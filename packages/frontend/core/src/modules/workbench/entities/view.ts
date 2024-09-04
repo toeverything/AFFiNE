@@ -86,9 +86,9 @@ export class View extends Entity<{
       parseBooleans: true,
     }
   ) {
-    return this.location$.map(
-      location => queryString.parse(location.search, options) as Partial<T>
-    );
+    return this.location$
+      .selector(v => v.search)
+      .map(search => queryString.parse(search, options) as Partial<T>);
   }
 
   updateQueryString<T extends Record<string, unknown>>(

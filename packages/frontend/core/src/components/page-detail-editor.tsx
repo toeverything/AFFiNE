@@ -11,7 +11,7 @@ import clsx from 'clsx';
 import type { CSSProperties } from 'react';
 import { memo, useCallback, useMemo } from 'react';
 
-import { type EditorSelector, EditorService } from '../modules/editor';
+import { EditorService } from '../modules/editor';
 import {
   EditorSettingService,
   fontStyleOptions,
@@ -35,13 +35,11 @@ export interface PageDetailEditorProps {
   docCollection: DocCollection;
   pageId: string;
   onLoad?: OnLoadEditor;
-  defaultEditorSelector?: EditorSelector;
 }
 
 const PageDetailEditorMain = memo(function PageDetailEditorMain({
   page,
   onLoad,
-  defaultEditorSelector,
 }: PageDetailEditorProps & { page: BlockSuiteDoc }) {
   const editor = useService(EditorService).editor;
   const mode = useLiveData(editor.mode$);
@@ -108,7 +106,6 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       mode={mode}
       page={page}
       shared={isSharedMode}
-      defaultEditorSelector={defaultEditorSelector}
       onLoadEditor={onLoadEditor}
     />
   );

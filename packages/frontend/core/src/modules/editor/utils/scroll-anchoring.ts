@@ -39,6 +39,7 @@ function scrollAnchoringInEdgelessMode(
         h / service.viewport.zoom
       );
     } else {
+      if (!service.getElementById) return;
       const model = service.getElementById(id);
       if (!model) return;
 

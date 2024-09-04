@@ -1,5 +1,4 @@
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
-import type { EditorSelector } from '@affine/core/modules/editor';
 import type { DocMode } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
@@ -30,7 +29,6 @@ export type EditorProps = {
   onLoadEditor?: (editor: AffineEditorContainer) => () => void;
   style?: CSSProperties;
   className?: string;
-  defaultEditorSelector?: EditorSelector;
 };
 
 function usePageRoot(page: Doc) {
@@ -57,15 +55,7 @@ function usePageRoot(page: Doc) {
 
 const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
   function BlockSuiteEditorImpl(
-    {
-      mode,
-      page,
-      className,
-      onLoadEditor,
-      shared,
-      style,
-      defaultEditorSelector,
-    },
+    { mode, page, className, onLoadEditor, shared, style },
     ref
   ) {
     usePageRoot(page);
@@ -115,7 +105,6 @@ const BlockSuiteEditorImpl = forwardRef<AffineEditorContainer, EditorProps>(
         ref={onRefChange}
         className={className}
         style={style}
-        defaultEditorSelector={defaultEditorSelector}
       />
     );
   }

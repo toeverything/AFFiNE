@@ -5,16 +5,17 @@ import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { EditorService } from '@affine/core/modules/editor';
 import { PageNotFound } from '@affine/core/pages/404';
 import { DebugLogger } from '@affine/debug';
 import type { DocMode, EdgelessRootService } from '@blocksuite/blocks';
 import { Bound, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import {
-  DocsService,
   FrameworkScope,
   useLiveData,
   useService,
+  useServices,
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useEffect, useState } from 'react';
@@ -62,27 +63,21 @@ function fitViewport(
   }
 }
 
-export function DocPeekPreview({
-  docId,
-  blockIds,
-  elementIds,
-  mode,
+function DocPeekPreviewEditor({
   xywh,
 }: {
-  docId: string;
-  blockIds?: string[];
-  elementIds?: string[];
-  mode?: DocMode;
   xywh?: `[${number},${number},${number},${number}]`;
 }) {
-  const { doc, workspace, editor, loading } = useEditor(docId, mode, {
-    blockIds,
-    elementIds,
+  const { editorService } = useServices({
+    EditorService,
   });
+  const editor = editorService.editor;
+  const doc = editor.doc;
+  const workspace = editor.doc.workspace;
+  const mode = useLiveData(editor.mode$);
   const { jumpToTag } = useNavigateHelper();
   const workbench = useService(WorkbenchService).workbench;
   const peekView = useService(PeekViewService).peekView;
-  const defaultEditorSelector = useLiveData(editor?.selector$);
   const [editorElement, setEditorElement] =
     useState<AffineEditorContainer | null>(null);
 
@@ -90,27 +85,16 @@ export function DocPeekPreview({
     setEditorElement(editor);
   };
 
-  const docs = useService(DocsService);
-  const [resolvedMode, setResolvedMode] = useState<DocMode | undefined>(mode);
-
   useEffect(() => {
     editorElement?.updateComplete
       .then(() => {
-        if (resolvedMode === 'edgeless') {
+        if (mode === 'edgeless') {
           fitViewport(editorElement, xywh);
         }
       })
       .catch(console.error);
     return;
-  }, [editorElement, resolvedMode, xywh]);
-
-  useEffect(() => {
-    if (!mode || !resolvedMode) {
-      setResolvedMode(
-        docs.list.doc$(docId).value?.primaryMode$.value || 'page'
-      );
-    }
-  }, [docId, docs.list, resolvedMode, mode]);
+  }, [editorElement, mode, xywh]);
 
   useEffect(() => {
     const disposable = AIProvider.slots.requestOpenWithChat.on(() => {
@@ -164,20 +148,11 @@ export function DocPeekPreview({
   }, [editorElement, jumpToTag, peekView, workspace.id]);
 
   const openOutlinePanel = useCallback(() => {
-    workbench.openDoc(docId);
+    workbench.openDoc(doc.id);
     workbench.openSidebar();
     workbench.activeView$.value.activeSidebarTab('outline');
     peekView.close();
-  }, [docId, peekView, workbench]);
-
-  // if sync engine has been synced and the page is null, show 404 page.
-  if (!doc || !resolvedMode || !editor) {
-    return loading || !resolvedMode ? (
-      <PageDetailSkeleton key="current-page-is-null" />
-    ) : (
-      <PageNotFound noPermission />
-    );
-  }
+  }, [doc, peekView, workbench]);
 
   return (
     <AffineErrorBoundary>
@@ -185,20 +160,15 @@ export function DocPeekPreview({
         <Scrollable.Viewport
           className={clsx('affine-page-viewport', styles.affineDocViewport)}
         >
-          <FrameworkScope scope={doc.scope}>
-            <FrameworkScope scope={editor.scope}>
-              <BlockSuiteEditor
-                ref={onRef}
-                className={styles.editor}
-                mode={resolvedMode}
-                defaultEditorSelector={defaultEditorSelector}
-                page={doc.blockSuiteDoc}
-              />
-            </FrameworkScope>
-          </FrameworkScope>
+          <BlockSuiteEditor
+            ref={onRef}
+            className={styles.editor}
+            mode={mode}
+            page={doc.blockSuiteDoc}
+          />
           <EditorOutlineViewer
             editor={editorElement}
-            show={resolvedMode === 'page'}
+            show={mode === 'page'}
             openOutlinePanel={openOutlinePanel}
           />
         </Scrollable.Viewport>
@@ -206,5 +176,41 @@ export function DocPeekPreview({
         <Scrollable.Scrollbar />
       </Scrollable.Root>
     </AffineErrorBoundary>
+  );
+}
+
+export function DocPeekPreview({
+  docId,
+  blockIds,
+  elementIds,
+  mode,
+  xywh,
+}: {
+  docId: string;
+  blockIds?: string[];
+  elementIds?: string[];
+  mode?: DocMode;
+  xywh?: `[${number},${number},${number},${number}]`;
+}) {
+  const { doc, editor, loading } = useEditor(docId, mode, {
+    blockIds,
+    elementIds,
+  });
+
+  // if sync engine has been synced and the page is null, show 404 page.
+  if (!doc || !editor) {
+    return loading ? (
+      <PageDetailSkeleton key="current-page-is-null" />
+    ) : (
+      <PageNotFound noPermission />
+    );
+  }
+
+  return (
+    <FrameworkScope scope={doc.scope}>
+      <FrameworkScope scope={editor.scope}>
+        <DocPeekPreviewEditor xywh={xywh} />
+      </FrameworkScope>
+    </FrameworkScope>
   );
 }

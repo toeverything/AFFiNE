@@ -1,7 +1,6 @@
-import type { EditorSelector } from '@affine/core/modules/editor';
+import { EditorService } from '@affine/core/modules/editor';
 import type { ReferenceInfo } from '@blocksuite/affine-model';
 import type { DocMode } from '@blocksuite/blocks';
-import type { InlineEditor } from '@blocksuite/inline/inline-editor';
 import type {
   AffineEditorContainer,
   DocTitle,
@@ -9,6 +8,7 @@ import type {
   PageEditor,
 } from '@blocksuite/presets';
 import { type Doc, Slot } from '@blocksuite/store';
+import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
 import {
@@ -18,10 +18,8 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
-  useState,
 } from 'react';
 
-import { scrollAnchoring } from '../../affine/reference-link/utils';
 import { BlocksuiteDocEditor, BlocksuiteEdgelessEditor } from './lit-adaper';
 import * as styles from './styles.css';
 
@@ -46,7 +44,6 @@ interface BlocksuiteEditorContainerProps {
   shared?: boolean;
   className?: string;
   style?: React.CSSProperties;
-  defaultEditorSelector?: EditorSelector;
 }
 
 // mimic the interface of the webcomponent and expose slots & host
@@ -60,21 +57,14 @@ export const BlocksuiteEditorContainer = forwardRef<
   AffineEditorContainer,
   BlocksuiteEditorContainerProps
 >(function AffineEditorContainer(
-  { page, mode, className, style, shared, defaultEditorSelector },
+  { page, mode, className, style, shared },
   ref
 ) {
+  const editorService = useService(EditorService);
   const rootRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<PageEditor>(null);
   const docTitleRef = useRef<DocTitle>(null);
   const edgelessRef = useRef<EdgelessEditor>(null);
-  const [anchor] = useState<string | null>(() => {
-    if (mode === 'edgeless' && defaultEditorSelector?.elementIds?.length) {
-      return defaultEditorSelector.elementIds[0];
-    } else if (defaultEditorSelector?.blockIds?.length) {
-      return defaultEditorSelector.blockIds[0];
-    }
-    return null;
-  });
 
   const slots: BlocksuiteEditorContainerRef['slots'] = useMemo(() => {
     return {
@@ -180,40 +170,24 @@ export const BlocksuiteEditorContainer = forwardRef<
   }, [affineEditorContainerProxy, ref]);
 
   useEffect(() => {
-    if (anchor) {
-      let canceled = false;
-      affineEditorContainerProxy.updateComplete
-        .then(() => {
-          if (!canceled) {
-            const std = affineEditorContainerProxy.host?.std;
-            if (std) {
-              scrollAnchoring(std, mode, anchor);
-            }
-          }
-        })
-        .catch(console.error);
-      return () => {
-        canceled = true;
-      };
-    } else {
-      // if no anchor, focus the title
-      let canceled = false;
+    let canceled = false;
+    let unsubscribe: () => void = () => {};
 
-      affineEditorContainerProxy.updateComplete
-        .then(() => {
-          if (!canceled) {
-            const title = docTitleRef.current?.querySelector<
-              HTMLElement & { inlineEditor: InlineEditor }
-            >('rich-text');
-            title?.inlineEditor.focusEnd();
-          }
-        })
-        .catch(console.error);
-      return () => {
-        canceled = true;
-      };
-    }
-  }, [anchor, affineEditorContainerProxy, mode]);
+    affineEditorContainerProxy.updateComplete
+      .then(() => {
+        if (!canceled) {
+          unsubscribe = editorService.editor.bindEditorContainer(
+            affineEditorContainerProxy,
+            docTitleRef.current as DocTitle
+          );
+        }
+      })
+      .catch(console.error);
+    return () => {
+      canceled = true;
+      unsubscribe();
+    };
+  }, [affineEditorContainerProxy, mode, editorService]);
 
   const handleClickPageModeBlank = useCallback(() => {
     affineEditorContainerProxy.host?.std.command.exec(

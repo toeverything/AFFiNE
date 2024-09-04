@@ -6,7 +6,6 @@ import {
 } from '@affine/core/modules/peek-view';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
-import type { BlockStdScope } from '@blocksuite/block-std';
 import type { DocMode } from '@blocksuite/blocks';
 import {
   BlockLinkIcon,
@@ -17,16 +16,16 @@ import {
 } from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';
+import { nanoid } from 'nanoid';
 import {
   type PropsWithChildren,
   useCallback,
-  useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 
 import * as styles from './styles.css';
-import { scrollAnchoring } from './utils';
 
 export interface PageReferenceRendererOptions {
   pageId: string;
@@ -90,8 +89,6 @@ export function AffinePageReference({
   wrapper: Wrapper,
   mode = 'page',
   params = {},
-  isSameDoc = false,
-  std,
 }: {
   pageId: string;
   docCollection: DocCollection;
@@ -102,16 +99,10 @@ export function AffinePageReference({
     blockIds?: string[];
     elementIds?: string[];
   };
-  isSameDoc?: boolean;
-  std?: BlockStdScope;
 }) {
   const pageMetaHelper = useDocMetaHelper(docCollection);
   const journalHelper = useJournalHelper(docCollection);
   const t = useI18n();
-  const [anchor, setAnchor] = useState<{
-    mode: DocMode;
-    id: string;
-  } | null>(null);
 
   const { mode: linkedWithMode, blockIds, elementIds } = params;
 
@@ -128,20 +119,10 @@ export function AffinePageReference({
 
   const ref = useRef<HTMLAnchorElement>(null);
 
+  const [refreshKey, setRefreshKey] = useState<string>(() => nanoid());
+
   const peekView = useService(PeekViewService).peekView;
   const isInPeekView = useInsidePeekView();
-
-  useEffect(() => {
-    if (isSameDoc) {
-      if (mode === 'edgeless' && elementIds?.length) {
-        setAnchor({ mode, id: elementIds[0] });
-      } else if (blockIds?.length) {
-        setAnchor({ mode, id: blockIds[0] });
-      }
-    } else {
-      setAnchor(null);
-    }
-  }, [std, isSameDoc, mode, blockIds, elementIds]);
 
   const onClick = useCallback(
     (e: React.MouseEvent) => {
@@ -151,33 +132,34 @@ export function AffinePageReference({
         peekView.open(ref.current).catch(console.error);
       }
 
-      if (std && anchor) {
-        e.preventDefault();
-        e.stopPropagation();
-        const { mode, id } = anchor;
-        scrollAnchoring(std, mode, id);
-      } else if (isInPeekView) {
+      if (isInPeekView) {
         peekView.close();
       }
 
+      // update refresh key
+      setRefreshKey(nanoid());
+
       return;
     },
-    [isInPeekView, peekView, anchor, std]
+    [isInPeekView, peekView]
   );
 
-  // A block/element reference link
-  const search = new URLSearchParams();
-  if (linkedWithMode) {
-    search.set('mode', linkedWithMode);
-  }
-  if (blockIds?.length) {
-    search.set('blockIds', blockIds.join(','));
-  }
-  if (elementIds?.length) {
-    search.set('elementIds', elementIds.join(','));
-  }
+  const query = useMemo(() => {
+    // A block/element reference link
+    const search = new URLSearchParams();
+    if (linkedWithMode) {
+      search.set('mode', linkedWithMode);
+    }
+    if (blockIds?.length) {
+      search.set('blockIds', blockIds.join(','));
+    }
+    if (elementIds?.length) {
+      search.set('elementIds', elementIds.join(','));
+    }
+    search.set('refreshKey', refreshKey);
 
-  const query = search.size > 0 ? `?${search.toString()}` : '';
+    return search.size > 0 ? `?${search.toString()}` : '';
+  }, [blockIds, elementIds, linkedWithMode, refreshKey]);
 
   return (
     <WorkbenchLink

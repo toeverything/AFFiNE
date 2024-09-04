@@ -159,7 +159,8 @@ const SharePageInner = ({
 
         setPage(doc);
 
-        const editor = doc.scope.get(EditorsService).createEditor(publishMode);
+        const editor = doc.scope.get(EditorsService).createEditor();
+        editor.setMode(publishMode);
 
         setEditor(editor);
       })

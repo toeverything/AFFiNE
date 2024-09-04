@@ -41,12 +41,9 @@ export const useEditor = (
     if (!doc) {
       return;
     }
-    const editor = doc.scope
-      .get(EditorsService)
-      .createEditor(
-        preferModeRef.current || doc.primaryMode$.value,
-        preferSelectorRef.current
-      );
+    const editor = doc.scope.get(EditorsService).createEditor();
+    editor.setMode(preferModeRef.current || doc.primaryMode$.value);
+    editor.setSelector(preferSelectorRef.current);
     setEditor(editor);
     return () => {
       editor.dispose();

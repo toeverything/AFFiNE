@@ -40,6 +40,7 @@ export const EditorModeSwitch = () => {
   const togglePage = useCallback(() => {
     if (currentMode === 'page' || isSharedMode || trash) return;
     editor.setMode('page');
+    editor.setSelector(undefined);
     editor.doc.setPrimaryMode('page');
     toast(t['com.affine.toastMessage.pageMode']());
     track.$.header.actions.switchPageMode({ mode: 'page' });
@@ -48,6 +49,7 @@ export const EditorModeSwitch = () => {
   const toggleEdgeless = useCallback(() => {
     if (currentMode === 'edgeless' || isSharedMode || trash) return;
     editor.setMode('edgeless');
+    editor.setSelector(undefined);
     editor.doc.setPrimaryMode('edgeless');
     toast(t['com.affine.toastMessage.edgelessMode']());
     track.$.header.actions.switchPageMode({ mode: 'edgeless' });

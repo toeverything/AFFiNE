@@ -1,3 +1,4 @@
+export { View as WorkbenchView } from './entities/view';
 export { Workbench } from './entities/workbench';
 export { ViewScope } from './scopes/view';
 export { WorkbenchService } from './services/workbench';
