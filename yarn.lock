@@ -228,6 +228,7 @@ __metadata:
     "@napi-rs/clipboard": "npm:^1.1.2"
     "@napi-rs/simple-git": "npm:^0.1.18"
     chalk: "npm:^5.3.0"
+    undici: "npm:^6.19.8"
   languageName: unknown
   linkType: soft
 
@@ -34940,7 +34941,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici@npm:^6.12.0":
+"undici@npm:^6.12.0, undici@npm:^6.19.8":
   version: 6.19.8
   resolution: "undici@npm:6.19.8"
   checksum: 10/19ae4ba38b029a664d99fd330935ef59136cf99edb04ed821042f27b5a9e84777265fb744c8a7abc83f2059afb019446c69a4ebef07bbc0ed6b2de8d67ef4090
