@@ -21,8 +21,8 @@ export default defineConfig({
     include: ['./test/**/*.spec.ts'],
     testTimeout: 5000,
     poolOptions: {
-      threads: {
-        singleThread: true,
+      forks: {
+        singleFork: true,
       },
     },
     coverage: {
