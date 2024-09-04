@@ -14,6 +14,7 @@ import {
   throwIfAborted,
   useLiveData,
   useService,
+  useServices,
   WorkspaceService,
 } from '@toeverything/infra';
 import { useAtomValue, useSetAtom } from 'jotai';
@@ -46,6 +47,7 @@ import { useRegisterFindInPageCommands } from '../hooks/affine/use-register-find
 import { useSubscriptionNotifyReader } from '../hooks/affine/use-subscription-notify';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
 import { AppTabsHeader } from '../modules/app-tabs-header';
+import { EditorSettingService } from '../modules/editor-settting';
 import { NavigationButtons } from '../modules/navigation';
 import { useRegisterNavigationCommands } from '../modules/navigation/view/use-register-navigation-commands';
 import { QuickSearchContainer } from '../modules/quicksearch';
@@ -73,8 +75,13 @@ export const WorkspaceLayoutProviders = ({ children }: PropsWithChildren) => {
   const t = useI18n();
   const pushGlobalLoadingEvent = useSetAtom(pushGlobalLoadingEventAtom);
   const resolveGlobalLoadingEvent = useSetAtom(resolveGlobalLoadingEventAtom);
-  const currentWorkspace = useService(WorkspaceService).workspace;
-  const docsList = useService(DocsService).list;
+  const { workspaceService, docsService } = useServices({
+    WorkspaceService,
+    DocsService,
+    EditorSettingService,
+  });
+  const currentWorkspace = workspaceService.workspace;
+  const docsList = docsService.list;
 
   const workbench = useService(WorkbenchService).workbench;
   useEffect(() => {

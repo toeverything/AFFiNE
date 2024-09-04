@@ -1,47 +1,41 @@
 import { toast } from '@affine/component';
 import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
-import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { DocMode } from '@blocksuite/blocks';
-import {
-  DocsService,
-  initEmptyPage,
-  useLiveData,
-  useServices,
-} from '@toeverything/infra';
+import { DocsService, initEmptyPage, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import type { DocCollection } from '../../../shared';
 
 export const usePageHelper = (docCollection: DocCollection) => {
-  const { docsService, workbenchService, editorSettingService } = useServices({
+  const { docsService, workbenchService } = useServices({
     DocsService,
     WorkbenchService,
-    EditorSettingService,
   });
   const workbench = workbenchService.workbench;
   const { createDoc } = useDocCollectionHelper(docCollection);
   const docRecordList = docsService.list;
-  const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
   const createPageAndOpen = useCallback(
     (mode?: DocMode, open?: boolean | 'new-tab') => {
       const page = createDoc();
       initEmptyPage(page);
-      const primaryMode = mode || settings.newDocDefaultMode;
-      docRecordList.doc$(page.id).value?.setPrimaryMode(primaryMode as DocMode);
+      if (mode) {
+        docRecordList.doc$(page.id).value?.setPrimaryMode(mode);
+      }
+
       if (open !== false)
         workbench.openDoc(page.id, {
           at: open === 'new-tab' ? 'new-tab' : 'active',
         });
       return page;
     },
-    [createDoc, docRecordList, settings.newDocDefaultMode, workbench]
+    [createDoc, docRecordList, workbench]
   );
 
   const createEdgelessAndOpen = useCallback(
     (open?: boolean | 'new-tab') => {
-      return createPageAndOpen('edgeless' as DocMode, open);
+      return createPageAndOpen('edgeless', open);
     },
     [createPageAndOpen]
   );
