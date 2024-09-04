@@ -48,6 +48,8 @@ export const wsSelectorWrapper = style({
   flex: 1,
   height: wsSelectorHeight,
   padding: '0 10px 0 16px',
+  display: 'flex',
+  alignItems: 'center',
 });
 
 export const settingWrapper = style({
