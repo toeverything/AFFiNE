@@ -75,25 +75,13 @@ export const WorkspaceLayoutProviders = ({ children }: PropsWithChildren) => {
   const t = useI18n();
   const pushGlobalLoadingEvent = useSetAtom(pushGlobalLoadingEventAtom);
   const resolveGlobalLoadingEvent = useSetAtom(resolveGlobalLoadingEventAtom);
-  const { workspaceService, docsService, editorSettingService } = useServices({
+  const { workspaceService, docsService } = useServices({
     WorkspaceService,
     DocsService,
     EditorSettingService,
   });
   const currentWorkspace = workspaceService.workspace;
   const docsList = docsService.list;
-  const defaultMode = useLiveData(
-    editorSettingService.editorSetting.settings$
-  ).newDocDefaultMode;
-
-  useEffect(() => {
-    const dispose = currentWorkspace.docCollection.slots.docCreated.on(id => {
-      docsList.setPrimaryMode(id, defaultMode);
-    });
-    return () => {
-      dispose.dispose();
-    };
-  }, [currentWorkspace, defaultMode, docsList]);
 
   const workbench = useService(WorkbenchService).workbench;
   useEffect(() => {
