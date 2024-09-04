@@ -1,6 +1,6 @@
 import { app, Menu } from 'electron';
 
-import { isMacOS } from '../../shared/utils';
+import { isMacOS, isWindows } from '../../shared/utils';
 import { logger, revealLogFile } from '../logger';
 import { checkForUpdates } from '../updater';
 import {
@@ -113,6 +113,9 @@ export function createApplicationMenu() {
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },
+        ...(isWindows()
+          ? [{ role: 'zoomIn', accelerator: 'Ctrl+=', visible: false }]
+          : []),
         { role: 'zoomOut' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
