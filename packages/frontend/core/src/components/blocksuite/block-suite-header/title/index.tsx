@@ -43,7 +43,6 @@ export const BlocksuiteHeaderTitle = (props: BlockSuiteHeaderTitleProps) => {
   return (
     <InlineEdit
       className={clsx(styles.title, props.className)}
-      autoSelect
       value={docTitle}
       onChange={onChange}
       editable={!isSharedMode}

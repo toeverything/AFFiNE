@@ -10,7 +10,13 @@ export const DesktopMenu = ({
   children,
   items,
   portalOptions,
-  rootOptions: { onOpenChange, defaultOpen, modal, ...rootOptions } = {},
+  rootOptions: {
+    onOpenChange,
+    defaultOpen,
+    modal,
+    open: rootOpen,
+    ...rootOptions
+  } = {},
   contentOptions: {
     className = '',
     style: contentStyle = {},
@@ -19,8 +25,9 @@ export const DesktopMenu = ({
     ...otherContentOptions
   } = {},
 }: MenuProps) => {
-  const { handleOpenChange, contentSide, contentOffset, contentRef } =
+  const { handleOpenChange, contentSide, contentOffset, contentRef, open } =
     useMenuContentController({
+      open: rootOpen,
       defaultOpen,
       onOpenChange,
       side,
@@ -31,6 +38,7 @@ export const DesktopMenu = ({
       onOpenChange={handleOpenChange}
       defaultOpen={defaultOpen}
       modal={modal ?? false}
+      open={open}
       {...rootOptions}
     >
       <DropdownMenu.Trigger

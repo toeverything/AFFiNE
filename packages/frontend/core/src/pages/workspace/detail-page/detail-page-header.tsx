@@ -116,7 +116,10 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
     useDetailPageHeaderResponsive(containerWidth);
 
   const onRename = useCallback(() => {
-    setTimeout(() => titleInputHandleRef.current?.triggerEdit());
+    setTimeout(
+      () => titleInputHandleRef.current?.triggerEdit(),
+      500 /* wait for menu animation end */
+    );
   }, []);
 
   const title = useDocCollectionPageTitle(workspace.docCollection, page?.id);

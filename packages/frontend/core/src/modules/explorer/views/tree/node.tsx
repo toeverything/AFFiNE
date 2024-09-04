@@ -376,9 +376,9 @@ export const ExplorerTreeNode = ({
         </div>
       </div>
 
-      {renameable && renaming && (
+      {renameable && (
         <RenameModal
-          open
+          open={!!renaming}
           width={sidebarWidth - 32}
           onOpenChange={setRenaming}
           onRename={handleRename}

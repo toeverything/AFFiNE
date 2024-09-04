@@ -12,7 +12,12 @@ export const DesktopMenuSub = ({
   children: propsChildren,
   items,
   portalOptions,
-  subOptions: { defaultOpen, onOpenChange, ...otherSubOptions } = {},
+  subOptions: {
+    defaultOpen,
+    onOpenChange,
+    open: rootOpen,
+    ...otherSubOptions
+  } = {},
   triggerOptions,
   subContentOptions: {
     className: subContentClassName = '',
@@ -27,9 +32,10 @@ export const DesktopMenuSub = ({
     suffixIcon: <ArrowRightSmallIcon />,
   });
 
-  const { handleOpenChange, contentOffset, contentRef } =
+  const { handleOpenChange, contentOffset, contentRef, open } =
     useMenuContentController({
       defaultOpen,
+      open: rootOpen,
       onOpenChange,
       side: 'right',
       sideOffset: (sideOffset ?? 0) + 12,
@@ -39,6 +45,7 @@ export const DesktopMenuSub = ({
     <DropdownMenu.Sub
       defaultOpen={defaultOpen}
       onOpenChange={handleOpenChange}
+      open={open}
       {...otherSubOptions}
     >
       <DropdownMenu.SubTrigger className={className} {...otherProps}>

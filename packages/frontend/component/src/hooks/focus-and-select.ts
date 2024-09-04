@@ -25,7 +25,9 @@ export const useAutoSelect = <T extends HTMLInputElement = HTMLInputElement>(
 
   useLayoutEffect(() => {
     if (ref.current && autoSelect) {
-      ref.current?.select();
+      setTimeout(() => {
+        ref.current?.select();
+      }, 0);
     }
   }, [autoSelect, ref]);
 

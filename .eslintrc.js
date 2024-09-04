@@ -248,7 +248,7 @@ const config = {
           'warn',
           {
             additionalHooks:
-              '(useAsyncCallback|useCatchEventCallback|useDraggable|useDropTarget)',
+              '(useAsyncCallback|useCatchEventCallback|useDraggable|useDropTarget|useRefEffect)',
           },
         ],
       },
