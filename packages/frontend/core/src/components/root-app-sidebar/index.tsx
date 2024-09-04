@@ -1,7 +1,6 @@
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
-import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import {
   ExplorerCollections,
   ExplorerFavorites,
@@ -13,7 +12,6 @@ import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/service
 import { isNewTabTrigger } from '@affine/core/utils';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
-import type { DocMode } from '@blocksuite/blocks';
 import {
   AllDocsIcon,
   GithubIcon,
@@ -79,17 +77,12 @@ export type RootAppSidebarProps = {
  *
  */
 export const RootAppSidebar = (): ReactElement => {
-  const {
-    workbenchService,
-    workspaceService,
-    cMDKQuickSearchService,
-    editorSettingService,
-  } = useServices({
-    WorkspaceService,
-    WorkbenchService,
-    CMDKQuickSearchService,
-    EditorSettingService,
-  });
+  const { workbenchService, workspaceService, cMDKQuickSearchService } =
+    useServices({
+      WorkspaceService,
+      WorkbenchService,
+      CMDKQuickSearchService,
+    });
   const currentWorkspace = workspaceService.workspace;
   const { appSettings } = useAppSettingHelper();
   const docCollection = currentWorkspace.docCollection;
@@ -106,18 +99,16 @@ export const RootAppSidebar = (): ReactElement => {
 
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
 
-  const settings = useLiveData(editorSettingService.editorSetting.settings$);
-
   const onClickNewPage = useAsyncCallback(
     async (e?: MouseEvent) => {
       const page = pageHelper.createPage(
-        settings.newDocDefaultMode as DocMode,
+        undefined,
         isNewTabTrigger(e) ? 'new-tab' : true
       );
       page.load();
-      track.$.navigationPanel.$.createDoc({ mode: settings.newDocDefaultMode });
+      track.$.navigationPanel.$.createDoc();
     },
-    [pageHelper, settings.newDocDefaultMode]
+    [pageHelper]
   );
 
   useEffect(() => {
