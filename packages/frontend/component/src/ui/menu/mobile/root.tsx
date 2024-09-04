@@ -19,6 +19,7 @@ export const MobileMenu = ({
   contentOptions: {
     className,
     onPointerDownOutside,
+    onInteractOutside,
     // ignore the following props
     sideOffset: _sideOffset,
     side: _side,
@@ -59,12 +60,13 @@ export const MobileMenu = ({
       if (!open) {
         // a workaround to hack the onPointerDownOutside event
         onPointerDownOutside?.({} as any);
+        onInteractOutside?.({} as any);
         setSubMenus([]);
       }
       setOpen(open);
       rootOptions?.onOpenChange?.(open);
     },
-    [onPointerDownOutside, rootOptions]
+    [onInteractOutside, onPointerDownOutside, rootOptions]
   );
 
   const onItemClick = useCallback(
