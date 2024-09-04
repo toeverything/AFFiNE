@@ -285,6 +285,7 @@ async function crawlingDocData({
 function crawlingRootDocData({
   allIndexedDocs,
   rootDocBuffer,
+  reindexAll,
 }: WorkerInput & {
   type: 'rootDoc';
 }): WorkerOutput {
@@ -317,7 +318,9 @@ function crawlingRootDocData({
   }
 
   const needDelete = difference(allIndexedDocs, availableDocs);
-  const needAdd = difference(availableDocs, allIndexedDocs);
+  const needAdd = reindexAll
+    ? availableDocs
+    : difference(availableDocs, allIndexedDocs);
 
   return {
     reindexDoc: [...needAdd, ...needDelete].map(docId => ({
