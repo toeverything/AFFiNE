@@ -85,7 +85,7 @@ const FontFamilySettings = () => {
 
   const radioItems = useMemo(() => {
     const items = getBaseFontStyleOptions(t);
-    if (!environment.isDesktop) return items;
+    if (!environment.isElectron) return items;
 
     // resolve custom fonts
     const customOption = fontStyleOptions.find(opt => opt.key === 'Custom');
@@ -274,7 +274,7 @@ const CustomFontFamilySettings = () => {
     },
     [editorSettingService.editorSetting]
   );
-  if (settings.fontFamily !== 'Custom' || !environment.isDesktop) {
+  if (settings.fontFamily !== 'Custom' || !environment.isElectron) {
     return null;
   }
   return (

@@ -14,7 +14,7 @@ type Challenge = {
 };
 
 const challengeFetcher = async (url: string) => {
-  if (!environment.isDesktop) {
+  if (!environment.isElectron) {
     return undefined;
   }
 
@@ -31,7 +31,7 @@ const challengeFetcher = async (url: string) => {
 };
 
 const generateChallengeResponse = async (challenge: string) => {
-  if (!environment.isDesktop) {
+  if (!environment.isElectron) {
     return undefined;
   }
 
@@ -56,7 +56,7 @@ export const Captcha = () => {
     return null;
   }
 
-  if (environment.isDesktop) {
+  if (environment.isElectron) {
     if (response) {
       return <div className={style.captchaWrapper}>Making Challenge</div>;
     } else {
@@ -87,7 +87,7 @@ export const useCaptcha = (): [string | undefined, string?] => {
   useEffect(() => {
     if (
       hasCaptchaFeature &&
-      environment.isDesktop &&
+      environment.isElectron &&
       challenge?.challenge &&
       prevChallenge.current !== challenge.challenge
     ) {
@@ -104,7 +104,7 @@ export const useCaptcha = (): [string | undefined, string?] => {
     return ['XXXX.DUMMY.TOKEN.XXXX'];
   }
 
-  if (environment.isDesktop) {
+  if (environment.isElectron) {
     if (response) {
       return [response, challenge?.challenge];
     } else {

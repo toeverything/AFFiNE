@@ -284,7 +284,7 @@ export const useMarkdownShortcuts = (): ShortcutsInfo => {
 
   const macMarkdownShortcuts = useMacMarkdownShortcuts();
   const winMarkdownShortcuts = useWinMarkdownShortcuts();
-  const isMac = environment.isBrowser && environment.isMacOs;
+  const isMac = environment.isMacOs;
   return {
     title: t['com.affine.shortcutsTitle.markdownSyntax'](),
     shortcuts: isMac ? macMarkdownShortcuts : winMarkdownShortcuts,
@@ -296,7 +296,7 @@ export const usePageShortcuts = (): ShortcutsInfo => {
 
   const macPageShortcuts = useMacPageKeyboardShortcuts();
   const winPageShortcuts = useWinPageKeyboardShortcuts();
-  const isMac = environment.isBrowser && environment.isMacOs;
+  const isMac = environment.isMacOs;
   return {
     title: t['com.affine.shortcutsTitle.page'](),
     shortcuts: isMac ? macPageShortcuts : winPageShortcuts,
@@ -308,7 +308,7 @@ export const useEdgelessShortcuts = (): ShortcutsInfo => {
 
   const macEdgelessShortcuts = useMacEdgelessKeyboardShortcuts();
   const winEdgelessShortcuts = useWinEdgelessKeyboardShortcuts();
-  const isMac = environment.isBrowser && environment.isMacOs;
+  const isMac = environment.isMacOs;
   return {
     title: t['com.affine.shortcutsTitle.edgeless'](),
     shortcuts: isMac ? macEdgelessShortcuts : winEdgelessShortcuts,
@@ -320,7 +320,7 @@ export const useGeneralShortcuts = (): ShortcutsInfo => {
 
   const macGeneralShortcuts = useMacGeneralKeyboardShortcuts();
   const winGeneralShortcuts = useWinGeneralKeyboardShortcuts();
-  const isMac = environment.isBrowser && environment.isMacOs;
+  const isMac = environment.isMacOs;
   return {
     title: t['com.affine.shortcutsTitle.general'](),
     shortcuts: isMac ? macGeneralShortcuts : winGeneralShortcuts,

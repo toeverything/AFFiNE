@@ -23,7 +23,7 @@ export const useDetailPageHeaderResponsive = (availableWidth: number) => {
     viewPosition.isLast &&
     !rightSidebarOpen &&
     !(hidePresent && hideShare) &&
-    !environment.isDesktop;
+    !environment.isElectron;
 
   return {
     hideShare,

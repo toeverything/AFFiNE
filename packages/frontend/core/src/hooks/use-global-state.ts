@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 
 export function useDocumentTitle(newTitle?: string | null) {
   useEffect(() => {
-    if (environment.isDesktop || !newTitle) {
+    if (environment.isElectron || !newTitle) {
       return noop;
     }
 

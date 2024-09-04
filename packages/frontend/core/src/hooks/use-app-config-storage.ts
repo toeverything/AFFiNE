@@ -35,7 +35,7 @@ export const appConfigProxy = new AppConfigProxy();
 
 setupGlobal();
 
-const storage = environment.isDesktop
+const storage = environment.isElectron
   ? new AppConfigStorage({
       config: defaultAppConfig,
       get: () => appConfigProxy.get(),

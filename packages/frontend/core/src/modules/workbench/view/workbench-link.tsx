@@ -40,7 +40,7 @@ export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
         }
         const at = (() => {
           if (isNewTabTrigger(event)) {
-            return event.altKey && enableMultiView && environment.isDesktop
+            return event.altKey && enableMultiView && environment.isElectron
               ? 'tail'
               : 'new-tab';
           }

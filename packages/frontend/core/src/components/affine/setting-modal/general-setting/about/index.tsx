@@ -72,7 +72,7 @@ export const AboutAffine = () => {
           name={t['com.affine.aboutAFFiNE.version.editor.title']()}
           desc={runtimeConfig.editorVersion}
         />
-        {environment.isDesktop ? (
+        {environment.isElectron ? (
           <>
             <UpdateCheckSection />
             <SettingRow

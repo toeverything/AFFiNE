@@ -12,7 +12,6 @@ import clsx from 'clsx';
 import type { CSSProperties, MouseEvent } from 'react';
 import { forwardRef, useCallback, useEffect, useState } from 'react';
 
-import { isMobile } from '../../utils/env';
 import type { IconButtonProps } from '../button';
 import { IconButton } from '../button';
 import * as styles from './styles.css';
@@ -151,9 +150,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       children,
       contentWrapperClassName,
       contentWrapperStyle,
-      animation = environment.isBrowser && environment.isMobile
-        ? 'slideBottom'
-        : 'fadeScaleTop',
+      animation = environment.isMobileEdition ? 'slideBottom' : 'fadeScaleTop',
       fullScreen,
       ...otherProps
     } = props;
@@ -225,7 +222,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
               `anim-${animation}`,
               styles.modalOverlay,
               overlayClassName,
-              { mobile: isMobile() }
+              { mobile: environment.isMobileEdition }
             )}
             style={{
               ...overlayStyle,

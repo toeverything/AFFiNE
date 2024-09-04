@@ -1,7 +1,6 @@
 import { DoneIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 
-import { isMobile } from '../../utils/env';
 import type { MenuItemProps } from './menu.types';
 import { mobileMenuItem } from './mobile/styles.css';
 import * as styles from './styles.css';
@@ -27,7 +26,7 @@ export const useMenuItem = <T extends MenuItemProps>({
       checked,
       selected,
       block,
-      [mobileMenuItem]: isMobile(),
+      [mobileMenuItem]: environment.isMobileEdition,
     },
     propsClassName
   );

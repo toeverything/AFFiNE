@@ -49,7 +49,7 @@ export function AppSidebar({
 
   useEffect(() => {
     // do not float app sidebar on desktop
-    if (environment.isDesktop) {
+    if (environment.isElectron) {
       return;
     }
 
@@ -79,8 +79,8 @@ export function AppSidebar({
     };
   }, [open, setFloating, setOpen, width]);
 
-  const hasRightBorder = !environment.isDesktop && !clientBorder;
-  const isMacosDesktop = environment.isDesktop && environment.isMacOs;
+  const hasRightBorder = !environment.isElectron && !clientBorder;
+  const isMacosDesktop = environment.isElectron && environment.isMacOs;
   return (
     <>
       <ResizePanel
@@ -105,7 +105,7 @@ export function AppSidebar({
         data-client-border={clientBorder}
       >
         <nav className={navStyle} data-testid="app-sidebar">
-          {!environment.isDesktop && <SidebarHeader />}
+          {!environment.isElectron && <SidebarHeader />}
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {children}
           </div>

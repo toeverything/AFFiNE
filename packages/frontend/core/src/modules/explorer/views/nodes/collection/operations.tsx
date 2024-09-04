@@ -183,7 +183,7 @@ export const useExplorerCollectionNodeOperations = (
           </MenuItem>
         ),
       },
-      ...(environment.isDesktop && enableMultiView
+      ...(environment.isElectron && enableMultiView
         ? [
             {
               index: 99,

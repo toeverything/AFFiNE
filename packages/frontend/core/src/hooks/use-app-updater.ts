@@ -1,6 +1,5 @@
 import type { UpdateMeta } from '@affine/electron-api';
 import { apis, events } from '@affine/electron-api';
-import { isBrowser } from '@affine/env/constant';
 import { appSettingAtom } from '@toeverything/infra';
 import { atom, useAtom, useAtomValue } from 'jotai';
 import { atomWithObservable, atomWithStorage } from 'jotai/utils';
@@ -30,7 +29,7 @@ function rpcToObservable<
   return new Observable<T | null>(subscriber => {
     subscriber.next(initialValue);
     onSubscribe?.();
-    if (!isBrowser || !environment.isDesktop || !event) {
+    if (!environment.isElectron || !event) {
       subscriber.complete();
       return;
     }
@@ -76,18 +75,12 @@ export const changelogCheckedAtom = atomWithStorage<Record<string, boolean>>(
 export const checkingForUpdatesAtom = atom(false);
 
 export const currentVersionAtom = atom(async () => {
-  if (!isBrowser) {
-    return null;
-  }
   const currentVersion = await apis?.updater.currentVersion();
   return currentVersion;
 });
 
 const currentChangelogUnreadAtom = atom(
   async get => {
-    if (!isBrowser) {
-      return false;
-    }
     const mapping = get(changelogCheckedAtom);
     const currentVersion = await get(currentVersionAtom);
     if (currentVersion) {

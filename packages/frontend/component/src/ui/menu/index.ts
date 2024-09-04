@@ -1,5 +1,4 @@
 export * from './menu.types';
-import { isMobile } from '../../utils/env';
 import { DesktopMenuItem } from './desktop/item';
 import { DesktopMenu } from './desktop/root';
 import { DesktopMenuSeparator } from './desktop/separator';
@@ -10,10 +9,12 @@ import { MobileMenu } from './mobile/root';
 import { MobileMenuSeparator } from './mobile/separator';
 import { MobileMenuSub } from './mobile/sub';
 
-const MenuItem = isMobile() ? MobileMenuItem : DesktopMenuItem;
-const MenuSeparator = isMobile() ? MobileMenuSeparator : DesktopMenuSeparator;
-const MenuSub = isMobile() ? MobileMenuSub : DesktopMenuSub;
-const Menu = isMobile() ? MobileMenu : DesktopMenu;
+const MenuItem = environment.isMobileEdition ? MobileMenuItem : DesktopMenuItem;
+const MenuSeparator = environment.isMobileEdition
+  ? MobileMenuSeparator
+  : DesktopMenuSeparator;
+const MenuSub = environment.isMobileEdition ? MobileMenuSub : DesktopMenuSub;
+const Menu = environment.isMobileEdition ? MobileMenu : DesktopMenu;
 
 export {
   DesktopMenu,

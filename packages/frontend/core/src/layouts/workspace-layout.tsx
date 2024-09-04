@@ -223,7 +223,9 @@ const WorkspaceLayoutUIContainer = ({ children }: PropsWithChildren) => {
   );
 
   const resizing = useAtomValue(appSidebarResizingAtom);
-  const LayoutComponent = environment.isDesktop ? DesktopLayout : BrowserLayout;
+  const LayoutComponent = environment.isElectron
+    ? DesktopLayout
+    : BrowserLayout;
 
   return (
     <AppContainer data-current-path={currentPath} resizing={resizing}>

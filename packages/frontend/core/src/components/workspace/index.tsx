@@ -26,8 +26,8 @@ export const AppContainer = ({
   children,
   ...rest
 }: WorkspaceRootProps) => {
-  const noisyBackground = useNoisyBackground && environment.isDesktop;
-  const blurBackground = environment.isDesktop && useBlurBackground;
+  const noisyBackground = useNoisyBackground && environment.isElectron;
+  const blurBackground = environment.isElectron && useBlurBackground;
   return (
     <div
       {...rest}
@@ -57,7 +57,7 @@ export const MainContainer = forwardRef<
     <div
       {...props}
       className={clsx(mainContainerStyle, className)}
-      data-is-desktop={environment.isDesktop}
+      data-is-desktop={environment.isElectron}
       data-transparent={false}
       data-client-border={appSettings.clientBorder}
       data-side-bar-open={appSideBarOpen}

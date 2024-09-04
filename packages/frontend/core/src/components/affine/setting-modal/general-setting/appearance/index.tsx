@@ -85,7 +85,7 @@ export const AppearanceSettings = () => {
             <LanguageMenu />
           </div>
         </SettingRow>
-        {environment.isDesktop ? (
+        {environment.isElectron ? (
           <SettingRow
             name={t['com.affine.appearanceSettings.clientBorder.title']()}
             desc={t['com.affine.appearanceSettings.clientBorder.description']()}
@@ -97,7 +97,7 @@ export const AppearanceSettings = () => {
             />
           </SettingRow>
         ) : null}
-        {runtimeConfig.enableNewSettingUnstableApi && environment.isDesktop ? (
+        {runtimeConfig.enableNewSettingUnstableApi && environment.isElectron ? (
           <SettingRow
             name={t['com.affine.appearanceSettings.windowFrame.title']()}
             desc={t['com.affine.appearanceSettings.windowFrame.description']()}
@@ -141,7 +141,7 @@ export const AppearanceSettings = () => {
         </SettingWrapper>
       ) : null}
 
-      {environment.isDesktop ? (
+      {environment.isElectron ? (
         <SettingWrapper
           title={t['com.affine.appearanceSettings.sidebar.title']()}
         >

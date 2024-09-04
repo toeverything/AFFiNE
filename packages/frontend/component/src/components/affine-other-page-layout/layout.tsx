@@ -20,7 +20,7 @@ export const AffineOtherPageLayout = ({
 
   return (
     <div className={styles.root}>
-      {environment.isDesktop ? null : (
+      {environment.isElectron ? null : (
         <div className={styles.topNav}>
           <a href="/" rel="noreferrer" className={styles.affineLogo}>
             <Logo1Icon width={24} height={24} />

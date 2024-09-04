@@ -258,7 +258,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   );
 
   const [refCallback, hasScrollTop] = useHasScrollTop();
-  const dynamicTopBorder = environment.isDesktop;
+  const dynamicTopBorder = environment.isElectron;
 
   const openOutlinePanel = useCallback(() => {
     workbench.openSidebar();

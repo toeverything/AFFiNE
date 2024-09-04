@@ -26,7 +26,7 @@ export const EmptyPageList = ({
           icon={<PlusIcon />}
         />
       );
-      if (environment.isDesktop) {
+      if (environment.isElectron) {
         const shortcut = environment.isMacOs ? '⌘ + N' : 'Ctrl + N';
         return (
           <Trans i18nKey="emptyAllPagesClient">

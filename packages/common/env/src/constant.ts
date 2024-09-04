@@ -2,19 +2,16 @@
 import type { DocCollection } from '@blocksuite/store';
 
 declare global {
-  interface Window {
-    __appInfo: {
-      electron: boolean;
-      schema: string;
-      windowName: string;
-    };
-  }
+  // eslint-disable-next-line no-var
+  var __appInfo: {
+    electron: boolean;
+    schema: string;
+    windowName: string;
+  };
 }
 
 //#region runtime variables
-export const isBrowser = typeof window !== 'undefined';
-export const isServer = !isBrowser && typeof navigator === 'undefined';
-export const isDesktop = isBrowser && !!window.__appInfo?.electron;
+export const isElectron = !!globalThis.__appInfo?.electron;
 //#endregion
 export const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 export const UNTITLED_WORKSPACE_NAME = 'Untitled';

@@ -43,7 +43,7 @@ export const Onboarding = ({ onOpenApp }: OnboardingProps) => {
   return (
     <div
       className={styles.onboarding}
-      data-is-desktop={environment.isDesktop}
+      data-is-desktop={environment.isElectron}
       data-is-window={!!status.activeId || !!status.unfoldingId}
     >
       <div className={styles.offsetOrigin}>

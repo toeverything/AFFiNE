@@ -42,7 +42,7 @@ const desktopWhiteList = [
   '/magic-link',
 ];
 if (
-  !environment.isDesktop &&
+  !environment.isElectron &&
   environment.isDebug &&
   desktopWhiteList.every(path => !location.pathname.startsWith(path))
 ) {

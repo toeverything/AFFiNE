@@ -7,6 +7,7 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   const buildPreset: Record<BuildFlags['channel'], RuntimeConfig> = {
     get stable() {
       return {
+        distribution: buildFlags.distribution,
         appBuildType: 'stable' as const,
         serverUrlPrefix: 'https://app.affine.pro',
         appVersion: packageJson.version,

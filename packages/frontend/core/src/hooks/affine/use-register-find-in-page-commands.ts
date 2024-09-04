@@ -18,7 +18,7 @@ export function useRegisterFindInPageCommands() {
   }, [findInPage]);
 
   useEffect(() => {
-    if (!environment.isDesktop) {
+    if (!environment.isElectron) {
       return;
     }
     const unsubs: Array<() => void> = [];

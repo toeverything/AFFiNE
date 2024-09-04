@@ -44,7 +44,7 @@ export const NavigationButtons = () => {
     };
   }, [navigator]);
 
-  if (!environment.isDesktop) {
+  if (!environment.isElectron) {
     return null;
   }
 

@@ -40,7 +40,7 @@ export class Navigator extends Entity {
   );
 
   back() {
-    if (!environment.isDesktop) {
+    if (!environment.isElectron) {
       window.history.back();
     } else {
       this.history$.value.back();
@@ -48,7 +48,7 @@ export class Navigator extends Entity {
   }
 
   forward() {
-    if (!environment.isDesktop) {
+    if (!environment.isElectron) {
       window.history.forward();
     } else {
       this.history$.value.forward();

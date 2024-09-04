@@ -206,7 +206,7 @@ export const PageHeaderMenuButton = ({
     setEditing(!isEditing);
   }, [isEditing, page.id, page.readonly, setDocReadonly]);
 
-  const isMobile = environment.isBrowser && environment.isMobile;
+  const isMobile = environment.isMobileEdition;
   const mobileEditMenuItem = (
     <MenuItem
       prefixIcon={isEditing ? <SaveIcon /> : <EditIcon />}
@@ -293,7 +293,7 @@ export const PageHeaderMenuButton = ({
         {t['com.affine.workbench.tab.page-menu-open']()}
       </MenuItem>
 
-      {environment.isDesktop && (
+      {environment.isElectron && (
         <MenuItem
           prefixIcon={<SplitViewIcon />}
           data-testid="editor-option-menu-open-in-split-new"

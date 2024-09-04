@@ -88,7 +88,7 @@ export class AuthService extends Service {
         email,
         // we call it [callbackUrl] instead of [redirect_uri]
         // to make it clear the url is used to finish the sign-in process instead of redirect after signed-in
-        callbackUrl: `/magic-link?client=${environment.isDesktop ? appInfo?.schema : 'web'}`,
+        callbackUrl: `/magic-link?client=${environment.isElectron ? appInfo?.schema : 'web'}`,
       }),
       headers: {
         'content-type': 'application/json',
@@ -131,7 +131,7 @@ export class AuthService extends Service {
       'state',
       JSON.stringify({
         state: oauthUrl.searchParams.get('state'),
-        client: environment.isDesktop ? appInfo?.schema : 'web',
+        client: environment.isElectron ? appInfo?.schema : 'web',
       })
     );
     url = oauthUrl.toString();

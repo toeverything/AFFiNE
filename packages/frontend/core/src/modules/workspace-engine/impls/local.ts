@@ -47,7 +47,7 @@ export class LocalWorkspaceFlavourProvider
       JSON.stringify(allWorkspaceIDs.filter(x => x !== id))
     );
 
-    if (apis && environment.isDesktop) {
+    if (apis && environment.isElectron) {
       await apis.workspace.delete(id);
     }
 

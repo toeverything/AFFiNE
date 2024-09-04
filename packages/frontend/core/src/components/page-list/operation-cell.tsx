@@ -182,7 +182,7 @@ export const PageOperationCell = ({
         {t['com.affine.workbench.tab.page-menu-open']()}
       </MenuItem>
 
-      {environment.isDesktop && enableSplitView ? (
+      {environment.isElectron && enableSplitView ? (
         <MenuItem onClick={onOpenInSplitView} prefixIcon={<SplitViewIcon />}>
           {t['com.affine.workbench.split-view.page-menu-open']()}
         </MenuItem>

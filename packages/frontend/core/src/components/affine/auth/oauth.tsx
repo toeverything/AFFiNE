@@ -57,7 +57,7 @@ function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
     try {
       setIsConnecting(true);
       const url = await authService.oauthPreflight(provider);
-      if (environment.isDesktop) {
+      if (environment.isElectron) {
         await apis?.ui.openExternal(url);
       } else {
         popupWindow(url);

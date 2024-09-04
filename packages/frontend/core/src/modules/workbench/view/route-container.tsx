@@ -54,7 +54,7 @@ export const RouteContainer = () => {
   return (
     <div className={styles.root}>
       <div className={styles.header}>
-        {viewPosition.isFirst && !environment.isDesktop && (
+        {viewPosition.isFirst && !environment.isElectron && (
           <SidebarSwitch
             show={!leftSidebarOpen}
             className={styles.leftSidebarButton}
@@ -64,7 +64,7 @@ export const RouteContainer = () => {
           viewId={view.id}
           className={styles.viewHeaderContainer}
         />
-        {viewPosition.isLast && !environment.isDesktop && (
+        {viewPosition.isLast && !environment.isElectron && (
           <ToggleButton
             show={!sidebarOpen}
             className={styles.rightSidebarButton}

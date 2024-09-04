@@ -22,7 +22,7 @@ import { ViewIslandRegistryProvider } from './view-islands';
 import { ViewRoot } from './view-root';
 import * as styles from './workbench-root.css';
 
-const useAdapter = environment.isDesktop
+const useAdapter = environment.isElectron
   ? useBindWorkbenchToDesktopRouter
   : useBindWorkbenchToBrowserRouter;
 

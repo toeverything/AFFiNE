@@ -181,7 +181,7 @@ export const useExplorerDocNodeOperations = (
           </MenuItem>
         ),
       },
-      ...(enableMultiView && environment.isDesktop
+      ...(enableMultiView && environment.isElectron
         ? [
             {
               index: 100,

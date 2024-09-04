@@ -67,7 +67,7 @@ export const WorkspaceSettingDetail = ({
         <EnableCloudPanel />
         <MembersPanel />
       </SettingWrapper>
-      {environment.isDesktop && (
+      {environment.isElectron && (
         <SettingWrapper title={t['Storage and Export']()}>
           <ExportPanel
             workspace={workspace}

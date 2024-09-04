@@ -49,7 +49,7 @@ const SubscriptionChangedNotifyFooter = ({
   );
 };
 
-const isDesktop = environment.isDesktop;
+const isDesktop = environment.isElectron;
 export const useUpgradeNotify = () => {
   const t = useI18n();
   const prevNotifyIdRef = useRef<string | number | null>(null);

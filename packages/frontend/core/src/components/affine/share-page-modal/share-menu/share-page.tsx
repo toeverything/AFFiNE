@@ -151,7 +151,7 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
     }
   }, [shareInfoService, t]);
 
-  const isMac = environment.isBrowser && environment.isMacOs;
+  const isMac = environment.isMacOs;
 
   const { onClickCopyLink } = useSharingUrl({
     workspaceId,

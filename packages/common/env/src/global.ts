@@ -2,7 +2,7 @@
 import { assertEquals } from '@blocksuite/global/utils';
 import { z } from 'zod';
 
-import { isDesktop, isServer } from './constant.js';
+import { isElectron } from './constant.js';
 import { UaHelper } from './ua-helper.js';
 
 export const runtimeFlagsSchema = z.object({
@@ -10,6 +10,7 @@ export const runtimeFlagsSchema = z.object({
   serverUrlPrefix: z.string(),
   appVersion: z.string(),
   editorVersion: z.string(),
+  distribution: z.enum(['browser', 'desktop', 'admin', 'mobile']),
   appBuildType: z.union([
     z.literal('stable'),
     z.literal('beta'),
@@ -35,18 +36,19 @@ export const runtimeFlagsSchema = z.object({
 
 export type RuntimeConfig = z.infer<typeof runtimeFlagsSchema>;
 
-type BrowserBase = {
-  /**
-   * @example https://app.affine.pro
-   * @example http://localhost:3000
-   */
-  origin: string;
-  isDesktop: boolean;
-  isBrowser: true;
-  isServer: false;
+export type Environment = {
   isDebug: boolean;
 
-  // browser special properties
+  // Edition
+  isDesktopEdition: boolean;
+  isMobileEdition: boolean;
+
+  // Platform/Entry
+  isElectron: boolean;
+  isDesktopWeb: boolean;
+  isMobileWeb: boolean;
+
+  // Device
   isLinux: boolean;
   isMacOs: boolean;
   isIOS: boolean;
@@ -55,36 +57,8 @@ type BrowserBase = {
   isFireFox: boolean;
   isMobile: boolean;
   isChrome: boolean;
+  chromeVersion?: number;
 };
-
-type NonChromeBrowser = BrowserBase & {
-  isChrome: false;
-};
-
-type ChromeBrowser = BrowserBase & {
-  isSafari: false;
-  isFireFox: false;
-  isChrome: true;
-  chromeVersion: number;
-};
-
-type Browser = NonChromeBrowser | ChromeBrowser;
-
-type Server = {
-  isDesktop: false;
-  isBrowser: false;
-  isServer: true;
-  isDebug: boolean;
-};
-
-interface Desktop extends ChromeBrowser {
-  isDesktop: true;
-  isBrowser: true;
-  isServer: false;
-  isDebug: boolean;
-}
-
-export type Environment = Browser | Server | Desktop;
 
 function setupRuntimeConfig() {
   if (!process.env.RUNTIME_CONFIG) {
@@ -106,31 +80,43 @@ export function setupGlobal() {
 
   let environment: Environment;
   const isDebug = process.env.NODE_ENV === 'development';
-  if (isServer) {
+
+  if (!globalThis.navigator) {
     environment = {
-      isDesktop: false,
-      isBrowser: false,
-      isServer: true,
+      isDesktopEdition: false,
+      isMobileEdition: false,
+      isElectron: false,
+      isDesktopWeb: false,
+      isMobileWeb: false,
+      isMobile: false,
       isDebug,
-    } satisfies Server;
+      isLinux: false,
+      isMacOs: false,
+      isSafari: false,
+      isWindows: false,
+      isFireFox: false,
+      isChrome: false,
+      isIOS: false,
+    };
   } else {
-    const uaHelper = new UaHelper(navigator);
+    const uaHelper = new UaHelper(globalThis.navigator);
 
     environment = {
-      origin: window.location.origin,
-      isDesktop,
-      isBrowser: true,
-      isServer: false,
+      isDesktopEdition: runtimeConfig.distribution !== 'mobile',
+      isMobileEdition: runtimeConfig.distribution === 'mobile',
+      isDesktopWeb: runtimeConfig.distribution === 'browser',
+      isMobileWeb: runtimeConfig.distribution === 'mobile',
+      isElectron,
       isDebug,
+      isMobile: uaHelper.isMobile,
       isLinux: uaHelper.isLinux,
       isMacOs: uaHelper.isMacOs,
       isSafari: uaHelper.isSafari,
       isWindows: uaHelper.isWindows,
       isFireFox: uaHelper.isFireFox,
-      isMobile: uaHelper.isMobile,
       isChrome: uaHelper.isChrome,
       isIOS: uaHelper.isIOS,
-    } as Browser;
+    };
     // Chrome on iOS is still Safari
     if (environment.isChrome && !environment.isIOS) {
       assertEquals(environment.isSafari, false);
@@ -141,9 +127,10 @@ export function setupGlobal() {
         isFireFox: false,
         isChrome: true,
         chromeVersion: uaHelper.getChromeVersion(),
-      } satisfies ChromeBrowser;
+      };
     }
   }
+
   globalThis.environment = environment;
 
   globalThis.$AFFINE_SETUP = true;

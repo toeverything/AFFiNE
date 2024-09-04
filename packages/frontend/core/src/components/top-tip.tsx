@@ -12,19 +12,15 @@ import { AuthService } from '../modules/cloud';
 const minimumChromeVersion = 106;
 
 const shouldShowWarning = (() => {
-  if (environment.isDesktop) {
+  if (environment.isElectron) {
     // even though desktop has compatibility issues,
     //  we don't want to show the warning
-    return false;
-  }
-  if (!environment.isBrowser) {
-    // disable in SSR
     return false;
   }
   if (environment.isMobile) {
     return true;
   }
-  if (environment.isChrome) {
+  if (environment.isChrome && environment.chromeVersion) {
     return environment.chromeVersion < minimumChromeVersion;
   }
   return false;
@@ -32,14 +28,14 @@ const shouldShowWarning = (() => {
 
 const OSWarningMessage = () => {
   const t = useI18n();
-  const notChrome = environment.isBrowser && !environment.isChrome;
+  const notChrome = !environment.isChrome;
   const notGoodVersion =
-    environment.isBrowser &&
     environment.isChrome &&
+    environment.chromeVersion &&
     environment.chromeVersion < minimumChromeVersion;
 
   // TODO(@L-Sun): remove this message when mobile version is able to edit.
-  if ('isMobile' in environment && environment.isMobile) {
+  if (environment.isMobile) {
     return <span>{t['com.affine.top-tip.mobile']()}</span>;
   }
 
@@ -80,7 +76,7 @@ export const TopTip = ({
 
   if (
     showLocalDemoTips &&
-    !environment.isDesktop &&
+    !environment.isElectron &&
     workspace.flavour === WorkspaceFlavour.LOCAL
   ) {
     return (

@@ -28,7 +28,7 @@ const getDefaultSubscriptionSuccessCallbackLink = (
     plan === SubscriptionPlan.AI ? '/ai-upgrade-success' : '/upgrade-success';
   const urlString = getAffineCloudBaseUrl() + path;
   const url = new URL(urlString);
-  if (environment.isDesktop && appInfo) {
+  if (environment.isElectron && appInfo) {
     url.searchParams.set('schema', appInfo.schema);
   }
   return url.toString();

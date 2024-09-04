@@ -20,7 +20,7 @@ export const SignIn = () => {
   const isLoggedIn = status === 'authenticated' && !isRevalidating;
 
   useEffect(() => {
-    if (environment.isDesktop && appInfo?.windowName === 'hidden-window') {
+    if (environment.isElectron && appInfo?.windowName === 'hidden-window') {
       return;
     }
 

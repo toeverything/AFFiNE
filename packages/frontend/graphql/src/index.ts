@@ -10,7 +10,7 @@ import { gqlFetcherFactory } from './fetcher';
 setupGlobal();
 
 export function getBaseUrl(): string {
-  if (environment.isDesktop) {
+  if (environment.isElectron) {
     return runtimeConfig.serverUrlPrefix;
   }
   if (typeof window === 'undefined') {

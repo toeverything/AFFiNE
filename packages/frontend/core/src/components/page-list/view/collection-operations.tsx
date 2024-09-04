@@ -156,7 +156,7 @@ export const CollectionOperations = ({
         name: t['com.affine.workbench.tab.page-menu-open'](),
         click: openCollectionNewTab,
       },
-      ...(enableMultiView && environment.isDesktop
+      ...(enableMultiView && environment.isElectron
         ? [
             {
               icon: <SplitViewIcon />,

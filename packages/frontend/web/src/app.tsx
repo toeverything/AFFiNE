@@ -31,7 +31,7 @@ import type { PropsWithChildren, ReactElement } from 'react';
 import { lazy, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
-if (!environment.isBrowser && environment.isDebug) {
+if (environment.isElectron && environment.isDebug) {
   document.body.innerHTML = `<h1 style="color:red;font-size:5rem;text-align:center;">Don't run web entry in electron.</h1>`;
   throw new Error('Wrong distribution');
 }

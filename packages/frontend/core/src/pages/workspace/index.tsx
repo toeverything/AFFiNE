@@ -99,7 +99,7 @@ export const Component = (): ReactElement => {
   if (workspaceNotFound) {
     if (
       detailDocRoute /*  */ &&
-      !environment.isDesktop /* only browser has share page */
+      !environment.isElectron /* only browser has share page */
     ) {
       return (
         <SharePage

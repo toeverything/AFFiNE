@@ -15,7 +15,7 @@ export const AddWorkspace = ({
 
   return (
     <div>
-      {environment.isDesktop ? (
+      {environment.isElectron ? (
         <MenuItem
           block={true}
           prefixIcon={<ImportIcon />}

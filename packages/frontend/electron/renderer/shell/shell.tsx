@@ -6,7 +6,7 @@ import * as styles from './shell.css';
 export function ShellRoot() {
   const { appSettings } = useAppSettingHelper();
   const translucent =
-    environment.isDesktop &&
+    environment.isElectron &&
     environment.isMacOs &&
     appSettings.enableBlurBackground;
   return (

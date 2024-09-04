@@ -283,7 +283,7 @@ export const CMDKGroup = ({
 };
 
 const CMDKKeyBinding = ({ keyBinding }: { keyBinding: string }) => {
-  const isMacOS = environment.isBrowser && environment.isMacOs;
+  const isMacOS = environment.isMacOs;
   const fragments = useMemo(() => {
     return keyBinding.split('+').map(fragment => {
       if (fragment === '$mod') {

@@ -23,7 +23,7 @@ export function registerAffineCreationCommands({
       category: 'affine:creation',
       label: t['com.affine.cmdk.affine.new-page'](),
       icon: <PlusIcon />,
-      keyBinding: environment.isDesktop
+      keyBinding: environment.isElectron
         ? {
             binding: '$mod+N',
             skipRegister: true,
@@ -73,7 +73,7 @@ export function registerAffineCreationCommands({
       icon: <ImportIcon />,
       label: t['com.affine.cmdk.affine.import-workspace'](),
       preconditionStrategy: () => {
-        return environment.isDesktop;
+        return environment.isElectron;
       },
       run() {
         track.$.cmdk.workspace.createWorkspace({

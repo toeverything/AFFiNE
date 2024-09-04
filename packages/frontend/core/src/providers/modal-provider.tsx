@@ -63,7 +63,7 @@ export const Setting = () => {
   );
 
   useEffect(() => {
-    if (environment.isDesktop) {
+    if (environment.isElectron) {
       return events?.applicationMenu.openAboutPageInSettingModal(() =>
         setOpenSettingModalAtom({
           activeTab: 'about',
@@ -123,7 +123,7 @@ export function CurrentWorkspaceModals() {
       )}
       <AiLoginRequiredModal />
       <PeekViewManagerModal />
-      {environment.isDesktop && <FindInPageModal />}
+      {environment.isElectron && <FindInPageModal />}
       <MoveToTrash.ConfirmModal
         open={trashConfirmOpen}
         onConfirm={handleOnConfirm}
