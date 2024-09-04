@@ -406,8 +406,9 @@ export const General = () => {
       <FontFamilySettings />
       <CustomFontFamilySettings />
       <NewDocDefaultModeSettings />
+      {/* //TODO(@akumatus): implement these settings
       <DeFaultCodeBlockSettings />
-      <SpellCheckSettings />
+      <SpellCheckSettings /> */}
     </SettingWrapper>
   );
 };
