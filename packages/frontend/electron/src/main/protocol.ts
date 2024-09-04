@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { net, protocol, session } from 'electron';
 
 import { CLOUD_BASE_URL } from './config';
+import { isOfflineModeEnabled } from './utils';
 import { getCookies } from './windows-manager';
 
 protocol.registerSchemesAsPrivileged([
@@ -105,9 +106,21 @@ export function registerProtocol() {
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
     const url = new URL(details.url);
     const pathname = url.pathname;
+    const protocol = url.protocol;
+    const origin = url.origin;
+
+    const sameOrigin = origin === CLOUD_BASE_URL || protocol === 'file:';
+
+    if (isOfflineModeEnabled() && (sameOrigin || 'devtools:' !== protocol)) {
+      callback({
+        cancel: true,
+      });
+      return;
+    }
+
     // session cookies are set to file:// on production
     // if sending request to the cloud, attach the session cookie (to affine cloud server)
-    if (isNetworkResource(pathname)) {
+    if (isNetworkResource(pathname) && sameOrigin) {
       const cookie = getCookies();
       if (cookie) {
         const cookieString = cookie.map(c => `${c.name}=${c.value}`).join('; ');

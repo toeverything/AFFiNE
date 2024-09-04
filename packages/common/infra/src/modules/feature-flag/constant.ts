@@ -96,6 +96,13 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: isCanaryBuild,
   },
+  enable_offline_mode: {
+    category: 'affine',
+    displayName: 'Offline Mode',
+    description: 'Enables offline mode.',
+    configurable: isDesktopEnvironment,
+    defaultState: false,
+  },
 } satisfies { [key in string]: FlagInfo };
 
 export type AFFINE_FLAGS = typeof AFFINE_FLAGS;

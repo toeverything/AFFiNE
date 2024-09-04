@@ -1,7 +1,7 @@
-import http from 'node:http';
-import https from 'node:https';
-
 import type { CookiesSetDetails } from 'electron';
+
+import { logger } from './logger';
+import { globalStateStorage } from './shared-storage/storage';
 
 export function parseCookie(
   cookieString: string,
@@ -56,55 +56,15 @@ export function parseCookie(
   return details;
 }
 
-/**
- * Send a GET request to a specified URL.
- * This function uses native http/https modules instead of fetch to
- * bypassing set-cookies headers
- */
-export async function simpleGet(requestUrl: string): Promise<{
-  body: string;
-  headers: [string, string][];
-  statusCode: number;
-}> {
-  return new Promise((resolve, reject) => {
-    const parsedUrl = new URL(requestUrl);
-    const protocol = parsedUrl.protocol === 'https:' ? https : http;
-    const options = {
-      hostname: parsedUrl.hostname,
-      port: parsedUrl.port,
-      path: parsedUrl.pathname + parsedUrl.search,
-      method: 'GET',
-    };
-    const req = protocol.request(options, res => {
-      let data = '';
-      res.on('data', chunk => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        resolve({
-          body: data,
-          headers: toStandardHeaders(res.headers),
-          statusCode: res.statusCode || 200,
-        });
-      });
-    });
-    req.on('error', error => {
-      reject(error);
-    });
-    req.end();
-  });
-
-  function toStandardHeaders(headers: http.IncomingHttpHeaders) {
-    const result: [string, string][] = [];
-    for (const [key, value] of Object.entries(headers)) {
-      if (Array.isArray(value)) {
-        value.forEach(v => {
-          result.push([key, v]);
-        });
-      } else {
-        result.push([key, value || '']);
-      }
-    }
-    return result;
+export const isOfflineModeEnabled = () => {
+  try {
+    return (
+      // todo(pengx17): better abstraction for syncing flags with electron
+      // packages/common/infra/src/modules/feature-flag/entities/flags.ts
+      globalStateStorage.get('affine-flag:enable_offline_mode') ?? false
+    );
+  } catch (error) {
+    logger.error('Failed to get offline mode flag', error);
+    return false;
   }
-}
+};
