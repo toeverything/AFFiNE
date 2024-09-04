@@ -92,13 +92,17 @@ export const modalContentWrapper = style({
     },
     '&.anim-fadeScaleTop': {
       animation: `${contentShowFadeScaleTop} 150ms cubic-bezier(0.42, 0, 0.58, 1)`,
-      viewTransitionName: modalContentViewTransitionNameFadeScaleTop,
       animationFillMode: 'forwards',
+    },
+    '&.anim-fadeScaleTop.vt-active': {
+      viewTransitionName: modalContentViewTransitionNameFadeScaleTop,
     },
     '&.anim-slideBottom': {
       animation: `${contentShowSlideBottom} 0.23s ease`,
-      viewTransitionName: modalContentViewTransitionNameSlideBottom,
       animationFillMode: 'forwards',
+    },
+    '&.anim-slideBottom.vt-active': {
+      viewTransitionName: modalContentViewTransitionNameSlideBottom,
     },
   },
 });

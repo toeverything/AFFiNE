@@ -89,6 +89,11 @@ class ModalTransitionContainer extends HTMLElement {
     this.animationFrame = requestAnimationFrame(() => {
       if (typeof document.startViewTransition === 'function') {
         const nodes = this.pendingTransitionNodes;
+        nodes.forEach(child => {
+          if (child instanceof HTMLElement) {
+            child.classList.add('vt-active');
+          }
+        });
         document.startViewTransition(() => {
           nodes.forEach(child => {
             // eslint-disable-next-line unicorn/prefer-dom-node-remove

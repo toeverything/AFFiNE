@@ -139,3 +139,37 @@ export const Animations = () => {
     </div>
   );
 };
+
+export const Nested = () => {
+  const [openRoot, setOpenRoot] = useState(false);
+  const [openNested, setOpenNested] = useState(false);
+
+  return (
+    <>
+      <Button onClick={() => setOpenRoot(true)}>Open Root Modal</Button>
+      <Modal
+        animation="slideBottom"
+        open={openRoot}
+        onOpenChange={setOpenRoot}
+        contentOptions={{
+          style: {
+            transition: 'all .3s ease 0.1s',
+            transform: openNested
+              ? `scale(0.95) translateY(-20px)`
+              : 'scale(1) translateY(0)',
+          },
+        }}
+      >
+        <Button onClick={() => setOpenNested(true)}>Open Nested Modal</Button>
+      </Modal>
+      <Modal
+        animation="slideBottom"
+        open={openNested}
+        onOpenChange={setOpenNested}
+        overlayOptions={{ style: { background: 'transparent' } }}
+      >
+        Nested Modal
+      </Modal>
+    </>
+  );
+};
