@@ -13,7 +13,9 @@ const buttonOptions: AskAIButtonOptions = {
   panelWidth: 300,
 };
 
-export function setupImageToolbarEntry(imageToolbar: AffineImageToolbarWidget) {
+export function setupImageToolbarAIEntry(
+  imageToolbar: AffineImageToolbarWidget
+) {
   imageToolbar.addPrimaryItems(
     [
       {

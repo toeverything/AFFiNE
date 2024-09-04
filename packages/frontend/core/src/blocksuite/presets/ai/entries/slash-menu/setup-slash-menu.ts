@@ -20,7 +20,7 @@ import { AIItemGroups } from '../../_common/config';
 import { handleInlineAskAIAction } from '../../actions/doc-handler';
 import { AIProvider } from '../../provider';
 
-export function setupSlashMenuEntry(slashMenu: AffineSlashMenuWidget) {
+export function setupSlashMenuAIEntry(slashMenu: AffineSlashMenuWidget) {
   const AIItems = AIItemGroups.map(group => group.items).flat();
 
   const iconWrapper = (icon: AIItemConfig['icon']) => {

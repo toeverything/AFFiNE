@@ -1225,7 +1225,7 @@
   "com.affine.settings.auto-check-description": "If enabled, it will automatically check for new versions at regular intervals.",
   "com.affine.settings.auto-download-description": "If enabled, new versions will be automatically downloaded to the current device.",
   "com.affine.settings.editorSettings": "Editor",
-  "com.affine.settings.editorSettings.title": "Editor Settings",
+  "com.affine.settings.editorSettings.title": "Editor settings",
   "com.affine.settings.editorSettings.subtitle": "Configure your own editor.",
   "com.affine.settings.editorSettings.general": "General",
   "com.affine.settings.editorSettings.general.ai.title": "AFFiNE AI",

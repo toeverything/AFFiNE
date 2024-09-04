@@ -6,24 +6,23 @@ import {
   EdgelessTextBlockSpec,
   FrameBlockSpec,
 } from '@blocksuite/blocks';
-import { AIChatBlockSpec } from '@blocksuite/presets';
 import type { FrameworkProvider } from '@toeverything/infra';
 
-import { CommonBlockSpecs } from './common';
+import { AIBlockSpecs, DefaultBlockSpecs } from './common';
 import { createEdgelessRootBlockSpec } from './custom/root-block';
 
 export function createEdgelessModeSpecs(
-  framework: FrameworkProvider
+  framework: FrameworkProvider,
+  enableAI: boolean
 ): ExtensionType[] {
   return [
-    ...CommonBlockSpecs,
+    ...(enableAI ? AIBlockSpecs : DefaultBlockSpecs),
     EdgelessSurfaceBlockSpec,
     EdgelessSurfaceRefBlockSpec,
     FrameBlockSpec,
     EdgelessTextBlockSpec,
     EdgelessNoteBlockSpec,
-    AIChatBlockSpec,
     // special
-    createEdgelessRootBlockSpec(framework),
+    createEdgelessRootBlockSpec(framework, enableAI),
   ].flat();
 }

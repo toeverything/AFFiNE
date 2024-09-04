@@ -14,7 +14,9 @@ import {
 import type { RootService, TelemetryEventMap } from '@blocksuite/blocks';
 import {
   AffineCanvasTextFonts,
+  EdgelessRootBlockSpec,
   EdgelessRootService,
+  PageRootBlockSpec,
   PageRootService,
 } from '@blocksuite/blocks';
 import { type FrameworkProvider } from '@toeverything/infra';
@@ -55,11 +57,12 @@ function withAffineRootService(Service: typeof PageRootService) {
 }
 
 export function createPageRootBlockSpec(
-  framework: FrameworkProvider
+  framework: FrameworkProvider,
+  enableAI: boolean
 ): ExtensionType[] {
   const editorSettingService = framework.get(EditorSettingService);
   return [
-    ...AIPageRootBlockSpec,
+    ...(enableAI ? AIPageRootBlockSpec : PageRootBlockSpec),
     {
       setup: di => {
         di.override(
@@ -79,11 +82,12 @@ export function createPageRootBlockSpec(
 }
 
 export function createEdgelessRootBlockSpec(
-  framework: FrameworkProvider
+  framework: FrameworkProvider,
+  enableAI: boolean
 ): ExtensionType[] {
   const editorSettingService = framework.get(EditorSettingService);
   return [
-    ...AIEdgelessRootBlockSpec,
+    ...(enableAI ? AIEdgelessRootBlockSpec : EdgelessRootBlockSpec),
     {
       setup: di => {
         di.override(

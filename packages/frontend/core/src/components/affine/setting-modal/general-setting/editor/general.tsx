@@ -8,6 +8,7 @@ import {
   type RadioItem,
   Scrollable,
   Switch,
+  useConfirmModal,
 } from '@affine/component';
 import {
   SettingRow,
@@ -393,16 +394,51 @@ export const SpellCheckSettings = () => {
   );
 };
 
+const AISettings = () => {
+  const t = useI18n();
+  const { openConfirmModal } = useConfirmModal();
+  const { editorSettingService } = useServices({ EditorSettingService });
+
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+
+  const onAIChange = useCallback(
+    (checked: boolean) => {
+      editorSettingService.editorSetting.set('enableAI', checked);
+    },
+    [editorSettingService]
+  );
+  const onToggleAI = useCallback(
+    (checked: boolean) => {
+      openConfirmModal({
+        title: checked ? 'Enable AI?' : 'Disable AI?',
+        description: `Are you sure you want to ${checked ? 'enable' : 'disable'} AI?`,
+        confirmText: checked ? 'Enable' : 'Disable',
+        cancelText: 'Cancel',
+        onConfirm: () => onAIChange(checked),
+        confirmButtonOptions: {
+          variant: checked ? 'primary' : 'error',
+        },
+      });
+    },
+    [openConfirmModal, onAIChange]
+  );
+
+  return (
+    <SettingRow
+      name={t['com.affine.settings.editorSettings.general.ai.title']()}
+      desc={t['com.affine.settings.editorSettings.general.ai.description']()}
+    >
+      <Switch checked={settings.enableAI} onChange={onToggleAI} />
+    </SettingRow>
+  );
+};
+
 export const General = () => {
   const t = useI18n();
+
   return (
     <SettingWrapper title={t['com.affine.settings.editorSettings.general']()}>
-      <SettingRow
-        name={t['com.affine.settings.editorSettings.general.ai.title']()}
-        desc={t['com.affine.settings.editorSettings.general.ai.description']()}
-      >
-        <Switch />
-      </SettingRow>
+      <AISettings />
       <FontFamilySettings />
       <CustomFontFamilySettings />
       <NewDocDefaultModeSettings />

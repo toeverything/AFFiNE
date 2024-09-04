@@ -4,22 +4,21 @@ import {
   PageSurfaceBlockSpec,
   PageSurfaceRefBlockSpec,
 } from '@blocksuite/blocks';
-import { AIChatBlockSpec } from '@blocksuite/presets';
 import { type FrameworkProvider } from '@toeverything/infra';
 
-import { CommonBlockSpecs } from './common';
+import { AIBlockSpecs, DefaultBlockSpecs } from './common';
 import { createPageRootBlockSpec } from './custom/root-block';
 
 export function createPageModeSpecs(
-  framework: FrameworkProvider
+  framework: FrameworkProvider,
+  enableAI: boolean
 ): ExtensionType[] {
   return [
-    ...CommonBlockSpecs,
+    ...(enableAI ? AIBlockSpecs : DefaultBlockSpecs),
     PageSurfaceBlockSpec,
     PageSurfaceRefBlockSpec,
     NoteBlockSpec,
-    AIChatBlockSpec,
     // special
-    createPageRootBlockSpec(framework),
+    createPageRootBlockSpec(framework, enableAI),
   ].flat();
 }

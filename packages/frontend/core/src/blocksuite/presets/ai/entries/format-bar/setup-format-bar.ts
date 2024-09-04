@@ -8,7 +8,7 @@ import { html, type TemplateResult } from 'lit';
 
 import { AIItemGroups } from '../../_common/config';
 
-export function setupFormatBarEntry(formatBar: AffineFormatBarWidget) {
+export function setupFormatBarAIEntry(formatBar: AffineFormatBarWidget) {
   toolbarDefaultConfig(formatBar);
   formatBar.addRawConfigItems(
     [

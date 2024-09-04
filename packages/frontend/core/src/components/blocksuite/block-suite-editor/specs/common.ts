@@ -6,6 +6,7 @@ import {
 import type { ExtensionType } from '@blocksuite/block-std';
 import {
   BookmarkBlockSpec,
+  CodeBlockSpec,
   DatabaseBlockSpec,
   DataViewBlockSpec,
   DividerBlockSpec,
@@ -16,12 +17,15 @@ import {
   EmbedLoomBlockSpec,
   EmbedSyncedDocBlockSpec,
   EmbedYoutubeBlockSpec,
+  ImageBlockSpec,
   ListBlockSpec,
+  ParagraphBlockSpec,
 } from '@blocksuite/blocks';
+import { AIChatBlockSpec } from '@blocksuite/presets';
 
 import { CustomAttachmentBlockSpec } from './custom/attachment-block';
 
-export const CommonBlockSpecs: ExtensionType[] = [
+const CommonBlockSpecs: ExtensionType[] = [
   ListBlockSpec,
   DatabaseBlockSpec,
   DataViewBlockSpec,
@@ -36,7 +40,19 @@ export const CommonBlockSpecs: ExtensionType[] = [
   EmbedLinkedDocBlockSpec,
   // special
   CustomAttachmentBlockSpec,
+].flat();
+
+export const DefaultBlockSpecs: ExtensionType[] = [
+  CodeBlockSpec,
+  ImageBlockSpec,
+  ParagraphBlockSpec,
+  ...CommonBlockSpecs,
+].flat();
+
+export const AIBlockSpecs: ExtensionType[] = [
   AICodeBlockSpec,
   AIImageBlockSpec,
   AIParagraphBlockSpec,
+  AIChatBlockSpec,
+  ...CommonBlockSpecs,
 ].flat();

@@ -17,7 +17,7 @@ export function setupEdgelessCopilot(widget: EdgelessCopilotWidget) {
   widget.groups = edgelessActionGroups;
 }
 
-export function setupEdgelessElementToolbarEntry(
+export function setupEdgelessElementToolbarAIEntry(
   widget: EdgelessElementToolbarWidget
 ) {
   widget.registerEntry({

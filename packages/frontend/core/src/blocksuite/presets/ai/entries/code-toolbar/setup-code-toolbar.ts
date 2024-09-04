@@ -12,7 +12,7 @@ const buttonOptions: AskAIButtonOptions = {
 import type { AskAIButtonOptions } from '../../_common/components/ask-ai-button';
 import { buildAICodeItemGroups } from '../../_common/config';
 
-export function setupCodeToolbarEntry(codeToolbar: AffineCodeToolbarWidget) {
+export function setupCodeToolbarAIEntry(codeToolbar: AffineCodeToolbarWidget) {
   codeToolbar.addPrimaryItems([
     {
       type: 'ask-ai',

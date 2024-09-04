@@ -7,6 +7,7 @@ import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { EditorService } from '@affine/core/modules/editor';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import type { PageRootService } from '@blocksuite/blocks';
@@ -71,6 +72,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     docService,
     workspaceService,
     globalContextService,
+    editorSettingService,
   } = useServices({
     WorkbenchService,
     ViewService,
@@ -78,6 +80,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     DocService,
     WorkspaceService,
     GlobalContextService,
+    EditorSettingService,
   });
   const workbench = workbenchService.workbench;
   const editor = editorService.editor;
@@ -307,9 +310,15 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         </div>
       </ViewBody>
 
-      <ViewSidebarTab tabId="chat" icon={<AiIcon />} unmountOnInactive={false}>
-        <EditorChatPanel editor={editorContainer} ref={chatPanelRef} />
-      </ViewSidebarTab>
+      {editorSettingService.editorSetting.settings$.value.enableAI && (
+        <ViewSidebarTab
+          tabId="chat"
+          icon={<AiIcon />}
+          unmountOnInactive={false}
+        >
+          <EditorChatPanel editor={editorContainer} ref={chatPanelRef} />
+        </ViewSidebarTab>
+      )}
 
       <ViewSidebarTab tabId="journal" icon={<TodayIcon />}>
         <EditorJournalPanel />

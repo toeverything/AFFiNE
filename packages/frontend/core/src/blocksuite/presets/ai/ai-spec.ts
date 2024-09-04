@@ -26,15 +26,15 @@ import { assertInstanceOf } from '@blocksuite/global/utils';
 import { literal, unsafeStatic } from 'lit/static-html.js';
 
 import { buildAIPanelConfig } from './ai-panel';
-import { setupCodeToolbarEntry } from './entries/code-toolbar/setup-code-toolbar';
+import { setupCodeToolbarAIEntry } from './entries/code-toolbar/setup-code-toolbar';
 import {
   setupEdgelessCopilot,
-  setupEdgelessElementToolbarEntry,
+  setupEdgelessElementToolbarAIEntry,
 } from './entries/edgeless/index';
-import { setupFormatBarEntry } from './entries/format-bar/setup-format-bar';
-import { setupImageToolbarEntry } from './entries/image-toolbar/setup-image-toolbar';
-import { setupSlashMenuEntry } from './entries/slash-menu/setup-slash-menu';
-import { setupSpaceEntry } from './entries/space/setup-space';
+import { setupFormatBarAIEntry } from './entries/format-bar/setup-format-bar';
+import { setupImageToolbarAIEntry } from './entries/image-toolbar/setup-image-toolbar';
+import { setupSlashMenuAIEntry } from './entries/slash-menu/setup-slash-menu';
+import { setupSpaceAIEntry } from './entries/space/setup-space';
 
 class AIPageRootWatcher extends BlockServiceWatcher {
   static override readonly flavour = 'affine:page';
@@ -45,15 +45,15 @@ class AIPageRootWatcher extends BlockServiceWatcher {
       if (view.component instanceof AffineAIPanelWidget) {
         view.component.style.width = '630px';
         view.component.config = buildAIPanelConfig(view.component);
-        setupSpaceEntry(view.component);
+        setupSpaceAIEntry(view.component);
       }
 
       if (view.component instanceof AffineFormatBarWidget) {
-        setupFormatBarEntry(view.component);
+        setupFormatBarAIEntry(view.component);
       }
 
       if (view.component instanceof AffineSlashMenuWidget) {
-        setupSlashMenuEntry(view.component);
+        setupSlashMenuAIEntry(view.component);
       }
     });
   }
@@ -85,7 +85,7 @@ class AIEdgelessRootWatcher extends BlockServiceWatcher {
       if (view.component instanceof AffineAIPanelWidget) {
         view.component.style.width = '430px';
         view.component.config = buildAIPanelConfig(view.component);
-        setupSpaceEntry(view.component);
+        setupSpaceAIEntry(view.component);
       }
 
       if (view.component instanceof EdgelessCopilotWidget) {
@@ -93,15 +93,15 @@ class AIEdgelessRootWatcher extends BlockServiceWatcher {
       }
 
       if (view.component instanceof EdgelessElementToolbarWidget) {
-        setupEdgelessElementToolbarEntry(view.component);
+        setupEdgelessElementToolbarAIEntry(view.component);
       }
 
       if (view.component instanceof AffineFormatBarWidget) {
-        setupFormatBarEntry(view.component);
+        setupFormatBarAIEntry(view.component);
       }
 
       if (view.component instanceof AffineSlashMenuWidget) {
-        setupSlashMenuEntry(view.component);
+        setupSlashMenuAIEntry(view.component);
       }
     });
   }
@@ -166,7 +166,7 @@ class AICodeBlockWatcher extends BlockServiceWatcher {
     const service = this.blockService;
     service.specSlots.widgetConnected.on(view => {
       if (view.component instanceof AffineCodeToolbarWidget) {
-        setupCodeToolbarEntry(view.component);
+        setupCodeToolbarAIEntry(view.component);
       }
     });
   }
@@ -184,7 +184,7 @@ class AIImageBlockWatcher extends BlockServiceWatcher {
     super.mounted();
     this.blockService.specSlots.widgetConnected.on(view => {
       if (view.component instanceof AffineImageToolbarWidget) {
-        setupImageToolbarEntry(view.component);
+        setupImageToolbarAIEntry(view.component);
       }
     });
   }

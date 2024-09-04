@@ -15,6 +15,7 @@ import {
   useFramework,
   useLiveData,
   useService,
+  useServices,
 } from '@toeverything/infra';
 import React, {
   forwardRef,
@@ -65,9 +66,13 @@ interface BlocksuiteEditorProps {
 
 const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
   const [reactToLit, portals] = useLitPortalFactory();
-  const peekViewService = useService(PeekViewService);
-  const docService = useService(DocService);
-  const docsService = useService(DocsService);
+  const { peekViewService, docService, docsService, editorSettingService } =
+    useServices({
+      PeekViewService,
+      DocService,
+      DocsService,
+      EditorSettingService,
+    });
   const framework = useFramework();
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
     return function customReference(reference) {
@@ -89,10 +94,12 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
   }, [mode, page.collection]);
 
   const specs = useMemo(() => {
+    const enableAI =
+      editorSettingService.editorSetting.settings$.value.enableAI;
     return mode === 'edgeless'
-      ? createEdgelessModeSpecs(framework)
-      : createPageModeSpecs(framework);
-  }, [mode, framework]);
+      ? createEdgelessModeSpecs(framework, enableAI)
+      : createPageModeSpecs(framework, enableAI);
+  }, [editorSettingService, mode, framework]);
 
   const confirmModal = useConfirmModal();
   const patchedSpecs = useMemo(() => {

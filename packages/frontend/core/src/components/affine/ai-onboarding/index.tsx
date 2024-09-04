@@ -1,3 +1,5 @@
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
+import { useLiveData, useService } from '@toeverything/infra';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 
 import { AIOnboardingEdgeless } from './edgeless.dialog';
@@ -28,19 +30,29 @@ const useDismiss = (key: AIOnboardingType) => {
 export const WorkspaceAIOnboarding = () => {
   const [dismissGeneral] = useDismiss(AIOnboardingType.GENERAL);
   const [dismissLocal] = useDismiss(AIOnboardingType.LOCAL);
+  const editorSettingService = useService(EditorSettingService);
+  const enableAI = useLiveData(
+    editorSettingService.editorSetting.settings$.map(s => s.enableAI)
+  );
 
   return (
     <Suspense>
-      {dismissGeneral ? null : <AIOnboardingGeneral />}
-      {dismissLocal ? null : <AIOnboardingLocal />}
+      {!enableAI || dismissGeneral ? null : <AIOnboardingGeneral />}
+      {!enableAI || dismissLocal ? null : <AIOnboardingLocal />}
     </Suspense>
   );
 };
 
 export const PageAIOnboarding = () => {
   const [dismissEdgeless] = useDismiss(AIOnboardingType.EDGELESS);
+  const editorSettingService = useService(EditorSettingService);
+  const enableAI = useLiveData(
+    editorSettingService.editorSetting.settings$.map(s => s.enableAI)
+  );
 
   return (
-    <Suspense>{dismissEdgeless ? null : <AIOnboardingEdgeless />}</Suspense>
+    <Suspense>
+      {!enableAI || dismissEdgeless ? null : <AIOnboardingEdgeless />}
+    </Suspense>
   );
 };
