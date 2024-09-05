@@ -41,7 +41,7 @@ export const SignIn = () => {
   return (
     <SignInPageContainer>
       <div style={{ maxWidth: '400px', width: '100%' }}>
-        <AuthPanel />
+        <AuthPanel onSkip={jumpToIndex} />
       </div>
     </SignInPageContainer>
   );

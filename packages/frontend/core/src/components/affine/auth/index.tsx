@@ -31,6 +31,7 @@ export type AuthPanelProps<State extends AuthAtomData['state']> = {
   setAuthData: <T extends AuthAtomData['state']>(
     updates: { state: T } & Difference<AuthAtomType<State>, AuthAtomType<T>>
   ) => void;
+  onSkip?: () => void;
 } & Extract<AuthAtomData, { state: State }>;
 
 const config: {
@@ -100,7 +101,7 @@ export function AuthModal() {
   );
 }
 
-export function AuthPanel() {
+export function AuthPanel({ onSkip }: { onSkip?: () => void }) {
   const t = useI18n();
   const [authAtomValue, setAuthAtom] = useAtom(authAtom);
   const authService = useService(AuthService);
@@ -137,6 +138,12 @@ export function AuthPanel() {
 
   const CurrentPanel = config[authAtomValue.state];
 
+  const props = {
+    ...authAtomValue,
+    onSkip,
+    setAuthData,
+  };
+
   // @ts-expect-error checked in impls
-  return <CurrentPanel {...authAtomValue} setAuthData={setAuthData} />;
+  return <CurrentPanel {...props} />;
 }

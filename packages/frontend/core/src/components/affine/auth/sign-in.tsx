@@ -24,6 +24,7 @@ function validateEmail(email: string) {
 
 export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
   setAuthData: setAuthState,
+  onSkip,
 }) => {
   const t = useI18n();
   const authService = useService(AuthService);
@@ -134,6 +135,29 @@ export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
           </Trans>
         </div>
       </div>
+
+      {onSkip ? (
+        <>
+          <div className={style.skipDivider}>
+            <div className={style.skipDividerLine} />
+            <span className={style.skipDividerText}>or</span>
+            <div className={style.skipDividerLine} />
+          </div>
+          <div className={style.skipSection}>
+            <div className={style.skipText}>
+              {t['com.affine.mobile.sign-in.skip.hint']()}
+            </div>
+            <Button
+              variant="plain"
+              onClick={onSkip}
+              className={style.skipLink}
+              suffix={<ArrowRightBigIcon className={style.skipLinkIcon} />}
+            >
+              {t['com.affine.mobile.sign-in.skip.link']()}
+            </Button>
+          </div>
+        </>
+      ) : null}
     </>
   );
 };

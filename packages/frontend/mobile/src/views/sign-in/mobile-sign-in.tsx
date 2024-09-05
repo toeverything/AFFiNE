@@ -4,8 +4,8 @@ import { MobileSignInLayout } from './layout';
 
 export const MobileSignIn = ({ onSkip }: { onSkip: () => void }) => {
   return (
-    <MobileSignInLayout onSkip={onSkip}>
-      <AuthPanel />
+    <MobileSignInLayout>
+      <AuthPanel onSkip={onSkip} />
     </MobileSignInLayout>
   );
 };
