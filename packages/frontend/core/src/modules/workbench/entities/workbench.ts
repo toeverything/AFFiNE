@@ -122,18 +122,27 @@ export class Workbench extends Entity {
   }
 
   openDoc(
-    id: string | { docId: string; blockId?: string; mode?: DocMode },
+    id:
+      | string
+      | {
+          docId: string;
+          mode?: DocMode;
+          blockIds?: string[];
+          elementIds?: string[];
+        },
     options?: WorkbenchOpenOptions
   ) {
-    const docId = typeof id === 'string' ? id : id.docId;
-    const blockId = typeof id === 'string' ? undefined : id.blockId;
-    const mode = typeof id === 'string' ? undefined : id.mode;
+    const isString = typeof id === 'string';
+    const docId = isString ? id : id.docId;
+
     let query = '';
-    if (mode || blockId) {
+    if (!isString) {
+      const { mode, blockIds, elementIds } = id;
       const search = new URLSearchParams();
       if (mode) search.set('mode', mode);
-      if (blockId) search.set('blockIds', blockId);
-      query = `?${search.toString()}`;
+      if (blockIds?.length) search.set('blockIds', blockIds.join(','));
+      if (elementIds?.length) search.set('elementIds', elementIds.join(','));
+      if (search.size > 0) query = `?${search.toString()}`;
     }
 
     this.open(`/${docId}${query}`, options);

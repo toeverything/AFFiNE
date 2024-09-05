@@ -53,7 +53,8 @@ const renderControls = ({ info }: ActivePeekView) => {
       <DocPeekViewControls
         mode={info.mode}
         docId={info.docId}
-        blockId={info.docId}
+        blockIds={info.blockIds}
+        elementIds={info.elementIds}
       />
     );
   }

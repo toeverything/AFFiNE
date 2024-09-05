@@ -54,10 +54,14 @@ export class CMDKQuickSearchService extends Service {
             result.source === 'docs' &&
               track.$.cmdk.results.searchResultsDocs();
 
-            this.workbenchService.workbench.openDoc({
+            const options: { docId: string; blockIds?: string[] } = {
               docId: doc.docId,
-              blockId: doc.blockId,
-            });
+            };
+            if (doc.blockId) {
+              options.blockIds = [doc.blockId];
+            }
+
+            this.workbenchService.workbench.openDoc(options);
           } else if (result.source === 'collections') {
             this.workbenchService.workbench.openCollection(
               result.payload.collectionId

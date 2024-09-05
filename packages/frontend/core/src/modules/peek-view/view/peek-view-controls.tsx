@@ -59,8 +59,9 @@ export const ControlButton = ({
 
 type DocPeekViewControlsProps = HTMLAttributes<HTMLDivElement> & {
   docId: string;
-  blockId?: string;
   mode?: DocMode;
+  blockIds?: string[];
+  elementIds?: string[];
 };
 
 export const DefaultPeekViewControls = ({
@@ -90,8 +91,9 @@ export const DefaultPeekViewControls = ({
 
 export const DocPeekViewControls = ({
   docId,
-  blockId,
   mode,
+  blockIds,
+  elementIds,
   className,
   ...rest
 }: DocPeekViewControlsProps) => {
@@ -111,8 +113,7 @@ export const DocPeekViewControls = ({
         name: t['com.affine.peek-view-controls.open-doc'](),
         nameKey: 'open',
         onClick: () => {
-          // TODO(@Peng): for frame blocks, we should mimic "view in edgeless" button behavior
-          workbench.openDoc({ docId, mode, blockId });
+          workbench.openDoc({ docId, mode, blockIds, elementIds });
           peekView.close('none');
         },
       },
@@ -121,7 +122,10 @@ export const DocPeekViewControls = ({
         nameKey: 'new-tab',
         name: t['com.affine.peek-view-controls.open-doc-in-new-tab'](),
         onClick: () => {
-          workbench.openDoc({ docId, mode }, { at: 'new-tab' });
+          workbench.openDoc(
+            { docId, mode, blockIds, elementIds },
+            { at: 'new-tab' }
+          );
           peekView.close('none');
         },
       },
@@ -135,7 +139,7 @@ export const DocPeekViewControls = ({
         },
       },
     ].filter((opt): opt is ControlButtonProps => Boolean(opt));
-  }, [blockId, docId, mode, peekView, t, workbench]);
+  }, [docId, mode, blockIds, elementIds, peekView, t, workbench]);
   return (
     <div {...rest} className={clsx(styles.root, className)}>
       {controls.map(option => (
