@@ -1,20 +1,7 @@
-import {
-  BrushSchema,
-  ConnectorSchema,
-  EdgelessTextSchema,
-  NoteSchema,
-  ShapeSchema,
-} from '@blocksuite/affine-shared/utils';
+import { NodePropsSchema } from '@blocksuite/affine-shared/utils';
 import { z } from 'zod';
 
-// TODO import from BlockSuite
-export const BSEditorSettingSchema = z.object({
-  connector: ConnectorSchema,
-  brush: BrushSchema,
-  shape: ShapeSchema,
-  'affine:edgeless-text': EdgelessTextSchema,
-  'affine:note': NoteSchema,
-});
+export const BSEditorSettingSchema = NodePropsSchema;
 
 export type FontFamily = 'Sans' | 'Serif' | 'Mono' | 'Custom';
 

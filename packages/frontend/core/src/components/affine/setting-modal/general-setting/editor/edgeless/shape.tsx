@@ -6,42 +6,51 @@ import {
   Slider,
 } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { useI18n } from '@affine/i18n';
-import { useMemo, useState } from 'react';
+import {
+  FontFamily,
+  FontFamilyMap,
+  FontStyle,
+  FontWeight,
+  LineColor,
+  ShapeFillColor,
+  type ShapeName,
+  ShapeStyle,
+  ShapeType,
+  StrokeStyle,
+  TextAlign,
+} from '@blocksuite/blocks';
+import { useFramework, useLiveData } from '@toeverything/infra';
+import { useCallback, useMemo, useState } from 'react';
 
 import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper, shapeIndicator } from '../style.css';
 import { EdgelessSnapshot } from './snapshot';
 
-type Shape =
-  | 'square'
-  | 'ellipse'
-  | 'diamond'
-  | 'triangle'
-  | 'rounded-rectangle';
+export enum ShapeTextFontSize {
+  '12px' = '12',
+  '20px' = '20',
+  '28px' = '28',
+  '36px' = '36',
+}
 
 export const ShapeSettings = () => {
   const t = useI18n();
-  const [currentShape, setCurrentShape] = useState<Shape>('square');
-  const [shapeStyle, setShapeStyle] = useState<'general' | 'scribbled'>(
-    'general'
-  );
-  const [borderStyle, setBorderStyle] = useState<'solid' | 'dash' | 'none'>(
-    'solid'
-  );
-  const [borderThickness, setBorderThickness] = useState<number[]>([3]);
-  const [textAlignment, setTextAlignment] = useState<
-    'left' | 'center' | 'right'
-  >('left');
+  const framework = useFramework();
+  const { editorSetting } = framework.get(EditorSettingService);
+  const settings = useLiveData(editorSetting.settings$);
+
+  const [currentShape, setCurrentShape] = useState<ShapeName>(ShapeType.Rect);
 
   const shapeStyleItems = useMemo<RadioItem[]>(
     () => [
       {
-        value: 'general',
+        value: ShapeStyle.General,
         label: t['com.affine.settings.editorSettings.edgeless.style.general'](),
       },
       {
-        value: 'scribbled',
+        value: ShapeStyle.Scribbled,
         label:
           t['com.affine.settings.editorSettings.edgeless.style.scribbled'](),
       },
@@ -49,20 +58,30 @@ export const ShapeSettings = () => {
     [t]
   );
 
+  const { shapeStyle } = settings[`shape:${currentShape}`];
+  const setShapeStyle = useCallback(
+    (value: ShapeStyle) => {
+      editorSetting.set(`shape:${currentShape}`, {
+        shapeStyle: value,
+      });
+    },
+    [editorSetting, currentShape]
+  );
+
   const borderStyleItems = useMemo<RadioItem[]>(
     () => [
       {
-        value: 'solid',
+        value: StrokeStyle.Solid,
         label:
           t['com.affine.settings.editorSettings.edgeless.note.border.solid'](),
       },
       {
-        value: 'dash',
+        value: StrokeStyle.Dash,
         label:
           t['com.affine.settings.editorSettings.edgeless.note.border.dash'](),
       },
       {
-        value: 'none',
+        value: StrokeStyle.None,
         label:
           t['com.affine.settings.editorSettings.edgeless.note.border.none'](),
       },
@@ -70,24 +89,34 @@ export const ShapeSettings = () => {
     [t]
   );
 
+  const borderStyle = settings[`shape:${currentShape}`].strokeStyle;
+  const setBorderStyle = useCallback(
+    (value: StrokeStyle) => {
+      editorSetting.set(`shape:${currentShape}`, {
+        strokeStyle: value,
+      });
+    },
+    [editorSetting, currentShape]
+  );
+
   const alignItems = useMemo<RadioItem[]>(
     () => [
       {
-        value: 'left',
+        value: TextAlign.Left,
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.text.alignment.left'
           ](),
       },
       {
-        value: 'center',
+        value: TextAlign.Center,
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.text.alignment.center'
           ](),
       },
       {
-        value: 'right',
+        value: TextAlign.Right,
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.text.alignment.right'
@@ -97,27 +126,37 @@ export const ShapeSettings = () => {
     [t]
   );
 
+  const textAlignment = settings[`shape:${currentShape}`].textAlign;
+  const setTextAlignment = useCallback(
+    (value: TextAlign) => {
+      editorSetting.set(`shape:${currentShape}`, {
+        textAlign: value,
+      });
+    },
+    [editorSetting, currentShape]
+  );
+
   const shapes = useMemo<RadioItem[]>(
     () => [
       {
-        value: 'square',
+        value: ShapeType.Rect,
         label: t['com.affine.settings.editorSettings.edgeless.shape.square'](),
       },
       {
-        value: 'ellipse',
+        value: ShapeType.Ellipse,
         label: t['com.affine.settings.editorSettings.edgeless.shape.ellipse'](),
       },
       {
-        value: 'diamond',
+        value: ShapeType.Diamond,
         label: t['com.affine.settings.editorSettings.edgeless.shape.diamond'](),
       },
       {
-        value: 'triangle',
+        value: ShapeType.Triangle,
         label:
           t['com.affine.settings.editorSettings.edgeless.shape.triangle'](),
       },
       {
-        value: 'rounded-rectangle',
+        value: 'roundedRect',
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.shape.rounded-rectangle'
@@ -126,6 +165,121 @@ export const ShapeSettings = () => {
     ],
     [t]
   );
+
+  const fillColorItems = useMemo(() => {
+    const { fillColor } = settings[`shape:${currentShape}`];
+    return Object.entries(ShapeFillColor).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set(`shape:${currentShape}`, { fillColor: value });
+      };
+      const isSelected = fillColor === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings, currentShape]);
+
+  const borderColorItems = useMemo(() => {
+    const { strokeColor } = settings[`shape:${currentShape}`];
+    return Object.entries(LineColor).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set(`shape:${currentShape}`, { strokeColor: value });
+      };
+      const isSelected = strokeColor === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings, currentShape]);
+
+  const borderThickness = settings[`shape:${currentShape}`].strokeWidth;
+  const setBorderThickness = useCallback(
+    (value: number[]) => {
+      editorSetting.set(`shape:${currentShape}`, {
+        strokeWidth: value[0],
+      });
+    },
+    [editorSetting, currentShape]
+  );
+
+  const fontFamilyItems = useMemo(() => {
+    const { fontFamily } = settings[`shape:${currentShape}`];
+    return Object.entries(FontFamily).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set(`shape:${currentShape}`, { fontFamily: value });
+      };
+      const isSelected = fontFamily === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings, currentShape]);
+
+  const fontStyleItems = useMemo(() => {
+    const { fontStyle } = settings[`shape:${currentShape}`];
+    return Object.entries(FontStyle).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set(`shape:${currentShape}`, { fontStyle: value });
+      };
+      const isSelected = fontStyle === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings, currentShape]);
+
+  const fontWeightItems = useMemo(() => {
+    const { fontWeight } = settings[`shape:${currentShape}`];
+    return Object.entries(FontWeight).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set(`shape:${currentShape}`, { fontWeight: value });
+      };
+      const isSelected = fontWeight === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings, currentShape]);
+
+  const fontSizeItems = useMemo(() => {
+    const { fontSize } = settings[`shape:${currentShape}`];
+    return Object.entries(ShapeTextFontSize).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set(`shape:${currentShape}`, { fontSize: Number(value) });
+      };
+      const isSelected = fontSize === Number(value);
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings, currentShape]);
+
+  const textColorItems = useMemo(() => {
+    const { color } = settings[`shape:${currentShape}`];
+    return Object.entries(LineColor).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set(`shape:${currentShape}`, { color: value });
+      };
+      const isSelected = color === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings, currentShape]);
 
   return (
     <>
@@ -166,10 +320,10 @@ export const ShapeSettings = () => {
         desc={''}
       >
         <DropdownMenu
-          items={<MenuItem>Yellow</MenuItem>}
+          items={fillColorItems}
           trigger={
-            <MenuTrigger className={menuTrigger} disabled>
-              Yellow
+            <MenuTrigger className={menuTrigger}>
+              {String(settings[`shape:${currentShape}`].fillColor)}
             </MenuTrigger>
           }
         />
@@ -181,10 +335,10 @@ export const ShapeSettings = () => {
         desc={''}
       >
         <DropdownMenu
-          items={<MenuItem>Yellow</MenuItem>}
+          items={borderColorItems}
           trigger={
-            <MenuTrigger className={menuTrigger} disabled>
-              Yellow
+            <MenuTrigger className={menuTrigger}>
+              {String(settings[`shape:${currentShape}`].strokeColor)}
             </MenuTrigger>
           }
         />
@@ -210,12 +364,12 @@ export const ShapeSettings = () => {
         desc={''}
       >
         <Slider
-          value={borderThickness}
+          value={[borderThickness]}
           onValueChange={setBorderThickness}
-          min={1}
-          max={5}
-          step={1}
-          nodes={[1, 2, 3, 4, 5]}
+          min={2}
+          max={12}
+          step={2}
+          nodes={[2, 4, 6, 8, 10, 12]}
         />
       </SettingRow>
       <SettingRow
@@ -225,24 +379,25 @@ export const ShapeSettings = () => {
         desc={''}
       >
         <DropdownMenu
-          items={<MenuItem>Yellow</MenuItem>}
+          items={textColorItems}
           trigger={
-            <MenuTrigger className={menuTrigger} disabled>
-              Yellow
+            <MenuTrigger className={menuTrigger}>
+              {String(settings[`shape:${currentShape}`].color)}
             </MenuTrigger>
           }
         />
       </SettingRow>
       <SettingRow
-        name={t['com.affine.settings.editorSettings.edgeless.shape.font']()}
+        name={t[
+          'com.affine.settings.editorSettings.edgeless.text.font-family'
+        ]()}
         desc={''}
       >
-        {' '}
         <DropdownMenu
-          items={<MenuItem>Inter</MenuItem>}
+          items={fontFamilyItems}
           trigger={
-            <MenuTrigger className={menuTrigger} disabled>
-              Inter
+            <MenuTrigger className={menuTrigger}>
+              {FontFamilyMap[settings[`shape:${currentShape}`].fontFamily]}
             </MenuTrigger>
           }
         />
@@ -254,25 +409,40 @@ export const ShapeSettings = () => {
         desc={''}
       >
         <DropdownMenu
-          items={<MenuItem>15px</MenuItem>}
+          items={fontSizeItems}
           trigger={
-            <MenuTrigger className={menuTrigger} disabled>
-              15px
+            <MenuTrigger className={menuTrigger}>
+              {String(settings[`shape:${currentShape}`].fontSize)}
             </MenuTrigger>
           }
         />
       </SettingRow>
       <SettingRow
         name={t[
-          'com.affine.settings.editorSettings.edgeless.shape.font-style'
+          'com.affine.settings.editorSettings.edgeless.text.font-style'
         ]()}
         desc={''}
       >
         <DropdownMenu
-          items={<MenuItem>Regular</MenuItem>}
+          items={fontStyleItems}
           trigger={
-            <MenuTrigger className={menuTrigger} disabled>
-              Regular
+            <MenuTrigger className={menuTrigger}>
+              {String(settings[`shape:${currentShape}`].fontStyle)}
+            </MenuTrigger>
+          }
+        />
+      </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.edgeless.text.font-weight'
+        ]()}
+        desc={''}
+      >
+        <DropdownMenu
+          items={fontWeightItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {settings[`shape:${currentShape}`].fontWeight}
             </MenuTrigger>
           }
         />
