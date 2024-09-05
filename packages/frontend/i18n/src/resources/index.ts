@@ -30,7 +30,7 @@ export const LOCALES = [
     originalName: '한국어(대한민국)',
     flagEmoji: '🇰🇷',
     base: false,
-    completeRate: 0.726,
+    completeRate: 0.672,
     res: ko,
   },
   {
@@ -40,7 +40,7 @@ export const LOCALES = [
     originalName: 'português (Brasil)',
     flagEmoji: '🇧🇷',
     base: false,
-    completeRate: 0.317,
+    completeRate: 0.29,
     res: pt_BR,
   },
   {
@@ -60,7 +60,7 @@ export const LOCALES = [
     originalName: '繁體中文',
     flagEmoji: '🇭🇰',
     base: false,
-    completeRate: 0.34,
+    completeRate: 0.308,
     res: zh_Hant,
   },
   {
@@ -70,7 +70,7 @@ export const LOCALES = [
     originalName: '简体中文',
     flagEmoji: '🇨🇳',
     base: false,
-    completeRate: 0.974,
+    completeRate: 0.99,
     res: zh_Hans,
   },
   {
@@ -80,7 +80,7 @@ export const LOCALES = [
     originalName: 'français',
     flagEmoji: '🇫🇷',
     base: false,
-    completeRate: 0.877,
+    completeRate: 0.799,
     res: fr,
   },
   {
@@ -90,7 +90,7 @@ export const LOCALES = [
     originalName: 'español',
     flagEmoji: '🇪🇸',
     base: false,
-    completeRate: 0.241,
+    completeRate: 0.247,
     res: es,
   },
   {
@@ -100,7 +100,7 @@ export const LOCALES = [
     originalName: 'Deutsch',
     flagEmoji: '🇩🇪',
     base: false,
-    completeRate: 0.277,
+    completeRate: 0.25,
     res: de,
   },
   {
@@ -110,7 +110,7 @@ export const LOCALES = [
     originalName: 'русский',
     flagEmoji: '🇷🇺',
     base: false,
-    completeRate: 0.913,
+    completeRate: 0.862,
     res: ru,
   },
   {
@@ -120,7 +120,7 @@ export const LOCALES = [
     originalName: '日本語',
     flagEmoji: '🇯🇵',
     base: false,
-    completeRate: 0.414,
+    completeRate: 0.375,
     res: ja,
   },
   {
@@ -140,7 +140,7 @@ export const LOCALES = [
     originalName: 'català',
     flagEmoji: '🇦🇩',
     base: false,
-    completeRate: 0.063,
+    completeRate: 0.091,
     res: ca,
   },
   {
@@ -150,7 +150,7 @@ export const LOCALES = [
     originalName: 'dansk',
     flagEmoji: '🇩🇰',
     base: false,
-    completeRate: 0.094,
+    completeRate: 0.087,
     res: da,
   },
   {
@@ -170,7 +170,7 @@ export const LOCALES = [
     originalName: 'español (Chile)',
     flagEmoji: '🇨🇱',
     base: false,
-    completeRate: 0.026,
+    completeRate: 0.023,
     res: es_CL,
   },
   {
@@ -180,7 +180,7 @@ export const LOCALES = [
     originalName: 'हिन्दी',
     flagEmoji: '🇮🇳',
     base: false,
-    completeRate: 0.016,
+    completeRate: 0.014,
     res: hi,
   },
   {
@@ -190,7 +190,7 @@ export const LOCALES = [
     originalName: 'svenska (Sverige)',
     flagEmoji: '🇸🇪',
     base: false,
-    completeRate: 0.059,
+    completeRate: 0.053,
     res: sv_SE,
   },
   {
@@ -200,7 +200,7 @@ export const LOCALES = [
     originalName: 'español (Argentina)',
     flagEmoji: '🇦🇷',
     base: false,
-    completeRate: 0.094,
+    completeRate: 0.085,
     res: es_AR,
   },
   {
@@ -210,7 +210,7 @@ export const LOCALES = [
     originalName: 'اردو',
     flagEmoji: '🇵🇰',
     base: false,
-    completeRate: 0.021,
+    completeRate: 0.019,
     res: ur,
   },
   {
@@ -220,7 +220,7 @@ export const LOCALES = [
     originalName: 'العربية',
     flagEmoji: '🇸🇦',
     base: false,
-    completeRate: 0.974,
+    completeRate: 0.881,
     res: ar,
   },
 ] as const;
