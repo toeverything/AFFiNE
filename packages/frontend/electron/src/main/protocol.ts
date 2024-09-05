@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { net, protocol, session } from 'electron';
 
 import { CLOUD_BASE_URL } from './config';
+import { logger } from './logger';
 import { isOfflineModeEnabled } from './utils';
 import { getCookies } from './windows-manager';
 
@@ -111,7 +112,28 @@ export function registerProtocol() {
 
     const sameOrigin = origin === CLOUD_BASE_URL || protocol === 'file:';
 
-    if (isOfflineModeEnabled() && (sameOrigin || 'devtools:' !== protocol)) {
+    // offline whitelist
+    // 1. do not block non-api request for http://localhost || file:// (local dev assets)
+    // 2. do not block devtools
+    // 3. block all other requests
+    const blocked = (() => {
+      if (!isOfflineModeEnabled()) {
+        return false;
+      }
+      if (
+        (protocol === 'file:' || origin.startsWith('http://localhost')) &&
+        !isNetworkResource(pathname)
+      ) {
+        return false;
+      }
+      if ('devtools:' === protocol) {
+        return false;
+      }
+      return true;
+    })();
+
+    if (blocked) {
+      logger.debug('blocked request', details.url);
       callback({
         cancel: true,
       });
