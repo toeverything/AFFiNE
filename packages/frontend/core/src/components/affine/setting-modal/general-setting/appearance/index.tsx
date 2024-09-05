@@ -13,6 +13,7 @@ import { useCallback, useMemo } from 'react';
 
 import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
 import { LanguageMenu } from '../../../language-menu';
+import { Page } from '../editor/page';
 import { DateFormatSetting } from './date-format-setting';
 import { settingWrapper } from './style.css';
 import { ThemeEditorSetting } from './theme-editor-setting';
@@ -119,6 +120,8 @@ export const AppearanceSettings = () => {
         ) : null}
         {runtimeConfig.enableThemeEditor ? <ThemeEditorSetting /> : null}
       </SettingWrapper>
+      {/* //TODO(@JimmFly): remove Page component when stable release */}
+      <Page />
       {runtimeConfig.enableNewSettingUnstableApi ? (
         <SettingWrapper title={t['com.affine.appearanceSettings.date.title']()}>
           <SettingRow

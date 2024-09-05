@@ -14,6 +14,7 @@ import {
   FontWeight,
   FontWeightMap,
   LineColor,
+  LineColorMap,
   TextAlign,
 } from '@blocksuite/blocks';
 import { useFramework, useLiveData } from '@toeverything/infra';
@@ -21,6 +22,7 @@ import { useCallback, useMemo } from 'react';
 
 import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
+import { useColor } from '../utils';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
 
@@ -29,6 +31,7 @@ export const TextSettings = () => {
   const framework = useFramework();
   const { editorSetting } = framework.get(EditorSettingService);
   const settings = useLiveData(editorSetting.settings$);
+  const getColorFromMap = useColor();
 
   const alignItems = useMemo<RadioItem[]>(
     () => [
@@ -134,8 +137,8 @@ export const TextSettings = () => {
 
   const currentColor = useMemo(() => {
     const { color } = settings['affine:edgeless-text'];
-    return Object.entries(LineColor).find(([, value]) => value === color);
-  }, [settings]);
+    return getColorFromMap(color, LineColorMap);
+  }, [getColorFromMap, settings]);
   return (
     <>
       <EdgelessSnapshot
@@ -154,9 +157,9 @@ export const TextSettings = () => {
             trigger={
               <MenuTrigger
                 className={menuTrigger}
-                prefix={<Point color={currentColor[1]} />}
+                prefix={<Point color={currentColor.value} />}
               >
-                {currentColor[0]}
+                {currentColor.key}
               </MenuTrigger>
             }
           />

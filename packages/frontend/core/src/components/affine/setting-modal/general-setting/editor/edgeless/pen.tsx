@@ -2,12 +2,14 @@ import { MenuItem, MenuTrigger, Slider } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { useI18n } from '@affine/i18n';
-import { LineColor } from '@blocksuite/blocks';
+import { LineColor, LineColorMap } from '@blocksuite/blocks';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 import { DropdownMenu } from '../menu';
 import { menuTrigger } from '../style.css';
+import { useColor } from '../utils';
+import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
 
 export const PenSettings = () => {
@@ -15,6 +17,11 @@ export const PenSettings = () => {
   const framework = useFramework();
   const { editorSetting } = framework.get(EditorSettingService);
   const settings = useLiveData(editorSetting.settings$);
+  const getColorFromMap = useColor();
+
+  const currentColor = useMemo(() => {
+    return getColorFromMap(settings.brush.color, LineColorMap);
+  }, [getColorFromMap, settings.brush.color]);
 
   const colorItems = useMemo(() => {
     const { color } = settings.brush;
@@ -24,12 +31,17 @@ export const PenSettings = () => {
       };
       const isSelected = color === value;
       return (
-        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+        <MenuItem
+          key={name}
+          onSelect={handler}
+          selected={isSelected}
+          prefix={<Point color={value} />}
+        >
           {name}
         </MenuItem>
       );
     });
-  }, [editorSetting, settings]);
+  }, [editorSetting, settings.brush]);
 
   const borderThickness = settings.brush.lineWidth;
   const setBorderThickness = useCallback(
@@ -52,14 +64,19 @@ export const PenSettings = () => {
         name={t['com.affine.settings.editorSettings.edgeless.pen.color']()}
         desc={''}
       >
-        <DropdownMenu
-          items={colorItems}
-          trigger={
-            <MenuTrigger className={menuTrigger}>
-              {String(settings.brush.color)}
-            </MenuTrigger>
-          }
-        />
+        {currentColor ? (
+          <DropdownMenu
+            items={colorItems}
+            trigger={
+              <MenuTrigger
+                className={menuTrigger}
+                prefix={<Point color={currentColor.value} />}
+              >
+                {currentColor.key}
+              </MenuTrigger>
+            }
+          />
+        ) : null}
       </SettingRow>
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.pen.thickness']()}

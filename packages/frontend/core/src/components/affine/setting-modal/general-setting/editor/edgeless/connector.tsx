@@ -11,6 +11,7 @@ import { useI18n } from '@affine/i18n';
 import {
   ConnectorMode,
   LineColor,
+  LineColorMap,
   PointStyle,
   StrokeStyle,
 } from '@blocksuite/blocks';
@@ -19,6 +20,7 @@ import { useCallback, useMemo } from 'react';
 
 import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
+import { useColor } from '../utils';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
 
@@ -32,6 +34,7 @@ export const ConnectorSettings = () => {
   const framework = useFramework();
   const { editorSetting } = framework.get(EditorSettingService);
   const settings = useLiveData(editorSetting.settings$);
+  const getColorFromMap = useColor();
 
   const connecterStyleItems = useMemo<RadioItem[]>(
     () => [
@@ -133,8 +136,8 @@ export const ConnectorSettings = () => {
 
   const currentColor = useMemo(() => {
     const color = settings.connector.stroke;
-    return Object.entries(LineColor).find(([, value]) => value === color);
-  }, [settings]);
+    return getColorFromMap(color, LineColorMap);
+  }, [getColorFromMap, settings.connector.stroke]);
 
   const colorItems = useMemo(() => {
     const { stroke } = settings.connector;
@@ -206,9 +209,9 @@ export const ConnectorSettings = () => {
             trigger={
               <MenuTrigger
                 className={menuTrigger}
-                prefix={<Point color={currentColor[1]} />}
+                prefix={<Point color={currentColor.value} />}
               >
-                {currentColor[0]}
+                {currentColor.key}
               </MenuTrigger>
             }
           />

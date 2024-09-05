@@ -11,6 +11,7 @@ import { useI18n } from '@affine/i18n';
 import {
   createEnumMap,
   NoteBackgroundColor,
+  NoteBackgroundColorMap,
   NoteShadow,
   NoteShadowMap,
   StrokeStyle,
@@ -20,6 +21,7 @@ import { useCallback, useMemo } from 'react';
 
 import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
+import { useColor } from '../utils';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
 
@@ -46,6 +48,7 @@ export const NoteSettings = () => {
   const framework = useFramework();
   const { editorSetting } = framework.get(EditorSettingService);
   const settings = useLiveData(editorSetting.settings$);
+  const getColorFromMap = useColor();
 
   const borderStyleItems = useMemo<RadioItem[]>(
     () => [
@@ -160,10 +163,8 @@ export const NoteSettings = () => {
 
   const currentColor = useMemo(() => {
     const { background } = settings['affine:note'];
-    return Object.entries(NoteBackgroundColor).find(
-      ([, value]) => value === background
-    );
-  }, [settings]);
+    return getColorFromMap(background, NoteBackgroundColorMap);
+  }, [getColorFromMap, settings]);
 
   return (
     <>
@@ -185,9 +186,9 @@ export const NoteSettings = () => {
             trigger={
               <MenuTrigger
                 className={menuTrigger}
-                prefix={<Point color={currentColor[1]} />}
+                prefix={<Point color={currentColor.value} />}
               >
-                {currentColor[0]}
+                {currentColor.key}
               </MenuTrigger>
             }
           />
