@@ -603,7 +603,9 @@ export const PagePropertiesTableHeader = ({
   const docBacklinks = docLinksServices.backlinks;
   const backlinks = useLiveData(docBacklinks.backlinks$);
 
-  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+  const displayDocInfo = useLiveData(
+    editorSettingService.editorSetting.settings$.selector(s => s.displayDocInfo)
+  );
 
   const { syncing, retrying, serverClock } = useLiveData(
     workspaceService.workspace.engine.doc.docState$(docService.doc.id)
@@ -696,7 +698,7 @@ export const PagePropertiesTableHeader = ({
         {dTimestampElement}
       </div>
       <Divider />
-      {settings.displayDocInfo ? (
+      {displayDocInfo ? (
         <div className={styles.tableHeaderSecondaryRow}>
           <div className={clsx(!open ? styles.pageInfoDimmed : null)}>
             {t['com.affine.page-properties.page-info']()}

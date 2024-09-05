@@ -92,7 +92,9 @@ export const PeekViewModalContainer = forwardRef<
   const controlsRef = useRef<HTMLDivElement>(null);
   const prevAnimeMap = useRef<Record<string, AnimeInstance | undefined>>({});
   const editorSettings = useService(EditorSettingService).editorSetting;
-  const settings = useLiveData(editorSettings.settings$);
+  const fullWidthLayout = useLiveData(
+    editorSettings.settings$.selector(s => s.fullWidthLayout)
+  );
 
   const animateControls = useCallback((animateIn = false) => {
     const controls = controlsRef.current;
@@ -322,7 +324,7 @@ export const PeekViewModalContainer = forwardRef<
           >
             <div
               data-anime-state={animeState}
-              data-full-width-layout={settings.fullWidthLayout}
+              data-full-width-layout={fullWidthLayout}
               ref={contentClipRef}
               className={styles.modalContentContainer}
             >

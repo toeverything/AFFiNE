@@ -13,7 +13,9 @@ import { RowLayout } from '../row.layout';
 export const FontStyleSetting = () => {
   const t = useI18n();
   const editorSetting = useService(EditorSettingService).editorSetting;
-  const settings = useLiveData(editorSetting.settings$);
+  const fontFamily = useLiveData(
+    editorSetting.settings$.selector(s => s.fontFamily)
+  );
 
   const options = useMemo(() => getBaseFontStyleOptions(t), [t]);
   const handleEdit = useCallback(
@@ -27,7 +29,7 @@ export const FontStyleSetting = () => {
     <RowLayout label={t['com.affine.mobile.setting.appearance.font']()}>
       <SettingDropdownSelect<FontFamily>
         options={options}
-        value={settings.fontFamily}
+        value={fontFamily}
         onChange={handleEdit}
       />
     </RowLayout>

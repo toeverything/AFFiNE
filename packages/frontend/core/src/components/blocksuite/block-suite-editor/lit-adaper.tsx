@@ -191,7 +191,11 @@ export const BlocksuiteDocEditor = forwardRef<
 
   const [specs, portals] = usePatchSpecs(page, !!shared, 'page');
 
-  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+  const displayBiDirectionalLink = useLiveData(
+    editorSettingService.editorSetting.settings$.selector(
+      s => s.displayBiDirectionalLink
+    )
+  );
 
   return (
     <>
@@ -210,7 +214,7 @@ export const BlocksuiteDocEditor = forwardRef<
           hasViewport={false}
         />
         <div className={styles.docEditorGap} onClick={onClickBlank}></div>
-        {!shared && settings.displayBiDirectionalLink ? (
+        {!shared && displayBiDirectionalLink ? (
           <BiDirectionalLinkPanel />
         ) : null}
       </div>

@@ -187,8 +187,8 @@ export const SignOutConfirmModal = () => {
 export const AIReloadConfirmModal = () => {
   const editorSettingService = useService(EditorSettingService);
   const enableAI = useLiveData(
-    editorSettingService.editorSetting.settings$
-  ).enableAI;
+    editorSettingService.editorSetting.settings$.selector(s => s.enableAI)
+  );
   const [aiState] = useState(enableAI);
   const [open, setOpen] = useState(false);
 
