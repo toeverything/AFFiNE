@@ -84,7 +84,7 @@
     "@blocksuite/block-std": "0.0.0-canary-20240903103812",
     "@blocksuite/blocks": "0.0.0-canary-20240903103812",
     "@blocksuite/global": "0.0.0-canary-20240903103812",
-    "@blocksuite/icons": "2.1.66",
+    "@blocksuite/icons": "2.1.67",
     "@blocksuite/presets": "0.0.0-canary-20240903103812",
     "@blocksuite/store": "0.0.0-canary-20240903103812",
     "@chromatic-com/storybook": "^1",
