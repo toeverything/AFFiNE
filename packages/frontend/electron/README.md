@@ -17,6 +17,12 @@ yarn dev # or yarn prod for production build
 
 ## Troubleshooting
 
+If you have trouble building electron during `yarn install`, try setting mirror environment variable:
+
+```sh
+export ELECTRON_MIRROR="https://registry.npmmirror.com/-/binary/electron/"
+```
+
 ## Credits
 
 Most of the boilerplate code is generously borrowed from the following
