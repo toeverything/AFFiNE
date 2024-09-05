@@ -228,6 +228,7 @@ __metadata:
     "@napi-rs/clipboard": "npm:^1.1.2"
     "@napi-rs/simple-git": "npm:^0.1.18"
     chalk: "npm:^5.3.0"
+    undici: "npm:^6.12.0"
   languageName: unknown
   linkType: soft
 
