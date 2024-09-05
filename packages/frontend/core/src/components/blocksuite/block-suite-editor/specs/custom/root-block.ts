@@ -4,6 +4,7 @@ import {
 } from '@affine/core/blocksuite/presets/ai';
 import { mixpanel } from '@affine/core/mixpanel';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
+import { AffineCanvasTextFonts } from '@blocksuite/affine-block-surface';
 import {
   BlockFlavourIdentifier,
   BlockServiceIdentifier,
@@ -13,7 +14,6 @@ import {
 } from '@blocksuite/block-std';
 import type { RootService, TelemetryEventMap } from '@blocksuite/blocks';
 import {
-  AffineCanvasTextFonts,
   EdgelessRootBlockSpec,
   EdgelessRootService,
   PageRootBlockSpec,

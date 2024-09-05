@@ -81,12 +81,12 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@blocksuite/block-std": "0.0.0-canary-20240903103812",
-    "@blocksuite/blocks": "0.0.0-canary-20240903103812",
-    "@blocksuite/global": "0.0.0-canary-20240903103812",
+    "@blocksuite/block-std": "0.0.0-canary-20240905075320",
+    "@blocksuite/blocks": "0.0.0-canary-20240905075320",
+    "@blocksuite/global": "0.0.0-canary-20240905075320",
     "@blocksuite/icons": "2.1.67",
-    "@blocksuite/presets": "0.0.0-canary-20240903103812",
-    "@blocksuite/store": "0.0.0-canary-20240903103812",
+    "@blocksuite/presets": "0.0.0-canary-20240905075320",
+    "@blocksuite/store": "0.0.0-canary-20240905075320",
     "@chromatic-com/storybook": "^1",
     "@storybook/addon-actions": "^8.2.9",
     "@storybook/addon-essentials": "^8.2.9",
