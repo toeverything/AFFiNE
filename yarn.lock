@@ -537,7 +537,7 @@ __metadata:
   resolution: "@affine/electron-api@workspace:packages/frontend/electron-api"
   dependencies:
     "@toeverything/infra": "workspace:*"
-    electron: "npm:^32.0.0"
+    electron: "npm:^31.0.0"
   languageName: unknown
   linkType: soft
 
@@ -576,7 +576,7 @@ __metadata:
     builder-util-runtime: "npm:^9.2.5-alpha.2"
     core-js: "npm:^3.36.1"
     cross-env: "npm:^7.0.3"
-    electron: "npm:^32.0.0"
+    electron: "npm:^31.0.0"
     electron-log: "npm:^5.1.2"
     electron-squirrel-startup: "npm:1.0.1"
     electron-updater: "npm:^6.2.1"
@@ -20573,6 +20573,19 @@ __metadata:
     "@electron/windows-sign":
       optional: true
   checksum: 10/7165f1fe1ba749357fa26423e1092fb2efb53e424066279d4c1be1552ae658cd570286dc57eaa403f652a0007aefdafda4ff075ad9f814433768f1ee18ec3edb
+  languageName: node
+  linkType: hard
+
+"electron@npm:^31.0.0":
+  version: 31.4.0
+  resolution: "electron@npm:31.4.0"
+  dependencies:
+    "@electron/get": "npm:^2.0.0"
+    "@types/node": "npm:^20.9.0"
+    extract-zip: "npm:^2.0.1"
+  bin:
+    electron: cli.js
+  checksum: 10/445bf8b04f0f8fcc16da4832634507c01bbdd6733ef8236e2216f8f4667d070115d41b7bd28f73ca91f819a720a629e1cbea08b079fa7bde424fd24b6aef4499
   languageName: node
   linkType: hard
 
