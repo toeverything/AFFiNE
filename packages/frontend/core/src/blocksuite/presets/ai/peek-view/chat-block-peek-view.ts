@@ -3,13 +3,14 @@ import './date-time';
 import '../_common/components/chat-action-list';
 import '../_common/components/copy-more';
 
+import { CanvasElementType } from '@blocksuite/affine-block-surface';
 import { type EditorHost } from '@blocksuite/block-std';
 import {
   type AIError,
-  CanvasElementType,
   ConnectorMode,
   DocModeProvider,
   type EdgelessRootService,
+  TelemetryProvider,
 } from '@blocksuite/blocks';
 import {
   type AIChatBlockModel,
@@ -138,7 +139,7 @@ export class AIChatBlockPeekView extends LitElement {
    */
   createAIChatBlock = async () => {
     // Only create AI chat block in edgeless mode
-    const mode = this._modeService.getMode();
+    const mode = this._modeService.getEditorMode();
     if (mode !== 'edgeless') {
       return;
     }
@@ -204,7 +205,8 @@ export class AIChatBlockPeekView extends LitElement {
       target: { id: aiChatBlockId },
     });
 
-    edgelessService.telemetryService?.track('CanvasElementAdded', {
+    const telemetryService = this.host.std.getOptional(TelemetryProvider);
+    telemetryService?.track('CanvasElementAdded', {
       control: 'conversation',
       page: 'whiteboard editor',
       module: 'canvas',

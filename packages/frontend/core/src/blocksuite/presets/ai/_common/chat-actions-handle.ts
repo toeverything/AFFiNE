@@ -10,6 +10,7 @@ import {
   type EdgelessRootService,
   type ImageSelection,
   type PageRootService,
+  TelemetryProvider,
 } from '@blocksuite/blocks';
 import { BlocksUtils, NoteDisplayMode } from '@blocksuite/blocks';
 import {
@@ -304,7 +305,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     const { notificationService } = rootService;
     const docModeService = host.std.get(DocModeProvider);
     const { layer } = surfaceService;
-    const curMode = docModeService.getMode();
+    const curMode = docModeService.getEditorMode() || 'page';
     const viewportCenter = getViewportCenter(
       curMode,
       rootService as PageRootService
@@ -313,7 +314,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     // If current mode is not edgeless, switch to edgeless mode first
     if (curMode !== 'edgeless') {
       // Set mode to edgeless
-      docModeService.setMode('edgeless' as DocMode);
+      docModeService.setEditorMode('edgeless' as DocMode);
       // Notify user to switch to edgeless mode
       notificationService?.notify({
         title: 'Save chat to a block',
@@ -354,7 +355,8 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
         return false;
       }
 
-      rootService.telemetryService?.track('CanvasElementAdded', {
+      const telemetryService = host.std.getOptional(TelemetryProvider);
+      telemetryService?.track('CanvasElementAdded', {
         control: 'manually save',
         page: 'whiteboard editor',
         module: 'ai chat panel',
@@ -463,7 +465,7 @@ const CREATE_AS_LINKED_DOC = {
 
     const service = host.std.getService<EdgelessRootService>('affine:page');
     const docModeService = host.std.get(DocModeProvider);
-    const mode = docModeService.getMode();
+    const mode = docModeService.getEditorMode();
     if (mode !== 'edgeless') {
       return false;
     }

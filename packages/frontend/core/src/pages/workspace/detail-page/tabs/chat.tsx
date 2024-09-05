@@ -52,10 +52,10 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
       pageService.slots.docLinkClicked.on(() => {
         (chatPanelRef.current as ChatPanel).doc = editor.doc;
       }),
-      docModeService.onModeChange(() => {
+      docModeService.onPrimaryModeChange(() => {
         if (!editor.host) return;
         (chatPanelRef.current as ChatPanel).host = editor.host;
-      }),
+      }, editor.doc.id),
     ];
 
     return () => disposable.forEach(d => d.dispose());

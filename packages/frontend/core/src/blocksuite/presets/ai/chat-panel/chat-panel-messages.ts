@@ -163,7 +163,12 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         })
       );
       const docModeService = this.host.std.get(DocModeProvider);
-      disposables.add(docModeService.onModeChange(() => this.requestUpdate()));
+      disposables.add(
+        docModeService.onPrimaryModeChange(
+          () => this.requestUpdate(),
+          this.host.doc.id
+        )
+      );
     }
   }
 

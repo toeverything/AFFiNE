@@ -4,6 +4,7 @@ import {
   useLitPortalFactory,
 } from '@affine/component';
 import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { EditorService } from '@affine/core/modules/editor';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import type { DocMode } from '@blocksuite/blocks';
@@ -66,13 +67,19 @@ interface BlocksuiteEditorProps {
 
 const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
   const [reactToLit, portals] = useLitPortalFactory();
-  const { peekViewService, docService, docsService, editorSettingService } =
-    useServices({
-      PeekViewService,
-      DocService,
-      DocsService,
-      EditorSettingService,
-    });
+  const {
+    peekViewService,
+    docService,
+    docsService,
+    editorSettingService,
+    editorService,
+  } = useServices({
+    PeekViewService,
+    DocService,
+    DocsService,
+    EditorSettingService,
+    EditorService,
+  });
   const framework = useFramework();
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
     return function customReference(reference) {
@@ -115,12 +122,15 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
     if (shared) {
       patched = patched.concat(patchForSharedPage());
     }
-    patched = patched.concat(patchDocModeService(docService, docsService));
+    patched = patched.concat(
+      patchDocModeService(docService, docsService, editorService)
+    );
     return patched;
   }, [
     confirmModal,
     docService,
     docsService,
+    editorService,
     framework,
     page.readonly,
     peekViewService,

@@ -9,6 +9,7 @@ import {
 } from '@affine/component';
 import { track } from '@affine/core/mixpanel';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
+import type { EditorService } from '@affine/core/modules/editor';
 import { resolveLinkToDoc } from '@affine/core/modules/navigation';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/peek-view';
@@ -27,13 +28,14 @@ import {
   type WidgetComponent,
 } from '@blocksuite/block-std';
 import { BlockServiceWatcher } from '@blocksuite/block-std';
-import type {
-  AffineReference,
-  DatabaseBlockService,
-  DocMode,
-  ListBlockService,
-  ParagraphBlockService,
-  RootService,
+import {
+  type AffineReference,
+  type DatabaseBlockService,
+  type DocMode,
+  EmbedOptionProvider,
+  type ListBlockService,
+  type ParagraphBlockService,
+  type RootService,
 } from '@blocksuite/blocks';
 import {
   AffineSlashMenuWidget,
@@ -239,30 +241,37 @@ export function patchPeekViewService(service: PeekViewService) {
 
 export function patchDocModeService(
   docService: DocService,
-  docsService: DocsService
+  docsService: DocsService,
+  editorService: EditorService
 ): ExtensionType {
   const DEFAULT_MODE = 'page';
   class AffineDocModeService implements DocModeProvider {
-    setMode = (mode: DocMode, id?: string) => {
+    setEditorMode = (mode: DocMode) => {
+      editorService.editor.setMode(mode);
+    };
+    getEditorMode = () => {
+      return editorService.editor.mode$.value;
+    };
+    setPrimaryMode = (mode: DocMode, id?: string) => {
       if (id) {
         docsService.list.setPrimaryMode(id, mode);
       } else {
         docService.doc.setPrimaryMode(mode);
       }
     };
-    getMode = (id?: string) => {
+    getPrimaryMode = (id?: string) => {
       const mode = id
         ? docsService.list.getPrimaryMode(id)
         : docService.doc.getPrimaryMode();
       return (mode || DEFAULT_MODE) as DocMode;
     };
-    toggleMode = (id?: string) => {
+    togglePrimaryMode = (id?: string) => {
       const mode = id
         ? docsService.list.togglePrimaryMode(id)
         : docService.doc.togglePrimaryMode();
       return (mode || DEFAULT_MODE) as DocMode;
     };
-    onModeChange = (handler: (mode: DocMode) => void, id?: string) => {
+    onPrimaryModeChange = (handler: (mode: DocMode) => void, id?: string) => {
       // eslint-disable-next-line rxjs/finnish
       const mode$ = id
         ? docsService.list.primaryMode$(id)
@@ -408,7 +417,7 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
           ) {
             const oldAction = item.action;
             item.action = async ({ model, rootComponent }) => {
-              const { host, service, std } = rootComponent;
+              const { host, std } = rootComponent;
               const quickSearchService =
                 component.std.getOptional(QuickSearchProvider);
 
@@ -434,9 +443,9 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
                 }
                 track.doc.editor.slashMenu.linkDoc({ control: 'linkDoc' });
               } else if ('userInput' in result) {
-                const embedOptions = service.getEmbedBlockOptions(
-                  result.userInput
-                );
+                const embedOptions = std
+                  .get(EmbedOptionProvider)
+                  .getEmbedBlockOptions(result.userInput);
                 if (!embedOptions) return;
 
                 host.doc.addSiblingBlocks(model, [
@@ -466,31 +475,28 @@ export function patchEdgelessClipboard() {
           const { component } = view;
           if (component instanceof EdgelessRootBlockComponent) {
             const AIChatBlockFlavour = AIChatBlockSchema.model.flavour;
-            const createFunc = (blocks: BlockSnapshot[]) => {
-              const blockIds = blocks.map(({ props }) => {
-                const {
+            const createFunc = (block: BlockSnapshot) => {
+              const {
+                xywh,
+                scale,
+                messages,
+                sessionId,
+                rootDocId,
+                rootWorkspaceId,
+              } = block.props;
+              const blockId = component.service.addBlock(
+                AIChatBlockFlavour,
+                {
                   xywh,
                   scale,
                   messages,
                   sessionId,
                   rootDocId,
                   rootWorkspaceId,
-                } = props;
-                const blockId = component.service.addBlock(
-                  AIChatBlockFlavour,
-                  {
-                    xywh,
-                    scale,
-                    messages,
-                    sessionId,
-                    rootDocId,
-                    rootWorkspaceId,
-                  },
-                  component.surface.model.id
-                );
-                return blockId;
-              });
-              return blockIds;
+                },
+                component.surface.model.id
+              );
+              return blockId;
             };
             component.clipboardController.registerBlock(
               AIChatBlockFlavour,

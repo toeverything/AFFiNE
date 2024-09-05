@@ -1,3 +1,5 @@
+import type { MindmapElementModel } from '@blocksuite/affine-block-surface';
+import { fitContent } from '@blocksuite/affine-block-surface';
 import type { EditorHost } from '@blocksuite/block-std';
 import type {
   AffineAIPanelWidget,
@@ -5,7 +7,6 @@ import type {
   EdgelessCopilotWidget,
   EdgelessElementToolbarWidget,
   EdgelessRootService,
-  MindmapElementModel,
   ShapeElementModel,
   SurfaceBlockModel,
 } from '@blocksuite/blocks';
@@ -15,12 +16,12 @@ import {
   EDGELESS_TEXT_BLOCK_MIN_HEIGHT,
   EDGELESS_TEXT_BLOCK_MIN_WIDTH,
   EdgelessTextBlockModel,
-  fitContent,
   ImageBlockModel,
   InsertBelowIcon,
   LightLoadingIcon,
   NoteDisplayMode,
   ResetIcon,
+  TelemetryProvider,
 } from '@blocksuite/blocks';
 import { assertExists, Bound } from '@blocksuite/global/utils';
 import { html, type TemplateResult } from 'lit';
@@ -435,7 +436,8 @@ export const responses: {
       });
     });
 
-    edgelessService.telemetryService?.track('CanvasElementAdded', {
+    const telemetryService = host.std.getOptional(TelemetryProvider);
+    telemetryService?.track('CanvasElementAdded', {
       control: 'ai',
       page: 'whiteboard editor',
       module: 'toolbar',

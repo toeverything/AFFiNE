@@ -4,6 +4,7 @@ import {
 } from '@affine/core/blocksuite/presets/ai';
 import { mixpanel } from '@affine/core/mixpanel';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
+import { AffineCanvasTextFonts } from '@blocksuite/affine-block-surface';
 import {
   BlockFlavourIdentifier,
   BlockServiceIdentifier,
@@ -11,9 +12,12 @@ import {
   type ExtensionType,
   StdIdentifier,
 } from '@blocksuite/block-std';
-import type { RootService, TelemetryEventMap } from '@blocksuite/blocks';
 import {
-  AffineCanvasTextFonts,
+  type RootService,
+  type TelemetryEventMap,
+  TelemetryProvider,
+} from '@blocksuite/blocks';
+import {
   EdgelessRootBlockSpec,
   EdgelessRootService,
   PageRootBlockSpec,
@@ -44,15 +48,6 @@ function withAffineRootService(Service: typeof PageRootService) {
     override loadFonts(): void {
       customLoadFonts(this);
     }
-
-    override telemetryService = {
-      track: <T extends keyof TelemetryEventMap>(
-        eventName: T,
-        props: TelemetryEventMap[T]
-      ) => {
-        mixpanel.track(eventName as string, props as Record<string, unknown>);
-      },
-    };
   };
 }
 
@@ -70,6 +65,17 @@ export function createPageRootBlockSpec(
           withAffineRootService(PageRootService),
           [StdIdentifier, BlockFlavourIdentifier('affine:page')]
         );
+        di.addImpl(TelemetryProvider, () => ({
+          track: <T extends keyof TelemetryEventMap>(
+            eventName: T,
+            props: TelemetryEventMap[T]
+          ) => {
+            mixpanel.track(
+              eventName as string,
+              props as Record<string, unknown>
+            );
+          },
+        }));
       },
     },
     ConfigExtension('affine:page', {

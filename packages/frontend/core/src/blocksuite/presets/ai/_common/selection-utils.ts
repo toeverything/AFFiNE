@@ -56,7 +56,7 @@ export async function frameToCanvas(
 ) {
   const edgelessRoot = getEdgelessRootFromEditor(editor);
   const { notes, frames, shapes, images } = BlocksUtils.splitElements(
-    edgelessRoot.service.frame.getElementsInFrame(frame, true)
+    edgelessRoot.service.frame.getElementsInFrameBound(frame, true)
   );
   if (notes.length + frames.length + images.length + shapes.length === 0) {
     return;
@@ -106,7 +106,10 @@ export const getFirstImageInFrame = (
   editor: EditorHost
 ) => {
   const edgelessRoot = getEdgelessRootFromEditor(editor);
-  const elements = edgelessRoot.service.frame.getElementsInFrame(frame, false);
+  const elements = edgelessRoot.service.frame.getElementsInFrameBound(
+    frame,
+    false
+  );
   const image = elements.find(ele => {
     if (!BlocksUtils.isCanvasElement(ele)) {
       return ele.flavour === 'affine:image';

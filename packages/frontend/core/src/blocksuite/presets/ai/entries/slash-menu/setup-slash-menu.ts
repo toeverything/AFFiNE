@@ -40,7 +40,7 @@ export function setupSlashMenuAIEntry(slashMenu: AffineSlashMenuWidget) {
 
       const chain = rootComponent.host.command.chain();
       const docModeService = rootComponent.std.get(DocModeProvider);
-      const editorMode = docModeService.getMode(rootComponent.doc.id);
+      const editorMode = docModeService.getPrimaryMode(rootComponent.doc.id);
 
       return item?.showWhen?.(chain, editorMode, rootComponent.host) ?? true;
     };
