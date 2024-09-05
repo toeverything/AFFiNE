@@ -20,6 +20,7 @@ export type DocName =
   | 'note'
   | 'pen'
   | 'shape'
+  | 'flow'
   | 'text'
   | 'connector'
   | 'mindmap';
@@ -31,6 +32,7 @@ export async function getDocByName(name: DocName) {
     note: (await import('./note.json')).default,
     pen: (await import('./pen.json')).default,
     shape: (await import('./shape.json')).default,
+    flow: (await import('./flow.json')).default,
     text: (await import('./text.json')).default,
     connector: (await import('./connector.json')).default,
     mindmap: (await import('./mindmap.json')).default,

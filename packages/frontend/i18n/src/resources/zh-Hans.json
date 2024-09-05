@@ -1293,6 +1293,8 @@
   "com.affine.settings.editorSettings.edgeless.shape.text-alignment": "文本对齐",
   "com.affine.settings.editorSettings.edgeless.shape.text-color": "文本颜色",
   "com.affine.settings.editorSettings.edgeless.shape.triangle": "三角形",
+  "com.affine.settings.editorSettings.edgeless.shape.list": "列表",
+  "com.affine.settings.editorSettings.edgeless.shape.flow": "流程图",
   "com.affine.settings.editorSettings.edgeless.style": "样式",
   "com.affine.settings.editorSettings.edgeless.style.general": "常规",
   "com.affine.settings.editorSettings.edgeless.style.scribbled": "涂鸦",

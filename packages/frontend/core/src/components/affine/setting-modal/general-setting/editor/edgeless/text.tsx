@@ -17,6 +17,7 @@ import {
   LineColorMap,
   TextAlign,
 } from '@blocksuite/blocks';
+import type { Doc } from '@blocksuite/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -139,13 +140,18 @@ export const TextSettings = () => {
     const { color } = settings['affine:edgeless-text'];
     return getColorFromMap(color, LineColorMap);
   }, [getColorFromMap, settings]);
+
+  const getElements = useCallback((doc: Doc) => {
+    return doc.getBlocksByFlavour('affine:edgeless-text') || [];
+  }, []);
+
   return (
     <>
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.text']()}
         docName="text"
         keyName="affine:edgeless-text"
-        flavour="affine:edgeless-text"
+        getElements={getElements}
       />
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.text.color']()}

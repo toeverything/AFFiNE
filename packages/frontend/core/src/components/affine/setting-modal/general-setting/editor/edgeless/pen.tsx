@@ -3,6 +3,7 @@ import { SettingRow } from '@affine/component/setting-components';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { useI18n } from '@affine/i18n';
 import { LineColor, LineColorMap } from '@blocksuite/blocks';
+import type { Doc } from '@blocksuite/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -11,6 +12,7 @@ import { menuTrigger } from '../style.css';
 import { useColor } from '../utils';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
+import { getSurfaceBlock } from './utils';
 
 export const PenSettings = () => {
   const t = useI18n();
@@ -52,13 +54,19 @@ export const PenSettings = () => {
     },
     [editorSetting]
   );
+
+  const getElements = useCallback((doc: Doc) => {
+    const surface = getSurfaceBlock(doc);
+    return surface?.getElementsByType('brush') || [];
+  }, []);
+
   return (
     <>
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.pen']()}
         docName="pen"
         keyName="brush"
-        flavour="brush"
+        getElements={getElements}
       />
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.pen.color']()}

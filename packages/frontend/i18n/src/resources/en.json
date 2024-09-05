@@ -1292,6 +1292,8 @@
   "com.affine.settings.editorSettings.edgeless.shape.text-alignment": "Text alignment",
   "com.affine.settings.editorSettings.edgeless.shape.text-color": "Text color",
   "com.affine.settings.editorSettings.edgeless.shape.triangle": "Triangle",
+  "com.affine.settings.editorSettings.edgeless.shape.list": "List",
+  "com.affine.settings.editorSettings.edgeless.shape.flow": "Flow",
   "com.affine.settings.editorSettings.edgeless.style": "Style",
   "com.affine.settings.editorSettings.edgeless.style.general": "General",
   "com.affine.settings.editorSettings.edgeless.style.scribbled": "Scribbled",

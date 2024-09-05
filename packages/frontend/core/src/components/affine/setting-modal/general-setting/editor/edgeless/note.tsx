@@ -16,6 +16,7 @@ import {
   NoteShadowMap,
   StrokeStyle,
 } from '@blocksuite/blocks';
+import type { Doc } from '@blocksuite/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -166,13 +167,17 @@ export const NoteSettings = () => {
     return getColorFromMap(background, NoteBackgroundColorMap);
   }, [getColorFromMap, settings]);
 
+  const getElements = useCallback((doc: Doc) => {
+    return doc.getBlocksByFlavour('affine:note') || [];
+  }, []);
+
   return (
     <>
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.note']()}
         docName="note"
         keyName="affine:note"
-        flavour="affine:note"
+        getElements={getElements}
       />
       <SettingRow
         name={t[

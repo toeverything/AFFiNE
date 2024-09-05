@@ -23,6 +23,7 @@ export const menuTrigger = style({
 });
 
 export const snapshotContainer = style({
+  position: 'relative',
   display: 'flex',
   flexDirection: 'column',
   marginBottom: '24px',

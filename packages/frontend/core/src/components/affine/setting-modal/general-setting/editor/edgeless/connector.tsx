@@ -15,6 +15,7 @@ import {
   PointStyle,
   StrokeStyle,
 } from '@blocksuite/blocks';
+import type { Doc } from '@blocksuite/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -23,6 +24,7 @@ import { menuTrigger, settingWrapper } from '../style.css';
 import { useColor } from '../utils';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
+import { getSurfaceBlock } from './utils';
 
 enum ConnecterStyle {
   General = 'general',
@@ -189,13 +191,18 @@ export const ConnectorSettings = () => {
     });
   }, [editorSetting, settings]);
 
+  const getElements = useCallback((doc: Doc) => {
+    const surface = getSurfaceBlock(doc);
+    return surface?.getElementsByType('connector') || [];
+  }, []);
+
   return (
     <>
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.connecter']()}
         docName="connector"
         keyName="connector"
-        flavour="connector"
+        getElements={getElements}
       />
       <SettingRow
         name={t[

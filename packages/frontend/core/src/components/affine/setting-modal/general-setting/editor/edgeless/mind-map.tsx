@@ -6,11 +6,13 @@ import {
 } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { useI18n } from '@affine/i18n';
-import { useMemo, useState } from 'react';
+import type { Doc } from '@blocksuite/store';
+import { useCallback, useMemo, useState } from 'react';
 
 import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
 import { EdgelessSnapshot } from './snapshot';
+import { getSurfaceBlock } from './utils';
 
 export const MindMapSettings = () => {
   const t = useI18n();
@@ -43,13 +45,19 @@ export const MindMapSettings = () => {
     ],
     [t]
   );
+
+  const getElements = useCallback((doc: Doc) => {
+    const surface = getSurfaceBlock(doc);
+    return surface?.getElementsByType('mindmap') || [];
+  }, []);
+
   return (
     <>
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.mind-map']()}
         docName="mindmap"
         keyName={'mindmap' as any}
-        flavour="mindmap"
+        getElements={getElements}
         height={320}
       />
       <SettingRow
