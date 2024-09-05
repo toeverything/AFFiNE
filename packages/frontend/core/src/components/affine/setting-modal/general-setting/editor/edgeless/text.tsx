@@ -12,6 +12,7 @@ import {
   FontFamilyMap,
   FontStyle,
   FontWeight,
+  FontWeightMap,
   LineColor,
   TextAlign,
 } from '@blocksuite/blocks';
@@ -139,8 +140,7 @@ export const TextSettings = () => {
     <>
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.text']()}
-        option={['mock-option']}
-        type="mock-type"
+        docName="text"
       />
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.text.color']()}
@@ -200,7 +200,7 @@ export const TextSettings = () => {
           items={fontWeightItems}
           trigger={
             <MenuTrigger className={menuTrigger}>
-              {settings['affine:edgeless-text'].fontWeight}
+              {FontWeightMap[settings['affine:edgeless-text'].fontWeight]}
             </MenuTrigger>
           }
         />

@@ -190,8 +190,7 @@ export const ConnectorSettings = () => {
     <>
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.connecter']()}
-        option={['mock-option']}
-        type="mock-type"
+        docName="connector"
       />
       <SettingRow
         name={t[

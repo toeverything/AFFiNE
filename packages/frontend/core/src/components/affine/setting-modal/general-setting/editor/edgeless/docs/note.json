@@ -1,0 +1,138 @@
+{
+  "type": "page",
+  "meta": {
+    "id": "pfXt9oH_Rb",
+    "title": "Note",
+    "createDate": 1725451650158,
+    "tags": []
+  },
+  "blocks": {
+    "type": "block",
+    "id": "hNFCyKIXqH",
+    "flavour": "affine:page",
+    "version": 2,
+    "props": {
+      "title": {
+        "$blocksuite:internal:text$": true,
+        "delta": [
+          {
+            "insert": "Note"
+          }
+        ]
+      }
+    },
+    "children": [
+      {
+        "type": "block",
+        "id": "odnFJlKwxt",
+        "flavour": "affine:surface",
+        "version": 5,
+        "props": {
+          "elements": {}
+        },
+        "children": [
+          {
+            "type": "block",
+            "id": "D1UhpqzS37",
+            "flavour": "affine:frame",
+            "version": 1,
+            "props": {
+              "title": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Frame 1"
+                  }
+                ]
+              },
+              "background": "--affine-palette-transparent",
+              "xywh": "[361.3046875,-9.600906372070312,803.04296875,291.26953125]",
+              "index": "a0",
+              "childElementIds": {
+                "C5e-RyxlTI": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "type": "block",
+        "id": "C5e-RyxlTI",
+        "flavour": "affine:note",
+        "version": 1,
+        "props": {
+          "xywh": "[538.826171875,46.71159362792969,448,180]",
+          "background": "--affine-note-background-blue",
+          "index": "a3",
+          "hidden": false,
+          "displayMode": "edgeless",
+          "edgeless": {
+            "style": {
+              "borderRadius": 0,
+              "borderSize": 4,
+              "borderStyle": "none",
+              "shadowType": "--affine-note-shadow-sticker"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "block",
+            "id": "AjSEjoCq1Q",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "h1",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Write, draw, plan all at once."
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "s5v28mktAO",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "AFFiNE is a workspace with fully merged docs,"
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "type": "block",
+            "id": "Jd9Unn0j4a",
+            "flavour": "affine:paragraph",
+            "version": 1,
+            "props": {
+              "type": "text",
+              "text": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "whiteboards and databases."
+                  }
+                ]
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}

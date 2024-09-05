@@ -131,8 +131,7 @@ export const ShapeSettings = () => {
     <>
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.shape']()}
-        option={['mock-option']}
-        type="mock-type"
+        docName="shape"
       />
 
       <RadioGroup

@@ -44,8 +44,7 @@ export const PenSettings = () => {
     <>
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.pen']()}
-        option={['mock-option']}
-        type="mock-type"
+        docName="pen"
       />
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.pen.color']()}

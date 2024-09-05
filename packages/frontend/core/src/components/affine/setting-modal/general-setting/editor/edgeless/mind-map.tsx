@@ -47,8 +47,8 @@ export const MindMapSettings = () => {
     <>
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.mind-map']()}
-        option={['mock-option']}
-        type="mock-type"
+        docName="mindmap"
+        height={320}
       />
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.style']()}

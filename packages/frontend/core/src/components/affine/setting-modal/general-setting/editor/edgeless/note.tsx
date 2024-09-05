@@ -9,8 +9,10 @@ import { SettingRow } from '@affine/component/setting-components';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { useI18n } from '@affine/i18n';
 import {
+  createEnumMap,
   NoteBackgroundColor,
   NoteShadow,
+  NoteShadowMap,
   StrokeStyle,
 } from '@blocksuite/blocks';
 import { useFramework, useLiveData } from '@toeverything/infra';
@@ -21,12 +23,22 @@ import { menuTrigger, settingWrapper } from '../style.css';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
 
+enum CornerSize {
+  None = 0,
+  Small = 8,
+  Medium = 16,
+  Large = 24,
+  Huge = 32,
+}
+
+const CornerSizeMap = createEnumMap(CornerSize);
+
 const CORNER_SIZE = [
-  { name: 'None', value: 0 },
-  { name: 'Small', value: 8 },
-  { name: 'Medium', value: 16 },
-  { name: 'Large', value: 24 },
-  { name: 'Huge', value: 32 },
+  { name: 'None', value: CornerSize.None },
+  { name: 'Small', value: CornerSize.Small },
+  { name: 'Medium', value: CornerSize.Medium },
+  { name: 'Large', value: CornerSize.Large },
+  { name: 'Huge', value: CornerSize.Huge },
 ] as const;
 
 export const NoteSettings = () => {
@@ -157,8 +169,7 @@ export const NoteSettings = () => {
     <>
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.note']()}
-        option={['mock-option']}
-        type="mock-type"
+        docName="note"
       />
       <SettingRow
         name={t[
@@ -188,7 +199,12 @@ export const NoteSettings = () => {
           items={cornerItems}
           trigger={
             <MenuTrigger className={menuTrigger}>
-              {String(settings['affine:note'].edgeless.style.borderRadius)}
+              {
+                CornerSizeMap[
+                  settings['affine:note'].edgeless.style
+                    .borderRadius as CornerSize
+                ]
+              }
             </MenuTrigger>
           }
         />
@@ -201,7 +217,7 @@ export const NoteSettings = () => {
           items={shadowItems}
           trigger={
             <MenuTrigger className={menuTrigger}>
-              {String(settings['affine:note'].edgeless.style.shadowType)}
+              {NoteShadowMap[settings['affine:note'].edgeless.style.shadowType]}
             </MenuTrigger>
           }
         />

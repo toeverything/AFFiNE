@@ -1,0 +1,186 @@
+{
+  "type": "page",
+  "meta": {
+    "id": "H26C3mrHAO",
+    "title": "BlockSuite Playground",
+    "createDate": 1725457623442,
+    "tags": []
+  },
+  "blocks": {
+    "type": "block",
+    "id": "gMFM1yrveo",
+    "flavour": "affine:page",
+    "version": 2,
+    "props": {
+      "title": {
+        "$blocksuite:internal:text$": true,
+        "delta": [
+          {
+            "insert": "BlockSuite Playground"
+          }
+        ]
+      }
+    },
+    "children": [
+      {
+        "type": "block",
+        "id": "ICj50zYaZ-",
+        "flavour": "affine:surface",
+        "version": 5,
+        "props": {
+          "elements": {
+            "e6t9tKz8Sy": {
+              "index": "a5",
+              "seed": 338503204,
+              "color": "--affine-palette-line-black",
+              "fillColor": "--affine-palette-shape-yellow",
+              "filled": true,
+              "fontFamily": "blocksuite:surface:Inter",
+              "fontSize": 12,
+              "maxWidth": false,
+              "padding": [10, 20],
+              "radius": 0,
+              "rotate": 0,
+              "roughness": 1.4,
+              "shadow": null,
+              "shapeStyle": "General",
+              "shapeType": "ellipse",
+              "strokeColor": "--affine-palette-line-yellow",
+              "strokeStyle": "solid",
+              "strokeWidth": 2,
+              "textResizing": 1,
+              "xywh": "[-14.79056021743071,154.8369594850144,100.11936661988601,100.11932857954827]",
+              "type": "shape",
+              "id": "e6t9tKz8Sy"
+            },
+            "F8qB_zDC5Q": {
+              "index": "a6",
+              "seed": 1896265661,
+              "color": "--affine-palette-line-black",
+              "fillColor": "--affine-palette-shape-yellow",
+              "filled": true,
+              "fontFamily": "blocksuite:surface:Inter",
+              "fontSize": 12,
+              "maxWidth": false,
+              "padding": [10, 20],
+              "radius": 0.1,
+              "rotate": 0,
+              "roughness": 1.4,
+              "shadow": null,
+              "shapeStyle": "General",
+              "shapeType": "rect",
+              "strokeColor": "--affine-palette-line-yellow",
+              "strokeStyle": "solid",
+              "strokeWidth": 2,
+              "textResizing": 1,
+              "xywh": "[145.85713815180185,171.45701762455542,131.14345570418993,66.87921230046624]",
+              "type": "shape",
+              "id": "F8qB_zDC5Q"
+            },
+            "mPR44JBpcd": {
+              "index": "a7",
+              "seed": 2073974140,
+              "color": "--affine-palette-line-black",
+              "fillColor": "--affine-palette-shape-yellow",
+              "filled": true,
+              "fontFamily": "blocksuite:surface:Inter",
+              "fontSize": 12,
+              "maxWidth": false,
+              "padding": [10, 20],
+              "radius": 0,
+              "rotate": 0,
+              "roughness": 1.4,
+              "shadow": null,
+              "shapeStyle": "General",
+              "shapeType": "diamond",
+              "strokeColor": "--affine-palette-line-yellow",
+              "strokeStyle": "solid",
+              "strokeWidth": 2,
+              "textResizing": 1,
+              "xywh": "[337.5289256053383,154.8369594850144,105.1083470248982,101.65945505340866]",
+              "type": "shape",
+              "id": "mPR44JBpcd"
+            },
+            "cmtluc3FWR": {
+              "index": "a8",
+              "seed": 1457248130,
+              "color": "--affine-palette-line-black",
+              "fillColor": "--affine-palette-shape-yellow",
+              "filled": true,
+              "fontFamily": "blocksuite:surface:Inter",
+              "fontSize": 12,
+              "maxWidth": false,
+              "padding": [10, 20],
+              "radius": 0,
+              "rotate": 0,
+              "roughness": 1.4,
+              "shadow": null,
+              "shapeStyle": "General",
+              "shapeType": "triangle",
+              "strokeColor": "--affine-palette-line-yellow",
+              "strokeStyle": "solid",
+              "strokeWidth": 2,
+              "textResizing": 1,
+              "xywh": "[503.16560437958293,165.36299989942228,99.95316838431143,80.60737422459296]",
+              "type": "shape",
+              "id": "cmtluc3FWR"
+            },
+            "knt_TKvACR": {
+              "index": "a9",
+              "seed": 1896265661,
+              "color": "--affine-palette-line-black",
+              "fillColor": "--affine-palette-shape-yellow",
+              "filled": true,
+              "fontFamily": "blocksuite:surface:Inter",
+              "fontSize": 12,
+              "maxWidth": false,
+              "padding": [10, 20],
+              "radius": 0,
+              "rotate": 0,
+              "roughness": 1.4,
+              "shadow": null,
+              "shapeStyle": "General",
+              "shapeType": "rect",
+              "strokeColor": "--affine-palette-line-yellow",
+              "strokeStyle": "solid",
+              "strokeWidth": 2,
+              "textResizing": 1,
+              "xywh": "[663.6471045132407,172.22708086148566,131.14345570418993,66.87921230046624]",
+              "type": "shape",
+              "id": "knt_TKvACR"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "block",
+            "id": "GuSXhkqpUl",
+            "flavour": "affine:frame",
+            "version": 1,
+            "props": {
+              "title": {
+                "$blocksuite:internal:text$": true,
+                "delta": [
+                  {
+                    "insert": "Frame 1"
+                  }
+                ]
+              },
+              "background": "--affine-palette-transparent",
+              "xywh": "[-140.35546875000006,60.96746826171875,1079.28125,307.06640625]",
+              "index": "a0",
+              "childElementIds": {
+                "e6t9tKz8Sy": true,
+                "F8qB_zDC5Q": true,
+                "mPR44JBpcd": true,
+                "cmtluc3FWR": true,
+                "knt_TKvACR": true
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}
