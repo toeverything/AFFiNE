@@ -11,7 +11,7 @@ export const appTabs = style({
   backgroundColor: cssVarV2('layer/background/secondary'),
   borderTop: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
 
-  width: '100vw',
+  width: '100dvw',
   height: globalVars.appTabHeight,
   padding: 16,
   gap: 15.5,

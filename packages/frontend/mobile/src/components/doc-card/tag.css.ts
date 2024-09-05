@@ -7,18 +7,12 @@ export const tags = style({
   width: '100%',
   display: 'flex',
   flexWrap: 'wrap',
-  alignItems: 'flex-start',
+  alignItems: 'center',
   position: 'relative',
-
-  transition: 'height 0.23s',
-  overflow: 'hidden',
+  gap: 4,
 });
 
 export const tag = style({
-  visibility: 'hidden',
-  position: 'absolute',
-  // transition: 'all 0.23s',
-
   padding: '0px 8px',
   borderRadius: 10,
   alignItems: 'center',
@@ -42,4 +36,9 @@ export const tag = style({
     backgroundColor: tagColorVar,
     marginRight: 4,
   },
+});
+
+export const more = style({
+  fontSize: 16,
+  color: cssVarV2('icon/primary'),
 });

@@ -55,6 +55,7 @@ export const AppTabs = () => {
             className={styles.tabItem}
             role="tab"
             aria-label={route.to.slice(1)}
+            replaceHistory
           >
             <li>
               <route.Icon />
