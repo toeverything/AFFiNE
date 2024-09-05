@@ -492,7 +492,13 @@ export const TagOperationCell = ({
       <IconButton
         tooltip={t['Rename']()}
         tooltipOptions={tooltipSideTop}
-        onClick={() => setOpen(true)}
+        onClick={useCallback(
+          (e: React.MouseEvent<HTMLButtonElement>) => {
+            e.preventDefault();
+            setOpen(true);
+          },
+          [setOpen]
+        )}
       >
         <EditIcon />
       </IconButton>
