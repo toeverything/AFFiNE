@@ -1,4 +1,3 @@
-import { IconButton } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
@@ -11,7 +10,6 @@ import { EditorService } from '@affine/core/modules/editor';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { DetailPageWrapper } from '@affine/core/pages/workspace/detail-page/detail-page-wrapper';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkBlockService,
@@ -22,7 +20,6 @@ import {
   ImageBlockService,
 } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
-import { ShareiOsIcon } from '@blocksuite/icons/rc';
 import { type AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
@@ -30,7 +27,6 @@ import {
   FrameworkScope,
   GlobalContextService,
   useLiveData,
-  useService,
   useServices,
   WorkspaceService,
 } from '@toeverything/infra';
@@ -42,6 +38,7 @@ import { PageHeader } from '../../../components';
 import { JournalIconButton } from './journal-icon-button';
 import * as styles from './mobile-detail-page.css';
 import { PageHeaderMenuButton } from './page-header-more-button';
+import { PageHeaderShareButton } from './page-header-share-button';
 
 const DetailPageImpl = () => {
   const { editorService, docService, workspaceService, globalContextService } =
@@ -221,7 +218,6 @@ const notFound = (
 export const Component = () => {
   const params = useParams();
   const pageId = params.pageId;
-  const workspace = useService(WorkspaceService).workspace;
 
   if (!pageId) {
     return null;
@@ -239,14 +235,8 @@ export const Component = () => {
           className={styles.header}
           suffix={
             <>
-              {workspace.meta.flavour !== WorkspaceFlavour.LOCAL && (
-                <IconButton
-                  size={24}
-                  style={{ padding: 10 }}
-                  icon={<ShareiOsIcon />}
-                />
-              )}
-              <PageHeaderMenuButton docId={pageId} />
+              <PageHeaderShareButton />
+              <PageHeaderMenuButton />
             </>
           }
         />

@@ -270,9 +270,11 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
           <span className={styles.copyLinkLabelStyle}>
             {t['com.affine.share-menu.copy']()}
           </span>
-          <span className={styles.copyLinkShortcutStyle}>
-            {isMac ? '⌘ + ⌥ + C' : 'Ctrl + Shift + C'}
-          </span>
+          {!environment.isMobile && (
+            <span className={styles.copyLinkShortcutStyle}>
+              {isMac ? '⌘ + ⌥ + C' : 'Ctrl + Shift + C'}
+            </span>
+          )}
         </Button>
         <Menu
           contentOptions={{

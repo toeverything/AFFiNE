@@ -19,18 +19,16 @@ import {
   PageIcon,
   TocIcon,
 } from '@blocksuite/icons/rc';
-import { useLiveData, useService } from '@toeverything/infra';
+import { DocService, useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 
 import * as styles from './page-header-more-button.css';
 import { DocInfoSheet } from './sheets/doc-info';
 
-type PageMenuProps = {
-  docId: string;
-};
-
-export const PageHeaderMenuButton = ({ docId }: PageMenuProps) => {
+export const PageHeaderMenuButton = () => {
   const t = useI18n();
+
+  const docId = useService(DocService).doc.id;
 
   const editorService = useService(EditorService);
   const editorContainer = useLiveData(editorService.editor.editorContainer$);
