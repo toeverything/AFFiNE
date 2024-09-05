@@ -6,17 +6,19 @@ import { AppContainer, MainContainer } from '@affine/core/components/workspace';
 import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
 import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
 import { AuthService } from '@affine/core/modules/cloud';
-import { type Editor, EditorsService } from '@affine/core/modules/editor';
+import {
+  type Editor,
+  EditorService,
+  EditorsService,
+} from '@affine/core/modules/editor';
 import { PeekViewManagerModal } from '@affine/core/modules/peek-view';
 import { ShareReaderService } from '@affine/core/modules/share-doc';
 import { CloudBlobStorage } from '@affine/core/modules/workspace-engine';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { type DocMode, DocModes } from '@blocksuite/blocks';
-import { noop } from '@blocksuite/global/utils';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import type { Doc, Workspace } from '@toeverything/infra';
 import {
   DocsService,
@@ -105,7 +107,6 @@ const SharePageInner = ({
   docBinary: Uint8Array;
   publishMode?: DocMode;
 }) => {
-  const t = useI18n();
   const workspacesService = useService(WorkspacesService);
 
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -179,15 +180,24 @@ const SharePageInner = ({
   const pageTitle = useLiveData(page?.title$);
 
   usePageDocumentTitle(pageTitle);
-  const authService = useService(AuthService);
-  const loginStatus = useLiveData(authService.session.status$);
 
   const onEditorLoad = useCallback(
-    (_: BlockSuiteDoc, editor: AffineEditorContainer) => {
-      setActiveBlocksuiteEditor(editor);
-      return noop;
+    (editorContainer: AffineEditorContainer) => {
+      setActiveBlocksuiteEditor(editorContainer);
+      if (!editor) {
+        return;
+      }
+      editor.setEditorContainer(editorContainer);
+      const unbind = editor.bindEditorContainer(
+        editorContainer,
+        (editorContainer as any).docTitle
+      );
+      return () => {
+        unbind();
+        editor.setEditorContainer(null);
+      };
     },
-    [setActiveBlocksuiteEditor]
+    [editor, setActiveBlocksuiteEditor]
   );
 
   if (!workspace || !page || !editor) {
@@ -214,30 +224,12 @@ const SharePageInner = ({
                         styles.editorContainer
                       )}
                     >
-                      <PageDetailEditor
-                        isPublic
-                        publishMode={publishMode}
-                        docCollection={page.blockSuiteDoc.collection}
-                        pageId={page.id}
-                        onLoad={onEditorLoad}
-                      />
+                      <PageDetailEditor onLoad={onEditorLoad} />
                       {publishMode === 'page' ? <ShareFooter /> : null}
                     </Scrollable.Viewport>
                     <Scrollable.Scrollbar />
                   </Scrollable.Root>
-                  {loginStatus !== 'authenticated' ? (
-                    <a
-                      href="https://affine.pro"
-                      target="_blank"
-                      className={styles.link}
-                      rel="noreferrer"
-                    >
-                      <span className={styles.linkText}>
-                        {t['com.affine.share-page.footer.built-with']()}
-                      </span>
-                      <Logo1Icon fontSize={20} />
-                    </a>
-                  ) : null}
+                  <SharePageFooter />
                 </div>
               </div>
             </MainContainer>
@@ -246,5 +238,30 @@ const SharePageInner = ({
         </FrameworkScope>
       </FrameworkScope>
     </FrameworkScope>
+  );
+};
+
+const SharePageFooter = () => {
+  const t = useI18n();
+  const editorService = useService(EditorService);
+  const isPresent = useLiveData(editorService.editor.isPresenting$);
+  const authService = useService(AuthService);
+  const loginStatus = useLiveData(authService.session.status$);
+
+  if (isPresent || loginStatus === 'authenticated') {
+    return null;
+  }
+  return (
+    <a
+      href="https://affine.pro"
+      target="_blank"
+      className={styles.link}
+      rel="noreferrer"
+    >
+      <span className={styles.linkText}>
+        {t['com.affine.share-page.footer.built-with']()}
+      </span>
+      <Logo1Icon fontSize={20} />
+    </a>
   );
 };

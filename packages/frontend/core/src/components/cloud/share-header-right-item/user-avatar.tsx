@@ -79,9 +79,7 @@ export const PublishPageUserAvatar = () => {
     <Menu
       items={menuItem}
       contentOptions={{
-        style: {
-          transform: 'translateX(-16px)',
-        },
+        align: 'end',
       }}
     >
       <div className={styles.iconWrapper} data-testid="share-page-user-avatar">

@@ -11,22 +11,12 @@ import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import type { PageRootService } from '@blocksuite/blocks';
-import {
-  BookmarkBlockService,
-  customImageProxyMiddleware,
-  EmbedGithubBlockService,
-  EmbedLoomBlockService,
-  EmbedYoutubeBlockService,
-  ImageBlockService,
-} from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import { AiIcon, FrameIcon, TocIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { type AffineEditorContainer } from '@blocksuite/presets';
-import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
   DocService,
   FrameworkScope,
-  globalBlockSuiteSchema,
   GlobalContextService,
   useLiveData,
   useService,
@@ -36,7 +26,6 @@ import {
 import clsx from 'clsx';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import type { Map as YMap } from 'yjs';
 
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { GlobalPageHistoryModal } from '../../../components/affine/page-history-modal';
@@ -94,7 +83,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const activeSidebarTab = useLiveData(view.activeSidebarTab$);
 
   const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
-  const { openPage, jumpToPageBlock, jumpToTag } = useNavigateHelper();
+  const { openPage, jumpToPageBlock } = useNavigateHelper();
   const editorContainer = useLiveData(editor.editorContainer$);
 
   const isSideBarOpen = useLiveData(workbench.sidebarOpen$);
@@ -171,49 +160,10 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   usePageDocumentTitle(title);
 
   const onLoad = useCallback(
-    (bsPage: BlockSuiteDoc, editorContainer: AffineEditorContainer) => {
-      try {
-        // todo(joooye34): improve the following migration code
-        const surfaceBlock = bsPage.getBlockByFlavour('affine:surface')[0];
-        // hotfix for old page
-        if (
-          surfaceBlock &&
-          (surfaceBlock.yBlock.get('prop:elements') as YMap<any>).get(
-            'type'
-          ) !== '$blocksuite:internal:native$'
-        ) {
-          globalBlockSuiteSchema.upgradeDoc(
-            0,
-            {
-              'affine:surface': 3,
-            },
-            bsPage.spaceDoc
-          );
-        }
-      } catch {}
-
+    (editorContainer: AffineEditorContainer) => {
       // blocksuite editor host
       const editorHost = editorContainer.host;
 
-      // provide image proxy endpoint to blocksuite
-      editorHost?.std.clipboard.use(
-        customImageProxyMiddleware(runtimeConfig.imageProxyUrl)
-      );
-      ImageBlockService.setImageProxyURL(runtimeConfig.imageProxyUrl);
-
-      // provide link preview endpoint to blocksuite
-      BookmarkBlockService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
-      EmbedGithubBlockService.setLinkPreviewEndpoint(
-        runtimeConfig.linkPreviewUrl
-      );
-      EmbedYoutubeBlockService.setLinkPreviewEndpoint(
-        runtimeConfig.linkPreviewUrl
-      );
-      EmbedLoomBlockService.setLinkPreviewEndpoint(
-        runtimeConfig.linkPreviewUrl
-      );
-
-      // provide page mode and updated date to blocksuite
       const pageService =
         editorHost?.std.getService<PageRootService>('affine:page');
       const disposable = new DisposableGroup();
@@ -234,27 +184,21 @@ const DetailPageImpl = memo(function DetailPageImpl() {
             return openPage(docCollection.id, pageId);
           })
         );
-        disposable.add(
-          pageService.slots.tagClicked.on(({ tagId }) => {
-            jumpToTag(workspace.id, tagId);
-          })
-        );
       }
 
       editor.setEditorContainer(editorContainer);
+      const unbind = editor.bindEditorContainer(
+        editorContainer,
+        (editorContainer as any).docTitle // set from proxy
+      );
 
       return () => {
+        unbind();
+        editor.setEditorContainer(null);
         disposable.dispose();
       };
     },
-    [
-      editor,
-      jumpToPageBlock,
-      docCollection.id,
-      openPage,
-      jumpToTag,
-      workspace.id,
-    ]
+    [editor, openPage, docCollection.id, jumpToPageBlock]
   );
 
   const [refCallback, hasScrollTop] = useHasScrollTop();
@@ -288,11 +232,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                   styles.editorContainer
                 )}
               >
-                <PageDetailEditor
-                  pageId={doc.id}
-                  onLoad={onLoad}
-                  docCollection={docCollection}
-                />
+                <PageDetailEditor onLoad={onLoad} />
               </Scrollable.Viewport>
               <Scrollable.Scrollbar
                 className={clsx({

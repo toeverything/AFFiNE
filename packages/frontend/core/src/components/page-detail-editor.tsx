@@ -1,15 +1,11 @@
 import './page-detail-editor.css';
 
-import { useDocCollectionPage } from '@affine/core/hooks/use-block-suite-workspace-page';
-import type { DocMode } from '@blocksuite/blocks';
-import { DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import type { CSSProperties } from 'react';
-import { memo, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { EditorService } from '../modules/editor';
 import {
@@ -25,22 +21,14 @@ declare global {
 }
 
 export type OnLoadEditor = (
-  page: BlockSuiteDoc,
   editor: AffineEditorContainer
-) => () => void;
+) => (() => void) | void;
 
 export interface PageDetailEditorProps {
-  isPublic?: boolean;
-  publishMode?: DocMode;
-  docCollection: DocCollection;
-  pageId: string;
   onLoad?: OnLoadEditor;
 }
 
-const PageDetailEditorMain = memo(function PageDetailEditorMain({
-  page,
-  onLoad,
-}: PageDetailEditorProps & { page: BlockSuiteDoc }) {
+export const PageDetailEditor = ({ onLoad }: PageDetailEditorProps) => {
   const editor = useService(EditorService).editor;
   const mode = useLiveData(editor.mode$);
 
@@ -68,30 +56,6 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
       : fontStyle.value;
   }, [settings.customFontFamily, settings.fontFamily]);
 
-  const onLoadEditor = useCallback(
-    (editor: AffineEditorContainer) => {
-      // debug current detail editor
-      globalThis.currentEditor = editor;
-      const disposableGroup = new DisposableGroup();
-      localStorage.setItem('last_page_id', page.id);
-
-      if (onLoad) {
-        // Invoke onLoad once the editor has been mounted to the DOM.
-        editor.updateComplete
-          .then(() => editor.host?.updateComplete)
-          .then(() => {
-            disposableGroup.add(onLoad(page, editor));
-          })
-          .catch(console.error);
-      }
-
-      return () => {
-        disposableGroup.dispose();
-      };
-    },
-    [onLoad, page]
-  );
-
   return (
     <Editor
       className={clsx(styles.editor, {
@@ -104,18 +68,9 @@ const PageDetailEditorMain = memo(function PageDetailEditorMain({
         } as CSSProperties
       }
       mode={mode}
-      page={page}
+      page={editor.doc.blockSuiteDoc}
       shared={isSharedMode}
-      onLoadEditor={onLoadEditor}
+      onEditorReady={onLoad}
     />
   );
-});
-
-export const PageDetailEditor = (props: PageDetailEditorProps) => {
-  const { docCollection, pageId } = props;
-  const page = useDocCollectionPage(docCollection, pageId);
-  if (!page) {
-    return null;
-  }
-  return <PageDetailEditorMain {...props} page={page} />;
 };

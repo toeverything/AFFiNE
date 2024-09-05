@@ -1,4 +1,3 @@
-import { EditorService } from '@affine/core/modules/editor';
 import type { ReferenceInfo } from '@blocksuite/affine-model';
 import type { DocMode } from '@blocksuite/blocks';
 import type {
@@ -8,13 +7,12 @@ import type {
   PageEditor,
 } from '@blocksuite/presets';
 import { type Doc, Slot } from '@blocksuite/store';
-import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
 import {
   forwardRef,
   useCallback,
-  useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -60,7 +58,6 @@ export const BlocksuiteEditorContainer = forwardRef<
   { page, mode, className, style, shared },
   ref
 ) {
-  const editorService = useService(EditorService);
   const rootRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<PageEditor>(null);
   const docTitleRef = useRef<DocTitle>(null);
@@ -112,6 +109,9 @@ export const BlocksuiteEditorContainer = forwardRef<
       get doc() {
         return page;
       },
+      get docTitle() {
+        return docTitleRef.current;
+      },
       get host() {
         return mode === 'page'
           ? docRef.current?.host
@@ -159,35 +159,9 @@ export const BlocksuiteEditorContainer = forwardRef<
     return proxy;
   }, [mode, page, slots]);
 
-  useEffect(() => {
-    if (ref) {
-      if (typeof ref === 'function') {
-        ref(affineEditorContainerProxy);
-      } else {
-        ref.current = affineEditorContainerProxy;
-      }
-    }
-  }, [affineEditorContainerProxy, ref]);
-
-  useEffect(() => {
-    let canceled = false;
-    let unsubscribe: () => void = () => {};
-
-    affineEditorContainerProxy.updateComplete
-      .then(() => {
-        if (!canceled) {
-          unsubscribe = editorService.editor.bindEditorContainer(
-            affineEditorContainerProxy,
-            docTitleRef.current as DocTitle
-          );
-        }
-      })
-      .catch(console.error);
-    return () => {
-      canceled = true;
-      unsubscribe();
-    };
-  }, [affineEditorContainerProxy, mode, editorService]);
+  useImperativeHandle(ref, () => affineEditorContainerProxy, [
+    affineEditorContainerProxy,
+  ]);
 
   const handleClickPageModeBlank = useCallback(() => {
     affineEditorContainerProxy.host?.std.command.exec(

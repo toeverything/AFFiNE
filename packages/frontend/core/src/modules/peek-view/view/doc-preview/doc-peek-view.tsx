@@ -4,7 +4,6 @@ import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { EditorService } from '@affine/core/modules/editor';
 import { PageNotFound } from '@affine/core/pages/404';
 import { DebugLogger } from '@affine/debug';
@@ -18,7 +17,7 @@ import {
   useServices,
 } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { WorkbenchService } from '../../../workbench';
 import { PeekViewService } from '../../services/peek-view';
@@ -75,26 +74,48 @@ function DocPeekPreviewEditor({
   const doc = editor.doc;
   const workspace = editor.doc.workspace;
   const mode = useLiveData(editor.mode$);
-  const { jumpToTag } = useNavigateHelper();
   const workbench = useService(WorkbenchService).workbench;
   const peekView = useService(PeekViewService).peekView;
-  const [editorElement, setEditorElement] =
-    useState<AffineEditorContainer | null>(null);
+  const editorElement = useLiveData(editor.editorContainer$);
 
-  const onRef = (editor: AffineEditorContainer) => {
-    setEditorElement(editor);
-  };
+  const handleOnEditorReady = useCallback(
+    (editorContainer: AffineEditorContainer) => {
+      if (!editorContainer.host) {
+        return;
+      }
+      const disposableGroup = new DisposableGroup();
+      const rootService = editorContainer.host.std.getService('affine:page');
+      // doc change event inside peek view should be handled by peek view
+      disposableGroup.add(
+        rootService.slots.docLinkClicked.on(options => {
+          peekView
+            .open({
+              type: 'doc',
+              docId: options.pageId,
+              ...options.params,
+            })
+            .catch(console.error);
+        })
+      );
 
-  useEffect(() => {
-    editorElement?.updateComplete
-      .then(() => {
-        if (mode === 'edgeless') {
-          fitViewport(editorElement, xywh);
-        }
-      })
-      .catch(console.error);
-    return;
-  }, [editorElement, mode, xywh]);
+      editor.setEditorContainer(editorContainer);
+      const unbind = editor.bindEditorContainer(
+        editorContainer,
+        (editorContainer as any).title
+      );
+
+      if (mode === 'edgeless') {
+        fitViewport(editorContainer, xywh);
+      }
+
+      return () => {
+        unbind();
+        editor.setEditorContainer(null);
+        disposableGroup.dispose();
+      };
+    },
+    [editor, mode, peekView, xywh]
+  );
 
   useEffect(() => {
     const disposable = AIProvider.slots.requestOpenWithChat.on(() => {
@@ -110,43 +131,6 @@ function DocPeekPreviewEditor({
     };
   }, [doc, peekView, workbench, workspace.id]);
 
-  useEffect(() => {
-    const disposableGroup = new DisposableGroup();
-    if (editorElement) {
-      editorElement.updateComplete
-        .then(() => {
-          if (!editorElement.host) {
-            return;
-          }
-
-          const rootService = editorElement.host.std.getService('affine:page');
-          // doc change event inside peek view should be handled by peek view
-          disposableGroup.add(
-            rootService.slots.docLinkClicked.on(options => {
-              peekView
-                .open({
-                  type: 'doc',
-                  docId: options.pageId,
-                  ...options.params,
-                })
-                .catch(console.error);
-            })
-          );
-          // TODO(@Peng): no tag peek view yet
-          disposableGroup.add(
-            rootService.slots.tagClicked.on(({ tagId }) => {
-              jumpToTag(workspace.id, tagId);
-              peekView.close();
-            })
-          );
-        })
-        .catch(console.error);
-    }
-    return () => {
-      disposableGroup.dispose();
-    };
-  }, [editorElement, jumpToTag, peekView, workspace.id]);
-
   const openOutlinePanel = useCallback(() => {
     workbench.openDoc(doc.id);
     workbench.openSidebar();
@@ -161,10 +145,10 @@ function DocPeekPreviewEditor({
           className={clsx('affine-page-viewport', styles.affineDocViewport)}
         >
           <BlockSuiteEditor
-            ref={onRef}
             className={styles.editor}
             mode={mode}
             page={doc.blockSuiteDoc}
+            onEditorReady={handleOnEditorReady}
           />
           <EditorOutlineViewer
             editor={editorElement}

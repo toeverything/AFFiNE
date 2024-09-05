@@ -1,4 +1,4 @@
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode, EdgelessRootService } from '@blocksuite/blocks';
 import type { InlineEditor } from '@blocksuite/inline/inline-editor';
 import type { AffineEditorContainer, DocTitle } from '@blocksuite/presets';
 import type { DocService, WorkspaceService } from '@toeverything/infra';
@@ -22,6 +22,20 @@ export class Editor extends Entity {
     this.workspaceService.workspace.openOptions.isSharedMode;
 
   readonly editorContainer$ = new LiveData<AffineEditorContainer | null>(null);
+
+  isPresenting$ = new LiveData<boolean>(false);
+
+  togglePresentation() {
+    const edgelessRootService =
+      this.editorContainer$.value?.host?.std.getService(
+        'affine:page'
+      ) as EdgelessRootService;
+    if (!edgelessRootService) return;
+
+    edgelessRootService.tool.setEdgelessTool({
+      type: !this.isPresenting$.value ? 'frameNavigator' : 'default',
+    });
+  }
 
   setSelector(selector: EditorSelector | undefined) {
     this.selector$.next(selector);
@@ -145,8 +159,10 @@ export class Editor extends Entity {
 
   bindEditorContainer(
     editorContainer: AffineEditorContainer,
-    docTitle: DocTitle
+    docTitle: DocTitle | null
   ) {
+    const unsubs: (() => void)[] = [];
+
     const focusAt$ = LiveData.computed(get => {
       const selector = get(this.selector$);
       const id =
@@ -159,26 +175,49 @@ export class Editor extends Entity {
         return null;
       }
     });
-    if (focusAt$.value === null) {
+    if (focusAt$.value === null && docTitle) {
       const title = docTitle.querySelector<
         HTMLElement & { inlineEditor: InlineEditor }
       >('rich-text');
       title?.inlineEditor.focusEnd();
     }
-    const unsubscribe = focusAt$
-      .distinctUntilChanged(
-        (a, b) => a?.id === b?.id && a?.refreshKey === b?.refreshKey
-      )
-      .subscribe(params => {
-        if (params?.id) {
-          const std = editorContainer.host?.std;
-          if (std) {
-            scrollAnchoring(std, this.mode$.value, params.id);
+    unsubs.push(
+      focusAt$
+        .distinctUntilChanged(
+          (a, b) => a?.id === b?.id && a?.refreshKey === b?.refreshKey
+        )
+        .subscribe(params => {
+          if (params?.id) {
+            const std = editorContainer.host?.std;
+            if (std) {
+              scrollAnchoring(std, this.mode$.value, params.id);
+            }
           }
-        }
-      });
+        }).unsubscribe
+    );
+
+    const edgelessPage = editorContainer.host?.querySelector(
+      'affine-edgeless-root'
+    );
+    if (!edgelessPage) {
+      this.isPresenting$.next(false);
+    } else {
+      this.isPresenting$.next(
+        edgelessPage.edgelessTool.type === 'frameNavigator'
+      );
+      unsubs.push(
+        edgelessPage.slots.edgelessToolUpdated.on(() => {
+          this.isPresenting$.next(
+            edgelessPage.edgelessTool.type === 'frameNavigator'
+          );
+        }).dispose
+      );
+    }
+
     return () => {
-      unsubscribe.unsubscribe();
+      for (const unsub of unsubs) {
+        unsub();
+      }
     };
   }
 
