@@ -185,10 +185,12 @@ const DetailPageImpl = () => {
         >
           {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
           <AffineErrorBoundary key={doc.id}>
-            <JournalIconButton
-              docId={doc.id}
-              className={styles.journalIconButton}
-            />
+            {mode === 'page' && (
+              <JournalIconButton
+                docId={doc.id}
+                className={styles.journalIconButton}
+              />
+            )}
             <PageDetailEditor
               pageId={doc.id}
               onLoad={onLoad}
