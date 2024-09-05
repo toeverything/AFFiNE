@@ -91,7 +91,12 @@ export const router = _createBrowserRouter(
             },
             {
               path: 'settings',
-              lazy: () => import('./modules/settings'),
+              children: [
+                {
+                  path: '*',
+                  lazy: () => import('./modules/settings'),
+                },
+              ],
             },
           ],
         },
