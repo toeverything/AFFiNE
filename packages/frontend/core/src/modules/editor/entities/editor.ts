@@ -181,20 +181,20 @@ export class Editor extends Entity {
       >('rich-text');
       title?.inlineEditor.focusEnd();
     }
-    unsubs.push(
-      focusAt$
-        .distinctUntilChanged(
-          (a, b) => a?.id === b?.id && a?.refreshKey === b?.refreshKey
-        )
-        .subscribe(params => {
-          if (params?.id) {
-            const std = editorContainer.host?.std;
-            if (std) {
-              scrollAnchoring(std, this.mode$.value, params.id);
-            }
+
+    const subscription = focusAt$
+      .distinctUntilChanged(
+        (a, b) => a?.id === b?.id && a?.refreshKey === b?.refreshKey
+      )
+      .subscribe(params => {
+        if (params?.id) {
+          const std = editorContainer.host?.std;
+          if (std) {
+            scrollAnchoring(std, this.mode$.value, params.id);
           }
-        }).unsubscribe
-    );
+        }
+      });
+    unsubs.push(subscription.unsubscribe.bind(subscription));
 
     const edgelessPage = editorContainer.host?.querySelector(
       'affine-edgeless-root'
@@ -205,13 +205,13 @@ export class Editor extends Entity {
       this.isPresenting$.next(
         edgelessPage.edgelessTool.type === 'frameNavigator'
       );
-      unsubs.push(
-        edgelessPage.slots.edgelessToolUpdated.on(() => {
-          this.isPresenting$.next(
-            edgelessPage.edgelessTool.type === 'frameNavigator'
-          );
-        }).dispose
-      );
+
+      const disposable = edgelessPage.slots.edgelessToolUpdated.on(() => {
+        this.isPresenting$.next(
+          edgelessPage.edgelessTool.type === 'frameNavigator'
+        );
+      });
+      unsubs.push(disposable.dispose.bind(disposable));
     }
 
     return () => {
