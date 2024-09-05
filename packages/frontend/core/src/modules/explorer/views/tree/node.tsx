@@ -138,19 +138,21 @@ export const ExplorerTreeNode = ({
     AffineDNDData & { draggable: { __cid: string } }
   >(
     () => ({
+      canDrag: () => !mobile,
       data: { ...dndData?.draggable, __cid: cid },
       dragPreviewPosition: 'pointer-outside',
     }),
-    [cid, dndData]
+    [cid, dndData, mobile]
   );
   const handleCanDrop = useMemo<DropTargetOptions<AffineDNDData>['canDrop']>(
     () => args => {
+      if (mobile) return false;
       if (!reorderable && args.treeInstruction?.type !== 'make-child') {
         return false;
       }
       return (typeof canDrop === 'function' ? canDrop(args) : canDrop) ?? true;
     },
-    [canDrop, reorderable]
+    [canDrop, mobile, reorderable]
   );
   const {
     dropTargetRef,
@@ -347,33 +349,35 @@ export const ExplorerTreeNode = ({
         </div>
 
         {postfix}
-        <div
-          className={styles.postfix}
-          onClick={e => {
-            // prevent jump to page
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-        >
-          {inlineOperations.map(({ view }, index) => (
-            <Fragment key={index}>{view}</Fragment>
-          ))}
-          {menuOperations.length > 0 && (
-            <Menu
-              items={menuOperations.map(({ view }, index) => (
-                <Fragment key={index}>{view}</Fragment>
-              ))}
-            >
-              <IconButton
-                size="16"
-                data-testid="explorer-tree-node-operation-button"
-                style={{ marginLeft: 4 }}
+        {mobile ? null : (
+          <div
+            className={styles.postfix}
+            onClick={e => {
+              // prevent jump to page
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+          >
+            {inlineOperations.map(({ view }, index) => (
+              <Fragment key={index}>{view}</Fragment>
+            ))}
+            {menuOperations.length > 0 && (
+              <Menu
+                items={menuOperations.map(({ view }, index) => (
+                  <Fragment key={index}>{view}</Fragment>
+                ))}
               >
-                <MoreHorizontalIcon />
-              </IconButton>
-            </Menu>
-          )}
-        </div>
+                <IconButton
+                  size="16"
+                  data-testid="explorer-tree-node-operation-button"
+                  style={{ marginLeft: 4 }}
+                >
+                  <MoreHorizontalIcon />
+                </IconButton>
+              </Menu>
+            )}
+          </div>
+        )}
       </div>
 
       {renameable && (

@@ -78,7 +78,7 @@ export const CollapsibleSection = ({
         ref={headerRef}
         className={clsx(header, headerClassName)}
       >
-        {mobile ? null : actions}
+        {actions}
       </CategoryDivider>
       <Collapsible.Content
         data-testid="collapsible-section-content"

@@ -73,10 +73,7 @@ export const mobileRoot = style([
     padding: '0 16px',
     selectors: {
       '&[data-collapsible="true"]:hover': {
-        backgroundColor: 'transparent',
-      },
-      '&[data-collapsible="true"]:active': {
-        backgroundColor: cssVarV2('layer/background/hoverOverlay'),
+        backgroundColor: 'none',
       },
     },
   },

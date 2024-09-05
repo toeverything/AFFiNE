@@ -189,7 +189,7 @@ export const mobileItemRoot = style([
     gap: 12,
     selectors: {
       '&:hover': {
-        background: 'transparent',
+        background: 'none',
       },
       '&:active': {
         background: cssVar('hoverColor'),

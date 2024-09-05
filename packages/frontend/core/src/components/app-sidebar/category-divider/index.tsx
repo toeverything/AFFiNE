@@ -53,9 +53,11 @@ export const CategoryDivider = forwardRef(
             />
           ) : null}
         </div>
-        <div className={styles.actions} onClick={e => e.stopPropagation()}>
-          {children}
-        </div>
+        {mobile ? null : (
+          <div className={styles.actions} onClick={e => e.stopPropagation()}>
+            {children}
+          </div>
+        )}
       </div>
     );
   }
