@@ -3,6 +3,7 @@ import { DocsService, initEmptyPage, useService } from '@toeverything/infra';
 import dayjs from 'dayjs';
 import { useCallback, useMemo } from 'react';
 
+import { track } from '../mixpanel';
 import { WorkbenchService } from '../modules/workbench';
 import type { DocCollection } from '../shared';
 import { useCurrentWorkspacePropertiesAdapter } from './use-affine-adapter';
@@ -163,6 +164,9 @@ export const useJournalRouteHelper = (docCollection: DocCollection) => {
       const page = getJournalByDate(maybeDate);
       workbench.openDoc(page.id, {
         at: newTab ? 'new-tab' : 'active',
+      });
+      track.$.navigationPanel.journal.navigate({
+        to: 'journal',
       });
       return page.id;
     },

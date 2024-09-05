@@ -1,5 +1,6 @@
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useJournalHelper } from '@affine/core/hooks/use-journal';
+import { track } from '@affine/core/mixpanel';
 import {
   PeekViewService,
   useInsidePeekView,
@@ -123,9 +124,16 @@ export function AffinePageReference({
 
   const peekView = useService(PeekViewService).peekView;
   const isInPeekView = useInsidePeekView();
+  const isJournal = journalHelper.isPageJournal(pageId);
 
   const onClick = useCallback(
     (e: React.MouseEvent) => {
+      if (isJournal) {
+        track.doc.editor.pageRef.navigate({
+          to: 'journal',
+        });
+      }
+
       if (e.shiftKey && ref.current) {
         e.preventDefault();
         e.stopPropagation();
@@ -141,7 +149,7 @@ export function AffinePageReference({
 
       return;
     },
-    [isInPeekView, peekView]
+    [isInPeekView, isJournal, peekView]
   );
 
   const query = useMemo(() => {

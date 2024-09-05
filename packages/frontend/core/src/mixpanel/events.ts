@@ -221,6 +221,7 @@ const PageEvents = {
         'openSettings',
       ],
       profileAndBadge: ['openSettings'],
+      journal: ['navigate'],
     },
     aiOnboarding: {
       dialog: ['viewPlans'],
@@ -263,6 +264,7 @@ const PageEvents = {
       slashMenu: ['linkDoc', 'createDoc'],
       atMenu: ['linkDoc'],
       formatToolbar: ['bold'],
+      pageRef: ['navigate'],
     },
     inlineDocInfo: {
       $: ['toggle'],
