@@ -12,6 +12,7 @@ import clsx from 'clsx';
 import type { CSSProperties, MouseEvent } from 'react';
 import { forwardRef, useCallback, useEffect, useState } from 'react';
 
+import { startScopedViewTransition } from '../../utils';
 import type { IconButtonProps } from '../button';
 import { IconButton } from '../button';
 import * as styles from './styles.css';
@@ -86,21 +87,19 @@ class ModalTransitionContainer extends HTMLElement {
     }
 
     this.animationFrame = requestAnimationFrame(() => {
-      if (typeof document.startViewTransition === 'function') {
-        const nodes = this.pendingTransitionNodes;
+      const nodes = this.pendingTransitionNodes;
+      nodes.forEach(child => {
+        if (child instanceof HTMLElement) {
+          child.classList.add('vt-active');
+        }
+      });
+      startScopedViewTransition(styles.modalVTScope, () => {
         nodes.forEach(child => {
-          if (child instanceof HTMLElement) {
-            child.classList.add('vt-active');
-          }
+          // eslint-disable-next-line unicorn/prefer-dom-node-remove
+          super.removeChild(child);
         });
-        document.startViewTransition(() => {
-          nodes.forEach(child => {
-            // eslint-disable-next-line unicorn/prefer-dom-node-remove
-            super.removeChild(child);
-          });
-        });
-        this.pendingTransitionNodes = [];
-      }
+      });
+      this.pendingTransitionNodes = [];
     });
   }
 }

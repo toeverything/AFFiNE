@@ -7,9 +7,13 @@ import {
   keyframes,
   style,
 } from '@vanilla-extract/css';
+
+import { vtScopeSelector } from '../../utils/view-transition';
 export const widthVar = createVar('widthVar');
 export const heightVar = createVar('heightVar');
 export const minHeightVar = createVar('minHeightVar');
+
+export const modalVTScope = generateIdentifier('modal');
 
 const overlayShow = keyframes({
   from: {
@@ -94,14 +98,14 @@ export const modalContentWrapper = style({
       animation: `${contentShowFadeScaleTop} 150ms cubic-bezier(0.42, 0, 0.58, 1)`,
       animationFillMode: 'forwards',
     },
-    '&.anim-fadeScaleTop.vt-active': {
+    [`${vtScopeSelector(modalVTScope)} &.anim-fadeScaleTop.vt-active`]: {
       viewTransitionName: modalContentViewTransitionNameFadeScaleTop,
     },
     '&.anim-slideBottom': {
       animation: `${contentShowSlideBottom} 0.23s ease`,
       animationFillMode: 'forwards',
     },
-    '&.anim-slideBottom.vt-active': {
+    [`${vtScopeSelector(modalVTScope)} &.anim-slideBottom.vt-active`]: {
       viewTransitionName: modalContentViewTransitionNameSlideBottom,
     },
   },

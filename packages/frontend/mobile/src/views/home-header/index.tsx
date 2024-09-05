@@ -1,4 +1,4 @@
-import { IconButton } from '@affine/component';
+import { IconButton, startScopedViewTransition } from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
@@ -9,6 +9,7 @@ import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
 import { SearchInput, WorkspaceSelector } from '../../components';
+import { searchVTScope } from '../../components/search-input/style.css';
 import { useGlobalEvent } from '../../hooks/use-global-events';
 import * as styles from './styles.css';
 
@@ -33,13 +34,8 @@ export const HomeHeader = () => {
   );
 
   const navSearch = useCallback(() => {
-    if (!document.startViewTransition) {
-      return workbench.open('/search');
-    }
-
-    document.startViewTransition(() => {
+    startScopedViewTransition(searchVTScope, () => {
       workbench.open('/search');
-      return new Promise(resolve => setTimeout(resolve, 150));
     });
   }, [workbench]);
 

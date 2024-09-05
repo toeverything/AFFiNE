@@ -9,8 +9,9 @@ let _resizeObserver: ResizeObserver | null = null;
 const elementsMap = new WeakMap<Element, Array<ObserveResize>>();
 
 // for debugging
-(window as any)._resizeObserverElementsMap = elementsMap;
-
+if (typeof window !== 'undefined') {
+  (window as any)._resizeObserverElementsMap = elementsMap;
+}
 /**
  * @internal get or initialize the ResizeObserver instance
  */

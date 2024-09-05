@@ -1,10 +1,18 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { style } from '@vanilla-extract/css';
+import { generateIdentifier, style } from '@vanilla-extract/css';
+
+export const searchVTName = generateIdentifier('mobile-search-input');
+export const searchVTScope = generateIdentifier('mobile-search');
 
 export const wrapper = style({
   position: 'relative',
   backgroundColor: cssVarV2('layer/background/primary'),
-  viewTransitionName: 'mobile-search-input',
+
+  selectors: {
+    [`[data-${searchVTScope}] &`]: {
+      viewTransitionName: searchVTName,
+    },
+  },
 });
 
 export const prefixIcon = style({
