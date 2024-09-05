@@ -70,7 +70,7 @@ export const WorkspaceLayout = ({
   if (!isRootDocReady) {
     return (
       <FrameworkScope scope={workspace.scope}>
-        <AppFallback key="workspaceLoading" />
+        <AppFallback />
       </FrameworkScope>
     );
   }

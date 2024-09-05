@@ -29,7 +29,6 @@ import { useSetAtom } from 'jotai';
 import type { MouseEvent, ReactElement } from 'react';
 import { useCallback, useEffect } from 'react';
 
-import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
 import { WorkbenchService } from '../../modules/workbench';
 import {
   AddPageButton,
@@ -84,7 +83,6 @@ export const RootAppSidebar = (): ReactElement => {
       CMDKQuickSearchService,
     });
   const currentWorkspace = workspaceService.workspace;
-  const { appSettings } = useAppSettingHelper();
   const docCollection = currentWorkspace.docCollection;
   const t = useI18n();
   const workbench = workbenchService.workbench;
@@ -141,10 +139,7 @@ export const RootAppSidebar = (): ReactElement => {
   }, [setOpenSettingModalAtom]);
 
   return (
-    <AppSidebar
-      clientBorder={appSettings.clientBorder}
-      translucentUI={appSettings.enableBlurBackground}
-    >
+    <AppSidebar>
       <SidebarContainer>
         <div className={workspaceAndUserWrapper}>
           <div className={workspaceWrapper}>

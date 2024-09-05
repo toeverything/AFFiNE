@@ -1,11 +1,11 @@
-import type { ReactElement } from 'react';
+import type { PropsWithChildren, ReactElement } from 'react';
 
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
 import { AppSidebarFallback } from '../app-sidebar';
 import type { WorkspaceRootProps } from '../workspace';
 import {
   AppContainer as AppContainerWithoutSettings,
-  MainContainer,
+  MainContainerFallback,
 } from '../workspace';
 
 export const AppContainer = (props: WorkspaceRootProps) => {
@@ -24,11 +24,16 @@ export const AppContainer = (props: WorkspaceRootProps) => {
   );
 };
 
-export const AppFallback = (): ReactElement => {
+export const AppFallback = ({
+  className,
+  children,
+}: PropsWithChildren<{
+  className?: string;
+}>): ReactElement => {
   return (
-    <AppContainer>
+    <AppContainer className={className}>
       <AppSidebarFallback />
-      <MainContainer />
+      <MainContainerFallback>{children}</MainContainerFallback>
     </AppContainer>
   );
 };

@@ -115,7 +115,7 @@ export function App() {
             <DebugProvider>
               <GlobalLoading />
               <RouterProvider
-                fallbackElement={<AppFallback key="RouterFallback" />}
+                fallbackElement={<AppFallback />}
                 router={router}
                 future={future}
               />

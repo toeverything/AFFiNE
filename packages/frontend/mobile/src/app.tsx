@@ -81,7 +81,7 @@ export function App() {
         <AffineContext store={getCurrentStore()}>
           <Telemetry />
           <RouterProvider
-            fallbackElement={<AppFallback key="RouterFallback" />}
+            fallbackElement={<AppFallback />}
             router={router}
             future={future}
           />
