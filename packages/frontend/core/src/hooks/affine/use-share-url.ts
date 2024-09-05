@@ -2,11 +2,10 @@ import { notify } from '@affine/component';
 import { track } from '@affine/core/mixpanel';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
 import { useI18n } from '@affine/i18n';
-import type { BaseSelection } from '@blocksuite/block-std';
-import type { DocMode } from '@blocksuite/blocks';
+import { type EditorHost } from '@blocksuite/block-std';
+import { GfxBlockElementModel } from '@blocksuite/block-std/gfx';
+import type { DocMode, EdgelessRootService } from '@blocksuite/blocks';
 import { useCallback } from 'react';
-
-import { useActiveBlocksuiteEditor } from '../use-block-suite-editor';
 
 export type UseSharingUrl = {
   workspaceId: string;
@@ -18,7 +17,9 @@ export type UseSharingUrl = {
 };
 
 /**
- * to generate a url like https://app.affine.pro/workspace/workspaceId/docId?mode=DocMode?element=seletedBlockid#seletedBlockid
+ * To generate a url like
+ *
+ * https://app.affine.pro/workspace/workspaceId/docId?mode=DocMode&elementIds=seletedElementIds&blockIds=selectedBlockIds
  */
 export const generateUrl = ({
   workspaceId,
@@ -75,29 +76,72 @@ const getShareLinkType = ({
   }
 };
 
-const getSelectionIds = (selections?: BaseSelection[]) => {
-  if (!selections || selections.length === 0) {
-    return { blockIds: [], elementIds: [] };
-  }
+export const getSelectedNodes = (
+  host: EditorHost | null,
+  mode: DocMode = 'page'
+) => {
+  const std = host?.std;
   const blockIds: string[] = [];
   const elementIds: string[] = [];
-  // TODO(@JimmFly): handle multiple selections and elementIds
-  if (selections[0].type === 'block') {
-    blockIds.push(selections[0].blockId);
+  const result = { blockIds, elementIds };
+
+  if (!std) {
+    return result;
   }
-  return { blockIds, elementIds };
+
+  if (mode === 'edgeless') {
+    const service = std.getService<EdgelessRootService>('affine:page');
+    if (!service) return result;
+
+    for (const element of service.selection.selectedElements) {
+      if (element instanceof GfxBlockElementModel) {
+        blockIds.push(element.id);
+      } else {
+        elementIds.push(element.id);
+      }
+    }
+
+    return result;
+  }
+
+  const [success, ctx] = std.command
+    .chain()
+    .tryAll(chain => [
+      chain.getTextSelection(),
+      chain.getBlockSelections(),
+      chain.getImageSelections(),
+    ])
+    .getSelectedModels({
+      mode: 'highest',
+    })
+    .run();
+
+  if (!success) {
+    return result;
+  }
+
+  // should return an empty array if `to` of the range is null
+  if (
+    ctx.currentTextSelection &&
+    !ctx.currentTextSelection.to &&
+    ctx.currentTextSelection.from.length === 0
+  ) {
+    return result;
+  }
+
+  if (ctx.selectedModels?.length) {
+    blockIds.push(...ctx.selectedModels.map(model => model.id));
+    return result;
+  }
+
+  return result;
 };
 
 export const useSharingUrl = ({ workspaceId, pageId }: UseSharingUrl) => {
   const t = useI18n();
-  const [editor] = useActiveBlocksuiteEditor();
 
   const onClickCopyLink = useCallback(
-    (shareMode?: DocMode) => {
-      const selectManager = editor?.host?.selection;
-      const selections = selectManager?.value;
-      const { blockIds, elementIds } = getSelectionIds(selections);
-
+    (shareMode?: DocMode, blockIds?: string[], elementIds?: string[]) => {
       const sharingUrl = generateUrl({
         workspaceId,
         pageId,
@@ -130,8 +174,9 @@ export const useSharingUrl = ({ workspaceId, pageId }: UseSharingUrl) => {
         });
       }
     },
-    [editor, pageId, t, workspaceId]
+    [pageId, t, workspaceId]
   );
+
   return {
     onClickCopyLink,
   };
