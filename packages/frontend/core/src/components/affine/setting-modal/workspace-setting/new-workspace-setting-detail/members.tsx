@@ -162,15 +162,15 @@ export const CloudWorkspaceMembersPanel = () => {
   if (workspaceQuota === null) {
     if (isLoading) {
       return <MembersPanelFallback />;
-    }
-    if (error) {
+    } else {
       return (
         <span style={{ color: cssVar('errorColor') }}>
-          {UserFriendlyError.fromAnyError(error).message}
+          {error
+            ? UserFriendlyError.fromAnyError(error).message
+            : 'Failed to load members'}
         </span>
       );
     }
-    return; // never reach here
   }
 
   return (
@@ -261,6 +261,7 @@ const MemberList = ({
   const memberCount = useLiveData(membersService.members.memberCount$);
   const pageNum = useLiveData(membersService.members.pageNum$);
   const isLoading = useLiveData(membersService.members.isLoading$);
+  const error = useLiveData(membersService.members.error$);
   const pageMembers = useLiveData(membersService.members.pageMembers$);
 
   useEffect(() => {
@@ -280,17 +281,25 @@ const MemberList = ({
 
   return (
     <div className={style.memberList}>
-      {isLoading && pageMembers === undefined ? (
-        <MemberListFallback
-          memberCount={
-            memberCount
-              ? Math.max(
-                  memberCount - pageNum * membersService.members.PAGE_SIZE,
-                  1
-                )
-              : 1
-          }
-        />
+      {pageMembers === undefined ? (
+        isLoading ? (
+          <MemberListFallback
+            memberCount={
+              memberCount
+                ? Math.max(
+                    memberCount - pageNum * membersService.members.PAGE_SIZE,
+                    1
+                  )
+                : 1
+            }
+          />
+        ) : (
+          <span style={{ color: cssVar('errorColor') }}>
+            {error
+              ? UserFriendlyError.fromAnyError(error).message
+              : 'Failed to load members'}
+          </span>
+        )
       ) : (
         pageMembers?.map(member => (
           <MemberItem

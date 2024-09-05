@@ -10,31 +10,33 @@ import { Loading } from '@affine/component/ui/loading';
 import { getUpgradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
+import {
+  AuthService,
+  InvoicesService,
+  SubscriptionService,
+} from '@affine/core/modules/cloud';
 import type { InvoicesQuery } from '@affine/graphql';
 import {
   createCustomerPortalMutation,
-  getInvoicesCountQuery,
-  invoicesQuery,
   InvoiceStatus,
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
+  UserFriendlyError,
 } from '@affine/graphql';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
+import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   openSettingModalAtom,
   type PlansScrollAnchor,
 } from '../../../../../atoms';
 import { useMutation } from '../../../../../hooks/use-mutation';
-import { useQuery } from '../../../../../hooks/use-query';
-import { AuthService, SubscriptionService } from '../../../../../modules/cloud';
 import { popupWindow } from '../../../../../utils';
-import { SWRErrorBoundary } from '../../../../pure/swr-error-bundary';
 import { CancelAction, ResumeAction } from '../plans/actions';
 import { AICancel, AIResume, AISubscribe } from '../plans/ai/actions';
 import { BelieverCard } from '../plans/lifetime/believer-card';
@@ -47,8 +49,6 @@ enum DescriptionI18NKey {
   Yearly = 'com.affine.payment.billing-setting.current-plan.description.yearly',
   Lifetime = 'com.affine.payment.billing-setting.current-plan.description.lifetime',
 }
-
-const INVOICE_PAGE_SIZE = 12;
 
 const getMessageKey = (
   plan: SubscriptionPlan,
@@ -69,24 +69,14 @@ export const BillingSettings = () => {
         title={t['com.affine.payment.billing-setting.title']()}
         subtitle={t['com.affine.payment.billing-setting.subtitle']()}
       />
-      <SWRErrorBoundary FallbackComponent={SubscriptionSettingSkeleton}>
-        <Suspense fallback={<SubscriptionSettingSkeleton />}>
-          <SettingWrapper
-            title={t['com.affine.payment.billing-setting.information']()}
-          >
-            <SubscriptionSettings />
-          </SettingWrapper>
-        </Suspense>
-      </SWRErrorBoundary>
-      <SWRErrorBoundary FallbackComponent={BillingHistorySkeleton}>
-        <Suspense fallback={<BillingHistorySkeleton />}>
-          <SettingWrapper
-            title={t['com.affine.payment.billing-setting.history']()}
-          >
-            <BillingHistory />
-          </SettingWrapper>
-        </Suspense>
-      </SWRErrorBoundary>
+      <SettingWrapper
+        title={t['com.affine.payment.billing-setting.information']()}
+      >
+        <SubscriptionSettings />
+      </SettingWrapper>
+      <SettingWrapper title={t['com.affine.payment.billing-setting.history']()}>
+        <BillingHistory />
+      </SettingWrapper>
     </>
   );
 };
@@ -485,39 +475,60 @@ const CancelSubscription = ({ loading }: { loading?: boolean }) => {
 
 const BillingHistory = () => {
   const t = useI18n();
-  const { data: invoicesCountQueryResult } = useQuery({
-    query: getInvoicesCountQuery,
-  });
 
-  const [skip, setSkip] = useState(0);
+  const invoicesService = useService(InvoicesService);
+  const pageInvoices = useLiveData(invoicesService.invoices.pageInvoices$);
+  const invoiceCount = useLiveData(invoicesService.invoices.invoiceCount$);
+  const isLoading = useLiveData(invoicesService.invoices.isLoading$);
+  const error = useLiveData(invoicesService.invoices.error$);
+  const pageNum = useLiveData(invoicesService.invoices.pageNum$);
 
-  const { data: invoicesQueryResult } = useQuery({
-    query: invoicesQuery,
-    variables: { skip, take: INVOICE_PAGE_SIZE },
-  });
+  useEffect(() => {
+    invoicesService.invoices.revalidate();
+  }, [invoicesService]);
 
-  const invoices = invoicesQueryResult.currentUser?.invoices ?? [];
-  const invoiceCount = invoicesCountQueryResult.currentUser?.invoiceCount ?? 0;
+  const handlePageChange = useCallback(
+    (_: number, pageNum: number) => {
+      invoicesService.invoices.setPageNum(pageNum);
+      invoicesService.invoices.revalidate();
+    },
+    [invoicesService]
+  );
+
+  if (invoiceCount === undefined) {
+    if (isLoading) {
+      return <BillingHistorySkeleton />;
+    } else {
+      return (
+        <span style={{ color: cssVar('errorColor') }}>
+          {error
+            ? UserFriendlyError.fromAnyError(error).message
+            : 'Failed to load members'}
+        </span>
+      );
+    }
+  }
 
   return (
     <div className={styles.history}>
       <div className={styles.historyContent}>
-        {invoices.length === 0 ? (
+        {invoiceCount === 0 ? (
           <p className={styles.noInvoice}>
             {t['com.affine.payment.billing-setting.no-invoice']()}
           </p>
         ) : (
-          invoices.map(invoice => (
+          pageInvoices?.map(invoice => (
             <InvoiceLine key={invoice.id} invoice={invoice} />
           ))
         )}
       </div>
 
-      {invoiceCount > INVOICE_PAGE_SIZE && (
+      {invoiceCount > invoicesService.invoices.PAGE_SIZE && (
         <Pagination
           totalCount={invoiceCount}
-          countPerPage={INVOICE_PAGE_SIZE}
-          onPageChange={skip => setSkip(skip)}
+          countPerPage={invoicesService.invoices.PAGE_SIZE}
+          pageNum={pageNum}
+          onPageChange={handlePageChange}
         />
       )}
     </div>
