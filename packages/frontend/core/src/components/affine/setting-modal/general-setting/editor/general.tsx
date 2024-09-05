@@ -410,17 +410,25 @@ const AISettings = () => {
   const onToggleAI = useCallback(
     (checked: boolean) => {
       openConfirmModal({
-        title: checked ? 'Enable AI?' : 'Disable AI?',
-        description: `Are you sure you want to ${checked ? 'enable' : 'disable'} AI?`,
-        confirmText: checked ? 'Enable' : 'Disable',
-        cancelText: 'Cancel',
+        title: checked
+          ? t['com.affine.settings.editorSettings.general.ai.enable.title']()
+          : t['com.affine.settings.editorSettings.general.ai.disable.title'](),
+        description: checked
+          ? t[
+              'com.affine.settings.editorSettings.general.ai.enable.description'
+            ]()
+          : t[
+              'com.affine.settings.editorSettings.general.ai.disable.description'
+            ](),
+        confirmText: checked ? t['Enable']() : t['Disable'](),
+        cancelText: t['Cancel'](),
         onConfirm: () => onAIChange(checked),
         confirmButtonOptions: {
           variant: checked ? 'primary' : 'error',
         },
       });
     },
-    [openConfirmModal, onAIChange]
+    [openConfirmModal, t, onAIChange]
   );
 
   return (

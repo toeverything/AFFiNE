@@ -1,6 +1,7 @@
 import { ConfirmModal, NotificationCenter, notify } from '@affine/component';
 import { events } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
+import { useI18n } from '@affine/i18n';
 import {
   GlobalContextService,
   useLiveData,
@@ -185,6 +186,7 @@ export const SignOutConfirmModal = () => {
 };
 
 export const AIReloadConfirmModal = () => {
+  const t = useI18n();
   const editorSettingService = useService(EditorSettingService);
   const enableAI = useLiveData(
     editorSettingService.editorSetting.settings$.selector(s => s.enableAI)
@@ -208,12 +210,14 @@ export const AIReloadConfirmModal = () => {
       confirmButtonOptions={{
         variant: 'primary',
       }}
-      title={'You need to reload the page'}
-      description={
-        'AI settings have been updated. Please reload the page to apply the changes.'
-      }
-      cancelText={'Cancel'}
-      confirmText={'Reload'}
+      title={t['com.affine.settings.editorSettings.general.ai.reload.title']()}
+      description={t[
+        'com.affine.settings.editorSettings.general.ai.reload.description'
+      ]()}
+      cancelText={t['Cancel']()}
+      confirmText={t[
+        'com.affine.settings.editorSettings.general.ai.reload.confirm'
+      ]()}
     />
   );
 };
