@@ -1,5 +1,4 @@
-import type { GetMembersByWorkspaceIdQuery } from '@affine/graphql';
-import type { WorkspaceService } from '@toeverything/infra';
+import type { InvoicesQuery } from '@affine/graphql';
 import {
   backoffRetry,
   catchErrorInto,
@@ -13,23 +12,21 @@ import {
 } from '@toeverything/infra';
 import { EMPTY, map, mergeMap } from 'rxjs';
 
-import { isBackendError, isNetworkError } from '../../cloud';
-import type { WorkspaceMembersStore } from '../stores/members';
+import { isBackendError, isNetworkError } from '../error';
+import type { InvoicesStore } from '../stores/invoices';
 
-export type Member =
-  GetMembersByWorkspaceIdQuery['workspace']['members'][number];
+export type Invoice = NonNullable<
+  InvoicesQuery['currentUser']
+>['invoices'][number];
 
-export class WorkspaceMembers extends Entity {
-  constructor(
-    private readonly store: WorkspaceMembersStore,
-    private readonly workspaceService: WorkspaceService
-  ) {
+export class Invoices extends Entity {
+  constructor(private readonly store: InvoicesStore) {
     super();
   }
 
   pageNum$ = new LiveData(0);
-  memberCount$ = new LiveData<number | undefined>(undefined);
-  pageMembers$ = new LiveData<Member[] | undefined>(undefined);
+  invoiceCount$ = new LiveData<number | undefined>(undefined);
+  pageInvoices$ = new LiveData<Invoice[] | undefined>(undefined);
 
   isLoading$ = new LiveData(false);
   error$ = new LiveData<any>(null);
@@ -42,16 +39,15 @@ export class WorkspaceMembers extends Entity {
       (a, b) => a === b,
       pageNum => {
         return fromPromise(async signal => {
-          return this.store.fetchMembers(
-            this.workspaceService.workspace.id,
+          return this.store.fetchInvoices(
             pageNum * this.PAGE_SIZE,
             this.PAGE_SIZE,
             signal
           );
         }).pipe(
           mergeMap(data => {
-            this.memberCount$.setValue(data.memberCount);
-            this.pageMembers$.setValue(data.members);
+            this.invoiceCount$.setValue(data.invoiceCount);
+            this.pageInvoices$.setValue(data.invoices);
             return EMPTY;
           }),
           backoffRetry({
@@ -63,7 +59,7 @@ export class WorkspaceMembers extends Entity {
           }),
           catchErrorInto(this.error$),
           onStart(() => {
-            this.pageMembers$.setValue(undefined);
+            this.pageInvoices$.setValue(undefined);
             this.isLoading$.setValue(true);
           }),
           onComplete(() => this.isLoading$.setValue(false))

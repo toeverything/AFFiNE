@@ -1941,6 +1941,7 @@ export type InvoicesQuery = {
   __typename?: 'Query';
   currentUser: {
     __typename?: 'UserType';
+    invoiceCount: number;
     invoices: Array<{
       __typename?: 'UserInvoice';
       id: string;

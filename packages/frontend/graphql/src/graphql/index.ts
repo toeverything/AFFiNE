@@ -750,6 +750,7 @@ export const invoicesQuery = {
   query: `
 query invoices($take: Int!, $skip: Int!) {
   currentUser {
+    invoiceCount
     invoices(take: $take, skip: $skip) {
       id
       status
