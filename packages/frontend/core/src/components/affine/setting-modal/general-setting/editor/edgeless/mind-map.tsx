@@ -48,6 +48,8 @@ export const MindMapSettings = () => {
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.mind-map']()}
         docName="mindmap"
+        keyName={'mindmap' as any}
+        flavour="mindmap"
         height={320}
       />
       <SettingRow

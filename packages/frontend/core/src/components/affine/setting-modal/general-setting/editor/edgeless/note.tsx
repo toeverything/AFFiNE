@@ -170,6 +170,8 @@ export const NoteSettings = () => {
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.note']()}
         docName="note"
+        keyName="affine:note"
+        flavour="affine:note"
       />
       <SettingRow
         name={t[

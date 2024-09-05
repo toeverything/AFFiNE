@@ -45,6 +45,8 @@ export const PenSettings = () => {
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.pen']()}
         docName="pen"
+        keyName="brush"
+        flavour="brush"
       />
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.pen.color']()}

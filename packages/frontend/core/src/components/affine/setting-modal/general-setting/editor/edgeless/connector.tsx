@@ -191,6 +191,8 @@ export const ConnectorSettings = () => {
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.connecter']()}
         docName="connector"
+        keyName="connector"
+        flavour="connector"
       />
       <SettingRow
         name={t[

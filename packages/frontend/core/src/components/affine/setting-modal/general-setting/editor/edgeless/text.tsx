@@ -141,6 +141,8 @@ export const TextSettings = () => {
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.text']()}
         docName="text"
+        keyName="affine:edgeless-text"
+        flavour="affine:edgeless-text"
       />
       <SettingRow
         name={t['com.affine.settings.editorSettings.edgeless.text.color']()}

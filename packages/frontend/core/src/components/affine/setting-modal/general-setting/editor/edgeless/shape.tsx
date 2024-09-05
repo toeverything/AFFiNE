@@ -132,6 +132,8 @@ export const ShapeSettings = () => {
       <EdgelessSnapshot
         title={t['com.affine.settings.editorSettings.edgeless.shape']()}
         docName="shape"
+        keyName="shape"
+        flavour="shape"
       />
 
       <RadioGroup
