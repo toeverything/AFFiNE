@@ -51,10 +51,6 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/404'),
       },
       {
-        path: '/admin-panel',
-        lazy: () => import('./pages/admin-panel'),
-      },
-      {
         path: '/expired',
         lazy: () => import('./pages/expired'),
       },
