@@ -3,6 +3,7 @@ import {
   generateUrl,
   type UseSharingUrl,
 } from '@affine/core/hooks/affine/use-share-url';
+import { track } from '@affine/core/mixpanel';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
 import { EditorService } from '@affine/core/modules/editor';
 import { I18n } from '@affine/i18n';
@@ -70,6 +71,8 @@ function createCopyLinkToBlockMenuItem(
 
       const str = generateUrl(options);
       if (!str) return;
+
+      track.doc.editor.toolbar.copyBlockToLink({ type: model.flavour });
 
       navigator.clipboard
         .writeText(str)

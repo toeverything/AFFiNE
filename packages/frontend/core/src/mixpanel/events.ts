@@ -44,7 +44,8 @@ type DocEvents =
   | 'restoreDoc'
   | 'switchPageMode'
   | 'openDocOptionsMenu'
-  | 'openDocInfo';
+  | 'openDocInfo'
+  | 'copyBlockToLink';
 type EditorEvents = 'bold' | 'italic' | 'underline' | 'strikeThrough';
 // END SECTION
 
@@ -265,6 +266,7 @@ const PageEvents = {
       atMenu: ['linkDoc'],
       formatToolbar: ['bold'],
       pageRef: ['navigate'],
+      toolbar: ['copyBlockToLink'],
     },
     inlineDocInfo: {
       $: ['toggle'],
@@ -382,6 +384,9 @@ export type EventArgs = {
     type: 'default' | 'doc' | 'whiteboard' | 'block' | 'element';
   };
   export: { type: string };
+  copyBlockToLink: {
+    type: string;
+  };
 };
 
 // for type checking
