@@ -53,11 +53,22 @@ function mountApp() {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const root = document.getElementById('app')!;
   performanceMainLogger.info('render app');
-  createRoot(root).render(
-    <StrictMode>
-      <App />
-    </StrictMode>
-  );
+
+  function mount() {
+    createRoot(root).render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    );
+  }
+
+  mount();
+
+  // @ts-expect-error HMR
+  if (process.env.NODE_ENV === 'development' && module.hot) {
+    // @ts-expect-error HMR
+    module.hot.accept('./app.tsx', mount);
+  }
 }
 
 try {

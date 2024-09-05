@@ -15,6 +15,7 @@ import type {
   ComponentVariant,
   FrameworkScopeStack,
   GeneralIdentifier,
+  IdentifierName,
   IdentifierValue,
 } from './types';
 
@@ -103,7 +104,7 @@ export abstract class FrameworkProvider {
 }
 
 export class ComponentCachePool {
-  cache: Map<string, Map<ComponentVariant, any>> = new Map();
+  cache: Map<IdentifierName, Map<ComponentVariant, any>> = new Map();
 
   getOrInsert(identifier: IdentifierValue, insert: () => any) {
     const cache = this.cache.get(identifier.identifierName) ?? new Map();
@@ -250,7 +251,7 @@ class Resolver extends FrameworkProvider {
       } else {
         service = this.provider.cache.getOrInsert(
           {
-            identifierName: identifier.identifierName,
+            ...identifier,
             variant,
           },
           runFactory
@@ -291,7 +292,7 @@ export class BasicFrameworkProvider extends FrameworkProvider {
 
   constructor(
     collection: Framework,
-    public readonly scope: string[],
+    public readonly scope: FrameworkScopeStack,
     public readonly parent: FrameworkProvider | null
   ) {
     super();

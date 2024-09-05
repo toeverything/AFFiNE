@@ -14,7 +14,7 @@ import type {
   ComponentVariant,
   FrameworkScopeStack,
   GeneralIdentifier,
-  Identifier,
+  IdentifierName,
   IdentifierType,
   IdentifierValue,
   SubComponent,
@@ -24,8 +24,8 @@ import type {
 
 export class Framework {
   private readonly components: Map<
-    string,
-    Map<string, Map<ComponentVariant, ComponentFactory>>
+    string /* scope */,
+    Map<IdentifierName, Map<ComponentVariant, ComponentFactory>>
   > = new Map();
 
   /**
@@ -103,7 +103,7 @@ export class Framework {
       override,
     }: { scope?: FrameworkScopeStack; override?: boolean } = {}
   ) {
-    this.addFactory(parseIdentifier(identifier) as Identifier<T>, () => value, {
+    this.addFactory(parseIdentifier(identifier), () => value, {
       scope,
       override,
     });
@@ -127,7 +127,7 @@ export class Framework {
 
     const services =
       this.components.get(normalizedScope) ??
-      new Map<string, Map<ComponentVariant, ComponentFactory>>();
+      new Map<IdentifierName, Map<ComponentVariant, ComponentFactory>>();
 
     const variants =
       services.get(normalizedIdentifier.identifierName) ??
@@ -142,7 +142,10 @@ export class Framework {
     this.components.set(normalizedScope, services);
   }
 
-  remove(identifier: IdentifierValue, scope: FrameworkScopeStack = ROOT_SCOPE) {
+  remove<T>(
+    identifier: GeneralIdentifier<T>,
+    scope: FrameworkScopeStack = ROOT_SCOPE
+  ) {
     const normalizedScope = stringifyScope(scope);
     const normalizedIdentifier = parseIdentifier(identifier);
     const normalizedVariant = normalizedIdentifier.variant ?? DEFAULT_VARIANT;
@@ -374,7 +377,7 @@ class FrameworkEditor {
    * ```
    */
   impl = <
-    Arg1 extends Identifier<any>,
+    Arg1 extends GeneralIdentifier<any>,
     Arg2 extends Type<Trait> | ComponentFactory<Trait> | Trait,
     Arg3 extends Deps,
     Trait = IdentifierType<Arg1>,
@@ -431,10 +434,7 @@ class FrameworkEditor {
     ...[arg3]: Arg3 extends [] ? [] : [Arg3]
   ): this => {
     if (arg2 === null) {
-      this.collection.remove(
-        parseIdentifier(identifier),
-        this.currentScopeStack
-      );
+      this.collection.remove(identifier, this.currentScopeStack);
       return this;
     } else if (arg2 instanceof Function) {
       this.collection.addFactory<any>(
@@ -464,10 +464,7 @@ class FrameworkEditor {
    * ```
    */
   scope = (scope: Type<Scope<any>>): this => {
-    this.currentScopeStack = [
-      ...this.currentScopeStack,
-      parseIdentifier(scope).identifierName,
-    ];
+    this.currentScopeStack = [...this.currentScopeStack, scope];
 
     this.collection.addFactory<any>(
       scope as any,

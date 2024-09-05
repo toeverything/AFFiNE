@@ -1,9 +1,8 @@
-import { stableHash } from '../../utils/stable-hash';
-import type { Component } from './components/component';
 import { DEFAULT_VARIANT } from './consts';
 import type {
   ComponentVariant,
   Identifier,
+  IdentifierName,
   IdentifierValue,
   Type,
 } from './types';
@@ -77,37 +76,28 @@ import type {
  * @param variant The default variant name of the identifier, can be overridden by `identifier("variant")`.
  */
 export function createIdentifier<T>(
-  name: string,
+  nameOrType: IdentifierName,
   variant: ComponentVariant = DEFAULT_VARIANT
-): Identifier<T> & ((variant: ComponentVariant) => Identifier<T>) {
-  return Object.assign(
-    (variant: ComponentVariant) => {
-      return createIdentifier<T>(name, variant);
-    },
-    {
-      identifierName: name,
-      variant,
-    }
-  ) as any;
-}
-
-/**
- * Convert the constructor into a ServiceIdentifier.
- * As we always deal with ServiceIdentifier in the DI container.
- *
- * @internal
- */
-export function createIdentifierFromConstructor<T extends Component>(
-  target: Type<T>
 ): Identifier<T> {
-  return createIdentifier<T>(`${target.name}${stableHash(target)}`);
+  const props = {
+    identifierName: nameOrType,
+    variant,
+  } satisfies IdentifierValue;
+
+  return Object.assign((variant: ComponentVariant) => {
+    return createIdentifier<T>(nameOrType, variant);
+  }, props) as any;
 }
 
-export function parseIdentifier(input: any): IdentifierValue {
-  if (input.identifierName) {
-    return input as IdentifierValue;
+export function parseIdentifier(
+  input: Type<any> | Identifier<any> | IdentifierValue
+): Identifier<any> {
+  if ('identifierName' in input) {
+    // @ts-expect-error safe to cast IdentifierValue to Identifier
+    // because IdentifierValue is a convenient represent of Identifier<any>
+    return input;
   } else if (typeof input === 'function' && input.name) {
-    return createIdentifierFromConstructor(input);
+    return createIdentifier(input);
   } else {
     throw new Error('Input is not a service identifier.');
   }

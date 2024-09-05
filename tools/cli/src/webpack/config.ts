@@ -38,7 +38,11 @@ const OptimizeOptionOptions: (
         compress: {
           unused: true,
         },
-        mangle: true,
+        mangle: {
+          // standalone swc minifier can't know used classnames to avoid name conflict
+          // the classnames is used in the runtime
+          keep_classnames: true,
+        },
       },
     }),
   ],
