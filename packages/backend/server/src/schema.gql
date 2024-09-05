@@ -603,6 +603,7 @@ type QuotaQueryType {
   copilotActionLimit: SafeInt
   historyPeriod: SafeInt!
   humanReadable: HumanReadableQuotaType!
+  memberCount: SafeInt!
   memberLimit: SafeInt!
   name: String!
   storageQuota: SafeInt!

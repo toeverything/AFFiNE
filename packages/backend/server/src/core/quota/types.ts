@@ -88,6 +88,9 @@ export class QuotaQueryType {
   memberLimit!: number;
 
   @Field(() => SafeIntResolver)
+  memberCount!: number;
+
+  @Field(() => SafeIntResolver)
   storageQuota!: number;
 
   @Field(() => SafeIntResolver, { nullable: true })

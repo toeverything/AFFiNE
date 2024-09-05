@@ -75,6 +75,14 @@ export class PermissionService {
     return owner.user;
   }
 
+  async getWorkspaceMemberCount(workspaceId: string) {
+    return this.prisma.workspaceUserPermission.count({
+      where: {
+        workspaceId,
+      },
+    });
+  }
+
   async tryGetWorkspaceOwner(workspaceId: string) {
     return this.prisma.workspaceUserPermission.findFirst({
       where: {

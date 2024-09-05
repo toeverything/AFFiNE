@@ -113,6 +113,8 @@ export class QuotaManagementService {
   // quota was apply to owner's account
   async getWorkspaceUsage(workspaceId: string): Promise<QuotaBusinessType> {
     const owner = await this.permissions.getWorkspaceOwner(workspaceId);
+    const memberCount =
+      await this.permissions.getWorkspaceMemberCount(workspaceId);
     const {
       feature: {
         name,
@@ -145,6 +147,7 @@ export class QuotaManagementService {
       humanReadable,
       usedSize,
       unlimited,
+      memberCount,
     };
 
     if (quota.unlimited) {

@@ -115,11 +115,7 @@ export class WorkspaceResolver {
     complexity: 2,
   })
   memberCount(@Parent() workspace: WorkspaceType) {
-    return this.prisma.workspaceUserPermission.count({
-      where: {
-        workspaceId: workspace.id,
-      },
-    });
+    return this.permissions.getWorkspaceMemberCount(workspace.id);
   }
 
   @ResolveField(() => Boolean, {
@@ -388,13 +384,8 @@ export class WorkspaceResolver {
       }
 
       // member limit check
-      const [memberCount, quota] = await Promise.all([
-        this.prisma.workspaceUserPermission.count({
-          where: { workspaceId },
-        }),
-        this.quota.getWorkspaceUsage(workspaceId),
-      ]);
-      if (memberCount >= quota.memberLimit) {
+      const quota = await this.quota.getWorkspaceUsage(workspaceId);
+      if (quota.memberCount >= quota.memberLimit) {
         return new MemberQuotaExceeded();
       }
 

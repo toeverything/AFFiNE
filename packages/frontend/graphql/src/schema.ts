@@ -901,6 +901,7 @@ export interface QuotaQueryType {
   copilotActionLimit: Maybe<Scalars['SafeInt']['output']>;
   historyPeriod: Scalars['SafeInt']['output'];
   humanReadable: HumanReadableQuotaType;
+  memberCount: Scalars['SafeInt']['output'];
   memberLimit: Scalars['SafeInt']['output'];
   name: Scalars['String']['output'];
   storageQuota: Scalars['SafeInt']['output'];
@@ -2423,6 +2424,7 @@ export type WorkspaceQuotaQuery = {
       storageQuota: number;
       historyPeriod: number;
       memberLimit: number;
+      memberCount: number;
       usedSize: number;
       humanReadable: {
         __typename?: 'HumanReadableQuotaType';

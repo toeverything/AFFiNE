@@ -1297,6 +1297,7 @@ query workspaceQuota($id: String!) {
       storageQuota
       historyPeriod
       memberLimit
+      memberCount
       humanReadable {
         name
         blobLimit
