@@ -35,6 +35,7 @@ import {
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
+import { clamp } from 'lodash-es';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -286,9 +287,10 @@ const MemberList = ({
           <MemberListFallback
             memberCount={
               memberCount
-                ? Math.max(
+                ? clamp(
                     memberCount - pageNum * membersService.members.PAGE_SIZE,
-                    1
+                    1,
+                    membersService.members.PAGE_SIZE
                   )
                 : 1
             }
