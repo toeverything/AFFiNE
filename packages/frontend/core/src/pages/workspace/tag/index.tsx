@@ -37,7 +37,9 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
 
   const filteredPageMetas = useMemo(() => {
     const pageIdsSet = new Set(pageIds);
-    return pageMetas.filter(page => pageIdsSet.has(page.id));
+    return pageMetas
+      .filter(page => pageIdsSet.has(page.id))
+      .filter(page => !page.trash);
   }, [pageIds, pageMetas]);
 
   const isActiveView = useIsActiveView();
