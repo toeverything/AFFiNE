@@ -59,6 +59,7 @@ export const itemContent = style({
   alignItems: 'center',
   flex: 1,
   color: cssVarV2('text/primary'),
+  lineHeight: cssVar('lineHeight'),
 });
 export const postfix = style({
   display: 'flex',
