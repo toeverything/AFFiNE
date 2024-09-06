@@ -8,7 +8,8 @@ import { OAuthProviderType } from '@affine/graphql';
 import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
-import { useState } from 'react';
+import { useMemo } from 'react';
+import useSWR from 'swr';
 
 import { AuthService, ServerConfigService } from '../../../modules/cloud';
 
@@ -48,28 +49,55 @@ export function OAuth() {
   ));
 }
 
+const usePreflightUrl = (provider: OAuthProviderType) => {
+  const authService = useService(AuthService);
+  const preflightFetcher = useMemo(() => {
+    return async () => {
+      const url = await authService.oauthPreflight(provider);
+      return url;
+    };
+  }, [authService, provider]);
+
+  const { data, isLoading, isValidating, mutate } = useSWR<string>(
+    'preflight:' + provider,
+    preflightFetcher,
+    {
+      onError: err => {
+        console.error(err);
+        notify.error({ title: 'Failed to sign in, please try again.' });
+      },
+    }
+  );
+
+  return { url: data, isLoading, isValidating, revalidate: mutate };
+};
+
 function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
   const { icon } = OAuthProviderMap[provider];
-  const authService = useService(AuthService);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const { url, isValidating, revalidate } = usePreflightUrl(provider);
 
   const onClick = useAsyncCallback(async () => {
     try {
-      setIsConnecting(true);
-      const url = await authService.oauthPreflight(provider);
+      if (!url || isValidating) {
+        return;
+      }
       if (environment.isElectron) {
         await apis?.ui.openExternal(url);
       } else {
         popupWindow(url);
       }
+      await revalidate();
     } catch (err) {
       console.error(err);
       notify.error({ title: 'Failed to sign in, please try again.' });
     } finally {
-      setIsConnecting(false);
       track.$.$.auth.oauth({ provider });
     }
-  }, [authService, provider]);
+  }, [url, isValidating, revalidate, provider]);
+
+  if (!url) {
+    return <Skeleton height={50} />;
+  }
 
   return (
     <Button
@@ -82,7 +110,7 @@ function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
       onClick={onClick}
     >
       Continue with {provider}
-      {isConnecting && '...'}
+      {isValidating && '...'}
     </Button>
   );
 }
