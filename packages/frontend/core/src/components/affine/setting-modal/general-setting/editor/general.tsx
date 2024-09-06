@@ -234,7 +234,7 @@ const FontMenuItem = ({
   onSelect: (font: string) => void;
 }) => {
   const handleFontSelect = useCallback(
-    () => onSelect(font.fullName),
+    () => onSelect(font.family),
     [font, onSelect]
   );
   const fontFamily = getFontFamily(font.family);
@@ -268,6 +268,7 @@ const CustomFontFamilySettings = () => {
   const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
   const fontFamily = getFontFamily(settings.customFontFamily);
+
   const onCustomFontFamilyChange = useCallback(
     (fontFamily: string) => {
       editorSettingService.editorSetting.set('customFontFamily', fontFamily);

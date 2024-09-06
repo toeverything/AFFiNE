@@ -1288,7 +1288,7 @@
   "com.affine.settings.editorSettings.edgeless.shape.font": "字体",
   "com.affine.settings.editorSettings.edgeless.shape.font-size": "字体大小",
   "com.affine.settings.editorSettings.edgeless.shape.font-style": "字体样式",
-  "com.affine.settings.editorSettings.edgeless.shape.rounded-rectangle": "长方形",
+  "com.affine.settings.editorSettings.edgeless.shape.rounded-rectangle": "圆角矩形",
   "com.affine.settings.editorSettings.edgeless.shape.square": "正方形",
   "com.affine.settings.editorSettings.edgeless.shape.text-alignment": "文本对齐",
   "com.affine.settings.editorSettings.edgeless.shape.text-color": "文本颜色",
