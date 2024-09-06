@@ -177,9 +177,9 @@ export class Editor extends Entity {
     });
     if (focusAt$.value === null && docTitle) {
       const title = docTitle.querySelector<
-        HTMLElement & { inlineEditor: InlineEditor }
+        HTMLElement & { inlineEditor: InlineEditor | null }
       >('rich-text');
-      title?.inlineEditor.focusEnd();
+      title?.inlineEditor?.focusEnd();
     }
 
     const subscription = focusAt$
