@@ -85,8 +85,8 @@ export const AFFINE_FLAGS = {
     category: 'affine',
     displayName: 'Editor Settings',
     description: 'Enables editor settings.',
-    configurable: isCanaryBuild,
-    defaultState: isCanaryBuild,
+    configurable: isNotStableBuild,
+    defaultState: isNotStableBuild,
   },
   enable_offline_mode: {
     category: 'affine',
