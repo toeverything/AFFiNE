@@ -58,10 +58,7 @@ export const Component = () => {
     auth
       .signInMagicLink(data.email, data.token)
       .then(() => {
-        // compatible with old client
-        if (data.redirectUri) {
-          nav(data.redirectUri);
-        }
+        nav(data.redirectUri ?? '/');
       })
       .catch(e => {
         nav(`/signIn?error=${encodeURIComponent(e.message)}`);

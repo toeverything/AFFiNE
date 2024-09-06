@@ -18,7 +18,6 @@ import {
   OauthAccountAlreadyConnected,
   OauthStateExpired,
   UnknownOauthProvider,
-  URLHelper,
 } from '../../fundamentals';
 import { OAuthProviderName } from './config';
 import { OAuthAccount, Tokens } from './providers/def';
@@ -31,7 +30,6 @@ export class OAuthController {
     private readonly auth: AuthService,
     private readonly oauth: OAuthService,
     private readonly user: UserService,
-    private readonly url: URLHelper,
     private readonly providerFactory: OAuthProviderFactory,
     private readonly db: PrismaClient
   ) {}
@@ -41,7 +39,7 @@ export class OAuthController {
   @HttpCode(HttpStatus.OK)
   async preflight(
     @Body('provider') unknownProviderName?: string,
-    @Body('redirect_uri') redirectUri: string = this.url.home
+    @Body('redirect_uri') redirectUri?: string
   ) {
     if (!unknownProviderName) {
       throw new MissingOauthQueryParameter({ name: 'provider' });

@@ -138,8 +138,7 @@ export class AuthController {
     res: Response,
     email: string,
     callbackUrl = '/magic-link',
-
-    redirectUrl = this.url.home
+    redirectUrl?: string
   ) {
     // send email magic link
     const user = await this.user.findUserByEmail(email);
@@ -155,7 +154,11 @@ export class AuthController {
     const magicLink = this.url.link(callbackUrl, {
       token,
       email,
-      redirect_uri: redirectUrl,
+      ...(redirectUrl
+        ? {
+            redirect_uri: redirectUrl,
+          }
+        : {}),
     });
 
     const result = await this.auth.sendSignInEmail(email, magicLink, !user);

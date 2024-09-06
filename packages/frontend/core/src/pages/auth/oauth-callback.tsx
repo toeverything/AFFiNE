@@ -60,9 +60,8 @@ export const Component = () => {
     auth
       .signInOauth(data.code, data.state)
       .then(({ redirectUri }) => {
-        if (redirectUri) {
-          nav(redirectUri);
-        }
+        // TODO(@forehalo): need a good way to go back to previous tab and close current one
+        nav(redirectUri ?? '/');
       })
       .catch(e => {
         nav(`/signIn?error=${encodeURIComponent(e.message)}`);
