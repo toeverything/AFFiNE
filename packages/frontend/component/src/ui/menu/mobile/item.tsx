@@ -12,7 +12,7 @@ const preventDefault = () => {
 export const MobileMenuItem = (props: MenuItemProps) => {
   const { setOpen } = useContext(MobileMenuContext);
   const { className, children, otherProps } = useMenuItem(props);
-  const { onSelect, onClick, ...restProps } = otherProps;
+  const { onSelect, onClick, divide, ...restProps } = otherProps;
 
   const onItemClick = useCallback(
     (e: any) => {
@@ -32,6 +32,7 @@ export const MobileMenuItem = (props: MenuItemProps) => {
       role="menuitem"
       onClick={onItemClick}
       className={className}
+      data-divider={divide}
       {...restProps}
     >
       {children}

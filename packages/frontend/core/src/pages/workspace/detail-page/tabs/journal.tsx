@@ -90,6 +90,7 @@ interface JournalBlockProps {
   date: dayjs.Dayjs;
 }
 
+const mobile = environment.isMobile;
 export const EditorJournalPanel = () => {
   const t = useI18n();
   const doc = useService(DocService).doc;
@@ -129,6 +130,7 @@ export const EditorJournalPanel = () => {
           data-selected={cell.selected}
           data-is-journal={isJournal}
           data-has-journal={hasJournal}
+          data-mobile={mobile}
         >
           {cell.label}
           {hasJournal && !cell.selected ? (
@@ -142,7 +144,7 @@ export const EditorJournalPanel = () => {
 
   return (
     <div className={styles.journalPanel} data-is-journal={isJournal}>
-      <div className={styles.calendar}>
+      <div data-mobile={mobile} className={styles.calendar}>
         <DatePicker
           weekDays={t['com.affine.calendar-date-picker.week-days']()}
           monthNames={t['com.affine.calendar-date-picker.month-names']()}
@@ -150,6 +152,8 @@ export const EditorJournalPanel = () => {
           customDayRenderer={customDayRenderer}
           value={date}
           onChange={onDateSelect}
+          monthHeaderCellClassName={styles.journalDateCellWrapper}
+          monthBodyCellClassName={styles.journalDateCellWrapper}
         />
       </div>
       <JournalConflictBlock date={dayjs(date)} />

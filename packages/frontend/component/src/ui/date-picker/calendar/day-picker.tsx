@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import dayjs from 'dayjs';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 
@@ -23,6 +24,8 @@ export const DayPicker = memo(function DayPicker(
     onChange,
     onCursorChange,
     onModeChange,
+    monthHeaderCellClassName,
+    monthBodyCellClassName,
   } = props;
 
   const matrix = useMemo(() => {
@@ -170,7 +173,13 @@ export const DayPicker = memo(function DayPicker(
         {/* weekDays */}
         <div className={styles.monthViewRow}>
           {weekDays.split(',').map(day => (
-            <div key={day} className={styles.monthViewHeaderCell}>
+            <div
+              key={day}
+              className={clsx(
+                styles.monthViewHeaderCell,
+                monthHeaderCellClassName
+              )}
+            >
               {day}
             </div>
           ))}
@@ -178,10 +187,13 @@ export const DayPicker = memo(function DayPicker(
         {/* Weeks in month */}
         {matrix.map((week, i) => {
           return (
-            <div key={i} className={styles.monthViewRow}>
+            <div key={i} className={clsx(styles.monthViewRow)}>
               {week.map((cell, j) => (
                 <div
-                  className={styles.monthViewBodyCell}
+                  className={clsx(
+                    styles.monthViewBodyCell,
+                    monthBodyCellClassName
+                  )}
                   key={j}
                   onClick={() => onChange?.(cell.date.format(format))}
                 >
@@ -197,7 +209,15 @@ export const DayPicker = memo(function DayPicker(
         })}
       </main>
     ),
-    [customDayRenderer, format, matrix, onChange, weekDays]
+    [
+      customDayRenderer,
+      format,
+      matrix,
+      monthBodyCellClassName,
+      monthHeaderCellClassName,
+      onChange,
+      weekDays,
+    ]
   );
 
   return (

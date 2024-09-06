@@ -117,6 +117,7 @@ export const SelectorMenu = ({ onClose }: { onClose?: () => void }) => {
           title="Cloud Sync"
           list={cloudWorkspaces}
         />
+        <div className={styles.divider} />
         <WorkspaceList
           onClose={onClose}
           title="Local Storage"

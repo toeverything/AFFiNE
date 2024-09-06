@@ -20,8 +20,6 @@ export interface MenuProps {
 export interface MenuItemProps
   extends Omit<MenuItemPropsPrimitive, 'asChild' | 'textValue' | 'prefix'> {
   type?: 'default' | 'warning' | 'danger';
-  // preFix?: React.ReactNode;
-  // endFix?: React.ReactNode;
   prefix?: ReactNode;
   suffix?: ReactNode;
   prefixIcon?: ReactNode;
@@ -29,6 +27,11 @@ export interface MenuItemProps
   checked?: boolean;
   selected?: boolean;
   block?: boolean;
+  /**
+   * add divider after item (if not last one)
+   * - Mobile only for now
+   */
+  divide?: boolean;
 }
 export interface MenuSubProps {
   children: ReactNode;

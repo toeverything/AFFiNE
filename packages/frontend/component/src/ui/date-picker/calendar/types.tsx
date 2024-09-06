@@ -50,6 +50,10 @@ export interface DatePickerProps {
    * when date is clicked
    */
   onChange?: (value: string) => void;
+
+  // style customizations
+  monthHeaderCellClassName?: string;
+  monthBodyCellClassName?: string;
 }
 
 /**

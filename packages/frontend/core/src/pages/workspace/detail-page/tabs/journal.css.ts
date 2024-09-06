@@ -35,6 +35,11 @@ const interactive = style({
 });
 export const calendar = style({
   padding: '16px',
+  selectors: {
+    '&[data-mobile=true]': {
+      padding: '8px 16px',
+    },
+  },
 });
 export const journalPanel = style({
   width: '100%',
@@ -212,6 +217,13 @@ export const journalDateCell = style([
         fontWeight: 500,
         border: `1px solid ${cssVar('primaryColor')}`,
       },
+
+      '&[data-mobile=true]': {
+        width: 34,
+        height: 34,
+        fontSize: 15,
+        fontWeight: 400,
+      },
     },
   },
 ]);
@@ -224,4 +236,8 @@ export const journalDateCellDot = style({
   bottom: 0,
   left: '50%',
   transform: 'translateX(-50%)',
+});
+
+export const journalDateCellWrapper = style({
+  height: 34,
 });

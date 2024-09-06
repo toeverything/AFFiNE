@@ -12,12 +12,13 @@ export const appTabs = style({
   borderTop: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
 
   width: '100dvw',
-  height: globalVars.appTabHeight,
+  height: `calc(${globalVars.appTabHeight} + 2px)`,
   padding: 16,
   gap: 15.5,
 
   position: 'fixed',
-  bottom: 0,
+  paddingBottom: 18,
+  bottom: -2,
   zIndex: 1,
 });
 export const tabItem = style({
@@ -30,6 +31,7 @@ export const tabItem = style({
   padding: 3,
   fontSize: 30,
   color: cssVarV2('icon/primary'),
+  lineHeight: 0,
 
   selectors: {
     '&[data-active="true"]': {

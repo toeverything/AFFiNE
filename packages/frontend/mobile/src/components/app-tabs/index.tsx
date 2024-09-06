@@ -2,11 +2,10 @@ import {
   WorkbenchLink,
   WorkbenchService,
 } from '@affine/core/modules/workbench';
-import { AllDocsIcon, SearchIcon } from '@blocksuite/icons/rc';
+import { AllDocsIcon, MobileHomeIcon, SearchIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { Location } from 'react-router-dom';
 
-import { HomeIcon } from './home-icon';
 import * as styles from './styles.css';
 
 interface Route {
@@ -19,7 +18,7 @@ interface Route {
 const routes: Route[] = [
   {
     to: '/home',
-    Icon: HomeIcon,
+    Icon: MobileHomeIcon,
   },
   {
     to: '/all',

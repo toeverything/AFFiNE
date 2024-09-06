@@ -50,6 +50,7 @@ export const SettingDropdownSelect = <
     <MobileMenu
       items={options.map(opt => (
         <MobileMenuItem
+          divide
           key={opt.value}
           selected={value === opt.value}
           data-testid={opt.testId}
