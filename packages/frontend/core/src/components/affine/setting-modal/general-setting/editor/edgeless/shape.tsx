@@ -19,7 +19,6 @@ import {
   FontFamily,
   FontFamilyMap,
   FontStyle,
-  FontWeight,
   FontWeightMap,
   getShapeName,
   LineColor,
@@ -41,7 +40,7 @@ import {
   settingWrapper,
   shapeIndicator,
 } from '../style.css';
-import { useColor } from '../utils';
+import { sortedFontWeightEntries, useColor } from '../utils';
 import type { DocName } from './docs';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
@@ -285,7 +284,7 @@ export const ShapeSettings = () => {
 
   const fontWeightItems = useMemo(() => {
     const { fontWeight } = settings[`shape:${currentShape}`];
-    return Object.entries(FontWeight).map(([name, value]) => {
+    return sortedFontWeightEntries.map(([name, value]) => {
       const handler = () => {
         editorSetting.set(`shape:${currentShape}`, { fontWeight: value });
       };

@@ -1,3 +1,4 @@
+import { FontWeight } from '@blocksuite/blocks';
 import { useTheme } from 'next-themes';
 
 function getColorFromMap(
@@ -43,3 +44,7 @@ export const useColor = () => {
       resolvedTheme as 'light' | 'dark' | undefined
     );
 };
+
+export const sortedFontWeightEntries = Object.entries(FontWeight).sort(
+  (a, b) => Number(a[1]) - Number(b[1])
+);

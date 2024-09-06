@@ -11,7 +11,6 @@ import {
   FontFamily,
   FontFamilyMap,
   FontStyle,
-  FontWeight,
   FontWeightMap,
   LineColor,
   LineColorMap,
@@ -23,7 +22,7 @@ import { useCallback, useMemo } from 'react';
 
 import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
-import { useColor } from '../utils';
+import { sortedFontWeightEntries, useColor } from '../utils';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
 
@@ -123,7 +122,7 @@ export const TextSettings = () => {
 
   const fontWeightItems = useMemo(() => {
     const { fontWeight } = settings['affine:edgeless-text'];
-    return Object.entries(FontWeight).map(([name, value]) => {
+    return sortedFontWeightEntries.map(([name, value]) => {
       const handler = () => {
         editorSetting.set('affine:edgeless-text', { fontWeight: value });
       };
