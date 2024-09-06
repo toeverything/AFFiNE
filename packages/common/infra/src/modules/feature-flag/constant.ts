@@ -59,14 +59,6 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: true,
   },
-  enable_expand_database_block: {
-    category: 'blocksuite',
-    bsFlag: 'enable_expand_database_block',
-    displayName: 'Expand Database Block',
-    description: 'Enables expanding of database blocks.',
-    configurable: false,
-    defaultState: false,
-  },
   enable_multi_view: {
     category: 'affine',
     displayName: 'Split View',

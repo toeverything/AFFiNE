@@ -25,7 +25,7 @@ const info = await fetch(
   'https://registry.npmjs.org/@blocksuite/block-std'
 ).then(res => res.json());
 
-const latestVersion = info['dist-tags'].canary;
+const latestVersion = info['dist-tags'].latest;
 const latestHash = latestVersion.split('-').pop();
 
 if (oldHash === latestHash) {
