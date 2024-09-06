@@ -111,7 +111,7 @@ export const Component = (): ReactElement => {
     return <PageNotFound noPermission />;
   }
   if (!meta) {
-    return <AppFallback key="workspaceLoading" />;
+    return <AppFallback />;
   }
 
   return <WorkspacePage meta={meta} />;
@@ -204,7 +204,7 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
   if (!isRootDocReady) {
     return (
       <FrameworkScope scope={workspace.scope}>
-        <AppFallback key="workspaceLoading" />
+        <AppFallback />
       </FrameworkScope>
     );
   }

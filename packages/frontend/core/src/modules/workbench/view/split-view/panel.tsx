@@ -39,6 +39,17 @@ export interface SplitViewPanelProps
   >;
 }
 
+export const SplitViewPanelContainer = ({
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) => {
+  return (
+    <div className={styles.splitViewPanel} {...props}>
+      {children}
+    </div>
+  );
+};
+
 export const SplitViewPanel = memo(function SplitViewPanel({
   children,
   view,
@@ -85,9 +96,8 @@ export const SplitViewPanel = memo(function SplitViewPanel({
   );
 
   return (
-    <div
+    <SplitViewPanelContainer
       style={style}
-      className={styles.splitViewPanel}
       data-is-dragging={isDragging}
       data-is-active={isActive && views.length > 1}
       data-is-last={isLast}
@@ -110,7 +120,7 @@ export const SplitViewPanel = memo(function SplitViewPanel({
         ) : null}
       </div>
       {children}
-    </div>
+    </SplitViewPanelContainer>
   );
 });
 

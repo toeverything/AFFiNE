@@ -28,6 +28,11 @@ export interface SkeletonProps
    * Number values are treated as pixels.
    */
   height?: number | string;
+
+  /**
+   * Flex of the skeleton.
+   */
+  flex?: number | string;
 }
 
 export type PickStringFromUnion<T> = T extends string ? T : never;

@@ -1,5 +1,6 @@
 import { cssVar, lightCssVariables } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
+
 export const appStyle = style({
   width: '100%',
   position: 'relative',
@@ -97,4 +98,12 @@ export const toolStyle = style({
       bottom: '78px',
     },
   },
+});
+
+export const fallbackRootStyle = style({
+  paddingTop: 52,
+  display: 'flex',
+  flex: 1,
+  width: '100%',
+  height: '100%',
 });

@@ -15,6 +15,7 @@ import { appStyle, mainContainerStyle, toolStyle } from './index.css';
 
 export type WorkspaceRootProps = PropsWithChildren<{
   resizing?: boolean;
+  className?: string;
   useNoisyBackground?: boolean;
   useBlurBackground?: boolean;
 }>;
@@ -24,6 +25,7 @@ export const AppContainer = ({
   useNoisyBackground,
   useBlurBackground,
   children,
+  className,
   ...rest
 }: WorkspaceRootProps) => {
   const noisyBackground = useNoisyBackground && environment.isElectron;
@@ -31,7 +33,7 @@ export const AppContainer = ({
   return (
     <div
       {...rest}
-      className={clsx(appStyle, {
+      className={clsx(appStyle, className, {
         'noisy-background': noisyBackground,
         'blur-background': blurBackground,
       })}
@@ -70,6 +72,11 @@ export const MainContainer = forwardRef<
 });
 
 MainContainer.displayName = 'MainContainer';
+
+export const MainContainerFallback = ({ children }: PropsWithChildren) => {
+  // todo: default app fallback?
+  return <MainContainer>{children}</MainContainer>;
+};
 
 export const ToolContainer = (
   props: PropsWithChildren<{ className?: string }>

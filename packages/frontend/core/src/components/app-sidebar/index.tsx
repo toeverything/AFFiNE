@@ -1,13 +1,15 @@
 import { Skeleton } from '@affine/component';
 import { ResizePanel } from '@affine/component/resize-panel';
+import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { NavigateContext } from '@affine/core/hooks/use-navigate-helper';
 import { useServiceOptional, WorkspaceService } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
 import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useEffect } from 'react';
+import { useContext, useEffect, useMemo } from 'react';
 
 import { WorkspaceNavigator } from '../workspace-selector';
-import { fallbackHeaderStyle, fallbackStyle } from './fallback.css';
+import * as styles from './fallback.css';
 import {
   floatingMaxWidth,
   navBodyStyle,
@@ -25,11 +27,6 @@ import {
 } from './index.jotai';
 import { SidebarHeader } from './sidebar-header';
 
-export type AppSidebarProps = PropsWithChildren<{
-  clientBorder?: boolean;
-  translucentUI?: boolean;
-}>;
-
 export type History = {
   stack: string[];
   current: number;
@@ -38,10 +35,11 @@ export type History = {
 const MAX_WIDTH = 480;
 const MIN_WIDTH = 248;
 
-export function AppSidebar({
-  children,
-  clientBorder,
-}: AppSidebarProps): ReactElement {
+export function AppSidebar({ children }: PropsWithChildren) {
+  const { appSettings } = useAppSettingHelper();
+
+  const clientBorder = appSettings.clientBorder;
+
   const [open, setOpen] = useAtom(appSidebarOpenAtom);
   const [width, setWidth] = useAtom(appSidebarWidthAtom);
   const [floating, setFloating] = useAtom(appSidebarFloatingAtom);
@@ -122,35 +120,96 @@ export function AppSidebar({
   );
 }
 
-export const AppSidebarFallback = (): ReactElement | null => {
-  const width = useAtomValue(appSidebarWidthAtom);
+const FallbackHeader = () => {
+  // if navigate is not defined, it is rendered outside of router
+  // WorkspaceNavigator requires navigate context
+  // todo: refactor
+  const navigate = useContext(NavigateContext);
 
   const currentWorkspace = useServiceOptional(WorkspaceService);
+  return (
+    <div className={styles.fallbackHeader}>
+      {!currentWorkspace && navigate ? (
+        <WorkspaceNavigator
+          showSettingsButton
+          showSyncStatus
+          showEnableCloudButton
+        />
+      ) : (
+        <>
+          <Skeleton variant="rectangular" width={32} height={32} />
+          <Skeleton variant="rectangular" width={150} height={32} flex={1} />
+          <Skeleton variant="circular" width={25} height={25} />
+        </>
+      )}
+    </div>
+  );
+};
+
+const randomWidth = () => {
+  return Math.floor(Math.random() * 200) + 100;
+};
+
+const RandomBar = ({ className }: { className?: string }) => {
+  const width = useMemo(() => randomWidth(), []);
+  return (
+    <Skeleton
+      variant="rectangular"
+      width={width}
+      height={16}
+      className={className}
+    />
+  );
+};
+
+const RandomBars = ({ count, header }: { count: number; header?: boolean }) => {
+  return (
+    <div className={styles.fallbackGroupItems}>
+      {header ? (
+        <Skeleton
+          className={styles.fallbackItemHeader}
+          variant="rectangular"
+          width={50}
+          height={16}
+        />
+      ) : null}
+      {Array.from({ length: count }).map((_, index) => (
+        <RandomBar key={index} />
+      ))}
+    </div>
+  );
+};
+
+const FallbackBody = () => {
+  return (
+    <div className={styles.fallbackBody}>
+      <RandomBars count={3} />
+      <RandomBars count={4} header />
+      <RandomBars count={4} header />
+      <RandomBars count={3} header />
+    </div>
+  );
+};
+
+export const AppSidebarFallback = (): ReactElement | null => {
+  const width = useAtomValue(appSidebarWidthAtom);
+  const { appSettings } = useAppSettingHelper();
+  const clientBorder = appSettings.clientBorder;
+  const hasRightBorder = !environment.isElectron && !clientBorder;
+
   return (
     <div
       style={{ width }}
       className={navWrapperStyle}
-      data-has-border
+      data-has-border={hasRightBorder}
       data-open="true"
     >
       <nav className={navStyle}>
-        <div className={navHeaderStyle} data-open="true" />
+        {!environment.isElectron ? <div className={navHeaderStyle} /> : null}
         <div className={navBodyStyle}>
-          <div className={fallbackStyle}>
-            <div className={fallbackHeaderStyle}>
-              {currentWorkspace ? (
-                <WorkspaceNavigator
-                  showSettingsButton
-                  showSyncStatus
-                  showEnableCloudButton
-                />
-              ) : (
-                <>
-                  <Skeleton variant="circular" width={40} height={40} />
-                  <Skeleton variant="rectangular" width={150} height={40} />
-                </>
-              )}
-            </div>
+          <div className={styles.fallback}>
+            <FallbackHeader />
+            <FallbackBody />
           </div>
         </div>
       </nav>

@@ -29,6 +29,7 @@ const waveKeyframes = keyframes({
 export const root = style({
   display: 'block',
   width: '100%',
+  maxWidth: '100%',
   height: defaultHeight,
   flexShrink: 0,
   /**
@@ -51,7 +52,7 @@ export const variant = {
     borderRadius: '50%',
   }),
   rectangular: style({
-    borderRadius: '0px',
+    borderRadius: '4px',
   }),
   rounded: style({
     borderRadius: '8px',
