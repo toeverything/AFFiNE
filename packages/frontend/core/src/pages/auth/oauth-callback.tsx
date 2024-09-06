@@ -22,7 +22,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   let stateStr = queries.get('state') ?? '{}';
 
   if (!code || !stateStr) {
-    return redirect('/signIn?error=Invalid oauth callback parameters');
+    return redirect('/sign-in?error=Invalid oauth callback parameters');
   }
 
   try {
@@ -46,7 +46,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       `/open-app/url?url=${encodeURIComponent(`${client}://authentication?${authParams.toString()}`)}`
     );
   } catch {
-    return redirect('/signIn?error=Invalid oauth callback parameters');
+    return redirect('/sign-in?error=Invalid oauth callback parameters');
   }
 };
 
@@ -64,7 +64,7 @@ export const Component = () => {
         nav(redirectUri ?? '/');
       })
       .catch(e => {
-        nav(`/signIn?error=${encodeURIComponent(e.message)}`);
+        nav(`/sign-in?error=${encodeURIComponent(e.message)}`);
       });
   }, [data, auth, nav]);
 

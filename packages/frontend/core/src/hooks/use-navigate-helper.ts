@@ -163,7 +163,7 @@ export function useNavigateHelper() {
       }
 
       return navigate(
-        '/signIn' +
+        '/sign-in' +
           (searchParams.toString() ? '?' + searchParams.toString() : ''),
         {
           replace: logic === RouteLogic.REPLACE,

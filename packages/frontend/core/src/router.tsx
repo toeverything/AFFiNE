@@ -82,7 +82,7 @@ export const topLevelRoutes = [
         path: '/try-cloud',
         loader: () => {
           return redirect(
-            `/signIn?redirect_uri=${encodeURIComponent('/?initCloud=true')}`
+            `/sign-in?redirect_uri=${encodeURIComponent('/?initCloud=true')}`
           );
         },
       },
@@ -99,7 +99,7 @@ export const topLevelRoutes = [
         lazy: () => import(/* webpackChunkName: "auth" */ './pages/auth/auth'),
       },
       {
-        path: '/signIn',
+        path: '/sign-In',
         lazy: () =>
           import(/* webpackChunkName: "auth" */ './pages/auth/sign-in'),
       },
@@ -107,6 +107,11 @@ export const topLevelRoutes = [
         path: '/magic-link',
         lazy: () =>
           import(/* webpackChunkName: "auth" */ './pages/auth/magic-link'),
+      },
+      {
+        path: '/oauth/login',
+        lazy: () =>
+          import(/* webpackChunkName: "auth" */ './pages/auth/oauth-login'),
       },
       {
         path: '/oauth/callback',
@@ -117,7 +122,16 @@ export const topLevelRoutes = [
       // TODO(@forehalo): remove
       {
         path: '/desktop-signin',
-        lazy: () => import('./pages/auth/desktop-signin'),
+        lazy: () =>
+          import(/* webpackChunkName: "auth" */ './pages/auth/oauth-login'),
+      },
+      // deprecated, keep for old client compatibility
+      // use '/sign-in'
+      // TODO(@forehalo): remove
+      {
+        path: '/signIn',
+        lazy: () =>
+          import(/* webpackChunkName: "auth" */ './pages/auth/sign-in'),
       },
       {
         path: '/open-app/:action',

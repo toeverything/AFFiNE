@@ -67,6 +67,27 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/sign-in'),
       },
       {
+        path: '/magic-link',
+        lazy: () =>
+          import(
+            /* webpackChunkName: "auth" */ '@affine/core/pages/auth/magic-link'
+          ),
+      },
+      {
+        path: '/oauth/login',
+        lazy: () =>
+          import(
+            /* webpackChunkName: "auth" */ '@affine/core/pages/auth/oauth-login'
+          ),
+      },
+      {
+        path: '/oauth/callback',
+        lazy: () =>
+          import(
+            /* webpackChunkName: "auth" */ '@affine/core/pages/auth/oauth-callback'
+          ),
+      },
+      {
         path: '/redirect-proxy',
         lazy: () => import('@affine/core/pages/redirect'),
       },

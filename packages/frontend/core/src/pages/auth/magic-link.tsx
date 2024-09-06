@@ -25,7 +25,7 @@ export const loader: LoaderFunction = ({ request }) => {
   const redirectUri = params.get('redirect_uri');
 
   if (!email || !token) {
-    return redirect('/signIn?error=Invalid magic link');
+    return redirect('/sign-in?error=Invalid magic link');
   }
 
   const payload: LoaderData = {
@@ -61,7 +61,7 @@ export const Component = () => {
         nav(data.redirectUri ?? '/');
       })
       .catch(e => {
-        nav(`/signIn?error=${encodeURIComponent(e.message)}`);
+        nav(`/sign-in?error=${encodeURIComponent(e.message)}`);
       });
   }, [data, auth, nav]);
 

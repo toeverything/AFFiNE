@@ -36,7 +36,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 
   return redirect(
-    `/signIn?error=${encodeURIComponent(`Invalid oauth provider ${provider}`)}`
+    `/sign-in?error=${encodeURIComponent(`Invalid oauth provider ${provider}`)}`
   );
 };
 
@@ -54,7 +54,7 @@ export const Component = () => {
         location.href = url;
       })
       .catch(e => {
-        nav(`/signIn?error=${encodeURIComponent(e.message)}`);
+        nav(`/sign-in?error=${encodeURIComponent(e.message)}`);
       });
   }, [data, auth, nav]);
 

@@ -1,16 +1,11 @@
-import { notify, Skeleton } from '@affine/component';
+import { Skeleton } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
-import { popupWindow } from '@affine/core/utils';
-import { apis } from '@affine/electron-api';
 import { OAuthProviderType } from '@affine/graphql';
 import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
-import { useState } from 'react';
 
-import { AuthService, ServerConfigService } from '../../../modules/cloud';
+import { ServerConfigService } from '../../../modules/cloud';
 
 const OAuthProviderMap: Record<
   OAuthProviderType,
@@ -50,39 +45,23 @@ export function OAuth() {
 
 function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
   const { icon } = OAuthProviderMap[provider];
-  const authService = useService(AuthService);
-  const [isConnecting, setIsConnecting] = useState(false);
-
-  const onClick = useAsyncCallback(async () => {
-    try {
-      setIsConnecting(true);
-      const url = await authService.oauthPreflight(provider);
-      if (environment.isElectron) {
-        await apis?.ui.openExternal(url);
-      } else {
-        popupWindow(url);
-      }
-    } catch (err) {
-      console.error(err);
-      notify.error({ title: 'Failed to sign in, please try again.' });
-    } finally {
-      setIsConnecting(false);
-      track.$.$.auth.oauth({ provider });
-    }
-  }, [authService, provider]);
 
   return (
-    <Button
-      key={provider}
-      variant="primary"
-      block
-      size="extraLarge"
-      style={{ marginTop: 30, width: '100%' }}
-      prefix={icon}
-      onClick={onClick}
+    <a
+      href={`/oauth/login?provider=${provider}`}
+      target="_blank"
+      rel="noreferrer"
     >
-      Continue with {provider}
-      {isConnecting && '...'}
-    </Button>
+      <Button
+        key={provider}
+        variant="primary"
+        block
+        size="extraLarge"
+        style={{ marginTop: 30, width: '100%' }}
+        prefix={icon}
+      >
+        Continue with {provider}
+      </Button>
+    </a>
   );
 }

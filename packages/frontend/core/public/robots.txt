@@ -6,7 +6,7 @@ Disallow: /oauth/*
 Disallow: /workspace/*
 Disallow: /public-workspace/*
 Disallow: /auth/*
-Disallow: /signin/*
+Disallow: /sign-in
 Disallow: /_next/*
 Disallow: /invite/*
 Disallow: /*/invite/*
