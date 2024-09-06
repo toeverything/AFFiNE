@@ -48,7 +48,10 @@ function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
 
   return (
     <a
-      href={`/oauth/login?provider=${provider}`}
+      href={
+        (environment.isDesktopEdition ? runtimeConfig.serverUrlPrefix : '') +
+        `/oauth/login?provider=${provider}`
+      }
       target="_blank"
       rel="noreferrer"
     >
