@@ -142,7 +142,7 @@ export const registerUpdater = async () => {
 
   // check update whenever the window is activated
   let lastCheckTime = 0;
-  app.on('activate', () => {
+  app.on('browser-window-focus', () => {
     (async () => {
       if (
         configured &&
