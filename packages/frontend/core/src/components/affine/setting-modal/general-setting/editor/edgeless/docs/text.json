@@ -1,14 +1,14 @@
 {
   "type": "page",
   "meta": {
-    "id": "VKd9Ksg2BG",
+    "id": "NJwLoscdk4",
     "title": "BlockSuite Playground",
-    "createDate": 1725454903728,
+    "createDate": 1725610138401,
     "tags": []
   },
   "blocks": {
     "type": "block",
-    "id": "rhCCfuveZ8",
+    "id": "W-A_1geJy3",
     "flavour": "affine:page",
     "version": 2,
     "props": {
@@ -24,7 +24,7 @@
     "children": [
       {
         "type": "block",
-        "id": "1Gr7rOSQE0",
+        "id": "KNi1ipoyX6",
         "flavour": "affine:surface",
         "version": 5,
         "props": {
@@ -33,25 +33,25 @@
         "children": [
           {
             "type": "block",
-            "id": "wTA9OwLHan",
+            "id": "bv-d4LA-Nr",
             "flavour": "affine:edgeless-text",
             "version": 1,
             "props": {
-              "xywh": "[272.7708206176758,163.16667556762695,245.12498474121088,56]",
-              "index": "a1",
+              "xywh": "[18.221401559354234,201.98389611782602,800.6283921393511,489.15472412109375]",
+              "index": "a0",
               "color": "--affine-palette-line-blue",
               "fontFamily": "blocksuite:surface:Inter",
               "fontStyle": "normal",
               "fontWeight": "400",
               "textAlign": "left",
-              "scale": 1,
+              "scale": 5.435052533564726,
               "rotate": 0,
               "hasMaxWidth": true
             },
             "children": [
               {
                 "type": "block",
-                "id": "ig8oN3BQrC",
+                "id": "vkzwo90EHS",
                 "flavour": "affine:paragraph",
                 "version": 1,
                 "props": {
@@ -60,7 +60,25 @@
                     "$blocksuite:internal:text$": true,
                     "delta": [
                       {
-                        "insert": "To shape, Not to Adapt."
+                        "insert": "To Shape,"
+                      }
+                    ]
+                  }
+                },
+                "children": []
+              },
+              {
+                "type": "block",
+                "id": "0ugn1XiO-U",
+                "flavour": "affine:paragraph",
+                "version": 1,
+                "props": {
+                  "type": "text",
+                  "text": {
+                    "$blocksuite:internal:text$": true,
+                    "delta": [
+                      {
+                        "insert": "Not to Adopt."
                       }
                     ]
                   }
@@ -71,7 +89,7 @@
           },
           {
             "type": "block",
-            "id": "d3qe5CuEDW",
+            "id": "mkbmK_R1sC",
             "flavour": "affine:frame",
             "version": 1,
             "props": {
@@ -84,10 +102,10 @@
                 ]
               },
               "background": "--affine-palette-transparent",
-              "xywh": "[207.38800048828125,138.71615600585938,328.28125,106.92578125]",
-              "index": "a0",
+              "xywh": "[-21.778598440645766,126.5612581783729,880.6283921393511,640]",
+              "index": "a1",
               "childElementIds": {
-                "wTA9OwLHan": true
+                "bv-d4LA-Nr": true
               }
             },
             "children": []

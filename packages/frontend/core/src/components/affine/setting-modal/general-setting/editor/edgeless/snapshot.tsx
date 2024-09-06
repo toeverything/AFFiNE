@@ -99,6 +99,7 @@ export const EdgelessSnapshot = (props: Props) => {
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     renderEditor();
+    return () => editorHostRef.current?.remove();
   }, [renderEditor]);
 
   // observe editor settings change

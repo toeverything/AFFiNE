@@ -27,20 +27,49 @@ export type DocName =
 
 const docMap = new Map<DocName, Promise<Doc | undefined>>();
 
+async function loadNote() {
+  return (await import('./note.json')).default;
+}
+
+async function loadPen() {
+  return (await import('./pen.json')).default;
+}
+
+async function loadShape() {
+  return (await import('./shape.json')).default;
+}
+
+async function loadFlow() {
+  return (await import('./flow.json')).default;
+}
+
+async function loadText() {
+  return (await import('./text.json')).default;
+}
+
+async function loadConnector() {
+  return (await import('./connector.json')).default;
+}
+
+async function loadMindmap() {
+  return (await import('./mindmap.json')).default;
+}
+
+const loaders = {
+  note: loadNote,
+  pen: loadPen,
+  shape: loadShape,
+  flow: loadFlow,
+  text: loadText,
+  connector: loadConnector,
+  mindmap: loadMindmap,
+};
+
 export async function getDocByName(name: DocName) {
-  const rawData: Record<DocName, any> = {
-    note: (await import('./note.json')).default,
-    pen: (await import('./pen.json')).default,
-    shape: (await import('./shape.json')).default,
-    flow: (await import('./flow.json')).default,
-    text: (await import('./text.json')).default,
-    connector: (await import('./connector.json')).default,
-    mindmap: (await import('./mindmap.json')).default,
-  };
   if (docMap.get(name)) {
     return docMap.get(name);
   }
-  const snapshot = rawData[name] as DocSnapshot;
+  const snapshot = (await loaders[name]()) as DocSnapshot;
   const promiseDoc = initDocFromSnapshot(snapshot);
   docMap.set(name, promiseDoc);
   return promiseDoc;
