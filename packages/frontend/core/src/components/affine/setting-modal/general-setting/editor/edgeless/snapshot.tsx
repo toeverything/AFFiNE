@@ -12,7 +12,7 @@ import { isEqual } from 'lodash-es';
 import { useCallback, useEffect, useRef } from 'react';
 import { map, pairwise } from 'rxjs';
 
-import { snapshotContainer, snapshotTitle } from '../style.css';
+import { snapshotContainer, snapshotLabel, snapshotTitle } from '../style.css';
 import { type DocName, getDocByName } from './docs';
 import { getFrameBlock } from './utils';
 
@@ -126,6 +126,7 @@ export const EdgelessSnapshot = (props: Props) => {
   return (
     <div className={snapshotContainer}>
       <div className={snapshotTitle}>{title}</div>
+      <div className={snapshotLabel}>{title}</div>
       <div
         ref={wrapperRef}
         style={{

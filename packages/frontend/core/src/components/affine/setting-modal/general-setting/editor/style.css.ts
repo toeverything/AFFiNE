@@ -8,6 +8,13 @@ export const settingWrapper = style({
   minWidth: '150px',
   maxWidth: '250px',
 });
+export const preViewLabelWrapper = style({
+  flexGrow: 1,
+  display: 'flex',
+  justifyContent: 'flex-end',
+  minWidth: '100px',
+  maxWidth: '250px',
+});
 
 export const menu = style({
   background: 'white',
@@ -44,6 +51,23 @@ export const snapshot = style({
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
+});
+
+export const snapshotLabel = style({
+  position: 'absolute',
+  bottom: '12px',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  fontSize: cssVar('fontXs'),
+  color: cssVarV2('text/secondary'),
+  backgroundColor: cssVarV2('layer/background/hoverOverlay'),
+  padding: '2px 8px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '4px',
+  zIndex: 1,
+  height: '24px',
 });
 
 export const shapeIndicator = style({

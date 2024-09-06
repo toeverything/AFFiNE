@@ -178,6 +178,7 @@ export const NoteSettings = () => {
         docName="note"
         keyName="affine:note"
         getElements={getElements}
+        height={240}
       />
       <SettingRow
         name={t[

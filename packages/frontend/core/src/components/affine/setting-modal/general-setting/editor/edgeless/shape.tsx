@@ -35,7 +35,12 @@ import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo, useState } from 'react';
 
 import { DropdownMenu } from '../menu';
-import { menuTrigger, settingWrapper, shapeIndicator } from '../style.css';
+import {
+  menuTrigger,
+  preViewLabelWrapper,
+  settingWrapper,
+  shapeIndicator,
+} from '../style.css';
 import { useColor } from '../utils';
 import type { DocName } from './docs';
 import { Point } from './point';
@@ -206,7 +211,12 @@ export const ShapeSettings = () => {
       };
       const isSelected = fillColor === value;
       return (
-        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+        <MenuItem
+          key={name}
+          onSelect={handler}
+          selected={isSelected}
+          prefix={<Point color={value} />}
+        >
           {name}
         </MenuItem>
       );
@@ -221,7 +231,12 @@ export const ShapeSettings = () => {
       };
       const isSelected = strokeColor === value;
       return (
-        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+        <MenuItem
+          key={name}
+          onSelect={handler}
+          selected={isSelected}
+          prefix={<Point color={value} />}
+        >
           {name}
         </MenuItem>
       );
@@ -306,7 +321,12 @@ export const ShapeSettings = () => {
       };
       const isSelected = color === value;
       return (
-        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+        <MenuItem
+          key={name}
+          onSelect={handler}
+          selected={isSelected}
+          prefix={<Point color={value} />}
+        >
           {name}
         </MenuItem>
       );
@@ -373,20 +393,15 @@ export const ShapeSettings = () => {
         firstUpdate={firstUpdate}
       >
         <RadioGroup
-          padding={0}
-          gap={4}
-          itemHeight={28}
-          borderRadius={8}
           value={currentDoc}
           items={docs}
           onChange={setCurrentDoc}
           style={{
-            background: 'transparent',
             position: 'absolute',
-            right: 0,
-            bottom: 0,
+            right: '10px',
+            bottom: '10px',
           }}
-          indicatorClassName={shapeIndicator}
+          className={preViewLabelWrapper}
         />
       </EdgelessSnapshot>
 
