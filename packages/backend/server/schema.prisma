@@ -286,8 +286,7 @@ model Update {
   id          String   @map("guid") @db.VarChar
   blob        Bytes    @db.ByteA
   createdAt   DateTime @map("created_at") @db.Timestamptz(3)
-  // TODO(@darkskygit): fullfill old update, remove default value in next release
-  createdBy   String?  @default("system") @map("created_by") @db.VarChar
+  createdBy   String?  @map("created_by") @db.VarChar
 
   // will delete createor record if createor's account is deleted
   createdByUser User? @relation(name: "createdUpdate", fields: [createdBy], references: [id], onDelete: SetNull)
