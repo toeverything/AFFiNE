@@ -27,7 +27,6 @@
       "matchPackagePatterns": ["^@blocksuite"],
       "excludePackageNames": ["@blocksuite/icons"],
       "rangeStrategy": "replace",
-      "followTag": "canary",
       "enabled": false
     },
     {
