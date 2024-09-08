@@ -143,6 +143,8 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
   }
 
   async getSpaceDocTimestamps(workspaceId: string, after?: number) {
+    // TODO(@forehalo): do we need a [Clock] table to store the last seen time of each doc?
+    // SLOW if query DB in large workspace by `updatedAt: { gt: after }`
     const snapshots = await this.db.snapshot.findMany({
       select: {
         id: true,
@@ -150,13 +152,6 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       },
       where: {
         workspaceId,
-        ...(after
-          ? {
-              updatedAt: {
-                gt: new Date(after),
-              },
-            }
-          : {}),
       },
     });
 
@@ -165,6 +160,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
         workspaceId,
         ...(after
           ? {
+              // [createdAt] in updates table is indexed, so it's fast
               createdAt: {
                 gt: new Date(after),
               },
@@ -180,7 +176,9 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     const result: Record<string, number> = {};
 
     snapshots.forEach(s => {
-      result[s.id] = s.updatedAt.getTime();
+      if (!after || s.updatedAt.getTime() > after) {
+        result[s.id] = s.updatedAt.getTime();
+      }
     });
 
     updates.forEach(u => {
