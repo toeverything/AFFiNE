@@ -11,32 +11,48 @@ import {
 } from 'react-router-dom';
 import { z } from 'zod';
 
+import { supportedClient } from './common';
+
 const supportedProvider = z.nativeEnum(OAuthProviderType);
+
+const oauthParameters = z.object({
+  provider: supportedProvider,
+  client: supportedClient,
+  redirectUri: z.string().optional().nullable(),
+});
 
 interface LoaderData {
   provider: OAuthProviderType;
-  redirectUri: string;
+  client: string;
+  redirectUri?: string;
 }
 
 export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
   const searchParams = url.searchParams;
   const provider = searchParams.get('provider');
+  const client = searchParams.get('client') ?? 'web';
   const redirectUri = searchParams.get('redirect_uri');
 
   // sign out first
   await fetch('/api/auth/sign-out');
 
-  const maybeProvider = supportedProvider.safeParse(provider);
-  if (maybeProvider.success) {
+  const paramsParseResult = oauthParameters.safeParse({
+    provider,
+    client,
+    redirectUri,
+  });
+
+  if (paramsParseResult.success) {
     return {
       provider,
+      client,
       redirectUri,
     };
   }
 
   return redirect(
-    `/sign-in?error=${encodeURIComponent(`Invalid oauth provider ${provider}`)}`
+    `/sign-in?error=${encodeURIComponent(`Invalid oauth parameters`)}`
   );
 };
 
@@ -48,7 +64,7 @@ export const Component = () => {
 
   useEffect(() => {
     auth
-      .oauthPreflight(data.provider, data.redirectUri)
+      .oauthPreflight(data.provider, data.client, data.redirectUri)
       .then(url => {
         // this is the url of oauth provider auth page, can't navigate with react-router
         location.href = url;

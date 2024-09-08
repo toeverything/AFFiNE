@@ -112,6 +112,7 @@ export class AuthService extends Service {
 
   async oauthPreflight(
     provider: OAuthProviderType,
+    client: string,
     /** @deprecated*/ redirectUrl?: string
   ) {
     const res = await this.fetchService.fetch('/api/oauth/preflight', {
@@ -131,7 +132,7 @@ export class AuthService extends Service {
       'state',
       JSON.stringify({
         state: oauthUrl.searchParams.get('state'),
-        client: environment.isElectron ? appInfo?.schema : 'web',
+        client,
       })
     );
     url = oauthUrl.toString();

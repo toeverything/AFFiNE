@@ -9,6 +9,7 @@ import {
 } from 'react-router-dom';
 
 import { AuthService } from '../../modules/cloud';
+import { supportedClient } from './common';
 
 interface LoaderData {
   state: string;
@@ -36,6 +37,11 @@ export const loader: LoaderFunction = async ({ request }) => {
 
     if (!client || client === 'web') {
       return payload;
+    }
+
+    const clientCheckResult = supportedClient.safeParse(client);
+    if (!clientCheckResult.success) {
+      return redirect('/sign-in?error=Invalid oauth callback parameters');
     }
 
     const authParams = new URLSearchParams();

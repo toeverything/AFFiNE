@@ -1,9 +1,11 @@
 import { Skeleton } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
+import { popupWindow } from '@affine/core/utils';
+import { appInfo } from '@affine/electron-api';
 import { OAuthProviderType } from '@affine/graphql';
 import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import type { ReactElement } from 'react';
+import { type ReactElement, useCallback } from 'react';
 
 import { ServerConfigService } from '../../../modules/cloud';
 
@@ -46,25 +48,29 @@ export function OAuth() {
 function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
   const { icon } = OAuthProviderMap[provider];
 
+  const onClick = useCallback(() => {
+    let oauthUrl =
+      (environment.isElectron ? runtimeConfig.serverUrlPrefix : '') +
+      `/oauth/login?provider=${provider}`;
+
+    if (environment.isElectron) {
+      oauthUrl += `&client=${appInfo?.schema}`;
+    }
+
+    popupWindow(oauthUrl);
+  }, [provider]);
+
   return (
-    <a
-      href={
-        (environment.isDesktopEdition ? runtimeConfig.serverUrlPrefix : '') +
-        `/oauth/login?provider=${provider}`
-      }
-      target="_blank"
-      rel="noreferrer"
+    <Button
+      key={provider}
+      variant="primary"
+      block
+      size="extraLarge"
+      style={{ marginTop: 30, width: '100%' }}
+      prefix={icon}
+      onClick={onClick}
     >
-      <Button
-        key={provider}
-        variant="primary"
-        block
-        size="extraLarge"
-        style={{ marginTop: 30, width: '100%' }}
-        prefix={icon}
-      >
-        Continue with {provider}
-      </Button>
-    </a>
+      Continue with {provider}
+    </Button>
   );
 }
