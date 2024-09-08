@@ -79,7 +79,7 @@ test('should have sequential update number', async t => {
   // fake the seq num is about to overflow
   await db.snapshot.update({
     where: {
-      id_workspaceId: {
+      workspaceId_id: {
         id: '2',
         workspaceId: '2',
       },
@@ -273,7 +273,7 @@ test('should not update snapshot if doc is outdated', async t => {
   // fake the snapshot is a lot newer
   await db.snapshot.update({
     where: {
-      id_workspaceId: {
+      workspaceId_id: {
         workspaceId: '2',
         id: '1',
       },

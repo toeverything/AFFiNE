@@ -262,7 +262,8 @@ model Snapshot {
   // we need to clear all hanging updates and snapshots before enable the foreign key on workspaceId
   // workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@id([id, workspaceId])
+  @@id([workspaceId, id])
+  @@index([workspaceId, updatedAt])
   @@map("snapshots")
 }
 

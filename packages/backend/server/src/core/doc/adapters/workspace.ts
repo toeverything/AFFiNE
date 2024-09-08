@@ -143,8 +143,6 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
   }
 
   async getSpaceDocTimestamps(workspaceId: string, after?: number) {
-    // TODO(@forehalo): do we need a [Clock] table to store the last seen time of each doc?
-    // SLOW if query DB in large workspace by `updatedAt: { gt: after }`
     const snapshots = await this.db.snapshot.findMany({
       select: {
         id: true,
@@ -152,6 +150,13 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       },
       where: {
         workspaceId,
+        ...(after
+          ? {
+              updatedAt: {
+                gt: new Date(after),
+              },
+            }
+          : {}),
       },
     });
 
@@ -176,9 +181,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     const result: Record<string, number> = {};
 
     snapshots.forEach(s => {
-      if (!after || s.updatedAt.getTime() > after) {
-        result[s.id] = s.updatedAt.getTime();
-      }
+      result[s.id] = s.updatedAt.getTime();
     });
 
     updates.forEach(u => {
@@ -378,7 +381,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
   protected async getDocSnapshot(workspaceId: string, docId: string) {
     const snapshot = await this.db.snapshot.findUnique({
       where: {
-        id_workspaceId: {
+        workspaceId_id: {
           workspaceId,
           id: docId,
         },
@@ -414,7 +417,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     //
     //  ii. Prisma doesn't support `upsert` with additional `where` condition along side unique constraint.
     //      In our case, we need to manually check the `updatedAt` to avoid overriding the newer snapshot.
-    //      where: { id_workspaceId: {}, updatedAt: { lt: updatedAt } }
+    //      where: { workspaceId_id: {}, updatedAt: { lt: updatedAt } }
     //                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     try {
       const result: { updatedAt: Date }[] = await this.db.$queryRaw`
@@ -432,7 +435,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       //     seq: true,
       //   },
       //   where: {
-      //     id_workspaceId: {
+      //     workspaceId_id: {
       //       workspaceId,
       //       id: guid,
       //     },
@@ -571,7 +574,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
           seq: true,
         },
         where: {
-          id_workspaceId: {
+          workspaceId_id: {
             workspaceId,
             id: guid,
           },
@@ -594,7 +597,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
             seq: true,
           },
           where: {
-            id_workspaceId: {
+            workspaceId_id: {
               workspaceId,
               id: guid,
             },
