@@ -141,6 +141,8 @@ model WorkspaceUserPermission {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, userId])
+  // optimize for quering user's workspace permissions
+  @@index(userId)
   @@map("workspace_user_permissions")
 }
 
