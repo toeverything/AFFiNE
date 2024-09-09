@@ -36,6 +36,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useState,
 } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 
@@ -134,7 +135,7 @@ const Scroller = forwardRef<
   PropsWithChildren<HTMLAttributes<HTMLDivElement>>
 >(({ children, ...props }, ref) => {
   return (
-    <Scrollable.Root>
+    <Scrollable.Root style={{ height: '330px' }}>
       <Scrollable.Viewport {...props} ref={ref}>
         {children}
       </Scrollable.Viewport>
@@ -195,30 +196,23 @@ const FontMenuItems = ({ onSelect }: { onSelect: (font: string) => void }) => {
       <MenuSeparator />
       {isLoading ? (
         <Loading />
+      ) : result.length > 0 ? (
+        <Virtuoso
+          totalCount={result.length}
+          components={{
+            Scroller: Scroller,
+          }}
+          itemContent={index => (
+            <FontMenuItem
+              key={result[index].fullName}
+              font={result[index]}
+              onSelect={onSelect}
+              currentFont={currentCustomFont}
+            />
+          )}
+        />
       ) : (
-        <Scrollable.Root style={{ height: '330px' }}>
-          <Scrollable.Viewport>
-            {result.length > 0 ? (
-              <Virtuoso
-                totalCount={result.length}
-                components={{
-                  Scroller: Scroller,
-                }}
-                itemContent={index => (
-                  <FontMenuItem
-                    key={result[index].fullName}
-                    font={result[index]}
-                    onSelect={onSelect}
-                    currentFont={currentCustomFont}
-                  />
-                )}
-              />
-            ) : (
-              <div className={styles.notFound}>No results found.</div>
-            )}
-          </Scrollable.Viewport>
-          <Scrollable.Scrollbar />
-        </Scrollable.Root>
+        <div className={styles.notFound}>No results found.</div>
       )}
     </div>
   );
@@ -264,6 +258,7 @@ const FontMenuItem = ({
 
 const CustomFontFamilySettings = () => {
   const t = useI18n();
+  const [open, setOpen] = useState(false);
   const { editorSettingService } = useServices({ EditorSettingService });
   const settings = useLiveData(editorSettingService.editorSetting.settings$);
 
@@ -292,6 +287,11 @@ const CustomFontFamilySettings = () => {
         contentOptions={{
           align: 'end',
           style: { width: '250px', height: '380px' },
+        }}
+        rootOptions={{
+          open,
+          onOpenChange: setOpen,
+          modal: open,
         }}
       >
         <MenuTrigger className={styles.menuTrigger} style={{ fontFamily }}>

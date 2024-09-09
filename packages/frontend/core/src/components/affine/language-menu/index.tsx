@@ -1,7 +1,7 @@
 import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
 import { DoneIcon } from '@blocksuite/icons/rc';
 import type { ReactElement } from 'react';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 
 import { useLanguageHelper } from '../../../hooks/affine/use-language-helper';
 import * as styles from './style.css';
@@ -37,12 +37,18 @@ const LanguageMenuContent = memo(function LanguageMenuContent() {
 
 export const LanguageMenu = () => {
   const { currentLanguage } = useLanguageHelper();
+  const [open, setOpen] = useState(false);
   return (
     <Menu
       items={(<LanguageMenuContent />) as ReactElement}
       contentOptions={{
         className: styles.menu,
         align: 'end',
+      }}
+      rootOptions={{
+        open,
+        onOpenChange: setOpen,
+        modal: open,
       }}
     >
       <MenuTrigger
