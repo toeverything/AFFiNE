@@ -71,6 +71,7 @@ export const Slider = ({
   thumbStyle,
   noteStyle,
   thumbSize = 14,
+  disabled,
   ...props
 }: SliderProps) => {
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -93,6 +94,7 @@ export const Slider = ({
         style={rootStyle}
         className={styles.root}
         {...props}
+        disabled={disabled}
       >
         <Sliders.Track className={styles.trackStyle} ref={sliderRef}>
           <div className={styles.fakeTrackStyle} style={trackStyle}>
@@ -108,6 +110,7 @@ export const Slider = ({
                 key={index}
                 className={styles.nodeStyle}
                 data-active={value && value[0] >= nodeValue}
+                data-disabled={disabled}
                 style={{
                   left: calcStepMarkOffset(
                     index,

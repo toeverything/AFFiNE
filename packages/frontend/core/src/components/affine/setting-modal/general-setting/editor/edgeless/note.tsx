@@ -256,6 +256,7 @@ export const NoteSettings = () => {
           max={12}
           step={2}
           nodes={[2, 4, 6, 8, 10, 12]}
+          disabled={borderStyle === StrokeStyle.None}
         />
       </SettingRow>
     </>

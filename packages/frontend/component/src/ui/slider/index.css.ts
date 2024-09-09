@@ -3,7 +3,13 @@ import { createVar, style } from '@vanilla-extract/css';
 
 export const thumbSize = createVar();
 
-export const root = style({});
+export const root = style({
+  selectors: {
+    '&[data-disabled]': {
+      opacity: 0.5,
+    },
+  },
+});
 
 export const trackStyle = style({
   width: '100%',
@@ -13,6 +19,11 @@ export const trackStyle = style({
   alignItems: 'center',
   padding: '12px 0',
   cursor: 'pointer',
+  selectors: {
+    '&[data-disabled]': {
+      cursor: 'not-allowed',
+    },
+  },
 });
 export const fakeTrackStyle = style({
   width: `calc(100% - ${thumbSize})`,
@@ -42,6 +53,11 @@ export const thumbStyle = style({
   top: '50%',
   transform: 'translate(-50%, -50%)',
   cursor: 'pointer',
+  selectors: {
+    '&[data-disabled]': {
+      cursor: 'not-allowed',
+    },
+  },
 });
 
 export const nodeStyle = style({
@@ -57,6 +73,9 @@ export const nodeStyle = style({
   selectors: {
     '&[data-active="true"]': {
       backgroundColor: cssVarV2('icon/primary'),
+    },
+    '&[data-disabled="true"]': {
+      cursor: 'not-allowed',
     },
   },
 });
