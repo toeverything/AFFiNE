@@ -72,14 +72,20 @@ function createCopyLinkToBlockMenuItem(
       const str = generateUrl(options);
       if (!str) return;
 
-      track.doc.editor.toolbar.copyBlockToLink({ type: model.flavour });
+      const type = model.flavour;
+      const title = editor.doc.title$.value;
+      const page = editor.editorContainer$.value;
 
-      navigator.clipboard
-        .writeText(str)
+      page?.host?.std.clipboard
+        .writeToClipboard(items => {
+          items['text/plain'] = str;
+          // wrap a link
+          items['text/html'] = `<a title="${title}" href="${str}">${title}</a>`;
+          return items;
+        })
         .then(() => {
-          notify.success({
-            title: I18n['Copied link to clipboard'](),
-          });
+          track.doc.editor.toolbar.copyBlockToLink({ type });
+          notify.success({ title: I18n['Copied link to clipboard']() });
         })
         .catch(console.error);
     },
