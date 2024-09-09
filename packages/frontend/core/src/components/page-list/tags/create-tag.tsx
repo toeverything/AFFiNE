@@ -3,6 +3,7 @@ import { TagService } from '@affine/core/modules/tag';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
+import type { MouseEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { TagMeta } from '../types';
@@ -107,6 +108,11 @@ export const CreateOrEditTag = ({
     return;
   }, [onClose, t, tag, tagIcon, tagMeta, tagName, tagOptions, tagList]);
 
+  const handlePropagation = useCallback((event: MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     if (menuOpen) return;
@@ -138,6 +144,7 @@ export const CreateOrEditTag = ({
       className={styles.createTagWrapper}
       data-show={open}
       data-testid="edit-tag-modal"
+      onClick={handlePropagation}
     >
       <Menu
         rootOptions={{
