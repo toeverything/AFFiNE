@@ -18,7 +18,25 @@ export const useMenuContentController = ({
   const [open, setOpen] = useState(defaultOpen ?? false);
   const actualOpen = controlledOpen ?? open;
   const contentSide = side ?? 'bottom';
-  const [contentOffset, setContentOffset] = useState<number>(0);
+  const [contentOffset, setContentOffsetO] = useState<number>(0);
+
+  const setContentOffset = useCallback(
+    (offsetOrFn: number | ((prev: number) => number)) => {
+      const setter =
+        typeof offsetOrFn !== 'function' ? () => offsetOrFn : offsetOrFn;
+
+      setContentOffsetO(prev => {
+        const newVal = setter(prev);
+
+        const diff = newVal - prev;
+        if (Math.abs(diff) < 1) {
+          return prev;
+        }
+        return newVal;
+      });
+    },
+    []
+  );
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -82,7 +100,7 @@ export const useMenuContentController = ({
         cancelAnimationFrame(animationFrame);
       };
     },
-    [actualOpen, contentSide]
+    [actualOpen, contentSide, setContentOffset]
   );
 
   return {
