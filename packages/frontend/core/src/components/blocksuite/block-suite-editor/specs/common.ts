@@ -18,6 +18,7 @@ import {
   EmbedSyncedDocBlockSpec,
   EmbedYoutubeBlockSpec,
   ImageBlockSpec,
+  LatexBlockSpec,
   ListBlockSpec,
   ParagraphBlockSpec,
 } from '@blocksuite/blocks';
@@ -38,6 +39,7 @@ const CommonBlockSpecs: ExtensionType[] = [
   EmbedHtmlBlockSpec,
   EmbedSyncedDocBlockSpec,
   EmbedLinkedDocBlockSpec,
+  LatexBlockSpec,
   // special
   CustomAttachmentBlockSpec,
 ].flat();
