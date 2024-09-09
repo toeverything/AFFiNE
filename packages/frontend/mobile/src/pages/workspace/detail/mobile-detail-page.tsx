@@ -21,7 +21,6 @@ import {
 } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import { type AffineEditorContainer } from '@blocksuite/presets';
-import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
 import {
   DocService,
   FrameworkScope,
@@ -106,7 +105,7 @@ const DetailPageImpl = () => {
   usePageDocumentTitle(title);
 
   const onLoad = useCallback(
-    (_bsPage: BlockSuiteDoc, editorContainer: AffineEditorContainer) => {
+    (editorContainer: AffineEditorContainer) => {
       // blocksuite editor host
       const editorHost = editorContainer.host;
 
@@ -191,11 +190,7 @@ const DetailPageImpl = () => {
                 className={styles.journalIconButton}
               />
             )}
-            <PageDetailEditor
-              pageId={doc.id}
-              onLoad={onLoad}
-              docCollection={docCollection}
-            />
+            <PageDetailEditor onLoad={onLoad} />
           </AffineErrorBoundary>
         </div>
       </div>

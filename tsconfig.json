@@ -98,6 +98,9 @@
       "path": "./packages/frontend/web"
     },
     {
+      "path": "./packages/frontend/mobile"
+    },
+    {
       "path": "./packages/frontend/electron/tsconfig.test.json"
     },
     {

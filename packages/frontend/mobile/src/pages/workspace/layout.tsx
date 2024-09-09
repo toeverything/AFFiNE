@@ -19,6 +19,22 @@ import {
 
 import { MobileCurrentWorkspaceModals } from '../../provider/model-provider';
 
+// TODO(@forehalo): reuse the global context with [core/electron]
+declare global {
+  /**
+   * @internal debug only
+   */
+  // eslint-disable-next-line no-var
+  var currentWorkspace: Workspace | undefined;
+  // eslint-disable-next-line no-var
+  var exportWorkspaceSnapshot: (docs?: string[]) => Promise<void>;
+  // eslint-disable-next-line no-var
+  var importWorkspaceSnapshot: () => Promise<void>;
+  interface WindowEventMap {
+    'affine:workspace:change': CustomEvent<{ id: string }>;
+  }
+}
+
 export const WorkspaceLayout = ({
   meta,
   children,
