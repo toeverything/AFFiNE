@@ -437,6 +437,7 @@ model AiSessionMessage {
 
   session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
+  @@index([sessionId])
   @@map("ai_sessions_messages")
 }
 
@@ -457,6 +458,8 @@ model AiSession {
   prompt   AiPrompt           @relation(fields: [promptName], references: [name], onDelete: Cascade)
   messages AiSessionMessage[]
 
+  @@index([userId])
+  @@index([userId, workspaceId])
   @@map("ai_sessions_metadata")
 }
 
