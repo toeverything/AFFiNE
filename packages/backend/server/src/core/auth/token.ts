@@ -40,6 +40,48 @@ export class TokenService {
     return this.crypto.encrypt(token);
   }
 
+  /**
+   * get token by type
+   *
+   * token will be revoked if expired or keep is not set
+   */
+  async getToken(type: TokenType, token: string, keep?: boolean) {
+    token = this.crypto.decrypt(token);
+    const record = await this.db.verificationToken.findUnique({
+      where: {
+        type_token: {
+          token,
+          type,
+        },
+      },
+    });
+
+    if (!record) {
+      return null;
+    }
+
+    const expired = record.expiresAt <= new Date();
+
+    // always revoke expired token
+    if (expired || !keep) {
+      const deleted = await this.revokeToken(type, token);
+
+      // already deleted, means token has been used
+      if (!deleted.count) {
+        return null;
+      }
+    }
+
+    return !expired ? record : null;
+  }
+
+  /**
+   * get token and verify credential
+   *
+   * if credential is not provided, it will be failed
+   *
+   * token will be revoked if expired or keep is not set
+   */
   async verifyToken(
     type: TokenType,
     token: string,

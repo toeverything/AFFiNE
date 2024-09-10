@@ -90,7 +90,7 @@ export class CaptchaService {
     const challenge = credential.challenge;
     if (typeof challenge === 'string' && challenge) {
       const resource = await this.token
-        .verifyToken(TokenType.Challenge, challenge)
+        .getToken(TokenType.Challenge, challenge)
         .then(token => token?.credential);
 
       if (!resource) {
