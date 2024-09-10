@@ -87,6 +87,17 @@ export class UserFriendlyError extends Error {
     };
   }
 
+  toText() {
+    const json = this.toJSON();
+    return [
+      `Status: ${json.status}`,
+      `Type: ${json.type}`,
+      `Name: ${json.name}`,
+      `Message: ${json.message}`,
+      `Data: ${JSON.stringify(json.data)}`,
+    ].join('\n');
+  }
+
   log(context: string) {
     // ignore all user behavior error log
     if (this.type !== 'internal_server_error') {

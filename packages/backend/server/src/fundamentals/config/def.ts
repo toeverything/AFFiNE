@@ -2,7 +2,7 @@ import type { LeafPaths } from '../utils/types';
 import { AppStartupConfig } from './types';
 
 export type EnvConfigType = 'string' | 'int' | 'float' | 'boolean';
-export type ServerFlavor = 'allinone' | 'graphql' | 'sync';
+export type ServerFlavor = 'allinone' | 'graphql' | 'sync' | 'renderer';
 export type AFFINE_ENV = 'dev' | 'beta' | 'production';
 export type NODE_ENV = 'development' | 'test' | 'production';
 
@@ -23,7 +23,7 @@ export interface PreDefinedAFFiNEConfig {
   readonly version: string;
   readonly type: DeploymentType;
   readonly isSelfhosted: boolean;
-  readonly flavor: { type: string; graphql: boolean; sync: boolean };
+  readonly flavor: { type: string } & { [key in ServerFlavor]: boolean };
   readonly affine: { canary: boolean; beta: boolean; stable: boolean };
   readonly node: { prod: boolean; dev: boolean; test: boolean };
   readonly deploy: boolean;

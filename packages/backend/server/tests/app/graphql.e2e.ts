@@ -14,7 +14,13 @@ const test = ava as TestFn<{
 
 test.before('start app', async t => {
   // @ts-expect-error override
-  AFFiNE.flavor = { type: 'graphql', graphql: true, sync: false };
+  AFFiNE.flavor = {
+    type: 'graphql',
+    allinone: false,
+    graphql: true,
+    sync: false,
+    renderer: false,
+  } satisfies typeof AFFiNE.flavor;
   const { app } = await createTestingApp({
     imports: [buildAppModule()],
   });

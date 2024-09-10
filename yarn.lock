@@ -896,6 +896,7 @@ __metadata:
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.4.5"
     ws: "npm:^8.16.0"
+    xss: "npm:^1.0.15"
     yjs: "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
     zod: "npm:^3.22.4"
   bin:
@@ -36500,7 +36501,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"xss@npm:^1.0.8":
+"xss@npm:^1.0.15, xss@npm:^1.0.8":
   version: 1.0.15
   resolution: "xss@npm:1.0.15"
   dependencies:

@@ -773,6 +773,8 @@ input UpdateUserInput {
 }
 
 input UpdateWorkspaceInput {
+  """Enable url previous when sharing"""
+  enableUrlPreview: Boolean
   id: ID!
 
   """is Public workspace"""
@@ -903,6 +905,9 @@ type WorkspaceType {
 
   """Workspace created date"""
   createdAt: DateTime!
+
+  """Enable url previous when sharing"""
+  enableUrlPreview: Boolean!
 
   """Enabled features of workspace"""
   features: [FeatureType!]!

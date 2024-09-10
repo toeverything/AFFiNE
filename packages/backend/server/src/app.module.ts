@@ -11,6 +11,7 @@ import { AppController } from './app.controller';
 import { AuthModule } from './core/auth';
 import { ADD_ENABLED_FEATURES, ServerConfigModule } from './core/config';
 import { DocStorageModule } from './core/doc';
+import { DocRendererModule } from './core/doc-renderer';
 import { FeatureModule } from './core/features';
 import { PermissionModule } from './core/permission';
 import { QuotaModule } from './core/quota';
@@ -42,7 +43,6 @@ import { ENABLED_PLUGINS } from './plugins/registry';
 
 export const FunctionalityModules = [
   ConfigModule.forRoot(),
-  ScheduleModule.forRoot(),
   EventModule,
   CacheModule,
   MutexModule,
@@ -156,7 +156,7 @@ export function buildAppModule() {
     .use(UserModule, AuthModule, PermissionModule)
 
     // business modules
-    .use(DocStorageModule)
+    .use(FeatureModule, QuotaModule, DocStorageModule)
 
     // sync server only
     .useIf(config => config.flavor.sync, SyncModule)
@@ -164,16 +164,16 @@ export function buildAppModule() {
     // graphql server only
     .useIf(
       config => config.flavor.graphql,
+      ScheduleModule.forRoot(),
       GqlModule,
       StorageModule,
       ServerConfigModule,
-      WorkspaceModule,
-      FeatureModule,
-      QuotaModule
+      WorkspaceModule
     )
 
     // self hosted server only
-    .useIf(config => config.isSelfhosted, SelfhostModule);
+    .useIf(config => config.isSelfhosted, SelfhostModule)
+    .useIf(config => config.flavor.renderer, DocRendererModule);
 
   // plugin modules
   ENABLED_PLUGINS.forEach(name => {

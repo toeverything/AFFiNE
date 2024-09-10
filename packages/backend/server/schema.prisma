@@ -97,9 +97,10 @@ model VerificationToken {
 }
 
 model Workspace {
-  id        String   @id @default(uuid()) @db.VarChar
-  public    Boolean
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id               String   @id @default(uuid()) @db.VarChar
+  public           Boolean
+  enableUrlPreview Boolean  @default(false) @map("enable_url_preview")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   pages           WorkspacePage[]
   permissions     WorkspaceUserPermission[]

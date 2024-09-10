@@ -48,7 +48,16 @@ export class GlobalExceptionFilter extends BaseExceptionFilter {
       error.log('HTTP');
       metrics.controllers.counter('error').add(1, { status: error.status });
       const res = host.switchToHttp().getResponse<Response>();
-      res.status(error.status).send(error.toJSON());
+      const respondText = res.getHeader('content-type') === 'text/plain';
+
+      if (respondText) {
+        res
+          .setHeader('content-type', 'text/plain')
+          .status(error.status)
+          .send(error.toText());
+      } else {
+        res.status(error.status).send(error.toJSON());
+      }
       return;
     }
   }

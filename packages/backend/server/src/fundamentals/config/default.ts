@@ -28,6 +28,7 @@ function getPredefinedAFFiNEConfig(): PreDefinedAFFiNEConfig {
     'allinone',
     'graphql',
     'sync',
+    'renderer',
   ]);
   const deploymentType = readEnv<DeploymentType>(
     'DEPLOYMENT_TYPE',
@@ -59,8 +60,10 @@ function getPredefinedAFFiNEConfig(): PreDefinedAFFiNEConfig {
     isSelfhosted,
     flavor: {
       type: flavor,
+      allinone: flavor === 'allinone',
       graphql: flavor === 'graphql' || flavor === 'allinone',
       sync: flavor === 'sync' || flavor === 'allinone',
+      renderer: flavor === 'renderer' || flavor === 'allinone',
     },
     affine,
     node,

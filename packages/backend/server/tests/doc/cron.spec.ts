@@ -1,5 +1,6 @@
 import { mock } from 'node:test';
 
+import { ScheduleModule } from '@nestjs/schedule';
 import { TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import test from 'ava';
@@ -20,7 +21,7 @@ test.before(async () => {
     toFake: ['setInterval'],
   });
   m = await createTestingModule({
-    imports: [DocStorageModule],
+    imports: [ScheduleModule.forRoot(), DocStorageModule],
   });
 
   db = m.get(PrismaClient);

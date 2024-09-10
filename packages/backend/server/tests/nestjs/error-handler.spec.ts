@@ -52,7 +52,7 @@ class TestResolver {
 }
 
 @Public()
-@Controller()
+@Controller('/')
 class TestController {
   @Get('/ok')
   ok() {
@@ -154,6 +154,7 @@ test('should be able to handle known user error in http request', async t => {
   const res = await request(t.context.app.getHttpServer())
     .get('/throw-known-error')
     .expect(HttpStatus.FORBIDDEN);
+
   t.is(res.body.message, 'You do not have permission to access this resource.');
   t.is(res.body.name, 'ACCESS_DENIED');
   t.true(t.context.logger.error.notCalled);

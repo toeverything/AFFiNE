@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 
@@ -11,14 +11,14 @@ export class DocStorageCronJob implements OnModuleInit {
   private busy = false;
 
   constructor(
-    private readonly registry: SchedulerRegistry,
     private readonly config: Config,
     private readonly db: PrismaClient,
-    private readonly workspace: PgWorkspaceDocStorageAdapter
+    private readonly workspace: PgWorkspaceDocStorageAdapter,
+    @Optional() private readonly registry?: SchedulerRegistry
   ) {}
 
   onModuleInit() {
-    if (this.config.doc.manager.enableUpdateAutoMerging) {
+    if (this.registry && this.config.doc.manager.enableUpdateAutoMerging) {
       this.registry.addInterval(
         this.autoMergePendingDocUpdates.name,
         // scheduler registry will clean up the interval when the app is stopped
