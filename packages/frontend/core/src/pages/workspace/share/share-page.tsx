@@ -1,5 +1,6 @@
 import { Scrollable } from '@affine/component';
 import { AppFallback } from '@affine/core/components/affine/app-container';
+import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
 import { SharePageNotFoundError } from '@affine/core/components/share-page-not-found-error';
 import { AppContainer, MainContainer } from '@affine/core/components/workspace';
@@ -112,7 +113,8 @@ const SharePageInner = ({
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [page, setPage] = useState<Doc | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
-  const [_, setActiveBlocksuiteEditor] = useActiveBlocksuiteEditor();
+  const [editorContainer, setActiveBlocksuiteEditor] =
+    useActiveBlocksuiteEditor();
 
   useEffect(() => {
     // create a workspace for share page
@@ -229,6 +231,10 @@ const SharePageInner = ({
                     </Scrollable.Viewport>
                     <Scrollable.Scrollbar />
                   </Scrollable.Root>
+                  <EditorOutlineViewer
+                    editor={editorContainer}
+                    show={publishMode === 'page'}
+                  />
                   <SharePageFooter />
                 </div>
               </div>
