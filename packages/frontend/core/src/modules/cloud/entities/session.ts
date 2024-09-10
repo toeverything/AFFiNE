@@ -7,6 +7,7 @@ import {
   onComplete,
   onStart,
 } from '@toeverything/infra';
+import { isEqual } from 'lodash-es';
 import { EMPTY, exhaustMap, mergeMap } from 'rxjs';
 
 import { validateAndReduceImage } from '../../../utils/reduce-image';
@@ -73,7 +74,9 @@ export class AuthSession extends Entity {
           count: Infinity,
         }),
         mergeMap(sessionInfo => {
-          this.store.setCachedAuthSession(sessionInfo);
+          if (!isEqual(this.store.getCachedAuthSession(), sessionInfo)) {
+            this.store.setCachedAuthSession(sessionInfo);
+          }
           return EMPTY;
         }),
         onStart(() => {

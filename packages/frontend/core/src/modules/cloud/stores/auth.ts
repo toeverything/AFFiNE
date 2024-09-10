@@ -32,6 +32,10 @@ export class AuthStore extends Store {
     return this.globalState.watch<AuthSessionInfo>('affine-cloud-auth');
   }
 
+  getCachedAuthSession() {
+    return this.globalState.get<AuthSessionInfo>('affine-cloud-auth');
+  }
+
   setCachedAuthSession(session: AuthSessionInfo | null) {
     this.globalState.set('affine-cloud-auth', session);
   }
