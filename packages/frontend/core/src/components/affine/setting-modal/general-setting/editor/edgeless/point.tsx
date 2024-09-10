@@ -14,7 +14,7 @@ export const Point = ({
         height: size,
         borderRadius: '50%',
         backgroundColor: `var(${color})`,
-        border: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
+        border: `1px solid ${cssVarV2('layer/insideBorder/blackBorder')}`,
       }}
     ></div>
   );
