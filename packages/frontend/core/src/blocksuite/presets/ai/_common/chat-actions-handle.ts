@@ -178,7 +178,7 @@ function addAIChatBlock(
 }
 
 export function promptDocTitle(host: EditorHost, autofill?: string) {
-  const notification = host.std.getService('affine:page').notificationService;
+  const notification = host.std.getService('affine:page')?.notificationService;
   if (!notification) return Promise.resolve(undefined);
 
   return notification.prompt({
@@ -386,6 +386,8 @@ const ADD_TO_EDGELESS_AS_NOTE = {
     reportResponse('result:add-note');
     const { doc } = host;
     const service = host.std.getService<EdgelessRootService>('affine:page');
+    if (!service) return;
+
     const elements = service.selection.selectedElements;
 
     const props: { displayMode: NoteDisplayMode; xywh?: SerializedXYWH } = {
@@ -426,7 +428,7 @@ const CREATE_AS_DOC = {
     newDoc.addBlock('affine:surface', {}, rootId);
     const noteId = newDoc.addBlock('affine:note', {}, rootId);
 
-    host.std.getService('affine:page').slots.docLinkClicked.emit({
+    host.std.getService('affine:page')?.slots.docLinkClicked.emit({
       pageId: newDoc.id,
     });
     let complete = false;
@@ -464,6 +466,9 @@ const CREATE_AS_LINKED_DOC = {
     }
 
     const service = host.std.getService<EdgelessRootService>('affine:page');
+    if (!service) {
+      return false;
+    }
     const docModeService = host.std.get(DocModeProvider);
     const mode = docModeService.getEditorMode();
     if (mode !== 'edgeless') {

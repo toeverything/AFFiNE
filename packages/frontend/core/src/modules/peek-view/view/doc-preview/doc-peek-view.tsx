@@ -37,6 +37,9 @@ function fitViewport(
 
     const rootService =
       editor.host.std.getService<EdgelessRootService>('affine:page');
+    if (!rootService) {
+      return;
+    }
     rootService.viewport.onResize();
 
     if (xywh) {
@@ -85,6 +88,9 @@ function DocPeekPreviewEditor({
       }
       const disposableGroup = new DisposableGroup();
       const rootService = editorContainer.host.std.getService('affine:page');
+      if (!rootService) {
+        return;
+      }
       // doc change event inside peek view should be handled by peek view
       disposableGroup.add(
         rootService.slots.docLinkClicked.on(options => {

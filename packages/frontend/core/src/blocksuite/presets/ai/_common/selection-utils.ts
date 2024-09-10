@@ -78,7 +78,7 @@ export async function selectedToPng(editor: EditorHost) {
 export async function getSelectedTextContent(editorHost: EditorHost) {
   const slice = Slice.fromModels(
     editorHost.std.doc,
-    getRootService(editorHost).selectedModels
+    getRootService(editorHost)?.selectedModels ?? []
   );
   return getMarkdownFromSlice(editorHost, slice);
 }

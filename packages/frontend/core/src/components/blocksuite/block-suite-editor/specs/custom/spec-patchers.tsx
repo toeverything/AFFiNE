@@ -30,11 +30,8 @@ import {
 import { BlockServiceWatcher } from '@blocksuite/block-std';
 import {
   type AffineReference,
-  type DatabaseBlockService,
   type DocMode,
   EmbedOptionProvider,
-  type ListBlockService,
-  type ParagraphBlockService,
   type RootService,
 } from '@blocksuite/blocks';
 import {
@@ -43,6 +40,7 @@ import {
   EdgelessRootBlockComponent,
   EmbedLinkedDocBlockComponent,
   QuickSearchProvider,
+  ReferenceNodeConfigExtension,
 } from '@blocksuite/blocks';
 import { LinkIcon } from '@blocksuite/icons/rc';
 import { AIChatBlockSchema } from '@blocksuite/presets';
@@ -95,21 +93,14 @@ function patchSpecService<Service extends BlockService = BlockService>(
 export function patchReferenceRenderer(
   reactToLit: (element: ElementOrFactory) => TemplateResult,
   reactRenderer: ReferenceReactRenderer
-): ExtensionType[] {
+): ExtensionType {
   const litRenderer = (reference: AffineReference) => {
     const node = reactRenderer(reference);
     return reactToLit(node);
   };
 
-  return ['affine:paragraph', 'affine:list', 'affine:database'].map(flavour => {
-    return patchSpecService<
-      ParagraphBlockService | ListBlockService | DatabaseBlockService
-    >(flavour, service => {
-      service.referenceNodeConfig.setCustomContent(litRenderer);
-      return () => {
-        service.referenceNodeConfig.setCustomContent(null);
-      };
-    });
+  return ReferenceNodeConfigExtension({
+    customContent: litRenderer,
   });
 }
 

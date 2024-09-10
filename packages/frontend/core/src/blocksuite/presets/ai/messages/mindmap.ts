@@ -1,6 +1,8 @@
-import type { MindmapStyle } from '@blocksuite/affine-block-surface';
 import type { EditorHost } from '@blocksuite/block-std';
-import type { AffineAIPanelWidgetConfig } from '@blocksuite/blocks';
+import type {
+  AffineAIPanelWidgetConfig,
+  MindmapStyle,
+} from '@blocksuite/blocks';
 import { markdownToMindmap, MiniMindmapPreview } from '@blocksuite/blocks';
 import { noop } from '@blocksuite/global/utils';
 import { html, nothing } from 'lit';

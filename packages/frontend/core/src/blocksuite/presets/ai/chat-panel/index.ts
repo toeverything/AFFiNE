@@ -160,7 +160,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
 
   private readonly _cleanupHistories = async () => {
     const notification =
-      this.host.std.getService('affine:page').notificationService;
+      this.host.std.getService('affine:page')?.notificationService;
     if (!notification) return;
 
     if (

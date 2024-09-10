@@ -510,6 +510,7 @@ export const responses: {
     if (!contents) return;
     const images = data.images as { url: string; id: string }[][];
     const service = host.std.getService<EdgelessRootService>('affine:page');
+    if (!service) return;
 
     (async function () {
       for (let i = 0; i < contents.length - 1; i++) {

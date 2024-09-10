@@ -148,7 +148,7 @@ export class ChatActionList extends LitElement {
                     messageId
                   );
                   if (success) {
-                    this._rootService.notificationService?.notify({
+                    this._rootService?.notificationService?.notify({
                       title: action.toast,
                       accent: 'success',
                       onClose: function (): void {},

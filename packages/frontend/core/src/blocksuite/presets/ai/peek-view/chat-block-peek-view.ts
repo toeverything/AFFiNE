@@ -254,10 +254,9 @@ export class AIChatBlockPeekView extends LitElement {
    * Clean current chat messages and delete the newly created AI chat block
    */
   cleanCurrentChatHistories = async () => {
+    if (!this._rootService) return;
     const { notificationService } = this._rootService;
-    if (!notificationService) {
-      return;
-    }
+    if (!notificationService) return;
 
     const { currentChatBlockId, currentSessionId } = this.chatContext;
     if (!currentChatBlockId && !currentSessionId) {

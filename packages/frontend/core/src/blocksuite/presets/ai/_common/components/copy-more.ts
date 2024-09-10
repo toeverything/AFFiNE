@@ -128,6 +128,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   }
 
   private readonly _notifySuccess = (title: string) => {
+    if (!this._rootService) return;
     const { notificationService } = this._rootService;
     notificationService?.notify({
       title: title,

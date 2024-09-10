@@ -18,14 +18,18 @@ import {
   EmbedSyncedDocBlockSpec,
   EmbedYoutubeBlockSpec,
   ImageBlockSpec,
+  LatexBlockSpec,
   ListBlockSpec,
   ParagraphBlockSpec,
+  RichTextExtensions,
 } from '@blocksuite/blocks';
 import { AIChatBlockSpec } from '@blocksuite/presets';
 
 import { CustomAttachmentBlockSpec } from './custom/attachment-block';
 
 const CommonBlockSpecs: ExtensionType[] = [
+  RichTextExtensions,
+  LatexBlockSpec,
   ListBlockSpec,
   DatabaseBlockSpec,
   DataViewBlockSpec,

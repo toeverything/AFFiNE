@@ -80,7 +80,7 @@ export class AISlidesRenderer extends WithDisposable(LitElement) {
       PPTBuilder(this._editorHost)
         .process(this.text)
         .then(res => {
-          if (this.ctx) {
+          if (res && this.ctx) {
             this.ctx.set({
               contents: res.contents,
               images: res.images,
