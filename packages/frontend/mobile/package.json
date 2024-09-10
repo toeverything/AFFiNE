@@ -15,7 +15,7 @@
     "@affine/env": "workspace:*",
     "@blocksuite/icons": "^2.1.66",
     "@sentry/react": "^8.0.0",
-    "@toeverything/theme": "^1.0.7",
+    "@toeverything/theme": "^1.0.9",
     "clsx": "^2.1.1",
     "core-js": "^3.36.1",
     "figma-squircle": "^1.0.0",
