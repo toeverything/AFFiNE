@@ -9,7 +9,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import type { CSSProperties, MouseEvent } from 'react';
+import type { CSSProperties } from 'react';
 import { forwardRef, useCallback, useEffect, useState } from 'react';
 
 import { startScopedViewTransition } from '../../utils';
@@ -142,7 +142,6 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       overlayOptions: {
         className: overlayClassName,
         style: overlayStyle,
-        onClick: onOverlayClick,
         ...otherOverlayOptions
       } = {},
       closeButtonOptions,
@@ -191,19 +190,6 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       [onEscapeKeyDown, persistent]
     );
 
-    const handleOverlayClick = useCallback(
-      (e: MouseEvent<HTMLDivElement>) => {
-        onOverlayClick?.(e);
-        if (persistent) {
-          e.preventDefault();
-        } else {
-          e.stopPropagation();
-          onOpenChange?.(false);
-        }
-      },
-      [onOpenChange, onOverlayClick, persistent]
-    );
-
     if (!container) {
       return;
     }
@@ -226,74 +212,74 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
             style={{
               ...overlayStyle,
             }}
-            onClick={handleOverlayClick}
             {...otherOverlayOptions}
-          />
-          <div
-            data-full-screen={fullScreen}
-            data-modal={modal}
-            className={clsx(
-              `anim-${animation}`,
-              styles.modalContentWrapper,
-              contentWrapperClassName
-            )}
-            style={contentWrapperStyle}
           >
-            <Dialog.Content
-              onPointerDownOutside={handlePointerDownOutSide}
-              onEscapeKeyDown={handleEscapeKeyDown}
-              className={clsx(styles.modalContent, contentClassName)}
-              style={{
-                ...assignInlineVars({
-                  [styles.widthVar]: getVar(
-                    width,
-                    fullScreen ? '100dvw' : '50dvw'
-                  ),
-                  [styles.heightVar]: getVar(
-                    height,
-                    fullScreen ? '100dvh' : 'unset'
-                  ),
-                  [styles.minHeightVar]: getVar(minHeight, '26px'),
-                }),
-                ...contentStyle,
-              }}
-              {...(description ? {} : { 'aria-describedby': undefined })}
-              {...otherContentOptions}
-              ref={ref}
+            <div
+              data-full-screen={fullScreen}
+              data-modal={modal}
+              className={clsx(
+                `anim-${animation}`,
+                styles.modalContentWrapper,
+                contentWrapperClassName
+              )}
+              style={contentWrapperStyle}
             >
-              {withoutCloseButton ? null : (
-                <Dialog.Close asChild>
-                  <IconButton
-                    size="20"
-                    className={clsx(styles.closeButton, closeButtonClassName)}
-                    aria-label="Close"
-                    data-testid="modal-close-button"
-                    {...otherCloseButtonProps}
-                  >
-                    <CloseIcon />
-                  </IconButton>
-                </Dialog.Close>
-              )}
-              {title ? (
-                <Dialog.Title className={styles.modalHeader}>
-                  {title}
-                </Dialog.Title>
-              ) : (
-                // Refer: https://www.radix-ui.com/primitives/docs/components/dialog#title
-                // If you want to hide the title, wrap it inside our Visually Hidden utility like this <VisuallyHidden asChild>.
-                <VisuallyHidden.Root asChild>
-                  <Dialog.Title></Dialog.Title>
-                </VisuallyHidden.Root>
-              )}
-              {description ? (
-                <Dialog.Description className={styles.modalDescription}>
-                  {description}
-                </Dialog.Description>
-              ) : null}
+              <Dialog.Content
+                onPointerDownOutside={handlePointerDownOutSide}
+                onEscapeKeyDown={handleEscapeKeyDown}
+                className={clsx(styles.modalContent, contentClassName)}
+                style={{
+                  ...assignInlineVars({
+                    [styles.widthVar]: getVar(
+                      width,
+                      fullScreen ? '100dvw' : '50dvw'
+                    ),
+                    [styles.heightVar]: getVar(
+                      height,
+                      fullScreen ? '100dvh' : 'unset'
+                    ),
+                    [styles.minHeightVar]: getVar(minHeight, '26px'),
+                  }),
+                  ...contentStyle,
+                }}
+                {...(description ? {} : { 'aria-describedby': undefined })}
+                {...otherContentOptions}
+                ref={ref}
+              >
+                {withoutCloseButton ? null : (
+                  <Dialog.Close asChild>
+                    <IconButton
+                      size="20"
+                      className={clsx(styles.closeButton, closeButtonClassName)}
+                      aria-label="Close"
+                      data-testid="modal-close-button"
+                      {...otherCloseButtonProps}
+                    >
+                      <CloseIcon />
+                    </IconButton>
+                  </Dialog.Close>
+                )}
+                {title ? (
+                  <Dialog.Title className={styles.modalHeader}>
+                    {title}
+                  </Dialog.Title>
+                ) : (
+                  // Refer: https://www.radix-ui.com/primitives/docs/components/dialog#title
+                  // If you want to hide the title, wrap it inside our Visually Hidden utility like this <VisuallyHidden asChild>.
+                  <VisuallyHidden.Root asChild>
+                    <Dialog.Title></Dialog.Title>
+                  </VisuallyHidden.Root>
+                )}
+                {description ? (
+                  <Dialog.Description className={styles.modalDescription}>
+                    {description}
+                  </Dialog.Description>
+                ) : null}
 
-              {children}
-            </Dialog.Content>
-          </div>
+                {children}
+              </Dialog.Content>
+            </div>
+          </Dialog.Overlay>
         </Dialog.Portal>
       </Dialog.Root>
     );

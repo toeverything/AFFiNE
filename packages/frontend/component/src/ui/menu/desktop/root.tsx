@@ -1,5 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import clsx from 'clsx';
+import React from 'react';
 
 import type { MenuProps } from '../menu.types';
 import * as styles from '../styles.css';
@@ -9,6 +10,7 @@ import * as desktopStyles from './styles.css';
 export const DesktopMenu = ({
   children,
   items,
+  noPortal,
   portalOptions,
   rootOptions: {
     onOpenChange,
@@ -33,6 +35,7 @@ export const DesktopMenu = ({
       side,
       sideOffset: (sideOffset ?? 0) + 5,
     });
+  const ContentWrapper = noPortal ? React.Fragment : DropdownMenu.Portal;
   return (
     <DropdownMenu.Root
       onOpenChange={handleOpenChange}
@@ -51,7 +54,7 @@ export const DesktopMenu = ({
         {children}
       </DropdownMenu.Trigger>
 
-      <DropdownMenu.Portal {...portalOptions}>
+      <ContentWrapper {...portalOptions}>
         <DropdownMenu.Content
           className={clsx(
             styles.menuContent,
@@ -68,7 +71,7 @@ export const DesktopMenu = ({
         >
           {items}
         </DropdownMenu.Content>
-      </DropdownMenu.Portal>
+      </ContentWrapper>
     </DropdownMenu.Root>
   );
 };
