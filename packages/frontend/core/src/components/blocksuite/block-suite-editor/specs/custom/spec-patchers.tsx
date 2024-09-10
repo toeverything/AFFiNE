@@ -22,19 +22,22 @@ import {
 } from '@affine/core/modules/quicksearch';
 import { DebugLogger } from '@affine/debug';
 import {
+  ReferenceInlineSpecExtension,
+  ReferenceNodeConfig,
+} from '@blocksuite/affine-components/rich-text';
+import {
   type BlockService,
   BlockViewIdentifier,
   type ExtensionType,
+  StdIdentifier,
   type WidgetComponent,
 } from '@blocksuite/block-std';
 import { BlockServiceWatcher } from '@blocksuite/block-std';
 import {
   type AffineReference,
-  type DatabaseBlockService,
   type DocMode,
   EmbedOptionProvider,
-  type ListBlockService,
-  type ParagraphBlockService,
+  ReferenceInfoSchema,
   type RootService,
 } from '@blocksuite/blocks';
 import {
@@ -52,9 +55,10 @@ import {
   DocsService,
   type FrameworkProvider,
 } from '@toeverything/infra';
-import { type TemplateResult } from 'lit';
+import { html, type TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { literal } from 'lit/static-html.js';
+import { z } from 'zod';
 
 export type ReferenceReactRenderer = (
   reference: AffineReference
@@ -101,16 +105,42 @@ export function patchReferenceRenderer(
     return reactToLit(node);
   };
 
-  return ['affine:paragraph', 'affine:list', 'affine:database'].map(flavour => {
-    return patchSpecService<
-      ParagraphBlockService | ListBlockService | DatabaseBlockService
-    >(flavour, service => {
-      service.referenceNodeConfig.setCustomContent(litRenderer);
-      return () => {
-        service.referenceNodeConfig.setCustomContent(null);
-      };
-    });
-  });
+  return [
+    {
+      setup: di => {
+        const std = di.provider().get(StdIdentifier);
+        const config = new ReferenceNodeConfig(std);
+        config.setCustomContent(litRenderer);
+
+        di.override(ReferenceInlineSpecExtension.identifier, () => ({
+          name: 'reference',
+          schema: z
+            .object({
+              type: z.enum([
+                // @deprecated Subpage is deprecated, use LinkedPage instead
+                'Subpage',
+                'LinkedPage',
+              ]),
+            })
+            .merge(ReferenceInfoSchema)
+            .optional()
+            .nullable()
+            .catch(undefined),
+          match: delta => {
+            return !!delta.attributes?.reference;
+          },
+          renderer: ({ delta, selected }) => {
+            return html`<affine-reference
+              .delta=${delta}
+              .selected=${selected}
+              .config=${config}
+            ></affine-reference>`;
+          },
+          embed: true,
+        }));
+      },
+    },
+  ];
 }
 
 export function patchNotificationService({
