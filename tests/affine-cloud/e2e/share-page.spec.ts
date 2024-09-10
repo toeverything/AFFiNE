@@ -120,6 +120,54 @@ test('share page should have toc', async ({ page, browser }) => {
   }
 });
 
+test('append paragraph should be disabled in shared mode', async ({
+  page,
+  browser,
+}) => {
+  await page.reload();
+  await waitForEditorLoad(page);
+  await createLocalWorkspace(
+    {
+      name: 'test',
+    },
+    page
+  );
+  await enableCloudWorkspaceFromShareButton(page);
+  const title = getBlockSuiteEditorTitle(page);
+  await title.pressSequentially('TEST TITLE', {
+    delay: 50,
+  });
+
+  // enable share page and copy page link
+  await enableShare(page);
+  await page.getByTestId('share-menu-copy-link-button').click();
+  await page.getByTestId('share-link-menu-copy-page').click();
+
+  {
+    const context = await browser.newContext();
+    await skipOnboarding(context);
+    const url: string = await page.evaluate(() =>
+      navigator.clipboard.readText()
+    );
+    const page2 = await context.newPage();
+    await page2.goto(url);
+    await waitForEditorLoad(page2);
+
+    const paragraph = page2.locator('affine-paragraph');
+    const numParagraphs = await paragraph.count();
+
+    let error = null;
+    try {
+      await page2.locator('[data-testid=page-editor-blank]').click();
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeNull();
+
+    expect(await paragraph.count()).toBe(numParagraphs);
+  }
+});
+
 test('share page with default edgeless', async ({ page, browser }) => {
   await page.reload();
   await waitForEditorLoad(page);

@@ -164,11 +164,12 @@ export const BlocksuiteEditorContainer = forwardRef<
   ]);
 
   const handleClickPageModeBlank = useCallback(() => {
+    if (shared || page.readonly) return;
     affineEditorContainerProxy.host?.std.command.exec(
       'appendParagraph' as never,
       {}
     );
-  }, [affineEditorContainerProxy]);
+  }, [affineEditorContainerProxy, page, shared]);
 
   return (
     <div

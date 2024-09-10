@@ -223,7 +223,11 @@ export const BlocksuiteDocEditor = forwardRef<
           specs={specs}
           hasViewport={false}
         />
-        <div className={styles.docEditorGap} onClick={onClickBlank}></div>
+        <div
+          className={styles.docEditorGap}
+          data-testid="page-editor-blank"
+          onClick={onClickBlank}
+        ></div>
         {!shared && displayBiDirectionalLink ? (
           <BiDirectionalLinkPanel />
         ) : null}
