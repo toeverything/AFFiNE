@@ -3,7 +3,7 @@ import { setupGlobal } from '@affine/env/global';
 
 process.env.RUNTIME_CONFIG = JSON.stringify(
   getRuntimeConfig({
-    distribution: 'browser',
+    distribution: 'web',
     mode: 'development',
     channel: 'canary',
     static: false,

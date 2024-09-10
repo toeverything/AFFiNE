@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { applyUpdate, Doc } from 'yjs';
 
-import { Cache } from '../../fundamentals';
+import { Cache, type EventPayload, OnEvent } from '../../fundamentals';
 import { PgWorkspaceDocStorageAdapter } from '../doc';
 import {
   type PageDocContent,
@@ -78,11 +78,15 @@ export class DocContentService {
     return content;
   }
 
-  async markDocContentCacheStale(workspaceId: string, guid: string) {
+  @OnEvent('snapshot.updated')
+  async markDocContentCacheStale({
+    workspaceId,
+    id,
+  }: EventPayload<'snapshot.updated'>) {
     const key =
-      workspaceId === guid
+      workspaceId === id
         ? `workspace:${workspaceId}:content`
-        : `workspace:${workspaceId}:doc:${guid}:content`;
+        : `workspace:${workspaceId}:doc:${id}:content`;
     await this.cache.delete(key);
   }
 }

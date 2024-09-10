@@ -20,6 +20,6 @@ permissions:
 jobs:
   build-image:
     name: Build Image
-    uses: ./.github/workflows/build-server-image.yml
+    uses: ./.github/workflows/build-images.yml
     with:
       flavor: ${{ github.event.inputs.flavor }}

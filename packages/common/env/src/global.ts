@@ -10,7 +10,7 @@ export const runtimeFlagsSchema = z.object({
   serverUrlPrefix: z.string(),
   appVersion: z.string(),
   editorVersion: z.string(),
-  distribution: z.enum(['browser', 'desktop', 'admin', 'mobile']),
+  distribution: z.enum(['web', 'desktop', 'admin', 'mobile']),
   appBuildType: z.union([
     z.literal('stable'),
     z.literal('beta'),
@@ -104,7 +104,7 @@ export function setupGlobal() {
     environment = {
       isDesktopEdition: runtimeConfig.distribution !== 'mobile',
       isMobileEdition: runtimeConfig.distribution === 'mobile',
-      isDesktopWeb: runtimeConfig.distribution === 'browser',
+      isDesktopWeb: runtimeConfig.distribution === 'web',
       isMobileWeb: runtimeConfig.distribution === 'mobile',
       isElectron,
       isDebug,

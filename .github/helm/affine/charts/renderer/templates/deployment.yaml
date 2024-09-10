@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "graphql.fullname" . }}
+  name: {{ include "renderer.fullname" . }}
   labels:
-    {{- include "graphql.labels" . | nindent 4 }}
+    {{- include "renderer.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "graphql.selectorLabels" . | nindent 6 }}
+      {{- include "renderer.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -16,13 +16,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "graphql.selectorLabels" . | nindent 8 }}
+        {{- include "renderer.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "graphql.serviceAccountName" . }}
+      serviceAccountName: {{ include "renderer.serviceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -42,7 +42,7 @@ spec:
           - name: DEPLOYMENT_TYPE
             value: "affine"
           - name: SERVER_FLAVOR
-            value: "graphql"
+            value: "renderer"
           - name: AFFINE_ENV
             value: "{{ .Release.Namespace }}"
           - name: DATABASE_PASSWORD
@@ -77,51 +77,6 @@ spec:
             value: "{{ .Values.app.https }}"
           - name: ENABLE_R2_OBJECT_STORAGE
             value: "{{ .Values.global.objectStorage.r2.enabled }}"
-          - name: FEATURES_EARLY_ACCESS_PREVIEW
-            value: "{{ .Values.app.features.earlyAccessPreview }}"
-          - name: FEATURES_SYNC_CLIENT_VERSION_CHECK
-            value: "{{ .Values.app.features.syncClientVersionCheck }}"
-          - name: MAILER_HOST
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.mailer.secretName }}"
-                key: host
-          - name: MAILER_PORT
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.mailer.secretName }}"
-                key: port
-          - name: MAILER_USER
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.mailer.secretName }}"
-                key: user
-          - name: MAILER_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.mailer.secretName }}"
-                key: password
-          - name: MAILER_SENDER
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.mailer.secretName }}"
-                key: sender
-          - name: STRIPE_API_KEY
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.payment.stripe.secretName }}"
-                key: stripeAPIKey
-          - name: STRIPE_WEBHOOK_KEY
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.payment.stripe.secretName }}"
-                key: stripeWebhookKey
-          - name: DOC_MERGE_INTERVAL
-            value: "{{ .Values.app.doc.mergeInterval }}"
-          {{ if .Values.app.experimental.enableJwstCodec }}
-          - name: DOC_MERGE_USE_JWST_CODEC
-            value: "true"
-          {{ end }}
           {{ if .Values.global.objectStorage.r2.enabled }}
           - name: R2_OBJECT_STORAGE_ACCOUNT_ID
             valueFrom:
@@ -138,63 +93,6 @@ spec:
               secretKeyRef:
                 name: "{{ .Values.global.objectStorage.r2.secretName }}"
                 key: secretAccessKey
-          {{ end }}
-          {{ if .Values.app.captcha.enabled }}
-          - name: CAPTCHA_TURNSTILE_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.captcha.secretName }}"
-                key: turnstileSecret
-          {{ end }}
-          {{ if .Values.app.copilot.enabled }}
-          - name: COPILOT_OPENAI_API_KEY
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.copilot.secretName }}"
-                key: openaiSecret
-          - name: COPILOT_FAL_API_KEY
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.copilot.secretName }}"
-                key: falSecret
-          - name: COPILOT_UNSPLASH_API_KEY
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.copilot.secretName }}"
-                key: unsplashSecret
-          {{ end }}
-          {{ if .Values.app.oauth.google.enabled }}
-          - name: OAUTH_GOOGLE_ENABLED
-            value: "true"
-          - name: OAUTH_GOOGLE_CLIENT_ID
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.oauth.google.secretName }}"
-                key: clientId
-          - name: OAUTH_GOOGLE_CLIENT_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.oauth.google.secretName }}"
-                key: clientSecret
-          {{ end }}
-          {{ if .Values.app.oauth.github.enabled }}
-          - name: OAUTH_GITHUB_CLIENT_ID
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.oauth.github.secretName }}"
-                key: clientId
-          - name: OAUTH_GITHUB_CLIENT_SECRET
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.oauth.github.secretName }}"
-                key: clientSecret
-          {{ end }}
-          {{ if .Values.app.metrics.enabled }}
-          - name: METRICS_CUSTOMER_IO_TOKEN
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.app.metrics.secretName }}"
-                key: customerIoSecret
           {{ end }}
           ports:
             - name: http

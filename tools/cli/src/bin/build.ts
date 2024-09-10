@@ -31,7 +31,7 @@ const getChannel = () => {
 
 let entry: BuildFlags['entry'];
 
-const { DISTRIBUTION } = process.env;
+const { DISTRIBUTION = 'web' } = process.env;
 
 const cwd = getCwdFromDistribution(DISTRIBUTION);
 

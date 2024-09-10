@@ -7,14 +7,15 @@ version = "1.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-chrono      = { workspace = true }
-file-format = { workspace = true }
-napi        = { workspace = true }
-napi-derive = { workspace = true }
-rand        = { workspace = true }
-sha3        = { workspace = true }
-tiktoken-rs = { workspace = true }
-y-octo      = { workspace = true }
+chrono       = { workspace = true }
+file-format  = { workspace = true }
+napi         = { workspace = true }
+napi-derive  = { workspace = true }
+rand         = { workspace = true }
+sha3         = { workspace = true }
+tiktoken-rs  = { workspace = true }
+v_htmlescape = { workspace = true }
+y-octo       = { workspace = true }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 mimalloc = { workspace = true }

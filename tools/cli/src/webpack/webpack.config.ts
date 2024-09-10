@@ -5,6 +5,7 @@ import type { BuildFlags } from '@affine/cli/config';
 import { Repository } from '@napi-rs/simple-git';
 import HTMLPlugin from 'html-webpack-plugin';
 import { once } from 'lodash-es';
+import webpack from 'webpack';
 import { merge } from 'webpack-merge';
 
 import { createConfiguration, rootPath, workspaceRoot } from './config.js';
@@ -48,9 +49,32 @@ export function createWebpackConfig(cwd: string, flags: BuildFlags) {
       minify: false,
       chunks: [entryName],
       filename: `${entryName === 'app' ? 'index' : entryName}.html`, // main entry should take name index.html
-      templateParameters: {
-        GIT_SHORT_SHA: gitShortHash(),
-        DESCRIPTION,
+      templateParameters: (compilation, assets) => {
+        if (entryName === 'app') {
+          // emit assets manifest for ssr
+          compilation.emitAsset(
+            `assets-manifest.json`,
+            new webpack.sources.RawSource(
+              JSON.stringify(
+                {
+                  ...assets,
+                  gitHash: gitShortHash(),
+                  description: DESCRIPTION,
+                },
+                null,
+                2
+              )
+            ),
+            {
+              immutable: true,
+            }
+          );
+        }
+        return {
+          GIT_SHORT_SHA: gitShortHash(),
+          DESCRIPTION,
+          PUBLIC_PATH: config.output?.publicPath,
+        };
       },
     });
   };

@@ -1,0 +1,38 @@
+replicaCount: 1
+image:
+  repository: ghcr.io/toeverything/affine-graphql
+  pullPolicy: IfNotPresent
+  tag: ''
+
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+# map to NODE_ENV environment variable
+env: 'production'
+app:
+  # AFFINE_SERVER_SUB_PATH
+  path: ''
+  # AFFINE_SERVER_HOST
+  host: '0.0.0.0'
+  https: true
+serviceAccount:
+  create: true
+  annotations: {}
+  name: 'affine-renderer'
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+resources:
+  requests:
+    cpu: '4'
+    memory: 4Gi
+
+probe:
+  initialDelaySeconds: 20
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

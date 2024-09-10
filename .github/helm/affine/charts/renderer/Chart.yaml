@@ -1,0 +1,11 @@
+apiVersion: v2
+name: renderer
+description: AFFiNE renderer server
+type: application
+version: 0.0.0
+appVersion: "0.16.0"
+dependencies:
+  - name: gcloud-sql-proxy
+    version: 0.0.0
+    repository: "file://../gcloud-sql-proxy"
+    condition: .global.database.gcloud.enabled

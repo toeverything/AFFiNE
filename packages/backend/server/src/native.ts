@@ -32,3 +32,4 @@ export const mintChallengeResponse = async (resource: string, bits: number) => {
 export const getMime = serverNativeModule.getMime;
 export const Tokenizer = serverNativeModule.Tokenizer;
 export const fromModelName = serverNativeModule.fromModelName;
+export const htmlSanitize = serverNativeModule.htmlSanitize;

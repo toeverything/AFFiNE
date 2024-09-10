@@ -1,4 +1,6 @@
 global:
+  app:
+    buildType: 'stable'
   ingress:
     enabled: false
     className: ''
@@ -28,6 +30,13 @@ global:
     username: ''
     password: ''
     database: 0
+  objectStorage:
+    r2:
+      enabled: false
+      secretName: r2
+      accountId: ''
+      accessKeyId: ''
+      secretAccessKey: ''
   gke:
     enabled: true
 
@@ -42,6 +51,13 @@ sync:
   service:
     type: ClusterIP
     port: 3010
+    annotations:
+      cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
+
+renderer:
+  service:
+    type: ClusterIP
+    port: 3000
     annotations:
       cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
 

@@ -60,6 +60,15 @@ spec:
                 name: affine-graphql
                 port:
                   number: {{ .Values.graphql.service.port }}
+          {{- if eq .Values.global.app.buildType "canary" }}
+          - path: /workspace
+            pathType: Prefix
+            backend:
+              service:
+                name: affine-renderer
+                port:
+                  number: {{ .Values.graphql.service.port }}
+          {{- end }}
           - path: /
             pathType: Prefix
             backend:

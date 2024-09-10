@@ -869,6 +869,7 @@ __metadata:
     graphql-upload: "npm:^16.0.2"
     html-validate: "npm:^8.20.1"
     ioredis: "npm:^5.3.2"
+    is-mobile: "npm:^4.0.0"
     keyv: "npm:^5.0.0"
     lodash-es: "npm:^4.17.21"
     mixpanel: "npm:^0.18.0"
@@ -896,7 +897,6 @@ __metadata:
     ts-node: "npm:^10.9.2"
     typescript: "npm:^5.4.5"
     ws: "npm:^8.16.0"
-    xss: "npm:^1.0.15"
     yjs: "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
     zod: "npm:^3.22.4"
   bin:
@@ -24792,6 +24792,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"is-mobile@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "is-mobile@npm:4.0.0"
+  checksum: 10/1c4f32ab030ac6c203d63b547ef23933eacfebe81fd9d800c86739d5a73afad7983aea4c5e832c3d9c0a63d1e68cd318637490e6406bdda1cbadc8f701d5d557
+  languageName: node
+  linkType: hard
+
 "is-my-ip-valid@npm:^1.0.0":
   version: 1.0.1
   resolution: "is-my-ip-valid@npm:1.0.1"
@@ -36501,7 +36508,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"xss@npm:^1.0.15, xss@npm:^1.0.8":
+"xss@npm:^1.0.8":
   version: 1.0.15
   resolution: "xss@npm:1.0.15"
   dependencies:

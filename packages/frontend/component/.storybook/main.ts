@@ -55,9 +55,10 @@ export default {
       define: {
         'process.env.CAPTCHA_SITE_KEY': `"${process.env.CAPTCHA_SITE_KEY}"`,
         runtimeConfig: getRuntimeConfig({
-          distribution: 'browser',
+          distribution: 'web',
           mode: 'development',
           channel: 'canary',
+          static: false,
           coverage: false,
           static: false,
         }),

@@ -18,16 +18,17 @@ const test = ava as TestFn<{
 }>;
 
 function initTestStaticFiles(staticPath: string) {
-  mkdirSync(path.join(staticPath, 'admin'), { recursive: true });
   const files = {
-    'index.html': `<!DOCTYPE html><html><body>AFFiNE</body><script src="main.js"/></html>`,
-    'main.js': `const name = 'affine'`,
-    'admin/index.html': `<!DOCTYPE html><html><body>AFFiNE Admin</body><script src="/admin/main.js"/></html>`,
-    'admin/main.js': `const name = 'affine-admin'`,
+    'selfhost/index.html': `<!DOCTYPE html><html><body>AFFiNE</body><script src="main.js"/></html>`,
+    'selfhost/main.js': `const name = 'affine'`,
+    'admin/selfhost/index.html': `<!DOCTYPE html><html><body>AFFiNE Admin</body><script src="/admin/main.js"/></html>`,
+    'admin/selfhost/main.js': `const name = 'affine-admin'`,
   };
 
   for (const [filename, content] of Object.entries(files)) {
-    writeFileSync(path.join(staticPath, filename), content);
+    const filePath = path.join(staticPath, filename);
+    mkdirSync(path.dirname(filePath), { recursive: true });
+    writeFileSync(filePath, content);
   }
 }
 

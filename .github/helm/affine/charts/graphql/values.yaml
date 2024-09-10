@@ -29,14 +29,7 @@ app:
     secretName: copilot
     openai:
       key: ''
-  objectStorage:
-    r2:
-      enabled: false
-      secretName: r2
-      accountId: ''
-      accessKeyId: ''
-      secretAccessKey: ''
-  oauth: 
+  oauth:
     google:
       enabled: false
       secretName: oauth-google

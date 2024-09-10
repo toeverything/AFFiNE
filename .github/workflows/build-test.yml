@@ -117,7 +117,7 @@ jobs:
     name: E2E Test
     runs-on: ubuntu-latest
     env:
-      DISTRIBUTION: browser
+      DISTRIBUTION: web
       IN_CI_TEST: true
     strategy:
       fail-fast: false
@@ -177,7 +177,7 @@ jobs:
     name: E2E Migration Test
     runs-on: ubuntu-latest
     env:
-      DISTRIBUTION: browser
+      DISTRIBUTION: web
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -204,7 +204,7 @@ jobs:
     needs:
       - build-native
     env:
-      DISTRIBUTION: browser
+      DISTRIBUTION: web
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -311,7 +311,7 @@ jobs:
         # always skip cache because its fast, and cache configuration is always changing
         run: yarn nx build @affine/web --skip-nx-cache
         env:
-          DISTRIBUTION: 'desktop'
+          DISTRIBUTION: desktop
       - name: zip web
         run: tar -czf dist.tar.gz --directory=packages/frontend/electron/renderer/dist .
       - name: Upload web artifact
@@ -327,7 +327,7 @@ jobs:
     needs: build-server-native
     env:
       NODE_ENV: test
-      DISTRIBUTION: browser
+      DISTRIBUTION: web
     services:
       postgres:
         image: postgres
@@ -396,7 +396,7 @@ jobs:
     name: ${{ matrix.tests.name }}
     runs-on: ubuntu-latest
     env:
-      DISTRIBUTION: browser
+      DISTRIBUTION: web
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
       IN_CI_TEST: true
     strategy:

@@ -6,6 +6,7 @@ import {
   Cache,
   DocHistoryNotFound,
   DocNotFound,
+  EventEmitter,
   FailedToSaveUpdates,
   FailedToUpsertSnapshot,
   metrics,
@@ -30,6 +31,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
     private readonly db: PrismaClient,
     private readonly mutex: Mutex,
     private readonly cache: Cache,
+    private readonly event: EventEmitter,
     protected override readonly options: DocStorageOptions
   ) {
     super(options);
@@ -97,7 +99,6 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       metrics.doc.counter('doc_update_insert_failed').add(1);
       throw new FailedToSaveUpdates();
     }
-
     return timestamp;
   }
 
@@ -463,6 +464,14 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
       // the updates has been applied to current `doc` must have been seen by the other process as well.
       // The `updatedSnapshot` will be `undefined` in this case.
       const updatedSnapshot = result.at(0);
+
+      if (updatedSnapshot) {
+        this.event.emit('snapshot.updated', {
+          workspaceId: snapshot.spaceId,
+          id: snapshot.docId,
+        });
+      }
+
       return !!updatedSnapshot;
     } catch (e) {
       metrics.doc.counter('snapshot_upsert_failed').add(1);

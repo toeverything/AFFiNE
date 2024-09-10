@@ -70,6 +70,7 @@
     "graphql-upload": "^16.0.2",
     "html-validate": "^8.20.1",
     "ioredis": "^5.3.2",
+    "is-mobile": "^4.0.0",
     "keyv": "^5.0.0",
     "lodash-es": "^4.17.21",
     "mixpanel": "^0.18.0",
@@ -94,7 +95,6 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
     "ws": "^8.16.0",
-    "xss": "^1.0.15",
     "yjs": "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch",
     "zod": "^3.22.4"
   },

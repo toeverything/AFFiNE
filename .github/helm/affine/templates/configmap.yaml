@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-runtime-config
+data:
+  web-assets-manifest: |-
+    {{ .Files.Get "web-assets-manifest.json" | nindent 4 }}
+  mobile-assets-manifest: |-
+    {{ .Files.Get "mobile-assets-manifest.json" | nindent 4 }}
