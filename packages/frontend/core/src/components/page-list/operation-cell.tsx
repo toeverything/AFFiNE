@@ -35,6 +35,7 @@ import {
   useServices,
   WorkspaceService,
 } from '@toeverything/infra';
+import type { MouseEvent } from 'react';
 import { useCallback, useState } from 'react';
 
 import type { CollectionService } from '../../modules/collection';
@@ -324,29 +325,48 @@ export const CollectionOperationCell = ({
       title: t['com.affine.editCollection.renameCollection'](),
     });
 
-  const handleEditName = useCallback(() => {
-    // use openRenameModal if it is in the sidebar collection list
-    openEditCollectionNameModal(collection.name)
-      .then(name => {
-        return service.updateCollection(collection.id, collection => ({
-          ...collection,
-          name,
-        }));
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, [collection.id, collection.name, openEditCollectionNameModal, service]);
+  const handlePropagation = useCallback((event: MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
 
-  const handleEdit = useCallback(() => {
-    openEditCollectionModal(collection)
-      .then(collection => {
-        return service.updateCollection(collection.id, () => collection);
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, [openEditCollectionModal, collection, service]);
+  const handleEditName = useCallback(
+    (event: MouseEvent) => {
+      handlePropagation(event);
+      // use openRenameModal if it is in the sidebar collection list
+      openEditCollectionNameModal(collection.name)
+        .then(name => {
+          return service.updateCollection(collection.id, collection => ({
+            ...collection,
+            name,
+          }));
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    },
+    [
+      collection.id,
+      collection.name,
+      handlePropagation,
+      openEditCollectionNameModal,
+      service,
+    ]
+  );
+
+  const handleEdit = useCallback(
+    (event: MouseEvent) => {
+      handlePropagation(event);
+      openEditCollectionModal(collection)
+        .then(collection => {
+          return service.updateCollection(collection.id, () => collection);
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    },
+    [handlePropagation, openEditCollectionModal, collection, service]
+  );
 
   const handleDelete = useCallback(() => {
     return service.deleteCollection(info, collection.id);
