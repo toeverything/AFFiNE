@@ -17,6 +17,7 @@ import { ExportPanel } from './export';
 import { LabelsPanel } from './labels';
 import { MembersPanel } from './members';
 import { ProfilePanel } from './profile';
+import { SharingPanel } from './sharing';
 import type { WorkspaceSettingDetailProps } from './types';
 
 export const WorkspaceSettingDetail = ({
@@ -67,6 +68,7 @@ export const WorkspaceSettingDetail = ({
         <EnableCloudPanel />
         <MembersPanel />
       </SettingWrapper>
+      <SharingPanel />
       {environment.isElectron && (
         <SettingWrapper title={t['Storage and Export']()}>
           <ExportPanel

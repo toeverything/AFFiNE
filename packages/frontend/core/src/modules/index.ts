@@ -19,6 +19,7 @@ import { configurePermissionsModule } from './permissions';
 import { configureWorkspacePropertiesModule } from './properties';
 import { configureQuickSearchModule } from './quicksearch';
 import { configureShareDocsModule } from './share-doc';
+import { configureShareSettingModule } from './share-setting';
 import { configureSystemFontFamilyModule } from './system-font-family';
 import { configureTagModule } from './tag';
 import { configureTelemetryModule } from './telemetry';
@@ -34,6 +35,7 @@ export function configureCommonModules(framework: Framework) {
   configureQuotaModule(framework);
   configurePermissionsModule(framework);
   configureShareDocsModule(framework);
+  configureShareSettingModule(framework);
   configureTelemetryModule(framework);
   configureFindInPageModule(framework);
   configurePeekViewModule(framework);

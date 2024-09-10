@@ -1170,6 +1170,32 @@ mutation verifyEmail($token: String!) {
 }`,
 };
 
+export const getEnableUrlPreviewQuery = {
+  id: 'getEnableUrlPreviewQuery' as const,
+  operationName: 'getEnableUrlPreview',
+  definitionName: 'workspace',
+  containsFile: false,
+  query: `
+query getEnableUrlPreview($id: String!) {
+  workspace(id: $id) {
+    enableUrlPreview
+  }
+}`,
+};
+
+export const setEnableUrlPreviewMutation = {
+  id: 'setEnableUrlPreviewMutation' as const,
+  operationName: 'setEnableUrlPreview',
+  definitionName: 'updateWorkspace',
+  containsFile: false,
+  query: `
+mutation setEnableUrlPreview($id: ID!, $enableUrlPreview: Boolean!) {
+  updateWorkspace(input: {id: $id, enableUrlPreview: $enableUrlPreview}) {
+    id
+  }
+}`,
+};
+
 export const enabledFeaturesQuery = {
   id: 'enabledFeaturesQuery' as const,
   operationName: 'enabledFeatures',

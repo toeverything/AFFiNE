@@ -1,0 +1,5 @@
+query getEnableUrlPreview($id: String!) {
+  workspace(id: $id) {
+    enableUrlPreview
+  }
+}

@@ -2325,6 +2325,25 @@ export type VerifyEmailMutation = {
   verifyEmail: boolean;
 };
 
+export type GetEnableUrlPreviewQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type GetEnableUrlPreviewQuery = {
+  __typename?: 'Query';
+  workspace: { __typename?: 'WorkspaceType'; enableUrlPreview: boolean };
+};
+
+export type SetEnableUrlPreviewMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  enableUrlPreview: Scalars['Boolean']['input'];
+}>;
+
+export type SetEnableUrlPreviewMutation = {
+  __typename?: 'Mutation';
+  updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
+};
+
 export type EnabledFeaturesQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -2620,6 +2639,11 @@ export type Queries =
       response: SubscriptionQuery;
     }
   | {
+      name: 'getEnableUrlPreviewQuery';
+      variables: GetEnableUrlPreviewQueryVariables;
+      response: GetEnableUrlPreviewQuery;
+    }
+  | {
       name: 'enabledFeaturesQuery';
       variables: EnabledFeaturesQueryVariables;
       response: EnabledFeaturesQuery;
@@ -2830,6 +2854,11 @@ export type Mutations =
       name: 'verifyEmailMutation';
       variables: VerifyEmailMutationVariables;
       response: VerifyEmailMutation;
+    }
+  | {
+      name: 'setEnableUrlPreviewMutation';
+      variables: SetEnableUrlPreviewMutationVariables;
+      response: SetEnableUrlPreviewMutation;
     }
   | {
       name: 'setWorkspaceExperimentalFeatureMutation';
