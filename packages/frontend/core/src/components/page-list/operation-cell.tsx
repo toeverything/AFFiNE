@@ -317,13 +317,11 @@ export const CollectionOperationCell = ({
     favAdapter.isFavorite$(collection.id, 'collection')
   );
 
-  const { open: openEditCollectionModal, node: editModal } =
-    useEditCollection();
+  const { open: openEditCollectionModal } = useEditCollection();
 
-  const { open: openEditCollectionNameModal, node: editNameModal } =
-    useEditCollectionName({
-      title: t['com.affine.editCollection.renameCollection'](),
-    });
+  const { open: openEditCollectionNameModal } = useEditCollectionName({
+    title: t['com.affine.editCollection.renameCollection'](),
+  });
 
   const handlePropagation = useCallback((event: MouseEvent) => {
     event.preventDefault();
@@ -402,8 +400,6 @@ export const CollectionOperationCell = ({
 
   return (
     <>
-      {editModal}
-      {editNameModal}
       <ColWrapper
         hideInSmallContainer
         data-testid="page-list-item-favorite"

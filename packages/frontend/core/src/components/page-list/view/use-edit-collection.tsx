@@ -1,5 +1,6 @@
 import type { Collection } from '@affine/env/filter';
-import { useCallback, useState } from 'react';
+import { useMount } from '@toeverything/infra';
+import { useCallback, useEffect, useState } from 'react';
 
 import { CreateCollectionModal } from './create-collection';
 import type { EditCollectionMode } from './edit-collection/edit-collection';
@@ -16,9 +17,11 @@ export const useEditCollection = () => {
       setData(undefined);
     }
   }, []);
+  const { mount } = useMount('useEditCollection');
 
-  return {
-    node: (
+  useEffect(() => {
+    if (!data) return;
+    return mount(
       <EditCollectionModal
         init={data?.collection}
         open={!!data}
@@ -26,7 +29,10 @@ export const useEditCollection = () => {
         onOpenChange={close}
         onConfirm={data?.onConfirm ?? (() => {})}
       />
-    ),
+    );
+  }, [close, data, mount]);
+
+  return {
     open: (
       collection: Collection,
       mode?: EditCollectionMode
@@ -59,9 +65,11 @@ export const useEditCollectionName = ({
       setData(undefined);
     }
   }, []);
+  const { mount } = useMount('useEditCollectionName');
 
-  return {
-    node: (
+  useEffect(() => {
+    if (!data) return;
+    return mount(
       <CreateCollectionModal
         showTips={showTips}
         title={title}
@@ -70,7 +78,10 @@ export const useEditCollectionName = ({
         onOpenChange={close}
         onConfirm={data?.onConfirm ?? (() => {})}
       />
-    ),
+    );
+  }, [close, data, mount, showTips, title]);
+
+  return {
     open: (name: string): Promise<string> =>
       new Promise<string>(res => {
         setData({

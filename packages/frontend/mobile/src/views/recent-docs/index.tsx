@@ -12,9 +12,14 @@ export const RecentDocs = ({ max = 5 }: { max?: number }) => {
 
   const cardMetas = useMemo(() => {
     return [...allPageMetas]
+      .filter(meta => !meta.trash)
       .sort((a, b) => (b.updatedDate ?? 0) - (a.updatedDate ?? 0))
       .slice(0, max);
   }, [allPageMetas, max]);
+
+  if (!cardMetas.length) {
+    return null;
+  }
 
   return (
     <CollapsibleSection

@@ -1,3 +1,4 @@
+import { EmptyCollections } from '@affine/core/components/affine/empty';
 import type { CollectionMeta } from '@affine/core/components/page-list';
 import { CollectionService } from '@affine/core/modules/collection';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -18,6 +19,10 @@ export const CollectionList = () => {
       ),
     [collections]
   );
+
+  if (!collectionMetas.length) {
+    return <EmptyCollections absoluteCenter />;
+  }
 
   return (
     <ul className={list}>

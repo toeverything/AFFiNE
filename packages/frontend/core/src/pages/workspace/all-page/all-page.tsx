@@ -72,11 +72,7 @@ export const AllPage = () => {
               filters={filters}
             />
           ) : (
-            <EmptyPageList
-              type="all"
-              heading={<PageListHeader />}
-              docCollection={currentWorkspace.docCollection}
-            />
+            <EmptyPageList type="all" heading={<PageListHeader />} />
           )}
         </div>
       </ViewBody>

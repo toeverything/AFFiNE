@@ -2,7 +2,6 @@ import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-co
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useService, WorkspaceService } from '@toeverything/infra';
-import type { ReactElement } from 'react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { CollectionService } from '../../../modules/collection';
@@ -42,12 +41,10 @@ export const VirtualizedCollectionList = ({
   collections,
   collectionMetas,
   setHideHeaderCreateNewCollection,
-  node,
   handleCreateCollection,
 }: {
   collections: Collection[];
   collectionMetas: CollectionMeta[];
-  node: ReactElement | null;
   handleCreateCollection: () => void;
   setHideHeaderCreateNewCollection: (hide: boolean) => void;
 }) => {
@@ -107,9 +104,7 @@ export const VirtualizedCollectionList = ({
         atTopThreshold={80}
         atTopStateChange={setHideHeaderCreateNewCollection}
         onSelectionActiveChange={setShowFloatingToolbar}
-        heading={
-          <CollectionListHeader node={node} onCreate={handleCreateCollection} />
-        }
+        heading={<CollectionListHeader onCreate={handleCreateCollection} />}
         selectedIds={filteredSelectedCollectionIds}
         onSelectedIdsChange={setSelectedCollectionIds}
         items={collectionMetas}

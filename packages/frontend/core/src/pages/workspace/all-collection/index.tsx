@@ -40,7 +40,7 @@ export const AllCollection = () => {
   }, [collections]);
 
   const navigateHelper = useNavigateHelper();
-  const { open, node } = useEditCollectionName({
+  const { open } = useEditCollectionName({
     title: t['com.affine.editCollection.createCollection'](),
     showTips: true,
   });
@@ -74,16 +74,12 @@ export const AllCollection = () => {
               collections={collections}
               collectionMetas={collectionMetas}
               setHideHeaderCreateNewCollection={setHideHeaderCreateNew}
-              node={node}
               handleCreateCollection={handleCreateCollection}
             />
           ) : (
             <EmptyCollectionList
               heading={
-                <CollectionListHeader
-                  node={node}
-                  onCreate={handleCreateCollection}
-                />
+                <CollectionListHeader onCreate={handleCreateCollection} />
               }
             />
           )}

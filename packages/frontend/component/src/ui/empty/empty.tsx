@@ -16,6 +16,9 @@ export type EmptyContentProps = {
   descriptionStyle?: CSSProperties;
 };
 
+/**
+ * @deprecated use different empty components for different use cases, like `EmptyDocs` for documentation empty state
+ */
 export const Empty = ({
   containerStyle,
   title,

@@ -79,13 +79,13 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
           ) : (
             <EmptyPageList
               type="all"
+              tagId={tagId}
               heading={
                 <TagPageListHeader
                   tag={currentTag}
                   workspaceId={currentWorkspace.id}
                 />
               }
-              docCollection={currentWorkspace.docCollection}
             />
           )}
         </div>

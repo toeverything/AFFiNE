@@ -28,6 +28,7 @@ export * from './ui/slider';
 export * from './ui/switch';
 export * from './ui/table';
 export * from './ui/tabs';
+export * from './ui/themed-img';
 export * from './ui/toast';
 export * from './ui/tooltip';
 export * from './utils';

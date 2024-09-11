@@ -110,7 +110,7 @@ export const CollectionPageListHeader = ({
     jumpToCollections(workspaceId);
   }, [jumpToCollections, workspaceId]);
 
-  const { node, open } = useEditCollection();
+  const { open } = useEditCollection();
 
   const handleEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'page');
@@ -162,32 +162,29 @@ export const CollectionPageListHeader = ({
   }, [createPage, onConfirmAddDocument]);
 
   return (
-    <>
-      {node}
-      <div className={styles.docListHeader}>
-        <div className={styles.docListHeaderTitle}>
-          <div style={{ cursor: 'pointer' }} onClick={handleJumpToCollections}>
-            {t['com.affine.collections.header']()} /
-          </div>
-          <div className={styles.titleIcon}>
-            <ViewLayersIcon />
-          </div>
-          <div className={styles.titleCollectionName}>{collection.name}</div>
+    <div className={styles.docListHeader}>
+      <div className={styles.docListHeaderTitle}>
+        <div style={{ cursor: 'pointer' }} onClick={handleJumpToCollections}>
+          {t['com.affine.collections.header']()} /
         </div>
-        <div className={styles.rightButtonGroup}>
-          <Button onClick={handleEdit}>{t['Edit']()}</Button>
-          <PageListNewPageButton
-            size="small"
-            testId="new-page-button-trigger"
-            onCreateDoc={onCreateDoc}
-            onCreateEdgeless={onCreateEdgeless}
-            onCreatePage={onCreatePage}
-          >
-            <div className={styles.buttonText}>{t['New Page']()}</div>
-          </PageListNewPageButton>
+        <div className={styles.titleIcon}>
+          <ViewLayersIcon />
         </div>
+        <div className={styles.titleCollectionName}>{collection.name}</div>
       </div>
-    </>
+      <div className={styles.rightButtonGroup}>
+        <Button onClick={handleEdit}>{t['Edit']()}</Button>
+        <PageListNewPageButton
+          size="small"
+          testId="new-page-button-trigger"
+          onCreateDoc={onCreateDoc}
+          onCreateEdgeless={onCreateEdgeless}
+          onCreatePage={onCreatePage}
+        >
+          <div className={styles.buttonText}>{t['New Page']()}</div>
+        </PageListNewPageButton>
+      </div>
+    </div>
   );
 };
 
@@ -205,7 +202,7 @@ export const TagPageListHeader = ({
   const { jumpToTags, jumpToCollection } = useNavigateHelper();
   const collectionService = useService(CollectionService);
   const [openMenu, setOpenMenu] = useState(false);
-  const { open, node } = useEditCollectionName({
+  const { open } = useEditCollectionName({
     title: t['com.affine.editCollection.saveCollection'](),
     showTips: true,
   });
@@ -235,47 +232,44 @@ export const TagPageListHeader = ({
   }, [open, saveToCollection]);
 
   return (
-    <>
-      {node}
-      <div className={styles.docListHeader}>
-        <div className={styles.docListHeaderTitle}>
-          <div
-            style={{ cursor: 'pointer', lineHeight: '1.4em' }}
-            onClick={handleJumpToTags}
-          >
-            {t['Tags']()} /
-          </div>
-          <Menu
-            rootOptions={{
-              open: openMenu,
-              onOpenChange: setOpenMenu,
-            }}
-            contentOptions={{
-              side: 'bottom',
-              align: 'start',
-              sideOffset: 18,
-              avoidCollisions: false,
-              className: styles.tagsMenu,
-            }}
-            items={<SwitchTag onClick={setOpenMenu} />}
-          >
-            <div className={styles.tagSticky}>
-              <div
-                className={styles.tagIndicator}
-                style={{
-                  backgroundColor: tagColor,
-                }}
-              />
-              <div className={styles.tagLabel}>{tagTitle}</div>
-              <ArrowDownSmallIcon className={styles.arrowDownSmallIcon} />
-            </div>
-          </Menu>
+    <div className={styles.docListHeader}>
+      <div className={styles.docListHeaderTitle}>
+        <div
+          style={{ cursor: 'pointer', lineHeight: '1.4em' }}
+          onClick={handleJumpToTags}
+        >
+          {t['Tags']()} /
         </div>
-        <Button onClick={handleClick}>
-          {t['com.affine.editCollection.saveCollection']()}
-        </Button>
+        <Menu
+          rootOptions={{
+            open: openMenu,
+            onOpenChange: setOpenMenu,
+          }}
+          contentOptions={{
+            side: 'bottom',
+            align: 'start',
+            sideOffset: 18,
+            avoidCollisions: false,
+            className: styles.tagsMenu,
+          }}
+          items={<SwitchTag onClick={setOpenMenu} />}
+        >
+          <div className={styles.tagSticky}>
+            <div
+              className={styles.tagIndicator}
+              style={{
+                backgroundColor: tagColor,
+              }}
+            />
+            <div className={styles.tagLabel}>{tagTitle}</div>
+            <ArrowDownSmallIcon className={styles.arrowDownSmallIcon} />
+          </div>
+        </Menu>
       </div>
-    </>
+      <Button onClick={handleClick}>
+        {t['com.affine.editCollection.saveCollection']()}
+      </Button>
+    </div>
   );
 };
 

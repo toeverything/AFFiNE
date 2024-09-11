@@ -1,7 +1,6 @@
 import { notify, useThemeColorV2 } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { CollectionService } from '@affine/core/modules/collection';
-import { isEmptyCollection } from '@affine/core/pages/workspace/collection';
 import { WorkspaceSubPath } from '@affine/core/shared';
 import {
   GlobalContextService,
@@ -13,7 +12,7 @@ import { useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { AppTabs } from '../../../components';
-import { CollectionDetail, EmptyCollection } from '../../../views';
+import { CollectionDetail } from '../../../views';
 
 export const Component = () => {
   useThemeColorV2('layer/background/secondary');
@@ -68,10 +67,6 @@ export const Component = () => {
 
   if (!collection) {
     return null;
-  }
-
-  if (isEmptyCollection(collection)) {
-    return <EmptyCollection collection={collection} />;
   }
 
   return (

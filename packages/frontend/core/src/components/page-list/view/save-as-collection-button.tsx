@@ -17,7 +17,7 @@ export const SaveAsCollectionButton = ({
   onConfirm,
 }: SaveAsCollectionButtonProps) => {
   const t = useI18n();
-  const { open, node } = useEditCollectionName({
+  const { open } = useEditCollectionName({
     title: t['com.affine.editCollection.saveCollection'](),
     showTips: true,
   });
@@ -31,16 +31,13 @@ export const SaveAsCollectionButton = ({
       });
   }, [open, onConfirm]);
   return (
-    <>
-      <Button
-        onClick={handleClick}
-        data-testid="save-as-collection"
-        prefix={<SaveIcon />}
-        className={styles.button}
-      >
-        {t['com.affine.editCollection.saveCollection']()}
-      </Button>
-      {node}
-    </>
+    <Button
+      onClick={handleClick}
+      data-testid="save-as-collection"
+      prefix={<SaveIcon />}
+      className={styles.button}
+    >
+      {t['com.affine.editCollection.saveCollection']()}
+    </Button>
   );
 };

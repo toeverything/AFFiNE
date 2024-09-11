@@ -51,13 +51,11 @@ export const CollectionOperations = ({
   });
   const deleteInfo = useDeleteCollectionInfo();
   const workbench = workbenchService.workbench;
-  const { open: openEditCollectionModal, node: editModal } =
-    useEditCollection();
+  const { open: openEditCollectionModal } = useEditCollection();
   const t = useI18n();
-  const { open: openEditCollectionNameModal, node: editNameModal } =
-    useEditCollectionName({
-      title: t['com.affine.editCollection.renameCollection'](),
-    });
+  const { open: openEditCollectionNameModal } = useEditCollectionName({
+    title: t['com.affine.editCollection.renameCollection'](),
+  });
   const enableMultiView = useLiveData(
     featureFlagService.flags.enable_multi_view.$
   );
@@ -193,33 +191,29 @@ export const CollectionOperations = ({
     ]
   );
   return (
-    <>
-      {editModal}
-      {editNameModal}
-      <Menu
-        items={
-          <div style={{ minWidth: 150 }}>
-            {actions.map(action => {
-              if (action.element) {
-                return action.element;
-              }
-              return (
-                <MenuItem
-                  data-testid="collection-option"
-                  key={action.name}
-                  type={action.type}
-                  prefixIcon={action.icon}
-                  onClick={action.click}
-                >
-                  {action.name}
-                </MenuItem>
-              );
-            })}
-          </div>
-        }
-      >
-        {children}
-      </Menu>
-    </>
+    <Menu
+      items={
+        <div style={{ minWidth: 150 }}>
+          {actions.map(action => {
+            if (action.element) {
+              return action.element;
+            }
+            return (
+              <MenuItem
+                data-testid="collection-option"
+                key={action.name}
+                type={action.type}
+                prefixIcon={action.icon}
+                onClick={action.click}
+              >
+                {action.name}
+              </MenuItem>
+            );
+          })}
+        </div>
+      }
+    >
+      {children}
+    </Menu>
   );
 };

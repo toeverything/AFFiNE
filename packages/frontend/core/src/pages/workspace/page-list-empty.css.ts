@@ -2,7 +2,13 @@ import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 export const pageListEmptyStyle = style({
-  height: 'calc(100% - 52px)',
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+});
+export const pageListEmptyBody = style({
+  height: 0,
+  flex: 1,
 });
 export const emptyDescButton = style({
   cursor: 'pointer',

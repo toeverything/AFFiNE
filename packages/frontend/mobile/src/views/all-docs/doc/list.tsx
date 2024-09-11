@@ -1,3 +1,4 @@
+import { EmptyDocs } from '@affine/core/components/affine/empty';
 import {
   type ItemGroupDefinition,
   type ItemGroupProps,
@@ -77,6 +78,10 @@ export const AllDocList = ({
   const groups = useMemo(() => {
     return itemsToItemGroups(finalPageMetas ?? [], groupDefs);
   }, [finalPageMetas, groupDefs]);
+
+  if (!groups.length) {
+    return <EmptyDocs absoluteCenter tagId={tag?.id} />;
+  }
 
   return (
     <div className={styles.groups}>

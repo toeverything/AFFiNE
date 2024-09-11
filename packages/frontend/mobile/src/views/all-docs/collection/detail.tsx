@@ -1,4 +1,6 @@
 import { IconButton, MobileMenu } from '@affine/component';
+import { EmptyCollectionDetail } from '@affine/core/components/affine/empty';
+import { isEmptyCollection } from '@affine/core/pages/workspace/collection';
 import type { Collection } from '@affine/env/filter';
 import { MoreHorizontalIcon, ViewLayersIcon } from '@blocksuite/icons/rc';
 
@@ -34,6 +36,15 @@ export const CollectionDetail = ({
 }: {
   collection: Collection;
 }) => {
+  if (isEmptyCollection(collection)) {
+    return (
+      <>
+        <DetailHeader collection={collection} />
+        <EmptyCollectionDetail collection={collection} absoluteCenter />
+      </>
+    );
+  }
+
   return (
     <>
       <DetailHeader collection={collection} />

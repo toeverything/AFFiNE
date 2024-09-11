@@ -75,10 +75,7 @@ export const TrashPage = () => {
           {filteredPageMetas.length > 0 ? (
             <VirtualizedTrashList />
           ) : (
-            <EmptyPageList
-              type="trash"
-              docCollection={currentWorkspace.docCollection}
-            />
+            <EmptyPageList type="trash" />
           )}
         </div>
       </ViewBody>

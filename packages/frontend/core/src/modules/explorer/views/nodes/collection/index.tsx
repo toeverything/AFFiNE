@@ -62,8 +62,7 @@ export const ExplorerCollectionNode = ({
   const { globalContextService } = useServices({
     GlobalContextService,
   });
-  const { open: openEditCollectionModal, node: editModal } =
-    useEditCollection();
+  const { open: openEditCollectionModal } = useEditCollection();
   const active =
     useLiveData(globalContextService.globalContext.collectionId.$) ===
     collectionId;
@@ -211,29 +210,26 @@ export const ExplorerCollectionNode = ({
   }
 
   return (
-    <>
-      <ExplorerTreeNode
-        icon={CollectionIcon}
-        name={collection.name || t['Untitled']()}
-        dndData={dndData}
-        onDrop={handleDropOnCollection}
-        renameable
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
-        to={`/collection/${collection.id}`}
-        active={active}
-        canDrop={handleCanDrop}
-        reorderable={reorderable}
-        onRename={handleRename}
-        childrenPlaceholder={<Empty onDrop={handleDropOnPlaceholder} />}
-        operations={finalOperations}
-        dropEffect={handleDropEffectOnCollection}
-        data-testid={`explorer-collection-${collectionId}`}
-      >
-        <ExplorerCollectionNodeChildren collection={collection} />
-      </ExplorerTreeNode>
-      {editModal}
-    </>
+    <ExplorerTreeNode
+      icon={CollectionIcon}
+      name={collection.name || t['Untitled']()}
+      dndData={dndData}
+      onDrop={handleDropOnCollection}
+      renameable
+      collapsed={collapsed}
+      setCollapsed={setCollapsed}
+      to={`/collection/${collection.id}`}
+      active={active}
+      canDrop={handleCanDrop}
+      reorderable={reorderable}
+      onRename={handleRename}
+      childrenPlaceholder={<Empty onDrop={handleDropOnPlaceholder} />}
+      operations={finalOperations}
+      dropEffect={handleDropEffectOnCollection}
+      data-testid={`explorer-collection-${collectionId}`}
+    >
+      <ExplorerCollectionNodeChildren collection={collection} />
+    </ExplorerTreeNode>
   );
 };
 
