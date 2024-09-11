@@ -18,8 +18,7 @@ import { VirtualizedList } from './virtualized-list';
 export const VirtualizedTrashList = () => {
   const currentWorkspace = useService(WorkspaceService).workspace;
   const docCollection = currentWorkspace.docCollection;
-  const { restoreFromTrash, permanentlyDeletePage } =
-    useBlockSuiteMetaHelper(docCollection);
+  const { restoreFromTrash, permanentlyDeletePage } = useBlockSuiteMetaHelper();
   const pageMetas = useBlockSuiteDocMeta(docCollection);
   const filteredPageMetas = useFilteredPageMetas(pageMetas, {
     trash: true,

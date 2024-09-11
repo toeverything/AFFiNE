@@ -122,7 +122,7 @@ export const VirtualizedPageList = ({
     return <PageListHeader />;
   }, [collection, currentWorkspace.id, tag]);
 
-  const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
+  const { setTrashModal } = useTrashModalHelper();
 
   const handleMultiDelete = useCallback(() => {
     if (filteredSelectedPageIds.length === 0) {

@@ -39,11 +39,11 @@ export class DocRecord extends Entity<{ id: string }> {
   }
 
   moveToTrash() {
-    return this.setMeta({ trash: true });
+    return this.setMeta({ trash: true, trashDate: Date.now() });
   }
 
   restoreFromTrash() {
-    return this.setMeta({ trash: false });
+    return this.setMeta({ trash: false, trashDate: undefined });
   }
 
   title$ = this.meta$.map(meta => meta.title ?? '');

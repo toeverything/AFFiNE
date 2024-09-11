@@ -30,7 +30,6 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
   const mode = useLiveData(editor.mode$);
   const t = useI18n();
   const workspace = useService(WorkspaceService).workspace;
-  const docCollection = workspace.docCollection;
 
   const favAdapter = useService(CompatibleFavoriteItemsAdapter);
   const favorite = useLiveData(favAdapter.isFavorite$(docId, 'doc'));
@@ -50,9 +49,9 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
     setInfoModalState(true);
   }, [setInfoModalState]);
 
-  const { duplicate } = useBlockSuiteMetaHelper(docCollection);
+  const { duplicate } = useBlockSuiteMetaHelper();
   const exportHandler = useExportPage();
-  const { setTrashModal } = useTrashModalHelper(docCollection);
+  const { setTrashModal } = useTrashModalHelper();
   const onClickDelete = useCallback(
     (title: string) => {
       setTrashModal({

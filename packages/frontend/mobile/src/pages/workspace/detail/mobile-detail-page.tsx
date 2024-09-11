@@ -62,7 +62,7 @@ const DetailPageImpl = () => {
   const { openPage, jumpToPageBlock, jumpToTag } = useNavigateHelper();
   const editorContainer = useLiveData(editor.editorContainer$);
 
-  const { setDocReadonly } = useDocMetaHelper(workspace.docCollection);
+  const { setDocReadonly } = useDocMetaHelper();
 
   // TODO(@eyhn): remove jotai here
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();
