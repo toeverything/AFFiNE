@@ -59,6 +59,14 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: true,
   },
+  enable_mind_map_import: {
+    category: 'blocksuite',
+    bsFlag: 'enable_mind_map_import',
+    displayName: 'Mind Map Import',
+    description: 'Enables mind map import.',
+    configurable: true,
+    defaultState: false,
+  },
   enable_multi_view: {
     category: 'affine',
     displayName: 'Split View',
