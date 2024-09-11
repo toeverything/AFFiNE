@@ -10,7 +10,7 @@ export class SqliteBlobStorage implements BlobStorage {
   readonly = false;
   async get(key: string) {
     assertExists(apis);
-    const buffer = await apis.db.getBlob(this.workspaceId, key);
+    const buffer = await apis.db.getBlob('workspace', this.workspaceId, key);
     if (buffer) {
       return bufferToBlob(buffer);
     }
@@ -19,6 +19,7 @@ export class SqliteBlobStorage implements BlobStorage {
   async set(key: string, value: Blob) {
     assertExists(apis);
     await apis.db.addBlob(
+      'workspace',
       this.workspaceId,
       key,
       new Uint8Array(await value.arrayBuffer())
@@ -27,10 +28,10 @@ export class SqliteBlobStorage implements BlobStorage {
   }
   delete(key: string) {
     assertExists(apis);
-    return apis.db.deleteBlob(this.workspaceId, key);
+    return apis.db.deleteBlob('workspace', this.workspaceId, key);
   }
   list() {
     assertExists(apis);
-    return apis.db.getBlobKeys(this.workspaceId);
+    return apis.db.getBlobKeys('workspace', this.workspaceId);
   }
 }

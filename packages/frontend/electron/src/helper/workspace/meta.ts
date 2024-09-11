@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import fs from 'fs-extra';
 
+import type { SpaceType } from '../db/types';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
 import type { WorkspaceMeta } from '../type';
@@ -20,20 +21,39 @@ export async function getWorkspacesBasePath() {
   return path.join(await getAppDataPath(), 'workspaces');
 }
 
-export async function getWorkspaceBasePath(workspaceId: string) {
-  return path.join(await getAppDataPath(), 'workspaces', workspaceId);
+export async function getWorkspaceBasePath(
+  spaceType: SpaceType,
+  workspaceId: string
+) {
+  return path.join(
+    await getAppDataPath(),
+    spaceType === 'userspace' ? 'userspaces' : 'workspaces',
+    workspaceId
+  );
 }
 
 export async function getDeletedWorkspacesBasePath() {
   return path.join(await getAppDataPath(), 'deleted-workspaces');
 }
 
-export async function getWorkspaceDBPath(workspaceId: string) {
-  return path.join(await getWorkspaceBasePath(workspaceId), 'storage.db');
+export async function getWorkspaceDBPath(
+  spaceType: SpaceType,
+  workspaceId: string
+) {
+  return path.join(
+    await getWorkspaceBasePath(spaceType, workspaceId),
+    'storage.db'
+  );
 }
 
-export async function getWorkspaceMetaPath(workspaceId: string) {
-  return path.join(await getWorkspaceBasePath(workspaceId), 'meta.json');
+export async function getWorkspaceMetaPath(
+  spaceType: SpaceType,
+  workspaceId: string
+) {
+  return path.join(
+    await getWorkspaceBasePath(spaceType, workspaceId),
+    'meta.json'
+  );
 }
 
 /**
@@ -41,11 +61,12 @@ export async function getWorkspaceMetaPath(workspaceId: string) {
  * This function will also migrate the workspace if needed
  */
 export async function getWorkspaceMeta(
+  spaceType: SpaceType,
   workspaceId: string
 ): Promise<WorkspaceMeta> {
   try {
-    const basePath = await getWorkspaceBasePath(workspaceId);
-    const metaPath = await getWorkspaceMetaPath(workspaceId);
+    const basePath = await getWorkspaceBasePath(spaceType, workspaceId);
+    const metaPath = await getWorkspaceMetaPath(spaceType, workspaceId);
     if (
       !(await fs
         .access(metaPath)
@@ -53,11 +74,12 @@ export async function getWorkspaceMeta(
         .catch(() => false))
     ) {
       await fs.ensureDir(basePath);
-      const dbPath = await getWorkspaceDBPath(workspaceId);
+      const dbPath = await getWorkspaceDBPath(spaceType, workspaceId);
       // create one if not exists
       const meta = {
         id: workspaceId,
         mainDBPath: dbPath,
+        type: spaceType,
       };
       await fs.writeJSON(metaPath, meta);
       return meta;

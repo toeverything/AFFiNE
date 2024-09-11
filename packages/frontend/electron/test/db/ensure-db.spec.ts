@@ -57,16 +57,16 @@ test('can get a valid WorkspaceSQLiteDB', async () => {
     '@affine/electron/helper/db/ensure-db'
   );
   const workspaceId = v4();
-  const db0 = await ensureSQLiteDB(workspaceId);
+  const db0 = await ensureSQLiteDB('workspace', workspaceId);
   expect(db0).toBeDefined();
   expect(db0.workspaceId).toBe(workspaceId);
 
-  const db1 = await ensureSQLiteDB(v4());
+  const db1 = await ensureSQLiteDB('workspace', v4());
   expect(db1).not.toBe(db0);
   expect(db1.workspaceId).not.toBe(db0.workspaceId);
 
   // ensure that the db is cached
-  expect(await ensureSQLiteDB(workspaceId)).toBe(db0);
+  expect(await ensureSQLiteDB('workspace', workspaceId)).toBe(db0);
 });
 
 test('db should be destroyed when app quits', async () => {
@@ -74,8 +74,8 @@ test('db should be destroyed when app quits', async () => {
     '@affine/electron/helper/db/ensure-db'
   );
   const workspaceId = v4();
-  const db0 = await ensureSQLiteDB(workspaceId);
-  const db1 = await ensureSQLiteDB(v4());
+  const db0 = await ensureSQLiteDB('workspace', workspaceId);
+  const db1 = await ensureSQLiteDB('workspace', v4());
 
   expect(db0.adapter).not.toBeNull();
   expect(db1.adapter).not.toBeNull();
@@ -94,8 +94,8 @@ test('db should be removed in db$Map after destroyed', async () => {
     '@affine/electron/helper/db/ensure-db'
   );
   const workspaceId = v4();
-  const db = await ensureSQLiteDB(workspaceId);
+  const db = await ensureSQLiteDB('workspace', workspaceId);
   await db.destroy();
   await setTimeout(100);
-  expect(db$Map.has(workspaceId)).toBe(false);
+  expect(db$Map.has(`workspace:${workspaceId}`)).toBe(false);
 });

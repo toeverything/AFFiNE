@@ -1,8 +1,10 @@
 import { Entity } from '../../../framework';
-import type { Table as OrmTable, TableSchemaBuilder } from '../../../orm/core';
+import type { Table as OrmTable, TableSchemaBuilder } from '../../../orm';
 import type { WorkspaceService } from '../../workspace';
 
-export class Table<Schema extends TableSchemaBuilder> extends Entity<{
+export class WorkspaceDBTable<
+  Schema extends TableSchemaBuilder,
+> extends Entity<{
   table: OrmTable<Schema>;
   storageDocId: string;
 }> {

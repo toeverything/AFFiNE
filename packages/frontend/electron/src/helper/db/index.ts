@@ -1,92 +1,129 @@
 import { mainRPC } from '../main-rpc';
 import type { MainEventRegister } from '../type';
 import { ensureSQLiteDB } from './ensure-db';
+import type { SpaceType } from './types';
 
 export * from './ensure-db';
 
 export const dbHandlers = {
-  getDocAsUpdates: async (workspaceId: string, subdocId: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.getDocAsUpdates(subdocId);
+  getDocAsUpdates: async (
+    spaceType: SpaceType,
+    workspaceId: string,
+    subdocId: string
+  ) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.getDocAsUpdates(subdocId);
   },
   applyDocUpdate: async (
+    spaceType: SpaceType,
     workspaceId: string,
     update: Uint8Array,
     subdocId: string
   ) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.addUpdateToSQLite(update, subdocId);
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.addUpdateToSQLite(update, subdocId);
   },
-  deleteDoc: async (workspaceId: string, subdocId: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.deleteUpdate(subdocId);
+  deleteDoc: async (
+    spaceType: SpaceType,
+    workspaceId: string,
+    subdocId: string
+  ) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.deleteUpdate(subdocId);
   },
-  addBlob: async (workspaceId: string, key: string, data: Uint8Array) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.addBlob(key, data);
+  addBlob: async (
+    spaceType: SpaceType,
+    workspaceId: string,
+    key: string,
+    data: Uint8Array
+  ) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.addBlob(key, data);
   },
-  getBlob: async (workspaceId: string, key: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.getBlob(key);
+  getBlob: async (spaceType: SpaceType, workspaceId: string, key: string) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.getBlob(key);
   },
-  deleteBlob: async (workspaceId: string, key: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.deleteBlob(key);
+  deleteBlob: async (
+    spaceType: SpaceType,
+    workspaceId: string,
+    key: string
+  ) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.deleteBlob(key);
   },
-  getBlobKeys: async (workspaceId: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.getBlobKeys();
+  getBlobKeys: async (spaceType: SpaceType, workspaceId: string) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.getBlobKeys();
   },
   getDefaultStorageLocation: async () => {
     return await mainRPC.getPath('sessionData');
   },
-  getServerClock: async (workspaceId: string, key: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.adapter.serverClock.get(key);
+  getServerClock: async (
+    spaceType: SpaceType,
+    workspaceId: string,
+    key: string
+  ) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.adapter.serverClock.get(key);
   },
   setServerClock: async (
+    spaceType: SpaceType,
     workspaceId: string,
     key: string,
     data: Uint8Array
   ) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.adapter.serverClock.set(key, data);
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.adapter.serverClock.set(key, data);
   },
-  getServerClockKeys: async (workspaceId: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.adapter.serverClock.keys();
+  getServerClockKeys: async (spaceType: SpaceType, workspaceId: string) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.adapter.serverClock.keys();
   },
-  clearServerClock: async (workspaceId: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.adapter.serverClock.clear();
+  clearServerClock: async (spaceType: SpaceType, workspaceId: string) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.adapter.serverClock.clear();
   },
-  delServerClock: async (workspaceId: string, key: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.adapter.serverClock.del(key);
+  delServerClock: async (
+    spaceType: SpaceType,
+    workspaceId: string,
+    key: string
+  ) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.adapter.serverClock.del(key);
   },
-  getSyncMetadata: async (workspaceId: string, key: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.adapter.syncMetadata.get(key);
+  getSyncMetadata: async (
+    spaceType: SpaceType,
+    workspaceId: string,
+    key: string
+  ) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.adapter.syncMetadata.get(key);
   },
   setSyncMetadata: async (
+    spaceType: SpaceType,
     workspaceId: string,
     key: string,
     data: Uint8Array
   ) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.adapter.syncMetadata.set(key, data);
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.adapter.syncMetadata.set(key, data);
   },
-  getSyncMetadataKeys: async (workspaceId: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.adapter.syncMetadata.keys();
+  getSyncMetadataKeys: async (spaceType: SpaceType, workspaceId: string) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.adapter.syncMetadata.keys();
   },
-  clearSyncMetadata: async (workspaceId: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.adapter.syncMetadata.clear();
+  clearSyncMetadata: async (spaceType: SpaceType, workspaceId: string) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.adapter.syncMetadata.clear();
   },
-  delSyncMetadata: async (workspaceId: string, key: string) => {
-    const workspaceDB = await ensureSQLiteDB(workspaceId);
-    return workspaceDB.adapter.syncMetadata.del(key);
+  delSyncMetadata: async (
+    spaceType: SpaceType,
+    workspaceId: string,
+    key: string
+  ) => {
+    const spaceDB = await ensureSQLiteDB(spaceType, workspaceId);
+    return spaceDB.adapter.syncMetadata.del(key);
   },
 };
 

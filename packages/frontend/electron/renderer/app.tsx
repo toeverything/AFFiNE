@@ -8,6 +8,7 @@ import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
 import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
 import { CustomThemeModifier } from '@affine/core/modules/theme-editor';
+import { configureSqliteUserspaceStorageProvider } from '@affine/core/modules/userspace';
 import { configureDesktopWorkbenchModule } from '@affine/core/modules/workbench';
 import {
   configureBrowserWorkspaceFlavours,
@@ -88,6 +89,7 @@ configureCommonModules(framework);
 configureElectronStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
 configureSqliteWorkspaceEngineStorageProvider(framework);
+configureSqliteUserspaceStorageProvider(framework);
 configureDesktopWorkbenchModule(framework);
 configureAppTabsHeaderModule(framework);
 const frameworkProvider = framework.provider();

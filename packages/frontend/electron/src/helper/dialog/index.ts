@@ -1,15 +1,11 @@
 import {
   loadDBFile,
-  revealDBFile,
   saveDBFileAs,
   selectDBFileLocation,
   setFakeDialogResult,
 } from './dialog';
 
 export const dialogHandlers = {
-  revealDBFile: async (workspaceId: string) => {
-    return revealDBFile(workspaceId);
-  },
   loadDBFile: async () => {
     return loadDBFile();
   },

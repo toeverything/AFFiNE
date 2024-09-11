@@ -6,11 +6,7 @@ import { ensureSQLiteDB } from '../db/ensure-db';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
 import { storeWorkspaceMeta } from '../workspace';
-import {
-  getWorkspaceDBPath,
-  getWorkspaceMeta,
-  getWorkspacesBasePath,
-} from '../workspace/meta';
+import { getWorkspaceDBPath, getWorkspacesBasePath } from '../workspace/meta';
 
 export type ErrorMessage =
   | 'DB_FILE_ALREADY_LOADED'
@@ -43,17 +39,6 @@ export interface FakeDialogResult {
   canceled?: boolean;
   filePath?: string;
   filePaths?: string[];
-}
-
-// NOTE:
-// we are using native dialogs because HTML dialogs do not give full file paths
-
-export async function revealDBFile(workspaceId: string) {
-  const meta = await getWorkspaceMeta(workspaceId);
-  if (!meta) {
-    return;
-  }
-  await mainRPC.showItemInFolder(meta.mainDBPath);
 }
 
 // result will be used in the next call to showOpenDialog
@@ -91,7 +76,7 @@ export async function saveDBFileAs(
   workspaceId: string
 ): Promise<SaveDBFileResult> {
   try {
-    const db = await ensureSQLiteDB(workspaceId);
+    const db = await ensureSQLiteDB('workspace', workspaceId);
     const fakedResult = getFakedResult();
 
     const ret =
@@ -215,7 +200,7 @@ export async function loadDBFile(): Promise<LoadDBFileResult> {
 
     // copy the db file to a new workspace id
     const workspaceId = nanoid(10);
-    const internalFilePath = await getWorkspaceDBPath(workspaceId);
+    const internalFilePath = await getWorkspaceDBPath('workspace', workspaceId);
 
     await fs.ensureDir(await getWorkspacesBasePath());
     await fs.copy(originalPath, internalFilePath);

@@ -5,7 +5,7 @@ import { createORMClient, YjsDBAdapter } from '../../../orm';
 import type { DocStorage } from '../../../sync';
 import { ObjectPool } from '../../../utils';
 import type { WorkspaceService } from '../../workspace';
-import { DB, type DBWithTables } from '../entities/db';
+import { WorkspaceDB, type WorkspaceDBWithTables } from '../entities/db';
 import { AFFiNE_WORKSPACE_DB_SCHEMA } from '../schema';
 import { AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA } from '../schema/schema';
 
@@ -15,10 +15,10 @@ const WorkspaceUserdataDBClient = createORMClient(
 );
 
 export class WorkspaceDBService extends Service {
-  db: DBWithTables<AFFiNE_WORKSPACE_DB_SCHEMA>;
+  db: WorkspaceDBWithTables<AFFiNE_WORKSPACE_DB_SCHEMA>;
   userdataDBPool = new ObjectPool<
     string,
-    DB<AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA>
+    WorkspaceDB<AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA>
   >({
     onDangling() {
       return false; // never release
@@ -27,27 +27,30 @@ export class WorkspaceDBService extends Service {
 
   constructor(private readonly workspaceService: WorkspaceService) {
     super();
-    this.db = this.framework.createEntity(DB<AFFiNE_WORKSPACE_DB_SCHEMA>, {
-      db: new WorkspaceDBClient(
-        new YjsDBAdapter(AFFiNE_WORKSPACE_DB_SCHEMA, {
-          getDoc: guid => {
-            const ydoc = new YDoc({
-              // guid format: db${workspaceId}${guid}
-              guid: `db$${this.workspaceService.workspace.id}$${guid}`,
-            });
-            this.workspaceService.workspace.engine.doc.addDoc(ydoc, false);
-            this.workspaceService.workspace.engine.doc.setPriority(
-              ydoc.guid,
-              50
-            );
-            return ydoc;
-          },
-        })
-      ),
-      schema: AFFiNE_WORKSPACE_DB_SCHEMA,
-      storageDocId: tableName =>
-        `db$${this.workspaceService.workspace.id}$${tableName}`,
-    }) as DBWithTables<AFFiNE_WORKSPACE_DB_SCHEMA>;
+    this.db = this.framework.createEntity(
+      WorkspaceDB<AFFiNE_WORKSPACE_DB_SCHEMA>,
+      {
+        db: new WorkspaceDBClient(
+          new YjsDBAdapter(AFFiNE_WORKSPACE_DB_SCHEMA, {
+            getDoc: guid => {
+              const ydoc = new YDoc({
+                // guid format: db${workspaceId}${guid}
+                guid: `db$${this.workspaceService.workspace.id}$${guid}`,
+              });
+              this.workspaceService.workspace.engine.doc.addDoc(ydoc, false);
+              this.workspaceService.workspace.engine.doc.setPriority(
+                ydoc.guid,
+                50
+              );
+              return ydoc;
+            },
+          })
+        ),
+        schema: AFFiNE_WORKSPACE_DB_SCHEMA,
+        storageDocId: tableName =>
+          `db$${this.workspaceService.workspace.id}$${tableName}`,
+      }
+    ) as WorkspaceDBWithTables<AFFiNE_WORKSPACE_DB_SCHEMA>;
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -55,11 +58,11 @@ export class WorkspaceDBService extends Service {
     // __local__ for local workspace
     const userdataDb = this.userdataDBPool.get(userId);
     if (userdataDb) {
-      return userdataDb.obj as DBWithTables<AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA>;
+      return userdataDb.obj as WorkspaceDBWithTables<AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA>;
     }
 
     const newDB = this.framework.createEntity(
-      DB<AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA>,
+      WorkspaceDB<AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA>,
       {
         db: new WorkspaceUserdataDBClient(
           new YjsDBAdapter(AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA, {
@@ -84,7 +87,7 @@ export class WorkspaceDBService extends Service {
     );
 
     this.userdataDBPool.put(userId, newDB);
-    return newDB as DBWithTables<AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA>;
+    return newDB as WorkspaceDBWithTables<AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA>;
   }
 
   static isDBDocId(docId: string) {

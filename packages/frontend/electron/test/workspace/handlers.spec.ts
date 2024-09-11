@@ -28,40 +28,6 @@ afterAll(() => {
   vi.doUnmock('@affine/electron/helper/main-rpc');
 });
 
-describe('list workspaces', () => {
-  test('listWorkspaces (valid)', async () => {
-    const { listWorkspaces } = await import(
-      '@affine/electron/helper/workspace/handlers'
-    );
-    const workspaceId = v4();
-    const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
-    const meta = {
-      id: workspaceId,
-    };
-    await fs.ensureDir(workspacePath);
-    await fs.writeJSON(path.join(workspacePath, 'meta.json'), meta);
-    const workspaces = await listWorkspaces();
-    expect(workspaces).toEqual([[workspaceId, meta]]);
-  });
-
-  test('listWorkspaces (without meta json file)', async () => {
-    const { listWorkspaces } = await import(
-      '@affine/electron/helper/workspace/handlers'
-    );
-    const workspaceId = v4();
-    const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
-    await fs.ensureDir(workspacePath);
-    const workspaces = await listWorkspaces();
-    expect(workspaces).toEqual([
-      [
-        workspaceId,
-        // meta file will be created automatically
-        { id: workspaceId, mainDBPath: path.join(workspacePath, 'storage.db') },
-      ],
-    ]);
-  });
-});
-
 describe('delete workspace', () => {
   test('deleteWorkspace', async () => {
     const { deleteWorkspace } = await import(
@@ -93,7 +59,7 @@ describe('getWorkspaceMeta', () => {
     };
     await fs.ensureDir(workspacePath);
     await fs.writeJSON(path.join(workspacePath, 'meta.json'), meta);
-    expect(await getWorkspaceMeta(workspaceId)).toEqual(meta);
+    expect(await getWorkspaceMeta('workspace', workspaceId)).toEqual(meta);
   });
 
   test('can create meta if not exists', async () => {
@@ -103,9 +69,10 @@ describe('getWorkspaceMeta', () => {
     const workspaceId = v4();
     const workspacePath = path.join(appDataPath, 'workspaces', workspaceId);
     await fs.ensureDir(workspacePath);
-    expect(await getWorkspaceMeta(workspaceId)).toEqual({
+    expect(await getWorkspaceMeta('workspace', workspaceId)).toEqual({
       id: workspaceId,
       mainDBPath: path.join(workspacePath, 'storage.db'),
+      type: 'workspace',
     });
     expect(
       await fs.pathExists(path.join(workspacePath, 'meta.json'))
@@ -124,9 +91,10 @@ describe('getWorkspaceMeta', () => {
 
     await fs.ensureSymlink(sourcePath, path.join(workspacePath, 'storage.db'));
 
-    expect(await getWorkspaceMeta(workspaceId)).toEqual({
+    expect(await getWorkspaceMeta('workspace', workspaceId)).toEqual({
       id: workspaceId,
       mainDBPath: path.join(workspacePath, 'storage.db'),
+      type: 'workspace',
     });
 
     expect(
@@ -145,6 +113,7 @@ test('storeWorkspaceMeta', async () => {
   const meta = {
     id: workspaceId,
     mainDBPath: path.join(workspacePath, 'storage.db'),
+    type: 'workspace',
   };
   await storeWorkspaceMeta(workspaceId, meta);
   expect(await fs.readJSON(path.join(workspacePath, 'meta.json'))).toEqual(

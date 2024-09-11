@@ -24,6 +24,7 @@ import { configureSystemFontFamilyModule } from './system-font-family';
 import { configureTagModule } from './tag';
 import { configureTelemetryModule } from './telemetry';
 import { configureThemeEditorModule } from './theme-editor';
+import { configureUserspaceModule } from './userspace';
 
 export function configureCommonModules(framework: Framework) {
   configureInfraModules(framework);
@@ -51,4 +52,5 @@ export function configureCommonModules(framework: Framework) {
   configureEditorSettingModule(framework);
   configureImportTemplateModule(framework);
   configureCreateWorkspaceModule(framework);
+  configureUserspaceModule(framework);
 }

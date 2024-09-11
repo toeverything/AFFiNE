@@ -1,18 +1,23 @@
 import { logger } from '../logger';
+import type { SpaceType } from './types';
 import type { WorkspaceSQLiteDB } from './workspace-db-adapter';
 import { openWorkspaceDatabase } from './workspace-db-adapter';
 
 // export for testing
-export const db$Map = new Map<string, Promise<WorkspaceSQLiteDB>>();
+export const db$Map = new Map<
+  `${SpaceType}:${string}`,
+  Promise<WorkspaceSQLiteDB>
+>();
 
-async function getWorkspaceDB(id: string) {
-  let db = await db$Map.get(id);
-  if (!db$Map.has(id)) {
-    const promise = openWorkspaceDatabase(id);
-    db$Map.set(id, promise);
+async function getWorkspaceDB(spaceType: SpaceType, id: string) {
+  const cacheId = `${spaceType}:${id}` as const;
+  let db = await db$Map.get(cacheId);
+  if (!db) {
+    const promise = openWorkspaceDatabase(spaceType, id);
+    db$Map.set(cacheId, promise);
     const _db = (db = await promise);
     const cleanup = () => {
-      db$Map.delete(id);
+      db$Map.delete(cacheId);
       _db
         .destroy()
         .then(() => {
@@ -33,6 +38,6 @@ async function getWorkspaceDB(id: string) {
   return db!;
 }
 
-export function ensureSQLiteDB(id: string) {
-  return getWorkspaceDB(id);
+export function ensureSQLiteDB(spaceType: SpaceType, id: string) {
+  return getWorkspaceDB(spaceType, id);
 }

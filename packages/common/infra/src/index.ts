@@ -11,6 +11,7 @@ export * from './modules/global-context';
 export * from './modules/lifecycle';
 export * from './modules/storage';
 export * from './modules/workspace';
+export * from './orm';
 export * from './storage';
 export * from './sync';
 export * from './utils';

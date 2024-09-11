@@ -6,6 +6,7 @@ import { logger } from '../logger';
 import { getWorkspaceMeta } from '../workspace/meta';
 import { SQLiteAdapter } from './db-adapter';
 import { mergeUpdate } from './merge-update';
+import type { SpaceType } from './types';
 
 const TRIM_SIZE = 1;
 
@@ -121,10 +122,13 @@ export class WorkspaceSQLiteDB {
   };
 }
 
-export async function openWorkspaceDatabase(workspaceId: string) {
-  const meta = await getWorkspaceMeta(workspaceId);
-  const db = new WorkspaceSQLiteDB(meta.mainDBPath, workspaceId);
+export async function openWorkspaceDatabase(
+  spaceType: SpaceType,
+  spaceId: string
+) {
+  const meta = await getWorkspaceMeta(spaceType, spaceId);
+  const db = new WorkspaceSQLiteDB(meta.mainDBPath, spaceId);
   await db.init();
-  logger.info(`openWorkspaceDatabase [${workspaceId}]`);
+  logger.info(`openWorkspaceDatabase [${spaceId}]`);
   return db;
 }

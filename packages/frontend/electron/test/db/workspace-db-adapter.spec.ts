@@ -29,7 +29,7 @@ test('can create new db file if not exists', async () => {
     '@affine/electron/helper/db/workspace-db-adapter'
   );
   const workspaceId = v4();
-  const db = await openWorkspaceDatabase(workspaceId);
+  const db = await openWorkspaceDatabase('workspace', workspaceId);
   const dbPath = path.join(
     appDataPath,
     `workspaces/${workspaceId}`,
@@ -44,7 +44,7 @@ test('on destroy, check if resources have been released', async () => {
     '@affine/electron/helper/db/workspace-db-adapter'
   );
   const workspaceId = v4();
-  const db = await openWorkspaceDatabase(workspaceId);
+  const db = await openWorkspaceDatabase('workspace', workspaceId);
   const updateSub = {
     complete: vi.fn(),
     next: vi.fn(),

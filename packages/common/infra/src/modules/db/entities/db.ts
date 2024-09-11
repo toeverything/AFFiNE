@@ -1,8 +1,8 @@
 import { Entity } from '../../../framework';
 import type { DBSchemaBuilder, TableMap } from '../../../orm';
-import { Table } from './table';
+import { WorkspaceDBTable } from './table';
 
-export class DB<Schema extends DBSchemaBuilder> extends Entity<{
+export class WorkspaceDB<Schema extends DBSchemaBuilder> extends Entity<{
   db: TableMap<Schema>;
   schema: Schema;
   storageDocId: (tableName: string) => string;
@@ -12,7 +12,7 @@ export class DB<Schema extends DBSchemaBuilder> extends Entity<{
   constructor() {
     super();
     Object.entries(this.props.schema).forEach(([tableName]) => {
-      const table = this.framework.createEntity(Table, {
+      const table = this.framework.createEntity(WorkspaceDBTable, {
         table: this.db[tableName],
         storageDocId: this.props.storageDocId(tableName),
       });
@@ -23,6 +23,7 @@ export class DB<Schema extends DBSchemaBuilder> extends Entity<{
   }
 }
 
-export type DBWithTables<Schema extends DBSchemaBuilder> = DB<Schema> & {
-  [K in keyof Schema]: Table<Schema[K]>;
-};
+export type WorkspaceDBWithTables<Schema extends DBSchemaBuilder> =
+  WorkspaceDB<Schema> & {
+    [K in keyof Schema]: WorkspaceDBTable<Schema[K]>;
+  };
