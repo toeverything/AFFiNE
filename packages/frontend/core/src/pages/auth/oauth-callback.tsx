@@ -14,6 +14,7 @@ import { supportedClient } from './common';
 interface LoaderData {
   state: string;
   code: string;
+  provider: string;
 }
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -27,12 +28,13 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 
   try {
-    const { state, client } = JSON.parse(stateStr);
+    const { state, client, provider } = JSON.parse(stateStr);
     stateStr = state;
 
     const payload: LoaderData = {
       state,
       code,
+      provider,
     };
 
     if (!client || client === 'web') {
@@ -64,7 +66,7 @@ export const Component = () => {
 
   useEffect(() => {
     auth
-      .signInOauth(data.code, data.state)
+      .signInOauth(data.code, data.state, data.provider)
       .then(({ redirectUri }) => {
         // TODO(@forehalo): need a good way to go back to previous tab and close current one
         nav(redirectUri ?? '/');

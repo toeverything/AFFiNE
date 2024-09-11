@@ -1,4 +1,5 @@
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
+import { track } from '@affine/core/mixpanel';
 import { appInfo } from '@affine/electron-api';
 import type { OAuthProviderType } from '@affine/graphql';
 import {
@@ -82,32 +83,41 @@ export class AuthService extends Service {
     verifyToken: string,
     challenge?: string
   ) {
-    const res = await this.fetchService.fetch('/api/auth/sign-in', {
-      method: 'POST',
-      body: JSON.stringify({
-        email,
-        // we call it [callbackUrl] instead of [redirect_uri]
-        // to make it clear the url is used to finish the sign-in process instead of redirect after signed-in
-        callbackUrl: `/magic-link?client=${environment.isElectron ? appInfo?.schema : 'web'}`,
-      }),
-      headers: {
-        'content-type': 'application/json',
-        ...this.captchaHeaders(verifyToken, challenge),
-      },
-    });
-    if (!res.ok) {
-      throw new Error('Failed to send email');
+    track.$.$.auth.signIn({ method: 'magic-link' });
+    try {
+      await this.fetchService.fetch('/api/auth/sign-in', {
+        method: 'POST',
+        body: JSON.stringify({
+          email,
+          // we call it [callbackUrl] instead of [redirect_uri]
+          // to make it clear the url is used to finish the sign-in process instead of redirect after signed-in
+          callbackUrl: `/magic-link?client=${environment.isElectron ? appInfo?.schema : 'web'}`,
+        }),
+        headers: {
+          'content-type': 'application/json',
+          ...this.captchaHeaders(verifyToken, challenge),
+        },
+      });
+    } catch (e) {
+      track.$.$.auth.signInFail({ method: 'magic-link' });
+      throw e;
     }
   }
 
   async signInMagicLink(email: string, token: string) {
-    await this.fetchService.fetch('/api/auth/magic-link', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, token }),
-    });
+    try {
+      await this.fetchService.fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, token }),
+      });
+      track.$.$.auth.signedIn({ method: 'magic-link' });
+    } catch (e) {
+      track.$.$.auth.signInFail({ method: 'magic-link' });
+      throw e;
+    }
   }
 
   async oauthPreflight(
@@ -115,41 +125,54 @@ export class AuthService extends Service {
     client: string,
     /** @deprecated*/ redirectUrl?: string
   ) {
-    const res = await this.fetchService.fetch('/api/oauth/preflight', {
-      method: 'POST',
-      body: JSON.stringify({ provider, redirect_uri: redirectUrl }),
-      headers: {
-        'content-type': 'application/json',
-      },
-    });
+    track.$.$.auth.signIn({ method: 'oauth', provider });
+    try {
+      const res = await this.fetchService.fetch('/api/oauth/preflight', {
+        method: 'POST',
+        body: JSON.stringify({ provider, redirect_uri: redirectUrl }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
 
-    let { url } = await res.json();
+      let { url } = await res.json();
 
-    // change `state=xxx` to `state={state:xxx,native:true}`
-    // so we could know the callback should be redirect to native app
-    const oauthUrl = new URL(url);
-    oauthUrl.searchParams.set(
-      'state',
-      JSON.stringify({
-        state: oauthUrl.searchParams.get('state'),
-        client,
-      })
-    );
-    url = oauthUrl.toString();
+      // change `state=xxx` to `state={state:xxx,native:true}`
+      // so we could know the callback should be redirect to native app
+      const oauthUrl = new URL(url);
+      oauthUrl.searchParams.set(
+        'state',
+        JSON.stringify({
+          state: oauthUrl.searchParams.get('state'),
+          client,
+          provider,
+        })
+      );
+      url = oauthUrl.toString();
 
-    return url;
+      return url;
+    } catch (e) {
+      track.$.$.auth.signInFail({ method: 'oauth', provider });
+      throw e;
+    }
   }
 
-  async signInOauth(code: string, state: string) {
-    const res = await this.fetchService.fetch('/api/oauth/callback', {
-      method: 'POST',
-      body: JSON.stringify({ code, state }),
-      headers: {
-        'content-type': 'application/json',
-      },
-    });
+  async signInOauth(code: string, state: string, provider: string) {
+    try {
+      const res = await this.fetchService.fetch('/api/oauth/callback', {
+        method: 'POST',
+        body: JSON.stringify({ code, state }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
 
-    return await res.json();
+      track.$.$.auth.signedIn({ method: 'oauth', provider });
+      return res.json();
+    } catch (e) {
+      track.$.$.auth.signInFail({ method: 'oauth', provider });
+      throw e;
+    }
   }
 
   async signInPassword(credential: {
@@ -158,18 +181,25 @@ export class AuthService extends Service {
     verifyToken: string;
     challenge?: string;
   }) {
-    const res = await this.fetchService.fetch('/api/auth/sign-in', {
-      method: 'POST',
-      body: JSON.stringify(credential),
-      headers: {
-        'content-type': 'application/json',
-        ...this.captchaHeaders(credential.verifyToken, credential.challenge),
-      },
-    });
-    if (!res.ok) {
-      throw new Error('Failed to sign in');
+    track.$.$.auth.signIn({ method: 'password' });
+    try {
+      const res = await this.fetchService.fetch('/api/auth/sign-in', {
+        method: 'POST',
+        body: JSON.stringify(credential),
+        headers: {
+          'content-type': 'application/json',
+          ...this.captchaHeaders(credential.verifyToken, credential.challenge),
+        },
+      });
+      if (!res.ok) {
+        throw new Error('Failed to sign in');
+      }
+      this.session.revalidate();
+      track.$.$.auth.signedIn({ method: 'password' });
+    } catch (e) {
+      track.$.$.auth.signInFail({ method: 'password' });
+      throw e;
     }
-    this.session.revalidate();
   }
 
   async signOut() {

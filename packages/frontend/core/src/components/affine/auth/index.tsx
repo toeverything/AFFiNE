@@ -74,8 +74,8 @@ export function AuthModal() {
             break;
           }
           case 'oauth': {
-            const { code, state } = payload;
-            await authService.signInOauth(code, state);
+            const { code, state, provider } = payload;
+            await authService.signInOauth(code, state, provider);
             break;
           }
         }

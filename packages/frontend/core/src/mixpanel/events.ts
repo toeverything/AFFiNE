@@ -91,7 +91,7 @@ type ShareEvents =
   | 'copyShareLink'
   | 'openShareMenu'
   | 'share';
-type AuthEvents = 'signIn' | 'signUp' | 'oauth' | 'signOut';
+type AuthEvents = 'signIn' | 'signInFail' | 'signedIn' | 'signOut';
 type AccountEvents = 'uploadAvatar' | 'removeAvatar' | 'updateUserName';
 type PaymentEvents =
   | 'viewPlans'
@@ -141,7 +141,7 @@ const PageEvents = {
   $: {
     $: {
       $: ['createWorkspace', 'checkout'],
-      auth: ['oauth', 'signIn', 'signUp'],
+      auth: ['signIn', 'signedIn', 'signInFail', 'signOut'],
     },
     sharePanel: {
       $: ['createShareLink', 'copyShareLink', 'export', 'open'],
@@ -347,9 +347,16 @@ type TabActionType =
   | 'switchTab'
   | 'separateTabs';
 
+type AuthArgs = {
+  method: 'password' | 'magic-link' | 'oauth';
+  provider?: string;
+};
+
 export type EventArgs = {
   createWorkspace: { flavour: string };
-  oauth: { provider: string };
+  signIn: AuthArgs;
+  signedIn: AuthArgs;
+  signInFail: AuthArgs;
   viewPlans: PaymentEventArgs;
   checkout: PaymentEventArgs;
   subscribe: PaymentEventArgs;

@@ -2,7 +2,6 @@ import { notify } from '@affine/component';
 import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
 import { Trans, useI18n } from '@affine/i18n';
 import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
@@ -59,7 +58,6 @@ export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
               email,
             });
           } else {
-            track.$.$.auth.signIn();
             await authService.sendEmailMagicLink(email, verifyToken, challenge);
             setAuthState({
               state: 'afterSignInSendEmail',
@@ -68,7 +66,6 @@ export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
           }
         } else {
           await authService.sendEmailMagicLink(email, verifyToken, challenge);
-          track.$.$.auth.signUp();
           setAuthState({
             state: 'afterSignUpSendEmail',
             email,
