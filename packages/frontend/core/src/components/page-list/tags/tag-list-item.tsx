@@ -23,7 +23,7 @@ const TagListTitleCell = ({
       >
         {title || t['Untitled']()}
       </div>
-      {/* //TODO(@EYHN): when indexer is ready, add this back
+      {/* // TODO(@EYHN): when indexer is ready, add this back
       <div
         data-testid="page-list-item-preview-text"
         className={styles.titleCellPreview}

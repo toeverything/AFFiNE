@@ -1,3 +1,4 @@
+import { notify } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { ZipTransformer } from '@blocksuite/blocks';
@@ -84,8 +85,6 @@ export function useBlockSuiteMetaHelper() {
       if (!importDoc) {
         return;
       }
-
-      workspace.engine.doc.markAsReady(importDoc.id);
       const newDoc = importDoc.load(() => {
         importDoc.history.clear();
       });
@@ -99,6 +98,12 @@ export function useBlockSuiteMetaHelper() {
 
       openPageAfterDuplication &&
         openPage(workspace.docCollection.id, newDoc.id);
+
+      // TODO(@JimmFly): add I18n
+      notify.success({
+        title: 'Page duplicated',
+        message: `Page "${currentPageMeta.title}" has been duplicated as "${newPageTitle}".`,
+      });
     },
 
     [docRecordList, getDocMeta, openPage, setDocMeta, setDocTitle, workspace]

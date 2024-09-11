@@ -459,7 +459,7 @@ export const General = () => {
       <FontFamilySettings />
       <CustomFontFamilySettings />
       <NewDocDefaultModeSettings />
-      {/* //TODO(@akumatus): implement these settings
+      {/* // TODO(@akumatus): implement these settings
       <DeFaultCodeBlockSettings />
       <SpellCheckSettings /> */}
     </SettingWrapper>

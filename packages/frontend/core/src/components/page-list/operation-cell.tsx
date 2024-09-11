@@ -93,7 +93,7 @@ export const PageOperationCell = ({
   }, []);
 
   const onDisablePublicSharing = useCallback(() => {
-    //TODO(@EYHN): implement disable public sharing
+    // TODO(@EYHN): implement disable public sharing
     toast('Successfully disabled', {
       portal: document.body,
     });

@@ -7,6 +7,7 @@ import {
 } from '@affine/component';
 import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
+import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { track } from '@affine/core/mixpanel';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
@@ -14,6 +15,7 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import {
   DeleteIcon,
+  DuplicateIcon,
   InformationIcon,
   LinkedPageIcon,
   OpenInNewIcon,
@@ -69,6 +71,11 @@ export const useExplorerDocNodeOperations = (
     }, [docId, compatibleFavoriteItemsAdapter])
   );
 
+  const { duplicate } = useBlockSuiteMetaHelper();
+  const handleDuplicate = useCallback(() => {
+    duplicate(docId, true);
+    track.$.navigationPanel.docs.createDoc();
+  }, [docId, duplicate]);
   const handleOpenInfoModal = useCallback(() => {
     track.$.docInfoPanel.$.open();
     options.openInfoModal();
@@ -176,6 +183,14 @@ export const useExplorerDocNodeOperations = (
       {
         index: 99,
         view: (
+          <MenuItem prefixIcon={<DuplicateIcon />} onClick={handleDuplicate}>
+            {t['com.affine.header.option.duplicate']()}
+          </MenuItem>
+        ),
+      },
+      {
+        index: 99,
+        view: (
           <MenuItem prefixIcon={<OpenInNewIcon />} onClick={handleOpenInNewTab}>
             {t['com.affine.workbench.tab.page-menu-open']()}
           </MenuItem>
@@ -230,6 +245,7 @@ export const useExplorerDocNodeOperations = (
       enableMultiView,
       favorite,
       handleAddLinkedPage,
+      handleDuplicate,
       handleMoveToTrash,
       handleOpenInNewTab,
       handleOpenInSplitView,
