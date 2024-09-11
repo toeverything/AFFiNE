@@ -55,25 +55,28 @@ export class DocsQuickSearchSession
       if (!query) {
         out = of([] as QuickSearchItem<'docs', DocsPayload>[]);
       } else {
+        const resolvedDoc = resolveLinkToDoc(query);
+        const resolvedDocId = resolvedDoc?.docId;
+        const resolvedBlockId = resolvedDoc?.blockIds?.[0];
+
         out = this.docsSearchService.search$(query).pipe(
           map(docs => {
-            const resolvedDoc = resolveLinkToDoc(query);
             if (
-              resolvedDoc &&
-              !docs.some(doc => doc.docId === resolvedDoc.docId)
+              resolvedDocId &&
+              !docs.some(doc => doc.docId === resolvedDocId)
             ) {
               return [
                 {
-                  docId: resolvedDoc.docId,
+                  docId: resolvedDocId,
                   score: 100,
-                  blockId: resolvedDoc.blockIds?.[0],
+                  blockId: resolvedBlockId,
                   blockContent: '',
                 },
                 ...docs,
               ];
-            } else {
-              return docs;
             }
+
+            return docs;
           }),
           map(docs =>
             docs

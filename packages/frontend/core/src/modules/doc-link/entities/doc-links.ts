@@ -6,6 +6,7 @@ import type { DocsSearchService } from '../../docs-search';
 export interface Link {
   docId: string;
   title: string;
+  params?: URLSearchParams;
 }
 
 export class DocLinks extends Entity {

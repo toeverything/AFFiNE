@@ -7,6 +7,7 @@ import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
 import { EditorService } from '@affine/core/modules/editor';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { PeekViewService } from '@affine/core/modules/peek-view';
+import { toURLSearchParams } from '@affine/core/utils';
 import type { DocMode } from '@blocksuite/blocks';
 import { DocTitle, EdgelessEditor, PageEditor } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
@@ -90,12 +91,14 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
       const pageId = data.pageId;
       if (!pageId) return <span />;
 
+      const params = toURLSearchParams(data.params);
+
       return (
         <AffinePageReference
           docCollection={page.collection}
           pageId={pageId}
           mode={mode}
-          params={data.params}
+          params={params}
         />
       );
     };

@@ -11,8 +11,13 @@ export const blockIndexSchema = defineSchema({
   blockId: 'String',
   content: 'FullText',
   flavour: 'String',
-  ref: 'String',
   blob: 'String',
+  // reference doc id
+  // ['xxx','yyy']
+  refDocId: 'String',
+  // reference info
+  // [{"docId":"xxx","mode":"page","blockIds":["gt5Yfq1maYvgNgpi13rIq"]},{"docId":"yyy","mode":"edgeless","blockIds":["k5prpOlDF-9CzfatmO0W7"]}]
+  ref: 'String',
 });
 
 export type BlockIndexSchema = typeof blockIndexSchema;

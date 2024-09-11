@@ -1,3 +1,4 @@
+import { toURLSearchParams } from '@affine/core/utils';
 import type { WorkspaceService } from '@toeverything/infra';
 import {
   fromPromise,
@@ -5,6 +6,7 @@ import {
   Service,
   WorkspaceEngineBeforeStart,
 } from '@toeverything/infra';
+import { isEmpty, omit } from 'lodash-es';
 import { type Observable, switchMap } from 'rxjs';
 
 import { DocsIndexer } from '../entities/docs-indexer';
@@ -250,36 +252,64 @@ export class DocsSearchService extends Service {
             field: 'docId',
             match: docId,
           },
+          // Ignore if it is a link to the current document.
+          {
+            type: 'boolean',
+            occur: 'must_not',
+            queries: [
+              {
+                type: 'match',
+                field: 'refDocId',
+                match: docId,
+              },
+            ],
+          },
           {
             type: 'exists',
-            field: 'ref',
+            field: 'refDocId',
           },
         ],
       },
       {
-        fields: ['ref'],
+        fields: ['refDocId', 'ref'],
         pagination: {
           limit: 100,
         },
       }
     );
 
-    const docIds = new Set(
-      nodes.flatMap(node => {
-        const refs = node.fields.ref;
-        return typeof refs === 'string' ? [refs] : refs;
-      })
+    const refs: {
+      docId: string;
+      mode?: string;
+      blockIds?: string[];
+      elementIds?: string[];
+    }[] = nodes.flatMap(node => {
+      const { ref } = node.fields;
+      return typeof ref === 'string'
+        ? [JSON.parse(ref)]
+        : ref.map(item => JSON.parse(item));
+    });
+
+    const docData = await this.indexer.docIndex.getAll(
+      Array.from(new Set(refs.map(ref => ref.docId)))
     );
 
-    const docData = await this.indexer.docIndex.getAll(Array.from(docIds));
+    return refs
+      .flatMap(ref => {
+        const doc = docData.find(doc => doc.id === ref.docId);
+        if (!doc) return null;
 
-    return docData.map(doc => {
-      const title = doc.get('title');
-      return {
-        docId: doc.id,
-        title: title ? (typeof title === 'string' ? title : title[0]) : '',
-      };
-    });
+        const titles = doc.get('title');
+        const title = (Array.isArray(titles) ? titles[0] : titles) ?? '';
+        const params = omit(ref, ['docId']);
+
+        return {
+          title,
+          docId: doc.id,
+          params: isEmpty(params) ? undefined : toURLSearchParams(params),
+        };
+      })
+      .filter(ref => !!ref);
   }
 
   watchRefsFrom(docId: string) {
@@ -294,14 +324,26 @@ export class DocsSearchService extends Service {
               field: 'docId',
               match: docId,
             },
+            // Ignore if it is a link to the current document.
+            {
+              type: 'boolean',
+              occur: 'must_not',
+              queries: [
+                {
+                  type: 'match',
+                  field: 'refDocId',
+                  match: docId,
+                },
+              ],
+            },
             {
               type: 'exists',
-              field: 'ref',
+              field: 'refDocId',
             },
           ],
         },
         {
-          fields: ['ref'],
+          fields: ['refDocId', 'ref'],
           pagination: {
             limit: 100,
           },
@@ -310,28 +352,41 @@ export class DocsSearchService extends Service {
       .pipe(
         switchMap(({ nodes }) => {
           return fromPromise(async () => {
-            const docIds = new Set(
-              nodes.flatMap(node => {
-                const refs = node.fields.ref;
-                return typeof refs === 'string' ? [refs] : refs;
-              })
-            );
+            const refs: {
+              docId: string;
+              mode?: string;
+              blockIds?: string[];
+              elementIds?: string[];
+            }[] = nodes.flatMap(node => {
+              const { ref } = node.fields;
+              return typeof ref === 'string'
+                ? [JSON.parse(ref)]
+                : ref.map(item => JSON.parse(item));
+            });
 
             const docData = await this.indexer.docIndex.getAll(
-              Array.from(docIds)
+              Array.from(new Set(refs.map(ref => ref.docId)))
             );
 
-            return docData.map(doc => {
-              const title = doc.get('title');
-              return {
-                docId: doc.id,
-                title: title
-                  ? typeof title === 'string'
-                    ? title
-                    : title[0]
-                  : '',
-              };
-            });
+            return refs
+              .flatMap(ref => {
+                const doc = docData.find(doc => doc.id === ref.docId);
+                if (!doc) return null;
+
+                const titles = doc.get('title');
+                const title =
+                  (Array.isArray(titles) ? titles[0] : titles) ?? '';
+                const params = omit(ref, ['docId']);
+
+                return {
+                  title,
+                  docId: doc.id,
+                  params: isEmpty(params)
+                    ? undefined
+                    : toURLSearchParams(params),
+                };
+              })
+              .filter(ref => !!ref);
           });
         })
       );
@@ -346,9 +401,27 @@ export class DocsSearchService extends Service {
   > {
     const { buckets } = await this.indexer.blockIndex.aggregate(
       {
-        type: 'match',
-        field: 'ref',
-        match: docId,
+        type: 'boolean',
+        occur: 'must',
+        queries: [
+          {
+            type: 'match',
+            field: 'refDocId',
+            match: docId,
+          },
+          // Ignore if it is a link to the current document.
+          {
+            type: 'boolean',
+            occur: 'must_not',
+            queries: [
+              {
+                type: 'match',
+                field: 'docId',
+                match: docId,
+              },
+            ],
+          },
+        ],
       },
       'docId',
       {
@@ -384,9 +457,27 @@ export class DocsSearchService extends Service {
     return this.indexer.blockIndex
       .aggregate$(
         {
-          type: 'match',
-          field: 'ref',
-          match: docId,
+          type: 'boolean',
+          occur: 'must',
+          queries: [
+            {
+              type: 'match',
+              field: 'refDocId',
+              match: docId,
+            },
+            // Ignore if it is a link to the current document.
+            {
+              type: 'boolean',
+              occur: 'must_not',
+              queries: [
+                {
+                  type: 'match',
+                  field: 'docId',
+                  match: docId,
+                },
+              ],
+            },
+          ],
         },
         'docId',
         {

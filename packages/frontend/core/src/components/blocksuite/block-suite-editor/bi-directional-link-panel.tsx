@@ -63,10 +63,14 @@ export const BiDirectionalLinkPanel = () => {
               {t['com.affine.page-properties.outgoing-links']()} ·{' '}
               {links.length}
             </div>
-            {links.map(link => (
-              <div key={link.docId} className={styles.link}>
+            {links.map((link, i) => (
+              <div
+                key={`${link.docId}-${link.params?.toString()}-${i}`}
+                className={styles.link}
+              >
                 <AffinePageReference
                   pageId={link.docId}
+                  params={link.params}
                   docCollection={workspaceService.workspace.docCollection}
                 />
               </div>

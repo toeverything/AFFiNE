@@ -31,3 +31,13 @@ export function buildAppUrl(path: string, opts: AppUrlOptions = {}) {
     return new URL(path, webBase).toString();
   }
 }
+
+export function toURLSearchParams(params?: Record<string, string | string[]>) {
+  if (!params) return;
+  return new URLSearchParams(
+    Object.entries(params).map(([k, v]) => [
+      k,
+      Array.isArray(v) ? v.join(',') : v,
+    ])
+  );
+}

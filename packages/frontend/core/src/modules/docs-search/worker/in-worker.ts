@@ -3,7 +3,7 @@ import type { DeltaInsert } from '@blocksuite/inline';
 import { Document } from '@toeverything/infra';
 import { toHexString } from 'lib0/buffer.js';
 import { digest as lib0Digest } from 'lib0/hash/sha256';
-import { difference } from 'lodash-es';
+import { difference, uniq } from 'lodash-es';
 import {
   applyUpdate,
   Array as YArray,
@@ -130,18 +130,25 @@ async function crawlingDocData({
         }
 
         const deltas: DeltaInsert<AffineTextAttributes>[] = text.toDelta();
-        const ref = deltas
-          .map(delta => {
-            if (
-              delta.attributes &&
-              delta.attributes.reference &&
-              delta.attributes.reference.pageId
-            ) {
-              return delta.attributes.reference.pageId;
-            }
-            return null;
-          })
-          .filter((link): link is string => !!link);
+        const refs = uniq(
+          deltas
+            .flatMap(delta => {
+              if (
+                delta.attributes &&
+                delta.attributes.reference &&
+                delta.attributes.reference.pageId
+              ) {
+                const { pageId: refDocId, params = {} } =
+                  delta.attributes.reference;
+                return {
+                  refDocId,
+                  ref: JSON.stringify({ docId: refDocId, ...params }),
+                };
+              }
+              return null;
+            })
+            .filter(ref => !!ref)
+        );
 
         blockDocuments.push(
           Document.from<BlockIndexSchema>(`${docId}:${blockId}`, {
@@ -149,7 +156,14 @@ async function crawlingDocData({
             flavour,
             blockId,
             content: text.toString(),
-            ref,
+            ...refs.reduce<{ refDocId: string[]; ref: string[] }>(
+              (prev, curr) => {
+                prev.refDocId.push(curr.refDocId);
+                prev.ref.push(curr.ref);
+                return prev;
+              },
+              { refDocId: [], ref: [] }
+            ),
           })
         );
       }
@@ -160,12 +174,15 @@ async function crawlingDocData({
       ) {
         const pageId = block.get('prop:pageId');
         if (typeof pageId === 'string') {
+          // reference info
+          const params = block.get('prop:params') ?? {};
           blockDocuments.push(
             Document.from<BlockIndexSchema>(`${docId}:${blockId}`, {
               docId,
               flavour,
               blockId,
-              ref: pageId,
+              refDocId: [pageId],
+              ref: [JSON.stringify({ docId: pageId, ...params })],
             })
           );
         }

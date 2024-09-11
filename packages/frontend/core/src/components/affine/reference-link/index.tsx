@@ -35,9 +35,8 @@ export interface PageReferenceRendererOptions {
   journalHelper: ReturnType<typeof useJournalHelper>;
   t: ReturnType<typeof useI18n>;
   docMode?: DocMode;
-  // linking doc with block or element
-  blockIds?: string[];
-  elementIds?: string[];
+  // Link to block or element
+  linkToNode?: boolean;
 }
 // use a function to be rendered in the lit renderer
 export function pageReferenceRenderer({
@@ -46,8 +45,7 @@ export function pageReferenceRenderer({
   journalHelper,
   t,
   docMode,
-  blockIds,
-  elementIds,
+  linkToNode = false,
 }: PageReferenceRendererOptions) {
   const { isPageJournal, getLocalizedJournalDateString } = journalHelper;
   const referencedPage = pageMetaHelper.getDocMeta(pageId);
@@ -62,7 +60,7 @@ export function pageReferenceRenderer({
     } else {
       Icon = LinkedPageIcon;
     }
-    if (blockIds?.length || elementIds?.length) {
+    if (linkToNode) {
       Icon = BlockLinkIcon;
     }
   }
@@ -89,33 +87,33 @@ export function AffinePageReference({
   docCollection,
   wrapper: Wrapper,
   mode = 'page',
-  params = {},
+  params,
 }: {
   pageId: string;
   docCollection: DocCollection;
   wrapper?: React.ComponentType<PropsWithChildren>;
   mode?: DocMode;
-  params?: {
-    mode?: DocMode;
-    blockIds?: string[];
-    elementIds?: string[];
-  };
+  params?: URLSearchParams;
 }) {
   const pageMetaHelper = useDocMetaHelper(docCollection);
   const journalHelper = useJournalHelper(docCollection);
   const t = useI18n();
 
-  const { mode: linkedWithMode, blockIds, elementIds } = params;
+  let linkWithMode: DocMode | null = null;
+  let linkToNode = false;
+  if (params) {
+    linkWithMode = params.get('mode') as DocMode;
+    linkToNode = params.has('blockIds') || params.has('elementIds');
+  }
 
   const el = pageReferenceRenderer({
-    docMode: linkedWithMode ?? mode,
+    docMode: linkWithMode ?? mode,
     pageId,
     pageMetaHelper,
     journalHelper,
     docCollection,
     t,
-    blockIds,
-    elementIds,
+    linkToNode,
   });
 
   const ref = useRef<HTMLAnchorElement>(null);
@@ -154,20 +152,11 @@ export function AffinePageReference({
 
   const query = useMemo(() => {
     // A block/element reference link
-    const search = new URLSearchParams();
-    if (linkedWithMode) {
-      search.set('mode', linkedWithMode);
-    }
-    if (blockIds?.length) {
-      search.set('blockIds', blockIds.join(','));
-    }
-    if (elementIds?.length) {
-      search.set('elementIds', elementIds.join(','));
-    }
-    search.set('refreshKey', refreshKey);
-
-    return search.size > 0 ? `?${search.toString()}` : '';
-  }, [blockIds, elementIds, linkedWithMode, refreshKey]);
+    let str = params?.toString() ?? '';
+    if (str.length) str += '&';
+    str += `refreshKey=${refreshKey}`;
+    return '?' + str;
+  }, [params, refreshKey]);
 
   return (
     <WorkbenchLink
