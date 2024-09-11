@@ -243,17 +243,11 @@ export class CloudWorkspaceFlavourProviderService
       getAwarenessConnections: () => {
         return [
           new BroadcastChannelAwarenessConnection(workspaceId),
-          new CloudAwarenessConnection(
-            workspaceId,
-            this.webSocketService.newSocket()
-          ),
+          new CloudAwarenessConnection(workspaceId, this.webSocketService),
         ];
       },
       getDocServer: () => {
-        return new CloudDocEngineServer(
-          workspaceId,
-          this.webSocketService.newSocket()
-        );
+        return new CloudDocEngineServer(workspaceId, this.webSocketService);
       },
       getDocStorage: () => {
         return this.storageProvider.getDocStorage(workspaceId);

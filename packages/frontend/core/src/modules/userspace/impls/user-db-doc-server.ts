@@ -7,6 +7,7 @@ import {
 import { type DocServer, throwIfAborted } from '@toeverything/infra';
 import type { Socket } from 'socket.io-client';
 
+import type { WebSocketService } from '../../cloud';
 import {
   base64ToUint8Array,
   uint8ArrayToBase64,
@@ -19,10 +20,17 @@ export class UserDBDocServer implements DocServer {
   interruptCb: ((reason: string) => void) | null = null;
   SEND_TIMEOUT = 30000;
 
+  socket: Socket;
+  disposeSocket: () => void;
+
   constructor(
     private readonly userId: string,
-    private readonly socket: Socket
-  ) {}
+    webSocketService: WebSocketService
+  ) {
+    const { socket, dispose } = webSocketService.connect();
+    this.socket = socket;
+    this.disposeSocket = dispose;
+  }
 
   private async clientHandShake() {
     await this.socket.emitWithAck('space:join', {
@@ -154,7 +162,6 @@ export class UserDBDocServer implements DocServer {
     if (this.socket.connected) {
       await this.clientHandShake();
     } else {
-      this.socket.connect();
       await new Promise<void>((resolve, reject) => {
         this.socket.on('connect', () => {
           resolve();
@@ -168,17 +175,12 @@ export class UserDBDocServer implements DocServer {
     }
   }
   disconnectServer(): void {
-    if (!this.socket) {
-      return;
-    }
-
     this.socket.emit('space:leave', {
       spaceType: 'userspace',
       spaceId: this.userId,
     });
     this.socket.off('server-version-rejected', this.handleVersionRejected);
     this.socket.off('disconnect', this.handleDisconnect);
-    this.socket.disconnect();
   }
   onInterrupted = (cb: (reason: string) => void) => {
     this.interruptCb = cb;
@@ -192,4 +194,9 @@ export class UserDBDocServer implements DocServer {
   handleVersionRejected = () => {
     this.interruptCb?.('Client version rejected');
   };
+
+  dispose(): void {
+    this.disconnectServer();
+    this.disposeSocket();
+  }
 }

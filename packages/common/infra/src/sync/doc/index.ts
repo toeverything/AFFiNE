@@ -219,4 +219,9 @@ export class DocEngine {
         });
     });
   }
+
+  dispose() {
+    this.stop();
+    this.server?.dispose?.();
+  }
 }

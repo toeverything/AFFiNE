@@ -59,7 +59,7 @@ export function configureCloudModule(framework: Framework) {
   framework
     .service(FetchService)
     .service(GraphQLService, [FetchService])
-    .service(WebSocketService)
+    .service(WebSocketService, [AuthService])
     .service(ServerConfigService)
     .entity(ServerConfig, [ServerConfigStore])
     .store(ServerConfigStore, [GraphQLService])

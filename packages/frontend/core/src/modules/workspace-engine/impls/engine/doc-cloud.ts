@@ -1,3 +1,4 @@
+import type { WebSocketService } from '@affine/core/modules/cloud';
 import { DebugLogger } from '@affine/debug';
 import {
   ErrorNames,
@@ -20,10 +21,17 @@ export class CloudDocEngineServer implements DocServer {
   interruptCb: ((reason: string) => void) | null = null;
   SEND_TIMEOUT = 30000;
 
+  socket: Socket;
+  disposeSocket: () => void;
+
   constructor(
     private readonly workspaceId: string,
-    private readonly socket: Socket
-  ) {}
+    webSocketService: WebSocketService
+  ) {
+    const { socket, dispose } = webSocketService.connect();
+    this.socket = socket;
+    this.disposeSocket = dispose;
+  }
 
   private async clientHandShake() {
     await this.socket.emitWithAck('space:join', {
@@ -169,17 +177,12 @@ export class CloudDocEngineServer implements DocServer {
     }
   }
   disconnectServer(): void {
-    if (!this.socket) {
-      return;
-    }
-
     this.socket.emit('space:leave', {
       spaceType: 'workspace',
       spaceId: this.workspaceId,
     });
     this.socket.off('server-version-rejected', this.handleVersionRejected);
     this.socket.off('disconnect', this.handleDisconnect);
-    this.socket.disconnect();
   }
   onInterrupted = (cb: (reason: string) => void) => {
     this.interruptCb = cb;
@@ -193,4 +196,9 @@ export class CloudDocEngineServer implements DocServer {
   handleVersionRejected = () => {
     this.interruptCb?.('Client version rejected');
   };
+
+  dispose(): void {
+    this.disconnectServer();
+    this.disposeSocket();
+  }
 }

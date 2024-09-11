@@ -70,5 +70,7 @@ export class WorkspaceEngine extends Entity<{
 
   override dispose(): void {
     this.forceStop();
+    this.doc.dispose();
+    this.awareness.dispose();
   }
 }

@@ -23,4 +23,6 @@ export interface DocServer {
   waitForConnectingServer(signal: AbortSignal): Promise<void>;
   disconnectServer(): void;
   onInterrupted(cb: (reason: string) => void): void;
+
+  dispose?(): void;
 }

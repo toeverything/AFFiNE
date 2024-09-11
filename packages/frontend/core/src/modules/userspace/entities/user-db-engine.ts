@@ -8,10 +8,9 @@ export class UserDBEngine extends Entity<{
   userId: string;
 }> {
   private readonly userId = this.props.userId;
-  private readonly socket = this.websocketService.newSocket();
   readonly docEngine = new DocEngine(
     this.userspaceStorageProvider.getDocStorage('affine-cloud:' + this.userId),
-    new UserDBDocServer(this.userId, this.socket)
+    new UserDBDocServer(this.userId, this.websocketService)
   );
 
   canGracefulStop() {
@@ -29,6 +28,5 @@ export class UserDBEngine extends Entity<{
 
   override dispose() {
     this.docEngine.stop();
-    this.socket.close();
   }
 }

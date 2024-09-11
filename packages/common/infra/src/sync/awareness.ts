@@ -3,6 +3,7 @@ import type { Awareness } from 'y-protocols/awareness.js';
 export interface AwarenessConnection {
   connect(awareness: Awareness): void;
   disconnect(): void;
+  dispose?(): void;
 }
 
 export class AwarenessEngine {
@@ -14,5 +15,9 @@ export class AwarenessEngine {
 
   disconnect() {
     this.connections.forEach(connection => connection.disconnect());
+  }
+
+  dispose() {
+    this.connections.forEach(connection => connection.dispose?.());
   }
 }

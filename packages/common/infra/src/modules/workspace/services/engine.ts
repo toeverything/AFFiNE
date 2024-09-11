@@ -16,4 +16,10 @@ export class WorkspaceEngineService extends Service {
   constructor(private readonly workspaceScope: WorkspaceScope) {
     super();
   }
+
+  override dispose(): void {
+    this._engine?.dispose();
+    this._engine = null;
+    super.dispose();
+  }
 }
