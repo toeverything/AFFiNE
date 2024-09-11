@@ -26,7 +26,6 @@ export const workspaceTypeIcon = style({
   color: cssVar('iconSecondary'),
 });
 export const scrollbar = style({
-  transform: 'translateX(8px)',
   width: '4px',
 });
 export const workspaceCard = style({

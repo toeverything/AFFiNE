@@ -4,7 +4,6 @@ import React from 'react';
 
 import type { MenuProps } from '../menu.types';
 import * as styles from '../styles.css';
-import { useMenuContentController } from './controller';
 import * as desktopStyles from './styles.css';
 
 export const DesktopMenu = ({
@@ -12,36 +11,18 @@ export const DesktopMenu = ({
   items,
   noPortal,
   portalOptions,
-  rootOptions: {
-    onOpenChange,
-    defaultOpen,
-    modal,
-    open: rootOpen,
-    ...rootOptions
-  } = {},
+  rootOptions: { defaultOpen, modal, ...rootOptions } = {},
   contentOptions: {
     className = '',
     style: contentStyle = {},
-    side,
-    sideOffset,
     ...otherContentOptions
   } = {},
 }: MenuProps) => {
-  const { handleOpenChange, contentSide, contentOffset, contentRef, open } =
-    useMenuContentController({
-      open: rootOpen,
-      defaultOpen,
-      onOpenChange,
-      side,
-      sideOffset: (sideOffset ?? 0) + 5,
-    });
   const ContentWrapper = noPortal ? React.Fragment : DropdownMenu.Portal;
   return (
     <DropdownMenu.Root
-      onOpenChange={handleOpenChange}
       defaultOpen={defaultOpen}
       modal={modal ?? false}
-      open={open}
       {...rootOptions}
     >
       <DropdownMenu.Trigger
@@ -62,11 +43,7 @@ export const DesktopMenu = ({
             className
           )}
           align="start"
-          ref={contentRef}
-          side={contentSide}
           style={{ zIndex: 'var(--affine-z-index-popover)', ...contentStyle }}
-          avoidCollisions={false}
-          sideOffset={contentOffset}
           {...otherContentOptions}
         >
           {items}
