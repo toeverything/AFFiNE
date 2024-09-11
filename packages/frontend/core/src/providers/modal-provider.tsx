@@ -1,7 +1,6 @@
-import { ConfirmModal, NotificationCenter, notify } from '@affine/component';
+import { NotificationCenter, notify } from '@affine/component';
 import { events } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { useI18n } from '@affine/i18n';
 import {
   GlobalContextService,
   useLiveData,
@@ -11,7 +10,7 @@ import {
 } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import type { SettingAtom } from '../atoms';
 import { openSettingModalAtom, openSignOutModalAtom } from '../atoms';
@@ -32,7 +31,6 @@ import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud/services/auth';
 import { CreateWorkspaceDialogProvider } from '../modules/create-workspace';
-import { EditorSettingService } from '../modules/editor-settting';
 import { FindInPageModal } from '../modules/find-in-page/view/find-in-page-modal';
 import { ImportTemplateDialogProvider } from '../modules/import-template';
 import { PeekViewManagerModal } from '../modules/peek-view';
@@ -185,43 +183,6 @@ export const SignOutConfirmModal = () => {
   );
 };
 
-export const AIReloadConfirmModal = () => {
-  const t = useI18n();
-  const editorSettingService = useService(EditorSettingService);
-  const enableAI = useLiveData(
-    editorSettingService.editorSetting.settings$.selector(s => s.enableAI)
-  );
-  const [aiState] = useState(enableAI);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    setOpen(enableAI !== aiState);
-  }, [aiState, enableAI]);
-
-  const onConfirm = useCallback(() => {
-    window.location.reload();
-  }, []);
-
-  return (
-    <ConfirmModal
-      open={open}
-      onOpenChange={setOpen}
-      onConfirm={onConfirm}
-      confirmButtonOptions={{
-        variant: 'primary',
-      }}
-      title={t['com.affine.settings.editorSettings.general.ai.reload.title']()}
-      description={t[
-        'com.affine.settings.editorSettings.general.ai.reload.description'
-      ]()}
-      cancelText={t['Cancel']()}
-      confirmText={t[
-        'com.affine.settings.editorSettings.general.ai.reload.confirm'
-      ]()}
-    />
-  );
-};
-
 export const AllWorkspaceModals = (): ReactElement => {
   return (
     <>
@@ -230,7 +191,6 @@ export const AllWorkspaceModals = (): ReactElement => {
       <CreateWorkspaceDialogProvider />
       <AuthModal />
       <SignOutConfirmModal />
-      <AIReloadConfirmModal />
     </>
   );
 };

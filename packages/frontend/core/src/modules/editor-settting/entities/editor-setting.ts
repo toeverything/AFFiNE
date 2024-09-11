@@ -11,6 +11,13 @@ import { map } from 'rxjs';
 import type { EditorSettingProvider } from '../provider/editor-setting-provider';
 import { EditorSettingSchema } from '../schema';
 
+type SettingItem<T> = {
+  readonly value: T;
+  set: (value: T) => void;
+  // eslint-disable-next-line rxjs/finnish
+  $: T;
+};
+
 export class EditorSetting extends Entity {
   constructor(public readonly provider: EditorSettingProvider) {
     super();
@@ -20,6 +27,27 @@ export class EditorSetting extends Entity {
     >(this.settings$, {});
     this.settingSignal = signal;
     this.disposables.push(cleanup);
+
+    Object.entries(EditorSettingSchema.shape).forEach(([flagKey, flag]) => {
+      const livedata$ = this.settings$.selector(
+        s => s[flagKey as keyof EditorSettingSchema]
+      );
+      const item = {
+        ...flag,
+        get value() {
+          return livedata$.value;
+        },
+        set: (value: any) => {
+          this.set(flagKey as keyof EditorSettingSchema, value);
+        },
+        $: livedata$,
+      } as SettingItem<unknown>;
+      Object.defineProperty(this, flagKey, {
+        get: () => {
+          return item;
+        },
+      });
+    });
   }
 
   settings$ = LiveData.from<EditorSettingSchema>(this.watchAll(), null as any);
@@ -61,3 +89,7 @@ export class EditorSetting extends Entity {
     );
   }
 }
+
+export type EditorSettingExt = EditorSetting & {
+  [K in keyof EditorSettingSchema]: SettingItem<EditorSettingSchema[K]>;
+};

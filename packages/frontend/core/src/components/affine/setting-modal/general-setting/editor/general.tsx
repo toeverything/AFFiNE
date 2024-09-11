@@ -26,7 +26,11 @@ import {
 import { useI18n } from '@affine/i18n';
 import type { DocMode } from '@blocksuite/blocks';
 import { DoneIcon, SearchIcon } from '@blocksuite/icons/rc';
-import { useLiveData, useServices } from '@toeverything/infra';
+import {
+  FeatureFlagService,
+  useLiveData,
+  useServices,
+} from '@toeverything/infra';
 import clsx from 'clsx';
 import {
   type ChangeEvent,
@@ -398,15 +402,15 @@ export const SpellCheckSettings = () => {
 const AISettings = () => {
   const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
-  const { editorSettingService } = useServices({ EditorSettingService });
+  const { featureFlagService } = useServices({ FeatureFlagService });
 
-  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+  const enableAI = useLiveData(featureFlagService.flags.enable_ai.$);
 
   const onAIChange = useCallback(
     (checked: boolean) => {
-      editorSettingService.editorSetting.set('enableAI', checked);
+      featureFlagService.flags.enable_ai.set(checked); // this will trigger page reload, see `FeatureFlagService`
     },
-    [editorSettingService]
+    [featureFlagService]
   );
   const onToggleAI = useCallback(
     (checked: boolean) => {
@@ -421,7 +425,11 @@ const AISettings = () => {
           : t[
               'com.affine.settings.editorSettings.general.ai.disable.description'
             ](),
-        confirmText: checked ? t['Enable']() : t['Disable'](),
+        confirmText: checked
+          ? t['com.affine.settings.editorSettings.general.ai.enable.confirm']()
+          : t[
+              'com.affine.settings.editorSettings.general.ai.disable.confirm'
+            ](),
         cancelText: t['Cancel'](),
         onConfirm: () => onAIChange(checked),
         confirmButtonOptions: {
@@ -437,7 +445,7 @@ const AISettings = () => {
       name={t['com.affine.settings.editorSettings.general.ai.title']()}
       desc={t['com.affine.settings.editorSettings.general.ai.description']()}
     >
-      <Switch checked={settings.enableAI} onChange={onToggleAI} />
+      <Switch checked={enableAI} onChange={onToggleAI} />
     </SettingRow>
   );
 };

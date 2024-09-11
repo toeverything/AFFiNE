@@ -120,7 +120,7 @@ const ExperimentalFeaturesItem = ({ flag }: { flag: Flag }) => {
       : feedbackLink[flag.feedbackType]
     : undefined;
 
-  if (flag.configurable === false) {
+  if (flag.configurable === false || flag.hide) {
     return null;
   }
 

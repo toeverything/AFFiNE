@@ -13,6 +13,7 @@ import type { Doc } from '@blocksuite/store';
 import {
   DocService,
   DocsService,
+  FeatureFlagService,
   useFramework,
   useLiveData,
   useService,
@@ -71,14 +72,14 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
     peekViewService,
     docService,
     docsService,
-    editorSettingService,
     editorService,
+    featureFlagService,
   } = useServices({
     PeekViewService,
     DocService,
     DocsService,
-    EditorSettingService,
     EditorService,
+    FeatureFlagService,
   });
   const framework = useFramework();
   const referenceRenderer: ReferenceReactRenderer = useMemo(() => {
@@ -101,12 +102,11 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
   }, [mode, page.collection]);
 
   const specs = useMemo(() => {
-    const enableAI =
-      editorSettingService.editorSetting.settings$.value.enableAI;
+    const enableAI = featureFlagService.flags.enable_ai.value;
     return mode === 'edgeless'
       ? createEdgelessModeSpecs(framework, enableAI)
       : createPageModeSpecs(framework, enableAI);
-  }, [editorSettingService, mode, framework]);
+  }, [featureFlagService, mode, framework]);
 
   const confirmModal = useConfirmModal();
   const patchedSpecs = useMemo(() => {

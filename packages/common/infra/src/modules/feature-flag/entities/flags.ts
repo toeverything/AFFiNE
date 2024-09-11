@@ -29,12 +29,17 @@ export class Flags extends Entity {
       const configurable = flag.configurable ?? true;
       const defaultState =
         'defaultState' in flag ? flag.defaultState : undefined;
+      const getValue = () => {
+        return configurable
+          ? (this.globalState.get<boolean>(FLAG_PREFIX + flagKey) ??
+              defaultState)
+          : defaultState;
+      };
       const item = {
         ...flag,
-        value: configurable
-          ? (this.globalState.get<boolean>(FLAG_PREFIX + flagKey) ??
-            defaultState)
-          : defaultState,
+        get value() {
+          return getValue();
+        },
         set: (value: boolean) => {
           if (!configurable) {
             return;

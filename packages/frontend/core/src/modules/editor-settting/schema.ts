@@ -16,7 +16,6 @@ export const fontStyleOptions = [
 }[];
 
 const AffineEditorSettingSchema = z.object({
-  enableAI: z.boolean().default(true),
   fontFamily: z.enum(['Sans', 'Serif', 'Mono', 'Custom']).default('Sans'),
   customFontFamily: z.string().default(''),
   newDocDefaultMode: z.enum(['edgeless', 'page']).default('page'),

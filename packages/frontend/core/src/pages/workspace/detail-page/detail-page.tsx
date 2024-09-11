@@ -7,7 +7,6 @@ import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { EditorService } from '@affine/core/modules/editor';
-import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import type { PageRootService } from '@blocksuite/blocks';
@@ -16,6 +15,7 @@ import { AiIcon, FrameIcon, TocIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { type AffineEditorContainer } from '@blocksuite/presets';
 import {
   DocService,
+  FeatureFlagService,
   FrameworkScope,
   GlobalContextService,
   useLiveData,
@@ -61,7 +61,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     docService,
     workspaceService,
     globalContextService,
-    editorSettingService,
+    featureFlagService,
   } = useServices({
     WorkbenchService,
     ViewService,
@@ -69,7 +69,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     DocService,
     WorkspaceService,
     GlobalContextService,
-    EditorSettingService,
+    FeatureFlagService,
   });
   const workbench = workbenchService.workbench;
   const editor = editorService.editor;
@@ -250,7 +250,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         </div>
       </ViewBody>
 
-      {editorSettingService.editorSetting.settings$.value.enableAI && (
+      {featureFlagService.flags.enable_ai.value && (
         <ViewSidebarTab
           tabId="chat"
           icon={<AiIcon />}

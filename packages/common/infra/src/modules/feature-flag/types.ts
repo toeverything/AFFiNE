@@ -5,6 +5,10 @@ export type FlagInfo = {
   description?: string;
   configurable?: boolean;
   defaultState?: boolean; // default to open and not controlled by user
+  /**
+   * hide in the feature flag settings, but still can be controlled by the code
+   */
+  hide?: boolean;
   feedbackType?: FeedbackType;
   feedbackLink?: string;
 } & (

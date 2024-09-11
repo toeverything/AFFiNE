@@ -6,11 +6,16 @@ import {
   WorkspaceInitialized,
 } from '@toeverything/infra';
 
-import { EditorSetting } from '../entities/editor-setting';
+import {
+  EditorSetting,
+  type EditorSettingExt,
+} from '../entities/editor-setting';
 
 @OnEvent(WorkspaceInitialized, e => e.onWorkspaceInitialized)
 export class EditorSettingService extends Service {
-  editorSetting = this.framework.createEntity(EditorSetting);
+  editorSetting = this.framework.createEntity(
+    EditorSetting
+  ) as EditorSettingExt;
 
   onWorkspaceInitialized(workspace: Workspace) {
     // set default mode for new doc

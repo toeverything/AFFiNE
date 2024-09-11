@@ -5,6 +5,14 @@ const isDesktopEnvironment = environment.isElectron;
 const isCanaryBuild = runtimeConfig.appBuildType === 'canary';
 
 export const AFFINE_FLAGS = {
+  enable_ai: {
+    category: 'affine',
+    displayName: 'Enable AI',
+    description: 'Enable or disable ALL AI features.',
+    hide: true,
+    configurable: true,
+    defaultState: true,
+  },
   enable_database_attachment_note: {
     category: 'blocksuite',
     bsFlag: 'enable_database_attachment_note',
