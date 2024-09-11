@@ -1,14 +1,14 @@
 {
   "type": "page",
   "meta": {
-    "id": "v4nxnq2Al2",
+    "id": "gJEFfmo4QJ",
     "title": "",
-    "createDate": 1725459565290,
+    "createDate": 1726038448921,
     "tags": []
   },
   "blocks": {
     "type": "block",
-    "id": "eDFE5HokPO",
+    "id": "orzKfiHevj",
     "flavour": "affine:page",
     "version": 2,
     "props": {
@@ -20,37 +20,58 @@
     "children": [
       {
         "type": "block",
-        "id": "ZksVPLRI0K",
+        "id": "-48EmppaxI",
         "flavour": "affine:surface",
         "version": 5,
         "props": {
           "elements": {
-            "hdqh5vFnzj": {
+            "m_PwyyI76y": {
               "index": "a0",
-              "seed": 263456687,
+              "seed": 44330892,
               "frontEndpointStyle": "None",
+              "labelOffset": {
+                "distance": 0.5,
+                "anchor": "center"
+              },
+              "labelStyle": {
+                "color": "--affine-palette-line-black",
+                "fontSize": 16,
+                "fontFamily": "blocksuite:surface:Inter",
+                "fontWeight": "400",
+                "fontStyle": "normal",
+                "textAlign": "center"
+              },
+              "labelXYWH": [235.6484375, 65.23828125, 200, 20],
               "mode": 2,
               "rearEndpointStyle": "Arrow",
               "rough": false,
               "roughness": 1.4,
               "source": {
-                "position": [196.0625, 145.84765625]
+                "position": [120.8515625, 146.44921875]
               },
               "stroke": "--affine-palette-line-grey",
               "strokeStyle": "solid",
               "strokeWidth": 2,
               "target": {
-                "position": [418.5859375, 52.13671875]
+                "position": [387.4453125, 4.02734375]
+              },
+              "text": {
+                "affine:surface:text": true,
+                "delta": [
+                  {
+                    "insert": "label"
+                  }
+                ]
               },
               "type": "connector",
-              "id": "hdqh5vFnzj"
+              "id": "m_PwyyI76y"
             }
           }
         },
         "children": [
           {
             "type": "block",
-            "id": "TNgzGwq6Ct",
+            "id": "-6UhNH7qhy",
             "flavour": "affine:frame",
             "version": 1,
             "props": {
@@ -63,10 +84,10 @@
                 ]
               },
               "background": "--affine-palette-transparent",
-              "xywh": "[-13.38671875,-4.5625,739.3828125,192.51171875]",
-              "index": "a0",
+              "xywh": "[-12.04296875,-49.66796875,542.9765625,248.3984375]",
+              "index": "Zz",
               "childElementIds": {
-                "hdqh5vFnzj": true
+                "m_PwyyI76y": true
               }
             },
             "children": []

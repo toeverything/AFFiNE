@@ -10,10 +10,15 @@ import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { useI18n } from '@affine/i18n';
 import {
   ConnectorMode,
+  FontFamily,
+  FontFamilyMap,
+  FontStyle,
+  FontWeightMap,
   LineColor,
   LineColorMap,
   PointStyle,
   StrokeStyle,
+  TextAlign,
 } from '@blocksuite/blocks';
 import type { Doc } from '@blocksuite/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
@@ -21,7 +26,7 @@ import { useCallback, useMemo } from 'react';
 
 import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
-import { useColor } from '../utils';
+import { sortedFontWeightEntries, useColor } from '../utils';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
 import { getSurfaceBlock } from './utils';
@@ -29,6 +34,15 @@ import { getSurfaceBlock } from './utils';
 enum ConnecterStyle {
   General = 'general',
   Scribbled = 'scribbled',
+}
+
+enum ConnectorTextFontSize {
+  '16px' = '16',
+  '20px' = '20',
+  '24px' = '24',
+  '32px' = '32',
+  '40px' = '40',
+  '64px' = '64',
 }
 
 export const ConnectorSettings = () => {
@@ -191,6 +205,150 @@ export const ConnectorSettings = () => {
     });
   }, [editorSetting, settings]);
 
+  const alignItems = useMemo<RadioItem[]>(
+    () => [
+      {
+        value: TextAlign.Left,
+        label:
+          t[
+            'com.affine.settings.editorSettings.edgeless.text.alignment.left'
+          ](),
+      },
+      {
+        value: TextAlign.Center,
+        label:
+          t[
+            'com.affine.settings.editorSettings.edgeless.text.alignment.center'
+          ](),
+      },
+      {
+        value: TextAlign.Right,
+        label:
+          t[
+            'com.affine.settings.editorSettings.edgeless.text.alignment.right'
+          ](),
+      },
+    ],
+    [t]
+  );
+
+  const textAlignment = settings.connector.labelStyle.textAlign;
+  const setTextAlignment = useCallback(
+    (value: TextAlign) => {
+      editorSetting.set('connector', {
+        labelStyle: {
+          textAlign: value,
+        },
+      });
+    },
+    [editorSetting]
+  );
+
+  const fontFamilyItems = useMemo(() => {
+    const { fontFamily } = settings.connector.labelStyle;
+    return Object.entries(FontFamily).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set('connector', {
+          labelStyle: {
+            fontFamily: value,
+          },
+        });
+      };
+      const isSelected = fontFamily === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
+
+  const fontStyleItems = useMemo(() => {
+    const { fontStyle } = settings.connector.labelStyle;
+    return Object.entries(FontStyle).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set('connector', {
+          labelStyle: {
+            fontStyle: value,
+          },
+        });
+      };
+      const isSelected = fontStyle === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
+
+  const fontWeightItems = useMemo(() => {
+    const { fontWeight } = settings.connector.labelStyle;
+    return sortedFontWeightEntries.map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set('connector', {
+          labelStyle: {
+            fontWeight: value,
+          },
+        });
+      };
+      const isSelected = fontWeight === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
+
+  const fontSizeItems = useMemo(() => {
+    const { fontSize } = settings.connector.labelStyle;
+    return Object.entries(ConnectorTextFontSize).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set('connector', {
+          labelStyle: {
+            fontSize: Number(value),
+          },
+        });
+      };
+      const isSelected = fontSize === Number(value);
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
+
+  const textColorItems = useMemo(() => {
+    const { color } = settings.connector.labelStyle;
+    return Object.entries(LineColor).map(([name, value]) => {
+      const handler = () => {
+        editorSetting.set('connector', {
+          labelStyle: {
+            color: value,
+          },
+        });
+      };
+      const isSelected = color === value;
+      return (
+        <MenuItem
+          key={name}
+          onSelect={handler}
+          selected={isSelected}
+          prefix={<Point color={value} />}
+        >
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
+
+  const textColor = useMemo(() => {
+    const { color } = settings.connector.labelStyle;
+    return getColorFromMap(color, LineColorMap);
+  }, [getColorFromMap, settings]);
+
   const getElements = useCallback((doc: Doc) => {
     const surface = getSurfaceBlock(doc);
     return surface?.getElementsByType('connector') || [];
@@ -307,6 +465,100 @@ export const ConnectorSettings = () => {
               {String(settings.connector.rearEndpointStyle)}
             </MenuTrigger>
           }
+        />
+      </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.edgeless.shape.text-color'
+        ]()}
+        desc={''}
+      >
+        {textColor ? (
+          <DropdownMenu
+            items={textColorItems}
+            trigger={
+              <MenuTrigger
+                className={menuTrigger}
+                prefix={<Point color={textColor.value} />}
+              >
+                {textColor.key}
+              </MenuTrigger>
+            }
+          />
+        ) : null}
+      </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.edgeless.text.font-family'
+        ]()}
+        desc={''}
+      >
+        <DropdownMenu
+          items={fontFamilyItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {FontFamilyMap[settings.connector.labelStyle.fontFamily]}
+            </MenuTrigger>
+          }
+        />
+      </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.edgeless.shape.font-size'
+        ]()}
+        desc={''}
+      >
+        <DropdownMenu
+          items={fontSizeItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {settings.connector.labelStyle.fontSize + 'px'}
+            </MenuTrigger>
+          }
+        />
+      </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.edgeless.text.font-style'
+        ]()}
+        desc={''}
+      >
+        <DropdownMenu
+          items={fontStyleItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {settings.connector.labelStyle.fontStyle}
+            </MenuTrigger>
+          }
+        />
+      </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.edgeless.text.font-weight'
+        ]()}
+        desc={''}
+      >
+        <DropdownMenu
+          items={fontWeightItems}
+          trigger={
+            <MenuTrigger className={menuTrigger}>
+              {FontWeightMap[settings.connector.labelStyle.fontWeight]}
+            </MenuTrigger>
+          }
+        />
+      </SettingRow>
+      <SettingRow
+        name={t[
+          'com.affine.settings.editorSettings.edgeless.shape.text-alignment'
+        ]()}
+        desc={''}
+      >
+        <RadioGroup
+          items={alignItems}
+          value={textAlignment}
+          width={250}
+          className={settingWrapper}
+          onChange={setTextAlignment}
         />
       </SettingRow>
     </>

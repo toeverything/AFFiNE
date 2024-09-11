@@ -43,6 +43,12 @@ export const snapshotTitle = style({
   color: cssVarV2('text/secondary'),
 });
 
+export const snapshotSkeleton = style({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+});
+
 export const snapshot = style({
   width: '100%',
   height: '180px',

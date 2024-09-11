@@ -1,3 +1,4 @@
+import { Skeleton } from '@affine/component';
 import type { EditorSettingSchema } from '@affine/core/modules/editor-settting';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import type { EditorHost } from '@blocksuite/block-std';
@@ -12,7 +13,12 @@ import { isEqual } from 'lodash-es';
 import { useCallback, useEffect, useRef } from 'react';
 import { map, pairwise } from 'rxjs';
 
-import { snapshotContainer, snapshotLabel, snapshotTitle } from '../style.css';
+import {
+  snapshotContainer,
+  snapshotLabel,
+  snapshotSkeleton,
+  snapshotTitle,
+} from '../style.css';
 import { type DocName, getDocByName } from './docs';
 import { getFrameBlock } from './utils';
 
@@ -136,7 +142,13 @@ export const EdgelessSnapshot = (props: Props) => {
           overflow: 'hidden',
           height,
         }}
-      ></div>
+      >
+        <Skeleton
+          className={snapshotSkeleton}
+          variant="rounded"
+          height={'100%'}
+        />
+      </div>
       {children}
     </div>
   );

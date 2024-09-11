@@ -69,13 +69,14 @@ export async function getDocByName(name: DocName) {
   if (docMap.get(name)) {
     return docMap.get(name);
   }
-  const snapshot = (await loaders[name]()) as DocSnapshot;
-  const promiseDoc = initDocFromSnapshot(snapshot);
-  docMap.set(name, promiseDoc);
-  return promiseDoc;
+
+  const promise = initDoc(name);
+  docMap.set(name, promise);
+  return promise;
 }
 
-async function initDocFromSnapshot(snapshot: DocSnapshot) {
+async function initDoc(name: DocName) {
+  const snapshot = (await loaders[name]()) as DocSnapshot;
   const collection = await getCollection();
   const job = new Job({
     collection,

@@ -5,38 +5,70 @@ import {
   type RadioItem,
 } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { useI18n } from '@affine/i18n';
+import { LayoutType, MindmapStyle } from '@blocksuite/blocks';
 import type { Doc } from '@blocksuite/store';
-import { useCallback, useMemo, useState } from 'react';
+import { useFramework, useLiveData } from '@toeverything/infra';
+import { useCallback, useMemo } from 'react';
 
 import { DropdownMenu } from '../menu';
 import { menuTrigger, settingWrapper } from '../style.css';
 import { EdgelessSnapshot } from './snapshot';
 import { getSurfaceBlock } from './utils';
 
+const MINDMAP_STYLES = [
+  {
+    value: MindmapStyle.ONE,
+    name: 'Style 1',
+  },
+  {
+    value: MindmapStyle.TWO,
+    name: 'Style 2',
+  },
+  {
+    value: MindmapStyle.THREE,
+    name: 'Style 3',
+  },
+  {
+    value: MindmapStyle.FOUR,
+    name: 'Style 4',
+  },
+];
+
 export const MindMapSettings = () => {
   const t = useI18n();
-  const [layoutValue, setLayoutValue] = useState<'left' | 'radial' | 'right'>(
-    'right'
+  const framework = useFramework();
+  const { editorSetting } = framework.get(EditorSettingService);
+  const settings = useLiveData(editorSetting.settings$);
+
+  const { layoutType } = settings.mindmap;
+  const setLayoutType = useCallback(
+    (value: LayoutType) => {
+      editorSetting.set('mindmap', {
+        layoutType: value,
+      });
+    },
+    [editorSetting]
   );
-  const layoutValueItems = useMemo<RadioItem[]>(
+  const layoutTypeItems = useMemo<RadioItem[]>(
     () => [
       {
-        value: 'left',
+        value: LayoutType.LEFT as any,
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.mind-map.layout.left'
           ](),
       },
       {
-        value: 'radial',
+        value: LayoutType.BALANCE as any,
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.mind-map.layout.radial'
           ](),
       },
       {
-        value: 'right',
+        value: LayoutType.RIGHT as any,
         label:
           t[
             'com.affine.settings.editorSettings.edgeless.mind-map.layout.right'
@@ -45,6 +77,21 @@ export const MindMapSettings = () => {
     ],
     [t]
   );
+
+  const styleItems = useMemo(() => {
+    const { style } = settings.mindmap;
+    return MINDMAP_STYLES.map(({ name, value }) => {
+      const handler = () => {
+        editorSetting.set('mindmap', { style: value });
+      };
+      const isSelected = style === value;
+      return (
+        <MenuItem key={name} onSelect={handler} selected={isSelected}>
+          {name}
+        </MenuItem>
+      );
+    });
+  }, [editorSetting, settings]);
 
   const getElements = useCallback((doc: Doc) => {
     const surface = getSurfaceBlock(doc);
@@ -65,10 +112,10 @@ export const MindMapSettings = () => {
         desc={''}
       >
         <DropdownMenu
-          items={<MenuItem>Style 1</MenuItem>}
+          items={styleItems}
           trigger={
-            <MenuTrigger className={menuTrigger} disabled>
-              Style 1
+            <MenuTrigger className={menuTrigger}>
+              {`Style ${settings.mindmap.style}`}
             </MenuTrigger>
           }
         />
@@ -80,11 +127,11 @@ export const MindMapSettings = () => {
         desc={''}
       >
         <RadioGroup
-          items={layoutValueItems}
-          value={layoutValue}
+          items={layoutTypeItems}
+          value={layoutType}
           width={250}
           className={settingWrapper}
-          onChange={setLayoutValue}
+          onChange={setLayoutType}
         />
       </SettingRow>
     </>

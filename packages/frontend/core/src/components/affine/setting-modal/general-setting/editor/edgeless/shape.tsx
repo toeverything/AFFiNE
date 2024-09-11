@@ -47,10 +47,12 @@ import { EdgelessSnapshot } from './snapshot';
 import { getSurfaceBlock } from './utils';
 
 enum ShapeTextFontSize {
-  '12px' = '12',
+  '16px' = '16',
   '20px' = '20',
-  '28px' = '28',
-  '36px' = '36',
+  '24px' = '24',
+  '32px' = '32',
+  '40px' = '40',
+  '64px' = '64',
 }
 
 const ShapeFillColorMap = createEnumMap(ShapeFillColor);
@@ -557,7 +559,7 @@ export const ShapeSettings = () => {
           items={fontStyleItems}
           trigger={
             <MenuTrigger className={menuTrigger}>
-              {String(settings[`shape:${currentShape}`].fontStyle)}
+              {settings[`shape:${currentShape}`].fontStyle}
             </MenuTrigger>
           }
         />
