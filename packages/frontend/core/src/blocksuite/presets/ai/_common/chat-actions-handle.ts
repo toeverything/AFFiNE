@@ -8,7 +8,9 @@ import {
   type DocMode,
   DocModeProvider,
   type EdgelessRootService,
+  EditPropsStore,
   type ImageSelection,
+  NotificationProvider,
   type PageRootService,
   TelemetryProvider,
 } from '@blocksuite/blocks';
@@ -114,7 +116,7 @@ function getViewportCenter(
 ) {
   const center = { x: 400, y: 50 };
   if (mode === 'page') {
-    const viewport = rootService.editPropsStore.getStorage('viewport');
+    const viewport = rootService.std.get(EditPropsStore).getStorage('viewport');
     if (viewport) {
       if ('xywh' in viewport) {
         const bound = Bound.deserialize(viewport.xywh);
@@ -178,7 +180,7 @@ function addAIChatBlock(
 }
 
 export function promptDocTitle(host: EditorHost, autofill?: string) {
-  const notification = host.std.getService('affine:page')?.notificationService;
+  const notification = host.std.getOptional(NotificationProvider);
   if (!notification) return Promise.resolve(undefined);
 
   return notification.prompt({
@@ -302,7 +304,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     const surfaceService = host.std.getService('affine:surface');
     if (!rootService || !surfaceService) return false;
 
-    const { notificationService } = rootService;
+    const notificationService = host.std.getOptional(NotificationProvider);
     const docModeService = host.std.get(DocModeProvider);
     const { layer } = surfaceService;
     const curMode = docModeService.getEditorMode() || 'page';

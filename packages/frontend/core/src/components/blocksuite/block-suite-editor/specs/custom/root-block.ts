@@ -8,6 +8,7 @@ import { ConfigExtension, type ExtensionType } from '@blocksuite/block-std';
 import {
   AffineCanvasTextFonts,
   EdgelessRootBlockSpec,
+  EditorSettingExtension,
   FontLoaderService,
   PageRootBlockSpec,
 } from '@blocksuite/blocks';
@@ -49,14 +50,18 @@ function getTelemetryExtension(): ExtensionType {
   };
 }
 
-function getEditorConfigExtension(framework: FrameworkProvider) {
+function getEditorConfigExtension(
+  framework: FrameworkProvider
+): ExtensionType[] {
   const editorSettingService = framework.get(EditorSettingService);
-  return ConfigExtension('affine:page', {
-    linkedWidget: createLinkedWidgetConfig(framework),
-    editorSetting: editorSettingService.editorSetting.settingSignal,
-    toolbarMoreMenu: createToolbarMoreMenuConfig(framework),
-    databaseOptions: createDatabaseOptionsConfig(framework),
-  });
+  return [
+    EditorSettingExtension(editorSettingService.editorSetting.settingSignal),
+    ConfigExtension('affine:page', {
+      linkedWidget: createLinkedWidgetConfig(framework),
+      toolbarMoreMenu: createToolbarMoreMenuConfig(framework),
+      databaseOptions: createDatabaseOptionsConfig(framework),
+    }),
+  ];
 }
 
 export function createPageRootBlockSpec(
@@ -64,11 +69,11 @@ export function createPageRootBlockSpec(
   enableAI: boolean
 ): ExtensionType[] {
   return [
-    ...(enableAI ? AIPageRootBlockSpec : PageRootBlockSpec),
+    enableAI ? AIPageRootBlockSpec : PageRootBlockSpec,
     FontLoaderService,
     getTelemetryExtension(),
     getEditorConfigExtension(framework),
-  ];
+  ].flat();
 }
 
 export function createEdgelessRootBlockSpec(
@@ -76,10 +81,10 @@ export function createEdgelessRootBlockSpec(
   enableAI: boolean
 ): ExtensionType[] {
   return [
-    ...(enableAI ? AIEdgelessRootBlockSpec : EdgelessRootBlockSpec),
+    enableAI ? AIEdgelessRootBlockSpec : EdgelessRootBlockSpec,
     FontLoaderService,
     getFontConfigExtension(),
     getTelemetryExtension(),
     getEditorConfigExtension(framework),
-  ];
+  ].flat();
 }

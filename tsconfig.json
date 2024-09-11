@@ -39,7 +39,7 @@
     "lib": ["ESNext", "DOM"],
     "target": "ES2022",
     "useDefineForClassFields": false,
-    "experimentalDecorators": true,
+    "experimentalDecorators": false,
     "emitDecoratorMetadata": false,
     // Projects
     "composite": true,

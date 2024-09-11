@@ -3,6 +3,7 @@ import './chat-panel-messages';
 
 import type { EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
+import { NotificationProvider } from '@blocksuite/blocks';
 import { debounce } from '@blocksuite/global/utils';
 import type { Doc } from '@blocksuite/store';
 import { css, html, type PropertyValues } from 'lit';
@@ -159,8 +160,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
   };
 
   private readonly _cleanupHistories = async () => {
-    const notification =
-      this.host.std.getService('affine:page')?.notificationService;
+    const notification = this.host.std.getOptional(NotificationProvider);
     if (!notification) return;
 
     if (

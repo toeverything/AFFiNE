@@ -4,7 +4,11 @@ import type {
   TextSelection,
 } from '@blocksuite/block-std';
 import { WithDisposable } from '@blocksuite/block-std';
-import { createButtonPopper, Tooltip } from '@blocksuite/blocks';
+import {
+  createButtonPopper,
+  NotificationProvider,
+  Tooltip,
+} from '@blocksuite/blocks';
 import { noop } from '@blocksuite/global/utils';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
@@ -129,7 +133,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
 
   private readonly _notifySuccess = (title: string) => {
     if (!this._rootService) return;
-    const { notificationService } = this._rootService;
+    const notificationService = this.host.std.getOptional(NotificationProvider);
     notificationService?.notify({
       title: title,
       accent: 'success',

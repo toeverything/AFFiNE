@@ -28,17 +28,21 @@ import {
   type WidgetComponent,
 } from '@blocksuite/block-std';
 import { BlockServiceWatcher } from '@blocksuite/block-std';
-import {
-  type AffineReference,
-  type DocMode,
-  EmbedOptionProvider,
-  type RootService,
+import type {
+  AffineReference,
+  DocMode,
+  DocModeProvider,
+  RootService,
 } from '@blocksuite/blocks';
 import {
   AffineSlashMenuWidget,
-  DocModeProvider,
+  DocModeExtension,
   EdgelessRootBlockComponent,
   EmbedLinkedDocBlockComponent,
+  EmbedOptionProvider,
+  NotificationExtension,
+  PeekViewExtension,
+  QuickSearchExtension,
   QuickSearchProvider,
   ReferenceNodeConfigExtension,
 } from '@blocksuite/blocks';
@@ -108,125 +112,121 @@ export function patchNotificationService({
   closeConfirmModal,
   openConfirmModal,
 }: ReturnType<typeof useConfirmModal>) {
-  return patchSpecService<RootService>('affine:page', service => {
-    service.notificationService = {
-      confirm: async ({ title, message, confirmText, cancelText, abort }) => {
-        return new Promise<boolean>(resolve => {
-          openConfirmModal({
-            title: toReactNode(title),
-            description: toReactNode(message),
-            confirmText,
-            confirmButtonOptions: {
-              variant: 'primary',
-            },
-            cancelText,
-            onConfirm: () => {
-              resolve(true);
-            },
-            onCancel: () => {
-              resolve(false);
-            },
-          });
-          abort?.addEventListener('abort', () => {
-            resolve(false);
-            closeConfirmModal();
-          });
-        });
-      },
-      prompt: async ({
-        title,
-        message,
-        confirmText,
-        placeholder,
-        cancelText,
-        autofill,
-        abort,
-      }) => {
-        return new Promise<string | null>(resolve => {
-          let value = autofill || '';
-          const description = (
-            <div>
-              <span style={{ marginBottom: 12 }}>{toReactNode(message)}</span>
-              <Input
-                placeholder={placeholder}
-                defaultValue={value}
-                onChange={e => (value = e)}
-                ref={input => input?.select()}
-              />
-            </div>
-          );
-          openConfirmModal({
-            title: toReactNode(title),
-            description: description,
-            confirmText: confirmText ?? 'Confirm',
-            confirmButtonOptions: {
-              variant: 'primary',
-            },
-            cancelText: cancelText ?? 'Cancel',
-            onConfirm: () => {
-              resolve(value);
-            },
-            onCancel: () => {
-              resolve(null);
-            },
-          });
-          abort?.addEventListener('abort', () => {
-            resolve(null);
-            closeConfirmModal();
-          });
-        });
-      },
-      toast: (message: string, options: ToastOptions) => {
-        return toast(message, options);
-      },
-      notify: notification => {
-        const accentToNotify = {
-          error: notify.error,
-          success: notify.success,
-          warning: notify.warning,
-          info: notify,
-        };
-
-        const fn = accentToNotify[notification.accent || 'info'];
-        if (!fn) {
-          throw new Error('Invalid notification accent');
-        }
-
-        const toastId = fn(
-          {
-            title: toReactNode(notification.title),
-            message: toReactNode(notification.message),
-            action: notification.action?.onClick
-              ? {
-                  label: toReactNode(notification.action?.label),
-                  onClick: notification.action.onClick,
-                }
-              : undefined,
-            onDismiss: notification.onClose,
+  return NotificationExtension({
+    confirm: async ({ title, message, confirmText, cancelText, abort }) => {
+      return new Promise<boolean>(resolve => {
+        openConfirmModal({
+          title: toReactNode(title),
+          description: toReactNode(message),
+          confirmText,
+          confirmButtonOptions: {
+            variant: 'primary',
           },
-          {
-            duration: notification.duration || 0,
-            onDismiss: notification.onClose,
-            onAutoClose: notification.onClose,
-          }
-        );
-
-        notification.abort?.addEventListener('abort', () => {
-          notify.dismiss(toastId);
+          cancelText,
+          onConfirm: () => {
+            resolve(true);
+          },
+          onCancel: () => {
+            resolve(false);
+          },
         });
-      },
-    };
+        abort?.addEventListener('abort', () => {
+          resolve(false);
+          closeConfirmModal();
+        });
+      });
+    },
+    prompt: async ({
+      title,
+      message,
+      confirmText,
+      placeholder,
+      cancelText,
+      autofill,
+      abort,
+    }) => {
+      return new Promise<string | null>(resolve => {
+        let value = autofill || '';
+        const description = (
+          <div>
+            <span style={{ marginBottom: 12 }}>{toReactNode(message)}</span>
+            <Input
+              placeholder={placeholder}
+              defaultValue={value}
+              onChange={e => (value = e)}
+              ref={input => input?.select()}
+            />
+          </div>
+        );
+        openConfirmModal({
+          title: toReactNode(title),
+          description: description,
+          confirmText: confirmText ?? 'Confirm',
+          confirmButtonOptions: {
+            variant: 'primary',
+          },
+          cancelText: cancelText ?? 'Cancel',
+          onConfirm: () => {
+            resolve(value);
+          },
+          onCancel: () => {
+            resolve(null);
+          },
+        });
+        abort?.addEventListener('abort', () => {
+          resolve(null);
+          closeConfirmModal();
+        });
+      });
+    },
+    toast: (message: string, options: ToastOptions) => {
+      return toast(message, options);
+    },
+    notify: notification => {
+      const accentToNotify = {
+        error: notify.error,
+        success: notify.success,
+        warning: notify.warning,
+        info: notify,
+      };
+
+      const fn = accentToNotify[notification.accent || 'info'];
+      if (!fn) {
+        throw new Error('Invalid notification accent');
+      }
+
+      const toastId = fn(
+        {
+          title: toReactNode(notification.title),
+          message: toReactNode(notification.message),
+          action: notification.action?.onClick
+            ? {
+                label: toReactNode(notification.action?.label),
+                onClick: notification.action.onClick,
+              }
+            : undefined,
+          onDismiss: notification.onClose,
+        },
+        {
+          duration: notification.duration || 0,
+          onDismiss: notification.onClose,
+          onAutoClose: notification.onClose,
+        }
+      );
+
+      notification.abort?.addEventListener('abort', () => {
+        notify.dismiss(toastId);
+      });
+    },
   });
 }
 
 export function patchPeekViewService(service: PeekViewService) {
-  return patchSpecService<RootService>('affine:page', pageService => {
-    pageService.peekViewService = {
-      peek: (target: ActivePeekView['target'], template?: TemplateResult) => {
-        logger.debug('center peek', target, template);
-        return service.peekView.open(target, template);
-      },
-    };
+  return PeekViewExtension({
+    peek: (target: ActivePeekView['target'], template?: TemplateResult) => {
+      logger.debug('center peek', target, template);
+      return service.peekView.open(target, template);
+    },
   });
 }
 
@@ -274,128 +274,119 @@ export function patchDocModeService(
     };
   }
 
-  const docModeExtension: ExtensionType = {
-    setup: di => [di.override(DocModeProvider, AffineDocModeService)],
-  };
+  const docModeExtension = DocModeExtension(new AffineDocModeService());
 
   return docModeExtension;
 }
 
 export function patchQuickSearchService(framework: FrameworkProvider) {
-  const QuickSearchExtension: ExtensionType = {
-    setup: di => {
-      di.addImpl(QuickSearchProvider, () => ({
-        async searchDoc(options) {
-          let searchResult:
-            | { docId: string; isNewDoc?: boolean }
-            | { userInput: string }
-            | null = null;
-          if (options.skipSelection) {
-            const query = options.userInput;
-            if (!query) {
-              logger.error('No user input provided');
-            } else {
-              const resolvedDoc = resolveLinkToDoc(query);
-              if (resolvedDoc) {
-                searchResult = {
-                  docId: resolvedDoc.docId,
-                };
-              } else if (
-                query.startsWith('http://') ||
-                query.startsWith('https://')
-              ) {
-                searchResult = {
-                  userInput: query,
-                };
-              } else {
-                const searchedDoc = (
-                  await framework.get(DocsSearchService).search(query)
-                ).at(0);
-                if (searchedDoc) {
-                  searchResult = {
-                    docId: searchedDoc.docId,
-                  };
-                }
-              }
-            }
+  const QuickSearch = QuickSearchExtension({
+    async searchDoc(options) {
+      let searchResult:
+        | { docId: string; isNewDoc?: boolean }
+        | { userInput: string }
+        | null = null;
+      if (options.skipSelection) {
+        const query = options.userInput;
+        if (!query) {
+          logger.error('No user input provided');
+        } else {
+          const resolvedDoc = resolveLinkToDoc(query);
+          if (resolvedDoc) {
+            searchResult = {
+              docId: resolvedDoc.docId,
+            };
+          } else if (
+            query.startsWith('http://') ||
+            query.startsWith('https://')
+          ) {
+            searchResult = {
+              userInput: query,
+            };
           } else {
-            searchResult = await new Promise(resolve =>
-              framework.get(QuickSearchService).quickSearch.show(
-                [
-                  framework.get(RecentDocsQuickSearchSession),
-                  framework.get(DocsQuickSearchSession),
-                  framework.get(CreationQuickSearchSession),
-                  (query: string) => {
-                    if (
-                      (query.startsWith('http://') ||
-                        query.startsWith('https://')) &&
-                      resolveLinkToDoc(query) === null
-                    ) {
-                      return [
-                        {
-                          id: 'link',
-                          source: 'link',
-                          icon: LinkIcon,
-                          label: {
-                            key: 'com.affine.cmdk.affine.insert-link',
-                          },
-                          payload: { url: query },
-                        } as QuickSearchItem<'link', { url: string }>,
-                      ];
-                    }
-                    return [];
-                  },
-                ],
-                result => {
-                  if (result === null) {
-                    resolve(null);
-                    return;
-                  }
-                  if (
-                    result.source === 'docs' ||
-                    result.source === 'recent-doc'
-                  ) {
-                    resolve({
-                      docId: result.payload.docId,
-                    });
-                  } else if (result.source === 'link') {
-                    resolve({
-                      userInput: result.payload.url,
-                    });
-                  } else if (result.source === 'creation') {
-                    const docsService = framework.get(DocsService);
-                    const mode =
-                      result.id === 'creation:create-edgeless'
-                        ? 'edgeless'
-                        : 'page';
-                    const newDoc = docsService.createDoc({
-                      primaryMode: mode,
-                      title: result.payload.title,
-                    });
-                    resolve({
-                      docId: newDoc.id,
-                      isNewDoc: true,
-                    });
-                  }
-                },
-                {
-                  defaultQuery: options.userInput,
-                  label: {
-                    key: 'com.affine.cmdk.insert-links',
-                  },
-                  placeholder: {
-                    key: 'com.affine.cmdk.docs.placeholder',
-                  },
-                }
-              )
-            );
+            const searchedDoc = (
+              await framework.get(DocsSearchService).search(query)
+            ).at(0);
+            if (searchedDoc) {
+              searchResult = {
+                docId: searchedDoc.docId,
+              };
+            }
           }
+        }
+      } else {
+        searchResult = await new Promise(resolve =>
+          framework.get(QuickSearchService).quickSearch.show(
+            [
+              framework.get(RecentDocsQuickSearchSession),
+              framework.get(DocsQuickSearchSession),
+              framework.get(CreationQuickSearchSession),
+              (query: string) => {
+                if (
+                  (query.startsWith('http://') ||
+                    query.startsWith('https://')) &&
+                  resolveLinkToDoc(query) === null
+                ) {
+                  return [
+                    {
+                      id: 'link',
+                      source: 'link',
+                      icon: LinkIcon,
+                      label: {
+                        key: 'com.affine.cmdk.affine.insert-link',
+                      },
+                      payload: { url: query },
+                    } as QuickSearchItem<'link', { url: string }>,
+                  ];
+                }
+                return [];
+              },
+            ],
+            result => {
+              if (result === null) {
+                resolve(null);
+                return;
+              }
+              if (result.source === 'docs' || result.source === 'recent-doc') {
+                resolve({
+                  docId: result.payload.docId,
+                });
+              } else if (result.source === 'link') {
+                resolve({
+                  userInput: result.payload.url,
+                });
+              } else if (result.source === 'creation') {
+                const docsService = framework.get(DocsService);
+                const mode =
+                  result.id === 'creation:create-edgeless'
+                    ? 'edgeless'
+                    : 'page';
+                const newDoc = docsService.createDoc({
+                  primaryMode: mode,
+                  title: result.payload.title,
+                });
+                resolve({
+                  docId: newDoc.id,
+                  isNewDoc: true,
+                });
+              }
+            },
+            {
+              defaultQuery: options.userInput,
+              label: {
+                key: 'com.affine.cmdk.insert-links',
+              },
+              placeholder: {
+                key: 'com.affine.cmdk.docs.placeholder',
+              },
+            }
+          )
+        );
+      }
 
-          return searchResult;
-        },
-      }));
+      return searchResult;
     },
-  };
+  });
   const SlashMenuQuickSearchExtension = patchSpecService<RootService>(
     'affine:page',
     () => {},
@@ -452,7 +443,7 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
       }
     }
   );
-  return [QuickSearchExtension, SlashMenuQuickSearchExtension];
+  return [QuickSearch, SlashMenuQuickSearchExtension];
 }
 
 export function patchEdgelessClipboard() {

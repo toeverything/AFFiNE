@@ -12,6 +12,7 @@ import {
   type EdgelessRootService,
   TelemetryProvider,
 } from '@blocksuite/blocks';
+import { NotificationProvider } from '@blocksuite/blocks';
 import {
   type AIChatBlockModel,
   type ChatMessage,
@@ -255,7 +256,7 @@ export class AIChatBlockPeekView extends LitElement {
    */
   cleanCurrentChatHistories = async () => {
     if (!this._rootService) return;
-    const { notificationService } = this._rootService;
+    const notificationService = this.host.std.getOptional(NotificationProvider);
     if (!notificationService) return;
 
     const { currentChatBlockId, currentSessionId } = this.chatContext;

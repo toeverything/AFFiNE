@@ -3,7 +3,7 @@ import type {
   EditorHost,
   TextSelection,
 } from '@blocksuite/block-std';
-import type { ImageSelection } from '@blocksuite/blocks';
+import { type ImageSelection, NotificationProvider } from '@blocksuite/blocks';
 import { css, html, LitElement, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -57,10 +57,6 @@ export class ChatActionList extends LitElement {
 
   private get _selectionValue() {
     return this.host.selection.value;
-  }
-
-  private get _rootService() {
-    return this.host.std.getService('affine:page');
   }
 
   private get _currentTextSelection(): TextSelection | undefined {
@@ -148,7 +144,7 @@ export class ChatActionList extends LitElement {
                     messageId
                   );
                   if (success) {
-                    this._rootService?.notificationService?.notify({
+                    this.host.std.getOptional(NotificationProvider)?.notify({
                       title: action.toast,
                       accent: 'success',
                       onClose: function (): void {},

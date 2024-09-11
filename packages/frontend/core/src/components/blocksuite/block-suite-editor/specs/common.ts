@@ -10,6 +10,7 @@ import {
   DatabaseBlockSpec,
   DataViewBlockSpec,
   DividerBlockSpec,
+  EditPropsStore,
   EmbedFigmaBlockSpec,
   EmbedGithubBlockSpec,
   EmbedHtmlBlockSpec,
@@ -28,6 +29,7 @@ import { AIChatBlockSpec } from '@blocksuite/presets';
 import { CustomAttachmentBlockSpec } from './custom/attachment-block';
 
 const CommonBlockSpecs: ExtensionType[] = [
+  EditPropsStore,
   RichTextExtensions,
   LatexBlockSpec,
   ListBlockSpec,
