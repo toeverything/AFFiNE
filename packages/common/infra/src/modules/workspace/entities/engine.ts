@@ -1,3 +1,4 @@
+import { DisposableGroup } from '@blocksuite/global/utils';
 import type { Doc as YDoc } from 'yjs';
 
 import { Entity } from '../../../framework';
@@ -24,8 +25,16 @@ export class WorkspaceEngine extends Entity<{
     this.props.engineProvider.getAwarenessConnections()
   );
 
+  private readonly disposableGroup: DisposableGroup;
+
   constructor(private readonly workspaceService: WorkspaceService) {
     super();
+    this.disposableGroup = new DisposableGroup();
+    this.disposableGroup.add(
+      workspaceService.workspace.docCollection.slots.docCreated.on(id => {
+        this.doc.markAsReady(id);
+      })
+    );
   }
 
   setRootDoc(yDoc: YDoc) {
@@ -72,5 +81,6 @@ export class WorkspaceEngine extends Entity<{
     this.forceStop();
     this.doc.dispose();
     this.awareness.dispose();
+    this.disposableGroup.dispose();
   }
 }
