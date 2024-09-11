@@ -95,6 +95,19 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/import-template'),
       },
       {
+        path: '/template/preview',
+        loader: ({ request }) => {
+          const url = new URL(request.url);
+          const workspaceId = url.searchParams.get('workspaceId');
+          const docId = url.searchParams.get('docId');
+          const templateName = url.searchParams.get('name');
+
+          return redirect(
+            `/workspace/${workspaceId}/${docId}?isTemplate=true&templateName=${encodeURIComponent(templateName ?? '')}`
+          );
+        },
+      },
+      {
         path: '/auth/:authType',
         lazy: () => import(/* webpackChunkName: "auth" */ './pages/auth/auth'),
       },

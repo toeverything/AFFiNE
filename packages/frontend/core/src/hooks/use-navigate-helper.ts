@@ -182,6 +182,15 @@ export function useNavigateHelper() {
     [navigate]
   );
 
+  const jumpToImportTemplate = useCallback(
+    (workspaceId: string, docId: string, name: string) => {
+      return navigate(
+        `/template/import?workspaceId=${encodeURIComponent(workspaceId)}&docId=${encodeURIComponent(docId)}&name=${encodeURIComponent(name)}`
+      );
+    },
+    [navigate]
+  );
+
   return useMemo(
     () => ({
       jumpToPage,
@@ -197,6 +206,7 @@ export function useNavigateHelper() {
       jumpToTags,
       jumpToTag,
       openInApp,
+      jumpToImportTemplate,
     }),
     [
       jumpToPage,
@@ -212,6 +222,7 @@ export function useNavigateHelper() {
       jumpToTags,
       jumpToTag,
       openInApp,
+      jumpToImportTemplate,
     ]
   );
 }

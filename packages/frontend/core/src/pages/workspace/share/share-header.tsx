@@ -11,10 +11,14 @@ export function ShareHeader({
   pageId,
   publishMode,
   docCollection,
+  isTemplate,
+  templateName,
 }: {
   pageId: string;
   publishMode: DocMode;
   docCollection: DocCollection;
+  isTemplate?: boolean;
+  templateName?: string;
 }) {
   return (
     <div className={styles.header}>
@@ -23,8 +27,10 @@ export function ShareHeader({
       <div className={styles.spacer} />
       <ShareHeaderRightItem
         workspaceId={docCollection.id}
-        pageId={pageId}
+        docId={pageId}
         publishMode={publishMode}
+        isTemplate={isTemplate}
+        templateName={templateName}
       />
       <AuthModal />
     </div>

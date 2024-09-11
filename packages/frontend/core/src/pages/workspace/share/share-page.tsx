@@ -32,7 +32,7 @@ import {
   WorkspacesService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { PageNotFound } from '../../404';
@@ -57,14 +57,18 @@ export const SharePage = ({
 
   const location = useLocation();
 
-  const [mode, setMode] = useState<DocMode | null>(null);
-
-  useEffect(() => {
+  const { mode, isTemplate, templateName } = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
     const queryStringMode = searchParams.get('mode') as DocMode | null;
-    if (queryStringMode && DocModes.includes(queryStringMode)) {
-      setMode(queryStringMode);
-    }
+
+    return {
+      mode:
+        queryStringMode && DocModes.includes(queryStringMode)
+          ? queryStringMode
+          : null,
+      isTemplate: searchParams.has('isTemplate'),
+      templateName: searchParams.get('templateName') || '',
+    };
   }, [location.search]);
 
   useEffect(() => {
@@ -88,6 +92,8 @@ export const SharePage = ({
         workspaceBinary={data.workspaceBinary}
         docBinary={data.docBinary}
         publishMode={mode || data.publishMode}
+        isTemplate={isTemplate}
+        templateName={templateName}
       />
     );
   } else {
@@ -101,12 +107,16 @@ const SharePageInner = ({
   workspaceBinary,
   docBinary,
   publishMode = 'page' as DocMode,
+  isTemplate,
+  templateName,
 }: {
   workspaceId: string;
   docId: string;
   workspaceBinary: Uint8Array;
   docBinary: Uint8Array;
   publishMode?: DocMode;
+  isTemplate?: boolean;
+  templateName?: string;
 }) => {
   const workspacesService = useService(WorkspacesService);
 
@@ -218,6 +228,8 @@ const SharePageInner = ({
                     pageId={page.id}
                     publishMode={publishMode}
                     docCollection={page.blockSuiteDoc.collection}
+                    isTemplate={isTemplate}
+                    templateName={templateName}
                   />
                   <Scrollable.Root>
                     <Scrollable.Viewport

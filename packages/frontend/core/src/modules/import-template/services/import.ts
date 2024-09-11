@@ -1,4 +1,5 @@
 import type { WorkspaceFlavour } from '@affine/env/workspace';
+import { ZipTransformer } from '@blocksuite/blocks';
 import type { WorkspaceMetadata, WorkspacesService } from '@toeverything/infra';
 import { Service } from '@toeverything/infra';
 
@@ -16,13 +17,18 @@ export class ImportTemplateService extends Service {
         metadata: workspaceMetadata,
       });
     await workspace.engine.waitForRootDocReady();
-    const newDoc = workspace.docCollection.createDoc({});
-    await workspace.engine.doc.storage.behavior.doc.set(
-      newDoc.spaceDoc.guid,
-      docBinary
+    const [importedDoc] = await ZipTransformer.importDocs(
+      workspace.docCollection,
+      new Blob([docBinary], {
+        type: 'application/zip',
+      })
     );
-    disposeWorkspace();
-    return newDoc.id;
+    if (importedDoc) {
+      disposeWorkspace();
+      return importedDoc.id;
+    } else {
+      throw new Error('Failed to import doc');
+    }
   }
 
   async importToNewWorkspace(
