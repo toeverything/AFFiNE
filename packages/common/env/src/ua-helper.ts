@@ -8,6 +8,7 @@ export class UaHelper {
   public isMobile = false;
   public isChrome = false;
   public isIOS = false;
+  public isStandalone = false;
 
   getChromeVersion = (): number => {
     let raw = this.navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
@@ -30,6 +31,13 @@ export class UaHelper {
     return Boolean(this.uaMap[isUseragent]);
   }
 
+  private isStandaloneMode() {
+    if ('standalone' in window.navigator) {
+      return !!window.navigator.standalone;
+    }
+    return !!window.matchMedia('(display-mode: standalone)').matches;
+  }
+
   private initUaFlags() {
     this.isLinux = this.checkUseragent('linux');
     this.isMacOs = this.checkUseragent('mac');
@@ -39,6 +47,7 @@ export class UaHelper {
     this.isMobile = this.checkUseragent('mobile');
     this.isChrome = this.checkUseragent('chrome');
     this.isIOS = this.checkUseragent('ios');
+    this.isStandalone = this.isStandaloneMode();
   }
 }
 

@@ -111,10 +111,6 @@ export const MobileMenu = ({
             className: clsx(className, styles.mobileMenuModal),
             ...otherContentOptions,
           }}
-          contentWrapperStyle={{
-            alignItems: 'end',
-            paddingBottom: 10,
-          }}
         >
           <div
             ref={setSliderElement}

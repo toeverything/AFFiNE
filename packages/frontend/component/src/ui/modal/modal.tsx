@@ -15,6 +15,7 @@ import { forwardRef, useCallback, useEffect, useState } from 'react';
 import { startScopedViewTransition } from '../../utils';
 import type { IconButtonProps } from '../button';
 import { IconButton } from '../button';
+import { SafeArea } from '../safe-area';
 import * as styles from './styles.css';
 
 export interface ModalProps extends DialogProps {
@@ -214,7 +215,9 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
             }}
             {...otherOverlayOptions}
           >
-            <div
+            <SafeArea
+              bottom={environment.isMobileEdition}
+              bottomOffset={12}
               data-full-screen={fullScreen}
               data-modal={modal}
               className={clsx(
@@ -278,7 +281,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
 
                 {children}
               </Dialog.Content>
-            </div>
+            </SafeArea>
           </Dialog.Overlay>
         </Dialog.Portal>
       </Dialog.Root>

@@ -1,3 +1,4 @@
+import { SafeArea } from '@affine/component';
 import {
   WorkbenchLink,
   WorkbenchService,
@@ -39,29 +40,31 @@ export const AppTabs = () => {
   const location = useLiveData(workbench.location$);
 
   return (
-    <ul className={styles.appTabs} id="app-tabs" role="tablist">
-      {routes.map(route => {
-        const Link = route.LinkComponent || WorkbenchLink;
+    <SafeArea bottom className={styles.appTabs} bottomOffset={2}>
+      <ul className={styles.appTabsInner} id="app-tabs" role="tablist">
+        {routes.map(route => {
+          const Link = route.LinkComponent || WorkbenchLink;
 
-        const isActive = route.isActive
-          ? route.isActive(location)
-          : location.pathname === route.to;
-        return (
-          <Link
-            data-active={isActive}
-            to={route.to}
-            key={route.to}
-            className={styles.tabItem}
-            role="tab"
-            aria-label={route.to.slice(1)}
-            replaceHistory
-          >
-            <li>
-              <route.Icon />
-            </li>
-          </Link>
-        );
-      })}
-    </ul>
+          const isActive = route.isActive
+            ? route.isActive(location)
+            : location.pathname === route.to;
+          return (
+            <Link
+              data-active={isActive}
+              to={route.to}
+              key={route.to}
+              className={styles.tabItem}
+              role="tab"
+              aria-label={route.to.slice(1)}
+              replaceHistory
+            >
+              <li style={{ lineHeight: 0 }}>
+                <route.Icon />
+              </li>
+            </Link>
+          );
+        })}
+      </ul>
+    </SafeArea>
   );
 };

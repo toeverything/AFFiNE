@@ -13,6 +13,7 @@ globalStyle(':root', {
 
 globalStyle('body', {
   height: 'auto',
+  minHeight: '100dvh',
 });
 globalStyle('body:has(#app-tabs)', {
   paddingBottom: globalVars.appTabHeight,
@@ -20,7 +21,4 @@ globalStyle('body:has(#app-tabs)', {
 globalStyle('html', {
   overflowY: 'auto',
   background: cssVarV2('layer/background/secondary'),
-});
-globalStyle('body[data-scroll-locked][style]', {
-  overflow: 'clip !important',
 });

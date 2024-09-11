@@ -1,3 +1,4 @@
+import { useThemeColorV2 } from '@affine/component';
 import { TagService } from '@affine/core/modules/tag';
 import { PageNotFound } from '@affine/core/pages/404';
 import {
@@ -11,6 +12,7 @@ import { useParams } from 'react-router-dom';
 import { TagDetail } from '../../../views';
 
 export const Component = () => {
+  useThemeColorV2('layer/background/secondary');
   const params = useParams();
   const tagId = params.tagId;
 

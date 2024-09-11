@@ -1,4 +1,8 @@
-import { IconButton, startScopedViewTransition } from '@affine/component';
+import {
+  IconButton,
+  SafeArea,
+  startScopedViewTransition,
+} from '@affine/component';
 import { openSettingModalAtom } from '@affine/core/atoms';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
@@ -41,7 +45,7 @@ export const HomeHeader = () => {
 
   return (
     <div className={clsx(styles.root, { dense })}>
-      <div className={styles.float}>
+      <SafeArea top className={styles.float}>
         <div className={styles.headerAndWsSelector}>
           <div className={styles.wsSelectorWrapper}>
             <WorkspaceSelector />
@@ -60,8 +64,10 @@ export const HomeHeader = () => {
         <div className={styles.searchWrapper}>
           <SearchInput placeholder={t['Quick search']()} onClick={navSearch} />
         </div>
-      </div>
-      <div className={styles.space} />
+      </SafeArea>
+      <SafeArea top>
+        <div className={styles.space} />
+      </SafeArea>
     </div>
   );
 };

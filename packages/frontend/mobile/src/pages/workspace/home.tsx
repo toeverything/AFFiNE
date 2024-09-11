@@ -1,3 +1,4 @@
+import { SafeArea, useThemeColorV2 } from '@affine/component';
 import {
   ExplorerCollections,
   ExplorerFavorites,
@@ -11,24 +12,28 @@ import { AppTabs } from '../../components';
 import { HomeHeader, RecentDocs } from '../../views';
 
 export const Component = () => {
+  useThemeColorV2('layer/background/secondary');
+
   return (
     <ExplorerMobileContext.Provider value={true}>
       <HomeHeader />
       <RecentDocs />
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 32,
-          padding: '0 8px 32px 8px',
-        }}
-      >
-        <ExplorerFavorites />
-        {runtimeConfig.enableOrganize && <ExplorerOrganize />}
-        <ExplorerMigrationFavorites />
-        <ExplorerCollections />
-        <ExplorerTags />
-      </div>
+      <SafeArea bottom>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 32,
+            padding: '0 8px 32px 8px',
+          }}
+        >
+          <ExplorerFavorites />
+          {runtimeConfig.enableOrganize && <ExplorerOrganize />}
+          <ExplorerMigrationFavorites />
+          <ExplorerCollections />
+          <ExplorerTags />
+        </div>
+      </SafeArea>
       <AppTabs />
     </ExplorerMobileContext.Provider>
   );

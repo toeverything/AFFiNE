@@ -1,7 +1,7 @@
-import { IconButton, MobileMenu } from '@affine/component';
+import { IconButton, MobileMenu, SafeArea } from '@affine/component';
 import { MoreHorizontalIcon } from '@blocksuite/icons/rc';
 
-import { header, headerSpace } from './style.css';
+import { header, headerContent, headerSpace } from './style.css';
 import { AllDocsTabs } from './tabs';
 
 export interface AllDocsHeaderProps {
@@ -11,17 +11,21 @@ export interface AllDocsHeaderProps {
 export const AllDocsHeader = ({ operations }: AllDocsHeaderProps) => {
   return (
     <>
-      <header className={header}>
-        <AllDocsTabs />
-        <div>
-          {operations ? (
-            <MobileMenu items={operations}>
-              <IconButton icon={<MoreHorizontalIcon />} />
-            </MobileMenu>
-          ) : null}
-        </div>
-      </header>
-      <div className={headerSpace} />
+      <SafeArea top className={header}>
+        <header className={headerContent}>
+          <AllDocsTabs />
+          <div>
+            {operations ? (
+              <MobileMenu items={operations}>
+                <IconButton icon={<MoreHorizontalIcon />} />
+              </MobileMenu>
+            ) : null}
+          </div>
+        </header>
+      </SafeArea>
+      <SafeArea top>
+        <div className={headerSpace} />
+      </SafeArea>
     </>
   );
 };

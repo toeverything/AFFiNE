@@ -83,7 +83,7 @@ export const modalContentWrapper = style({
     'screen and (width <= 640px)': {
       // todo: adjust animation
       alignItems: 'flex-end',
-      paddingBottom: 32,
+      paddingBottom: 'env(safe-area-inset-bottom, 20px)',
     },
   },
 

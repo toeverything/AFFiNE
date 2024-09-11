@@ -3,17 +3,17 @@ import { style } from '@vanilla-extract/css';
 
 export const root = style({
   width: '100%',
-  minHeight: 44,
-  padding: '0 6px',
-  paddingTop: 16,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-
   position: 'sticky',
   top: 0,
   zIndex: 1,
   backgroundColor: cssVarV2('layer/background/secondary'),
+});
+export const inner = style({
+  minHeight: 44,
+  padding: '0 6px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
 });
 export const content = style({
   selectors: {

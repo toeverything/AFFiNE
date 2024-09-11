@@ -74,6 +74,7 @@ export function createWebpackConfig(cwd: string, flags: BuildFlags) {
           GIT_SHORT_SHA: gitShortHash(),
           DESCRIPTION,
           PUBLIC_PATH: config.output?.publicPath,
+          VIEWPORT_FIT: flags.distribution === 'mobile' ? 'cover' : 'auto',
         };
       },
     });

@@ -1,4 +1,4 @@
-import { notify } from '@affine/component';
+import { notify, useThemeColorV2 } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { CollectionService } from '@affine/core/modules/collection';
 import { isEmptyCollection } from '@affine/core/pages/workspace/collection';
@@ -16,6 +16,7 @@ import { AppTabs } from '../../../components';
 import { CollectionDetail, EmptyCollection } from '../../../views';
 
 export const Component = () => {
+  useThemeColorV2('layer/background/secondary');
   const { collectionService, globalContextService, workspaceService } =
     useServices({
       WorkspaceService,

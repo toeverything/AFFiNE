@@ -4,22 +4,23 @@ import { style } from '@vanilla-extract/css';
 import { globalVars } from '../../styles/mobile.css';
 
 export const appTabs = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-
   backgroundColor: cssVarV2('layer/background/secondary'),
   borderTop: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
 
   width: '100dvw',
-  height: `calc(${globalVars.appTabHeight} + 2px)`,
-  padding: 16,
-  gap: 15.5,
 
   position: 'fixed',
-  paddingBottom: 18,
   bottom: -2,
   zIndex: 1,
+});
+export const appTabsInner = style({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: 15.5,
+
+  height: `calc(${globalVars.appTabHeight} + 2px)`,
+  padding: 16,
 });
 export const tabItem = style({
   display: 'flex',

@@ -1,4 +1,4 @@
-import { IconButton } from '@affine/component';
+import { IconButton, SafeArea } from '@affine/component';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import {
@@ -42,7 +42,7 @@ export interface PageHeaderProps
   suffixClassName?: string;
   suffixStyle?: React.CSSProperties;
 }
-export const PageHeader = forwardRef<HTMLHeadElement, PageHeaderProps>(
+export const PageHeader = forwardRef<HTMLDivElement, PageHeaderProps>(
   function PageHeader(
     {
       back,
@@ -65,38 +65,41 @@ export const PageHeader = forwardRef<HTMLHeadElement, PageHeaderProps>(
     }, [backAction]);
 
     return (
-      <header
-        data-testid="mobile-page-header"
+      <SafeArea
+        top
         ref={ref}
         className={clsx(styles.root, className)}
+        data-testid="mobile-page-header"
         {...attrs}
       >
-        <section
-          className={clsx(styles.prefix, prefixClassName)}
-          style={prefixStyle}
-        >
-          {back ? (
-            <IconButton
-              size={24}
-              style={{ padding: 10 }}
-              onClick={handleRouteBack}
-              icon={<ArrowLeftSmallIcon />}
-            />
-          ) : null}
-          {prefix}
-        </section>
+        <header className={styles.inner}>
+          <section
+            className={clsx(styles.prefix, prefixClassName)}
+            style={prefixStyle}
+          >
+            {back ? (
+              <IconButton
+                size={24}
+                style={{ padding: 10 }}
+                onClick={handleRouteBack}
+                icon={<ArrowLeftSmallIcon />}
+              />
+            ) : null}
+            {prefix}
+          </section>
 
-        <section className={clsx(styles.content, { center: centerContent })}>
-          {children}
-        </section>
+          <section className={clsx(styles.content, { center: centerContent })}>
+            {children}
+          </section>
 
-        <section
-          className={clsx(styles.suffix, suffixClassName)}
-          style={suffixStyle}
-        >
-          {suffix}
-        </section>
-      </header>
+          <section
+            className={clsx(styles.suffix, suffixClassName)}
+            style={suffixStyle}
+          >
+            {suffix}
+          </section>
+        </header>
+      </SafeArea>
     );
   }
 );

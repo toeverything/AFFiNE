@@ -22,7 +22,6 @@ export const float = style({
   top: 0,
   width: '100%',
   background: cssVarV2('layer/background/secondary'),
-  paddingTop: 12,
   zIndex: 1,
 });
 export const space = style({

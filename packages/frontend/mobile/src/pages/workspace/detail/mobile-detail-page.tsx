@@ -1,3 +1,4 @@
+import { useThemeColorV2 } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
@@ -213,6 +214,7 @@ const notFound = (
 );
 
 export const Component = () => {
+  useThemeColorV2('layer/background/primary');
   const params = useParams();
   const pageId = params.pageId;
 

@@ -47,6 +47,7 @@ export type Environment = {
   isElectron: boolean;
   isDesktopWeb: boolean;
   isMobileWeb: boolean;
+  isStandalone?: boolean;
 
   // Device
   isLinux: boolean;
@@ -116,6 +117,7 @@ export function setupGlobal() {
       isFireFox: uaHelper.isFireFox,
       isChrome: uaHelper.isChrome,
       isIOS: uaHelper.isIOS,
+      isStandalone: uaHelper.isStandalone,
     };
     // Chrome on iOS is still Safari
     if (environment.isChrome && !environment.isIOS) {

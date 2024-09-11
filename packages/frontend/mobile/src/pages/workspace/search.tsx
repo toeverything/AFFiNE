@@ -1,3 +1,4 @@
+import { SafeArea, useThemeColorV2 } from '@affine/component';
 import { CollectionService } from '@affine/core/modules/collection';
 import {
   type QuickSearchItem,
@@ -112,6 +113,7 @@ const WithQueryList = () => {
 };
 
 export const Component = () => {
+  useThemeColorV2('layer/background/secondary');
   const searchInput = useLiveData(searchInput$);
   const searchService = useService(MobileSearchService);
 
@@ -133,15 +135,17 @@ export const Component = () => {
 
   return (
     <>
-      <div className={styles.searchHeader} data-testid="search-header">
-        <SearchInput
-          debounce={300}
-          autoFocus={!searchInput}
-          value={searchInput}
-          onInput={onSearch}
-          placeholder="Search Docs, Collections"
-        />
-      </div>
+      <SafeArea top>
+        <div className={styles.searchHeader} data-testid="search-header">
+          <SearchInput
+            debounce={300}
+            autoFocus={!searchInput}
+            value={searchInput}
+            onInput={onSearch}
+            placeholder="Search Docs, Collections"
+          />
+        </div>
+      </SafeArea>
       {searchInput ? <WithQueryList /> : <RecentList />}
       <AppTabs />
     </>
