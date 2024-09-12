@@ -206,7 +206,7 @@ export const PageHeaderMenuButton = ({
     setEditing(!isEditing);
   }, [isEditing, page.id, page.readonly, setDocReadonly]);
 
-  const isMobile = environment.isMobileEdition;
+  const isMobile = environment.isMobile;
   const mobileEditMenuItem = (
     <MenuItem
       prefixIcon={isEditing ? <SaveIcon /> : <EditIcon />}
