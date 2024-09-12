@@ -313,7 +313,7 @@ jobs:
         env:
           DISTRIBUTION: desktop
       - name: zip web
-        run: tar -czf dist.tar.gz --directory=packages/frontend/electron/renderer/dist .
+        run: tar -czf dist.tar.gz --directory=packages/frontend/apps/electron/renderer/dist .
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
@@ -554,7 +554,7 @@ jobs:
       - name: Download web artifact
         uses: ./.github/actions/download-web
         with:
-          path: packages/frontend/electron/resources/web-static
+          path: packages/frontend/apps/electron/resources/web-static
 
       - name: Build Desktop Layers
         run: yarn workspace @affine/electron build

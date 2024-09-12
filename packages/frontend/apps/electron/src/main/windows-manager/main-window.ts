@@ -90,7 +90,7 @@ export class MainWindowManager {
 
     if (isLinux()) {
       browserWindow.setIcon(
-        // __dirname is `packages/frontend/electron/dist` (the bundled output directory)
+        // __dirname is `packages/frontend/apps/electron/dist` (the bundled output directory)
         join(__dirname, `../resources/icons/icon_${buildType}_64x64.png`)
       );
     }

@@ -28,8 +28,7 @@ import {
   getCurrentStore,
   LifecycleService,
 } from '@toeverything/infra';
-import type { PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 if (environment.isElectron && environment.isDebug) {
@@ -39,19 +38,6 @@ if (environment.isElectron && environment.isDebug) {
 
 const performanceI18nLogger = performanceLogger.namespace('i18n');
 const cache = createEmotionCache();
-
-const DevTools = lazy(() =>
-  import('jotai-devtools').then(m => ({ default: m.DevTools }))
-);
-
-const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
-  return (
-    <>
-      <Suspense>{process.env.DEBUG_JOTAI === 'true' && <DevTools />}</Suspense>
-      {children}
-    </>
-  );
-};
 
 const future = {
   v7_startTransition: true,
@@ -99,14 +85,12 @@ export function App() {
           <AffineContext store={getCurrentStore()}>
             <Telemetry />
             <CustomThemeModifier />
-            <DebugProvider>
-              <GlobalLoading />
-              <RouterProvider
-                fallbackElement={<AppFallback key="RouterFallback" />}
-                router={router}
-                future={future}
-              />
-            </DebugProvider>
+            <GlobalLoading />
+            <RouterProvider
+              fallbackElement={<AppFallback key="RouterFallback" />}
+              router={router}
+              future={future}
+            />
           </AffineContext>
         </CacheProvider>
       </FrameworkRoot>

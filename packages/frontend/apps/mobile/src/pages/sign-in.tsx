@@ -5,6 +5,7 @@ import {
 import { AuthService } from '@affine/core/modules/cloud';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { MobileSignIn } from '../views/sign-in/mobile-sign-in';

@@ -72,7 +72,7 @@
       "@affine/native/*": ["./packages/frontend/native/*"],
       "@affine/server-native": ["./packages/backend/native/index.d.ts"],
       // Development only
-      "@affine/electron/*": ["./packages/frontend/electron/src/*"]
+      "@affine/electron/*": ["./packages/frontend/apps/electron/src/*"]
     }
   },
   "include": [],
@@ -95,16 +95,16 @@
       "path": "./packages/frontend/core"
     },
     {
-      "path": "./packages/frontend/web"
+      "path": "./packages/frontend/apps/web"
     },
     {
-      "path": "./packages/frontend/mobile"
+      "path": "./packages/frontend/apps/mobile"
     },
     {
-      "path": "./packages/frontend/electron/tsconfig.test.json"
+      "path": "./packages/frontend/apps/electron/tsconfig.test.json"
     },
     {
-      "path": "./packages/frontend/electron/renderer/tsconfig.json"
+      "path": "./packages/frontend/apps/electron/renderer/tsconfig.json"
     },
     {
       "path": "./packages/frontend/graphql"

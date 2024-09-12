@@ -1,42 +1,33 @@
 {
-  "name": "@affine/mobile",
+  "name": "@affine/web",
   "version": "0.16.0",
   "description": "AFFiNE Desktop Web application",
   "private": true,
   "browser": "src/index.tsx",
   "scripts": {
-    "build": "cross-env DISTRIBUTION=mobile yarn workspace @affine/cli build",
+    "build": "cross-env DISTRIBUTION=web yarn workspace @affine/cli build",
     "dev": "yarn workspace @affine/cli dev",
-    "static-server": "cross-env DISTRIBUTION=mobile yarn workspace @affine/cli dev --static"
+    "static-server": "yarn workspace @affine/cli dev --static"
   },
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/core": "workspace:*",
+    "@affine/electron-api": "workspace:*",
     "@affine/env": "workspace:*",
-    "@blocksuite/icons": "^2.1.66",
+    "@affine/i18n": "workspace:*",
+    "@emotion/react": "^11.11.4",
     "@sentry/react": "^8.0.0",
-    "@toeverything/theme": "^1.0.9",
-    "clsx": "^2.1.1",
     "core-js": "^3.36.1",
-    "figma-squircle": "^1.0.0",
     "intl-segmenter-polyfill-rs": "^0.1.7",
-    "jotai": "^2.9.3",
-    "jotai-devtools": "^0.10.1",
-    "jotai-effect": "^1.0.2",
-    "jotai-scope": "^0.7.2",
-    "lodash-es": "^4.17.21",
-    "next-themes": "^0.3.0",
+    "jotai": "^2.8.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.26.1"
+    "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
     "@affine/cli": "workspace:*",
-    "@types/lodash-es": "^4.17.12",
     "@types/react": "^18.2.75",
     "@types/react-dom": "^18.2.24",
-    "@vanilla-extract/css": "^1.15.5",
-    "@vanilla-extract/dynamic": "^2.1.2",
     "cross-env": "^7.0.3",
     "typescript": "^5.4.5"
   }

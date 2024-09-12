@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react-swc';
 import { defineConfig } from 'vitest/config';
 
-const rootDir = fileURLToPath(new URL('../../..', import.meta.url));
+const rootDir = fileURLToPath(new URL('../../../..', import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
@@ -12,7 +12,10 @@ export default defineConfig({
     alias: {
       // prevent tests using two different sources of yjs
       yjs: resolve(rootDir, 'node_modules/yjs'),
-      '@affine/electron': resolve(rootDir, 'packages/frontend/electron/src'),
+      '@affine/electron': resolve(
+        rootDir,
+        'packages/frontend/apps/electron/src'
+      ),
     },
   },
 

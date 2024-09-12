@@ -67,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: web
-          path: packages/frontend/electron/resources/web-static
+          path: packages/frontend/apps/electron/resources/web-static
 
   make-distribution:
     strategy:
@@ -119,7 +119,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: web
-          path: packages/frontend/electron/resources/web-static
+          path: packages/frontend/apps/electron/resources/web-static
 
       - name: Build Desktop Layers
         run: yarn workspace @affine/electron build
@@ -146,20 +146,20 @@ jobs:
       - name: signing DMG
         if: ${{ matrix.spec.platform == 'darwin' }}
         run: |
-          codesign --force --sign "Developer ID Application: TOEVERYTHING PTE. LTD." packages/frontend/electron/out/${{ env.BUILD_TYPE }}/make/AFFiNE.dmg
+          codesign --force --sign "Developer ID Application: TOEVERYTHING PTE. LTD." packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make/AFFiNE.dmg
 
       - name: Save artifacts (mac)
         if: ${{ matrix.spec.platform == 'darwin' }}
         run: |
           mkdir -p builds
-          mv packages/frontend/electron/out/*/make/*.dmg ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
-          mv packages/frontend/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
+          mv packages/frontend/apps/electron/out/*/make/*.dmg ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
+          mv packages/frontend/apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
       - name: Save artifacts (linux)
         if: ${{ matrix.spec.platform == 'linux' }}
         run: |
           mkdir -p builds
-          mv packages/frontend/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
-          mv packages/frontend/electron/out/*/make/*.AppImage ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
+          mv packages/frontend/apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
+          mv packages/frontend/apps/electron/out/*/make/*.AppImage ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
 
       - uses: actions/attest-build-provenance@v1
         if: ${{ matrix.spec.platform == 'darwin' }}
@@ -221,7 +221,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: web
-          path: packages/frontend/electron/resources/web-static
+          path: packages/frontend/apps/electron/resources/web-static
 
       - name: Build Desktop Layers
         run: yarn workspace @affine/electron build
@@ -235,12 +235,12 @@ jobs:
       - name: get all files to be signed
         id: get_files_to_be_signed
         run: |
-          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path packages/frontend/electron/out -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { '"' + $_.FullName.Replace((Get-Location).Path + '\packages\frontend\electron\out\', '') + '"' }) -join ' ')
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path packages/frontend/apps/electron/out -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { '"' + $_.FullName.Replace((Get-Location).Path + '\packages\frontend\electron\out\', '') + '"' }) -join ' ')
           "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
           echo $FILES_TO_BE_SIGNED
 
       - name: Zip artifacts for faster upload
-        run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/electron/out/* -DestinationPath archive.zip
+        run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/apps/electron/out/* -DestinationPath archive.zip
 
       - name: Save packaged artifacts for signing
         uses: actions/upload-artifact@v4
@@ -287,7 +287,7 @@ jobs:
           name: signed-packaged-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: .
       - name: unzip file
-        run: Expand-Archive -Path signed.zip -DestinationPath packages/frontend/electron/out
+        run: Expand-Archive -Path signed.zip -DestinationPath packages/frontend/apps/electron/out
 
       - name: Make squirrel.windows installer
         run: yarn workspace @affine/electron make-squirrel --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
@@ -296,12 +296,12 @@ jobs:
         run: yarn workspace @affine/electron make-nsis --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
 
       - name: Zip artifacts for faster upload
-        run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/electron/out/${{ env.BUILD_TYPE }}/make/* -DestinationPath archive.zip
+        run: Compress-Archive -CompressionLevel Fastest -Path packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make/* -DestinationPath archive.zip
 
       - name: get all files to be signed
         id: get_files_to_be_signed
         run: |
-          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path packages/frontend/electron/out/${{ env.BUILD_TYPE }}/make -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { '"' + $_.FullName.Replace((Get-Location).Path + '\packages\frontend\electron\out\${{ env.BUILD_TYPE }}\make\', '') + '"' }) -join ' ')
+          Set-Variable -Name FILES_TO_BE_SIGNED -Value ((Get-ChildItem -Path packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make -Recurse -File | Where-Object { $_.Extension -in @(".exe", ".node", ".dll", ".msi") } | ForEach-Object { '"' + $_.FullName.Replace((Get-Location).Path + '\packages\frontend\electron\out\${{ env.BUILD_TYPE }}\make\', '') + '"' }) -join ' ')
           "FILES_TO_BE_SIGNED=$FILES_TO_BE_SIGNED" >> $env:GITHUB_OUTPUT
           echo $FILES_TO_BE_SIGNED
 
@@ -335,14 +335,14 @@ jobs:
           name: signed-installer-${{ matrix.spec.platform }}-${{ matrix.spec.arch }}
           path: .
       - name: unzip file
-        run: Expand-Archive -Path signed.zip -DestinationPath packages/frontend/electron/out/${{ env.BUILD_TYPE }}/make
+        run: Expand-Archive -Path signed.zip -DestinationPath packages/frontend/apps/electron/out/${{ env.BUILD_TYPE }}/make
 
       - name: Save artifacts
         run: |
           mkdir -p builds
-          mv packages/frontend/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.zip
-          mv packages/frontend/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.exe
-          mv packages/frontend/electron/out/*/make/nsis.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.nsis.exe
+          mv packages/frontend/apps/electron/out/*/make/zip/win32/x64/AFFiNE*-win32-x64-*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.zip
+          mv packages/frontend/apps/electron/out/*/make/squirrel.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.exe
+          mv packages/frontend/apps/electron/out/*/make/nsis.windows/x64/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-x64.nsis.exe
 
       - uses: actions/attest-build-provenance@v1
         with:
@@ -394,7 +394,7 @@ jobs:
           node-version: 20
       - name: Generate Release yml
         run: |
-          node ./packages/frontend/electron/scripts/generate-yml.js
+          node ./packages/frontend/apps/electron/scripts/generate-yml.js
         env:
           RELEASE_VERSION: ${{ needs.before-make.outputs.RELEASE_VERSION }}
       - name: Create Release Draft

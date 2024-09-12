@@ -2,8 +2,8 @@
   "name": "@affine/electron",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
-  "root": "packages/frontend/electron",
-  "sourceRoot": "packages/frontend/electron/src",
+  "root": "packages/frontend/apps/electron",
+  "sourceRoot": "packages/frontend/apps/electron/src",
   "targets": {
     "build": {
       "executor": "nx:run-script",

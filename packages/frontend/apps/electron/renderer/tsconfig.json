@@ -1,5 +1,5 @@
 {
-  "extends": "../../../../tsconfig.json",
+  "extends": "../../../../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
     "target": "ESNext",
@@ -13,16 +13,16 @@
   },
   "references": [
     {
-      "path": "../../../common/env"
+      "path": "../../../../common/env"
     },
     {
-      "path": "../../core"
+      "path": "../../../core"
     },
     {
-      "path": "../../component"
+      "path": "../../../component"
     },
     {
-      "path": "../../../common/infra"
+      "path": "../../../../common/infra"
     }
   ],
   "include": ["."],

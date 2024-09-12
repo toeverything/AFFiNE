@@ -30,8 +30,7 @@ import {
   getCurrentStore,
   LifecycleService,
 } from '@toeverything/infra';
-import type { PropsWithChildren, ReactElement } from 'react';
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 const desktopWhiteList = [
@@ -54,19 +53,6 @@ if (
 
 const performanceI18nLogger = performanceLogger.namespace('i18n');
 const cache = createEmotionCache();
-
-const DevTools = lazy(() =>
-  import('jotai-devtools').then(m => ({ default: m.DevTools }))
-);
-
-const DebugProvider = ({ children }: PropsWithChildren): ReactElement => {
-  return (
-    <>
-      <Suspense>{process.env.DEBUG_JOTAI === 'true' && <DevTools />}</Suspense>
-      {children}
-    </>
-  );
-};
 
 const future = {
   v7_startTransition: true,
@@ -115,19 +101,17 @@ export function App() {
           <AffineContext store={getCurrentStore()}>
             <Telemetry />
             <CustomThemeModifier />
-            <DebugProvider>
-              <GlobalLoading />
-              <RouterProvider
-                fallbackElement={<AppFallback />}
-                router={router}
-                future={future}
-              />
-              {environment.isWindows && (
-                <div style={{ position: 'fixed', right: 0, top: 0, zIndex: 5 }}>
-                  <WindowsAppControls />
-                </div>
-              )}
-            </DebugProvider>
+            <GlobalLoading />
+            <RouterProvider
+              fallbackElement={<AppFallback />}
+              router={router}
+              future={future}
+            />
+            {environment.isWindows && (
+              <div style={{ position: 'fixed', right: 0, top: 0, zIndex: 5 }}>
+                <WindowsAppControls />
+              </div>
+            )}
           </AffineContext>
         </CacheProvider>
       </FrameworkRoot>

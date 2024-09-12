@@ -68,7 +68,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: web
-          path: ./packages/frontend/web/dist
+          path: ./packages/frontend/apps/web/dist
           if-no-files-found: error
 
   build-admin:
@@ -132,7 +132,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mobile
-          path: ./packages/frontend/mobile/dist
+          path: ./packages/frontend/apps/mobile/dist
           if-no-files-found: error
 
   build-web-selfhost:
@@ -159,7 +159,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: selfhost-web
-          path: ./packages/frontend/web/dist
+          path: ./packages/frontend/apps/web/dist
           if-no-files-found: error
 
   build-mobile-selfhost:
@@ -184,7 +184,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: selfhost-mobile
-          path: ./packages/frontend/mobile/dist
+          path: ./packages/frontend/apps/mobile/dist
           if-no-files-found: error
 
   build-admin-selfhost:
@@ -320,13 +320,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web
-          path: ./packages/frontend/web/dist
+          path: ./packages/frontend/apps/web/dist
 
       - name: Download mobile artifact
         uses: actions/download-artifact@v4
         with:
           name: mobile
-          path: ./packages/frontend/mobile/dist
+          path: ./packages/frontend/apps/mobile/dist
 
       - name: Download admin artifact
         uses: actions/download-artifact@v4
@@ -338,13 +338,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: selfhost-web
-          path: ./packages/frontend/web/dist/selfhost
+          path: ./packages/frontend/apps/web/dist/selfhost
 
       - name: Download selfhost mobile artifact
         uses: actions/download-artifact@v4
         with:
           name: selfhost-mobile
-          path: ./packages/frontend/mobile/dist/selfhost
+          path: ./packages/frontend/apps/mobile/dist/selfhost
 
       - name: Download selfhost admin artifact
         uses: actions/download-artifact@v4

@@ -10,7 +10,7 @@ import { test as base, testResultDir } from './playwright';
 import { removeWithRetry } from './utils/utils';
 
 const projectRoot = join(__dirname, '..', '..');
-const electronRoot = join(projectRoot, 'packages/frontend/electron');
+const electronRoot = join(projectRoot, 'packages/frontend/apps/electron');
 
 function generateUUID() {
   return crypto.randomUUID();

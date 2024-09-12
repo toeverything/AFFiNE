@@ -77,7 +77,7 @@ app:core:
 app:electron:
   - changed-files:
       - any-glob-to-any-file:
-          - 'packages/frontend/electron/**/*'
+          - 'packages/frontend/apps/electron/**/*'
 
 app:server:
   - changed-files:

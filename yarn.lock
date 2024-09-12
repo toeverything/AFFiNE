@@ -543,9 +543,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/electron@workspace:packages/frontend/electron":
+"@affine/electron@workspace:packages/frontend/apps/electron":
   version: 0.0.0-use.local
-  resolution: "@affine/electron@workspace:packages/frontend/electron"
+  resolution: "@affine/electron@workspace:packages/frontend/apps/electron"
   dependencies:
     "@affine-test/kit": "workspace:*"
     "@affine/component": "workspace:*"
@@ -587,7 +587,6 @@ __metadata:
     fs-extra: "npm:^11.2.0"
     glob: "npm:^11.0.0"
     jotai: "npm:^2.8.0"
-    jotai-devtools: "npm:^0.10.0"
     link-preview-js: "npm:^3.0.5"
     lodash-es: "npm:^4.17.21"
     nanoid: "npm:^5.0.7"
@@ -663,15 +662,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/mobile@workspace:packages/frontend/mobile":
+"@affine/mobile@workspace:packages/frontend/apps/mobile":
   version: 0.0.0-use.local
-  resolution: "@affine/mobile@workspace:packages/frontend/mobile"
+  resolution: "@affine/mobile@workspace:packages/frontend/apps/mobile"
   dependencies:
     "@affine/cli": "workspace:*"
     "@affine/component": "workspace:*"
     "@affine/core": "workspace:*"
     "@affine/env": "workspace:*"
+    "@affine/graphql": "workspace:*"
+    "@affine/i18n": "workspace:*"
+    "@blocksuite/blocks": "npm:^0.17.6"
     "@blocksuite/icons": "npm:^2.1.66"
+    "@radix-ui/react-collapsible": "npm:^1.0.3"
     "@sentry/react": "npm:^8.0.0"
     "@toeverything/theme": "npm:^1.0.9"
     "@types/lodash-es": "npm:^4.17.12"
@@ -685,7 +688,6 @@ __metadata:
     figma-squircle: "npm:^1.0.0"
     intl-segmenter-polyfill-rs: "npm:^0.1.7"
     jotai: "npm:^2.9.3"
-    jotai-devtools: "npm:^0.10.1"
     jotai-effect: "npm:^1.0.2"
     jotai-scope: "npm:^0.7.2"
     lodash-es: "npm:^4.17.21"
@@ -913,14 +915,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@affine/web@workspace:packages/frontend/web":
+"@affine/web@workspace:packages/frontend/apps/web":
   version: 0.0.0-use.local
-  resolution: "@affine/web@workspace:packages/frontend/web"
+  resolution: "@affine/web@workspace:packages/frontend/apps/web"
   dependencies:
     "@affine/cli": "workspace:*"
     "@affine/component": "workspace:*"
     "@affine/core": "workspace:*"
+    "@affine/electron-api": "workspace:*"
     "@affine/env": "workspace:*"
+    "@affine/i18n": "workspace:*"
+    "@emotion/react": "npm:^11.11.4"
     "@sentry/react": "npm:^8.0.0"
     "@types/react": "npm:^18.2.75"
     "@types/react-dom": "npm:^18.2.24"
@@ -930,6 +935,7 @@ __metadata:
     jotai: "npm:^2.8.0"
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
+    react-router-dom: "npm:^6.22.3"
     typescript: "npm:^5.4.5"
   languageName: unknown
   linkType: soft
@@ -3600,7 +3606,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/blocks@npm:0.17.8":
+"@blocksuite/blocks@npm:0.17.8, @blocksuite/blocks@npm:^0.17.6":
   version: 0.17.8
   resolution: "@blocksuite/blocks@npm:0.17.8"
   dependencies:
@@ -17702,13 +17708,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"builder-util-runtime@npm:9.2.5, builder-util-runtime@npm:^9.2.5-alpha.2":
+"builder-util-runtime@npm:9.2.5":
   version: 9.2.5
   resolution: "builder-util-runtime@npm:9.2.5"
   dependencies:
     debug: "npm:^4.3.4"
     sax: "npm:^1.2.4"
   checksum: 10/89c1e67c286ad5dd039abd56af91b3fa3d01eb62ce16c07e8d496a06eb0ed9ce015870d83dd919ffa387a32d47f9080923958672fc993154c8a184c6b1a78adc
+  languageName: node
+  linkType: hard
+
+"builder-util-runtime@npm:^9.2.5-alpha.2":
+  version: 9.2.6
+  resolution: "builder-util-runtime@npm:9.2.6"
+  dependencies:
+    debug: "npm:^4.3.4"
+    sax: "npm:^1.2.4"
+  checksum: 10/547ff72ef1147a3d3ed1e22ff0ba3c3c324235b8fd4cf19cdd546a0c1cf3cd84aae75ef9dd1172ccd0771ef265d35519cfee62488e4749b656217882f274fe22
   languageName: node
   linkType: hard
 
@@ -25367,7 +25383,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jotai-devtools@npm:^0.10.0, jotai-devtools@npm:^0.10.1":
+"jotai-devtools@npm:^0.10.0":
   version: 0.10.1
   resolution: "jotai-devtools@npm:0.10.1"
   dependencies:

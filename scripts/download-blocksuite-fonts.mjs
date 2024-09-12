@@ -10,6 +10,7 @@ const fontPath = join(
   '..',
   'packages',
   'frontend',
+  'apps',
   'web',
   'dist',
   'assets'

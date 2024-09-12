@@ -6,6 +6,7 @@ import {
   createBrowserRouter as reactRouterCreateBrowserRouter,
   Outlet,
   redirect,
+  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
   useNavigate,
 } from 'react-router-dom';
 

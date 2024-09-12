@@ -10,7 +10,7 @@ yarn install
 yarn workspace @affine/native build
 yarn dev
 
-# in packages/frontend/electron
+# in packages/frontend/apps/electron
 yarn generate-assets
 yarn dev # or yarn prod for production build
 ```
