@@ -57,19 +57,21 @@ export const SharePage = ({
 
   const location = useLocation();
 
-  const { mode, isTemplate, templateName } = useMemo(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const queryStringMode = searchParams.get('mode') as DocMode | null;
+  const { mode, isTemplate, templateName, templateSnapshotUrl } =
+    useMemo(() => {
+      const searchParams = new URLSearchParams(location.search);
+      const queryStringMode = searchParams.get('mode') as DocMode | null;
 
-    return {
-      mode:
-        queryStringMode && DocModes.includes(queryStringMode)
-          ? queryStringMode
-          : null,
-      isTemplate: searchParams.has('isTemplate'),
-      templateName: searchParams.get('templateName') || '',
-    };
-  }, [location.search]);
+      return {
+        mode:
+          queryStringMode && DocModes.includes(queryStringMode)
+            ? queryStringMode
+            : null,
+        isTemplate: searchParams.has('isTemplate'),
+        templateName: searchParams.get('templateName') || '',
+        templateSnapshotUrl: searchParams.get('snapshotUrl') || '',
+      };
+    }, [location.search]);
 
   useEffect(() => {
     shareReaderService.reader.loadShare({ workspaceId, docId });
@@ -94,6 +96,7 @@ export const SharePage = ({
         publishMode={mode || data.publishMode}
         isTemplate={isTemplate}
         templateName={templateName}
+        templateSnapshotUrl={templateSnapshotUrl}
       />
     );
   } else {
@@ -109,6 +112,7 @@ const SharePageInner = ({
   publishMode = 'page' as DocMode,
   isTemplate,
   templateName,
+  templateSnapshotUrl,
 }: {
   workspaceId: string;
   docId: string;
@@ -117,6 +121,7 @@ const SharePageInner = ({
   publishMode?: DocMode;
   isTemplate?: boolean;
   templateName?: string;
+  templateSnapshotUrl?: string;
 }) => {
   const workspacesService = useService(WorkspacesService);
 
@@ -227,9 +232,9 @@ const SharePageInner = ({
                   <ShareHeader
                     pageId={page.id}
                     publishMode={publishMode}
-                    docCollection={page.blockSuiteDoc.collection}
                     isTemplate={isTemplate}
                     templateName={templateName}
+                    snapshotUrl={templateSnapshotUrl}
                   />
                   <Scrollable.Root>
                     <Scrollable.Viewport

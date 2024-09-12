@@ -1,15 +1,16 @@
 import { Entity, LiveData } from '@toeverything/infra';
 
+interface TemplateOptions {
+  templateName: string;
+  snapshotUrl: string;
+}
+
 export class ImportTemplateDialog extends Entity {
   readonly isOpen$ = new LiveData(false);
-  readonly template$ = new LiveData<{
-    workspaceId: string;
-    docId: string;
-    templateName: string;
-  } | null>(null);
+  readonly template$ = new LiveData<TemplateOptions | null>(null);
 
-  open(workspaceId: string, docId: string, templateName: string) {
-    this.template$.next({ workspaceId, docId, templateName });
+  open(options: TemplateOptions) {
+    this.template$.next(options);
     this.isOpen$.next(true);
   }
 

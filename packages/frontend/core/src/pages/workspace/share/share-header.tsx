@@ -3,22 +3,21 @@ import { BlocksuiteHeaderTitle } from '@affine/core/components/blocksuite/block-
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
 import ShareHeaderRightItem from '@affine/core/components/cloud/share-header-right-item';
 import type { DocMode } from '@blocksuite/blocks';
-import type { DocCollection } from '@blocksuite/store';
 
 import * as styles from './share-header.css';
 
 export function ShareHeader({
   pageId,
   publishMode,
-  docCollection,
   isTemplate,
   templateName,
+  snapshotUrl,
 }: {
   pageId: string;
   publishMode: DocMode;
-  docCollection: DocCollection;
   isTemplate?: boolean;
   templateName?: string;
+  snapshotUrl?: string;
 }) {
   return (
     <div className={styles.header}>
@@ -26,10 +25,9 @@ export function ShareHeader({
       <BlocksuiteHeaderTitle docId={pageId} />
       <div className={styles.spacer} />
       <ShareHeaderRightItem
-        workspaceId={docCollection.id}
-        docId={pageId}
         publishMode={publishMode}
         isTemplate={isTemplate}
+        snapshotUrl={snapshotUrl}
         templateName={templateName}
       />
       <AuthModal />

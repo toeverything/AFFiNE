@@ -1,7 +1,7 @@
 import type { WorkspaceFlavour } from '@affine/env/workspace';
 import { ZipTransformer } from '@blocksuite/blocks';
 import type { WorkspaceMetadata, WorkspacesService } from '@toeverything/infra';
-import { Service } from '@toeverything/infra';
+import { DocsService, Service } from '@toeverything/infra';
 
 export class ImportTemplateService extends Service {
   constructor(private readonly workspacesService: WorkspacesService) {
@@ -23,7 +23,10 @@ export class ImportTemplateService extends Service {
         type: 'application/zip',
       })
     );
+    const docsService = workspace.scope.get(DocsService);
     if (importedDoc) {
+      // only support page mode for now
+      docsService.list.setPrimaryMode(importedDoc.id, 'page');
       disposeWorkspace();
       return importedDoc.id;
     } else {

@@ -7,16 +7,10 @@ export class TemplateDownloaderStore extends Store {
     super();
   }
 
-  async download(
-    /* not support workspaceid for now */ _workspaceId: string,
-    docId: string
-  ) {
-    const response = await this.fetchService.fetch(
-      `https://affine.pro/templates/snapshots/${docId}.zip `,
-      {
-        priority: 'high',
-      } as any
-    );
+  async download(snapshotUrl: string) {
+    const response = await this.fetchService.fetch(snapshotUrl, {
+      priority: 'high',
+    } as any);
     const arrayBuffer = await response.arrayBuffer();
 
     return { data: new Uint8Array(arrayBuffer) };

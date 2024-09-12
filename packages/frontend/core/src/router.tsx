@@ -101,9 +101,14 @@ export const topLevelRoutes = [
           const workspaceId = url.searchParams.get('workspaceId');
           const docId = url.searchParams.get('docId');
           const templateName = url.searchParams.get('name');
+          const snapshotUrl = url.searchParams.get('snapshotUrl');
 
           return redirect(
-            `/workspace/${workspaceId}/${docId}?isTemplate=true&templateName=${encodeURIComponent(templateName ?? '')}`
+            `/workspace/${workspaceId}/${docId}?${new URLSearchParams({
+              isTemplate: 'true',
+              templateName: templateName ?? '',
+              snapshotUrl: snapshotUrl ?? '',
+            }).toString()}`
           );
         },
       },

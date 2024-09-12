@@ -23,14 +23,12 @@ import { ImportTemplateService } from '../services/import';
 import * as styles from './dialog.css';
 
 const Dialog = ({
-  workspaceId,
-  docId,
   templateName,
+  snapshotUrl,
   onClose,
 }: {
-  workspaceId: string;
-  docId: string;
   templateName: string;
+  snapshotUrl: string;
   onClose?: () => void;
 }) => {
   const t = useI18n();
@@ -69,28 +67,26 @@ const Dialog = ({
   useEffect(() => {
     if (!isSessionRevalidating && notLogin) {
       jumpToSignIn(
-        '/template/import?workspaceId=' +
-          workspaceId +
-          '&docId=' +
-          docId +
+        '/template/import?' +
           '&name=' +
-          templateName
+          templateName +
+          '&snapshotUrl=' +
+          snapshotUrl
       );
       onClose?.();
     }
   }, [
-    docId,
     isSessionRevalidating,
     jumpToSignIn,
     notLogin,
     onClose,
+    snapshotUrl,
     templateName,
-    workspaceId,
   ]);
 
   useEffect(() => {
-    templateDownloader.download({ workspaceId, docId });
-  }, [docId, templateDownloader, workspaceId]);
+    templateDownloader.download({ snapshotUrl });
+  }, [snapshotUrl, templateDownloader]);
 
   const handleSelectedWorkspace = useCallback(
     (workspaceMetadata: WorkspaceMetadata) => {
@@ -238,9 +234,8 @@ export const ImportTemplateDialogProvider = () => {
     >
       {template && (
         <Dialog
-          docId={template.docId}
           templateName={template.templateName}
-          workspaceId={template.workspaceId}
+          snapshotUrl={template.snapshotUrl}
           onClose={() => importTemplateDialogService.dialog.close()}
         />
       )}

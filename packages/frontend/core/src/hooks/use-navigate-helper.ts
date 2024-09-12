@@ -183,9 +183,9 @@ export function useNavigateHelper() {
   );
 
   const jumpToImportTemplate = useCallback(
-    (workspaceId: string, docId: string, name: string) => {
+    (name: string, snapshotUrl: string) => {
       return navigate(
-        `/template/import?workspaceId=${encodeURIComponent(workspaceId)}&docId=${encodeURIComponent(docId)}&name=${encodeURIComponent(name)}`
+        `/template/import?name=${encodeURIComponent(name)}&snapshotUrl=${encodeURIComponent(snapshotUrl)}`
       );
     },
     [navigate]

@@ -10,11 +10,10 @@ export const Component = () => {
   const [searchParams] = useSearchParams();
   const { jumpToIndex } = useNavigateHelper();
   useEffect(() => {
-    importTemplateDialogService.dialog.open(
-      searchParams.get('workspaceId') ?? '',
-      searchParams.get('docId') ?? '',
-      searchParams.get('name') ?? ''
-    );
+    importTemplateDialogService.dialog.open({
+      templateName: searchParams.get('name') ?? '',
+      snapshotUrl: searchParams.get('snapshotUrl') ?? '',
+    });
   }, [importTemplateDialogService.dialog, jumpToIndex, searchParams]);
   // no ui for this route, just open the dialog
   return null;

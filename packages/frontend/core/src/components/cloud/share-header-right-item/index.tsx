@@ -9,19 +9,17 @@ import * as styles from './styles.css';
 import { PublishPageUserAvatar } from './user-avatar';
 
 export type ShareHeaderRightItemProps = {
-  workspaceId: string;
-  docId: string;
   publishMode: DocMode;
   isTemplate?: boolean;
   templateName?: string;
+  snapshotUrl?: string;
 };
 
 const ShareHeaderRightItem = ({
   publishMode,
   isTemplate,
   templateName,
-  workspaceId,
-  docId,
+  snapshotUrl,
 }: ShareHeaderRightItemProps) => {
   const loginStatus = useLiveData(useService(AuthService).session.status$);
   const authenticated = loginStatus === 'authenticated';
@@ -29,9 +27,8 @@ const ShareHeaderRightItem = ({
     <div className={styles.rightItemContainer}>
       {isTemplate ? (
         <ImportTemplateButton
-          docId={docId}
-          workspaceId={workspaceId}
           name={templateName ?? ''}
+          snapshotUrl={snapshotUrl ?? ''}
         />
       ) : (
         <>

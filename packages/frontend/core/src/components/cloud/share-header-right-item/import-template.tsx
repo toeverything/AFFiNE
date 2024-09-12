@@ -3,20 +3,18 @@ import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { useI18n } from '@affine/i18n';
 
 export const ImportTemplateButton = ({
-  workspaceId,
-  docId,
   name,
+  snapshotUrl,
 }: {
-  workspaceId: string;
-  docId: string;
   name: string;
+  snapshotUrl: string;
 }) => {
   const t = useI18n();
   const { jumpToImportTemplate } = useNavigateHelper();
   return (
     <Button
       variant="primary"
-      onClick={() => jumpToImportTemplate(workspaceId, docId, name)}
+      onClick={() => jumpToImportTemplate(name, snapshotUrl)}
     >
       {t['com.affine.share-page.header.import-template']()}
     </Button>
