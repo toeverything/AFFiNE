@@ -815,7 +815,9 @@ export class WebContentViewsManager {
 
       view.webContents.loadURL(shellViewUrl).catch(logger.error);
       if (isDev) {
-        view.webContents.openDevTools();
+        view.webContents.openDevTools({
+          mode: 'detach',
+        });
       }
     }
 
@@ -999,13 +1001,17 @@ export const showDevTools = (id?: string) => {
   getCustomThemeWindow()
     .then(w => {
       if (w && w.isFocused()) {
-        w.webContents.openDevTools();
+        w.webContents.openDevTools({
+          mode: 'detach',
+        });
       } else {
         const view = id
           ? WebContentViewsManager.instance.getViewById(id)
           : WebContentViewsManager.instance.activeWorkbenchView;
         if (view) {
-          view.webContents.openDevTools();
+          view.webContents.openDevTools({
+            mode: 'detach',
+          });
         }
       }
     })

@@ -258,7 +258,9 @@ export async function openUrlInHiddenWindow(urlObj: URL) {
   });
 
   if (environment.isDebug) {
-    win.webContents.openDevTools();
+    win.webContents.openDevTools({
+      mode: 'detach',
+    });
   }
 
   win.on('close', e => {
