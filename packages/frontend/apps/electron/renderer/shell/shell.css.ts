@@ -18,14 +18,13 @@ export const root = style({
 
 export const appTabsHeader = style({
   zIndex: 1,
+  position: 'absolute',
+  top: 0,
 });
 
 export const fallbackRoot = style({
-  position: 'absolute',
-  paddingTop: 52,
   width: '100%',
   height: '100%',
-  zIndex: 0,
 });
 
 export const splitViewFallback = style({

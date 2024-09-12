@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import type { PropsWithChildren, ReactElement } from 'react';
 
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
@@ -7,6 +8,7 @@ import {
   AppContainer as AppContainerWithoutSettings,
   MainContainerFallback,
 } from '../workspace';
+import * as styles from './app-container.css';
 
 export const AppContainer = (props: WorkspaceRootProps) => {
   const { appSettings } = useAppSettingHelper();
@@ -31,7 +33,12 @@ export const AppFallback = ({
   className?: string;
 }>): ReactElement => {
   return (
-    <AppContainer className={className}>
+    <AppContainer
+      className={clsx(
+        className,
+        environment.isElectron && styles.electronFallback
+      )}
+    >
       <AppSidebarFallback />
       <MainContainerFallback>{children}</MainContainerFallback>
     </AppContainer>
