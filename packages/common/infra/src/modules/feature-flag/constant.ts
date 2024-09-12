@@ -13,6 +13,13 @@ export const AFFINE_FLAGS = {
     configurable: true,
     defaultState: true,
   },
+  enable_database_full_width: {
+    category: 'blocksuite',
+    bsFlag: 'enable_database_full_width',
+    displayName: 'Database Full Width',
+    description: 'The database will be displayed in full-width mode.',
+    configurable: isNotStableBuild,
+  },
   enable_database_attachment_note: {
     category: 'blocksuite',
     bsFlag: 'enable_database_attachment_note',
