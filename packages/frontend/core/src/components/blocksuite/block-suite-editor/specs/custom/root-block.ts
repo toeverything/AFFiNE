@@ -6,34 +6,18 @@ import { mixpanel } from '@affine/core/mixpanel';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { ConfigExtension, type ExtensionType } from '@blocksuite/block-std';
 import {
-  AffineCanvasTextFonts,
   EdgelessRootBlockSpec,
   EditorSettingExtension,
   FontLoaderService,
   PageRootBlockSpec,
 } from '@blocksuite/blocks';
-import {
-  FontConfigExtension,
-  type TelemetryEventMap,
-  TelemetryProvider,
-} from '@blocksuite/blocks';
+import { type TelemetryEventMap, TelemetryProvider } from '@blocksuite/blocks';
 import { type FrameworkProvider } from '@toeverything/infra';
 
+import { getFontConfigExtension } from '../font-extension';
 import { createDatabaseOptionsConfig } from './database-block';
 import { createLinkedWidgetConfig } from './widgets/linked';
 import { createToolbarMoreMenuConfig } from './widgets/toolbar';
-
-function getFontConfigExtension() {
-  return FontConfigExtension(
-    runtimeConfig.isSelfHosted
-      ? AffineCanvasTextFonts.map(font => ({
-          ...font,
-          // self-hosted fonts are served from /assets
-          url: '/assets/' + new URL(font.url).pathname.split('/').pop(),
-        }))
-      : AffineCanvasTextFonts
-  );
-}
 
 function getTelemetryExtension(): ExtensionType {
   return {
