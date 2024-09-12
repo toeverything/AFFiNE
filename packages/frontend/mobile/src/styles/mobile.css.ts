@@ -22,3 +22,10 @@ globalStyle('html', {
   overflowY: 'auto',
   background: cssVarV2('layer/background/secondary'),
 });
+
+globalStyle('a:focus', {
+  outline: 'none',
+});
+globalStyle('button:focus', {
+  outline: 'none',
+});

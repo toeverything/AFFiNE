@@ -180,6 +180,10 @@ export const button = style({
       borderRadius: 'inherit',
       boxShadow: `0 0 0 1px ${cssVarV2('layer/insideBorder/primaryBorder')}`,
     },
+    '&[data-mobile=true]:focus-visible::after': {
+      content: 'none',
+      display: 'none',
+    },
   },
 });
 export const content = style({
