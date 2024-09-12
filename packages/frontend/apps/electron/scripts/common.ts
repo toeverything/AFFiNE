@@ -8,7 +8,7 @@ import type { BuildOptions, Plugin } from 'esbuild';
 
 export const electronDir = fileURLToPath(new URL('..', import.meta.url));
 
-export const rootDir = resolve(electronDir, '..', '..', '..');
+export const rootDir = resolve(electronDir, '..', '..', '..', '..');
 
 export const NODE_MAJOR_VERSION = 18;
 
