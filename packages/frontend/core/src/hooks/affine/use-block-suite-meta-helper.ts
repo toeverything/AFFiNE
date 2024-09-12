@@ -1,86 +1,59 @@
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useDocCollectionHelper } from '@affine/core/hooks/use-block-suite-workspace-helper';
-import { CollectionService } from '@affine/core/modules/collection';
 import type { DocMode } from '@blocksuite/blocks';
-import { DocsService, useService } from '@toeverything/infra';
+import { DocsService, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
-import type { DocCollection } from '../../shared';
 import { useNavigateHelper } from '../use-navigate-helper';
 
-export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
-  const { setDocMeta, getDocMeta, setDocReadonly, setDocTitle } =
-    useDocMetaHelper(docCollection);
-  const { createDoc } = useDocCollectionHelper(docCollection);
+export function useBlockSuiteMetaHelper() {
+  const workspace = useService(WorkspaceService).workspace;
+  const { setDocMeta, getDocMeta, setDocTitle, setDocReadonly } =
+    useDocMetaHelper();
+  const { createDoc } = useDocCollectionHelper(workspace.docCollection);
   const { openPage } = useNavigateHelper();
-  const collectionService = useService(CollectionService);
-  const pageRecordList = useService(DocsService).list;
+  const docRecordList = useService(DocsService).list;
 
   // TODO-Doma
   // "Remove" may cause ambiguity here. Consider renaming as "moveToTrash".
   const removeToTrash = useCallback(
-    (pageId: string) => {
-      setDocMeta(pageId, {
-        trash: true,
-        trashDate: Date.now(),
-      });
-      setDocReadonly(pageId, true);
-      collectionService.deletePagesFromCollections([pageId]);
+    (docId: string) => {
+      const docRecord = docRecordList.doc$(docId).value;
+      if (docRecord) {
+        docRecord.moveToTrash();
+        setDocReadonly(docId, true);
+      }
     },
-    [collectionService, setDocMeta, setDocReadonly]
+    [docRecordList, setDocReadonly]
   );
 
   const restoreFromTrash = useCallback(
-    (pageId: string) => {
-      setDocMeta(pageId, {
-        trash: false,
-        trashDate: undefined,
-      });
-      setDocReadonly(pageId, false);
+    (docId: string) => {
+      const docRecord = docRecordList.doc$(docId).value;
+      if (docRecord) {
+        docRecord.restoreFromTrash();
+        setDocReadonly(docId, false);
+      }
     },
-    [setDocMeta, setDocReadonly]
+    [docRecordList, setDocReadonly]
   );
 
   const permanentlyDeletePage = useCallback(
     (pageId: string) => {
-      docCollection.removeDoc(pageId);
+      workspace.docCollection.removeDoc(pageId);
     },
-    [docCollection]
-  );
-
-  /**
-   * see {@link useBlockSuiteWorkspacePageIsPublic}
-   */
-  const publicPage = useCallback(
-    (pageId: string) => {
-      setDocMeta(pageId, {
-        isPublic: true,
-      });
-    },
-    [setDocMeta]
-  );
-
-  /**
-   * see {@link useBlockSuiteWorkspacePageIsPublic}
-   */
-  const cancelPublicPage = useCallback(
-    (pageId: string) => {
-      setDocMeta(pageId, {
-        isPublic: false,
-      });
-    },
-    [setDocMeta]
+    [workspace]
   );
 
   const duplicate = useAsyncCallback(
     async (pageId: string, openPageAfterDuplication: boolean = true) => {
       const currentPagePrimaryMode =
-        pageRecordList.doc$(pageId).value?.primaryMode$.value;
+        docRecordList.doc$(pageId).value?.primaryMode$.value;
       const currentPageMeta = getDocMeta(pageId);
       const newPage = createDoc();
-      const currentPage = docCollection.getDoc(pageId);
+      const currentPage = workspace.docCollection.getDoc(pageId);
 
       newPage.load();
       if (!currentPageMeta || !currentPage) {
@@ -95,33 +68,31 @@ export function useBlockSuiteMetaHelper(docCollection: DocCollection) {
       });
 
       const lastDigitRegex = /\((\d+)\)$/;
-      const match = currentPageMeta.title.match(lastDigitRegex);
+      const match = currentPageMeta?.title?.match(lastDigitRegex);
       const newNumber = match ? parseInt(match[1], 10) + 1 : 1;
 
       const newPageTitle =
-        currentPageMeta.title.replace(lastDigitRegex, '') + `(${newNumber})`;
+        currentPageMeta?.title?.replace(lastDigitRegex, '') + `(${newNumber})`;
 
-      pageRecordList
+      docRecordList
         .doc$(newPage.id)
         .value?.setPrimaryMode(currentPagePrimaryMode || ('page' as DocMode));
       setDocTitle(newPage.id, newPageTitle);
-      openPageAfterDuplication && openPage(docCollection.id, newPage.id);
+      openPageAfterDuplication &&
+        openPage(workspace.docCollection.id, newPage.id);
     },
     [
-      docCollection,
-      createDoc,
+      docRecordList,
       getDocMeta,
-      openPage,
-      pageRecordList,
+      createDoc,
+      workspace.docCollection,
       setDocMeta,
       setDocTitle,
+      openPage,
     ]
   );
 
   return {
-    publicPage,
-    cancelPublicPage,
-
     removeToTrash,
     restoreFromTrash,
     permanentlyDeletePage,

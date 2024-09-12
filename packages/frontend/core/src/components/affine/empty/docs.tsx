@@ -39,7 +39,6 @@ export const EmptyDocs = ({
         undefined,
         isNewTabTrigger(e) ? 'new-tab' : true
       );
-      doc.load();
 
       if (tag) tag.tag(doc.id);
     },

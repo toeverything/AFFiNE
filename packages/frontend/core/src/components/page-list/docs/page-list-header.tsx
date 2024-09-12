@@ -19,7 +19,7 @@ import {
   SearchIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons/rc';
-import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
+import type { DocRecord } from '@toeverything/infra';
 import {
   useLiveData,
   useService,
@@ -122,7 +122,7 @@ export const CollectionPageListHeader = ({
   const { openConfirmModal } = useConfirmModal();
 
   const createAndAddDocument = useCallback(
-    (createDocumentFn: () => BlockSuiteDoc) => {
+    (createDocumentFn: () => DocRecord) => {
       const newDoc = createDocumentFn();
       collectionService.addPageToCollection(collection.id, newDoc.id);
     },
@@ -130,7 +130,7 @@ export const CollectionPageListHeader = ({
   );
 
   const onConfirmAddDocument = useCallback(
-    (createDocumentFn: () => BlockSuiteDoc) => {
+    (createDocumentFn: () => DocRecord) => {
       openConfirmModal({
         title: t['com.affine.collection.add-doc.confirm.title'](),
         description: t['com.affine.collection.add-doc.confirm.description'](),

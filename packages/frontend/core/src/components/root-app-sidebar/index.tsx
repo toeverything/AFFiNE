@@ -99,11 +99,7 @@ export const RootAppSidebar = (): ReactElement => {
 
   const onClickNewPage = useAsyncCallback(
     async (e?: MouseEvent) => {
-      const page = pageHelper.createPage(
-        undefined,
-        isNewTabTrigger(e) ? 'new-tab' : true
-      );
-      page.load();
+      pageHelper.createPage(undefined, isNewTabTrigger(e) ? 'new-tab' : true);
       track.$.navigationPanel.$.createDoc();
     },
     [pageHelper]

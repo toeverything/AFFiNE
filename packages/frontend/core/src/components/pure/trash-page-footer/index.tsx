@@ -19,7 +19,7 @@ export const TrashPageFooter = () => {
   const t = useI18n();
   const { appSettings } = useAppSettingHelper();
   const { jumpToSubPath } = useNavigateHelper();
-  const { restoreFromTrash } = useBlockSuiteMetaHelper(docCollection);
+  const { restoreFromTrash } = useBlockSuiteMetaHelper();
   const [open, setOpen] = useState(false);
   const hintText = t['com.affine.cmdk.affine.editor.trash-footer-hint']();
 

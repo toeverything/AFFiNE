@@ -22,9 +22,7 @@ import { MobileSignInModal } from '../views/sign-in/modal';
 export function MobileCurrentWorkspaceModals() {
   const currentWorkspace = useService(WorkspaceService).workspace;
 
-  const { trashModal, setTrashModal, handleOnConfirm } = useTrashModalHelper(
-    currentWorkspace.docCollection
-  );
+  const { trashModal, setTrashModal, handleOnConfirm } = useTrashModalHelper();
   const deletePageTitles = trashModal.pageTitles;
   const trashConfirmOpen = trashModal.open;
   const onTrashConfirmOpenChange = useCallback(

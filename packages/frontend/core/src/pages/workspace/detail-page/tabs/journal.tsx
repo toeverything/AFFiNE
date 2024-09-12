@@ -301,9 +301,8 @@ const ConflictList = ({
   className,
   ...attrs
 }: ConflictListProps) => {
-  const workspace = useService(WorkspaceService).workspace;
   const currentDoc = useService(DocService).doc;
-  const { setTrashModal } = useTrashModalHelper(workspace.docCollection);
+  const { setTrashModal } = useTrashModalHelper();
 
   const handleOpenTrashModal = useCallback(
     (docRecord: DocRecord) => {

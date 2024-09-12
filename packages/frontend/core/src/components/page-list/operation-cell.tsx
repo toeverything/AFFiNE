@@ -80,10 +80,10 @@ export const PageOperationCell = ({
     featureFlagService.flags.enable_multi_view.$
   );
   const currentWorkspace = workspaceService.workspace;
-  const { setTrashModal } = useTrashModalHelper(currentWorkspace.docCollection);
+  const { setTrashModal } = useTrashModalHelper();
   const favourite = useLiveData(favAdapter.isFavorite$(page.id, 'doc'));
   const workbench = workbenchService.workbench;
-  const { duplicate } = useBlockSuiteMetaHelper(currentWorkspace.docCollection);
+  const { duplicate } = useBlockSuiteMetaHelper();
   const blocksuiteDoc = currentWorkspace.docCollection.getDoc(page.id);
 
   const [openInfoModal, setOpenInfoModal] = useState(false);
@@ -93,7 +93,7 @@ export const PageOperationCell = ({
   }, []);
 
   const onDisablePublicSharing = useCallback(() => {
-    //TODO(@EYHN): implement disable public sharing
+    // TODO(@EYHN): implement disable public sharing
     toast('Successfully disabled', {
       portal: document.body,
     });

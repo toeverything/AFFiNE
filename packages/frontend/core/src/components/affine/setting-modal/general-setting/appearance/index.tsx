@@ -120,7 +120,7 @@ export const AppearanceSettings = () => {
         ) : null}
         {runtimeConfig.enableThemeEditor ? <ThemeEditorSetting /> : null}
       </SettingWrapper>
-      {/* //TODO(@JimmFly): remove Page component when stable release */}
+      {/* // TODO(@JimmFly): remove Page component when stable release */}
       <Page />
       {runtimeConfig.enableNewSettingUnstableApi ? (
         <SettingWrapper title={t['com.affine.appearanceSettings.date.title']()}>

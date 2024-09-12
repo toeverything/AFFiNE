@@ -9,7 +9,7 @@ import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import {
-  initEmptyPage,
+  DocsService,
   useLiveData,
   useService,
   WorkspacesService,
@@ -179,6 +179,7 @@ export const CreateWorkspaceModal = ({
   const [step, setStep] = useState<CreateWorkspaceStep>();
   const t = useI18n();
   const workspacesService = useService(WorkspacesService);
+  const docsService = useService(DocsService);
   const [loading, setLoading] = useState(false);
 
   // TODO(@Peng): maybe refactor using xstate?
@@ -242,9 +243,8 @@ export const CreateWorkspaceModal = ({
           async workspace => {
             workspace.meta.initialize();
             workspace.meta.setName(name);
-            const page = workspace.createDoc();
+            const page = docsService.createDoc();
             defaultDocId = page.id;
-            initEmptyPage(page);
           }
         );
         onCreate(id, defaultDocId);
@@ -252,7 +252,7 @@ export const CreateWorkspaceModal = ({
 
       setLoading(false);
     },
-    [loading, onCreate, workspacesService]
+    [docsService, loading, onCreate, workspacesService]
   );
 
   const onOpenChange = useCallback(

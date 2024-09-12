@@ -89,7 +89,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const isSideBarOpen = useLiveData(workbench.sidebarOpen$);
   const { appSettings } = useAppSettingHelper();
   const chatPanelRef = useRef<ChatPanel | null>(null);
-  const { setDocReadonly } = useDocMetaHelper(workspace.docCollection);
+  const { setDocReadonly } = useDocMetaHelper();
 
   const isActiveView = useIsActiveView();
   // TODO(@eyhn): remove jotai here

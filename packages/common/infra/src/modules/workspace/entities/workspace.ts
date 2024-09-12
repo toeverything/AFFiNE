@@ -35,6 +35,9 @@ export class Workspace extends Entity {
         idGenerator: () => nanoid(),
         schema: globalBlockSuiteSchema,
       });
+      this._docCollection.slots.docCreated.on(id => {
+        this.engine.doc.markAsReady(id);
+      });
     }
     return this._docCollection;
   }

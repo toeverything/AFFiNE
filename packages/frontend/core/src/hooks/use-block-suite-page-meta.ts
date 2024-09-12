@@ -1,8 +1,8 @@
-import type { RootBlockModel } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
-import { useMemo } from 'react';
+import { DocsService, useService, WorkspaceService } from '@toeverything/infra';
+import { useCallback, useMemo } from 'react';
 
+import { useAsyncCallback } from './affine-async-hooks';
 import { useAllBlockSuiteDocMeta } from './use-all-block-suite-page-meta';
 import { useJournalHelper } from './use-journal';
 
@@ -23,34 +23,54 @@ export function useBlockSuiteDocMeta(docCollection: DocCollection) {
   );
 }
 
-export function useDocMetaHelper(docCollection: DocCollection) {
+export function useDocMetaHelper() {
+  const workspaceService = useService(WorkspaceService);
+  const docsService = useService(DocsService);
+
+  const setDocTitle = useAsyncCallback(
+    async (docId: string, newTitle: string) => {
+      await docsService.changeDocTitle(docId, newTitle);
+    },
+    [docsService]
+  );
+
+  const setDocMeta = useCallback(
+    (docId: string, docMeta: Partial<DocMeta>) => {
+      const doc = docsService.list.doc$(docId).value;
+      if (doc) {
+        doc.setMeta(docMeta);
+      }
+    },
+    [docsService]
+  );
+
+  const getDocMeta = useCallback(
+    (docId: string) => {
+      const doc = docsService.list.doc$(docId).value;
+      return doc?.meta$.value;
+    },
+    [docsService]
+  );
+  const setDocReadonly = useCallback(
+    (docId: string, readonly: boolean) => {
+      const doc = workspaceService.workspace.docCollection.getDoc(docId);
+      if (doc?.blockCollection) {
+        workspaceService.workspace.docCollection.awarenessStore.setReadonly(
+          doc.blockCollection,
+          readonly
+        );
+      }
+    },
+    [workspaceService]
+  );
+
   return useMemo(
     () => ({
-      setDocTitle: (docId: string, newTitle: string) => {
-        const page = docCollection.getDoc(docId);
-        assertExists(page);
-        const pageBlock = page
-          .getBlockByFlavour('affine:page')
-          .at(0) as RootBlockModel;
-        assertExists(pageBlock);
-        page.transact(() => {
-          pageBlock.title.delete(0, pageBlock.title.length);
-          pageBlock.title.insert(newTitle, 0);
-        });
-        docCollection.meta.setDocMeta(docId, { title: newTitle });
-      },
-      setDocReadonly: (docId: string, readonly: boolean) => {
-        const page = docCollection.getDoc(docId);
-        assertExists(page);
-        page.awarenessStore.setReadonly(page.blockCollection, readonly);
-      },
-      setDocMeta: (docId: string, docMeta: Partial<DocMeta>) => {
-        docCollection.meta.setDocMeta(docId, docMeta);
-      },
-      getDocMeta: (docId: string) => {
-        return docCollection.meta.getDocMeta(docId);
-      },
+      setDocTitle,
+      setDocMeta,
+      getDocMeta,
+      setDocReadonly,
     }),
-    [docCollection]
+    [getDocMeta, setDocMeta, setDocReadonly, setDocTitle]
   );
 }

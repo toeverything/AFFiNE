@@ -239,7 +239,7 @@ export const useRestorePage = (
   const { trigger: recover, isMutating } = useMutation({
     mutation: recoverDocMutation,
   });
-  const { getDocMeta, setDocTitle } = useDocMetaHelper(docCollection);
+  const { getDocMeta, setDocTitle } = useDocMetaHelper();
 
   const onRestore = useMemo(() => {
     return async (version: string, update: Uint8Array) => {

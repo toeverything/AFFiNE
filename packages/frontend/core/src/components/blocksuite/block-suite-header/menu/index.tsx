@@ -81,12 +81,12 @@ export const PageHeaderMenuButton = ({
 
   const { favorite, toggleFavorite } = useFavorite(pageId);
 
-  const { duplicate } = useBlockSuiteMetaHelper(docCollection);
+  const { duplicate } = useBlockSuiteMetaHelper();
   const { importFile } = usePageHelper(docCollection);
-  const { setTrashModal } = useTrashModalHelper(docCollection);
+  const { setTrashModal } = useTrashModalHelper();
 
   const [isEditing, setEditing] = useState(!page.readonly);
-  const { setDocReadonly } = useDocMetaHelper(docCollection);
+  const { setDocReadonly } = useDocMetaHelper();
 
   const view = useService(ViewService).view;
 

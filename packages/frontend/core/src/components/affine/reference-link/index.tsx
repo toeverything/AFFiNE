@@ -95,7 +95,7 @@ export function AffinePageReference({
   mode?: DocMode;
   params?: URLSearchParams;
 }) {
-  const pageMetaHelper = useDocMetaHelper(docCollection);
+  const pageMetaHelper = useDocMetaHelper();
   const journalHelper = useJournalHelper(docCollection);
   const t = useI18n();
 
