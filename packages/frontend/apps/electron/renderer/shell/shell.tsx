@@ -1,3 +1,4 @@
+import { AffineContext } from '@affine/component/context';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
 import { AppTabsHeader } from '@affine/core/modules/app-tabs-header';
@@ -12,11 +13,13 @@ export function ShellRoot() {
     environment.isMacOs &&
     appSettings.enableBlurBackground;
   return (
-    <div className={styles.root} data-translucent={translucent}>
-      <AppTabsHeader mode="shell" className={styles.appTabsHeader} />
-      <AppFallback className={styles.fallbackRoot}>
-        <SplitViewFallback className={styles.splitViewFallback} />
-      </AppFallback>
-    </div>
+    <AffineContext>
+      <div className={styles.root} data-translucent={translucent}>
+        <AppTabsHeader mode="shell" className={styles.appTabsHeader} />
+        <AppFallback className={styles.fallbackRoot}>
+          <SplitViewFallback className={styles.splitViewFallback} />
+        </AppFallback>
+      </div>
+    </AffineContext>
   );
 }
