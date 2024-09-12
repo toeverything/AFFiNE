@@ -16,7 +16,7 @@ import {
   TodayIcon,
 } from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
-import { useService } from '@toeverything/infra';
+import { DocsService, useLiveData, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import {
   type PropsWithChildren,
@@ -38,6 +38,7 @@ export interface PageReferenceRendererOptions {
   // Link to block or element
   linkToNode?: boolean;
 }
+
 // use a function to be rendered in the lit renderer
 export function pageReferenceRenderer({
   pageId,
@@ -86,28 +87,31 @@ export function AffinePageReference({
   pageId,
   docCollection,
   wrapper: Wrapper,
-  mode = 'page',
   params,
 }: {
   pageId: string;
   docCollection: DocCollection;
   wrapper?: React.ComponentType<PropsWithChildren>;
-  mode?: DocMode;
   params?: URLSearchParams;
 }) {
+  const t = useI18n();
   const pageMetaHelper = useDocMetaHelper();
   const journalHelper = useJournalHelper(docCollection);
-  const t = useI18n();
+  const docsService = useService(DocsService);
+  const mode = useLiveData(docsService.list.primaryMode$(pageId));
 
   let linkWithMode: DocMode | null = null;
   let linkToNode = false;
   if (params) {
-    linkWithMode = params.get('mode') as DocMode;
+    const m = params.get('mode');
+    if (m && (m === 'page' || m === 'edgeless')) {
+      linkWithMode = m as DocMode;
+    }
     linkToNode = params.has('blockIds') || params.has('elementIds');
   }
 
   const el = pageReferenceRenderer({
-    docMode: linkWithMode ?? mode,
+    docMode: linkWithMode ?? mode ?? 'page',
     pageId,
     pageMetaHelper,
     journalHelper,

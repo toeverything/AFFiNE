@@ -97,12 +97,11 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
         <AffinePageReference
           docCollection={page.collection}
           pageId={pageId}
-          mode={mode}
           params={params}
         />
       );
     };
-  }, [mode, page.collection]);
+  }, [page.collection]);
 
   const specs = useMemo(() => {
     const enableAI = featureFlagService.flags.enable_ai.value;
