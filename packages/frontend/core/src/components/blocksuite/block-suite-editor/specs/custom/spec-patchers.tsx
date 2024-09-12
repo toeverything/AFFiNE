@@ -16,7 +16,7 @@ import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/pee
 import {
   CreationQuickSearchSession,
   DocsQuickSearchSession,
-  type QuickSearchItem,
+  LinksQuickSearchSession,
   QuickSearchService,
   RecentDocsQuickSearchSession,
 } from '@affine/core/modules/quicksearch';
@@ -32,6 +32,8 @@ import type {
   AffineReference,
   DocMode,
   DocModeProvider,
+  QuickSearchResult,
+  ReferenceParams,
   RootService,
 } from '@blocksuite/blocks';
 import {
@@ -46,7 +48,6 @@ import {
   QuickSearchProvider,
   ReferenceNodeConfigExtension,
 } from '@blocksuite/blocks';
-import { LinkIcon } from '@blocksuite/icons/rc';
 import { AIChatBlockSchema } from '@blocksuite/presets';
 import type { BlockSnapshot } from '@blocksuite/store';
 import {
@@ -282,10 +283,7 @@ export function patchDocModeService(
 export function patchQuickSearchService(framework: FrameworkProvider) {
   const QuickSearch = QuickSearchExtension({
     async searchDoc(options) {
-      let searchResult:
-        | { docId: string; isNewDoc?: boolean }
-        | { userInput: string }
-        | null = null;
+      let searchResult: QuickSearchResult = null;
       if (options.skipSelection) {
         const query = options.userInput;
         if (!query) {
@@ -319,43 +317,45 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
           framework.get(QuickSearchService).quickSearch.show(
             [
               framework.get(RecentDocsQuickSearchSession),
-              framework.get(DocsQuickSearchSession),
               framework.get(CreationQuickSearchSession),
-              (query: string) => {
-                if (
-                  (query.startsWith('http://') ||
-                    query.startsWith('https://')) &&
-                  resolveLinkToDoc(query) === null
-                ) {
-                  return [
-                    {
-                      id: 'link',
-                      source: 'link',
-                      icon: LinkIcon,
-                      label: {
-                        key: 'com.affine.cmdk.affine.insert-link',
-                      },
-                      payload: { url: query },
-                    } as QuickSearchItem<'link', { url: string }>,
-                  ];
-                }
-                return [];
-              },
+              framework.get(DocsQuickSearchSession),
+              framework.get(LinksQuickSearchSession),
             ],
             result => {
               if (result === null) {
                 resolve(null);
                 return;
               }
-              if (result.source === 'docs' || result.source === 'recent-doc') {
+
+              if (result.source === 'docs') {
                 resolve({
                   docId: result.payload.docId,
                 });
-              } else if (result.source === 'link') {
+                return;
+              }
+
+              if (result.source === 'recent-doc') {
                 resolve({
-                  userInput: result.payload.url,
+                  docId: result.payload.docId,
                 });
-              } else if (result.source === 'creation') {
+                return;
+              }
+
+              if (result.source === 'link') {
+                if (result.payload.external) {
+                  const userInput = result.payload.external.url;
+                  resolve({ userInput });
+                  return;
+                }
+
+                if (result.payload.internal) {
+                  const { docId, params } = result.payload.internal;
+                  resolve({ docId, params });
+                }
+                return;
+              }
+
+              if (result.source === 'creation') {
                 const docsService = framework.get(DocsService);
                 const mode =
                   result.id === 'creation:create-edgeless'
@@ -365,10 +365,12 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
                   primaryMode: mode,
                   title: result.payload.title,
                 });
+
                 resolve({
                   docId: newDoc.id,
                   isNewDoc: true,
                 });
+                return;
               }
             },
             {
@@ -413,17 +415,27 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
                 const linkedDoc = std.collection.getDoc(result.docId);
                 if (!linkedDoc) return;
 
-                host.doc.addSiblingBlocks(model, [
-                  {
-                    flavour: 'affine:embed-linked-doc',
-                    pageId: linkedDoc.id,
-                  },
-                ]);
+                const props: {
+                  flavour: string;
+                  pageId: string;
+                  params?: ReferenceParams;
+                } = {
+                  flavour: 'affine:embed-linked-doc',
+                  pageId: linkedDoc.id,
+                };
+
+                if (!result.isNewDoc && result.params) {
+                  props.params = result.params;
+                }
+
+                host.doc.addSiblingBlocks(model, [props]);
+
                 if (result.isNewDoc) {
                   track.doc.editor.slashMenu.createDoc({ control: 'linkDoc' });
                   track.doc.editor.slashMenu.linkDoc({ control: 'createDoc' });
+                } else {
+                  track.doc.editor.slashMenu.linkDoc({ control: 'linkDoc' });
                 }
-                track.doc.editor.slashMenu.linkDoc({ control: 'linkDoc' });
               } else if ('userInput' in result) {
                 const embedOptions = std
                   .get(EmbedOptionProvider)

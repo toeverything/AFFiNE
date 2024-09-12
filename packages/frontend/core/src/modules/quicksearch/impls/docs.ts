@@ -10,7 +10,6 @@ import { truncate } from 'lodash-es';
 import { EMPTY, map, mergeMap, of, switchMap } from 'rxjs';
 
 import type { DocsSearchService } from '../../docs-search';
-import { resolveLinkToDoc } from '../../navigation';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
 import type { DocDisplayMetaService } from '../services/doc-display-meta';
 import type { QuickSearchItem } from '../types/item';
@@ -55,29 +54,7 @@ export class DocsQuickSearchSession
       if (!query) {
         out = of([] as QuickSearchItem<'docs', DocsPayload>[]);
       } else {
-        const resolvedDoc = resolveLinkToDoc(query);
-        const resolvedDocId = resolvedDoc?.docId;
-        const resolvedBlockId = resolvedDoc?.blockIds?.[0];
-
         out = this.docsSearchService.search$(query).pipe(
-          map(docs => {
-            if (
-              resolvedDocId &&
-              !docs.some(doc => doc.docId === resolvedDocId)
-            ) {
-              return [
-                {
-                  docId: resolvedDocId,
-                  score: 100,
-                  blockId: resolvedBlockId,
-                  blockContent: '',
-                },
-                ...docs,
-              ];
-            }
-
-            return docs;
-          }),
           map(docs =>
             docs
               .map(doc => {

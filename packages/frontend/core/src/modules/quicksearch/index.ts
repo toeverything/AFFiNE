@@ -16,6 +16,7 @@ import { CollectionsQuickSearchSession } from './impls/collections';
 import { CommandsQuickSearchSession } from './impls/commands';
 import { CreationQuickSearchSession } from './impls/creation';
 import { DocsQuickSearchSession } from './impls/docs';
+import { LinksQuickSearchSession } from './impls/links';
 import { RecentDocsQuickSearchSession } from './impls/recent-docs';
 import { TagsQuickSearchSession } from './impls/tags';
 import { CMDKQuickSearchService } from './services/cmdk';
@@ -29,6 +30,7 @@ export { CollectionsQuickSearchSession } from './impls/collections';
 export { CommandsQuickSearchSession } from './impls/commands';
 export { CreationQuickSearchSession } from './impls/creation';
 export { DocsQuickSearchSession } from './impls/docs';
+export { LinksQuickSearchSession } from './impls/links';
 export { RecentDocsQuickSearchSession } from './impls/recent-docs';
 export { TagsQuickSearchSession } from './impls/tags';
 export type { QuickSearchItem } from './types/item';
@@ -53,6 +55,7 @@ export function configureQuickSearchModule(framework: Framework) {
       DocsService,
       DocDisplayMetaService,
     ])
+    .entity(LinksQuickSearchSession, [DocsService, DocDisplayMetaService])
     .entity(CreationQuickSearchSession)
     .entity(CollectionsQuickSearchSession, [CollectionService])
     .entity(TagsQuickSearchSession, [TagService])
