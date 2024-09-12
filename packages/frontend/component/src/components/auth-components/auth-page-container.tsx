@@ -5,7 +5,10 @@ import { AffineOtherPageLayout } from '../affine-other-page-layout';
 import { authPageContainer, hideInSmallScreen } from './share.css';
 
 export const AuthPageContainer: FC<
-  PropsWithChildren<{ title?: ReactNode; subtitle?: ReactNode }>
+  PropsWithChildren<{
+    title?: ReactNode;
+    subtitle?: ReactNode;
+  }>
 > = ({ children, title, subtitle }) => {
   return (
     <AffineOtherPageLayout>

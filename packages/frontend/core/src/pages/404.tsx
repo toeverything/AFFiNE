@@ -67,4 +67,6 @@ export const PageNotFound = ({
   );
 };
 
-export const Component = PageNotFound;
+export const Component = () => {
+  return <PageNotFound />;
+};

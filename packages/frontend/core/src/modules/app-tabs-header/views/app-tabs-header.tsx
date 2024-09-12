@@ -12,7 +12,6 @@ import {
   appSidebarResizingAtom,
 } from '@affine/core/components/app-sidebar';
 import { appSidebarWidthAtom } from '@affine/core/components/app-sidebar/index.jotai';
-import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import { track } from '@affine/core/mixpanel';
@@ -475,7 +474,7 @@ export const AppTabsHeader = ({
         <RightSidebarIcon />
       </IconButton>
       {environment.isElectron && environment.isWindows ? (
-        <WindowsAppControls />
+        <div className={styles.windowsAppControlsPlaceholder} />
       ) : null}
     </div>
   );

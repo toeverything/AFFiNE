@@ -4,6 +4,7 @@ import '@affine/component/theme/theme.css';
 import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
 import { AppFallback } from '@affine/core/components/affine/app-container';
+import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
 import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
@@ -121,6 +122,11 @@ export function App() {
                 router={router}
                 future={future}
               />
+              {environment.isWindows && (
+                <div style={{ position: 'fixed', right: 0, top: 0, zIndex: 5 }}>
+                  <WindowsAppControls />
+                </div>
+              )}
             </DebugProvider>
           </AffineContext>
         </CacheProvider>

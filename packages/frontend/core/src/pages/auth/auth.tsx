@@ -3,6 +3,7 @@ import {
   ChangeEmailPage,
   ChangePasswordPage,
   ConfirmChangeEmail,
+  ConfirmVerifiedEmail,
   OnboardingPage,
   SetPasswordPage,
   SignInSuccessPage,
@@ -153,7 +154,7 @@ export const Component = () => {
       return <ConfirmChangeEmail onOpenAffine={onOpenAffine} />;
     }
     case 'verify-email': {
-      return <ConfirmChangeEmail onOpenAffine={onOpenAffine} />;
+      return <ConfirmVerifiedEmail onOpenAffine={onOpenAffine} />;
     }
   }
   return null;

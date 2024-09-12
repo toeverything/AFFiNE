@@ -1,3 +1,4 @@
+import { AffineOtherPageLayout } from '@affine/component/affine-other-page-layout';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { viewRoutes } from '@affine/core/router';
 import { ZipTransformer } from '@blocksuite/blocks';
@@ -108,7 +109,11 @@ export const Component = (): ReactElement => {
         />
       );
     }
-    return <PageNotFound noPermission />;
+    return (
+      <AffineOtherPageLayout>
+        <PageNotFound noPermission />
+      </AffineOtherPageLayout>
+    );
   }
   if (!meta) {
     return <AppFallback />;

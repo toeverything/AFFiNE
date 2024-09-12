@@ -242,6 +242,12 @@ export const spacer = style({
   },
 });
 
+export const windowsAppControlsPlaceholder = style({
+  width: '160px',
+  height: '100%',
+  flexShrink: 0,
+});
+
 export const dropIndicator = style({
   position: 'absolute',
   height: 32,

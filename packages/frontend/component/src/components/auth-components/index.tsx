@@ -6,6 +6,7 @@ export * from './change-email-page';
 export * from './change-password-page';
 export * from './confirm-change-email';
 export * from './count-down-render';
+export * from './email-verified-email';
 export * from './modal';
 export * from './modal-header';
 export * from './onboarding-page';

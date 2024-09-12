@@ -4,7 +4,7 @@ import type { FC } from 'react';
 import { Button } from '../../ui/button';
 import { AuthPageContainer } from './auth-page-container';
 
-export const ConfirmChangeEmail: FC<{
+export const ConfirmVerifiedEmail: FC<{
   onOpenAffine: () => void;
 }> = ({ onOpenAffine }) => {
   const t = useI18n();
