@@ -1,5 +1,4 @@
-import './polyfill/dispose';
-import '@affine/core/bootstrap/preload';
+import './setup';
 import './global.css';
 
 import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';

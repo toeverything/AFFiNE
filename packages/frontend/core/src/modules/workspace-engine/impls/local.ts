@@ -9,7 +9,11 @@ import type {
   WorkspaceMetadata,
   WorkspaceProfileInfo,
 } from '@toeverything/infra';
-import { globalBlockSuiteSchema, LiveData, Service } from '@toeverything/infra';
+import {
+  getAFFiNEWorkspaceSchema,
+  LiveData,
+  Service,
+} from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
@@ -70,7 +74,7 @@ export class LocalWorkspaceFlavourProvider
     const docCollection = new DocCollection({
       id: id,
       idGenerator: () => nanoid(),
-      schema: globalBlockSuiteSchema,
+      schema: getAFFiNEWorkspaceSchema(),
       blobSources: { main: blobStorage },
     });
 
@@ -143,7 +147,7 @@ export class LocalWorkspaceFlavourProvider
 
     const bs = new DocCollection({
       id,
-      schema: globalBlockSuiteSchema,
+      schema: getAFFiNEWorkspaceSchema(),
     });
 
     if (localData) applyUpdate(bs.doc, localData);

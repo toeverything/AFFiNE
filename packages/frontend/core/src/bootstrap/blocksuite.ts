@@ -3,9 +3,11 @@ import { builtInTemplates as builtInStickersTemplates } from '@affine/templates/
 import type { TemplateManager } from '@blocksuite/blocks';
 import { EdgelessTemplatePanel } from '@blocksuite/blocks';
 
-EdgelessTemplatePanel.templates.extend(
-  builtInStickersTemplates as TemplateManager
-);
-EdgelessTemplatePanel.templates.extend(
-  builtInEdgelessTemplates as TemplateManager
-);
+export function setupBlocksuite() {
+  EdgelessTemplatePanel.templates.extend(
+    builtInStickersTemplates as TemplateManager
+  );
+  EdgelessTemplatePanel.templates.extend(
+    builtInEdgelessTemplates as TemplateManager
+  );
+}

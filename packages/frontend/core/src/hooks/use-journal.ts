@@ -1,11 +1,11 @@
 import { i18nTime } from '@affine/i18n';
+import type { DocCollection } from '@blocksuite/store';
 import { DocsService, initEmptyPage, useService } from '@toeverything/infra';
 import dayjs from 'dayjs';
 import { useCallback, useMemo } from 'react';
 
 import { track } from '../mixpanel';
 import { WorkbenchService } from '../modules/workbench';
-import type { DocCollection } from '../shared';
 import { useCurrentWorkspacePropertiesAdapter } from './use-affine-adapter';
 import { useDocCollectionHelper } from './use-block-suite-workspace-helper';
 

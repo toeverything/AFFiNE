@@ -1,6 +1,5 @@
+import type { DocCollection } from '@blocksuite/store';
 import { useCallback } from 'react';
-
-import type { DocCollection } from '../../shared';
 
 export function useReferenceLinkHelper(docCollection: DocCollection) {
   const addReferenceLink = useCallback(

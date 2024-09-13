@@ -6,7 +6,7 @@ import { listHistoryQuery, recoverDocMutation } from '@affine/graphql';
 import { i18nTime } from '@affine/i18n';
 import { assertEquals } from '@blocksuite/global/utils';
 import { DocCollection } from '@blocksuite/store';
-import { globalBlockSuiteSchema } from '@toeverything/infra';
+import { getAFFiNEWorkspaceSchema } from '@toeverything/infra';
 import { useEffect, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import {
@@ -108,7 +108,7 @@ const getOrCreateShellWorkspace = (workspaceId: string) => {
       blobSources: {
         main: blobStorage,
       },
-      schema: globalBlockSuiteSchema,
+      schema: getAFFiNEWorkspaceSchema(),
     });
     docCollectionMap.set(workspaceId, docCollection);
     docCollection.doc.emit('sync', [true, docCollection.doc]);

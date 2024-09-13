@@ -51,7 +51,6 @@
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react-swc": "^3.6.0",
     "builder-util-runtime": "^9.2.5-alpha.2",
-    "core-js": "^3.36.1",
     "cross-env": "^7.0.3",
     "electron": "^32.0.0",
     "electron-log": "^5.1.2",

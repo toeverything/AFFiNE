@@ -1,8 +1,4 @@
-import './polyfill/dispose';
-import './polyfill/intl-segmenter';
-import './polyfill/promise-with-resolvers';
-import './polyfill/request-idle-callback';
-import '@affine/core/bootstrap/preload';
+import './setup';
 
 import { performanceLogger } from '@affine/core/shared';
 import {
