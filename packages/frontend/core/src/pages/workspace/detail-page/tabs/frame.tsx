@@ -28,8 +28,8 @@ export const EditorFramePanel = ({
     framePanelRef.current = new FramePanel();
   }
 
-  if (editor !== framePanelRef.current?.editor) {
-    (framePanelRef.current as FramePanel).editor = editor;
+  if (editor.host !== framePanelRef.current?.host && editor.host) {
+    (framePanelRef.current as FramePanel).host = editor.host;
     (framePanelRef.current as FramePanel).fitPadding = [20, 20, 20, 20];
   }
 

@@ -1,8 +1,8 @@
-import { MindmapElementModel } from '@blocksuite/affine-block-surface';
 import {
   type AIItemGroupConfig,
   AIStarIconWithAnimation,
   BlocksUtils,
+  MindmapElementModel,
   ShapeElementModel,
   TextElementModel,
 } from '@blocksuite/blocks';

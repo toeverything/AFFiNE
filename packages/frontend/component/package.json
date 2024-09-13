@@ -81,12 +81,12 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@blocksuite/block-std": "0.17.9",
-    "@blocksuite/blocks": "0.17.9",
-    "@blocksuite/global": "0.17.9",
+    "@blocksuite/block-std": "0.17.10",
+    "@blocksuite/blocks": "0.17.10",
+    "@blocksuite/global": "0.17.10",
     "@blocksuite/icons": "2.1.67",
-    "@blocksuite/presets": "0.17.9",
-    "@blocksuite/store": "0.17.9",
+    "@blocksuite/presets": "0.17.10",
+    "@blocksuite/store": "0.17.10",
     "@chromatic-com/storybook": "^2.0.0",
     "@storybook/addon-actions": "^8.2.9",
     "@storybook/addon-essentials": "^8.2.9",

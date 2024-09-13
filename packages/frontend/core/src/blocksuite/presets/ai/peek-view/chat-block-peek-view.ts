@@ -3,10 +3,10 @@ import './date-time';
 import '../_common/components/chat-action-list';
 import '../_common/components/copy-more';
 
-import { CanvasElementType } from '@blocksuite/affine-block-surface';
 import { type EditorHost } from '@blocksuite/block-std';
 import {
   type AIError,
+  CanvasElementType,
   ConnectorMode,
   DocModeProvider,
   type EdgelessRootService,

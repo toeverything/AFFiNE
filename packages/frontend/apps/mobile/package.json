@@ -16,7 +16,7 @@
     "@affine/graphql": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/track": "workspace:*",
-    "@blocksuite/blocks": "0.17.9",
+    "@blocksuite/blocks": "0.17.10",
     "@blocksuite/icons": "^2.1.66",
     "@radix-ui/react-collapsible": "^1.0.3",
     "@sentry/react": "^8.0.0",
