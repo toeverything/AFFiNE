@@ -108,7 +108,7 @@
     "typescript": "^5.4.5",
     "unplugin-swc": "^1.5.1",
     "vite": "^5.2.8",
-    "vitest": "2.0.5"
+    "vitest": "2.1.0"
   },
   "version": "0.16.0"
 }

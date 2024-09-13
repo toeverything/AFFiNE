@@ -42,8 +42,8 @@
     "react": "^18.2.0",
     "rxjs": "^7.8.1",
     "vite": "^5.2.8",
-    "vite-plugin-dts": "4.1.0",
-    "vitest": "2.0.5"
+    "vite-plugin-dts": "4.2.1",
+    "vitest": "2.1.0"
   },
   "peerDependencies": {
     "@affine/templates": "*",

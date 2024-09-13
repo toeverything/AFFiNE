@@ -12,12 +12,12 @@
         "script": "build"
       },
       "inputs": [
-        { "runtime": "rustc --version" },
-        { "runtime": "node -v" },
-        { "runtime": "clang --version" },
-        { "runtime": "cargo tree" }
+        { "fileset": "{workspaceRoot}/rust-toolchain.toml" },
+        { "fileset": "{workspaceRoot}/Cargo.lock" },
+        { "fileset": "{workspaceRoot}/packages/backend/native/**/*.rs" },
+        { "fileset": "{workspaceRoot}/packages/backend/native/Cargo.toml" }
       ],
-      "outputs": ["{projectRoot}/*.node", "{workspaceRoot}/*.node"]
+      "outputs": ["{projectRoot}/*.node"]
     }
   }
 }

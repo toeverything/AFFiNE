@@ -115,6 +115,6 @@
     "lodash-es": "^4.17.21",
     "mime-types": "^2.1.35",
     "react-refresh": "^0.14.0",
-    "vitest": "2.0.5"
+    "vitest": "2.1.0"
   }
 }

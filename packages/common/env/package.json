@@ -7,7 +7,7 @@
     "@blocksuite/store": "0.17.9",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "vitest": "2.0.5"
+    "vitest": "2.1.0"
   },
   "exports": {
     "./automation": "./src/automation.ts",
