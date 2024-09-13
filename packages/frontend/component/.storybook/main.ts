@@ -54,13 +54,18 @@ export default {
       ],
       define: {
         'process.env.CAPTCHA_SITE_KEY': `"${process.env.CAPTCHA_SITE_KEY}"`,
-        runtimeConfig: getBuildConfig({
-          distribution: 'web',
-          mode: 'development',
-          channel: 'canary',
-          static: false,
-          coverage: false,
-        }),
+        ...Object.entries(
+          getBuildConfig({
+            distribution: 'web',
+            mode: 'development',
+            channel: 'canary',
+            static: false,
+            coverage: false,
+          })
+        ).reduce((envs, [key, value]) => {
+          envs[`BUILD_CONFIG.${key}`] = JSON.stringify(value);
+          return envs;
+        }, {}),
       },
     });
   },
