@@ -318,7 +318,7 @@ __metadata:
     "@blocksuite/icons": "npm:2.1.67"
     "@blocksuite/presets": "npm:0.17.9"
     "@blocksuite/store": "npm:0.17.9"
-    "@chromatic-com/storybook": "npm:^1"
+    "@chromatic-com/storybook": "npm:^2.0.0"
     "@dnd-kit/core": "npm:^6.1.0"
     "@dnd-kit/modifiers": "npm:^7.0.0"
     "@dnd-kit/sortable": "npm:^8.0.0"
@@ -3815,16 +3815,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@chromatic-com/storybook@npm:^1":
-  version: 1.8.0
-  resolution: "@chromatic-com/storybook@npm:1.8.0"
+"@chromatic-com/storybook@npm:^2.0.0":
+  version: 2.0.2
+  resolution: "@chromatic-com/storybook@npm:2.0.2"
   dependencies:
     chromatic: "npm:^11.4.0"
     filesize: "npm:^10.0.12"
     jsonfile: "npm:^6.1.0"
     react-confetti: "npm:^6.1.0"
     strip-ansi: "npm:^7.1.0"
-  checksum: 10/5f4f260e407ad20814b78b6b3023962f14664f07b4c1f728180f6959771befee4f1897fcfad0db75f372fbf26914d582ee7457b0f1b614700e20121721fc4371
+  checksum: 10/acd23f87072aaec2a4db174ec19b2479d9a0a4390f10ca804198f6453dce0c35055861bc19a4905fee97f8fd87e43b6c51fda7ce3e30bb355a2729af85f53440
   languageName: node
   linkType: hard
 

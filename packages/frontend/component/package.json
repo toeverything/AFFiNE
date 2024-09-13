@@ -87,7 +87,7 @@
     "@blocksuite/icons": "2.1.67",
     "@blocksuite/presets": "0.17.9",
     "@blocksuite/store": "0.17.9",
-    "@chromatic-com/storybook": "^1",
+    "@chromatic-com/storybook": "^2.0.0",
     "@storybook/addon-actions": "^8.2.9",
     "@storybook/addon-essentials": "^8.2.9",
     "@storybook/addon-interactions": "^8.2.9",
