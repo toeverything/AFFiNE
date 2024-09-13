@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { isElectron } from './constant.js';
 import { UaHelper } from './ua-helper.js';
 
-export const runtimeFlagsSchema = z.object({
+export const BUILD_CONFIG_SCHEMA = z.object({
   // this is for the electron app
   serverUrlPrefix: z.string(),
   appVersion: z.string(),
@@ -27,14 +27,11 @@ export const runtimeFlagsSchema = z.object({
   allowLocalWorkspace: z.boolean(),
   enablePreloading: z.boolean(),
   enableNewSettingUnstableApi: z.boolean(),
-  enableEnhanceShareMode: z.boolean(),
   enableExperimentalFeature: z.boolean(),
-  enableInfoModal: z.boolean(),
-  enableOrganize: z.boolean(),
   enableThemeEditor: z.boolean(),
 });
 
-export type RuntimeConfig = z.infer<typeof runtimeFlagsSchema>;
+export type BUILD_CONFIG_TYPE = z.infer<typeof BUILD_CONFIG_SCHEMA>;
 
 export type Environment = {
   isDebug: boolean;
@@ -61,23 +58,10 @@ export type Environment = {
   chromeVersion?: number;
 };
 
-function setupRuntimeConfig() {
-  if (!process.env.RUNTIME_CONFIG) {
-    return;
-  }
-
-  // registered by [webpack.DefinePlugin]
-  const runtimeConfig = JSON.parse(process.env.RUNTIME_CONFIG ?? '');
-  runtimeFlagsSchema.parse(runtimeConfig);
-  globalThis.runtimeConfig = runtimeConfig;
-}
-
 export function setupGlobal() {
   if (globalThis.$AFFINE_SETUP) {
     return;
   }
-
-  setupRuntimeConfig();
 
   let environment: Environment;
   const isDebug = process.env.NODE_ENV === 'development';
@@ -103,10 +87,10 @@ export function setupGlobal() {
     const uaHelper = new UaHelper(globalThis.navigator);
 
     environment = {
-      isDesktopEdition: runtimeConfig.distribution !== 'mobile',
-      isMobileEdition: runtimeConfig.distribution === 'mobile',
-      isDesktopWeb: runtimeConfig.distribution === 'web',
-      isMobileWeb: runtimeConfig.distribution === 'mobile',
+      isDesktopEdition: BUILD_CONFIG.distribution !== 'mobile',
+      isMobileEdition: BUILD_CONFIG.distribution === 'mobile',
+      isDesktopWeb: BUILD_CONFIG.distribution === 'web',
+      isMobileWeb: BUILD_CONFIG.distribution === 'mobile',
       isElectron,
       isDebug,
       isMobile: uaHelper.isMobile,

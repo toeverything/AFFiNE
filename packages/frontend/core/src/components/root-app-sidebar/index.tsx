@@ -176,7 +176,7 @@ export const RootAppSidebar = (): ReactElement => {
       </SidebarContainer>
       <SidebarScrollableContainer>
         <ExplorerFavorites />
-        {runtimeConfig.enableOrganize && <ExplorerOrganize />}
+        <ExplorerOrganize />
         <ExplorerMigrationFavorites />
         <ExplorerCollections />
         <ExplorerTags />

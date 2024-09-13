@@ -37,7 +37,7 @@ export class CloudDocEngineServer implements DocServer {
     await this.socket.emitWithAck('space:join', {
       spaceType: 'workspace',
       spaceId: this.workspaceId,
-      clientVersion: runtimeConfig.appVersion,
+      clientVersion: BUILD_CONFIG.appVersion,
     });
   }
 

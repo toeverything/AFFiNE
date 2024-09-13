@@ -1,8 +1,8 @@
 import type { FlagInfo } from './types';
 
-const isNotStableBuild = runtimeConfig.appBuildType !== 'stable';
+const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
 const isDesktopEnvironment = environment.isElectron;
-const isCanaryBuild = runtimeConfig.appBuildType === 'canary';
+const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
 
 export const AFFINE_FLAGS = {
   enable_ai: {

@@ -21,7 +21,7 @@ export const AboutAffine = () => {
   const t = useI18n();
   const { appSettings, updateSettings } = useAppSettingHelper();
   const { toggleAutoCheck, toggleAutoDownload } = useAppUpdater();
-  const channel = runtimeConfig.appBuildType;
+  const channel = BUILD_CONFIG.appBuildType;
   const appIcon = appIconMap[channel];
   const appName = appNames[channel];
 
@@ -63,14 +63,14 @@ export const AboutAffine = () => {
       <SettingWrapper title={t['com.affine.aboutAFFiNE.version.title']()}>
         <SettingRow
           name={appName}
-          desc={runtimeConfig.appVersion}
+          desc={BUILD_CONFIG.appVersion}
           className={styles.appImageRow}
         >
           <img src={appIcon} alt={appName} width={56} height={56} />
         </SettingRow>
         <SettingRow
           name={t['com.affine.aboutAFFiNE.version.editor.title']()}
-          desc={runtimeConfig.editorVersion}
+          desc={BUILD_CONFIG.editorVersion}
         />
         {environment.isElectron ? (
           <>
@@ -100,7 +100,7 @@ export const AboutAffine = () => {
               desc={t['com.affine.aboutAFFiNE.changelog.description']()}
               style={{ cursor: 'pointer' }}
               onClick={() => {
-                popupWindow(runtimeConfig.changelogUrl);
+                popupWindow(BUILD_CONFIG.changelogUrl);
               }}
             >
               <ArrowRightSmallIcon />

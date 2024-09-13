@@ -6,7 +6,7 @@ import { BackendError, NetworkError } from '../error';
 
 export function getAffineCloudBaseUrl(): string {
   if (environment.isElectron) {
-    return runtimeConfig.serverUrlPrefix;
+    return BUILD_CONFIG.serverUrlPrefix;
   }
   const { protocol, hostname, port } = window.location;
   return `${protocol}//${hostname}${port ? `:${port}` : ''}`;

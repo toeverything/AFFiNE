@@ -98,7 +98,7 @@ export const AppearanceSettings = () => {
             />
           </SettingRow>
         ) : null}
-        {runtimeConfig.enableNewSettingUnstableApi && environment.isElectron ? (
+        {BUILD_CONFIG.enableNewSettingUnstableApi && environment.isElectron ? (
           <SettingRow
             name={t['com.affine.appearanceSettings.windowFrame.title']()}
             desc={t['com.affine.appearanceSettings.windowFrame.description']()}
@@ -118,11 +118,11 @@ export const AppearanceSettings = () => {
             />
           </SettingRow>
         ) : null}
-        {runtimeConfig.enableThemeEditor ? <ThemeEditorSetting /> : null}
+        {BUILD_CONFIG.enableThemeEditor ? <ThemeEditorSetting /> : null}
       </SettingWrapper>
       {/* // TODO(@JimmFly): remove Page component when stable release */}
       <Page />
-      {runtimeConfig.enableNewSettingUnstableApi ? (
+      {BUILD_CONFIG.enableNewSettingUnstableApi ? (
         <SettingWrapper title={t['com.affine.appearanceSettings.date.title']()}>
           <SettingRow
             name={t['com.affine.appearanceSettings.dateFormat.title']()}

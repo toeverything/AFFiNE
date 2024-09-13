@@ -46,7 +46,7 @@ export async function createFirstAppData(workspacesService: WorkspacesService) {
     return;
   }
   localStorage.setItem('is-first-open', 'false');
-  if (runtimeConfig.enablePreloading) {
+  if (BUILD_CONFIG.enablePreloading) {
     const { meta, defaultDocId } = await buildShowcaseWorkspace(
       workspacesService,
       WorkspaceFlavour.LOCAL,

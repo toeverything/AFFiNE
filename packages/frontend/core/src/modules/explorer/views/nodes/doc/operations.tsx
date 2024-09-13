@@ -154,21 +154,17 @@ export const useExplorerDocNodeOperations = (
           />
         ),
       },
-      ...(runtimeConfig.enableInfoModal
-        ? [
-            {
-              index: 50,
-              view: (
-                <MenuItem
-                  prefixIcon={<InformationIcon />}
-                  onClick={handleOpenInfoModal}
-                >
-                  {t['com.affine.page-properties.page-info.view']()}
-                </MenuItem>
-              ),
-            },
-          ]
-        : []),
+      {
+        index: 50,
+        view: (
+          <MenuItem
+            prefixIcon={<InformationIcon />}
+            onClick={handleOpenInfoModal}
+          >
+            {t['com.affine.page-properties.page-info.view']()}
+          </MenuItem>
+        ),
+      },
       {
         index: 99,
         view: (

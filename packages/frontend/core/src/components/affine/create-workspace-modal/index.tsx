@@ -48,7 +48,7 @@ interface NameWorkspaceContentProps extends ConfirmModalProps {
   ) => void;
 }
 
-const shouldEnableCloud = !runtimeConfig.allowLocalWorkspace;
+const shouldEnableCloud = !BUILD_CONFIG.allowLocalWorkspace;
 
 const NameWorkspaceContent = ({
   loading,
@@ -159,7 +159,7 @@ const NameWorkspaceContent = ({
         {shouldEnableCloud ? (
           <a
             className={styles.cloudTips}
-            href={runtimeConfig.downloadUrl}
+            href={BUILD_CONFIG.downloadUrl}
             target="_blank"
             rel="noreferrer"
           >
@@ -229,7 +229,7 @@ export const CreateWorkspaceModal = ({
 
       // this will be the last step for web for now
       // fix me later
-      if (runtimeConfig.enablePreloading) {
+      if (BUILD_CONFIG.enablePreloading) {
         const { meta, defaultDocId } = await buildShowcaseWorkspace(
           workspacesService,
           workspaceFlavour,

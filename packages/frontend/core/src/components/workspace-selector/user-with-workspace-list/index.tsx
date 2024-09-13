@@ -88,7 +88,7 @@ const UserWithWorkspaceListInner = ({
   }, [setOpenSignIn]);
 
   const onNewWorkspace = useCallback(() => {
-    if (!isAuthenticated && !runtimeConfig.allowLocalWorkspace) {
+    if (!isAuthenticated && !BUILD_CONFIG.allowLocalWorkspace) {
       return openSignInModal();
     }
     track.$.navigationPanel.workspaceList.createWorkspace();

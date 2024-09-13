@@ -23,7 +23,7 @@ export function registerAffineHelpCommands({
       label: t['com.affine.cmdk.affine.whats-new'](),
       run() {
         track.$.cmdk.help.openChangelog();
-        popupWindow(runtimeConfig.changelogUrl);
+        popupWindow(BUILD_CONFIG.changelogUrl);
       },
     })
   );

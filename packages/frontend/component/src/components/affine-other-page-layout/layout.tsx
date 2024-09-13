@@ -15,7 +15,7 @@ export const AffineOtherPageLayout = ({
   const t = useI18n();
 
   const openDownloadLink = useCallback(() => {
-    open(runtimeConfig.downloadUrl, '_blank');
+    open(BUILD_CONFIG.downloadUrl, '_blank');
   }, []);
 
   return (

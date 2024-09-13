@@ -8,7 +8,7 @@ interface AppUrlOptions {
 
 export function buildAppUrl(path: string, opts: AppUrlOptions = {}) {
   // TODO(@EYHN): should use server base url
-  const webBase = runtimeConfig.serverUrlPrefix;
+  const webBase = BUILD_CONFIG.serverUrlPrefix;
   // TODO(@pengx17): how could we know the corresponding app schema in web environment
   if (opts.desktop && appInfo?.schema) {
     const urlCtor = new URL(path, webBase);

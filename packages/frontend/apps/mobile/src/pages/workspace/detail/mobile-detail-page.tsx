@@ -112,21 +112,19 @@ const DetailPageImpl = () => {
 
       // provide image proxy endpoint to blocksuite
       editorHost?.std.clipboard.use(
-        customImageProxyMiddleware(runtimeConfig.imageProxyUrl)
+        customImageProxyMiddleware(BUILD_CONFIG.imageProxyUrl)
       );
-      ImageBlockService.setImageProxyURL(runtimeConfig.imageProxyUrl);
+      ImageBlockService.setImageProxyURL(BUILD_CONFIG.imageProxyUrl);
 
       // provide link preview endpoint to blocksuite
-      BookmarkBlockService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
+      BookmarkBlockService.setLinkPreviewEndpoint(BUILD_CONFIG.linkPreviewUrl);
       EmbedGithubBlockService.setLinkPreviewEndpoint(
-        runtimeConfig.linkPreviewUrl
+        BUILD_CONFIG.linkPreviewUrl
       );
       EmbedYoutubeBlockService.setLinkPreviewEndpoint(
-        runtimeConfig.linkPreviewUrl
+        BUILD_CONFIG.linkPreviewUrl
       );
-      EmbedLoomBlockService.setLinkPreviewEndpoint(
-        runtimeConfig.linkPreviewUrl
-      );
+      EmbedLoomBlockService.setLinkPreviewEndpoint(BUILD_CONFIG.linkPreviewUrl);
 
       // provide page mode and updated date to blocksuite
       const refNodeService = editorHost?.std.getOptional(RefNodeSlotsProvider);

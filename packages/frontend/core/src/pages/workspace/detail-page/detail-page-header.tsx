@@ -139,7 +139,7 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
         {hideCollect ? null : (
           <>
             <FavoriteButton pageId={page?.id} />
-            {runtimeConfig.enableInfoModal ? <InfoButton /> : null}
+            <InfoButton />
           </>
         )}
         <PageHeaderMenuButton

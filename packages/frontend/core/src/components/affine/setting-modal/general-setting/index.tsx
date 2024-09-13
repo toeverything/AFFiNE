@@ -107,7 +107,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     }
   }
 
-  if (runtimeConfig.enableExperimentalFeature) {
+  if (BUILD_CONFIG.enableExperimentalFeature) {
     settings.push({
       key: 'experimental-features',
       title: t['com.affine.settings.workspace.experimental-features'](),

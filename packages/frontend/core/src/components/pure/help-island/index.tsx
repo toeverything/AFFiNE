@@ -77,7 +77,7 @@ export const HelpIsland = () => {
             <StyledIconWrapper
               data-testid="right-bottom-change-log-icon"
               onClick={() => {
-                popupWindow(runtimeConfig.changelogUrl);
+                popupWindow(BUILD_CONFIG.changelogUrl);
               }}
             >
               <NewIcon />

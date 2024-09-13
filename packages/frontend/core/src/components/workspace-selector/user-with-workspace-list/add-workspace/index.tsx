@@ -36,7 +36,7 @@ export const AddWorkspace = ({
         className={styles.ItemContainer}
       >
         <div className={styles.ItemText}>
-          {runtimeConfig.allowLocalWorkspace
+          {BUILD_CONFIG.allowLocalWorkspace
             ? t['com.affine.workspaceList.addWorkspace.create']()
             : t['com.affine.workspaceList.addWorkspace.create-cloud']()}
         </div>

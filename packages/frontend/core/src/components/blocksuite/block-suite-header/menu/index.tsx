@@ -304,16 +304,13 @@ export const PageHeaderMenuButton = ({
       )}
 
       <MenuSeparator />
-
-      {runtimeConfig.enableInfoModal && (
-        <MenuItem
-          prefixIcon={<InformationIcon />}
-          data-testid="editor-option-menu-info"
-          onSelect={openInfoModal}
-        >
-          {t['com.affine.page-properties.page-info.view']()}
-        </MenuItem>
-      )}
+      <MenuItem
+        prefixIcon={<InformationIcon />}
+        data-testid="editor-option-menu-info"
+        onSelect={openInfoModal}
+      >
+        {t['com.affine.page-properties.page-info.view']()}
+      </MenuItem>
       {currentMode === 'page' ? (
         <MenuItem
           prefixIcon={<TocIcon />}

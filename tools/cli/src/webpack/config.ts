@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { RuntimeConfig } from '@affine/env/global';
+import type { BUILD_CONFIG_TYPE } from '@affine/env/global';
 import { PerfseePlugin } from '@perfsee/webpack';
 import ReactRefreshWebpackPlugin from '@pmmmwh/react-refresh-webpack-plugin';
 import { sentryWebpackPlugin } from '@sentry/webpack-plugin';
@@ -89,8 +89,8 @@ export const getPublicPath = (buildFlags: BuildFlags) => {
 export const createConfiguration: (
   cwd: string,
   buildFlags: BuildFlags,
-  runtimeConfig: RuntimeConfig
-) => webpack.Configuration = (cwd, buildFlags, runtimeConfig) => {
+  buildConfig: BUILD_CONFIG_TYPE
+) => webpack.Configuration = (cwd, buildFlags, buildConfig) => {
   const blocksuiteBaseDir = buildFlags.localBlockSuite;
   const config = {
     name: 'affine',
@@ -350,8 +350,12 @@ export const createConfiguration: (
           process.env.MIXPANEL_TOKEN
         ),
         'process.env.DEBUG_JOTAI': JSON.stringify(process.env.DEBUG_JOTAI),
-        'process.env.RUNTIME_CONFIG': JSON.stringify(
-          JSON.stringify(runtimeConfig)
+        ...Object.entries(buildConfig).reduce(
+          (def, [k, v]) => {
+            def[`BUILD_CONFIG.${k}`] = JSON.stringify(v);
+            return def;
+          },
+          {} as Record<string, string>
         ),
       }),
       buildFlags.distribution === 'admin'

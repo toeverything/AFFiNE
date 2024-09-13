@@ -177,7 +177,7 @@ export const useAppUpdater = () => {
 
   const openChangelog = useAsyncCallback(async () => {
     track.$.navigationPanel.bottomButtons.openChangelog();
-    popupWindow(runtimeConfig.changelogUrl);
+    popupWindow(BUILD_CONFIG.changelogUrl);
     await setChangelogUnread(true);
   }, [setChangelogUnread]);
 

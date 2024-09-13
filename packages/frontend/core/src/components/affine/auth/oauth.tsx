@@ -50,7 +50,7 @@ function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
 
   const onClick = useCallback(() => {
     let oauthUrl =
-      (environment.isElectron ? runtimeConfig.serverUrlPrefix : '') +
+      (environment.isElectron ? BUILD_CONFIG.serverUrlPrefix : '') +
       `/oauth/login?provider=${provider}`;
 
     if (environment.isElectron) {

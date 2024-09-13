@@ -11,7 +11,7 @@ setupGlobal();
 
 export function getBaseUrl(): string {
   if (environment.isElectron) {
-    return runtimeConfig.serverUrlPrefix;
+    return BUILD_CONFIG.serverUrlPrefix;
   }
   if (typeof window === 'undefined') {
     // is nodejs

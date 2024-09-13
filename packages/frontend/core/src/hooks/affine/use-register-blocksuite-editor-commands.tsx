@@ -95,9 +95,7 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
       registerAffineCommand({
         id: `editor:${mode}-view-info`,
         preconditionStrategy: () =>
-          PreconditionStrategy.InPaperOrEdgeless &&
-          !trash &&
-          runtimeConfig.enableInfoModal,
+          PreconditionStrategy.InPaperOrEdgeless && !trash,
         category: `editor:${mode}`,
         icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
         label: t['com.affine.page-properties.page-info.view'](),

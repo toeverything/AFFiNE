@@ -32,10 +32,10 @@ function createMixpanel() {
   const wrapped = {
     init() {
       mixpanel.register({
-        appVersion: runtimeConfig.appVersion,
-        environment: runtimeConfig.appBuildType,
-        editorVersion: runtimeConfig.editorVersion,
-        isSelfHosted: Boolean(runtimeConfig.isSelfHosted),
+        appVersion: BUILD_CONFIG.appVersion,
+        environment: BUILD_CONFIG.appBuildType,
+        editorVersion: BUILD_CONFIG.editorVersion,
+        isSelfHosted: Boolean(BUILD_CONFIG.isSelfHosted),
         isDesktop: environment.isElectron,
       });
     },

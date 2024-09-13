@@ -11,7 +11,7 @@ export const useCustomTheme = (target: HTMLElement) => {
   const { resolvedTheme } = useTheme();
 
   useEffect(() => {
-    if (!runtimeConfig.enableThemeEditor) return;
+    if (!BUILD_CONFIG.enableThemeEditor) return;
     if (_provided) return;
 
     _provided = true;

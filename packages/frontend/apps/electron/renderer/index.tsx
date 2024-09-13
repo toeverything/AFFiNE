@@ -55,8 +55,8 @@ function main() {
         ],
       });
       setTags({
-        appVersion: runtimeConfig.appVersion,
-        editorVersion: runtimeConfig.editorVersion,
+        appVersion: BUILD_CONFIG.appVersion,
+        editorVersion: BUILD_CONFIG.editorVersion,
       });
 
       apis?.ui.handleNetworkChange(navigator.onLine);
