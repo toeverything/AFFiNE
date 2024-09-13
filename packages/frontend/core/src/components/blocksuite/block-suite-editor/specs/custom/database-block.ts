@@ -73,14 +73,13 @@ function createCopyLinkToBlockMenuItem(
       if (!str) return;
 
       const type = model.flavour;
-      const title = editor.doc.title$.value;
       const page = editor.editorContainer$.value;
 
       page?.host?.std.clipboard
         .writeToClipboard(items => {
           items['text/plain'] = str;
           // wrap a link
-          items['text/html'] = `<a title="${title}" href="${str}">${title}</a>`;
+          items['text/html'] = `<a href="${str}">${str}</a>`;
           return items;
         })
         .then(() => {
