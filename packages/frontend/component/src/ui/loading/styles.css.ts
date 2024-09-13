@@ -12,10 +12,12 @@ const rotate = keyframes({
   },
 });
 export const loading = style({
+  transform: 'rotate(-90deg)',
+});
+
+export const rotateAnimation = style({
   vars: {
     [speedVar]: '1.5s',
   },
-  textRendering: 'optimizeLegibility',
-  transform: 'rotate(-90deg)',
   animation: `${rotate} ${speedVar} infinite linear`,
 });

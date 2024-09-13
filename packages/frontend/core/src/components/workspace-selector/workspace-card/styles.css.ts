@@ -107,6 +107,7 @@ globalStyle(`.${workspaceActiveStatus} svg`, {
   width: 16,
   height: 16,
   color: cssVar('iconSecondary'),
+  display: 'block',
 });
 
 export const workspaceInfoTooltip = style({

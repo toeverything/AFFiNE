@@ -42,7 +42,7 @@ const CloudWorkspaceStatus = () => {
 const SyncingWorkspaceStatus = ({ progress }: { progress?: number }) => {
   return (
     <>
-      <Loading progress={progress} speed={progress ? 0 : undefined} />
+      <Loading progress={progress} speed={0} />
       Syncing...
     </>
   );
