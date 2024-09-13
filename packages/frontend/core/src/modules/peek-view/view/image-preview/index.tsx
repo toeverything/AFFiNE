@@ -308,6 +308,7 @@ const ImagePreviewModalImpl = ({
               data-testid="image-content"
               src={url}
               alt={caption}
+              tabIndex={0}
               ref={imageRef}
               draggable={isZoomedBigger}
               onMouseDown={handleDragStart}
