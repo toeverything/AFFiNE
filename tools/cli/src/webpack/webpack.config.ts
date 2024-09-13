@@ -45,7 +45,6 @@ export function createWebpackConfig(cwd: string, flags: BuildFlags) {
     return new HTMLPlugin({
       template: join(rootPath, 'webpack', 'template.html'),
       inject: 'body',
-      scriptLoading: 'module',
       minify: false,
       chunks: [entryName],
       filename: `${entryName === 'app' ? 'index' : entryName}.html`, // main entry should take name index.html

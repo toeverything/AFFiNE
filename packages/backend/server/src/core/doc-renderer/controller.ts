@@ -154,40 +154,49 @@ export class DocRendererController {
     const summary = opts ? htmlSanitize(opts.summary) : assets.description;
     const image = opts?.avatar ?? 'https://affine.pro/og.jpeg';
 
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1, maximum-scale=1"
-          />
-          <title>${title}</title>
-          <meta name="theme-color" content="#fafafa" />
-          <link rel="preconnect" href="${assets.publicPath}">
-          <link rel="manifest" href="/manifest.json" />
-          <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-          <link rel="icon" sizes="192x192" href="/favicon-192.png" />
-          <meta name="emotion-insertion-point" content="" />
-          ${!opts ? '<meta name="robots" content="noindex, nofollow" />' : ''}
-          <meta
-            name="twitter:title"
-            content="${title}"
-          />
-          <meta name="twitter:description" content="${summary}" />
-          <meta name="twitter:site" content="@AffineOfficial" />
-          <meta name="twitter:image" content="${image}" />
-          <meta property="og:title" content="${title}" />
-          <meta property="og:description" content="${summary}" />
-          <meta property="og:image" content="${image}" />
-          ${assets.css.map(url => `<link rel="stylesheet" href="${url}" />`).join('\n')}
-        </head>
-        <body>
-          <div id="app" data-version="${assets.gitHash}"></div>
-          ${assets.js.map(url => `<script type="module" src="${url}"></script>`).join('\n')}
-        </body>
-      </html>
+    // TODO(@forehalo): parse assets/index.html
+    return `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
+
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+
+    <title>${title}</title>
+    <meta name="theme-color" content="#fafafa" />
+    <link rel="preconnect" href="${assets.publicPath}">
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" sizes="192x192" href="/favicon-192.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <meta name="emotion-insertion-point" content="" />
+    ${!opts ? '<meta name="robots" content="noindex, nofollow" />' : ''}
+    <meta
+      name="twitter:title"
+      content="${title}"
+    />
+    <meta name="twitter:description" content="${summary}" />
+    <meta name="twitter:site" content="@AffineOfficial" />
+    <meta name="twitter:image" content="${image}" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${summary}" />
+    <meta property="og:image" content="${image}" />
+    ${assets.css.map(url => `<link rel="stylesheet" href="${url}" />`).join('\n')}
+  </head>
+  <body>
+    <div id="app" data-version="${assets.gitHash}"></div>
+    ${assets.js.map(url => `<script src="${url}"></script>`).join('\n')}
+  </body>
+</html>
     `;
   }
 }
