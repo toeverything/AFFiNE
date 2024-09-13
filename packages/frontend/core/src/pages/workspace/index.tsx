@@ -1,6 +1,6 @@
 import { AffineOtherPageLayout } from '@affine/component/affine-other-page-layout';
 import { AppFallback } from '@affine/core/components/affine/app-container';
-import { viewRoutes } from '@affine/core/router';
+import { workspaceRoutes } from '@affine/core/workspace-router';
 import { ZipTransformer } from '@blocksuite/blocks';
 import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
 import {
@@ -55,9 +55,10 @@ export const Component = (): ReactElement => {
       match &&
       match.params.docId &&
       match.params.workspaceId &&
-      // TODO(eyhn): need a better way to check if it's a docId
-      viewRoutes.find(route => matchPath(route.path, '/' + match.params.docId))
-        ?.path === '/:pageId'
+      // // TODO(eyhn): need a better way to check if it's a docId
+      workspaceRoutes.find(route =>
+        matchPath(route.path, '/' + match.params.docId)
+      )?.path === '/:pageId'
     ) {
       return {
         docId: match.params.docId,

@@ -1,4 +1,3 @@
-import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { track } from '@affine/core/mixpanel';
 import { appInfo } from '@affine/electron-api';
 import type { OAuthProviderType } from '@affine/graphql';
@@ -25,16 +24,6 @@ export const AccountLoggedIn = createEvent<AuthAccountInfo>('AccountLoggedIn');
 export const AccountLoggedOut =
   createEvent<AuthAccountInfo>('AccountLoggedOut');
 
-function toAIUserInfo(account: AuthAccountInfo | null) {
-  if (!account) return null;
-  return {
-    avatarUrl: account.avatar ?? '',
-    email: account.email ?? '',
-    id: account.id,
-    name: account.label,
-  };
-}
-
 @OnEvent(ApplicationStarted, e => e.onApplicationStart)
 @OnEvent(ApplicationFocused, e => e.onApplicationFocused)
 export class AuthService extends Service {
@@ -45,10 +34,6 @@ export class AuthService extends Service {
     private readonly store: AuthStore
   ) {
     super();
-
-    AIProvider.provide('userInfo', () => {
-      return toAIUserInfo(this.session.account$.value);
-    });
 
     this.session.account$
       .pipe(
@@ -66,7 +51,6 @@ export class AuthService extends Service {
           this.eventBus.emit(AccountLoggedIn, account);
         }
         this.eventBus.emit(AccountChanged, account);
-        AIProvider.slots.userInfo.emit(toAIUserInfo(account));
       });
   }
 
