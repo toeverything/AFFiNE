@@ -25,6 +25,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { Link } from 'react-router-dom';
 
 import * as styles from './styles.css';
 
@@ -171,5 +172,81 @@ export function AffinePageReference({
     >
       {Wrapper ? <Wrapper>{el}</Wrapper> : el}
     </WorkbenchLink>
+  );
+}
+
+export function AffineSharedPageReference({
+  pageId,
+  docCollection,
+  wrapper: Wrapper,
+  params,
+}: {
+  pageId: string;
+  docCollection: DocCollection;
+  wrapper?: React.ComponentType<PropsWithChildren>;
+  params?: URLSearchParams;
+}) {
+  const t = useI18n();
+  const pageMetaHelper = useDocMetaHelper();
+  const journalHelper = useJournalHelper(docCollection);
+  const docsService = useService(DocsService);
+  const mode = useLiveData(docsService.list.primaryMode$(pageId));
+
+  let linkWithMode: DocMode | null = null;
+  let linkToNode = false;
+  if (params) {
+    const m = params.get('mode');
+    if (m && (m === 'page' || m === 'edgeless')) {
+      linkWithMode = m as DocMode;
+    }
+    linkToNode = params.has('blockIds') || params.has('elementIds');
+  }
+
+  const el = pageReferenceRenderer({
+    docMode: linkWithMode ?? mode ?? 'page',
+    pageId,
+    pageMetaHelper,
+    journalHelper,
+    docCollection,
+    t,
+    linkToNode,
+  });
+
+  const ref = useRef<HTMLAnchorElement>(null);
+
+  const [refreshKey, setRefreshKey] = useState<string>(() => nanoid());
+
+  const isJournal = journalHelper.isPageJournal(pageId);
+
+  const onClick = useCallback(() => {
+    if (isJournal) {
+      track.doc.editor.pageRef.navigate({
+        to: 'journal',
+      });
+    }
+
+    // update refresh key
+    setRefreshKey(nanoid());
+
+    return;
+  }, [isJournal]);
+
+  const query = useMemo(() => {
+    // A block/element reference link
+    let str = params?.toString() ?? '';
+    if (str.length) str += '&';
+    str += `refreshKey=${refreshKey}`;
+    return '?' + str;
+  }, [params, refreshKey]);
+
+  return (
+    <Link
+      ref={ref}
+      to={`/workspace/${docCollection.id}/${pageId}${query}`}
+      onClick={onClick}
+      className={styles.pageReferenceLink}
+    >
+      {Wrapper ? <Wrapper>{el}</Wrapper> : el}
+    </Link>
   );
 }
