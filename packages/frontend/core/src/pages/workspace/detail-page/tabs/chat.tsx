@@ -1,5 +1,5 @@
 import { ChatPanel } from '@affine/core/blocksuite/presets/ai';
-import { DocModeProvider } from '@blocksuite/blocks';
+import { DocModeProvider, RefNodeSlotsProvider } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import { forwardRef, useCallback, useEffect, useRef } from 'react';
@@ -46,19 +46,21 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     const pageService = editor.host?.std.getService('affine:page');
     if (!pageService) return;
     const docModeService = editor.host?.std.get(DocModeProvider);
-    if (!docModeService) return;
+    const refNodeService = editor.host?.std.getOptional(RefNodeSlotsProvider);
 
     const disposable = [
-      pageService.slots.docLinkClicked.on(() => {
-        (chatPanelRef.current as ChatPanel).doc = editor.doc;
-      }),
-      docModeService.onPrimaryModeChange(() => {
-        if (!editor.host) return;
-        (chatPanelRef.current as ChatPanel).host = editor.host;
-      }, editor.doc.id),
+      refNodeService &&
+        refNodeService.docLinkClicked.on(() => {
+          (chatPanelRef.current as ChatPanel).doc = editor.doc;
+        }),
+      docModeService &&
+        docModeService.onPrimaryModeChange(() => {
+          if (!editor.host) return;
+          (chatPanelRef.current as ChatPanel).host = editor.host;
+        }, editor.doc.id),
     ];
 
-    return () => disposable.forEach(d => d.dispose());
+    return () => disposable.forEach(d => d?.dispose());
   }, [editor]);
 
   if (!editor) {

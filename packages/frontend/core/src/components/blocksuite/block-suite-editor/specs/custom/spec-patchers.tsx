@@ -8,7 +8,6 @@ import {
   type useConfirmModal,
 } from '@affine/component';
 import { track } from '@affine/core/mixpanel';
-import { DocsSearchService } from '@affine/core/modules/docs-search';
 import type { EditorService } from '@affine/core/modules/editor';
 import { resolveLinkToDoc } from '@affine/core/modules/navigation';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
@@ -20,6 +19,7 @@ import {
   QuickSearchService,
   RecentDocsQuickSearchSession,
 } from '@affine/core/modules/quicksearch';
+import { ExternalLinksQuickSearchSession } from '@affine/core/modules/quicksearch/impls/external-links';
 import { DebugLogger } from '@affine/debug';
 import {
   type BlockService,
@@ -43,6 +43,7 @@ import {
   EmbedLinkedDocBlockComponent,
   EmbedOptionProvider,
   NotificationExtension,
+  ParseDocUrlExtension,
   PeekViewExtension,
   QuickSearchExtension,
   QuickSearchProvider,
@@ -54,6 +55,7 @@ import {
   type DocService,
   DocsService,
   type FrameworkProvider,
+  WorkspaceService,
 } from '@toeverything/infra';
 import { type TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
@@ -282,109 +284,84 @@ export function patchDocModeService(
 
 export function patchQuickSearchService(framework: FrameworkProvider) {
   const QuickSearch = QuickSearchExtension({
-    async searchDoc(options) {
+    async openQuickSearch() {
       let searchResult: QuickSearchResult = null;
-      if (options.skipSelection) {
-        const query = options.userInput;
-        if (!query) {
-          logger.error('No user input provided');
-        } else {
-          const resolvedDoc = resolveLinkToDoc(query);
-          if (resolvedDoc) {
-            searchResult = {
-              docId: resolvedDoc.docId,
-            };
-          } else if (
-            query.startsWith('http://') ||
-            query.startsWith('https://')
-          ) {
-            searchResult = {
-              userInput: query,
-            };
-          } else {
-            const searchedDoc = (
-              await framework.get(DocsSearchService).search(query)
-            ).at(0);
-            if (searchedDoc) {
-              searchResult = {
-                docId: searchedDoc.docId,
-              };
+      searchResult = await new Promise(resolve =>
+        framework.get(QuickSearchService).quickSearch.show(
+          [
+            framework.get(RecentDocsQuickSearchSession),
+            framework.get(CreationQuickSearchSession),
+            framework.get(DocsQuickSearchSession),
+            framework.get(LinksQuickSearchSession),
+            framework.get(ExternalLinksQuickSearchSession),
+          ],
+          result => {
+            if (result === null) {
+              resolve(null);
+              return;
             }
-          }
-        }
-      } else {
-        searchResult = await new Promise(resolve =>
-          framework.get(QuickSearchService).quickSearch.show(
-            [
-              framework.get(RecentDocsQuickSearchSession),
-              framework.get(CreationQuickSearchSession),
-              framework.get(DocsQuickSearchSession),
-              framework.get(LinksQuickSearchSession),
-            ],
-            result => {
-              if (result === null) {
-                resolve(null);
-                return;
-              }
 
-              if (result.source === 'docs') {
-                resolve({
-                  docId: result.payload.docId,
-                });
-                return;
-              }
+            if (result.source === 'docs') {
+              resolve({
+                docId: result.payload.docId,
+              });
+              return;
+            }
 
-              if (result.source === 'recent-doc') {
-                resolve({
-                  docId: result.payload.docId,
-                });
-                return;
-              }
+            if (result.source === 'recent-doc') {
+              resolve({
+                docId: result.payload.docId,
+              });
+              return;
+            }
 
-              if (result.source === 'link') {
-                if (result.payload.external) {
-                  const userInput = result.payload.external.url;
-                  resolve({ userInput });
-                  return;
-                }
+            if (result.source === 'link') {
+              const { docId, blockIds, elementIds, mode } = result.payload;
+              resolve({
+                docId,
+                params: {
+                  blockIds,
+                  elementIds,
+                  mode,
+                },
+              });
+              return;
+            }
 
-                if (result.payload.internal) {
-                  const { docId, params } = result.payload.internal;
-                  resolve({ docId, params });
-                }
-                return;
-              }
+            if (result.source === 'external-link') {
+              const externalUrl = result.payload.url;
+              resolve({ externalUrl });
+              return;
+            }
 
-              if (result.source === 'creation') {
-                const docsService = framework.get(DocsService);
-                const mode =
-                  result.id === 'creation:create-edgeless'
-                    ? 'edgeless'
-                    : 'page';
-                const newDoc = docsService.createDoc({
-                  primaryMode: mode,
-                  title: result.payload.title,
-                });
+            if (result.source === 'creation') {
+              const docsService = framework.get(DocsService);
+              const mode =
+                result.id === 'creation:create-edgeless' ? 'edgeless' : 'page';
+              const newDoc = docsService.createDoc({
+                primaryMode: mode,
+                title: result.payload.title,
+              });
+              track.doc.editor.quickSearch.createDoc({
+                mode,
+              });
 
-                resolve({
-                  docId: newDoc.id,
-                  isNewDoc: true,
-                });
-                return;
-              }
+              resolve({
+                docId: newDoc.id,
+              });
+              return;
+            }
+          },
+          {
+            label: {
+              key: 'com.affine.cmdk.insert-links',
             },
-            {
-              defaultQuery: options.userInput,
-              label: {
-                key: 'com.affine.cmdk.insert-links',
-              },
-              placeholder: {
-                key: 'com.affine.cmdk.docs.placeholder',
-              },
-            }
-          )
-        );
-      }
+            placeholder: {
+              key: 'com.affine.cmdk.docs.placeholder',
+            },
+          }
+        )
+      );
 
       return searchResult;
     },
@@ -408,7 +385,7 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
               if (!quickSearchService)
                 return oldAction({ model, rootComponent });
 
-              const result = await quickSearchService.searchDoc({});
+              const result = await quickSearchService.openQuickSearch();
               if (result === null) return;
 
               if ('docId' in result) {
@@ -424,28 +401,23 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
                   pageId: linkedDoc.id,
                 };
 
-                if (!result.isNewDoc && result.params) {
+                if (result.params) {
                   props.params = result.params;
                 }
 
                 host.doc.addSiblingBlocks(model, [props]);
 
-                if (result.isNewDoc) {
-                  track.doc.editor.slashMenu.createDoc({ control: 'linkDoc' });
-                  track.doc.editor.slashMenu.linkDoc({ control: 'createDoc' });
-                } else {
-                  track.doc.editor.slashMenu.linkDoc({ control: 'linkDoc' });
-                }
-              } else if ('userInput' in result) {
+                track.doc.editor.slashMenu.linkDoc({ control: 'linkDoc' });
+              } else if (result.externalUrl) {
                 const embedOptions = std
                   .get(EmbedOptionProvider)
-                  .getEmbedBlockOptions(result.userInput);
+                  .getEmbedBlockOptions(result.externalUrl);
                 if (!embedOptions) return;
 
                 host.doc.addSiblingBlocks(model, [
                   {
                     flavour: embedOptions.flavour,
-                    url: result.userInput,
+                    url: result.externalUrl,
                   },
                 ]);
               }
@@ -456,6 +428,25 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
     }
   );
   return [QuickSearch, SlashMenuQuickSearchExtension];
+}
+
+export function patchParseDocUrlExtension(framework: FrameworkProvider) {
+  const workspaceService = framework.get(WorkspaceService);
+  const ParseDocUrl = ParseDocUrlExtension({
+    parseDocUrl(url) {
+      const info = resolveLinkToDoc(url);
+      if (!info || info.workspaceId !== workspaceService.workspace.id) return;
+
+      return {
+        docId: info.docId,
+        blockIds: info.blockIds,
+        elementIds: info.elementIds,
+        mode: info.mode,
+      };
+    },
+  });
+
+  return [ParseDocUrl];
 }
 
 export function patchEdgelessClipboard() {

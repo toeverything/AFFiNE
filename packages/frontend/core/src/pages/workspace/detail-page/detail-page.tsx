@@ -9,7 +9,7 @@ import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
 import { EditorService } from '@affine/core/modules/editor';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
-import type { PageRootService } from '@blocksuite/blocks';
+import { RefNodeSlotsProvider } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import { AiIcon, FrameIcon, TocIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { type AffineEditorContainer } from '@blocksuite/presets';
@@ -164,26 +164,28 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       // blocksuite editor host
       const editorHost = editorContainer.host;
 
-      const pageService =
-        editorHost?.std.getService<PageRootService>('affine:page');
+      const std = editorHost?.std;
       const disposable = new DisposableGroup();
-      if (pageService) {
-        disposable.add(
-          pageService.slots.docLinkClicked.on(({ pageId, params }) => {
-            if (params) {
-              const { mode, blockIds, elementIds } = params;
-              return jumpToPageBlock(
-                docCollection.id,
-                pageId,
-                mode,
-                blockIds,
-                elementIds
-              );
-            }
+      if (std) {
+        const refNodeSlots = std.getOptional(RefNodeSlotsProvider);
+        if (refNodeSlots) {
+          disposable.add(
+            refNodeSlots.docLinkClicked.on(({ pageId, params }) => {
+              if (params) {
+                const { mode, blockIds, elementIds } = params;
+                return jumpToPageBlock(
+                  docCollection.id,
+                  pageId,
+                  mode,
+                  blockIds,
+                  elementIds
+                );
+              }
 
-            return openPage(docCollection.id, pageId);
-          })
-        );
+              return openPage(docCollection.id, pageId);
+            })
+          );
+        }
       }
 
       editor.setEditorContainer(editorContainer);

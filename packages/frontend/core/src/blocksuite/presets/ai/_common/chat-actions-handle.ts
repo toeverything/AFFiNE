@@ -4,17 +4,21 @@ import type {
   EditorHost,
   TextSelection,
 } from '@blocksuite/block-std';
+import type {
+  DocMode,
+  EdgelessRootService,
+  ImageSelection,
+  RootService,
+} from '@blocksuite/blocks';
 import {
-  type DocMode,
+  BlocksUtils,
   DocModeProvider,
-  type EdgelessRootService,
   EditPropsStore,
-  type ImageSelection,
+  NoteDisplayMode,
   NotificationProvider,
-  type PageRootService,
+  RefNodeSlotsProvider,
   TelemetryProvider,
 } from '@blocksuite/blocks';
-import { BlocksUtils, NoteDisplayMode } from '@blocksuite/blocks';
 import {
   Bound,
   getElementsBound,
@@ -110,10 +114,7 @@ export async function constructRootChatBlockMessages(
   return constructUserInfoWithMessages(forkMessages, userInfo);
 }
 
-function getViewportCenter(
-  mode: DocMode,
-  rootService: PageRootService | EdgelessRootService
-) {
+function getViewportCenter(mode: DocMode, rootService: RootService) {
   const center = { x: 400, y: 50 };
   if (mode === 'page') {
     const viewport = rootService.std.get(EditPropsStore).getStorage('viewport');
@@ -310,7 +311,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
     const curMode = docModeService.getEditorMode() || 'page';
     const viewportCenter = getViewportCenter(
       curMode,
-      rootService as PageRootService
+      rootService as RootService
     );
     const newBlockIndex = layer.generateIndex('affine:embed-ai-chat');
     // If current mode is not edgeless, switch to edgeless mode first
@@ -430,7 +431,7 @@ const CREATE_AS_DOC = {
     newDoc.addBlock('affine:surface', {}, rootId);
     const noteId = newDoc.addBlock('affine:note', {}, rootId);
 
-    host.std.getService('affine:page')?.slots.docLinkClicked.emit({
+    host.std.getOptional(RefNodeSlotsProvider)?.docLinkClicked.emit({
       pageId: newDoc.id,
     });
     let complete = false;

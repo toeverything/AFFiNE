@@ -6,8 +6,8 @@ import {
 import { track } from '@affine/core/mixpanel';
 import { EditorService } from '@affine/core/modules/editor';
 import { useI18n } from '@affine/i18n';
-import type { PageRootService } from '@blocksuite/blocks';
 import {
+  ExportManager,
   HtmlTransformer,
   MarkdownTransformer,
   printToPdf,
@@ -34,27 +34,22 @@ async function exportHandler({
   editorContainer,
 }: ExportHandlerOptions) {
   const editorRoot = document.querySelector('editor-host');
-  let pageService: PageRootService | null = null;
-  if (editorRoot) {
-    pageService = editorRoot.std.getService<PageRootService>('affine:page');
-  }
   track.$.sharePanel.$.export({
     type,
   });
   switch (type) {
     case 'html':
       await HtmlTransformer.exportDoc(page);
-      break;
+      return;
     case 'markdown':
       await MarkdownTransformer.exportDoc(page);
-      break;
+      return;
     case 'pdf':
       await printToPdf(editorContainer);
       return;
     case 'png': {
-      if (!pageService) return;
-      await pageService.exportManager.exportPng();
-      break;
+      await editorRoot?.std.get(ExportManager).exportPng();
+      return;
     }
   }
 }

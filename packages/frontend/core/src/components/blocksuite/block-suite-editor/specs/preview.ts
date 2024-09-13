@@ -9,5 +9,7 @@ function patchPreviewSpec(id: string, specs: ExtensionType[]) {
   specProvider.extendSpec(id, specs);
 }
 
-// Patch edgeless preview spec for blocksuite surface-ref and embed-synced-doc
-patchPreviewSpec('edgeless:preview', CustomSpecs);
+export function effects() {
+  // Patch edgeless preview spec for blocksuite surface-ref and embed-synced-doc
+  patchPreviewSpec('edgeless:preview', CustomSpecs);
+}

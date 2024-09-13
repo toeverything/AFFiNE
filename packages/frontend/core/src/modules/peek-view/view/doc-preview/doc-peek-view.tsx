@@ -7,7 +7,11 @@ import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-
 import { EditorService } from '@affine/core/modules/editor';
 import { PageNotFound } from '@affine/core/pages/404';
 import { DebugLogger } from '@affine/debug';
-import type { DocMode, EdgelessRootService } from '@blocksuite/blocks';
+import {
+  type DocMode,
+  type EdgelessRootService,
+  RefNodeSlotsProvider,
+} from '@blocksuite/blocks';
 import { Bound, DisposableGroup } from '@blocksuite/global/utils';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import {
@@ -87,13 +91,12 @@ function DocPeekPreviewEditor({
         return;
       }
       const disposableGroup = new DisposableGroup();
-      const rootService = editorContainer.host.std.getService('affine:page');
-      if (!rootService) {
-        return;
-      }
+      const refNodeSlots =
+        editorContainer.host.std.getOptional(RefNodeSlotsProvider);
+      if (!refNodeSlots) return;
       // doc change event inside peek view should be handled by peek view
       disposableGroup.add(
-        rootService.slots.docLinkClicked.on(options => {
+        refNodeSlots.docLinkClicked.on(options => {
           peekView
             .open({
               type: 'doc',

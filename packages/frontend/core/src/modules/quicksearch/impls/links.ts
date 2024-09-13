@@ -1,8 +1,8 @@
-import type { ReferenceParams } from '@blocksuite/blocks';
-import { BlockLinkIcon, LinkIcon } from '@blocksuite/icons/rc';
-import type { DocsService } from '@toeverything/infra';
+import type { DocMode } from '@blocksuite/blocks';
+import { BlockLinkIcon, EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
+import type { DocsService, WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
-import { isEmpty, pick, truncate } from 'lodash-es';
+import { truncate } from 'lodash-es';
 
 import { resolveLinkToDoc } from '../../navigation';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
@@ -10,16 +10,10 @@ import type { DocDisplayMetaService } from '../services/doc-display-meta';
 import type { QuickSearchItem } from '../types/item';
 
 type LinkPayload = {
-  internal?: {
-    docId: string;
-    title?: string;
-    blockId?: string;
-    blockContent?: string;
-    params?: ReferenceParams;
-  };
-  external?: {
-    url: string;
-  };
+  docId: string;
+  blockIds?: string[];
+  elementIds?: string[];
+  mode?: DocMode;
 };
 
 export class LinksQuickSearchSession
@@ -27,6 +21,7 @@ export class LinksQuickSearchSession
   implements QuickSearchSession<'link', LinkPayload>
 {
   constructor(
+    private readonly workspaceService: WorkspaceService,
     private readonly docsService: DocsService,
     private readonly docDisplayMetaService: DocDisplayMetaService
   ) {
@@ -43,44 +38,25 @@ export class LinksQuickSearchSession
     if (!isLink) return [];
 
     const resolvedDoc = resolveLinkToDoc(query);
-    if (!resolvedDoc) {
-      return [
-        {
-          id: 'link',
-          source: 'link',
-          icon: LinkIcon,
-          label: {
-            key: 'com.affine.cmdk.affine.insert-link',
-          },
-          payload: { external: { url: query } },
-        } as QuickSearchItem<'link', LinkPayload>,
-      ];
+    if (
+      !resolvedDoc ||
+      resolvedDoc.workspaceId !== this.workspaceService.workspace.id
+    ) {
+      return [];
     }
 
     const docId = resolvedDoc.docId;
     const doc = this.docsService.list.doc$(docId).value;
     if (!doc || get(doc.trash$)) return [];
 
-    const params = pick(resolvedDoc, ['mode', 'blockIds', 'elementIds']);
     const { title, icon, updatedDate } =
       this.docDisplayMetaService.getDocDisplayMeta(doc);
-    const blockId = params?.blockIds?.[0];
-    const linkToNode = Boolean(blockId);
+    const linkToNode = resolvedDoc.blockIds || resolvedDoc.elementIds;
     const score = 100;
-    const internal = {
-      docId,
-      score,
-      blockId,
-      blockContent: '',
-    };
-
-    if (linkToNode && !isEmpty(params)) {
-      Object.assign(internal, { params });
-    }
 
     return [
       {
-        id: ['doc', doc.id, linkToNode ? blockId : ''].join(':'),
+        id: 'links:doc:' + doc.id,
         source: 'link',
         group: {
           id: 'docs',
@@ -94,9 +70,20 @@ export class LinksQuickSearchSession
           title: title,
         },
         score,
-        icon: linkToNode ? BlockLinkIcon : icon,
+        icon: linkToNode
+          ? BlockLinkIcon
+          : resolvedDoc.mode === 'page'
+            ? PageIcon
+            : resolvedDoc.mode === 'edgeless'
+              ? EdgelessIcon
+              : icon,
         timestamp: updatedDate,
-        payload: { internal },
+        payload: {
+          docId,
+          blockIds: resolvedDoc.blockIds,
+          elementIds: resolvedDoc.elementIds,
+          mode: resolvedDoc.mode,
+        },
       } as QuickSearchItem<'link', LinkPayload>,
     ];
   });

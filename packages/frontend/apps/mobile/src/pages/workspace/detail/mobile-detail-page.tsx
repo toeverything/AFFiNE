@@ -11,7 +11,6 @@ import { EditorService } from '@affine/core/modules/editor';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { DetailPageWrapper } from '@affine/core/pages/workspace/detail-page/detail-page-wrapper';
-import type { PageRootService } from '@blocksuite/blocks';
 import {
   BookmarkBlockService,
   customImageProxyMiddleware,
@@ -19,6 +18,7 @@ import {
   EmbedLoomBlockService,
   EmbedYoutubeBlockService,
   ImageBlockService,
+  RefNodeSlotsProvider,
 } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import { type AffineEditorContainer } from '@blocksuite/presets';
@@ -59,7 +59,7 @@ const DetailPageImpl = () => {
   const mode = useLiveData(editor.mode$);
 
   const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
-  const { openPage, jumpToPageBlock, jumpToTag } = useNavigateHelper();
+  const { openPage, jumpToPageBlock } = useNavigateHelper();
   const editorContainer = useLiveData(editor.editorContainer$);
 
   const { setDocReadonly } = useDocMetaHelper();
@@ -129,12 +129,11 @@ const DetailPageImpl = () => {
       );
 
       // provide page mode and updated date to blocksuite
-      const pageService =
-        editorHost?.std.getService<PageRootService>('affine:page');
+      const refNodeService = editorHost?.std.getOptional(RefNodeSlotsProvider);
       const disposable = new DisposableGroup();
-      if (pageService) {
+      if (refNodeService) {
         disposable.add(
-          pageService.slots.docLinkClicked.on(({ pageId, params }) => {
+          refNodeService.docLinkClicked.on(({ pageId, params }) => {
             if (params) {
               const { mode, blockIds, elementIds } = params;
               return jumpToPageBlock(
@@ -149,11 +148,6 @@ const DetailPageImpl = () => {
             return openPage(docCollection.id, pageId);
           })
         );
-        disposable.add(
-          pageService.slots.tagClicked.on(({ tagId }) => {
-            jumpToTag(workspace.id, tagId);
-          })
-        );
       }
 
       editor.setEditorContainer(editorContainer);
@@ -162,14 +156,7 @@ const DetailPageImpl = () => {
         disposable.dispose();
       };
     },
-    [
-      editor,
-      jumpToPageBlock,
-      docCollection.id,
-      openPage,
-      jumpToTag,
-      workspace.id,
-    ]
+    [docCollection.id, editor, jumpToPageBlock, openPage]
   );
 
   return (

@@ -264,6 +264,7 @@ const PageEvents = {
     editor: {
       slashMenu: ['linkDoc', 'createDoc'],
       atMenu: ['linkDoc'],
+      quickSearch: ['createDoc'],
       formatToolbar: ['bold'],
       pageRef: ['navigate'],
       toolbar: ['copyBlockToLink'],

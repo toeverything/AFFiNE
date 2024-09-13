@@ -1,4 +1,3 @@
-import type { ReferenceInfo } from '@blocksuite/affine-model';
 import type { DocMode } from '@blocksuite/blocks';
 import type {
   AffineEditorContainer,
@@ -20,21 +19,6 @@ import {
 
 import { BlocksuiteDocEditor, BlocksuiteEdgelessEditor } from './lit-adaper';
 import * as styles from './styles.css';
-
-// copy forwardSlot from blocksuite, but it seems we need to dispose the pipe
-// after the component is unmounted right?
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function forwardSlot<T extends Record<string, Slot<any>>>(
-  from: T,
-  to: Partial<T>
-) {
-  Object.entries(from).forEach(([key, slot]) => {
-    const target = to[key];
-    if (target) {
-      slot.pipe(target);
-    }
-  });
-}
 
 interface BlocksuiteEditorContainerProps {
   page: Doc;
@@ -65,37 +49,14 @@ export const BlocksuiteEditorContainer = forwardRef<
 
   const slots: BlocksuiteEditorContainerRef['slots'] = useMemo(() => {
     return {
-      docLinkClicked: new Slot<ReferenceInfo>(),
       editorModeSwitched: new Slot(),
       docUpdated: new Slot(),
-      tagClicked: new Slot(),
     };
   }, []);
-
-  // forward the slot to the webcomponent
-  useLayoutEffect(() => {
-    requestAnimationFrame(() => {
-      const docPage = rootRef.current?.querySelector('affine-page-root');
-      const edgelessPage = rootRef.current?.querySelector(
-        'affine-edgeless-root'
-      );
-      if (docPage) {
-        forwardSlot(docPage.slots, slots);
-      }
-
-      if (edgelessPage) {
-        forwardSlot(edgelessPage.slots, slots);
-      }
-    });
-  }, [page, slots]);
 
   useLayoutEffect(() => {
     slots.docUpdated.emit({ newDocId: page.id });
   }, [page, slots.docUpdated]);
-
-  useLayoutEffect(() => {
-    slots.editorModeSwitched.emit(mode);
-  }, [mode, slots.editorModeSwitched]);
 
   /**
    * mimic an AffineEditorContainer using proxy

@@ -4,6 +4,7 @@ import {
   GlobalContextService,
   WorkspaceLocalState,
   WorkspaceScope,
+  WorkspaceService,
 } from '@toeverything/infra';
 
 import { CollectionService } from '../collection';
@@ -16,6 +17,7 @@ import { CollectionsQuickSearchSession } from './impls/collections';
 import { CommandsQuickSearchSession } from './impls/commands';
 import { CreationQuickSearchSession } from './impls/creation';
 import { DocsQuickSearchSession } from './impls/docs';
+import { ExternalLinksQuickSearchSession } from './impls/external-links';
 import { LinksQuickSearchSession } from './impls/links';
 import { RecentDocsQuickSearchSession } from './impls/recent-docs';
 import { TagsQuickSearchSession } from './impls/tags';
@@ -30,6 +32,7 @@ export { CollectionsQuickSearchSession } from './impls/collections';
 export { CommandsQuickSearchSession } from './impls/commands';
 export { CreationQuickSearchSession } from './impls/creation';
 export { DocsQuickSearchSession } from './impls/docs';
+export { ExternalLinksQuickSearchSession } from './impls/external-links';
 export { LinksQuickSearchSession } from './impls/links';
 export { RecentDocsQuickSearchSession } from './impls/recent-docs';
 export { TagsQuickSearchSession } from './impls/tags';
@@ -55,7 +58,12 @@ export function configureQuickSearchModule(framework: Framework) {
       DocsService,
       DocDisplayMetaService,
     ])
-    .entity(LinksQuickSearchSession, [DocsService, DocDisplayMetaService])
+    .entity(LinksQuickSearchSession, [
+      WorkspaceService,
+      DocsService,
+      DocDisplayMetaService,
+    ])
+    .entity(ExternalLinksQuickSearchSession, [WorkspaceService])
     .entity(CreationQuickSearchSession)
     .entity(CollectionsQuickSearchSession, [CollectionService])
     .entity(TagsQuickSearchSession, [TagService])

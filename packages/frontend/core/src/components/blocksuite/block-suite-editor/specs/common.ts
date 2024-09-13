@@ -22,6 +22,7 @@ import {
   LatexBlockSpec,
   ListBlockSpec,
   ParagraphBlockSpec,
+  RefNodeSlotsExtension,
   RichTextExtensions,
 } from '@blocksuite/blocks';
 import { AIChatBlockSpec } from '@blocksuite/presets';
@@ -29,6 +30,7 @@ import { AIChatBlockSpec } from '@blocksuite/presets';
 import { CustomAttachmentBlockSpec } from './custom/attachment-block';
 
 const CommonBlockSpecs: ExtensionType[] = [
+  RefNodeSlotsExtension(),
   EditPropsStore,
   RichTextExtensions,
   LatexBlockSpec,

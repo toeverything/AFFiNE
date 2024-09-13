@@ -1,5 +1,5 @@
 import type { DocMode, EdgelessRootService } from '@blocksuite/blocks';
-import type { InlineEditor } from '@blocksuite/inline/inline-editor';
+import type { InlineEditor } from '@blocksuite/inline';
 import type { AffineEditorContainer, DocTitle } from '@blocksuite/presets';
 import type { DocService, WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';

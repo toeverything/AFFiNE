@@ -48,13 +48,13 @@ export class CMDKQuickSearchService extends Service {
           }
 
           if (result.source === 'link') {
-            if (result.payload.internal) {
-              const { docId, params } = result.payload.internal;
-              this.workbenchService.workbench.openDoc({
-                docId,
-                ...params,
-              });
-            }
+            const { docId, blockIds, elementIds, mode } = result.payload;
+            this.workbenchService.workbench.openDoc({
+              docId,
+              blockIds,
+              elementIds,
+              mode,
+            });
             return;
           }
 

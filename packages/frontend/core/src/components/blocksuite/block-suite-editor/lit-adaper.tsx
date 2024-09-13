@@ -38,6 +38,7 @@ import {
   patchEdgelessClipboard,
   patchForSharedPage,
   patchNotificationService,
+  patchParseDocUrlExtension,
   patchPeekViewService,
   patchQuickSearchService,
   patchReferenceRenderer,
@@ -118,9 +119,8 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
     patched = patched.concat(patchNotificationService(confirmModal));
     patched = patched.concat(patchPeekViewService(peekViewService));
     patched = patched.concat(patchEdgelessClipboard());
-    if (!page.readonly) {
-      patched = patched.concat(patchQuickSearchService(framework));
-    }
+    patched = patched.concat(patchParseDocUrlExtension(framework));
+    patched = patched.concat(patchQuickSearchService(framework));
     if (shared) {
       patched = patched.concat(patchForSharedPage());
     }
@@ -134,7 +134,6 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
     docsService,
     editorService,
     framework,
-    page.readonly,
     peekViewService,
     reactToLit,
     referenceRenderer,
