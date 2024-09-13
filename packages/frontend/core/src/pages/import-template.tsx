@@ -1,3 +1,4 @@
+import type { DocMode } from '@blocksuite/blocks';
 import { useService } from '@toeverything/infra';
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -12,6 +13,7 @@ export const Component = () => {
   useEffect(() => {
     importTemplateDialogService.dialog.open({
       templateName: searchParams.get('name') ?? '',
+      templateMode: (searchParams.get('mode') as DocMode) ?? 'page',
       snapshotUrl: searchParams.get('snapshotUrl') ?? '',
     });
   }, [importTemplateDialogService.dialog, jumpToIndex, searchParams]);

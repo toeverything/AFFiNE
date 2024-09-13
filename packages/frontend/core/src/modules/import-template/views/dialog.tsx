@@ -5,6 +5,7 @@ import { useWorkspaceName } from '@affine/core/components/hooks/use-workspace-in
 import { WorkspaceSelector } from '@affine/core/components/workspace-selector';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
+import type { DocMode } from '@blocksuite/blocks';
 import { AllDocsIcon } from '@blocksuite/icons/rc';
 import {
   useLiveData,
@@ -24,10 +25,12 @@ import * as styles from './dialog.css';
 
 const Dialog = ({
   templateName,
+  templateMode,
   snapshotUrl,
   onClose,
 }: {
   templateName: string;
+  templateMode: DocMode;
   snapshotUrl: string;
   onClose?: () => void;
 }) => {
@@ -70,6 +73,8 @@ const Dialog = ({
         '/template/import?' +
           '&name=' +
           templateName +
+          '&mode=' +
+          templateMode +
           '&snapshotUrl=' +
           snapshotUrl
       );
@@ -82,6 +87,7 @@ const Dialog = ({
     onClose,
     snapshotUrl,
     templateName,
+    templateMode,
   ]);
 
   useEffect(() => {
@@ -108,7 +114,8 @@ const Dialog = ({
       try {
         const docId = await importTemplateService.importToWorkspace(
           selectedWorkspace,
-          templateDownloader.data$.value
+          templateDownloader.data$.value,
+          templateMode
         );
         openPage(selectedWorkspace.id, docId);
         onClose?.();
@@ -124,6 +131,7 @@ const Dialog = ({
     openPage,
     selectedWorkspace,
     templateDownloader.data$.value,
+    templateMode,
   ]);
 
   const handleImportToNewWorkspace = useAsyncCallback(async () => {
@@ -235,6 +243,7 @@ export const ImportTemplateDialogProvider = () => {
       {template && (
         <Dialog
           templateName={template.templateName}
+          templateMode={template.templateMode}
           snapshotUrl={template.snapshotUrl}
           onClose={() => importTemplateDialogService.dialog.close()}
         />

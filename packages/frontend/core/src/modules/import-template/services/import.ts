@@ -1,5 +1,5 @@
 import type { WorkspaceFlavour } from '@affine/env/workspace';
-import { ZipTransformer } from '@blocksuite/blocks';
+import { type DocMode, ZipTransformer } from '@blocksuite/blocks';
 import type { WorkspaceMetadata, WorkspacesService } from '@toeverything/infra';
 import { DocsService, Service } from '@toeverything/infra';
 
@@ -10,7 +10,8 @@ export class ImportTemplateService extends Service {
 
   async importToWorkspace(
     workspaceMetadata: WorkspaceMetadata,
-    docBinary: Uint8Array
+    docBinary: Uint8Array,
+    mode: DocMode
   ) {
     const { workspace, dispose: disposeWorkspace } =
       this.workspacesService.open({
@@ -26,7 +27,7 @@ export class ImportTemplateService extends Service {
     const docsService = workspace.scope.get(DocsService);
     if (importedDoc) {
       // only support page mode for now
-      docsService.list.setPrimaryMode(importedDoc.id, 'page');
+      docsService.list.setPrimaryMode(importedDoc.id, mode);
       disposeWorkspace();
       return importedDoc.id;
     } else {
@@ -38,6 +39,7 @@ export class ImportTemplateService extends Service {
     flavour: WorkspaceFlavour,
     workspaceName: string,
     docBinary: Uint8Array
+    // todo: support doc mode on init
   ) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     let docId: string = null!;

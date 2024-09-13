@@ -101,6 +101,7 @@ export const topLevelRoutes = [
           const workspaceId = url.searchParams.get('workspaceId');
           const docId = url.searchParams.get('docId');
           const templateName = url.searchParams.get('name');
+          const templateMode = url.searchParams.get('mode');
           const snapshotUrl = url.searchParams.get('snapshotUrl');
 
           return redirect(
@@ -108,6 +109,7 @@ export const topLevelRoutes = [
               isTemplate: 'true',
               templateName: templateName ?? '',
               snapshotUrl: snapshotUrl ?? '',
+              templateMode: templateMode ?? 'page',
             }).toString()}`
           );
         },
