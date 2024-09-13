@@ -20,7 +20,7 @@ export const AffineOtherPageLayout = ({
 
   return (
     <div className={styles.root}>
-      {environment.isElectron ? (
+      {BUILD_CONFIG.isElectron ? (
         <div className={styles.draggableHeader} />
       ) : (
         <div className={styles.topNav}>

@@ -9,7 +9,7 @@ import webpack from 'webpack';
 import { merge } from 'webpack-merge';
 
 import { createConfiguration, rootPath, workspaceRoot } from './config.js';
-import { getRuntimeConfig } from './runtime-config.js';
+import { getBuildConfig } from './runtime-config.js';
 
 const DESCRIPTION = `There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together.`;
 
@@ -31,8 +31,8 @@ const gitShortHash = once(() => {
 
 export function createWebpackConfig(cwd: string, flags: BuildFlags) {
   console.log('build flags', flags);
-  const runtimeConfig = getRuntimeConfig(flags);
-  console.log('runtime config', runtimeConfig);
+  const runtimeConfig = getBuildConfig(flags);
+  console.log('BUILD_CONFIG', runtimeConfig);
   const config = createConfiguration(cwd, flags, runtimeConfig);
   const entry =
     typeof flags.entry === 'string' || !flags.entry

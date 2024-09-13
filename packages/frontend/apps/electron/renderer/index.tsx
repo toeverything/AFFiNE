@@ -39,7 +39,7 @@ function main() {
     performanceMainLogger.info('skip setup');
   } else {
     performanceMainLogger.info('setup start');
-    if (window.SENTRY_RELEASE || environment.isDebug) {
+    if (BUILD_CONFIG.debug || window.SENTRY_RELEASE) {
       // https://docs.sentry.io/platforms/javascript/guides/electron/
       init({
         dsn: process.env.SENTRY_DSN,

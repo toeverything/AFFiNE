@@ -29,7 +29,7 @@ function rpcToObservable<
   return new Observable<T | null>(subscriber => {
     subscriber.next(initialValue);
     onSubscribe?.();
-    if (!environment.isElectron || !event) {
+    if (!BUILD_CONFIG.isElectron || !event) {
       subscriber.complete();
       return;
     }

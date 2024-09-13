@@ -31,11 +31,6 @@ import {
 import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
-if (environment.isElectron && environment.isDebug) {
-  document.body.innerHTML = `<h1 style="color:red;font-size:5rem;text-align:center;">Don't run web entry in electron.</h1>`;
-  throw new Error('Wrong distribution');
-}
-
 const performanceI18nLogger = performanceLogger.namespace('i18n');
 const cache = createEmotionCache();
 

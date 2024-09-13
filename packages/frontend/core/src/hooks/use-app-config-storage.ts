@@ -1,5 +1,4 @@
 import { apis } from '@affine/electron-api';
-import { setupGlobal } from '@affine/env/global';
 import { assertExists } from '@blocksuite/global/utils';
 import type { AppConfigSchema } from '@toeverything/infra';
 import { AppConfigStorage, defaultAppConfig } from '@toeverything/infra';
@@ -33,9 +32,7 @@ class AppConfigProxy {
 }
 export const appConfigProxy = new AppConfigProxy();
 
-setupGlobal();
-
-const storage = environment.isElectron
+const storage = BUILD_CONFIG.isElectron
   ? new AppConfigStorage({
       config: defaultAppConfig,
       get: () => appConfigProxy.get(),

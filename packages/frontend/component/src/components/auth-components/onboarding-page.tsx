@@ -119,8 +119,8 @@ export const OnboardingPage = ({
     () => questions?.[questionIdx],
     [questionIdx, questions]
   );
-  const isMacosDesktop = environment.isElectron && environment.isMacOs;
-  const isWindowsDesktop = environment.isElectron && environment.isWindows;
+  const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
+  const isWindowsDesktop = BUILD_CONFIG.isElectron && environment.isWindows;
 
   if (!questions) {
     return null;

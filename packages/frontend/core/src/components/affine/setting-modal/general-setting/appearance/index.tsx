@@ -86,7 +86,7 @@ export const AppearanceSettings = () => {
             <LanguageMenu />
           </div>
         </SettingRow>
-        {environment.isElectron ? (
+        {BUILD_CONFIG.isElectron ? (
           <SettingRow
             name={t['com.affine.appearanceSettings.clientBorder.title']()}
             desc={t['com.affine.appearanceSettings.clientBorder.description']()}
@@ -98,7 +98,7 @@ export const AppearanceSettings = () => {
             />
           </SettingRow>
         ) : null}
-        {BUILD_CONFIG.enableNewSettingUnstableApi && environment.isElectron ? (
+        {BUILD_CONFIG.enableNewSettingUnstableApi && BUILD_CONFIG.isElectron ? (
           <SettingRow
             name={t['com.affine.appearanceSettings.windowFrame.title']()}
             desc={t['com.affine.appearanceSettings.windowFrame.description']()}
@@ -144,7 +144,7 @@ export const AppearanceSettings = () => {
         </SettingWrapper>
       ) : null}
 
-      {environment.isElectron ? (
+      {BUILD_CONFIG.isElectron ? (
         <SettingWrapper
           title={t['com.affine.appearanceSettings.sidebar.title']()}
         >

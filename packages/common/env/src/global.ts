@@ -1,51 +1,47 @@
 /// <reference types="@blocksuite/global" />
-import { assertEquals } from '@blocksuite/global/utils';
-import { z } from 'zod';
 
-import { isElectron } from './constant.js';
 import { UaHelper } from './ua-helper.js';
 
-export const BUILD_CONFIG_SCHEMA = z.object({
-  // this is for the electron app
-  serverUrlPrefix: z.string(),
-  appVersion: z.string(),
-  editorVersion: z.string(),
-  distribution: z.enum(['web', 'desktop', 'admin', 'mobile']),
-  appBuildType: z.union([
-    z.literal('stable'),
-    z.literal('beta'),
-    z.literal('internal'),
-    z.literal('canary'),
-  ]),
-  isSelfHosted: z.boolean().optional(),
-  githubUrl: z.string(),
-  changelogUrl: z.string(),
-  downloadUrl: z.string(),
-  // see: tools/workers
-  imageProxyUrl: z.string(),
-  linkPreviewUrl: z.string(),
-  allowLocalWorkspace: z.boolean(),
-  enablePreloading: z.boolean(),
-  enableNewSettingUnstableApi: z.boolean(),
-  enableExperimentalFeature: z.boolean(),
-  enableThemeEditor: z.boolean(),
-});
-
-export type BUILD_CONFIG_TYPE = z.infer<typeof BUILD_CONFIG_SCHEMA>;
-
-export type Environment = {
-  isDebug: boolean;
-
-  // Edition
+export type BUILD_CONFIG_TYPE = {
+  debug: boolean;
+  distribution: 'web' | 'desktop' | 'admin' | 'mobile';
+  /**
+   * 'web' | 'desktop' | 'admin'
+   */
   isDesktopEdition: boolean;
+  /**
+   * 'mobile'
+   */
   isMobileEdition: boolean;
 
-  // Platform/Entry
   isElectron: boolean;
-  isDesktopWeb: boolean;
+  isWeb: boolean;
   isMobileWeb: boolean;
-  isStandalone?: boolean;
 
+  // this is for the electron app
+  serverUrlPrefix: string;
+  appVersion: string;
+  editorVersion: string;
+  appBuildType: 'stable' | 'beta' | 'internal' | 'canary';
+
+  githubUrl: string;
+  changelogUrl: string;
+  downloadUrl: string;
+  // see: tools/workers
+  imageProxyUrl: string;
+  linkPreviewUrl: string;
+
+  allowLocalWorkspace: boolean;
+  enablePreloading: boolean;
+  enableNewSettingUnstableApi: boolean;
+  enableExperimentalFeature: boolean;
+  enableThemeEditor: boolean;
+
+  // TODO(@forehalo): remove
+  isSelfHosted: boolean;
+};
+
+export type Environment = {
   // Device
   isLinux: boolean;
   isMacOs: boolean;
@@ -55,6 +51,8 @@ export type Environment = {
   isFireFox: boolean;
   isMobile: boolean;
   isChrome: boolean;
+  isPwa: boolean;
+
   chromeVersion?: number;
 };
 
@@ -64,17 +62,9 @@ export function setupGlobal() {
   }
 
   let environment: Environment;
-  const isDebug = process.env.NODE_ENV === 'development';
 
   if (!globalThis.navigator) {
     environment = {
-      isDesktopEdition: false,
-      isMobileEdition: false,
-      isElectron: false,
-      isDesktopWeb: false,
-      isMobileWeb: false,
-      isMobile: false,
-      isDebug,
       isLinux: false,
       isMacOs: false,
       isSafari: false,
@@ -82,17 +72,13 @@ export function setupGlobal() {
       isFireFox: false,
       isChrome: false,
       isIOS: false,
+      isPwa: false,
+      isMobile: false,
     };
   } else {
     const uaHelper = new UaHelper(globalThis.navigator);
 
     environment = {
-      isDesktopEdition: BUILD_CONFIG.distribution !== 'mobile',
-      isMobileEdition: BUILD_CONFIG.distribution === 'mobile',
-      isDesktopWeb: BUILD_CONFIG.distribution === 'web',
-      isMobileWeb: BUILD_CONFIG.distribution === 'mobile',
-      isElectron,
-      isDebug,
       isMobile: uaHelper.isMobile,
       isLinux: uaHelper.isLinux,
       isMacOs: uaHelper.isMacOs,
@@ -101,12 +87,10 @@ export function setupGlobal() {
       isFireFox: uaHelper.isFireFox,
       isChrome: uaHelper.isChrome,
       isIOS: uaHelper.isIOS,
-      isStandalone: uaHelper.isStandalone,
+      isPwa: uaHelper.isStandalone,
     };
     // Chrome on iOS is still Safari
     if (environment.isChrome && !environment.isIOS) {
-      assertEquals(environment.isSafari, false);
-      assertEquals(environment.isFireFox, false);
       environment = {
         ...environment,
         isSafari: false,

@@ -106,7 +106,7 @@ export const RootAppSidebar = (): ReactElement => {
   );
 
   useEffect(() => {
-    if (environment.isElectron) {
+    if (BUILD_CONFIG.isElectron) {
       return events?.applicationMenu.onNewPageAction(() => {
         apis?.ui
           .isActiveTab()
@@ -197,7 +197,7 @@ export const RootAppSidebar = (): ReactElement => {
         </div>
       </SidebarScrollableContainer>
       <SidebarContainer>
-        {environment.isElectron ? <UpdaterButton /> : <AppDownloadButton />}
+        {BUILD_CONFIG.isElectron ? <UpdaterButton /> : <AppDownloadButton />}
       </SidebarContainer>
     </AppSidebar>
   );

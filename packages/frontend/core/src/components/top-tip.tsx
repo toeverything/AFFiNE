@@ -12,12 +12,12 @@ import { AuthService } from '../modules/cloud';
 const minimumChromeVersion = 106;
 
 const shouldShowWarning = (() => {
-  if (environment.isElectron) {
+  if (BUILD_CONFIG.isElectron) {
     // even though desktop has compatibility issues,
     //  we don't want to show the warning
     return false;
   }
-  if (environment.isMobile) {
+  if (BUILD_CONFIG.isMobileEdition) {
     return true;
   }
   if (environment.isChrome && environment.chromeVersion) {
@@ -75,8 +75,8 @@ export const TopTip = ({
   }, [setAuthModal]);
 
   if (
+    !BUILD_CONFIG.isElectron &&
     showLocalDemoTips &&
-    !environment.isElectron &&
     workspace.flavour === WorkspaceFlavour.LOCAL
   ) {
     return (

@@ -69,7 +69,7 @@ export const WorkspaceSettingDetail = ({
         <MembersPanel />
       </SettingWrapper>
       <SharingPanel />
-      {environment.isElectron && (
+      {BUILD_CONFIG.isElectron && (
         <SettingWrapper title={t['Storage and Export']()}>
           <ExportPanel
             workspace={workspace}

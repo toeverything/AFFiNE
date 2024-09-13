@@ -10,6 +10,14 @@ import * as styles from './navigation-buttons.css';
 const tooltipSideBottom = { side: 'bottom' as const };
 
 export const NavigationButtons = () => {
+  if (!BUILD_CONFIG.isElectron) {
+    return null;
+  }
+
+  return <ElectronNavigationButtons />;
+};
+
+const ElectronNavigationButtons = () => {
   const t = useI18n();
 
   const navigator = useService(NavigatorService).navigator;
@@ -43,10 +51,6 @@ export const NavigationButtons = () => {
       document.removeEventListener('mouseup', cb);
     };
   }, [navigator]);
-
-  if (!environment.isElectron) {
-    return null;
-  }
 
   return (
     <div className={styles.container}>

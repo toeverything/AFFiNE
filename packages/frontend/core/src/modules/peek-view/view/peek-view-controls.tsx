@@ -129,7 +129,7 @@ export const DocPeekViewControls = ({
           peekView.close('none');
         },
       },
-      environment.isElectron && {
+      BUILD_CONFIG.isElectron && {
         icon: <SplitViewIcon />,
         nameKey: 'split-view',
         name: t['com.affine.peek-view-controls.open-doc-in-split-view'](),

@@ -49,7 +49,6 @@ const SubscriptionChangedNotifyFooter = ({
   );
 };
 
-const isDesktop = environment.isElectron;
 export const useUpgradeNotify = () => {
   const t = useI18n();
   const prevNotifyIdRef = useRef<string | number | null>(null);
@@ -71,7 +70,7 @@ export const useUpgradeNotify = () => {
             <SubscriptionChangedNotifyFooter
               to={link}
               okText={
-                isDesktop
+                BUILD_CONFIG.isElectron
                   ? t['com.affine.payment.upgrade-success-notify.ok-client']()
                   : t['com.affine.payment.upgrade-success-notify.ok-web']()
               }
@@ -112,7 +111,7 @@ export const useDowngradeNotify = () => {
             <SubscriptionChangedNotifyFooter
               to={link}
               okText={
-                isDesktop
+                BUILD_CONFIG.isElectron
                   ? t['com.affine.payment.downgraded-notify.ok-client']()
                   : t['com.affine.payment.downgraded-notify.ok-web']()
               }

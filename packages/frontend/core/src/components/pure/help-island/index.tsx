@@ -29,7 +29,9 @@ const DEFAULT_SHOW_LIST: IslandItemNames[] = [
 const DESKTOP_SHOW_LIST: IslandItemNames[] = [...DEFAULT_SHOW_LIST];
 type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
 
-const showList = environment.isElectron ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST;
+const showList = BUILD_CONFIG.isElectron
+  ? DESKTOP_SHOW_LIST
+  : DEFAULT_SHOW_LIST;
 
 export const HelpIsland = () => {
   const { globalContextService } = useServices({

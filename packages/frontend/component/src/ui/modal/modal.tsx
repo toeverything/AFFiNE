@@ -149,7 +149,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
       children,
       contentWrapperClassName,
       contentWrapperStyle,
-      animation = environment.isMobileEdition ? 'slideBottom' : 'fadeScaleTop',
+      animation = BUILD_CONFIG.isMobileEdition ? 'slideBottom' : 'fadeScaleTop',
       fullScreen,
       ...otherProps
     } = props;
@@ -208,7 +208,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
               `anim-${animation}`,
               styles.modalOverlay,
               overlayClassName,
-              { mobile: environment.isMobileEdition }
+              { mobile: BUILD_CONFIG.isMobileEdition }
             )}
             style={{
               ...overlayStyle,
@@ -216,7 +216,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
             {...otherOverlayOptions}
           >
             <SafeArea
-              bottom={environment.isMobileEdition}
+              bottom={BUILD_CONFIG.isMobileEdition}
               bottomOffset={12}
               data-full-screen={fullScreen}
               data-modal={modal}

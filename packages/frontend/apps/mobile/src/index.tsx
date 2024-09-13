@@ -20,7 +20,7 @@ import { App } from './app';
 const performanceMainLogger = performanceLogger.namespace('main');
 function main() {
   performanceMainLogger.info('setup start');
-  if (window.SENTRY_RELEASE || environment.isDebug) {
+  if (BUILD_CONFIG.debug || window.SENTRY_RELEASE) {
     // https://docs.sentry.io/platforms/javascript/guides/react/#configure
     init({
       dsn: process.env.SENTRY_DSN,

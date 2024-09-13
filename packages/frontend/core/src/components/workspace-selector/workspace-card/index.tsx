@@ -60,7 +60,7 @@ const UnSyncWorkspaceStatus = () => {
 const LocalWorkspaceStatus = () => {
   return (
     <>
-      {!environment.isElectron ? (
+      {!BUILD_CONFIG.isElectron ? (
         <InformationFillDuotoneIcon style={{ color: cssVar('errorColor') }} />
       ) : (
         <LocalWorkspaceIcon />
@@ -98,7 +98,7 @@ const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
   let content;
   // TODO(@eyhn): add i18n
   if (workspace.flavour === WorkspaceFlavour.LOCAL) {
-    if (!environment.isElectron) {
+    if (!BUILD_CONFIG.isElectron) {
       content = 'This is a local demo workspace.';
     } else {
       content = 'Saved locally';

@@ -26,7 +26,7 @@ export const useMenuItem = <T extends MenuItemProps>({
       checked,
       selected,
       block,
-      [mobileMenuItem]: environment.isMobileEdition,
+      [mobileMenuItem]: BUILD_CONFIG.isMobileEdition,
     },
     propsClassName
   );

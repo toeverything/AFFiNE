@@ -204,7 +204,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   );
 
   const [refCallback, hasScrollTop] = useHasScrollTop();
-  const dynamicTopBorder = environment.isElectron;
 
   const openOutlinePanel = useCallback(() => {
     workbench.openSidebar();
@@ -219,7 +218,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       <ViewBody>
         <div
           className={styles.mainContainer}
-          data-dynamic-top-border={dynamicTopBorder}
+          data-dynamic-top-border={BUILD_CONFIG.isElectron}
           data-has-scroll-top={hasScrollTop}
         >
           {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}

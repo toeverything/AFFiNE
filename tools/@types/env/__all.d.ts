@@ -1,3 +1,5 @@
+import '@affine/env/constant';
+
 import type { BUILD_CONFIG_TYPE, Environment } from '@affine/env/global';
 
 declare global {

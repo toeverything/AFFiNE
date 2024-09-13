@@ -3,11 +3,23 @@ import type { BUILD_CONFIG_TYPE } from '@affine/env/global';
 import packageJson from '../../package.json' assert { type: 'json' };
 import type { BuildFlags } from '../config';
 
-export function getRuntimeConfig(buildFlags: BuildFlags): BUILD_CONFIG_TYPE {
+export function getBuildConfig(buildFlags: BuildFlags): BUILD_CONFIG_TYPE {
   const buildPreset: Record<BuildFlags['channel'], BUILD_CONFIG_TYPE> = {
     get stable() {
       return {
+        debug: buildFlags.mode === 'development',
         distribution: buildFlags.distribution,
+        isDesktopEdition: (
+          ['web', 'desktop', 'admin'] as BuildFlags['distribution'][]
+        ).includes(buildFlags.distribution),
+        isMobileEdition: (['mobile'] as BuildFlags['distribution'][]).includes(
+          buildFlags.distribution
+        ),
+        isElectron: buildFlags.distribution === 'desktop',
+        isWeb: buildFlags.distribution === 'web',
+        isMobileWeb: buildFlags.distribution === 'mobile',
+
+        isSelfHosted: process.env.SELF_HOSTED === 'true',
         appBuildType: 'stable' as const,
         serverUrlPrefix: 'https://app.affine.pro',
         appVersion: packageJson.version,
@@ -87,7 +99,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): BUILD_CONFIG_TYPE {
   }
 
   return {
-    isSelfHosted: process.env.SELF_HOSTED === 'true',
     ...currentBuildPreset,
     // environment preset will overwrite current build preset
     // this environment variable is for debug proposes only

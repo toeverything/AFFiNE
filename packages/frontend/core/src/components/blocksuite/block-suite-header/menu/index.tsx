@@ -292,8 +292,7 @@ export const PageHeaderMenuButton = ({
       >
         {t['com.affine.workbench.tab.page-menu-open']()}
       </MenuItem>
-
-      {environment.isElectron && (
+      {BUILD_CONFIG.isElectron && (
         <MenuItem
           prefixIcon={<SplitViewIcon />}
           data-testid="editor-option-menu-open-in-split-new"

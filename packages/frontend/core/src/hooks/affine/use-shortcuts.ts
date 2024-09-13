@@ -279,50 +279,56 @@ export const useWinMarkdownShortcuts = (): ShortcutMap => {
   );
 };
 
+const shortcutsMap = environment.isMacOs
+  ? {
+      useMarkdownShortcuts: useMacMarkdownShortcuts,
+      usePageShortcuts: useMacPageKeyboardShortcuts,
+      useEdgelessShortcuts: useMacEdgelessKeyboardShortcuts,
+      useGeneralShortcuts: useMacGeneralKeyboardShortcuts,
+    }
+  : {
+      useMarkdownShortcuts: useWinMarkdownShortcuts,
+      usePageShortcuts: useWinPageKeyboardShortcuts,
+      useEdgelessShortcuts: useWinEdgelessKeyboardShortcuts,
+      useGeneralShortcuts: useWinGeneralKeyboardShortcuts,
+    };
+
 export const useMarkdownShortcuts = (): ShortcutsInfo => {
   const t = useI18n();
+  const shortcuts = shortcutsMap.useMarkdownShortcuts();
 
-  const macMarkdownShortcuts = useMacMarkdownShortcuts();
-  const winMarkdownShortcuts = useWinMarkdownShortcuts();
-  const isMac = environment.isMacOs;
   return {
     title: t['com.affine.shortcutsTitle.markdownSyntax'](),
-    shortcuts: isMac ? macMarkdownShortcuts : winMarkdownShortcuts,
+    shortcuts,
   };
 };
 
 export const usePageShortcuts = (): ShortcutsInfo => {
   const t = useI18n();
+  const shortcuts = shortcutsMap.usePageShortcuts();
 
-  const macPageShortcuts = useMacPageKeyboardShortcuts();
-  const winPageShortcuts = useWinPageKeyboardShortcuts();
-  const isMac = environment.isMacOs;
   return {
     title: t['com.affine.shortcutsTitle.page'](),
-    shortcuts: isMac ? macPageShortcuts : winPageShortcuts,
+    shortcuts,
   };
 };
 
 export const useEdgelessShortcuts = (): ShortcutsInfo => {
   const t = useI18n();
+  const shortcuts = shortcutsMap.useEdgelessShortcuts();
 
-  const macEdgelessShortcuts = useMacEdgelessKeyboardShortcuts();
-  const winEdgelessShortcuts = useWinEdgelessKeyboardShortcuts();
-  const isMac = environment.isMacOs;
   return {
     title: t['com.affine.shortcutsTitle.edgeless'](),
-    shortcuts: isMac ? macEdgelessShortcuts : winEdgelessShortcuts,
+    shortcuts,
   };
 };
 
 export const useGeneralShortcuts = (): ShortcutsInfo => {
   const t = useI18n();
+  const shortcuts = shortcutsMap.useGeneralShortcuts();
 
-  const macGeneralShortcuts = useMacGeneralKeyboardShortcuts();
-  const winGeneralShortcuts = useWinGeneralKeyboardShortcuts();
-  const isMac = environment.isMacOs;
   return {
     title: t['com.affine.shortcutsTitle.general'](),
-    shortcuts: isMac ? macGeneralShortcuts : winGeneralShortcuts,
+    shortcuts,
   };
 };

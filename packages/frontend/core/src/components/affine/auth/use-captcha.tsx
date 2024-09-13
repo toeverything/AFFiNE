@@ -14,7 +14,7 @@ type Challenge = {
 };
 
 const challengeFetcher = async (url: string) => {
-  if (!environment.isElectron) {
+  if (!BUILD_CONFIG.isElectron) {
     return undefined;
   }
 
@@ -31,7 +31,7 @@ const challengeFetcher = async (url: string) => {
 };
 
 const generateChallengeResponse = async (challenge: string) => {
-  if (!environment.isElectron) {
+  if (!BUILD_CONFIG.isElectron) {
     return undefined;
   }
 
@@ -56,7 +56,7 @@ export const Captcha = () => {
     return null;
   }
 
-  if (environment.isElectron) {
+  if (BUILD_CONFIG.isElectron) {
     if (response) {
       return <div className={style.captchaWrapper}>Making Challenge</div>;
     } else {
@@ -86,8 +86,8 @@ export const useCaptcha = (): [string | undefined, string?] => {
 
   useEffect(() => {
     if (
+      BUILD_CONFIG.isElectron &&
       hasCaptchaFeature &&
-      environment.isElectron &&
       challenge?.challenge &&
       prevChallenge.current !== challenge.challenge
     ) {
@@ -104,7 +104,7 @@ export const useCaptcha = (): [string | undefined, string?] => {
     return ['XXXX.DUMMY.TOKEN.XXXX'];
   }
 
-  if (environment.isElectron) {
+  if (BUILD_CONFIG.isElectron) {
     if (response) {
       return [response, challenge?.challenge];
     } else {

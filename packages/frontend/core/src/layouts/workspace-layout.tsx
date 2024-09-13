@@ -211,6 +211,8 @@ const BrowserLayout = ({ children }: PropsWithChildren) => {
   );
 };
 
+const LayoutComponent = BUILD_CONFIG.isElectron ? DesktopLayout : BrowserLayout;
+
 /**
  * Wraps the workspace layout main router view
  */
@@ -223,9 +225,6 @@ const WorkspaceLayoutUIContainer = ({ children }: PropsWithChildren) => {
   );
 
   const resizing = useAtomValue(appSidebarResizingAtom);
-  const LayoutComponent = environment.isElectron
-    ? DesktopLayout
-    : BrowserLayout;
 
   return (
     <AppContainer data-current-path={currentPath} resizing={resizing}>

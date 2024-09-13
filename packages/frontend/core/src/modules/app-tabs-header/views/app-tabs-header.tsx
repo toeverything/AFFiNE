@@ -303,7 +303,8 @@ export const AppTabsHeader = ({
   const sidebarWidth = useAtomValue(appSidebarWidthAtom);
   const sidebarOpen = useAtomValue(appSidebarOpenAtom);
   const sidebarResizing = useAtomValue(appSidebarResizingAtom);
-  const isMacosDesktop = environment.isElectron && environment.isMacOs;
+  const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
+  const isWindowsDesktop = BUILD_CONFIG.isElectron && environment.isWindows;
   const fullScreen = useIsFullScreen();
 
   const tabsHeaderService = useService(AppTabsHeaderService);
@@ -412,7 +413,7 @@ export const AppTabsHeader = ({
       className={clsx(styles.root, className)}
       style={style}
       data-mode={mode}
-      data-is-windows={environment.isElectron && environment.isWindows}
+      data-is-windows={isWindowsDesktop}
     >
       <div
         style={{
@@ -473,9 +474,9 @@ export const AppTabsHeader = ({
       <IconButton size="24" onClick={onToggleRightSidebar}>
         <RightSidebarIcon />
       </IconButton>
-      {environment.isElectron && environment.isWindows ? (
+      {isWindowsDesktop && (
         <div className={styles.windowsAppControlsPlaceholder} />
-      ) : null}
+      )}
     </div>
   );
 };

@@ -176,12 +176,10 @@ export const PageOperationCell = ({
       <MenuItem onClick={onOpenInfoModal} prefixIcon={<InformationIcon />}>
         {t['com.affine.page-properties.page-info.view']()}
       </MenuItem>
-
       <MenuItem onClick={onOpenInNewTab} prefixIcon={<OpenInNewIcon />}>
         {t['com.affine.workbench.tab.page-menu-open']()}
       </MenuItem>
-
-      {environment.isElectron && enableSplitView ? (
+      {BUILD_CONFIG.isElectron && enableSplitView ? (
         <MenuItem onClick={onOpenInSplitView} prefixIcon={<SplitViewIcon />}>
           {t['com.affine.workbench.split-view.page-menu-open']()}
         </MenuItem>

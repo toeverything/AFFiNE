@@ -119,7 +119,7 @@ export const useExplorerTagNodeOperations = (
           </MenuItem>
         ),
       },
-      ...(enableMultiView && environment.isElectron
+      ...(BUILD_CONFIG.isElectron && enableMultiView
         ? [
             {
               index: 100,

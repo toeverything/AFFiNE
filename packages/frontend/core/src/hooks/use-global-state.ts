@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 
 export function useDocumentTitle(newTitle?: string | null) {
   useEffect(() => {
-    if (environment.isElectron || !newTitle) {
+    if (BUILD_CONFIG.isElectron || !newTitle) {
       return noop;
     }
 

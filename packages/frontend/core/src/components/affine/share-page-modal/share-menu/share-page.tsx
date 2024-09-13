@@ -156,8 +156,6 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
     }
   }, [shareInfoService, t]);
 
-  const isMac = environment.isMacOs;
-
   const { blockIds, elementIds } = useMemo(
     () => getSelectedNodes(editorContainer?.host || null, currentMode),
     [editorContainer, currentMode]
@@ -270,9 +268,9 @@ export const AFFiNESharePage = (props: ShareMenuProps) => {
           <span className={styles.copyLinkLabelStyle}>
             {t['com.affine.share-menu.copy']()}
           </span>
-          {!environment.isMobile && (
+          {BUILD_CONFIG.isDesktopEdition && (
             <span className={styles.copyLinkShortcutStyle}>
-              {isMac ? '⌘ + ⌥ + C' : 'Ctrl + Shift + C'}
+              {environment.isMacOs ? '⌘ + ⌥ + C' : 'Ctrl + Shift + C'}
             </span>
           )}
         </Button>

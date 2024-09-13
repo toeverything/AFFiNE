@@ -91,7 +91,7 @@ export class AuthService extends Service {
           email,
           // we call it [callbackUrl] instead of [redirect_uri]
           // to make it clear the url is used to finish the sign-in process instead of redirect after signed-in
-          callbackUrl: `/magic-link?client=${environment.isElectron ? appInfo?.schema : 'web'}`,
+          callbackUrl: `/magic-link?client=${BUILD_CONFIG.isElectron ? appInfo?.schema : 'web'}`,
         }),
         headers: {
           'content-type': 'application/json',

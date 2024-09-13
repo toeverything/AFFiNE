@@ -183,7 +183,7 @@ export function registerAffineSettingsCommands({
         `,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () => environment.isElectron,
+      preconditionStrategy: () => BUILD_CONFIG.isElectron,
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'clientBorder',
@@ -231,7 +231,7 @@ export function registerAffineSettingsCommands({
         ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () => environment.isElectron,
+      preconditionStrategy: () => BUILD_CONFIG.isElectron,
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'enableNoisyBackground',
@@ -257,7 +257,8 @@ export function registerAffineSettingsCommands({
         ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () => environment.isElectron && environment.isMacOs,
+      preconditionStrategy: () =>
+        BUILD_CONFIG.isElectron && environment.isMacOs,
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'enableBlurBackground',

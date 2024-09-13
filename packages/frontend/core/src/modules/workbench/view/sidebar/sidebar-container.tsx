@@ -38,7 +38,7 @@ export const SidebarContainer = ({
             viewId={view.id}
             className={clsx(
               styles.sidebarBodyTarget,
-              !environment.isElectron && styles.borderTop
+              !BUILD_CONFIG.isElectron && styles.borderTop
             )}
           />
         ))

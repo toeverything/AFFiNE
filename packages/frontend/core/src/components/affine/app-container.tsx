@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import type { PropsWithChildren, ReactElement } from 'react';
 
 import { useAppSettingHelper } from '../../hooks/affine/use-app-setting-helper';
-import { AppSidebarFallback } from '../app-sidebar';
+import { AppSidebarFallback, ShellAppSidebarFallback } from '../app-sidebar';
 import type { WorkspaceRootProps } from '../workspace';
 import {
   AppContainer as AppContainerWithoutSettings,
@@ -16,11 +16,7 @@ export const AppContainer = (props: WorkspaceRootProps) => {
   return (
     <AppContainerWithoutSettings
       useNoisyBackground={appSettings.enableNoisyBackground}
-      useBlurBackground={
-        appSettings.enableBlurBackground &&
-        environment.isElectron &&
-        environment.isMacOs
-      }
+      useBlurBackground={appSettings.enableBlurBackground}
       {...props}
     />
   );
@@ -36,10 +32,24 @@ export const AppFallback = ({
     <AppContainer
       className={clsx(
         className,
-        environment.isElectron && styles.electronFallback
+        BUILD_CONFIG.isElectron && styles.electronFallback
       )}
     >
       <AppSidebarFallback />
+      <MainContainerFallback>{children}</MainContainerFallback>
+    </AppContainer>
+  );
+};
+
+export const ShellAppFallback = ({
+  className,
+  children,
+}: PropsWithChildren<{
+  className?: string;
+}>): ReactElement => {
+  return (
+    <AppContainer className={className}>
+      <ShellAppSidebarFallback />
       <MainContainerFallback>{children}</MainContainerFallback>
     </AppContainer>
   );

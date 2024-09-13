@@ -1,7 +1,7 @@
 import type { FlagInfo } from './types';
 
 const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
-const isDesktopEnvironment = environment.isElectron;
+const isDesktopEnvironment = BUILD_CONFIG.isElectron;
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
 
 export const AFFINE_FLAGS = {

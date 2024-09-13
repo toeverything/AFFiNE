@@ -11,7 +11,7 @@ import {
 import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
 
 export const loader = () => {
-  if (!environment.isElectron && !appConfigStorage.get('onBoarding')) {
+  if (!BUILD_CONFIG.isElectron && !appConfigStorage.get('onBoarding')) {
     // onboarding is off, redirect to index
     return redirect('/');
   }
@@ -24,7 +24,7 @@ export const Component = () => {
   const [, setOnboarding] = useAppConfigStorage('onBoarding');
 
   const openApp = useCallback(() => {
-    if (environment.isElectron) {
+    if (BUILD_CONFIG.isElectron) {
       assertExists(apis);
       apis.ui.handleOpenMainApp().catch(err => {
         console.log('failed to open main app', err);

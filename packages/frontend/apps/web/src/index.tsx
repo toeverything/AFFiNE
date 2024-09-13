@@ -23,11 +23,11 @@ function main() {
   performanceMainLogger.info('start');
 
   // skip bootstrap setup for desktop onboarding
-  if (environment.isElectron && appInfo?.windowName === 'onboarding') {
+  if (BUILD_CONFIG.isElectron && appInfo?.windowName === 'onboarding') {
     performanceMainLogger.info('skip setup');
   } else {
     performanceMainLogger.info('setup start');
-    if (window.SENTRY_RELEASE || environment.isDebug) {
+    if (BUILD_CONFIG.debug || window.SENTRY_RELEASE) {
       // https://docs.sentry.io/platforms/javascript/guides/react/#configure
       init({
         dsn: process.env.SENTRY_DSN,

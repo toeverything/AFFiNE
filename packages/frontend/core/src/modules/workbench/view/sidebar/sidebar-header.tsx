@@ -44,7 +44,7 @@ export const Header = ({ floating, children, onToggle }: HeaderProps) => {
   return (
     <Container className={styles.header} floating={floating}>
       {children}
-      {!environment.isElectron && (
+      {!BUILD_CONFIG.isElectron && (
         <>
           <div className={styles.spacer} />
           <ToggleButton onToggle={onToggle} />

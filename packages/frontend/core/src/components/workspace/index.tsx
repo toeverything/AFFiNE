@@ -28,8 +28,9 @@ export const AppContainer = ({
   className,
   ...rest
 }: WorkspaceRootProps) => {
-  const noisyBackground = useNoisyBackground && environment.isElectron;
-  const blurBackground = environment.isElectron && useBlurBackground;
+  const noisyBackground = BUILD_CONFIG.isElectron && useNoisyBackground;
+  const blurBackground =
+    BUILD_CONFIG.isElectron && environment.isMacOs && useBlurBackground;
   return (
     <div
       {...rest}
@@ -59,7 +60,7 @@ export const MainContainer = forwardRef<
     <div
       {...props}
       className={clsx(mainContainerStyle, className)}
-      data-is-desktop={environment.isElectron}
+      data-is-desktop={BUILD_CONFIG.isElectron}
       data-transparent={false}
       data-client-border={appSettings.clientBorder}
       data-side-bar-open={appSideBarOpen}
