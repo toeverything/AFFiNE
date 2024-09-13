@@ -53,7 +53,7 @@
     "builder-util-runtime": "^9.2.5-alpha.2",
     "core-js": "^3.36.1",
     "cross-env": "^7.0.3",
-    "electron": "^31.0.0",
+    "electron": "^32.0.0",
     "electron-log": "^5.1.2",
     "electron-squirrel-startup": "1.0.1",
     "electron-window-state": "^5.0.3",

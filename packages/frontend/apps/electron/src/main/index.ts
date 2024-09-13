@@ -22,6 +22,8 @@ import { launchStage } from './windows-manager/stage';
 app.enableSandbox();
 
 app.commandLine.appendSwitch('enable-features', 'CSSTextAutoSpace');
+// https://github.com/electron/electron/issues/43556
+app.commandLine.appendSwitch('disable-features', 'PlzDedicatedWorker');
 
 // use the same data for internal & beta for testing
 if (overrideSession) {
