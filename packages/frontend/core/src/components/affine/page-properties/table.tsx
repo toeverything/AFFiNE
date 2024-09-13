@@ -759,6 +759,11 @@ export const PagePropertyRow = ({
     setEditingMeta(false);
     setEditingItem(null);
   }, [setEditingItem]);
+
+  // NOTE: if we define a new property type, the value render may not exists in old client
+  //       skip rendering if value render is not define yet
+  if (!ValueRenderer || typeof ValueRenderer !== 'function') return null;
+
   return (
     <SortablePropertyRow property={property} data-testid="page-property-row">
       {({ attributes, listeners }) => (
