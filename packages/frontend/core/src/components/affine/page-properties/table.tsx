@@ -1,7 +1,6 @@
 import type { MenuProps } from '@affine/component';
 import { Button, IconButton, Menu, MenuItem, Tooltip } from '@affine/component';
-import { useCurrentWorkspacePropertiesAdapter } from '@affine/core/hooks/use-affine-adapter';
-import { track } from '@affine/core/mixpanel';
+import { useCurrentWorkspacePropertiesAdapter } from '@affine/core/components/hooks/use-affine-adapter';
 import { DocLinksService } from '@affine/core/modules/doc-link';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import type {
@@ -10,6 +9,7 @@ import type {
   PagePropertyType,
 } from '@affine/core/modules/properties/services/schema';
 import { i18nTime, useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   ArrowDownSmallIcon,

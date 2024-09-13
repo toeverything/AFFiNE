@@ -7,8 +7,11 @@ import { Onboarding } from '../components/affine/onboarding/onboarding';
 import {
   appConfigStorage,
   useAppConfigStorage,
-} from '../hooks/use-app-config-storage';
-import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
+} from '../components/hooks/use-app-config-storage';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '../components/hooks/use-navigate-helper';
 
 export const loader = () => {
   if (!BUILD_CONFIG.isElectron && !appConfigStorage.get('onBoarding')) {

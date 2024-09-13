@@ -1,4 +1,5 @@
 import { EmptyDocs } from '@affine/core/components/affine/empty';
+import { useBlockSuiteDocMeta } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import {
   type ItemGroupDefinition,
   type ItemGroupProps,
@@ -7,7 +8,6 @@ import {
   usePageItemGroupDefinitions,
 } from '@affine/core/components/page-list';
 import { itemsToItemGroups } from '@affine/core/components/page-list/items-to-item-group';
-import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import type { Tag } from '@affine/core/modules/tag';
 import type { Collection, Filter } from '@affine/env/filter';
 import { ToggleExpandIcon } from '@blocksuite/icons/rc';

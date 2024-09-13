@@ -1,4 +1,4 @@
-import { useLanguageHelper } from '@affine/core/hooks/affine/use-language-helper';
+import { useLanguageHelper } from '@affine/core/components/hooks/affine/use-language-helper';
 import { useI18n } from '@affine/i18n';
 import { useMemo } from 'react';
 

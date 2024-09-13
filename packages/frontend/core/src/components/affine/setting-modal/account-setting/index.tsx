@@ -5,11 +5,11 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
-import { track } from '@affine/core/mixpanel';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons/rc';
 import {
   useEnsureLiveData,
@@ -21,12 +21,12 @@ import { useSetAtom } from 'jotai';
 import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { AuthService, ServerConfigService } from '../../../../modules/cloud';
 import {
   authAtom,
   openSettingModalAtom,
   openSignOutModalAtom,
-} from '../../../../atoms';
-import { AuthService, ServerConfigService } from '../../../../modules/cloud';
+} from '../../../atoms';
 import { Upload } from '../../../pure/file-upload';
 import { AIUsagePanel } from './ai-usage-panel';
 import { StorageProgress } from './storage-progress';

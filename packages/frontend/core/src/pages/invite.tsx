@@ -1,5 +1,4 @@
 import { AcceptInvitePage } from '@affine/component/member-components';
-import { WorkspaceSubPath } from '@affine/core/shared';
 import type { GetInviteInfoQuery } from '@affine/graphql';
 import {
   acceptInviteByInviteIdMutation,
@@ -12,8 +11,11 @@ import { useCallback, useEffect } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { redirect, useLoaderData } from 'react-router-dom';
 
-import { authAtom } from '../atoms';
-import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
+import { authAtom } from '../components/atoms';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '../components/hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud';
 
 export const loader: LoaderFunction = async args => {
@@ -56,7 +58,7 @@ export const Component = () => {
   }, [authService]);
 
   const { jumpToSignIn } = useNavigateHelper();
-  const { jumpToSubPath } = useNavigateHelper();
+  const { jumpToPage } = useNavigateHelper();
 
   const setAuthAtom = useSetAtom(authAtom);
   const { inviteInfo } = useLoaderData() as {
@@ -65,12 +67,8 @@ export const Component = () => {
   };
 
   const openWorkspace = useCallback(() => {
-    jumpToSubPath(
-      inviteInfo.workspace.id,
-      WorkspaceSubPath.ALL,
-      RouteLogic.REPLACE
-    );
-  }, [inviteInfo.workspace.id, jumpToSubPath]);
+    jumpToPage(inviteInfo.workspace.id, 'all', RouteLogic.REPLACE);
+  }, [inviteInfo.workspace.id, jumpToPage]);
 
   useEffect(() => {
     if (loginStatus === 'unauthenticated' && !isRevalidating) {

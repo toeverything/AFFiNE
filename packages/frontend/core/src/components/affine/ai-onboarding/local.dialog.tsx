@@ -2,7 +2,7 @@ import { Button, notify } from '@affine/component';
 import {
   RouteLogic,
   useNavigateHelper,
-} from '@affine/core/hooks/use-navigate-helper';
+} from '@affine/core/components/hooks/use-navigate-helper';
 import { AuthService } from '@affine/core/modules/cloud';
 import { useI18n } from '@affine/i18n';
 import { AiIcon } from '@blocksuite/icons/rc';

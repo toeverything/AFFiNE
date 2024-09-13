@@ -16,6 +16,7 @@
     "@affine/graphql": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/templates": "workspace:*",
+    "@affine/track": "workspace:*",
     "@blocksuite/affine-block-surface": "0.17.9",
     "@blocksuite/block-std": "0.17.9",
     "@blocksuite/blocks": "0.17.9",

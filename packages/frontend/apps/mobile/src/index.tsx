@@ -1,6 +1,5 @@
 import './setup';
 
-import { performanceLogger } from '@affine/core/shared';
 import {
   init,
   reactRouterV6BrowserTracingIntegration,
@@ -17,9 +16,7 @@ import {
 
 import { App } from './app';
 
-const performanceMainLogger = performanceLogger.namespace('main');
 function main() {
-  performanceMainLogger.info('setup start');
   if (BUILD_CONFIG.debug || window.SENTRY_RELEASE) {
     // https://docs.sentry.io/platforms/javascript/guides/react/#configure
     init({
@@ -40,15 +37,12 @@ function main() {
       editorVersion: BUILD_CONFIG.editorVersion,
     });
   }
-  performanceMainLogger.info('setup done');
   mountApp();
 }
 
 function mountApp() {
-  performanceMainLogger.info('import app');
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const root = document.getElementById('app')!;
-  performanceMainLogger.info('render app');
   createRoot(root).render(
     <StrictMode>
       <App />

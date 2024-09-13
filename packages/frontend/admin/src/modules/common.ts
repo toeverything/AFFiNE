@@ -1,5 +1,5 @@
-import { useMutateQueryResource } from '@affine/core/hooks/use-mutation';
-import { useQuery } from '@affine/core/hooks/use-query';
+import { useMutateQueryResource } from '@affine/core/components/hooks/use-mutation';
+import { useQuery } from '@affine/core/components/hooks/use-query';
 import type { GetCurrentUserFeaturesQuery } from '@affine/graphql';
 import {
   adminServerConfigQuery,

@@ -1,6 +1,6 @@
 import { MenuItem, MenuSeparator, MenuSub } from '@affine/component';
-import { track } from '@affine/core/mixpanel';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import {
   ExportIcon,
   ExportToHtmlIcon,

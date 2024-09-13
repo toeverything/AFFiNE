@@ -19,19 +19,18 @@ import {
   createFirstAppData,
 } from '../bootstrap/first-app-data';
 import { AppFallback } from '../components/affine/app-container';
+import { useNavigateHelper } from '../components/hooks/use-navigate-helper';
 import { WorkspaceNavigator } from '../components/workspace-selector';
-import { useNavigateHelper } from '../hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud';
-import { WorkspaceSubPath } from '../shared';
 
 export const loader: LoaderFunction = async () => {
   return null;
 };
 
 export const Component = ({
-  defaultIndexRoute = WorkspaceSubPath.ALL,
+  defaultIndexRoute = 'all',
 }: {
-  defaultIndexRoute?: WorkspaceSubPath;
+  defaultIndexRoute?: string;
 }) => {
   // navigating and creating may be slow, to avoid flickering, we show workspace fallback
   const [navigating, setNavigating] = useState(true);
@@ -131,7 +130,7 @@ export const Component = ({
               createdWorkspace.defaultPageId
             );
           } else {
-            openPage(createdWorkspace.meta.id, WorkspaceSubPath.ALL);
+            openPage(createdWorkspace.meta.id, 'all');
           }
         }
       })

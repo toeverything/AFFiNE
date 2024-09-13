@@ -95,6 +95,9 @@
       "path": "./packages/frontend/core"
     },
     {
+      "path": "./packages/frontend/track"
+    },
+    {
       "path": "./packages/frontend/apps/web"
     },
     {

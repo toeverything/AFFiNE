@@ -1,4 +1,4 @@
-import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import { isNewTabTrigger } from '@affine/core/utils';
 import {
   FeatureFlagService,

@@ -6,12 +6,12 @@ import {
 } from '@affine/component/ui/menu';
 import { useFavorite } from '@affine/core/components/blocksuite/block-suite-header/favorite';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
-import { track } from '@affine/core/mixpanel';
 import { EditorService } from '@affine/core/modules/editor';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { EditorOutlinePanel } from '@affine/core/pages/workspace/detail-page/tabs/outline';
 import { preventDefault } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import {
   EdgelessIcon,
   InformationIcon,

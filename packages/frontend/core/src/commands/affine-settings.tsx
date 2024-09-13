@@ -1,11 +1,11 @@
 import type { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { SettingsIcon } from '@blocksuite/icons/rc';
 import { appSettingAtom } from '@toeverything/infra';
 import type { createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
-import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
-import { track } from '../mixpanel';
+import type { useLanguageHelper } from '../components/hooks/affine/use-language-helper';
 import type { EditorSettingService } from '../modules/editor-settting';
 import { registerAffineCommand } from './registry';
 

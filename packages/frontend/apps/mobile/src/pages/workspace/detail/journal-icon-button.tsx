@@ -1,5 +1,5 @@
 import { IconButton, MobileMenu } from '@affine/component';
-import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { EditorJournalPanel } from '@affine/core/pages/workspace/detail-page/tabs/journal';
 import { TodayIcon, TomorrowIcon, YesterdayIcon } from '@blocksuite/icons/rc';
 import { useService, WorkspaceService } from '@toeverything/infra';

@@ -1,11 +1,11 @@
 import { IconButton } from '@affine/component';
 import { useEditCollectionName } from '@affine/core/components/page-list';
 import { createEmptyCollection } from '@affine/core/components/page-list/use-collection-manager';
-import { track } from '@affine/core/mixpanel';
 import { CollectionService } from '@affine/core/modules/collection';
 import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { nanoid } from 'nanoid';

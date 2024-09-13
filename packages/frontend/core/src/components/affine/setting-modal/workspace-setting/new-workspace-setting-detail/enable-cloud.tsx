@@ -1,6 +1,6 @@
 import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
-import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
+import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
@@ -13,7 +13,7 @@ import {
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';
 
-import { openSettingModalAtom } from '../../../../../atoms';
+import { openSettingModalAtom } from '../../../../atoms';
 
 export interface PublishPanelProps {
   workspace: Workspace | null;

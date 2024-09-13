@@ -1,8 +1,8 @@
 import { FlexWrapper, Input, notify, Wrapper } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import { Upload } from '@affine/core/components/pure/file-upload';
-import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { validateAndReduceImage } from '@affine/core/utils/reduce-image';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';

@@ -15,9 +15,8 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { matchPath, useLocation, useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
-import { WorkspaceLayout } from '../../layouts/workspace-layout';
+import { WorkspaceLayout } from '../../components/layouts/workspace-layout';
 import { WorkbenchRoot } from '../../modules/workbench';
-import { performanceRenderLogger } from '../../shared';
 import { PageNotFound } from '../404';
 import { SharePage } from './share/share-page';
 
@@ -37,7 +36,6 @@ declare global {
 }
 
 export const Component = (): ReactElement => {
-  performanceRenderLogger.debug('WorkspaceLayout');
   const { workspacesService } = useServices({
     WorkspacesService,
   });

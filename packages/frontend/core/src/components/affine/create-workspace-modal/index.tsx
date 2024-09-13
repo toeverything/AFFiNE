@@ -1,13 +1,13 @@
 import { Avatar, Input, Switch, toast } from '@affine/component';
 import type { ConfirmModalProps } from '@affine/component/ui/modal';
 import { ConfirmModal, Modal } from '@affine/component/ui/modal';
-import { authAtom } from '@affine/core/atoms';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
+import { authAtom } from '@affine/core/components/atoms';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import {
   DocsService,
   useLiveData,

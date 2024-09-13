@@ -1,4 +1,4 @@
-import { useAppUpdater } from '@affine/core/hooks/use-app-updater';
+import { useAppUpdater } from '@affine/core/components/hooks/use-app-updater';
 import { Suspense } from 'react';
 
 import { AppUpdaterButton } from '../app-sidebar';

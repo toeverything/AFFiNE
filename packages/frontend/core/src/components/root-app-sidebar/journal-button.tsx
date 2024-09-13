@@ -1,8 +1,8 @@
-import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import {
   useJournalInfoHelper,
   useJournalRouteHelper,
-} from '@affine/core/hooks/use-journal';
+} from '@affine/core/components/hooks/use-journal';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { isNewTabTrigger } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';

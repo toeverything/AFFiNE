@@ -11,7 +11,7 @@ import { windowFrameStyleOptions } from '@toeverything/infra';
 import { useTheme } from 'next-themes';
 import { useCallback, useMemo } from 'react';
 
-import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
+import { useAppSettingHelper } from '../../../../../components/hooks/affine/use-app-setting-helper';
 import { LanguageMenu } from '../../../language-menu';
 import { Page } from '../editor/page';
 import { DateFormatSetting } from './date-format-setting';

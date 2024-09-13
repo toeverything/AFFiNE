@@ -6,7 +6,7 @@ import {
   ModalHeader,
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import {
   sendChangeEmailMutation,
   sendChangePasswordEmailMutation,
@@ -17,7 +17,7 @@ import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
-import { useMutation } from '../../../hooks/use-mutation';
+import { useMutation } from '../../../components/hooks/use-mutation';
 import { ServerConfigService } from '../../../modules/cloud';
 import type { AuthPanelProps } from './index';
 

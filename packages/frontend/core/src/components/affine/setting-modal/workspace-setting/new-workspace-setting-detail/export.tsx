@@ -1,8 +1,8 @@
 import { notify } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { Button } from '@affine/component/ui/button';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useSystemOnline } from '@affine/core/hooks/use-system-online';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useSystemOnline } from '@affine/core/components/hooks/use-system-online';
 import { apis } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';

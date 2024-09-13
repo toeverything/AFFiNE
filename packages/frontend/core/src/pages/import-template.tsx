@@ -2,7 +2,7 @@ import { useService } from '@toeverything/infra';
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import { useNavigateHelper } from '../components/hooks/use-navigate-helper';
 import { ImportTemplateDialogService } from '../modules/import-template';
 
 export const Component = () => {

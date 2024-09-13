@@ -1,0 +1,15 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "lib",
+    "typeRoots": ["../../../node_modules", "../../../node_modules/@types"],
+    "types": ["affine__env"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"],
+  "exclude": ["node_modules"],
+  "references": [
+    {
+      "path": "../../common/debug"
+    }
+  ]
+}

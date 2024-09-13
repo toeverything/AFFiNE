@@ -10,8 +10,8 @@ import {
 import { useSetAtom } from 'jotai/react';
 import { useCallback, useState } from 'react';
 
-import { openSettingModalAtom } from '../../../atoms';
 import type { SettingProps } from '../../affine/setting-modal';
+import { openSettingModalAtom } from '../../atoms';
 import { ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import {
   StyledAnimateWrapper,

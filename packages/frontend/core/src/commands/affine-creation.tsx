@@ -1,9 +1,9 @@
 import type { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import type { DocMode } from '@blocksuite/blocks';
 import { ImportIcon, PlusIcon } from '@blocksuite/icons/rc';
 
 import type { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
-import { track } from '../mixpanel';
 import type { CreateWorkspaceDialogService } from '../modules/create-workspace';
 import { registerAffineCommand } from './registry';
 

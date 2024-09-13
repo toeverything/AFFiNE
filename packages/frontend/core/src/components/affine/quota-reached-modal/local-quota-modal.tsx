@@ -1,5 +1,5 @@
 import { ConfirmModal } from '@affine/component/ui/modal';
-import { openQuotaModalAtom } from '@affine/core/atoms';
+import { openQuotaModalAtom } from '@affine/core/components/atoms';
 import { useI18n } from '@affine/i18n';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useAtom } from 'jotai';

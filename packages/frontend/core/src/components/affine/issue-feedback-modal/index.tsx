@@ -1,5 +1,5 @@
 import { OverlayModal } from '@affine/component';
-import { openIssueFeedbackModalAtom } from '@affine/core/atoms';
+import { openIssueFeedbackModalAtom } from '@affine/core/components/atoms';
 import { useI18n } from '@affine/i18n';
 import { useAtom } from 'jotai';
 

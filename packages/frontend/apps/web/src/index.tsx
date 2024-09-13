@@ -1,7 +1,5 @@
 import './setup';
 
-import { performanceLogger } from '@affine/core/shared';
-import { appInfo } from '@affine/electron-api';
 import {
   init,
   reactRouterV6BrowserTracingIntegration,
@@ -18,46 +16,35 @@ import {
 
 import { App } from './app';
 
-const performanceMainLogger = performanceLogger.namespace('main');
 function main() {
-  performanceMainLogger.info('start');
-
   // skip bootstrap setup for desktop onboarding
-  if (BUILD_CONFIG.isElectron && appInfo?.windowName === 'onboarding') {
-    performanceMainLogger.info('skip setup');
-  } else {
-    performanceMainLogger.info('setup start');
-    if (BUILD_CONFIG.debug || window.SENTRY_RELEASE) {
-      // https://docs.sentry.io/platforms/javascript/guides/react/#configure
-      init({
-        dsn: process.env.SENTRY_DSN,
-        environment: process.env.BUILD_TYPE ?? 'development',
-        integrations: [
-          reactRouterV6BrowserTracingIntegration({
-            useEffect,
-            useLocation,
-            useNavigationType,
-            createRoutesFromChildren,
-            matchRoutes,
-          }),
-        ],
-      });
-      setTags({
-        appVersion: BUILD_CONFIG.appVersion,
-        editorVersion: BUILD_CONFIG.editorVersion,
-      });
-    }
-    performanceMainLogger.info('setup done');
+  if (BUILD_CONFIG.debug || window.SENTRY_RELEASE) {
+    // https://docs.sentry.io/platforms/javascript/guides/react/#configure
+    init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.BUILD_TYPE ?? 'development',
+      integrations: [
+        reactRouterV6BrowserTracingIntegration({
+          useEffect,
+          useLocation,
+          useNavigationType,
+          createRoutesFromChildren,
+          matchRoutes,
+        }),
+      ],
+    });
+    setTags({
+      appVersion: BUILD_CONFIG.appVersion,
+      editorVersion: BUILD_CONFIG.editorVersion,
+    });
   }
 
   mountApp();
 }
 
 function mountApp() {
-  performanceMainLogger.info('import app');
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const root = document.getElementById('app')!;
-  performanceMainLogger.info('render app');
   createRoot(root).render(
     <StrictMode>
       <App />

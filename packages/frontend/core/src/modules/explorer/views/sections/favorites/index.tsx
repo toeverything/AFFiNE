@@ -4,7 +4,6 @@ import {
   useDropTarget,
 } from '@affine/component';
 import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
-import { track } from '@affine/core/mixpanel';
 import {
   DropEffect,
   ExplorerTreeRoot,
@@ -18,6 +17,7 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { isNewTabTrigger } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import {
   useLiveData,

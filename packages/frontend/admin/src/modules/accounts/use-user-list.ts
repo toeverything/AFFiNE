@@ -1,4 +1,4 @@
-import { useQuery } from '@affine/core/hooks/use-query';
+import { useQuery } from '@affine/core/components/hooks/use-query';
 import { listUsersQuery } from '@affine/graphql';
 import { useState } from 'react';
 

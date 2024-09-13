@@ -1,12 +1,12 @@
-import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
-import { useJournalHelper } from '@affine/core/hooks/use-journal';
-import { track } from '@affine/core/mixpanel';
+import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
+import { useJournalHelper } from '@affine/core/components/hooks/use-journal';
 import {
   PeekViewService,
   useInsidePeekView,
 } from '@affine/core/modules/peek-view';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import type { DocMode } from '@blocksuite/blocks';
 import {
   BlockLinkIcon,

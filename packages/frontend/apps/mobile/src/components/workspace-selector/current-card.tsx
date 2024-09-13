@@ -1,5 +1,5 @@
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { ArrowDownSmallIcon } from '@blocksuite/icons/rc';
 import { useService, WorkspaceService } from '@toeverything/infra';

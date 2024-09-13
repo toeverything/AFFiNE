@@ -1,6 +1,5 @@
-import { openSettingModalAtom } from '@affine/core/atoms';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import {
   ExplorerCollections,
   ExplorerFavorites,
@@ -12,6 +11,7 @@ import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/service
 import { isNewTabTrigger } from '@affine/core/utils';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import {
   AllDocsIcon,
   GithubIcon,

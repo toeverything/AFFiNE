@@ -3,7 +3,7 @@ import { DoneIcon } from '@blocksuite/icons/rc';
 import type { ReactElement } from 'react';
 import { memo } from 'react';
 
-import { useLanguageHelper } from '../../../hooks/affine/use-language-helper';
+import { useLanguageHelper } from '../../../components/hooks/affine/use-language-helper';
 import * as styles from './style.css';
 
 // Fixme: keyboard focus should be supported by Menu component

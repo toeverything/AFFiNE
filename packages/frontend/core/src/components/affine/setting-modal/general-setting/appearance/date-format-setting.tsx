@@ -4,7 +4,7 @@ import { dateFormatOptions } from '@toeverything/infra';
 import dayjs from 'dayjs';
 import { useCallback } from 'react';
 
-import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
+import { useAppSettingHelper } from '../../../../../components/hooks/affine/use-app-setting-helper';
 
 interface DateFormatMenuContentProps {
   currentOption: DateFormats;

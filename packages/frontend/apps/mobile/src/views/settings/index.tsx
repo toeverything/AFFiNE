@@ -1,5 +1,5 @@
 import { Modal } from '@affine/component';
-import { openSettingModalAtom } from '@affine/core/atoms';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
 import { AuthService } from '@affine/core/modules/cloud';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';

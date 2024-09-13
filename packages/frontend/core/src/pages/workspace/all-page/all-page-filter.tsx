@@ -4,11 +4,11 @@ import { useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { filterContainerStyle } from '../../../components/filter-container.css';
+import { useNavigateHelper } from '../../../components/hooks/use-navigate-helper';
 import {
   FilterList,
   SaveAsCollectionButton,
 } from '../../../components/page-list';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 
 export const FilterContainer = ({
   filters,

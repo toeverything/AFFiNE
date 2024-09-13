@@ -1,8 +1,8 @@
+import { useBlockSuiteDocMeta } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import {
   TagPageListHeader,
   VirtualizedPageList,
 } from '@affine/core/components/page-list';
-import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { TagService } from '@affine/core/modules/tag';
 import {
   useIsActiveView,

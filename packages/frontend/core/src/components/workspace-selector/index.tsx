@@ -1,8 +1,7 @@
 import { Menu, type MenuProps } from '@affine/component';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { track } from '@affine/core/mixpanel';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import type { CreateWorkspaceCallbackPayload } from '@affine/core/modules/create-workspace';
-import { WorkspaceSubPath } from '@affine/core/shared';
+import { track } from '@affine/track';
 import {
   GlobalContextService,
   useLiveData,
@@ -122,23 +121,23 @@ export const WorkspaceNavigator = ({
   onCreatedWorkspace,
   ...props
 }: WorkspaceSelectorProps) => {
-  const { jumpToSubPath, jumpToPage } = useNavigateHelper();
+  const { jumpToPage } = useNavigateHelper();
 
   const handleClickWorkspace = useCallback(
     (workspaceMetadata: WorkspaceMetadata) => {
       onSelectWorkspace?.(workspaceMetadata);
       if (document.startViewTransition) {
         document.startViewTransition(() => {
-          jumpToSubPath(workspaceMetadata.id, WorkspaceSubPath.ALL);
+          jumpToPage(workspaceMetadata.id, 'all');
           return new Promise(resolve =>
             setTimeout(resolve, 150)
           ); /* start transition after 150ms */
         });
       } else {
-        jumpToSubPath(workspaceMetadata.id, WorkspaceSubPath.ALL);
+        jumpToPage(workspaceMetadata.id, 'all');
       }
     },
-    [onSelectWorkspace, jumpToSubPath]
+    [onSelectWorkspace, jumpToPage]
   );
   const handleCreatedWorkspace = useCallback(
     (payload: CreateWorkspaceCallbackPayload) => {
@@ -148,7 +147,7 @@ export const WorkspaceNavigator = ({
           if (payload.defaultDocId) {
             jumpToPage(payload.meta.id, payload.defaultDocId);
           } else {
-            jumpToSubPath(payload.meta.id, WorkspaceSubPath.ALL);
+            jumpToPage(payload.meta.id, 'all');
           }
           return new Promise(resolve =>
             setTimeout(resolve, 150)
@@ -158,11 +157,11 @@ export const WorkspaceNavigator = ({
         if (payload.defaultDocId) {
           jumpToPage(payload.meta.id, payload.defaultDocId);
         } else {
-          jumpToSubPath(payload.meta.id, WorkspaceSubPath.ALL);
+          jumpToPage(payload.meta.id, 'all');
         }
       }
     },
-    [jumpToPage, jumpToSubPath, onCreatedWorkspace]
+    [jumpToPage, onCreatedWorkspace]
   );
   return (
     <WorkspaceSelector

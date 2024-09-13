@@ -3,7 +3,7 @@ import { WeekDatePicker } from '@affine/component';
 import {
   useJournalInfoHelper,
   useJournalRouteHelper,
-} from '@affine/core/hooks/use-journal';
+} from '@affine/core/components/hooks/use-journal';
 import type { Doc, DocCollection } from '@blocksuite/store';
 import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';

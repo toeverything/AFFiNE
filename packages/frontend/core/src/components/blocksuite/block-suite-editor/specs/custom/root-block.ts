@@ -2,8 +2,8 @@ import {
   AIEdgelessRootBlockSpec,
   AIPageRootBlockSpec,
 } from '@affine/core/blocksuite/presets/ai';
-import { mixpanel } from '@affine/core/mixpanel';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
+import { mixpanel } from '@affine/track';
 import { ConfigExtension, type ExtensionType } from '@blocksuite/block-std';
 import {
   EdgelessRootBlockSpec,

@@ -1,4 +1,4 @@
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
+import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import {
   DocsService,
   GlobalContextService,

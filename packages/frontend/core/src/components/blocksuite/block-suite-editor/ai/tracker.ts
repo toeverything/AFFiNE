@@ -1,5 +1,5 @@
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
-import { mixpanel, track } from '@affine/core/mixpanel';
+import { mixpanel, track } from '@affine/track';
 import type { EditorHost } from '@blocksuite/block-std';
 import type { BlockModel } from '@blocksuite/store';
 import { lowerCase, omit } from 'lodash-es';

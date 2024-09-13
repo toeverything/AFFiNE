@@ -50,6 +50,7 @@ const allPackages = [
   'packages/frontend/i18n',
   'packages/frontend/native',
   'packages/frontend/templates',
+  'packages/frontend/track',
   'packages/common/debug',
   'packages/common/env',
   'packages/common/infra',

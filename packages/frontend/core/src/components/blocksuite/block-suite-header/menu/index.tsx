@@ -5,27 +5,27 @@ import {
   MenuSeparator,
   MenuSub,
 } from '@affine/component/ui/menu';
+import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
+import { ShareMenuContent } from '@affine/core/components/affine/share-page-modal/share-menu';
 import {
   openHistoryTipsModalAtom,
   openInfoModalAtom,
-} from '@affine/core/atoms';
-import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
-import { ShareMenuContent } from '@affine/core/components/affine/share-page-modal/share-menu';
+} from '@affine/core/components/atoms';
+import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
+import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
+import { useExportPage } from '@affine/core/components/hooks/affine/use-export-page';
+import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import { Export, MoveToTrash } from '@affine/core/components/page-list';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
-import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
-import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
-import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
-import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
-import { track } from '@affine/core/mixpanel';
 import { EditorService } from '@affine/core/modules/editor';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { useDetailPageHeaderResponsive } from '@affine/core/pages/workspace/detail-page/use-header-responsive';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import {
   DuplicateIcon,
   EdgelessIcon,

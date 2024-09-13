@@ -413,6 +413,7 @@ __metadata:
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/templates": "workspace:*"
+    "@affine/track": "workspace:*"
     "@blocksuite/affine-block-surface": "npm:0.17.9"
     "@blocksuite/block-std": "npm:0.17.9"
     "@blocksuite/blocks": "npm:0.17.9"
@@ -673,6 +674,7 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/graphql": "workspace:*"
     "@affine/i18n": "workspace:*"
+    "@affine/track": "workspace:*"
     "@blocksuite/blocks": "npm:0.17.9"
     "@blocksuite/icons": "npm:^2.1.66"
     "@radix-ui/react-collapsible": "npm:^1.0.3"
@@ -911,6 +913,16 @@ __metadata:
   dependencies:
     glob: "npm:^11.0.0"
     jszip: "npm:^3.10.1"
+  languageName: unknown
+  linkType: soft
+
+"@affine/track@workspace:*, @affine/track@workspace:packages/frontend/track":
+  version: 0.0.0-use.local
+  resolution: "@affine/track@workspace:packages/frontend/track"
+  dependencies:
+    "@affine/debug": "workspace:*"
+    mixpanel-browser: "npm:^2.49.0"
+    vitest: "npm:^2.0.5"
   languageName: unknown
   linkType: soft
 
@@ -29425,9 +29437,9 @@ __metadata:
   linkType: hard
 
 "path-to-regexp@npm:^6.2.0":
-  version: 6.3.0
-  resolution: "path-to-regexp@npm:6.3.0"
-  checksum: 10/6822f686f01556d99538b350722ef761541ec0ce95ca40ce4c29e20a5b492fe8361961f57993c71b2418de12e604478dcf7c430de34b2c31a688363a7a944d9c
+  version: 6.2.2
+  resolution: "path-to-regexp@npm:6.2.2"
+  checksum: 10/f7d11c1a9e02576ce0294f4efdc523c11b73894947afdf7b23a0d0f7c6465d7a7772166e770ddf1495a8017cc0ee99e3e8a15ed7302b6b948b89a6dd4eea895e
   languageName: node
   linkType: hard
 
@@ -35654,7 +35666,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vitest@npm:2.1.0":
+"vitest@npm:2.1.0, vitest@npm:^2.0.5":
   version: 2.1.0
   resolution: "vitest@npm:2.1.0"
   dependencies:

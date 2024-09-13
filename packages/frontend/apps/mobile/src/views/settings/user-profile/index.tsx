@@ -1,6 +1,6 @@
 import { Avatar } from '@affine/component';
-import { authAtom } from '@affine/core/atoms';
-import { useSignOut } from '@affine/core/hooks/affine/use-sign-out';
+import { authAtom } from '@affine/core/components/atoms';
+import { useSignOut } from '@affine/core/components/hooks/affine/use-sign-out';
 import { AuthService } from '@affine/core/modules/cloud';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import {

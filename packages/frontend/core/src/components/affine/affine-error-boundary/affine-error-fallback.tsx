@@ -10,17 +10,12 @@ import { DumpInfo } from './error-basic/info-logger';
 import { AnyErrorFallback } from './error-fallbacks/any-error-fallback';
 import { NoPageRootFallback } from './error-fallbacks/no-page-root-fallback';
 import { PageNotFoundDetail } from './error-fallbacks/page-not-found-fallback';
-import { RecoverableErrorFallback } from './error-fallbacks/recoverable-error-fallback';
 
 /**
  * Register all fallback components here.
  * If have new one just add it to the set.
  */
-const fallbacks = new Set([
-  PageNotFoundDetail,
-  RecoverableErrorFallback,
-  NoPageRootFallback,
-]);
+const fallbacks = new Set([PageNotFoundDetail, NoPageRootFallback]);
 
 function getErrorFallbackComponent(error: any): FC<FallbackProps> {
   for (const Component of fallbacks) {

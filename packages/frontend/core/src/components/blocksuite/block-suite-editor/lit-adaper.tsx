@@ -3,7 +3,7 @@ import {
   useConfirmModal,
   useLitPortalFactory,
 } from '@affine/component';
-import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { EditorService } from '@affine/core/modules/editor';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { PeekViewService } from '@affine/core/modules/peek-view';

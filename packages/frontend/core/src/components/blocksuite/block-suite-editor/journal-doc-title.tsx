@@ -1,4 +1,4 @@
-import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { useI18n } from '@affine/i18n';
 import type { Doc } from '@blocksuite/store';
 

@@ -5,10 +5,9 @@ import { DeleteIcon, ResetIcon } from '@blocksuite/icons/rc';
 import { DocService, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
-import { useAppSettingHelper } from '../../../hooks/affine/use-app-setting-helper';
-import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { WorkspaceSubPath } from '../../../shared';
+import { useAppSettingHelper } from '../../../components/hooks/affine/use-app-setting-helper';
+import { useBlockSuiteMetaHelper } from '../../../components/hooks/affine/use-block-suite-meta-helper';
+import { useNavigateHelper } from '../../../components/hooks/use-navigate-helper';
 import { toast } from '../../../utils';
 import * as styles from './styles.css';
 
@@ -18,7 +17,7 @@ export const TrashPageFooter = () => {
   const doc = useService(DocService).doc;
   const t = useI18n();
   const { appSettings } = useAppSettingHelper();
-  const { jumpToSubPath } = useNavigateHelper();
+  const { jumpToPage } = useNavigateHelper();
   const { restoreFromTrash } = useBlockSuiteMetaHelper();
   const [open, setOpen] = useState(false);
   const hintText = t['com.affine.cmdk.affine.editor.trash-footer-hint']();
@@ -33,10 +32,10 @@ export const TrashPageFooter = () => {
   }, [doc.id, doc.meta$.value.title, restoreFromTrash, t]);
 
   const onConfirmDelete = useCallback(() => {
-    jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
+    jumpToPage(workspace.id, 'all');
     docCollection.removeDoc(doc.id);
     toast(t['com.affine.toastMessage.permanentlyDeleted']());
-  }, [jumpToSubPath, workspace.id, docCollection, doc.id, t]);
+  }, [jumpToPage, workspace.id, docCollection, doc.id, t]);
 
   const onDelete = useCallback(() => {
     setOpen(true);

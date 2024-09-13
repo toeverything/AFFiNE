@@ -1,5 +1,5 @@
 import { ResizePanel } from '@affine/component/resize-panel';
-import { rightSidebarWidthAtom } from '@affine/core/atoms';
+import { rightSidebarWidthAtom } from '@affine/core/components/atoms';
 import { workspaceRoutes } from '@affine/core/workspace-router';
 import {
   appSettingAtom,

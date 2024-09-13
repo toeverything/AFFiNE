@@ -1,7 +1,7 @@
 import { Skeleton } from '@affine/component';
 import { ResizePanel } from '@affine/component/resize-panel';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
-import { NavigateContext } from '@affine/core/hooks/use-navigate-helper';
+import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
+import { NavigateContext } from '@affine/core/components/hooks/use-navigate-helper';
 import { useServiceOptional, WorkspaceService } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
 import { debounce } from 'lodash-es';

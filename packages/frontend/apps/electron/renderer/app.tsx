@@ -5,6 +5,7 @@ import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
+import { Telemetry } from '@affine/core/components/telemetry';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
 import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
@@ -16,11 +17,6 @@ import {
   configureSqliteWorkspaceEngineStorageProvider,
 } from '@affine/core/modules/workspace-engine';
 import { router } from '@affine/core/router';
-import {
-  performanceLogger,
-  performanceRenderLogger,
-} from '@affine/core/shared';
-import { Telemetry } from '@affine/core/telemetry';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
@@ -51,7 +47,6 @@ if (
   throw new Error('Wrong distribution');
 }
 
-const performanceI18nLogger = performanceLogger.namespace('i18n');
 const cache = createEmotionCache();
 
 const future = {
@@ -59,14 +54,10 @@ const future = {
 } as const;
 
 async function loadLanguage() {
-  performanceI18nLogger.info('start');
-
   const i18n = createI18n();
   document.documentElement.lang = i18n.language;
 
-  performanceI18nLogger.info('set up');
   await setUpLanguage(i18n);
-  performanceI18nLogger.info('done');
 }
 
 let languageLoadingPromise: Promise<void> | null = null;
@@ -88,8 +79,6 @@ window.addEventListener('focus', () => {
 frameworkProvider.get(LifecycleService).applicationStart();
 
 export function App() {
-  performanceRenderLogger.debug('App');
-
   if (!languageLoadingPromise) {
     languageLoadingPromise = loadLanguage().catch(console.error);
   }

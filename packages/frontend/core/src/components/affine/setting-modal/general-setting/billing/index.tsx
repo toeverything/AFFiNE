@@ -7,9 +7,8 @@ import {
 } from '@affine/component/setting-components';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
-import { getUpgradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
+import { getUpgradeQuestionnaireLink } from '@affine/core/components/hooks/affine/use-subscription-notify';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import {
   AuthService,
   InvoicesService,
@@ -25,18 +24,19 @@ import {
   UserFriendlyError,
 } from '@affine/graphql';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
+import { useMutation } from '../../../../../components/hooks/use-mutation';
+import { popupWindow } from '../../../../../utils';
 import {
   openSettingModalAtom,
   type PlansScrollAnchor,
-} from '../../../../../atoms';
-import { useMutation } from '../../../../../hooks/use-mutation';
-import { popupWindow } from '../../../../../utils';
+} from '../../../../atoms';
 import { CancelAction, ResumeAction } from '../plans/actions';
 import { AICancel, AIResume, AISubscribe } from '../plans/ai/actions';
 import { BelieverCard } from '../plans/lifetime/believer-card';

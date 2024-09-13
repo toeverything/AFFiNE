@@ -8,7 +8,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
-import { NavigateContext } from './hooks/use-navigate-helper';
+import { NavigateContext } from './components/hooks/use-navigate-helper';
 import { RootWrapper } from './pages/root';
 
 export function RootRouter() {

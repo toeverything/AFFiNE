@@ -1,14 +1,17 @@
 import { Button, Loading } from '@affine/component';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
+import { mixpanel, track } from '@affine/track';
 import { effect, fromPromise, useServices } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EMPTY, mergeMap, switchMap } from 'rxjs';
 
-import { generateSubscriptionCallbackLink } from '../hooks/affine/use-subscription-notify';
-import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
-import { mixpanel, track } from '../mixpanel';
+import { generateSubscriptionCallbackLink } from '../components/hooks/affine/use-subscription-notify';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '../components/hooks/use-navigate-helper';
 import { AuthService, SubscriptionService } from '../modules/cloud';
 import { container } from './subscribe.css';
 

@@ -2,11 +2,11 @@ import { notify } from '@affine/component';
 import {
   generateUrl,
   type UseSharingUrl,
-} from '@affine/core/hooks/affine/use-share-url';
-import { track } from '@affine/core/mixpanel';
+} from '@affine/core/components/hooks/affine/use-share-url';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
 import { EditorService } from '@affine/core/modules/editor';
 import { I18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import type { MenuItemGroup } from '@blocksuite/affine-components/toolbar';
 import type {
   GfxBlockElementModel,

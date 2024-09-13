@@ -1,5 +1,5 @@
 import { IconButton, Menu, toast } from '@affine/component';
-import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { ShareDocsListService } from '@affine/core/modules/share-doc';
 import { PublicPageMode } from '@affine/graphql';

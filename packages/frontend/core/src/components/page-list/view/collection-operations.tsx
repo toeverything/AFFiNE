@@ -1,6 +1,6 @@
 import type { MenuItemProps } from '@affine/component';
 import { Menu, MenuItem } from '@affine/component';
-import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
+import { useDeleteCollectionInfo } from '@affine/core/components/hooks/affine/use-delete-collection-info';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { Collection } from '@affine/env/filter';

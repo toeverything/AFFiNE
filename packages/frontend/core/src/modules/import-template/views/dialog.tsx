@@ -1,8 +1,8 @@
 import { Button, Modal } from '@affine/component';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
+import { useWorkspaceName } from '@affine/core/components/hooks/use-workspace-info';
 import { WorkspaceSelector } from '@affine/core/components/workspace-selector';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { useWorkspaceName } from '@affine/core/hooks/use-workspace-info';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { AllDocsIcon } from '@blocksuite/icons/rc';

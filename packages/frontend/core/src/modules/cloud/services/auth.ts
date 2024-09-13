@@ -1,6 +1,6 @@
-import { track } from '@affine/core/mixpanel';
 import { appInfo } from '@affine/electron-api';
 import type { OAuthProviderType } from '@affine/graphql';
+import { track } from '@affine/track';
 import {
   ApplicationFocused,
   ApplicationStarted,

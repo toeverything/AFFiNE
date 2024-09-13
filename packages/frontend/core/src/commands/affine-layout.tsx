@@ -1,9 +1,9 @@
 import type { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { SidebarIcon } from '@blocksuite/icons/rc';
 import type { createStore } from 'jotai';
 
 import { appSidebarOpenAtom } from '../components/app-sidebar';
-import { track } from '../mixpanel';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineLayoutCommands({

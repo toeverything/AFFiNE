@@ -1,9 +1,9 @@
 import type { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { ContactWithUsIcon, NewIcon } from '@blocksuite/icons/rc';
 import type { createStore } from 'jotai';
 
-import { openSettingModalAtom } from '../atoms';
-import { track } from '../mixpanel';
+import { openSettingModalAtom } from '../components/atoms';
 import { popupWindow } from '../utils';
 import { registerAffineCommand } from './registry';
 

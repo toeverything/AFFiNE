@@ -1,5 +1,5 @@
 import { Button } from '@affine/component';
-import { useJournalRouteHelper } from '@affine/core/hooks/use-journal';
+import { useJournalRouteHelper } from '@affine/core/components/hooks/use-journal';
 import { useI18n } from '@affine/i18n';
 import type { DocCollection } from '@blocksuite/store';
 import { useCallback } from 'react';

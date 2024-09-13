@@ -1,6 +1,6 @@
 import { Button, Checkbox, Loading, Switch, Tooltip } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useI18n } from '@affine/i18n';
 import {
   ArrowRightSmallIcon,

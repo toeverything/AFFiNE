@@ -7,7 +7,10 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AuthPanel } from '../../components/affine/auth';
-import { RouteLogic, useNavigateHelper } from '../../hooks/use-navigate-helper';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '../../components/hooks/use-navigate-helper';
 
 export const SignIn = () => {
   const session = useService(AuthService).session;

@@ -1,5 +1,5 @@
 import { Button } from '@affine/component/ui/button';
-import { authAtom } from '@affine/core/atoms';
+import { authAtom } from '@affine/core/components/atoms';
 import { useI18n } from '@affine/i18n';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';

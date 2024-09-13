@@ -5,7 +5,7 @@ import { Modal } from '@affine/component/ui/modal';
 import {
   openIssueFeedbackModalAtom,
   openStarAFFiNEModalAtom,
-} from '@affine/core/atoms';
+} from '@affine/core/components/atoms';
 import { AuthService } from '@affine/core/modules/cloud';
 import { Trans } from '@affine/i18n';
 import { ContactWithUsIcon } from '@blocksuite/icons/rc';

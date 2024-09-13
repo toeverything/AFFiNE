@@ -1,4 +1,4 @@
-import { mixpanel } from '@affine/core/mixpanel';
+import { mixpanel } from '@affine/track';
 import { createEvent, Service } from '@toeverything/infra';
 import { combineLatest, distinctUntilChanged, map, skip } from 'rxjs';
 

@@ -5,9 +5,9 @@ import { useLiveData, useService, type Workspace } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
-import { authAtom } from '../atoms';
-import { useEnableCloud } from '../hooks/affine/use-enable-cloud';
+import { useEnableCloud } from '../components/hooks/affine/use-enable-cloud';
 import { AuthService } from '../modules/cloud';
+import { authAtom } from './atoms';
 
 const minimumChromeVersion = 106;
 

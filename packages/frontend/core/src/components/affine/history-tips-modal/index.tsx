@@ -1,6 +1,6 @@
 import { OverlayModal } from '@affine/component';
-import { openHistoryTipsModalAtom } from '@affine/core/atoms';
-import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
+import { openHistoryTipsModalAtom } from '@affine/core/components/atoms';
+import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { useI18n } from '@affine/i18n';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useAtom } from 'jotai';

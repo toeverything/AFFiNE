@@ -1,12 +1,14 @@
-import { WorkspaceSubPath } from '@affine/core/shared';
 import type { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
 import type { DocCollection } from '@blocksuite/store';
 import type { createStore } from 'jotai';
 
-import { openSettingModalAtom, openWorkspaceListModalAtom } from '../atoms';
-import type { useNavigateHelper } from '../hooks/use-navigate-helper';
-import { track } from '../mixpanel';
+import {
+  openSettingModalAtom,
+  openWorkspaceListModalAtom,
+} from '../components/atoms';
+import type { useNavigateHelper } from '../components/hooks/use-navigate-helper';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineNavigationCommands({
@@ -32,7 +34,7 @@ export function registerAffineNavigationCommands({
           to: 'allDocs',
         });
 
-        navigationHelper.jumpToSubPath(docCollection.id, WorkspaceSubPath.ALL);
+        navigationHelper.jumpToPage(docCollection.id, 'all');
       },
     })
   );
@@ -129,10 +131,7 @@ export function registerAffineNavigationCommands({
           to: 'trash',
         });
 
-        navigationHelper.jumpToSubPath(
-          docCollection.id,
-          WorkspaceSubPath.TRASH
-        );
+        navigationHelper.jumpToPage(docCollection.id, 'trash');
       },
     })
   );

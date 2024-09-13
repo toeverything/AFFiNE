@@ -1,5 +1,5 @@
 import { OverlayModal } from '@affine/component';
-import { openStarAFFiNEModalAtom } from '@affine/core/atoms';
+import { openStarAFFiNEModalAtom } from '@affine/core/components/atoms';
 import { useI18n } from '@affine/i18n';
 import { useAtom } from 'jotai';
 

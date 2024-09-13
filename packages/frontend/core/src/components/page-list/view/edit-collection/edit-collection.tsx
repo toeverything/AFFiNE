@@ -1,5 +1,5 @@
 import { Button, Modal, RadioGroup } from '@affine/component';
-import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
+import { useAllPageListConfig } from '@affine/core/components/hooks/affine/use-all-page-list-config';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import type { DocCollection, DocMeta } from '@blocksuite/store';

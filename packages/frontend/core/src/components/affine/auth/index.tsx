@@ -1,7 +1,7 @@
 import { notify } from '@affine/component';
 import { AuthModal as AuthModalBase } from '@affine/component/auth-components';
-import { authAtom, type AuthAtomData } from '@affine/core/atoms';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { authAtom, type AuthAtomData } from '@affine/core/components/atoms';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AuthService } from '@affine/core/modules/cloud';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';

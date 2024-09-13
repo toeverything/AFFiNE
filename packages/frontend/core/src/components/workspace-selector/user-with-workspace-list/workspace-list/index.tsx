@@ -1,7 +1,7 @@
 import { ScrollableContainer } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
-import { openSettingModalAtom } from '@affine/core/atoms';
-import { useEnableCloud } from '@affine/core/hooks/affine/use-enable-cloud';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
+import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';

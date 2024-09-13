@@ -1,13 +1,12 @@
 import { notify, Skeleton } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
 import { Menu, MenuItem, MenuTrigger } from '@affine/component/ui/menu';
-import { openSettingModalAtom } from '@affine/core/atoms';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
 import {
   getSelectedNodes,
   useSharingUrl,
-} from '@affine/core/hooks/affine/use-share-url';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
+} from '@affine/core/components/hooks/affine/use-share-url';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { ServerConfigService } from '@affine/core/modules/cloud';
 import { EditorService } from '@affine/core/modules/editor';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
@@ -15,6 +14,7 @@ import { ShareInfoService } from '@affine/core/modules/share-doc';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { PublicPageMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import type { DocMode } from '@blocksuite/blocks';
 import {
   BlockIcon,

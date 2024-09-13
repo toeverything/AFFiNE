@@ -1,5 +1,5 @@
-import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
-import { track } from '@affine/core/mixpanel';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
+import { track } from '@affine/track';
 import { CloseIcon, DownloadIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';

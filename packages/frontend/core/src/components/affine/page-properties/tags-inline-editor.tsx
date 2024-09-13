@@ -1,6 +1,6 @@
 import type { MenuProps } from '@affine/component';
 import { IconButton, Input, Menu, Scrollable } from '@affine/component';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { WorkspaceLegacyProperties } from '@affine/core/modules/properties';
 import type { Tag } from '@affine/core/modules/tag';
 import { DeleteTagConfirmModal, TagService } from '@affine/core/modules/tag';

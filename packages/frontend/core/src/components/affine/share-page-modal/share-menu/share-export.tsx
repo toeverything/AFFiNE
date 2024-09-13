@@ -1,8 +1,8 @@
+import { useExportPage } from '@affine/core/components/hooks/affine/use-export-page';
 import {
   ExportMenuItems,
   PrintMenuItems,
 } from '@affine/core/components/page-list';
-import { useExportPage } from '@affine/core/hooks/affine/use-export-page';
 import { EditorService } from '@affine/core/modules/editor';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';

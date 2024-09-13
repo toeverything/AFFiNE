@@ -12,12 +12,12 @@ import {
   appSidebarResizingAtom,
 } from '@affine/core/components/app-sidebar';
 import { appSidebarWidthAtom } from '@affine/core/components/app-sidebar/index.jotai';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
-import { track } from '@affine/core/mixpanel';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { CloseIcon, PlusIcon, RightSidebarIcon } from '@blocksuite/icons/rc';
 import {
   useLiveData,
