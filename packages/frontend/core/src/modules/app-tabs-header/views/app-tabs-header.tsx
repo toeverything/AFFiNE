@@ -237,7 +237,7 @@ const WorkbenchTab = ({
                     <Loading />
                   )}
                 </div>
-                {workbench.pinned || !view.title ? null : (
+                {!view.title ? null : (
                   <div
                     title={view.title}
                     className={styles.splitViewLabelText}
@@ -254,19 +254,17 @@ const WorkbenchTab = ({
             </Fragment>
           );
         })}
-        {!workbench.pinned ? (
-          <div className={styles.tabCloseButtonWrapper}>
-            {tabsLength > 1 ? (
-              <button
-                data-testid="close-tab-button"
-                className={styles.tabCloseButton}
-                onClick={handleCloseTab}
-              >
-                <CloseIcon />
-              </button>
-            ) : null}
-          </div>
-        ) : null}
+        <div className={styles.tabCloseButtonWrapper}>
+          {tabsLength > 1 && !workbench.pinned ? (
+            <button
+              data-testid="close-tab-button"
+              className={styles.tabCloseButton}
+              onClick={handleCloseTab}
+            >
+              <CloseIcon />
+            </button>
+          ) : null}
+        </div>
       </div>
       <div className={styles.dropIndicator} data-edge={closestEdge} />
     </div>
