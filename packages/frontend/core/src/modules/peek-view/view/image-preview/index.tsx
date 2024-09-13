@@ -265,11 +265,20 @@ const ImagePreviewModalImpl = ({
       event.stopPropagation();
     };
 
+    const onCopyEvent = (event: ClipboardEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      copyHandler();
+    };
+
     document.addEventListener('keyup', handleKeyUp);
+    document.addEventListener('copy', onCopyEvent);
     return () => {
       document.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('copy', onCopyEvent);
     };
-  }, [blockModel, blocksuiteDoc, onBlockIdChange]);
+  }, [blockModel, blocksuiteDoc, copyHandler, onBlockIdChange]);
 
   useErrorBoundary(error);
 

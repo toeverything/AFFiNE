@@ -375,6 +375,35 @@ test('image able to copy to clipboard', async ({ page }) => {
   ).toBeVisible();
 });
 
+test('image preview should be able to copy image to clipboard on copy event', async ({
+  page,
+}) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  let blobId: string;
+  {
+    const title = getBlockSuiteEditorTitle(page);
+    await title.click();
+    await page.keyboard.press('Enter');
+    await importImage(page, 'http://localhost:8081/large-image.png');
+    await page.locator('affine-page-image').first().dblclick();
+    await page.waitForTimeout(500);
+    blobId = (await page
+      .getByTestId('image-preview-modal')
+      .locator('img')
+      .first()
+      .getAttribute('data-blob-id')) as string;
+    expect(blobId).toBeTruthy();
+  }
+  const locator = page.getByTestId('image-preview-modal');
+  await expect(locator).toBeVisible();
+  await page.dispatchEvent('body', 'copy');
+  await expect(
+    page.locator('[data-testid=affine-toast]:has-text("Copied to clipboard.")')
+  ).toBeVisible();
+});
+
 test('image able to download', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
