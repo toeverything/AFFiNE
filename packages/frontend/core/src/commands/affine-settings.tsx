@@ -1,11 +1,11 @@
 import type { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { SettingsIcon } from '@blocksuite/icons/rc';
 import { appSettingAtom } from '@toeverything/infra';
 import type { createStore } from 'jotai';
 import type { useTheme } from 'next-themes';
 
-import type { useLanguageHelper } from '../hooks/affine/use-language-helper';
-import { track } from '../mixpanel';
+import type { useLanguageHelper } from '../components/hooks/affine/use-language-helper';
 import type { EditorSettingService } from '../modules/editor-settting';
 import { registerAffineCommand } from './registry';
 
@@ -183,7 +183,7 @@ export function registerAffineSettingsCommands({
         `,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () => environment.isElectron,
+      preconditionStrategy: () => BUILD_CONFIG.isElectron,
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'clientBorder',
@@ -231,7 +231,7 @@ export function registerAffineSettingsCommands({
         ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () => environment.isElectron,
+      preconditionStrategy: () => BUILD_CONFIG.isElectron,
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'enableNoisyBackground',
@@ -257,7 +257,8 @@ export function registerAffineSettingsCommands({
         ]()}`,
       category: 'affine:settings',
       icon: <SettingsIcon />,
-      preconditionStrategy: () => environment.isElectron && environment.isMacOs,
+      preconditionStrategy: () =>
+        BUILD_CONFIG.isElectron && environment.isMacOs,
       run() {
         track.$.cmdk.settings.changeAppSetting({
           key: 'enableBlurBackground',

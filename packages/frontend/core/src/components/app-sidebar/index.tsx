@@ -1,7 +1,7 @@
 import { Skeleton } from '@affine/component';
 import { ResizePanel } from '@affine/component/resize-panel';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
-import { NavigateContext } from '@affine/core/hooks/use-navigate-helper';
+import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
+import { NavigateContext } from '@affine/core/components/hooks/use-navigate-helper';
 import { useServiceOptional, WorkspaceService } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
 import { debounce } from 'lodash-es';
@@ -47,7 +47,7 @@ export function AppSidebar({ children }: PropsWithChildren) {
 
   useEffect(() => {
     // do not float app sidebar on desktop
-    if (environment.isElectron) {
+    if (BUILD_CONFIG.isElectron) {
       return;
     }
 
@@ -77,8 +77,9 @@ export function AppSidebar({ children }: PropsWithChildren) {
     };
   }, [open, setFloating, setOpen, width]);
 
-  const hasRightBorder = !environment.isElectron && !clientBorder;
-  const isMacosDesktop = environment.isElectron && environment.isMacOs;
+  const hasRightBorder = !BUILD_CONFIG.isElectron && !clientBorder;
+  const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
+
   return (
     <>
       <ResizePanel
@@ -103,7 +104,7 @@ export function AppSidebar({ children }: PropsWithChildren) {
         data-client-border={clientBorder}
       >
         <nav className={navStyle} data-testid="app-sidebar">
-          {!environment.isElectron && <SidebarHeader />}
+          {!BUILD_CONFIG.isElectron && <SidebarHeader />}
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {children}
           </div>
@@ -120,7 +121,15 @@ export function AppSidebar({ children }: PropsWithChildren) {
   );
 }
 
-const FallbackHeader = () => {
+export function FallbackHeader() {
+  return (
+    <div className={styles.fallbackHeader}>
+      <FallbackHeaderSkeleton />
+    </div>
+  );
+}
+
+export function FallbackHeaderWithWorkspaceNavigator() {
   // if navigate is not defined, it is rendered outside of router
   // WorkspaceNavigator requires navigate context
   // todo: refactor
@@ -136,15 +145,21 @@ const FallbackHeader = () => {
           showEnableCloudButton
         />
       ) : (
-        <>
-          <Skeleton variant="rectangular" width={32} height={32} />
-          <Skeleton variant="rectangular" width={150} height={32} flex={1} />
-          <Skeleton variant="circular" width={25} height={25} />
-        </>
+        <FallbackHeaderSkeleton />
       )}
     </div>
   );
-};
+}
+
+export function FallbackHeaderSkeleton() {
+  return (
+    <>
+      <Skeleton variant="rectangular" width={32} height={32} />
+      <Skeleton variant="rectangular" width={150} height={32} flex={1} />
+      <Skeleton variant="circular" width={25} height={25} />
+    </>
+  );
+}
 
 const randomWidth = () => {
   return Math.floor(Math.random() * 200) + 100;
@@ -195,17 +210,44 @@ export const AppSidebarFallback = (): ReactElement | null => {
   const width = useAtomValue(appSidebarWidthAtom);
   const { appSettings } = useAppSettingHelper();
   const clientBorder = appSettings.clientBorder;
-  const hasRightBorder = !environment.isElectron && !clientBorder;
 
   return (
     <div
       style={{ width }}
       className={navWrapperStyle}
-      data-has-border={hasRightBorder}
+      data-has-border={!BUILD_CONFIG.isElectron && !clientBorder}
       data-open="true"
     >
       <nav className={navStyle}>
-        {!environment.isElectron ? <div className={navHeaderStyle} /> : null}
+        {!BUILD_CONFIG.isElectron ? <div className={navHeaderStyle} /> : null}
+        <div className={navBodyStyle}>
+          <div className={styles.fallback}>
+            <FallbackHeaderWithWorkspaceNavigator />
+            <FallbackBody />
+          </div>
+        </div>
+      </nav>
+    </div>
+  );
+};
+
+/**
+ * NOTE(@forehalo): this is a copy of [AppSidebarFallback] without [WorkspaceNavigator] which will introduce a lot useless dependencies for shell(tab bar)
+ */
+export const ShellAppSidebarFallback = () => {
+  const width = useAtomValue(appSidebarWidthAtom);
+  const { appSettings } = useAppSettingHelper();
+  const clientBorder = appSettings.clientBorder;
+
+  return (
+    <div
+      style={{ width }}
+      className={navWrapperStyle}
+      data-has-border={!BUILD_CONFIG.isElectron && !clientBorder}
+      data-open="true"
+    >
+      <nav className={navStyle}>
+        {!BUILD_CONFIG.isElectron ? <div className={navHeaderStyle} /> : null}
         <div className={navBodyStyle}>
           <div className={styles.fallback}>
             <FallbackHeader />

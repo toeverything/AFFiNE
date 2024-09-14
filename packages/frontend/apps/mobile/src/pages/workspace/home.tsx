@@ -28,7 +28,7 @@ export const Component = () => {
           }}
         >
           <ExplorerFavorites />
-          {runtimeConfig.enableOrganize && <ExplorerOrganize />}
+          <ExplorerOrganize />
           <ExplorerMigrationFavorites />
           <ExplorerCollections />
           <ExplorerTags />

@@ -13,7 +13,6 @@ interface QuickSearchInputProps extends HTMLAttributes<HTMLDivElement> {
 // Although it is called an input, it is actually a button.
 export function QuickSearchInput({ onClick, ...props }: QuickSearchInputProps) {
   const t = useI18n();
-  const isMac = environment.isMacOs;
 
   return (
     <div
@@ -27,7 +26,7 @@ export function QuickSearchInput({ onClick, ...props }: QuickSearchInputProps) {
       </span>
       <div className={styles.spacer} />
       <div className={styles.shortcutHint}>
-        {isMac ? ' ⌘ + K' : ' Ctrl + K'}
+        {environment.isMacOs ? ' ⌘ + K' : ' Ctrl + K'}
       </div>
       <Spotlight />
     </div>

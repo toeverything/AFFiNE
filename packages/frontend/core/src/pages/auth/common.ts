@@ -5,5 +5,5 @@ export const supportedClient = z.enum([
   'affine',
   'affine-canary',
   'affine-beta',
-  ...(environment.isDebug ? ['affine-dev'] : []),
+  ...(BUILD_CONFIG.debug ? ['affine-dev'] : []),
 ]);

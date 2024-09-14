@@ -3,7 +3,7 @@ import {
   useConfirmModal,
   useLitPortalFactory,
 } from '@affine/component';
-import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { EditorService } from '@affine/core/modules/editor';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { PeekViewService } from '@affine/core/modules/peek-view';
@@ -19,6 +19,7 @@ import {
   useLiveData,
   useService,
   useServices,
+  WorkspaceService,
 } from '@toeverything/infra';
 import React, {
   forwardRef,
@@ -30,7 +31,10 @@ import React, {
 } from 'react';
 
 import { PagePropertiesTable } from '../../affine/page-properties';
-import { AffinePageReference } from '../../affine/reference-link';
+import {
+  AffinePageReference,
+  AffineSharedPageReference,
+} from '../../affine/reference-link';
 import { BiDirectionalLinkPanel } from './bi-directional-link-panel';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import {
@@ -75,11 +79,13 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
     docService,
     docsService,
     editorService,
+    workspaceService,
     featureFlagService,
   } = useServices({
     PeekViewService,
     DocService,
     DocsService,
+    WorkspaceService,
     EditorService,
     FeatureFlagService,
   });
@@ -94,6 +100,16 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
 
       const params = toURLSearchParams(data.params);
 
+      if (workspaceService.workspace.openOptions.isSharedMode) {
+        return (
+          <AffineSharedPageReference
+            docCollection={workspaceService.workspace.docCollection}
+            pageId={pageId}
+            params={params}
+          />
+        );
+      }
+
       return (
         <AffinePageReference
           docCollection={page.collection}
@@ -102,7 +118,7 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
         />
       );
     };
-  }, [page.collection]);
+  }, [page.collection, workspaceService]);
 
   const specs = useMemo(() => {
     const enableAI = featureFlagService.flags.enable_ai.value;

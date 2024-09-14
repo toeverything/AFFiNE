@@ -3,7 +3,7 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { WorkspaceShareSettingService } from '@affine/core/modules/share-setting';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';

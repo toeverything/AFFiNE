@@ -1,9 +1,7 @@
-import './polyfill/dispose';
-import '@affine/core/bootstrap/preload';
+import './setup';
 import './global.css';
 
-import { appConfigProxy } from '@affine/core/hooks/use-app-config-storage';
-import { performanceLogger } from '@affine/core/shared';
+import { appConfigProxy } from '@affine/core/components/hooks/use-app-config-storage';
 import { apis, appInfo, events } from '@affine/electron-api';
 import {
   init,
@@ -22,10 +20,7 @@ import {
 
 import { App } from './app';
 
-const performanceMainLogger = performanceLogger.namespace('main');
 function main() {
-  performanceMainLogger.info('start');
-
   // load persistent config for electron
   // TODO(@Peng): should be sync, but it's not necessary for now
   appConfigProxy
@@ -34,13 +29,12 @@ function main() {
 
   // skip bootstrap setup for desktop onboarding
   if (
-    appInfo?.windowName === 'onboarding' ||
-    appInfo?.windowName === 'theme-editor'
+    !(
+      appInfo?.windowName === 'onboarding' ||
+      appInfo?.windowName === 'theme-editor'
+    )
   ) {
-    performanceMainLogger.info('skip setup');
-  } else {
-    performanceMainLogger.info('setup start');
-    if (window.SENTRY_RELEASE || environment.isDebug) {
+    if (BUILD_CONFIG.debug || window.SENTRY_RELEASE) {
       // https://docs.sentry.io/platforms/javascript/guides/electron/
       init({
         dsn: process.env.SENTRY_DSN,
@@ -56,8 +50,8 @@ function main() {
         ],
       });
       setTags({
-        appVersion: runtimeConfig.appVersion,
-        editorVersion: runtimeConfig.editorVersion,
+        appVersion: BUILD_CONFIG.appVersion,
+        editorVersion: BUILD_CONFIG.editorVersion,
       });
 
       apis?.ui.handleNetworkChange(navigator.onLine);
@@ -101,7 +95,6 @@ function main() {
       apis?.ui.handleWindowResize().catch(console.error);
     }, 50);
     window.addEventListener('resize', handleResize);
-    performanceMainLogger.info('setup done');
     window.addEventListener('dragstart', () => {
       document.documentElement.dataset.dragging = 'true';
     });
@@ -114,10 +107,8 @@ function main() {
 }
 
 function mountApp() {
-  performanceMainLogger.info('import app');
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const root = document.getElementById('app')!;
-  performanceMainLogger.info('render app');
   createRoot(root).render(
     <StrictMode>
       <App />

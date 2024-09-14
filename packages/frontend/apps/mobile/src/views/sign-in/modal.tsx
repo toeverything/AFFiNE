@@ -1,5 +1,5 @@
 import { Modal } from '@affine/component';
-import { authAtom } from '@affine/core/atoms';
+import { authAtom } from '@affine/core/components/atoms';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { useAtom } from 'jotai';
 import { useCallback } from 'react';

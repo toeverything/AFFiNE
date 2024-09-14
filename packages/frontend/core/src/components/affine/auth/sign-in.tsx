@@ -1,7 +1,7 @@
 import { notify } from '@affine/component';
 import { AuthInput, ModalHeader } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { Trans, useI18n } from '@affine/i18n';
 import { ArrowRightBigIcon } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';

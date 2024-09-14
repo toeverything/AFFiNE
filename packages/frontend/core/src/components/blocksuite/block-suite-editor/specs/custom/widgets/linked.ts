@@ -1,6 +1,6 @@
-import { track } from '@affine/core/mixpanel';
 import { WorkspacePropertiesAdapter } from '@affine/core/modules/properties';
 import { I18n, i18nTime } from '@affine/i18n';
+import { track } from '@affine/track';
 import type { EditorHost } from '@blocksuite/block-std';
 import type { AffineInlineEditor } from '@blocksuite/blocks';
 import { LinkedWidgetUtils } from '@blocksuite/blocks';

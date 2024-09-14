@@ -1,7 +1,7 @@
-import { EdgelessSurfaceBlockSpec } from '@blocksuite/affine-block-surface';
 import type { ExtensionType } from '@blocksuite/block-std';
 import {
   EdgelessNoteBlockSpec,
+  EdgelessSurfaceBlockSpec,
   EdgelessSurfaceRefBlockSpec,
   EdgelessTextBlockSpec,
   FrameBlockSpec,

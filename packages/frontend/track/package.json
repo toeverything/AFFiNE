@@ -1,0 +1,17 @@
+{
+  "name": "@affine/track",
+  "type": "module",
+  "private": true,
+  "version": "0.16.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": "false",
+  "dependencies": {
+    "@affine/debug": "workspace:*",
+    "mixpanel-browser": "^2.49.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.5"
+  }
+}

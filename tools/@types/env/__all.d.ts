@@ -1,4 +1,6 @@
-import type { Environment, RuntimeConfig } from '@affine/env/global';
+import '@affine/env/constant';
+
+import type { BUILD_CONFIG_TYPE, Environment } from '@affine/env/global';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -8,7 +10,7 @@ declare global {
   // eslint-disable-next-line no-var
   var environment: Environment;
   // eslint-disable-next-line no-var
-  var runtimeConfig: RuntimeConfig;
+  var BUILD_CONFIG: BUILD_CONFIG_TYPE;
   // eslint-disable-next-line no-var
   var $AFFINE_SETUP: boolean | undefined;
   /**

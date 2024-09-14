@@ -1,7 +1,6 @@
 import { Button, ErrorMessage, Skeleton } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
-import { openSettingModalAtom } from '@affine/core/atoms';
-import { track } from '@affine/core/mixpanel';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
 import {
   ServerConfigService,
   SubscriptionService,
@@ -9,6 +8,7 @@ import {
 } from '@affine/core/modules/cloud';
 import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { useSetAtom } from 'jotai';

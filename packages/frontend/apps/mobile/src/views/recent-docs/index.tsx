@@ -1,4 +1,4 @@
-import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useBlockSuiteDocMeta } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import { CollapsibleSection } from '@affine/core/modules/explorer';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useMemo } from 'react';

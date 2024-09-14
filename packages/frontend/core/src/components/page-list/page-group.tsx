@@ -1,4 +1,4 @@
-import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import type { Tag } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';

@@ -1,6 +1,6 @@
 import { AffineOtherPageLayout } from '@affine/component/affine-other-page-layout';
 import { AppFallback } from '@affine/core/components/affine/app-container';
-import { viewRoutes } from '@affine/core/router';
+import { workspaceRoutes } from '@affine/core/workspace-router';
 import { ZipTransformer } from '@blocksuite/blocks';
 import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
 import {
@@ -15,9 +15,8 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { matchPath, useLocation, useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../components/affine/affine-error-boundary';
-import { WorkspaceLayout } from '../../layouts/workspace-layout';
+import { WorkspaceLayout } from '../../components/layouts/workspace-layout';
 import { WorkbenchRoot } from '../../modules/workbench';
-import { performanceRenderLogger } from '../../shared';
 import { PageNotFound } from '../404';
 import { SharePage } from './share/share-page';
 
@@ -37,7 +36,6 @@ declare global {
 }
 
 export const Component = (): ReactElement => {
-  performanceRenderLogger.debug('WorkspaceLayout');
   const { workspacesService } = useServices({
     WorkspacesService,
   });
@@ -55,9 +53,10 @@ export const Component = (): ReactElement => {
       match &&
       match.params.docId &&
       match.params.workspaceId &&
-      // TODO(eyhn): need a better way to check if it's a docId
-      viewRoutes.find(route => matchPath(route.path, '/' + match.params.docId))
-        ?.path === '/:pageId'
+      // // TODO(eyhn): need a better way to check if it's a docId
+      workspaceRoutes.find(route =>
+        matchPath(route.path, '/' + match.params.docId)
+      )?.path === '/:pageId'
     ) {
       return {
         docId: match.params.docId,
@@ -99,8 +98,8 @@ export const Component = (): ReactElement => {
 
   if (workspaceNotFound) {
     if (
-      detailDocRoute /*  */ &&
-      !environment.isElectron /* only browser has share page */
+      !BUILD_CONFIG.isElectron /* only browser has share page */ &&
+      detailDocRoute
     ) {
       return (
         <SharePage

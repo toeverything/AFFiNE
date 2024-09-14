@@ -9,12 +9,14 @@ import { MobileMenu } from './mobile/root';
 import { MobileMenuSeparator } from './mobile/separator';
 import { MobileMenuSub } from './mobile/sub';
 
-const MenuItem = environment.isMobileEdition ? MobileMenuItem : DesktopMenuItem;
-const MenuSeparator = environment.isMobileEdition
+const MenuItem = BUILD_CONFIG.isMobileEdition
+  ? MobileMenuItem
+  : DesktopMenuItem;
+const MenuSeparator = BUILD_CONFIG.isMobileEdition
   ? MobileMenuSeparator
   : DesktopMenuSeparator;
-const MenuSub = environment.isMobileEdition ? MobileMenuSub : DesktopMenuSub;
-const Menu = environment.isMobileEdition ? MobileMenu : DesktopMenu;
+const MenuSub = BUILD_CONFIG.isMobileEdition ? MobileMenuSub : DesktopMenuSub;
+const Menu = BUILD_CONFIG.isMobileEdition ? MobileMenu : DesktopMenu;
 
 export {
   DesktopMenu,

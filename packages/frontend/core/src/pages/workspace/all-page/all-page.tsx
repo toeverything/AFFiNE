@@ -1,10 +1,9 @@
+import { useBlockSuiteDocMeta } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import {
   PageListHeader,
   useFilteredPageMetas,
   VirtualizedPageList,
 } from '@affine/core/components/page-list';
-import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { performanceRenderLogger } from '@affine/core/shared';
 import type { Filter } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import {
@@ -81,7 +80,5 @@ export const AllPage = () => {
 };
 
 export const Component = () => {
-  performanceRenderLogger.debug('AllPage');
-
   return <AllPage />;
 };

@@ -89,22 +89,22 @@ const BlockSuiteEditorImpl = ({
 
             // provide image proxy endpoint to blocksuite
             editor.host?.std.clipboard.use(
-              customImageProxyMiddleware(runtimeConfig.imageProxyUrl)
+              customImageProxyMiddleware(BUILD_CONFIG.imageProxyUrl)
             );
-            ImageBlockService.setImageProxyURL(runtimeConfig.imageProxyUrl);
+            ImageBlockService.setImageProxyURL(BUILD_CONFIG.imageProxyUrl);
 
             // provide link preview endpoint to blocksuite
             BookmarkBlockService.setLinkPreviewEndpoint(
-              runtimeConfig.linkPreviewUrl
+              BUILD_CONFIG.linkPreviewUrl
             );
             EmbedGithubBlockService.setLinkPreviewEndpoint(
-              runtimeConfig.linkPreviewUrl
+              BUILD_CONFIG.linkPreviewUrl
             );
             EmbedYoutubeBlockService.setLinkPreviewEndpoint(
-              runtimeConfig.linkPreviewUrl
+              BUILD_CONFIG.linkPreviewUrl
             );
             EmbedLoomBlockService.setLinkPreviewEndpoint(
-              runtimeConfig.linkPreviewUrl
+              BUILD_CONFIG.linkPreviewUrl
             );
 
             return editor.host?.updateComplete;

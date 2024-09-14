@@ -5,15 +5,15 @@ import {
   toast,
   useConfirmModal,
 } from '@affine/component';
-import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
-import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
-import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
-import { track } from '@affine/core/mixpanel';
+import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
+import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import {
   DeleteIcon,
   DeletePermanentlyIcon,
@@ -173,17 +173,13 @@ export const PageOperationCell = ({
           ? t['com.affine.favoritePageOperation.remove']()
           : t['com.affine.favoritePageOperation.add']()}
       </MenuItem>
-      {runtimeConfig.enableInfoModal ? (
-        <MenuItem onClick={onOpenInfoModal} prefixIcon={<InformationIcon />}>
-          {t['com.affine.page-properties.page-info.view']()}
-        </MenuItem>
-      ) : null}
-
+      <MenuItem onClick={onOpenInfoModal} prefixIcon={<InformationIcon />}>
+        {t['com.affine.page-properties.page-info.view']()}
+      </MenuItem>
       <MenuItem onClick={onOpenInNewTab} prefixIcon={<OpenInNewIcon />}>
         {t['com.affine.workbench.tab.page-menu-open']()}
       </MenuItem>
-
-      {environment.isElectron && enableSplitView ? (
+      {BUILD_CONFIG.isElectron && enableSplitView ? (
         <MenuItem onClick={onOpenInSplitView} prefixIcon={<SplitViewIcon />}>
           {t['com.affine.workbench.split-view.page-menu-open']()}
         </MenuItem>

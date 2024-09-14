@@ -4,7 +4,8 @@
   "private": true,
   "version": "0.16.0",
   "exports": {
-    "./*": "./src/*"
+    "./*": "./src/*",
+    "./bootstrap": "./src/bootstrap/index.ts"
   },
   "dependencies": {
     "@affine-test/fixtures": "workspace:*",
@@ -15,14 +16,14 @@
     "@affine/graphql": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@blocksuite/affine-block-surface": "0.17.9",
-    "@blocksuite/block-std": "0.17.9",
-    "@blocksuite/blocks": "0.17.9",
-    "@blocksuite/global": "0.17.9",
+    "@affine/track": "workspace:*",
+    "@blocksuite/block-std": "0.17.10",
+    "@blocksuite/blocks": "0.17.10",
+    "@blocksuite/global": "0.17.10",
     "@blocksuite/icons": "2.1.67",
-    "@blocksuite/inline": "0.17.9",
-    "@blocksuite/presets": "0.17.9",
-    "@blocksuite/store": "0.17.9",
+    "@blocksuite/inline": "0.17.10",
+    "@blocksuite/presets": "0.17.10",
+    "@blocksuite/store": "0.17.10",
     "@dnd-kit/core": "^6.1.0",
     "@dnd-kit/modifiers": "^7.0.0",
     "@dnd-kit/sortable": "^8.0.0",
@@ -52,6 +53,7 @@
     "bytes": "^3.1.2",
     "clsx": "^2.1.0",
     "cmdk": "^1.0.0",
+    "core-js": "^3.36.1",
     "css-spring": "^4.1.0",
     "dayjs": "^1.11.10",
     "file-type": "^19.1.0",
@@ -65,6 +67,7 @@
     "idb": "^8.0.0",
     "idb-keyval": "^6.2.1",
     "image-blob-reduce": "^4.1.0",
+    "intl-segmenter-polyfill-rs": "^0.1.7",
     "is-svg": "^5.0.0",
     "jotai": "^2.8.0",
     "jotai-devtools": "^0.10.0",
@@ -115,6 +118,6 @@
     "lodash-es": "^4.17.21",
     "mime-types": "^2.1.35",
     "react-refresh": "^0.14.0",
-    "vitest": "2.0.5"
+    "vitest": "2.1.0"
   }
 }

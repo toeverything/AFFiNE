@@ -3,7 +3,7 @@ import { SettingHeader } from '@affine/component/setting-components';
 import {
   openSettingModalAtom,
   type PlansScrollAnchor,
-} from '@affine/core/atoms';
+} from '@affine/core/components/atoms';
 import { useI18n } from '@affine/i18n';
 import { ArrowRightBigIcon, ArrowUpSmallIcon } from '@blocksuite/icons/rc';
 import * as Collapsible from '@radix-ui/react-collapsible';

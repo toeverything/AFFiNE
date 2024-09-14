@@ -12,12 +12,12 @@ import {
   appSidebarResizingAtom,
 } from '@affine/core/components/app-sidebar';
 import { appSidebarWidthAtom } from '@affine/core/components/app-sidebar/index.jotai';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
-import { track } from '@affine/core/mixpanel';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { CloseIcon, PlusIcon, RightSidebarIcon } from '@blocksuite/icons/rc';
 import {
   useLiveData,
@@ -237,7 +237,7 @@ const WorkbenchTab = ({
                     <Loading />
                   )}
                 </div>
-                {workbench.pinned || !view.title ? null : (
+                {!view.title ? null : (
                   <div
                     title={view.title}
                     className={styles.splitViewLabelText}
@@ -254,19 +254,17 @@ const WorkbenchTab = ({
             </Fragment>
           );
         })}
-        {!workbench.pinned ? (
-          <div className={styles.tabCloseButtonWrapper}>
-            {tabsLength > 1 ? (
-              <button
-                data-testid="close-tab-button"
-                className={styles.tabCloseButton}
-                onClick={handleCloseTab}
-              >
-                <CloseIcon />
-              </button>
-            ) : null}
-          </div>
-        ) : null}
+        <div className={styles.tabCloseButtonWrapper}>
+          {tabsLength > 1 && !workbench.pinned ? (
+            <button
+              data-testid="close-tab-button"
+              className={styles.tabCloseButton}
+              onClick={handleCloseTab}
+            >
+              <CloseIcon />
+            </button>
+          ) : null}
+        </div>
       </div>
       <div className={styles.dropIndicator} data-edge={closestEdge} />
     </div>
@@ -303,7 +301,8 @@ export const AppTabsHeader = ({
   const sidebarWidth = useAtomValue(appSidebarWidthAtom);
   const sidebarOpen = useAtomValue(appSidebarOpenAtom);
   const sidebarResizing = useAtomValue(appSidebarResizingAtom);
-  const isMacosDesktop = environment.isElectron && environment.isMacOs;
+  const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
+  const isWindowsDesktop = BUILD_CONFIG.isElectron && environment.isWindows;
   const fullScreen = useIsFullScreen();
 
   const tabsHeaderService = useService(AppTabsHeaderService);
@@ -412,7 +411,7 @@ export const AppTabsHeader = ({
       className={clsx(styles.root, className)}
       style={style}
       data-mode={mode}
-      data-is-windows={environment.isElectron && environment.isWindows}
+      data-is-windows={isWindowsDesktop}
     >
       <div
         style={{
@@ -473,9 +472,9 @@ export const AppTabsHeader = ({
       <IconButton size="24" onClick={onToggleRightSidebar}>
         <RightSidebarIcon />
       </IconButton>
-      {environment.isElectron && environment.isWindows ? (
+      {isWindowsDesktop && (
         <div className={styles.windowsAppControlsPlaceholder} />
-      ) : null}
+      )}
     </div>
   );
 };

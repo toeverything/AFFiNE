@@ -10,7 +10,7 @@ const DesktopThemeSync = memo(function DesktopThemeSync() {
   const lastThemeRef = useRef(theme);
   const onceRef = useRef(false);
   if (lastThemeRef.current !== theme || !onceRef.current) {
-    if (environment.isElectron && theme) {
+    if (BUILD_CONFIG.isElectron && theme) {
       apis?.ui
         .handleThemeChange(theme as 'dark' | 'light' | 'system')
         .catch(err => {

@@ -1,8 +1,7 @@
 import { IconButton } from '@affine/component';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
-import { WorkspaceSubPath } from '@affine/core/shared';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
+import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { CloseIcon, CollaborationIcon } from '@blocksuite/icons/rc';
 import {
@@ -61,15 +60,15 @@ const WorkspaceList = ({
 }) => {
   const currentWorkspace = useService(WorkspaceService).workspace;
 
-  const { jumpToSubPath } = useNavigateHelper();
+  const { jumpToPage } = useNavigateHelper();
   const toggleWorkspace = useCallback(
     (id: string) => {
       if (id !== currentWorkspace.id) {
-        jumpToSubPath(id, WorkspaceSubPath.ALL);
+        jumpToPage(id, 'all');
       }
       onClose?.();
     },
-    [currentWorkspace.id, jumpToSubPath, onClose]
+    [currentWorkspace.id, jumpToPage, onClose]
   );
 
   if (!list.length) return null;

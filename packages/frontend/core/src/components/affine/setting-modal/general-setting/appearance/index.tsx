@@ -11,7 +11,7 @@ import { windowFrameStyleOptions } from '@toeverything/infra';
 import { useTheme } from 'next-themes';
 import { useCallback, useMemo } from 'react';
 
-import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
+import { useAppSettingHelper } from '../../../../../components/hooks/affine/use-app-setting-helper';
 import { LanguageMenu } from '../../../language-menu';
 import { Page } from '../editor/page';
 import { DateFormatSetting } from './date-format-setting';
@@ -86,7 +86,7 @@ export const AppearanceSettings = () => {
             <LanguageMenu />
           </div>
         </SettingRow>
-        {environment.isElectron ? (
+        {BUILD_CONFIG.isElectron ? (
           <SettingRow
             name={t['com.affine.appearanceSettings.clientBorder.title']()}
             desc={t['com.affine.appearanceSettings.clientBorder.description']()}
@@ -98,7 +98,7 @@ export const AppearanceSettings = () => {
             />
           </SettingRow>
         ) : null}
-        {runtimeConfig.enableNewSettingUnstableApi && environment.isElectron ? (
+        {BUILD_CONFIG.enableNewSettingUnstableApi && BUILD_CONFIG.isElectron ? (
           <SettingRow
             name={t['com.affine.appearanceSettings.windowFrame.title']()}
             desc={t['com.affine.appearanceSettings.windowFrame.description']()}
@@ -118,11 +118,11 @@ export const AppearanceSettings = () => {
             />
           </SettingRow>
         ) : null}
-        {runtimeConfig.enableThemeEditor ? <ThemeEditorSetting /> : null}
+        {BUILD_CONFIG.enableThemeEditor ? <ThemeEditorSetting /> : null}
       </SettingWrapper>
       {/* // TODO(@JimmFly): remove Page component when stable release */}
       <Page />
-      {runtimeConfig.enableNewSettingUnstableApi ? (
+      {BUILD_CONFIG.enableNewSettingUnstableApi ? (
         <SettingWrapper title={t['com.affine.appearanceSettings.date.title']()}>
           <SettingRow
             name={t['com.affine.appearanceSettings.dateFormat.title']()}
@@ -144,7 +144,7 @@ export const AppearanceSettings = () => {
         </SettingWrapper>
       ) : null}
 
-      {environment.isElectron ? (
+      {BUILD_CONFIG.isElectron ? (
         <SettingWrapper
           title={t['com.affine.appearanceSettings.sidebar.title']()}
         >

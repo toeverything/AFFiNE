@@ -1,6 +1,6 @@
 import { toast } from '@affine/component';
 import { Button, IconButton } from '@affine/component/ui/button';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import type { ImageBlockModel } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import {
@@ -265,11 +265,20 @@ const ImagePreviewModalImpl = ({
       event.stopPropagation();
     };
 
+    const onCopyEvent = (event: ClipboardEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      copyHandler();
+    };
+
     document.addEventListener('keyup', handleKeyUp);
+    document.addEventListener('copy', onCopyEvent);
     return () => {
       document.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('copy', onCopyEvent);
     };
-  }, [blockModel, blocksuiteDoc, onBlockIdChange]);
+  }, [blockModel, blocksuiteDoc, copyHandler, onBlockIdChange]);
 
   useErrorBoundary(error);
 
@@ -308,6 +317,7 @@ const ImagePreviewModalImpl = ({
               data-testid="image-content"
               src={url}
               alt={caption}
+              tabIndex={0}
               ref={imageRef}
               draggable={isZoomedBigger}
               onMouseDown={handleDragStart}

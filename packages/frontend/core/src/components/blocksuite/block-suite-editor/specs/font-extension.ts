@@ -2,7 +2,7 @@ import { AffineCanvasTextFonts, FontConfigExtension } from '@blocksuite/blocks';
 
 export function getFontConfigExtension() {
   return FontConfigExtension(
-    runtimeConfig.isSelfHosted
+    BUILD_CONFIG.isSelfHosted
       ? AffineCanvasTextFonts.map(font => ({
           ...font,
           // self-hosted fonts are served from /assets

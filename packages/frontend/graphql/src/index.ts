@@ -10,8 +10,8 @@ import { gqlFetcherFactory } from './fetcher';
 setupGlobal();
 
 export function getBaseUrl(): string {
-  if (environment.isElectron) {
-    return runtimeConfig.serverUrlPrefix;
+  if (BUILD_CONFIG.isElectron) {
+    return BUILD_CONFIG.serverUrlPrefix;
   }
   if (typeof window === 'undefined') {
     // is nodejs

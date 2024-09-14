@@ -1,4 +1,5 @@
 import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import {
   AllPageListOperationsMenu,
   PageDisplayMenu,
@@ -6,10 +7,9 @@ import {
 } from '@affine/core/components/page-list';
 import { Header } from '@affine/core/components/pure/header';
 import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
 import { isNewTabTrigger } from '@affine/core/utils';
 import type { Filter } from '@affine/env/filter';
+import { track } from '@affine/track';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import { useServices, WorkspaceService } from '@toeverything/infra';
 import clsx from 'clsx';

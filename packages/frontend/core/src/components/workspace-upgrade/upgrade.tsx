@@ -1,10 +1,9 @@
 import { Button } from '@affine/component/ui/button';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { AffineShapeIcon } from '@affine/core/components/page-list'; // TODO(@eyhn): import from page-list temporarily, need to defined common svg icon/images management.
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { track } from '@affine/core/mixpanel';
-import { WorkspaceSubPath } from '@affine/core/shared';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useState } from 'react';
 
@@ -31,7 +30,7 @@ export const WorkspaceUpgrade = function WorkspaceUpgrade() {
     try {
       const newWorkspace = await currentWorkspace.upgrade.upgrade();
       if (newWorkspace) {
-        openPage(newWorkspace.id, WorkspaceSubPath.ALL);
+        openPage(newWorkspace.id, 'all');
       } else {
         // blocksuite may enter an incorrect state, reload to reset it.
         location.reload();

@@ -1,5 +1,5 @@
 import { Button } from '@affine/component/ui/button';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { Trans, useI18n } from '@affine/i18n';
 import { useTheme } from 'next-themes';
 import type { FC, PropsWithChildren, ReactNode } from 'react';

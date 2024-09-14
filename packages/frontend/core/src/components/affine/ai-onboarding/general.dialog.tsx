@@ -1,9 +1,9 @@
 import { Button, IconButton, Modal } from '@affine/component';
-import { openSettingModalAtom } from '@affine/core/atoms';
-import { useBlurRoot } from '@affine/core/hooks/use-blur-root';
-import { track } from '@affine/core/mixpanel';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
+import { useBlurRoot } from '@affine/core/components/hooks/use-blur-root';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { Trans, useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useAtom } from 'jotai';

@@ -14,7 +14,7 @@ import {
 import { MemoryBlobStorage } from '../../../sync/blob/blob';
 import type { GlobalState } from '../../storage';
 import type { WorkspaceProfileInfo } from '../entities/profile';
-import { globalBlockSuiteSchema } from '../global-schema';
+import { getAFFiNEWorkspaceSchema } from '../global-schema';
 import type { WorkspaceMetadata } from '../metadata';
 import type {
   WorkspaceEngineProvider,
@@ -57,7 +57,7 @@ export class TestingWorkspaceLocalProvider
     const docCollection = new DocCollection({
       id: id,
       idGenerator: () => nanoid(),
-      schema: globalBlockSuiteSchema,
+      schema: getAFFiNEWorkspaceSchema(),
       blobSources: {
         main: blobStorage,
       },
@@ -94,7 +94,7 @@ export class TestingWorkspaceLocalProvider
 
     const bs = new DocCollection({
       id,
-      schema: globalBlockSuiteSchema,
+      schema: getAFFiNEWorkspaceSchema(),
     });
 
     applyUpdate(bs.doc, data);

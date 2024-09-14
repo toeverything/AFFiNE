@@ -1,9 +1,9 @@
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { ImportIcon } from '@blocksuite/icons/rc';
+import type { DocCollection } from '@blocksuite/store';
 
-import type { DocCollection } from '../../shared';
 import { MenuItem } from '../app-sidebar';
 import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
 

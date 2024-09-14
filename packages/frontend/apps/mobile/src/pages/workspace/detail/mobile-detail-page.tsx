@@ -1,12 +1,12 @@
 import { useThemeColorV2 } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
+import { useRegisterBlocksuiteEditorCommands } from '@affine/core/components/hooks/affine/use-register-blocksuite-editor-commands';
+import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
+import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
+import { usePageDocumentTitle } from '@affine/core/components/hooks/use-global-state';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
-import { useRegisterBlocksuiteEditorCommands } from '@affine/core/hooks/affine/use-register-blocksuite-editor-commands';
-import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
-import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
-import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { EditorService } from '@affine/core/modules/editor';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
@@ -112,21 +112,19 @@ const DetailPageImpl = () => {
 
       // provide image proxy endpoint to blocksuite
       editorHost?.std.clipboard.use(
-        customImageProxyMiddleware(runtimeConfig.imageProxyUrl)
+        customImageProxyMiddleware(BUILD_CONFIG.imageProxyUrl)
       );
-      ImageBlockService.setImageProxyURL(runtimeConfig.imageProxyUrl);
+      ImageBlockService.setImageProxyURL(BUILD_CONFIG.imageProxyUrl);
 
       // provide link preview endpoint to blocksuite
-      BookmarkBlockService.setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
+      BookmarkBlockService.setLinkPreviewEndpoint(BUILD_CONFIG.linkPreviewUrl);
       EmbedGithubBlockService.setLinkPreviewEndpoint(
-        runtimeConfig.linkPreviewUrl
+        BUILD_CONFIG.linkPreviewUrl
       );
       EmbedYoutubeBlockService.setLinkPreviewEndpoint(
-        runtimeConfig.linkPreviewUrl
+        BUILD_CONFIG.linkPreviewUrl
       );
-      EmbedLoomBlockService.setLinkPreviewEndpoint(
-        runtimeConfig.linkPreviewUrl
-      );
+      EmbedLoomBlockService.setLinkPreviewEndpoint(BUILD_CONFIG.linkPreviewUrl);
 
       // provide page mode and updated date to blocksuite
       const refNodeService = editorHost?.std.getOptional(RefNodeSlotsProvider);

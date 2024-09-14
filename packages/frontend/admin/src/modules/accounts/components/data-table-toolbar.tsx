@@ -1,6 +1,6 @@
 import { Button } from '@affine/admin/components/ui/button';
 import { Input } from '@affine/admin/components/ui/input';
-import { useQuery } from '@affine/core/hooks/use-query';
+import { useQuery } from '@affine/core/components/hooks/use-query';
 import { getUserByEmailQuery } from '@affine/graphql';
 import { PlusIcon } from 'lucide-react';
 import type { SetStateAction } from 'react';

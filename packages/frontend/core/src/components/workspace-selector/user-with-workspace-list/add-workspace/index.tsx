@@ -15,7 +15,7 @@ export const AddWorkspace = ({
 
   return (
     <div>
-      {environment.isElectron ? (
+      {BUILD_CONFIG.isElectron && (
         <MenuItem
           block={true}
           prefixIcon={<ImportIcon />}
@@ -27,7 +27,7 @@ export const AddWorkspace = ({
             {t['com.affine.workspace.local.import']()}
           </div>
         </MenuItem>
-      ) : null}
+      )}
       <MenuItem
         block={true}
         prefixIcon={<PlusIcon />}
@@ -36,7 +36,7 @@ export const AddWorkspace = ({
         className={styles.ItemContainer}
       >
         <div className={styles.ItemText}>
-          {runtimeConfig.allowLocalWorkspace
+          {BUILD_CONFIG.allowLocalWorkspace
             ? t['com.affine.workspaceList.addWorkspace.create']()
             : t['com.affine.workspaceList.addWorkspace.create-cloud']()}
         </div>

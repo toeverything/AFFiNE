@@ -3,7 +3,7 @@ import {
   SafeArea,
   startScopedViewTransition,
 } from '@affine/component';
-import { openSettingModalAtom } from '@affine/core/atoms';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { SettingsIcon } from '@blocksuite/icons/rc';

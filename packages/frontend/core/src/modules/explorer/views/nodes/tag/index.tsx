@@ -3,11 +3,11 @@ import {
   type DropTargetOptions,
   toast,
 } from '@affine/component';
-import { track } from '@affine/core/mixpanel';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import {
   GlobalContextService,
   useLiveData,

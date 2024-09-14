@@ -1,4 +1,4 @@
-import { track } from '@affine/core/mixpanel';
+import { track } from '@affine/track';
 import type { DocsService } from '@toeverything/infra';
 import { Service } from '@toeverything/infra';
 

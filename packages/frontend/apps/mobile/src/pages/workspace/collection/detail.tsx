@@ -1,7 +1,6 @@
 import { notify, useThemeColorV2 } from '@affine/component';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { CollectionService } from '@affine/core/modules/collection';
-import { WorkspaceSubPath } from '@affine/core/shared';
 import {
   GlobalContextService,
   useLiveData,
@@ -44,7 +43,7 @@ export const Component = () => {
   }, [collection, globalContext]);
 
   const notifyCollectionDeleted = useCallback(() => {
-    navigate.jumpToSubPath(workspace.id, WorkspaceSubPath.HOME);
+    navigate.jumpToPage(workspace.id, 'home');
     const collection = collectionService.collectionsTrash$.value.find(
       v => v.collection.id === params.collectionId
     );

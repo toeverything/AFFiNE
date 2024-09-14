@@ -44,7 +44,7 @@ export const dateFormatOptions: DateFormats[] = [
 ];
 
 const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
-  clientBorder: environment.isElectron && !environment.isWindows,
+  clientBorder: BUILD_CONFIG.isElectron && !environment.isWindows,
   windowFrameStyle: 'frameless',
   dateFormat: dateFormatOptions[0],
   startWeekOnMonday: false,
@@ -61,7 +61,7 @@ type SetStateAction<Value> = Value | ((prev: Value) => Value);
 const appSettingEffect = atomEffect(get => {
   const settings = get(appSettingBaseAtom);
   // some values in settings should be synced into electron side
-  if (environment.isElectron) {
+  if (BUILD_CONFIG.isElectron) {
     logger.debug('sync settings to electron', settings);
     // this api type in @affine/electron-api, but it is circular dependency this package, use any here
     (window as any).apis?.updater

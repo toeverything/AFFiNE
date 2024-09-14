@@ -1,8 +1,8 @@
 import { IconButton, useConfirmModal } from '@affine/component';
-import { track } from '@affine/core/mixpanel';
 import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
 import { MigrationFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { Trans, useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { BroomIcon, HelpIcon } from '@blocksuite/icons/rc';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
 import { useCallback } from 'react';

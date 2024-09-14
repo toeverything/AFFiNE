@@ -1,10 +1,9 @@
 import { toast } from '@affine/component';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { DocMode } from '@blocksuite/blocks';
+import type { DocCollection } from '@blocksuite/store';
 import { DocsService, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
-
-import type { DocCollection } from '../../../shared';
 
 export const usePageHelper = (docCollection: DocCollection) => {
   const { docsService, workbenchService } = useServices({

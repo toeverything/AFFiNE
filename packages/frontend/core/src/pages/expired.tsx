@@ -3,7 +3,10 @@ import { Button } from '@affine/component/ui/button';
 import { useI18n } from '@affine/i18n';
 import { useCallback } from 'react';
 
-import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '../components/hooks/use-navigate-helper';
 
 export const Component = () => {
   const t = useI18n();

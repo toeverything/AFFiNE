@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { getRuntimeConfig } from '@affine/cli/src/webpack/runtime-config';
+import { getBuildConfig } from '@affine/cli/src/webpack/runtime-config';
 import { sentryEsbuildPlugin } from '@sentry/esbuild-plugin';
 import type { BuildOptions, Plugin } from 'esbuild';
 
@@ -20,8 +20,8 @@ export const config = (): BuildOptions => {
 
   define['REPLACE_ME_BUILD_ENV'] = `"${process.env.BUILD_TYPE ?? 'stable'}"`;
 
-  define['runtimeConfig'] = JSON.stringify(
-    getRuntimeConfig({
+  define['BUILD_CONFIG'] = JSON.stringify(
+    getBuildConfig({
       channel: (process.env.BUILD_TYPE as any) ?? 'canary',
       distribution: 'desktop',
       mode:

@@ -1,13 +1,13 @@
 import { Button, type ButtonProps } from '@affine/component/ui/button';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { generateSubscriptionCallbackLink } from '@affine/core/hooks/affine/use-subscription-notify';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
+import { generateSubscriptionCallbackLink } from '@affine/core/components/hooks/affine/use-subscription-notify';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { popupWindow } from '@affine/core/utils';
 import type { SubscriptionRecurring } from '@affine/graphql';
 import { SubscriptionPlan, SubscriptionStatus } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { DoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
@@ -16,7 +16,7 @@ import { nanoid } from 'nanoid';
 import type { PropsWithChildren } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { authAtom } from '../../../../../atoms/index';
+import { authAtom } from '../../../../atoms/index';
 import { CancelAction, ResumeAction } from './actions';
 import type { DynamicPrice, FixedPrice } from './cloud-plans';
 import { ConfirmLoadingModal } from './modals';

@@ -36,7 +36,7 @@ export class UserDBDocServer implements DocServer {
     await this.socket.emitWithAck('space:join', {
       spaceType: 'userspace',
       spaceId: this.userId,
-      clientVersion: runtimeConfig.appVersion,
+      clientVersion: BUILD_CONFIG.appVersion,
     });
   }
 

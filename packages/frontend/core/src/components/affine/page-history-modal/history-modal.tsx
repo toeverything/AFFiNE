@@ -2,13 +2,13 @@ import { Loading, Scrollable } from '@affine/component';
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { Modal, useConfirmModal } from '@affine/component/ui/modal';
-import { openSettingModalAtom } from '@affine/core/atoms';
-import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
-import { track } from '@affine/core/mixpanel';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
+import { useDocCollectionPageTitle } from '@affine/core/components/hooks/use-block-suite-workspace-page-title';
 import { EditorService } from '@affine/core/modules/editor';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import type { DocMode } from '@blocksuite/blocks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons/rc';
 import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
@@ -28,7 +28,7 @@ import {
 } from 'react';
 import { encodeStateAsUpdate } from 'yjs';
 
-import { pageHistoryModalAtom } from '../../../atoms/page-history';
+import { pageHistoryModalAtom } from '../../atoms/page-history';
 import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
 import { PureEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch';
 import { AffineErrorBoundary } from '../affine-error-boundary';

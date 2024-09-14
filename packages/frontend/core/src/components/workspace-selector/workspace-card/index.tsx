@@ -1,9 +1,9 @@
 import { Button, Skeleton, Tooltip } from '@affine/component';
 import { Loading } from '@affine/component/ui/loading';
 import { WorkspaceAvatar } from '@affine/component/workspace-avatar';
-import { useSystemOnline } from '@affine/core/hooks/use-system-online';
-import { useWorkspace } from '@affine/core/hooks/use-workspace';
-import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { useSystemOnline } from '@affine/core/components/hooks/use-system-online';
+import { useWorkspace } from '@affine/core/components/hooks/use-workspace';
+import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import {
@@ -42,7 +42,7 @@ const CloudWorkspaceStatus = () => {
 const SyncingWorkspaceStatus = ({ progress }: { progress?: number }) => {
   return (
     <>
-      <Loading progress={progress} speed={progress ? 0 : undefined} />
+      <Loading progress={progress} speed={0} />
       Syncing...
     </>
   );
@@ -60,7 +60,7 @@ const UnSyncWorkspaceStatus = () => {
 const LocalWorkspaceStatus = () => {
   return (
     <>
-      {!environment.isElectron ? (
+      {!BUILD_CONFIG.isElectron ? (
         <InformationFillDuotoneIcon style={{ color: cssVar('errorColor') }} />
       ) : (
         <LocalWorkspaceIcon />
@@ -98,7 +98,7 @@ const useSyncEngineSyncProgress = (meta: WorkspaceMetadata) => {
   let content;
   // TODO(@eyhn): add i18n
   if (workspace.flavour === WorkspaceFlavour.LOCAL) {
-    if (!environment.isElectron) {
+    if (!BUILD_CONFIG.isElectron) {
       content = 'This is a local demo workspace.';
     } else {
       content = 'Saved locally';

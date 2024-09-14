@@ -15,12 +15,12 @@ export const AffineOtherPageLayout = ({
   const t = useI18n();
 
   const openDownloadLink = useCallback(() => {
-    open(runtimeConfig.downloadUrl, '_blank');
+    open(BUILD_CONFIG.downloadUrl, '_blank');
   }, []);
 
   return (
     <div className={styles.root}>
-      {environment.isElectron ? (
+      {BUILD_CONFIG.isElectron ? (
         <div className={styles.draggableHeader} />
       ) : (
         <div className={styles.topNav}>

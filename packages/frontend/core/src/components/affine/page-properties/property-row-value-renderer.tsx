@@ -232,8 +232,6 @@ const CloudUserAvatar = (props: { type: 'CreatedBy' | 'UpdatedBy' }) => {
     return null;
   }, [cloudDocMeta, props.type]);
 
-  const t = useI18n();
-
   if (!cloudDocMeta) {
     if (isRevalidating) {
       // TODO: loading ui
@@ -253,23 +251,21 @@ const CloudUserAvatar = (props: { type: 'CreatedBy' | 'UpdatedBy' }) => {
       </>
     );
   }
+  return <NoRecordValue />;
+};
+
+const NoRecordValue = () => {
+  const t = useI18n();
   return (
-    <>
-      <Avatar name="?" size={20} />
-      <span>
-        {t['com.affine.page-properties.property-user-avatar-no-record']()}
-      </span>
-    </>
+    <span>
+      {t['com.affine.page-properties.property-user-avatar-no-record']()}
+    </span>
   );
 };
 
-export const LocalUserValue = () => {
+const LocalUserValue = () => {
   const t = useI18n();
-  return (
-    <span className={styles.propertyRowValueCell}>
-      {t['com.affine.page-properties.local-user']()}
-    </span>
-  );
+  return <span>{t['com.affine.page-properties.local-user']()}</span>;
 };
 
 export const CreatedUserValue = () => {
@@ -278,7 +274,11 @@ export const CreatedUserValue = () => {
     workspaceService.workspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
 
   if (!isCloud) {
-    return <LocalUserValue />;
+    return (
+      <div className={styles.propertyRowValueUserCell}>
+        <LocalUserValue />
+      </div>
+    );
   }
 
   return (

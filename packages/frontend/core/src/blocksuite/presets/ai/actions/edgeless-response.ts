@@ -1,5 +1,4 @@
 import type { MindmapElementModel } from '@blocksuite/affine-block-surface';
-import { fitContent } from '@blocksuite/affine-block-surface';
 import type { EditorHost } from '@blocksuite/block-std';
 import type {
   AffineAIPanelWidget,
@@ -16,6 +15,7 @@ import {
   EDGELESS_TEXT_BLOCK_MIN_HEIGHT,
   EDGELESS_TEXT_BLOCK_MIN_WIDTH,
   EdgelessTextBlockModel,
+  fitContent,
   ImageBlockModel,
   InsertBelowIcon,
   LightLoadingIcon,

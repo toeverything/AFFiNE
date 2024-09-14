@@ -1,5 +1,5 @@
 import { Tooltip } from '@affine/component';
-import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import { popupWindow } from '@affine/core/utils';
 import { Unreachable } from '@affine/env/constant';
 import { useI18n } from '@affine/i18n';

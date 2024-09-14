@@ -8,7 +8,7 @@ import {
   useNavigate,
 } from 'react-router-dom';
 
-import { NavigateContext } from './hooks/use-navigate-helper';
+import { NavigateContext } from './components/hooks/use-navigate-helper';
 import { RootWrapper } from './pages/root';
 
 export function RootRouter() {
@@ -101,6 +101,7 @@ export const topLevelRoutes = [
           const workspaceId = url.searchParams.get('workspaceId');
           const docId = url.searchParams.get('docId');
           const templateName = url.searchParams.get('name');
+          const templateMode = url.searchParams.get('mode');
           const snapshotUrl = url.searchParams.get('snapshotUrl');
 
           return redirect(
@@ -108,6 +109,7 @@ export const topLevelRoutes = [
               isTemplate: 'true',
               templateName: templateName ?? '',
               snapshotUrl: snapshotUrl ?? '',
+              templateMode: templateMode ?? 'page',
             }).toString()}`
           );
         },
@@ -160,41 +162,6 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/404'),
       },
     ],
-  },
-] satisfies [RouteObject, ...RouteObject[]];
-
-export const viewRoutes = [
-  {
-    path: '/all',
-    lazy: () => import('./pages/workspace/all-page/all-page'),
-  },
-  {
-    path: '/collection',
-    lazy: () => import('./pages/workspace/all-collection'),
-  },
-  {
-    path: '/collection/:collectionId',
-    lazy: () => import('./pages/workspace/collection/index'),
-  },
-  {
-    path: '/tag',
-    lazy: () => import('./pages/workspace/all-tag'),
-  },
-  {
-    path: '/tag/:tagId',
-    lazy: () => import('./pages/workspace/tag'),
-  },
-  {
-    path: '/trash',
-    lazy: () => import('./pages/workspace/trash-page'),
-  },
-  {
-    path: '/:pageId',
-    lazy: () => import('./pages/workspace/detail-page/detail-page'),
-  },
-  {
-    path: '*',
-    lazy: () => import('./pages/404'),
   },
 ] satisfies [RouteObject, ...RouteObject[]];
 

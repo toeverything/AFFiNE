@@ -7,7 +7,6 @@ import {
   toReactNode,
   type useConfirmModal,
 } from '@affine/component';
-import { track } from '@affine/core/mixpanel';
 import type { EditorService } from '@affine/core/modules/editor';
 import { resolveLinkToDoc } from '@affine/core/modules/navigation';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
@@ -21,6 +20,7 @@ import {
 } from '@affine/core/modules/quicksearch';
 import { ExternalLinksQuickSearchSession } from '@affine/core/modules/quicksearch/impls/external-links';
 import { DebugLogger } from '@affine/debug';
+import { track } from '@affine/track';
 import {
   type BlockService,
   BlockViewIdentifier,

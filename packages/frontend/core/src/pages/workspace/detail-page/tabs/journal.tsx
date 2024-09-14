@@ -1,13 +1,13 @@
 import type { DateCell } from '@affine/component';
 import { DatePicker, IconButton, Menu, Scrollable } from '@affine/component';
-import { MoveToTrash } from '@affine/core/components/page-list';
-import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
-import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
+import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
+import { useDocCollectionPageTitle } from '@affine/core/components/hooks/use-block-suite-workspace-page-title';
 import {
   useJournalHelper,
   useJournalInfoHelper,
   useJournalRouteHelper,
-} from '@affine/core/hooks/use-journal';
+} from '@affine/core/components/hooks/use-journal';
+import { MoveToTrash } from '@affine/core/components/page-list';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import {

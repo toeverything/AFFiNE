@@ -1,5 +1,4 @@
 import { Toaster } from '@affine/admin/components/ui/sonner';
-import { Telemetry } from '@affine/core/telemetry';
 import { wrapCreateBrowserRouter } from '@sentry/react';
 import { useEffect } from 'react';
 import {
@@ -113,7 +112,6 @@ export const router = _createBrowserRouter(
 export const App = () => {
   return (
     <TooltipProvider>
-      <Telemetry />
       <SWRConfig
         value={{
           revalidateOnFocus: false,

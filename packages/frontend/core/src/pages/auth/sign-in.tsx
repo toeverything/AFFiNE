@@ -1,14 +1,16 @@
 import { AffineOtherPageLayout } from '@affine/component/affine-other-page-layout';
 import { SignInPageContainer } from '@affine/component/auth-components';
 import { AuthService } from '@affine/core/modules/cloud';
-import { appInfo } from '@affine/electron-api';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AuthPanel } from '../../components/affine/auth';
-import { RouteLogic, useNavigateHelper } from '../../hooks/use-navigate-helper';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '../../components/hooks/use-navigate-helper';
 
 export const SignIn = () => {
   const session = useService(AuthService).session;
@@ -20,10 +22,6 @@ export const SignIn = () => {
   const isLoggedIn = status === 'authenticated' && !isRevalidating;
 
   useEffect(() => {
-    if (environment.isElectron && appInfo?.windowName === 'hidden-window') {
-      return;
-    }
-
     if (isLoggedIn) {
       const redirectUri = searchParams.get('redirect_uri');
       if (redirectUri) {

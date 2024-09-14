@@ -1,4 +1,4 @@
-import { useQuery } from '@affine/core/hooks/use-query';
+import { useQuery } from '@affine/core/components/hooks/use-query';
 import { getServerRuntimeConfigQuery } from '@affine/graphql';
 import { useMemo } from 'react';
 

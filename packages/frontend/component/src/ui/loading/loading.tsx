@@ -1,7 +1,8 @@
 import { assignInlineVars } from '@vanilla-extract/dynamic';
+import clsx from 'clsx';
 
 import { withUnit } from '../../utils/with-unit';
-import { loading, speedVar } from './styles.css';
+import { loading, rotateAnimation, speedVar } from './styles.css';
 
 export interface LoadingProps {
   size?: number | string;
@@ -18,7 +19,7 @@ export const Loading = ({
   const sizeWithUnit = size ? withUnit(size, 'px') : '16px';
   return (
     <svg
-      className={loading}
+      className={clsx(loading, speed !== 0 && rotateAnimation)}
       width={sizeWithUnit}
       height={sizeWithUnit}
       viewBox="0 0 24 24"

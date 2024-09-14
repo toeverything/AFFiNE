@@ -17,11 +17,11 @@ export const ActionButton = ({
     <Button
       size="large"
       className={clsx(
-        environment.isMobileEdition ? mobileActionButton : actionButton,
+        BUILD_CONFIG.isMobileEdition ? mobileActionButton : actionButton,
         className
       )}
       contentClassName={clsx(
-        environment.isMobileEdition ? mobileActionContent : actionContent,
+        BUILD_CONFIG.isMobileEdition ? mobileActionContent : actionContent,
         contentClassName
       )}
       {...props}

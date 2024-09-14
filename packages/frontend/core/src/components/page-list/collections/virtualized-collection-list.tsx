@@ -1,4 +1,4 @@
-import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
+import { useDeleteCollectionInfo } from '@affine/core/components/hooks/affine/use-delete-collection-info';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useService, WorkspaceService } from '@toeverything/infra';

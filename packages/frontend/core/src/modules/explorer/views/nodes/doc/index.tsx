@@ -6,11 +6,11 @@ import {
   Tooltip,
 } from '@affine/component';
 import { InfoModal } from '@affine/core/components/affine/page-properties';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import {
   EdgelessIcon,
   LinkedEdgelessIcon,

@@ -166,7 +166,7 @@ export class CloudAwarenessConnection implements AwarenessConnection {
         spaceType: 'workspace',
         spaceId: this.workspaceId,
         docId: this.workspaceId,
-        clientVersion: runtimeConfig.appVersion,
+        clientVersion: BUILD_CONFIG.appVersion,
       },
       (res: any) => {
         logger.debug('awareness handshake finished', res);

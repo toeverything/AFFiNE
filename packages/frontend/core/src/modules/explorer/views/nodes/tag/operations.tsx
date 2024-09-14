@@ -1,11 +1,11 @@
 import { IconButton, MenuItem, MenuSeparator, toast } from '@affine/component';
 import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
-import { track } from '@affine/core/mixpanel';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { TagService } from '@affine/core/modules/tag';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import {
   DeleteIcon,
   OpenInNewIcon,
@@ -119,7 +119,7 @@ export const useExplorerTagNodeOperations = (
           </MenuItem>
         ),
       },
-      ...(enableMultiView && environment.isElectron
+      ...(BUILD_CONFIG.isElectron && enableMultiView
         ? [
             {
               index: 100,

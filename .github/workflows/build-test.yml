@@ -604,6 +604,8 @@ jobs:
       - e2e-mobile-test
       - e2e-migration-test
       - unit-test
+      - build-native
+      - build-server-native
       - server-test
       - server-e2e-test
       - desktop-test

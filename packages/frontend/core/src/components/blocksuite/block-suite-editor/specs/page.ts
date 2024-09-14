@@ -1,6 +1,9 @@
-import { PageSurfaceBlockSpec } from '@blocksuite/affine-block-surface';
 import type { ExtensionType } from '@blocksuite/block-std';
-import { NoteBlockSpec, PageSurfaceRefBlockSpec } from '@blocksuite/blocks';
+import {
+  NoteBlockSpec,
+  PageSurfaceBlockSpec,
+  PageSurfaceRefBlockSpec,
+} from '@blocksuite/blocks';
 import { type FrameworkProvider } from '@toeverything/infra';
 
 import { AIBlockSpecs, DefaultBlockSpecs } from './common';

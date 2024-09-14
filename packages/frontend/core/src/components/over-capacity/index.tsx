@@ -1,5 +1,5 @@
 import { notify } from '@affine/component';
-import { openSettingModalAtom } from '@affine/core/atoms';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';

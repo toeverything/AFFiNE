@@ -4,8 +4,8 @@ import type { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
-import { useAppSettingHelper } from '@affine/core/hooks/affine/use-app-setting-helper';
-import { useDocMetaHelper } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
+import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import { EditorService } from '@affine/core/modules/editor';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
@@ -29,13 +29,13 @@ import { useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { GlobalPageHistoryModal } from '../../../components/affine/page-history-modal';
+import { useRegisterBlocksuiteEditorCommands } from '../../../components/hooks/affine/use-register-blocksuite-editor-commands';
+import { useActiveBlocksuiteEditor } from '../../../components/hooks/use-block-suite-editor';
+import { usePageDocumentTitle } from '../../../components/hooks/use-global-state';
+import { useNavigateHelper } from '../../../components/hooks/use-navigate-helper';
 import { PageDetailEditor } from '../../../components/page-detail-editor';
 import { TrashPageFooter } from '../../../components/pure/trash-page-footer';
 import { TopTip } from '../../../components/top-tip';
-import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-register-blocksuite-editor-commands';
-import { useActiveBlocksuiteEditor } from '../../../hooks/use-block-suite-editor';
-import { usePageDocumentTitle } from '../../../hooks/use-global-state';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
 import {
   useIsActiveView,
   ViewBody,
@@ -43,7 +43,6 @@ import {
   ViewSidebarTab,
   WorkbenchService,
 } from '../../../modules/workbench';
-import { performanceRenderLogger } from '../../../shared';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
@@ -204,7 +203,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   );
 
   const [refCallback, hasScrollTop] = useHasScrollTop();
-  const dynamicTopBorder = environment.isElectron;
 
   const openOutlinePanel = useCallback(() => {
     workbench.openSidebar();
@@ -219,7 +217,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       <ViewBody>
         <div
           className={styles.mainContainer}
-          data-dynamic-top-border={dynamicTopBorder}
+          data-dynamic-top-border={BUILD_CONFIG.isElectron}
           data-has-scroll-top={hasScrollTop}
         >
           {/* Add a key to force rerender when page changed, to avoid error boundary persisting. */}
@@ -281,8 +279,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 });
 
 export const Component = () => {
-  performanceRenderLogger.debug('DetailPage');
-
   const params = useParams();
   const recentPages = useService(RecentDocsService);
 

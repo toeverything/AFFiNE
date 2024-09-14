@@ -9,7 +9,6 @@ import {
   filterPage,
   useEditCollection,
 } from '@affine/core/components/page-list';
-import { track } from '@affine/core/mixpanel';
 import { CollectionService } from '@affine/core/modules/collection';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { ShareDocsListService } from '@affine/core/modules/share-doc';
@@ -17,6 +16,7 @@ import type { AffineDNDData } from '@affine/core/types/dnd';
 import type { Collection } from '@affine/env/filter';
 import { PublicPageMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { FilterMinusIcon } from '@blocksuite/icons/rc';
 import type { DocMeta } from '@blocksuite/store';
 import {

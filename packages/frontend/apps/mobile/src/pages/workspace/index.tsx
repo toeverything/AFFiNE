@@ -125,8 +125,8 @@ export const Component = () => {
 
   if (workspaceNotFound) {
     if (
-      detailDocRoute /*  */ &&
-      environment.isDesktopEdition /* only browser has share page */
+      BUILD_CONFIG.isDesktopEdition /* only browser has share page */ &&
+      detailDocRoute
     ) {
       return <div>TODO: share page</div>;
     }

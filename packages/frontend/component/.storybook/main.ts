@@ -3,7 +3,7 @@ import { StorybookConfig } from '@storybook/react-vite';
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin';
 import swc from 'unplugin-swc';
 import { mergeConfig } from 'vite';
-import { getRuntimeConfig } from '@affine/cli/src/webpack/runtime-config';
+import { getBuildConfig } from '@affine/cli/src/webpack/runtime-config';
 
 export default {
   stories: ['../src/ui/**/*.@(mdx|stories.@(js|jsx|ts|tsx))'],
@@ -54,14 +54,18 @@ export default {
       ],
       define: {
         'process.env.CAPTCHA_SITE_KEY': `"${process.env.CAPTCHA_SITE_KEY}"`,
-        runtimeConfig: getRuntimeConfig({
-          distribution: 'web',
-          mode: 'development',
-          channel: 'canary',
-          static: false,
-          coverage: false,
-          static: false,
-        }),
+        ...Object.entries(
+          getBuildConfig({
+            distribution: 'web',
+            mode: 'development',
+            channel: 'canary',
+            static: false,
+            coverage: false,
+          })
+        ).reduce((envs, [key, value]) => {
+          envs[`BUILD_CONFIG.${key}`] = JSON.stringify(value);
+          return envs;
+        }, {}),
       },
     });
   },

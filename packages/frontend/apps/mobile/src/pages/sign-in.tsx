@@ -1,7 +1,7 @@
 import {
   RouteLogic,
   useNavigateHelper,
-} from '@affine/core/hooks/use-navigate-helper';
+} from '@affine/core/components/hooks/use-navigate-helper';
 import { AuthService } from '@affine/core/modules/cloud';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';

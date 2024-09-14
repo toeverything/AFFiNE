@@ -4,13 +4,13 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import { useAppUpdater } from '@affine/core/hooks/use-app-updater';
-import { mixpanel } from '@affine/core/mixpanel';
+import { useAppUpdater } from '@affine/core/components/hooks/use-app-updater';
 import { useI18n } from '@affine/i18n';
+import { mixpanel } from '@affine/track';
 import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
-import { useAppSettingHelper } from '../../../../../hooks/affine/use-app-setting-helper';
+import { useAppSettingHelper } from '../../../../../components/hooks/affine/use-app-setting-helper';
 import { appIconMap, appNames } from '../../../../../pages/open-app';
 import { popupWindow } from '../../../../../utils';
 import { relatedLinks } from './config';
@@ -21,7 +21,7 @@ export const AboutAffine = () => {
   const t = useI18n();
   const { appSettings, updateSettings } = useAppSettingHelper();
   const { toggleAutoCheck, toggleAutoDownload } = useAppUpdater();
-  const channel = runtimeConfig.appBuildType;
+  const channel = BUILD_CONFIG.appBuildType;
   const appIcon = appIconMap[channel];
   const appName = appNames[channel];
 
@@ -63,16 +63,16 @@ export const AboutAffine = () => {
       <SettingWrapper title={t['com.affine.aboutAFFiNE.version.title']()}>
         <SettingRow
           name={appName}
-          desc={runtimeConfig.appVersion}
+          desc={BUILD_CONFIG.appVersion}
           className={styles.appImageRow}
         >
           <img src={appIcon} alt={appName} width={56} height={56} />
         </SettingRow>
         <SettingRow
           name={t['com.affine.aboutAFFiNE.version.editor.title']()}
-          desc={runtimeConfig.editorVersion}
+          desc={BUILD_CONFIG.editorVersion}
         />
-        {environment.isElectron ? (
+        {BUILD_CONFIG.isElectron ? (
           <>
             <UpdateCheckSection />
             <SettingRow
@@ -100,7 +100,7 @@ export const AboutAffine = () => {
               desc={t['com.affine.aboutAFFiNE.changelog.description']()}
               style={{ cursor: 'pointer' }}
               onClick={() => {
-                popupWindow(runtimeConfig.changelogUrl);
+                popupWindow(BUILD_CONFIG.changelogUrl);
               }}
             >
               <ArrowRightSmallIcon />

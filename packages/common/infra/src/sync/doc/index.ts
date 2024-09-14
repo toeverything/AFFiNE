@@ -142,17 +142,22 @@ export class DocEngine {
   }
 
   addDoc(doc: YDoc, withSubDocs = true) {
-    this.localPart.actions.addDoc(doc);
     this.remotePart?.actions.addDoc(doc.guid);
+    this.localPart.actions.addDoc(doc);
 
     if (withSubDocs) {
-      const subdocs = doc.getSubdocs();
-      for (const subdoc of subdocs) {
-        this.addDoc(subdoc, false);
-      }
-      doc.on('subdocs', ({ added }: { added: Set<YDoc> }) => {
+      doc.on('subdocs', ({ added, loaded }) => {
+        // added: the subdocs that are existing on the ydoc
+        // loaded: the subdocs that have been called `ydoc.load()`
+        //
+        // we add all existing subdocs to remote part, let them sync between storage and server
+        // but only add loaded subdocs to local part, let them sync between storage and ydoc
+        // sync data to ydoc will consume more memory, so we only sync the ydoc that are necessary.
         for (const subdoc of added) {
-          this.addDoc(subdoc, false);
+          this.remotePart?.actions.addDoc(subdoc.guid);
+        }
+        for (const subdoc of loaded) {
+          this.localPart.actions.addDoc(subdoc);
         }
       });
     }

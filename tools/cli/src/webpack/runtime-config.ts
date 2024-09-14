@@ -1,13 +1,25 @@
-import type { RuntimeConfig } from '@affine/env/global';
+import type { BUILD_CONFIG_TYPE } from '@affine/env/global';
 
 import packageJson from '../../package.json' assert { type: 'json' };
 import type { BuildFlags } from '../config';
 
-export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
-  const buildPreset: Record<BuildFlags['channel'], RuntimeConfig> = {
+export function getBuildConfig(buildFlags: BuildFlags): BUILD_CONFIG_TYPE {
+  const buildPreset: Record<BuildFlags['channel'], BUILD_CONFIG_TYPE> = {
     get stable() {
       return {
+        debug: buildFlags.mode === 'development',
         distribution: buildFlags.distribution,
+        isDesktopEdition: (
+          ['web', 'desktop', 'admin'] as BuildFlags['distribution'][]
+        ).includes(buildFlags.distribution),
+        isMobileEdition: (['mobile'] as BuildFlags['distribution'][]).includes(
+          buildFlags.distribution
+        ),
+        isElectron: buildFlags.distribution === 'desktop',
+        isWeb: buildFlags.distribution === 'web',
+        isMobileWeb: buildFlags.distribution === 'mobile',
+
+        isSelfHosted: process.env.SELF_HOSTED === 'true',
         appBuildType: 'stable' as const,
         serverUrlPrefix: 'https://app.affine.pro',
         appVersion: packageJson.version,
@@ -21,13 +33,10 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         enableExperimentalFeature: true,
         allowLocalWorkspace:
           buildFlags.distribution === 'desktop' ? true : false,
-        enableOrganize: true,
-        enableInfoModal: true,
+        enableThemeEditor: false,
 
         // CAUTION(@forehalo): product not ready, do not enable it
         enableNewSettingUnstableApi: false,
-        enableEnhanceShareMode: false,
-        enableThemeEditor: false,
       };
     },
     get beta() {
@@ -53,8 +62,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
         appBuildType: 'canary' as const,
         serverUrlPrefix: 'https://affine.fail',
         changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
-        enableInfoModal: true,
-        enableOrganize: true,
         enableThemeEditor: true,
       };
     },
@@ -76,9 +83,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
     enableNewSettingUnstableApi: process.env.ENABLE_NEW_SETTING_UNSTABLE_API
       ? process.env.ENABLE_NEW_SETTING_UNSTABLE_API === 'true'
       : currentBuildPreset.enableNewSettingUnstableApi,
-    enableEnhanceShareMode: process.env.ENABLE_ENHANCE_SHARE_MODE
-      ? process.env.ENABLE_ENHANCE_SHARE_MODE === 'true'
-      : currentBuildPreset.enableEnhanceShareMode,
     allowLocalWorkspace: process.env.ALLOW_LOCAL_WORKSPACE
       ? process.env.ALLOW_LOCAL_WORKSPACE === 'true'
       : buildFlags.mode === 'development'
@@ -95,7 +99,6 @@ export function getRuntimeConfig(buildFlags: BuildFlags): RuntimeConfig {
   }
 
   return {
-    isSelfHosted: process.env.SELF_HOSTED === 'true',
     ...currentBuildPreset,
     // environment preset will overwrite current build preset
     // this environment variable is for debug proposes only

@@ -1,11 +1,11 @@
 import { notify } from '@affine/component';
-import { updateReadyAtom } from '@affine/core/hooks/use-app-updater';
+import { updateReadyAtom } from '@affine/core/components/hooks/use-app-updater';
 import { apis } from '@affine/electron-api';
 import type { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { ResetIcon } from '@blocksuite/icons/rc';
 import type { createStore } from 'jotai';
 
-import { track } from '../mixpanel';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineUpdatesCommands({

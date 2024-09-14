@@ -5,7 +5,7 @@ import { useCallback } from 'react';
 import {
   RouteLogic,
   useNavigateHelper,
-} from '../../../../hooks/use-navigate-helper';
+} from '../../../../components/hooks/use-navigate-helper';
 import { ErrorDetail, ErrorStatus } from '../error-basic/error-detail';
 import { createErrorFallback } from '../error-basic/fallback-creator';
 

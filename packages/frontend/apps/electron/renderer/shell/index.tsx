@@ -1,12 +1,11 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
-import '@affine/core/bootstrap/preload';
 import '../global.css';
+import './setup';
 
 import { ThemeProvider } from '@affine/component/theme-provider';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
 import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
-import { performanceLogger } from '@affine/core/shared';
 import { apis, events } from '@affine/electron-api';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import {
@@ -24,8 +23,6 @@ configureGlobalStorageModule(framework);
 configureElectronStateStorageImpls(framework);
 configureAppTabsHeaderModule(framework);
 const frameworkProvider = framework.provider();
-
-const logger = performanceLogger.namespace('shell');
 
 async function loadLanguage() {
   const i18n = createI18n();
@@ -60,7 +57,6 @@ function mountApp() {
   if (!root) {
     throw new Error('Root element not found');
   }
-  logger.info('render app');
   createRoot(root).render(
     <StrictMode>
       <FrameworkRoot framework={frameworkProvider}>

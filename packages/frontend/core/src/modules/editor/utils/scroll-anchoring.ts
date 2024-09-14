@@ -1,9 +1,10 @@
-import type { BlockStdScope } from '@blocksuite/block-std';
+import type { BlockStdScope, SelectionManager } from '@blocksuite/block-std';
 import type {
   DocMode,
   EdgelessRootService,
   PageRootService,
 } from '@blocksuite/blocks';
+import { ZOOM_MAX } from '@blocksuite/blocks';
 import { Bound, deserializeXYWH } from '@blocksuite/global/utils';
 
 function scrollAnchoringInEdgelessMode(
@@ -11,23 +12,14 @@ function scrollAnchoringInEdgelessMode(
   id: string
 ) {
   requestAnimationFrame(() => {
-    let isNotInNote = true;
     let bounds: Bound | null = null;
+    let pageSelection: SelectionManager | null = null;
 
     const blockComponent = service.std.view.getBlock(id);
-
     const parentComponent = blockComponent?.parentComponent;
     if (parentComponent && parentComponent.flavour === 'affine:note') {
-      isNotInNote = false;
-
-      const selection = parentComponent.std.selection;
-      if (!selection) return;
-
-      selection.set([
-        selection.create('block', {
-          blockId: id,
-        }),
-      ]);
+      pageSelection = parentComponent.std.selection;
+      if (!pageSelection) return;
 
       const { left: x, width: w } = parentComponent.getBoundingClientRect();
       const { top: y, height: h } = blockComponent.getBoundingClientRect();
@@ -48,19 +40,27 @@ function scrollAnchoringInEdgelessMode(
 
     if (!bounds) return;
 
-    if (isNotInNote) {
+    const { zoom, centerX, centerY } = service.getFitToScreenData(
+      [20, 20, 100, 20],
+      [bounds],
+      ZOOM_MAX
+    );
+
+    service.viewport.setCenter(centerX, centerY);
+    service.viewport.setZoom(zoom);
+
+    if (pageSelection) {
+      pageSelection.setGroup('note', [
+        pageSelection.create('block', {
+          blockId: id,
+        }),
+      ]);
+    } else {
       service.selection.set({
         elements: [id],
         editing: false,
       });
     }
-
-    const { zoom, centerX, centerY } = service.getFitToScreenData(
-      [20, 20, 20, 20],
-      [bounds]
-    );
-
-    service.viewport.setViewport(zoom, [centerX, centerY]);
 
     // const surfaceComponent = service.std.view.getBlock(service.surface.id);
     // if (!surfaceComponent) return;
@@ -82,7 +82,7 @@ function scrollAnchoringInPageMode(service: PageRootService, id: string) {
   const selection = service.std.selection;
   if (!selection) return;
 
-  selection.set([
+  selection.setGroup('note', [
     selection.create('block', {
       blockId: id,
     }),

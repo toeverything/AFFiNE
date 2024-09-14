@@ -1,11 +1,11 @@
 import { Scrollable } from '@affine/component';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
+import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
+import { usePageDocumentTitle } from '@affine/core/components/hooks/use-global-state';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
 import { SharePageNotFoundError } from '@affine/core/components/share-page-not-found-error';
 import { AppContainer, MainContainer } from '@affine/core/components/workspace';
-import { useActiveBlocksuiteEditor } from '@affine/core/hooks/use-block-suite-editor';
-import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
 import { AuthService } from '@affine/core/modules/cloud';
 import {
   type Editor,

@@ -1,6 +1,6 @@
 import { toast } from '@affine/component';
-import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
-import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
+import { useBlockSuiteDocMeta } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import { CollectionService } from '@affine/core/modules/collection';
 import type { Tag } from '@affine/core/modules/tag';
 import type { Collection, Filter } from '@affine/env/filter';

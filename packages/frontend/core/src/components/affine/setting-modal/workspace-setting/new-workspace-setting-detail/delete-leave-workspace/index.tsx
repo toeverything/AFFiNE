@@ -1,7 +1,7 @@
 import { notify } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { ConfirmModal } from '@affine/component/ui/modal';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { useI18n } from '@affine/i18n';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
@@ -15,12 +15,11 @@ import {
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 
-import { openSettingModalAtom } from '../../../../../../atoms';
 import {
   RouteLogic,
   useNavigateHelper,
-} from '../../../../../../hooks/use-navigate-helper';
-import { WorkspaceSubPath } from '../../../../../../shared';
+} from '../../../../../../components/hooks/use-navigate-helper';
+import { openSettingModalAtom } from '../../../../../atoms';
 import { WorkspaceDeleteModal } from './delete';
 
 export const DeleteLeaveWorkspace = () => {
@@ -37,7 +36,7 @@ export const DeleteLeaveWorkspace = () => {
   });
   const t = useI18n();
   const workspace = workspaceService.workspace;
-  const { jumpToSubPath, jumpToIndex } = useNavigateHelper();
+  const { jumpToPage, jumpToIndex } = useNavigateHelper();
   // fixme: cloud regression
   const [showDelete, setShowDelete] = useState(false);
   const [showLeave, setShowLeave] = useState(false);
@@ -72,11 +71,7 @@ export const DeleteLeaveWorkspace = () => {
       );
       // TODO(@eyhn): if there is no workspace, jump to a new page(wait for design)
       if (backWorkspace) {
-        jumpToSubPath(
-          backWorkspace?.id || '',
-          WorkspaceSubPath.ALL,
-          RouteLogic.REPLACE
-        );
+        jumpToPage(backWorkspace?.id || '', 'all', RouteLogic.REPLACE);
       } else {
         jumpToIndex(RouteLogic.REPLACE);
       }
@@ -96,7 +91,7 @@ export const DeleteLeaveWorkspace = () => {
     isOwner,
     t,
     workspaceList,
-    jumpToSubPath,
+    jumpToPage,
     jumpToIndex,
     workspacesService,
     workspacePermissionService,

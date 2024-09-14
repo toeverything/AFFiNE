@@ -1,5 +1,5 @@
 import { MobileMenu } from '@affine/component';
-import { track } from '@affine/core/mixpanel';
+import { track } from '@affine/track';
 import { useService, WorkspacesService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 

@@ -1,7 +1,7 @@
-import { getDowngradeQuestionnaireLink } from '@affine/core/hooks/affine/use-subscription-notify';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
+import { getDowngradeQuestionnaireLink } from '@affine/core/components/hooks/affine/use-subscription-notify';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { SubscriptionPlan } from '@affine/graphql';
+import { track } from '@affine/track';
 import { useLiveData, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import type { PropsWithChildren } from 'react';

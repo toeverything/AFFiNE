@@ -98,7 +98,7 @@ export const tab = style({
       boxShadow: cssVar('buttonShadow'),
     },
     '&[data-pinned="true"]': {
-      flexShrink: 0,
+      maxWidth: 64,
     },
     [`${tabWrapper}[data-dragging="true"] &`]: {
       boxShadow: `0 0 0 1px ${cssVar('primaryColor')}`,

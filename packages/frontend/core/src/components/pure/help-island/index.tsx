@@ -10,8 +10,8 @@ import {
 import { useSetAtom } from 'jotai/react';
 import { useCallback, useState } from 'react';
 
-import { openSettingModalAtom } from '../../../atoms';
 import type { SettingProps } from '../../affine/setting-modal';
+import { openSettingModalAtom } from '../../atoms';
 import { ContactIcon, HelpIcon, KeyboardIcon } from './icons';
 import {
   StyledAnimateWrapper,
@@ -29,7 +29,9 @@ const DEFAULT_SHOW_LIST: IslandItemNames[] = [
 const DESKTOP_SHOW_LIST: IslandItemNames[] = [...DEFAULT_SHOW_LIST];
 type IslandItemNames = 'whatNew' | 'contact' | 'shortcuts';
 
-const showList = environment.isElectron ? DESKTOP_SHOW_LIST : DEFAULT_SHOW_LIST;
+const showList = BUILD_CONFIG.isElectron
+  ? DESKTOP_SHOW_LIST
+  : DEFAULT_SHOW_LIST;
 
 export const HelpIsland = () => {
   const { globalContextService } = useServices({
@@ -77,7 +79,7 @@ export const HelpIsland = () => {
             <StyledIconWrapper
               data-testid="right-bottom-change-log-icon"
               onClick={() => {
-                popupWindow(runtimeConfig.changelogUrl);
+                popupWindow(BUILD_CONFIG.changelogUrl);
               }}
             >
               <NewIcon />

@@ -254,10 +254,10 @@ export async function openUrlInHiddenWindow(urlObj: URL) {
       preload: join(__dirname, './preload.js'),
       additionalArguments: await getWindowAdditionalArguments(),
     },
-    show: environment.isDebug,
+    show: BUILD_CONFIG.debug,
   });
 
-  if (environment.isDebug) {
+  if (BUILD_CONFIG.debug) {
     win.webContents.openDevTools({
       mode: 'detach',
     });

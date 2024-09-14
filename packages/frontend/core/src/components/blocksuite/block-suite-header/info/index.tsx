@@ -1,7 +1,7 @@
 import { IconButton } from '@affine/component';
-import { openInfoModalAtom } from '@affine/core/atoms';
-import { track } from '@affine/core/mixpanel';
+import { openInfoModalAtom } from '@affine/core/components/atoms';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { InformationIcon } from '@blocksuite/icons/rc';
 import { useSetAtom } from 'jotai';
 import { useCallback } from 'react';

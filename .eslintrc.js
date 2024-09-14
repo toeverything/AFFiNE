@@ -34,7 +34,7 @@ const createPattern = packageName => [
   {
     group: ['@affine/env/constant'],
     message:
-      'Do not import from @affine/env/constant. Use `environment.isElectron` instead',
+      'Do not import from @affine/env/constant. Use `BUILD_CONFIG.isElectron` instead',
     importNames: ['isElectron'],
   },
 ];
@@ -50,6 +50,7 @@ const allPackages = [
   'packages/frontend/i18n',
   'packages/frontend/native',
   'packages/frontend/templates',
+  'packages/frontend/track',
   'packages/common/debug',
   'packages/common/env',
   'packages/common/infra',

@@ -1,5 +1,5 @@
 import { OverlayModal } from '@affine/component';
-import { openIssueFeedbackModalAtom } from '@affine/core/atoms';
+import { openIssueFeedbackModalAtom } from '@affine/core/components/atoms';
 import { useI18n } from '@affine/i18n';
 import { useAtom } from 'jotai';
 
@@ -24,7 +24,7 @@ export const IssueFeedbackModal = () => {
       onOpenChange={setOpen}
       description={t['com.affine.issue-feedback.description']()}
       cancelText={t['com.affine.issue-feedback.cancel']()}
-      to={`${runtimeConfig.githubUrl}/issues/new/choose`}
+      to={`${BUILD_CONFIG.githubUrl}/issues/new/choose`}
       confirmText={t['com.affine.issue-feedback.confirm']()}
       confirmButtonOptions={{
         variant: 'primary',

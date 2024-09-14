@@ -1,5 +1,5 @@
 import { Button } from '@affine/component';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { useI18n } from '@affine/i18n';
 
 export const ImportTemplateButton = ({

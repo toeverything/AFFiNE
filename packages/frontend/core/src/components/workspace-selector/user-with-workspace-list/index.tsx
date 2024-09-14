@@ -1,11 +1,11 @@
 import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
-import { authAtom } from '@affine/core/atoms';
-import { track } from '@affine/core/mixpanel';
+import { authAtom } from '@affine/core/components/atoms';
 import { AuthService } from '@affine/core/modules/cloud';
 import { CreateWorkspaceDialogService } from '@affine/core/modules/create-workspace';
 import type { CreateWorkspaceCallbackPayload } from '@affine/core/modules/create-workspace/types';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import {
   useLiveData,
@@ -88,7 +88,7 @@ const UserWithWorkspaceListInner = ({
   }, [setOpenSignIn]);
 
   const onNewWorkspace = useCallback(() => {
-    if (!isAuthenticated && !runtimeConfig.allowLocalWorkspace) {
+    if (!isAuthenticated && !BUILD_CONFIG.allowLocalWorkspace) {
       return openSignInModal();
     }
     track.$.navigationPanel.workspaceList.createWorkspace();

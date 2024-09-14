@@ -75,7 +75,7 @@ export function effect<T, A, B, C, D, E, F>(
 export function effect(...args: any[]) {
   const subject$ = new Subject<any>();
 
-  const effectLocation = environment.isDebug
+  const effectLocation = BUILD_CONFIG.debug
     ? `(${new Error().stack?.split('\n')[2].trim()})`
     : '';
 

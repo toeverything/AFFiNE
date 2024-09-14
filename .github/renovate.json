@@ -23,11 +23,10 @@
       "groupName": "oxlint"
     },
     {
-      "groupName": "blocksuite-canary",
+      "groupName": "blocksuite",
       "matchPackagePatterns": ["^@blocksuite"],
       "excludePackageNames": ["@blocksuite/icons"],
-      "rangeStrategy": "replace",
-      "enabled": false
+      "rangeStrategy": "replace"
     },
     {
       "groupName": "all non-major dependencies",

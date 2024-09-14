@@ -1,4 +1,4 @@
-import { NavigateContext } from '@affine/core/hooks/use-navigate-helper';
+import { NavigateContext } from '@affine/core/components/hooks/use-navigate-helper';
 import { wrapCreateBrowserRouter } from '@sentry/react';
 import { useEffect, useState } from 'react';
 import type { RouteObject } from 'react-router-dom';

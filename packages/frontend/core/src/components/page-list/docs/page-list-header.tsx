@@ -5,14 +5,14 @@ import {
   Scrollable,
   useConfirmModal,
 } from '@affine/component';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
-import { track } from '@affine/core/mixpanel';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import { isNewTabTrigger } from '@affine/core/utils';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import type { DocMode } from '@blocksuite/blocks';
 import {
   ArrowDownSmallIcon,

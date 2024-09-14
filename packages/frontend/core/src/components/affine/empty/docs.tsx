@@ -31,7 +31,7 @@ export const EmptyDocs = ({
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
   const tag = useLiveData(tagService.tagList.tagByTagId$(tagId));
 
-  const showActionButton = type !== 'trash'; // && !environment.isMobileEdition;
+  const showActionButton = type !== 'trash'; // && !BUILD_CONFIG.isMobileEdition;
 
   const onCreate = useCallback(
     (e: MouseEvent) => {

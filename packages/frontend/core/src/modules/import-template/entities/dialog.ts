@@ -1,8 +1,10 @@
+import type { DocMode } from '@blocksuite/blocks';
 import { Entity, LiveData } from '@toeverything/infra';
 
 interface TemplateOptions {
   templateName: string;
   snapshotUrl: string;
+  templateMode: DocMode;
 }
 
 export class ImportTemplateDialog extends Entity {

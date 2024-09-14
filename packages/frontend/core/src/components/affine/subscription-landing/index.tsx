@@ -1,7 +1,7 @@
 import { AuthPageContainer } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
-import { useSubscriptionNotifyWriter } from '@affine/core/hooks/affine/use-subscription-notify';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { useSubscriptionNotifyWriter } from '@affine/core/components/hooks/affine/use-subscription-notify';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { Trans, useI18n } from '@affine/i18n';
 import { type ReactNode, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';

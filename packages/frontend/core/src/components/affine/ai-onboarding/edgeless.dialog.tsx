@@ -1,9 +1,9 @@
 import { Button, FlexWrapper, notify } from '@affine/component';
-import { openSettingModalAtom } from '@affine/core/atoms';
-import { track } from '@affine/core/mixpanel';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
 import { SubscriptionService } from '@affine/core/modules/cloud';
 import { EditorService } from '@affine/core/modules/editor';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { AiIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';

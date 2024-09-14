@@ -1,6 +1,6 @@
 import { Button, IconButton, Menu } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
-import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
+import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import type { PageInfoCustomPropertyMeta } from '@affine/core/modules/properties/services/schema';
 import { Trans, useI18n } from '@affine/i18n';
 import {
@@ -20,8 +20,8 @@ import {
   useState,
 } from 'react';
 
-import { useCurrentWorkspacePropertiesAdapter } from '../../../../../hooks/use-affine-adapter';
-import { useWorkspace } from '../../../../../hooks/use-workspace';
+import { useCurrentWorkspacePropertiesAdapter } from '../../../../../components/hooks/use-affine-adapter';
+import { useWorkspace } from '../../../../../components/hooks/use-workspace';
 import type { PagePropertyIcon } from '../../../page-properties';
 import {
   nameToIcon,

@@ -12,9 +12,9 @@ import {
   authAtom,
   openSettingModalAtom,
   openSignOutModalAtom,
-} from '@affine/core/atoms';
-import { track } from '@affine/core/mixpanel';
+} from '@affine/core/components/atoms';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { AccountIcon, SignOutIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';

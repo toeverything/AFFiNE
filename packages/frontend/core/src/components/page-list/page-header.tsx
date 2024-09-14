@@ -1,6 +1,6 @@
 import type { CheckboxProps } from '@affine/component';
 import { Checkbox } from '@affine/component';
-import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import { useI18n } from '@affine/i18n';
 import { MultiSelectIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';

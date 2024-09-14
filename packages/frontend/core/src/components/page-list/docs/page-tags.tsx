@@ -1,5 +1,5 @@
 import { Menu } from '@affine/component';
-import { useCatchEventCallback } from '@affine/core/hooks/use-catch-event-hook';
+import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import type { Tag } from '@affine/core/modules/tag';
 import { stopPropagation } from '@affine/core/utils';
 import { CloseIcon, MoreHorizontalIcon } from '@blocksuite/icons/rc';

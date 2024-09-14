@@ -10,9 +10,6 @@ declare global {
   };
 }
 
-//#region runtime variables
-export const isElectron = !!globalThis.__appInfo?.electron;
-//#endregion
 export const DEFAULT_WORKSPACE_NAME = 'Demo Workspace';
 export const UNTITLED_WORKSPACE_NAME = 'Untitled';
 

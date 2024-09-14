@@ -5,19 +5,19 @@ import { useLiveData, useService, type Workspace } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
-import { authAtom } from '../atoms';
-import { useEnableCloud } from '../hooks/affine/use-enable-cloud';
+import { useEnableCloud } from '../components/hooks/affine/use-enable-cloud';
 import { AuthService } from '../modules/cloud';
+import { authAtom } from './atoms';
 
 const minimumChromeVersion = 106;
 
 const shouldShowWarning = (() => {
-  if (environment.isElectron) {
+  if (BUILD_CONFIG.isElectron) {
     // even though desktop has compatibility issues,
     //  we don't want to show the warning
     return false;
   }
-  if (environment.isMobile) {
+  if (BUILD_CONFIG.isMobileEdition) {
     return true;
   }
   if (environment.isChrome && environment.chromeVersion) {
@@ -75,8 +75,8 @@ export const TopTip = ({
   }, [setAuthModal]);
 
   if (
+    !BUILD_CONFIG.isElectron &&
     showLocalDemoTips &&
-    !environment.isElectron &&
     workspace.flavour === WorkspaceFlavour.LOCAL
   ) {
     return (

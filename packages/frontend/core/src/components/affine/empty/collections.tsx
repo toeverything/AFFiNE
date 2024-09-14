@@ -1,4 +1,4 @@
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { CollectionService } from '@affine/core/modules/collection';
 import { useI18n } from '@affine/i18n';
 import { ViewLayersIcon } from '@blocksuite/icons/rc';

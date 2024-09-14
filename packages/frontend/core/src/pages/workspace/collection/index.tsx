@@ -1,10 +1,10 @@
 import { notify } from '@affine/component';
 import { EmptyCollectionDetail } from '@affine/core/components/affine/empty/collection-detail';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import {
   useEditCollection,
   VirtualizedPageList,
 } from '@affine/core/components/page-list';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
@@ -19,7 +19,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
+import { useNavigateHelper } from '../../../components/hooks/use-navigate-helper';
 import {
   useIsActiveView,
   ViewBody,
@@ -27,7 +27,6 @@ import {
   ViewIcon,
   ViewTitle,
 } from '../../../modules/workbench';
-import { WorkspaceSubPath } from '../../../shared';
 import { CollectionDetailHeader } from './header';
 
 export const CollectionDetail = ({
@@ -77,7 +76,7 @@ export const Component = function CollectionPage() {
   const isActiveView = useIsActiveView();
 
   const notifyCollectionDeleted = useCallback(() => {
-    navigate.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
+    navigate.jumpToPage(workspace.id, 'all');
     const collection = collectionService.collectionsTrash$.value.find(
       v => v.collection.id === params.collectionId
     );

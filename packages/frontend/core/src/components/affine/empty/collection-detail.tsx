@@ -1,4 +1,4 @@
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
@@ -30,7 +30,9 @@ export const EmptyCollectionDetail = ({
       title={t['com.affine.empty.collection-detail.title']()}
       description={t['com.affine.empty.collection-detail.description']()}
       action={
-        environment.isMobileEdition ? null : <Actions collection={collection} />
+        BUILD_CONFIG.isMobileEdition ? null : (
+          <Actions collection={collection} />
+        )
       }
       {...props}
     />

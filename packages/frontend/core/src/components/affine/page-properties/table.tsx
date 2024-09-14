@@ -1,7 +1,6 @@
 import type { MenuProps } from '@affine/component';
 import { Button, IconButton, Menu, MenuItem, Tooltip } from '@affine/component';
-import { useCurrentWorkspacePropertiesAdapter } from '@affine/core/hooks/use-affine-adapter';
-import { track } from '@affine/core/mixpanel';
+import { useCurrentWorkspacePropertiesAdapter } from '@affine/core/components/hooks/use-affine-adapter';
 import { DocLinksService } from '@affine/core/modules/doc-link';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import type {
@@ -10,6 +9,7 @@ import type {
   PagePropertyType,
 } from '@affine/core/modules/properties/services/schema';
 import { i18nTime, useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { assertExists } from '@blocksuite/global/utils';
 import {
   ArrowDownSmallIcon,
@@ -759,6 +759,11 @@ export const PagePropertyRow = ({
     setEditingMeta(false);
     setEditingItem(null);
   }, [setEditingItem]);
+
+  // NOTE: if we define a new property type, the value render may not exists in old client
+  //       skip rendering if value render is not define yet
+  if (!ValueRenderer || typeof ValueRenderer !== 'function') return null;
+
   return (
     <SortablePropertyRow property={property} data-testid="page-property-row">
       {({ attributes, listeners }) => (

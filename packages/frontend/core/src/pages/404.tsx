@@ -2,14 +2,17 @@ import {
   NoPermissionOrNotFound,
   NotFoundPage,
 } from '@affine/component/not-found-page';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { apis } from '@affine/electron-api';
 import { useLiveData, useService } from '@toeverything/infra';
 import type { ReactElement } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { SignOutModal } from '../components/affine/sign-out-modal';
-import { RouteLogic, useNavigateHelper } from '../hooks/use-navigate-helper';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '../components/hooks/use-navigate-helper';
 import { AuthService } from '../modules/cloud';
 import { SignIn } from './auth/sign-in';
 

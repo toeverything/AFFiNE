@@ -15,7 +15,6 @@ import {
   useSelectDoc,
   useSelectTag,
 } from '@affine/core/components/page-list/selector';
-import { track } from '@affine/core/mixpanel';
 import {
   type FolderNode,
   OrganizeService,
@@ -25,6 +24,7 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { Unreachable } from '@affine/env/constant';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import {
   DeleteIcon,
   FolderIcon,

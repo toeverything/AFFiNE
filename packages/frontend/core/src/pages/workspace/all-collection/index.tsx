@@ -1,3 +1,4 @@
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import type { CollectionMeta } from '@affine/core/components/page-list';
 import {
   CollectionListHeader,
@@ -5,7 +6,6 @@ import {
   useEditCollectionName,
   VirtualizedCollectionList,
 } from '@affine/core/components/page-list';
-import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import {
   ViewIcon,
   ViewTitle,

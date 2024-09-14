@@ -1,5 +1,5 @@
 import { OverlayModal } from '@affine/component';
-import { openStarAFFiNEModalAtom } from '@affine/core/atoms';
+import { openStarAFFiNEModalAtom } from '@affine/core/components/atoms';
 import { useI18n } from '@affine/i18n';
 import { useAtom } from 'jotai';
 
@@ -24,7 +24,7 @@ export const StarAFFiNEModal = () => {
       onOpenChange={setOpen}
       description={t['com.affine.star-affine.description']()}
       cancelText={t['com.affine.star-affine.cancel']()}
-      to={runtimeConfig.githubUrl}
+      to={BUILD_CONFIG.githubUrl}
       confirmButtonOptions={{
         variant: 'primary',
       }}

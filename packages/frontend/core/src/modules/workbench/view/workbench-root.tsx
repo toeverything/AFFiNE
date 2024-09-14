@@ -1,6 +1,6 @@
 import { ResizePanel } from '@affine/component/resize-panel';
-import { rightSidebarWidthAtom } from '@affine/core/atoms';
-import { viewRoutes } from '@affine/core/router';
+import { rightSidebarWidthAtom } from '@affine/core/components/atoms';
+import { workspaceRoutes } from '@affine/core/workspace-router';
 import {
   appSettingAtom,
   FrameworkScope,
@@ -8,7 +8,7 @@ import {
   useService,
 } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { type RouteObject, useLocation } from 'react-router-dom';
 
 import type { View } from '../entities/view';
@@ -22,9 +22,16 @@ import { ViewIslandRegistryProvider } from './view-islands';
 import { ViewRoot } from './view-root';
 import * as styles from './workbench-root.css';
 
-const useAdapter = environment.isElectron
+const useAdapter = BUILD_CONFIG.isElectron
   ? useBindWorkbenchToDesktopRouter
   : useBindWorkbenchToBrowserRouter;
+
+const routes: RouteObject[] = [
+  {
+    element: <RouteContainer />,
+    children: workspaceRoutes,
+  },
+];
 
 export const WorkbenchRoot = memo(() => {
   const workbench = useService(WorkbenchService).workbench;
@@ -92,15 +99,6 @@ const WorkbenchView = ({ view, index }: { view: View; index: number }) => {
     }
     return;
   }, [handleOnFocus]);
-
-  const routes: RouteObject[] = useMemo(() => {
-    return [
-      {
-        element: <RouteContainer />,
-        children: viewRoutes,
-      },
-    ] satisfies RouteObject[];
-  }, []);
 
   return (
     <div className={styles.workbenchViewContainer} ref={containerRef}>

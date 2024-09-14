@@ -1,9 +1,9 @@
+import { useBlockSuiteDocMeta } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import {
   useFilteredPageMetas,
   VirtualizedTrashList,
 } from '@affine/core/components/page-list';
 import { Header } from '@affine/core/components/pure/header';
-import { useBlockSuiteDocMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useI18n } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
 import { DeleteIcon } from '@blocksuite/icons/rc';

@@ -1,13 +1,13 @@
 import { Avatar, ConfirmModal, Input, Switch, toast } from '@affine/component';
 import type { ConfirmModalProps } from '@affine/component/ui/modal';
-import { authAtom } from '@affine/core/atoms';
 import { CloudSvg } from '@affine/core/components/affine/share-page-modal/cloud-svg';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
+import { authAtom } from '@affine/core/components/atoms';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import {
   initEmptyPage,
   useLiveData,
@@ -35,7 +35,7 @@ interface NameWorkspaceContentProps extends ConfirmModalProps {
   ) => void;
 }
 
-const shouldEnableCloud = !runtimeConfig.allowLocalWorkspace;
+const shouldEnableCloud = !BUILD_CONFIG.allowLocalWorkspace;
 
 const NameWorkspaceContent = ({
   loading,
@@ -146,7 +146,7 @@ const NameWorkspaceContent = ({
         {shouldEnableCloud ? (
           <a
             className={styles.cloudTips}
-            href={runtimeConfig.downloadUrl}
+            href={BUILD_CONFIG.downloadUrl}
             target="_blank"
             rel="noreferrer"
           >
@@ -213,7 +213,7 @@ const CreateWorkspaceDialog = () => {
 
       // this will be the last step for web for now
       // fix me later
-      if (runtimeConfig.enablePreloading) {
+      if (BUILD_CONFIG.enablePreloading) {
         const { meta, defaultDocId } = await buildShowcaseWorkspace(
           workspacesService,
           workspaceFlavour,

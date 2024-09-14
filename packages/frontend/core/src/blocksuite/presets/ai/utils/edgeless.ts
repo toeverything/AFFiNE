@@ -1,10 +1,10 @@
-import { MindmapElementModel } from '@blocksuite/affine-block-surface';
 import type { BlockComponent, EditorHost } from '@blocksuite/block-std';
 import {
   AFFINE_EDGELESS_COPILOT_WIDGET,
   type EdgelessCopilotWidget,
   type EdgelessRootService,
   matchFlavours,
+  MindmapElementModel,
   type ShapeElementModel,
 } from '@blocksuite/blocks';
 

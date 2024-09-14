@@ -11,11 +11,10 @@ import { Button, IconButton } from '@affine/component/ui/button';
 import { Loading } from '@affine/component/ui/loading';
 import { Menu, MenuItem } from '@affine/component/ui/menu';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { openSettingModalAtom } from '@affine/core/atoms';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
-import { useInviteMember } from '@affine/core/hooks/affine/use-invite-member';
-import { useRevokeMemberPermission } from '@affine/core/hooks/affine/use-revoke-member-permission';
-import { track } from '@affine/core/mixpanel';
+import { openSettingModalAtom } from '@affine/core/components/atoms';
+import { useInviteMember } from '@affine/core/components/hooks/affine/use-invite-member';
+import { useRevokeMemberPermission } from '@affine/core/components/hooks/affine/use-revoke-member-permission';
 import {
   type Member,
   WorkspaceMembersService,
@@ -25,6 +24,7 @@ import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { Permission, UserFriendlyError } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { MoreVerticalIcon } from '@blocksuite/icons/rc';
 import {
   useEnsureLiveData,

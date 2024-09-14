@@ -169,11 +169,10 @@ export class Editor extends Entity {
         get(this.mode$) === 'edgeless' && selector?.elementIds?.length
           ? selector?.elementIds?.[0]
           : selector?.blockIds?.[0];
-      if (id) {
-        return { id, refreshKey: selector?.refreshKey };
-      } else {
-        return null;
-      }
+
+      if (!id) return null;
+
+      return { id, refreshKey: selector?.refreshKey };
     });
     if (focusAt$.value === null && docTitle) {
       const title = docTitle.querySelector<

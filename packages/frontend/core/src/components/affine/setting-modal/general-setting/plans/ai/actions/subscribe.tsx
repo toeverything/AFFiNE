@@ -1,11 +1,11 @@
 import { Button, type ButtonProps, Skeleton } from '@affine/component';
-import { generateSubscriptionCallbackLink } from '@affine/core/hooks/affine/use-subscription-notify';
-import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { track } from '@affine/core/mixpanel';
+import { generateSubscriptionCallbackLink } from '@affine/core/components/hooks/affine/use-subscription-notify';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { popupWindow } from '@affine/core/utils';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { useLiveData, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useEffect, useState } from 'react';

@@ -3,8 +3,8 @@ import {
   type InlineEditHandle,
   observeResize,
 } from '@affine/component';
-import { openInfoModalAtom } from '@affine/core/atoms';
 import { InfoModal } from '@affine/core/components/affine/page-properties';
+import { openInfoModalAtom } from '@affine/core/components/atoms';
 import { FavoriteButton } from '@affine/core/components/blocksuite/block-suite-header/favorite';
 import { InfoButton } from '@affine/core/components/blocksuite/block-suite-header/info';
 import { JournalWeekDatePicker } from '@affine/core/components/blocksuite/block-suite-header/journal/date-picker';
@@ -12,9 +12,9 @@ import { JournalTodayButton } from '@affine/core/components/blocksuite/block-sui
 import { PageHeaderMenuButton } from '@affine/core/components/blocksuite/block-suite-header/menu';
 import { DetailPageHeaderPresentButton } from '@affine/core/components/blocksuite/block-suite-header/present/detail-header-present-button';
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
-import { useRegisterCopyLinkCommands } from '@affine/core/hooks/affine/use-register-copy-link-commands';
-import { useDocCollectionPageTitle } from '@affine/core/hooks/use-block-suite-workspace-page-title';
-import { useJournalInfoHelper } from '@affine/core/hooks/use-journal';
+import { useRegisterCopyLinkCommands } from '@affine/core/components/hooks/affine/use-register-copy-link-commands';
+import { useDocCollectionPageTitle } from '@affine/core/components/hooks/use-block-suite-workspace-page-title';
+import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { EditorService } from '@affine/core/modules/editor';
 import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
 import type { Doc } from '@blocksuite/store';
@@ -139,7 +139,7 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
         {hideCollect ? null : (
           <>
             <FavoriteButton pageId={page?.id} />
-            {runtimeConfig.enableInfoModal ? <InfoButton /> : null}
+            <InfoButton />
           </>
         )}
         <PageHeaderMenuButton
