@@ -11,7 +11,7 @@ import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
 import { useAppSettingHelper } from '../../../../../components/hooks/affine/use-app-setting-helper';
-import { appIconMap, appNames } from '../../../../../pages/open-app';
+import { appIconMap, appNames } from '../../../../../desktop/pages/open-app';
 import { popupWindow } from '../../../../../utils';
 import { relatedLinks } from './config';
 import * as styles from './style.css';

@@ -686,7 +686,6 @@ __metadata:
     "@vanilla-extract/dynamic": "npm:^2.1.2"
     clsx: "npm:^2.1.1"
     cross-env: "npm:^7.0.3"
-    figma-squircle: "npm:^1.0.0"
     jotai: "npm:^2.9.3"
     jotai-effect: "npm:^1.0.2"
     jotai-scope: "npm:^0.7.2"
@@ -22141,13 +22140,6 @@ __metadata:
   version: 0.8.2
   resolution: "fflate@npm:0.8.2"
   checksum: 10/2bd26ba6d235d428de793c6a0cd1aaa96a06269ebd4e21b46c8fd1bd136abc631acf27e188d47c3936db090bf3e1ede11d15ce9eae9bffdc4bfe1b9dc66ca9cb
-  languageName: node
-  linkType: hard
-
-"figma-squircle@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "figma-squircle@npm:1.0.0"
-  checksum: 10/6f981c06bd66e4da16b7b9742dc830ff0745d88cac2fc87c058a3cacea7087be2734117229f1553700a38cc6c54ade6d05dbba9328ae00f0f378f6a4a008abef
   languageName: node
   linkType: hard
 

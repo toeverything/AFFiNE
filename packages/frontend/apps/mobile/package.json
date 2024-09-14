@@ -22,7 +22,6 @@
     "@sentry/react": "^8.0.0",
     "@toeverything/theme": "^1.0.9",
     "clsx": "^2.1.1",
-    "figma-squircle": "^1.0.0",
     "jotai": "^2.9.3",
     "jotai-effect": "^1.0.2",
     "jotai-scope": "^0.7.2",

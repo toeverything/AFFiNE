@@ -18,10 +18,8 @@ import {
 } from '@blocksuite/icons/rc';
 import {
   useLiveData,
-  useService,
   type WorkspaceMetadata,
   type WorkspaceProfileInfo,
-  WorkspaceService,
 } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';
@@ -173,8 +171,7 @@ const WorkspaceSyncInfo = ({
   workspaceProfile: WorkspaceProfileInfo;
 }) => {
   const syncStatus = useSyncEngineSyncProgress(workspaceMetadata);
-  const currentWorkspace = useService(WorkspaceService).workspace;
-  const isCloud = currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
+  const isCloud = workspaceMetadata.flavour === WorkspaceFlavour.AFFINE_CLOUD;
   const { paused, pause } = usePauseAnimation();
 
   // to make sure that animation will play first time

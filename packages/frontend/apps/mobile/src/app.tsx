@@ -1,12 +1,15 @@
 import '@affine/component/theme/global.css';
 import '@affine/component/theme/theme.css';
-import './styles/mobile.css';
+import '@affine/core/mobile/styles/mobile.css';
 
 import { AffineContext } from '@affine/component/context';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { Telemetry } from '@affine/core/components/telemetry';
+import { configureMobileModules } from '@affine/core/mobile/modules';
+import { router } from '@affine/core/mobile/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureLocalStorageStateStorageImpls } from '@affine/core/modules/storage';
+import { configureIndexedDBUserspaceStorageProvider } from '@affine/core/modules/userspace';
 import { configureBrowserWorkbenchModule } from '@affine/core/modules/workbench';
 import {
   configureBrowserWorkspaceFlavours,
@@ -21,9 +24,6 @@ import {
 } from '@toeverything/infra';
 import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
-
-import { configureMobileModules } from './modules';
-import { router } from './router';
 
 const future = {
   v7_startTransition: true,
@@ -44,6 +44,7 @@ configureBrowserWorkbenchModule(framework);
 configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
 configureIndexedDBWorkspaceEngineStorageProvider(framework);
+configureIndexedDBUserspaceStorageProvider(framework);
 configureMobileModules(framework);
 const frameworkProvider = framework.provider();
 

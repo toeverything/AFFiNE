@@ -1,6 +1,6 @@
 import { ResizePanel } from '@affine/component/resize-panel';
 import { rightSidebarWidthAtom } from '@affine/core/components/atoms';
-import { workspaceRoutes } from '@affine/core/workspace-router';
+import { workbenchRoutes } from '@affine/core/desktop/workbench-router';
 import {
   appSettingAtom,
   FrameworkScope,
@@ -29,7 +29,7 @@ const useAdapter = BUILD_CONFIG.isElectron
 const routes: RouteObject[] = [
   {
     element: <RouteContainer />,
-    children: workspaceRoutes,
+    children: workbenchRoutes,
   },
 ];
 

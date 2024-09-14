@@ -4,8 +4,8 @@ import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { BlockSuiteEditor } from '@affine/core/components/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
+import { PageNotFound } from '@affine/core/desktop/pages/404';
 import { EditorService } from '@affine/core/modules/editor';
-import { PageNotFound } from '@affine/core/pages/404';
 import { DebugLogger } from '@affine/debug';
 import {
   type DocMode,
