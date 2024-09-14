@@ -6,9 +6,5 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts"
-  },
-  "devDependencies": {
-    "@toeverything/infra": "workspace:*",
-    "electron": "^32.0.0"
   }
 }

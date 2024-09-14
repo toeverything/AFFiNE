@@ -35,7 +35,7 @@ export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
     {
       label: 'Refresh tab',
       click: () => {
-        reloadView().catch(logger.error);
+        reloadView().catch(err => logger.error(err));
       },
     },
     {
@@ -45,7 +45,7 @@ export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
           basename: tabMeta.basename,
           view: tabMeta.views,
           show: false,
-        }).catch(logger.error);
+        }).catch(err => logger.error(err));
       },
     },
 
@@ -71,7 +71,7 @@ export const showTabContextMenu = async (tabId: string, viewIndex: number) => {
           {
             label: 'Close tab',
             click: () => {
-              closeTab(tabId).catch(logger.error);
+              closeTab(tabId).catch(err => logger.error(err));
             },
           },
           {

@@ -12,6 +12,7 @@
     "mixpanel-browser": "^2.49.0"
   },
   "devDependencies": {
+    "@types/mixpanel-browser": "^2.49.0",
     "vitest": "^2.0.5"
   }
 }
