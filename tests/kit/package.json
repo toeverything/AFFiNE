@@ -10,7 +10,6 @@
     "./e2e-enhance/*": "./e2e-enhance/*.ts"
   },
   "devDependencies": {
-    "@affine/electron-api": "workspace:*",
     "@node-rs/argon2": "^1.8.0",
     "@playwright/test": "=1.47.0",
     "express": "^4.19.2",

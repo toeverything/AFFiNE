@@ -9,13 +9,14 @@ import { glob } from 'glob';
 const require = createRequire(import.meta.url);
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-const repoRootDir = path.join(__dirname, '..', '..', '..', '..');
+const repoRootDir = path.join(__dirname, '..', '..', '..', '..', '..');
 const electronRootDir = path.join(__dirname, '..');
 const publicDistDir = path.join(electronRootDir, 'resources');
 const webDir = path.join(
   repoRootDir,
   'packages',
   'frontend',
+  'apps',
   'electron',
   'renderer'
 );

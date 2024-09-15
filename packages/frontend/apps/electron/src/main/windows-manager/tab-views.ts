@@ -359,7 +359,7 @@ export class WebContentViewsManager {
       return;
     }
 
-    this.showTab(activeWorkbenchKey).catch(logger.error);
+    this.showTab(activeWorkbenchKey).catch(error => logger.error(error));
 
     this.patchTabViewsMeta({
       workbenches,
@@ -470,7 +470,7 @@ export class WebContentViewsManager {
       url.hash = viewMeta.path?.hash ?? '';
       url.search = viewMeta.path?.search ?? '';
       logger.info(`loading tab ${id} at ${url.href}`);
-      view.webContents.loadURL(url.href).catch(logger.error);
+      view.webContents.loadURL(url.href).catch(err => logger.error(err));
     }
     return view;
   };
@@ -593,7 +593,7 @@ export class WebContentViewsManager {
     this.updateWorkbenchMeta(tabId, {
       views: tabMeta.views.toSpliced(viewIndex, 1),
     });
-    addTab(newTabMeta).catch(logger.error);
+    addTab(newTabMeta).catch(err => logger.error(err));
   };
 
   openInSplitView = (payload: OpenInSplitViewAction['payload']) => {
@@ -668,7 +668,9 @@ export class WebContentViewsManager {
         this.mainWindow?.contentView.addChildView(view, idx);
       });
 
-      handleWebContentsResize(activeView?.webContents).catch(logger.error);
+      handleWebContentsResize(activeView?.webContents).catch(err =>
+        logger.error(err)
+      );
     }
   };
 
@@ -680,7 +682,7 @@ export class WebContentViewsManager {
     const disposables: Unsubscribable[] = [];
     disposables.push(
       windowReadyToShow$.subscribe(w => {
-        handleWebContentsResize().catch(logger.error);
+        handleWebContentsResize().catch(err => logger.error(err));
         const screenSizeChangeEvents = ['resize', 'maximize', 'unmaximize'];
         const onResize = () => {
           if (this.activeWorkbenchView) {
@@ -695,7 +697,7 @@ export class WebContentViewsManager {
         });
 
         // add shell view
-        this.createAndAddView('shell').catch(logger.error);
+        this.createAndAddView('shell').catch(err => logger.error(err));
         (async () => {
           const updateCookies = () => {
             session.defaultSession.cookies
@@ -721,7 +723,7 @@ export class WebContentViewsManager {
             const defaultTabId = this.activeWorkbenchId;
             if (defaultTabId) await this.showTab(defaultTabId);
           }
-        })().catch(logger.error);
+        })().catch(err => logger.error(err));
       })
     );
 
@@ -813,7 +815,7 @@ export class WebContentViewsManager {
         });
       });
 
-      view.webContents.loadURL(shellViewUrl).catch(logger.error);
+      view.webContents.loadURL(shellViewUrl).catch(err => logger.error(err));
       if (isDev) {
         view.webContents.openDevTools({
           mode: 'detach',
@@ -1032,7 +1034,9 @@ export const switchTab = (n: number) => {
     n === 9 ? -1 : n - 1
   );
   if (item) {
-    WebContentViewsManager.instance.showTab(item.id).catch(logger.error);
+    WebContentViewsManager.instance
+      .showTab(item.id)
+      .catch(err => logger.error(err));
   }
 };
 
@@ -1044,7 +1048,9 @@ export const switchToNextTab = () => {
     activeIndex === length - 1 ? 0 : activeIndex + 1
   );
   if (item) {
-    WebContentViewsManager.instance.showTab(item.id).catch(logger.error);
+    WebContentViewsManager.instance
+      .showTab(item.id)
+      .catch(err => logger.error(err));
   }
 };
 
@@ -1056,6 +1062,8 @@ export const switchToPreviousTab = () => {
     activeIndex === 0 ? length - 1 : activeIndex - 1
   );
   if (item) {
-    WebContentViewsManager.instance.showTab(item.id).catch(logger.error);
+    WebContentViewsManager.instance
+      .showTab(item.id)
+      .catch(err => logger.error(err));
   }
 };

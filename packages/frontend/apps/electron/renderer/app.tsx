@@ -6,6 +6,7 @@ import { GlobalLoading } from '@affine/component/global-loading';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { Telemetry } from '@affine/core/components/telemetry';
+import { router } from '@affine/core/desktop/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
 import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
@@ -16,7 +17,6 @@ import {
   configureBrowserWorkspaceFlavours,
   configureSqliteWorkspaceEngineStorageProvider,
 } from '@affine/core/modules/workspace-engine';
-import { router } from '@affine/core/router';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';

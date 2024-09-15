@@ -19,10 +19,10 @@ import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hoo
 import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import { Export, MoveToTrash } from '@affine/core/components/page-list';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
+import { useDetailPageHeaderResponsive } from '@affine/core/desktop/pages/workspace/detail-page/use-header-responsive';
 import { EditorService } from '@affine/core/modules/editor';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
-import { useDetailPageHeaderResponsive } from '@affine/core/pages/workspace/detail-page/use-header-responsive';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';

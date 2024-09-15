@@ -5,7 +5,6 @@
   "dependencies": {
     "@affine/core": "workspace:*",
     "@affine/graphql": "workspace:*",
-    "@hookform/resolvers": "^3.6.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
@@ -36,7 +35,6 @@
     "@sentry/react": "^8.9.0",
     "@tanstack/react-table": "^8.19.3",
     "cmdk": "^1.0.0",
-    "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.1.5",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.441.0",
