@@ -16,31 +16,27 @@ export const mode = (process.env.NODE_ENV =
   process.env.NODE_ENV || 'development');
 
 export const config = (): BuildOptions => {
-  const define: Record<string, string> = {};
-
-  define['REPLACE_ME_BUILD_ENV'] = `"${process.env.BUILD_TYPE ?? 'stable'}"`;
-
-  define['BUILD_CONFIG'] = JSON.stringify(
-    getBuildConfig({
-      channel: (process.env.BUILD_TYPE as any) ?? 'canary',
-      distribution: 'desktop',
-      mode:
-        process.env.NODE_ENV === 'production' ? 'production' : 'development',
-      static: false,
-    })
-  );
-
-  if (process.env.GITHUB_SHA) {
-    define['process.env.GITHUB_SHA'] = `"${process.env.GITHUB_SHA}"`;
-  }
-
-  if (process.env.SENTRY_RELEASE) {
-    define['process.env.SENTRY_RELEASE'] = `"${process.env.SENTRY_RELEASE}"`;
-  }
-
-  if (process.env.SENTRY_DSN) {
-    define['process.env.SENTRY_DSN'] = `"${process.env.SENTRY_DSN}"`;
-  }
+  const define = {
+    'process.env.GITHUB_SHA': process.env.GITHUB_SHA,
+    'process.env.SENTRY_RELEASE': process.env.SENTRY_RELEASE,
+    'process.env.SENTRY_DSN': process.env.SENTRY_DSN,
+    REPLACE_ME_BUILD_ENV: process.env.BUILD_TYPE ?? 'stable',
+    ...Object.entries(
+      getBuildConfig({
+        channel: (process.env.BUILD_TYPE as any) ?? 'canary',
+        distribution: 'desktop',
+        mode:
+          process.env.NODE_ENV === 'production' ? 'production' : 'development',
+        static: false,
+      })
+    ).reduce(
+      (def, [key, val]) => {
+        def[`BUILD_CONFIG.${key}`] = val;
+        return def;
+      },
+      {} as Record<string, any>
+    ),
+  };
 
   const plugins: Plugin[] = [];
 
@@ -96,7 +92,17 @@ export const config = (): BuildOptions => {
     loader: {
       '.node': 'copy',
     },
-    define,
+    define: Object.entries(define).reduce(
+      (def, [key, val]) => {
+        def[key] =
+          JSON.stringify(val) ??
+          String(
+            val
+          ) /* JSON.stringify(undefined) == undefined, but we need 'undefined' */;
+        return def;
+      },
+      {} as Record<string, string>
+    ),
     assetNames: '[name]',
     treeShaking: true,
     sourcemap: 'linked',
