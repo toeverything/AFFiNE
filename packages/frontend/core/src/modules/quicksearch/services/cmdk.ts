@@ -1,7 +1,9 @@
 import { track } from '@affine/track';
-import type { DocsService } from '@toeverything/infra';
+import { Text } from '@blocksuite/store';
+import type { DocProps, DocsService } from '@toeverything/infra';
 import { Service } from '@toeverything/infra';
 
+import { EditorSettingService } from '../../editor-settting';
 import type { WorkbenchService } from '../../workbench';
 import { CollectionsQuickSearchSession } from '../impls/collections';
 import { CommandsQuickSearchSession } from '../impls/commands';
@@ -92,16 +94,22 @@ export class CMDKQuickSearchService extends Service {
           }
 
           if (result.source === 'creation') {
+            const editorSettingService =
+              this.framework.get(EditorSettingService);
+            const docProps: DocProps = {
+              page: { title: new Text(result.payload.title) },
+              note: editorSettingService.editorSetting.get('affine:note'),
+            };
             if (result.id === 'creation:create-page') {
               const newDoc = this.docsService.createDoc({
                 primaryMode: 'page',
-                title: result.payload.title,
+                docProps,
               });
               this.workbenchService.workbench.openDoc(newDoc.id);
             } else if (result.id === 'creation:create-edgeless') {
               const newDoc = this.docsService.createDoc({
                 primaryMode: 'edgeless',
-                title: result.payload.title,
+                docProps,
               });
               this.workbenchService.workbench.openDoc(newDoc.id);
             }

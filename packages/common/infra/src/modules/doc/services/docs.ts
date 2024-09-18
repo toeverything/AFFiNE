@@ -1,8 +1,8 @@
 import { Unreachable } from '@affine/env/constant';
-import type { DocMode } from '@blocksuite/blocks';
+import { type DocMode } from '@blocksuite/blocks';
 
 import { Service } from '../../../framework';
-import { initEmptyPage } from '../../../initialization';
+import { type DocProps, initDocFromProps } from '../../../initialization';
 import { ObjectPool } from '../../../utils';
 import type { Doc } from '../entities/doc';
 import { DocRecordList } from '../entities/record-list';
@@ -54,11 +54,11 @@ export class DocsService extends Service {
   createDoc(
     options: {
       primaryMode?: DocMode;
-      title?: string;
+      docProps?: DocProps;
     } = {}
   ) {
     const doc = this.store.createBlockSuiteDoc();
-    initEmptyPage(doc, options.title);
+    initDocFromProps(doc, options.docProps);
     this.store.markDocSyncStateAsReady(doc.id);
     const docRecord = this.list.doc$(doc.id).value;
     if (!docRecord) {

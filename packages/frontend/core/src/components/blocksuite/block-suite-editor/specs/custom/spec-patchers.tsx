@@ -8,6 +8,7 @@ import {
   type useConfirmModal,
 } from '@affine/component';
 import type { EditorService } from '@affine/core/modules/editor';
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { resolveLinkToDoc } from '@affine/core/modules/navigation';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
 import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/peek-view';
@@ -50,8 +51,9 @@ import {
   ReferenceNodeConfigExtension,
 } from '@blocksuite/blocks';
 import { AIChatBlockSchema } from '@blocksuite/presets';
-import type { BlockSnapshot } from '@blocksuite/store';
+import { type BlockSnapshot, Text } from '@blocksuite/store';
 import {
+  type DocProps,
   type DocService,
   DocsService,
   type FrameworkProvider,
@@ -336,11 +338,16 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
 
             if (result.source === 'creation') {
               const docsService = framework.get(DocsService);
+              const editorSettingService = framework.get(EditorSettingService);
               const mode =
                 result.id === 'creation:create-edgeless' ? 'edgeless' : 'page';
+              const docProps: DocProps = {
+                page: { title: new Text(result.payload.title) },
+                note: editorSettingService.editorSetting.get('affine:note'),
+              };
               const newDoc = docsService.createDoc({
                 primaryMode: mode,
-                title: result.payload.title,
+                docProps,
               });
               track.doc.editor.quickSearch.createDoc({
                 mode,

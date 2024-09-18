@@ -1,7 +1,14 @@
+import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { i18nTime } from '@affine/i18n';
 import { track } from '@affine/track';
-import type { DocCollection } from '@blocksuite/store';
-import { DocsService, initEmptyPage, useService } from '@toeverything/infra';
+import { type DocCollection, Text } from '@blocksuite/store';
+import {
+  type DocProps,
+  DocsService,
+  initDocFromProps,
+  useService,
+  useServices,
+} from '@toeverything/infra';
 import dayjs from 'dayjs';
 import { useCallback, useMemo } from 'react';
 
@@ -25,7 +32,10 @@ function toDayjs(j?: string | false) {
 
 export const useJournalHelper = (docCollection: DocCollection) => {
   const bsWorkspaceHelper = useDocCollectionHelper(docCollection);
-  const docsService = useService(DocsService);
+  const { docsService, editorSettingService } = useServices({
+    DocsService,
+    EditorSettingService,
+  });
   const adapter = useCurrentWorkspacePropertiesAdapter();
 
   /**
@@ -46,11 +56,15 @@ export const useJournalHelper = (docCollection: DocCollection) => {
           .toDate()
           .getTime(),
       });
-      initEmptyPage(page, title);
+      const docProps: DocProps = {
+        page: { title: new Text(title) },
+        note: editorSettingService.editorSetting.get('affine:note'),
+      };
+      initDocFromProps(page, docProps);
       adapter.setJournalPageDateString(page.id, title);
       return page;
     },
-    [adapter, bsWorkspaceHelper, docsService.list]
+    [adapter, bsWorkspaceHelper, docsService.list, editorSettingService]
   );
 
   const isPageJournal = useCallback(

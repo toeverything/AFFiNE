@@ -1,28 +1,45 @@
-import type { Doc } from '@blocksuite/store';
+import type { SurfaceBlockProps } from '@blocksuite/block-std/gfx';
+import {
+  NoteDisplayMode,
+  type NoteProps,
+  type ParagraphProps,
+  type RootBlockProps,
+} from '@blocksuite/blocks';
+import { type Doc, Text } from '@blocksuite/store';
 
-export function initEmptyPage(page: Doc, title?: string) {
-  page.load(() => {
-    const pageBlockId = page.addBlock(
-      'affine:page' as keyof BlockSuite.BlockModels,
+export interface DocProps {
+  page?: Partial<RootBlockProps>;
+  surface?: Partial<SurfaceBlockProps>;
+  note?: Partial<NoteProps>;
+  paragraph?: Partial<ParagraphProps>;
+}
+
+export function initEmptyDoc(doc: Doc, title?: string) {
+  doc.load(() => {
+    initDocFromProps(doc, {
+      page: {
+        title: new Text(title),
+      },
+    });
+  });
+}
+
+export function initDocFromProps(doc: Doc, props?: DocProps) {
+  doc.load(() => {
+    const pageBlockId = doc.addBlock(
+      'affine:page',
+      props?.page || { title: new Text('') }
+    );
+    doc.addBlock('affine:surface', props?.surface || {}, pageBlockId);
+    const noteBlockId = doc.addBlock(
+      'affine:note',
       {
-        title: new page.Text(title ?? ''),
-      }
-    );
-    page.addBlock(
-      'affine:surface' as keyof BlockSuite.BlockModels,
-      {},
+        ...props?.note,
+        displayMode: NoteDisplayMode.DocAndEdgeless,
+      },
       pageBlockId
     );
-    const noteBlockId = page.addBlock(
-      'affine:note' as keyof BlockSuite.BlockModels,
-      {},
-      pageBlockId
-    );
-    page.addBlock(
-      'affine:paragraph' as keyof BlockSuite.BlockModels,
-      {},
-      noteBlockId
-    );
-    page.history.clear();
+    doc.addBlock('affine:paragraph', props?.paragraph || {}, noteBlockId);
+    doc.history.clear();
   });
 }
