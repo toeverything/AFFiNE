@@ -1,0 +1,12 @@
+'base_path': '.'
+'base_url': 'https://api.crowdin.com'
+
+'preserve_hierarchy': true
+
+'files':
+  [
+    {
+      'source': '/src/resources/en.json',
+      'translation': '/src/resources/%locale%.json',
+    },
+  ]

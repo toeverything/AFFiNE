@@ -10,9 +10,6 @@
   "references": [
     {
       "path": "./tsconfig.resources.json"
-    },
-    {
-      "path": "./tsconfig.node.json"
     }
   ]
 }
