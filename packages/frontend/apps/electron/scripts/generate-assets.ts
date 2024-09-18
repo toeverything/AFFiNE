@@ -47,12 +47,9 @@ process.env.DISTRIBUTION = 'desktop';
 
 const cwd = repoRootDir;
 
-const { SKIP_NX_CACHE } = process.env;
-const nxFlag = SKIP_NX_CACHE ? '--skip-nx-cache' : '';
-
 // step 1: build web dist
 if (!process.env.SKIP_WEB_BUILD) {
-  spawnSync('yarn', ['nx', 'build', '@affine/web', nxFlag], {
+  spawnSync('yarn', ['build'], {
     stdio: 'inherit',
     env: process.env,
     cwd,
