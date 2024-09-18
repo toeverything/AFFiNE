@@ -26,7 +26,8 @@
       "groupName": "blocksuite",
       "matchPackagePatterns": ["^@blocksuite"],
       "excludePackageNames": ["@blocksuite/icons"],
-      "rangeStrategy": "replace"
+      "rangeStrategy": "replace",
+      "changelogUrl": "https://github.com/toeverything/blocksuite/blob/master/packages/blocks/CHANGELOG.md"
     },
     {
       "groupName": "all non-major dependencies",
