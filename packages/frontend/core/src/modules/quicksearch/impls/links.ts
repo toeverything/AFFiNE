@@ -1,20 +1,16 @@
-import type { DocMode } from '@blocksuite/blocks';
+import type { ReferenceParams } from '@blocksuite/blocks';
 import { BlockLinkIcon, EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
 import type { DocsService, WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
-import { truncate } from 'lodash-es';
+import { omit, truncate } from 'lodash-es';
 
 import { resolveLinkToDoc } from '../../navigation';
+import { isLink } from '../../navigation/utils';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
 import type { DocDisplayMetaService } from '../services/doc-display-meta';
 import type { QuickSearchItem } from '../types/item';
 
-type LinkPayload = {
-  docId: string;
-  blockIds?: string[];
-  elementIds?: string[];
-  mode?: DocMode;
-};
+type LinkPayload = { docId: string } & ReferenceParams;
 
 export class LinksQuickSearchSession
   extends Entity
@@ -31,11 +27,10 @@ export class LinksQuickSearchSession
   query$ = new LiveData('');
 
   items$ = LiveData.computed(get => {
-    const query = get(this.query$);
+    const query = get(this.query$).trim();
     if (!query) return [];
 
-    const isLink = query.startsWith('http://') || query.startsWith('https://');
-    if (!isLink) return [];
+    if (!isLink(query)) return [];
 
     const resolvedDoc = resolveLinkToDoc(query);
     if (
@@ -53,6 +48,13 @@ export class LinksQuickSearchSession
       this.docDisplayMetaService.getDocDisplayMeta(doc);
     const linkToNode = resolvedDoc.blockIds || resolvedDoc.elementIds;
     const score = 100;
+    const payload = omit(resolvedDoc, ['workspaceId']);
+    const icons = {
+      page: PageIcon,
+      edgeless: EdgelessIcon,
+      node: BlockLinkIcon,
+      other: icon,
+    };
 
     return [
       {
@@ -67,23 +69,12 @@ export class LinksQuickSearchSession
           score: 5,
         },
         label: {
-          title: title,
+          title,
         },
         score,
-        icon: linkToNode
-          ? BlockLinkIcon
-          : resolvedDoc.mode === 'page'
-            ? PageIcon
-            : resolvedDoc.mode === 'edgeless'
-              ? EdgelessIcon
-              : icon,
+        icon: icons[linkToNode ? 'node' : (resolvedDoc.mode ?? 'other')],
         timestamp: updatedDate,
-        payload: {
-          docId,
-          blockIds: resolvedDoc.blockIds,
-          elementIds: resolvedDoc.elementIds,
-          mode: resolvedDoc.mode,
-        },
+        payload,
       } as QuickSearchItem<'link', LinkPayload>,
     ];
   });

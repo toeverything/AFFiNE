@@ -1,5 +1,6 @@
 import { notify } from '@affine/component';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
+import { toURLSearchParams } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { type EditorHost } from '@blocksuite/block-std';
@@ -34,20 +35,14 @@ export const generateUrl = ({
   if (!baseUrl) return null;
 
   try {
-    const url = new URL(`${baseUrl}/workspace/${workspaceId}/${pageId}`);
-    const search = url.searchParams;
-    if (shareMode) {
-      search.append('mode', shareMode);
-    }
-    if (blockIds && blockIds.length > 0) {
-      search.append('blockIds', blockIds.join(','));
-    }
-    if (elementIds && elementIds.length > 0) {
-      search.append('elementIds', elementIds.join(','));
-    }
-    if (xywh) {
-      search.append('xywh', xywh);
-    }
+    const url = new URL(`/workspace/${workspaceId}/${pageId}`, baseUrl);
+    const search = toURLSearchParams({
+      mode: shareMode,
+      blockIds,
+      elementIds,
+      xywh,
+    });
+    if (search) url.search = search.toString();
     return url.toString();
   } catch {
     return null;

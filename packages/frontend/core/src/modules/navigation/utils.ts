@@ -1,4 +1,6 @@
-import type { DocMode } from '@blocksuite/blocks';
+import type { ReferenceParams } from '@blocksuite/blocks';
+import { isNil, pick, pickBy } from 'lodash-es';
+import type { ParsedQuery, ParseOptions } from 'query-string';
 import queryString from 'query-string';
 
 function maybeAffineOrigin(origin: string) {
@@ -61,6 +63,23 @@ export const resolveRouteLinkMeta = (href: string) => {
   }
 };
 
+export const isLink = (href: string) => {
+  try {
+    const hasScheme = href.match(/^https?:\/\//);
+
+    if (!hasScheme) {
+      const dotIdx = href.indexOf('.');
+      if (dotIdx > 0 && dotIdx < href.length - 1) {
+        href = `https://${href}`;
+      }
+    }
+
+    return Boolean(URL.canParse?.(href) ?? new URL(href));
+  } catch {
+    return null;
+  }
+};
+
 /**
  * @see /packages/frontend/core/src/router.tsx
  */
@@ -76,22 +95,49 @@ export const resolveLinkToDoc = (href: string) => {
   const meta = resolveRouteLinkMeta(href);
   if (!meta || meta.moduleName !== 'doc') return null;
 
-  const params: {
-    mode?: DocMode;
-    blockIds?: string[];
-    elementIds?: string[];
-  } = queryString.parse(meta.location.search, {
-    arrayFormat: 'none',
-    types: {
-      mode: value => (value === 'edgeless' ? 'edgeless' : 'page') as DocMode,
-      blockIds: value => value.split(','),
-      elementIds: value => value.split(','),
-    },
-  });
+  const params = preprocessParams(
+    queryString.parse(meta.location.search, paramsParseOptions)
+  );
 
   return {
-    workspaceId: meta.workspaceId,
-    docId: meta.docId,
+    ...pick(meta, ['workspaceId', 'docId']),
     ...params,
   };
+};
+
+export const preprocessParams = (
+  params: ParsedQuery<string>
+): ReferenceParams & { refreshKey?: string } => {
+  const result: ReferenceParams & { refreshKey?: string } = pickBy(
+    params,
+    value => {
+      if (isNil(value)) return false;
+      if (typeof value === 'string' && value.length === 0) return false;
+      if (Array.isArray(value) && value.length === 0) return false;
+      return true;
+    }
+  );
+
+  if (result.blockIds?.length) {
+    result.blockIds = result.blockIds.filter(v => v.length);
+  }
+  if (result.elementIds?.length) {
+    result.elementIds = result.elementIds.filter(v => v.length);
+  }
+
+  return pick(result, ['mode', 'blockIds', 'elementIds', 'refreshKey']);
+};
+
+export const paramsParseOptions: ParseOptions = {
+  // Cannot handle single id situation correctly: `blockIds=xxx`
+  arrayFormat: 'none',
+  types: {
+    mode: value =>
+      value === 'page' || value === 'edgeless' ? value : undefined,
+    blockIds: value =>
+      value.length ? value.split(',').filter(v => v.length) : [],
+    elementIds: value =>
+      value.length ? value.split(',').filter(v => v.length) : [],
+    refreshKey: 'string',
+  },
 };

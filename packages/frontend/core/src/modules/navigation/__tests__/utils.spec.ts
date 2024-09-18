@@ -53,11 +53,35 @@ const testCases: [string, ReturnType<typeof resolveLinkToDoc>][] = [
     },
   ],
   [
-    'http//localhost:8000/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?blockIds=xxxx',
+    'http//localhost:8000/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?mode=page&blockIds=xxxx',
     {
       workspaceId: '48__RTCSwASvWZxyAk3Jw',
       docId: '-Uge-K6SYcAbcNYfQ5U-j',
+      mode: 'page',
       blockIds: ['xxxx'],
+    },
+  ],
+  [
+    'http//localhost:8000/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?mode=&blockIds=',
+    {
+      workspaceId: '48__RTCSwASvWZxyAk3Jw',
+      docId: '-Uge-K6SYcAbcNYfQ5U-j',
+    },
+  ],
+  [
+    'http//localhost:8000/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?mode=edgeless&elementIds=yyyy',
+    {
+      workspaceId: '48__RTCSwASvWZxyAk3Jw',
+      docId: '-Uge-K6SYcAbcNYfQ5U-j',
+      mode: 'edgeless',
+      elementIds: ['yyyy'],
+    },
+  ],
+  [
+    'http//localhost:8000/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?mode=edgeles&elementId=yyyy',
+    {
+      workspaceId: '48__RTCSwASvWZxyAk3Jw',
+      docId: '-Uge-K6SYcAbcNYfQ5U-j',
     },
   ],
 ];

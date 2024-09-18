@@ -34,7 +34,6 @@ import type {
   DocMode,
   DocModeProvider,
   QuickSearchResult,
-  ReferenceParams,
   RootService,
 } from '@blocksuite/blocks';
 import {
@@ -42,12 +41,10 @@ import {
   DocModeExtension,
   EdgelessRootBlockComponent,
   EmbedLinkedDocBlockComponent,
-  EmbedOptionProvider,
   NotificationExtension,
   ParseDocUrlExtension,
   PeekViewExtension,
   QuickSearchExtension,
-  QuickSearchProvider,
   ReferenceNodeConfigExtension,
 } from '@blocksuite/blocks';
 import { AIChatBlockSchema } from '@blocksuite/presets';
@@ -62,6 +59,7 @@ import {
 import { type TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { literal } from 'lit/static-html.js';
+import { pick } from 'lodash-es';
 
 export type ReferenceReactRenderer = (
   reference: AffineReference
@@ -318,14 +316,13 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
             }
 
             if (result.source === 'link') {
-              const { docId, blockIds, elementIds, mode } = result.payload;
               resolve({
-                docId,
-                params: {
-                  blockIds,
-                  elementIds,
-                  mode,
-                },
+                docId: result.payload.docId,
+                params: pick(result.payload, [
+                  'mode',
+                  'blockIds',
+                  'elementIds',
+                ]),
               });
               return;
             }
@@ -349,13 +346,8 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
                 primaryMode: mode,
                 docProps,
               });
-              track.doc.editor.quickSearch.createDoc({
-                mode,
-              });
 
-              resolve({
-                docId: newDoc.id,
-              });
+              resolve({ docId: newDoc.id });
               return;
             }
           },
@@ -373,6 +365,7 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
       return searchResult;
     },
   });
+
   const SlashMenuQuickSearchExtension = patchSpecService<RootService>(
     'affine:page',
     () => {},
@@ -383,51 +376,38 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
             'action' in item &&
             (item.name === 'Linked Doc' || item.name === 'Link')
           ) {
-            const oldAction = item.action;
-            item.action = async ({ model, rootComponent }) => {
-              const { host, std } = rootComponent;
-              const quickSearchService =
-                component.std.getOptional(QuickSearchProvider);
+            item.action = async ({ rootComponent }) => {
+              // TODO(@Mirone): fix the type
+              // @ts-expect-error fixme
+              const { success, insertedLinkType } =
+                // @ts-expect-error fixme
+                rootComponent.std.command.exec('insertLinkByQuickSearch');
 
-              if (!quickSearchService)
-                return oldAction({ model, rootComponent });
+              if (!success) return;
 
-              const result = await quickSearchService.openQuickSearch();
-              if (result === null) return;
+              // TODO(@Mirone): fix the type
+              insertedLinkType
+                ?.then(
+                  (type: {
+                    flavour?: 'affine:embed-linked-doc' | 'affine:bookmark';
+                  }) => {
+                    const flavour = type?.flavour;
+                    if (!flavour) return;
 
-              if ('docId' in result) {
-                const linkedDoc = std.collection.getDoc(result.docId);
-                if (!linkedDoc) return;
+                    if (flavour === 'affine:embed-linked-doc') {
+                      track.doc.editor.slashMenu.linkDoc({
+                        control: 'linkDoc',
+                      });
+                      return;
+                    }
 
-                const props: {
-                  flavour: string;
-                  pageId: string;
-                  params?: ReferenceParams;
-                } = {
-                  flavour: 'affine:embed-linked-doc',
-                  pageId: linkedDoc.id,
-                };
-
-                if (result.params) {
-                  props.params = result.params;
-                }
-
-                host.doc.addSiblingBlocks(model, [props]);
-
-                track.doc.editor.slashMenu.linkDoc({ control: 'linkDoc' });
-              } else if (result.externalUrl) {
-                const embedOptions = std
-                  .get(EmbedOptionProvider)
-                  .getEmbedBlockOptions(result.externalUrl);
-                if (!embedOptions) return;
-
-                host.doc.addSiblingBlocks(model, [
-                  {
-                    flavour: embedOptions.flavour,
-                    url: result.externalUrl,
-                  },
-                ]);
-              }
+                    if (flavour === 'affine:bookmark') {
+                      track.doc.editor.slashMenu.bookmark();
+                      return;
+                    }
+                  }
+                )
+                .catch(console.error);
             };
           }
         });

@@ -16,7 +16,10 @@ import {
   WorkspaceService,
 } from '@toeverything/infra';
 
-export function createLinkedWidgetConfig(framework: FrameworkProvider) {
+// TODO: fix the type
+export function createLinkedWidgetConfig(
+  framework: FrameworkProvider
+): Partial<Record<string, unknown>> {
   return {
     getMenus: (
       query: string,

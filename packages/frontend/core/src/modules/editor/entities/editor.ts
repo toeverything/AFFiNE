@@ -1,10 +1,15 @@
-import type { DocMode, EdgelessRootService } from '@blocksuite/blocks';
+import type {
+  DocMode,
+  EdgelessRootService,
+  ReferenceParams,
+} from '@blocksuite/blocks';
 import type { InlineEditor } from '@blocksuite/inline';
 import type { AffineEditorContainer, DocTitle } from '@blocksuite/presets';
 import type { DocService, WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
 
+import { paramsParseOptions, preprocessParams } from '../../navigation/utils';
 import type { WorkbenchView } from '../../workbench';
 import { EditorScope } from '../scopes/editor';
 import type { EditorSelector } from '../types';
@@ -58,22 +63,11 @@ export class Editor extends Entity {
    */
   bindWorkbenchView(view: WorkbenchView) {
     // eslint-disable-next-line rxjs/finnish
-    const viewParams$ = view.queryString$<{
-      mode?: DocMode;
-      blockIds?: string[];
-      elementIds?: string[];
-      refreshKey?: string;
-    }>({
-      // Cannot handle single id situation correctly: `blockIds=xxx`
-      arrayFormat: 'none',
-      types: {
-        mode: value =>
-          value === 'page' || value === 'edgeless' ? value : undefined,
-        blockIds: value => (value.length ? value.split(',') : []),
-        elementIds: value => (value.length ? value.split(',') : []),
-        refreshKey: 'string',
-      },
-    });
+    const viewParams$ = view
+      .queryString$<
+        ReferenceParams & { refreshKey?: string }
+      >(paramsParseOptions)
+      .map(preprocessParams);
 
     const stablePrimaryMode = this.doc.getPrimaryMode();
 

@@ -1,4 +1,5 @@
 import { appInfo } from '@affine/electron-api';
+import { isNil } from 'lodash-es';
 
 interface AppUrlOptions {
   desktop?: boolean | string;
@@ -32,12 +33,24 @@ export function buildAppUrl(path: string, opts: AppUrlOptions = {}) {
   }
 }
 
-export function toURLSearchParams(params?: Record<string, string | string[]>) {
+export function toURLSearchParams(
+  params?: Partial<Record<string, string | string[]>>
+) {
   if (!params) return;
+
+  const items = Object.entries(params)
+    .filter(([_, v]) => !isNil(v))
+    .filter(([_, v]) => {
+      if (typeof v === 'string') {
+        return v.length > 0;
+      }
+      if (Array.isArray(v)) {
+        return v.length > 0;
+      }
+      return false;
+    }) as [string, string | string[]][];
+
   return new URLSearchParams(
-    Object.entries(params).map(([k, v]) => [
-      k,
-      Array.isArray(v) ? v.join(',') : v,
-    ])
+    items.map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v])
   );
 }

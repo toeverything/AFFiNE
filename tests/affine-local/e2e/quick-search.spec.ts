@@ -572,3 +572,34 @@ test('can use slash menu to insert a newly created doc card', async ({
     page.locator('.affine-embed-linked-doc-content-title')
   ).toContainText(testTitle);
 });
+
+test('can use slash menu to insert an external link', async ({ page }) => {
+  await openHomePage(page);
+  await clickNewPageButton(page);
+
+  // goto main content
+  await page.keyboard.press('Enter');
+
+  // open slash menu
+  await page.keyboard.type('/link', {
+    delay: 50,
+  });
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('cmdk-quick-search')).toBeVisible();
+
+  const link = 'affine.pro';
+  await page.locator('[cmdk-input]').fill(link);
+
+  const insertLinkBtn = page.locator(
+    '[cmdk-item] [data-value="external-link:affine.pro"]'
+  );
+
+  await expect(insertLinkBtn).toBeVisible();
+
+  await insertLinkBtn.click();
+
+  await expect(page.locator('affine-bookmark')).toBeVisible();
+  await expect(page.locator('.affine-bookmark-content-url')).toContainText(
+    link
+  );
+});

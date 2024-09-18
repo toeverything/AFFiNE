@@ -1,5 +1,5 @@
 import { useAutoFocus } from '@affine/component';
-import { getSvgPath } from '@blocksuite/global/utils';
+import { getFigmaSquircleSvgPath } from '@blocksuite/global/utils';
 import { SearchIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { debounce } from 'lodash-es';
@@ -49,7 +49,13 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
     const [inputValue, setInputValue] = useState(value);
 
     const clipPath = useMemo(
-      () => getSvgPath({ width, height, cornerRadius, cornerSmoothing }),
+      () =>
+        getFigmaSquircleSvgPath({
+          width,
+          height,
+          cornerRadius,
+          cornerSmoothing,
+        }),
       [cornerRadius, cornerSmoothing, height, width]
     );
 

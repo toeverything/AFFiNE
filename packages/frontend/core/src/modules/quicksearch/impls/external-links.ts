@@ -3,6 +3,7 @@ import type { WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
 
 import { resolveLinkToDoc } from '../../navigation';
+import { isLink } from '../../navigation/utils';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
 import type { QuickSearchItem } from '../types/item';
 
@@ -21,11 +22,10 @@ export class ExternalLinksQuickSearchSession
   query$ = new LiveData('');
 
   items$ = LiveData.computed(get => {
-    const query = get(this.query$);
+    const query = get(this.query$).trim();
     if (!query) return [];
 
-    const isLink = query.startsWith('http://') || query.startsWith('https://');
-    if (!isLink) return [];
+    if (!isLink(query)) return [];
 
     const resolvedDoc = resolveLinkToDoc(query);
     if (

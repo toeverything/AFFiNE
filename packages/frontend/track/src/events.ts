@@ -45,7 +45,8 @@ type DocEvents =
   | 'switchPageMode'
   | 'openDocOptionsMenu'
   | 'openDocInfo'
-  | 'copyBlockToLink';
+  | 'copyBlockToLink'
+  | 'bookmark';
 type EditorEvents = 'bold' | 'italic' | 'underline' | 'strikeThrough';
 // END SECTION
 
@@ -262,7 +263,7 @@ const PageEvents = {
   },
   doc: {
     editor: {
-      slashMenu: ['linkDoc', 'createDoc'],
+      slashMenu: ['linkDoc', 'createDoc', 'bookmark'],
       atMenu: ['linkDoc'],
       quickSearch: ['createDoc'],
       formatToolbar: ['bold'],

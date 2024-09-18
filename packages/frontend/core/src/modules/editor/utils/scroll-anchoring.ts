@@ -6,7 +6,6 @@ import type {
   EdgelessRootService,
   PageRootService,
 } from '@blocksuite/blocks';
-import { ZOOM_MAX } from '@blocksuite/blocks';
 import { Bound, deserializeXYWH } from '@blocksuite/global/utils';
 
 function scrollAnchoringInEdgelessMode(
@@ -47,8 +46,7 @@ function scrollAnchoringInEdgelessMode(
 
     const { zoom, centerX, centerY } = service.getFitToScreenData(
       [20, 20, 100, 20],
-      [bounds],
-      ZOOM_MAX
+      [bounds]
     );
 
     service.viewport.setCenter(centerX, centerY);
