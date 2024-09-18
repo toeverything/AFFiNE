@@ -3,7 +3,12 @@ import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-e
 import { popupWindow } from '@affine/core/utils';
 import { Unreachable } from '@affine/env/constant';
 import { useI18n } from '@affine/i18n';
-import { CloseIcon, NewIcon, ResetIcon } from '@blocksuite/icons/rc';
+import {
+  CloseIcon,
+  DownloadIcon,
+  NewIcon,
+  ResetIcon,
+} from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useCallback, useMemo } from 'react';
 
@@ -43,11 +48,21 @@ interface ButtonContentProps {
 function DownloadUpdate({ updateAvailable }: ButtonContentProps) {
   const t = useI18n();
   return (
-    <div className={styles.installLabel}>
-      <span className={styles.ellipsisTextOverflow}>
-        {t['com.affine.appUpdater.downloadUpdate']()}
-      </span>
-      <span className={styles.versionLabel}>{updateAvailable?.version}</span>
+    <div className={styles.updateAvailableWrapper}>
+      <div className={styles.installLabelNormal}>
+        <DownloadIcon className={styles.icon} />
+        <span className={styles.ellipsisTextOverflow}>
+          {t['com.affine.appUpdater.downloadUpdate']()}
+        </span>
+        <span className={styles.versionLabel}>{updateAvailable?.version}</span>
+      </div>
+
+      <div className={styles.installLabelHover}>
+        <DownloadIcon className={styles.icon} />
+        <span className={styles.ellipsisTextOverflow}>
+          {t['com.affine.appUpdater.downloadUpdate']()}
+        </span>
+      </div>
     </div>
   );
 }
@@ -57,6 +72,7 @@ function UpdateReady({ updateAvailable, appQuitting }: ButtonContentProps) {
   return (
     <div className={styles.updateAvailableWrapper}>
       <div className={styles.installLabelNormal}>
+        <ResetIcon className={styles.icon} />
         <span className={styles.ellipsisTextOverflow}>
           {t['com.affine.appUpdater.updateAvailable']()}
         </span>
@@ -102,6 +118,7 @@ function OpenDownloadPage({ updateAvailable }: ButtonContentProps) {
   return (
     <>
       <div className={styles.installLabelNormal}>
+        <DownloadIcon className={styles.icon} />
         <span className={styles.ellipsisTextOverflow}>
           {t['com.affine.appUpdater.updateAvailable']()}
         </span>
@@ -109,6 +126,7 @@ function OpenDownloadPage({ updateAvailable }: ButtonContentProps) {
       </div>
 
       <div className={styles.installLabelHover}>
+        <DownloadIcon className={styles.icon} />
         <span className={styles.ellipsisTextOverflow}>
           {t['com.affine.appUpdater.openDownloadPage']()}
         </span>

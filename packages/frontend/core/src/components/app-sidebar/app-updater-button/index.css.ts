@@ -87,6 +87,7 @@ export const installLabel = style({
 export const installLabelNormal = style([
   installLabel,
   {
+    justifyContent: 'flex-start',
     selectors: {
       [`${root}:hover &, ${root}[data-updating=true] &`]: {
         display: 'none',
