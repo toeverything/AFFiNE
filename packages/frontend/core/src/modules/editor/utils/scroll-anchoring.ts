@@ -1,3 +1,5 @@
+import { notify } from '@affine/component';
+import { I18n } from '@affine/i18n';
 import type { BlockStdScope, SelectionManager } from '@blocksuite/block-std';
 import type {
   DocMode,
@@ -38,7 +40,10 @@ function scrollAnchoringInEdgelessMode(
       bounds = Bound.fromXYWH(deserializeXYWH(model.xywh));
     }
 
-    if (!bounds) return;
+    if (!bounds) {
+      notify.error({ title: I18n['Block not found']() });
+      return;
+    }
 
     const { zoom, centerX, centerY } = service.getFitToScreenData(
       [20, 20, 100, 20],
@@ -72,7 +77,10 @@ function scrollAnchoringInEdgelessMode(
 
 function scrollAnchoringInPageMode(service: PageRootService, id: string) {
   const blockComponent = service.std.view.getBlock(id);
-  if (!blockComponent) return;
+  if (!blockComponent) {
+    notify.error({ title: I18n['Block not found']() });
+    return;
+  }
 
   blockComponent.scrollIntoView({
     behavior: 'instant',
