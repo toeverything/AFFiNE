@@ -82,9 +82,6 @@
       "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [
         {
-          "env": "ENABLE_PRELOADING"
-        },
-        {
           "env": "COVERAGE"
         }
       ]
@@ -93,20 +90,13 @@
       "outputs": ["{workspaceRoot}/.nyc_output"],
       "inputs": [
         {
-          "env": "ENABLE_PRELOADING"
-        },
-        {
           "env": "COVERAGE"
         }
       ]
     },
     "test:coverage": {
       "outputs": ["{workspaceRoot}/.nyc_output"],
-      "inputs": [
-        {
-          "env": "ENABLE_PRELOADING"
-        }
-      ]
+      "inputs": []
     }
   }
 }

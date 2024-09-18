@@ -107,14 +107,12 @@ export const useGeneralSettingList = (): GeneralSettingList => {
     }
   }
 
-  if (BUILD_CONFIG.enableExperimentalFeature) {
-    settings.push({
-      key: 'experimental-features',
-      title: t['com.affine.settings.workspace.experimental-features'](),
-      icon: ExperimentIcon,
-      testId: 'experimental-features-trigger',
-    });
-  }
+  settings.push({
+    key: 'experimental-features',
+    title: t['com.affine.settings.workspace.experimental-features'](),
+    icon: ExperimentIcon,
+    testId: 'experimental-features-trigger',
+  });
 
   return settings;
 };

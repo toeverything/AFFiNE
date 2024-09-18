@@ -29,14 +29,6 @@ export function getBuildConfig(buildFlags: BuildFlags): BUILD_CONFIG_TYPE {
         downloadUrl: 'https://affine.pro/download',
         imageProxyUrl: '/api/worker/image-proxy',
         linkPreviewUrl: '/api/worker/link-preview',
-        enablePreloading: true,
-        enableExperimentalFeature: true,
-        allowLocalWorkspace:
-          buildFlags.distribution === 'desktop' ? true : false,
-        enableThemeEditor: false,
-
-        // CAUTION(@forehalo): product not ready, do not enable it
-        enableNewSettingUnstableApi: false,
       };
     },
     get beta() {
@@ -62,7 +54,6 @@ export function getBuildConfig(buildFlags: BuildFlags): BUILD_CONFIG_TYPE {
         appBuildType: 'canary' as const,
         serverUrlPrefix: 'https://affine.fail',
         changelogUrl: 'https://github.com/toeverything/AFFiNE/releases',
-        enableThemeEditor: true,
       };
     },
   };
@@ -77,21 +68,6 @@ export function getBuildConfig(buildFlags: BuildFlags): BUILD_CONFIG_TYPE {
 
   const environmentPreset = {
     changelogUrl: process.env.CHANGELOG_URL ?? currentBuildPreset.changelogUrl,
-    enablePreloading: process.env.ENABLE_PRELOADING
-      ? process.env.ENABLE_PRELOADING === 'true'
-      : currentBuildPreset.enablePreloading,
-    enableNewSettingUnstableApi: process.env.ENABLE_NEW_SETTING_UNSTABLE_API
-      ? process.env.ENABLE_NEW_SETTING_UNSTABLE_API === 'true'
-      : currentBuildPreset.enableNewSettingUnstableApi,
-    allowLocalWorkspace: process.env.ALLOW_LOCAL_WORKSPACE
-      ? process.env.ALLOW_LOCAL_WORKSPACE === 'true'
-      : buildFlags.mode === 'development'
-        ? true
-        : currentBuildPreset.allowLocalWorkspace,
-  };
-
-  const testEnvironmentPreset = {
-    allowLocalWorkspace: true,
   };
 
   if (buildFlags.mode === 'development') {
@@ -104,9 +80,5 @@ export function getBuildConfig(buildFlags: BuildFlags): BUILD_CONFIG_TYPE {
     // this environment variable is for debug proposes only
     // do not put them into CI
     ...(process.env.CI ? {} : environmentPreset),
-
-    // test environment preset will overwrite current build preset
-    // this environment variable is for github workflow e2e-test only
-    ...(process.env.IN_CI_TEST ? testEnvironmentPreset : {}),
   };
 }

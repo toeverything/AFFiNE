@@ -6,15 +6,17 @@ import {
   SettingWrapper,
 } from '@affine/component/setting-components';
 import { useI18n } from '@affine/i18n';
-import type { AppSetting } from '@toeverything/infra';
-import { windowFrameStyleOptions } from '@toeverything/infra';
+import {
+  FeatureFlagService,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import { useTheme } from 'next-themes';
 import { useCallback, useMemo } from 'react';
 
 import { useAppSettingHelper } from '../../../../../components/hooks/affine/use-app-setting-helper';
 import { LanguageMenu } from '../../../language-menu';
 import { Page } from '../editor/page';
-import { DateFormatSetting } from './date-format-setting';
 import { settingWrapper } from './style.css';
 import { ThemeEditorSetting } from './theme-editor-setting';
 
@@ -62,6 +64,10 @@ export const ThemeSettings = () => {
 export const AppearanceSettings = () => {
   const t = useI18n();
 
+  const featureFlagService = useService(FeatureFlagService);
+  const enableThemeEditor = useLiveData(
+    featureFlagService.flags.enable_theme_editor.$
+  );
   const { appSettings, updateSettings } = useAppSettingHelper();
 
   return (
@@ -98,51 +104,10 @@ export const AppearanceSettings = () => {
             />
           </SettingRow>
         ) : null}
-        {BUILD_CONFIG.enableNewSettingUnstableApi && BUILD_CONFIG.isElectron ? (
-          <SettingRow
-            name={t['com.affine.appearanceSettings.windowFrame.title']()}
-            desc={t['com.affine.appearanceSettings.windowFrame.description']()}
-          >
-            <RadioGroup
-              items={windowFrameStyleOptions.map(option => ({
-                value: option,
-                label:
-                  t[`com.affine.appearanceSettings.windowFrame.${option}`](),
-              }))}
-              value={appSettings.windowFrameStyle}
-              className={settingWrapper}
-              width={250}
-              onChange={(value: AppSetting['windowFrameStyle']) => {
-                updateSettings('windowFrameStyle', value);
-              }}
-            />
-          </SettingRow>
-        ) : null}
-        {BUILD_CONFIG.enableThemeEditor ? <ThemeEditorSetting /> : null}
+        {enableThemeEditor ? <ThemeEditorSetting /> : null}
       </SettingWrapper>
       {/* // TODO(@JimmFly): remove Page component when stable release */}
       <Page />
-      {BUILD_CONFIG.enableNewSettingUnstableApi ? (
-        <SettingWrapper title={t['com.affine.appearanceSettings.date.title']()}>
-          <SettingRow
-            name={t['com.affine.appearanceSettings.dateFormat.title']()}
-            desc={t['com.affine.appearanceSettings.dateFormat.description']()}
-          >
-            <div className={settingWrapper}>
-              <DateFormatSetting />
-            </div>
-          </SettingRow>
-          <SettingRow
-            name={t['com.affine.appearanceSettings.startWeek.title']()}
-            desc={t['com.affine.appearanceSettings.startWeek.description']()}
-          >
-            <Switch
-              checked={appSettings.startWeekOnMonday}
-              onChange={checked => updateSettings('startWeekOnMonday', checked)}
-            />
-          </SettingRow>
-        </SettingWrapper>
-      ) : null}
 
       {BUILD_CONFIG.isElectron ? (
         <SettingWrapper

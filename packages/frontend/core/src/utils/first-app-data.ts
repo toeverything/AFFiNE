@@ -4,7 +4,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import onboardingUrl from '@affine/templates/onboarding.zip';
 import { ZipTransformer } from '@blocksuite/blocks';
 import type { WorkspacesService } from '@toeverything/infra';
-import { DocsService, initEmptyPage } from '@toeverything/infra';
+import { DocsService } from '@toeverything/infra';
 
 export async function buildShowcaseWorkspace(
   workspacesService: WorkspacesService,
@@ -46,27 +46,11 @@ export async function createFirstAppData(workspacesService: WorkspacesService) {
     return;
   }
   localStorage.setItem('is-first-open', 'false');
-  if (BUILD_CONFIG.enablePreloading) {
-    const { meta, defaultDocId } = await buildShowcaseWorkspace(
-      workspacesService,
-      WorkspaceFlavour.LOCAL,
-      DEFAULT_WORKSPACE_NAME
-    );
-    logger.info('create first workspace', defaultDocId);
-    return { meta, defaultPageId: defaultDocId };
-  } else {
-    let defaultPageId: string | undefined = undefined;
-    const workspaceMetadata = await workspacesService.create(
-      WorkspaceFlavour.LOCAL,
-      async workspace => {
-        workspace.meta.initialize();
-        workspace.meta.setName(DEFAULT_WORKSPACE_NAME);
-        const page = workspace.createDoc();
-        defaultPageId = page.id;
-        initEmptyPage(page);
-      }
-    );
-    logger.info('create first workspace', workspaceMetadata);
-    return { meta: workspaceMetadata, defaultPageId };
-  }
+  const { meta, defaultDocId } = await buildShowcaseWorkspace(
+    workspacesService,
+    WorkspaceFlavour.LOCAL,
+    DEFAULT_WORKSPACE_NAME
+  );
+  logger.info('create first workspace', defaultDocId);
+  return { meta, defaultPageId: defaultDocId };
 }

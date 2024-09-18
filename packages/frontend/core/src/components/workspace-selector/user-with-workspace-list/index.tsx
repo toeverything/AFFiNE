@@ -8,6 +8,7 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import {
+  FeatureFlagService,
   useLiveData,
   useService,
   type WorkspaceMetadata,
@@ -75,6 +76,7 @@ const UserWithWorkspaceListInner = ({
 }: UserWithWorkspaceListProps) => {
   const createWorkspaceDialogService = useService(CreateWorkspaceDialogService);
   const session = useLiveData(useService(AuthService).session.session$);
+  const featureFlagService = useService(FeatureFlagService);
 
   const isAuthenticated = session.status === 'authenticated';
 
@@ -88,7 +90,10 @@ const UserWithWorkspaceListInner = ({
   }, [setOpenSignIn]);
 
   const onNewWorkspace = useCallback(() => {
-    if (!isAuthenticated && !BUILD_CONFIG.allowLocalWorkspace) {
+    if (
+      !isAuthenticated &&
+      !featureFlagService.flags.enable_local_workspace.value
+    ) {
       return openSignInModal();
     }
     track.$.navigationPanel.workspaceList.createWorkspace();
@@ -99,7 +104,8 @@ const UserWithWorkspaceListInner = ({
     });
     onEventEnd?.();
   }, [
-    createWorkspaceDialogService.dialog,
+    createWorkspaceDialogService,
+    featureFlagService,
     isAuthenticated,
     onCreatedWorkspace,
     onEventEnd,

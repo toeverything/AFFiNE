@@ -31,12 +31,6 @@ export type BUILD_CONFIG_TYPE = {
   imageProxyUrl: string;
   linkPreviewUrl: string;
 
-  allowLocalWorkspace: boolean;
-  enablePreloading: boolean;
-  enableNewSettingUnstableApi: boolean;
-  enableExperimentalFeature: boolean;
-  enableThemeEditor: boolean;
-
   // TODO(@forehalo): remove
   isSelfHosted: boolean;
 };

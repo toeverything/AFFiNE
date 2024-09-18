@@ -118,6 +118,20 @@ export const AFFINE_FLAGS = {
     configurable: isDesktopEnvironment,
     defaultState: false,
   },
+  enable_theme_editor: {
+    category: 'affine',
+    displayName: 'Theme Editor',
+    description: 'Enables theme editor.',
+    configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
+  },
+  enable_local_workspace: {
+    category: 'affine',
+    displayName: 'Allow create local workspace',
+    description: 'Allow create local workspace.',
+    configurable: isCanaryBuild,
+    defaultState: isDesktopEnvironment || isCanaryBuild,
+  },
 } satisfies { [key in string]: FlagInfo };
 
 export type AFFINE_FLAGS = typeof AFFINE_FLAGS;

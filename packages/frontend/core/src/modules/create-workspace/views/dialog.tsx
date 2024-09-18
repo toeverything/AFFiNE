@@ -9,7 +9,7 @@ import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import {
-  initEmptyPage,
+  FeatureFlagService,
   useLiveData,
   useService,
   WorkspacesService,
@@ -18,9 +18,9 @@ import { useSetAtom } from 'jotai';
 import type { KeyboardEvent } from 'react';
 import { useCallback, useLayoutEffect, useState } from 'react';
 
-import { buildShowcaseWorkspace } from '../../../bootstrap/first-app-data';
 import { AuthService } from '../../../modules/cloud';
 import { _addLocalWorkspace } from '../../../modules/workspace-engine';
+import { buildShowcaseWorkspace } from '../../../utils/first-app-data';
 import { CreateWorkspaceDialogService } from '../services/dialog';
 import * as styles from './dialog.css';
 
@@ -35,8 +35,6 @@ interface NameWorkspaceContentProps extends ConfirmModalProps {
   ) => void;
 }
 
-const shouldEnableCloud = !BUILD_CONFIG.allowLocalWorkspace;
-
 const NameWorkspaceContent = ({
   loading,
   onConfirmName,
@@ -44,7 +42,11 @@ const NameWorkspaceContent = ({
 }: NameWorkspaceContentProps) => {
   const t = useI18n();
   const [workspaceName, setWorkspaceName] = useState('');
-  const [enable, setEnable] = useState(shouldEnableCloud);
+  const featureFlagService = useService(FeatureFlagService);
+  const enableLocalWorkspace = useLiveData(
+    featureFlagService.flags.enable_local_workspace.$
+  );
+  const [enable, setEnable] = useState(!enableLocalWorkspace);
   const session = useService(AuthService).session;
   const loginStatus = useLiveData(session.status$);
 
@@ -132,7 +134,7 @@ const NameWorkspaceContent = ({
               <Switch
                 checked={enable}
                 onChange={onSwitchChange}
-                disabled={shouldEnableCloud}
+                disabled={!enableLocalWorkspace}
               />
             </div>
             <div className={styles.cardDescription}>
@@ -143,7 +145,7 @@ const NameWorkspaceContent = ({
             <CloudSvg />
           </div>
         </div>
-        {shouldEnableCloud ? (
+        {!enableLocalWorkspace ? (
           <a
             className={styles.cloudTips}
             href={BUILD_CONFIG.downloadUrl}
@@ -213,27 +215,12 @@ const CreateWorkspaceDialog = () => {
 
       // this will be the last step for web for now
       // fix me later
-      if (BUILD_CONFIG.enablePreloading) {
-        const { meta, defaultDocId } = await buildShowcaseWorkspace(
-          workspacesService,
-          workspaceFlavour,
-          name
-        );
-        createWorkspaceDialogService.dialog.callback({ meta, defaultDocId });
-      } else {
-        let defaultDocId: string | undefined = undefined;
-        const meta = await workspacesService.create(
-          workspaceFlavour,
-          async workspace => {
-            workspace.meta.initialize();
-            workspace.meta.setName(name);
-            const page = workspace.createDoc();
-            defaultDocId = page.id;
-            initEmptyPage(page);
-          }
-        );
-        createWorkspaceDialogService.dialog.callback({ meta, defaultDocId });
-      }
+      const { meta, defaultDocId } = await buildShowcaseWorkspace(
+        workspacesService,
+        workspaceFlavour,
+        name
+      );
+      createWorkspaceDialogService.dialog.callback({ meta, defaultDocId });
 
       createWorkspaceDialogService.dialog.close();
       setLoading(false);

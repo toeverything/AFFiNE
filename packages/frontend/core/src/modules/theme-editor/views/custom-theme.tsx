@@ -1,4 +1,8 @@
-import { useService } from '@toeverything/infra';
+import {
+  FeatureFlagService,
+  useLiveData,
+  useServices,
+} from '@toeverything/infra';
 import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
 
@@ -7,16 +11,22 @@ import { ThemeEditorService } from '../services/theme-editor';
 let _provided = false;
 
 export const useCustomTheme = (target: HTMLElement) => {
-  const themeEditor = useService(ThemeEditorService);
+  const { themeEditorService, featureFlagService } = useServices({
+    ThemeEditorService,
+    FeatureFlagService,
+  });
+  const enableThemeEditor = useLiveData(
+    featureFlagService.flags.enable_theme_editor.$
+  );
   const { resolvedTheme } = useTheme();
 
   useEffect(() => {
-    if (!BUILD_CONFIG.enableThemeEditor) return;
+    if (!enableThemeEditor) return;
     if (_provided) return;
 
     _provided = true;
 
-    const sub = themeEditor.customTheme$.subscribe(themeObj => {
+    const sub = themeEditorService.customTheme$.subscribe(themeObj => {
       if (!themeObj) return;
 
       const mode = resolvedTheme === 'dark' ? 'dark' : 'light';
@@ -37,7 +47,7 @@ export const useCustomTheme = (target: HTMLElement) => {
       _provided = false;
       sub.unsubscribe();
     };
-  }, [resolvedTheme, target.style, themeEditor.customTheme$]);
+  }, [resolvedTheme, target.style, enableThemeEditor, themeEditorService]);
 };
 
 export const CustomThemeModifier = () => {

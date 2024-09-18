@@ -14,14 +14,14 @@ import {
 } from 'react';
 import { type LoaderFunction, useSearchParams } from 'react-router-dom';
 
-import {
-  buildShowcaseWorkspace,
-  createFirstAppData,
-} from '../../bootstrap/first-app-data';
 import { AppFallback } from '../../components/affine/app-container';
 import { useNavigateHelper } from '../../components/hooks/use-navigate-helper';
 import { WorkspaceNavigator } from '../../components/workspace-selector';
 import { AuthService } from '../../modules/cloud';
+import {
+  buildShowcaseWorkspace,
+  createFirstAppData,
+} from '../../utils/first-app-data';
 
 export const loader: LoaderFunction = async () => {
   return null;

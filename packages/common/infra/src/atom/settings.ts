@@ -8,20 +8,9 @@ setupGlobal();
 
 const logger = new DebugLogger('affine:settings');
 
-export type DateFormats =
-  | 'MM/dd/YYYY'
-  | 'dd/MM/YYYY'
-  | 'YYYY-MM-dd'
-  | 'YYYY.MM.dd'
-  | 'YYYY/MM/dd'
-  | 'dd-MMM-YYYY'
-  | 'dd MMMM YYYY';
-
 export type AppSetting = {
   clientBorder: boolean;
   windowFrameStyle: 'frameless' | 'NativeTitleBar';
-  dateFormat: DateFormats;
-  startWeekOnMonday: boolean;
   enableBlurBackground: boolean;
   enableNoisyBackground: boolean;
   autoCheckUpdate: boolean;
@@ -33,21 +22,9 @@ export const windowFrameStyleOptions: AppSetting['windowFrameStyle'][] = [
   'NativeTitleBar',
 ];
 
-export const dateFormatOptions: DateFormats[] = [
-  'MM/dd/YYYY',
-  'dd/MM/YYYY',
-  'YYYY-MM-dd',
-  'YYYY.MM.dd',
-  'YYYY/MM/dd',
-  'dd-MMM-YYYY',
-  'dd MMMM YYYY',
-];
-
 const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
   clientBorder: BUILD_CONFIG.isElectron && !environment.isWindows,
   windowFrameStyle: 'frameless',
-  dateFormat: dateFormatOptions[0],
-  startWeekOnMonday: false,
   enableBlurBackground: true,
   enableNoisyBackground: true,
   autoCheckUpdate: true,
