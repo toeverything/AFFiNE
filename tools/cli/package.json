@@ -41,7 +41,7 @@
     "webpack-merge": "^6.0.0"
   },
   "scripts": {
-    "build": "node --loader ts-node/esm/transpile-only.mjs ./src/bin/build.ts",
+    "bundle": "node --loader ts-node/esm/transpile-only.mjs ./src/bin/build.ts",
     "dev": "node --loader ts-node/esm/transpile-only.mjs ./src/bin/dev.ts"
   },
   "version": "0.16.0"

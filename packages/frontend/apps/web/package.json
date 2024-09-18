@@ -5,7 +5,7 @@
   "private": true,
   "browser": "src/index.tsx",
   "scripts": {
-    "build": "cross-env DISTRIBUTION=web yarn workspace @affine/cli build",
+    "build": "cross-env DISTRIBUTION=web yarn workspace @affine/cli bundle",
     "dev": "yarn workspace @affine/cli dev",
     "static-server": "yarn workspace @affine/cli dev --static"
   },

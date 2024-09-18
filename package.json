@@ -19,8 +19,8 @@
   },
   "scripts": {
     "dev": "yarn workspace @affine/cli dev",
+    "build": "yarn workspace @affine/cli bundle",
     "dev:electron": "yarn workspace @affine/electron dev",
-    "build": "yarn nx build @affine/web",
     "build:electron": "yarn nx build @affine/electron",
     "build:server-native": "yarn nx run-many -t build -p @affine/server-native",
     "start:web-static": "yarn workspace @affine/web static-server",

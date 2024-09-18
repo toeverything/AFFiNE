@@ -296,8 +296,8 @@ jobs:
           path: ./packages/backend/native/server-native.node
           if-no-files-found: error
 
-  build-web:
-    name: Build @affine/web
+  build-electron-renderer:
+    name: Build @affine/electron renderer
     runs-on: ubuntu-latest
 
     steps:
@@ -307,9 +307,9 @@ jobs:
         with:
           electron-install: false
           full-cache: true
-      - name: Build Web
+      - name: Build Electron renderer
         # always skip cache because its fast, and cache configuration is always changing
-        run: yarn nx build @affine/web --skip-nx-cache
+        run: yarn build
         env:
           DISTRIBUTION: desktop
       - name: zip web
@@ -520,7 +520,7 @@ jobs:
               test: true,
             }
     needs:
-      - build-web
+      - build-electron-renderer
       - build-native
     steps:
       - uses: actions/checkout@v4
