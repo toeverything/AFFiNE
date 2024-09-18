@@ -1,4 +1,6 @@
-import { setupBlocksuite, setupElectron } from '@affine/core/bootstrap';
+import '@affine/component/theme';
+import './global.css';
+
+import { setupElectron } from '@affine/core/bootstrap';
 
 setupElectron();
-setupBlocksuite();

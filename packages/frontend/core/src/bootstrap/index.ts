@@ -12,5 +12,3 @@ export async function setupBrowser() {
   await polyfillBrowser();
   setupEnvironment();
 }
-
-export { setupBlocksuite } from './blocksuite';

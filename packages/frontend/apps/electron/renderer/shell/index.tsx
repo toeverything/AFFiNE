@@ -1,34 +1,17 @@
-import '@affine/component/theme/global.css';
-import '@affine/component/theme/theme.css';
-import '../global.css';
 import './setup';
 
-import { ThemeProvider } from '@affine/component/theme-provider';
-import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
-import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
 import { apis, events } from '@affine/electron-api';
 import { createI18n, setUpLanguage } from '@affine/i18n';
-import {
-  configureGlobalStorageModule,
-  Framework,
-  FrameworkRoot,
-} from '@toeverything/infra';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
-import { ShellRoot } from './shell';
+import { App } from './app';
 
-const framework = new Framework();
-configureGlobalStorageModule(framework);
-configureElectronStateStorageImpls(framework);
-configureAppTabsHeaderModule(framework);
-const frameworkProvider = framework.provider();
-
-async function loadLanguage() {
+function loadLanguage() {
   const i18n = createI18n();
   document.documentElement.lang = i18n.language;
 
-  await setUpLanguage(i18n);
+  setUpLanguage(i18n).catch(console.error);
 }
 
 async function main() {
@@ -48,7 +31,7 @@ async function main() {
   events?.ui.onFullScreen(handleFullscreen);
   events?.ui.onTabShellViewActiveChange(handleActive);
 
-  await loadLanguage();
+  loadLanguage();
   mountApp();
 }
 
@@ -59,11 +42,7 @@ function mountApp() {
   }
   createRoot(root).render(
     <StrictMode>
-      <FrameworkRoot framework={frameworkProvider}>
-        <ThemeProvider>
-          <ShellRoot />
-        </ThemeProvider>
-      </FrameworkRoot>
+      <App />
     </StrictMode>
   );
 }

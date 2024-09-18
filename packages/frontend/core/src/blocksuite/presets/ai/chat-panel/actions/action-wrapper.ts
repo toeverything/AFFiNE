@@ -1,7 +1,7 @@
 import type { EditorHost } from '@blocksuite/block-std';
 import { WithDisposable } from '@blocksuite/block-std';
 import { css, html, LitElement, nothing, type TemplateResult } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 
 import {
   ActionIcon,
@@ -59,7 +59,6 @@ const icons: Record<string, TemplateResult<1>> = {
   'Convert to sticker': AIImageIcon,
 };
 
-@customElement('action-wrapper')
 export class ActionWrapper extends WithDisposable(LitElement) {
   static override styles = css`
     .action-name {

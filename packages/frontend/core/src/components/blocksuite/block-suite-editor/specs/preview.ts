@@ -2,7 +2,12 @@ import type { ExtensionType } from '@blocksuite/block-std';
 import { SpecProvider } from '@blocksuite/blocks';
 import { AIChatBlockSpec } from '@blocksuite/presets';
 
-const CustomSpecs: ExtensionType[] = [AIChatBlockSpec].flat();
+import { getFontConfigExtension } from './font-extension';
+
+const CustomSpecs: ExtensionType[] = [
+  AIChatBlockSpec,
+  getFontConfigExtension(),
+].flat();
 
 function patchPreviewSpec(id: string, specs: ExtensionType[]) {
   const specProvider = SpecProvider.getInstance();

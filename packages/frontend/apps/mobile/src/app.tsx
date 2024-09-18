@@ -1,7 +1,3 @@
-import '@affine/component/theme/global.css';
-import '@affine/component/theme/theme.css';
-import '@affine/core/mobile/styles/mobile.css';
-
 import { AffineContext } from '@affine/component/context';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { Telemetry } from '@affine/core/components/telemetry';

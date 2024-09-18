@@ -1,8 +1,7 @@
 import { i18nTime } from '@affine/i18n';
 import { css, html, LitElement } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 
-@customElement('date-time')
 export class DateTime extends LitElement {
   static override styles = css`
     :host {

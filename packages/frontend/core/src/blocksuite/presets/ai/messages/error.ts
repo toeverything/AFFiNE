@@ -5,14 +5,13 @@ import {
   UnauthorizedError,
 } from '@blocksuite/blocks';
 import { html, LitElement, nothing, type TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { ErrorTipIcon } from '../_common/icons';
 import { AIProvider } from '../provider';
 
-@customElement('ai-error-wrapper')
-class AIErrorWrapper extends WithDisposable(LitElement) {
+export class AIErrorWrapper extends WithDisposable(LitElement) {
   @property({ attribute: false })
   accessor text!: TemplateResult<1>;
 

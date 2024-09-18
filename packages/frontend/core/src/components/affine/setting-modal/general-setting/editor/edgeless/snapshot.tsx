@@ -1,5 +1,4 @@
 import { Skeleton } from '@affine/component';
-import { getFontConfigExtension } from '@affine/core/components/blocksuite/block-suite-editor';
 import type { EditorSettingSchema } from '@affine/core/modules/editor-settting';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import type { EditorHost } from '@blocksuite/block-std';
@@ -72,10 +71,7 @@ export const EdgelessSnapshot = (props: Props) => {
 
     const editorHost = new BlockStdScope({
       doc,
-      extensions: [
-        ...SpecProvider.getInstance().getSpec('edgeless:preview').value,
-        getFontConfigExtension(),
-      ],
+      extensions: SpecProvider.getInstance().getSpec('edgeless:preview').value,
     }).render();
     docRef.current = doc;
     editorHostRef.current = editorHost;

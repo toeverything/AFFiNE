@@ -11,7 +11,7 @@ import {
 } from '@blocksuite/blocks';
 import { noop } from '@blocksuite/global/utils';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
+import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { type ChatAction } from '../../_common/chat-actions-handle';
@@ -20,7 +20,6 @@ import { copyText } from '../../utils/editor-actions';
 
 noop(Tooltip);
 
-@customElement('chat-copy-more')
 export class ChatCopyMore extends WithDisposable(LitElement) {
   static override styles = css`
     .copy-more {

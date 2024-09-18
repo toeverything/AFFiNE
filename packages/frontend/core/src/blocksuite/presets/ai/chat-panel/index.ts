@@ -7,7 +7,7 @@ import { NotificationProvider } from '@blocksuite/blocks';
 import { debounce } from '@blocksuite/global/utils';
 import type { Doc } from '@blocksuite/store';
 import { css, html, type PropertyValues } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 
 import { AIHelpIcon, SmallHintIcon } from '../_common/icons';
@@ -19,7 +19,6 @@ import {
 import type { ChatAction, ChatContextValue, ChatItem } from './chat-context';
 import type { ChatPanelMessages } from './chat-panel-messages';
 
-@customElement('chat-panel')
 export class ChatPanel extends WithDisposable(ShadowlessElement) {
   static override styles = css`
     chat-panel {

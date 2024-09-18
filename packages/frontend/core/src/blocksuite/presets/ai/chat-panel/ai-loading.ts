@@ -1,10 +1,9 @@
 import { WithDisposable } from '@blocksuite/block-std';
 import { css, html, LitElement } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 
 import { AIStarIconWithAnimation } from '../_common/icons';
 
-@customElement('ai-loading')
 export class AILoading extends WithDisposable(LitElement) {
   static override styles = css`
     :host {

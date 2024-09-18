@@ -1,8 +1,12 @@
+import { builtInTemplates as builtInEdgelessTemplates } from '@affine/templates/edgeless';
+import { builtInTemplates as builtInStickersTemplates } from '@affine/templates/stickers';
 import type { ExtensionType } from '@blocksuite/block-std';
+import type { TemplateManager } from '@blocksuite/blocks';
 import {
   EdgelessNoteBlockSpec,
   EdgelessSurfaceBlockSpec,
   EdgelessSurfaceRefBlockSpec,
+  EdgelessTemplatePanel,
   EdgelessTextBlockSpec,
   FrameBlockSpec,
 } from '@blocksuite/blocks';
@@ -25,4 +29,13 @@ export function createEdgelessModeSpecs(
     // special
     createEdgelessRootBlockSpec(framework, enableAI),
   ].flat();
+}
+
+export function effects() {
+  EdgelessTemplatePanel.templates.extend(
+    builtInStickersTemplates as TemplateManager
+  );
+  EdgelessTemplatePanel.templates.extend(
+    builtInEdgelessTemplates as TemplateManager
+  );
 }

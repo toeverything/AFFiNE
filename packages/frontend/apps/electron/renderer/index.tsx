@@ -1,5 +1,4 @@
 import './setup';
-import './global.css';
 
 import { appConfigProxy } from '@affine/core/components/hooks/use-app-config-storage';
 import { apis, appInfo, events } from '@affine/electron-api';

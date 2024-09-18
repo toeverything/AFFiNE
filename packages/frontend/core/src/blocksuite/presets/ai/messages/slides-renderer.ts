@@ -8,7 +8,7 @@ import { AffineSchemas } from '@blocksuite/blocks/schemas';
 import type { Doc } from '@blocksuite/store';
 import { DocCollection, Schema } from '@blocksuite/store';
 import { css, html, LitElement, nothing } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
+import { property, query } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 
 import { getAIPanel } from '../ai-panel';
@@ -48,7 +48,6 @@ export const createSlidesRenderer: (
   };
 };
 
-@customElement('ai-slides-renderer')
 export class AISlidesRenderer extends WithDisposable(LitElement) {
   static override styles = css``;
 

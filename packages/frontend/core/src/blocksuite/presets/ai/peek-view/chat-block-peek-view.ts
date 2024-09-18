@@ -19,7 +19,7 @@ import {
   ChatMessagesSchema,
 } from '@blocksuite/presets';
 import { html, LitElement, nothing } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
+import { property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 
@@ -35,7 +35,6 @@ import { PeekViewStyles } from './styles';
 import type { ChatContext } from './types';
 import { calcChildBound } from './utils';
 
-@customElement('ai-chat-block-peek-view')
 export class AIChatBlockPeekView extends LitElement {
   static override styles = PeekViewStyles;
 

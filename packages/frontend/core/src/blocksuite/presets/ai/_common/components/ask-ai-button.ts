@@ -10,7 +10,7 @@ import { createLitPortal, HoverController } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
 import { flip, offset } from '@floating-ui/dom';
 import { css, html, LitElement, nothing } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
+import { property, query } from 'lit/decorators.js';
 import { ref } from 'lit/directives/ref.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -38,7 +38,6 @@ export type AskAIButtonOptions = {
   panelWidth?: number;
 };
 
-@customElement('ask-ai-button')
 export class AskAIButton extends WithDisposable(LitElement) {
   get _edgeless() {
     const rootService = getRootService(this.host);

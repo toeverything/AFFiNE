@@ -1,6 +1,3 @@
-import '@affine/component/theme/global.css';
-import '@affine/component/theme/theme.css';
-
 import { AffineContext } from '@affine/component/context';
 import { GlobalLoading } from '@affine/component/global-loading';
 import { AppFallback } from '@affine/core/components/affine/app-container';

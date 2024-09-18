@@ -5,14 +5,13 @@ import type {
 } from '@blocksuite/block-std';
 import { type ImageSelection, NotificationProvider } from '@blocksuite/blocks';
 import { css, html, LitElement, nothing } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { insertBelow } from '../../utils/editor-actions';
 import type { ChatAction } from '../chat-actions-handle';
 
-@customElement('chat-action-list')
 export class ChatActionList extends LitElement {
   static override styles = css`
     .actions-container {

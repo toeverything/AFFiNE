@@ -23,7 +23,7 @@ import {
   UnauthorizedError,
 } from '@blocksuite/blocks';
 import { css, html, nothing, type PropertyValues } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
+import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -38,7 +38,6 @@ import type { ChatContextValue, ChatItem, ChatMessage } from './chat-context';
 import { HISTORY_IMAGE_ACTIONS } from './const';
 import { AIPreloadConfig } from './preload-config';
 
-@customElement('chat-panel-messages')
 export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   static override styles = css`
     chat-panel-messages {

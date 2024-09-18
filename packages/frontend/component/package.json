@@ -4,7 +4,7 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./theme/*": "./src/theme/*",
+    "./theme": "./src/theme/index.ts",
     "./ui/*": "./src/ui/*/index.ts",
     "./*": "./src/components/*/index.tsx"
   },

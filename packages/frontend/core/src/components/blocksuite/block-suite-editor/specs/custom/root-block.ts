@@ -55,6 +55,7 @@ export function createPageRootBlockSpec(
   return [
     enableAI ? AIPageRootBlockSpec : PageRootBlockSpec,
     FontLoaderService,
+    getFontConfigExtension(),
     getTelemetryExtension(),
     getEditorConfigExtension(framework),
   ].flat();
