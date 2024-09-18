@@ -125,6 +125,15 @@ export const workspaceTitleContainer = style({
   overflow: 'hidden',
 });
 
+export const enableCloudButton = style({
+  opacity: 0,
+  selectors: {
+    [`.${container}:hover &`]: {
+      opacity: 1,
+    },
+  },
+});
+
 export const settingButton = style({
   transition: 'all 0.13s ease',
   width: 0,
@@ -152,12 +161,14 @@ export const settingButton = style({
 });
 
 export const showOnCardHover = style({
-  visibility: 'hidden',
-  opacity: 0,
+  position: 'absolute',
+  right: 0,
+  display: 'flex',
+  gap: 8,
+  alignItems: 'center',
   selectors: {
     [`.${container}:hover &`]: {
-      visibility: 'visible',
-      opacity: 1,
+      position: 'relative',
     },
   },
 });

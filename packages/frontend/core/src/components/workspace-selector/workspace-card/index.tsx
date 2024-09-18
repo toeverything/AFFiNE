@@ -26,6 +26,7 @@ import clsx from 'clsx';
 import type { HTMLAttributes } from 'react';
 import { forwardRef, useCallback, useEffect, useState } from 'react';
 
+import { useCatchEventCallback } from '../../hooks/use-catch-event-hook';
 import * as styles from './styles.css';
 
 const CloudWorkspaceStatus = () => {
@@ -262,6 +263,14 @@ export const WorkspaceCard = forwardRef<
 
     const name = information?.name ?? UNTITLED_WORKSPACE_NAME;
 
+    const onEnableCloud = useCatchEventCallback(() => {
+      onClickEnableCloud?.(workspaceMetadata);
+    }, [onClickEnableCloud, workspaceMetadata]);
+
+    const onOpenSettings = useCatchEventCallback(() => {
+      onClickOpenSettings?.(workspaceMetadata);
+    }, [onClickOpenSettings, workspaceMetadata]);
+
     return (
       <div
         className={clsx(
@@ -301,32 +310,26 @@ export const WorkspaceCard = forwardRef<
             <Skeleton width={100} />
           )}
         </div>
-        {onClickEnableCloud &&
-        workspaceMetadata.flavour === WorkspaceFlavour.LOCAL ? (
-          <Button
-            className={styles.showOnCardHover}
-            onClick={e => {
-              e.stopPropagation();
-              onClickEnableCloud(workspaceMetadata);
-            }}
-          >
-            Enable Cloud
-          </Button>
-        ) : null}
-        {hideCollaborationIcon || information?.isOwner ? null : (
-          <CollaborationIcon />
-        )}
-        {onClickOpenSettings && (
-          <div
-            className={styles.settingButton}
-            onClick={e => {
-              e.stopPropagation();
-              onClickOpenSettings(workspaceMetadata);
-            }}
-          >
-            <SettingsIcon width={16} height={16} />
-          </div>
-        )}
+        <div className={styles.showOnCardHover}>
+          {onClickEnableCloud &&
+          workspaceMetadata.flavour === WorkspaceFlavour.LOCAL ? (
+            <Button
+              className={styles.enableCloudButton}
+              onClick={onEnableCloud}
+            >
+              Enable Cloud
+            </Button>
+          ) : null}
+          {hideCollaborationIcon || information?.isOwner ? null : (
+            <CollaborationIcon />
+          )}
+          {onClickOpenSettings && (
+            <div className={styles.settingButton} onClick={onOpenSettings}>
+              <SettingsIcon width={16} height={16} />
+            </div>
+          )}
+        </div>
+
         {showArrowDownIcon && <ArrowDownSmallIcon />}
       </div>
     );
