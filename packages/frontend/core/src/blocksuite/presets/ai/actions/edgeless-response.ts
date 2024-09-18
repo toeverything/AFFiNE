@@ -28,8 +28,6 @@ import { html, type TemplateResult } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { AIPenIcon, ChatWithAIIcon } from '../_common/icons';
-import { insertFromMarkdown } from '../_common/markdown-utils';
-import { getSurfaceElementFromEditor } from '../_common/selection-utils';
 import { getAIPanel } from '../ai-panel';
 import { AIProvider } from '../provider';
 import { reportResponse } from '../utils/action-reporter';
@@ -40,10 +38,12 @@ import {
 } from '../utils/edgeless';
 import { preprocessHtml } from '../utils/html';
 import { fetchImageToFile } from '../utils/image';
+import { insertFromMarkdown } from '../utils/markdown-utils';
 import {
   getCopilotSelectedElems,
   getEdgelessRootFromEditor,
   getEdgelessService,
+  getSurfaceElementFromEditor,
 } from '../utils/selection-utils';
 import { EXCLUDING_INSERT_ACTIONS, generatingStages } from './consts';
 import type { CtxRecord } from './types';
@@ -192,7 +192,7 @@ function insertBelow(
   parentId: string,
   index = 0
 ) {
-  insertFromMarkdown(host, markdown, parentId, index)
+  insertFromMarkdown(host, markdown, host.doc, parentId, index)
     .then(() => {
       const service = getService(host);
 
