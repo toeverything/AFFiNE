@@ -1,11 +1,12 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
 export const modalOverlay = style({
   position: 'fixed',
   inset: 0,
   zIndex: cssVar('zIndexModal'),
-  backgroundColor: cssVar('black30'),
+  backgroundColor: cssVarV2('layer/background/modal'),
   pointerEvents: 'auto',
   selectors: {
     '&[data-anime-state="animating"]': {
