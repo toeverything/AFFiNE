@@ -4,6 +4,7 @@ import {
   SettingWrapper,
 } from '@affine/component/setting-components';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceShareSettingService } from '@affine/core/modules/share-setting';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
@@ -22,6 +23,8 @@ export const Sharing = () => {
   const shareSetting = useService(WorkspaceShareSettingService).sharePreview;
   const enableUrlPreview = useLiveData(shareSetting.enableUrlPreview$);
   const loading = useLiveData(shareSetting.isLoading$);
+  const permissionService = useService(WorkspacePermissionService);
+  const isOwner = useLiveData(permissionService.permission.isOwner$);
 
   const handleCheck = useAsyncCallback(
     async (checked: boolean) => {
@@ -29,6 +32,10 @@ export const Sharing = () => {
     },
     [shareSetting]
   );
+
+  if (!isOwner) {
+    return null;
+  }
 
   return (
     <SettingWrapper title={t['com.affine.settings.workspace.sharing.title']()}>
