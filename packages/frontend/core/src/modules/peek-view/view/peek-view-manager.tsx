@@ -66,6 +66,13 @@ const renderControls = ({ info }: ActivePeekView) => {
   return <DefaultPeekViewControls />;
 };
 
+const getMode = (info: ActivePeekView['info']) => {
+  if (info.type === 'image') {
+    return 'full';
+  }
+  return 'fit';
+};
+
 const getRendererProps = (
   activePeekView?: ActivePeekView
 ): Partial<PeekViewModalContainerProps> | undefined => {
@@ -82,7 +89,7 @@ const getRendererProps = (
       activePeekView?.target instanceof HTMLElement
         ? activePeekView.target
         : undefined,
-    padding: activePeekView.info.type !== 'image',
+    mode: getMode(activePeekView.info),
     dialogFrame: activePeekView.info.type !== 'image',
   };
 };

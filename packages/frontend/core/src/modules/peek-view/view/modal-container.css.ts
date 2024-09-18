@@ -24,17 +24,16 @@ export const modalContentWrapper = style({
 });
 
 export const modalContentContainer = style({
-  width: '100%',
-  height: '100%',
   position: 'relative',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   borderRadius: 12,
   '@media': {
+    // mobile:
     'screen and (width <= 640px)': {
       selectors: {
-        '[data-padding="true"] &': {
+        [`${modalContentWrapper}:is([data-mode="max"], [data-mode="fit"]) &`]: {
           height: '60%',
           width: 'calc(100% - 32px)',
           paddingRight: 0,
@@ -45,10 +44,20 @@ export const modalContentContainer = style({
     },
   },
   selectors: {
-    '[data-padding="true"] &': {
+    [`${modalContentWrapper}[data-mode="max"] &`]: {
       width: 'calc(100% - 64px)',
       height: 'calc(100% - 64px)',
       paddingRight: 48,
+    },
+    [`${modalContentWrapper}[data-mode="full"] &`]: {
+      width: '100%',
+      height: '100%',
+    },
+    [`${modalContentWrapper}[data-mode="fit"] &`]: {
+      width: '90%',
+      height: '90%',
+      paddingRight: 48,
+      maxWidth: 1248,
     },
     '&[data-anime-state="animating"]': {
       opacity: 0,

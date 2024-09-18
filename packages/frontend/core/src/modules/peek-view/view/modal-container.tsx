@@ -14,7 +14,7 @@ import {
 } from 'react';
 
 import { EditorSettingService } from '../../editor-settting';
-import type { PeekViewAnimation } from '../entities/peek-view';
+import type { PeekViewAnimation, PeekViewMode } from '../entities/peek-view';
 import * as styles from './modal-container.css';
 
 const contentOptions: Dialog.DialogContentProps = {
@@ -55,7 +55,7 @@ export type PeekViewModalContainerProps = PropsWithChildren<{
   controls?: React.ReactNode;
   onAnimationStart?: () => void;
   onAnimateEnd?: () => void;
-  padding?: boolean;
+  mode?: PeekViewMode;
   animation?: PeekViewAnimation;
   testId?: string;
   /** Whether to apply shadow & bg */
@@ -77,7 +77,7 @@ export const PeekViewModalContainer = forwardRef<
     onAnimationStart,
     onAnimateEnd,
     animation = 'zoom',
-    padding = true,
+    mode = 'fit',
     dialogFrame = true,
   },
   ref
@@ -318,9 +318,9 @@ export const PeekViewModalContainer = forwardRef<
           />
           <div
             ref={ref}
-            data-padding={padding}
+            data-mode={mode}
             data-peek-view-wrapper
-            className={clsx(styles.modalContentWrapper)}
+            className={styles.modalContentWrapper}
           >
             <div
               data-anime-state={animeState}

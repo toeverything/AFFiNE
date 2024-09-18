@@ -7,7 +7,7 @@ export const root = style({
 
 export const editor = style({
   vars: {
-    '--affine-editor-side-padding': '160px',
+    '--affine-editor-side-padding': '96px',
   },
   minHeight: '100%',
 });

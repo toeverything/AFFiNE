@@ -184,6 +184,7 @@ function resolvePeekInfoFromPeekTarget(
 }
 
 export type PeekViewAnimation = 'fade' | 'zoom' | 'none';
+export type PeekViewMode = 'full' | 'fit' | 'max';
 
 export class PeekViewEntity extends Entity {
   private readonly _active$ = new LiveData<ActivePeekView | null>(null);
