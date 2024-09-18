@@ -64,7 +64,7 @@ const appSettingEffect = atomEffect(get => {
   if (BUILD_CONFIG.isElectron) {
     logger.debug('sync settings to electron', settings);
     // this api type in @affine/electron-api, but it is circular dependency this package, use any here
-    (window as any).apis?.updater
+    (window as any).__apis?.updater
       .setConfig({
         autoCheckUpdate: settings.autoCheckUpdate,
         autoDownloadUpdate: settings.autoDownloadUpdate,
