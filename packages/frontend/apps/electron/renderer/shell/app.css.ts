@@ -25,6 +25,7 @@ export const appTabsHeader = style({
 export const fallbackRoot = style({
   width: '100%',
   height: '100%',
+  paddingTop: 52,
 });
 
 export const splitViewFallback = style({
