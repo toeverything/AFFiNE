@@ -7,7 +7,7 @@ const ReleaseTypeSchema = z.enum(['stable', 'beta', 'canary', 'internal']);
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..', '..');
 const ROOT = path.resolve(__dirname, '..');
 
 const envBuildType = (process.env.BUILD_TYPE || 'canary').trim().toLowerCase();
