@@ -34,6 +34,14 @@ export const config = (): BuildOptions => {
     define['process.env.GITHUB_SHA'] = `"${process.env.GITHUB_SHA}"`;
   }
 
+  if (process.env.SENTRY_RELEASE) {
+    define['process.env.SENTRY_RELEASE'] = `"${process.env.SENTRY_RELEASE}"`;
+  }
+
+  if (process.env.SENTRY_DSN) {
+    define['process.env.SENTRY_DSN'] = `"${process.env.SENTRY_DSN}"`;
+  }
+
   const plugins: Plugin[] = [];
 
   if (
