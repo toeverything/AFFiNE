@@ -39,6 +39,10 @@
       "groupName": "rust toolchain",
       "matchManagers": ["custom.regex"],
       "matchDepNames": ["rustc"]
+    },
+    {
+      "groupName": "nestjs",
+      "matchPackagePatterns": ["^@nestjs"]
     }
   ],
   "commitMessagePrefix": "chore: ",
