@@ -1,5 +1,5 @@
 import './polyfill';
-import '../src/theme/global.css';
+import '../src/theme';
 import './preview.css';
 import { ThemeProvider } from 'next-themes';
 import type { ComponentType } from 'react';

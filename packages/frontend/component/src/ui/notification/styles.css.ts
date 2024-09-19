@@ -61,17 +61,6 @@ export const actionButton = style({
   position: 'relative',
   background: 'transparent',
   border: 'none',
-  '::before': {
-    content: '""',
-    position: 'absolute',
-    inset: 0,
-    borderRadius: 'inherit',
-    backgroundColor: cssVar('black'),
-    opacity: 0.04,
-  },
-  ':hover': {
-    boxShadow: 'none !important',
-  },
 });
 export const closeButton = style({
   selectors: {
