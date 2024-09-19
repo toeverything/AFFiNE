@@ -1,4 +1,4 @@
-import { Scrollable, useHasScrollTop } from '@affine/component';
+import { notify, Scrollable, useHasScrollTop } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
@@ -9,6 +9,7 @@ import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-
 import { EditorService } from '@affine/core/modules/editor';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
+import { useI18n } from '@affine/i18n';
 import { RefNodeSlotsProvider } from '@blocksuite/blocks';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import { AiIcon, FrameIcon, TocIcon, TodayIcon } from '@blocksuite/icons/rc';
@@ -93,6 +94,8 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const isActiveView = useIsActiveView();
   // TODO(@eyhn): remove jotai here
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();
+
+  const t = useI18n();
 
   useEffect(() => {
     if (isActiveView) {
@@ -187,6 +190,22 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         }
       }
 
+      disposable.add(
+        AIProvider.slots.requestRunInEdgeless.on(({ host }) => {
+          if (host === editorHost) {
+            notify.warning({
+              title: t['com.affine.ai.action.edgeless-only.dialog-title'](),
+              action: {
+                label: t['Switch'](),
+                onClick: () => {
+                  editor.setMode('edgeless');
+                },
+              },
+            });
+          }
+        })
+      );
+
       editor.setEditorContainer(editorContainer);
       const unbind = editor.bindEditorContainer(
         editorContainer,
@@ -199,7 +218,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         disposable.dispose();
       };
     },
-    [editor, openPage, docCollection.id, jumpToPageBlock]
+    [editor, openPage, docCollection.id, jumpToPageBlock, t]
   );
 
   const [refCallback, hasScrollTop] = useHasScrollTop();
