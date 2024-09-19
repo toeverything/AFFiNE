@@ -79,8 +79,8 @@ export const AFFINE_FLAGS = {
     bsFlag: 'enable_mind_map_import',
     displayName: 'Mind Map Import',
     description: 'Enables mind map import.',
-    configurable: true,
-    defaultState: false,
+    configurable: false,
+    defaultState: true,
   },
   enable_multi_view: {
     category: 'affine',
@@ -102,14 +102,14 @@ export const AFFINE_FLAGS = {
     feedbackLink:
       'https://discord.com/channels/959027316334407691/1280014319865696351/1280014319865696351',
     configurable: true,
-    defaultState: false,
+    defaultState: true,
   },
   enable_editor_settings: {
     category: 'affine',
     displayName: 'Editor Settings',
     description: 'Enables editor settings.',
-    configurable: isNotStableBuild,
-    defaultState: isNotStableBuild,
+    configurable: false,
+    defaultState: true,
   },
   enable_offline_mode: {
     category: 'affine',
