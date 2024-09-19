@@ -2,7 +2,8 @@ import './action-wrapper';
 import '../../messages/slides-renderer';
 
 import type { EditorHost } from '@blocksuite/block-std';
-import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
+import { ShadowlessElement } from '@blocksuite/block-std';
+import { WithDisposable } from '@blocksuite/global/utils';
 import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';

@@ -3,13 +3,12 @@ import type {
   EditorHost,
   TextSelection,
 } from '@blocksuite/block-std';
-import { WithDisposable } from '@blocksuite/block-std';
 import {
   createButtonPopper,
   NotificationProvider,
   Tooltip,
 } from '@blocksuite/blocks';
-import { noop } from '@blocksuite/global/utils';
+import { noop, WithDisposable } from '@blocksuite/global/utils';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';

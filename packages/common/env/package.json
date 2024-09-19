@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@blocksuite/global": "0.17.11",
-    "@blocksuite/store": "0.17.11",
+    "@blocksuite/global": "0.17.13",
+    "@blocksuite/store": "0.17.13",
     "vitest": "2.1.1"
   },
   "exports": {

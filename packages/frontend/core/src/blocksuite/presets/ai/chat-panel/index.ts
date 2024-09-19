@@ -2,9 +2,9 @@ import './chat-panel-input';
 import './chat-panel-messages';
 
 import type { EditorHost } from '@blocksuite/block-std';
-import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
+import { ShadowlessElement } from '@blocksuite/block-std';
 import { NotificationProvider } from '@blocksuite/blocks';
-import { debounce } from '@blocksuite/global/utils';
+import { debounce, WithDisposable } from '@blocksuite/global/utils';
 import type { Doc } from '@blocksuite/store';
 import { css, html, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';

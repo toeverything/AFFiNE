@@ -1,9 +1,10 @@
-import { type EditorHost, WithDisposable } from '@blocksuite/block-std';
+import { type EditorHost } from '@blocksuite/block-std';
 import {
   type AIError,
   PaymentRequiredError,
   UnauthorizedError,
 } from '@blocksuite/blocks';
+import { WithDisposable } from '@blocksuite/global/utils';
 import { html, LitElement, nothing, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';

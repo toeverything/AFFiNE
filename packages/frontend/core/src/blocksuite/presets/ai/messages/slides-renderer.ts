@@ -1,10 +1,10 @@
 import { BlockStdScope, type EditorHost } from '@blocksuite/block-std';
-import { WithDisposable } from '@blocksuite/block-std';
 import {
   type AffineAIPanelWidgetConfig,
   EdgelessEditorBlockSpecs,
 } from '@blocksuite/blocks';
 import { AffineSchemas } from '@blocksuite/blocks/schemas';
+import { WithDisposable } from '@blocksuite/global/utils';
 import type { Doc } from '@blocksuite/store';
 import { DocCollection, Schema } from '@blocksuite/store';
 import { css, html, LitElement, nothing } from 'lit';

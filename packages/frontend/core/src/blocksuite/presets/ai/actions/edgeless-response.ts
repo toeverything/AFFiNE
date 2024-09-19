@@ -1,4 +1,3 @@
-import type { MindmapElementModel } from '@blocksuite/affine-block-surface';
 import type { EditorHost } from '@blocksuite/block-std';
 import type {
   AffineAIPanelWidget,
@@ -6,6 +5,7 @@ import type {
   EdgelessCopilotWidget,
   EdgelessElementToolbarWidget,
   EdgelessRootService,
+  MindmapElementModel,
   ShapeElementModel,
   SurfaceBlockModel,
 } from '@blocksuite/blocks';
@@ -19,6 +19,7 @@ import {
   ImageBlockModel,
   InsertBelowIcon,
   LightLoadingIcon,
+  MindmapUtils,
   NoteDisplayMode,
   ResetIcon,
   TelemetryProvider,
@@ -363,7 +364,7 @@ export const responses: {
 
     if (data.node.children) {
       data.node.children.forEach(childTree => {
-        mindmap.addTree(elements[0].id, childTree);
+        MindmapUtils.addTree(mindmap, elements[0].id, childTree);
       });
 
       const subtree = mindmap.getNode(elements[0].id);

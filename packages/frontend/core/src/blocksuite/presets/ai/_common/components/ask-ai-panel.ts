@@ -1,9 +1,10 @@
-import { type EditorHost, WithDisposable } from '@blocksuite/block-std';
+import { type EditorHost } from '@blocksuite/block-std';
 import {
   type AIItemGroupConfig,
   EdgelessRootService,
   scrollbarStyle,
 } from '@blocksuite/blocks';
+import { WithDisposable } from '@blocksuite/global/utils';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';

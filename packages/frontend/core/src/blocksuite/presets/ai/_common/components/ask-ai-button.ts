@@ -1,13 +1,13 @@
 import './ask-ai-panel';
 
-import { type EditorHost, WithDisposable } from '@blocksuite/block-std';
+import { type EditorHost } from '@blocksuite/block-std';
 import {
   type AIItemGroupConfig,
   AIStarIcon,
   EdgelessRootService,
 } from '@blocksuite/blocks';
 import { createLitPortal, HoverController } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists, WithDisposable } from '@blocksuite/global/utils';
 import { flip, offset } from '@floating-ui/dom';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';

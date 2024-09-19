@@ -14,7 +14,7 @@ import '../_common/components/chat-action-list';
 import '../_common/components/copy-more';
 
 import type { BaseSelection, EditorHost } from '@blocksuite/block-std';
-import { ShadowlessElement, WithDisposable } from '@blocksuite/block-std';
+import { ShadowlessElement } from '@blocksuite/block-std';
 import {
   type AIError,
   DocModeProvider,
@@ -22,6 +22,7 @@ import {
   PaymentRequiredError,
   UnauthorizedError,
 } from '@blocksuite/blocks';
+import { WithDisposable } from '@blocksuite/global/utils';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
