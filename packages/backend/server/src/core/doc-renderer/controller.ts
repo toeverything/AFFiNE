@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { Controller, Get, Logger, Param, Req, Res } from '@nestjs/common';
+import { Controller, Get, Logger, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import isMobile from 'is-mobile';
 
@@ -18,6 +18,7 @@ interface RenderOptions {
 }
 
 interface HtmlAssets {
+  html: string;
   css: string[];
   js: string[];
   publicPath: string;
@@ -26,12 +27,23 @@ interface HtmlAssets {
 }
 
 const defaultAssets: HtmlAssets = {
+  html: '',
   css: [],
   js: [],
   publicPath: '/',
   gitHash: '',
   description: '',
 };
+
+// TODO(@forehalo): reuse routes with frontend
+const staticPaths = new Set([
+  'all',
+  'home',
+  'search',
+  'collection',
+  'tag',
+  'trash',
+]);
 
 @Controller('/workspace')
 export class DocRendererController {
@@ -45,36 +57,23 @@ export class DocRendererController {
     private readonly config: Config,
     private readonly url: URLHelper
   ) {
-    try {
-      const webConfigMapsPath = join(
+    this.webAssets = this.readHtmlAssets(
+      join(
         this.config.projectRoot,
-        this.config.isSelfhosted ? 'static/selfhost' : 'static',
-        'assets-manifest.json'
-      );
-      const mobileConfigMapsPath = join(
+        this.config.isSelfhosted ? 'static/selfhost' : 'static'
+      )
+    );
+    this.mobileAssets = this.readHtmlAssets(
+      join(
         this.config.projectRoot,
-        this.config.isSelfhosted ? 'static/mobile/selfhost' : 'static/mobile',
-        'assets-manifest.json'
-      );
-      this.webAssets = JSON.parse(readFileSync(webConfigMapsPath, 'utf-8'));
-      this.mobileAssets = JSON.parse(
-        readFileSync(mobileConfigMapsPath, 'utf-8')
-      );
-    } catch (e) {
-      if (this.config.node.prod) {
-        throw e;
-      }
-    }
+        this.config.isSelfhosted ? 'static/mobile/selfhost' : 'static/mobile'
+      )
+    );
   }
 
   @Public()
-  @Get('/:workspaceId/:docId')
-  async render(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Param('workspaceId') workspaceId: string,
-    @Param('docId') docId: string
-  ) {
+  @Get('/*')
+  async render(@Req() req: Request, @Res() res: Response) {
     const assets: HtmlAssets =
       this.config.affine.canary &&
       isMobile({
@@ -84,14 +83,20 @@ export class DocRendererController {
         : this.webAssets;
 
     let opts: RenderOptions | null = null;
-    try {
-      opts =
-        workspaceId === docId
-          ? await this.getWorkspaceContent(workspaceId)
-          : await this.getPageContent(workspaceId, docId);
-      metrics.doc.counter('render').add(1);
-    } catch (e) {
-      this.logger.error('failed to render page', e);
+    // /workspace/:workspaceId/{:docId | staticPaths}
+    const [, , workspaceId, subPath, ...restPaths] = req.path.split('/');
+
+    // /:workspaceId/:docId
+    if (workspaceId && !staticPaths.has(subPath) && restPaths.length === 0) {
+      try {
+        opts =
+          workspaceId === subPath
+            ? await this.getWorkspaceContent(workspaceId)
+            : await this.getPageContent(workspaceId, subPath);
+        metrics.doc.counter('render').add(1);
+      } catch (e) {
+        this.logger.error('failed to render page', e);
+      }
     }
 
     res.setHeader('Content-Type', 'text/html');
@@ -148,6 +153,10 @@ export class DocRendererController {
   }
 
   _render(opts: RenderOptions | null, assets: HtmlAssets): string {
+    if (!opts && assets.html) {
+      return assets.html;
+    }
+
     const title = opts?.title
       ? htmlSanitize(`${opts.title} | AFFiNE`)
       : 'AFFiNE';
@@ -198,5 +207,25 @@ export class DocRendererController {
   </body>
 </html>
     `;
+  }
+
+  /**
+   * Should only be called at startup time
+   */
+  private readHtmlAssets(path: string): HtmlAssets {
+    const manifestPath = join(path, 'assets-manifest.json');
+    const htmlPath = join(path, 'index.html');
+
+    try {
+      const assets = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+      assets.html = readFileSync(htmlPath, 'utf-8');
+      return assets;
+    } catch (e) {
+      if (this.config.node.prod) {
+        throw e;
+      } else {
+        return defaultAssets;
+      }
+    }
   }
 }
