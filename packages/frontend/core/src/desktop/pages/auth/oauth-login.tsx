@@ -34,8 +34,10 @@ export const loader: LoaderFunction = async ({ request }) => {
   const client = searchParams.get('client') ?? 'web';
   const redirectUri = searchParams.get('redirect_uri');
 
-  // sign out first
-  await fetch('/api/auth/sign-out');
+  // sign out first, web only
+  if (client === 'web') {
+    await fetch('/api/auth/sign-out');
+  }
 
   const paramsParseResult = oauthParameters.safeParse({
     provider,
