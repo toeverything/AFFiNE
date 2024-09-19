@@ -33,7 +33,7 @@ const defaultAssets: HtmlAssets = {
   description: '',
 };
 
-@Controller('/workspace/:workspaceId/:docId')
+@Controller('/workspace')
 export class DocRendererController {
   private readonly logger = new Logger(DocRendererController.name);
   private readonly webAssets: HtmlAssets = defaultAssets;
@@ -68,7 +68,7 @@ export class DocRendererController {
   }
 
   @Public()
-  @Get()
+  @Get('/:workspaceId/:docId')
   async render(
     @Req() req: Request,
     @Res() res: Response,
@@ -87,7 +87,7 @@ export class DocRendererController {
     try {
       opts =
         workspaceId === docId
-          ? await this.renderWorkspace(workspaceId)
+          ? await this.getWorkspaceContent(workspaceId)
           : await this.getPageContent(workspaceId, docId);
       metrics.doc.counter('render').add(1);
     } catch (e) {
@@ -123,7 +123,7 @@ export class DocRendererController {
     return null;
   }
 
-  private async renderWorkspace(
+  private async getWorkspaceContent(
     workspaceId: string
   ): Promise<RenderOptions | null> {
     const allowUrlPreview = await this.permission.allowUrlPreview(workspaceId);
