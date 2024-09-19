@@ -5,7 +5,7 @@
   "devDependencies": {
     "@blocksuite/global": "0.17.11",
     "@blocksuite/store": "0.17.11",
-    "vitest": "2.1.0"
+    "vitest": "2.1.1"
   },
   "exports": {
     "./automation": "./src/automation.ts",

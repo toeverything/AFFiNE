@@ -57,7 +57,7 @@
     "@faker-js/faker": "^9.0.0",
     "@istanbuljs/schema": "^0.1.3",
     "@magic-works/i18n-codegen": "^0.6.0",
-    "@playwright/test": "=1.47.0",
+    "@playwright/test": "=1.47.1",
     "@taplo/cli": "^0.7.0",
     "@toeverything/infra": "workspace:*",
     "@types/affine__env": "workspace:*",
@@ -66,8 +66,8 @@
     "@typescript-eslint/eslint-plugin": "^7.6.0",
     "@typescript-eslint/parser": "^7.6.0",
     "@vanilla-extract/vite-plugin": "^4.0.7",
-    "@vitest/coverage-istanbul": "2.1.0",
-    "@vitest/ui": "2.1.0",
+    "@vitest/coverage-istanbul": "2.1.1",
+    "@vitest/ui": "2.1.1",
     "cross-env": "^7.0.3",
     "electron": "^32.0.0",
     "eslint": "^8.57.0",
@@ -92,9 +92,9 @@
     "typescript": "^5.4.5",
     "unplugin-swc": "^1.4.5",
     "vite": "^5.2.8",
-    "vitest": "2.1.0"
+    "vitest": "2.1.1"
   },
-  "packageManager": "yarn@4.4.1",
+  "packageManager": "yarn@4.5.0",
   "resolutions": {
     "array-buffer-byte-length": "npm:@nolyfill/array-buffer-byte-length@latest",
     "array-includes": "npm:@nolyfill/array-includes@latest",

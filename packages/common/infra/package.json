@@ -39,7 +39,7 @@
     "fake-indexeddb": "^6.0.0",
     "react": "^18.2.0",
     "rxjs": "^7.8.1",
-    "vitest": "2.1.0"
+    "vitest": "2.1.1"
   },
   "peerDependencies": {
     "@affine/templates": "*",

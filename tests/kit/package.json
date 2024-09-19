@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@node-rs/argon2": "^1.8.0",
-    "@playwright/test": "=1.47.0",
+    "@playwright/test": "=1.47.1",
     "express": "^4.19.2",
     "http-proxy-middleware": "^3.0.0"
   },
