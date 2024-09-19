@@ -674,7 +674,7 @@
   "com.affine.error.no-page-root.title": "Le contenu du document est manquant.",
   "com.affine.error.page-not-found.title": "Rafraichir",
   "com.affine.error.refetch": "Récupérer",
-  "com.affine.error.reload": "Récupérer",
+  "com.affine.error.reload": "Récupérer AFFiNE",
   "com.affine.error.retry": "Rafraichir",
   "com.affine.error.unexpected-error.title": "Quelque chose ne va pas...",
   "com.affine.expired.page.subtitle": "Merci de demander un nouveau lien pour réinitialiser votre mot de passe",

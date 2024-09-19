@@ -24,6 +24,7 @@ export const AnyErrorFallback: FC<FallbackProps> = props => {
       description={
         'message' in (error as Error) ? (error as Error).message : `${error}`
       }
+      error={error as Error}
     />
   );
 };

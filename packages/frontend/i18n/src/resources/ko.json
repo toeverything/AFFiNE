@@ -651,7 +651,7 @@
   "com.affine.error.no-page-root.title": "페이지 콘텐츠가 누락됨",
   "com.affine.error.page-not-found.title": "새로고침",
   "com.affine.error.refetch": "다시 가져오기",
-  "com.affine.error.reload": "다시 로드",
+  "com.affine.error.reload": "다시 로드 AFFiNE",
   "com.affine.error.retry": "새로고침",
   "com.affine.error.unexpected-error.title": "뭔가 잘못되었습니다...",
   "com.affine.expired.page.subtitle": "비밀번호 재설정 링크를 요청해 주세요.",

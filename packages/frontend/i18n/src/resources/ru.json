@@ -691,7 +691,7 @@
   "com.affine.error.no-page-root.title": "Содержимое документа отсутствует",
   "com.affine.error.page-not-found.title": "Обновить",
   "com.affine.error.refetch": "Повторно получить данные",
-  "com.affine.error.reload": "Перезагрузить",
+  "com.affine.error.reload": "Перезагрузить AFFiNE",
   "com.affine.error.retry": "Обновить",
   "com.affine.error.unexpected-error.title": "Что-то не так...",
   "com.affine.expired.page.subtitle": "Пожалуйста, запросите новую ссылку для восстановления пароля.",
