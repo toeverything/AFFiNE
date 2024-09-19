@@ -8,10 +8,7 @@
   },
   "scripts": {
     "build": "node build.mjs",
-    "dev": "node dev.mjs",
-    "sync-languages": "node --loader ts-node/esm/transpile-only src/scripts/sync.ts",
-    "sync-languages:check": "yarn run sync-languages --check",
-    "download-resources": "node --loader ts-node/esm/transpile-only src/scripts/download.ts"
+    "dev": "node dev.mjs"
   },
   "keywords": [],
   "repository": {
