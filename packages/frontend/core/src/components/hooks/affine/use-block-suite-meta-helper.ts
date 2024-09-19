@@ -1,7 +1,7 @@
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import { useDocCollectionHelper } from '@affine/core/components/hooks/use-block-suite-workspace-helper';
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 import { DocsService, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback } from 'react';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';

@@ -7,12 +7,12 @@ import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch
 import { EditorService } from '@affine/core/modules/editor';
 import { I18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import type { MenuItemGroup } from '@blocksuite/affine-components/toolbar';
 import type {
   GfxBlockElementModel,
   GfxPrimitiveElementModel,
-} from '@blocksuite/block-std/gfx';
-import type { MenuContext } from '@blocksuite/blocks';
+} from '@blocksuite/affine/block-std/gfx';
+import type { MenuContext } from '@blocksuite/affine/blocks';
+import type { MenuItemGroup } from '@blocksuite/affine-components/toolbar';
 import { LinkIcon } from '@blocksuite/icons/lit';
 import type { FrameworkProvider } from '@toeverything/infra';
 

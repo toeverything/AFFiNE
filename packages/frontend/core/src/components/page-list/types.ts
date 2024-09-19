@@ -1,5 +1,5 @@
 import type { Collection, Tag } from '@affine/env/filter';
-import type { DocCollection, DocMeta } from '@blocksuite/store';
+import type { DocCollection, DocMeta } from '@blocksuite/affine/store';
 import type { PropsWithChildren, ReactNode } from 'react';
 import type { To } from 'react-router-dom';
 

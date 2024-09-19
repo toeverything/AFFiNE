@@ -11,9 +11,9 @@ import {
   type DocMode,
   type EdgelessRootService,
   RefNodeSlotsProvider,
-} from '@blocksuite/blocks';
-import { Bound, DisposableGroup } from '@blocksuite/global/utils';
-import type { AffineEditorContainer } from '@blocksuite/presets';
+} from '@blocksuite/affine/blocks';
+import { Bound, DisposableGroup } from '@blocksuite/affine/global/utils';
+import type { AffineEditorContainer } from '@blocksuite/affine/presets';
 import {
   FrameworkScope,
   useLiveData,

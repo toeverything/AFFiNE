@@ -1,9 +1,9 @@
 import './action-wrapper';
 
-import type { EditorHost } from '@blocksuite/block-std';
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { MiniMindmapPreview } from '@blocksuite/blocks';
-import { noop, WithDisposable } from '@blocksuite/global/utils';
+import type { EditorHost } from '@blocksuite/affine/block-std';
+import { ShadowlessElement } from '@blocksuite/affine/block-std';
+import { MiniMindmapPreview } from '@blocksuite/affine/blocks';
+import { noop, WithDisposable } from '@blocksuite/affine/global/utils';
 import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';

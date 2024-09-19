@@ -1,5 +1,5 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { assertEquals } from '@blocksuite/global/utils';
+import { assertEquals } from '@blocksuite/affine/global/utils';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 
 import { Service } from '../../../framework';

@@ -2,7 +2,7 @@ import {
   BlockServiceWatcher,
   type ExtensionType,
   WidgetViewMapIdentifier,
-} from '@blocksuite/block-std';
+} from '@blocksuite/affine/block-std';
 import {
   AFFINE_AI_PANEL_WIDGET,
   AFFINE_EDGELESS_COPILOT_WIDGET,
@@ -21,8 +21,8 @@ import {
   pageRootWidgetViewMap,
   ParagraphBlockService,
   ParagraphBlockSpec,
-} from '@blocksuite/blocks';
-import { assertInstanceOf } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { assertInstanceOf } from '@blocksuite/affine/global/utils';
 import { literal, unsafeStatic } from 'lit/static-html.js';
 
 import { buildAIPanelConfig } from './ai-panel';

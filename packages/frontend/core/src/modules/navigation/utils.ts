@@ -1,4 +1,4 @@
-import type { ReferenceParams } from '@blocksuite/blocks';
+import type { ReferenceParams } from '@blocksuite/affine/blocks';
 import { isNil, pick, pickBy } from 'lodash-es';
 import type { ParsedQuery, ParseOptions } from 'query-string';
 import queryString from 'query-string';

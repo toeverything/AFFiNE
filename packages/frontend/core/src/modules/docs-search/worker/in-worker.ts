@@ -1,5 +1,5 @@
-import type { AffineTextAttributes } from '@blocksuite/blocks';
-import type { DeltaInsert } from '@blocksuite/inline';
+import type { AffineTextAttributes } from '@blocksuite/affine/blocks';
+import type { DeltaInsert } from '@blocksuite/affine/inline';
 import { Document } from '@toeverything/infra';
 import { toHexString } from 'lib0/buffer.js';
 import { digest as lib0Digest } from 'lib0/hash/sha256';

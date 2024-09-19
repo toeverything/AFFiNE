@@ -1,5 +1,5 @@
 import { Unreachable } from '@affine/env/constant';
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 import { Entity, LiveData } from '@toeverything/infra';
 import { type To } from 'history';
 import { nanoid } from 'nanoid';

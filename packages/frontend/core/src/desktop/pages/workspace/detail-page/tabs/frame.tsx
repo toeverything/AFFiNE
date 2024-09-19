@@ -1,6 +1,6 @@
-import { assertExists } from '@blocksuite/global/utils';
-import type { AffineEditorContainer } from '@blocksuite/presets';
-import { FramePanel } from '@blocksuite/presets';
+import { assertExists } from '@blocksuite/affine/global/utils';
+import type { AffineEditorContainer } from '@blocksuite/affine/presets';
+import { FramePanel } from '@blocksuite/affine/presets';
 import { useCallback, useRef } from 'react';
 
 import * as styles from './frame.css';

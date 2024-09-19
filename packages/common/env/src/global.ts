@@ -1,5 +1,3 @@
-/// <reference types="@blocksuite/global" />
-
 import { UaHelper } from './ua-helper.js';
 
 export type BUILD_CONFIG_TYPE = {

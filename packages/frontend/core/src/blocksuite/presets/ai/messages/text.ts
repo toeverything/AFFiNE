@@ -1,16 +1,16 @@
-import { BlockStdScope, type EditorHost } from '@blocksuite/block-std';
+import { BlockStdScope, type EditorHost } from '@blocksuite/affine/block-std';
 import {
   type AffineAIPanelState,
   type AffineAIPanelWidgetConfig,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import {
   CodeBlockComponent,
   DividerBlockComponent,
   ListBlockComponent,
   ParagraphBlockComponent,
-} from '@blocksuite/blocks';
-import { WithDisposable } from '@blocksuite/global/utils';
-import { BlockViewType, type Doc, type Query } from '@blocksuite/store';
+} from '@blocksuite/affine/blocks';
+import { WithDisposable } from '@blocksuite/affine/global/utils';
+import { BlockViewType, type Doc, type Query } from '@blocksuite/affine/store';
 import { css, html, LitElement, type PropertyValues } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';

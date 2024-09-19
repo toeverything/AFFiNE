@@ -1,6 +1,6 @@
 import '../../_common/components/ask-ai-button';
 
-import type { AffineCodeToolbarWidget } from '@blocksuite/blocks';
+import type { AffineCodeToolbarWidget } from '@blocksuite/affine/blocks';
 import { html } from 'lit';
 
 const AICodeItemGroups = buildAICodeItemGroups();

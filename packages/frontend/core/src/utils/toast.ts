@@ -1,6 +1,6 @@
 import type { ToastOptions } from '@affine/component';
 import { toast as basicToast } from '@affine/component';
-import { assertEquals } from '@blocksuite/global/utils';
+import { assertEquals } from '@blocksuite/affine/global/utils';
 
 export const toast = (message: string, options?: ToastOptions) => {
   const modal = document.querySelector(

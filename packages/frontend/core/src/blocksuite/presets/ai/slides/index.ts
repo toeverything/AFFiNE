@@ -1,6 +1,6 @@
-import type { EditorHost } from '@blocksuite/block-std';
-import type { EdgelessRootService } from '@blocksuite/blocks';
-import type { BlockSnapshot } from '@blocksuite/store';
+import type { EditorHost } from '@blocksuite/affine/block-std';
+import type { EdgelessRootService } from '@blocksuite/affine/blocks';
+import type { BlockSnapshot } from '@blocksuite/affine/store';
 
 import { markdownToSnapshot } from '../utils/markdown-utils';
 import { getSurfaceElementFromEditor } from '../utils/selection-utils';

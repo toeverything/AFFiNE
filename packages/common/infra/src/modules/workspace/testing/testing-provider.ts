@@ -1,5 +1,5 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { DocCollection, nanoid } from '@blocksuite/store';
+import { DocCollection, nanoid } from '@blocksuite/affine/store';
 import { map } from 'rxjs';
 import { applyUpdate, encodeStateAsUpdate } from 'yjs';
 

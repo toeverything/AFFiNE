@@ -1,5 +1,5 @@
 import { useI18n } from '@affine/i18n';
-import type { AffineEditorContainer } from '@blocksuite/presets';
+import type { AffineEditorContainer } from '@blocksuite/affine/presets';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useStore } from 'jotai';
 import { useTheme } from 'next-themes';

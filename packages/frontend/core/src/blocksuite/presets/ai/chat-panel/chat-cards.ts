@@ -1,12 +1,12 @@
-import type { EditorHost } from '@blocksuite/block-std';
+import type { EditorHost } from '@blocksuite/affine/block-std';
 import {
   type ImageBlockModel,
   isInsideEdgelessEditor,
   type NoteBlockModel,
   NoteDisplayMode,
-} from '@blocksuite/blocks';
-import { WithDisposable } from '@blocksuite/global/utils';
-import type { BlockModel } from '@blocksuite/store';
+} from '@blocksuite/affine/blocks';
+import { WithDisposable } from '@blocksuite/affine/global/utils';
+import type { BlockModel } from '@blocksuite/affine/store';
 import {
   css,
   html,

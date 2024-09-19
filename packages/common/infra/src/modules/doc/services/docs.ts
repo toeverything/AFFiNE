@@ -1,5 +1,5 @@
 import { Unreachable } from '@affine/env/constant';
-import { type DocMode } from '@blocksuite/blocks';
+import { type DocMode } from '@blocksuite/affine/blocks';
 
 import { Service } from '../../../framework';
 import { type DocProps, initDocFromProps } from '../../../initialization';

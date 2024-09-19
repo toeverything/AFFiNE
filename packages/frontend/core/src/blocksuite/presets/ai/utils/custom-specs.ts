@@ -1,5 +1,8 @@
-import { BlockViewIdentifier, type ExtensionType } from '@blocksuite/block-std';
-import { PageEditorBlockSpecs } from '@blocksuite/blocks';
+import {
+  BlockViewIdentifier,
+  type ExtensionType,
+} from '@blocksuite/affine/block-std';
+import { PageEditorBlockSpecs } from '@blocksuite/affine/blocks';
 import { literal } from 'lit/static-html.js';
 
 export const CustomPageEditorBlockSpecs: ExtensionType[] = [

@@ -1,4 +1,4 @@
-import type { EditorHost } from '@blocksuite/block-std';
+import type { EditorHost } from '@blocksuite/affine/block-std';
 import type {
   AffineAIPanelWidget,
   AIItemConfig,
@@ -8,7 +8,7 @@ import type {
   MindmapElementModel,
   ShapeElementModel,
   SurfaceBlockModel,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import {
   DeleteIcon,
   EDGELESS_ELEMENT_TOOLBAR_WIDGET,
@@ -23,8 +23,8 @@ import {
   NoteDisplayMode,
   ResetIcon,
   TelemetryProvider,
-} from '@blocksuite/blocks';
-import { assertExists, Bound } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { assertExists, Bound } from '@blocksuite/affine/global/utils';
 import { html, type TemplateResult } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 

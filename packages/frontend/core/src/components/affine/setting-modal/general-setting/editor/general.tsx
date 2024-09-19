@@ -24,7 +24,7 @@ import {
   SystemFontFamilyService,
 } from '@affine/core/modules/system-font-family';
 import { useI18n } from '@affine/i18n';
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 import { DoneIcon, SearchIcon } from '@blocksuite/icons/rc';
 import {
   FeatureFlagService,

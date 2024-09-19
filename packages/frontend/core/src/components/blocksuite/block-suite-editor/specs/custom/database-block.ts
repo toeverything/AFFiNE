@@ -7,7 +7,10 @@ import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch
 import { EditorService } from '@affine/core/modules/editor';
 import { I18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import type { DatabaseBlockModel, MenuOptions } from '@blocksuite/blocks';
+import type {
+  DatabaseBlockModel,
+  MenuOptions,
+} from '@blocksuite/affine/blocks';
 import { LinkIcon } from '@blocksuite/icons/lit';
 import type { FrameworkProvider } from '@toeverything/infra';
 import type { TemplateResult } from 'lit';

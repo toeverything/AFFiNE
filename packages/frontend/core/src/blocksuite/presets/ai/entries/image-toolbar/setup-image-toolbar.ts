@@ -1,6 +1,6 @@
 import '../../_common/components/ask-ai-button';
 
-import type { AffineImageToolbarWidget } from '@blocksuite/blocks';
+import type { AffineImageToolbarWidget } from '@blocksuite/affine/blocks';
 import { html } from 'lit';
 
 import type { AskAIButtonOptions } from '../../_common/components/ask-ai-button';

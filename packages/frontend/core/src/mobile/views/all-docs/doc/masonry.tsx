@@ -1,4 +1,4 @@
-import type { DocMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/affine/store';
 import { useMemo } from 'react';
 
 import { DocCard } from '../../../components';

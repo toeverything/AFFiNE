@@ -1,9 +1,9 @@
-import type { ExtensionType } from '@blocksuite/block-std';
+import type { ExtensionType } from '@blocksuite/affine/block-std';
 import {
   NoteBlockSpec,
   PageSurfaceBlockSpec,
   PageSurfaceRefBlockSpec,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import { type FrameworkProvider } from '@toeverything/infra';
 
 import { AIBlockSpecs, DefaultBlockSpecs } from './common';

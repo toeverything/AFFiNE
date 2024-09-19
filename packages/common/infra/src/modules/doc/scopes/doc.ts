@@ -1,4 +1,4 @@
-import type { Doc as BlockSuiteDoc } from '@blocksuite/store';
+import type { Doc as BlockSuiteDoc } from '@blocksuite/affine/store';
 
 import { Scope } from '../../../framework';
 import type { DocRecord } from '../entities/record';

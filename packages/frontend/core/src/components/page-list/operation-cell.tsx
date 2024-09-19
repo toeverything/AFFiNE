@@ -14,6 +14,7 @@ import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
+import type { DocMeta } from '@blocksuite/affine/store';
 import {
   DeleteIcon,
   DeletePermanentlyIcon,
@@ -28,7 +29,6 @@ import {
   ResetIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
-import type { DocMeta } from '@blocksuite/store';
 import {
   FeatureFlagService,
   useLiveData,

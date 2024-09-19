@@ -3,11 +3,11 @@ import {
   BlockServiceIdentifier,
   type ExtensionType,
   StdIdentifier,
-} from '@blocksuite/block-std';
+} from '@blocksuite/affine/block-std';
 import {
   AttachmentBlockService,
   AttachmentBlockSpec,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import bytes from 'bytes';
 
 class CustomAttachmentBlockService extends AttachmentBlockService {

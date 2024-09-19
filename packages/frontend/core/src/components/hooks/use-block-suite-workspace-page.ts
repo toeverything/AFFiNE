@@ -1,6 +1,6 @@
 import { DebugLogger } from '@affine/debug';
-import { DisposableGroup } from '@blocksuite/global/utils';
-import type { Doc, DocCollection } from '@blocksuite/store';
+import { DisposableGroup } from '@blocksuite/affine/global/utils';
+import type { Doc, DocCollection } from '@blocksuite/affine/store';
 import { useEffect, useState } from 'react';
 
 const logger = new DebugLogger('use-doc-collection-page');

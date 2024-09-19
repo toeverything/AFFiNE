@@ -1,4 +1,4 @@
-import { FontWeight } from '@blocksuite/blocks';
+import { FontWeight } from '@blocksuite/affine/blocks';
 import { useTheme } from 'next-themes';
 
 function getColorFromMap(

@@ -1,10 +1,10 @@
-import type { EditorHost } from '@blocksuite/block-std';
+import type { EditorHost } from '@blocksuite/affine/block-std';
 import type {
   AffineAIPanelWidget,
   AffineAIPanelWidgetConfig,
   AIError,
-} from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import type { TemplateResult } from 'lit';
 
 import {

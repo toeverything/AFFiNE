@@ -1,10 +1,13 @@
-import type { EditorHost } from '@blocksuite/block-std';
+import type { EditorHost } from '@blocksuite/affine/block-std';
 import type {
   AffineAIPanelWidgetConfig,
   MindmapStyle,
-} from '@blocksuite/blocks';
-import { markdownToMindmap, MiniMindmapPreview } from '@blocksuite/blocks';
-import { noop } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import {
+  markdownToMindmap,
+  MiniMindmapPreview,
+} from '@blocksuite/affine/blocks';
+import { noop } from '@blocksuite/affine/global/utils';
 import { html, nothing } from 'lit';
 
 import { getAIPanel } from '../ai-panel';

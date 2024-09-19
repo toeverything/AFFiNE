@@ -1,4 +1,4 @@
-import type { DocMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/affine/store';
 import { useState } from 'react';
 
 export const useSearch = (list: DocMeta[]) => {

@@ -1,4 +1,4 @@
-import type { AffineAIPanelWidget } from '@blocksuite/blocks';
+import type { AffineAIPanelWidget } from '@blocksuite/affine/blocks';
 
 import { handleInlineAskAIAction } from '../../actions/doc-handler';
 import { AIProvider } from '../../provider';

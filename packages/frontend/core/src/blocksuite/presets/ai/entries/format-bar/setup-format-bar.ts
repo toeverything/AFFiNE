@@ -3,7 +3,7 @@ import '../../_common/components/ask-ai-button';
 import {
   type AffineFormatBarWidget,
   toolbarDefaultConfig,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import { html, type TemplateResult } from 'lit';
 
 import { AIItemGroups } from '../../_common/config';

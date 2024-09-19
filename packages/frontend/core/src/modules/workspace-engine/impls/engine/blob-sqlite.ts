@@ -1,5 +1,5 @@
 import { apis } from '@affine/electron-api';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import type { BlobStorage } from '@toeverything/infra';
 
 import { bufferToBlob } from '../../utils/buffer-to-blob';

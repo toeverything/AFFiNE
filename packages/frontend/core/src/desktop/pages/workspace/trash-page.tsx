@@ -5,7 +5,7 @@ import {
 } from '@affine/core/components/page-list';
 import { Header } from '@affine/core/components/pure/header';
 import { useI18n } from '@affine/i18n';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import { DeleteIcon } from '@blocksuite/icons/rc';
 import {
   GlobalContextService,

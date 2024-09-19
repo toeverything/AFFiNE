@@ -15,8 +15,8 @@ import {
   NoteShadow,
   NoteShadowMap,
   StrokeStyle,
-} from '@blocksuite/blocks';
-import type { Doc } from '@blocksuite/store';
+} from '@blocksuite/affine/blocks';
+import type { Doc } from '@blocksuite/affine/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 

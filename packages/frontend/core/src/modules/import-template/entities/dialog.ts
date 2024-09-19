@@ -1,4 +1,4 @@
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 import { Entity, LiveData } from '@toeverything/infra';
 
 interface TemplateOptions {

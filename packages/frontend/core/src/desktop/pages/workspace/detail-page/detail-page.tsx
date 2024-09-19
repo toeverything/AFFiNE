@@ -10,10 +10,10 @@ import { EditorService } from '@affine/core/modules/editor';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { useI18n } from '@affine/i18n';
-import { RefNodeSlotsProvider } from '@blocksuite/blocks';
-import { DisposableGroup } from '@blocksuite/global/utils';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/blocks';
+import { DisposableGroup } from '@blocksuite/affine/global/utils';
+import { type AffineEditorContainer } from '@blocksuite/affine/presets';
 import { AiIcon, FrameIcon, TocIcon, TodayIcon } from '@blocksuite/icons/rc';
-import { type AffineEditorContainer } from '@blocksuite/presets';
 import {
   DocService,
   FeatureFlagService,

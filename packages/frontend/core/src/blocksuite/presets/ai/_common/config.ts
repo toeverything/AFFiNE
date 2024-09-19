@@ -1,4 +1,8 @@
-import type { Chain, EditorHost, InitCommandCtx } from '@blocksuite/block-std';
+import type {
+  Chain,
+  EditorHost,
+  InitCommandCtx,
+} from '@blocksuite/affine/block-std';
 import {
   type AIItemGroupConfig,
   type AISubItemConfig,
@@ -6,7 +10,7 @@ import {
   EDGELESS_ELEMENT_TOOLBAR_WIDGET,
   type EdgelessElementToolbarWidget,
   matchFlavours,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import type { TemplateResult } from 'lit';
 
 import { actionToHandler } from '../actions/doc-handler';

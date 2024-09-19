@@ -19,7 +19,7 @@ import {
   GeneralNetworkError,
   PaymentRequiredError,
   UnauthorizedError,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import { getCurrentStore } from '@toeverything/infra';
 
 type OptionsField<T extends GraphQLQuery> =

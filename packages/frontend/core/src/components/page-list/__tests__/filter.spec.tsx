@@ -11,7 +11,7 @@ import type {
   VariableMap,
 } from '@affine/env/filter';
 import { createI18n, I18nextProvider } from '@affine/i18n';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { useState } from 'react';

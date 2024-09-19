@@ -1,6 +1,9 @@
-import type { EditorHost } from '@blocksuite/block-std';
-import { PaymentRequiredError, UnauthorizedError } from '@blocksuite/blocks';
-import { Slot } from '@blocksuite/store';
+import type { EditorHost } from '@blocksuite/affine/block-std';
+import {
+  PaymentRequiredError,
+  UnauthorizedError,
+} from '@blocksuite/affine/blocks';
+import { Slot } from '@blocksuite/affine/store';
 
 export interface AIUserInfo {
   id: string;

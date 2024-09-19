@@ -2,13 +2,13 @@ import { Button, IconButton, Tooltip } from '@affine/component';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import type { Collection } from '@affine/env/filter';
 import { Trans, useI18n } from '@affine/i18n';
+import type { DocMeta } from '@blocksuite/affine/store';
 import {
   CloseIcon,
   EdgelessIcon,
   PageIcon,
   ToggleCollapseIcon,
 } from '@blocksuite/icons/rc';
-import type { DocMeta } from '@blocksuite/store';
 import { DocsService, useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';

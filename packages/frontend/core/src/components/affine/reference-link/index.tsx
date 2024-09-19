@@ -7,8 +7,8 @@ import {
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import type { DocMode } from '@blocksuite/blocks';
-import type { DocCollection } from '@blocksuite/store';
+import type { DocMode } from '@blocksuite/affine/blocks';
+import type { DocCollection } from '@blocksuite/affine/store';
 import { useLiveData, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import {

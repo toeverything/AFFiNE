@@ -1,4 +1,4 @@
-import type { DocCollection } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/affine/store';
 import type { Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 /**

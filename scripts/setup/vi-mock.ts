@@ -4,7 +4,7 @@ vi.mock('lottie-web', () => ({
   default: {},
 }));
 
-vi.mock('@blocksuite/presets', () => ({
+vi.mock('@blocksuite/affine/presets', () => ({
   AffineEditorContainer: vi.fn(),
   BiDirectionalLinkPanel: vi.fn(),
   DocMetaTags: vi.fn(),

@@ -26,6 +26,7 @@ import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
+import type { Doc } from '@blocksuite/affine/store';
 import {
   DuplicateIcon,
   EdgelessIcon,
@@ -41,7 +42,6 @@ import {
   SplitViewIcon,
   TocIcon,
 } from '@blocksuite/icons/rc';
-import type { Doc } from '@blocksuite/store';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';

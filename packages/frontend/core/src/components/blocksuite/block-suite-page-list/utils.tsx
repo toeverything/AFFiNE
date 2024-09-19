@@ -1,8 +1,8 @@
 import { toast } from '@affine/component';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { WorkbenchService } from '@affine/core/modules/workbench';
-import type { DocMode } from '@blocksuite/blocks';
-import type { DocCollection } from '@blocksuite/store';
+import type { DocMode } from '@blocksuite/affine/blocks';
+import type { DocCollection } from '@blocksuite/affine/store';
 import { type DocProps, DocsService, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -43,7 +43,7 @@ export const usePageHelper = (docCollection: DocCollection) => {
 
   const importFileAndOpen = useMemo(
     () => async () => {
-      const { showImportModal } = await import('@blocksuite/blocks');
+      const { showImportModal } = await import('@blocksuite/affine/blocks');
       const { promise, resolve, reject } =
         Promise.withResolvers<
           Parameters<

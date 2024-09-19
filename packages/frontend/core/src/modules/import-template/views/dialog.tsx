@@ -5,7 +5,7 @@ import { useWorkspaceName } from '@affine/core/components/hooks/use-workspace-in
 import { WorkspaceSelector } from '@affine/core/components/workspace-selector';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 import { AllDocsIcon } from '@blocksuite/icons/rc';
 import {
   useLiveData,

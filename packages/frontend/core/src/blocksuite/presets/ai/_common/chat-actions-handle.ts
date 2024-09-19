@@ -3,13 +3,13 @@ import type {
   BlockSelection,
   EditorHost,
   TextSelection,
-} from '@blocksuite/block-std';
+} from '@blocksuite/affine/block-std';
 import type {
   DocMode,
   EdgelessRootService,
   ImageSelection,
   RootService,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import {
   BlocksUtils,
   DocModeProvider,
@@ -18,14 +18,14 @@ import {
   NotificationProvider,
   RefNodeSlotsProvider,
   TelemetryProvider,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import {
   Bound,
   getElementsBound,
   type SerializedXYWH,
-} from '@blocksuite/global/utils';
-import { type ChatMessage } from '@blocksuite/presets';
-import type { Doc } from '@blocksuite/store';
+} from '@blocksuite/affine/global/utils';
+import { type ChatMessage } from '@blocksuite/affine/presets';
+import type { Doc } from '@blocksuite/affine/store';
 import type { TemplateResult } from 'lit';
 
 import { AIProvider, type AIUserInfo } from '../provider';

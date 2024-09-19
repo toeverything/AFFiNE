@@ -1,4 +1,4 @@
-import type { ReferenceParams } from '@blocksuite/blocks';
+import type { ReferenceParams } from '@blocksuite/affine/blocks';
 import { BlockLinkIcon, EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
 import type { DocsService, WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';

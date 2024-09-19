@@ -17,9 +17,9 @@ import { ShareReaderService } from '@affine/core/modules/share-doc';
 import { CloudBlobStorage } from '@affine/core/modules/workspace-engine';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
-import { type DocMode, DocModes } from '@blocksuite/blocks';
+import { type DocMode, DocModes } from '@blocksuite/affine/blocks';
+import type { AffineEditorContainer } from '@blocksuite/affine/presets';
 import { Logo1Icon } from '@blocksuite/icons/rc';
-import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc, Workspace } from '@toeverything/infra';
 import {
   DocsService,

@@ -3,7 +3,7 @@ import { registerAffineCommand } from '@affine/core/commands';
 import { EditorService } from '@affine/core/modules/editor';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo } from 'react';

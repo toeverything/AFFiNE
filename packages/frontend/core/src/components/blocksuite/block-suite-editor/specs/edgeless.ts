@@ -1,7 +1,7 @@
 import { builtInTemplates as builtInEdgelessTemplates } from '@affine/templates/edgeless';
 import { builtInTemplates as builtInStickersTemplates } from '@affine/templates/stickers';
-import type { ExtensionType } from '@blocksuite/block-std';
-import type { TemplateManager } from '@blocksuite/blocks';
+import type { ExtensionType } from '@blocksuite/affine/block-std';
+import type { TemplateManager } from '@blocksuite/affine/blocks';
 import {
   EdgelessNoteBlockSpec,
   EdgelessSurfaceBlockSpec,
@@ -9,7 +9,7 @@ import {
   EdgelessTemplatePanel,
   EdgelessTextBlockSpec,
   FrameBlockSpec,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import type { FrameworkProvider } from '@toeverything/infra';
 
 import { AIBlockSpecs, DefaultBlockSpecs } from './common';

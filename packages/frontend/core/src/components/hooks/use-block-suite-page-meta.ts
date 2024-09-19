@@ -1,4 +1,4 @@
-import type { DocCollection, DocMeta } from '@blocksuite/store';
+import type { DocCollection, DocMeta } from '@blocksuite/affine/store';
 import { DocsService, useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 

@@ -3,7 +3,7 @@ import './date-time';
 import '../_common/components/chat-action-list';
 import '../_common/components/copy-more';
 
-import { type EditorHost } from '@blocksuite/block-std';
+import { type EditorHost } from '@blocksuite/affine/block-std';
 import {
   type AIError,
   CanvasElementType,
@@ -11,13 +11,13 @@ import {
   DocModeProvider,
   type EdgelessRootService,
   TelemetryProvider,
-} from '@blocksuite/blocks';
-import { NotificationProvider } from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
+import { NotificationProvider } from '@blocksuite/affine/blocks';
 import {
   type AIChatBlockModel,
   type ChatMessage,
   ChatMessagesSchema,
-} from '@blocksuite/presets';
+} from '@blocksuite/affine/presets';
 import { html, LitElement, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';

@@ -19,9 +19,9 @@ import {
   EmbedYoutubeBlockService,
   ImageBlockService,
   RefNodeSlotsProvider,
-} from '@blocksuite/blocks';
-import { DisposableGroup } from '@blocksuite/global/utils';
-import { type AffineEditorContainer } from '@blocksuite/presets';
+} from '@blocksuite/affine/blocks';
+import { DisposableGroup } from '@blocksuite/affine/global/utils';
+import { type AffineEditorContainer } from '@blocksuite/affine/presets';
 import {
   DocService,
   FrameworkScope,

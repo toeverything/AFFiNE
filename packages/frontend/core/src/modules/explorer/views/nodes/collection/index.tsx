@@ -17,8 +17,8 @@ import type { Collection } from '@affine/env/filter';
 import { PublicPageMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
+import type { DocMeta } from '@blocksuite/affine/store';
 import { FilterMinusIcon } from '@blocksuite/icons/rc';
-import type { DocMeta } from '@blocksuite/store';
 import {
   DocsService,
   GlobalContextService,

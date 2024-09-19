@@ -1,5 +1,5 @@
 import type { Collection, Filter, VariableMap } from '@affine/env/filter';
-import type { DocMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/affine/store';
 
 import { evalFilterList } from './filter';
 

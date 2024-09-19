@@ -1,5 +1,5 @@
 import { ErrorNames, UserFriendlyError } from '@affine/graphql';
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 import { Store } from '@toeverything/infra';
 
 import { type FetchService, isBackendError } from '../../cloud';

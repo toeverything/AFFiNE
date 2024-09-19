@@ -17,7 +17,7 @@ import { useDocCollectionPageTitle } from '@affine/core/components/hooks/use-blo
 import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { EditorService } from '@affine/core/modules/editor';
 import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
-import type { Doc } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/affine/store';
 import { useLiveData, useService, type Workspace } from '@toeverything/infra';
 import { useAtom, useAtomValue } from 'jotai';
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';

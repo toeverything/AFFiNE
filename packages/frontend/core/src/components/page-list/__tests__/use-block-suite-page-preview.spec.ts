@@ -3,10 +3,10 @@
  */
 import 'fake-indexeddb/auto';
 
-import { AffineSchemas } from '@blocksuite/blocks/schemas';
-import { assertExists } from '@blocksuite/global/utils';
-import type { Doc } from '@blocksuite/store';
-import { DocCollection, Schema } from '@blocksuite/store';
+import { AffineSchemas } from '@blocksuite/affine/blocks/schemas';
+import { assertExists } from '@blocksuite/affine/global/utils';
+import type { Doc } from '@blocksuite/affine/store';
+import { DocCollection, Schema } from '@blocksuite/affine/store';
 import { renderHook } from '@testing-library/react';
 import { useAtomValue } from 'jotai';
 import { beforeEach, describe, expect, test, vi } from 'vitest';

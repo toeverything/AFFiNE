@@ -2,7 +2,7 @@ import { DebugLogger } from '@affine/debug';
 import { DEFAULT_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import onboardingUrl from '@affine/templates/onboarding.zip';
-import { ZipTransformer } from '@blocksuite/blocks';
+import { ZipTransformer } from '@blocksuite/affine/blocks';
 import type { WorkspacesService } from '@toeverything/infra';
 import { DocsService } from '@toeverything/infra';
 

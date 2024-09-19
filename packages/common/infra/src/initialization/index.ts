@@ -1,11 +1,11 @@
-import type { SurfaceBlockProps } from '@blocksuite/block-std/gfx';
+import type { SurfaceBlockProps } from '@blocksuite/affine/block-std/gfx';
 import {
   NoteDisplayMode,
   type NoteProps,
   type ParagraphProps,
   type RootBlockProps,
-} from '@blocksuite/blocks';
-import { type Doc, Text } from '@blocksuite/store';
+} from '@blocksuite/affine/blocks';
+import { type Doc, Text } from '@blocksuite/affine/store';
 
 export interface DocProps {
   page?: Partial<RootBlockProps>;

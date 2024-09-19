@@ -2,10 +2,10 @@ import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { WorkspacePropertiesAdapter } from '@affine/core/modules/properties';
 import { I18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import type { EditorHost } from '@blocksuite/block-std';
-import type { AffineInlineEditor } from '@blocksuite/blocks';
-import { LinkedWidgetUtils } from '@blocksuite/blocks';
-import type { DocMeta } from '@blocksuite/store';
+import type { EditorHost } from '@blocksuite/affine/block-std';
+import type { AffineInlineEditor } from '@blocksuite/affine/blocks';
+import { LinkedWidgetUtils } from '@blocksuite/affine/blocks';
+import type { DocMeta } from '@blocksuite/affine/store';
 import { type FrameworkProvider, WorkspaceService } from '@toeverything/infra';
 
 // TODO: fix the type

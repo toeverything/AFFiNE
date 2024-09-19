@@ -1,4 +1,4 @@
-import type { DocCollection } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/affine/store';
 import { useAtomValue } from 'jotai';
 import { type ReactNode, Suspense } from 'react';
 

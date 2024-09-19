@@ -2,7 +2,7 @@ import type {
   EditorHost,
   TextRangePoint,
   TextSelection,
-} from '@blocksuite/block-std';
+} from '@blocksuite/affine/block-std';
 import {
   defaultImageProxyMiddleware,
   embedSyncedDocMiddleware,
@@ -11,8 +11,8 @@ import {
   pasteMiddleware,
   PlainTextAdapter,
   titleMiddleware,
-} from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import type {
   BlockModel,
   BlockSnapshot,
@@ -20,8 +20,8 @@ import type {
   DraftModel,
   Slice,
   SliceSnapshot,
-} from '@blocksuite/store';
-import { DocCollection, Job } from '@blocksuite/store';
+} from '@blocksuite/affine/store';
+import { DocCollection, Job } from '@blocksuite/affine/store';
 
 const updateSnapshotText = (
   point: TextRangePoint,

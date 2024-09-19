@@ -1,4 +1,4 @@
-import type { BlockComponent, EditorHost } from '@blocksuite/block-std';
+import type { BlockComponent, EditorHost } from '@blocksuite/affine/block-std';
 import type {
   DocMode,
   EmbedLinkedDocModel,
@@ -6,10 +6,10 @@ import type {
   ImageBlockModel,
   SurfaceRefBlockComponent,
   SurfaceRefBlockModel,
-} from '@blocksuite/blocks';
-import { AffineReference } from '@blocksuite/blocks';
-import type { AIChatBlockModel } from '@blocksuite/presets';
-import type { BlockModel } from '@blocksuite/store';
+} from '@blocksuite/affine/blocks';
+import { AffineReference } from '@blocksuite/affine/blocks';
+import type { AIChatBlockModel } from '@blocksuite/affine/presets';
+import type { BlockModel } from '@blocksuite/affine/store';
 import { Entity, LiveData } from '@toeverything/infra';
 import type { TemplateResult } from 'lit';
 import { firstValueFrom, map, race } from 'rxjs';

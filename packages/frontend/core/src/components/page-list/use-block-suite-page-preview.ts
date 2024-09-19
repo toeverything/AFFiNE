@@ -1,4 +1,4 @@
-import type { Doc } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/affine/store';
 import type { Atom } from 'jotai';
 import { atom } from 'jotai';
 

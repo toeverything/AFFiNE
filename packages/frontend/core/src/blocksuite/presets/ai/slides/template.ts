@@ -1,5 +1,5 @@
-import { Bound } from '@blocksuite/global/utils';
-import { nanoid } from '@blocksuite/store';
+import { Bound } from '@blocksuite/affine/global/utils';
+import { nanoid } from '@blocksuite/affine/store';
 
 import { AIProvider } from '../provider';
 

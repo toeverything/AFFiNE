@@ -7,8 +7,8 @@ import {
 import { SettingRow } from '@affine/component/setting-components';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { useI18n } from '@affine/i18n';
-import { LayoutType, MindmapStyle } from '@blocksuite/blocks';
-import type { Doc } from '@blocksuite/store';
+import { LayoutType, MindmapStyle } from '@blocksuite/affine/blocks';
+import type { Doc } from '@blocksuite/affine/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 

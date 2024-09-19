@@ -5,7 +5,7 @@ import { CollectionService } from '@affine/core/modules/collection';
 import type { Tag } from '@affine/core/modules/tag';
 import type { Collection, Filter } from '@affine/env/filter';
 import { Trans, useI18n } from '@affine/i18n';
-import type { DocMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/affine/store';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useCallback, useMemo, useRef, useState } from 'react';
 

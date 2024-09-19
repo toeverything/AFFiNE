@@ -1,4 +1,4 @@
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 import type { Doc } from '@toeverything/infra';
 import {
   DocsService,

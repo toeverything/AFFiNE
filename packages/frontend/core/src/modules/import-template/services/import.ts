@@ -1,5 +1,5 @@
 import type { WorkspaceFlavour } from '@affine/env/workspace';
-import { type DocMode, ZipTransformer } from '@blocksuite/blocks';
+import { type DocMode, ZipTransformer } from '@blocksuite/affine/blocks';
 import type { WorkspaceMetadata, WorkspacesService } from '@toeverything/infra';
 import { DocsService, Service } from '@toeverything/infra';
 

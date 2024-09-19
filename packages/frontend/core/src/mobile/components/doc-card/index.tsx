@@ -7,7 +7,7 @@ import {
   WorkbenchLink,
   type WorkbenchLinkProps,
 } from '@affine/core/modules/workbench';
-import type { DocMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/affine/store';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { forwardRef, type ReactNode } from 'react';

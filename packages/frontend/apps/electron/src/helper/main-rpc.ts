@@ -1,4 +1,4 @@
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import { AsyncCall } from 'async-call-rpc';
 
 import type { HelperToMain, MainToHelper } from '../shared/type';

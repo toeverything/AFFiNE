@@ -1,6 +1,6 @@
 import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { useI18n } from '@affine/i18n';
-import type { Doc } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/affine/store';
 
 import * as styles from './styles.css';
 

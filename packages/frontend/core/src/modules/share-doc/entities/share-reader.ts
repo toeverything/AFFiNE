@@ -1,5 +1,5 @@
 import { UserFriendlyError } from '@affine/graphql';
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 import {
   effect,
   Entity,

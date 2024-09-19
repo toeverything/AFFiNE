@@ -73,7 +73,7 @@ export default defineConfig({
     },
     server: {
       deps: {
-        inline: ['@blocksuite/blocks'],
+        inline: ['@blocksuite/affine/blocks'],
       },
     },
   },

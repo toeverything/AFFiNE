@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { Slot } from '@blocksuite/global/utils';
+import { Slot } from '@blocksuite/affine/global/utils';
 import { difference } from 'lodash-es';
 
 import { LiveData } from '../../livedata';

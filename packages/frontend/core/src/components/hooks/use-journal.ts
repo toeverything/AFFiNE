@@ -1,7 +1,7 @@
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { i18nTime } from '@affine/i18n';
 import { track } from '@affine/track';
-import { type DocCollection, Text } from '@blocksuite/store';
+import { type DocCollection, Text } from '@blocksuite/affine/store';
 import {
   type DocProps,
   DocsService,
