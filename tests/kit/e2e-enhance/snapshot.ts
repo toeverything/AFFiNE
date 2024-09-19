@@ -21,17 +21,11 @@ export class SnapshotStorage {
   binaryIndexPath: string;
   binaryFilePath: string;
 
-  constructor(version: string) {
-    // The snapshots data is stored in "@affine-test/fixtures/legacy", just keep all fixtures in one place
-    const legacyReadMeFilePath = require.resolve(
-      '@affine-test/fixtures/legacy/README.md'
-    );
-    const dir = dirname(legacyReadMeFilePath);
-
-    this.idbFilePath = join(dir, version, 'idb.json');
-    this.binaryFilePath = join(dir, version, 'idb.bin');
-    this.binaryIndexPath = join(dir, version, 'idb_index.json');
-    this.localStorageFilePath = join(dir, version, 'local-storage.json');
+  constructor(dir: string) {
+    this.idbFilePath = join(dir, 'idb.json');
+    this.binaryFilePath = join(dir, 'idb.bin');
+    this.binaryIndexPath = join(dir, 'idb_index.json');
+    this.localStorageFilePath = join(dir, 'local-storage.json');
   }
 
   async read(): Promise<SnapshotData> {
@@ -105,5 +99,16 @@ export class SnapshotStorage {
       ),
       writeFile(binaryFilePath, Buffer.concat(binaryBuffers), 'utf-8'),
     ]);
+  }
+}
+
+export class LegacySnapshotStorage extends SnapshotStorage {
+  constructor(version: string) {
+    // The snapshots data is stored in "@affine-test/fixtures/legacy", just keep all fixtures in one place
+    const legacyReadMeFilePath = require.resolve(
+      '@affine-test/fixtures/legacy/README.md'
+    );
+    const dir = dirname(legacyReadMeFilePath);
+    super(join(dir, version));
   }
 }

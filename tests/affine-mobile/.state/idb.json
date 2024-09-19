@@ -1,0 +1,186 @@
+[
+  {
+    "name": "PL1Iva9wfpSglVaP6weyo:sync-metadata",
+    "version": 1,
+    "stores": [
+      {
+        "name": "kv",
+        "keyPath": "key",
+        "values": [
+          {
+            "key": "PL1Iva9wfpSglVaP6weyo:seqNum",
+            "val": "__BINARY__1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "PL1Iva9wfpSglVaP6weyo_blob",
+    "version": 1,
+    "stores": [
+      {
+        "name": "blob",
+        "keyPath": null,
+        "values": [{}, {}, {}]
+      }
+    ]
+  },
+  {
+    "name": "PL1Iva9wfpSglVaP6weyo_blob_mime",
+    "version": 1,
+    "stores": [
+      {
+        "name": "blob_mime",
+        "keyPath": null,
+        "values": ["", "", ""]
+      }
+    ]
+  },
+  {
+    "name": "affine-local",
+    "version": 1,
+    "stores": [
+      {
+        "name": "workspace",
+        "keyPath": "id",
+        "values": [
+          {
+            "id": "PL1Iva9wfpSglVaP6weyo",
+            "updates": [
+              {
+                "timestamp": 1726802435350,
+                "update": "__BINARY__2"
+              }
+            ]
+          },
+          {
+            "id": "s_F2490nY_lEYSeK1jNYv",
+            "updates": [
+              {
+                "timestamp": 1726802434912,
+                "update": "__BINARY__3"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "idx:PL1Iva9wfpSglVaP6weyo:doc",
+    "version": 1,
+    "stores": [
+      {
+        "name": "invertedIndex",
+        "keyPath": null,
+        "values": [
+          {
+            "key": {},
+            "nid": 1,
+            "pos": {
+              "l": 30,
+              "i": 0,
+              "rs": [[0, 5]]
+            }
+          },
+          {
+            "key": {},
+            "nid": 1,
+            "pos": {
+              "l": 30,
+              "i": 0,
+              "rs": [[7, 11]]
+            }
+          },
+          {
+            "key": {},
+            "nid": 1,
+            "pos": {
+              "l": 30,
+              "i": 0,
+              "rs": [[13, 17]]
+            }
+          },
+          {
+            "key": {},
+            "nid": 1,
+            "pos": {
+              "l": 30,
+              "i": 0,
+              "rs": [[18, 21]]
+            }
+          },
+          {
+            "key": {},
+            "nid": 1,
+            "pos": {
+              "l": 30,
+              "i": 0,
+              "rs": [[22, 24]]
+            }
+          },
+          {
+            "key": {},
+            "nid": 1,
+            "pos": {
+              "l": 30,
+              "i": 0,
+              "rs": [[25, 29]]
+            }
+          }
+        ]
+      },
+      {
+        "name": "kvMetadata",
+        "keyPath": "key",
+        "values": [
+          {
+            "key": "full-text:avg-field-length:title",
+            "value": 30
+          },
+          {
+            "key": "full-text:field-count:title",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "name": "records",
+        "keyPath": null,
+        "values": [
+          {
+            "id": "s_F2490nY_lEYSeK1jNYv",
+            "data": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "jq:PL1Iva9wfpSglVaP6weyo",
+    "version": 1,
+    "stores": [
+      {
+        "name": "jobs",
+        "keyPath": null,
+        "values": [
+          {
+            "batchKey": "s_F2490nY_lEYSeK1jNYv",
+            "payload": {
+              "storageDocId": "s_F2490nY_lEYSeK1jNYv"
+            },
+            "startTime": 1726802435408
+          },
+          {
+            "batchKey": "s_F2490nY_lEYSeK1jNYv",
+            "payload": {
+              "storageDocId": "s_F2490nY_lEYSeK1jNYv"
+            },
+            "startTime": 1726802435408
+          }
+        ]
+      }
+    ]
+  }
+]
