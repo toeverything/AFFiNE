@@ -50,6 +50,7 @@ export const FilterList = ({
         );
       })}
       <Menu
+        key={value.length} // hack to force menu to rerender (disable unmount animation)
         items={
           <CreateFilterMenu
             value={value}
