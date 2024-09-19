@@ -1,5 +1,7 @@
-import { appInfo } from '@affine/electron-api';
+import { notify } from '@affine/component';
+import { apis, appInfo, events } from '@affine/electron-api';
 import type { OAuthProviderType } from '@affine/graphql';
+import { I18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import {
   ApplicationFocused,
@@ -56,6 +58,33 @@ export class AuthService extends Service {
 
   private onApplicationStart() {
     this.session.revalidate();
+
+    if (BUILD_CONFIG.isElectron) {
+      events?.ui.onAuthenticationRequest(({ method, payload }) => {
+        (async () => {
+          if (!(await apis?.ui.isActiveTab())) {
+            return;
+          }
+          switch (method) {
+            case 'magic-link': {
+              const { email, token } = payload;
+              await this.signInMagicLink(email, token);
+              break;
+            }
+            case 'oauth': {
+              const { code, state, provider } = payload;
+              await this.signInOauth(code, state, provider);
+              break;
+            }
+          }
+        })().catch(e => {
+          notify.error({
+            title: I18n['com.affine.auth.toast.title.failed'](),
+            message: (e as any).message,
+          });
+        });
+      });
+    }
   }
 
   private onApplicationFocused() {
@@ -97,6 +126,8 @@ export class AuthService extends Service {
         },
         body: JSON.stringify({ email, token }),
       });
+
+      this.session.revalidate();
       track.$.$.auth.signedIn({ method: 'magic-link' });
     } catch (e) {
       track.$.$.auth.signInFail({ method: 'magic-link' });
@@ -151,6 +182,8 @@ export class AuthService extends Service {
         },
       });
 
+      this.session.revalidate();
+
       track.$.$.auth.signedIn({ method: 'oauth', provider });
       return res.json();
     } catch (e) {
@@ -167,7 +200,7 @@ export class AuthService extends Service {
   }) {
     track.$.$.auth.signIn({ method: 'password' });
     try {
-      const res = await this.fetchService.fetch('/api/auth/sign-in', {
+      await this.fetchService.fetch('/api/auth/sign-in', {
         method: 'POST',
         body: JSON.stringify(credential),
         headers: {
@@ -175,9 +208,6 @@ export class AuthService extends Service {
           ...this.captchaHeaders(credential.verifyToken, credential.challenge),
         },
       });
-      if (!res.ok) {
-        throw new Error('Failed to sign in');
-      }
       this.session.revalidate();
       track.$.$.auth.signedIn({ method: 'password' });
     } catch (e) {
