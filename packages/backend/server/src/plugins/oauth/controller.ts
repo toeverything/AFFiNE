@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   Req,
   Res,
 } from '@nestjs/common';
@@ -18,6 +20,7 @@ import {
   OauthAccountAlreadyConnected,
   OauthStateExpired,
   UnknownOauthProvider,
+  URLHelper,
 } from '../../fundamentals';
 import { OAuthProviderName } from './config';
 import { OAuthAccount, Tokens } from './providers/def';
@@ -31,7 +34,8 @@ export class OAuthController {
     private readonly oauth: OAuthService,
     private readonly user: UserService,
     private readonly providerFactory: OAuthProviderFactory,
-    private readonly db: PrismaClient
+    private readonly db: PrismaClient,
+    private readonly url: URLHelper
   ) {}
 
   @Public()
@@ -39,7 +43,9 @@ export class OAuthController {
   @HttpCode(HttpStatus.OK)
   async preflight(
     @Body('provider') unknownProviderName?: string,
-    @Body('redirect_uri') redirectUri?: string
+    @Body('redirect_uri') redirectUri?: string,
+    @Body('client') clientId?: string,
+    @Body('state') state?: string
   ) {
     if (!unknownProviderName) {
       throw new MissingOauthQueryParameter({ name: 'provider' });
@@ -53,14 +59,43 @@ export class OAuthController {
       throw new UnknownOauthProvider({ name: unknownProviderName });
     }
 
-    const state = await this.oauth.saveOAuthState({
+    const token = await this.oauth.saveOAuthState({
       provider: providerName,
       redirectUri,
+      // new client will generate the state from the client side
+      clientId,
+      state,
     });
 
     return {
-      url: provider.getAuthUrl(state),
+      url: provider.getAuthUrl(token),
     };
+  }
+
+  @Public()
+  @Get('/redirect')
+  @HttpCode(HttpStatus.OK)
+  async redirect(
+    @Res() res: Response,
+    @Query('code') code: string,
+    @Query('state') state: string
+  ) {
+    if (!code) {
+      throw new MissingOauthQueryParameter({ name: 'code' });
+    }
+    if (!state) {
+      throw new MissingOauthQueryParameter({ name: 'state' });
+    }
+
+    const oauthState = await this.oauth.getOAuthState(state);
+
+    if (oauthState?.state) {
+      // redirect from new client
+      res.redirect(this.url.link('/api/oauth/callback', { code, state }));
+    } else {
+      // compatible with old client
+      res.redirect(this.url.link('/oauth/callback', { code, state }));
+    }
   }
 
   @Public()
@@ -100,20 +135,29 @@ export class OAuthController {
       throw new UnknownOauthProvider({ name: state.provider ?? 'unknown' });
     }
 
-    const tokens = await provider.getToken(code);
-    const externAccount = await provider.getUser(tokens.accessToken);
-    const user = await this.loginFromOauth(
-      state.provider,
-      externAccount,
-      tokens
-    );
+    if (state.state) {
+      // new method, need exchange cookie by client state
+      // we only cache the code and access token in server side
+      const token = await this.oauth.saveOAuthState({ ...state, code });
+      res.redirect(
+        this.url.link('/oauth/callback', { token, client: state.clientId })
+      );
+    } else {
+      const tokens = await provider.getToken(code);
+      const externAccount = await provider.getUser(tokens.accessToken);
+      const user = await this.loginFromOauth(
+        state.provider,
+        externAccount,
+        tokens
+      );
 
-    await this.auth.setCookies(req, res, user.id);
-    res.send({
-      id: user.id,
-      /* @deprecated */
-      redirectUri: state.redirectUri,
-    });
+      await this.auth.setCookies(req, res, user.id);
+      res.send({
+        id: user.id,
+        /* @deprecated */
+        redirectUri: state.redirectUri,
+      });
+    }
   }
 
   private async loginFromOauth(

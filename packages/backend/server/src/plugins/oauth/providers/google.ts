@@ -33,7 +33,7 @@ export class GoogleOAuthProvider extends AutoRegisteredOAuthProvider {
   getAuthUrl(state: string) {
     return `https://accounts.google.com/o/oauth2/v2/auth?${this.url.stringify({
       client_id: this.config.clientId,
-      redirect_uri: this.url.link('/oauth/callback'),
+      redirect_uri: this.url.link('/api/oauth/redirect'),
       response_type: 'code',
       scope: 'openid email profile',
       prompt: 'select_account',
@@ -50,7 +50,7 @@ export class GoogleOAuthProvider extends AutoRegisteredOAuthProvider {
         code,
         client_id: this.config.clientId,
         client_secret: this.config.clientSecret,
-        redirect_uri: this.url.link('/oauth/callback'),
+        redirect_uri: this.url.link('/api/oauth/redirect'),
         grant_type: 'authorization_code',
       }),
       headers: {
