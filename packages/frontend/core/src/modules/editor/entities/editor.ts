@@ -13,7 +13,6 @@ import { paramsParseOptions, preprocessParams } from '../../navigation/utils';
 import type { WorkbenchView } from '../../workbench';
 import { EditorScope } from '../scopes/editor';
 import type { EditorSelector } from '../types';
-import { scrollAnchoring } from '../utils/scroll-anchoring';
 
 export class Editor extends Entity {
   readonly scope = this.framework.createScope(EditorScope, {
@@ -159,14 +158,21 @@ export class Editor extends Entity {
 
     const focusAt$ = LiveData.computed(get => {
       const selector = get(this.selector$);
-      const id =
-        get(this.mode$) === 'edgeless' && selector?.elementIds?.length
-          ? selector?.elementIds?.[0]
-          : selector?.blockIds?.[0];
+      const mode = get(this.mode$);
+      let id = selector?.blockIds?.[0];
+      let key = 'blockIds';
+
+      if (mode === 'edgeless') {
+        const elementId = selector?.elementIds?.[0];
+        if (elementId) {
+          id = elementId;
+          key = 'elementIds';
+        }
+      }
 
       if (!id) return null;
 
-      return { id, refreshKey: selector?.refreshKey };
+      return { id, key, mode, refreshKey: selector?.refreshKey };
     });
     if (focusAt$.value === null && docTitle) {
       const title = docTitle.querySelector<
@@ -177,15 +183,25 @@ export class Editor extends Entity {
 
     const subscription = focusAt$
       .distinctUntilChanged(
-        (a, b) => a?.id === b?.id && a?.refreshKey === b?.refreshKey
+        (a, b) =>
+          a?.id === b?.id &&
+          a?.key === b?.key &&
+          a?.refreshKey === b?.refreshKey
       )
-      .subscribe(params => {
-        if (!params?.id) return;
+      .subscribe(anchor => {
+        if (!anchor) return;
 
-        const std = editorContainer.host?.std;
-        if (!std) return;
+        const selection = editorContainer.host?.std.selection;
+        if (!selection) return;
 
-        scrollAnchoring(std, this.mode$.value, params.id);
+        const { id, key, mode } = anchor;
+
+        selection.setGroup('scene', [
+          selection.create('highlight', {
+            mode,
+            [key]: [id],
+          }),
+        ]);
       });
     unsubs.push(subscription.unsubscribe.bind(subscription));
 
