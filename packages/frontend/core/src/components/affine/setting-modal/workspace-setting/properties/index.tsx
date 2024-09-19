@@ -172,6 +172,10 @@ const EditPropertyButton = ({
           onOpenChange: handleFinishEditing,
         }}
         items={editing ? editMenuItems : defaultMenuItems}
+        contentOptions={{
+          align: 'end',
+          sideOffset: 4,
+        }}
       >
         <IconButton onClick={() => setOpen(true)} size="20">
           <MoreHorizontalIcon />
