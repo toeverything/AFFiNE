@@ -50,7 +50,7 @@ export const resizeHandleContainer = style({
   right: resizeHandleOffsetVar,
   top: resizeHandleVerticalPadding,
   bottom: resizeHandleVerticalPadding,
-  width: 16,
+  width: 8,
   zIndex: '1',
   transform: 'translateX(50%)',
   backgroundColor: 'transparent',

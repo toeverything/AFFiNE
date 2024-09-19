@@ -94,7 +94,7 @@ export function AppSidebar({ children }: PropsWithChildren) {
         onResizing={setResizing}
         onWidthChange={setWidth}
         className={navWrapperStyle}
-        resizeHandleOffset={clientBorder ? 8 : 0}
+        resizeHandleOffset={0}
         resizeHandleVerticalPadding={clientBorder ? 16 : 0}
         data-transparent
         data-open={open}

@@ -149,7 +149,7 @@ const WorkbenchSidebar = () => {
     <ResizePanel
       floating={floating}
       resizeHandlePos="left"
-      resizeHandleOffset={clientBorder ? 3.5 : 0}
+      resizeHandleOffset={0}
       width={width}
       resizing={resizing}
       onResizing={setResizing}
