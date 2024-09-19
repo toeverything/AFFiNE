@@ -404,7 +404,7 @@ test('can use cmdk to search page content and scroll to it, then the block will 
   );
   expect(isVisitable).toBe(true);
   const selectionElement = page.locator(
-    'affine-block-selection[style*="display: block;"]'
+    'affine-scroll-anchoring-widget div.highlight'
   );
   await expect(selectionElement).toBeVisible();
 });

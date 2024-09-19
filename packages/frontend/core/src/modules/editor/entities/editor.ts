@@ -180,12 +180,12 @@ export class Editor extends Entity {
         (a, b) => a?.id === b?.id && a?.refreshKey === b?.refreshKey
       )
       .subscribe(params => {
-        if (params?.id) {
-          const std = editorContainer.host?.std;
-          if (std) {
-            scrollAnchoring(std, this.mode$.value, params.id);
-          }
-        }
+        if (!params?.id) return;
+
+        const std = editorContainer.host?.std;
+        if (!std) return;
+
+        scrollAnchoring(std, this.mode$.value, params.id);
       });
     unsubs.push(subscription.unsubscribe.bind(subscription));
 
