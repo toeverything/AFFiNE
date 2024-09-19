@@ -7,16 +7,11 @@ import {
 } from '@affine/component';
 import { InfoModal } from '@affine/core/components/affine/page-properties';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import {
-  EdgelessIcon,
-  LinkedEdgelessIcon,
-  LinkedPageIcon,
-  PageIcon,
-} from '@blocksuite/icons/rc';
 import {
   DocsService,
   GlobalContextService,
@@ -46,35 +41,37 @@ export const ExplorerDocNode = ({
   isLinked?: boolean;
 } & GenericExplorerNode) => {
   const t = useI18n();
-  const { docsSearchService, docsService, globalContextService } = useServices({
+  const {
+    docsSearchService,
+    docsService,
+    globalContextService,
+    docDisplayMetaService,
+  } = useServices({
     DocsSearchService,
     DocsService,
     GlobalContextService,
+    DocDisplayMetaService,
   });
+  // const pageInfoAdapter = useCurrentWorkspacePropertiesAdapter();
+
   const active =
     useLiveData(globalContextService.globalContext.docId.$) === docId;
   const [collapsed, setCollapsed] = useState(true);
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
-  const docPrimaryMode = useLiveData(docRecord?.primaryMode$);
-  const docTitle = useLiveData(docRecord?.title$);
+  const DocIcon = useLiveData(
+    docDisplayMetaService.icon$(docId, {
+      reference: isLinked,
+    })
+  );
+  const docTitle = useLiveData(docDisplayMetaService.title$(docId));
   const isInTrash = useLiveData(docRecord?.trash$);
 
   const Icon = useCallback(
     ({ className }: { className?: string }) => {
-      return isLinked ? (
-        docPrimaryMode === 'edgeless' ? (
-          <LinkedEdgelessIcon className={className} />
-        ) : (
-          <LinkedPageIcon className={className} />
-        )
-      ) : docPrimaryMode === 'edgeless' ? (
-        <EdgelessIcon className={className} />
-      ) : (
-        <PageIcon className={className} />
-      );
+      return <DocIcon className={className} />;
     },
-    [docPrimaryMode, isLinked]
+    [DocIcon]
   );
 
   const children = useLiveData(
@@ -205,7 +202,7 @@ export const ExplorerDocNode = ({
     <>
       <ExplorerTreeNode
         icon={Icon}
-        name={docTitle || t['Untitled']()}
+        name={typeof docTitle === 'string' ? docTitle : t[docTitle.key]()}
         dndData={dndData}
         onDrop={handleDropOnDoc}
         renameable

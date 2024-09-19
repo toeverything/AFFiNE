@@ -4,6 +4,7 @@ import { configureInfraModules, type Framework } from '@toeverything/infra';
 import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
 import { configureCreateWorkspaceModule } from './create-workspace';
+import { configureDocDisplayMetaModule } from './doc-display-meta';
 import { configureDocLinksModule } from './doc-link';
 import { configureDocsSearchModule } from './docs-search';
 import { configureEditorModule } from './editor';
@@ -40,6 +41,7 @@ export function configureCommonModules(framework: Framework) {
   configureTelemetryModule(framework);
   configureFindInPageModule(framework);
   configurePeekViewModule(framework);
+  configureDocDisplayMetaModule(framework);
   configureQuickSearchModule(framework);
   configureDocsSearchModule(framework);
   configureDocLinksModule(framework);

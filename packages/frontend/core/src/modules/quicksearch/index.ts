@@ -8,8 +8,8 @@ import {
 } from '@toeverything/infra';
 
 import { CollectionService } from '../collection';
+import { DocDisplayMetaService } from '../doc-display-meta/services/doc-display-meta';
 import { DocsSearchService } from '../docs-search';
-import { WorkspacePropertiesAdapter } from '../properties';
 import { TagService } from '../tag';
 import { WorkbenchService } from '../workbench';
 import { QuickSearch } from './entities/quick-search';
@@ -22,7 +22,6 @@ import { LinksQuickSearchSession } from './impls/links';
 import { RecentDocsQuickSearchSession } from './impls/recent-docs';
 import { TagsQuickSearchSession } from './impls/tags';
 import { CMDKQuickSearchService } from './services/cmdk';
-import { DocDisplayMetaService } from './services/doc-display-meta';
 import { QuickSearchService } from './services/quick-search';
 import { RecentDocsService } from './services/recent-pages';
 
@@ -50,7 +49,6 @@ export function configureQuickSearchModule(framework: Framework) {
       DocsService,
     ])
     .service(RecentDocsService, [WorkspaceLocalState, DocsService])
-    .service(DocDisplayMetaService, [WorkspacePropertiesAdapter])
     .entity(QuickSearch)
     .entity(CommandsQuickSearchSession, [GlobalContextService])
     .entity(DocsQuickSearchSession, [

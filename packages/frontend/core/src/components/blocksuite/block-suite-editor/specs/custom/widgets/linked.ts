@@ -1,20 +1,12 @@
+import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { WorkspacePropertiesAdapter } from '@affine/core/modules/properties';
-import { I18n, i18nTime } from '@affine/i18n';
+import { I18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { EditorHost } from '@blocksuite/block-std';
 import type { AffineInlineEditor } from '@blocksuite/blocks';
 import { LinkedWidgetUtils } from '@blocksuite/blocks';
-import {
-  LinkedEdgelessIcon,
-  LinkedPageIcon,
-  TodayIcon,
-} from '@blocksuite/icons/lit';
 import type { DocMeta } from '@blocksuite/store';
-import {
-  DocsService,
-  type FrameworkProvider,
-  WorkspaceService,
-} from '@toeverything/infra';
+import { type FrameworkProvider, WorkspaceService } from '@toeverything/infra';
 
 // TODO: fix the type
 export function createLinkedWidgetConfig(
@@ -33,6 +25,7 @@ export function createLinkedWidgetConfig(
       const isJournal = (d: DocMeta) =>
         !!adapter.getJournalPageDateString(d.id);
 
+      const docDisplayMetaService = framework.get(DocDisplayMetaService);
       const docMetas = rawMetas
         .filter(meta => {
           if (isJournal(meta) && !meta.updatedDate) {
@@ -41,37 +34,28 @@ export function createLinkedWidgetConfig(
           return !meta.trash;
         })
         .map(meta => {
-          if (isJournal(meta)) {
-            const date = adapter.getJournalPageDateString(meta.id);
-            if (date) {
-              const title = i18nTime(date, { absolute: { accuracy: 'day' } });
-              return { ...meta, title };
-            }
-          }
-          if (!meta.title) {
-            const title = I18n['Untitled']();
-            return { ...meta, title };
-          }
-          return meta;
+          const title = docDisplayMetaService.title$(meta.id).value;
+          return {
+            ...meta,
+            title: typeof title === 'string' ? title : I18n[title.key](),
+          };
         })
         .filter(({ title }) => isFuzzyMatch(title, query));
 
       // TODO need i18n if BlockSuite supported
       const MAX_DOCS = 6;
-      const docsService = framework.get(DocsService);
-      const isEdgeless = (d: DocMeta) =>
-        docsService.list.getPrimaryMode(d.id) === 'edgeless';
       return Promise.resolve([
         {
           name: 'Link to Doc',
           items: docMetas.map(doc => ({
             key: doc.id,
             name: doc.title,
-            icon: isJournal(doc)
-              ? TodayIcon()
-              : isEdgeless(doc)
-                ? LinkedEdgelessIcon()
-                : LinkedPageIcon(),
+            icon: docDisplayMetaService
+              .icon$(doc.id, {
+                type: 'lit',
+                reference: true,
+              })
+              .value(),
             action: () => {
               abort();
               LinkedWidgetUtils.insertLinkedNode({

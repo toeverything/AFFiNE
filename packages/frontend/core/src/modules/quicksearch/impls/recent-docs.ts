@@ -1,7 +1,7 @@
 import { Entity, LiveData } from '@toeverything/infra';
 
+import type { DocDisplayMetaService } from '../../doc-display-meta';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
-import type { DocDisplayMetaService } from '../services/doc-display-meta';
 import type { RecentDocsService } from '../services/recent-pages';
 import type { QuickSearchGroup } from '../types/group';
 import type { QuickSearchItem } from '../types/item';

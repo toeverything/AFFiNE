@@ -1,10 +1,6 @@
 import { DocLinksService } from '@affine/core/modules/doc-link';
 import { useI18n } from '@affine/i18n';
-import {
-  useLiveData,
-  useServices,
-  WorkspaceService,
-} from '@toeverything/infra';
+import { useLiveData, useServices } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
 import { AffinePageReference } from '../../affine/reference-link';
@@ -12,9 +8,8 @@ import * as styles from './bi-directional-link-panel.css';
 
 export const BiDirectionalLinkPanel = () => {
   const [show, setShow] = useState(false);
-  const { docLinksService, workspaceService } = useServices({
+  const { docLinksService } = useServices({
     DocLinksService,
-    WorkspaceService,
   });
   const t = useI18n();
 
@@ -50,11 +45,7 @@ export const BiDirectionalLinkPanel = () => {
             </div>
             {backlinks.map(link => (
               <div key={link.docId} className={styles.link}>
-                <AffinePageReference
-                  key={link.docId}
-                  pageId={link.docId}
-                  docCollection={workspaceService.workspace.docCollection}
-                />
+                <AffinePageReference key={link.docId} pageId={link.docId} />
               </div>
             ))}
           </div>
@@ -68,11 +59,7 @@ export const BiDirectionalLinkPanel = () => {
                 key={`${link.docId}-${link.params?.toString()}-${i}`}
                 className={styles.link}
               >
-                <AffinePageReference
-                  pageId={link.docId}
-                  params={link.params}
-                  docCollection={workspaceService.workspace.docCollection}
-                />
+                <AffinePageReference pageId={link.docId} params={link.params} />
               </div>
             ))}
           </div>

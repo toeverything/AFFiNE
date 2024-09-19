@@ -4,7 +4,7 @@ import { useCallback, useMemo } from 'react';
 
 import { useAsyncCallback } from './affine-async-hooks';
 import { useAllBlockSuiteDocMeta } from './use-all-block-suite-page-meta';
-import { useJournalHelper } from './use-journal';
+import { useJournalInfoHelper } from './use-journal';
 
 /**
  * Get pageMetas excluding journal pages without updatedDate
@@ -13,7 +13,7 @@ import { useJournalHelper } from './use-journal';
  */
 export function useBlockSuiteDocMeta(docCollection: DocCollection) {
   const pageMetas = useAllBlockSuiteDocMeta(docCollection);
-  const { isPageJournal } = useJournalHelper(docCollection);
+  const { isPageJournal } = useJournalInfoHelper();
   return useMemo(
     () =>
       pageMetas.filter(

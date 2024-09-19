@@ -4,10 +4,10 @@ import type { DocsService, WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
 import { omit, truncate } from 'lodash-es';
 
+import type { DocDisplayMetaService } from '../../doc-display-meta';
 import { resolveLinkToDoc } from '../../navigation';
 import { isLink } from '../../navigation/utils';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
-import type { DocDisplayMetaService } from '../services/doc-display-meta';
 import type { QuickSearchItem } from '../types/item';
 
 type LinkPayload = { docId: string } & ReferenceParams;

@@ -32,5 +32,6 @@ globalStyle(`${wrapper} span`, {
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
-  borderBottom: 'none',
+  // don't modify border width to avoid layout shift
+  borderBottomColor: 'transparent',
 });

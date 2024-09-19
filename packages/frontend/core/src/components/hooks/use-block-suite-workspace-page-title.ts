@@ -4,7 +4,7 @@ import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 import { useCallback } from 'react';
 
-import { useJournalHelper, useJournalInfoHelper } from './use-journal';
+import { useJournalInfoHelper } from './use-journal';
 
 const weakMap = new WeakMap<DocCollection, Map<string, Atom<string>>>();
 
@@ -32,6 +32,9 @@ function getAtom(w: DocCollection, pageId: string): Atom<string> {
   }
 }
 
+/**
+ * @deprecated use `useDocTitle(docId: string)` instead
+ */
 export function useDocCollectionPageTitle(
   docCollection: DocCollection,
   pageId: string
@@ -39,13 +42,13 @@ export function useDocCollectionPageTitle(
   const titleAtom = getAtom(docCollection, pageId);
   assertExists(titleAtom);
   const title = useAtomValue(titleAtom);
-  const { localizedJournalDate } = useJournalInfoHelper(docCollection, pageId);
+  const { localizedJournalDate } = useJournalInfoHelper(pageId);
   return localizedJournalDate || title;
 }
 
 // This hook is NOT reactive to the page title change
 export function useGetDocCollectionPageTitle(docCollection: DocCollection) {
-  const { getLocalizedJournalDateString } = useJournalHelper(docCollection);
+  const { getLocalizedJournalDateString } = useJournalInfoHelper();
   return useCallback(
     (pageId: string) => {
       return (

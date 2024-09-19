@@ -9,9 +9,9 @@ import {
 import { truncate } from 'lodash-es';
 import { EMPTY, map, mergeMap, of, switchMap } from 'rxjs';
 
+import type { DocDisplayMetaService } from '../../doc-display-meta';
 import type { DocsSearchService } from '../../docs-search';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
-import type { DocDisplayMetaService } from '../services/doc-display-meta';
 import type { QuickSearchItem } from '../types/item';
 
 interface DocsPayload {

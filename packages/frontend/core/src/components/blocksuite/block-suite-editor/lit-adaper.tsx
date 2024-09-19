@@ -72,7 +72,7 @@ interface BlocksuiteEditorProps {
   shared?: boolean;
 }
 
-const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
+const usePatchSpecs = (shared: boolean, mode: DocMode) => {
   const [reactToLit, portals] = useLitPortalFactory();
   const {
     peekViewService,
@@ -110,15 +110,9 @@ const usePatchSpecs = (page: Doc, shared: boolean, mode: DocMode) => {
         );
       }
 
-      return (
-        <AffinePageReference
-          docCollection={page.collection}
-          pageId={pageId}
-          params={params}
-        />
-      );
+      return <AffinePageReference pageId={pageId} params={params} />;
     };
-  }, [page.collection, workspaceService]);
+  }, [workspaceService]);
 
   const specs = useMemo(() => {
     const enableAI = featureFlagService.flags.enable_ai.value;
@@ -184,7 +178,7 @@ export const BlocksuiteDocEditor = forwardRef<
 ) {
   const titleRef = useRef<DocTitle | null>(null);
   const docRef = useRef<PageEditor | null>(null);
-  const { isJournal } = useJournalInfoHelper(page.collection, page.id);
+  const { isJournal } = useJournalInfoHelper(page.id);
 
   const editorSettingService = useService(EditorSettingService);
 
@@ -216,7 +210,7 @@ export const BlocksuiteDocEditor = forwardRef<
     [externalTitleRef]
   );
 
-  const [specs, portals] = usePatchSpecs(page, !!shared, 'page');
+  const [specs, portals] = usePatchSpecs(!!shared, 'page');
 
   const displayBiDirectionalLink = useLiveData(
     editorSettingService.editorSetting.settings$.selector(
@@ -257,7 +251,7 @@ export const BlocksuiteEdgelessEditor = forwardRef<
   EdgelessEditor,
   BlocksuiteEditorProps
 >(function BlocksuiteEdgelessEditor({ page, shared }, ref) {
-  const [specs, portals] = usePatchSpecs(page, !!shared, 'edgeless');
+  const [specs, portals] = usePatchSpecs(!!shared, 'edgeless');
   const editorRef = useRef<EdgelessEditor | null>(null);
 
   const onDocRef = useCallback(

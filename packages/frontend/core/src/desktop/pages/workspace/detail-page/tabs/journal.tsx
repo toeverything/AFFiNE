@@ -1,21 +1,16 @@
 import type { DateCell } from '@affine/component';
 import { DatePicker, IconButton, Menu, Scrollable } from '@affine/component';
 import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
-import { useDocCollectionPageTitle } from '@affine/core/components/hooks/use-block-suite-workspace-page-title';
 import {
   useJournalHelper,
   useJournalInfoHelper,
   useJournalRouteHelper,
 } from '@affine/core/components/hooks/use-journal';
 import { MoveToTrash } from '@affine/core/components/page-list';
+import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
-import {
-  EdgelessIcon,
-  MoreHorizontalIcon,
-  PageIcon,
-  TodayIcon,
-} from '@blocksuite/icons/rc';
+import { MoreHorizontalIcon } from '@blocksuite/icons/rc';
 import type { DocRecord } from '@toeverything/infra';
 import {
   DocService,
@@ -28,7 +23,7 @@ import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import type { HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import * as styles from './journal.css';
 
@@ -44,30 +39,22 @@ const CountDisplay = ({
 };
 interface PageItemProps
   extends Omit<HTMLAttributes<HTMLAnchorElement>, 'onClick'> {
-  docRecord: DocRecord;
+  docId: string;
   right?: ReactNode;
 }
-const PageItem = ({ docRecord, right, className, ...attrs }: PageItemProps) => {
-  const mode = useLiveData(docRecord.primaryMode$);
-  const workspace = useService(WorkspaceService).workspace;
-  const title = useDocCollectionPageTitle(
-    workspace.docCollection,
-    docRecord.id
+const PageItem = ({ docId, right, className, ...attrs }: PageItemProps) => {
+  const t = useI18n();
+  const docDisplayMetaService = useService(DocDisplayMetaService);
+  const Icon = useLiveData(
+    docDisplayMetaService.icon$(docId, { compareDate: new Date() })
   );
-  const { isJournal } = useJournalInfoHelper(
-    workspace.docCollection,
-    docRecord.id
-  );
+  const titleMeta = useLiveData(docDisplayMetaService.title$(docId));
+  const title = typeof titleMeta === 'string' ? titleMeta : t[titleMeta.key]();
 
-  const Icon = isJournal
-    ? TodayIcon
-    : mode === 'edgeless'
-      ? EdgelessIcon
-      : PageIcon;
   return (
     <WorkbenchLink
       aria-label={title}
-      to={`/${docRecord.id}`}
+      to={`/${docId}`}
       className={clsx(className, styles.pageItem)}
       {...attrs}
     >
@@ -95,16 +82,8 @@ export const EditorJournalPanel = () => {
   const t = useI18n();
   const doc = useService(DocService).doc;
   const workspace = useService(WorkspaceService).workspace;
-  const { journalDate, isJournal } = useJournalInfoHelper(
-    workspace.docCollection,
-    doc.id
-  );
+  const { journalDate, isJournal } = useJournalInfoHelper(doc.id);
   const { openJournal } = useJournalRouteHelper(workspace.docCollection);
-  const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'));
-
-  useEffect(() => {
-    journalDate && setDate(journalDate.format('YYYY-MM-DD'));
-  }, [journalDate]);
 
   const onDateSelect = useCallback(
     (date: string) => {
@@ -150,14 +129,18 @@ export const EditorJournalPanel = () => {
           monthNames={t['com.affine.calendar-date-picker.month-names']()}
           todayLabel={t['com.affine.calendar-date-picker.today']()}
           customDayRenderer={customDayRenderer}
-          value={date}
+          value={journalDate?.format('YYYY-MM-DD')}
           onChange={onDateSelect}
           monthHeaderCellClassName={styles.journalDateCellWrapper}
           monthBodyCellClassName={styles.journalDateCellWrapper}
         />
       </div>
-      <JournalConflictBlock date={dayjs(date)} />
-      <JournalDailyCountBlock date={dayjs(date)} />
+      {journalDate ? (
+        <>
+          <JournalConflictBlock date={journalDate} />
+          <JournalDailyCountBlock date={journalDate} />
+        </>
+      ) : null}
     </div>
   );
 };
@@ -276,7 +259,7 @@ const JournalDailyCountBlock = ({ date }: JournalBlockProps) => {
                     <PageItem
                       tabIndex={name === activeItem ? 0 : -1}
                       key={index}
-                      docRecord={pageRecord}
+                      docId={pageRecord.id}
                     />
                   ))}
                 </div>
@@ -322,7 +305,7 @@ const ConflictList = ({
         return (
           <PageItem
             aria-selected={isCurrent}
-            docRecord={docRecord}
+            docId={docRecord.id}
             key={docRecord.id}
             right={
               <Menu

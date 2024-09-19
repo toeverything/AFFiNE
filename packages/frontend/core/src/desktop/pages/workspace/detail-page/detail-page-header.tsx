@@ -166,7 +166,7 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
 
 export function DetailPageHeader(props: PageHeaderProps) {
   const { page, workspace } = props;
-  const { isJournal } = useJournalInfoHelper(page.collection, page.id);
+  const { isJournal } = useJournalInfoHelper(page.id);
   const isInTrash = page.meta?.trash;
   const [openInfoModal, setOpenInfoModal] = useAtom(openInfoModalAtom);
 

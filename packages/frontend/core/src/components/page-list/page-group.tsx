@@ -1,17 +1,11 @@
-import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
+import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import type { Tag } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import { assertExists } from '@blocksuite/global/utils';
-import {
-  EdgelessIcon,
-  PageIcon,
-  TodayIcon,
-  ToggleCollapseIcon,
-  ViewLayersIcon,
-} from '@blocksuite/icons/rc';
+import { ToggleCollapseIcon, ViewLayersIcon } from '@blocksuite/icons/rc';
 import type { DocCollection, DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
-import { DocsService, useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
 import type { MouseEventHandler } from 'react';
@@ -284,26 +278,16 @@ function tagIdToTagOption(
 }
 
 const PageTitle = ({ id }: { id: string }) => {
-  const doc = useLiveData(useService(DocsService).list.doc$(id));
-  const title = useLiveData(doc?.title$);
   const t = useI18n();
-  return title || t['Untitled']();
+  const docDisplayMetaService = useService(DocDisplayMetaService);
+  const title = useLiveData(docDisplayMetaService.title$(id));
+  return typeof title === 'string' ? title : t[title.key]();
 };
 
-const UnifiedPageIcon = ({
-  id,
-  docCollection,
-}: {
-  id: string;
-  docCollection: DocCollection;
-}) => {
-  const list = useService(DocsService).list;
-  const isEdgeless = useLiveData(list.primaryMode$(id)) === 'edgeless';
-  const { isJournal } = useJournalInfoHelper(docCollection, id);
-  if (isJournal) {
-    return <TodayIcon />;
-  }
-  return isEdgeless ? <EdgelessIcon /> : <PageIcon />;
+const UnifiedPageIcon = ({ id }: { id: string }) => {
+  const docDisplayMetaService = useService(DocDisplayMetaService);
+  const Icon = useLiveData(docDisplayMetaService.icon$(id));
+  return <Icon />;
 };
 
 function pageMetaToListItemProp(
@@ -338,7 +322,7 @@ function pageMetaToListItemProp(
     updatedDate: item.updatedDate ? new Date(item.updatedDate) : undefined,
     to: props.rowAsLink && !props.selectable ? `/${item.id}` : undefined,
     onClick: toggleSelection,
-    icon: <UnifiedPageIcon id={item.id} docCollection={props.docCollection} />,
+    icon: <UnifiedPageIcon id={item.id} />,
     tags:
       item.tags
         ?.map(id => tagIdToTagOption(id, props.docCollection))

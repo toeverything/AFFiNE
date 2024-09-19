@@ -379,8 +379,6 @@ export const PageBacklinksPopup = ({
   backlinks,
   children,
 }: PageBacklinksPopupProps) => {
-  const manager = useContext(managerContext);
-
   return (
     <Menu
       contentOptions={{
@@ -395,7 +393,6 @@ export const PageBacklinksPopup = ({
               key={link.docId + ':' + link.blockId}
               wrapper={MenuItem}
               pageId={link.docId}
-              docCollection={manager.workspace.docCollection}
             />
           ))}
         </div>
