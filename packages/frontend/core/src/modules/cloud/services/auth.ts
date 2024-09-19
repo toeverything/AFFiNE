@@ -97,6 +97,7 @@ export class AuthService extends Service {
         },
         body: JSON.stringify({ email, token }),
       });
+      this.session.revalidate();
       track.$.$.auth.signedIn({ method: 'magic-link' });
     } catch (e) {
       track.$.$.auth.signInFail({ method: 'magic-link' });
@@ -152,6 +153,7 @@ export class AuthService extends Service {
       });
 
       track.$.$.auth.signedIn({ method: 'oauth', provider });
+      this.session.revalidate();
       return res.json();
     } catch (e) {
       track.$.$.auth.signInFail({ method: 'oauth', provider });

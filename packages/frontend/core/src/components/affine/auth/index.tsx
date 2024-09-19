@@ -79,7 +79,6 @@ export function AuthModal() {
             break;
           }
         }
-        authService.session.revalidate();
       } catch (e) {
         notify.error({
           title: t['com.affine.auth.toast.title.failed'](),
