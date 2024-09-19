@@ -14,7 +14,6 @@ export const root = style({
   },
   overflow: 'hidden',
   cursor: 'default',
-  willChange: 'opacity',
   selectors: {
     '&[data-clickable=true]': {
       cursor: 'pointer',
@@ -51,7 +50,6 @@ globalStyle(`[data-draggable=true] ${dndCell}:before`, {
   backgroundColor: cssVar('placeholderColor'),
   borderRadius: '2px',
   opacity: 0,
-  willChange: 'height, opacity',
 });
 globalStyle(`[data-draggable=true] ${dndCell}:hover:before`, {
   height: 12,
