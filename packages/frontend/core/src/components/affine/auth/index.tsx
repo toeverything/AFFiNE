@@ -1,9 +1,7 @@
 import { notify } from '@affine/component';
 import { AuthModal as AuthModalBase } from '@affine/component/auth-components';
 import { authAtom, type AuthAtomData } from '@affine/core/components/atoms';
-import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AuthService } from '@affine/core/modules/cloud';
-import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useAtom } from 'jotai/react';
@@ -45,54 +43,13 @@ const config: {
 };
 
 export function AuthModal() {
-  const t = useI18n();
   const [authAtomValue, setAuthAtom] = useAtom(authAtom);
-  const authService = useService(AuthService);
   const setOpen = useCallback(
     (open: boolean) => {
       setAuthAtom(prev => ({ ...prev, openModal: open }));
     },
     [setAuthAtom]
   );
-
-  const signIn = useAsyncCallback(
-    async ({
-      method,
-      payload,
-    }: {
-      method: 'magic-link' | 'oauth';
-      payload: any;
-    }) => {
-      if (!(await apis?.ui.isActiveTab())) {
-        return;
-      }
-      try {
-        switch (method) {
-          case 'magic-link': {
-            const { email, token } = payload;
-            await authService.signInMagicLink(email, token);
-            break;
-          }
-          case 'oauth': {
-            const { code, state, provider } = payload;
-            await authService.signInOauth(code, state, provider);
-            break;
-          }
-        }
-        authService.session.revalidate();
-      } catch (e) {
-        notify.error({
-          title: t['com.affine.auth.toast.title.failed'](),
-          message: (e as any).message,
-        });
-      }
-    },
-    [authService, t]
-  );
-
-  useEffect(() => {
-    return events?.ui.onAuthenticationRequest(signIn);
-  }, [signIn]);
 
   return (
     <AuthModalBase open={authAtomValue.openModal} setOpen={setOpen}>

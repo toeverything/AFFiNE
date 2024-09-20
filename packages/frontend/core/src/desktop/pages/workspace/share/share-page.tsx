@@ -3,12 +3,14 @@ import { AppFallback } from '@affine/core/components/affine/app-container';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
 import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
 import { usePageDocumentTitle } from '@affine/core/components/hooks/use-global-state';
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
 import { SharePageNotFoundError } from '@affine/core/components/share-page-not-found-error';
 import { AppContainer, MainContainer } from '@affine/core/components/workspace';
 import { AuthService } from '@affine/core/modules/cloud';
 import {
   type Editor,
+  type EditorSelector,
   EditorService,
   EditorsService,
 } from '@affine/core/modules/editor';
@@ -17,8 +19,12 @@ import { ShareReaderService } from '@affine/core/modules/share-doc';
 import { CloudBlobStorage } from '@affine/core/modules/workspace-engine';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
-import { type DocMode, DocModes } from '@blocksuite/affine/blocks';
-import type { AffineEditorContainer } from '@blocksuite/affine/presets';
+import {
+  type DocMode,
+  DocModes,
+  RefNodeSlotsProvider,
+} from '@blocksuite/affine/blocks';
+import { DisposableGroup } from '@blocksuite/affine/global/utils';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import type { Doc, Workspace } from '@toeverything/infra';
 import {
@@ -57,16 +63,29 @@ export const SharePage = ({
 
   const location = useLocation();
 
-  const { mode, isTemplate, templateName, templateSnapshotUrl } =
+  const { mode, selector, isTemplate, templateName, templateSnapshotUrl } =
     useMemo(() => {
       const searchParams = new URLSearchParams(location.search);
       const queryStringMode = searchParams.get('mode') as DocMode | null;
+      const blockIds = searchParams
+        .get('blockIds')
+        ?.split(',')
+        .filter(v => v.length);
+      const elementIds = searchParams
+        .get('elementIds')
+        ?.split(',')
+        .filter(v => v.length);
 
       return {
         mode:
           queryStringMode && DocModes.includes(queryStringMode)
             ? queryStringMode
             : null,
+        selector: {
+          blockIds,
+          elementIds,
+          refreshKey: searchParams.get('refreshKey') || undefined,
+        },
         isTemplate: searchParams.has('isTemplate'),
         templateName: searchParams.get('templateName') || '',
         templateSnapshotUrl: searchParams.get('snapshotUrl') || '',
@@ -94,6 +113,7 @@ export const SharePage = ({
         workspaceBinary={data.workspaceBinary}
         docBinary={data.docBinary}
         publishMode={mode || data.publishMode}
+        selector={selector}
         isTemplate={isTemplate}
         templateName={templateName}
         templateSnapshotUrl={templateSnapshotUrl}
@@ -110,6 +130,7 @@ const SharePageInner = ({
   workspaceBinary,
   docBinary,
   publishMode = 'page' as DocMode,
+  selector,
   isTemplate,
   templateName,
   templateSnapshotUrl,
@@ -119,6 +140,7 @@ const SharePageInner = ({
   workspaceBinary: Uint8Array;
   docBinary: Uint8Array;
   publishMode?: DocMode;
+  selector?: EditorSelector;
   isTemplate?: boolean;
   templateName?: string;
   templateSnapshotUrl?: string;
@@ -180,6 +202,10 @@ const SharePageInner = ({
         const editor = doc.scope.get(EditorsService).createEditor();
         editor.setMode(publishMode);
 
+        if (selector) {
+          editor.setSelector(selector);
+        }
+
         setEditor(editor);
       })
       .catch(err => {
@@ -190,11 +216,13 @@ const SharePageInner = ({
     workspaceId,
     workspacesService,
     publishMode,
+    selector,
     workspaceBinary,
     docBinary,
   ]);
 
   const pageTitle = useLiveData(page?.title$);
+  const { jumpToPageBlock, openPage } = useNavigateHelper();
 
   usePageDocumentTitle(pageTitle);
 
@@ -209,12 +237,35 @@ const SharePageInner = ({
         editorContainer,
         (editorContainer as any).docTitle
       );
+
+      const disposable = new DisposableGroup();
+      const refNodeSlots =
+        editorContainer.host?.std.getOptional(RefNodeSlotsProvider);
+      if (refNodeSlots) {
+        disposable.add(
+          refNodeSlots.docLinkClicked.on(({ pageId, params }) => {
+            if (params) {
+              const { mode, blockIds, elementIds } = params;
+              return jumpToPageBlock(
+                workspaceId,
+                pageId,
+                mode,
+                blockIds,
+                elementIds
+              );
+            }
+
+            return openPage(workspaceId, pageId);
+          })
+        );
+      }
+
       return () => {
         unbind();
         editor.setEditorContainer(null);
       };
     },
-    [editor, setActiveBlocksuiteEditor]
+    [editor, setActiveBlocksuiteEditor, jumpToPageBlock, openPage, workspaceId]
   );
 
   if (!workspace || !page || !editor) {

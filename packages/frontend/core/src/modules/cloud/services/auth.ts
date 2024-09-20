@@ -1,5 +1,8 @@
-import { appInfo } from '@affine/electron-api';
+import { notify } from '@affine/component';
+import { AIProvider } from '@affine/core/blocksuite/presets/ai';
+import { apis, appInfo, events } from '@affine/electron-api';
 import type { OAuthProviderType } from '@affine/graphql';
+import { I18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import {
   ApplicationFocused,
@@ -13,6 +16,16 @@ import { distinctUntilChanged, map, skip } from 'rxjs';
 import { type AuthAccountInfo, AuthSession } from '../entities/session';
 import type { AuthStore } from '../stores/auth';
 import type { FetchService } from './fetch';
+
+function toAIUserInfo(account: AuthAccountInfo | null) {
+  if (!account) return null;
+  return {
+    avatarUrl: account.avatar ?? '',
+    email: account.email ?? '',
+    id: account.id,
+    name: account.label,
+  };
+}
 
 // Emit when account changed
 export const AccountChanged = createEvent<AuthAccountInfo | null>(
@@ -35,6 +48,11 @@ export class AuthService extends Service {
   ) {
     super();
 
+    // TODO(@forehalo): make AIProvider a standalone service passed to AI elements by props
+    AIProvider.provide('userInfo', () => {
+      return toAIUserInfo(this.session.account$.value);
+    });
+
     this.session.account$
       .pipe(
         map(a => ({
@@ -45,6 +63,8 @@ export class AuthService extends Service {
         skip(1) // skip the initial value
       )
       .subscribe(({ account }) => {
+        AIProvider.slots.userInfo.emit(toAIUserInfo(account));
+
         if (account === null) {
           this.eventBus.emit(AccountLoggedOut, account);
         } else {
@@ -56,6 +76,33 @@ export class AuthService extends Service {
 
   private onApplicationStart() {
     this.session.revalidate();
+
+    if (BUILD_CONFIG.isElectron) {
+      events?.ui.onAuthenticationRequest(({ method, payload }) => {
+        (async () => {
+          if (!(await apis?.ui.isActiveTab())) {
+            return;
+          }
+          switch (method) {
+            case 'magic-link': {
+              const { email, token } = payload;
+              await this.signInMagicLink(email, token);
+              break;
+            }
+            case 'oauth': {
+              const { code, state, provider } = payload;
+              await this.signInOauth(code, state, provider);
+              break;
+            }
+          }
+        })().catch(e => {
+          notify.error({
+            title: I18n['com.affine.auth.toast.title.failed'](),
+            message: (e as any).message,
+          });
+        });
+      });
+    }
   }
 
   private onApplicationFocused() {
@@ -97,6 +144,8 @@ export class AuthService extends Service {
         },
         body: JSON.stringify({ email, token }),
       });
+
+      this.session.revalidate();
       track.$.$.auth.signedIn({ method: 'magic-link' });
     } catch (e) {
       track.$.$.auth.signInFail({ method: 'magic-link' });
@@ -151,6 +200,8 @@ export class AuthService extends Service {
         },
       });
 
+      this.session.revalidate();
+
       track.$.$.auth.signedIn({ method: 'oauth', provider });
       return res.json();
     } catch (e) {
@@ -167,7 +218,7 @@ export class AuthService extends Service {
   }) {
     track.$.$.auth.signIn({ method: 'password' });
     try {
-      const res = await this.fetchService.fetch('/api/auth/sign-in', {
+      await this.fetchService.fetch('/api/auth/sign-in', {
         method: 'POST',
         body: JSON.stringify(credential),
         headers: {
@@ -175,9 +226,6 @@ export class AuthService extends Service {
           ...this.captchaHeaders(credential.verifyToken, credential.challenge),
         },
       });
-      if (!res.ok) {
-        throw new Error('Failed to sign in');
-      }
       this.session.revalidate();
       track.$.$.auth.signedIn({ method: 'password' });
     } catch (e) {

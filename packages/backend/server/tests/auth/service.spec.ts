@@ -202,16 +202,17 @@ test('should be able to signout multi accounts session', async t => {
   t.is(list.length, 1);
   t.is(list[0]!.id, u2.id);
 
-  const u1Session = await auth.getUserSession(session.id, u1.id);
+  const u2Session = await auth.getUserSession(session.id, u1.id);
 
-  t.is(u1Session, null);
+  t.is(u2Session?.session.sessionId, session.id);
+  t.is(u2Session?.user.id, u2.id);
 
   await auth.signOut(session.id, u2.id);
   list = await auth.getUserList(session.id);
 
   t.is(list.length, 0);
 
-  const u2Session = await auth.getUserSession(session.id, u2.id);
+  const nullSession = await auth.getUserSession(session.id, u2.id);
 
-  t.is(u2Session, null);
+  t.is(nullSession, null);
 });

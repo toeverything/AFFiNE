@@ -1,7 +1,9 @@
+import { toURLSearchParams } from '@affine/core/modules/navigation';
 import { Unreachable } from '@affine/env/constant';
-import type { DocMode } from '@blocksuite/affine/blocks';
+import type { ReferenceParams } from '@blocksuite/affine/blocks';
 import { Entity, LiveData } from '@toeverything/infra';
 import { type To } from 'history';
+import { omit } from 'lodash-es';
 import { nanoid } from 'nanoid';
 
 import type { WorkbenchNewTabHandler } from '../services/workbench-new-tab-handler';
@@ -122,14 +124,7 @@ export class Workbench extends Entity {
   }
 
   openDoc(
-    id:
-      | string
-      | {
-          docId: string;
-          mode?: DocMode;
-          blockIds?: string[];
-          elementIds?: string[];
-        },
+    id: string | ({ docId: string } & ReferenceParams),
     options?: WorkbenchOpenOptions
   ) {
     const isString = typeof id === 'string';
@@ -137,12 +132,10 @@ export class Workbench extends Entity {
 
     let query = '';
     if (!isString) {
-      const { mode, blockIds, elementIds } = id;
-      const search = new URLSearchParams();
-      if (mode) search.set('mode', mode);
-      if (blockIds?.length) search.set('blockIds', blockIds.join(','));
-      if (elementIds?.length) search.set('elementIds', elementIds.join(','));
-      if (search.size > 0) query = `?${search.toString()}`;
+      const search = toURLSearchParams(omit(id, ['docId']));
+      if (search?.size) {
+        query = `?${search.toString()}`;
+      }
     }
 
     this.open(`/${docId}${query}`, options);

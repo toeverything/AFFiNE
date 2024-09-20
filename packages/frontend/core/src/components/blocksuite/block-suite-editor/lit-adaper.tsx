@@ -6,6 +6,7 @@ import {
 import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { EditorService } from '@affine/core/modules/editor';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
+import { toURLSearchParams } from '@affine/core/modules/navigation';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { toURLSearchParams } from '@affine/core/utils';
 import type { DocMode } from '@blocksuite/affine/blocks';

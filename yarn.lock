@@ -554,14 +554,11 @@ __metadata:
   resolution: "@affine/i18n@workspace:packages/frontend/i18n"
   dependencies:
     "@magic-works/i18n-codegen": "npm:^0.6.0"
-    "@types/prettier": "npm:^3.0.0"
     dayjs: "npm:^1.11.11"
+    glob: "npm:^11.0.0"
     i18next: "npm:^23.11.1"
-    prettier: "npm:^3.2.5"
     react: "npm:^18.2.0"
     react-i18next: "npm:^15.0.0"
-    ts-node: "npm:^10.9.2"
-    typescript: "npm:^5.4.5"
     undici: "npm:^6.12.0"
     vitest: "npm:2.1.1"
   languageName: unknown
@@ -12659,7 +12656,6 @@ __metadata:
   peerDependencies:
     "@affine/templates": "*"
     "@blocksuite/presets": "*"
-    async-call-rpc: "*"
     electron: "*"
     react: "*"
     yjs: ^13
@@ -12667,8 +12663,6 @@ __metadata:
     "@affine/templates":
       optional: true
     "@blocksuite/presets":
-      optional: true
-    async-call-rpc:
       optional: true
     electron:
       optional: true
@@ -13495,15 +13489,6 @@ __metadata:
   version: 9.0.4
   resolution: "@types/pica@npm:9.0.4"
   checksum: 10/fd1954400cb45a191a8f05da5009ebfafe4b5e173cc1ed2806d263de48250e303cfa06207d8da36091a834a29b34ffe65d386a35788831e9f906b7f6670ce9c3
-  languageName: node
-  linkType: hard
-
-"@types/prettier@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "@types/prettier@npm:3.0.0"
-  dependencies:
-    prettier: "npm:*"
-  checksum: 10/a2a512d304e5bcf78f38089dc88ad19215e6ab871d435a17aef3ce538a63b07c0e359c18db23989dc1ed9fff96d99eee1f680416080184df5c7e0e3bf767e165
   languageName: node
   linkType: hard
 
@@ -27763,7 +27748,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:*, prettier@npm:^3.2.5, prettier@npm:^3.3.3":
+"prettier@npm:^3.2.5, prettier@npm:^3.3.3":
   version: 3.3.3
   resolution: "prettier@npm:3.3.3"
   bin:

@@ -24,10 +24,7 @@
     "undici": "^6.12.0"
   },
   "devDependencies": {
-    "@types/prettier": "^3.0.0",
-    "prettier": "^3.2.5",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.4.5",
+    "glob": "^11.0.0",
     "vitest": "2.1.1"
   },
   "version": "0.16.0"

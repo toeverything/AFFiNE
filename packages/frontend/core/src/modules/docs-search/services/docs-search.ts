@@ -1,4 +1,4 @@
-import { toURLSearchParams } from '@affine/core/utils';
+import { toURLSearchParams } from '@affine/core/modules/navigation';
 import type { WorkspaceService } from '@toeverything/infra';
 import {
   fromPromise,
