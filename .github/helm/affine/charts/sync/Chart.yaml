@@ -3,7 +3,7 @@ name: sync
 description: AFFiNE Sync Server
 type: application
 version: 0.0.0
-appVersion: "0.16.0"
+appVersion: "0.17.0"
 dependencies:
   - name: gcloud-sql-proxy
     version: 0.0.0

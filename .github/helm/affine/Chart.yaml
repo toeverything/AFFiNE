@@ -3,4 +3,4 @@ name: affine
 description: AFFiNE cloud chart
 type: application
 version: 0.0.0
-appVersion: "0.16.0"
+appVersion: "0.17.0"

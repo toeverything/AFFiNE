@@ -1,6 +1,6 @@
 {
   "name": "@affine/commitlint-config",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "private": true,
   "devDependencies": {
     "@commitlint/cli": "^19.2.1",
