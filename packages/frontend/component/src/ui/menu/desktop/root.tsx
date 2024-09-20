@@ -42,6 +42,7 @@ export const DesktopMenu = ({
             desktopStyles.contentAnimation,
             className
           )}
+          sideOffset={4}
           align="start"
           style={{ zIndex: 'var(--affine-z-index-popover)', ...contentStyle }}
           {...otherContentOptions}
