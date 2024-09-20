@@ -383,6 +383,7 @@ __metadata:
     "@floating-ui/dom": "npm:^1.6.5"
     "@juggle/resize-observer": "npm:^3.4.0"
     "@marsidev/react-turnstile": "npm:^1.0.0"
+    "@preact/signals-core": "npm:^1.8.0"
     "@radix-ui/react-collapsible": "npm:^1.0.3"
     "@radix-ui/react-dialog": "npm:^1.0.5"
     "@radix-ui/react-popover": "npm:^1.0.7"

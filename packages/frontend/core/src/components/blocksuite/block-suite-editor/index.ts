@@ -1,4 +1,4 @@
-import { registerAICustomComponents } from '@affine/core/blocksuite/presets/ai';
+import { registerBlocksuitePresetsCustomComponents } from '@affine/core/blocksuite/presets/effects';
 import { effects as blocksEffects } from '@blocksuite/blocks/effects';
 import { effects as presetsEffects } from '@blocksuite/presets/effects';
 
@@ -11,6 +11,6 @@ presetsEffects();
 patchEffects();
 setupAIProvider();
 edgelessEffects();
-registerAICustomComponents();
+registerBlocksuitePresetsCustomComponents();
 
 export * from './blocksuite-editor';

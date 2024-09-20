@@ -32,6 +32,7 @@
     "@floating-ui/dom": "^1.6.5",
     "@juggle/resize-observer": "^3.4.0",
     "@marsidev/react-turnstile": "^1.0.0",
+    "@preact/signals-core": "^1.8.0",
     "@radix-ui/react-collapsible": "^1.0.3",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-popover": "^1.0.7",

@@ -1,18 +1,3 @@
-import '../messages/slides-renderer';
-import './ai-loading';
-import '../messages/text';
-import './actions/text';
-import './actions/action-wrapper';
-import './actions/make-real';
-import './actions/slides';
-import './actions/mindmap';
-import './actions/chat-text';
-import './actions/image-to-text';
-import './actions/image';
-import './chat-cards';
-import '../_common/components/chat-action-list';
-import '../_common/components/copy-more';
-
 import type { BaseSelection, EditorHost } from '@blocksuite/block-std';
 import { ShadowlessElement } from '@blocksuite/block-std';
 import {

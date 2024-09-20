@@ -15,17 +15,17 @@ import {
   TextElementModel,
 } from '@blocksuite/blocks';
 import { assertExists } from '@blocksuite/global/utils';
-import { AIChatBlockModel } from '@blocksuite/presets';
 import { Slice } from '@blocksuite/store';
+import { AIChatBlockModel } from '@toeverything/infra';
 import type { TemplateResult } from 'lit';
 
+import { createTextRenderer, getContentFromSlice } from '../../_common';
 import { getAIPanel } from '../ai-panel';
 import {
   createMindmapExecuteRenderer,
   createMindmapRenderer,
 } from '../messages/mindmap';
 import { createSlidesRenderer } from '../messages/slides-renderer';
-import { createTextRenderer } from '../messages/text';
 import { createIframeRenderer, createImageRenderer } from '../messages/wrapper';
 import { AIProvider } from '../provider';
 import { reportResponse } from '../utils/action-reporter';
@@ -35,7 +35,6 @@ import {
   isMindMapRoot,
 } from '../utils/edgeless';
 import { copyTextAnswer } from '../utils/editor-actions';
-import { getContentFromSlice } from '../utils/markdown-utils';
 import {
   getCopilotSelectedElems,
   getSelectedNoteAnchor,

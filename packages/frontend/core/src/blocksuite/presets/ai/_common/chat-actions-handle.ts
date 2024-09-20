@@ -28,10 +28,10 @@ import { type ChatMessage } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
 import type { TemplateResult } from 'lit';
 
+import { insertFromMarkdown } from '../../_common';
 import { AIProvider, type AIUserInfo } from '../provider';
 import { reportResponse } from '../utils/action-reporter';
 import { insertBelow, replace } from '../utils/editor-actions';
-import { insertFromMarkdown } from '../utils/markdown-utils';
 import { BlockIcon, CreateIcon, InsertBelowIcon, ReplaceIcon } from './icons';
 
 const { matchFlavours } = BlocksUtils;

@@ -3,6 +3,7 @@ import {
   AIImageBlockSpec,
   AIParagraphBlockSpec,
 } from '@affine/core/blocksuite/presets/ai';
+import { AIChatBlockSpec } from '@affine/core/blocksuite/presets/blocks/ai-chat-block';
 import type { ExtensionType } from '@blocksuite/block-std';
 import {
   BookmarkBlockSpec,
@@ -25,7 +26,6 @@ import {
   RefNodeSlotsExtension,
   RichTextExtensions,
 } from '@blocksuite/blocks';
-import { AIChatBlockSpec } from '@blocksuite/presets';
 
 import { CustomAttachmentBlockSpec } from './custom/attachment-block';
 

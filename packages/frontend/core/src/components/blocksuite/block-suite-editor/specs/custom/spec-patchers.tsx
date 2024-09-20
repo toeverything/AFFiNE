@@ -47,9 +47,9 @@ import {
   QuickSearchExtension,
   ReferenceNodeConfigExtension,
 } from '@blocksuite/blocks';
-import { AIChatBlockSchema } from '@blocksuite/presets';
 import { type BlockSnapshot, Text } from '@blocksuite/store';
 import {
+  AIChatBlockSchema,
   type DocProps,
   type DocService,
   DocsService,

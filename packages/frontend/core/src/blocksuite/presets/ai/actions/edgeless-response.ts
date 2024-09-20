@@ -28,6 +28,7 @@ import { assertExists, Bound } from '@blocksuite/global/utils';
 import { html, type TemplateResult } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { insertFromMarkdown } from '../../_common';
 import { AIPenIcon, ChatWithAIIcon } from '../_common/icons';
 import { getAIPanel } from '../ai-panel';
 import { AIProvider } from '../provider';
@@ -39,7 +40,6 @@ import {
 } from '../utils/edgeless';
 import { preprocessHtml } from '../utils/html';
 import { fetchImageToFile } from '../utils/image';
-import { insertFromMarkdown } from '../utils/markdown-utils';
 import {
   getCopilotSelectedElems,
   getEdgelessRootFromEditor,

@@ -6,7 +6,7 @@ import { WithDisposable } from '@blocksuite/global/utils';
 import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import { createTextRenderer } from '../../messages/text';
+import { createTextRenderer } from '../../../_common';
 import { renderImages } from '../components/images';
 export class ChatText extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
