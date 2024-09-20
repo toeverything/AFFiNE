@@ -1,4 +1,5 @@
 import { notify } from '@affine/component';
+import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { apis, appInfo, events } from '@affine/electron-api';
 import type { OAuthProviderType } from '@affine/graphql';
 import { I18n } from '@affine/i18n';
@@ -15,6 +16,16 @@ import { distinctUntilChanged, map, skip } from 'rxjs';
 import { type AuthAccountInfo, AuthSession } from '../entities/session';
 import type { AuthStore } from '../stores/auth';
 import type { FetchService } from './fetch';
+
+function toAIUserInfo(account: AuthAccountInfo | null) {
+  if (!account) return null;
+  return {
+    avatarUrl: account.avatar ?? '',
+    email: account.email ?? '',
+    id: account.id,
+    name: account.label,
+  };
+}
 
 // Emit when account changed
 export const AccountChanged = createEvent<AuthAccountInfo | null>(
@@ -37,6 +48,11 @@ export class AuthService extends Service {
   ) {
     super();
 
+    // TODO(@forehalo): make AIProvider a standalone service passed to AI elements by props
+    AIProvider.provide('userInfo', () => {
+      return toAIUserInfo(this.session.account$.value);
+    });
+
     this.session.account$
       .pipe(
         map(a => ({
@@ -47,6 +63,8 @@ export class AuthService extends Service {
         skip(1) // skip the initial value
       )
       .subscribe(({ account }) => {
+        AIProvider.slots.userInfo.emit(toAIUserInfo(account));
+
         if (account === null) {
           this.eventBus.emit(AccountLoggedOut, account);
         } else {

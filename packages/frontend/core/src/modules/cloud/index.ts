@@ -35,7 +35,6 @@ import { SubscriptionPrices } from './entities/subscription-prices';
 import { UserCopilotQuota } from './entities/user-copilot-quota';
 import { UserFeature } from './entities/user-feature';
 import { UserQuota } from './entities/user-quota';
-import { AIService } from './services/ai';
 import { AuthService } from './services/auth';
 import { CloudDocMetaService } from './services/cloud-doc-meta';
 import { FetchService } from './services/fetch';
@@ -69,7 +68,6 @@ export function configureCloudModule(framework: Framework) {
     .entity(AuthSession, [AuthStore])
     .service(SubscriptionService, [SubscriptionStore])
     .store(SubscriptionStore, [GraphQLService, GlobalCache])
-    .service(AIService, [AuthService])
     .entity(Subscription, [AuthService, ServerConfigService, SubscriptionStore])
     .entity(SubscriptionPrices, [ServerConfigService, SubscriptionStore])
     .service(UserQuotaService)
