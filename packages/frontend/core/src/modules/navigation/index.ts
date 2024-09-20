@@ -1,5 +1,9 @@
 export { Navigator } from './entities/navigator';
-export { resolveLinkToDoc, resolveRouteLinkMeta } from './utils';
+export {
+  resolveLinkToDoc,
+  resolveRouteLinkMeta,
+  toURLSearchParams,
+} from './utils';
 export { NavigationButtons } from './view/navigation-buttons';
 
 import { type Framework, WorkspaceScope } from '@toeverything/infra';

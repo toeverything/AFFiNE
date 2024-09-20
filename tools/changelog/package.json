@@ -1,6 +1,6 @@
 {
   "name": "@affine/changelog",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "type": "module",
   "main": "index.js",
   "private": true,

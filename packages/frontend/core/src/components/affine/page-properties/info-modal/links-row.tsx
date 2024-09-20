@@ -23,6 +23,7 @@ export const LinksRow = ({
         <AffinePageReference
           key={index}
           pageId={link.docId}
+          params={'params' in link ? link.params : undefined}
           wrapper={props => (
             <div className={styles.wrapper} onClick={onClick} {...props} />
           )}

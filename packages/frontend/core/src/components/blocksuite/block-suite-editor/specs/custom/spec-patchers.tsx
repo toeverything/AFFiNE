@@ -377,7 +377,6 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
             (item.name === 'Linked Doc' || item.name === 'Link')
           ) {
             item.action = async ({ rootComponent }) => {
-              // TODO(@Mirone): fix the type
               // @ts-expect-error fixme
               const { success, insertedLinkType } =
                 // @ts-expect-error fixme
@@ -385,7 +384,6 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
 
               if (!success) return;
 
-              // TODO(@Mirone): fix the type
               insertedLinkType
                 ?.then(
                   (type: {
@@ -394,15 +392,15 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
                     const flavour = type?.flavour;
                     if (!flavour) return;
 
+                    if (flavour === 'affine:bookmark') {
+                      track.doc.editor.slashMenu.bookmark();
+                      return;
+                    }
+
                     if (flavour === 'affine:embed-linked-doc') {
                       track.doc.editor.slashMenu.linkDoc({
                         control: 'linkDoc',
                       });
-                      return;
-                    }
-
-                    if (flavour === 'affine:bookmark') {
-                      track.doc.editor.slashMenu.bookmark();
                       return;
                     }
                   }

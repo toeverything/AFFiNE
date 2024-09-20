@@ -13,5 +13,5 @@
     "http-proxy-middleware": "^3.0.0",
     "serve": "^14.2.1"
   },
-  "version": "0.16.0"
+  "version": "0.17.0"
 }

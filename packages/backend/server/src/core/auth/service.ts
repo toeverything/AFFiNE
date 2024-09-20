@@ -122,35 +122,45 @@ export class AuthService implements OnApplicationBootstrap {
     sessionId: string,
     userId?: string
   ): Promise<{ user: CurrentUser; session: UserSession } | null> {
-    const userSession = await this.db.userSession.findFirst({
+    const sessions = await this.getUserSessions(sessionId);
+
+    if (!sessions.length) {
+      return null;
+    }
+
+    let userSession: UserSession | undefined;
+
+    // try read from user provided cookies.userId
+    if (userId) {
+      userSession = sessions.find(s => s.userId === userId);
+    }
+
+    // fallback to the first valid session if user provided userId is invalid
+    if (!userSession) {
+      // checked
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      userSession = sessions.at(-1)!;
+    }
+
+    const user = await this.user.findUserById(userSession.userId);
+
+    if (!user) {
+      return null;
+    }
+
+    return { user: sessionUser(user), session: userSession };
+  }
+
+  async getUserSessions(sessionId: string) {
+    return this.db.userSession.findMany({
       where: {
         sessionId,
-        userId,
-      },
-      select: {
-        id: true,
-        sessionId: true,
-        userId: true,
-        createdAt: true,
-        expiresAt: true,
-        user: true,
+        OR: [{ expiresAt: { gt: new Date() } }, { expiresAt: null }],
       },
       orderBy: {
         createdAt: 'asc',
       },
     });
-
-    // no such session
-    if (!userSession) {
-      return null;
-    }
-
-    // user session expired
-    if (userSession.expiresAt && userSession.expiresAt <= new Date()) {
-      return null;
-    }
-
-    return { user: sessionUser(userSession.user), session: userSession };
   }
 
   async createUserSession(
@@ -309,6 +319,25 @@ export class AuthService implements OnApplicationBootstrap {
     this.setUserCookie(res, userId);
   }
 
+  async refreshCookies(res: Response, sessionId?: string) {
+    if (sessionId) {
+      const users = await this.getUserList(sessionId);
+      const candidateUser = users.at(-1);
+
+      if (candidateUser) {
+        this.setUserCookie(res, candidateUser.id);
+        return;
+      }
+    }
+
+    this.clearCookies(res);
+  }
+
+  private clearCookies(res: Response<any, Record<string, any>>) {
+    res.clearCookie(AuthService.sessionCookieName);
+    res.clearCookie(AuthService.userCookieName);
+  }
+
   setUserCookie(res: Response, userId: string) {
     res.cookie(AuthService.userCookieName, userId, {
       ...this.cookieOptions,
@@ -319,14 +348,28 @@ export class AuthService implements OnApplicationBootstrap {
     });
   }
 
-  async getUserSessionFromRequest(req: Request) {
+  async getUserSessionFromRequest(req: Request, res?: Response) {
     const { sessionId, userId } = this.getSessionOptionsFromRequest(req);
 
     if (!sessionId) {
       return null;
     }
 
-    return this.getUserSession(sessionId, userId);
+    const session = await this.getUserSession(sessionId, userId);
+
+    if (res) {
+      if (session) {
+        // set user id cookie for fast authentication
+        if (!userId || userId !== session.user.id) {
+          this.setUserCookie(res, session.user.id);
+        }
+      } else if (sessionId) {
+        // clear invalid cookies.session and cookies.userId
+        this.clearCookies(res);
+      }
+    }
+
+    return session;
   }
 
   async changePassword(

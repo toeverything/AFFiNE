@@ -1,3 +1,4 @@
+import { toURLSearchParams } from '@affine/core/modules/navigation';
 import type { DocMode } from '@blocksuite/blocks';
 import { createContext, useCallback, useContext, useMemo } from 'react';
 import type { NavigateFunction, NavigateOptions } from 'react-router-dom';
@@ -45,11 +46,8 @@ export function useNavigateHelper() {
       elementIds?: string[],
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      const search = new URLSearchParams();
-      if (mode) search.append('mode', mode);
-      if (blockIds?.length) search.append('blockIds', blockIds.join(','));
-      if (elementIds?.length) search.append('elementIds', elementIds.join(','));
-      const query = search.size > 0 ? `?${search.toString()}` : '';
+      const search = toURLSearchParams({ mode, blockIds, elementIds });
+      const query = search?.size ? `?${search.toString()}` : '';
       return navigate(`/workspace/${workspaceId}/${pageId}${query}`, {
         replace: logic === RouteLogic.REPLACE,
       });

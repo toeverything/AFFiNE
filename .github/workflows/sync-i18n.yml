@@ -2,6 +2,10 @@ name: Sync I18n with Crowdin
 
 on:
   push:
+    branches:
+      - canary
+    paths:
+      - 'packages/frontend/i18n/**'
   workflow_dispatch:
 
 jobs:
@@ -16,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: crowdin action
+      - name: Crowdin action
         uses: crowdin/github-action@v2
         with:
           upload_sources: true

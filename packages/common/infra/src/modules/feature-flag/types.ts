@@ -1,3 +1,5 @@
+import type { BlockSuiteFlags } from '@blocksuite/global/types';
+
 type FeedbackType = 'discord' | 'email' | 'github';
 
 export type FlagInfo = {

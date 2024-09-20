@@ -1,6 +1,6 @@
 {
   "name": "@affine/server-native",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "engines": {
     "node": ">= 10.16.0 < 11 || >= 11.8.0"
   },
