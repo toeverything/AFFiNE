@@ -5,9 +5,9 @@ import {
   toast,
   Tooltip,
 } from '@affine/component';
-import { useInfoModal } from '@affine/core/components/affine/page-properties';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
+import { DocInfoService } from '@affine/core/modules/doc-info';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
@@ -17,6 +17,7 @@ import {
   GlobalContextService,
   LiveData,
   useLiveData,
+  useService,
   useServices,
 } from '@toeverything/infra';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
@@ -175,15 +176,15 @@ export const ExplorerDocNode = ({
     [canDrop]
   );
 
-  const openInfoModal = useInfoModal(docId);
+  const docInfoModal = useService(DocInfoService).modal;
   const operations = useExplorerDocNodeOperations(
     docId,
     useMemo(
       () => ({
-        openInfoModal: () => openInfoModal(),
+        openInfoModal: () => docInfoModal.open(docId),
         openNodeCollapsed: () => setCollapsed(false),
       }),
-      [openInfoModal]
+      [docId, docInfoModal]
     )
   );
 

@@ -4,23 +4,16 @@ import {
   Modal,
   Scrollable,
 } from '@affine/component';
+import { DocInfoService } from '@affine/core/modules/doc-info';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { useI18n } from '@affine/i18n';
 import {
   LiveData,
   useLiveData,
-  useMount,
+  useService,
   useServices,
 } from '@toeverything/infra';
-import {
-  Suspense,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { Suspense, useCallback, useContext, useMemo, useRef } from 'react';
 
 import { BlocksuiteHeaderTitle } from '../../../blocksuite/block-suite-header/title';
 import { managerContext } from '../common';
@@ -35,35 +28,23 @@ import { LinksRow } from './links-row';
 import { TagsRow } from './tags-row';
 import { TimeRow } from './time-row';
 
-export const useInfoModal = (docId?: string) => {
-  const [open, setOpen] = useState(false);
-  const { mount } = useMount('InfoModal');
+export const InfoModal = () => {
+  const modal = useService(DocInfoService).modal;
+  const docId = useLiveData(modal.docId$);
 
-  useEffect(() => {
-    if (!open || !docId) return;
-    return mount(<InfoModal open docId={docId} onOpenChange={setOpen} />);
-  }, [docId, mount, open]);
+  if (!docId) return null;
 
-  return useCallback(() => setOpen(true), []);
+  return <InfoModalOpened docId={docId} />;
 };
 
-/**
- * For most situations, use `useInfoModal()` instead.
- */
-export const InfoModal = ({
-  open,
-  onOpenChange,
-  docId,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  docId: string;
-}) => {
+const InfoModalOpened = ({ docId }: { docId: string }) => {
+  const modal = useService(DocInfoService).modal;
+
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
-  const manager = usePagePropertiesManager(docId);
+  const manager = usePagePropertiesManager(docId ?? '');
   const handleClose = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
+    modal.close();
+  }, [modal]);
 
   if (!manager.page || manager.readonly) {
     return null;
@@ -74,8 +55,8 @@ export const InfoModal = ({
       contentOptions={{
         className: styles.container,
       }}
-      open={open}
-      onOpenChange={onOpenChange}
+      open
+      onOpenChange={v => modal.onOpenChange(v)}
       withoutCloseButton
     >
       <Scrollable.Root>
