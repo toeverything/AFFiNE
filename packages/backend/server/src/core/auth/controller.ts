@@ -180,6 +180,7 @@ export class AuthController {
     @Query('user_id') userId: string | undefined
   ) {
     if (!session) {
+      res.status(HttpStatus.OK).send({});
       return;
     }
 
