@@ -6,13 +6,13 @@ import { InformationIcon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
 export const InfoButton = ({ docId }: { docId: string }) => {
-  const [_, setOpen] = useInfoModal(docId);
+  const open = useInfoModal(docId);
   const t = useI18n();
 
   const onOpenInfoModal = useCallback(() => {
     track.$.header.actions.openDocInfo();
-    setOpen(true);
-  }, [setOpen]);
+    open();
+  }, [open]);
 
   return (
     <IconButton

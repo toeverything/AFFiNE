@@ -36,7 +36,7 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
   const trash = useLiveData(doc.trash$);
 
   const setPageHistoryModalState = useSetAtom(pageHistoryModalAtom);
-  const [_, setInfoModalState] = useInfoModal(docId);
+  const openInfo = useInfoModal(docId);
 
   const openHistoryModal = useCallback(() => {
     setPageHistoryModalState(() => ({
@@ -46,8 +46,8 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
   }, [docId, setPageHistoryModalState]);
 
   const openInfoModal = useCallback(() => {
-    setInfoModalState(true);
-  }, [setInfoModalState]);
+    openInfo();
+  }, [openInfo]);
 
   const { duplicate } = useBlockSuiteMetaHelper();
   const exportHandler = useExportPage();

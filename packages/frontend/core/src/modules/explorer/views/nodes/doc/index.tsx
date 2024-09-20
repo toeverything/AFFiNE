@@ -175,15 +175,15 @@ export const ExplorerDocNode = ({
     [canDrop]
   );
 
-  const [_, setEnableInfoModal] = useInfoModal(docId);
+  const openInfoModal = useInfoModal(docId);
   const operations = useExplorerDocNodeOperations(
     docId,
     useMemo(
       () => ({
-        openInfoModal: () => setEnableInfoModal(true),
+        openInfoModal: () => openInfoModal(),
         openNodeCollapsed: () => setCollapsed(false),
       }),
-      [setEnableInfoModal]
+      [openInfoModal]
     )
   );
 

@@ -44,7 +44,7 @@ export const useInfoModal = (docId?: string) => {
     return mount(<InfoModal open docId={docId} onOpenChange={setOpen} />);
   }, [docId, mount, open]);
 
-  return [open, setOpen] as const;
+  return useCallback(() => setOpen(true), []);
 };
 
 /**

@@ -86,11 +86,11 @@ export const PageOperationCell = ({
   const { duplicate } = useBlockSuiteMetaHelper();
   const blocksuiteDoc = currentWorkspace.docCollection.getDoc(page.id);
 
-  const [_, setOpenInfoModal] = useInfoModal(blocksuiteDoc?.id);
+  const openInfoModal = useInfoModal(blocksuiteDoc?.id);
   const onOpenInfoModal = useCallback(() => {
     track.$.docInfoPanel.$.open();
-    setOpenInfoModal(true);
-  }, [setOpenInfoModal]);
+    openInfoModal();
+  }, [openInfoModal]);
 
   const onDisablePublicSharing = useCallback(() => {
     // TODO(@EYHN): implement disable public sharing

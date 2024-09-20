@@ -115,11 +115,11 @@ export const PageHeaderMenuButton = ({
     return setOpenHistoryTipsModal(true);
   }, [setOpenHistoryTipsModal, workspace.flavour]);
 
-  const [_, setOpenInfoModal] = useInfoModal(pageId);
+  const openInfo = useInfoModal(pageId);
   const openInfoModal = useCallback(() => {
     track.$.header.pageInfo.open();
-    setOpenInfoModal(true);
-  }, [setOpenInfoModal]);
+    openInfo();
+  }, [openInfo]);
 
   const handleOpenInNewTab = useCallback(() => {
     workbench.openDoc(pageId, {
