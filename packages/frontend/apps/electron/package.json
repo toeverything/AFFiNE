@@ -28,7 +28,7 @@
     "@affine/core": "workspace:*",
     "@affine/i18n": "workspace:*",
     "@affine/native": "workspace:*",
-    "@blocksuite/global": "0.17.13",
+    "@blocksuite/global": "0.17.14",
     "@electron-forge/cli": "^7.3.0",
     "@electron-forge/core": "^7.3.0",
     "@electron-forge/core-utils": "^7.3.0",
