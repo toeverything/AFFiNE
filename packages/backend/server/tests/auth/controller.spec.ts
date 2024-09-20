@@ -161,12 +161,155 @@ test('should be able to sign out', async t => {
   t.falsy(session.user);
 });
 
-test('should not be able to sign out if not signed in', async t => {
-  const { app } = t.context;
+test('should be able to correct user id cookie', async t => {
+  const { app, u1 } = t.context;
 
+  const signInRes = await request(app.getHttpServer())
+    .post('/api/auth/sign-in')
+    .send({ email: u1.email, password: '1' })
+    .expect(200);
+
+  const cookie = sessionCookie(signInRes.headers);
+
+  let session = await request(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('cookie', cookie)
+    .expect(200);
+
+  let userIdCookie = session.get('Set-Cookie')?.find(c => {
+    return c.startsWith(`${AuthService.userCookieName}=`);
+  });
+
+  t.true(userIdCookie?.startsWith(`${AuthService.userCookieName}=${u1.id}`));
+
+  session = await request(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('cookie', `${cookie};${AuthService.userCookieName}=invalid_user_id`)
+    .expect(200);
+
+  userIdCookie = session.get('Set-Cookie')?.find(c => {
+    return c.startsWith(`${AuthService.userCookieName}=`);
+  });
+
+  t.true(userIdCookie?.startsWith(`${AuthService.userCookieName}=${u1.id}`));
+  t.is(session.body.user.id, u1.id);
+});
+
+// multiple accounts session tests
+test('should be able to sign in another account in one session', async t => {
+  const { app, u1, auth } = t.context;
+
+  const u2 = await auth.signUp('u3@affine.pro', '3');
+
+  // sign in u1
+  const signInRes = await request(app.getHttpServer())
+    .post('/api/auth/sign-in')
+    .send({ email: u1.email, password: '1' })
+    .expect(200);
+
+  const cookie = sessionCookie(signInRes.headers);
+
+  // avoid create session at the exact same time, leads to same random session users order
+  await new Promise(resolve => setTimeout(resolve, 1));
+
+  // sign in u2 in the same session
   await request(app.getHttpServer())
-    .get('/api/auth/sign-out')
-    .expect(HttpStatus.UNAUTHORIZED);
+    .post('/api/auth/sign-in')
+    .set('cookie', cookie)
+    .send({ email: u2.email, password: '3' })
+    .expect(200);
 
-  t.assert(true);
+  // list [u1, u2]
+  const sessions = await request(app.getHttpServer())
+    .get('/api/auth/sessions')
+    .set('cookie', cookie)
+    .expect(200);
+
+  t.is(sessions.body.users.length, 2);
+  t.is(sessions.body.users[0].id, u1.id);
+  t.is(sessions.body.users[1].id, u2.id);
+
+  // default to latest signed in user: u2
+  let session = await request(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('cookie', cookie)
+    .expect(200);
+
+  t.is(session.body.user.id, u2.id);
+
+  // switch to u1
+  session = await request(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('cookie', `${cookie};${AuthService.userCookieName}=${u1.id}`)
+    .expect(200);
+
+  t.is(session.body.user.id, u1.id);
+});
+
+test('should be able to sign out multiple accounts in one session', async t => {
+  const { app, u1, auth } = t.context;
+
+  const u2 = await auth.signUp('u4@affine.pro', '4');
+
+  // sign in u1
+  const signInRes = await request(app.getHttpServer())
+    .post('/api/auth/sign-in')
+    .send({ email: u1.email, password: '1' })
+    .expect(200);
+
+  const cookie = sessionCookie(signInRes.headers);
+
+  await new Promise(resolve => setTimeout(resolve, 1));
+
+  // sign in u2 in the same session
+  await request(app.getHttpServer())
+    .post('/api/auth/sign-in')
+    .set('cookie', cookie)
+    .send({ email: u2.email, password: '4' })
+    .expect(200);
+
+  // sign out u2
+  let signOut = await request(app.getHttpServer())
+    .get(`/api/auth/sign-out?user_id=${u2.id}`)
+    .set('cookie', `${cookie};${AuthService.userCookieName}=${u2.id}`)
+    .expect(200);
+
+  // auto switch to u1 after sign out u2
+  const userIdCookie = signOut.get('Set-Cookie')?.find(c => {
+    return c.startsWith(`${AuthService.userCookieName}=`);
+  });
+
+  t.true(userIdCookie?.startsWith(`${AuthService.userCookieName}=${u1.id}`));
+
+  // list [u1]
+  const session = await request(app.getHttpServer())
+    .get('/api/auth/session')
+    .set('cookie', cookie)
+    .expect(200);
+
+  t.is(session.body.user.id, u1.id);
+
+  // sign in u2 in the same session
+  await request(app.getHttpServer())
+    .post('/api/auth/sign-in')
+    .set('cookie', cookie)
+    .send({ email: u2.email, password: '4' })
+    .expect(200);
+
+  // sign out all account in session
+  signOut = await request(app.getHttpServer())
+    .get('/api/auth/sign-out')
+    .set('cookie', cookie)
+    .expect(200);
+
+  t.true(
+    signOut
+      .get('Set-Cookie')
+      ?.some(c => c.startsWith(`${AuthService.sessionCookieName}=;`))
+  );
+  t.true(
+    signOut
+      .get('Set-Cookie')
+      ?.some(c => c.startsWith(`${AuthService.userCookieName}=;`))
+  );
 });

@@ -6,7 +6,7 @@ import type {
 } from '@nestjs/common';
 import { Injectable, SetMetadata } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 
 import {
   AuthenticationRequired,
@@ -37,7 +37,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
   async canActivate(context: ExecutionContext) {
     const { req, res } = getRequestResponseFromContext(context);
 
-    const userSession = await this.signIn(req);
+    const userSession = await this.signIn(req, res);
     if (res && userSession && userSession.expiresAt) {
       await this.auth.refreshUserSessionIfNeeded(res, userSession);
     }
@@ -59,7 +59,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     return true;
   }
 
-  async signIn(req: Request): Promise<Session | null> {
+  async signIn(req: Request, res?: Response): Promise<Session | null> {
     if (req.session) {
       return req.session;
     }
@@ -68,7 +68,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     parseCookies(req);
 
     // TODO(@forehalo): a cache for user session
-    const userSession = await this.auth.getUserSessionFromRequest(req);
+    const userSession = await this.auth.getUserSessionFromRequest(req, res);
 
     if (userSession) {
       req.session = {

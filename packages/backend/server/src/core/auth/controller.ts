@@ -172,16 +172,19 @@ export class AuthController {
     });
   }
 
+  @Public()
   @Get('/sign-out')
   async signOut(
     @Res() res: Response,
-    @Session() session: Session,
-    @Body() { all }: { all: boolean }
+    @Session() session: Session | undefined,
+    @Query('user_id') userId: string | undefined
   ) {
-    await this.auth.signOut(
-      session.sessionId,
-      all ? undefined : session.userId
-    );
+    if (!session) {
+      return;
+    }
+
+    await this.auth.signOut(session.sessionId, userId);
+    await this.auth.refreshCookies(res, session.sessionId);
 
     res.status(HttpStatus.OK).send({});
   }
