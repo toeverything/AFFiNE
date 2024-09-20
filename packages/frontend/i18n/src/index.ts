@@ -98,3 +98,25 @@ export function setUpLanguage(i: i18n) {
   }
   return i.changeLanguage(language);
 }
+
+const cachedCompleteness: Record<string, number> = {};
+export const calcLocaleCompleteness = (
+  locale: (typeof LOCALES)[number]['tag']
+) => {
+  if (cachedCompleteness[locale]) {
+    return cachedCompleteness[locale];
+  }
+  const base = LOCALES.find(item => item.base);
+  if (!base) {
+    throw new Error('Base language not found');
+  }
+  const target = LOCALES.find(item => item.tag === locale);
+  if (!target) {
+    throw new Error('Locale not found');
+  }
+  const baseKeyCount = Object.keys(base.res).length;
+  const translatedKeyCount = Object.keys(target.res).length;
+  const completeness = translatedKeyCount / baseKeyCount;
+  cachedCompleteness[target.tag] = completeness;
+  return completeness;
+};

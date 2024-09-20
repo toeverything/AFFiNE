@@ -44,7 +44,6 @@
   "peerDependencies": {
     "@affine/templates": "*",
     "@blocksuite/presets": "*",
-    "async-call-rpc": "*",
     "electron": "*",
     "react": "*",
     "yjs": "^13"
@@ -54,9 +53,6 @@
       "optional": true
     },
     "@blocksuite/presets": {
-      "optional": true
-    },
-    "async-call-rpc": {
       "optional": true
     },
     "electron": {
