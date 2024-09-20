@@ -82,6 +82,12 @@ export class DocDisplayMetaService extends Service {
       const doc = get(this.docsService.list.doc$(docId));
       const mode = doc ? get(doc.primaryMode$) : undefined;
       const finalMode = options?.mode ?? mode ?? 'page';
+      const referenceToNode = !!(options?.reference && options.referenceToNode);
+
+      // increases block link priority
+      if (referenceToNode) {
+        return iconSet.BlockLinkIcon;
+      }
 
       const journalDate = this._toDayjs(
         this.propertiesAdapter.getJournalPageDateString(docId)
@@ -98,11 +104,9 @@ export class DocDisplayMetaService extends Service {
       }
 
       return options?.reference
-        ? options?.referenceToNode
-          ? iconSet.BlockLinkIcon
-          : finalMode === 'edgeless'
-            ? iconSet.LinkedEdgelessIcon
-            : iconSet.LinkedPageIcon
+        ? finalMode === 'edgeless'
+          ? iconSet.LinkedEdgelessIcon
+          : iconSet.LinkedPageIcon
         : finalMode === 'edgeless'
           ? iconSet.EdgelessIcon
           : iconSet.PageIcon;
