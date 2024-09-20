@@ -1,10 +1,10 @@
-import type { EditorHost } from '@blocksuite/block-std';
+import type { EditorHost } from '@blocksuite/affine/block-std';
 import type {
   AffineAIPanelWidget,
   AIError,
   EdgelessCopilotWidget,
   MindmapElementModel,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import {
   BlocksUtils,
   EdgelessTextBlockModel,
@@ -13,10 +13,10 @@ import {
   NoteBlockModel,
   ShapeElementModel,
   TextElementModel,
-} from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
-import { AIChatBlockModel } from '@blocksuite/presets';
-import { Slice } from '@blocksuite/store';
+} from '@blocksuite/affine/blocks';
+import { assertExists } from '@blocksuite/affine/global/utils';
+import { AIChatBlockModel } from '@blocksuite/affine/presets';
+import { Slice } from '@blocksuite/affine/store';
 import type { TemplateResult } from 'lit';
 
 import { getAIPanel } from '../ai-panel';

@@ -1,5 +1,5 @@
 // This file should has not side effect
-import type { DocCollection } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/affine/store';
 
 declare global {
   // eslint-disable-next-line no-var

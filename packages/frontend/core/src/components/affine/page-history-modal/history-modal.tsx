@@ -9,9 +9,12 @@ import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
+import type {
+  Doc as BlockSuiteDoc,
+  DocCollection,
+} from '@blocksuite/affine/store';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons/rc';
-import type { Doc as BlockSuiteDoc, DocCollection } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';

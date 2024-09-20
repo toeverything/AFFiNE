@@ -1,11 +1,11 @@
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 import type {
   AffineEditorContainer,
   DocTitle,
   EdgelessEditor,
   PageEditor,
-} from '@blocksuite/presets';
-import { type Doc, Slot } from '@blocksuite/store';
+} from '@blocksuite/affine/presets';
+import { type Doc, Slot } from '@blocksuite/affine/store';
 import clsx from 'clsx';
 import type React from 'react';
 import {

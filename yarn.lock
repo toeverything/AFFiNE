@@ -237,7 +237,7 @@ __metadata:
     "@affine/env": "workspace:*"
     "@affine/templates": "workspace:*"
     "@aws-sdk/client-s3": "npm:^3.620.0"
-    "@blocksuite/presets": "npm:0.17.14"
+    "@blocksuite/affine": "npm:0.17.14"
     "@clack/core": "npm:^0.3.4"
     "@clack/prompts": "npm:^0.7.0"
     "@magic-works/i18n-codegen": "npm:^0.6.0"
@@ -294,7 +294,7 @@ __metadata:
     "@affine/i18n": "workspace:*"
     "@atlaskit/pragmatic-drag-and-drop": "npm:^1.2.1"
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^1.0.3"
-    "@blocksuite/global": "npm:0.17.14"
+    "@blocksuite/affine": "npm:0.17.14"
     "@blocksuite/icons": "npm:2.1.67"
     "@chromatic-com/storybook": "npm:^2.0.0"
     "@emotion/react": "npm:^11.11.4"
@@ -347,11 +347,8 @@ __metadata:
     vitest: "npm:2.1.1"
     zod: "npm:^3.22.4"
   peerDependencies:
-    "@blocksuite/blocks": "*"
-    "@blocksuite/global": "*"
+    "@blocksuite/affine": "*"
     "@blocksuite/icons": 2.1.67
-    "@blocksuite/presets": "*"
-    "@blocksuite/store": "*"
   languageName: unknown
   linkType: soft
 
@@ -367,13 +364,8 @@ __metadata:
     "@affine/i18n": "workspace:*"
     "@affine/templates": "workspace:*"
     "@affine/track": "workspace:*"
-    "@blocksuite/block-std": "npm:0.17.14"
-    "@blocksuite/blocks": "npm:0.17.14"
-    "@blocksuite/global": "npm:0.17.14"
+    "@blocksuite/affine": "npm:0.17.14"
     "@blocksuite/icons": "npm:2.1.67"
-    "@blocksuite/inline": "npm:0.17.14"
-    "@blocksuite/presets": "npm:0.17.14"
-    "@blocksuite/store": "npm:0.17.14"
     "@dnd-kit/core": "npm:^6.1.0"
     "@dnd-kit/modifiers": "npm:^7.0.0"
     "@dnd-kit/sortable": "npm:^8.0.0"
@@ -478,7 +470,7 @@ __metadata:
     "@affine/core": "workspace:*"
     "@affine/i18n": "workspace:*"
     "@affine/native": "workspace:*"
-    "@blocksuite/global": "npm:0.17.14"
+    "@blocksuite/affine": "npm:0.17.14"
     "@electron-forge/cli": "npm:^7.3.0"
     "@electron-forge/core": "npm:^7.3.0"
     "@electron-forge/core-utils": "npm:^7.3.0"
@@ -530,13 +522,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/env@workspace:packages/common/env"
   dependencies:
-    "@blocksuite/global": "npm:0.17.14"
-    "@blocksuite/store": "npm:0.17.14"
+    "@blocksuite/affine": "npm:0.17.14"
     vitest: "npm:2.1.1"
     zod: "npm:^3.22.4"
   peerDependencies:
     "@affine/templates": "workspace:*"
-    "@blocksuite/global": 0.11.0-nightly-202401020419-752a5b8
   languageName: unknown
   linkType: soft
 
@@ -580,7 +570,7 @@ __metadata:
     "@affine/component": "workspace:*"
     "@affine/core": "workspace:*"
     "@affine/i18n": "workspace:*"
-    "@blocksuite/blocks": "npm:0.17.14"
+    "@blocksuite/affine": "npm:0.17.14"
     "@blocksuite/icons": "npm:^2.1.67"
     "@sentry/react": "npm:^8.0.0"
     "@types/react": "npm:^18.2.75"
@@ -2606,6 +2596,20 @@ __metadata:
     "@toeverything/theme": "npm:^1.0.8"
     lit: "npm:^3.2.0"
   checksum: 10/d692f6a841731b70cfb463bed08dba332b2a5501b3443a28a521d5fa6f6f336d9457e6303428f9daf6cb68f97acc4b3d39af032be05cc9b950f76e184b30a849
+  languageName: node
+  linkType: hard
+
+"@blocksuite/affine@npm:0.17.14":
+  version: 0.17.14
+  resolution: "@blocksuite/affine@npm:0.17.14"
+  dependencies:
+    "@blocksuite/block-std": "npm:0.17.14"
+    "@blocksuite/blocks": "npm:0.17.14"
+    "@blocksuite/global": "npm:0.17.14"
+    "@blocksuite/inline": "npm:0.17.14"
+    "@blocksuite/presets": "npm:0.17.14"
+    "@blocksuite/store": "npm:0.17.14"
+  checksum: 10/cf787cd5be95ce9cbda5a8c1c14bcda194bdde691f301b0f23dae7032eb5e505aac26dff03fb9dbd5f2b5836b9b58004923d38865f46f954aa0f8dac7f7ccb5d
   languageName: node
   linkType: hard
 
@@ -12630,10 +12634,7 @@ __metadata:
     "@affine/debug": "workspace:*"
     "@affine/env": "workspace:*"
     "@affine/templates": "workspace:*"
-    "@blocksuite/blocks": "npm:0.17.14"
-    "@blocksuite/global": "npm:0.17.14"
-    "@blocksuite/presets": "npm:0.17.14"
-    "@blocksuite/store": "npm:0.17.14"
+    "@blocksuite/affine": "npm:0.17.14"
     "@datastructures-js/binary-search-tree": "npm:^5.3.2"
     "@testing-library/react": "npm:^16.0.0"
     fake-indexeddb: "npm:^6.0.0"
@@ -12652,14 +12653,11 @@ __metadata:
     zod: "npm:^3.22.4"
   peerDependencies:
     "@affine/templates": "*"
-    "@blocksuite/presets": "*"
     electron: "*"
     react: "*"
     yjs: ^13
   peerDependenciesMeta:
     "@affine/templates":
-      optional: true
-    "@blocksuite/presets":
       optional: true
     electron:
       optional: true

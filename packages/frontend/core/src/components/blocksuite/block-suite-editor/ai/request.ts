@@ -1,6 +1,6 @@
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import type { ForkChatSessionInput } from '@affine/graphql';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import { partition } from 'lodash-es';
 
 import { CopilotClient } from './copilot-client';

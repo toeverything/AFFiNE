@@ -1,6 +1,6 @@
 import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { track } from '@affine/track';
-import type { Doc } from '@blocksuite/store';
+import type { Doc } from '@blocksuite/affine/store';
 import { type Workspace } from '@toeverything/infra';
 import { useCallback } from 'react';
 

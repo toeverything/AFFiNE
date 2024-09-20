@@ -1,5 +1,5 @@
 import type { WorkspaceFlavour } from '@affine/env/workspace';
-import type { DocCollection } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/affine/store';
 
 import { Service } from '../../../framework';
 import type { BlobStorage, DocStorage } from '../../../sync';

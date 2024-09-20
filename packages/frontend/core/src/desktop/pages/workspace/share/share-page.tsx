@@ -23,10 +23,10 @@ import {
   type DocMode,
   DocModes,
   RefNodeSlotsProvider,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
+import type { AffineEditorContainer } from '@blocksuite/affine/presets';
 import { DisposableGroup } from '@blocksuite/global/utils';
 import { Logo1Icon } from '@blocksuite/icons/rc';
-import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Doc, Workspace } from '@toeverything/infra';
 import {
   DocsService,

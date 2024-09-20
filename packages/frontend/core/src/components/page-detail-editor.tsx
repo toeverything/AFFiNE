@@ -1,6 +1,6 @@
 import './page-detail-editor.css';
 
-import type { AffineEditorContainer } from '@blocksuite/presets';
+import type { AffineEditorContainer } from '@blocksuite/affine/presets';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import clsx from 'clsx';

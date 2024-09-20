@@ -8,10 +8,10 @@ import {
   EmbedLoomBlockService,
   EmbedYoutubeBlockService,
   ImageBlockService,
-} from '@blocksuite/blocks';
-import { DisposableGroup } from '@blocksuite/global/utils';
-import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Doc } from '@blocksuite/store';
+} from '@blocksuite/affine/blocks';
+import { DisposableGroup } from '@blocksuite/affine/global/utils';
+import type { AffineEditorContainer } from '@blocksuite/affine/presets';
+import type { Doc } from '@blocksuite/affine/store';
 import { use } from 'foxact/use';
 import type { CSSProperties } from 'react';
 import { Suspense, useEffect } from 'react';

@@ -11,9 +11,9 @@ import {
   HtmlTransformer,
   MarkdownTransformer,
   printToPdf,
-} from '@blocksuite/blocks';
-import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Doc } from '@blocksuite/store';
+} from '@blocksuite/affine/blocks';
+import type { AffineEditorContainer } from '@blocksuite/affine/presets';
+import type { Doc } from '@blocksuite/affine/store';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';

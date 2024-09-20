@@ -7,8 +7,8 @@ import {
   type RequestOptions,
 } from '@affine/graphql';
 import { track } from '@affine/track';
-import { UnauthorizedError } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+import { UnauthorizedError } from '@blocksuite/affine/blocks';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import { getCurrentStore } from '@toeverything/infra';
 import { z } from 'zod';
 

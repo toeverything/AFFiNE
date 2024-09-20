@@ -10,8 +10,8 @@ import {
 import { itemsToItemGroups } from '@affine/core/components/page-list/items-to-item-group';
 import type { Tag } from '@affine/core/modules/tag';
 import type { Collection, Filter } from '@affine/env/filter';
+import type { DocMeta } from '@blocksuite/affine/store';
 import { ToggleExpandIcon } from '@blocksuite/icons/rc';
-import type { DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useMemo } from 'react';

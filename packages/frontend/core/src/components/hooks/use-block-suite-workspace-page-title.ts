@@ -1,5 +1,5 @@
-import { assertExists } from '@blocksuite/global/utils';
-import type { DocCollection } from '@blocksuite/store';
+import { assertExists } from '@blocksuite/affine/global/utils';
+import type { DocCollection } from '@blocksuite/affine/store';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 import { useCallback } from 'react';

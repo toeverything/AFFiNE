@@ -1,6 +1,6 @@
 import type { getCopilotHistoriesQuery, RequestOptions } from '@affine/graphql';
-import type { EditorHost } from '@blocksuite/block-std';
-import type { BlockModel } from '@blocksuite/store';
+import type { EditorHost } from '@blocksuite/affine/block-std';
+import type { BlockModel } from '@blocksuite/affine/store';
 
 export const translateLangs = [
   'English',

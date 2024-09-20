@@ -2,7 +2,7 @@ import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties'
 import { ShareDocsListService } from '@affine/core/modules/share-doc';
 import type { Collection, Filter } from '@affine/env/filter';
 import { PublicPageMode } from '@affine/graphql';
-import type { DocMeta } from '@blocksuite/store';
+import type { DocMeta } from '@blocksuite/affine/store';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo } from 'react';
 

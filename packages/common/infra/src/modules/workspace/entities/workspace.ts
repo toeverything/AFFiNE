@@ -1,4 +1,4 @@
-import { DocCollection } from '@blocksuite/store';
+import { DocCollection } from '@blocksuite/affine/store';
 import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
 import type { Awareness } from 'y-protocols/awareness.js';

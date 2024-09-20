@@ -1,9 +1,9 @@
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import type { Tag } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists } from '@blocksuite/affine/global/utils';
+import type { DocCollection, DocMeta } from '@blocksuite/affine/store';
 import { ToggleCollapseIcon, ViewLayersIcon } from '@blocksuite/icons/rc';
-import type { DocCollection, DocMeta } from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';

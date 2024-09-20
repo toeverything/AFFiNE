@@ -6,14 +6,14 @@ import {
   type AffineSlashSubMenu,
   type AIItemConfig,
   DocModeProvider,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import {
   AFFINE_AI_PANEL_WIDGET,
   AffineSlashMenuWidget,
   AIStarIcon,
   MoreHorizontalIcon,
-} from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import { html } from 'lit';
 
 import { AIItemGroups } from '../../_common/config';

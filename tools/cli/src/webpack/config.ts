@@ -155,7 +155,7 @@ export const createConfiguration: (
       alias: {
         yjs: join(workspaceRoot, 'node_modules', 'yjs'),
         lit: join(workspaceRoot, 'node_modules', 'lit'),
-        '@blocksuite/block-std': blocksuiteBaseDir
+        '@blocksuite/affine/block-std': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'framework', 'block-std', 'src')
           : join(
               workspaceRoot,
@@ -164,7 +164,7 @@ export const createConfiguration: (
               'block-std',
               'dist'
             ),
-        '@blocksuite/blocks': blocksuiteBaseDir
+        '@blocksuite/affine/blocks': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'blocks', 'src')
           : join(
               workspaceRoot,
@@ -173,7 +173,7 @@ export const createConfiguration: (
               'blocks',
               'dist'
             ),
-        '@blocksuite/presets': blocksuiteBaseDir
+        '@blocksuite/affine/presets': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'presets', 'src')
           : join(
               workspaceRoot,
@@ -182,7 +182,7 @@ export const createConfiguration: (
               'presets',
               'dist'
             ),
-        '@blocksuite/global': blocksuiteBaseDir
+        '@blocksuite/affine/global': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'framework', 'global', 'src')
           : join(
               workspaceRoot,
@@ -191,24 +191,25 @@ export const createConfiguration: (
               'global',
               'dist'
             ),
-        '@blocksuite/store/providers/broadcast-channel': blocksuiteBaseDir
-          ? join(
-              blocksuiteBaseDir,
-              'packages',
-              'framework',
-              'store',
-              'src/providers/broadcast-channel'
-            )
-          : join(
-              workspaceRoot,
-              'node_modules',
-              '@blocksuite',
-              'store',
-              'dist',
-              'providers',
-              'broadcast-channel.js'
-            ),
-        '@blocksuite/store': blocksuiteBaseDir
+        '@blocksuite/affine/store/providers/broadcast-channel':
+          blocksuiteBaseDir
+            ? join(
+                blocksuiteBaseDir,
+                'packages',
+                'framework',
+                'store',
+                'src/providers/broadcast-channel'
+              )
+            : join(
+                workspaceRoot,
+                'node_modules',
+                '@blocksuite',
+                'store',
+                'dist',
+                'providers',
+                'broadcast-channel.js'
+              ),
+        '@blocksuite/affine/store': blocksuiteBaseDir
           ? join(blocksuiteBaseDir, 'packages', 'framework', 'store', 'src')
           : join(workspaceRoot, 'node_modules', '@blocksuite', 'store', 'dist'),
         '@blocksuite/inline': blocksuiteBaseDir

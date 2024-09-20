@@ -1,5 +1,5 @@
 import { apis } from '@affine/electron-api';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import type { AppConfigSchema } from '@toeverything/infra';
 import { AppConfigStorage, defaultAppConfig } from '@toeverything/infra';
 import type { Dispatch } from 'react';

@@ -2,7 +2,7 @@ import { AuthModal } from '@affine/core/components/affine/auth';
 import { BlocksuiteHeaderTitle } from '@affine/core/components/blocksuite/block-suite-header/title';
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
 import ShareHeaderRightItem from '@affine/core/components/cloud/share-header-right-item';
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 
 import * as styles from './share-header.css';
 

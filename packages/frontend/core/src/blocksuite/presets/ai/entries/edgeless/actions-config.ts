@@ -5,7 +5,7 @@ import {
   MindmapElementModel,
   ShapeElementModel,
   TextElementModel,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 
 import {
   AIExpandMindMapIcon,

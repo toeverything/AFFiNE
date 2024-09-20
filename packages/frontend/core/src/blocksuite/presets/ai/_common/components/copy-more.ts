@@ -2,13 +2,13 @@ import type {
   BlockSelection,
   EditorHost,
   TextSelection,
-} from '@blocksuite/block-std';
+} from '@blocksuite/affine/block-std';
 import {
   createButtonPopper,
   NotificationProvider,
   Tooltip,
-} from '@blocksuite/blocks';
-import { noop, WithDisposable } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { noop, WithDisposable } from '@blocksuite/affine/global/utils';
 import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';

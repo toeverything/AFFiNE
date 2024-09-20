@@ -1,5 +1,5 @@
 import type { Tag } from '@affine/env/filter';
-import type { DocsPropertiesMeta } from '@blocksuite/store';
+import type { DocsPropertiesMeta } from '@blocksuite/affine/store';
 import type { WorkspaceService } from '@toeverything/infra';
 import { LiveData, Service } from '@toeverything/infra';
 import { Observable } from 'rxjs';

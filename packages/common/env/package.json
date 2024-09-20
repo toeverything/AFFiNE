@@ -3,8 +3,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@blocksuite/global": "0.17.14",
-    "@blocksuite/store": "0.17.14",
+    "@blocksuite/affine": "0.17.14",
     "vitest": "2.1.1"
   },
   "exports": {
@@ -17,8 +16,7 @@
     "./blocksuite": "./src/blocksuite/index.ts"
   },
   "peerDependencies": {
-    "@affine/templates": "workspace:*",
-    "@blocksuite/global": "0.11.0-nightly-202401020419-752a5b8"
+    "@affine/templates": "workspace:*"
   },
   "dependencies": {
     "zod": "^3.22.4"

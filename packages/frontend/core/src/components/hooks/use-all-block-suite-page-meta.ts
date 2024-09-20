@@ -1,4 +1,4 @@
-import type { DocCollection, DocMeta } from '@blocksuite/store';
+import type { DocCollection, DocMeta } from '@blocksuite/affine/store';
 import type { Atom } from 'jotai';
 import { atom, useAtomValue } from 'jotai';
 

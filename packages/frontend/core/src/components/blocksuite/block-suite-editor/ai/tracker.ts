@@ -1,7 +1,7 @@
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { mixpanel, track } from '@affine/track';
-import type { EditorHost } from '@blocksuite/block-std';
-import type { BlockModel } from '@blocksuite/store';
+import type { EditorHost } from '@blocksuite/affine/block-std';
+import type { BlockModel } from '@blocksuite/affine/store';
 import { lowerCase, omit } from 'lodash-es';
 
 type ElementModel = BlockSuite.SurfaceElementModel;

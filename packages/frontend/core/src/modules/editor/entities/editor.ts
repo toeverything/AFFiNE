@@ -2,9 +2,12 @@ import type {
   DocMode,
   EdgelessRootService,
   ReferenceParams,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
+import type {
+  AffineEditorContainer,
+  DocTitle,
+} from '@blocksuite/affine/presets';
 import type { InlineEditor } from '@blocksuite/inline';
-import type { AffineEditorContainer, DocTitle } from '@blocksuite/presets';
 import type { DocService, WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';

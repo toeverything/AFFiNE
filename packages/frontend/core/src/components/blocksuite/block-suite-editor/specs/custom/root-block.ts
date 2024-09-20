@@ -4,14 +4,20 @@ import {
 } from '@affine/core/blocksuite/presets/ai';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { mixpanel } from '@affine/track';
-import { ConfigExtension, type ExtensionType } from '@blocksuite/block-std';
+import {
+  ConfigExtension,
+  type ExtensionType,
+} from '@blocksuite/affine/block-std';
 import {
   EdgelessRootBlockSpec,
   EditorSettingExtension,
   FontLoaderService,
   PageRootBlockSpec,
-} from '@blocksuite/blocks';
-import { type TelemetryEventMap, TelemetryProvider } from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
+import {
+  type TelemetryEventMap,
+  TelemetryProvider,
+} from '@blocksuite/affine/blocks';
 import { type FrameworkProvider } from '@toeverything/infra';
 
 import { getFontConfigExtension } from '../font-extension';

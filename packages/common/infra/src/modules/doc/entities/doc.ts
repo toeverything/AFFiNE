@@ -1,4 +1,4 @@
-import type { DocMode, RootBlockModel } from '@blocksuite/blocks';
+import type { DocMode, RootBlockModel } from '@blocksuite/affine/blocks';
 
 import { Entity } from '../../../framework';
 import type { WorkspaceService } from '../../workspace';

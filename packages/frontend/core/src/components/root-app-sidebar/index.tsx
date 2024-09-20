@@ -12,13 +12,13 @@ import { isNewTabTrigger } from '@affine/core/utils';
 import { apis, events } from '@affine/electron-api';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
+import type { Doc } from '@blocksuite/affine/store';
 import {
   AllDocsIcon,
   GithubIcon,
   JournalIcon,
   SettingsIcon,
 } from '@blocksuite/icons/rc';
-import type { Doc } from '@blocksuite/store';
 import type { Workspace } from '@toeverything/infra';
 import {
   useLiveData,

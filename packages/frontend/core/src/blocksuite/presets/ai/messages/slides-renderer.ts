@@ -1,12 +1,12 @@
-import { BlockStdScope, type EditorHost } from '@blocksuite/block-std';
+import { BlockStdScope, type EditorHost } from '@blocksuite/affine/block-std';
 import {
   type AffineAIPanelWidgetConfig,
   EdgelessEditorBlockSpecs,
-} from '@blocksuite/blocks';
-import { AffineSchemas } from '@blocksuite/blocks/schemas';
-import { WithDisposable } from '@blocksuite/global/utils';
-import type { Doc } from '@blocksuite/store';
-import { DocCollection, Schema } from '@blocksuite/store';
+} from '@blocksuite/affine/blocks';
+import { AffineSchemas } from '@blocksuite/affine/blocks/schemas';
+import { WithDisposable } from '@blocksuite/affine/global/utils';
+import type { Doc } from '@blocksuite/affine/store';
+import { DocCollection, Schema } from '@blocksuite/affine/store';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';

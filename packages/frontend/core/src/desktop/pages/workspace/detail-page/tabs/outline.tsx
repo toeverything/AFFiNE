@@ -1,5 +1,5 @@
-import type { AffineEditorContainer } from '@blocksuite/presets';
-import { OutlinePanel } from '@blocksuite/presets';
+import type { AffineEditorContainer } from '@blocksuite/affine/presets';
+import { OutlinePanel } from '@blocksuite/affine/presets';
 import { useCallback, useRef } from 'react';
 
 import * as styles from './outline.css';

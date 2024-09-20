@@ -4,9 +4,9 @@ import type {
   EdgelessCopilotWidget,
   EdgelessElementToolbarWidget,
   EdgelessRootBlockComponent,
-} from '@blocksuite/blocks';
-import { EdgelessCopilotToolbarEntry } from '@blocksuite/blocks';
-import { noop } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { EdgelessCopilotToolbarEntry } from '@blocksuite/affine/blocks';
+import { noop } from '@blocksuite/affine/global/utils';
 import { html } from 'lit';
 
 import { edgelessActionGroups } from './actions-config';

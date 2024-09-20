@@ -4,8 +4,8 @@ import { Menu } from '@affine/component/ui/menu';
 import { ShareInfoService } from '@affine/core/modules/share-doc';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
+import type { Doc } from '@blocksuite/affine/store';
 import { LockIcon, PublishIcon } from '@blocksuite/icons/rc';
-import type { Doc } from '@blocksuite/store';
 import {
   useLiveData,
   useService,

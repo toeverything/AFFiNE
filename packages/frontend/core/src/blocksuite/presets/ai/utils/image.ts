@@ -1,5 +1,5 @@
-import { fetchImage } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+import { fetchImage } from '@blocksuite/affine/blocks';
+import { assertExists } from '@blocksuite/affine/global/utils';
 
 export async function fetchImageToFile(
   url: string,

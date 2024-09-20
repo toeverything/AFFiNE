@@ -1,13 +1,13 @@
 import './ask-ai-panel';
 
-import { type EditorHost } from '@blocksuite/block-std';
+import { type EditorHost } from '@blocksuite/affine/block-std';
 import {
   type AIItemGroupConfig,
   AIStarIcon,
   EdgelessRootService,
-} from '@blocksuite/blocks';
-import { createLitPortal, HoverController } from '@blocksuite/blocks';
-import { assertExists, WithDisposable } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { createLitPortal, HoverController } from '@blocksuite/affine/blocks';
+import { assertExists, WithDisposable } from '@blocksuite/affine/global/utils';
 import { flip, offset } from '@floating-ui/dom';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';

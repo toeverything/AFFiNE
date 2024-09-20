@@ -1,4 +1,4 @@
-import type { DocMode } from '@blocksuite/blocks';
+import type { DocMode } from '@blocksuite/affine/blocks';
 
 import { Entity } from '../../../framework';
 import { LiveData } from '../../../livedata';

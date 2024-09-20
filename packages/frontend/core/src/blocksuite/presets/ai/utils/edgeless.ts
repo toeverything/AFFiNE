@@ -1,4 +1,4 @@
-import type { BlockComponent, EditorHost } from '@blocksuite/block-std';
+import type { BlockComponent, EditorHost } from '@blocksuite/affine/block-std';
 import {
   AFFINE_EDGELESS_COPILOT_WIDGET,
   type EdgelessCopilotWidget,
@@ -6,7 +6,7 @@ import {
   matchFlavours,
   MindmapElementModel,
   type ShapeElementModel,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 
 export function mindMapToMarkdown(mindmap: MindmapElementModel) {
   let markdownStr = '';

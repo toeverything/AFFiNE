@@ -1,5 +1,5 @@
-import type { DocMode } from '@blocksuite/blocks';
-import type { DocMeta } from '@blocksuite/store';
+import type { DocMode } from '@blocksuite/affine/blocks';
+import type { DocMeta } from '@blocksuite/affine/store';
 
 import { Entity } from '../../../framework';
 import { LiveData } from '../../../livedata';

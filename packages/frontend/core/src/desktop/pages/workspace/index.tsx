@@ -1,7 +1,7 @@
 import { AffineOtherPageLayout } from '@affine/component/affine-other-page-layout';
 import { AppFallback } from '@affine/core/components/affine/app-container';
 import { workbenchRoutes } from '@affine/core/desktop/workbench-router';
-import { ZipTransformer } from '@blocksuite/blocks';
+import { ZipTransformer } from '@blocksuite/affine/blocks';
 import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
 import {
   FrameworkScope,

@@ -23,7 +23,7 @@ export function getBuildConfig(buildFlags: BuildFlags): BUILD_CONFIG_TYPE {
         appBuildType: 'stable' as const,
         serverUrlPrefix: 'https://app.affine.pro',
         appVersion: packageJson.version,
-        editorVersion: packageJson.devDependencies['@blocksuite/presets'],
+        editorVersion: packageJson.devDependencies['@blocksuite/affine'],
         githubUrl: 'https://github.com/toeverything/AFFiNE',
         changelogUrl: 'https://affine.pro/what-is-new',
         downloadUrl: 'https://affine.pro/download',

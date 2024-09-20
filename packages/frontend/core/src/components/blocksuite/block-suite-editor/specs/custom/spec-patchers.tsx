@@ -27,15 +27,15 @@ import {
   BlockViewIdentifier,
   type ExtensionType,
   type WidgetComponent,
-} from '@blocksuite/block-std';
-import { BlockServiceWatcher } from '@blocksuite/block-std';
+} from '@blocksuite/affine/block-std';
+import { BlockServiceWatcher } from '@blocksuite/affine/block-std';
 import type {
   AffineReference,
   DocMode,
   DocModeProvider,
   QuickSearchResult,
   RootService,
-} from '@blocksuite/blocks';
+} from '@blocksuite/affine/blocks';
 import {
   AffineSlashMenuWidget,
   DocModeExtension,
@@ -46,9 +46,9 @@ import {
   PeekViewExtension,
   QuickSearchExtension,
   ReferenceNodeConfigExtension,
-} from '@blocksuite/blocks';
-import { AIChatBlockSchema } from '@blocksuite/presets';
-import { type BlockSnapshot, Text } from '@blocksuite/store';
+} from '@blocksuite/affine/blocks';
+import { AIChatBlockSchema } from '@blocksuite/affine/presets';
+import { type BlockSnapshot, Text } from '@blocksuite/affine/store';
 import {
   type DocProps,
   type DocService,

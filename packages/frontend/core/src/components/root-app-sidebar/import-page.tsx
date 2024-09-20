@@ -1,8 +1,8 @@
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
+import type { DocCollection } from '@blocksuite/affine/store';
 import { ImportIcon } from '@blocksuite/icons/rc';
-import type { DocCollection } from '@blocksuite/store';
 
 import { MenuItem } from '../app-sidebar';
 import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';

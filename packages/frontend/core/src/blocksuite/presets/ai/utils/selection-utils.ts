@@ -1,18 +1,18 @@
-import type { EditorHost } from '@blocksuite/block-std';
+import type { EditorHost } from '@blocksuite/affine/block-std';
 import {
   type CopilotSelectionController,
   type FrameBlockModel,
   ImageBlockModel,
   type SurfaceBlockComponent,
-} from '@blocksuite/blocks';
-import { BlocksUtils, EdgelessRootService } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { BlocksUtils, EdgelessRootService } from '@blocksuite/affine/blocks';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import {
   type BlockModel,
   type DraftModel,
   Slice,
   toDraftModel,
-} from '@blocksuite/store';
+} from '@blocksuite/affine/store';
 
 import { getEdgelessCopilotWidget, getService } from './edgeless';
 import { getContentFromSlice } from './markdown-utils';

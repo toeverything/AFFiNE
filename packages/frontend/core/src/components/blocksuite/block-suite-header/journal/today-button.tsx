@@ -1,7 +1,7 @@
 import { Button } from '@affine/component';
 import { useJournalRouteHelper } from '@affine/core/components/hooks/use-journal';
 import { useI18n } from '@affine/i18n';
-import type { DocCollection } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/affine/store';
 import { useCallback } from 'react';
 
 export interface JournalTodayButtonProps {

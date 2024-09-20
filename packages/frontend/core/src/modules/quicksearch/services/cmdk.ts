@@ -1,5 +1,5 @@
 import { track } from '@affine/track';
-import { Text } from '@blocksuite/store';
+import { Text } from '@blocksuite/affine/store';
 import type { DocProps, DocsService } from '@toeverything/infra';
 import { Service } from '@toeverything/infra';
 

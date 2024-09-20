@@ -6,7 +6,7 @@ import {
   getIsOwnerQuery,
   getWorkspacesQuery,
 } from '@affine/graphql';
-import { DocCollection } from '@blocksuite/store';
+import { DocCollection } from '@blocksuite/affine/store';
 import {
   ApplicationStarted,
   type BlobStorage,

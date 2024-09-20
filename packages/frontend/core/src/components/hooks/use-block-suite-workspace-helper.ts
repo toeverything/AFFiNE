@@ -1,4 +1,4 @@
-import type { Doc, DocCollection } from '@blocksuite/store';
+import type { Doc, DocCollection } from '@blocksuite/affine/store';
 import { useMemo } from 'react';
 
 export function useDocCollectionHelper(docCollection: DocCollection) {

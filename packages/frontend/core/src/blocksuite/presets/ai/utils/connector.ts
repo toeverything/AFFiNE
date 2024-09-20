@@ -2,8 +2,8 @@ import {
   type ConnectorElementModel,
   type EdgelessRootService,
   SurfaceBlockComponent,
-} from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { assertExists } from '@blocksuite/affine/global/utils';
 
 export const getConnectorFromId = (
   id: string,

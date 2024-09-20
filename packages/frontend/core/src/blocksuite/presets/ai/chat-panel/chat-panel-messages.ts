@@ -13,16 +13,16 @@ import './chat-cards';
 import '../_common/components/chat-action-list';
 import '../_common/components/copy-more';
 
-import type { BaseSelection, EditorHost } from '@blocksuite/block-std';
-import { ShadowlessElement } from '@blocksuite/block-std';
+import type { BaseSelection, EditorHost } from '@blocksuite/affine/block-std';
+import { ShadowlessElement } from '@blocksuite/affine/block-std';
 import {
   type AIError,
   DocModeProvider,
   isInsidePageEditor,
   PaymentRequiredError,
   UnauthorizedError,
-} from '@blocksuite/blocks';
-import { WithDisposable } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { WithDisposable } from '@blocksuite/affine/global/utils';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';

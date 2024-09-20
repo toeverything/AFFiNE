@@ -1,4 +1,4 @@
-import type { DocCollection } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/affine/store';
 import { z } from 'zod';
 
 export const literalValueSchema: z.ZodType<LiteralValue, z.ZodTypeDef> =

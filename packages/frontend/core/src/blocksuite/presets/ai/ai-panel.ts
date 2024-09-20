@@ -1,4 +1,4 @@
-import type { EditorHost } from '@blocksuite/block-std';
+import type { EditorHost } from '@blocksuite/affine/block-std';
 import {
   AFFINE_AI_PANEL_WIDGET,
   AffineAIPanelWidget,
@@ -8,8 +8,8 @@ import {
   isInsideEdgelessEditor,
   matchFlavours,
   NoteDisplayMode,
-} from '@blocksuite/blocks';
-import { assertExists, Bound } from '@blocksuite/global/utils';
+} from '@blocksuite/affine/blocks';
+import { assertExists, Bound } from '@blocksuite/affine/global/utils';
 import type { TemplateResult } from 'lit';
 
 import {

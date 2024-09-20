@@ -1,4 +1,4 @@
-import type { DocCollection } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/affine/store';
 import { useCallback } from 'react';
 
 export function useReferenceLinkHelper(docCollection: DocCollection) {

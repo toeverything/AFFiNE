@@ -3,9 +3,9 @@ import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch
 import { toURLSearchParams } from '@affine/core/modules/navigation';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import { type EditorHost } from '@blocksuite/block-std';
-import { GfxBlockElementModel } from '@blocksuite/block-std/gfx';
-import type { DocMode, EdgelessRootService } from '@blocksuite/blocks';
+import { type EditorHost } from '@blocksuite/affine/block-std';
+import { GfxBlockElementModel } from '@blocksuite/affine/block-std/gfx';
+import type { DocMode, EdgelessRootService } from '@blocksuite/affine/blocks';
 import { useCallback } from 'react';
 
 export type UseSharingUrl = {

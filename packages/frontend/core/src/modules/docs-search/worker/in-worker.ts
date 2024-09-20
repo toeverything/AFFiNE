@@ -1,4 +1,4 @@
-import type { AffineTextAttributes } from '@blocksuite/blocks';
+import type { AffineTextAttributes } from '@blocksuite/affine/blocks';
 import type { DeltaInsert } from '@blocksuite/inline';
 import { Document } from '@toeverything/infra';
 import { toHexString } from 'lib0/buffer.js';

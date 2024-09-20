@@ -1,6 +1,6 @@
-import { AffineSchemas } from '@blocksuite/blocks';
-import type { Doc, DocSnapshot } from '@blocksuite/store';
-import { DocCollection, Job, Schema } from '@blocksuite/store';
+import { AffineSchemas } from '@blocksuite/affine/blocks';
+import type { Doc, DocSnapshot } from '@blocksuite/affine/store';
+import { DocCollection, Job, Schema } from '@blocksuite/affine/store';
 
 const getCollection = (() => {
   let collection: DocCollection | null = null;

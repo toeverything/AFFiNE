@@ -1,5 +1,5 @@
 import { useAutoFocus } from '@affine/component';
-import { getFigmaSquircleSvgPath } from '@blocksuite/global/utils';
+import { getFigmaSquircleSvgPath } from '@blocksuite/affine/global/utils';
 import { SearchIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { debounce } from 'lodash-es';

@@ -1,4 +1,4 @@
-import type { BlockSuiteFlags } from '@blocksuite/global/types';
+import type { BlockSuiteFlags } from '@blocksuite/affine/global/types';
 
 type FeedbackType = 'discord' | 'email' | 'github';
 

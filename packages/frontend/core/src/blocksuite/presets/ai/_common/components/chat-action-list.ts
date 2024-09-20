@@ -2,8 +2,11 @@ import type {
   BlockSelection,
   EditorHost,
   TextSelection,
-} from '@blocksuite/block-std';
-import { type ImageSelection, NotificationProvider } from '@blocksuite/blocks';
+} from '@blocksuite/affine/block-std';
+import {
+  type ImageSelection,
+  NotificationProvider,
+} from '@blocksuite/affine/blocks';
 import { css, html, LitElement, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';

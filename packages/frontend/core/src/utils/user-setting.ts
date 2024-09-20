@@ -1,5 +1,5 @@
 import type { Collection } from '@affine/env/filter';
-import type { DocCollection } from '@blocksuite/store';
+import type { DocCollection } from '@blocksuite/affine/store';
 import { nanoid } from 'nanoid';
 import type { Map as YMap } from 'yjs';
 import { Doc as YDoc } from 'yjs';

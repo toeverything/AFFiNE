@@ -1,4 +1,4 @@
-import type { Schema } from '@blocksuite/store';
+import type { Schema } from '@blocksuite/affine/store';
 import type { Array as YArray } from 'yjs';
 import {
   applyUpdate,

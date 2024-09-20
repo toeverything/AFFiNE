@@ -2,7 +2,7 @@ import { Button, Modal, RadioGroup } from '@affine/component';
 import { useAllPageListConfig } from '@affine/core/components/hooks/affine/use-all-page-list-config';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
-import type { DocCollection, DocMeta } from '@blocksuite/store';
+import type { DocCollection, DocMeta } from '@blocksuite/affine/store';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import type { ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';

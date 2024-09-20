@@ -1,7 +1,10 @@
 import { ChatPanel } from '@affine/core/blocksuite/presets/ai';
-import { DocModeProvider, RefNodeSlotsProvider } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
-import type { AffineEditorContainer } from '@blocksuite/presets';
+import {
+  DocModeProvider,
+  RefNodeSlotsProvider,
+} from '@blocksuite/affine/blocks';
+import { assertExists } from '@blocksuite/affine/global/utils';
+import type { AffineEditorContainer } from '@blocksuite/affine/presets';
 import { forwardRef, useCallback, useEffect, useRef } from 'react';
 
 import * as styles from './chat.css';

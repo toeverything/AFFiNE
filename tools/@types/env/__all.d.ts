@@ -20,7 +20,7 @@ declare global {
   var SENTRY_RELEASE: { id: string } | undefined;
 }
 
-declare module '@blocksuite/store' {
+declare module '@blocksuite/affine/store' {
   interface DocMeta {
     /**
      * @deprecated

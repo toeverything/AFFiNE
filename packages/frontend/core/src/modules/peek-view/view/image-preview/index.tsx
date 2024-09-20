@@ -1,8 +1,9 @@
 import { toast } from '@affine/component';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import type { ImageBlockModel } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
+import type { ImageBlockModel } from '@blocksuite/affine/blocks';
+import { assertExists } from '@blocksuite/affine/global/utils';
+import type { BlockModel } from '@blocksuite/affine/store';
 import {
   ArrowLeftSmallIcon,
   ArrowRightSmallIcon,
@@ -14,7 +15,6 @@ import {
   PlusIcon,
   ViewBarIcon,
 } from '@blocksuite/icons/rc';
-import type { BlockModel } from '@blocksuite/store';
 import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { fileTypeFromBuffer } from 'file-type';

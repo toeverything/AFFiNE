@@ -1,10 +1,10 @@
-import type { EdgelessRootService } from '@blocksuite/blocks';
-import { Bound } from '@blocksuite/global/utils';
+import type { EdgelessRootService } from '@blocksuite/affine/blocks';
+import { Bound } from '@blocksuite/affine/global/utils';
 import {
   type AIChatBlockModel,
   CHAT_BLOCK_HEIGHT,
   CHAT_BLOCK_WIDTH,
-} from '@blocksuite/presets';
+} from '@blocksuite/affine/presets';
 
 /**
  * Calculates the bounding box for a child block

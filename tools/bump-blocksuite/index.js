@@ -17,13 +17,11 @@ import corePackage from '../../packages/frontend/core/package.json' assert { typ
 
 const clipboard = new Clipboard();
 
-const oldHash = corePackage.dependencies['@blocksuite/block-std']
-  .split('-')
-  .pop();
+const oldHash = corePackage.dependencies['@blocksuite/affine'].split('-').pop();
 
-const info = await fetch(
-  'https://registry.npmjs.org/@blocksuite/block-std'
-).then(res => res.json());
+const info = await fetch('https://registry.npmjs.org/@blocksuite/affine').then(
+  res => res.json()
+);
 
 const latestVersion = info['dist-tags'].latest;
 const latestHash = latestVersion.split('-').pop();

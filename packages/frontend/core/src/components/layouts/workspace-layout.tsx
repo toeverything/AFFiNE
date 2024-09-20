@@ -4,7 +4,7 @@ import {
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
 import { useI18n } from '@affine/i18n';
-import { type DocMode, ZipTransformer } from '@blocksuite/blocks';
+import { type DocMode, ZipTransformer } from '@blocksuite/affine/blocks';
 import {
   DocsService,
   effect,

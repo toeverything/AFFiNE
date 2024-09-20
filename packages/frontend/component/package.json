@@ -13,11 +13,8 @@
     "build:storybook": "storybook build"
   },
   "peerDependencies": {
-    "@blocksuite/blocks": "*",
-    "@blocksuite/global": "*",
-    "@blocksuite/icons": "2.1.67",
-    "@blocksuite/presets": "*",
-    "@blocksuite/store": "*"
+    "@blocksuite/affine": "*",
+    "@blocksuite/icons": "2.1.67"
   },
   "dependencies": {
     "@affine/cli": "workspace:*",
@@ -63,7 +60,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@blocksuite/global": "0.17.14",
+    "@blocksuite/affine": "0.17.14",
     "@blocksuite/icons": "2.1.67",
     "@chromatic-com/storybook": "^2.0.0",
     "@storybook/addon-essentials": "^8.2.9",

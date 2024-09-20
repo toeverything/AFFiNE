@@ -7,8 +7,8 @@ import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { isNewTabTrigger } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
+import type { DocCollection } from '@blocksuite/affine/store';
 import { TodayIcon } from '@blocksuite/icons/rc';
-import type { DocCollection } from '@blocksuite/store';
 import { useLiveData, useService } from '@toeverything/infra';
 import { type MouseEvent } from 'react';
 

@@ -1,6 +1,6 @@
-import type { EditorHost } from '@blocksuite/block-std';
-import { type AIError, openFileOrFiles } from '@blocksuite/blocks';
-import { assertExists, WithDisposable } from '@blocksuite/global/utils';
+import type { EditorHost } from '@blocksuite/affine/block-std';
+import { type AIError, openFileOrFiles } from '@blocksuite/affine/blocks';
+import { assertExists, WithDisposable } from '@blocksuite/affine/global/utils';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';

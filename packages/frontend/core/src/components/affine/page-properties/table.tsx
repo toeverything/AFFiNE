@@ -10,7 +10,7 @@ import type {
 } from '@affine/core/modules/properties/services/schema';
 import { i18nTime, useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import { assertExists } from '@blocksuite/global/utils';
+import { assertExists } from '@blocksuite/affine/global/utils';
 import {
   ArrowDownSmallIcon,
   DeleteIcon,

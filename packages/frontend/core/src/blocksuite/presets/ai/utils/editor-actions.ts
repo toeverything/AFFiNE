@@ -2,10 +2,10 @@ import type {
   BlockComponent,
   EditorHost,
   TextSelection,
-} from '@blocksuite/block-std';
-import type { AffineAIPanelWidget } from '@blocksuite/blocks';
-import { isInsideEdgelessEditor } from '@blocksuite/blocks';
-import { type BlockModel, Slice } from '@blocksuite/store';
+} from '@blocksuite/affine/block-std';
+import type { AffineAIPanelWidget } from '@blocksuite/affine/blocks';
+import { isInsideEdgelessEditor } from '@blocksuite/affine/blocks';
+import { type BlockModel, Slice } from '@blocksuite/affine/store';
 
 import {
   insertFromMarkdown,

@@ -14,10 +14,7 @@
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@blocksuite/blocks": "0.17.14",
-    "@blocksuite/global": "0.17.14",
-    "@blocksuite/presets": "0.17.14",
-    "@blocksuite/store": "0.17.14",
+    "@blocksuite/affine": "0.17.14",
     "@datastructures-js/binary-search-tree": "^5.3.2",
     "foxact": "^0.2.33",
     "fuse.js": "^7.0.0",
@@ -34,7 +31,6 @@
   "devDependencies": {
     "@affine-test/fixtures": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@blocksuite/presets": "0.17.14",
     "@testing-library/react": "^16.0.0",
     "fake-indexeddb": "^6.0.0",
     "react": "^18.2.0",
@@ -43,16 +39,12 @@
   },
   "peerDependencies": {
     "@affine/templates": "*",
-    "@blocksuite/presets": "*",
     "electron": "*",
     "react": "*",
     "yjs": "^13"
   },
   "peerDependenciesMeta": {
     "@affine/templates": {
-      "optional": true
-    },
-    "@blocksuite/presets": {
       "optional": true
     },
     "electron": {

@@ -4,8 +4,8 @@ import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties'
 import { ShareDocsListService } from '@affine/core/modules/share-doc';
 import { PublicPageMode } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
+import type { DocMeta } from '@blocksuite/affine/store';
 import { FilterIcon } from '@blocksuite/icons/rc';
-import type { DocMeta } from '@blocksuite/store';
 import {
   useLiveData,
   useServices,
