@@ -6,8 +6,21 @@ import {
 } from '@affine/component';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { useI18n } from '@affine/i18n';
-import { LiveData, useLiveData, useServices } from '@toeverything/infra';
-import { Suspense, useCallback, useContext, useMemo, useRef } from 'react';
+import {
+  LiveData,
+  useLiveData,
+  useMount,
+  useServices,
+} from '@toeverything/infra';
+import {
+  Suspense,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { BlocksuiteHeaderTitle } from '../../../blocksuite/block-suite-header/title';
 import { managerContext } from '../common';
@@ -22,6 +35,21 @@ import { LinksRow } from './links-row';
 import { TagsRow } from './tags-row';
 import { TimeRow } from './time-row';
 
+export const useInfoModal = (docId?: string) => {
+  const [open, setOpen] = useState(false);
+  const { mount } = useMount('InfoModal');
+
+  useEffect(() => {
+    if (!open || !docId) return;
+    return mount(<InfoModal open docId={docId} onOpenChange={setOpen} />);
+  }, [docId, mount, open]);
+
+  return [open, setOpen] as const;
+};
+
+/**
+ * For most situations, use `useInfoModal()` instead.
+ */
 export const InfoModal = ({
   open,
   onOpenChange,

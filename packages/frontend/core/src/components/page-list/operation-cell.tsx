@@ -39,7 +39,7 @@ import type { MouseEvent } from 'react';
 import { useCallback, useState } from 'react';
 
 import type { CollectionService } from '../../modules/collection';
-import { InfoModal } from '../affine/page-properties';
+import { useInfoModal } from '../affine/page-properties';
 import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
 import { IsFavoriteIcon } from '../pure/icons';
 import { FavoriteTag } from './components/favorite-tag';
@@ -86,11 +86,11 @@ export const PageOperationCell = ({
   const { duplicate } = useBlockSuiteMetaHelper();
   const blocksuiteDoc = currentWorkspace.docCollection.getDoc(page.id);
 
-  const [openInfoModal, setOpenInfoModal] = useState(false);
+  const [_, setOpenInfoModal] = useInfoModal(blocksuiteDoc?.id);
   const onOpenInfoModal = useCallback(() => {
     track.$.docInfoPanel.$.open();
     setOpenInfoModal(true);
-  }, []);
+  }, [setOpenInfoModal]);
 
   const onDisablePublicSharing = useCallback(() => {
     // TODO(@EYHN): implement disable public sharing
@@ -214,13 +214,6 @@ export const PageOperationCell = ({
           </IconButton>
         </Menu>
       </ColWrapper>
-      {blocksuiteDoc ? (
-        <InfoModal
-          open={openInfoModal}
-          onOpenChange={setOpenInfoModal}
-          docId={blocksuiteDoc.id}
-        />
-      ) : null}
     </>
   );
 };

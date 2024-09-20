@@ -3,7 +3,6 @@ import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@affine/core/commands';
-import { openInfoModalAtom } from '@affine/core/components/atoms';
 import type { Editor } from '@affine/core/modules/editor';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -20,6 +19,7 @@ import { useSetAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
 import { pageHistoryModalAtom } from '../../../components/atoms/page-history';
+import { useInfoModal } from '../../affine/page-properties';
 import { useBlockSuiteMetaHelper } from './use-block-suite-meta-helper';
 import { useExportPage } from './use-export-page';
 import { useTrashModalHelper } from './use-trash-modal-helper';
@@ -36,7 +36,7 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
   const trash = useLiveData(doc.trash$);
 
   const setPageHistoryModalState = useSetAtom(pageHistoryModalAtom);
-  const setInfoModalState = useSetAtom(openInfoModalAtom);
+  const [_, setInfoModalState] = useInfoModal(docId);
 
   const openHistoryModal = useCallback(() => {
     setPageHistoryModalState(() => ({

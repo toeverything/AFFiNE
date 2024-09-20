@@ -6,11 +6,9 @@ import {
   MenuSub,
 } from '@affine/component/ui/menu';
 import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
+import { useInfoModal } from '@affine/core/components/affine/page-properties';
 import { ShareMenuContent } from '@affine/core/components/affine/share-page-modal/share-menu';
-import {
-  openHistoryTipsModalAtom,
-  openInfoModalAtom,
-} from '@affine/core/components/atoms';
+import { openHistoryTipsModalAtom } from '@affine/core/components/atoms';
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { useExportPage } from '@affine/core/components/hooks/affine/use-export-page';
@@ -117,7 +115,7 @@ export const PageHeaderMenuButton = ({
     return setOpenHistoryTipsModal(true);
   }, [setOpenHistoryTipsModal, workspace.flavour]);
 
-  const setOpenInfoModal = useSetAtom(openInfoModalAtom);
+  const [_, setOpenInfoModal] = useInfoModal(pageId);
   const openInfoModal = useCallback(() => {
     track.$.header.pageInfo.open();
     setOpenInfoModal(true);

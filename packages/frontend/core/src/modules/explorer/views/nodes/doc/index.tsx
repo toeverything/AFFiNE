@@ -5,7 +5,7 @@ import {
   toast,
   Tooltip,
 } from '@affine/component';
-import { InfoModal } from '@affine/core/components/affine/page-properties';
+import { useInfoModal } from '@affine/core/components/affine/page-properties';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
@@ -175,7 +175,7 @@ export const ExplorerDocNode = ({
     [canDrop]
   );
 
-  const [enableInfoModal, setEnableInfoModal] = useState(false);
+  const [_, setEnableInfoModal] = useInfoModal(docId);
   const operations = useExplorerDocNodeOperations(
     docId,
     useMemo(
@@ -183,7 +183,7 @@ export const ExplorerDocNode = ({
         openInfoModal: () => setEnableInfoModal(true),
         openNodeCollapsed: () => setCollapsed(false),
       }),
-      []
+      [setEnableInfoModal]
     )
   );
 
@@ -199,57 +199,48 @@ export const ExplorerDocNode = ({
   }
 
   return (
-    <>
-      <ExplorerTreeNode
-        icon={Icon}
-        name={typeof docTitle === 'string' ? docTitle : t[docTitle.key]()}
-        dndData={dndData}
-        onDrop={handleDropOnDoc}
-        renameable
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
-        canDrop={handleCanDrop}
-        to={`/${docId}`}
-        active={active}
-        postfix={
-          referencesLoading &&
-          !collapsed && (
-            <Tooltip
-              content={t['com.affine.rootAppSidebar.docs.references-loading']()}
-            >
-              <div className={styles.loadingIcon}>
-                <Loading />
-              </div>
-            </Tooltip>
-          )
-        }
-        reorderable={reorderable}
-        onRename={handleRename}
-        childrenPlaceholder={<Empty onDrop={handleDropOnPlaceholder} />}
-        operations={finalOperations}
-        dropEffect={handleDropEffectOnDoc}
-        data-testid={`explorer-doc-${docId}`}
-      >
-        {children?.map(child => (
-          <ExplorerDocNode
-            key={child.docId}
-            docId={child.docId}
-            reorderable={false}
-            location={{
-              at: 'explorer:doc:linked-docs',
-              docId,
-            }}
-            isLinked
-          />
-        ))}
-      </ExplorerTreeNode>
-      {enableInfoModal && (
-        <InfoModal
-          open={enableInfoModal}
-          onOpenChange={setEnableInfoModal}
-          docId={docId}
+    <ExplorerTreeNode
+      icon={Icon}
+      name={typeof docTitle === 'string' ? docTitle : t[docTitle.key]()}
+      dndData={dndData}
+      onDrop={handleDropOnDoc}
+      renameable
+      collapsed={collapsed}
+      setCollapsed={setCollapsed}
+      canDrop={handleCanDrop}
+      to={`/${docId}`}
+      active={active}
+      postfix={
+        referencesLoading &&
+        !collapsed && (
+          <Tooltip
+            content={t['com.affine.rootAppSidebar.docs.references-loading']()}
+          >
+            <div className={styles.loadingIcon}>
+              <Loading />
+            </div>
+          </Tooltip>
+        )
+      }
+      reorderable={reorderable}
+      onRename={handleRename}
+      childrenPlaceholder={<Empty onDrop={handleDropOnPlaceholder} />}
+      operations={finalOperations}
+      dropEffect={handleDropEffectOnDoc}
+      data-testid={`explorer-doc-${docId}`}
+    >
+      {children?.map(child => (
+        <ExplorerDocNode
+          key={child.docId}
+          docId={child.docId}
+          reorderable={false}
+          location={{
+            at: 'explorer:doc:linked-docs',
+            docId,
+          }}
+          isLinked
         />
-      )}
-    </>
+      ))}
+    </ExplorerTreeNode>
   );
 };
