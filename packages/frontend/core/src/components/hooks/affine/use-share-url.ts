@@ -1,6 +1,6 @@
 import { notify } from '@affine/component';
 import { getAffineCloudBaseUrl } from '@affine/core/modules/cloud/services/fetch';
-import { toURLSearchParams } from '@affine/core/utils';
+import { toURLSearchParams } from '@affine/core/modules/navigation';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { type EditorHost } from '@blocksuite/block-std';

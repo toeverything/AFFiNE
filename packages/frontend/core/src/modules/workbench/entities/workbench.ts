@@ -1,4 +1,4 @@
-import { toURLSearchParams } from '@affine/core/utils';
+import { toURLSearchParams } from '@affine/core/modules/navigation';
 import { Unreachable } from '@affine/env/constant';
 import type { ReferenceParams } from '@blocksuite/blocks';
 import { Entity, LiveData } from '@toeverything/infra';

@@ -1,4 +1,4 @@
-import { toURLSearchParams } from '@affine/core/utils';
+import { toURLSearchParams } from '@affine/core/modules/navigation';
 import type { DocMode } from '@blocksuite/blocks';
 import { createContext, useCallback, useContext, useMemo } from 'react';
 import type { NavigateFunction, NavigateOptions } from 'react-router-dom';

@@ -2,7 +2,7 @@ import { afterEach } from 'node:test';
 
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { resolveLinkToDoc } from '../utils';
+import { resolveLinkToDoc, toURLSearchParams } from '../utils';
 
 function defineTest(
   input: string,
@@ -88,4 +88,52 @@ const testCases: [string, ReturnType<typeof resolveLinkToDoc>][] = [
 
 for (const [input, expected] of testCases) {
   defineTest(input, expected);
+}
+
+function defineTestWithToURLSearchParams(
+  input?: Partial<Record<string, string | string[]>>,
+  expected?: ReturnType<typeof toURLSearchParams>
+) {
+  test(`toURLSearchParams(${JSON.stringify(input)})`, () => {
+    const result = toURLSearchParams(input);
+    expect(result).toEqual(expected);
+  });
+}
+
+const testCases2: [
+  Partial<Record<string, string | string[]> | undefined>,
+  ReturnType<typeof toURLSearchParams>,
+][] = [
+  [undefined, undefined],
+  [
+    { blockIds: ['x'] },
+    new URLSearchParams({
+      blockIds: 'x',
+    }),
+  ],
+  [{ blockIds: [] }, new URLSearchParams()],
+  [
+    { blockIds: ['', 'x', ''] },
+    new URLSearchParams({
+      blockIds: 'x',
+    }),
+  ],
+  [{ mode: undefined }, new URLSearchParams()],
+  [{ mode: '' }, new URLSearchParams()],
+  [
+    { mode: 'page', blockIds: ['x', 'y', 'z'], elementIds: ['a', 'b', 'c'] },
+    new URLSearchParams({
+      mode: 'page',
+      blockIds: 'x,y,z',
+      elementIds: 'a,b,c',
+    }),
+  ],
+  [
+    { mode: undefined, blockIds: undefined, elementIds: undefined },
+    new URLSearchParams(),
+  ],
+];
+
+for (const [input, expected] of testCases2) {
+  defineTestWithToURLSearchParams(input, expected);
 }
