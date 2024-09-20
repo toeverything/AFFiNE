@@ -95,7 +95,7 @@ export const tab = style({
       marginRight: 8,
     },
     '&[data-active="true"]': {
-      boxShadow: cssVar('buttonShadow'),
+      boxShadow: `0 0 0 1px ${cssVarV2('button/innerBlackBorder')}`,
     },
     '&[data-pinned="true"]': {
       maxWidth: 64,
