@@ -110,7 +110,8 @@ export function registerProtocol() {
     const protocol = url.protocol;
     const origin = url.origin;
 
-    const sameOrigin = origin === CLOUD_BASE_URL || protocol === 'file:';
+    const sameSite =
+      url.host === new URL(CLOUD_BASE_URL).host || protocol === 'file:';
 
     // offline whitelist
     // 1. do not block non-api request for http://localhost || file:// (local dev assets)
@@ -142,7 +143,7 @@ export function registerProtocol() {
 
     // session cookies are set to file:// on production
     // if sending request to the cloud, attach the session cookie (to affine cloud server)
-    if (isNetworkResource(pathname) && sameOrigin) {
+    if (isNetworkResource(pathname) && sameSite) {
       const cookie = getCookies();
       if (cookie) {
         const cookieString = cookie.map(c => `${c.name}=${c.value}`).join('; ');
