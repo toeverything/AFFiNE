@@ -7,10 +7,7 @@ import {
 } from '@affine/component/ui/menu';
 import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
 import { ShareMenuContent } from '@affine/core/components/affine/share-page-modal/share-menu';
-import {
-  openHistoryTipsModalAtom,
-  openInfoModalAtom,
-} from '@affine/core/components/atoms';
+import { openHistoryTipsModalAtom } from '@affine/core/components/atoms';
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { useExportPage } from '@affine/core/components/hooks/affine/use-export-page';
@@ -20,6 +17,7 @@ import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-
 import { Export, MoveToTrash } from '@affine/core/components/page-list';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { useDetailPageHeaderResponsive } from '@affine/core/desktop/pages/workspace/detail-page/use-header-responsive';
+import { DocInfoService } from '@affine/core/modules/doc-info';
 import { EditorService } from '@affine/core/modules/editor';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
@@ -117,11 +115,11 @@ export const PageHeaderMenuButton = ({
     return setOpenHistoryTipsModal(true);
   }, [setOpenHistoryTipsModal, workspace.flavour]);
 
-  const setOpenInfoModal = useSetAtom(openInfoModalAtom);
+  const docInfoModal = useService(DocInfoService).modal;
   const openInfoModal = useCallback(() => {
     track.$.header.pageInfo.open();
-    setOpenInfoModal(true);
-  }, [setOpenInfoModal]);
+    docInfoModal.open(pageId);
+  }, [docInfoModal, pageId]);
 
   const handleOpenInNewTab = useCallback(() => {
     workbench.openDoc(pageId, {

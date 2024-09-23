@@ -1,19 +1,19 @@
 import { IconButton } from '@affine/component';
-import { openInfoModalAtom } from '@affine/core/components/atoms';
+import { DocInfoService } from '@affine/core/modules/doc-info';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { InformationIcon } from '@blocksuite/icons/rc';
-import { useSetAtom } from 'jotai';
+import { useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
-export const InfoButton = () => {
-  const setOpenInfoModal = useSetAtom(openInfoModalAtom);
+export const InfoButton = ({ docId }: { docId: string }) => {
+  const modal = useService(DocInfoService).modal;
   const t = useI18n();
 
   const onOpenInfoModal = useCallback(() => {
     track.$.header.actions.openDocInfo();
-    setOpenInfoModal(true);
-  }, [setOpenInfoModal]);
+    modal.open(docId);
+  }, [docId, modal]);
 
   return (
     <IconButton

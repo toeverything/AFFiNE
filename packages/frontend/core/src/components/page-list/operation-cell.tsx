@@ -8,6 +8,7 @@ import {
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
 import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
+import { DocInfoService } from '@affine/core/modules/doc-info';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -32,6 +33,7 @@ import {
 import {
   FeatureFlagService,
   useLiveData,
+  useService,
   useServices,
   WorkspaceService,
 } from '@toeverything/infra';
@@ -39,7 +41,6 @@ import type { MouseEvent } from 'react';
 import { useCallback, useState } from 'react';
 
 import type { CollectionService } from '../../modules/collection';
-import { InfoModal } from '../affine/page-properties';
 import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
 import { IsFavoriteIcon } from '../pure/icons';
 import { FavoriteTag } from './components/favorite-tag';
@@ -86,11 +87,11 @@ export const PageOperationCell = ({
   const { duplicate } = useBlockSuiteMetaHelper();
   const blocksuiteDoc = currentWorkspace.docCollection.getDoc(page.id);
 
-  const [openInfoModal, setOpenInfoModal] = useState(false);
+  const docInfoModal = useService(DocInfoService).modal;
   const onOpenInfoModal = useCallback(() => {
     track.$.docInfoPanel.$.open();
-    setOpenInfoModal(true);
-  }, []);
+    docInfoModal.open(blocksuiteDoc?.id);
+  }, [blocksuiteDoc?.id, docInfoModal]);
 
   const onDisablePublicSharing = useCallback(() => {
     // TODO(@EYHN): implement disable public sharing
@@ -214,13 +215,6 @@ export const PageOperationCell = ({
           </IconButton>
         </Menu>
       </ColWrapper>
-      {blocksuiteDoc ? (
-        <InfoModal
-          open={openInfoModal}
-          onOpenChange={setOpenInfoModal}
-          docId={blocksuiteDoc.id}
-        />
-      ) : null}
     </>
   );
 };

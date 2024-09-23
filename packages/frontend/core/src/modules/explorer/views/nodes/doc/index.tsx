@@ -5,9 +5,9 @@ import {
   toast,
   Tooltip,
 } from '@affine/component';
-import { InfoModal } from '@affine/core/components/affine/page-properties';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
+import { DocInfoService } from '@affine/core/modules/doc-info';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
@@ -17,6 +17,7 @@ import {
   GlobalContextService,
   LiveData,
   useLiveData,
+  useService,
   useServices,
 } from '@toeverything/infra';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
@@ -175,15 +176,15 @@ export const ExplorerDocNode = ({
     [canDrop]
   );
 
-  const [enableInfoModal, setEnableInfoModal] = useState(false);
+  const docInfoModal = useService(DocInfoService).modal;
   const operations = useExplorerDocNodeOperations(
     docId,
     useMemo(
       () => ({
-        openInfoModal: () => setEnableInfoModal(true),
+        openInfoModal: () => docInfoModal.open(docId),
         openNodeCollapsed: () => setCollapsed(false),
       }),
-      []
+      [docId, docInfoModal]
     )
   );
 
@@ -199,57 +200,48 @@ export const ExplorerDocNode = ({
   }
 
   return (
-    <>
-      <ExplorerTreeNode
-        icon={Icon}
-        name={typeof docTitle === 'string' ? docTitle : t[docTitle.key]()}
-        dndData={dndData}
-        onDrop={handleDropOnDoc}
-        renameable
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
-        canDrop={handleCanDrop}
-        to={`/${docId}`}
-        active={active}
-        postfix={
-          referencesLoading &&
-          !collapsed && (
-            <Tooltip
-              content={t['com.affine.rootAppSidebar.docs.references-loading']()}
-            >
-              <div className={styles.loadingIcon}>
-                <Loading />
-              </div>
-            </Tooltip>
-          )
-        }
-        reorderable={reorderable}
-        onRename={handleRename}
-        childrenPlaceholder={<Empty onDrop={handleDropOnPlaceholder} />}
-        operations={finalOperations}
-        dropEffect={handleDropEffectOnDoc}
-        data-testid={`explorer-doc-${docId}`}
-      >
-        {children?.map(child => (
-          <ExplorerDocNode
-            key={child.docId}
-            docId={child.docId}
-            reorderable={false}
-            location={{
-              at: 'explorer:doc:linked-docs',
-              docId,
-            }}
-            isLinked
-          />
-        ))}
-      </ExplorerTreeNode>
-      {enableInfoModal && (
-        <InfoModal
-          open={enableInfoModal}
-          onOpenChange={setEnableInfoModal}
-          docId={docId}
+    <ExplorerTreeNode
+      icon={Icon}
+      name={typeof docTitle === 'string' ? docTitle : t[docTitle.key]()}
+      dndData={dndData}
+      onDrop={handleDropOnDoc}
+      renameable
+      collapsed={collapsed}
+      setCollapsed={setCollapsed}
+      canDrop={handleCanDrop}
+      to={`/${docId}`}
+      active={active}
+      postfix={
+        referencesLoading &&
+        !collapsed && (
+          <Tooltip
+            content={t['com.affine.rootAppSidebar.docs.references-loading']()}
+          >
+            <div className={styles.loadingIcon}>
+              <Loading />
+            </div>
+          </Tooltip>
+        )
+      }
+      reorderable={reorderable}
+      onRename={handleRename}
+      childrenPlaceholder={<Empty onDrop={handleDropOnPlaceholder} />}
+      operations={finalOperations}
+      dropEffect={handleDropEffectOnDoc}
+      data-testid={`explorer-doc-${docId}`}
+    >
+      {children?.map(child => (
+        <ExplorerDocNode
+          key={child.docId}
+          docId={child.docId}
+          reorderable={false}
+          location={{
+            at: 'explorer:doc:linked-docs',
+            docId,
+          }}
+          isLinked
         />
-      )}
-    </>
+      ))}
+    </ExplorerTreeNode>
   );
 };

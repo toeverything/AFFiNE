@@ -3,8 +3,6 @@ import {
   type InlineEditHandle,
   observeResize,
 } from '@affine/component';
-import { InfoModal } from '@affine/core/components/affine/page-properties';
-import { openInfoModalAtom } from '@affine/core/components/atoms';
 import { FavoriteButton } from '@affine/core/components/blocksuite/block-suite-header/favorite';
 import { InfoButton } from '@affine/core/components/blocksuite/block-suite-header/info';
 import { JournalWeekDatePicker } from '@affine/core/components/blocksuite/block-suite-header/journal/date-picker';
@@ -19,7 +17,7 @@ import { EditorService } from '@affine/core/modules/editor';
 import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
 import type { Doc } from '@blocksuite/affine/store';
 import { useLiveData, useService, type Workspace } from '@toeverything/infra';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 
 import { SharePageButton } from '../../../../components/affine/share-page-modal';
@@ -139,7 +137,7 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
         {hideCollect ? null : (
           <>
             <FavoriteButton pageId={page?.id} />
-            <InfoButton />
+            <InfoButton docId={page.id} />
           </>
         )}
         <PageHeaderMenuButton
@@ -168,25 +166,15 @@ export function DetailPageHeader(props: PageHeaderProps) {
   const { page, workspace } = props;
   const { isJournal } = useJournalInfoHelper(page.id);
   const isInTrash = page.meta?.trash;
-  const [openInfoModal, setOpenInfoModal] = useAtom(openInfoModalAtom);
 
   useRegisterCopyLinkCommands({
     workspaceMeta: workspace.meta,
     docId: page.id,
   });
 
-  return (
-    <>
-      {isJournal && !isInTrash ? (
-        <JournalPageHeader {...props} />
-      ) : (
-        <NormalPageHeader {...props} />
-      )}
-      <InfoModal
-        open={openInfoModal}
-        onOpenChange={setOpenInfoModal}
-        docId={page.id}
-      />
-    </>
+  return isJournal && !isInTrash ? (
+    <JournalPageHeader {...props} />
+  ) : (
+    <NormalPageHeader {...props} />
   );
 }

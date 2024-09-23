@@ -12,7 +12,6 @@ export const openQuotaModalAtom = atom(false);
 export const openStarAFFiNEModalAtom = atom(false);
 export const openIssueFeedbackModalAtom = atom(false);
 export const openHistoryTipsModalAtom = atom(false);
-export const openInfoModalAtom = atom(false);
 
 export const rightSidebarWidthAtom = atom(320);
 

@@ -21,6 +21,7 @@ import { AuthModal } from '../affine/auth';
 import { AiLoginRequiredModal } from '../affine/auth/ai-login-required';
 import { HistoryTipsModal } from '../affine/history-tips-modal';
 import { IssueFeedbackModal } from '../affine/issue-feedback-modal';
+import { InfoModal } from '../affine/page-properties/info-modal/info-modal';
 import {
   CloudQuotaModal,
   LocalQuotaModal,
@@ -126,6 +127,7 @@ export function CurrentWorkspaceModals() {
         onOpenChange={onTrashConfirmOpenChange}
         titles={deletePageTitles}
       />
+      <InfoModal />
     </>
   );
 }

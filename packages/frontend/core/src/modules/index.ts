@@ -5,6 +5,7 @@ import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
 import { configureCreateWorkspaceModule } from './create-workspace';
 import { configureDocDisplayMetaModule } from './doc-display-meta';
+import { configureDocInfoModule } from './doc-info';
 import { configureDocLinksModule } from './doc-link';
 import { configureDocsSearchModule } from './docs-search';
 import { configureEditorModule } from './editor';
@@ -55,4 +56,5 @@ export function configureCommonModules(framework: Framework) {
   configureImportTemplateModule(framework);
   configureCreateWorkspaceModule(framework);
   configureUserspaceModule(framework);
+  configureDocInfoModule(framework);
 }
