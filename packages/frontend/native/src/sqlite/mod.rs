@@ -53,7 +53,7 @@ impl SqliteConnection {
     let sqlite_options = SqliteConnectOptions::new()
       .filename(&path)
       .foreign_keys(false)
-      .journal_mode(sqlx::sqlite::SqliteJournalMode::Off);
+      .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
     let pool = SqlitePoolOptions::new()
       .max_connections(4)
       .connect_lazy_with(sqlite_options);
