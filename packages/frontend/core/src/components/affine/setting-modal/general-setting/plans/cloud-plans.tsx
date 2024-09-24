@@ -67,7 +67,7 @@ const proBenefits: BenefitsGetter = t => ({
       title: t['com.affine.payment.cloud.pro.benefit.g1-1'](),
       icon: <AfFiNeIcon />,
     },
-    ...([2, 3, 4, 5, 6, 7, 8] as const).map(i => ({
+    ...([2, 3, 4, 5, 7, 8] as const).map(i => ({
       title: t[`com.affine.payment.cloud.pro.benefit.g1-${i}`](),
     })),
   ],
