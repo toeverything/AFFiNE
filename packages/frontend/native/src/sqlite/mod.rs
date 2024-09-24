@@ -48,7 +48,7 @@ pub enum ValidationResult {
 
 #[napi]
 impl SqliteConnection {
-  #[napi(constructor)]
+  #[napi(constructor, async_runtime)]
   pub fn new(path: String) -> napi::Result<Self> {
     let sqlite_options = SqliteConnectOptions::new()
       .filename(&path)
