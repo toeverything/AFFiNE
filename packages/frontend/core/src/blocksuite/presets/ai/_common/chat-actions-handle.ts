@@ -313,7 +313,7 @@ const SAVE_CHAT_TO_BLOCK_ACTION: ChatAction = {
       curMode,
       rootService as RootService
     );
-    const newBlockIndex = layer.generateIndex('affine:embed-ai-chat');
+    const newBlockIndex = layer.generateIndex();
     // If current mode is not edgeless, switch to edgeless mode first
     if (curMode !== 'edgeless') {
       // Set mode to edgeless

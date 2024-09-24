@@ -133,6 +133,15 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: isDesktopEnvironment || isCanaryBuild,
   },
+  enable_advanced_block_visibility: {
+    category: 'blocksuite',
+    bsFlag: 'enable_advanced_block_visibility',
+    displayName: 'Advanced block visibility control',
+    description:
+      'To provide detailed control over which edgeless blocks are visible in page mode.',
+    configurable: true,
+    defaultState: false,
+  },
 } satisfies { [key in string]: FlagInfo };
 
 export type AFFINE_FLAGS = typeof AFFINE_FLAGS;

@@ -113,7 +113,7 @@ function createNewNote(host: EditorHost): AIItemConfig {
           {
             xywh: newBound.serialize(),
             displayMode: NoteDisplayMode.EdgelessOnly,
-            index: service.generateIndex('affine:note'),
+            index: service.generateIndex(),
           },
           doc.root.id
         );
