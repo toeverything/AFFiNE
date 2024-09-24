@@ -165,18 +165,24 @@ export function AffineSharedPageReference({
 
   const isJournal = journalHelper.isPageJournal(pageId);
 
-  const onClick = useCallback(() => {
-    if (isJournal) {
-      track.doc.editor.pageRef.navigate({
-        to: 'journal',
-      });
-    }
+  const onClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (isJournal) {
+        track.doc.editor.pageRef.navigate({
+          to: 'journal',
+        });
+      }
 
-    // update refresh key
-    setRefreshKey(nanoid());
+      // update refresh key
+      setRefreshKey(nanoid());
 
-    return;
-  }, [isJournal]);
+      // Prevent blocksuite link clicked behavior
+      e.stopPropagation();
+
+      return;
+    },
+    [isJournal]
+  );
 
   const query = useMemo(() => {
     // A block/element reference link
