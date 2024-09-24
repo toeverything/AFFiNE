@@ -45,6 +45,8 @@ export async function type(page: Page, content: string, delay = 50) {
 }
 
 export const createLinkedPage = async (page: Page, pageName?: string) => {
+  // fixme: workaround for @ popover not showing up when editor is not ready
+  await page.waitForTimeout(500);
   await page.keyboard.type('@', { delay: 50 });
   const linkedPagePopover = page.locator('.linked-doc-popover');
   await expect(linkedPagePopover).toBeVisible();
