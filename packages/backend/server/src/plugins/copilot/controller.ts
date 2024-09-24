@@ -335,7 +335,10 @@ export class CopilotController {
               concatMap(values => {
                 session.push({
                   role: 'assistant',
-                  content: values.join(''),
+                  content: values
+                    .filter(v => v.status === GraphExecutorState.EmitContent)
+                    .map(v => v.content)
+                    .join(''),
                   createdAt: new Date(),
                 });
                 return from(session.save());
