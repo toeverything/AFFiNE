@@ -25,9 +25,13 @@ export const useThemeColorMeta = (color: string) => {
     const meta = getMeta();
     const old = meta.content;
     meta.content = color;
+    // also modify document background (for over scroll bounce effect)
+    const oldBg = document.documentElement.style.backgroundColor;
+    document.documentElement.style.backgroundColor = color;
 
     return () => {
       meta.content = old;
+      document.documentElement.style.backgroundColor = oldBg;
     };
   }, [color]);
 };

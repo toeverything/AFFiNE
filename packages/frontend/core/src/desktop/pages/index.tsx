@@ -15,7 +15,10 @@ import {
 import { type LoaderFunction, useSearchParams } from 'react-router-dom';
 
 import { AppFallback } from '../../components/affine/app-container';
-import { useNavigateHelper } from '../../components/hooks/use-navigate-helper';
+import {
+  RouteLogic,
+  useNavigateHelper,
+} from '../../components/hooks/use-navigate-helper';
 import { WorkspaceNavigator } from '../../components/workspace-selector';
 import { AuthService } from '../../modules/cloud';
 import {
@@ -102,7 +105,7 @@ export const Component = ({
       const lastId = localStorage.getItem('last_workspace_id');
 
       const openWorkspace = list.find(w => w.id === lastId) ?? list[0];
-      openPage(openWorkspace.id, defaultIndexRoute);
+      openPage(openWorkspace.id, defaultIndexRoute, RouteLogic.REPLACE);
     }
   }, [
     createCloudWorkspace,

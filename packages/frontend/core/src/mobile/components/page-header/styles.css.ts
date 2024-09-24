@@ -3,13 +3,16 @@ import { style } from '@vanilla-extract/css';
 
 export const root = style({
   width: '100%',
-  position: 'sticky',
+  position: 'fixed',
   top: 0,
   zIndex: 1,
   backgroundColor: cssVarV2('layer/background/secondary'),
 });
+export const headerSpacer = style({
+  height: 44,
+});
 export const inner = style({
-  minHeight: 44,
+  height: 44,
   padding: '0 6px',
   display: 'flex',
   alignItems: 'center',

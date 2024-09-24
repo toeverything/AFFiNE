@@ -11,7 +11,7 @@ export const root = style({
 
 export const header = style({
   background: cssVarV2('layer/background/primary'),
-  position: 'sticky',
+  position: 'fixed',
   top: 0,
   zIndex: 1,
 });

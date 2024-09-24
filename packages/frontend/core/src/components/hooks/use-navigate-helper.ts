@@ -96,8 +96,8 @@ export function useNavigateHelper() {
   );
 
   const openPage = useCallback(
-    (workspaceId: string, pageId: string) => {
-      return jumpToPage(workspaceId, pageId);
+    (workspaceId: string, pageId: string, logic?: RouteLogic) => {
+      return jumpToPage(workspaceId, pageId, logic);
     },
     [jumpToPage]
   );

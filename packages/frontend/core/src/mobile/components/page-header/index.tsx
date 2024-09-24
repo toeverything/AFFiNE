@@ -65,41 +65,50 @@ export const PageHeader = forwardRef<HTMLDivElement, PageHeaderProps>(
     }, [backAction]);
 
     return (
-      <SafeArea
-        top
-        ref={ref}
-        className={clsx(styles.root, className)}
-        data-testid="mobile-page-header"
-        {...attrs}
-      >
-        <header className={styles.inner}>
-          <section
-            className={clsx(styles.prefix, prefixClassName)}
-            style={prefixStyle}
-          >
-            {back ? (
-              <IconButton
-                size={24}
-                style={{ padding: 10 }}
-                onClick={handleRouteBack}
-                icon={<ArrowLeftSmallIcon />}
-              />
-            ) : null}
-            {prefix}
-          </section>
+      <>
+        <SafeArea
+          top
+          ref={ref}
+          className={clsx(styles.root, className)}
+          data-testid="mobile-page-header"
+          {...attrs}
+        >
+          <header className={styles.inner}>
+            <section
+              className={clsx(styles.prefix, prefixClassName)}
+              style={prefixStyle}
+            >
+              {back ? (
+                <IconButton
+                  size={24}
+                  style={{ padding: 10 }}
+                  onClick={handleRouteBack}
+                  icon={<ArrowLeftSmallIcon />}
+                />
+              ) : null}
+              {prefix}
+            </section>
 
-          <section className={clsx(styles.content, { center: centerContent })}>
-            {children}
-          </section>
+            <section
+              className={clsx(styles.content, { center: centerContent })}
+            >
+              {children}
+            </section>
 
-          <section
-            className={clsx(styles.suffix, suffixClassName)}
-            style={suffixStyle}
-          >
-            {suffix}
-          </section>
-        </header>
-      </SafeArea>
+            <section
+              className={clsx(styles.suffix, suffixClassName)}
+              style={suffixStyle}
+            >
+              {suffix}
+            </section>
+          </header>
+        </SafeArea>
+
+        {/* Spacer */}
+        <SafeArea top>
+          <div className={styles.headerSpacer} />
+        </SafeArea>
+      </>
     );
   }
 );

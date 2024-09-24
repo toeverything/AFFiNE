@@ -14,11 +14,13 @@ globalStyle(':root', {
 globalStyle('body', {
   height: 'auto',
   minHeight: '100dvh',
+  overflowY: 'unset',
 });
 globalStyle('body:has(#app-tabs)', {
   paddingBottom: globalVars.appTabHeight,
 });
 globalStyle('html', {
+  height: '100dvh',
   overflowY: 'auto',
   background: cssVarV2('layer/background/secondary'),
 });
