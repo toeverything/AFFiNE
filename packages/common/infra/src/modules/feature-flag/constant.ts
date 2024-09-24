@@ -114,7 +114,8 @@ export const AFFINE_FLAGS = {
   enable_offline_mode: {
     category: 'affine',
     displayName: 'Offline Mode',
-    description: 'Enables offline mode.',
+    description:
+      'Enable Offline Mode, the affine client will disconnect from all network connections. You will not be able to use any online features. For testing only.',
     configurable: isDesktopEnvironment,
     defaultState: false,
   },
