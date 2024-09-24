@@ -16,7 +16,6 @@ import { useCallback, useMemo } from 'react';
 
 import { useAppSettingHelper } from '../../../../../components/hooks/affine/use-app-setting-helper';
 import { LanguageMenu } from '../../../language-menu';
-import { Page } from '../editor/page';
 import { settingWrapper } from './style.css';
 import { ThemeEditorSetting } from './theme-editor-setting';
 
@@ -106,8 +105,6 @@ export const AppearanceSettings = () => {
         ) : null}
         {enableThemeEditor ? <ThemeEditorSetting /> : null}
       </SettingWrapper>
-      {/* // TODO(@JimmFly): remove Page component when stable release */}
-      <Page />
 
       {BUILD_CONFIG.isElectron ? (
         <SettingWrapper
