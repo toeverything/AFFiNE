@@ -111,7 +111,7 @@ export const topLevelRoutes = [
               isTemplate: 'true',
               templateName: templateName ?? '',
               snapshotUrl: snapshotUrl ?? '',
-              templateMode: templateMode ?? 'page',
+              mode: templateMode ?? 'page',
             }).toString()}`
           );
         },
