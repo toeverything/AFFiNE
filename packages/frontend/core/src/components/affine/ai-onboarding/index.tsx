@@ -1,4 +1,9 @@
-import { FeatureFlagService, useService } from '@toeverything/infra';
+import { ServerConfigService } from '@affine/core/modules/cloud';
+import {
+  FeatureFlagService,
+  useLiveData,
+  useService,
+} from '@toeverything/infra';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 
 import { AIOnboardingEdgeless } from './edgeless.dialog';
@@ -30,7 +35,12 @@ export const WorkspaceAIOnboarding = () => {
   const [dismissGeneral] = useDismiss(AIOnboardingType.GENERAL);
   const [dismissLocal] = useDismiss(AIOnboardingType.LOCAL);
   const featureFlagService = useService(FeatureFlagService);
-  const enableAI = featureFlagService.flags.enable_ai.value;
+  const serverConfigService = useService(ServerConfigService);
+  const serverFeatures = useLiveData(
+    serverConfigService.serverConfig.features$
+  );
+  const enableAI =
+    serverFeatures?.copilot && featureFlagService.flags.enable_ai.value;
 
   return (
     <Suspense>
@@ -43,7 +53,12 @@ export const WorkspaceAIOnboarding = () => {
 export const PageAIOnboarding = () => {
   const [dismissEdgeless] = useDismiss(AIOnboardingType.EDGELESS);
   const featureFlagService = useService(FeatureFlagService);
-  const enableAI = featureFlagService.flags.enable_ai.value;
+  const serverConfigService = useService(ServerConfigService);
+  const serverFeatures = useLiveData(
+    serverConfigService.serverConfig.features$
+  );
+  const enableAI =
+    serverFeatures?.copilot && featureFlagService.flags.enable_ai.value;
 
   return (
     <Suspense>
