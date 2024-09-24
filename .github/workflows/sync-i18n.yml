@@ -2,10 +2,6 @@ name: Sync I18n with Crowdin
 
 on:
   push:
-    branches:
-      - canary
-    paths:
-      - 'packages/frontend/i18n/**'
   workflow_dispatch:
 
 jobs:
@@ -15,6 +11,8 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write
+      checks: write
 
     steps:
       - name: Checkout
