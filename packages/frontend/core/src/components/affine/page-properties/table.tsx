@@ -382,6 +382,7 @@ export const PageBacklinksPopup = ({
   return (
     <Menu
       contentOptions={{
+        className: styles.backLinksMenu,
         onClick(e) {
           e.stopPropagation();
         },
