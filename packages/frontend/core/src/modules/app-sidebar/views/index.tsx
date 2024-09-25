@@ -2,13 +2,18 @@ import { Skeleton } from '@affine/component';
 import { ResizePanel } from '@affine/component/resize-panel';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { NavigateContext } from '@affine/core/components/hooks/use-navigate-helper';
-import { useServiceOptional, WorkspaceService } from '@toeverything/infra';
-import { useAtom, useAtomValue } from 'jotai';
+import { WorkspaceNavigator } from '@affine/core/components/workspace-selector';
+import {
+  useLiveData,
+  useService,
+  useServiceOptional,
+  WorkspaceService,
+} from '@toeverything/infra';
 import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useContext, useEffect, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo } from 'react';
 
-import { WorkspaceNavigator } from '../workspace-selector';
+import { AppSidebarService } from '../services/app-sidebar';
 import * as styles from './fallback.css';
 import {
   floatingMaxWidth,
@@ -18,13 +23,6 @@ import {
   navWrapperStyle,
   sidebarFloatMaskStyle,
 } from './index.css';
-import {
-  APP_SIDEBAR_OPEN,
-  appSidebarFloatingAtom,
-  appSidebarOpenAtom,
-  appSidebarResizingAtom,
-  appSidebarWidthAtom,
-} from './index.jotai';
 import { SidebarHeader } from './sidebar-header';
 
 export type History = {
@@ -40,10 +38,12 @@ export function AppSidebar({ children }: PropsWithChildren) {
 
   const clientBorder = appSettings.clientBorder;
 
-  const [open, setOpen] = useAtom(appSidebarOpenAtom);
-  const [width, setWidth] = useAtom(appSidebarWidthAtom);
-  const [floating, setFloating] = useAtom(appSidebarFloatingAtom);
-  const [resizing, setResizing] = useAtom(appSidebarResizingAtom);
+  const appSidebarService = useService(AppSidebarService).sidebar;
+
+  const open = useLiveData(appSidebarService.open$);
+  const width = useLiveData(appSidebarService.width$);
+  const floating = useLiveData(appSidebarService.responsiveFloating$);
+  const resizing = useLiveData(appSidebarService.resizing$);
 
   useEffect(() => {
     // do not float app sidebar on desktop
@@ -61,13 +61,13 @@ export function AppSidebar({ children }: PropsWithChildren) {
       const isFloating = isFloatingMaxWidth || isOverflowWidth;
       if (
         open === undefined &&
-        localStorage.getItem(APP_SIDEBAR_OPEN) === null
+        appSidebarService.getCachedAppSidebarOpenState() === undefined
       ) {
         // give the initial value,
         // so that the sidebar can be closed on mobile by default
-        setOpen(!isFloating);
+        appSidebarService.setOpen(!isFloating);
       }
-      setFloating(isFloating);
+      appSidebarService.setResponsiveFloating(isFloating);
     }
 
     const dOnResize = debounce(onResize, 50);
@@ -75,10 +75,35 @@ export function AppSidebar({ children }: PropsWithChildren) {
     return () => {
       window.removeEventListener('resize', dOnResize);
     };
-  }, [open, setFloating, setOpen, width]);
+  }, [appSidebarService, open, width]);
 
   const hasRightBorder = !BUILD_CONFIG.isElectron && !clientBorder;
   const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
+
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      appSidebarService.setOpen(open);
+    },
+    [appSidebarService]
+  );
+
+  const handleResizing = useCallback(
+    (resizing: boolean) => {
+      appSidebarService.setResizing(resizing);
+    },
+    [appSidebarService]
+  );
+
+  const handleWidthChange = useCallback(
+    (width: number) => {
+      appSidebarService.setWidth(width);
+    },
+    [appSidebarService]
+  );
+
+  const handleClose = useCallback(() => {
+    appSidebarService.setOpen(false);
+  }, [appSidebarService]);
 
   return (
     <>
@@ -90,9 +115,9 @@ export function AppSidebar({ children }: PropsWithChildren) {
         minWidth={MIN_WIDTH}
         width={width}
         resizeHandlePos="right"
-        onOpen={setOpen}
-        onResizing={setResizing}
-        onWidthChange={setWidth}
+        onOpen={handleOpenChange}
+        onResizing={handleResizing}
+        onWidthChange={handleWidthChange}
         className={navWrapperStyle}
         resizeHandleOffset={0}
         resizeHandleVerticalPadding={clientBorder ? 16 : 0}
@@ -115,7 +140,7 @@ export function AppSidebar({ children }: PropsWithChildren) {
         data-open={open}
         data-is-floating={floating}
         className={sidebarFloatMaskStyle}
-        onClick={() => setOpen(false)}
+        onClick={handleClose}
       />
     </>
   );
@@ -207,7 +232,8 @@ const FallbackBody = () => {
 };
 
 export const AppSidebarFallback = (): ReactElement | null => {
-  const width = useAtomValue(appSidebarWidthAtom);
+  const appSidebarService = useService(AppSidebarService).sidebar;
+  const width = useLiveData(appSidebarService.width$);
   const { appSettings } = useAppSettingHelper();
   const clientBorder = appSettings.clientBorder;
 
@@ -235,7 +261,8 @@ export const AppSidebarFallback = (): ReactElement | null => {
  * NOTE(@forehalo): this is a copy of [AppSidebarFallback] without [WorkspaceNavigator] which will introduce a lot useless dependencies for shell(tab bar)
  */
 export const ShellAppSidebarFallback = () => {
-  const width = useAtomValue(appSidebarWidthAtom);
+  const appSidebarService = useService(AppSidebarService).sidebar;
+  const width = useLiveData(appSidebarService.width$);
   const { appSettings } = useAppSettingHelper();
   const clientBorder = appSettings.clientBorder;
 
@@ -268,4 +295,3 @@ export * from './menu-item';
 export * from './quick-search-input';
 export * from './sidebar-containers';
 export * from './sidebar-header';
-export { appSidebarFloatingAtom, appSidebarOpenAtom, appSidebarResizingAtom };

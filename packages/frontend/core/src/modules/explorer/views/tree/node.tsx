@@ -10,7 +10,7 @@ import {
   useDropTarget,
 } from '@affine/component';
 import { RenameModal } from '@affine/component/rename-modal';
-import { appSidebarWidthAtom } from '@affine/core/components/app-sidebar/index.jotai';
+import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { extractEmojiIcon } from '@affine/core/utils';
@@ -21,10 +21,10 @@ import {
   MoreHorizontalIcon,
 } from '@blocksuite/icons/rc';
 import * as Collapsible from '@radix-ui/react-collapsible';
+import { useLiveData, useService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import type { To } from 'history';
-import { useAtomValue } from 'jotai';
 import {
   Fragment,
   type RefAttributes,
@@ -117,10 +117,13 @@ export const ExplorerTreeNode = ({
   // If no onClick or to is provided, clicking on the node will toggle the collapse state
   const clickForCollapse = !onClick && !to && !disabled;
   const [childCount, setChildCount] = useState(0);
-  const sidebarWidth = useAtomValue(appSidebarWidthAtom);
   const [renaming, setRenaming] = useState(defaultRenaming);
   const [lastInGroup, setLastInGroup] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  const appSidebarService = useService(AppSidebarService).sidebar;
+  const sidebarWidth = useLiveData(appSidebarService.width$);
+
   const { emoji, name } = useMemo(() => {
     if (!extractEmojiAsIcon || !rawName) {
       return {

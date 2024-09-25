@@ -1,6 +1,18 @@
 import { openSettingModalAtom } from '@affine/core/components/atoms';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import {
+  AddPageButton,
+  AppDownloadButton,
+  AppSidebar,
+  CategoryDivider,
+  MenuItem,
+  MenuLinkItem,
+  QuickSearchInput,
+  SidebarContainer,
+  SidebarScrollableContainer,
+} from '@affine/core/modules/app-sidebar/views';
+import { ExternalMenuLinkItem } from '@affine/core/modules/app-sidebar/views/menu-item/external-menu-link-item';
+import {
   ExplorerCollections,
   ExplorerFavorites,
   ExplorerMigrationFavorites,
@@ -30,18 +42,6 @@ import type { MouseEvent, ReactElement } from 'react';
 import { useCallback, useEffect } from 'react';
 
 import { WorkbenchService } from '../../modules/workbench';
-import {
-  AddPageButton,
-  AppDownloadButton,
-  AppSidebar,
-  CategoryDivider,
-  MenuItem,
-  MenuLinkItem,
-  QuickSearchInput,
-  SidebarContainer,
-  SidebarScrollableContainer,
-} from '../app-sidebar';
-import { ExternalMenuLinkItem } from '../app-sidebar/menu-item/external-menu-link-item';
 import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
 import { WorkspaceNavigator } from '../workspace-selector';
 import ImportPage from './import-page';

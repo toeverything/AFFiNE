@@ -1,3 +1,4 @@
+import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import { useI18n } from '@affine/i18n';
 import type { AffineEditorContainer } from '@blocksuite/affine/presets';
 import { useService, WorkspaceService } from '@toeverything/infra';
@@ -71,6 +72,7 @@ export function useRegisterWorkspaceCommands() {
   const cmdkQuickSearchService = useService(CMDKQuickSearchService);
   const editorSettingService = useService(EditorSettingService);
   const createWorkspaceDialogService = useService(CreateWorkspaceDialogService);
+  const appSidebarService = useService(AppSidebarService);
 
   useEffect(() => {
     const unsub = registerCMDKCommand(cmdkQuickSearchService, editor);
@@ -123,12 +125,12 @@ export function useRegisterWorkspaceCommands() {
 
   // register AffineLayoutCommands
   useEffect(() => {
-    const unsub = registerAffineLayoutCommands({ t, store });
+    const unsub = registerAffineLayoutCommands({ t, appSidebarService });
 
     return () => {
       unsub();
     };
-  }, [store, t]);
+  }, [appSidebarService, store, t]);
 
   // register AffineCreationCommands
   useEffect(() => {

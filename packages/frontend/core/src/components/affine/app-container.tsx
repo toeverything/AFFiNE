@@ -1,8 +1,11 @@
+import {
+  AppSidebarFallback,
+  ShellAppSidebarFallback,
+} from '@affine/core/modules/app-sidebar/views';
 import clsx from 'clsx';
 import type { PropsWithChildren, ReactElement } from 'react';
 
 import { useAppSettingHelper } from '../../components/hooks/affine/use-app-setting-helper';
-import { AppSidebarFallback, ShellAppSidebarFallback } from '../app-sidebar';
 import type { WorkspaceRootProps } from '../workspace';
 import {
   AppContainer as AppContainerWithoutSettings,

@@ -7,11 +7,6 @@ import {
   useDraggable,
   useDropTarget,
 } from '@affine/component';
-import {
-  appSidebarOpenAtom,
-  appSidebarResizingAtom,
-} from '@affine/core/components/app-sidebar';
-import { appSidebarWidthAtom } from '@affine/core/components/app-sidebar/index.jotai';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import type { AffineDNDData } from '@affine/core/types/dnd';
@@ -25,7 +20,6 @@ import {
   useServiceOptional,
 } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useAtomValue } from 'jotai';
 import { partition } from 'lodash-es';
 import {
   Fragment,
@@ -35,6 +29,7 @@ import {
   useState,
 } from 'react';
 
+import { AppSidebarService } from '../../app-sidebar';
 import { iconNameToIcon } from '../../workbench/constants';
 import { DesktopStateSynchronizer } from '../../workbench/services/desktop-state-synchronizer';
 import {
@@ -298,9 +293,11 @@ export const AppTabsHeader = ({
   left?: ReactNode;
 }) => {
   const t = useI18n();
-  const sidebarWidth = useAtomValue(appSidebarWidthAtom);
-  const sidebarOpen = useAtomValue(appSidebarOpenAtom);
-  const sidebarResizing = useAtomValue(appSidebarResizingAtom);
+  const appSidebarService = useService(AppSidebarService).sidebar;
+  const sidebarWidth = useLiveData(appSidebarService.width$);
+  const sidebarOpen = useLiveData(appSidebarService.open$);
+  const sidebarResizing = useLiveData(appSidebarService.resizing$);
+
   const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
   const isWindowsDesktop = BUILD_CONFIG.isElectron && environment.isWindows;
   const fullScreen = useIsFullScreen();
