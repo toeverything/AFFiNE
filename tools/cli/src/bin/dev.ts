@@ -18,7 +18,6 @@ const flags: BuildFlags = {
   static: false,
   channel: 'canary',
   coverage: process.env.COVERAGE === 'true',
-  localBlockSuite: undefined,
 };
 
 const files = ['.env', '.env.local'];
@@ -34,7 +33,7 @@ for (const file of files) {
 }
 
 const buildFlags = process.argv.includes('--static')
-  ? { ...flags, debugBlockSuite: false, static: true }
+  ? { ...flags, static: true }
   : ((await p.group(
       {
         distribution: () =>
@@ -90,11 +89,6 @@ const buildFlags = process.argv.includes('--static')
             message: 'Enable coverage',
             initialValue: process.env.COVERAGE === 'true',
           }),
-        debugBlockSuite: () =>
-          p.confirm({
-            message: 'Debug blocksuite locally?',
-            initialValue: false,
-          }),
       },
       {
         onCancel: () => {
@@ -102,7 +96,7 @@ const buildFlags = process.argv.includes('--static')
           process.exit(0);
         },
       }
-    )) as BuildFlags & { debugBlockSuite: boolean });
+    )) as BuildFlags);
 
 flags.distribution = buildFlags.distribution;
 flags.mode = buildFlags.mode;
@@ -120,27 +114,6 @@ if (flags.distribution === 'desktop') {
     app: join(cwd, 'index.tsx'),
     shell: join(cwd, 'shell/index.tsx'),
   };
-}
-
-if (buildFlags.debugBlockSuite) {
-  const { config } = await import('dotenv');
-  const envLocal = config({
-    path: join(cwd, '.env.local'),
-  });
-
-  const localBlockSuite = await p.text({
-    message: 'local blocksuite PATH',
-    initialValue: envLocal.error
-      ? undefined
-      : envLocal.parsed?.LOCAL_BLOCK_SUITE,
-  });
-  if (typeof localBlockSuite !== 'string') {
-    throw new Error('local blocksuite PATH is required');
-  }
-  if (!existsSync(localBlockSuite)) {
-    throw new Error(`local blocksuite not found: ${localBlockSuite}`);
-  }
-  flags.localBlockSuite = localBlockSuite;
 }
 
 console.info(flags);
