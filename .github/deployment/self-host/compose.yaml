@@ -28,8 +28,6 @@ services:
       - REDIS_SERVER_HOST=redis
       - DATABASE_URL=postgres://affine:affine@postgres:5432/affine
       - NODE_ENV=production
-      - AFFINE_ADMIN_EMAIL=${AFFINE_ADMIN_EMAIL}
-      - AFFINE_ADMIN_PASSWORD=${AFFINE_ADMIN_PASSWORD}
       # Telemetry allows us to collect data on how you use the affine. This data will helps us improve the app and provide better features.
       # Uncomment next line if you wish to quit telemetry.
       # - TELEMETRY_ENABLE=false

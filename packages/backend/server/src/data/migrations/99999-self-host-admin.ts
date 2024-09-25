@@ -23,11 +23,7 @@ export class SelfHostAdmin1 {
   }
 
   // revert the migration
-  static async down(db: PrismaClient) {
-    await db.user.deleteMany({
-      where: {
-        email: process.env.AFFINE_ADMIN_EMAIL ?? 'admin@example.com',
-      },
-    });
+  static async down() {
+    //
   }
 }
