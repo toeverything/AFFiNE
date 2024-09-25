@@ -98,8 +98,6 @@ export const registerUpdater = async () => {
     channel: buildType,
   });
 
-  logger.debug('auto-updater feed config', feedUrl);
-
   autoUpdater.setFeedURL(feedUrl);
 
   // register events for checkForUpdates

@@ -120,6 +120,10 @@ export class WorkspaceSQLiteDB {
     }
     return null;
   };
+
+  async checkpoint() {
+    await this.adapter.checkpoint();
+  }
 }
 
 export async function openWorkspaceDatabase(

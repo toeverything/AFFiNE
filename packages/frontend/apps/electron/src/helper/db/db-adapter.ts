@@ -141,6 +141,18 @@ export class SQLiteAdapter {
     }
   }
 
+  async checkpoint() {
+    try {
+      if (!this.db) {
+        logger.warn(`${this.path} is not connected`);
+        return;
+      }
+      await this.db.checkpoint();
+    } catch (error) {
+      logger.error('checkpoint', error);
+    }
+  }
+
   async getUpdatesCount(docId?: string) {
     try {
       if (!this.db) {

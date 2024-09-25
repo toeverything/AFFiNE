@@ -30,6 +30,11 @@ export declare class SqliteConnection {
   get isClose(): boolean
   static validate(path: string): Promise<ValidationResult>
   migrateAddDocId(): Promise<void>
+  /**
+   * Flush the WAL file to the database file.
+   * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
+   */
+  checkpoint(): Promise<void>
 }
 
 export interface BlobRow {

@@ -77,6 +77,7 @@ export async function saveDBFileAs(
 ): Promise<SaveDBFileResult> {
   try {
     const db = await ensureSQLiteDB('workspace', workspaceId);
+    await db.checkpoint(); // make sure all changes (WAL) are written to db
     const fakedResult = getFakedResult();
 
     const ret =

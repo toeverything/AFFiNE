@@ -53,7 +53,7 @@ impl SqliteConnection {
     let sqlite_options = SqliteConnectOptions::new()
       .filename(&path)
       .foreign_keys(false)
-      .journal_mode(sqlx::sqlite::SqliteJournalMode::Off);
+      .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
     let pool = SqlitePoolOptions::new()
       .max_connections(4)
       .connect_lazy_with(sqlite_options);
@@ -488,6 +488,19 @@ impl SqliteConnection {
         }
       }
     }
+  }
+
+  /**
+   * Flush the WAL file to the database file.
+   * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
+   */
+  #[napi]
+  pub async fn checkpoint(&self) -> napi::Result<()> {
+    sqlx::query("PRAGMA wal_checkpoint(FULL);")
+      .execute(&self.pool)
+      .await
+      .map_err(anyhow::Error::from)?;
+    Ok(())
   }
 
   pub async fn migrate_add_doc_id_index(&self) -> napi::Result<()> {
