@@ -175,16 +175,21 @@ const DetailPageImpl = memo(function DetailPageImpl() {
             refNodeSlots.docLinkClicked.on(({ pageId, params }) => {
               if (params) {
                 const { mode, blockIds, elementIds } = params;
-                return jumpToPageBlock(
+                jumpToPageBlock(
                   docCollection.id,
                   pageId,
                   mode,
                   blockIds,
                   elementIds
                 );
+                return;
               }
 
-              return openPage(docCollection.id, pageId);
+              if (editor.doc.id === pageId) {
+                return;
+              }
+
+              openPage(docCollection.id, pageId);
             })
           );
         }

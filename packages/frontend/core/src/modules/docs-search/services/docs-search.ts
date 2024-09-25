@@ -1,4 +1,5 @@
 import { toURLSearchParams } from '@affine/core/modules/navigation';
+import type { ReferenceParams } from '@blocksuite/blocks';
 import type { WorkspaceService } from '@toeverything/infra';
 import {
   fromPromise,
@@ -278,17 +279,14 @@ export class DocsSearchService extends Service {
       }
     );
 
-    const refs: {
-      docId: string;
-      mode?: string;
-      blockIds?: string[];
-      elementIds?: string[];
-    }[] = nodes.flatMap(node => {
-      const { ref } = node.fields;
-      return typeof ref === 'string'
-        ? [JSON.parse(ref)]
-        : ref.map(item => JSON.parse(item));
-    });
+    const refs: ({ docId: string } & ReferenceParams)[] = nodes.flatMap(
+      node => {
+        const { ref } = node.fields;
+        return typeof ref === 'string'
+          ? [JSON.parse(ref)]
+          : ref.map(item => JSON.parse(item));
+      }
+    );
 
     const docData = await this.indexer.docIndex.getAll(
       Array.from(new Set(refs.map(ref => ref.docId)))
@@ -352,17 +350,14 @@ export class DocsSearchService extends Service {
       .pipe(
         switchMap(({ nodes }) => {
           return fromPromise(async () => {
-            const refs: {
-              docId: string;
-              mode?: string;
-              blockIds?: string[];
-              elementIds?: string[];
-            }[] = nodes.flatMap(node => {
-              const { ref } = node.fields;
-              return typeof ref === 'string'
-                ? [JSON.parse(ref)]
-                : ref.map(item => JSON.parse(item));
-            });
+            const refs: ({ docId: string } & ReferenceParams)[] = nodes.flatMap(
+              node => {
+                const { ref } = node.fields;
+                return typeof ref === 'string'
+                  ? [JSON.parse(ref)]
+                  : ref.map(item => JSON.parse(item));
+              }
+            );
 
             const docData = await this.indexer.docIndex.getAll(
               Array.from(new Set(refs.map(ref => ref.docId)))

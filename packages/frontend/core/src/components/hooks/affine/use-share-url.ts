@@ -27,7 +27,7 @@ export const generateUrl = ({
   pageId,
   blockIds,
   elementIds,
-  shareMode,
+  shareMode: mode,
   xywh, // not needed currently
 }: UseSharingUrl) => {
   // Base URL construction
@@ -36,13 +36,8 @@ export const generateUrl = ({
 
   try {
     const url = new URL(`/workspace/${workspaceId}/${pageId}`, baseUrl);
-    const search = toURLSearchParams({
-      mode: shareMode,
-      blockIds,
-      elementIds,
-      xywh,
-    });
-    if (search) url.search = search.toString();
+    const search = toURLSearchParams({ mode, blockIds, elementIds, xywh });
+    if (search?.size) url.search = search.toString();
     return url.toString();
   } catch {
     return null;

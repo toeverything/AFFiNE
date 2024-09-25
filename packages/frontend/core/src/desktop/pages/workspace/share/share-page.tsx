@@ -247,13 +247,12 @@ const SharePageInner = ({
           refNodeSlots.docLinkClicked.on(({ pageId, params }) => {
             if (params) {
               const { mode, blockIds, elementIds } = params;
-              return jumpToPageBlock(
-                workspaceId,
-                pageId,
-                mode,
-                blockIds,
-                elementIds
-              );
+              jumpToPageBlock(workspaceId, pageId, mode, blockIds, elementIds);
+              return;
+            }
+
+            if (editor.doc.id === pageId) {
+              return;
             }
 
             return openPage(workspaceId, pageId);

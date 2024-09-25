@@ -1,6 +1,6 @@
 import { afterEach } from 'node:test';
 
-import { beforeEach, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { resolveLinkToDoc, toURLSearchParams } from '../utils';
 
@@ -84,11 +84,63 @@ const testCases: [string, ReturnType<typeof resolveLinkToDoc>][] = [
       docId: '-Uge-K6SYcAbcNYfQ5U-j',
     },
   ],
+  [
+    'http//localhost:8000/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?mode=edgeless&elementIds=,yyyy,',
+    {
+      workspaceId: '48__RTCSwASvWZxyAk3Jw',
+      docId: '-Uge-K6SYcAbcNYfQ5U-j',
+      mode: 'edgeless',
+      elementIds: ['yyyy'],
+    },
+  ],
 ];
 
 for (const [input, expected] of testCases) {
   defineTest(input, expected);
 }
+
+// self-hosted
+describe('resolveLinkToDoc in self-hosted', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals();
+    vi.stubGlobal('location', { origin: 'https://local.first' });
+  });
+
+  const testCases: [string, ReturnType<typeof resolveLinkToDoc>][] = [
+    ['http://example.com/', null],
+    [
+      '/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?blockIds=xxxx',
+      {
+        workspaceId: '48__RTCSwASvWZxyAk3Jw',
+        docId: '-Uge-K6SYcAbcNYfQ5U-j',
+        blockIds: ['xxxx'],
+      },
+    ],
+    [
+      'http://affine.pro/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?blockIds=xxxx',
+      {
+        workspaceId: '48__RTCSwASvWZxyAk3Jw',
+        docId: '-Uge-K6SYcAbcNYfQ5U-j',
+        blockIds: ['xxxx'],
+      },
+    ],
+    [
+      'https://local.first/workspace/48__RTCSwASvWZxyAk3Jw/-Uge-K6SYcAbcNYfQ5U-j?blockIds=xxxx',
+      {
+        workspaceId: '48__RTCSwASvWZxyAk3Jw',
+        docId: '-Uge-K6SYcAbcNYfQ5U-j',
+        blockIds: ['xxxx'],
+      },
+    ],
+  ];
+
+  for (const [input, expected] of testCases) {
+    test(`resolveLinkToDoc(${input})InSelfHosted`, () => {
+      const result = resolveLinkToDoc(input);
+      expect(result).toEqual(expected);
+    });
+  }
+});
 
 function defineTestWithToURLSearchParams(
   input?: Partial<Record<string, string | string[]>>,

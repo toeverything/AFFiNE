@@ -3,23 +3,27 @@ import { isNil, pick, pickBy } from 'lodash-es';
 import type { ParsedQuery, ParseOptions } from 'query-string';
 import queryString from 'query-string';
 
-function maybeAffineOrigin(origin: string) {
+function maybeAffineOrigin(origin: string, baseUrl: string) {
   return (
     origin.startsWith('file://') ||
     origin.startsWith('affine://') ||
     origin.endsWith('affine.pro') || // stable/beta
     origin.endsWith('affine.fail') || // canary
-    origin.includes('localhost') // dev
+    origin === baseUrl // localhost or self-hosted
   );
 }
 
-export const resolveRouteLinkMeta = (href: string) => {
+export const resolveRouteLinkMeta = (
+  href: string,
+  baseUrl = location.origin
+) => {
   try {
-    const url = new URL(href, location.origin);
+    const url = new URL(href, baseUrl);
 
     // check if origin is one of affine's origins
+    // check if origin is localhost or self-hosted
 
-    if (!maybeAffineOrigin(url.origin)) {
+    if (!maybeAffineOrigin(url.origin, baseUrl)) {
       return null;
     }
 
