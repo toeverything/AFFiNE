@@ -9,14 +9,16 @@ import {
   useServiceOptional,
   WorkspaceService,
 } from '@toeverything/infra';
+import clsx from 'clsx';
 import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useCallback, useContext, useEffect, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 
 import { AppSidebarService } from '../services/app-sidebar';
 import * as styles from './fallback.css';
 import {
   floatingMaxWidth,
+  hoverNavWrapperStyle,
   navBodyStyle,
   navHeaderStyle,
   navStyle,
@@ -32,6 +34,7 @@ export type History = {
 
 const MAX_WIDTH = 480;
 const MIN_WIDTH = 248;
+const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
 
 export function AppSidebar({ children }: PropsWithChildren) {
   const { appSettings } = useAppSettingHelper();
@@ -42,8 +45,21 @@ export function AppSidebar({ children }: PropsWithChildren) {
 
   const open = useLiveData(appSidebarService.open$);
   const width = useLiveData(appSidebarService.width$);
-  const floating = useLiveData(appSidebarService.responsiveFloating$);
+  const responsiveFloating = useLiveData(appSidebarService.responsiveFloating$);
+  const hoverFloating = useLiveData(appSidebarService.hoverFloating$);
   const resizing = useLiveData(appSidebarService.resizing$);
+  const showFloatToPinAnimation = useLiveData(
+    appSidebarService.showFloatToPinAnimation$
+  );
+
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearExistingTimeout = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     // do not float app sidebar on desktop
@@ -78,7 +94,6 @@ export function AppSidebar({ children }: PropsWithChildren) {
   }, [appSidebarService, open, width]);
 
   const hasRightBorder = !BUILD_CONFIG.isElectron && !clientBorder;
-  const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -105,10 +120,34 @@ export function AppSidebar({ children }: PropsWithChildren) {
     appSidebarService.setOpen(false);
   }, [appSidebarService]);
 
+  const onMouseEnter = useCallback(() => {
+    if (!timeoutRef.current) {
+      return;
+    }
+    clearExistingTimeout();
+  }, [clearExistingTimeout]);
+
+  const onMouseLeave = useCallback(() => {
+    if (!hoverFloating) {
+      clearExistingTimeout();
+      return;
+    }
+    clearExistingTimeout();
+    timeoutRef.current = setTimeout(() => {
+      appSidebarService.setOpen(false);
+    }, 1500);
+  }, [hoverFloating, clearExistingTimeout, appSidebarService]);
+
+  useEffect(() => {
+    return () => {
+      clearExistingTimeout();
+    };
+  }, [clearExistingTimeout]);
+
   return (
     <>
       <ResizePanel
-        floating={floating}
+        floating={responsiveFloating || hoverFloating}
         open={open}
         resizing={resizing}
         maxWidth={MAX_WIDTH}
@@ -118,30 +157,38 @@ export function AppSidebar({ children }: PropsWithChildren) {
         onOpen={handleOpenChange}
         onResizing={handleResizing}
         onWidthChange={handleWidthChange}
-        className={navWrapperStyle}
+        className={clsx(navWrapperStyle, {
+          [hoverNavWrapperStyle]: hoverFloating,
+        })}
         resizeHandleOffset={0}
         resizeHandleVerticalPadding={clientBorder ? 16 : 0}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
         data-transparent
         data-open={open}
         data-has-border={hasRightBorder}
         data-testid="app-sidebar-wrapper"
         data-is-macos-electron={isMacosDesktop}
         data-client-border={clientBorder}
+        data-is-electron={BUILD_CONFIG.isElectron}
+        data-show-pin-animation={showFloatToPinAnimation}
       >
         <nav className={navStyle} data-testid="app-sidebar">
-          {!BUILD_CONFIG.isElectron && <SidebarHeader />}
+          {!BUILD_CONFIG.isElectron && !hoverFloating && <SidebarHeader />}
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {children}
           </div>
         </nav>
       </ResizePanel>
-      <div
-        data-testid="app-sidebar-float-mask"
-        data-open={open}
-        data-is-floating={floating}
-        className={sidebarFloatMaskStyle}
-        onClick={handleClose}
-      />
+      {!hoverFloating && (
+        <div
+          data-testid="app-sidebar-float-mask"
+          data-open={open}
+          data-is-floating={responsiveFloating}
+          className={sidebarFloatMaskStyle}
+          onClick={handleClose}
+        />
+      )}
     </>
   );
 }

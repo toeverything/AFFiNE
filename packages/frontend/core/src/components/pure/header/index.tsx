@@ -19,11 +19,12 @@ export const Header = ({ left, center, right }: HeaderPros) => {
   const appSidebarService = useService(AppSidebarService).sidebar;
   const open = useLiveData(appSidebarService.open$);
   const appSidebarFloating = useLiveData(appSidebarService.responsiveFloating$);
+  const hoverFloating = useLiveData(appSidebarService.hoverFloating$);
   return (
     <div
       className={clsx(style.header)}
       data-open={open}
-      data-sidebar-floating={appSidebarFloating}
+      data-sidebar-floating={appSidebarFloating || hoverFloating}
       data-testid="header"
     >
       <div className={clsx(style.headerSideContainer)}>

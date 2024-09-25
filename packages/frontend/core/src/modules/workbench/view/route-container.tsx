@@ -44,6 +44,9 @@ export const RouteContainer = () => {
   const viewPosition = useViewPosition();
   const appSidebarService = useService(AppSidebarService).sidebar;
   const leftSidebarOpen = useLiveData(appSidebarService.open$);
+  const leftSidebarHoverFloating = useLiveData(
+    appSidebarService.hoverFloating$
+  );
   const workbench = useService(WorkbenchService).workbench;
   const view = useService(ViewService).view;
   const sidebarOpen = useLiveData(workbench.sidebarOpen$);
@@ -56,7 +59,8 @@ export const RouteContainer = () => {
       <div className={styles.header}>
         {!BUILD_CONFIG.isElectron && viewPosition.isFirst && (
           <SidebarSwitch
-            show={!leftSidebarOpen}
+            show={leftSidebarHoverFloating || !leftSidebarOpen}
+            enableOpenHoverSidebar
             className={styles.leftSidebarButton}
           />
         )}

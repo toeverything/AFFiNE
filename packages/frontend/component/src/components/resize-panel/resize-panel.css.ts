@@ -6,6 +6,7 @@ export const resizeHandleVerticalPadding = createVar(
   'resize-handle-vertical-padding'
 );
 export const animationTimeout = createVar();
+
 export const root = style({
   vars: {
     [panelWidthVar]: '256px',
@@ -30,8 +31,11 @@ export const root = style({
     '&[data-open="false"][data-handle-position="left"]': {
       marginRight: `calc(${panelWidthVar} * -1)`,
     },
-    '&[data-enable-animation="true"]': {
-      transition: `margin-left ${animationTimeout} .05s, margin-right ${animationTimeout} .05s, width ${animationTimeout} .05s`,
+    '&[data-enable-animation="true"][data-is-floating="false"]': {
+      transition: `margin-left ${animationTimeout} .05s, margin-right ${animationTimeout} .05s, width ${animationTimeout} .05s,background ${animationTimeout} .05s,scale ${animationTimeout} .05s`,
+    },
+    '&[data-enable-animation="true"][data-is-floating="true"]': {
+      transition: 'margin-left 0.5s cubic-bezier(0.22,1,0.36,1)',
     },
     '&[data-transition-state="exited"]': {
       // avoid focus on hidden panel

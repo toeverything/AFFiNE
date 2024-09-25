@@ -32,6 +32,8 @@ export class AppSidebar extends Entity {
   hoverFloating$ = new LiveData<boolean>(false);
   resizing$ = new LiveData<boolean>(false);
 
+  showFloatToPinAnimation$ = new LiveData<boolean>(false);
+
   getCachedAppSidebarOpenState = () => {
     return this.appSidebarState.get<boolean>(APP_SIDEBAR_STATE.OPEN);
   };
@@ -58,6 +60,9 @@ export class AppSidebar extends Entity {
   };
 
   setHoverFloating = (hoverFloating: boolean) => {
+    if (hoverFloating) {
+      this.showFloatToPinAnimation$.next(false);
+    }
     this.hoverFloating$.next(hoverFloating);
   };
 
@@ -67,5 +72,9 @@ export class AppSidebar extends Entity {
 
   setWidth = (width: number) => {
     this.appSidebarState.set(APP_SIDEBAR_STATE.WIDTH, width);
+  };
+
+  setShowFloatToPinAnimation = (show: boolean) => {
+    this.showFloatToPinAnimation$.next(show);
   };
 }

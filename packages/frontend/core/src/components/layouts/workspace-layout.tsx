@@ -185,7 +185,7 @@ const DesktopLayout = ({ children }: PropsWithChildren) => {
         <AppTabsHeader
           left={
             <>
-              <SidebarSwitch show />
+              <SidebarSwitch show enableOpenHoverSidebar />
               <NavigationButtons />
             </>
           }

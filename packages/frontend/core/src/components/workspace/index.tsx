@@ -6,11 +6,17 @@ import {
   useLiveData,
   useService,
 } from '@toeverything/infra';
+import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { clsx } from 'clsx';
 import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
-import { forwardRef } from 'react';
+import { forwardRef, useMemo } from 'react';
 
-import { appStyle, mainContainerStyle, toolStyle } from './index.css';
+import {
+  appStyle,
+  mainContainerStyle,
+  panelWidthVar,
+  toolStyle,
+} from './index.css';
 
 export type WorkspaceRootProps = PropsWithChildren<{
   className?: string;
@@ -48,19 +54,41 @@ export interface MainContainerProps extends HTMLAttributes<HTMLDivElement> {}
 export const MainContainer = forwardRef<
   HTMLDivElement,
   PropsWithChildren<MainContainerProps>
->(function MainContainer({ className, children, ...props }, ref): ReactElement {
+>(function MainContainer(
+  { className, children, style, ...props },
+  ref
+): ReactElement {
   const appSidebarService = useService(AppSidebarService).sidebar;
   const appSideBarOpen = useLiveData(appSidebarService.open$);
+  const appSidebarHoverFloating = useLiveData(appSidebarService.hoverFloating$);
+  const appSideBarWidth = useLiveData(appSidebarService.width$);
+
+  const showAppSideBarPinAnimation = useLiveData(
+    appSidebarService.showFloatToPinAnimation$
+  );
   const { appSettings } = useAppSettingHelper();
+
+  const combinedStyle = useMemo(() => {
+    const dynamicStyle = assignInlineVars({
+      [panelWidthVar]: `${appSideBarWidth}px`,
+    });
+    return {
+      ...style,
+      ...dynamicStyle,
+    };
+  }, [appSideBarWidth, style]);
 
   return (
     <div
       {...props}
+      style={combinedStyle}
       className={clsx(mainContainerStyle, className)}
       data-is-desktop={BUILD_CONFIG.isElectron}
       data-transparent={false}
       data-client-border={appSettings.clientBorder}
       data-side-bar-open={appSideBarOpen}
+      data-side-bar-floating={appSidebarHoverFloating}
+      data-show-pin-sidebar-animation={showAppSideBarPinAnimation}
       data-testid="main-container"
       ref={ref}
     >

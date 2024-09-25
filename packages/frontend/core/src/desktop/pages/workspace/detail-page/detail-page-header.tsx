@@ -16,7 +16,6 @@ import { useRegisterCopyLinkCommands } from '@affine/core/components/hooks/affin
 import { useDocCollectionPageTitle } from '@affine/core/components/hooks/use-block-suite-workspace-page-title';
 import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { HeaderDivider } from '@affine/core/components/pure/header';
-import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import { EditorService } from '@affine/core/modules/editor';
 import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
 import type { Doc } from '@blocksuite/affine/store';
@@ -34,16 +33,8 @@ const Header = forwardRef<
     style?: React.CSSProperties;
   }
 >(({ children, style, className }, ref) => {
-  const appSidebarService = useService(AppSidebarService).sidebar;
-  const appSidebarFloating = useLiveData(appSidebarService.responsiveFloating$);
   return (
-    <div
-      data-testid="header"
-      style={style}
-      className={className}
-      ref={ref}
-      data-sidebar-floating={appSidebarFloating}
-    >
+    <div data-testid="header" style={style} className={className} ref={ref}>
       {children}
     </div>
   );

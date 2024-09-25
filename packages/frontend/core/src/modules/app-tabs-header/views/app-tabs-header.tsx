@@ -297,6 +297,7 @@ export const AppTabsHeader = ({
   const sidebarWidth = useLiveData(appSidebarService.width$);
   const sidebarOpen = useLiveData(appSidebarService.open$);
   const sidebarResizing = useLiveData(appSidebarService.resizing$);
+  const hoverFloating = useLiveData(appSidebarService.hoverFloating$);
 
   const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
   const isWindowsDesktop = BUILD_CONFIG.isElectron && environment.isWindows;
@@ -414,9 +415,12 @@ export const AppTabsHeader = ({
         style={{
           transition: sidebarResizing ? 'none' : undefined,
           paddingLeft: 12 + trafficLightOffset,
-          width: sidebarOpen ? sidebarWidth : 120 + trafficLightOffset,
+          width:
+            sidebarOpen && !hoverFloating
+              ? sidebarWidth
+              : 120 + trafficLightOffset,
           // minus 16 to account for the padding on the right side of the header (for box shadow)
-          marginRight: sidebarOpen ? -16 : 0,
+          marginRight: sidebarOpen && !hoverFloating ? -16 : 0,
         }}
         className={styles.headerLeft}
       >

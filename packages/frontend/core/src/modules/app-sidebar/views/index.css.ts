@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 export const floatingMaxWidth = 768;
 export const navWrapperStyle = style({
@@ -10,13 +11,45 @@ export const navWrapperStyle = style({
   },
   selectors: {
     '&[data-has-border=true]': {
-      borderRight: `0.5px solid ${cssVar('borderColor')}`,
+      borderRight: `0.5px solid ${cssVarV2('layer/insideBorder/border')}`,
     },
     '&[data-is-floating="true"]': {
-      backgroundColor: cssVar('backgroundPrimaryColor'),
+      backgroundColor: cssVarV2('layer/background/primary'),
     },
     '&[data-client-border="true"]': {
       paddingBottom: 8,
+    },
+  },
+});
+export const hoverNavWrapperStyle = style({
+  selectors: {
+    '&[data-is-floating="true"]': {
+      backgroundColor: cssVarV2('layer/background/primary'),
+      height: 'calc(100% - 60px)',
+      marginTop: '52px',
+      marginLeft: '4px',
+      boxShadow: cssVar('--affine-popover-shadow'),
+      borderRadius: '6px',
+    },
+    '&[data-is-floating="true"][data-show-pin-animation="true"]': {
+      marginLeft: '0',
+    },
+    '&[data-is-floating="true"][data-is-electron="true"]': {
+      height: '100%',
+      marginTop: '-4px',
+    },
+    '&[data-is-floating="true"][data-client-border="true"]': {
+      backgroundColor: cssVarV2('layer/background/overlayPanel'),
+    },
+    '&[data-is-floating="true"][data-client-border="true"]::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      opacity: `var(--affine-noise-opacity, 0)`,
+      backgroundRepeat: 'repeat',
+      backgroundSize: '50px',
+      // TODO(@Peng): figure out how to use vanilla-extract webpack plugin to inject img url
+      backgroundImage: `var(--noise-background)`,
     },
   },
 });
@@ -62,7 +95,7 @@ export const sidebarFloatMaskStyle = style({
   left: 0,
   right: '100%',
   bottom: 0,
-  background: cssVar('backgroundModalColor'),
+  background: cssVarV2('layer/background/modal'),
   selectors: {
     '&[data-open="true"][data-is-floating="true"]': {
       opacity: 1,
