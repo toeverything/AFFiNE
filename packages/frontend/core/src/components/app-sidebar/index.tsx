@@ -138,7 +138,7 @@ export function FallbackHeaderWithWorkspaceNavigator() {
   const currentWorkspace = useServiceOptional(WorkspaceService);
   return (
     <div className={styles.fallbackHeader}>
-      {!currentWorkspace && navigate ? (
+      {currentWorkspace && navigate ? (
         <WorkspaceNavigator
           showSettingsButton
           showSyncStatus
