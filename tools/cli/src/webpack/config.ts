@@ -251,7 +251,33 @@ export const createConfiguration: (
         {
           oneOf: [
             {
-              test: /\.tsx?$/,
+              test: /\.ts$/,
+              exclude: /node_modules/,
+              loader: 'swc-loader',
+              options: {
+                // https://swc.rs/docs/configuring-swc/
+                jsc: {
+                  preserveAllComments: true,
+                  parser: {
+                    syntax: 'typescript',
+                    dynamicImport: true,
+                    topLevelAwait: false,
+                    tsx: false,
+                    decorators: true,
+                  },
+                  target: 'es2022',
+                  externalHelpers: false,
+                  transform: {
+                    useDefineForClassFields: false,
+                    decoratorVersion: '2022-03',
+                  },
+                },
+                sourceMaps: true,
+                inlineSourcesContent: true,
+              },
+            },
+            {
+              test: /\.tsx$/,
               exclude: /node_modules/,
               loader: 'swc-loader',
               options: {
@@ -333,7 +359,11 @@ export const createConfiguration: (
     plugins: compact([
       IN_CI ? null : new webpack.ProgressPlugin({ percentBy: 'entries' }),
       buildFlags.mode === 'development'
-        ? new ReactRefreshWebpackPlugin({ overlay: false, esModule: true })
+        ? new ReactRefreshWebpackPlugin({
+            overlay: false,
+            esModule: true,
+            include: /\.tsx$/,
+          })
         : // todo: support multiple entry points
           new MiniCssExtractPlugin({
             filename: `[name].[contenthash:8].css`,
