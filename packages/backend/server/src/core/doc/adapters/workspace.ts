@@ -132,11 +132,6 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
   async deleteSpace(workspaceId: string) {
     const ident = { where: { workspaceId } };
     await this.db.$transaction([
-      this.db.workspace.deleteMany({
-        where: {
-          id: workspaceId,
-        },
-      }),
       this.db.snapshot.deleteMany(ident),
       this.db.update.deleteMany(ident),
       this.db.snapshotHistory.deleteMany(ident),
@@ -344,6 +339,17 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
         return false;
       }
 
+      const historyMaxAge = await this.options
+        .historyMaxAge(snapshot.spaceId)
+        .catch(
+          () =>
+            0 /* edgecase: user deleted but owned workspaces not handled correctly */
+        );
+
+      if (historyMaxAge === 0) {
+        return false;
+      }
+
       await this.db.snapshotHistory
         .create({
           select: {
@@ -355,9 +361,7 @@ export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
             timestamp: new Date(snapshot.timestamp),
             blob: Buffer.from(snapshot.bin),
             createdBy: snapshot.editor,
-            expiredAt: new Date(
-              Date.now() + (await this.options.historyMaxAge(snapshot.spaceId))
-            ),
+            expiredAt: new Date(Date.now() + historyMaxAge),
           },
         })
         .catch(() => {

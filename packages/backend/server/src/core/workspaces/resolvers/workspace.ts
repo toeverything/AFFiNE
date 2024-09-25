@@ -30,7 +30,7 @@ import {
   UserNotFound,
 } from '../../../fundamentals';
 import { CurrentUser, Public } from '../../auth';
-import type { Editor } from '../../doc';
+import { type Editor, PgWorkspaceDocStorageAdapter } from '../../doc';
 import { DocContentService } from '../../doc-renderer';
 import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService, QuotaQueryType } from '../../quota';
@@ -86,7 +86,8 @@ export class WorkspaceResolver {
     private readonly event: EventEmitter,
     private readonly blobStorage: WorkspaceBlobStorage,
     private readonly mutex: RequestMutex,
-    private readonly doc: DocContentService
+    private readonly doc: DocContentService,
+    private readonly workspaceStorage: PgWorkspaceDocStorageAdapter
   ) {}
 
   @ResolveField(() => Permission, {
@@ -352,6 +353,7 @@ export class WorkspaceResolver {
         id,
       },
     });
+    await this.workspaceStorage.deleteSpace(id);
 
     this.event.emit('workspace.deleted', id);
 

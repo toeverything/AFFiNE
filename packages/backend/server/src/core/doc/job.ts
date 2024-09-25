@@ -2,7 +2,13 @@ import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 
-import { CallTimer, Config, metrics } from '../../fundamentals';
+import {
+  CallTimer,
+  Config,
+  type EventPayload,
+  metrics,
+  OnEvent,
+} from '../../fundamentals';
 import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 
 @Injectable()
@@ -72,5 +78,12 @@ export class DocStorageCronJob implements OnModuleInit {
     metrics.doc
       .gauge('updates_queue_count')
       .record(await this.db.update.count());
+  }
+
+  @OnEvent('user.deleted')
+  async clearUserWorkspaces(payload: EventPayload<'user.deleted'>) {
+    for (const workspace of payload.ownedWorkspaces) {
+      await this.workspace.deleteSpace(workspace);
+    }
   }
 }

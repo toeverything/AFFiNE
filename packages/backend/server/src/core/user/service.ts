@@ -11,6 +11,7 @@ import {
   WrongSignInCredentials,
   WrongSignInMethod,
 } from '../../fundamentals';
+import { PermissionService } from '../permission';
 import { Quota_FreePlanV1_1 } from '../quota/schema';
 import { validators } from '../utils/validators';
 
@@ -34,7 +35,8 @@ export class UserService {
     private readonly config: Config,
     private readonly crypto: CryptoHelper,
     private readonly prisma: PrismaClient,
-    private readonly emitter: EventEmitter
+    private readonly emitter: EventEmitter,
+    private readonly permission: PermissionService
   ) {}
 
   get userCreatingData() {
@@ -276,12 +278,13 @@ export class UserService {
   }
 
   async deleteUser(id: string) {
+    const ownedWorkspaces = await this.permission.getOwnedWorkspaces(id);
     const user = await this.prisma.user.delete({ where: { id } });
-    this.emitter.emit('user.deleted', user);
+    this.emitter.emit('user.deleted', { ...user, ownedWorkspaces });
   }
 
   @OnEvent('user.updated')
-  async onUserUpdated(user: EventPayload<'user.deleted'>) {
+  async onUserUpdated(user: EventPayload<'user.updated'>) {
     const { enabled, customerIo } = this.config.metrics;
     if (enabled && customerIo?.token) {
       const payload = {
