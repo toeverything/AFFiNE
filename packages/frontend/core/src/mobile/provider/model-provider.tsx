@@ -2,7 +2,7 @@ import { NotificationCenter } from '@affine/component';
 import { AiLoginRequiredModal } from '@affine/core/components/affine/auth/ai-login-required';
 import { HistoryTipsModal } from '@affine/core/components/affine/history-tips-modal';
 import { IssueFeedbackModal } from '@affine/core/components/affine/issue-feedback-modal';
-import { InfoModal } from '@affine/core/components/affine/page-properties/info-modal/info-modal';
+import { InfoModal } from '@affine/core/components/affine/page-properties';
 import {
   CloudQuotaModal,
   LocalQuotaModal,
@@ -58,7 +58,7 @@ export function MobileCurrentWorkspaceModals() {
         onOpenChange={onTrashConfirmOpenChange}
         titles={deletePageTitles}
       />
-      <InfoModal />
+      {currentWorkspace ? <InfoModal /> : null}
     </>
   );
 }

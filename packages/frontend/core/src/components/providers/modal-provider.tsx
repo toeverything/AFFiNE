@@ -127,7 +127,7 @@ export function CurrentWorkspaceModals() {
         onOpenChange={onTrashConfirmOpenChange}
         titles={deletePageTitles}
       />
-      <InfoModal />
+      {currentWorkspace ? <InfoModal /> : null}
     </>
   );
 }
