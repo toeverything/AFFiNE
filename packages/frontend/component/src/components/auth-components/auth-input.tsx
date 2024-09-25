@@ -30,11 +30,7 @@ export const AuthInput = ({
         className={clsx(className)}
         size="extraLarge"
         status={error ? 'error' : 'default'}
-        onKeyDown={e => {
-          if (e.key === 'Enter') {
-            onEnter?.();
-          }
-        }}
+        onEnter={onEnter}
         {...inputProps}
       />
       {error && errorHint && !withoutHint ? (

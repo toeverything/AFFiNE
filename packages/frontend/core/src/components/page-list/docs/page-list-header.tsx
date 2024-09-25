@@ -2,6 +2,7 @@ import {
   Button,
   Divider,
   Menu,
+  RowInput,
   Scrollable,
   useConfirmModal,
 } from '@affine/component';
@@ -285,12 +286,9 @@ export const SwitchTag = ({ onClick }: SwitchTagProps) => {
     inputValue ? tagList.filterTagsByName$(inputValue) : tagList.tags$
   );
 
-  const onInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setInputValue(e.target.value);
-    },
-    []
-  );
+  const onInputChange = useCallback((value: string) => {
+    setInputValue(value);
+  }, []);
 
   const handleClick = useCallback(() => {
     setInputValue('');
@@ -301,7 +299,7 @@ export const SwitchTag = ({ onClick }: SwitchTagProps) => {
     <div className={styles.tagsEditorRoot}>
       <div className={styles.tagsEditorSelectedTags}>
         <SearchIcon className={styles.searchIcon} />
-        <input
+        <RowInput
           value={inputValue}
           onChange={onInputChange}
           autoFocus

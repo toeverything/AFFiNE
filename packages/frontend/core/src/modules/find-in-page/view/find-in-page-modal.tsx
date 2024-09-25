@@ -1,4 +1,4 @@
-import { IconButton, observeResize } from '@affine/component';
+import { IconButton, observeResize, RowInput } from '@affine/component';
 import {
   ArrowDownSmallIcon,
   ArrowUpSmallIcon,
@@ -10,7 +10,6 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import {
-  type ChangeEventHandler,
   type CompositionEventHandler,
   type KeyboardEventHandler,
   type SetStateAction,
@@ -102,9 +101,8 @@ export const FindInPageModal = () => {
     toggle(visible);
   }, [visible]);
 
-  const handleValueChange: ChangeEventHandler<HTMLInputElement> = useCallback(
-    e => {
-      const value = e.target.value;
+  const handleValueChange = useCallback(
+    (value: string) => {
       setValue(value);
       if (!composing) {
         findInPage.findInPage(value);
@@ -227,7 +225,7 @@ export const FindInPageModal = () => {
             >
               <SearchIcon className={styles.searchIcon} />
               <div className={styles.inputMain}>
-                <input
+                <RowInput
                   type="text"
                   autoFocus
                   value={value}

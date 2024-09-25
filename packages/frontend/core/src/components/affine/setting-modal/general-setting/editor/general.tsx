@@ -6,6 +6,7 @@ import {
   MenuTrigger,
   RadioGroup,
   type RadioItem,
+  RowInput,
   Scrollable,
   Switch,
   useConfirmModal,
@@ -33,7 +34,6 @@ import {
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import {
-  type ChangeEvent,
   forwardRef,
   type HTMLAttributes,
   type PropsWithChildren,
@@ -171,8 +171,8 @@ const FontMenuItems = ({ onSelect }: { onSelect: (font: string) => void }) => {
   const searchText = useLiveData(systemFontFamily.searchText$);
 
   const onInputChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      systemFontFamily.search(e.target.value);
+    (value: string) => {
+      systemFontFamily.search(value);
     },
     [systemFontFamily]
   );
@@ -187,7 +187,7 @@ const FontMenuItems = ({ onSelect }: { onSelect: (font: string) => void }) => {
     <div>
       <div className={styles.InputContainer}>
         <SearchIcon className={styles.searchIcon} />
-        <input
+        <RowInput
           value={searchText ?? ''}
           onChange={onInputChange}
           onKeyDown={onInputKeyDown}

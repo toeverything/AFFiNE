@@ -15,7 +15,6 @@ import {
   WorkspacesService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
-import type { KeyboardEvent } from 'react';
 import { useCallback, useLayoutEffect, useState } from 'react';
 
 import { AuthService } from '../../../modules/cloud';
@@ -76,14 +75,11 @@ const NameWorkspaceContent = ({
     );
   }, [enable, onConfirmName, workspaceName]);
 
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLInputElement>) => {
-      if (event.key === 'Enter' && workspaceName) {
-        handleCreateWorkspace();
-      }
-    },
-    [handleCreateWorkspace, workspaceName]
-  );
+  const onEnter = useCallback(() => {
+    if (workspaceName) {
+      handleCreateWorkspace();
+    }
+  }, [handleCreateWorkspace, workspaceName]);
 
   // Currently, when we create a new workspace and upload an avatar at the same time,
   // an error occurs after the creation is successful: get blob 404 not found
@@ -117,7 +113,7 @@ const NameWorkspaceContent = ({
         <Input
           autoFocus
           data-testid="create-workspace-input"
-          onKeyDown={handleKeyDown}
+          onEnter={onEnter}
           placeholder={t['com.affine.nameWorkspace.placeholder']()}
           maxLength={64}
           minLength={0}

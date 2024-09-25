@@ -1,16 +1,14 @@
 import clsx from 'clsx';
 import type {
-  ChangeEvent,
   CSSProperties,
   ForwardedRef,
   InputHTMLAttributes,
-  KeyboardEvent,
   KeyboardEventHandler,
   ReactNode,
 } from 'react';
-import { forwardRef, useCallback, useEffect } from 'react';
+import { forwardRef } from 'react';
 
-import { useAutoFocus, useAutoSelect } from '../../hooks';
+import { RowInput } from './row-input';
 import { input, inputWrapper } from './style.css';
 
 export type InputProps = {
@@ -50,32 +48,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   }: InputProps,
   upstreamRef: ForwardedRef<HTMLInputElement>
 ) {
-  const focusRef = useAutoFocus<HTMLInputElement>(autoFocus);
-  const selectRef = useAutoSelect<HTMLInputElement>(autoSelect);
-
-  const inputRef = (el: HTMLInputElement | null) => {
-    focusRef.current = el;
-    selectRef.current = el;
-    if (upstreamRef) {
-      if (typeof upstreamRef === 'function') {
-        upstreamRef(el);
-      } else {
-        upstreamRef.current = el;
-      }
-    }
-  };
-
-  // use native blur event to get event after unmount
-  // don't use useLayoutEffect here, because the cleanup function will be called before unmount
-  useEffect(() => {
-    if (!onBlur) return;
-    selectRef.current?.addEventListener('blur', onBlur as any);
-    return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      selectRef.current?.removeEventListener('blur', onBlur as any);
-    };
-  }, [onBlur, selectRef]);
-
   return (
     <div
       className={clsx(inputWrapper, className, {
@@ -96,29 +68,20 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       }}
     >
       {preFix}
-      <input
+      <RowInput
         className={clsx(input, {
           large: size === 'large',
           'extra-large': size === 'extraLarge',
         })}
-        ref={inputRef}
+        ref={upstreamRef}
         disabled={disabled}
         style={inputStyle}
-        onChange={useCallback(
-          (e: ChangeEvent<HTMLInputElement>) => {
-            propsOnChange?.(e.target.value);
-          },
-          [propsOnChange]
-        )}
-        onKeyDown={useCallback(
-          (e: KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === 'Enter') {
-              onEnter?.();
-            }
-            onKeyDown?.(e);
-          },
-          [onKeyDown, onEnter]
-        )}
+        onChange={propsOnChange}
+        onEnter={onEnter}
+        onKeyDown={onKeyDown}
+        onBlur={onBlur}
+        autoFocus={autoFocus}
+        autoSelect={autoSelect}
         {...otherProps}
       />
       {endFix}

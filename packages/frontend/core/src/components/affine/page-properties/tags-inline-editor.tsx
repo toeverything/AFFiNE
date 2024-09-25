@@ -1,5 +1,11 @@
 import type { MenuProps } from '@affine/component';
-import { IconButton, Input, Menu, Scrollable } from '@affine/component';
+import {
+  IconButton,
+  Input,
+  Menu,
+  RowInput,
+  Scrollable,
+} from '@affine/component';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { WorkspaceLegacyProperties } from '@affine/core/modules/properties';
 import type { Tag } from '@affine/core/modules/tag';
@@ -239,12 +245,9 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
     [setOpen, setSelectedTagIds]
   );
 
-  const onInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setInputValue(e.target.value);
-    },
-    []
-  );
+  const onInputChange = useCallback((value: string) => {
+    setInputValue(value);
+  }, []);
 
   const onToggleTag = useCallback(
     (id: string) => {
@@ -297,14 +300,15 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
     },
     [onCreateTag, onToggleTag, focusInput, tagIds.length]
   );
+  const onEnter = useCallback(() => {
+    if (safeFocusedIndex >= 0) {
+      onSelectTagOption(tagOptions[safeFocusedIndex]);
+    }
+  }, [onSelectTagOption, safeFocusedIndex, tagOptions]);
 
   const onInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        if (safeFocusedIndex >= 0) {
-          onSelectTagOption(tagOptions[safeFocusedIndex]);
-        }
-      } else if (e.key === 'Backspace' && inputValue === '' && tagIds.length) {
+      if (e.key === 'Backspace' && inputValue === '' && tagIds.length) {
         const tagToRemove =
           safeInlineFocusedIndex < 0 || safeInlineFocusedIndex >= tagIds.length
             ? tagIds.length - 1
@@ -341,7 +345,6 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
       inputValue,
       tagIds,
       safeFocusedIndex,
-      onSelectTagOption,
       tagOptions,
       safeInlineFocusedIndex,
       tags,
@@ -358,11 +361,12 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
           focusedIndex={safeInlineFocusedIndex}
           onRemove={focusInput}
         >
-          <input
+          <RowInput
             ref={inputRef}
             value={inputValue}
             onChange={onInputChange}
             onKeyDown={onInputKeyDown}
+            onEnter={onEnter}
             autoFocus
             className={styles.searchInput}
             placeholder="Type here ..."
@@ -380,7 +384,7 @@ export const TagsEditor = ({ pageId, readonly }: TagsEditorProps) => {
           >
             {tagOptions.map((tag, idx) => {
               const commonProps = {
-                focused: safeFocusedIndex === idx,
+                ...(safeFocusedIndex === idx ? { focused: 'true' } : {}),
                 onClick: () => onSelectTagOption(tag),
                 onMouseEnter: () => setFocusedIndex(idx),
                 ['data-testid']: 'tag-selector-item',
