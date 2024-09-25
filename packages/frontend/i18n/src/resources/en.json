@@ -882,6 +882,7 @@
   "com.affine.peek-view-controls.open-doc": "Open this doc",
   "com.affine.peek-view-controls.open-doc-in-new-tab": "Open in new tab",
   "com.affine.peek-view-controls.open-doc-in-split-view": "Open in split view",
+  "com.affine.peek-view-controls.open-info": "Open doc info",
   "com.affine.quicksearch.group.creation": "New",
   "com.affine.quicksearch.group.searchfor": "Search for \"{{query}}\"",
   "com.affine.resetSyncStatus.button": "Reset sync",

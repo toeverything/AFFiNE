@@ -4,6 +4,7 @@ import type { DocMode } from '@blocksuite/affine/blocks';
 import {
   CloseIcon,
   ExpandFullIcon,
+  InformationIcon,
   OpenInNewIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
@@ -17,6 +18,7 @@ import {
   useMemo,
 } from 'react';
 
+import { DocInfoService } from '../../doc-info';
 import { WorkbenchService } from '../../workbench';
 import { PeekViewService } from '../services/peek-view';
 import * as styles from './peek-view-controls.css';
@@ -100,6 +102,7 @@ export const DocPeekViewControls = ({
   const peekView = useService(PeekViewService).peekView;
   const workbench = useService(WorkbenchService).workbench;
   const t = useI18n();
+  const docInfoService = useService(DocInfoService);
   const controls = useMemo(() => {
     return [
       {
@@ -138,8 +141,25 @@ export const DocPeekViewControls = ({
           peekView.close('none');
         },
       },
+      {
+        icon: <InformationIcon />,
+        nameKey: 'info',
+        name: t['com.affine.peek-view-controls.open-info'](),
+        onClick: () => {
+          docInfoService.modal.open(docId);
+        },
+      },
     ].filter((opt): opt is ControlButtonProps => Boolean(opt));
-  }, [docId, mode, blockIds, elementIds, peekView, t, workbench]);
+  }, [
+    t,
+    peekView,
+    workbench,
+    docId,
+    mode,
+    blockIds,
+    elementIds,
+    docInfoService.modal,
+  ]);
   return (
     <div {...rest} className={clsx(styles.root, className)}>
       {controls.map(option => (
