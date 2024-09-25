@@ -90,8 +90,22 @@ export class OAuthController {
     const oauthState = await this.oauth.getOAuthState(state);
 
     if (oauthState?.state) {
-      // redirect from new client
-      res.redirect(this.url.link('/api/oauth/callback', { code, state }));
+      // redirect from new client, need exchange cookie by client state
+      // we only cache the code and access token in server side
+      const provider = this.providerFactory.get(oauthState.provider);
+      if (!provider) {
+        throw new UnknownOauthProvider({
+          name: oauthState.provider ?? 'unknown',
+        });
+      }
+      const token = await this.oauth.saveOAuthState({ ...oauthState, code });
+      res.redirect(
+        this.url.link('/oauth/callback', {
+          token,
+          client: oauthState.clientId,
+          provider: oauthState.provider,
+        })
+      );
     } else {
       // compatible with old client
       res.redirect(this.url.link('/oauth/callback', { code, state }));
@@ -104,45 +118,74 @@ export class OAuthController {
   async callback(
     @Req() req: Request,
     @Res() res: Response,
-    @Body('code') code?: string,
-    @Body('state') stateStr?: string
+    /** @deprecated */ @Body('code') code?: string,
+    @Body('state') stateStr?: string,
+    // new client will send token to exchange cookie
+    @Body('token') token?: string
   ) {
-    if (!code) {
-      throw new MissingOauthQueryParameter({ name: 'code' });
-    }
-
-    if (!stateStr) {
-      throw new MissingOauthQueryParameter({ name: 'state' });
-    }
-
-    if (typeof stateStr !== 'string' || !this.oauth.isValidState(stateStr)) {
-      throw new InvalidOauthCallbackState();
-    }
-
-    const state = await this.oauth.getOAuthState(stateStr);
-
-    if (!state) {
-      throw new OauthStateExpired();
-    }
-
-    if (!state.provider) {
-      throw new MissingOauthQueryParameter({ name: 'provider' });
-    }
-
-    const provider = this.providerFactory.get(state.provider);
-
-    if (!provider) {
-      throw new UnknownOauthProvider({ name: state.provider ?? 'unknown' });
-    }
-
-    if (state.state) {
+    if (token && stateStr) {
       // new method, need exchange cookie by client state
       // we only cache the code and access token in server side
-      const token = await this.oauth.saveOAuthState({ ...state, code });
-      res.redirect(
-        this.url.link('/oauth/callback', { token, client: state.clientId })
+      const authState = await this.oauth.getOAuthState(token);
+      if (!authState || authState.state !== stateStr || !authState.code) {
+        throw new OauthStateExpired();
+      }
+
+      if (!authState.provider) {
+        throw new MissingOauthQueryParameter({ name: 'provider' });
+      }
+
+      const provider = this.providerFactory.get(authState.provider);
+
+      if (!provider) {
+        throw new UnknownOauthProvider({
+          name: authState.provider ?? 'unknown',
+        });
+      }
+
+      const tokens = await provider.getToken(authState.code);
+      const externAccount = await provider.getUser(tokens.accessToken);
+      const user = await this.loginFromOauth(
+        authState.provider,
+        externAccount,
+        tokens
       );
+
+      await this.auth.setCookies(req, res, user.id);
+      res.send({
+        id: user.id,
+        /* @deprecated */
+        redirectUri: authState.redirectUri,
+      });
     } else {
+      if (!code) {
+        throw new MissingOauthQueryParameter({ name: 'code' });
+      }
+
+      if (!stateStr) {
+        throw new MissingOauthQueryParameter({ name: 'state' });
+      }
+
+      if (typeof stateStr !== 'string' || !this.oauth.isValidState(stateStr)) {
+        throw new InvalidOauthCallbackState();
+      }
+
+      const state = await this.oauth.getOAuthState(stateStr);
+
+      if (!state) {
+        throw new OauthStateExpired();
+      }
+
+      if (!state.provider) {
+        throw new MissingOauthQueryParameter({ name: 'provider' });
+      }
+
+      const provider = this.providerFactory.get(state.provider);
+
+      if (!provider) {
+        throw new UnknownOauthProvider({ name: state.provider ?? 'unknown' });
+      }
+
       const tokens = await provider.getToken(code);
       const externAccount = await provider.getUser(tokens.accessToken);
       const user = await this.loginFromOauth(

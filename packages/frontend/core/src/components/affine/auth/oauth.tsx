@@ -1,13 +1,12 @@
 import { Skeleton } from '@affine/component';
 import { Button } from '@affine/component/ui/button';
+import { AuthService, ServerConfigService } from '@affine/core/modules/cloud';
 import { popupWindow } from '@affine/core/utils';
 import { appInfo } from '@affine/electron-api';
 import { OAuthProviderType } from '@affine/graphql';
 import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { type ReactElement, useCallback } from 'react';
-
-import { ServerConfigService } from '../../../modules/cloud';
 
 const OAuthProviderMap: Record<
   OAuthProviderType,
@@ -46,20 +45,25 @@ export function OAuth() {
 }
 
 function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
+  const auth = useService(AuthService);
   const { icon } = OAuthProviderMap[provider];
 
   const onClick = useCallback(() => {
-    let oauthUrl =
-      (BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
-        ? BUILD_CONFIG.serverUrlPrefix
-        : '') + `/oauth/login?provider=${provider}`;
-
-    if (BUILD_CONFIG.isElectron) {
-      oauthUrl += `&client=${appInfo?.schema}`;
+    async function preflight() {
+      if (ignore) return;
+      const url = await auth.oauthPreflight(provider, appInfo?.schema || '');
+      if (!ignore) {
+        popupWindow(url);
+      }
     }
 
-    popupWindow(oauthUrl);
-  }, [provider]);
+    let ignore = false;
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    preflight();
+    return () => {
+      ignore = true;
+    };
+  }, [auth, provider]);
 
   return (
     <Button
