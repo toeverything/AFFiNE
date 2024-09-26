@@ -7,13 +7,24 @@ import {
 import { DocInfoService } from '@affine/core/modules/doc-info';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { useI18n } from '@affine/i18n';
+import type { Doc } from '@toeverything/infra';
 import {
+  DocsService,
+  FrameworkScope,
   LiveData,
   useLiveData,
   useService,
   useServices,
 } from '@toeverything/infra';
-import { Suspense, useCallback, useContext, useMemo, useRef } from 'react';
+import {
+  Suspense,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { BlocksuiteHeaderTitle } from '../../../blocksuite/block-suite-header/title';
 import { managerContext } from '../common';
@@ -31,10 +42,26 @@ import { TimeRow } from './time-row';
 export const InfoModal = () => {
   const modal = useService(DocInfoService).modal;
   const docId = useLiveData(modal.docId$);
+  const docsService = useService(DocsService);
 
-  if (!docId) return null;
+  const [doc, setDoc] = useState<Doc | null>(null);
+  useEffect(() => {
+    if (!docId) return;
+    const docRef = docsService.open(docId);
+    setDoc(docRef.doc);
+    return () => {
+      docRef.release();
+      setDoc(null);
+    };
+  }, [docId, docsService]);
 
-  return <InfoModalOpened docId={docId} />;
+  if (!doc || !docId) return null;
+
+  return (
+    <FrameworkScope scope={doc.scope}>
+      <InfoModalOpened docId={docId} />
+    </FrameworkScope>
+  );
 };
 
 const InfoModalOpened = ({ docId }: { docId: string }) => {
