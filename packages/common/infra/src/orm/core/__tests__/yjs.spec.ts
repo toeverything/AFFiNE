@@ -1,5 +1,11 @@
 import { nanoid } from 'nanoid';
-import { beforeEach, describe, expect, test as t, type TestAPI } from 'vitest';
+import {
+  beforeEach,
+  describe,
+  expect,
+  test as vitest,
+  type TestAPI,
+} from 'vitest';
 import { Doc } from 'yjs';
 
 import {
@@ -8,6 +14,7 @@ import {
   type DocProvider,
   type Entity,
   f,
+  t,
   Table,
   YjsDBAdapter,
 } from '../';
@@ -28,6 +35,9 @@ const TEST_SCHEMA = {
     name: f.string(),
     email: f.string().optional(),
   },
+  userInfo: t.document({
+    userId: f.number().primaryKey(),
+  }),
 } satisfies DBSchemaBuilder;
 
 const docProvider: DocProvider = {
@@ -45,7 +55,7 @@ beforeEach<Context>(async t => {
   t.client = new Client(new YjsDBAdapter(TEST_SCHEMA, docProvider));
 });
 
-const test = t as TestAPI<Context>;
+const test = vitest as TestAPI<Context>;
 
 describe('ORM entity CRUD', () => {
   test('should be able to create ORM client', t => {
@@ -403,5 +413,72 @@ describe('ORM entity CRUD', () => {
 
       expect(found).toEqual([]);
     }
+  });
+
+  test('should be able to create document entity', t => {
+    const { client } = t;
+
+    const doc = client.userInfo.create({
+      userId: 1,
+      avatar: 'avatar.jpg',
+      address: '123 Main St',
+    });
+
+    expect(doc.userId).toBe(1);
+    expect(doc.avatar).toBe('avatar.jpg');
+    expect(doc.address).toBe('123 Main St');
+  });
+
+  test('should be able to read document entity', t => {
+    const { client } = t;
+
+    const doc = client.userInfo.create({
+      userId: 1,
+      avatar: 'avatar.jpg',
+      address: '123 Main St',
+    });
+
+    const doc2 = client.userInfo.get(1);
+
+    expect(doc2).toStrictEqual(doc);
+  });
+
+  test('should be able to update document entity', t => {
+    const { client } = t;
+
+    const doc = client.userInfo.create({
+      userId: 1,
+      avatar: 'avatar.jpg',
+      address: '123 Main St',
+    });
+
+    client.userInfo.update(doc.userId, {
+      avatar: 'avatar2.jpg',
+      city: 'New York',
+    });
+
+    const doc2 = client.userInfo.get(1);
+
+    expect(doc2).toStrictEqual({
+      userId: 1,
+      avatar: 'avatar2.jpg',
+      address: '123 Main St',
+      city: 'New York',
+    });
+  });
+
+  test('should be able to delete document entity', t => {
+    const { client } = t;
+
+    const doc = client.userInfo.create({
+      userId: 1,
+      avatar: 'avatar.jpg',
+      address: '123 Main St',
+    });
+
+    client.userInfo.delete(doc.userId);
+
+    const doc2 = client.userInfo.get(1);
+    expect(doc2).toBe(null);
   });
 });

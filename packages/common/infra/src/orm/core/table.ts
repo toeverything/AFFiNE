@@ -4,6 +4,7 @@ import { Observable, shareReplay } from 'rxjs';
 import type { DBAdapter, TableAdapter } from './adapters';
 import type {
   DBSchemaBuilder,
+  DocumentTableSchemaBuilder,
   FieldSchemaBuilder,
   TableSchema,
   TableSchemaBuilder,
@@ -17,72 +18,115 @@ type Pretty<T> = T extends any
     }
   : never;
 
+// filter out all fields starting with `__`
+type TableDefinedFieldNames<T extends TableSchemaBuilder> = keyof {
+  [K in keyof T as K extends `__${string}` ? never : K]: T[K];
+};
+
+type Typeof<F extends FieldSchemaBuilder> =
+  F extends FieldSchemaBuilder<infer Type> ? Type : never;
+
 type RequiredFields<T extends TableSchemaBuilder> = {
-  [K in keyof T as T[K] extends FieldSchemaBuilder<any, infer Optional>
+  [K in TableDefinedFieldNames<T> as T[K] extends FieldSchemaBuilder<
+    any,
+    infer Optional
+  >
     ? Optional extends false
       ? K
       : never
-    : never]: T[K] extends FieldSchemaBuilder<infer Type> ? Type : never;
+    : never]: Typeof<T[K]>;
 };
 
 type OptionalFields<T extends TableSchemaBuilder> = {
-  [K in keyof T as T[K] extends FieldSchemaBuilder<any, infer Optional>
+  [K in TableDefinedFieldNames<T> as T[K] extends FieldSchemaBuilder<
+    any,
+    infer Optional
+  >
     ? Optional extends true
       ? K
       : never
-    : never]?: T[K] extends FieldSchemaBuilder<infer Type>
-    ? Type | null
-    : never;
+    : never]?: Typeof<T[K]> | null;
 };
 
 type PrimaryKeyField<T extends TableSchemaBuilder> = {
-  [K in keyof T]: T[K] extends FieldSchemaBuilder<any, any, infer PrimaryKey>
+  [K in TableDefinedFieldNames<T>]: T[K] extends FieldSchemaBuilder<
+    any,
+    any,
+    infer PrimaryKey
+  >
     ? PrimaryKey extends true
       ? K
       : never
     : never;
-}[keyof T];
+}[TableDefinedFieldNames<T>];
 
-export type NonPrimaryKeyFields<T extends TableSchemaBuilder> = {
-  [K in keyof T]: T[K] extends FieldSchemaBuilder<any, any, infer PrimaryKey>
+type TableDefinedEntity<T extends TableSchemaBuilder> = Pretty<
+  RequiredFields<T> &
+    OptionalFields<T> & {
+      [PrimaryKey in PrimaryKeyField<T>]: Typeof<T[PrimaryKey]>;
+    }
+>;
+
+type MaybeDocumentEntityWrapper<Schema, Ty> =
+  Schema extends DocumentTableSchemaBuilder
+    ? Ty & {
+        [key: string]: any;
+      }
+    : Ty;
+
+type NonPrimaryKeyFieldNames<T extends TableSchemaBuilder> = {
+  [K in TableDefinedFieldNames<T>]: T[K] extends FieldSchemaBuilder<
+    any,
+    any,
+    infer PrimaryKey
+  >
     ? PrimaryKey extends false
       ? K
       : never
     : never;
-}[keyof T];
+}[TableDefinedFieldNames<T>];
 
-export type PrimaryKeyFieldType<T extends TableSchemaBuilder> =
-  T[PrimaryKeyField<T>] extends FieldSchemaBuilder<infer Type>
-    ? Type extends Key
-      ? Type
-      : never
-    : never;
+// CRUD api types
+export type PrimaryKeyFieldType<T extends TableSchemaBuilder> = Typeof<
+  T[PrimaryKeyField<T>]
+>;
 
 export type CreateEntityInput<T extends TableSchemaBuilder> = Pretty<
-  RequiredFields<T> & OptionalFields<T>
+  MaybeDocumentEntityWrapper<T, RequiredFields<T> & OptionalFields<T>>
 >;
 
 // @TODO(@forehalo): return value need to be specified with `Default` inference
 export type Entity<T extends TableSchemaBuilder> = Pretty<
-  CreateEntityInput<T> & {
-    [key in PrimaryKeyField<T>]: PrimaryKeyFieldType<T>;
-  }
+  MaybeDocumentEntityWrapper<T, TableDefinedEntity<T>>
 >;
 
-export type UpdateEntityInput<T extends TableSchemaBuilder> = Pretty<{
-  [key in NonPrimaryKeyFields<T>]?: key extends keyof Entity<T>
-    ? Entity<T>[key]
-    : never;
-}>;
+export type UpdateEntityInput<T extends TableSchemaBuilder> = Pretty<
+  MaybeDocumentEntityWrapper<
+    T,
+    {
+      [key in NonPrimaryKeyFieldNames<T>]?: key extends keyof TableDefinedEntity<T>
+        ? TableDefinedEntity<T>[key]
+        : never;
+    }
+  >
+>;
 
-export type FindEntityInput<T extends TableSchemaBuilder> = Pretty<{
-  [key in keyof T]?: key extends keyof Entity<T> ? Entity<T>[key] : never;
-}>;
+export type FindEntityInput<T extends TableSchemaBuilder> = Pretty<
+  MaybeDocumentEntityWrapper<
+    T,
+    {
+      [key in TableDefinedFieldNames<T>]?: key extends keyof TableDefinedEntity<T>
+        ? TableDefinedEntity<T>[key]
+        : never;
+    }
+  >
+>;
 
 export class Table<T extends TableSchemaBuilder> {
-  readonly schema: TableSchema;
+  readonly schema: TableSchema = {};
   readonly keyField: string = '';
   private readonly adapter: TableAdapter;
+  public readonly isDocumentTable: boolean = false;
 
   private readonly subscribedKeys: Map<Key, Observable<any>> = new Map();
 
@@ -92,17 +136,20 @@ export class Table<T extends TableSchemaBuilder> {
     private readonly opts: TableOptions
   ) {
     this.adapter = db.table(name) as any;
-    this.schema = Object.entries(this.opts.schema).reduce(
-      (acc, [fieldName, fieldBuilder]) => {
-        acc[fieldName] = fieldBuilder.schema;
-        if (fieldBuilder.schema.isPrimaryKey) {
-          // @ts-expect-error still in constructor
-          this.keyField = fieldName;
+    for (const [fieldName, fieldBuilder] of Object.entries(this.opts.schema)) {
+      // handle internal fields
+      if (fieldName.startsWith('__')) {
+        if (fieldName === '__document') {
+          this.isDocumentTable = true;
         }
-        return acc;
-      },
-      {} as TableSchema
-    );
+        continue;
+      }
+
+      this.schema[fieldName] = fieldBuilder.schema;
+      if (fieldBuilder.schema.isPrimaryKey) {
+        this.keyField = fieldName;
+      }
+    }
     this.adapter.setup({ ...opts, keyField: this.keyField });
   }
 
@@ -129,7 +176,7 @@ export class Table<T extends TableSchemaBuilder> {
     validators.validateCreateEntityData(this, data);
 
     return this.adapter.insert({
-      data: data,
+      data,
     });
   }
 

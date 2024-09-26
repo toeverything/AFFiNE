@@ -12,6 +12,10 @@ export type TableSchemaBuilder = Record<
   string,
   FieldSchemaBuilder<any, boolean>
 >;
+export type DocumentTableSchemaBuilder = TableSchemaBuilder & {
+  __document: FieldSchemaBuilder<boolean, true, false>;
+};
+
 export type DBSchemaBuilder = Record<string, TableSchemaBuilder>;
 
 export class FieldSchemaBuilder<
@@ -53,3 +57,12 @@ export const f = {
   boolean: () => new FieldSchemaBuilder<boolean>('boolean'),
   json: <T = any>() => new FieldSchemaBuilder<T>('json'),
 } satisfies Record<FieldType, () => FieldSchemaBuilder<any>>;
+
+export const t = {
+  document: <T extends TableSchemaBuilder>(schema: T) => {
+    return {
+      ...schema,
+      __document: new FieldSchemaBuilder<boolean>('boolean').optional(),
+    };
+  },
+};

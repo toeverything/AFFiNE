@@ -208,7 +208,7 @@ export class YjsTableAdapter implements TableAdapter {
     if (select === 'key') {
       return this.keyof(record);
     } else if (select === '*') {
-      selectedFields = this.fields;
+      return this.toObject(record);
     } else {
       selectedFields = select;
     }
