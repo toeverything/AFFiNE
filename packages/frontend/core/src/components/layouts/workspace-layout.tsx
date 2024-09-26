@@ -42,7 +42,6 @@ import { WorkspaceAIOnboarding } from '../affine/ai-onboarding';
 import { AppContainer } from '../affine/app-container';
 import { SyncAwareness } from '../affine/awareness';
 import { useRegisterFindInPageCommands } from '../hooks/affine/use-register-find-in-page-commands';
-import { useSubscriptionNotifyReader } from '../hooks/affine/use-subscription-notify';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
 import { OverCapacityNotification } from '../over-capacity';
 import { CurrentWorkspaceModals } from '../providers/modal-provider';
@@ -141,7 +140,6 @@ export const WorkspaceLayoutProviders = ({ children }: PropsWithChildren) => {
     workbench,
   ]);
 
-  useSubscriptionNotifyReader();
   useRegisterWorkspaceCommands();
   useRegisterNavigationCommands();
   useRegisterFindInPageCommands();

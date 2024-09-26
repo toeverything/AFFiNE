@@ -5,6 +5,7 @@ import {
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
+import { useSignOut } from '@affine/core/components/hooks/affine/use-sign-out';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import { SubscriptionPlan } from '@affine/graphql';
@@ -22,11 +23,7 @@ import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { AuthService, ServerConfigService } from '../../../../modules/cloud';
-import {
-  authAtom,
-  openSettingModalAtom,
-  openSignOutModalAtom,
-} from '../../../atoms';
+import { authAtom, openSettingModalAtom } from '../../../atoms';
 import { Upload } from '../../../pure/file-upload';
 import { AIUsagePanel } from './ai-usage-panel';
 import { StorageProgress } from './storage-progress';
@@ -189,7 +186,7 @@ export const AccountSetting: FC = () => {
   }, [session]);
   const account = useEnsureLiveData(session.account$);
   const setAuthModal = useSetAtom(authAtom);
-  const setSignOutModal = useSetAtom(openSignOutModalAtom);
+  const openSignOutModal = useSignOut();
 
   const onChangeEmail = useCallback(() => {
     setAuthModal({
@@ -210,10 +207,6 @@ export const AccountSetting: FC = () => {
       emailType: account.info?.hasPassword ? 'changePassword' : 'setPassword',
     });
   }, [account.email, account.info?.hasPassword, setAuthModal]);
-
-  const onOpenSignOutModal = useCallback(() => {
-    setSignOutModal(true);
-  }, [setSignOutModal]);
 
   return (
     <>
@@ -247,7 +240,7 @@ export const AccountSetting: FC = () => {
         desc={t['com.affine.setting.sign.out.message']()}
         style={{ cursor: 'pointer' }}
         data-testid="sign-out-button"
-        onClick={onOpenSignOutModal}
+        onClick={openSignOutModal}
       >
         <ArrowRightSmallIcon />
       </SettingRow>
