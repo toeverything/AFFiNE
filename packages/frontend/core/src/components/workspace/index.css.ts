@@ -1,5 +1,5 @@
 import { cssVar, lightCssVariables } from '@toeverything/theme';
-import { createVar, globalStyle, keyframes, style } from '@vanilla-extract/css';
+import { createVar, globalStyle, style } from '@vanilla-extract/css';
 
 export const panelWidthVar = createVar('panel-width');
 
@@ -42,19 +42,7 @@ globalStyle(`html[data-theme="dark"] ${appStyle}`, {
   },
 });
 
-const anime = keyframes({
-  '0%': {
-    marginLeft: '8px',
-  },
-  '100%': {
-    marginLeft: '0',
-  },
-});
-
 export const mainContainerStyle = style({
-  vars: {
-    [panelWidthVar]: '256px',
-  },
   position: 'relative',
   zIndex: 0,
   width: '100%',
@@ -76,14 +64,6 @@ export const mainContainerStyle = style({
         },
       },
     },
-    '&[data-side-bar-open="true"][data-show-pin-sidebar-animation="true"]': {
-      marginLeft: panelWidthVar,
-      transition: 'margin-left 0.5s ease-in-out',
-    },
-    '&[data-client-border="true"][data-side-bar-open="true"][data-side-bar-floating="false"]':
-      {
-        animation: `${anime} 0.5s ease-in-out forwards`,
-      },
     '&[data-client-border="true"][data-is-desktop="true"]': {
       marginTop: 0,
     },

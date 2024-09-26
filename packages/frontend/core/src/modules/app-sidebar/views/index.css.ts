@@ -31,9 +31,6 @@ export const hoverNavWrapperStyle = style({
       boxShadow: cssVar('--affine-popover-shadow'),
       borderRadius: '6px',
     },
-    '&[data-is-floating="true"][data-show-pin-animation="true"]': {
-      marginLeft: '0',
-    },
     '&[data-is-floating="true"][data-is-electron="true"]': {
       height: '100%',
       marginTop: '-4px',

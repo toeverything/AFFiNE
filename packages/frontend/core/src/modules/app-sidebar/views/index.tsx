@@ -12,7 +12,7 @@ import {
 import clsx from 'clsx';
 import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { AppSidebarService } from '../services/app-sidebar';
 import * as styles from './fallback.css';
@@ -45,21 +45,45 @@ export function AppSidebar({ children }: PropsWithChildren) {
 
   const open = useLiveData(appSidebarService.open$);
   const width = useLiveData(appSidebarService.width$);
-  const responsiveFloating = useLiveData(appSidebarService.responsiveFloating$);
-  const hoverFloating = useLiveData(appSidebarService.hoverFloating$);
+  const smallScreenMode = useLiveData(appSidebarService.smallScreenMode$);
+  const hovering = useLiveData(appSidebarService.hovering$) && open !== true;
   const resizing = useLiveData(appSidebarService.resizing$);
-  const showFloatToPinAnimation = useLiveData(
-    appSidebarService.showFloatToPinAnimation$
-  );
-
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const clearExistingTimeout = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
+  const [deferredHovering, setDeferredHovering] = useState(false);
+  useEffect(() => {
+    if (open) {
+      // if open, we don't need to show the floating sidebar
+      setDeferredHovering(false);
+      return;
     }
-  }, []);
+    if (hovering) {
+      // if hovering is true, we make a little delay here.
+      // this allow the sidebar close animation to complete.
+      const timeout = setTimeout(() => {
+        setDeferredHovering(hovering);
+      }, 150);
+      return () => {
+        clearTimeout(timeout);
+      };
+    } else {
+      // if hovering is false, we set the deferred value after 1000ms
+      const timeout = setTimeout(() => {
+        setDeferredHovering(hovering);
+      }, 1000);
+      return () => {
+        clearTimeout(timeout);
+      };
+    }
+  }, [hovering, open]);
+
+  const sidebarState = smallScreenMode
+    ? open
+      ? 'floating-with-mask'
+      : 'close'
+    : open
+      ? 'open'
+      : deferredHovering
+        ? 'floating'
+        : 'close';
 
   useEffect(() => {
     // do not float app sidebar on desktop
@@ -71,19 +95,8 @@ export function AppSidebar({ children }: PropsWithChildren) {
       const isFloatingMaxWidth = window.matchMedia(
         `(max-width: ${floatingMaxWidth}px)`
       ).matches;
-      const isOverflowWidth = window.matchMedia(
-        `(max-width: ${width / 0.4}px)`
-      ).matches;
-      const isFloating = isFloatingMaxWidth || isOverflowWidth;
-      if (
-        open === undefined &&
-        appSidebarService.getCachedAppSidebarOpenState() === undefined
-      ) {
-        // give the initial value,
-        // so that the sidebar can be closed on mobile by default
-        appSidebarService.setOpen(!isFloating);
-      }
-      appSidebarService.setResponsiveFloating(isFloating);
+      const isFloating = isFloatingMaxWidth;
+      appSidebarService.setSmallScreenMode(isFloating);
     }
 
     const dOnResize = debounce(onResize, 50);
@@ -91,7 +104,7 @@ export function AppSidebar({ children }: PropsWithChildren) {
     return () => {
       window.removeEventListener('resize', dOnResize);
     };
-  }, [appSidebarService, open, width]);
+  }, [appSidebarService]);
 
   const hasRightBorder = !BUILD_CONFIG.isElectron && !clientBorder;
 
@@ -121,34 +134,20 @@ export function AppSidebar({ children }: PropsWithChildren) {
   }, [appSidebarService]);
 
   const onMouseEnter = useCallback(() => {
-    if (!timeoutRef.current) {
-      return;
-    }
-    clearExistingTimeout();
-  }, [clearExistingTimeout]);
+    appSidebarService.setHovering(true);
+  }, [appSidebarService]);
 
   const onMouseLeave = useCallback(() => {
-    if (!hoverFloating) {
-      clearExistingTimeout();
-      return;
-    }
-    clearExistingTimeout();
-    timeoutRef.current = setTimeout(() => {
-      appSidebarService.setOpen(false);
-    }, 1500);
-  }, [hoverFloating, clearExistingTimeout, appSidebarService]);
-
-  useEffect(() => {
-    return () => {
-      clearExistingTimeout();
-    };
-  }, [clearExistingTimeout]);
+    appSidebarService.setHovering(false);
+  }, [appSidebarService]);
 
   return (
     <>
       <ResizePanel
-        floating={responsiveFloating || hoverFloating}
-        open={open}
+        floating={
+          sidebarState === 'floating' || sidebarState === 'floating-with-mask'
+        }
+        open={sidebarState !== 'close'}
         resizing={resizing}
         maxWidth={MAX_WIDTH}
         minWidth={MIN_WIDTH}
@@ -158,37 +157,36 @@ export function AppSidebar({ children }: PropsWithChildren) {
         onResizing={handleResizing}
         onWidthChange={handleWidthChange}
         className={clsx(navWrapperStyle, {
-          [hoverNavWrapperStyle]: hoverFloating,
+          [hoverNavWrapperStyle]: sidebarState === 'floating',
         })}
         resizeHandleOffset={0}
         resizeHandleVerticalPadding={clientBorder ? 16 : 0}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         data-transparent
-        data-open={open}
+        data-open={sidebarState !== 'close'}
         data-has-border={hasRightBorder}
         data-testid="app-sidebar-wrapper"
         data-is-macos-electron={isMacosDesktop}
         data-client-border={clientBorder}
         data-is-electron={BUILD_CONFIG.isElectron}
-        data-show-pin-animation={showFloatToPinAnimation}
       >
         <nav className={navStyle} data-testid="app-sidebar">
-          {!BUILD_CONFIG.isElectron && !hoverFloating && <SidebarHeader />}
+          {!BUILD_CONFIG.isElectron && sidebarState !== 'floating' && (
+            <SidebarHeader />
+          )}
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {children}
           </div>
         </nav>
       </ResizePanel>
-      {!hoverFloating && (
-        <div
-          data-testid="app-sidebar-float-mask"
-          data-open={open}
-          data-is-floating={responsiveFloating}
-          className={sidebarFloatMaskStyle}
-          onClick={handleClose}
-        />
-      )}
+      <div
+        data-testid="app-sidebar-float-mask"
+        data-open={open}
+        data-is-floating={sidebarState === 'floating-with-mask'}
+        className={sidebarFloatMaskStyle}
+        onClick={handleClose}
+      />
     </>
   );
 }

@@ -9,39 +9,26 @@ import * as styles from './sidebar-switch.css';
 
 export const SidebarSwitch = ({
   show,
-  enableOpenHoverSidebar,
   className,
 }: {
   show: boolean;
-  enableOpenHoverSidebar?: boolean;
   className?: string;
 }) => {
   const appSidebarService = useService(AppSidebarService).sidebar;
   const open = useLiveData(appSidebarService.open$);
-  const hoverFloating = useLiveData(appSidebarService.hoverFloating$);
   const switchRef = useRef<HTMLDivElement>(null);
 
   const handleMouseEnter = useCallback(() => {
-    if (!enableOpenHoverSidebar || open) {
-      return;
-    }
-    appSidebarService.setHoverFloating(true);
-    appSidebarService.setOpen(true);
-  }, [appSidebarService, enableOpenHoverSidebar, open]);
+    appSidebarService.setHovering(true);
+  }, [appSidebarService]);
 
   const handleClickSwitch = useCallback(() => {
-    if (open && hoverFloating) {
-      appSidebarService.setShowFloatToPinAnimation(true);
-      const timeout = setTimeout(() => {
-        appSidebarService.setShowFloatToPinAnimation(false);
-        appSidebarService.setHoverFloating(false);
-      }, 500);
-      return () => {
-        clearTimeout(timeout);
-      };
-    }
-    return appSidebarService.toggleSidebar();
-  }, [appSidebarService, hoverFloating, open]);
+    appSidebarService.toggleSidebar();
+  }, [appSidebarService]);
+
+  const handleMouseLeave = useCallback(() => {
+    appSidebarService.setHovering(false);
+  }, [appSidebarService]);
 
   const t = useI18n();
   const tooltipContent = open
@@ -54,13 +41,13 @@ export const SidebarSwitch = ({
       data-show={show}
       className={styles.sidebarSwitchClip}
       data-testid={`app-sidebar-arrow-button-${open ? 'collapse' : 'expand'}`}
-      data-enable-open-hover-sidebar={enableOpenHoverSidebar}
       onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <IconButton
         tooltip={tooltipContent}
         tooltipShortcut={['$mod', '/']}
-        tooltipOptions={{ side: open && !hoverFloating ? 'bottom' : 'right' }}
+        tooltipOptions={{ side: open ? 'bottom' : 'right' }}
         className={className}
         size="24"
         style={{
