@@ -4,9 +4,9 @@ import {
   wrapMemento,
 } from '@toeverything/infra';
 
-import type { AppSidebarLocalState } from '../providers/storage';
+import type { AppSidebarState } from '../providers/storage';
 
-export class AppSidebarLocalStateImpl implements AppSidebarLocalState {
+export class AppSidebarStateImpl implements AppSidebarState {
   wrapped: Memento;
   constructor(globalState: GlobalState) {
     this.wrapped = wrapMemento(globalState, `app-sidebar-state:`);

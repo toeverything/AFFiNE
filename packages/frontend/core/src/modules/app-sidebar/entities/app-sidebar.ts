@@ -1,7 +1,7 @@
 import { Entity, LiveData } from '@toeverything/infra';
 import { map } from 'rxjs';
 
-import type { AppSidebarLocalState } from '../providers/storage';
+import type { AppSidebarState } from '../providers/storage';
 
 const isMobile = !BUILD_CONFIG.isElectron && window.innerWidth < 768;
 
@@ -11,19 +11,19 @@ enum APP_SIDEBAR_STATE {
 }
 
 export class AppSidebar extends Entity {
-  constructor(private readonly appSidebarLocalState: AppSidebarLocalState) {
+  constructor(private readonly appSidebarState: AppSidebarState) {
     super();
   }
 
   open$ = LiveData.from(
-    this.appSidebarLocalState
+    this.appSidebarState
       .watch<boolean>(APP_SIDEBAR_STATE.OPEN)
       .pipe(map(value => value ?? !isMobile)),
     !isMobile
   );
 
   width$ = LiveData.from(
-    this.appSidebarLocalState
+    this.appSidebarState
       .watch<number>(APP_SIDEBAR_STATE.WIDTH)
       .pipe(map(value => value ?? 248)),
     248
@@ -33,7 +33,7 @@ export class AppSidebar extends Entity {
   resizing$ = new LiveData<boolean>(false);
 
   getCachedAppSidebarOpenState = () => {
-    return this.appSidebarLocalState.get<boolean>(APP_SIDEBAR_STATE.OPEN);
+    return this.appSidebarState.get<boolean>(APP_SIDEBAR_STATE.OPEN);
   };
 
   toggleSidebar = () => {
@@ -41,7 +41,7 @@ export class AppSidebar extends Entity {
   };
 
   setOpen = (open: boolean) => {
-    this.appSidebarLocalState.set(APP_SIDEBAR_STATE.OPEN, open);
+    this.appSidebarState.set(APP_SIDEBAR_STATE.OPEN, open);
     if (!open && this.hoverFloating$.value) {
       const timeout = setTimeout(() => {
         this.setHoverFloating(false);
@@ -66,6 +66,6 @@ export class AppSidebar extends Entity {
   };
 
   setWidth = (width: number) => {
-    this.appSidebarLocalState.set(APP_SIDEBAR_STATE.WIDTH, width);
+    this.appSidebarState.set(APP_SIDEBAR_STATE.WIDTH, width);
   };
 }

@@ -1,7 +1,6 @@
 import { createIdentifier, type Memento } from '@toeverything/infra';
 
-export interface AppSidebarLocalState extends Memento {}
+export interface AppSidebarState extends Memento {}
 
-export const AppSidebarLocalState = createIdentifier<AppSidebarLocalState>(
-  'AppSidebarLocalState'
-);
+export const AppSidebarState =
+  createIdentifier<AppSidebarState>('AppSidebarState');
