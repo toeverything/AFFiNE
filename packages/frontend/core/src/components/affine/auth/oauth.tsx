@@ -51,15 +51,23 @@ function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
   const onClick = useCallback(() => {
     async function preflight() {
       if (ignore) return;
-      const url = await auth.oauthPreflight(provider, appInfo?.schema || '');
-      if (!ignore) {
-        popupWindow(url);
+      try {
+        return await auth.oauthPreflight(provider, appInfo?.schema || '');
+      } catch {
+        return null;
       }
     }
 
     let ignore = false;
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    preflight();
+    preflight().then(url => {
+      // cover popup limit in safari
+      setTimeout(() => {
+        if (url && !ignore) {
+          popupWindow(url);
+        }
+      });
+    });
     return () => {
       ignore = true;
     };
