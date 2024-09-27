@@ -41,18 +41,18 @@ export class CopilotStorage {
       // return image base64url for dev environment
       return `data:image/png;base64,${blob.toString('base64')}`;
     }
-    metrics.ai.counter('ai_blob_put').add(1);
+    metrics.ai.counter('blob_put').add(1);
     return this.url.link(`/api/copilot/blob/${name}`);
   }
 
   async get(userId: string, workspaceId: string, key: string) {
-    metrics.ai.counter('ai_blob_get').add(1);
+    metrics.ai.counter('blob_get').add(1);
     return this.provider.get(`${userId}/${workspaceId}/${key}`);
   }
 
   async delete(userId: string, workspaceId: string, key: string) {
     await this.provider.delete(`${userId}/${workspaceId}/${key}`);
-    metrics.ai.counter('ai_blob_delete').add(1);
+    metrics.ai.counter('blob_delete').add(1);
   }
 
   async handleUpload(userId: string, blob: FileUpload) {
@@ -85,7 +85,7 @@ export class CopilotStorage {
       });
     });
 
-    metrics.ai.counter('ai_blob_handle_upload').add(1);
+    metrics.ai.counter('blob_handle_upload').add(1);
     return {
       buffer,
       filename: blob.filename,
@@ -96,7 +96,7 @@ export class CopilotStorage {
     const response = await fetch(link);
     const buffer = new Uint8Array(await response.arrayBuffer());
     const filename = createHash('sha256').update(buffer).digest('base64url');
-    metrics.ai.counter('ai_blob_proxy_remote_url').add(1);
+    metrics.ai.counter('blob_proxy_remote_url').add(1);
     return this.put(userId, workspaceId, filename, Buffer.from(buffer));
   }
 }

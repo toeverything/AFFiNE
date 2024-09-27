@@ -4,6 +4,7 @@ import { APIError, ClientOptions, OpenAI } from 'openai';
 import {
   CopilotPromptInvalid,
   CopilotProviderSideError,
+  metrics,
   UserFriendlyError,
 } from '../../../fundamentals';
 import {
@@ -221,8 +222,10 @@ export class OpenAIProvider
       );
       const { content } = result.choices[0].message;
       if (!content) throw new Error('Failed to generate text');
+      metrics.ai.counter('chat_text_success').add(1, { model });
       return content.trim();
     } catch (e: any) {
+      metrics.ai.counter('chat_text_failed').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -267,7 +270,9 @@ export class OpenAIProvider
           }
         }
       }
+      metrics.ai.counter('chat_text_stream_success').add(1, { model });
     } catch (e: any) {
+      metrics.ai.counter('chat_text_stream_failed').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -289,8 +294,13 @@ export class OpenAIProvider
         dimensions: options.dimensions || DEFAULT_DIMENSIONS,
         user: options.user,
       });
-      return result.data.map(e => e.embedding);
+
+      metrics.ai.counter('generate_embedding_success').add(1, { model });
+      return result.data
+        .map(e => e?.embedding)
+        .filter(v => v && Array.isArray(v));
     } catch (e: any) {
+      metrics.ai.counter('generate_embedding_failed').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -315,10 +325,12 @@ export class OpenAIProvider
         { signal: options.signal }
       );
 
+      metrics.ai.counter('generate_images_success').add(1, { model });
       return result.data
         .map(image => image.url)
         .filter((v): v is string => !!v);
     } catch (e: any) {
+      metrics.ai.counter('generate_images_failed').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -328,9 +340,15 @@ export class OpenAIProvider
     model: string = 'dall-e-3',
     options: CopilotImageOptions = {}
   ): AsyncIterable<string> {
-    const ret = await this.generateImages(messages, model, options);
-    for (const url of ret) {
-      yield url;
+    try {
+      const ret = await this.generateImages(messages, model, options);
+      for (const url of ret) {
+        yield url;
+      }
+      metrics.ai.counter('_generate_images_stream_success').add(1, { model });
+    } catch (e) {
+      metrics.ai.counter('generate_images_stream_failed').add(1, { model });
+      throw e;
     }
   }
 }

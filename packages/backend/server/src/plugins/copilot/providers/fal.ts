@@ -9,6 +9,7 @@ import { z, ZodType } from 'zod';
 import {
   CopilotPromptInvalid,
   CopilotProviderSideError,
+  metrics,
   UserFriendlyError,
 } from '../../../fundamentals';
 import {
@@ -235,8 +236,10 @@ export class FalProvider
       if (!data.output) {
         throw this.extractFalError(data, 'Failed to generate text');
       }
+      metrics.ai.counter('chat_text_success').add(1, { model });
       return data.output;
     } catch (e: any) {
+      metrics.ai.counter('chat_text_failed').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -246,15 +249,21 @@ export class FalProvider
     model: string = 'llava-next',
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
-    const result = await this.generateText(messages, model, options);
+    try {
+      const result = await this.generateText(messages, model, options);
 
-    for await (const content of result) {
-      if (content) {
-        yield content;
-        if (options.signal?.aborted) {
-          break;
+      for await (const content of result) {
+        if (content) {
+          yield content;
+          if (options.signal?.aborted) {
+            break;
+          }
         }
       }
+      metrics.ai.counter('chat_text_stream_success').add(1, { model });
+    } catch (e) {
+      metrics.ai.counter('chat_text_stream_failed').add(1, { model });
+      throw e;
     }
   }
 
@@ -308,13 +317,14 @@ export class FalProvider
       if (data.image?.url) {
         return [data.image.url];
       }
-
+      metrics.ai.counter('generate_images_success').add(1, { model });
       return (
         data.images
           ?.filter((image): image is NonNullable<FalImage> => !!image)
           .map(image => image.url) || []
       );
     } catch (e: any) {
+      metrics.ai.counter('generate_images_failed').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -324,9 +334,15 @@ export class FalProvider
     model: string = this.availableModels[0],
     options: CopilotImageOptions = {}
   ): AsyncIterable<string> {
-    const ret = await this.generateImages(messages, model, options);
-    for (const url of ret) {
-      yield url;
+    try {
+      const ret = await this.generateImages(messages, model, options);
+      for (const url of ret) {
+        yield url;
+      }
+      metrics.ai.counter('generate_images_stream_success').add(1, { model });
+    } catch (e) {
+      metrics.ai.counter('generate_images_stream_failed').add(1, { model });
+      throw e;
     }
   }
 }
