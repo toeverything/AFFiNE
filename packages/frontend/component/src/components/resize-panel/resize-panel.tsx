@@ -1,4 +1,3 @@
-import { assertExists } from '@blocksuite/affine/global/utils';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import {
@@ -60,48 +59,53 @@ const ResizeHandle = ({
   ...rest
 }: ResizeHandleProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  const onResizeStart = useCallback(() => {
-    let resized = false;
-    const panelContainer = ref.current?.parentElement;
-    assertExists(
-      panelContainer,
-      'parent element not found for resize indicator'
-    );
-
-    const { left: anchorLeft, right: anchorRight } =
-      panelContainer.getBoundingClientRect();
-
-    function onMouseMove(e: MouseEvent) {
-      e.preventDefault();
+  const onResizeStart = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      let resized = false;
+      const panelContainer = ref.current?.parentElement;
       if (!panelContainer) return;
-      const newWidth = Math.min(
-        maxWidth,
-        Math.max(
-          resizeHandlePos === 'right'
-            ? e.clientX - anchorLeft
-            : anchorRight - e.clientX,
-          minWidth
-        )
-      );
-      onWidthChange(newWidth);
-      onResizing(true);
-      resized = true;
-    }
 
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener(
-      'mouseup',
-      () => {
-        // if not resized, toggle sidebar
-        if (!resized) {
-          onOpen(false);
-        }
-        onResizing(false);
-        document.removeEventListener('mousemove', onMouseMove);
-      },
-      { once: true }
-    );
-  }, [maxWidth, resizeHandlePos, minWidth, onWidthChange, onResizing, onOpen]);
+      // add cursor style to body
+      document.body.style.cursor = 'col-resize';
+
+      const { left: anchorLeft, right: anchorRight } =
+        panelContainer.getBoundingClientRect();
+
+      function onMouseMove(e: MouseEvent) {
+        e.preventDefault();
+        if (!panelContainer) return;
+        const newWidth = Math.min(
+          maxWidth,
+          Math.max(
+            resizeHandlePos === 'right'
+              ? e.clientX - anchorLeft
+              : anchorRight - e.clientX,
+            minWidth
+          )
+        );
+        onWidthChange(newWidth);
+        onResizing(true);
+        resized = true;
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener(
+        'mouseup',
+        () => {
+          // if not resized, toggle sidebar
+          if (!resized) {
+            onOpen(false);
+          }
+          onResizing(false);
+          document.removeEventListener('mousemove', onMouseMove);
+          document.body.style.cursor = '';
+        },
+        { once: true }
+      );
+    },
+    [maxWidth, resizeHandlePos, minWidth, onWidthChange, onResizing, onOpen]
+  );
 
   return (
     <div

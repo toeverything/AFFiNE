@@ -1,4 +1,4 @@
-import { CategoryDivider } from '@affine/core/components/app-sidebar';
+import { CategoryDivider } from '@affine/core/modules/app-sidebar/views';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';

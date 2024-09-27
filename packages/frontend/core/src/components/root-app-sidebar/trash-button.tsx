@@ -3,6 +3,7 @@ import {
   useConfirmModal,
   useDropTarget,
 } from '@affine/component';
+import { MenuLinkItem } from '@affine/core/modules/app-sidebar/views';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
 import {
@@ -11,8 +12,6 @@ import {
   useLiveData,
   useService,
 } from '@toeverything/infra';
-
-import { MenuLinkItem } from '../app-sidebar';
 
 export const TrashButton = () => {
   const t = useI18n();

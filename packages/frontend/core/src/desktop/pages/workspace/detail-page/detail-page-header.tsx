@@ -3,27 +3,26 @@ import {
   type InlineEditHandle,
   observeResize,
 } from '@affine/component';
+import { SharePageButton } from '@affine/core/components/affine/share-page-modal';
 import { FavoriteButton } from '@affine/core/components/blocksuite/block-suite-header/favorite';
 import { InfoButton } from '@affine/core/components/blocksuite/block-suite-header/info';
 import { JournalWeekDatePicker } from '@affine/core/components/blocksuite/block-suite-header/journal/date-picker';
 import { JournalTodayButton } from '@affine/core/components/blocksuite/block-suite-header/journal/today-button';
 import { PageHeaderMenuButton } from '@affine/core/components/blocksuite/block-suite-header/menu';
 import { DetailPageHeaderPresentButton } from '@affine/core/components/blocksuite/block-suite-header/present/detail-header-present-button';
+import { BlocksuiteHeaderTitle } from '@affine/core/components/blocksuite/block-suite-header/title';
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
 import { useRegisterCopyLinkCommands } from '@affine/core/components/hooks/affine/use-register-copy-link-commands';
 import { useDocCollectionPageTitle } from '@affine/core/components/hooks/use-block-suite-workspace-page-title';
 import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
+import { HeaderDivider } from '@affine/core/components/pure/header';
+import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import { EditorService } from '@affine/core/modules/editor';
 import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
 import type { Doc } from '@blocksuite/affine/store';
 import { useLiveData, useService, type Workspace } from '@toeverything/infra';
-import { useAtomValue } from 'jotai';
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 
-import { SharePageButton } from '../../../../components/affine/share-page-modal';
-import { appSidebarFloatingAtom } from '../../../../components/app-sidebar';
-import { BlocksuiteHeaderTitle } from '../../../../components/blocksuite/block-suite-header/title/index';
-import { HeaderDivider } from '../../../../components/pure/header';
 import * as styles from './detail-page-header.css';
 import { useDetailPageHeaderResponsive } from './use-header-responsive';
 
@@ -35,7 +34,8 @@ const Header = forwardRef<
     style?: React.CSSProperties;
   }
 >(({ children, style, className }, ref) => {
-  const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
+  const appSidebarService = useService(AppSidebarService).sidebar;
+  const appSidebarFloating = useLiveData(appSidebarService.responsiveFloating$);
   return (
     <div
       data-testid="header"

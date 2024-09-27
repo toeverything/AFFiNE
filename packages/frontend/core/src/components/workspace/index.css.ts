@@ -9,9 +9,6 @@ export const appStyle = style({
   display: 'flex',
   backgroundColor: cssVar('backgroundPrimaryColor'),
   selectors: {
-    '&[data-is-resizing="true"]': {
-      cursor: 'col-resize',
-    },
     '&.blur-background': {
       backgroundColor: 'transparent',
     },

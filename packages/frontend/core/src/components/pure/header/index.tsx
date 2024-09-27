@@ -1,8 +1,8 @@
+import { AppSidebarService } from '@affine/core/modules/app-sidebar';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useAtomValue } from 'jotai';
 import type { ReactNode } from 'react';
 
-import { appSidebarFloatingAtom, appSidebarOpenAtom } from '../../app-sidebar';
 import * as style from './style.css';
 
 interface HeaderPros {
@@ -16,8 +16,9 @@ interface HeaderPros {
 // 1. Manage layout issues independently of page or business logic
 // 2. Dynamic centered middle element (relative to the main-container), when the middle element is detected to collide with the two elements, the line wrapping process is performed
 export const Header = ({ left, center, right }: HeaderPros) => {
-  const open = useAtomValue(appSidebarOpenAtom);
-  const appSidebarFloating = useAtomValue(appSidebarFloatingAtom);
+  const appSidebarService = useService(AppSidebarService).sidebar;
+  const open = useLiveData(appSidebarService.open$);
+  const appSidebarFloating = useLiveData(appSidebarService.responsiveFloating$);
   return (
     <div
       className={clsx(style.header)}

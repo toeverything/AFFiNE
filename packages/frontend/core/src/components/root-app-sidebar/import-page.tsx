@@ -1,10 +1,10 @@
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { MenuItem } from '@affine/core/modules/app-sidebar/views';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { DocCollection } from '@blocksuite/affine/store';
 import { ImportIcon } from '@blocksuite/icons/rc';
 
-import { MenuItem } from '../app-sidebar';
 import { usePageHelper } from '../blocksuite/block-suite-page-list/utils';
 
 const ImportPage = ({ docCollection }: { docCollection: DocCollection }) => {

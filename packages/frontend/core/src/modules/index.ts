@@ -1,6 +1,7 @@
 import { configureQuotaModule } from '@affine/core/modules/quota';
 import { configureInfraModules, type Framework } from '@toeverything/infra';
 
+import { configureAppSidebarModule } from './app-sidebar';
 import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
 import { configureCreateWorkspaceModule } from './create-workspace';
@@ -57,4 +58,5 @@ export function configureCommonModules(framework: Framework) {
   configureCreateWorkspaceModule(framework);
   configureUserspaceModule(framework);
   configureDocInfoModule(framework);
+  configureAppSidebarModule(framework);
 }

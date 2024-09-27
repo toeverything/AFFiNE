@@ -1,4 +1,5 @@
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
+import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import {
   DocsService,
   GlobalContextService,
@@ -6,22 +7,18 @@ import {
   useService,
 } from '@toeverything/infra';
 import { clsx } from 'clsx';
-import { useAtomValue } from 'jotai';
 import type { HTMLAttributes, PropsWithChildren, ReactElement } from 'react';
 import { forwardRef } from 'react';
 
-import { appSidebarOpenAtom } from '../app-sidebar';
 import { appStyle, mainContainerStyle, toolStyle } from './index.css';
 
 export type WorkspaceRootProps = PropsWithChildren<{
-  resizing?: boolean;
   className?: string;
   useNoisyBackground?: boolean;
   useBlurBackground?: boolean;
 }>;
 
 export const AppContainer = ({
-  resizing,
   useNoisyBackground,
   useBlurBackground,
   children,
@@ -39,7 +36,6 @@ export const AppContainer = ({
         'blur-background': blurBackground,
       })}
       data-noise-background={noisyBackground}
-      data-is-resizing={resizing}
       data-blur-background={blurBackground}
     >
       {children}
@@ -53,7 +49,8 @@ export const MainContainer = forwardRef<
   HTMLDivElement,
   PropsWithChildren<MainContainerProps>
 >(function MainContainer({ className, children, ...props }, ref): ReactElement {
-  const appSideBarOpen = useAtomValue(appSidebarOpenAtom);
+  const appSidebarService = useService(AppSidebarService).sidebar;
+  const appSideBarOpen = useLiveData(appSidebarService.open$);
   const { appSettings } = useAppSettingHelper();
 
   return (

@@ -1,7 +1,6 @@
 import { useAppUpdater } from '@affine/core/components/hooks/use-app-updater';
+import { AppUpdaterButton } from '@affine/core/modules/app-sidebar/views';
 import { Suspense } from 'react';
-
-import { AppUpdaterButton } from '../app-sidebar';
 
 const UpdaterButtonInner = () => {
   const appUpdater = useAppUpdater();

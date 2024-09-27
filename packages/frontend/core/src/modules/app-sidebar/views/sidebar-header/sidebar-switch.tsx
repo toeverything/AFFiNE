@@ -1,9 +1,10 @@
 import { IconButton } from '@affine/component';
 import { useI18n } from '@affine/i18n';
 import { SidebarIcon } from '@blocksuite/icons/rc';
-import { useAtom } from 'jotai';
+import { useLiveData, useService } from '@toeverything/infra';
+import { useCallback } from 'react';
 
-import { appSidebarOpenAtom } from '../index.jotai';
+import { AppSidebarService } from '../../services/app-sidebar';
 import * as styles from './sidebar-switch.css';
 
 export const SidebarSwitch = ({
@@ -13,11 +14,17 @@ export const SidebarSwitch = ({
   show: boolean;
   className?: string;
 }) => {
-  const [open, setOpen] = useAtom(appSidebarOpenAtom);
+  const appSidebarService = useService(AppSidebarService).sidebar;
+  const open = useLiveData(appSidebarService.open$);
+
   const t = useI18n();
   const tooltipContent = open
     ? t['com.affine.sidebarSwitch.collapse']()
     : t['com.affine.sidebarSwitch.expand']();
+
+  const toggleSidebar = useCallback(() => {
+    appSidebarService.toggleSidebar();
+  }, [appSidebarService]);
 
   return (
     <div
@@ -34,7 +41,7 @@ export const SidebarSwitch = ({
         style={{
           zIndex: 1,
         }}
-        onClick={() => setOpen(open => !open)}
+        onClick={toggleSidebar}
       >
         <SidebarIcon />
       </IconButton>

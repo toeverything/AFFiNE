@@ -3,7 +3,7 @@ import { cssVarV2 } from '@toeverything/theme/v2';
 import type { ReactElement } from 'react';
 import type { To } from 'react-router-dom';
 
-import { MenuLinkItem } from '.';
+import { MenuLinkItem } from './index';
 
 const RawLink = ({
   children,

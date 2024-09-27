@@ -3,6 +3,7 @@ import {
   pushGlobalLoadingEventAtom,
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
+import { SidebarSwitch } from '@affine/core/modules/app-sidebar/views';
 import { useI18n } from '@affine/i18n';
 import { type DocMode, ZipTransformer } from '@blocksuite/affine/blocks';
 import {
@@ -17,7 +18,7 @@ import {
   useServices,
   WorkspaceService,
 } from '@toeverything/infra';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import type { PropsWithChildren } from 'react';
 import { useEffect } from 'react';
 import {
@@ -40,7 +41,6 @@ import { WorkbenchService } from '../../modules/workbench';
 import { WorkspaceAIOnboarding } from '../affine/ai-onboarding';
 import { AppContainer } from '../affine/app-container';
 import { SyncAwareness } from '../affine/awareness';
-import { appSidebarResizingAtom, SidebarSwitch } from '../app-sidebar';
 import { useRegisterFindInPageCommands } from '../hooks/affine/use-register-find-in-page-commands';
 import { useSubscriptionNotifyReader } from '../hooks/affine/use-subscription-notify';
 import { useRegisterWorkspaceCommands } from '../hooks/use-register-workspace-commands';
@@ -221,10 +221,8 @@ const WorkspaceLayoutUIContainer = ({ children }: PropsWithChildren) => {
     })
   );
 
-  const resizing = useAtomValue(appSidebarResizingAtom);
-
   return (
-    <AppContainer data-current-path={currentPath} resizing={resizing}>
+    <AppContainer data-current-path={currentPath}>
       <LayoutComponent>{children}</LayoutComponent>
     </AppContainer>
   );

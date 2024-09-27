@@ -3,6 +3,7 @@ import {
   useJournalInfoHelper,
   useJournalRouteHelper,
 } from '@affine/core/components/hooks/use-journal';
+import { MenuItem } from '@affine/core/modules/app-sidebar/views';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { isNewTabTrigger } from '@affine/core/utils';
@@ -11,8 +12,6 @@ import type { DocCollection } from '@blocksuite/affine/store';
 import { TodayIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { type MouseEvent } from 'react';
-
-import { MenuItem } from '../app-sidebar';
 
 interface AppSidebarJournalButtonProps {
   docCollection: DocCollection;
