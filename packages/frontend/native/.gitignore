@@ -1,2 +1,4 @@
 *.fixture
 lib
+
+*.a

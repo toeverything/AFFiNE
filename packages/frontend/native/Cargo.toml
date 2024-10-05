@@ -6,6 +6,10 @@ version = "0.0.0"
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+default = ["static"]
+static = []
+
 [dependencies]
 affine_schema = { path = "./schema" }
 anyhow        = { workspace = true }
@@ -22,6 +26,9 @@ sha3          = { workspace = true }
 sqlx          = { workspace = true, default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
 tokio         = { workspace = true, features = ["full"] }
 uuid          = { workspace = true, features = ["fast-rng", "serde", "v4"] }
+
+# pdfium-render = "0.8"
+pdfium-render = { git = "https://github.com/fundon/pdfium-render", branch = "msrv-1.63", default-features = false, features = ["pdfium_latest", "thread_safe", "static", "sync"] }
 
 [build-dependencies]
 affine_schema = { path = "./schema" }
