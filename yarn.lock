@@ -201,7 +201,7 @@ __metadata:
     tailwind-merge: "npm:^2.3.0"
     tailwindcss: "npm:^3.4.4"
     tailwindcss-animate: "npm:^1.0.7"
-    vaul: "npm:^0.9.1"
+    vaul: "npm:^1.0.0"
     zod: "npm:^3.23.8"
   languageName: unknown
   linkType: soft
@@ -32664,15 +32664,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vaul@npm:^0.9.1":
-  version: 0.9.9
-  resolution: "vaul@npm:0.9.9"
+"vaul@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "vaul@npm:1.0.0"
   dependencies:
     "@radix-ui/react-dialog": "npm:^1.1.1"
   peerDependencies:
     react: ^16.8 || ^17.0 || ^18.0
     react-dom: ^16.8 || ^17.0 || ^18.0
-  checksum: 10/f97f7647475482b4705c6df939c905b16ec35db9b481486301183710830da9a21de2fc208d227bf47c82735a3bf1cd66b54884911dcb17724a7f6547d18e89f9
+  checksum: 10/0b2fe82dad51d1b609b2086f0a8f8731d1db2da46f23ae744b58cd5d7ffc1c5e014a35d8312489915168d660f126d0dc23de87a1c07a6618e1e7995ff7714257
   languageName: node
   linkType: hard
 
