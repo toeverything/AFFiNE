@@ -6,8 +6,10 @@ import type { DocStorage } from '../../../sync';
 import { ObjectPool } from '../../../utils';
 import type { WorkspaceService } from '../../workspace';
 import { WorkspaceDB, type WorkspaceDBWithTables } from '../entities/db';
-import { AFFiNE_WORKSPACE_DB_SCHEMA } from '../schema';
-import { AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA } from '../schema/schema';
+import {
+  AFFiNE_WORKSPACE_DB_SCHEMA,
+  AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA,
+} from '../schema';
 
 const WorkspaceDBClient = createORMClient(AFFiNE_WORKSPACE_DB_SCHEMA);
 const WorkspaceUserdataDBClient = createORMClient(

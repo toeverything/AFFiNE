@@ -29,6 +29,7 @@ export class Doc extends Entity {
   public readonly record = this.scope.props.record;
 
   readonly meta$ = this.record.meta$;
+  readonly properties$ = this.record.properties$;
   readonly primaryMode$ = this.record.primaryMode$;
   readonly title$ = this.record.title$;
   readonly trash$ = this.record.trash$;

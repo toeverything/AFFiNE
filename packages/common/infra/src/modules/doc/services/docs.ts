@@ -5,6 +5,7 @@ import { Service } from '../../../framework';
 import { type DocProps, initDocFromProps } from '../../../initialization';
 import { ObjectPool } from '../../../utils';
 import type { Doc } from '../entities/doc';
+import { DocPropertyList } from '../entities/property-list';
 import { DocRecordList } from '../entities/record-list';
 import { DocScope } from '../scopes/doc';
 import type { DocsStore } from '../stores/docs';
@@ -18,6 +19,8 @@ export class DocsService extends Service {
       obj.scope.dispose();
     },
   });
+
+  propertyList = this.framework.createEntity(DocPropertyList);
 
   constructor(private readonly store: DocsStore) {
     super();

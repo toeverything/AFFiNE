@@ -3,6 +3,8 @@ import type { DocMeta } from '@blocksuite/affine/store';
 
 import { Entity } from '../../../framework';
 import { LiveData } from '../../../livedata';
+import type { DocProperties } from '../../db';
+import type { DocPropertiesStore } from '../stores/doc-properties';
 import type { DocsStore } from '../stores/docs';
 
 /**
@@ -12,7 +14,10 @@ import type { DocsStore } from '../stores/docs';
  */
 export class DocRecord extends Entity<{ id: string }> {
   id: string = this.props.id;
-  constructor(private readonly docsStore: DocsStore) {
+  constructor(
+    private readonly docsStore: DocsStore,
+    private readonly docPropertiesStore: DocPropertiesStore
+  ) {
     super();
   }
 
@@ -20,6 +25,15 @@ export class DocRecord extends Entity<{ id: string }> {
     this.docsStore.watchDocMeta(this.id),
     {}
   );
+
+  properties$ = LiveData.from<DocProperties>(
+    this.docPropertiesStore.watchDocProperties(this.id),
+    { id: this.id }
+  );
+
+  setProperties(properties: Partial<DocProperties>): void {
+    this.docPropertiesStore.updateDocProperties(this.id, properties);
+  }
 
   setMeta(meta: Partial<DocMeta>): void {
     this.docsStore.setDocMeta(this.id, meta);

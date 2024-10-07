@@ -5,6 +5,7 @@ import type { Awareness } from 'y-protocols/awareness.js';
 
 import { Entity } from '../../../framework';
 import { LiveData } from '../../../livedata';
+import { WorkspaceDBService } from '../../db';
 import { getAFFiNEWorkspaceSchema } from '../global-schema';
 import type { WorkspaceScope } from '../scopes/workspace';
 import { WorkspaceEngineService } from '../services/engine';
@@ -40,6 +41,10 @@ export class Workspace extends Entity {
       });
     }
     return this._docCollection;
+  }
+
+  get db() {
+    return this.framework.get(WorkspaceDBService).db;
   }
 
   get awareness() {
