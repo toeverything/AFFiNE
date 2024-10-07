@@ -693,7 +693,13 @@ export class WebContentViewsManager {
           }
         };
         screenSizeChangeEvents.forEach(event => {
-          w.on(event as any, onResize);
+          w.on(event as any, () => {
+            onResize();
+            // sometimes the resize event is too fast, the view is not ready for the new size (esp. on linux)
+            setTimeout(() => {
+              onResize();
+            }, 100);
+          });
         });
 
         // add shell view
