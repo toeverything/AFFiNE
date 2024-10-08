@@ -30,6 +30,7 @@ import {
 import { CurrentUser, Public } from '../../core/auth';
 import {
   BlobNotFound,
+  CallThrowableCounter,
   CallTimer,
   Config,
   CopilotFailedToGenerateText,
@@ -462,6 +463,7 @@ export class CopilotController {
     }
   }
 
+  @CallThrowableCounter('ai', 'unsplash')
   @CallTimer('ai', 'unsplash_duration')
   @Get('/unsplash/photos')
   async unsplashPhotos(
@@ -474,29 +476,23 @@ export class CopilotController {
       throw new UnsplashIsNotConfigured();
     }
 
-    try {
-      metrics.ai.counter('unsplash').add(1);
-      const query = new URLSearchParams(params);
-      const response = await fetch(
-        `https://api.unsplash.com/search/photos?${query}`,
-        {
-          headers: { Authorization: `Client-ID ${unsplashKey}` },
-          signal: this.getSignal(req),
-        }
-      );
+    const query = new URLSearchParams(params);
+    const response = await fetch(
+      `https://api.unsplash.com/search/photos?${query}`,
+      {
+        headers: { Authorization: `Client-ID ${unsplashKey}` },
+        signal: this.getSignal(req),
+      }
+    );
 
-      res.set({
-        'Content-Type': response.headers.get('Content-Type'),
-        'Content-Length': response.headers.get('Content-Length'),
-        'X-Ratelimit-Limit': response.headers.get('X-Ratelimit-Limit'),
-        'X-Ratelimit-Remaining': response.headers.get('X-Ratelimit-Remaining'),
-      });
+    res.set({
+      'Content-Type': response.headers.get('Content-Type'),
+      'Content-Length': response.headers.get('Content-Length'),
+      'X-Ratelimit-Limit': response.headers.get('X-Ratelimit-Limit'),
+      'X-Ratelimit-Remaining': response.headers.get('X-Ratelimit-Remaining'),
+    });
 
-      res.status(response.status).send(await response.json());
-    } catch (e) {
-      metrics.ai.counter('unsplash_error').add(1);
-      throw e;
-    }
+    res.status(response.status).send(await response.json());
   }
 
   @Public()

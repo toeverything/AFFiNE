@@ -24,9 +24,9 @@ import { Admin } from '../../core/common';
 import { PermissionService } from '../../core/permission';
 import { UserType } from '../../core/user';
 import {
+  CallThrowableCounter,
   CopilotFailedToCreateMessage,
   FileUpload,
-  metrics,
   RequestMutex,
   Throttle,
   TooManyRequest,
@@ -309,6 +309,7 @@ export class CopilotResolver {
   }
 
   @ResolveField(() => [CopilotHistoriesType], {})
+  @CallThrowableCounter('ai', 'histories')
   async histories(
     @Parent() copilot: CopilotType,
     @CurrentUser() user: CurrentUser,
@@ -328,30 +329,25 @@ export class CopilotResolver {
       await this.permissions.checkCloudWorkspace(workspaceId, user.id);
     }
 
-    try {
-      metrics.ai.counter('chat_histories').add(1);
-      const histories = await this.chatSession.listHistories(
-        user.id,
-        workspaceId,
-        docId,
-        options,
-        true
-      );
+    const histories = await this.chatSession.listHistories(
+      user.id,
+      workspaceId,
+      docId,
+      options,
+      true
+    );
 
-      return histories.map(h => ({
-        ...h,
-        // filter out empty messages
-        messages: h.messages.filter(m => m.content || m.attachments?.length),
-      }));
-    } catch (e) {
-      metrics.ai.counter('chat_histories_error').add(1);
-      throw e;
-    }
+    return histories.map(h => ({
+      ...h,
+      // filter out empty messages
+      messages: h.messages.filter(m => m.content || m.attachments?.length),
+    }));
   }
 
   @Mutation(() => String, {
     description: 'Create a chat session',
   })
+  @CallThrowableCounter('ai', 'chat_session_create')
   async createCopilotSession(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => CreateChatSessionInput })
@@ -370,21 +366,16 @@ export class CopilotResolver {
 
     await this.chatSession.checkQuota(user.id);
 
-    try {
-      metrics.ai.counter('chat_session_create').add(1);
-      return await this.chatSession.create({
-        ...options,
-        userId: user.id,
-      });
-    } catch (e) {
-      metrics.ai.counter('chat_session_create_error').add(1);
-      throw e;
-    }
+    return await this.chatSession.create({
+      ...options,
+      userId: user.id,
+    });
   }
 
   @Mutation(() => String, {
     description: 'Create a chat session',
   })
+  @CallThrowableCounter('ai', 'chat_session_fork')
   async forkCopilotSession(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => ForkChatSessionInput })
@@ -403,21 +394,16 @@ export class CopilotResolver {
 
     await this.chatSession.checkQuota(user.id);
 
-    try {
-      metrics.ai.counter('chat_session_fork').add(1);
-      return await this.chatSession.fork({
-        ...options,
-        userId: user.id,
-      });
-    } catch (e) {
-      metrics.ai.counter('chat_session_fork_error').add(1);
-      throw e;
-    }
+    return await this.chatSession.fork({
+      ...options,
+      userId: user.id,
+    });
   }
 
   @Mutation(() => [String], {
     description: 'Cleanup sessions',
   })
+  @CallThrowableCounter('ai', 'chat_session_cleanup')
   async cleanupCopilotSession(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => DeleteSessionInput })
@@ -437,21 +423,16 @@ export class CopilotResolver {
       return new TooManyRequest('Server is busy');
     }
 
-    try {
-      metrics.ai.counter('chat_session_cleanup').add(1);
-      return await this.chatSession.cleanup({
-        ...options,
-        userId: user.id,
-      });
-    } catch (e) {
-      metrics.ai.counter('chat_session_cleanup_error').add(1);
-      throw e;
-    }
+    return await this.chatSession.cleanup({
+      ...options,
+      userId: user.id,
+    });
   }
 
   @Mutation(() => String, {
     description: 'Create a chat message',
   })
+  @CallThrowableCounter('ai', 'chat_message_create')
   async createCopilotMessage(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => CreateChatMessageInput })
@@ -490,10 +471,8 @@ export class CopilotResolver {
     }
 
     try {
-      metrics.ai.counter('chat_message_create').add(1);
       return await this.chatSession.createMessage(options);
     } catch (e: any) {
-      metrics.ai.counter('chat_message_create_error').add(1);
       throw new CopilotFailedToCreateMessage(e.message);
     }
   }

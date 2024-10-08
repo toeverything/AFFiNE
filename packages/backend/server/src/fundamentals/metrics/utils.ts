@@ -74,3 +74,40 @@ export const CallCounter = (
     return desc;
   };
 };
+
+export const CallThrowableCounter = (
+  scope: KnownMetricScopes,
+  name: string,
+  attrs?: Attributes
+): MethodDecorator => {
+  // @ts-expect-error allow
+  return (
+    _target,
+    _key,
+    desc: TypedPropertyDescriptor<(...args: any[]) => any>
+  ) => {
+    const originalMethod = desc.value;
+    if (!originalMethod) {
+      return desc;
+    }
+
+    desc.value = async function (...args: any[]) {
+      const count = metrics[scope].counter(name, {
+        description: `function call counter of ${name}`,
+      });
+      const errorCount = metrics[scope].counter(name, {
+        description: `function call failed counter of ${name}`,
+      });
+
+      count.add(1, attrs);
+      try {
+        return await originalMethod.apply(this, args);
+      } catch (err) {
+        errorCount.add(1, attrs);
+        throw err;
+      }
+    };
+
+    return desc;
+  };
+};
