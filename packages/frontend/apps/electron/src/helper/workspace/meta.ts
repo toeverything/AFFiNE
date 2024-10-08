@@ -2,6 +2,7 @@ import path from 'node:path';
 
 import fs from 'fs-extra';
 
+import { isWindows } from '../../shared/utils';
 import type { SpaceType } from '../db/types';
 import { logger } from '../logger';
 import { mainRPC } from '../main-rpc';
@@ -28,7 +29,7 @@ export async function getWorkspaceBasePath(
   return path.join(
     await getAppDataPath(),
     spaceType === 'userspace' ? 'userspaces' : 'workspaces',
-    workspaceId
+    isWindows() ? workspaceId.replace(':', '_') : workspaceId
   );
 }
 
