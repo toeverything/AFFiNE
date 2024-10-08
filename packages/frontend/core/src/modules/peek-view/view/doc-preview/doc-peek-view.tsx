@@ -159,15 +159,14 @@ function DocPeekPreviewEditor({
             page={doc.blockSuiteDoc}
             onEditorReady={handleOnEditorReady}
           />
-          <EditorOutlineViewer
-            editor={editorElement}
-            show={mode === 'page'}
-            openOutlinePanel={openOutlinePanel}
-          />
         </Scrollable.Viewport>
-
         <Scrollable.Scrollbar />
       </Scrollable.Root>
+      <EditorOutlineViewer
+        editor={editorElement}
+        show={mode === 'page'}
+        openOutlinePanel={openOutlinePanel}
+      />
     </AffineErrorBoundary>
   );
 }

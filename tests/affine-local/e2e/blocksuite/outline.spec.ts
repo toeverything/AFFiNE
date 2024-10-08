@@ -103,22 +103,56 @@ test('outline viewer should be useable in doc peek preview', async ({
 
   await page.keyboard.type('# Heading 1');
 
+  for (let i = 0; i < 10; i++) {
+    await page.keyboard.press('Enter');
+  }
+
+  await page.keyboard.type('## Heading 2');
+
+  const outlineViewer = peekView.locator('affine-outline-viewer');
+  const outlineViewerBound = await outlineViewer.boundingBox();
+  expect(outlineViewerBound).not.toBeNull();
+
   const indicators = getIndicators(peekView);
-  await expect(indicators).toHaveCount(2);
+  await expect(indicators).toHaveCount(3);
   await expect(indicators.nth(0)).toBeVisible();
   await expect(indicators.nth(1)).toBeVisible();
+  await expect(indicators.nth(2)).toBeVisible();
 
   await indicators.first().hover({ force: true });
   const viewer = peekView.locator('affine-outline-viewer');
   await expect(viewer).toBeVisible();
 
-  const toggleButton = peekView.locator(
-    '.outline-viewer-header edgeless-tool-icon-button'
-  );
-  await toggleButton.click();
+  // position of outline viewer should be fixed
+  {
+    const headingButtons = peekView.locator(
+      'affine-outline-viewer .outline-viewer-item:not(.outline-viewer-header)'
+    );
+    await expect(headingButtons).toHaveCount(3);
+    await expect(headingButtons.nth(0)).toBeVisible();
+    await expect(headingButtons.nth(1)).toBeVisible();
+    await expect(headingButtons.nth(2)).toBeVisible();
 
-  await page.waitForTimeout(500);
-  await expect(peekView).toBeHidden();
-  await expect(viewer).toBeHidden();
-  await expect(page.locator('affine-outline-panel')).toBeVisible();
+    await headingButtons.last().click();
+    await page.mouse.move(0, 0);
+    await headingButtons.last().waitFor({ state: 'hidden' });
+
+    const currentOutlineViewerBound = await outlineViewer.boundingBox();
+    expect(currentOutlineViewerBound).not.toBeNull();
+    expect(outlineViewerBound).toEqual(currentOutlineViewerBound);
+  }
+
+  // outline viewer should be hidden when clicking the outline panel toggle button
+  {
+    await indicators.first().hover({ force: true });
+    const toggleButton = peekView.locator(
+      '.outline-viewer-header edgeless-tool-icon-button'
+    );
+    await toggleButton.click();
+
+    await page.waitForTimeout(500);
+    await expect(peekView).toBeHidden();
+    await expect(viewer).toBeHidden();
+    await expect(page.locator('affine-outline-panel')).toBeVisible();
+  }
 });
