@@ -1,6 +1,7 @@
 import { ThemeProvider } from '@affine/component/theme-provider';
 import { ShellAppFallback } from '@affine/core/components/affine/app-container';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
+import { configureAppSidebarModule } from '@affine/core/modules/app-sidebar';
 import {
   AppTabsHeader,
   configureAppTabsHeaderModule,
@@ -19,6 +20,7 @@ const framework = new Framework();
 configureGlobalStorageModule(framework);
 configureElectronStateStorageImpls(framework);
 configureAppTabsHeaderModule(framework);
+configureAppSidebarModule(framework);
 const frameworkProvider = framework.provider();
 
 export function App() {
