@@ -329,19 +329,20 @@ export class CopilotResolver {
     }
 
     try {
-      const histories = await this.chatSession
-        .listHistories(user.id, workspaceId, docId, options, true)
-        .then(h =>
-          h.map(h => ({
-            ...h,
-            // filter out empty messages
-            messages: h.messages.filter(
-              m => m.content || m.attachments?.length
-            ),
-          }))
-        );
-      metrics.ai.counter('chat_histories').add(histories.length);
-      return histories;
+      metrics.ai.counter('chat_histories').add(1);
+      const histories = await this.chatSession.listHistories(
+        user.id,
+        workspaceId,
+        docId,
+        options,
+        true
+      );
+
+      return histories.map(h => ({
+        ...h,
+        // filter out empty messages
+        messages: h.messages.filter(m => m.content || m.attachments?.length),
+      }));
     } catch (e) {
       metrics.ai.counter('chat_histories_error').add(1);
       throw e;
@@ -370,12 +371,11 @@ export class CopilotResolver {
     await this.chatSession.checkQuota(user.id);
 
     try {
-      const session = await this.chatSession.create({
+      metrics.ai.counter('chat_session_create').add(1);
+      return await this.chatSession.create({
         ...options,
         userId: user.id,
       });
-      metrics.ai.counter('chat_session_create').add(1);
-      return session;
     } catch (e) {
       metrics.ai.counter('chat_session_create_error').add(1);
       throw e;
@@ -402,13 +402,13 @@ export class CopilotResolver {
     }
 
     await this.chatSession.checkQuota(user.id);
+
     try {
-      const session = await this.chatSession.fork({
+      metrics.ai.counter('chat_session_fork').add(1);
+      return await this.chatSession.fork({
         ...options,
         userId: user.id,
       });
-      metrics.ai.counter('chat_session_fork').add(1);
-      return session;
     } catch (e) {
       metrics.ai.counter('chat_session_fork_error').add(1);
       throw e;
@@ -438,12 +438,11 @@ export class CopilotResolver {
     }
 
     try {
-      const ids = await this.chatSession.cleanup({
+      metrics.ai.counter('chat_session_cleanup').add(1);
+      return await this.chatSession.cleanup({
         ...options,
         userId: user.id,
       });
-      metrics.ai.counter('chat_session_cleanup').add(ids.length);
-      return ids;
     } catch (e) {
       metrics.ai.counter('chat_session_cleanup_error').add(1);
       throw e;
@@ -491,9 +490,8 @@ export class CopilotResolver {
     }
 
     try {
-      const id = await this.chatSession.createMessage(options);
       metrics.ai.counter('chat_message_create').add(1);
-      return id;
+      return await this.chatSession.createMessage(options);
     } catch (e: any) {
       metrics.ai.counter('chat_message_create_error').add(1);
       throw new CopilotFailedToCreateMessage(e.message);

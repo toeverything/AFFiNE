@@ -35,13 +35,13 @@ export class CopilotStorage {
     key: string,
     blob: BlobInputType
   ) {
+    metrics.ai.counter('blob_put').add(1);
     const name = `${userId}/${workspaceId}/${key}`;
     await this.provider.put(name, blob);
     if (this.config.node.dev) {
       // return image base64url for dev environment
       return `data:image/png;base64,${blob.toString('base64')}`;
     }
-    metrics.ai.counter('blob_put').add(1);
     return this.url.link(`/api/copilot/blob/${name}`);
   }
 
@@ -51,8 +51,8 @@ export class CopilotStorage {
   }
 
   async delete(userId: string, workspaceId: string, key: string) {
-    await this.provider.delete(`${userId}/${workspaceId}/${key}`);
     metrics.ai.counter('blob_delete').add(1);
+    await this.provider.delete(`${userId}/${workspaceId}/${key}`);
   }
 
   async handleUpload(userId: string, blob: FileUpload) {
@@ -61,35 +61,41 @@ export class CopilotStorage {
     if (checkExceeded(0)) {
       throw new BlobQuotaExceeded();
     }
-    const buffer = await new Promise<Buffer>((resolve, reject) => {
-      const stream = blob.createReadStream();
-      const chunks: Uint8Array[] = [];
-      stream.on('data', chunk => {
-        chunks.push(chunk);
 
-        // check size after receive each chunk to avoid unnecessary memory usage
-        const bufferSize = chunks.reduce((acc, cur) => acc + cur.length, 0);
-        if (checkExceeded(bufferSize)) {
-          reject(new BlobQuotaExceeded());
-        }
+    try {
+      metrics.ai.counter('blob_handle_upload').add(1);
+      const buffer = await new Promise<Buffer>((resolve, reject) => {
+        const stream = blob.createReadStream();
+        const chunks: Uint8Array[] = [];
+        stream.on('data', chunk => {
+          chunks.push(chunk);
+
+          // check size after receive each chunk to avoid unnecessary memory usage
+          const bufferSize = chunks.reduce((acc, cur) => acc + cur.length, 0);
+          if (checkExceeded(bufferSize)) {
+            reject(new BlobQuotaExceeded());
+          }
+        });
+        stream.on('error', reject);
+        stream.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+
+          if (checkExceeded(buffer.length)) {
+            reject(new BlobQuotaExceeded());
+          } else {
+            resolve(buffer);
+          }
+        });
       });
-      stream.on('error', reject);
-      stream.on('end', () => {
-        const buffer = Buffer.concat(chunks);
 
-        if (checkExceeded(buffer.length)) {
-          reject(new BlobQuotaExceeded());
-        } else {
-          resolve(buffer);
-        }
-      });
-    });
-
-    metrics.ai.counter('blob_handle_upload').add(1);
-    return {
-      buffer,
-      filename: blob.filename,
-    };
+      return {
+        buffer,
+        filename: blob.filename,
+      };
+    } catch (e) {
+      metrics.ai.counter('blob_handle_upload_error').add(1);
+      throw e;
+    }
   }
 
   async handleRemoteLink(userId: string, workspaceId: string, link: string) {
