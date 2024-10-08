@@ -17,6 +17,9 @@ export type BUILD_CONFIG_TYPE = {
   isMobileWeb: boolean;
 
   // this is for the electron app
+  /**
+   * @deprecated need to be refactored
+   */
   serverUrlPrefix: string;
   appVersion: string;
   editorVersion: string;
