@@ -15,7 +15,7 @@ export const editor = style({
 globalStyle(`[data-full-width-layout="true"] ${editor}`, {
   vars: {
     '--affine-editor-width': '100%',
-    '--affine-editor-side-padding': '24px',
+    '--affine-editor-side-padding': '72px',
   },
 });
 
