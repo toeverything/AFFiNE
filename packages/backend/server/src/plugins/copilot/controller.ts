@@ -185,17 +185,17 @@ export class CopilotController {
     @Param('sessionId') sessionId: string,
     @Query() params: Record<string, string | string[]>
   ): Promise<string> {
+    const { messageId } = this.prepareParams(params);
+
+    const provider = await this.chooseTextProvider(
+      user.id,
+      sessionId,
+      messageId
+    );
+
+    const session = await this.appendSessionMessage(sessionId, messageId);
     try {
-      const { messageId } = this.prepareParams(params);
-      metrics.ai.counter('chat').add(1, { sessionId, messageId });
-      const provider = await this.chooseTextProvider(
-        user.id,
-        sessionId,
-        messageId
-      );
-
-      const session = await this.appendSessionMessage(sessionId, messageId);
-
+      metrics.ai.counter('chat').add(1, { model: session.model });
       const content = await provider.generateText(
         session.finish(params),
         session.model,
@@ -215,7 +215,7 @@ export class CopilotController {
 
       return content;
     } catch (e: any) {
-      metrics.ai.counter('chat_error').add(1, { sessionId });
+      metrics.ai.counter('chat_error').add(1, { model: session.model });
       throw new CopilotFailedToGenerateText(e.message);
     }
   }
@@ -227,18 +227,17 @@ export class CopilotController {
     @Param('sessionId') sessionId: string,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
+    const { messageId } = this.prepareParams(params);
+
+    const provider = await this.chooseTextProvider(
+      user.id,
+      sessionId,
+      messageId
+    );
+
+    const session = await this.appendSessionMessage(sessionId, messageId);
     try {
-      const { messageId } = this.prepareParams(params);
-      metrics.ai.counter('chat_stream').add(1, { sessionId, messageId });
-
-      const provider = await this.chooseTextProvider(
-        user.id,
-        sessionId,
-        messageId
-      );
-
-      const session = await this.appendSessionMessage(sessionId, messageId);
-
+      metrics.ai.counter('chat_stream').add(1, { model: session.model });
       const source$ = from(
         provider.generateTextStream(session.finish(params), session.model, {
           ...session.config.promptConfig,
@@ -270,14 +269,14 @@ export class CopilotController {
         catchError(e => {
           metrics.ai
             .counter('chat_stream_error')
-            .add(1, { sessionId, messageId });
+            .add(1, { model: session.model });
           return mapSseError(e);
         })
       );
 
       return this.mergePingStream(messageId, source$);
     } catch (err) {
-      metrics.ai.counter('chat_stream_error').add(1, { sessionId });
+      metrics.ai.counter('chat_stream_error').add(1, { model: session.model });
       return mapSseError(err);
     }
   }
@@ -289,11 +288,11 @@ export class CopilotController {
     @Param('sessionId') sessionId: string,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
-    try {
-      const { messageId } = this.prepareParams(params);
-      metrics.ai.counter('workflow').add(1, { sessionId, messageId });
+    const { messageId } = this.prepareParams(params);
 
-      const session = await this.appendSessionMessage(sessionId, messageId);
+    const session = await this.appendSessionMessage(sessionId, messageId);
+    try {
+      metrics.ai.counter('workflow').add(1, { model: session.model });
       const latestMessage = session.stashMessages.findLast(
         m => m.role === 'user'
       );
@@ -361,14 +360,14 @@ export class CopilotController {
           )
         ),
         catchError(e => {
-          metrics.ai.counter('workflow_error').add(1, { sessionId, messageId });
+          metrics.ai.counter('workflow_error').add(1, { model: session.model });
           return mapSseError(e);
         })
       );
 
       return this.mergePingStream(messageId, source$);
     } catch (err) {
-      metrics.ai.counter('workflow_error').add(1, { sessionId });
+      metrics.ai.counter('workflow_error').add(1, { model: session.model });
       return mapSseError(err);
     }
   }
@@ -380,27 +379,26 @@ export class CopilotController {
     @Param('sessionId') sessionId: string,
     @Query() params: Record<string, string>
   ): Promise<Observable<ChatEvent>> {
+    const { messageId } = this.prepareParams(params);
+
+    const { model, hasAttachment } = await this.checkRequest(
+      user.id,
+      sessionId,
+      messageId
+    );
+    const provider = await this.provider.getProviderByCapability(
+      hasAttachment
+        ? CopilotCapability.ImageToImage
+        : CopilotCapability.TextToImage,
+      model
+    );
+    if (!provider) {
+      throw new NoCopilotProviderAvailable();
+    }
+
+    const session = await this.appendSessionMessage(sessionId, messageId);
     try {
-      const { messageId } = this.prepareParams(params);
-      metrics.ai.counter('images_stream').add(1, { sessionId, messageId });
-
-      const { model, hasAttachment } = await this.checkRequest(
-        user.id,
-        sessionId,
-        messageId
-      );
-      const provider = await this.provider.getProviderByCapability(
-        hasAttachment
-          ? CopilotCapability.ImageToImage
-          : CopilotCapability.TextToImage,
-        model
-      );
-      if (!provider) {
-        throw new NoCopilotProviderAvailable();
-      }
-
-      const session = await this.appendSessionMessage(sessionId, messageId);
-
+      metrics.ai.counter('images_stream').add(1, { model: session.model });
       const handleRemoteLink = this.storage.handleRemoteLink.bind(
         this.storage,
         user.id,
@@ -443,14 +441,18 @@ export class CopilotController {
           )
         ),
         catchError(e => {
-          metrics.ai.counter('images_stream_error').add(1, { sessionId });
+          metrics.ai
+            .counter('images_stream_error')
+            .add(1, { model: session.model });
           return mapSseError(e);
         })
       );
 
       return this.mergePingStream(messageId, source$);
     } catch (err) {
-      metrics.ai.counter('images_stream_error').add(1, { sessionId });
+      metrics.ai
+        .counter('images_stream_error')
+        .add(1, { model: session.model });
       return mapSseError(err);
     }
   }
