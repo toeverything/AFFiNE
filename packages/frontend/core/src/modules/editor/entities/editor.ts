@@ -10,7 +10,7 @@ import type {
 import type { InlineEditor } from '@blocksuite/inline';
 import type { DocService, WorkspaceService } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
-import { isEqual } from 'lodash-es';
+import { defaults, isEqual, omit } from 'lodash-es';
 
 import { paramsParseOptions, preprocessParams } from '../../navigation/utils';
 import type { WorkbenchView } from '../../workbench';
@@ -64,22 +64,24 @@ export class Editor extends Entity {
    * sync editor params with view query string
    */
   bindWorkbenchView(view: WorkbenchView) {
-    // eslint-disable-next-line rxjs/finnish
-    const viewParams$ = view
-      .queryString$<
-        ReferenceParams & { refreshKey?: string }
-      >(paramsParseOptions)
-      .map(preprocessParams);
-
     const stablePrimaryMode = this.doc.getPrimaryMode();
 
+    // eslint-disable-next-line rxjs/finnish
+    const viewParams$ = view
+      .queryString$<ReferenceParams & { refreshKey?: string }>(
+        paramsParseOptions
+      )
+      .map(preprocessParams)
+      .map(params =>
+        defaults(params, {
+          mode: stablePrimaryMode || ('page' as DocMode),
+        })
+      );
+
     const editorParams$ = LiveData.computed(get => {
-      const selector = get(this.selector$);
       return {
         mode: get(this.mode$),
-        blockIds: selector?.blockIds,
-        elementIds: selector?.elementIds,
-        refreshKey: selector?.refreshKey,
+        ...get(this.selector$),
       };
     });
 
@@ -91,22 +93,14 @@ export class Editor extends Entity {
       updating = true;
       // when view params changed, sync to editor
       try {
-        const mode =
-          viewParams$.value.mode || stablePrimaryMode || ('page' as DocMode);
-        if (mode !== editorParams$.value.mode) {
-          this.setMode(mode);
+        const editorParams = editorParams$.value;
+        if (params.mode !== editorParams.mode) {
+          this.setMode(params.mode);
         }
-        const newSelector = {
-          blockIds: params.blockIds,
-          elementIds: params.elementIds,
-          refreshKey: params.refreshKey,
-        };
-        if (!isEqual(newSelector, editorParams$.value)) {
-          this.setSelector({
-            blockIds: params.blockIds,
-            elementIds: params.elementIds,
-            refreshKey: params.refreshKey,
-          });
+
+        const selector = omit(params, ['mode']);
+        if (!isEqual(selector, omit(editorParams, ['mode']))) {
+          this.setSelector(selector);
         }
       } finally {
         updating = false;
@@ -118,28 +112,13 @@ export class Editor extends Entity {
       updating = true;
       try {
         // when editor params changed, sync to view
-        const newQueryString: any = {};
-        let updated = false;
-        if (params.mode !== viewParams$.value.mode) {
-          newQueryString.mode = params.mode;
-          updated = true;
-        }
-        const stringBlockIds = params.blockIds?.join(',');
-        const stringElementIds = params.elementIds?.join(',');
-        const stringViewBlockIds = viewParams$.value.blockIds?.join(',');
-        const stringViewElementIds = viewParams$.value.elementIds?.join(',');
-        if (
-          stringBlockIds !== stringViewBlockIds ||
-          stringElementIds !== stringViewElementIds ||
-          params.refreshKey !== viewParams$.value.refreshKey
-        ) {
-          newQueryString.blockIds = stringBlockIds;
-          newQueryString.elementIds = stringElementIds;
-          newQueryString.refreshKey = params.refreshKey;
-          updated = true;
-        }
+        if (!isEqual(params, viewParams$.value)) {
+          const newQueryString: Record<string, string> = {};
 
-        if (updated) {
+          Object.entries(params).forEach(([k, v]) => {
+            newQueryString[k] = Array.isArray(v) ? v.join(',') : v;
+          });
+
           view.updateQueryString(newQueryString, { replace: true });
         }
       } finally {
