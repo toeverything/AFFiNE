@@ -43,7 +43,7 @@ services:
       timeout: 5s
       retries: 5
   postgres:
-    image: postgres:16
+    image: postgres:17
     container_name: affine_postgres
     restart: unless-stopped
     volumes:
