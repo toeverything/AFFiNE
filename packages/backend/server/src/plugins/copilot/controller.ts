@@ -30,6 +30,7 @@ import {
 import { CurrentUser, Public } from '../../core/auth';
 import {
   BlobNotFound,
+  CallTimer,
   Config,
   CopilotFailedToGenerateText,
   CopilotSessionNotFound,
@@ -178,6 +179,7 @@ export class CopilotController {
     return merge(source$.pipe(finalize(() => subject$.next(null))), ping$);
   }
 
+  @CallTimer('ai', 'chat_duration')
   @Get('/chat/:sessionId')
   async chat(
     @CurrentUser() user: CurrentUser,
@@ -220,6 +222,7 @@ export class CopilotController {
     }
   }
 
+  @CallTimer('ai', 'chat_stream_duration')
   @Sse('/chat/:sessionId/stream')
   async chatStream(
     @CurrentUser() user: CurrentUser,
@@ -281,6 +284,7 @@ export class CopilotController {
     }
   }
 
+  @CallTimer('ai', 'chat_workflow_duration')
   @Sse('/chat/:sessionId/workflow')
   async chatWorkflow(
     @CurrentUser() user: CurrentUser,
@@ -372,6 +376,7 @@ export class CopilotController {
     }
   }
 
+  @CallTimer('ai', 'chat_images_duration')
   @Sse('/chat/:sessionId/images')
   async chatImagesStream(
     @CurrentUser() user: CurrentUser,
@@ -457,6 +462,7 @@ export class CopilotController {
     }
   }
 
+  @CallTimer('ai', 'unsplash_duration')
   @Get('/unsplash/photos')
   async unsplashPhotos(
     @Req() req: Request,
