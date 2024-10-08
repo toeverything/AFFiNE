@@ -1,6 +1,6 @@
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { assertEquals } from '@blocksuite/affine/global/utils';
-import { applyUpdate, encodeStateAsUpdate } from 'yjs';
+import { applyUpdate } from 'yjs';
 
 import { Service } from '../../../framework';
 import { transformWorkspaceDBLocalToCloud } from '../../db';
@@ -28,21 +28,23 @@ export class WorkspaceTransformService extends Service {
   ): Promise<WorkspaceMetadata> => {
     assertEquals(local.flavour, WorkspaceFlavour.LOCAL);
 
-    await local.engine.waitForDocSynced();
+    const localDocStorage = local.engine.doc.storage.behavior;
 
     const newMetadata = await this.factory.create(
       WorkspaceFlavour.AFFINE_CLOUD,
       async (docCollection, blobStorage, docStorage) => {
-        applyUpdate(
-          docCollection.doc,
-          encodeStateAsUpdate(local.docCollection.doc)
+        const rootDocBinary = await localDocStorage.doc.get(
+          local.docCollection.doc.guid
         );
 
-        for (const subdoc of local.docCollection.doc.getSubdocs()) {
-          for (const newSubdoc of docCollection.doc.getSubdocs()) {
-            if (newSubdoc.guid === subdoc.guid) {
-              applyUpdate(newSubdoc, encodeStateAsUpdate(subdoc));
-            }
+        if (rootDocBinary) {
+          applyUpdate(docCollection.doc, rootDocBinary);
+        }
+
+        for (const subdoc of docCollection.doc.getSubdocs()) {
+          const subdocBinary = await localDocStorage.doc.get(subdoc.guid);
+          if (subdocBinary) {
+            applyUpdate(subdoc, subdocBinary);
           }
         }
 
@@ -50,7 +52,7 @@ export class WorkspaceTransformService extends Service {
         await transformWorkspaceDBLocalToCloud(
           local.id,
           docCollection.id,
-          local.engine.doc.storage.behavior,
+          localDocStorage,
           docStorage,
           accountId
         );
