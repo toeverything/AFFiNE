@@ -218,6 +218,7 @@ export class FalProvider
     // by default, image prompt assumes there is only one message
     const prompt = this.extractPrompt(messages.pop());
     try {
+      metrics.ai.counter('chat_text').add(1, { model });
       const response = await fetch(`https://fal.run/fal-ai/${model}`, {
         method: 'POST',
         headers: {
@@ -236,7 +237,6 @@ export class FalProvider
       if (!data.output) {
         throw this.extractFalError(data, 'Failed to generate text');
       }
-      metrics.ai.counter('chat_text_success').add(1, { model });
       return data.output;
     } catch (e: any) {
       metrics.ai.counter('chat_text_failed').add(1, { model });
@@ -250,6 +250,7 @@ export class FalProvider
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
     try {
+      metrics.ai.counter('chat_text_stream').add(1, { model });
       const result = await this.generateText(messages, model, options);
 
       for await (const content of result) {
@@ -260,7 +261,6 @@ export class FalProvider
           }
         }
       }
-      metrics.ai.counter('chat_text_stream_success').add(1, { model });
     } catch (e) {
       metrics.ai.counter('chat_text_stream_failed').add(1, { model });
       throw e;
@@ -308,6 +308,8 @@ export class FalProvider
     }
 
     try {
+      metrics.ai.counter('generate_images').add(1, { model });
+
       const data = await this.buildResponse(messages, model, options);
 
       if (!data.images?.length && !data.image?.url) {
@@ -317,7 +319,7 @@ export class FalProvider
       if (data.image?.url) {
         return [data.image.url];
       }
-      metrics.ai.counter('generate_images_success').add(1, { model });
+
       return (
         data.images
           ?.filter((image): image is NonNullable<FalImage> => !!image)
@@ -335,11 +337,11 @@ export class FalProvider
     options: CopilotImageOptions = {}
   ): AsyncIterable<string> {
     try {
+      metrics.ai.counter('generate_images_stream').add(1, { model });
       const ret = await this.generateImages(messages, model, options);
       for (const url of ret) {
         yield url;
       }
-      metrics.ai.counter('generate_images_stream_success').add(1, { model });
     } catch (e) {
       metrics.ai.counter('generate_images_stream_failed').add(1, { model });
       throw e;
