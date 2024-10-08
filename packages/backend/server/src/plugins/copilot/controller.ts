@@ -222,8 +222,8 @@ export class CopilotController {
     }
   }
 
-  @CallTimer('ai', 'chat_stream_duration')
   @Sse('/chat/:sessionId/stream')
+  @CallTimer('ai', 'chat_stream_duration')
   async chatStream(
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
@@ -284,8 +284,8 @@ export class CopilotController {
     }
   }
 
-  @CallTimer('ai', 'chat_workflow_duration')
   @Sse('/chat/:sessionId/workflow')
+  @CallTimer('ai', 'chat_workflow_duration')
   async chatWorkflow(
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
@@ -376,8 +376,8 @@ export class CopilotController {
     }
   }
 
-  @CallTimer('ai', 'chat_images_duration')
   @Sse('/chat/:sessionId/images')
+  @CallTimer('ai', 'chat_images_duration')
   async chatImagesStream(
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
