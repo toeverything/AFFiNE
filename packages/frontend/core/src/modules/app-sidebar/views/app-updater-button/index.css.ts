@@ -42,7 +42,7 @@ export const root = style({
   },
 });
 export const icon = style({
-  marginRight: '18px',
+  marginRight: '12px',
   color: cssVar('iconColor'),
   fontSize: '24px',
 });
@@ -122,6 +122,7 @@ export const versionLabel = style({
   fontSize: '10px',
   lineHeight: '18px',
   borderRadius: '4px',
+  marginLeft: '8px',
   maxWidth: '100px',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
