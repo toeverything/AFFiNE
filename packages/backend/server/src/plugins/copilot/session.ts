@@ -357,7 +357,7 @@ export class ChatSessionService {
       }
     });
 
-    metrics.ai.counter('ai_session_revert_latest_message').add(1);
+    metrics.ai.counter('session_revert_latest_message').add(1);
   }
 
   private calculateTokenSize(
@@ -533,7 +533,7 @@ export class ChatSessionService {
         histories.filter((v): v is NonNullable<typeof v> => !!v)
       );
 
-    metrics.ai.counter('ai_session_list_histories').add(1);
+    metrics.ai.counter('session_list_histories').add(1);
     return histories;
   }
 
@@ -574,7 +574,7 @@ export class ChatSessionService {
       // when client create chat session, we always find root session
       parentSessionId: null,
     }).then(s => {
-      metrics.ai.counter('ai_session_created').add(1);
+      metrics.ai.counter('session_created').add(1);
       return s;
     });
   }
@@ -604,7 +604,7 @@ export class ChatSessionService {
     };
     // create session
     await this.setSession(forkedState).then(s => {
-      metrics.ai.counter('ai_session_forked').add(1);
+      metrics.ai.counter('session_forked').add(1);
       return s;
     });
     // save message
@@ -676,7 +676,7 @@ export class ChatSessionService {
     if (state) {
       return new ChatSession(this.messageCache, state, async state => {
         await this.setSession(state).then(s => {
-          metrics.ai.counter('ai_session_updated').add(1);
+          metrics.ai.counter('session_updated').add(1);
           return s;
         });
       });
