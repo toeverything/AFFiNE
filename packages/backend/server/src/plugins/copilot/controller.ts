@@ -34,6 +34,7 @@ import {
   CopilotFailedToGenerateText,
   CopilotSessionNotFound,
   mapSseError,
+  metrics,
   NoCopilotProviderAvailable,
   UnsplashIsNotConfigured,
 } from '../../fundamentals';
@@ -184,16 +185,17 @@ export class CopilotController {
     @Param('sessionId') sessionId: string,
     @Query() params: Record<string, string | string[]>
   ): Promise<string> {
-    const { messageId } = this.prepareParams(params);
-    const provider = await this.chooseTextProvider(
-      user.id,
-      sessionId,
-      messageId
-    );
-
-    const session = await this.appendSessionMessage(sessionId, messageId);
-
     try {
+      const { messageId } = this.prepareParams(params);
+      metrics.ai.counter('chat').add(1, { sessionId, messageId });
+      const provider = await this.chooseTextProvider(
+        user.id,
+        sessionId,
+        messageId
+      );
+
+      const session = await this.appendSessionMessage(sessionId, messageId);
+
       const content = await provider.generateText(
         session.finish(params),
         session.model,
@@ -213,6 +215,7 @@ export class CopilotController {
 
       return content;
     } catch (e: any) {
+      metrics.ai.counter('chat_error').add(1, { sessionId });
       throw new CopilotFailedToGenerateText(e.message);
     }
   }
@@ -226,6 +229,8 @@ export class CopilotController {
   ): Promise<Observable<ChatEvent>> {
     try {
       const { messageId } = this.prepareParams(params);
+      metrics.ai.counter('chat_stream').add(1, { sessionId, messageId });
+
       const provider = await this.chooseTextProvider(
         user.id,
         sessionId,
@@ -262,11 +267,17 @@ export class CopilotController {
             )
           )
         ),
-        catchError(mapSseError)
+        catchError(e => {
+          metrics.ai
+            .counter('chat_stream_error')
+            .add(1, { sessionId, messageId });
+          return mapSseError(e);
+        })
       );
 
       return this.mergePingStream(messageId, source$);
     } catch (err) {
+      metrics.ai.counter('chat_stream_error').add(1, { sessionId });
       return mapSseError(err);
     }
   }
@@ -280,6 +291,8 @@ export class CopilotController {
   ): Promise<Observable<ChatEvent>> {
     try {
       const { messageId } = this.prepareParams(params);
+      metrics.ai.counter('workflow').add(1, { sessionId, messageId });
+
       const session = await this.appendSessionMessage(sessionId, messageId);
       const latestMessage = session.stashMessages.findLast(
         m => m.role === 'user'
@@ -347,11 +360,15 @@ export class CopilotController {
             )
           )
         ),
-        catchError(mapSseError)
+        catchError(e => {
+          metrics.ai.counter('workflow_error').add(1, { sessionId, messageId });
+          return mapSseError(e);
+        })
       );
 
       return this.mergePingStream(messageId, source$);
     } catch (err) {
+      metrics.ai.counter('workflow_error').add(1, { sessionId });
       return mapSseError(err);
     }
   }
@@ -365,6 +382,8 @@ export class CopilotController {
   ): Promise<Observable<ChatEvent>> {
     try {
       const { messageId } = this.prepareParams(params);
+      metrics.ai.counter('images_stream').add(1, { sessionId, messageId });
+
       const { model, hasAttachment } = await this.checkRequest(
         user.id,
         sessionId,
@@ -423,11 +442,15 @@ export class CopilotController {
             )
           )
         ),
-        catchError(mapSseError)
+        catchError(e => {
+          metrics.ai.counter('images_stream_error').add(1, { sessionId });
+          return mapSseError(e);
+        })
       );
 
       return this.mergePingStream(messageId, source$);
     } catch (err) {
+      metrics.ai.counter('images_stream_error').add(1, { sessionId });
       return mapSseError(err);
     }
   }
@@ -443,23 +466,29 @@ export class CopilotController {
       throw new UnsplashIsNotConfigured();
     }
 
-    const query = new URLSearchParams(params);
-    const response = await fetch(
-      `https://api.unsplash.com/search/photos?${query}`,
-      {
-        headers: { Authorization: `Client-ID ${unsplashKey}` },
-        signal: this.getSignal(req),
-      }
-    );
+    try {
+      metrics.ai.counter('unsplash').add(1);
+      const query = new URLSearchParams(params);
+      const response = await fetch(
+        `https://api.unsplash.com/search/photos?${query}`,
+        {
+          headers: { Authorization: `Client-ID ${unsplashKey}` },
+          signal: this.getSignal(req),
+        }
+      );
 
-    res.set({
-      'Content-Type': response.headers.get('Content-Type'),
-      'Content-Length': response.headers.get('Content-Length'),
-      'X-Ratelimit-Limit': response.headers.get('X-Ratelimit-Limit'),
-      'X-Ratelimit-Remaining': response.headers.get('X-Ratelimit-Remaining'),
-    });
+      res.set({
+        'Content-Type': response.headers.get('Content-Type'),
+        'Content-Length': response.headers.get('Content-Length'),
+        'X-Ratelimit-Limit': response.headers.get('X-Ratelimit-Limit'),
+        'X-Ratelimit-Remaining': response.headers.get('X-Ratelimit-Remaining'),
+      });
 
-    res.status(response.status).send(await response.json());
+      res.status(response.status).send(await response.json());
+    } catch (e) {
+      metrics.ai.counter('unsplash_error').add(1);
+      throw e;
+    }
   }
 
   @Public()
