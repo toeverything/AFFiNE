@@ -26,6 +26,7 @@ import { UserType } from '../../core/user';
 import {
   CopilotFailedToCreateMessage,
   FileUpload,
+  metrics,
   RequestMutex,
   Throttle,
   TooManyRequest,
@@ -327,18 +328,24 @@ export class CopilotResolver {
       await this.permissions.checkCloudWorkspace(workspaceId, user.id);
     }
 
-    const histories = await this.chatSession.listHistories(
-      user.id,
-      workspaceId,
-      docId,
-      options,
-      true
-    );
-    return histories.map(h => ({
-      ...h,
-      // filter out empty messages
-      messages: h.messages.filter(m => m.content || m.attachments?.length),
-    }));
+    try {
+      const histories = await this.chatSession
+        .listHistories(user.id, workspaceId, docId, options, true)
+        .then(h =>
+          h.map(h => ({
+            ...h,
+            // filter out empty messages
+            messages: h.messages.filter(
+              m => m.content || m.attachments?.length
+            ),
+          }))
+        );
+      metrics.ai.counter('chat_histories').add(histories.length);
+      return histories;
+    } catch (e) {
+      metrics.ai.counter('chat_histories_error').add(1);
+      throw e;
+    }
   }
 
   @Mutation(() => String, {
@@ -362,11 +369,17 @@ export class CopilotResolver {
 
     await this.chatSession.checkQuota(user.id);
 
-    const session = await this.chatSession.create({
-      ...options,
-      userId: user.id,
-    });
-    return session;
+    try {
+      const session = await this.chatSession.create({
+        ...options,
+        userId: user.id,
+      });
+      metrics.ai.counter('chat_session_create').add(1);
+      return session;
+    } catch (e) {
+      metrics.ai.counter('chat_session_create_error').add(1);
+      throw e;
+    }
   }
 
   @Mutation(() => String, {
@@ -389,12 +402,17 @@ export class CopilotResolver {
     }
 
     await this.chatSession.checkQuota(user.id);
-
-    const session = await this.chatSession.fork({
-      ...options,
-      userId: user.id,
-    });
-    return session;
+    try {
+      const session = await this.chatSession.fork({
+        ...options,
+        userId: user.id,
+      });
+      metrics.ai.counter('chat_session_fork').add(1);
+      return session;
+    } catch (e) {
+      metrics.ai.counter('chat_session_fork_error').add(1);
+      throw e;
+    }
   }
 
   @Mutation(() => [String], {
@@ -419,10 +437,17 @@ export class CopilotResolver {
       return new TooManyRequest('Server is busy');
     }
 
-    return await this.chatSession.cleanup({
-      ...options,
-      userId: user.id,
-    });
+    try {
+      const ids = await this.chatSession.cleanup({
+        ...options,
+        userId: user.id,
+      });
+      metrics.ai.counter('chat_session_cleanup').add(ids.length);
+      return ids;
+    } catch (e) {
+      metrics.ai.counter('chat_session_cleanup_error').add(1);
+      throw e;
+    }
   }
 
   @Mutation(() => String, {
@@ -466,8 +491,11 @@ export class CopilotResolver {
     }
 
     try {
-      return await this.chatSession.createMessage(options);
+      const id = await this.chatSession.createMessage(options);
+      metrics.ai.counter('chat_message_create').add(1);
+      return id;
     } catch (e: any) {
+      metrics.ai.counter('chat_message_create_error').add(1);
       throw new CopilotFailedToCreateMessage(e.message);
     }
   }
