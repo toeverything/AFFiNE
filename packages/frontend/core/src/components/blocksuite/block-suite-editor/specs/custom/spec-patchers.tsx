@@ -20,6 +20,8 @@ import {
   RecentDocsQuickSearchSession,
 } from '@affine/core/modules/quicksearch';
 import { ExternalLinksQuickSearchSession } from '@affine/core/modules/quicksearch/impls/external-links';
+import { WorkbenchService } from '@affine/core/modules/workbench';
+import { isNewTabTrigger } from '@affine/core/utils';
 import { DebugLogger } from '@affine/debug';
 import { track } from '@affine/track';
 import {
@@ -41,6 +43,7 @@ import {
   DocModeExtension,
   EdgelessRootBlockComponent,
   EmbedLinkedDocBlockComponent,
+  EmbedLinkedDocBlockConfigExtension,
   NotificationExtension,
   ParseDocUrlExtension,
   PeekViewExtension,
@@ -220,6 +223,20 @@ export function patchNotificationService({
       notification.abort?.addEventListener('abort', () => {
         notify.dismiss(toastId);
       });
+    },
+  });
+}
+
+export function patchEmbedLinkedDocBlockConfig(framework: FrameworkProvider) {
+  const getWorkbench = () => framework.get(WorkbenchService).workbench;
+
+  return EmbedLinkedDocBlockConfigExtension({
+    handleClick(e, _, refInfo) {
+      if (isNewTabTrigger(e)) {
+        const workbench = getWorkbench();
+        workbench.openDoc(refInfo.pageId, { at: 'new-tab' });
+        e.preventDefault();
+      }
     },
   });
 }

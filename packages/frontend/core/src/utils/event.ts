@@ -13,6 +13,6 @@ export function stopEvent(event: BaseSyntheticEvent) {
   event.preventDefault();
 }
 
-export function isNewTabTrigger(event?: React.MouseEvent) {
+export function isNewTabTrigger(event?: React.MouseEvent | MouseEvent) {
   return event ? event.ctrlKey || event.metaKey || event.button === 1 : false;
 }

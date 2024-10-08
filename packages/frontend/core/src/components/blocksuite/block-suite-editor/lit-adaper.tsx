@@ -44,6 +44,7 @@ import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import {
   patchDocModeService,
   patchEdgelessClipboard,
+  patchEmbedLinkedDocBlockConfig,
   patchForSharedPage,
   patchNotificationService,
   patchParseDocUrlExtension,
@@ -135,6 +136,7 @@ const usePatchSpecs = (shared: boolean, mode: DocMode) => {
     patched = patched.concat(patchEdgelessClipboard());
     patched = patched.concat(patchParseDocUrlExtension(framework));
     patched = patched.concat(patchQuickSearchService(framework));
+    patched = patched.concat(patchEmbedLinkedDocBlockConfig(framework));
     if (shared) {
       patched = patched.concat(patchForSharedPage());
     }
