@@ -20,7 +20,7 @@ export const appTabsInner = style({
   gap: 15.5,
 
   height: `calc(${globalVars.appTabHeight} + 2px)`,
-  padding: 16,
+  padding: '13px 16px',
 });
 export const tabItem = style({
   display: 'flex',
