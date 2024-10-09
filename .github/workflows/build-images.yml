@@ -177,7 +177,7 @@ jobs:
         run: yarn nx build @affine/mobile --skip-nx-cache
         env:
           BUILD_TYPE: ${{ github.event.inputs.flavor }}
-          PUBLIC_PATH: '/'
+          PUBLIC_PATH: '/mobile/'
           SELF_HOSTED: true
           MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
       - name: Upload mobile artifact
