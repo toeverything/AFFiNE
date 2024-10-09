@@ -110,8 +110,14 @@ type PaymentEvents =
 // SECTION: copilot events
 type CopilotEvents =
   | 'startCopilotChat'
+  | 'resetCopilotChat'
+  | 'retryCopilotChat'
+  | 'failureCopilotChat'
   | 'addCopilotChatAttachment'
-  | 'startCopilotAction';
+  | 'startCopilotAction'
+  | 'retryCopilotAction'
+  | 'discordCopilotAction'
+  | 'failureCopilotAction';
 // END SECTION
 
 type UserEvents =
@@ -284,13 +290,29 @@ const PageEvents = {
   },
   copilot: {
     chat: {
-      $: ['startCopilotChat', 'addCopilotChatAttachment'],
+      $: [
+        'startCopilotChat',
+        'retryCopilotChat',
+        'resetCopilotChat',
+        'failureCopilotChat',
+        'addCopilotChatAttachment',
+      ],
     },
     page: {
-      $: ['startCopilotAction'],
+      $: [
+        'startCopilotAction',
+        'retryCopilotAction',
+        'discordCopilotAction',
+        'failureCopilotAction',
+      ],
     },
     edgeless: {
-      $: ['startCopilotAction'],
+      $: [
+        'startCopilotAction',
+        'retryCopilotAction',
+        'discordCopilotAction',
+        'failureCopilotAction',
+      ],
     },
   },
   // remove when type added
