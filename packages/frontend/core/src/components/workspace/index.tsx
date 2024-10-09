@@ -49,9 +49,9 @@ export const MainContainer = forwardRef<
   HTMLDivElement,
   PropsWithChildren<MainContainerProps>
 >(function MainContainer({ className, children, ...props }, ref): ReactElement {
-  const appSidebarService = useService(AppSidebarService).sidebar;
-  const appSideBarOpen = useLiveData(appSidebarService.open$);
   const { appSettings } = useAppSettingHelper();
+  const appSidebarService = useService(AppSidebarService).sidebar;
+  const open = useLiveData(appSidebarService.open$);
 
   return (
     <div
@@ -60,7 +60,7 @@ export const MainContainer = forwardRef<
       data-is-desktop={BUILD_CONFIG.isElectron}
       data-transparent={false}
       data-client-border={appSettings.clientBorder}
-      data-side-bar-open={appSideBarOpen}
+      data-side-bar-open={open}
       data-testid="main-container"
       ref={ref}
     >

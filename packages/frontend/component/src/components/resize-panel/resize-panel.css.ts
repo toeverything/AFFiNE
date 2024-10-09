@@ -6,6 +6,7 @@ export const resizeHandleVerticalPadding = createVar(
   'resize-handle-vertical-padding'
 );
 export const animationTimeout = createVar();
+
 export const root = style({
   vars: {
     [panelWidthVar]: '256px',
@@ -15,23 +16,28 @@ export const root = style({
   width: panelWidthVar,
   minWidth: panelWidthVar,
   height: '100%',
+  zIndex: 4,
+  transform: 'translateX(0)',
+  maxWidth: '50%',
   selectors: {
-    '&[data-is-floating="true"]': {
-      position: 'absolute',
-      width: `calc(${panelWidthVar})`,
-      zIndex: 4,
-    },
-    '&[data-open="true"]': {
-      maxWidth: '50%',
-    },
-    '&[data-open="false"][data-handle-position="right"]': {
-      marginLeft: `calc(${panelWidthVar} * -1)`,
-    },
-    '&[data-open="false"][data-handle-position="left"]': {
-      marginRight: `calc(${panelWidthVar} * -1)`,
-    },
+    '&[data-open="false"][data-handle-position="right"],&[data-is-floating="true"][data-handle-position="right"]':
+      {
+        marginLeft: `calc(${panelWidthVar} * -1)`,
+      },
+    '&[data-open="false"][data-handle-position="left"],&[data-is-floating="true"][data-handle-position="left"]':
+      {
+        marginRight: `calc(${panelWidthVar} * -1)`,
+      },
+    '&[data-open="true"][data-handle-position="right"][data-is-floating="true"]':
+      {
+        transform: `translateX(${panelWidthVar})`,
+      },
+    '&[data-open="true"][data-handle-position="left"][data-is-floating="true"]':
+      {
+        transform: `translateX(-${panelWidthVar})`,
+      },
     '&[data-enable-animation="true"]': {
-      transition: `margin-left ${animationTimeout} .05s, margin-right ${animationTimeout} .05s, width ${animationTimeout} .05s`,
+      transition: `margin-left ${animationTimeout}, margin-right ${animationTimeout}, transform ${animationTimeout}, background ${animationTimeout}`,
     },
     '&[data-transition-state="exited"]': {
       // avoid focus on hidden panel

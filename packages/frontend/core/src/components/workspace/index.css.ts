@@ -1,5 +1,7 @@
 import { cssVar, lightCssVariables } from '@toeverything/theme';
-import { globalStyle, style } from '@vanilla-extract/css';
+import { createVar, globalStyle, style } from '@vanilla-extract/css';
+
+export const panelWidthVar = createVar('panel-width');
 
 export const appStyle = style({
   width: '100%',
@@ -48,7 +50,7 @@ export const mainContainerStyle = style({
   flex: 1,
   overflow: 'clip',
   maxWidth: '100%',
-  transition: 'margin-left 0.2s ease',
+
   selectors: {
     '&[data-client-border="true"]': {
       borderRadius: 6,

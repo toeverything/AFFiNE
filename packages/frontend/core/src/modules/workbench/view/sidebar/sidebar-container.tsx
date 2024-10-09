@@ -26,7 +26,7 @@ export const SidebarContainer = ({
 
   return (
     <div className={clsx(styles.sidebarContainerInner, className)} {...props}>
-      <Header floating={false} onToggle={handleToggleOpen}>
+      <Header onToggle={handleToggleOpen}>
         <SidebarHeaderSwitcher />
       </Header>
       {sidebarTabs.length > 0 ? (
