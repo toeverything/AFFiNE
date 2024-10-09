@@ -107,6 +107,13 @@ type PaymentEvents =
   | 'confirmResumingSubscription';
 // END SECTION
 
+// SECTION: copilot events
+type CopilotEvents =
+  | 'startCopilotChat'
+  | 'addCopilotChatAttachment'
+  | 'startCopilotAction';
+// END SECTION
+
 type UserEvents =
   | GeneralEvents
   | AppEvents
@@ -120,7 +127,8 @@ type UserEvents =
   | ShareEvents
   | AuthEvents
   | AccountEvents
-  | PaymentEvents;
+  | PaymentEvents
+  | CopilotEvents;
 
 interface PageDivision {
   [page: string]: {
@@ -272,6 +280,17 @@ const PageEvents = {
     },
     inlineDocInfo: {
       $: ['toggle'],
+    },
+  },
+  copilot: {
+    chat: {
+      $: ['startCopilotChat', 'addCopilotChatAttachment'],
+    },
+    page: {
+      $: ['startCopilotAction'],
+    },
+    edgeless: {
+      $: ['startCopilotAction'],
     },
   },
   // remove when type added
