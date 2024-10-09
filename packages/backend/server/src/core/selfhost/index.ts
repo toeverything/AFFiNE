@@ -58,10 +58,6 @@ export class SelfhostModule implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    // selfhost static file location
-    // web => 'static/selfhost'
-    // admin => 'static/admin/selfhost'
-    // mobile => 'static/mobile/selfhost'
     const staticPath = join(this.config.projectRoot, 'static');
     // in command line mode
     if (!this.adapterHost.httpAdapter) {
@@ -71,9 +67,11 @@ export class SelfhostModule implements OnModuleInit {
     const app = this.adapterHost.httpAdapter.getInstance<Application>();
     const basePath = this.config.server.path;
 
-    app.get(basePath + '/admin/index.html', (_req, res) => {
-      res.redirect(basePath + '/admin');
-    });
+    // selfhost static file location
+    // web => 'static/selfhost'
+    // admin => 'static/admin/selfhost'
+    // mobile => 'static/mobile/selfhost'
+
     app.use(
       basePath + '/admin',
       serveStatic(join(staticPath, 'admin', 'selfhost'), {
@@ -81,7 +79,23 @@ export class SelfhostModule implements OnModuleInit {
         index: false,
       })
     );
-
+    app.use(
+      basePath + '/mobile',
+      serveStatic(join(staticPath, 'mobile', 'selfhost'), {
+        redirect: false,
+        index: false,
+      })
+    );
+    app.use(
+      basePath,
+      serveStatic(join(staticPath, 'selfhost'), {
+        redirect: false,
+        index: false,
+      })
+    );
+    app.get(basePath + '/admin/index.html', (_req, res) => {
+      res.redirect(basePath + '/admin');
+    });
     app.get(
       [basePath + '/admin', basePath + '/admin/*'],
       this.check.use,
@@ -93,13 +107,7 @@ export class SelfhostModule implements OnModuleInit {
     app.get(basePath + '/index.html', (_req, res) => {
       res.redirect(basePath);
     });
-    app.use(
-      basePath,
-      serveStatic(join(staticPath, 'selfhost'), {
-        redirect: false,
-        index: false,
-      })
-    );
+
     app.get('*', this.check.use, (_req, res) => {
       res.sendFile(join(staticPath, 'selfhost', 'index.html'));
     });
