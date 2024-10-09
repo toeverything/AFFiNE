@@ -207,7 +207,7 @@ export class OpenAIProvider
     this.checkParams({ messages, model, options });
 
     try {
-      metrics.ai.counter('chat_text').add(1, { model });
+      metrics.ai.counter('chat_text_calls').add(1, { model });
       const result = await this.instance.chat.completions.create(
         {
           messages: this.chatToGPTMessage(messages),
@@ -225,7 +225,7 @@ export class OpenAIProvider
       if (!content) throw new Error('Failed to generate text');
       return content.trim();
     } catch (e: any) {
-      metrics.ai.counter('chat_text_failed').add(1, { model });
+      metrics.ai.counter('chat_text_errors').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -238,7 +238,7 @@ export class OpenAIProvider
     this.checkParams({ messages, model, options });
 
     try {
-      metrics.ai.counter('chat_text_stream').add(1, { model });
+      metrics.ai.counter('chat_text_stream_calls').add(1, { model });
       const result = await this.instance.chat.completions.create(
         {
           stream: true,
@@ -272,7 +272,7 @@ export class OpenAIProvider
         }
       }
     } catch (e: any) {
-      metrics.ai.counter('chat_text_stream_failed').add(1, { model });
+      metrics.ai.counter('chat_text_stream_errors').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -288,7 +288,7 @@ export class OpenAIProvider
     this.checkParams({ embeddings: messages, model, options });
 
     try {
-      metrics.ai.counter('generate_embedding').add(1, { model });
+      metrics.ai.counter('generate_embedding_calls').add(1, { model });
       const result = await this.instance.embeddings.create({
         model: model,
         input: messages,
@@ -299,7 +299,7 @@ export class OpenAIProvider
         .map(e => e?.embedding)
         .filter(v => v && Array.isArray(v));
     } catch (e: any) {
-      metrics.ai.counter('generate_embedding_failed').add(1, { model });
+      metrics.ai.counter('generate_embedding_errors').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -314,7 +314,7 @@ export class OpenAIProvider
     if (!prompt) throw new CopilotPromptInvalid('Prompt is required');
 
     try {
-      metrics.ai.counter('generate_images').add(1, { model });
+      metrics.ai.counter('generate_images_calls').add(1, { model });
       const result = await this.instance.images.generate(
         {
           prompt,
@@ -329,7 +329,7 @@ export class OpenAIProvider
         .map(image => image.url)
         .filter((v): v is string => !!v);
     } catch (e: any) {
-      metrics.ai.counter('generate_images_failed').add(1, { model });
+      metrics.ai.counter('generate_images_errors').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -340,13 +340,13 @@ export class OpenAIProvider
     options: CopilotImageOptions = {}
   ): AsyncIterable<string> {
     try {
-      metrics.ai.counter('generate_images_stream').add(1, { model });
+      metrics.ai.counter('generate_images_stream_calls').add(1, { model });
       const ret = await this.generateImages(messages, model, options);
       for (const url of ret) {
         yield url;
       }
     } catch (e) {
-      metrics.ai.counter('generate_images_stream_failed').add(1, { model });
+      metrics.ai.counter('generate_images_stream_errors').add(1, { model });
       throw e;
     }
   }

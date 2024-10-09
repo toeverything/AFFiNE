@@ -12,6 +12,7 @@ import { type KnownMetricScopes, metrics } from './metrics';
 export const CallMetric = (
   scope: KnownMetricScopes,
   name: string,
+  record?: { timer?: boolean; count?: boolean; error?: boolean },
   attrs?: Attributes
 ): MethodDecorator => {
   // @ts-expect-error allow
@@ -43,13 +44,19 @@ export const CallMetric = (
       };
 
       try {
-        count.add(1, attrs);
+        if (!record || !!record.count) {
+          count.add(1, attrs);
+        }
         return await originalMethod.apply(this, args);
       } catch (err) {
-        errorCount.add(1, attrs);
+        if (!record || !!record.error) {
+          errorCount.add(1, attrs);
+        }
         throw err;
       } finally {
-        end();
+        if (!record || !!record.timer) {
+          end();
+        }
       }
     };
 
