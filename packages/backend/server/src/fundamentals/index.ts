@@ -19,12 +19,7 @@ export type { GraphqlContext } from './graphql';
 export * from './guard';
 export { CryptoHelper, URLHelper } from './helpers';
 export { MailService } from './mailer';
-export {
-  CallCounter,
-  CallThrowableCounter,
-  CallTimer,
-  metrics,
-} from './metrics';
+export { CallMetric, metrics } from './metrics';
 export { type ILocker, Lock, Locker, Mutex, RequestMutex } from './mutex';
 export {
   GatewayErrorWrapper,
