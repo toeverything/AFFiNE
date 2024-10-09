@@ -24,7 +24,7 @@ import { Admin } from '../../core/common';
 import { PermissionService } from '../../core/permission';
 import { UserType } from '../../core/user';
 import {
-  CallThrowableCounter,
+  CallMetric,
   CopilotFailedToCreateMessage,
   FileUpload,
   RequestMutex,
@@ -309,7 +309,7 @@ export class CopilotResolver {
   }
 
   @ResolveField(() => [CopilotHistoriesType], {})
-  @CallThrowableCounter('ai', 'histories')
+  @CallMetric('ai', 'histories')
   async histories(
     @Parent() copilot: CopilotType,
     @CurrentUser() user: CurrentUser,
@@ -347,7 +347,7 @@ export class CopilotResolver {
   @Mutation(() => String, {
     description: 'Create a chat session',
   })
-  @CallThrowableCounter('ai', 'chat_session_create')
+  @CallMetric('ai', 'chat_session_create')
   async createCopilotSession(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => CreateChatSessionInput })
@@ -375,7 +375,7 @@ export class CopilotResolver {
   @Mutation(() => String, {
     description: 'Create a chat session',
   })
-  @CallThrowableCounter('ai', 'chat_session_fork')
+  @CallMetric('ai', 'chat_session_fork')
   async forkCopilotSession(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => ForkChatSessionInput })
@@ -403,7 +403,7 @@ export class CopilotResolver {
   @Mutation(() => [String], {
     description: 'Cleanup sessions',
   })
-  @CallThrowableCounter('ai', 'chat_session_cleanup')
+  @CallMetric('ai', 'chat_session_cleanup')
   async cleanupCopilotSession(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => DeleteSessionInput })
@@ -432,7 +432,7 @@ export class CopilotResolver {
   @Mutation(() => String, {
     description: 'Create a chat message',
   })
-  @CallThrowableCounter('ai', 'chat_message_create')
+  @CallMetric('ai', 'chat_message_create')
   async createCopilotMessage(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => CreateChatMessageInput })

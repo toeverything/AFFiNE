@@ -6,7 +6,7 @@ import { QuotaManagementService } from '../../core/quota';
 import {
   type BlobInputType,
   BlobQuotaExceeded,
-  CallThrowableCounter,
+  CallMetric,
   Config,
   type FileUpload,
   type StorageProvider,
@@ -29,7 +29,7 @@ export class CopilotStorage {
     );
   }
 
-  @CallThrowableCounter('ai', 'blob_put')
+  @CallMetric('ai', 'blob_put')
   async put(
     userId: string,
     workspaceId: string,
@@ -45,17 +45,17 @@ export class CopilotStorage {
     return this.url.link(`/api/copilot/blob/${name}`);
   }
 
-  @CallThrowableCounter('ai', 'blob_get')
+  @CallMetric('ai', 'blob_get')
   async get(userId: string, workspaceId: string, key: string) {
     return this.provider.get(`${userId}/${workspaceId}/${key}`);
   }
 
-  @CallThrowableCounter('ai', 'blob_delete')
+  @CallMetric('ai', 'blob_delete')
   async delete(userId: string, workspaceId: string, key: string) {
     await this.provider.delete(`${userId}/${workspaceId}/${key}`);
   }
 
-  @CallThrowableCounter('ai', 'blob_upload')
+  @CallMetric('ai', 'blob_upload')
   async handleUpload(userId: string, blob: FileUpload) {
     const checkExceeded = await this.quota.getQuotaCalculator(userId);
 
@@ -93,7 +93,7 @@ export class CopilotStorage {
     };
   }
 
-  @CallThrowableCounter('ai', 'blob_proxy_remote_url')
+  @CallMetric('ai', 'blob_proxy_remote_url')
   async handleRemoteLink(userId: string, workspaceId: string, link: string) {
     const response = await fetch(link);
     const buffer = new Uint8Array(await response.arrayBuffer());

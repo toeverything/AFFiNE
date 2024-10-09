@@ -3,7 +3,7 @@ import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 
 import {
-  CallTimer,
+  CallMetric,
   Config,
   type EventPayload,
   metrics,
@@ -47,7 +47,7 @@ export class DocStorageCronJob implements OnModuleInit {
     }
   }
 
-  @CallTimer('doc', 'auto_merge_pending_doc_updates')
+  @CallMetric('doc', 'auto_merge_pending_doc_updates')
   async autoMergePendingDocUpdates() {
     try {
       const randomDoc = await this.workspace.randomDoc();

@@ -30,8 +30,7 @@ import {
 import { CurrentUser, Public } from '../../core/auth';
 import {
   BlobNotFound,
-  CallThrowableCounter,
-  CallTimer,
+  CallMetric,
   Config,
   CopilotFailedToGenerateText,
   CopilotSessionNotFound,
@@ -180,7 +179,7 @@ export class CopilotController {
     return merge(source$.pipe(finalize(() => subject$.next(null))), ping$);
   }
 
-  @CallTimer('ai', 'chat_duration')
+  @CallMetric('ai', 'chat')
   @Get('/chat/:sessionId')
   async chat(
     @CurrentUser() user: CurrentUser,
@@ -224,7 +223,7 @@ export class CopilotController {
   }
 
   @Sse('/chat/:sessionId/stream')
-  @CallTimer('ai', 'chat_stream_duration')
+  @CallMetric('ai', 'chat_stream')
   async chatStream(
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
@@ -286,7 +285,7 @@ export class CopilotController {
   }
 
   @Sse('/chat/:sessionId/workflow')
-  @CallTimer('ai', 'chat_workflow_duration')
+  @CallMetric('ai', 'chat_workflow')
   async chatWorkflow(
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
@@ -378,7 +377,7 @@ export class CopilotController {
   }
 
   @Sse('/chat/:sessionId/images')
-  @CallTimer('ai', 'chat_images_duration')
+  @CallMetric('ai', 'chat_images')
   async chatImagesStream(
     @CurrentUser() user: CurrentUser,
     @Req() req: Request,
@@ -463,8 +462,7 @@ export class CopilotController {
     }
   }
 
-  @CallThrowableCounter('ai', 'unsplash')
-  @CallTimer('ai', 'unsplash_duration')
+  @CallMetric('ai', 'unsplash')
   @Get('/unsplash/photos')
   async unsplashPhotos(
     @Req() req: Request,
