@@ -63,7 +63,7 @@
     "get-stream": "^9.0.1",
     "graphql": "^16.8.1",
     "graphql-scalars": "^1.23.0",
-    "graphql-upload": "^16.0.2",
+    "graphql-upload": "^17.0.0",
     "html-validate": "^8.20.1",
     "ioredis": "^5.3.2",
     "is-mobile": "^4.0.0",

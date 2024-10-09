@@ -722,7 +722,7 @@ __metadata:
     get-stream: "npm:^9.0.1"
     graphql: "npm:^16.8.1"
     graphql-scalars: "npm:^1.23.0"
-    graphql-upload: "npm:^16.0.2"
+    graphql-upload: "npm:^17.0.0"
     html-validate: "npm:^8.20.1"
     ioredis: "npm:^5.3.2"
     is-mobile: "npm:^4.0.0"
@@ -21524,9 +21524,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-upload@npm:^16.0.2":
-  version: 16.0.2
-  resolution: "graphql-upload@npm:16.0.2"
+"graphql-upload@npm:^17.0.0":
+  version: 17.0.0
+  resolution: "graphql-upload@npm:17.0.0"
   dependencies:
     "@types/busboy": "npm:^1.5.0"
     "@types/node": "npm:*"
@@ -21536,7 +21536,7 @@ __metadata:
     http-errors: "npm:^2.0.0"
     object-path: "npm:^0.11.8"
   peerDependencies:
-    "@types/express": ^4.0.29
+    "@types/express": 4.0.29 - 5
     "@types/koa": ^2.11.4
     graphql: ^16.3.0
   peerDependenciesMeta:
@@ -21544,7 +21544,7 @@ __metadata:
       optional: true
     "@types/koa":
       optional: true
-  checksum: 10/c386f39a7e43e9f0fa8c2607d68125a377ce8225720f084cd5bf5e811e375bfc1d68af0d3ca81ec141e7f3603b756d8c719840231dd21c015e53454ec79201cf
+  checksum: 10/7df39d0cd16b14668151091e2844960faa46b3d79a75219585821db7a24b08e8be6264e26c97b1bf144678fdde5489ef4d105a3e718983826747221bf81bba81
   languageName: node
   linkType: hard
 
