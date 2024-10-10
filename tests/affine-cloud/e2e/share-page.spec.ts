@@ -118,6 +118,11 @@ test('share page should have toc', async ({ page, browser }) => {
     const viewer = page2.locator('affine-outline-viewer');
     await tocIndicators.first().hover({ force: true });
     await expect(viewer).toBeVisible();
+
+    const toggleButton = viewer.locator(
+      '[data-testid="toggle-outline-panel-button"]'
+    );
+    await expect(toggleButton).toHaveCount(0);
   }
 });
 
