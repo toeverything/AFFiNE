@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
 
 import { AuthGuard } from './core/auth';
+import { ENABLED_FEATURES } from './core/config/server-feature';
 import {
   CacheInterceptor,
   CloudThrottlerGuard,
@@ -56,6 +57,7 @@ export async function createApp() {
       .init(AFFiNE.metrics.telemetry.token)
       .track('selfhost-server-started', {
         version: AFFiNE.version,
+        features: Array.from(ENABLED_FEATURES),
       });
   }
 
