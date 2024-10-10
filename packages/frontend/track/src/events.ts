@@ -440,6 +440,12 @@ export type EventArgs = {
   copyBlockToLink: {
     type: string;
   };
+  // copilot
+  startAction: { action: string };
+  retryAction: { action: string };
+  discordAction: { action: string };
+  failureAction: { action: string };
+  finishAction: { action: string };
 };
 
 // for type checking
