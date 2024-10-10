@@ -45,29 +45,34 @@ const replicaConfig = {
     web: 3,
     graphql: Number(process.env.PRODUCTION_GRAPHQL_REPLICA) || 3,
     sync: Number(process.env.PRODUCTION_SYNC_REPLICA) || 3,
+    renderer: Number(process.env.PRODUCTION_RENDERER_REPLICA) || 3,
   },
   beta: {
     web: 2,
     graphql: Number(process.env.BETA_GRAPHQL_REPLICA) || 2,
     sync: Number(process.env.BETA_SYNC_REPLICA) || 2,
+    renderer: Number(process.env.BETA_RENDERER_REPLICA) || 3,
   },
   canary: {
     web: 2,
     graphql: 2,
     sync: 2,
+    renderer: 2,
   },
 };
 
 const cpuConfig = {
   beta: {
-    web: '500m',
+    web: '300m',
     graphql: '1',
     sync: '1',
+    renderer: '300m',
   },
   canary: {
-    web: '500m',
+    web: '300m',
     graphql: '1',
     sync: '1',
+    renderer: '300m',
   },
 };
 
@@ -160,6 +165,7 @@ const createHelmCommand = ({ isDryRun }) => {
     `--set-string sync.image.tag="${imageTag}"`,
     `--set-string renderer.image.tag="${imageTag}"`,
     `--set        renderer.app.host=${host}`,
+    `--set        renderer.replicaCount=${replica.renderer}`,
     ...serviceAnnotations,
     ...resources,
     `--timeout 10m`,
