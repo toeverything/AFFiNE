@@ -476,6 +476,7 @@ __metadata:
     "@electron-forge/core-utils": "npm:^7.3.0"
     "@electron-forge/maker-deb": "npm:^7.5.0"
     "@electron-forge/maker-dmg": "npm:^7.3.0"
+    "@electron-forge/maker-flatpak": "npm:^7.5.0"
     "@electron-forge/maker-squirrel": "npm:^7.3.0"
     "@electron-forge/maker-zip": "npm:^7.3.0"
     "@electron-forge/plugin-auto-unpack-natives": "npm:^7.3.0"
@@ -3382,6 +3383,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@electron-forge/maker-flatpak@npm:^7.5.0":
+  version: 7.5.0
+  resolution: "@electron-forge/maker-flatpak@npm:7.5.0"
+  dependencies:
+    "@electron-forge/maker-base": "npm:7.5.0"
+    "@electron-forge/shared-types": "npm:7.5.0"
+    "@malept/electron-installer-flatpak": "npm:^0.11.4"
+    fs-extra: "npm:^10.0.0"
+  dependenciesMeta:
+    "@malept/electron-installer-flatpak":
+      optional: true
+  checksum: 10/4e795f737fff75b03bdc5f08907302f240a422ef79f65b5bb7c65d152e2fb22cd39eaf07c0957c7b02d882e6d2455ff7ceeffcb044ca0bdca08f6967acd4bad8
+  languageName: node
+  linkType: hard
+
 "@electron-forge/maker-squirrel@npm:^7.3.0":
   version: 7.5.0
   resolution: "@electron-forge/maker-squirrel@npm:7.5.0"
@@ -6136,6 +6152,22 @@ __metadata:
   dependencies:
     cross-spawn: "npm:^7.0.1"
   checksum: 10/b7402d050e5ca99375b0226e4bb3fbefb0bcd86187dd4d6baac70f34b93d5c7fada9c78bd377ccd8ee74886ce911dd38f91c53479d1e40a2a38fc890150b670f
+  languageName: node
+  linkType: hard
+
+"@malept/electron-installer-flatpak@npm:^0.11.4":
+  version: 0.11.4
+  resolution: "@malept/electron-installer-flatpak@npm:0.11.4"
+  dependencies:
+    "@malept/flatpak-bundler": "npm:^0.4.0"
+    debug: "npm:^4.1.1"
+    electron-installer-common: "npm:^0.10.0"
+    lodash: "npm:^4.17.15"
+    semver: "npm:^7.1.1"
+    yargs: "npm:^16.0.0"
+  bin:
+    electron-installer-flatpak: bin/electron-installer-flatpak.js
+  conditions: (os=darwin | os=linux)
   languageName: node
   linkType: hard
 
@@ -18590,7 +18622,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron-installer-common@npm:^0.10.2":
+"electron-installer-common@npm:^0.10.0, electron-installer-common@npm:^0.10.2":
   version: 0.10.3
   resolution: "electron-installer-common@npm:0.10.3"
   dependencies:
@@ -33559,7 +33591,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yargs@npm:^16.0.2":
+"yargs@npm:^16.0.0, yargs@npm:^16.0.2":
   version: 16.2.0
   resolution: "yargs@npm:16.2.0"
   dependencies:
