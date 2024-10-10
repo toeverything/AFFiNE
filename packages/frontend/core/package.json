@@ -16,7 +16,7 @@
     "@affine/i18n": "workspace:*",
     "@affine/templates": "workspace:*",
     "@affine/track": "workspace:*",
-    "@blocksuite/affine": "0.17.17",
+    "@blocksuite/affine": "0.17.18",
     "@blocksuite/icons": "2.1.67",
     "@dnd-kit/core": "^6.1.0",
     "@dnd-kit/modifiers": "^7.0.0",
