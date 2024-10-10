@@ -1,5 +1,6 @@
 import {
   DocsService,
+  FeatureFlagService,
   type Framework,
   WorkspaceScope,
 } from '@toeverything/infra';
@@ -12,5 +13,9 @@ export { DocDisplayMetaService };
 export function configureDocDisplayMetaModule(framework: Framework) {
   framework
     .scope(WorkspaceScope)
-    .service(DocDisplayMetaService, [WorkspacePropertiesAdapter, DocsService]);
+    .service(DocDisplayMetaService, [
+      WorkspacePropertiesAdapter,
+      DocsService,
+      FeatureFlagService,
+    ]);
 }

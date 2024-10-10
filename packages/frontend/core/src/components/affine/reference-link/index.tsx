@@ -52,7 +52,9 @@ export function AffinePageReference({
       referenceToNode: linkToNode,
     })
   );
-  const title = useLiveData(docDisplayMetaService.title$(pageId));
+  const title = useLiveData(
+    docDisplayMetaService.title$(pageId, { reference: true })
+  );
 
   const el = (
     <>

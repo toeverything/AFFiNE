@@ -104,6 +104,17 @@ export const AFFINE_FLAGS = {
     configurable: true,
     defaultState: true,
   },
+  enable_emoji_doc_icon: {
+    category: 'affine',
+    displayName: 'Emoji Doc Icon',
+    description:
+      'Once enabled, you can use an emoji as the page icon. When the first character of the folder name is an emoji, it will be extracted and used as its icon.',
+    feedbackType: 'discord',
+    feedbackLink:
+      'https://discord.com/channels/959027316334407691/1280014319865696351',
+    configurable: true,
+    defaultState: true,
+  },
   enable_editor_settings: {
     category: 'affine',
     displayName: 'Editor Settings',

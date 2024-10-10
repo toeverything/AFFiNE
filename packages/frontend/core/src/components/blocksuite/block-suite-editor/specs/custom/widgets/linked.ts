@@ -34,7 +34,9 @@ export function createLinkedWidgetConfig(
           return !meta.trash;
         })
         .map(meta => {
-          const title = docDisplayMetaService.title$(meta.id).value;
+          const title = docDisplayMetaService.title$(meta.id, {
+            reference: true,
+          }).value;
           return {
             ...meta,
             title: typeof title === 'string' ? title : I18n[title.key](),
