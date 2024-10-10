@@ -6,8 +6,8 @@ We recommend users to always use the latest major version. Security updates will
 
 | Version         | Supported          |
 | --------------- | ------------------ |
-| 0.15.x (stable) | :white_check_mark: |
-| < 0.15.x        | :x:                |
+| 0.17.x (stable) | :white_check_mark: |
+| < 0.17.x        | :x:                |
 
 ## Reporting a Vulnerability
 
