@@ -116,7 +116,7 @@ type CopilotEvents =
   | 'addChatAttachment'
   | 'startAction'
   | 'retryAction'
-  | 'discordAction'
+  | 'discardAction'
   | 'failureAction'
   | 'finishAction';
 // END SECTION
@@ -303,7 +303,7 @@ const PageEvents = {
       $: [
         'startAction',
         'retryAction',
-        'discordAction',
+        'discardAction',
         'failureAction',
         'finishAction',
       ],
@@ -312,7 +312,7 @@ const PageEvents = {
       $: [
         'startAction',
         'retryAction',
-        'discordAction',
+        'discardAction',
         'failureAction',
         'finishAction',
       ],
@@ -443,7 +443,7 @@ export type EventArgs = {
   // copilot
   startAction: { action: string };
   retryAction: { action: string };
-  discordAction: { action: string };
+  discardAction: { action: string };
   failureAction: { action: string };
   finishAction: { action: string };
 };

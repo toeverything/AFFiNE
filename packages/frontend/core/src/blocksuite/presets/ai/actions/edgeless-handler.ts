@@ -385,7 +385,7 @@ function updateEdgelessAIPanelConfig<
     },
   };
   config.discardCallback = () => {
-    track.copilot.edgeless.$.discordAction({ action: id });
+    track.copilot.edgeless.$.discardAction({ action: id });
     reportResponse('result:discard');
   };
   config.hideCallback = () => {
