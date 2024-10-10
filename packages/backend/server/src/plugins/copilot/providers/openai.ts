@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { APIError, ClientOptions, OpenAI } from 'openai';
+import { APIError, BadRequestError, ClientOptions, OpenAI } from 'openai';
 
 import {
   CopilotPromptInvalid,
@@ -180,10 +180,23 @@ export class OpenAIProvider
     }
   }
 
-  private handleError(e: any) {
+  private handleError(
+    e: any,
+    model: string,
+    options: CopilotImageOptions = {}
+  ) {
     if (e instanceof UserFriendlyError) {
       return e;
     } else if (e instanceof APIError) {
+      if (
+        e instanceof BadRequestError &&
+        (e.message.includes('safety') || e.message.includes('risk'))
+      ) {
+        metrics.ai
+          .counter('chat_text_risk_errors')
+          .add(1, { model, user: options.user || undefined });
+      }
+
       return new CopilotProviderSideError({
         provider: this.type,
         kind: e.type || 'unknown',
@@ -226,7 +239,7 @@ export class OpenAIProvider
       return content.trim();
     } catch (e: any) {
       metrics.ai.counter('chat_text_errors').add(1, { model });
-      throw this.handleError(e);
+      throw this.handleError(e, model, options);
     }
   }
 
@@ -273,7 +286,7 @@ export class OpenAIProvider
       }
     } catch (e: any) {
       metrics.ai.counter('chat_text_stream_errors').add(1, { model });
-      throw this.handleError(e);
+      throw this.handleError(e, model, options);
     }
   }
 
@@ -300,7 +313,7 @@ export class OpenAIProvider
         .filter(v => v && Array.isArray(v));
     } catch (e: any) {
       metrics.ai.counter('generate_embedding_errors').add(1, { model });
-      throw this.handleError(e);
+      throw this.handleError(e, model, options);
     }
   }
 
@@ -330,7 +343,7 @@ export class OpenAIProvider
         .filter((v): v is string => !!v);
     } catch (e: any) {
       metrics.ai.counter('generate_images_errors').add(1, { model });
-      throw this.handleError(e);
+      throw this.handleError(e, model, options);
     }
   }
 
