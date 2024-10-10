@@ -30,10 +30,12 @@ import {
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
+  SubscriptionVariant,
 } from './types';
 
 registerEnumType(SubscriptionStatus, { name: 'SubscriptionStatus' });
 registerEnumType(SubscriptionRecurring, { name: 'SubscriptionRecurring' });
+registerEnumType(SubscriptionVariant, { name: 'SubscriptionVariant' });
 registerEnumType(SubscriptionPlan, { name: 'SubscriptionPlan' });
 registerEnumType(InvoiceStatus, { name: 'InvoiceStatus' });
 
@@ -71,6 +73,9 @@ export class UserSubscriptionType implements Partial<UserSubscription> {
 
   @Field(() => SubscriptionRecurring)
   recurring!: SubscriptionRecurring;
+
+  @Field(() => SubscriptionVariant, { nullable: true })
+  variant?: SubscriptionVariant | null;
 
   @Field(() => SubscriptionStatus)
   status!: SubscriptionStatus;
@@ -149,6 +154,11 @@ class CreateCheckoutSessionInput {
     defaultValue: SubscriptionPlan.Pro,
   })
   plan!: SubscriptionPlan;
+
+  @Field(() => SubscriptionVariant, {
+    nullable: true,
+  })
+  variant?: SubscriptionVariant;
 
   @Field(() => String, { nullable: true })
   coupon!: string | null;
@@ -236,6 +246,7 @@ export class SubscriptionResolver {
       user,
       plan: input.plan,
       recurring: input.recurring,
+      variant: input.variant,
       promotionCode: input.coupon,
       redirectUrl: this.url.link(input.successCallbackLink),
       idempotencyKey: input.idempotencyKey,

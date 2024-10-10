@@ -390,9 +390,9 @@ export class SubscriptionPlanNotFound extends UserFriendlyError {
   }
 }
 
-export class CantUpdateLifetimeSubscription extends UserFriendlyError {
+export class CantUpdateOnetimePaymentSubscription extends UserFriendlyError {
   constructor(message?: string) {
-    super('action_forbidden', 'cant_update_lifetime_subscription', message);
+    super('action_forbidden', 'cant_update_onetime_payment_subscription', message);
   }
 }
 
@@ -591,7 +591,7 @@ export enum ErrorNames {
   SAME_SUBSCRIPTION_RECURRING,
   CUSTOMER_PORTAL_CREATE_FAILED,
   SUBSCRIPTION_PLAN_NOT_FOUND,
-  CANT_UPDATE_LIFETIME_SUBSCRIPTION,
+  CANT_UPDATE_ONETIME_PAYMENT_SUBSCRIPTION,
   COPILOT_SESSION_NOT_FOUND,
   COPILOT_SESSION_DELETED,
   NO_COPILOT_PROVIDER_AVAILABLE,

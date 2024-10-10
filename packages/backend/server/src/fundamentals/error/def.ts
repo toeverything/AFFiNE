@@ -443,9 +443,9 @@ export const USER_FRIENDLY_ERRORS = {
     args: { plan: 'string', recurring: 'string' },
     message: 'You are trying to access a unknown subscription plan.',
   },
-  cant_update_lifetime_subscription: {
+  cant_update_onetime_payment_subscription: {
     type: 'action_forbidden',
-    message: 'You cannot update a lifetime subscription.',
+    message: 'You cannot update an onetime payment subscription.',
   },
 
   // Copilot errors

@@ -59,6 +59,7 @@ export const AISubscribe = ({
         recurring: SubscriptionRecurring.Yearly,
         idempotencyKey,
         plan: SubscriptionPlan.AI,
+        variant: null,
         coupon: null,
         successCallbackLink: generateSubscriptionCallbackLink(
           authService.session.account$.value,

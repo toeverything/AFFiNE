@@ -282,6 +282,7 @@ export const Upgrade = ({
       recurring,
       idempotencyKey,
       plan: SubscriptionPlan.Pro, // Only support prod plan now.
+      variant: null,
       coupon: null,
       successCallbackLink: generateSubscriptionCallbackLink(
         authService.session.account$.value,

@@ -100,6 +100,7 @@ export const Component = () => {
                 plan: targetPlan,
                 coupon: null,
                 recurring: targetRecurring,
+                variant: null,
                 successCallbackLink: generateSubscriptionCallbackLink(
                   account,
                   targetPlan,
