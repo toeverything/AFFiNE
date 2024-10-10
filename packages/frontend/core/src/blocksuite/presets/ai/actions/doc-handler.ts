@@ -1,3 +1,4 @@
+import track from '@affine/track';
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import type {
   AffineAIPanelWidget,
@@ -180,6 +181,7 @@ function updateAIPanelConfig<T extends keyof BlockSuitePresets.AIActions>(
   config.errorStateConfig = buildErrorConfig(aiPanel);
   config.copy = buildCopyConfig(aiPanel);
   config.discardCallback = () => {
+    track.copilot.page.$.discordAction({ action: id });
     reportResponse('result:discard');
   };
 }
@@ -200,6 +202,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
     if (!blocks || blocks.length === 0) return;
     const block = blocks.at(-1);
     assertExists(block);
+    track.copilot.page.$.startAction({ action: id });
     aiPanel.toggle(block, 'placeholder');
   };
 }

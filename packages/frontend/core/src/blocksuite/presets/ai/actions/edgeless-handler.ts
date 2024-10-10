@@ -1,3 +1,4 @@
+import track from '@affine/track';
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import type {
   AffineAIPanelWidget,
@@ -383,6 +384,7 @@ function updateEdgelessAIPanelConfig<
     },
   };
   config.discardCallback = () => {
+    track.copilot.edgeless.$.discordAction({ action: id });
     reportResponse('result:discard');
   };
   config.hideCallback = () => {
@@ -493,6 +495,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
 
     togglePanel()
       .then(isEmpty => {
+        track.copilot.edgeless.$.startAction({ action: id });
         aiPanel.toggle(referenceElement, isEmpty ? undefined : 'placeholder');
       })
       .catch(console.error);
