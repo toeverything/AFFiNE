@@ -1141,6 +1141,7 @@ export interface UserSubscription {
   trialEnd: Maybe<Scalars['DateTime']['output']>;
   trialStart: Maybe<Scalars['DateTime']['output']>;
   updatedAt: Scalars['DateTime']['output'];
+  variant: Maybe<SubscriptionVariant>;
 }
 
 export interface UserType {
@@ -2210,6 +2211,7 @@ export type SubscriptionQuery = {
       end: string | null;
       nextBillAt: string | null;
       canceledAt: string | null;
+      variant: SubscriptionVariant | null;
     }>;
   } | null;
 };

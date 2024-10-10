@@ -4,8 +4,15 @@ import { generateSubscriptionCallbackLink } from '@affine/core/components/hooks/
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
 import { popupWindow } from '@affine/core/utils';
-import type { SubscriptionRecurring } from '@affine/graphql';
-import { SubscriptionPlan, SubscriptionStatus } from '@affine/graphql';
+import {
+  type CreateCheckoutSessionInput,
+  SubscriptionRecurring,
+} from '@affine/graphql';
+import {
+  SubscriptionPlan,
+  SubscriptionStatus,
+  SubscriptionVariant,
+} from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { DoneIcon } from '@blocksuite/icons/rc';
@@ -96,6 +103,7 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
   );
   const currentPlan = primarySubscription?.plan ?? SubscriptionPlan.Free;
   const currentRecurring = primarySubscription?.recurring;
+  const isOnetime = useLiveData(subscriptionService.subscription.isOnetime$);
 
   // branches:
   //  if contact                                => 'Contact Sales'
@@ -104,12 +112,12 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
   //    else                                    => 'Buy Pro'
   //  else
   //    if isBeliever                           => 'Included in Lifetime'
+  //    if onetime                              => 'Redeem Code'
   //    if isCurrent
   //      if canceled                           => 'Resume'
   //      else                                  => 'Current Plan'
-  //    if isCurrent                            => 'Current Plan'
-  //    else if free                            => 'Downgrade'
-  //    else if currentRecurring !== recurring  => 'Change to {recurring} Billing'
+  //    if free                                 => 'Downgrade'
+  //    if currentRecurring !== recurring       => 'Change to {recurring} Billing'
   //    else                                    => 'Upgrade'
 
   // contact
@@ -135,6 +143,11 @@ const ActionButton = ({ detail, recurring }: PlanCardProps) => {
         {t['com.affine.payment.cloud.lifetime.included']()}
       </Button>
     );
+  }
+
+  // onetime
+  if (isOnetime) {
+    return <RedeemCode recurring={recurring} />;
   }
 
   const isCanceled = !!primarySubscription?.canceledAt;
@@ -242,9 +255,11 @@ export const Upgrade = ({
   className,
   recurring,
   children,
+  checkoutInput,
   ...btnProps
 }: ButtonProps & {
   recurring: SubscriptionRecurring;
+  checkoutInput?: Partial<CreateCheckoutSessionInput>;
 }) => {
   const [isMutating, setMutating] = useState(false);
   const [isOpenedExternalWindow, setOpenedExternalWindow] = useState(false);
@@ -289,6 +304,7 @@ export const Upgrade = ({
         SubscriptionPlan.Pro,
         recurring
       ),
+      ...checkoutInput,
     });
     setMutating(false);
     setIdempotencyKey(nanoid());
@@ -299,6 +315,7 @@ export const Upgrade = ({
     authService.session.account$.value,
     subscriptionService,
     idempotencyKey,
+    checkoutInput,
   ]);
 
   return (
@@ -433,5 +450,26 @@ const ResumeButton = () => {
         </span>
       </Button>
     </ResumeAction>
+  );
+};
+
+const redeemCodeCheckoutInput = { variant: SubscriptionVariant.Onetime };
+export const RedeemCode = ({
+  className,
+  recurring = SubscriptionRecurring.Yearly,
+  children,
+  ...btnProps
+}: ButtonProps & { recurring?: SubscriptionRecurring }) => {
+  const t = useI18n();
+
+  return (
+    <Upgrade
+      recurring={recurring}
+      className={className}
+      checkoutInput={redeemCodeCheckoutInput}
+      {...btnProps}
+    >
+      {children ?? t['com.affine.payment.redeem-code']()}
+    </Upgrade>
   );
 };

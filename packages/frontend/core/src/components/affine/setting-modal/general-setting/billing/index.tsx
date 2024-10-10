@@ -94,6 +94,7 @@ const SubscriptionSettings = () => {
   const proSubscription = useLiveData(subscriptionService.subscription.pro$);
   const proPrice = useLiveData(subscriptionService.prices.proPrice$);
   const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
+  const isOnetime = useLiveData(subscriptionService.subscription.isOnetime$);
 
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
@@ -206,7 +207,17 @@ const SubscriptionSettings = () => {
                 })}
               />
             )}
-            {isBeliever ? null : proSubscription.end &&
+            {isOnetime && proSubscription.end && (
+              <SettingRow
+                name={t['com.affine.payment.billing-setting.due-date']()}
+                desc={t[
+                  'com.affine.payment.billing-setting.due-date.description'
+                ]({
+                  dueDate: new Date(proSubscription.end).toLocaleDateString(),
+                })}
+              />
+            )}
+            {isBeliever || isOnetime ? null : proSubscription.end &&
               proSubscription.canceledAt ? (
               <SettingRow
                 name={t['com.affine.payment.billing-setting.expiration-date']()}
