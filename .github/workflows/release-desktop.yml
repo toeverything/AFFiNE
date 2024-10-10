@@ -160,7 +160,7 @@ jobs:
           mkdir -p builds
           mv packages/frontend/apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
           mv packages/frontend/apps/electron/out/*/make/*.AppImage ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
-
+          mv packages/frontend/apps/electron/out/*/make/deb/x64/*.deb ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.deb
       - uses: actions/attest-build-provenance@v1
         if: ${{ matrix.spec.platform == 'darwin' }}
         with:
@@ -174,7 +174,7 @@ jobs:
           subject-path: |
             ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
             ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
-
+            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.deb
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -411,6 +411,7 @@ jobs:
             ./*.dmg
             ./*.exe
             ./*.appimage
+            ./*.deb
             ./*.apk
             ./*.yml
       - name: Create Nightly Release Draft
@@ -433,5 +434,6 @@ jobs:
             ./*.dmg
             ./*.exe
             ./*.appimage
+            ./*.deb
             ./*.apk
             ./*.yml

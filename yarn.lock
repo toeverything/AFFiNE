@@ -474,7 +474,7 @@ __metadata:
     "@electron-forge/cli": "npm:^7.3.0"
     "@electron-forge/core": "npm:^7.3.0"
     "@electron-forge/core-utils": "npm:^7.3.0"
-    "@electron-forge/maker-deb": "npm:^7.3.0"
+    "@electron-forge/maker-deb": "npm:^7.5.0"
     "@electron-forge/maker-dmg": "npm:^7.3.0"
     "@electron-forge/maker-squirrel": "npm:^7.3.0"
     "@electron-forge/maker-zip": "npm:^7.3.0"
@@ -3353,7 +3353,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron-forge/maker-deb@npm:^7.3.0":
+"@electron-forge/maker-deb@npm:^7.5.0":
   version: 7.5.0
   resolution: "@electron-forge/maker-deb@npm:7.5.0"
   dependencies:

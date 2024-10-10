@@ -88,6 +88,18 @@ const makers = [
       ],
     },
   },
+  !process.env.SKIP_BUNDLE && {
+    name: '@electron-forge/maker-deb',
+    config: {
+      bin: productName,
+      options: {
+        name: productName,
+        productName,
+        icon: iconX64PngPath,
+        mimeType: ['x-scheme-handler/affine'],
+      },
+    },
+  },
 ].filter(Boolean);
 
 /**
@@ -119,6 +131,7 @@ export default {
         schemes: [productName.toLowerCase()],
       },
     ],
+    executableName: productName,
     asar: true,
   },
   makers,
