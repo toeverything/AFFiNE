@@ -12,4 +12,5 @@ static
 web-static
 public
 packages/frontend/i18n/src/i18n-generated.ts
+packages/frontend/i18n/src/i18n-completenesses.json
 packages/frontend/templates/*.gen.ts

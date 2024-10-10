@@ -8,8 +8,11 @@ export interface SearchResLabelProps {
 export const SearchResLabel = ({ item }: SearchResLabelProps) => {
   const i18n = useI18n();
 
-  const text = !isI18nString(item.label)
-    ? i18n.t(item.label.title)
-    : i18n.t(item.label);
-  return <HighlightText text={text} start="<b>" end="</b>" />;
+  return (
+    <HighlightText
+      text={i18n.t(isI18nString(item.label) ? item.label : item.label.title)}
+      start="<b>"
+      end="</b>"
+    />
+  );
 };

@@ -23,7 +23,7 @@ import {
   SubscriptionStatus,
   UserFriendlyError,
 } from '@affine/graphql';
-import { i18nTime, Trans, useI18n } from '@affine/i18n';
+import { type I18nString, i18nTime, Trans, useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -43,17 +43,19 @@ import { BelieverCard } from '../plans/lifetime/believer-card';
 import { BelieverBenefits } from '../plans/lifetime/benefits';
 import * as styles from './style.css';
 
-enum DescriptionI18NKey {
-  Basic = 'com.affine.payment.billing-setting.current-plan.description',
-  Monthly = 'com.affine.payment.billing-setting.current-plan.description.monthly',
-  Yearly = 'com.affine.payment.billing-setting.current-plan.description.yearly',
-  Lifetime = 'com.affine.payment.billing-setting.current-plan.description.lifetime',
-}
+const DescriptionI18NKey = {
+  Basic: 'com.affine.payment.billing-setting.current-plan.description',
+  Monthly:
+    'com.affine.payment.billing-setting.current-plan.description.monthly',
+  Yearly: 'com.affine.payment.billing-setting.current-plan.description.yearly',
+  Lifetime:
+    'com.affine.payment.billing-setting.current-plan.description.lifetime',
+} as const satisfies { [key: string]: I18nString };
 
 const getMessageKey = (
   plan: SubscriptionPlan,
   recurring: SubscriptionRecurring
-): DescriptionI18NKey => {
+) => {
   if (plan !== SubscriptionPlan.Pro) {
     return DescriptionI18NKey.Basic;
   }

@@ -76,7 +76,7 @@ export class DocsQuickSearchSession
                   group: {
                     id: 'docs',
                     label: {
-                      key: 'com.affine.quicksearch.group.searchfor',
+                      i18nKey: 'com.affine.quicksearch.group.searchfor',
                       options: { query: truncate(query) },
                     },
                     score: 5,

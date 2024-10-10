@@ -43,13 +43,13 @@ interface PageItemProps
   right?: ReactNode;
 }
 const PageItem = ({ docId, right, className, ...attrs }: PageItemProps) => {
-  const t = useI18n();
+  const i18n = useI18n();
   const docDisplayMetaService = useService(DocDisplayMetaService);
   const Icon = useLiveData(
     docDisplayMetaService.icon$(docId, { compareDate: new Date() })
   );
   const titleMeta = useLiveData(docDisplayMetaService.title$(docId));
-  const title = typeof titleMeta === 'string' ? titleMeta : t[titleMeta.key]();
+  const title = i18n.t(titleMeta);
 
   return (
     <WorkbenchLink

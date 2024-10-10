@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "node build.mjs",
-    "dev": "node dev.mjs"
+    "dev": "node build.mjs --dev"
   },
   "keywords": [],
   "repository": {
@@ -16,6 +16,7 @@
     "url": "git+https://github.com/toeverything/AFFiNE.git"
   },
   "dependencies": {
+    "@affine/debug": "workspace:*",
     "@magic-works/i18n-codegen": "^0.6.0",
     "dayjs": "^1.11.11",
     "i18next": "^23.11.1",

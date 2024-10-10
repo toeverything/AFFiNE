@@ -208,7 +208,7 @@ export const ExplorerDocNode = ({
   return (
     <ExplorerTreeNode
       icon={Icon}
-      name={typeof docTitle === 'string' ? docTitle : t[docTitle.key]()}
+      name={t.t(docTitle)}
       dndData={dndData}
       onDrop={handleDropOnDoc}
       renameable

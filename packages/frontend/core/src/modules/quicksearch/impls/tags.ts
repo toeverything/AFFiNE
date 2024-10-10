@@ -11,7 +11,7 @@ import { QuickSearchTagIcon } from '../views/tag-icon';
 const group: QuickSearchGroup = {
   id: 'tags',
   label: {
-    key: 'com.affine.cmdk.affine.category.affine.tags',
+    i18nKey: 'com.affine.cmdk.affine.category.affine.tags',
   },
   score: 10,
 };
@@ -72,7 +72,7 @@ export class TagsQuickSearchSession
                 titleMatches ?? []
               ) ??
                 item.title) || {
-                key: 'Untitled',
+                i18nKey: 'Untitled',
               },
             },
             group,

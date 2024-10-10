@@ -90,7 +90,7 @@ jobs:
           electron-install: false
           full-cache: true
       - name: Run i18n codegen
-        run: yarn i18n-codegen gen
+        run: yarn workspace @affine/i18n build
       - name: Run ESLint
         run: yarn lint:eslint --max-warnings=0
       - name: Run Prettier

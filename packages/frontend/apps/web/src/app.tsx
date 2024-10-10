@@ -4,6 +4,7 @@ import { AppFallback } from '@affine/core/components/affine/app-container';
 import { Telemetry } from '@affine/core/components/telemetry';
 import { router } from '@affine/core/desktop/router';
 import { configureCommonModules } from '@affine/core/modules';
+import { I18nProvider } from '@affine/core/modules/i18n';
 import { configureLocalStorageStateStorageImpls } from '@affine/core/modules/storage';
 import { CustomThemeModifier } from '@affine/core/modules/theme-editor';
 import { configureIndexedDBUserspaceStorageProvider } from '@affine/core/modules/userspace';
@@ -13,7 +14,6 @@ import {
   configureIndexedDBWorkspaceEngineStorageProvider,
 } from '@affine/core/modules/workspace-engine';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
-import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
 import {
   Framework,
@@ -29,15 +29,6 @@ const cache = createEmotionCache();
 const future = {
   v7_startTransition: true,
 } as const;
-
-async function loadLanguage() {
-  const i18n = createI18n();
-  document.documentElement.lang = i18n.language;
-
-  await setUpLanguage(i18n);
-}
-
-let languageLoadingPromise: Promise<void> | null = null;
 
 const framework = new Framework();
 configureCommonModules(framework);
@@ -55,24 +46,22 @@ window.addEventListener('focus', () => {
 frameworkProvider.get(LifecycleService).applicationStart();
 
 export function App() {
-  if (!languageLoadingPromise) {
-    languageLoadingPromise = loadLanguage().catch(console.error);
-  }
-
   return (
     <Suspense>
       <FrameworkRoot framework={frameworkProvider}>
         <CacheProvider value={cache}>
-          <AffineContext store={getCurrentStore()}>
-            <Telemetry />
-            <CustomThemeModifier />
-            <GlobalLoading />
-            <RouterProvider
-              fallbackElement={<AppFallback key="RouterFallback" />}
-              router={router}
-              future={future}
-            />
-          </AffineContext>
+          <I18nProvider>
+            <AffineContext store={getCurrentStore()}>
+              <Telemetry />
+              <CustomThemeModifier />
+              <GlobalLoading />
+              <RouterProvider
+                fallbackElement={<AppFallback key="RouterFallback" />}
+                router={router}
+                future={future}
+              />
+            </AffineContext>
+          </I18nProvider>
         </CacheProvider>
       </FrameworkRoot>
     </Suspense>

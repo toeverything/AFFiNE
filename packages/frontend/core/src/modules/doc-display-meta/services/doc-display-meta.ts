@@ -159,7 +159,7 @@ export class DocDisplayMetaService extends Service {
       if (options?.originalTitle) return options.originalTitle;
 
       // empty title
-      if (!docTitle) return { key: 'Untitled' } as const;
+      if (!docTitle) return { i18nKey: 'Untitled' } as const;
 
       // reference
       if (options?.reference) return docTitle;

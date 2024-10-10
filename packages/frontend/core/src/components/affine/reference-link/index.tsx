@@ -33,7 +33,7 @@ export function AffinePageReference({
 }) {
   const docDisplayMetaService = useService(DocDisplayMetaService);
   const journalHelper = useJournalInfoHelper();
-  const t = useI18n();
+  const i18n = useI18n();
 
   let linkWithMode: DocMode | null = null;
   let linkToNode = false;
@@ -59,9 +59,7 @@ export function AffinePageReference({
   const el = (
     <>
       <Icon className={styles.pageReferenceIcon} />
-      <span className="affine-reference-title">
-        {typeof title === 'string' ? title : t[title.key]()}
-      </span>
+      <span className="affine-reference-title">{i18n.t(title)}</span>
     </>
   );
 
@@ -132,7 +130,7 @@ export function AffineSharedPageReference({
 }) {
   const docDisplayMetaService = useService(DocDisplayMetaService);
   const journalHelper = useJournalInfoHelper();
-  const t = useI18n();
+  const i18n = useI18n();
 
   let linkWithMode: DocMode | null = null;
   let linkToNode = false;
@@ -155,9 +153,7 @@ export function AffineSharedPageReference({
   const el = (
     <>
       <Icon className={styles.pageReferenceIcon} />
-      <span className="affine-reference-title">
-        {typeof title === 'string' ? title : t[title.key]()}
-      </span>
+      <span className="affine-reference-title">{i18n.t(title)}</span>
     </>
   );
 

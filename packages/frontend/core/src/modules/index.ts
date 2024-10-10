@@ -14,6 +14,7 @@ import { configureEditorSettingModule } from './editor-settting';
 import { configureExplorerModule } from './explorer';
 import { configureFavoriteModule } from './favorite';
 import { configureFindInPageModule } from './find-in-page';
+import { configureI18nModule } from './i18n';
 import { configureImportTemplateModule } from './import-template';
 import { configureNavigationModule } from './navigation';
 import { configureOrganizeModule } from './organize';
@@ -30,6 +31,7 @@ import { configureThemeEditorModule } from './theme-editor';
 import { configureUserspaceModule } from './userspace';
 
 export function configureCommonModules(framework: Framework) {
+  configureI18nModule(framework);
   configureInfraModules(framework);
   configureCollectionModule(framework);
   configureNavigationModule(framework);

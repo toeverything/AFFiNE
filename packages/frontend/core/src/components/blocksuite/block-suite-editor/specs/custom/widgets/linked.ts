@@ -39,7 +39,7 @@ export function createLinkedWidgetConfig(
           }).value;
           return {
             ...meta,
-            title: typeof title === 'string' ? title : I18n[title.key](),
+            title: I18n.t(title),
           };
         })
         .filter(({ title }) => isFuzzyMatch(title, query));

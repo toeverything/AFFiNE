@@ -6,6 +6,7 @@ import { Telemetry } from '@affine/core/components/telemetry';
 import { router } from '@affine/core/desktop/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
+import { I18nProvider } from '@affine/core/modules/i18n';
 import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
 import { CustomThemeModifier } from '@affine/core/modules/theme-editor';
 import { configureSqliteUserspaceStorageProvider } from '@affine/core/modules/userspace';
@@ -15,7 +16,6 @@ import {
   configureSqliteWorkspaceEngineStorageProvider,
 } from '@affine/core/modules/workspace-engine';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
-import { createI18n, setUpLanguage } from '@affine/i18n';
 import { CacheProvider } from '@emotion/react';
 import {
   Framework,
@@ -50,15 +50,6 @@ const future = {
   v7_startTransition: true,
 } as const;
 
-async function loadLanguage() {
-  const i18n = createI18n();
-  document.documentElement.lang = i18n.language;
-
-  await setUpLanguage(i18n);
-}
-
-let languageLoadingPromise: Promise<void> | null = null;
-
 const framework = new Framework();
 configureCommonModules(framework);
 configureElectronStateStorageImpls(framework);
@@ -76,29 +67,27 @@ window.addEventListener('focus', () => {
 frameworkProvider.get(LifecycleService).applicationStart();
 
 export function App() {
-  if (!languageLoadingPromise) {
-    languageLoadingPromise = loadLanguage().catch(console.error);
-  }
-
   return (
     <Suspense>
       <FrameworkRoot framework={frameworkProvider}>
         <CacheProvider value={cache}>
-          <AffineContext store={getCurrentStore()}>
-            <Telemetry />
-            <CustomThemeModifier />
-            <GlobalLoading />
-            <RouterProvider
-              fallbackElement={<AppFallback />}
-              router={router}
-              future={future}
-            />
-            {environment.isWindows && (
-              <div style={{ position: 'fixed', right: 0, top: 0, zIndex: 5 }}>
-                <WindowsAppControls />
-              </div>
-            )}
-          </AffineContext>
+          <I18nProvider>
+            <AffineContext store={getCurrentStore()}>
+              <Telemetry />
+              <CustomThemeModifier />
+              <GlobalLoading />
+              <RouterProvider
+                fallbackElement={<AppFallback />}
+                router={router}
+                future={future}
+              />
+              {environment.isWindows && (
+                <div style={{ position: 'fixed', right: 0, top: 0, zIndex: 5 }}>
+                  <WindowsAppControls />
+                </div>
+              )}
+            </AffineContext>
+          </I18nProvider>
         </CacheProvider>
       </FrameworkRoot>
     </Suspense>

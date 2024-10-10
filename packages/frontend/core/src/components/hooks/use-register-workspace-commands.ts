@@ -1,4 +1,5 @@
 import { AppSidebarService } from '@affine/core/modules/app-sidebar';
+import { I18nService } from '@affine/core/modules/i18n';
 import { useI18n } from '@affine/i18n';
 import type { AffineEditorContainer } from '@blocksuite/affine/presets';
 import { useService, WorkspaceService } from '@toeverything/infra';
@@ -11,6 +12,7 @@ import {
   registerAffineCommand,
   registerAffineCreationCommands,
   registerAffineHelpCommands,
+  registerAffineLanguageCommands,
   registerAffineLayoutCommands,
   registerAffineNavigationCommands,
   registerAffineSettingsCommands,
@@ -20,7 +22,6 @@ import { usePageHelper } from '../../components/blocksuite/block-suite-page-list
 import { CreateWorkspaceDialogService } from '../../modules/create-workspace';
 import { EditorSettingService } from '../../modules/editor-settting';
 import { CMDKQuickSearchService } from '../../modules/quicksearch/services/cmdk';
-import { useLanguageHelper } from './affine/use-language-helper';
 import { useActiveBlocksuiteEditor } from './use-block-suite-editor';
 import { useNavigateHelper } from './use-navigate-helper';
 
@@ -65,7 +66,6 @@ export function useRegisterWorkspaceCommands() {
   const t = useI18n();
   const theme = useTheme();
   const currentWorkspace = useService(WorkspaceService).workspace;
-  const languageHelper = useLanguageHelper();
   const pageHelper = usePageHelper(currentWorkspace.docCollection);
   const navigationHelper = useNavigateHelper();
   const [editor] = useActiveBlocksuiteEditor();
@@ -73,6 +73,7 @@ export function useRegisterWorkspaceCommands() {
   const editorSettingService = useService(EditorSettingService);
   const createWorkspaceDialogService = useService(CreateWorkspaceDialogService);
   const appSidebarService = useService(AppSidebarService);
+  const i18n = useService(I18nService).i18n;
 
   useEffect(() => {
     const unsub = registerCMDKCommand(cmdkQuickSearchService, editor);
@@ -114,14 +115,25 @@ export function useRegisterWorkspaceCommands() {
       store,
       t,
       theme,
-      languageHelper,
       editorSettingService,
     });
 
     return () => {
       unsub();
     };
-  }, [editorSettingService, languageHelper, store, t, theme]);
+  }, [editorSettingService, store, t, theme]);
+
+  // register AffineLanguageCommands
+  useEffect(() => {
+    const unsub = registerAffineLanguageCommands({
+      i18n,
+      t,
+    });
+
+    return () => {
+      unsub();
+    };
+  }, [i18n, t]);
 
   // register AffineLayoutCommands
   useEffect(() => {
