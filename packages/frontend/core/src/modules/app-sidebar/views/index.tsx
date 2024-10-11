@@ -128,9 +128,33 @@ export function AppSidebar({ children }: PropsWithChildren) {
     appSidebarService.setHovering(true);
   }, [appSidebarService]);
 
-  const onMouseLeave = useCallback(() => {
-    appSidebarService.setHovering(false);
-  }, [appSidebarService]);
+  const onMouseLeave = useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.relatedTarget as HTMLElement;
+
+      // should not close sidebar when hovering on dialog or menu
+      if (
+        !(target instanceof HTMLElement) ||
+        resizing ||
+        target?.closest(
+          '[role="dialog"], [role="menu"], modal-transition-container'
+        )
+      ) {
+        return;
+      }
+
+      // handle uncaught popper
+      const popper = document.querySelector(
+        '[data-radix-popper-content-wrapper]'
+      );
+      if (popper) {
+        return;
+      }
+
+      appSidebarService.setHovering(false);
+    },
+    [appSidebarService, resizing]
+  );
 
   return (
     <>
