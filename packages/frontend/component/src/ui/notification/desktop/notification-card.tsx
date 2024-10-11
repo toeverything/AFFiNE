@@ -1,25 +1,15 @@
 import { CloseIcon, InformationFillDuotoneIcon } from '@blocksuite/icons/rc';
-import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import { type HTMLAttributes, useCallback } from 'react';
+import { useCallback } from 'react';
 
-import { Button, IconButton } from '../button';
+import { Button, IconButton } from '../../button';
+import type { NotificationCardProps } from '../types';
+import { getCardVars } from '../utils';
 import * as styles from './styles.css';
-import type { Notification } from './types';
-import {
-  getActionTextColor,
-  getCardBorderColor,
-  getCardColor,
-  getCardForegroundColor,
-  getCloseIconColor,
-  getIconColor,
-} from './utils';
 
-export interface NotificationCardProps extends HTMLAttributes<HTMLDivElement> {
-  notification: Notification;
-}
-
-export const NotificationCard = ({ notification }: NotificationCardProps) => {
+export const DesktopNotificationCard = ({
+  notification,
+}: NotificationCardProps) => {
   const {
     theme = 'info',
     style = 'normal',
@@ -43,14 +33,7 @@ export const NotificationCard = ({ notification }: NotificationCardProps) => {
 
   return (
     <div
-      style={assignInlineVars({
-        [styles.cardColor]: getCardColor(style, theme),
-        [styles.cardBorderColor]: getCardBorderColor(style),
-        [styles.cardForeground]: getCardForegroundColor(style),
-        [styles.actionTextColor]: getActionTextColor(style, theme),
-        [styles.iconColor]: getIconColor(style, theme, iconColor),
-        [styles.closeIconColor]: getCloseIconColor(style),
-      })}
+      style={getCardVars(style, theme, iconColor)}
       data-with-icon={icon ? '' : undefined}
       {...rootAttrs}
       className={clsx(styles.card, rootAttrs?.className)}
