@@ -295,7 +295,7 @@ __metadata:
     "@atlaskit/pragmatic-drag-and-drop": "npm:^1.2.1"
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^1.0.3"
     "@blocksuite/affine": "npm:0.17.18"
-    "@blocksuite/icons": "npm:2.1.67"
+    "@blocksuite/icons": "npm:2.1.68"
     "@chromatic-com/storybook": "npm:^2.0.0"
     "@emotion/react": "npm:^11.11.4"
     "@emotion/styled": "npm:^11.11.5"
@@ -365,7 +365,7 @@ __metadata:
     "@affine/templates": "workspace:*"
     "@affine/track": "workspace:*"
     "@blocksuite/affine": "npm:0.17.18"
-    "@blocksuite/icons": "npm:2.1.67"
+    "@blocksuite/icons": "npm:2.1.68"
     "@dnd-kit/core": "npm:^6.1.0"
     "@dnd-kit/modifiers": "npm:^7.0.0"
     "@dnd-kit/sortable": "npm:^8.0.0"
@@ -2728,23 +2728,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:2.1.67":
-  version: 2.1.67
-  resolution: "@blocksuite/icons@npm:2.1.67"
-  peerDependencies:
-    "@types/react": ^18.0.25
-    lit: ^3.1.1
-    react: ^18.2.0
-  peerDependenciesMeta:
-    lit:
-      optional: true
-    react:
-      optional: true
-  checksum: 10/8fcc9e5038885c17207def172986210ba3d3fcf088bf9ac447e4dad337802db6b3e7facde8fca8a32d39aa5c1c8b5a7b739c3745d106897f2f84a39e374bf37e
-  languageName: node
-  linkType: hard
-
-"@blocksuite/icons@npm:^2.1.67":
+"@blocksuite/icons@npm:2.1.68, @blocksuite/icons@npm:^2.1.67":
   version: 2.1.68
   resolution: "@blocksuite/icons@npm:2.1.68"
   peerDependencies:
