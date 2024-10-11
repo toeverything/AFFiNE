@@ -2728,7 +2728,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:2.1.67, @blocksuite/icons@npm:^2.1.67":
+"@blocksuite/icons@npm:2.1.67":
   version: 2.1.67
   resolution: "@blocksuite/icons@npm:2.1.67"
   peerDependencies:
@@ -2741,6 +2741,22 @@ __metadata:
     react:
       optional: true
   checksum: 10/8fcc9e5038885c17207def172986210ba3d3fcf088bf9ac447e4dad337802db6b3e7facde8fca8a32d39aa5c1c8b5a7b739c3745d106897f2f84a39e374bf37e
+  languageName: node
+  linkType: hard
+
+"@blocksuite/icons@npm:^2.1.67":
+  version: 2.1.68
+  resolution: "@blocksuite/icons@npm:2.1.68"
+  peerDependencies:
+    "@types/react": ^18.0.25
+    lit: ^3.1.1
+    react: ^18.2.0
+  peerDependenciesMeta:
+    lit:
+      optional: true
+    react:
+      optional: true
+  checksum: 10/e95f1ba03ac6a7d19f02beb3b52d5686936b51e639118c810110b16d4c2299a142dfd50cd4cfaa857507aaf97c1fc3862ae0f7fc1a3271c52fa45740cdd601ff
   languageName: node
   linkType: hard
 
