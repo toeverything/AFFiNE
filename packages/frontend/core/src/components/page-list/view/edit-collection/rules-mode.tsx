@@ -15,12 +15,12 @@ import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
+import type { AllPageListConfig } from '../../../hooks/affine/use-all-page-list-config';
 import { FilterList } from '../../filter';
 import { List, ListScrollContainer } from '../../list';
 import type { ListItem } from '../../types';
 import { filterPageByRules } from '../../use-collection-manager';
 import { AffineShapeIcon } from '../affine-shape';
-import type { AllPageListConfig } from './edit-collection';
 import * as styles from './edit-collection.css';
 
 export const RulesMode = ({
