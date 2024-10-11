@@ -318,7 +318,7 @@ __metadata:
     "@storybook/react": "npm:^8.2.9"
     "@storybook/react-vite": "npm:^8.2.9"
     "@testing-library/react": "npm:^16.0.0"
-    "@toeverything/theme": "npm:^1.0.9"
+    "@toeverything/theme": "npm:^1.0.10"
     "@types/react": "npm:^18.2.75"
     "@types/react-dom": "npm:^18.2.24"
     "@vanilla-extract/css": "npm:^1.14.2"
@@ -382,7 +382,7 @@ __metadata:
     "@radix-ui/react-toolbar": "npm:^1.0.4"
     "@sentry/react": "npm:^8.0.0"
     "@testing-library/react": "npm:^16.0.0"
-    "@toeverything/theme": "npm:^1.0.9"
+    "@toeverything/theme": "npm:^1.0.10"
     "@types/animejs": "npm:^3.1.12"
     "@types/bytes": "npm:^3.1.4"
     "@types/image-blob-reduce": "npm:^4.1.4"
@@ -12843,10 +12843,10 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@toeverything/theme@npm:^1.0.8, @toeverything/theme@npm:^1.0.9":
-  version: 1.0.9
-  resolution: "@toeverything/theme@npm:1.0.9"
-  checksum: 10/4eb8e9e9ad899cca53ed957cd8f6508bb3a0bc0d9698c11c203bea6f3dcbfbbf18370c69a690612e3b16ac1753c5282349ba218d65215372776dc7d93cee6ce4
+"@toeverything/theme@npm:^1.0.10, @toeverything/theme@npm:^1.0.8":
+  version: 1.0.10
+  resolution: "@toeverything/theme@npm:1.0.10"
+  checksum: 10/9d83bb4199a50a9079f7c0ca0efe5afbe92b405fa7ed95a9b1631d0657f36a1e2b6b64511ea7b1cced7ce0c78ae01d8aba7a328cf69da55176aea9c25d6d61ab
   languageName: node
   linkType: hard
 

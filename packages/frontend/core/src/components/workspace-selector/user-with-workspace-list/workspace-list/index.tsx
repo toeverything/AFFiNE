@@ -10,6 +10,8 @@ import type { WorkspaceMetadata } from '@toeverything/infra';
 import {
   useLiveData,
   useService,
+  useServiceOptional,
+  WorkspaceService,
   WorkspacesService,
 } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
@@ -210,12 +212,15 @@ const SortableWorkspaceItem = ({
     onClick(workspaceMetadata);
   }, [onClick, workspaceMetadata]);
 
+  const currentWorkspace = useServiceOptional(WorkspaceService)?.workspace;
+
   return (
     <WorkspaceCard
       className={styles.workspaceCard}
       workspaceMetadata={workspaceMetadata}
       onClick={handleClick}
       avatarSize={28}
+      active={currentWorkspace?.id === workspaceMetadata.id}
       onClickOpenSettings={onSettingClick}
       onClickEnableCloud={onEnableCloudClick}
     />

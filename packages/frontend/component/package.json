@@ -38,7 +38,7 @@
     "@radix-ui/react-toast": "^1.1.5",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@radix-ui/react-visually-hidden": "^1.1.0",
-    "@toeverything/theme": "^1.0.9",
+    "@toeverything/theme": "^1.0.10",
     "@vanilla-extract/dynamic": "^2.1.0",
     "check-password-strength": "^2.0.10",
     "clsx": "^2.1.0",

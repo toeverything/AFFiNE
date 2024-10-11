@@ -10,6 +10,7 @@ import {
   ArrowDownSmallIcon,
   CloudWorkspaceIcon,
   CollaborationIcon,
+  DoneIcon,
   InformationFillDuotoneIcon,
   LocalWorkspaceIcon,
   NoNetworkIcon,
@@ -240,6 +241,7 @@ export const WorkspaceCard = forwardRef<
     avatarSize?: number;
     disable?: boolean;
     hideCollaborationIcon?: boolean;
+    active?: boolean;
     onClickOpenSettings?: (workspaceMetadata: WorkspaceMetadata) => void;
     onClickEnableCloud?: (workspaceMetadata: WorkspaceMetadata) => void;
   }
@@ -255,6 +257,7 @@ export const WorkspaceCard = forwardRef<
       className,
       disable,
       hideCollaborationIcon,
+      active,
       ...props
     },
     ref
@@ -284,53 +287,60 @@ export const WorkspaceCard = forwardRef<
         ref={ref}
         {...props}
       >
-        {information ? (
-          <WorkspaceAvatar
-            meta={workspaceMetadata}
-            rounded={3}
-            data-testid="workspace-avatar"
-            size={avatarSize}
-            name={name}
-            colorfulFallback
-          />
-        ) : (
-          <Skeleton width={avatarSize} height={avatarSize} />
-        )}
-        <div className={styles.workspaceTitleContainer}>
+        <div className={styles.infoContainer}>
           {information ? (
-            showSyncStatus ? (
-              <WorkspaceSyncInfo
-                workspaceProfile={information}
-                workspaceMetadata={workspaceMetadata}
-              />
-            ) : (
-              <span className={styles.workspaceName}>{information.name}</span>
-            )
+            <WorkspaceAvatar
+              meta={workspaceMetadata}
+              rounded={3}
+              data-testid="workspace-avatar"
+              size={avatarSize}
+              name={name}
+              colorfulFallback
+            />
           ) : (
-            <Skeleton width={100} />
+            <Skeleton width={avatarSize} height={avatarSize} />
           )}
-        </div>
-        <div className={styles.showOnCardHover}>
-          {onClickEnableCloud &&
-          workspaceMetadata.flavour === WorkspaceFlavour.LOCAL ? (
-            <Button
-              className={styles.enableCloudButton}
-              onClick={onEnableCloud}
-            >
-              Enable Cloud
-            </Button>
-          ) : null}
-          {hideCollaborationIcon || information?.isOwner ? null : (
-            <CollaborationIcon />
-          )}
-          {onClickOpenSettings && (
-            <div className={styles.settingButton} onClick={onOpenSettings}>
-              <SettingsIcon width={16} height={16} />
-            </div>
-          )}
+          <div className={styles.workspaceTitleContainer}>
+            {information ? (
+              showSyncStatus ? (
+                <WorkspaceSyncInfo
+                  workspaceProfile={information}
+                  workspaceMetadata={workspaceMetadata}
+                />
+              ) : (
+                <span className={styles.workspaceName}>{information.name}</span>
+              )
+            ) : (
+              <Skeleton width={100} />
+            )}
+          </div>
+          <div className={styles.showOnCardHover}>
+            {onClickEnableCloud &&
+            workspaceMetadata.flavour === WorkspaceFlavour.LOCAL ? (
+              <Button
+                className={styles.enableCloudButton}
+                onClick={onEnableCloud}
+              >
+                Enable Cloud
+              </Button>
+            ) : null}
+            {hideCollaborationIcon || information?.isOwner ? null : (
+              <CollaborationIcon className={styles.collaborationIcon} />
+            )}
+            {onClickOpenSettings && (
+              <div className={styles.settingButton} onClick={onOpenSettings}>
+                <SettingsIcon width={16} height={16} />
+              </div>
+            )}
+          </div>
+          {showArrowDownIcon && <ArrowDownSmallIcon />}
         </div>
 
-        {showArrowDownIcon && <ArrowDownSmallIcon />}
+        {active && (
+          <div className={styles.activeContainer}>
+            <DoneIcon className={styles.activeIcon} />{' '}
+          </div>
+        )}
       </div>
     );
   }
