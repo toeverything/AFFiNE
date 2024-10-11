@@ -21,7 +21,10 @@ test('should create a page with a local first avatar and remove it', async ({
   await page.getByTestId('create-workspace-create-button').click();
   await page.waitForTimeout(1000);
   await page.getByTestId('workspace-name').click();
-  await page.getByTestId('workspace-card').nth(1).click();
+  await page
+    .getByTestId('workspace-card')
+    .nth(1)
+    .click({ position: { x: 10, y: 10 } });
   await page.getByTestId('settings-modal-trigger').click();
   await page.getByTestId('current-workspace-label').click();
   await page
