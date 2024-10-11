@@ -10,7 +10,7 @@ import {
   ActionForbidden,
   getRequestResponseFromContext,
 } from '../../fundamentals';
-import { FeatureManagementService } from '../features';
+import { FeatureManagementService } from '../features/management';
 
 @Injectable()
 export class AdminGuard implements CanActivate, OnModuleInit {

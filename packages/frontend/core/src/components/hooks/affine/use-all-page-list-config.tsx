@@ -1,14 +1,24 @@
 import { toast } from '@affine/component';
 import { useBlockSuiteDocMeta } from '@affine/core/components/hooks/use-block-suite-page-meta';
-import type { AllPageListConfig } from '@affine/core/components/page-list';
-import { FavoriteTag } from '@affine/core/components/page-list';
+import { FavoriteTag } from '@affine/core/components/page-list/components/favorite-tag';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { ShareDocsListService } from '@affine/core/modules/share-doc';
 import { PublicPageMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
-import type { DocMeta } from '@blocksuite/affine/store';
+import type { DocCollection, DocMeta } from '@blocksuite/affine/store';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
-import { useCallback, useEffect, useMemo } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo } from 'react';
+
+export type AllPageListConfig = {
+  allPages: DocMeta[];
+  docCollection: DocCollection;
+  /**
+   * Return `undefined` if the page is not public
+   */
+  getPublicMode: (id: string) => undefined | 'page' | 'edgeless';
+  getPage: (id: string) => DocMeta | undefined;
+  favoriteRender: (page: DocMeta) => ReactNode;
+};
 
 /**
  * @deprecated very poor performance

@@ -3,8 +3,10 @@ import { useMount } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 
 import { CreateCollectionModal } from './create-collection';
-import type { EditCollectionMode } from './edit-collection/edit-collection';
-import { EditCollectionModal } from './edit-collection/edit-collection';
+import {
+  EditCollectionModal,
+  type EditCollectionMode,
+} from './edit-collection/edit-collection';
 
 export const useEditCollection = () => {
   const [data, setData] = useState<{

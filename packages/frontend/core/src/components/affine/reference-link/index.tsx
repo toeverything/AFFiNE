@@ -1,9 +1,7 @@
 import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
-import {
-  PeekViewService,
-  useInsidePeekView,
-} from '@affine/core/modules/peek-view';
+import { PeekViewService } from '@affine/core/modules/peek-view/services/peek-view';
+import { useInsidePeekView } from '@affine/core/modules/peek-view/view/modal-container';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
