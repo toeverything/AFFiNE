@@ -2,7 +2,6 @@ import type { EditorHost } from '@blocksuite/affine/block-std';
 import type {
   AffineAIPanelWidget,
   AIItemConfig,
-  EdgelessCopilotWidget,
   EdgelessElementToolbarWidget,
   EdgelessRootService,
   MindmapElementModel,
@@ -46,6 +45,7 @@ import {
   getEdgelessService,
   getSurfaceElementFromEditor,
 } from '../utils/selection-utils';
+import { getTracker } from '../utils/track';
 import { EXCLUDING_INSERT_ACTIONS, generatingStages } from './consts';
 import type { CtxRecord } from './types';
 
@@ -77,10 +77,7 @@ export function getTriggerEntry(host: EditorHost) {
   return copilotWidget.visible ? 'selection' : 'toolbar';
 }
 
-export function discard(
-  panel: AffineAIPanelWidget,
-  _: EdgelessCopilotWidget
-): AIItemConfig {
+export function discard(panel: AffineAIPanelWidget): AIItemConfig {
   return {
     name: 'Discard',
     icon: DeleteIcon,
@@ -91,11 +88,15 @@ export function discard(
   };
 }
 
-export function retry(panel: AffineAIPanelWidget): AIItemConfig {
+export function retry<T extends keyof BlockSuitePresets.AIActions>(
+  panel: AffineAIPanelWidget,
+  id: T
+): AIItemConfig {
   return {
     name: 'Retry',
     icon: ResetIcon,
     handler: () => {
+      getTracker(panel.host).retryAction({ action: id });
       reportResponse('result:retry');
       panel.generate();
     },
@@ -144,6 +145,7 @@ export function createInsertResp<T extends keyof BlockSuitePresets.AIActions>(
         );
       },
       handler: () => {
+        getTracker(host).finishAction({ action: id });
         reportResponse('result:insert');
         handler(host, ctx);
         const panel = getAIPanel(host);
@@ -165,6 +167,7 @@ export function asCaption<T extends keyof BlockSuitePresets.AIActions>(
       return id === 'generateCaption' && !!panel.answer;
     },
     handler: () => {
+      getTracker(host).finishAction({ action: id });
       reportResponse('result:use-as-caption');
       const panel = getAIPanel(host);
       const caption = panel.answer;
@@ -583,6 +586,7 @@ export function actionToResponse<T extends keyof BlockSuitePresets.AIActions>(
             name: 'Continue in chat',
             icon: ChatWithAIIcon,
             handler: () => {
+              getTracker(host).finishAction({ action: id });
               reportResponse('result:continue-in-chat');
               const panel = getAIPanel(host);
               AIProvider.slots.requestOpenWithChat.emit({ host });
@@ -591,8 +595,8 @@ export function actionToResponse<T extends keyof BlockSuitePresets.AIActions>(
           },
           ...getInsertAndReplaceHandler(id, host, ctx, variants),
           asCaption(id, host),
-          retry(getAIPanel(host)),
-          discard(getAIPanel(host), getEdgelessCopilotWidget(host)),
+          retry(getAIPanel(host), id),
+          discard(getAIPanel(host)),
         ],
       },
     ],
@@ -624,14 +628,17 @@ export function actionToErrorResponse<
 ): ErrorConfig {
   return {
     upgrade: () => {
+      getTracker(host).failureAction({ action: id });
       AIProvider.slots.requestUpgradePlan.emit({ host: panel.host });
       panel.hide();
     },
     login: () => {
+      getTracker(host).failureAction({ action: id });
       AIProvider.slots.requestLogin.emit({ host: panel.host });
       panel.hide();
     },
     cancel: () => {
+      getTracker(host).discardAction({ action: id });
       panel.hide();
     },
     responses: [
@@ -641,10 +648,7 @@ export function actionToErrorResponse<
       },
       {
         name: '',
-        items: [
-          retry(getAIPanel(host)),
-          discard(getAIPanel(host), getEdgelessCopilotWidget(host)),
-        ],
+        items: [retry(getAIPanel(host), id), discard(getAIPanel(host))],
       },
     ],
   };
