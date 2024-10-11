@@ -121,6 +121,7 @@ console.info(flags);
 if (!flags.static) {
   spawn('yarn', ['workspace', '@affine/i18n', 'dev'], {
     stdio: 'inherit',
+    shell: true,
   });
 }
 
