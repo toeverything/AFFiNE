@@ -90,6 +90,7 @@ export function AppSidebar({ children }: PropsWithChildren) {
     }
 
     const dOnResize = debounce(onResize, 50);
+    onResize();
     window.addEventListener('resize', dOnResize);
     return () => {
       window.removeEventListener('resize', dOnResize);
