@@ -36,7 +36,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -b tsconfig.json",
-    "postinstall": "node ./scripts/check-version.mjs && yarn i18n-codegen gen && yarn husky install",
+    "postinstall": "node ./scripts/check-version.mjs && yarn workspace @affine/i18n i18n-codegen gen && yarn husky install",
     "prepare": "husky"
   },
   "lint-staged": {
