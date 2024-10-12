@@ -90,7 +90,7 @@ jobs:
           electron-install: false
           full-cache: true
       - name: Run i18n codegen
-        run: yarn i18n-codegen gen
+        run: yarn workspace @affine/i18n build
       - name: Run ESLint
         run: yarn lint:eslint --max-warnings=0
       - name: Run Prettier
@@ -567,7 +567,7 @@ jobs:
         if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}
         run: yarn workspace @affine-test/affine-desktop e2e
 
-      - name: Make bundle
+      - name: Make bundle (macOS)
         if: ${{ matrix.spec.target == 'aarch64-apple-darwin' }}
         env:
           SKIP_BUNDLE: true
@@ -575,8 +575,15 @@ jobs:
           HOIST_NODE_MODULES: 1
         run: yarn workspace @affine/electron package --platform=darwin --arch=arm64
 
-      - name: Make AppImage
-        run: yarn workspace @affine/electron make --platform=linux --arch=x64
+      - name: Make Bundle (Linux)
+        run: |
+          sudo add-apt-repository universe
+          sudo apt install -y libfuse2 elfutils flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak update
+          # some flatpak deps need git protocol.file.allow
+          git config --global protocol.file.allow always
+          yarn workspace @affine/electron make --platform=linux --arch=x64
         if: ${{ matrix.spec.target == 'x86_64-unknown-linux-gnu' }}
         env:
           SKIP_WEB_BUILD: 1

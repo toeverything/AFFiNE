@@ -1,18 +1,10 @@
 import './setup';
 
 import { apis, events } from '@affine/electron-api';
-import { createI18n, setUpLanguage } from '@affine/i18n';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './app';
-
-function loadLanguage() {
-  const i18n = createI18n();
-  document.documentElement.lang = i18n.language;
-
-  setUpLanguage(i18n).catch(console.error);
-}
 
 async function main() {
   const handleMaximized = (maximized: boolean | undefined) => {
@@ -31,7 +23,6 @@ async function main() {
   events?.ui.onFullScreen(handleFullscreen);
   events?.ui.onTabShellViewActiveChange(handleActive);
 
-  loadLanguage();
   mountApp();
 }
 

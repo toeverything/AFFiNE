@@ -192,6 +192,7 @@ export interface CreateCheckoutSessionInput {
   plan: InputMaybe<SubscriptionPlan>;
   recurring: InputMaybe<SubscriptionRecurring>;
   successCallbackLink: Scalars['String']['input'];
+  variant: InputMaybe<SubscriptionVariant>;
 }
 
 export interface CreateCopilotPromptInput {
@@ -291,7 +292,7 @@ export enum ErrorNames {
   CANNOT_DELETE_ALL_ADMIN_ACCOUNT = 'CANNOT_DELETE_ALL_ADMIN_ACCOUNT',
   CANNOT_DELETE_OWN_ACCOUNT = 'CANNOT_DELETE_OWN_ACCOUNT',
   CANT_CHANGE_SPACE_OWNER = 'CANT_CHANGE_SPACE_OWNER',
-  CANT_UPDATE_LIFETIME_SUBSCRIPTION = 'CANT_UPDATE_LIFETIME_SUBSCRIPTION',
+  CANT_UPDATE_ONETIME_PAYMENT_SUBSCRIPTION = 'CANT_UPDATE_ONETIME_PAYMENT_SUBSCRIPTION',
   CAPTCHA_VERIFICATION_FAILED = 'CAPTCHA_VERIFICATION_FAILED',
   COPILOT_ACTION_TAKEN = 'COPILOT_ACTION_TAKEN',
   COPILOT_FAILED_TO_CREATE_MESSAGE = 'COPILOT_FAILED_TO_CREATE_MESSAGE',
@@ -1063,6 +1064,11 @@ export enum SubscriptionStatus {
   Unpaid = 'Unpaid',
 }
 
+export enum SubscriptionVariant {
+  EA = 'EA',
+  Onetime = 'Onetime',
+}
+
 export interface UnknownOauthProviderDataType {
   __typename?: 'UnknownOauthProviderDataType';
   name: Scalars['String']['output'];
@@ -1135,6 +1141,7 @@ export interface UserSubscription {
   trialEnd: Maybe<Scalars['DateTime']['output']>;
   trialStart: Maybe<Scalars['DateTime']['output']>;
   updatedAt: Scalars['DateTime']['output'];
+  variant: Maybe<SubscriptionVariant>;
 }
 
 export interface UserType {
@@ -2204,6 +2211,7 @@ export type SubscriptionQuery = {
       end: string | null;
       nextBillAt: string | null;
       canceledAt: string | null;
+      variant: SubscriptionVariant | null;
     }>;
   } | null;
 };

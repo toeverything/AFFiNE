@@ -1,8 +1,9 @@
+import { spawn } from 'node:child_process';
+
 import webpack from 'webpack';
 
 import { getCwdFromDistribution } from '../config/cwd.cjs';
 import type { BuildFlags } from '../config/index.js';
-import { buildI18N } from '../util/i18n.js';
 import { createWebpackConfig } from '../webpack/webpack.config.js';
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -48,7 +49,9 @@ const flags = {
   static: false,
 } satisfies BuildFlags;
 
-buildI18N();
+spawn('yarn', ['workspace', '@affine/i18n', 'build'], {
+  stdio: 'inherit',
+});
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 webpack(createWebpackConfig(cwd!, flags), (err, stats) => {

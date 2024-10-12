@@ -8,6 +8,6 @@
     "outDir": "lib/resources",
     "noEmit": false
   },
-  "include": ["./src/resources/**/*.ts", "./src/resources/**/*.json"],
+  "include": ["./src/resources/**/*.ts", "./src/**/*.json"],
   "exclude": ["dist", "lib"]
 }

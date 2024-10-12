@@ -14,6 +14,7 @@ public
 packages/backend/server/src/schema.gql
 packages/backend/server/src/fundamentals/error/errors.gen.ts
 packages/frontend/i18n/src/i18n-generated.ts
+packages/frontend/i18n/src/i18n-completenesses.json
 packages/frontend/graphql/src/graphql/index.ts
 tests/affine-legacy/**/static
 .yarnrc.yml

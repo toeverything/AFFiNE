@@ -42,7 +42,7 @@ export class ExternalLinksQuickSearchSession
         source: 'external-link',
         icon: LinkIcon,
         label: {
-          key: 'com.affine.cmdk.affine.insert-link',
+          i18nKey: 'com.affine.cmdk.affine.insert-link',
         },
         payload: { url: query },
       } as QuickSearchItem<'external-link', ExternalLinkPayload>,

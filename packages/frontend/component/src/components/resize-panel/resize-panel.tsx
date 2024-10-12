@@ -1,13 +1,6 @@
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { forwardRef, useCallback, useLayoutEffect, useRef } from 'react';
 import { useTransition } from 'react-transition-state';
 
 import * as styles from './resize-panel.css';
@@ -129,17 +122,6 @@ const ResizeHandle = ({
   );
 };
 
-// delay initial animation to avoid flickering
-function useEnableAnimation() {
-  const [enable, setEnable] = useState(false);
-  useEffect(() => {
-    window.setTimeout(() => {
-      setEnable(true);
-    }, 500);
-  }, []);
-  return enable;
-}
-
 const animationTimeout = 300;
 
 export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
@@ -152,7 +134,7 @@ export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
       maxWidth,
       width,
       floating,
-      enableAnimation: _enableAnimation = true,
+      enableAnimation = true,
       open,
       unmountOnExit,
       onOpen,
@@ -165,7 +147,6 @@ export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
     },
     ref
   ) {
-    const enableAnimation = useEnableAnimation() && _enableAnimation;
     const safeWidth = Math.min(maxWidth, Math.max(minWidth, width));
     const [{ status }, toggle] = useTransition({
       timeout: animationTimeout,

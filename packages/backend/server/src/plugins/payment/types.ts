@@ -17,8 +17,9 @@ export enum SubscriptionPlan {
   SelfHosted = 'selfhosted',
 }
 
-export enum SubscriptionPriceVariant {
+export enum SubscriptionVariant {
   EA = 'earlyaccess',
+  Onetime = 'onetime',
 }
 
 // see https://stripe.com/docs/api/subscriptions/object#subscription_object-status

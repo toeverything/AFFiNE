@@ -4,7 +4,7 @@ import { SubscriptionRecurring } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 
-import { Upgrade } from '../plan-card';
+import { RedeemCode, Upgrade } from '../plan-card';
 import { BelieverCard } from './believer-card';
 import { BelieverBenefits } from './benefits';
 import * as styles from './style.css';
@@ -17,6 +17,7 @@ export const LifetimePlan = () => {
     subscriptionService.prices.readableLifetimePrice$
   );
   const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
+  const isOnetime = useLiveData(subscriptionService.subscription.isOnetime$);
 
   if (!readableLifetimePrice) return null;
 
@@ -36,6 +37,8 @@ export const LifetimePlan = () => {
         <Button className={styles.purchase} size="default" disabled>
           {t['com.affine.payment.lifetime.purchased']()}
         </Button>
+      ) : isOnetime ? (
+        <RedeemCode className={styles.purchase} size="default" />
       ) : (
         <Upgrade
           className={styles.purchase}

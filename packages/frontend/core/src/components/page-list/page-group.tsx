@@ -278,10 +278,10 @@ function tagIdToTagOption(
 }
 
 const PageTitle = ({ id }: { id: string }) => {
-  const t = useI18n();
+  const i18n = useI18n();
   const docDisplayMetaService = useService(DocDisplayMetaService);
   const title = useLiveData(docDisplayMetaService.title$(id));
-  return typeof title === 'string' ? title : t[title.key]();
+  return i18n.t(title);
 };
 
 const UnifiedPageIcon = ({ id }: { id: string }) => {

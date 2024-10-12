@@ -131,17 +131,22 @@ jobs:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
 
-      - name: Install fuse on Linux (for patching AppImage)
+      - name: Install additional dependencies on Linux
         if: ${{ matrix.spec.platform == 'linux' }}
         run: |
           sudo add-apt-repository universe
-          sudo apt install libfuse2 -y
+          sudo apt install -y libfuse2 elfutils flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak update
+          # some flatpak deps need git protocol.file.allow
+          git config --global protocol.file.allow always
 
       - name: make
         run: yarn workspace @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
         env:
           SKIP_WEB_BUILD: 1
           HOIST_NODE_MODULES: 1
+          DEBUG: '*'
 
       - name: signing DMG
         if: ${{ matrix.spec.platform == 'darwin' }}
@@ -160,6 +165,8 @@ jobs:
           mkdir -p builds
           mv packages/frontend/apps/electron/out/*/make/zip/linux/x64/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
           mv packages/frontend/apps/electron/out/*/make/*.AppImage ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
+          mv packages/frontend/apps/electron/out/*/make/deb/x64/*.deb ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.deb
+          mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.flatpak
 
       - uses: actions/attest-build-provenance@v1
         if: ${{ matrix.spec.platform == 'darwin' }}
@@ -174,7 +181,7 @@ jobs:
           subject-path: |
             ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
             ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
-
+            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.deb
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -411,6 +418,8 @@ jobs:
             ./*.dmg
             ./*.exe
             ./*.appimage
+            ./*.deb
+            ./*.flatpak
             ./*.apk
             ./*.yml
       - name: Create Nightly Release Draft
@@ -433,5 +442,7 @@ jobs:
             ./*.dmg
             ./*.exe
             ./*.appimage
+            ./*.deb
             ./*.apk
+            ./*.flatpak
             ./*.yml

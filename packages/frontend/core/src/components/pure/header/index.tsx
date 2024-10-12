@@ -18,14 +18,8 @@ interface HeaderPros {
 export const Header = ({ left, center, right }: HeaderPros) => {
   const appSidebarService = useService(AppSidebarService).sidebar;
   const open = useLiveData(appSidebarService.open$);
-  const appSidebarFloating = useLiveData(appSidebarService.responsiveFloating$);
   return (
-    <div
-      className={clsx(style.header)}
-      data-open={open}
-      data-sidebar-floating={appSidebarFloating}
-      data-testid="header"
-    >
+    <div className={clsx(style.header)} data-open={open} data-testid="header">
       <div className={clsx(style.headerSideContainer)}>
         <div className={clsx(style.headerItem, 'left')}>
           <div>{left}</div>

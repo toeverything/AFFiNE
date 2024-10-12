@@ -332,9 +332,11 @@ model UserSubscription {
   id                   Int       @id @default(autoincrement()) @db.Integer
   userId               String    @map("user_id") @db.VarChar
   plan                 String    @db.VarChar(20)
-  // yearly/monthly
+  // yearly/monthly/lifetime
   recurring            String    @db.VarChar(20)
-  // subscription.id, null for linefetime payment
+  // onetime subscription or anything else
+  variant              String?    @db.VarChar(20)
+  // subscription.id, null for linefetime payment or one time payment subscription
   stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
   // subscription.status, active/past_due/canceled/unpaid...
   status               String    @db.VarChar(20)

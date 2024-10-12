@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -8,7 +9,6 @@ import WebpackDevServer from 'webpack-dev-server';
 
 import { getCwdFromDistribution, projectRoot } from '../config/cwd.cjs';
 import type { BuildFlags } from '../config/index.js';
-import { watchI18N } from '../util/i18n.js';
 import { createWebpackConfig } from '../webpack/webpack.config.js';
 
 const flags: BuildFlags = {
@@ -119,7 +119,10 @@ if (flags.distribution === 'desktop') {
 console.info(flags);
 
 if (!flags.static) {
-  watchI18N();
+  spawn('yarn', ['workspace', '@affine/i18n', 'dev'], {
+    stdio: 'inherit',
+    shell: true,
+  });
 }
 
 try {

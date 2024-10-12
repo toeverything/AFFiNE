@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { globalStyle, style } from '@vanilla-extract/css';
 
 const wsSlideAnim = {
@@ -17,11 +18,22 @@ export const container = style({
   outline: 'none',
   width: '100%',
   maxWidth: 500,
-  color: cssVar('textPrimaryColor'),
+  color: cssVarV2('text/primary'),
   ':hover': {
     cursor: 'pointer',
     background: cssVar('hoverColor'),
   },
+});
+export const infoContainer = style({
+  width: 0,
+  flex: 1,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  position: 'relative',
+});
+export const activeContainer = style({
+  flexShrink: 0,
 });
 
 export const disable = style({
@@ -134,6 +146,11 @@ export const enableCloudButton = style({
   },
 });
 
+export const collaborationIcon = style({
+  color: cssVarV2('icon/secondary'),
+  fontSize: 14,
+});
+
 export const settingButton = style({
   transition: 'all 0.13s ease',
   width: 0,
@@ -144,6 +161,7 @@ export const settingButton = style({
   alignItems: 'center',
   justifyContent: 'center',
   placeItems: 'center',
+  color: cssVarV2('icon/primary'),
 
   borderRadius: 4,
   boxShadow: 'none',
@@ -153,9 +171,8 @@ export const settingButton = style({
   selectors: {
     [`.${container}:hover &`]: {
       width: 20,
-      marginLeft: 8,
-      boxShadow: cssVar('shadow1'),
-      background: cssVar('white80'),
+      boxShadow: cssVar('buttonShadow'),
+      background: cssVarV2('button/secondary'),
     },
   },
 });
@@ -171,4 +188,9 @@ export const showOnCardHover = style({
       position: 'relative',
     },
   },
+});
+
+export const activeIcon = style({
+  fontSize: 14,
+  color: cssVarV2('icon/activated'),
 });

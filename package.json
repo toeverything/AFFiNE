@@ -36,7 +36,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -b tsconfig.json",
-    "postinstall": "node ./scripts/check-version.mjs && yarn i18n-codegen gen && yarn husky install",
+    "postinstall": "node ./scripts/check-version.mjs && yarn workspace @affine/i18n i18n-codegen gen && yarn husky install",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -85,7 +85,7 @@
     "lint-staged": "^15.2.2",
     "msw": "^2.3.0",
     "nx": "^19.0.0",
-    "oxlint": "0.9.6",
+    "oxlint": "0.9.10",
     "prettier": "^3.3.3",
     "semver": "^7.6.0",
     "serve": "^14.2.1",

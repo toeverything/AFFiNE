@@ -370,10 +370,10 @@ export function patchQuickSearchService(framework: FrameworkProvider) {
           },
           {
             label: {
-              key: 'com.affine.cmdk.insert-links',
+              i18nKey: 'com.affine.cmdk.insert-links',
             },
             placeholder: {
-              key: 'com.affine.cmdk.docs.placeholder',
+              i18nKey: 'com.affine.cmdk.docs.placeholder',
             },
           }
         )

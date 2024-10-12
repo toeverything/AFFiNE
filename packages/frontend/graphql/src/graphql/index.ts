@@ -1037,6 +1037,7 @@ query subscription {
       end
       nextBillAt
       canceledAt
+      variant
     }
   }
 }`,

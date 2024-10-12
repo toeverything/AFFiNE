@@ -1,9 +1,7 @@
 import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
-import {
-  PeekViewService,
-  useInsidePeekView,
-} from '@affine/core/modules/peek-view';
+import { PeekViewService } from '@affine/core/modules/peek-view/services/peek-view';
+import { useInsidePeekView } from '@affine/core/modules/peek-view/view/modal-container';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
@@ -33,7 +31,7 @@ export function AffinePageReference({
 }) {
   const docDisplayMetaService = useService(DocDisplayMetaService);
   const journalHelper = useJournalInfoHelper();
-  const t = useI18n();
+  const i18n = useI18n();
 
   let linkWithMode: DocMode | null = null;
   let linkToNode = false;
@@ -52,14 +50,14 @@ export function AffinePageReference({
       referenceToNode: linkToNode,
     })
   );
-  const title = useLiveData(docDisplayMetaService.title$(pageId));
+  const title = useLiveData(
+    docDisplayMetaService.title$(pageId, { reference: true })
+  );
 
   const el = (
     <>
       <Icon className={styles.pageReferenceIcon} />
-      <span className="affine-reference-title">
-        {typeof title === 'string' ? title : t[title.key]()}
-      </span>
+      <span className="affine-reference-title">{i18n.t(title)}</span>
     </>
   );
 
@@ -130,7 +128,7 @@ export function AffineSharedPageReference({
 }) {
   const docDisplayMetaService = useService(DocDisplayMetaService);
   const journalHelper = useJournalInfoHelper();
-  const t = useI18n();
+  const i18n = useI18n();
 
   let linkWithMode: DocMode | null = null;
   let linkToNode = false;
@@ -153,9 +151,7 @@ export function AffineSharedPageReference({
   const el = (
     <>
       <Icon className={styles.pageReferenceIcon} />
-      <span className="affine-reference-title">
-        {typeof title === 'string' ? title : t[title.key]()}
-      </span>
+      <span className="affine-reference-title">{i18n.t(title)}</span>
     </>
   );
 

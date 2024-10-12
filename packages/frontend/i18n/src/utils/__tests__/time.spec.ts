@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'vitest';
 
-import { createI18n, I18n } from '../../';
+import { getOrCreateI18n, I18n } from '../../';
 import { i18nTime } from '../time';
 
 // Intl api is not available in github action, skip the test
 describe('humanTime', () => {
   test('absolute', async () => {
-    createI18n();
+    getOrCreateI18n();
     expect(i18nTime('2024-10-10 13:30:28')).toBe('Oct 10, 2024, 1:30:28 PM');
     expect(
       i18nTime('2024-10-10 13:30:28', {
@@ -48,7 +48,7 @@ describe('humanTime', () => {
   });
 
   test('relative', async () => {
-    createI18n();
+    getOrCreateI18n();
     expect(
       i18nTime('2024-10-10 13:30:28.005', {
         now: '2024-10-10 13:30:30',
@@ -148,7 +148,7 @@ describe('humanTime', () => {
   });
 
   test('relative - accuracy', async () => {
-    createI18n();
+    getOrCreateI18n();
     expect(
       i18nTime('2024-10-10 13:30:28.005', {
         now: '2024-10-10 13:30:30',
@@ -224,7 +224,7 @@ describe('humanTime', () => {
   });
 
   test('relative - disable yesterdayAndTomorrow', async () => {
-    createI18n();
+    getOrCreateI18n();
     expect(
       i18nTime('2024-10-9 13:30:30', {
         now: '2024-10-10 13:30:30',
@@ -244,7 +244,7 @@ describe('humanTime', () => {
   });
 
   test('relative - weekday', async () => {
-    createI18n();
+    getOrCreateI18n();
     expect(
       i18nTime('2024-10-9 13:30:30', {
         now: '2024-10-10 13:30:30',
@@ -302,7 +302,7 @@ describe('humanTime', () => {
   });
 
   test('mix relative and absolute', async () => {
-    createI18n();
+    getOrCreateI18n();
     expect(
       i18nTime('2024-10-9 14:30:30', {
         now: '2024-10-10 13:30:30',
@@ -348,9 +348,9 @@ describe('humanTime', () => {
     ).toBe('Oct 8, 2024');
   });
 
-  test('chinese', () => {
-    createI18n();
-    I18n.changeLanguage('zh-Hans');
+  test('chinese', async () => {
+    getOrCreateI18n();
+    await I18n.changeLanguage('zh-Hans');
     expect(i18nTime('2024-10-10 13:30:28.005')).toBe('2024年10月10日 13:30:28');
     expect(
       i18nTime('2024-10-10 13:30:28.005', {
@@ -398,7 +398,7 @@ describe('humanTime', () => {
   });
 
   test('invalid time', () => {
-    createI18n();
+    getOrCreateI18n();
     expect(i18nTime('foobar')).toBe('');
   });
 });

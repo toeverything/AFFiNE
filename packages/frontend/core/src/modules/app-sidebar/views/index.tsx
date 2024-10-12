@@ -9,14 +9,16 @@ import {
   useServiceOptional,
   WorkspaceService,
 } from '@toeverything/infra';
+import clsx from 'clsx';
 import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useCallback, useContext, useEffect, useMemo } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { AppSidebarService } from '../services/app-sidebar';
 import * as styles from './fallback.css';
 import {
   floatingMaxWidth,
+  hoverNavWrapperStyle,
   navBodyStyle,
   navHeaderStyle,
   navStyle,
@@ -32,6 +34,7 @@ export type History = {
 
 const MAX_WIDTH = 480;
 const MIN_WIDTH = 248;
+const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
 
 export function AppSidebar({ children }: PropsWithChildren) {
   const { appSettings } = useAppSettingHelper();
@@ -42,8 +45,35 @@ export function AppSidebar({ children }: PropsWithChildren) {
 
   const open = useLiveData(appSidebarService.open$);
   const width = useLiveData(appSidebarService.width$);
-  const floating = useLiveData(appSidebarService.responsiveFloating$);
+  const smallScreenMode = useLiveData(appSidebarService.smallScreenMode$);
+  const hovering = useLiveData(appSidebarService.hovering$) && open !== true;
   const resizing = useLiveData(appSidebarService.resizing$);
+  const [deferredHovering, setDeferredHovering] = useState(false);
+  useEffect(() => {
+    if (open) {
+      // if open, we don't need to show the floating sidebar
+      setDeferredHovering(false);
+      return;
+    }
+    // we make a little delay here.
+    // this allow the sidebar close animation to complete.
+    const timeout = setTimeout(() => {
+      setDeferredHovering(hovering);
+    }, 150);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [hovering, open]);
+
+  const sidebarState = smallScreenMode
+    ? open
+      ? 'floating-with-mask'
+      : 'close'
+    : open
+      ? 'open'
+      : deferredHovering
+        ? 'floating'
+        : 'close';
 
   useEffect(() => {
     // do not float app sidebar on desktop
@@ -55,30 +85,19 @@ export function AppSidebar({ children }: PropsWithChildren) {
       const isFloatingMaxWidth = window.matchMedia(
         `(max-width: ${floatingMaxWidth}px)`
       ).matches;
-      const isOverflowWidth = window.matchMedia(
-        `(max-width: ${width / 0.4}px)`
-      ).matches;
-      const isFloating = isFloatingMaxWidth || isOverflowWidth;
-      if (
-        open === undefined &&
-        appSidebarService.getCachedAppSidebarOpenState() === undefined
-      ) {
-        // give the initial value,
-        // so that the sidebar can be closed on mobile by default
-        appSidebarService.setOpen(!isFloating);
-      }
-      appSidebarService.setResponsiveFloating(isFloating);
+      const isFloating = isFloatingMaxWidth;
+      appSidebarService.setSmallScreenMode(isFloating);
     }
 
     const dOnResize = debounce(onResize, 50);
+    onResize();
     window.addEventListener('resize', dOnResize);
     return () => {
       window.removeEventListener('resize', dOnResize);
     };
-  }, [appSidebarService, open, width]);
+  }, [appSidebarService]);
 
   const hasRightBorder = !BUILD_CONFIG.isElectron && !clientBorder;
-  const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -105,11 +124,21 @@ export function AppSidebar({ children }: PropsWithChildren) {
     appSidebarService.setOpen(false);
   }, [appSidebarService]);
 
+  const onMouseEnter = useCallback(() => {
+    appSidebarService.setHovering(true);
+  }, [appSidebarService]);
+
+  const onMouseLeave = useCallback(() => {
+    appSidebarService.setHovering(false);
+  }, [appSidebarService]);
+
   return (
     <>
       <ResizePanel
-        floating={floating}
-        open={open}
+        floating={
+          sidebarState === 'floating' || sidebarState === 'floating-with-mask'
+        }
+        open={sidebarState !== 'close'}
         resizing={resizing}
         maxWidth={MAX_WIDTH}
         minWidth={MIN_WIDTH}
@@ -118,18 +147,25 @@ export function AppSidebar({ children }: PropsWithChildren) {
         onOpen={handleOpenChange}
         onResizing={handleResizing}
         onWidthChange={handleWidthChange}
-        className={navWrapperStyle}
+        className={clsx(navWrapperStyle, {
+          [hoverNavWrapperStyle]: sidebarState === 'floating',
+        })}
         resizeHandleOffset={0}
         resizeHandleVerticalPadding={clientBorder ? 16 : 0}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
         data-transparent
-        data-open={open}
+        data-open={sidebarState !== 'close'}
         data-has-border={hasRightBorder}
         data-testid="app-sidebar-wrapper"
         data-is-macos-electron={isMacosDesktop}
         data-client-border={clientBorder}
+        data-is-electron={BUILD_CONFIG.isElectron}
       >
         <nav className={navStyle} data-testid="app-sidebar">
-          {!BUILD_CONFIG.isElectron && <SidebarHeader />}
+          {!BUILD_CONFIG.isElectron && sidebarState !== 'floating' && (
+            <SidebarHeader />
+          )}
           <div className={navBodyStyle} data-testid="sliderBar-inner">
             {children}
           </div>
@@ -138,7 +174,7 @@ export function AppSidebar({ children }: PropsWithChildren) {
       <div
         data-testid="app-sidebar-float-mask"
         data-open={open}
-        data-is-floating={floating}
+        data-is-floating={sidebarState === 'floating-with-mask'}
         className={sidebarFloatMaskStyle}
         onClick={handleClose}
       />

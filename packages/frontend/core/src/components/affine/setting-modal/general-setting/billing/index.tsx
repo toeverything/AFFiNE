@@ -23,7 +23,7 @@ import {
   SubscriptionStatus,
   UserFriendlyError,
 } from '@affine/graphql';
-import { i18nTime, Trans, useI18n } from '@affine/i18n';
+import { type I18nString, i18nTime, Trans, useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -43,17 +43,19 @@ import { BelieverCard } from '../plans/lifetime/believer-card';
 import { BelieverBenefits } from '../plans/lifetime/benefits';
 import * as styles from './style.css';
 
-enum DescriptionI18NKey {
-  Basic = 'com.affine.payment.billing-setting.current-plan.description',
-  Monthly = 'com.affine.payment.billing-setting.current-plan.description.monthly',
-  Yearly = 'com.affine.payment.billing-setting.current-plan.description.yearly',
-  Lifetime = 'com.affine.payment.billing-setting.current-plan.description.lifetime',
-}
+const DescriptionI18NKey = {
+  Basic: 'com.affine.payment.billing-setting.current-plan.description',
+  Monthly:
+    'com.affine.payment.billing-setting.current-plan.description.monthly',
+  Yearly: 'com.affine.payment.billing-setting.current-plan.description.yearly',
+  Lifetime:
+    'com.affine.payment.billing-setting.current-plan.description.lifetime',
+} as const satisfies { [key: string]: I18nString };
 
 const getMessageKey = (
   plan: SubscriptionPlan,
   recurring: SubscriptionRecurring
-): DescriptionI18NKey => {
+) => {
   if (plan !== SubscriptionPlan.Pro) {
     return DescriptionI18NKey.Basic;
   }
@@ -92,6 +94,7 @@ const SubscriptionSettings = () => {
   const proSubscription = useLiveData(subscriptionService.subscription.pro$);
   const proPrice = useLiveData(subscriptionService.prices.proPrice$);
   const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
+  const isOnetime = useLiveData(subscriptionService.subscription.isOnetime$);
 
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
@@ -204,7 +207,17 @@ const SubscriptionSettings = () => {
                 })}
               />
             )}
-            {isBeliever ? null : proSubscription.end &&
+            {isOnetime && proSubscription.end && (
+              <SettingRow
+                name={t['com.affine.payment.billing-setting.due-date']()}
+                desc={t[
+                  'com.affine.payment.billing-setting.due-date.description'
+                ]({
+                  dueDate: new Date(proSubscription.end).toLocaleDateString(),
+                })}
+              />
+            )}
+            {isBeliever || isOnetime ? null : proSubscription.end &&
               proSubscription.canceledAt ? (
               <SettingRow
                 name={t['com.affine.payment.billing-setting.expiration-date']()}

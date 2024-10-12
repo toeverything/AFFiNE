@@ -15,10 +15,11 @@ import { CurrentUser } from '../../core/auth';
 import { EarlyAccessType, FeatureManagementService } from '../../core/features';
 import {
   ActionForbidden,
-  CantUpdateLifetimeSubscription,
+  CantUpdateOnetimePaymentSubscription,
   Config,
   CustomerPortalCreateFailed,
   EventEmitter,
+  InternalServerError,
   OnEvent,
   SameSubscriptionRecurring,
   SubscriptionAlreadyExists,
@@ -32,9 +33,9 @@ import { ScheduleManager } from './schedule';
 import {
   InvoiceStatus,
   SubscriptionPlan,
-  SubscriptionPriceVariant,
   SubscriptionRecurring,
   SubscriptionStatus,
+  SubscriptionVariant,
 } from './types';
 
 const OnStripeEvent = (
@@ -46,20 +47,20 @@ const OnStripeEvent = (
 export function encodeLookupKey(
   plan: SubscriptionPlan,
   recurring: SubscriptionRecurring,
-  variant?: SubscriptionPriceVariant
+  variant?: SubscriptionVariant
 ): string {
   return `${plan}_${recurring}` + (variant ? `_${variant}` : '');
 }
 
 export function decodeLookupKey(
   key: string
-): [SubscriptionPlan, SubscriptionRecurring, SubscriptionPriceVariant?] {
+): [SubscriptionPlan, SubscriptionRecurring, SubscriptionVariant?] {
   const [plan, recurring, variant] = key.split('_');
 
   return [
     plan as SubscriptionPlan,
     recurring as SubscriptionRecurring,
-    variant as SubscriptionPriceVariant | undefined,
+    variant as SubscriptionVariant | undefined,
   ];
 }
 
@@ -137,6 +138,12 @@ export class SubscriptionService {
       }
 
       const [plan, recurring, variant] = decodeLookupKey(price.lookup_key);
+
+      // never return onetime payment price
+      if (variant === SubscriptionVariant.Onetime) {
+        return false;
+      }
+
       // no variant price should be used for monthly or lifetime subscription
       if (
         recurring === SubscriptionRecurring.Monthly ||
@@ -167,6 +174,7 @@ export class SubscriptionService {
     user,
     recurring,
     plan,
+    variant,
     promotionCode,
     redirectUrl,
     idempotencyKey,
@@ -174,6 +182,7 @@ export class SubscriptionService {
     user: CurrentUser;
     recurring: SubscriptionRecurring;
     plan: SubscriptionPlan;
+    variant?: SubscriptionVariant;
     promotionCode?: string | null;
     redirectUrl: string;
     idempotencyKey: string;
@@ -186,6 +195,11 @@ export class SubscriptionService {
       throw new ActionForbidden();
     }
 
+    // variant is not allowed for lifetime subscription
+    if (recurring === SubscriptionRecurring.Lifetime) {
+      variant = undefined;
+    }
+
     const currentSubscription = await this.db.userSubscription.findFirst({
       where: {
         userId: user.id,
@@ -196,9 +210,18 @@ export class SubscriptionService {
 
     if (
       currentSubscription &&
-      // do not allow to re-subscribe unless the new recurring is `Lifetime`
-      (currentSubscription.recurring === recurring ||
-        recurring !== SubscriptionRecurring.Lifetime)
+      // do not allow to re-subscribe unless
+      !(
+        /* current subscription is a onetime subscription and so as the one that's checking out */
+        (
+          (currentSubscription.variant === SubscriptionVariant.Onetime &&
+            variant === SubscriptionVariant.Onetime) ||
+          /* current subscription is normal subscription and is checking-out a lifetime subscription */
+          (currentSubscription.recurring !== SubscriptionRecurring.Lifetime &&
+            currentSubscription.variant !== SubscriptionVariant.Onetime &&
+            recurring === SubscriptionRecurring.Lifetime)
+        )
+      )
     ) {
       throw new SubscriptionAlreadyExists({ plan });
     }
@@ -211,7 +234,8 @@ export class SubscriptionService {
     const { price, coupon } = await this.getAvailablePrice(
       customer,
       plan,
-      recurring
+      recurring,
+      variant
     );
 
     let discounts: Stripe.Checkout.SessionCreateParams['discounts'] = [];
@@ -241,8 +265,9 @@ export class SubscriptionService {
         },
         // discount
         ...(discounts.length ? { discounts } : { allow_promotion_codes: true }),
-        // mode: 'subscription' or 'payment' for lifetime
-        ...(recurring === SubscriptionRecurring.Lifetime
+        // mode: 'subscription' or 'payment' for lifetime and onetime payment
+        ...(recurring === SubscriptionRecurring.Lifetime ||
+        variant === SubscriptionVariant.Onetime
           ? {
               mode: 'payment',
               invoice_creation: {
@@ -291,8 +316,8 @@ export class SubscriptionService {
     }
 
     if (!subscriptionInDB.stripeSubscriptionId) {
-      throw new CantUpdateLifetimeSubscription(
-        'Lifetime subscription cannot be canceled.'
+      throw new CantUpdateOnetimePaymentSubscription(
+        'Onetime payment subscription cannot be canceled.'
       );
     }
 
@@ -348,8 +373,8 @@ export class SubscriptionService {
     }
 
     if (!subscriptionInDB.stripeSubscriptionId || !subscriptionInDB.end) {
-      throw new CantUpdateLifetimeSubscription(
-        'Lifetime subscription cannot be resumed.'
+      throw new CantUpdateOnetimePaymentSubscription(
+        'Onetime payment subscription cannot be resumed.'
       );
     }
 
@@ -407,9 +432,7 @@ export class SubscriptionService {
     }
 
     if (!subscriptionInDB.stripeSubscriptionId) {
-      throw new CantUpdateLifetimeSubscription(
-        'Can not update lifetime subscription.'
-      );
+      throw new CantUpdateOnetimePaymentSubscription();
     }
 
     if (subscriptionInDB.canceledAt) {
@@ -525,7 +548,7 @@ export class SubscriptionService {
       throw new Error('Unexpected subscription with no key');
     }
 
-    const [plan, recurring] = decodeLookupKey(price.lookup_key);
+    const [plan, recurring, variant] = decodeLookupKey(price.lookup_key);
 
     const invoice = await this.db.userInvoice.upsert({
       where: {
@@ -537,7 +560,7 @@ export class SubscriptionService {
         stripeInvoiceId: stripeInvoice.id,
         plan,
         recurring,
-        reason: stripeInvoice.billing_reason ?? 'contact support',
+        reason: stripeInvoice.billing_reason ?? 'subscription_update',
         ...(data as any),
       },
     });
@@ -545,10 +568,13 @@ export class SubscriptionService {
     // handle one time payment, no subscription created by stripe
     if (
       event === 'invoice.payment_succeeded' &&
-      recurring === SubscriptionRecurring.Lifetime &&
       stripeInvoice.status === 'paid'
     ) {
-      await this.saveLifetimeSubscription(user, invoice);
+      if (recurring === SubscriptionRecurring.Lifetime) {
+        await this.saveLifetimeSubscription(user, invoice);
+      } else if (variant === SubscriptionVariant.Onetime) {
+        await this.saveOnetimePaymentSubscription(user, invoice);
+      }
     }
   }
 
@@ -607,6 +633,72 @@ export class SubscriptionService {
     });
   }
 
+  async saveOnetimePaymentSubscription(user: User, invoice: UserInvoice) {
+    const savedSubscription = await this.db.userSubscription.findUnique({
+      where: {
+        userId_plan: {
+          userId: user.id,
+          plan: invoice.plan,
+        },
+      },
+    });
+
+    // TODO(@forehalo): time helper
+    const subscriptionTime =
+      (invoice.recurring === SubscriptionRecurring.Monthly ? 30 : 365) *
+      24 *
+      60 *
+      60 *
+      1000;
+
+    // extends the subscription time if exists
+    if (savedSubscription) {
+      if (!savedSubscription.end) {
+        throw new InternalServerError(
+          'Unexpected onetime subscription with no end date'
+        );
+      }
+
+      const period =
+        // expired, reset the period
+        savedSubscription.end <= new Date()
+          ? {
+              start: new Date(),
+              end: new Date(Date.now() + subscriptionTime),
+            }
+          : {
+              end: new Date(savedSubscription.end.getTime() + subscriptionTime),
+            };
+
+      await this.db.userSubscription.update({
+        where: {
+          id: savedSubscription.id,
+        },
+        data: period,
+      });
+    } else {
+      await this.db.userSubscription.create({
+        data: {
+          userId: user.id,
+          stripeSubscriptionId: null,
+          plan: invoice.plan,
+          recurring: invoice.recurring,
+          variant: SubscriptionVariant.Onetime,
+          start: new Date(),
+          end: new Date(Date.now() + subscriptionTime),
+          status: SubscriptionStatus.Active,
+          nextBillAt: null,
+        },
+      });
+    }
+
+    this.event.emit('user.subscription.activated', {
+      userId: user.id,
+      plan: invoice.plan as SubscriptionPlan,
+      recurring: invoice.recurring as SubscriptionRecurring,
+    });
+  }
+
   @OnStripeEvent('customer.subscription.created')
   @OnStripeEvent('customer.subscription.updated')
   async onSubscriptionChanges(subscription: Stripe.Subscription) {
@@ -656,7 +748,8 @@ export class SubscriptionService {
       throw new Error('Unexpected subscription with no key');
     }
 
-    const [plan, recurring] = this.decodePlanFromSubscription(subscription);
+    const [plan, recurring, variant] =
+      this.decodePlanFromSubscription(subscription);
     const planActivated = SubscriptionActivated.includes(subscription.status);
 
     // update features first, features modify are idempotent
@@ -689,6 +782,8 @@ export class SubscriptionService {
         : null,
       stripeSubscriptionId: subscription.id,
       plan,
+      recurring,
+      variant,
       status: subscription.status,
       stripeScheduleId: subscription.schedule as string | null,
     };
@@ -700,7 +795,6 @@ export class SubscriptionService {
       update: commonData,
       create: {
         userId: user.id,
-        recurring,
         ...commonData,
       },
     });
@@ -813,7 +907,7 @@ export class SubscriptionService {
   private async getPrice(
     plan: SubscriptionPlan,
     recurring: SubscriptionRecurring,
-    variant?: SubscriptionPriceVariant
+    variant?: SubscriptionVariant
   ): Promise<string> {
     if (recurring === SubscriptionRecurring.Lifetime) {
       const lifetimePriceEnabled = await this.config.runtime.fetch(
@@ -845,8 +939,14 @@ export class SubscriptionService {
   private async getAvailablePrice(
     customer: UserStripeCustomer,
     plan: SubscriptionPlan,
-    recurring: SubscriptionRecurring
+    recurring: SubscriptionRecurring,
+    variant?: SubscriptionVariant
   ): Promise<{ price: string; coupon?: string }> {
+    if (variant) {
+      const price = await this.getPrice(plan, recurring, variant);
+      return { price };
+    }
+
     const isEaUser = await this.feature.isEarlyAccessUser(customer.userId);
     const oldSubscriptions = await this.stripe.subscriptions.list({
       customer: customer.stripeCustomerId,
@@ -867,7 +967,7 @@ export class SubscriptionService {
       const price = await this.getPrice(
         plan,
         recurring,
-        canHaveEADiscount ? SubscriptionPriceVariant.EA : undefined
+        canHaveEADiscount ? SubscriptionVariant.EA : undefined
       );
       return {
         price,
@@ -886,7 +986,7 @@ export class SubscriptionService {
       const price = await this.getPrice(
         plan,
         recurring,
-        canHaveEADiscount ? SubscriptionPriceVariant.EA : undefined
+        canHaveEADiscount ? SubscriptionVariant.EA : undefined
       );
 
       return {

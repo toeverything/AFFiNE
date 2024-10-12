@@ -14,6 +14,7 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import {
   DocsService,
+  FeatureFlagService,
   GlobalContextService,
   LiveData,
   useLiveData,
@@ -47,11 +48,13 @@ export const ExplorerDocNode = ({
     docsService,
     globalContextService,
     docDisplayMetaService,
+    featureFlagService,
   } = useServices({
     DocsSearchService,
     DocsService,
     GlobalContextService,
     DocDisplayMetaService,
+    FeatureFlagService,
   });
   // const pageInfoAdapter = useCurrentWorkspacePropertiesAdapter();
 
@@ -67,6 +70,9 @@ export const ExplorerDocNode = ({
   );
   const docTitle = useLiveData(docDisplayMetaService.title$(docId));
   const isInTrash = useLiveData(docRecord?.trash$);
+  const enableEmojiIcon = useLiveData(
+    featureFlagService.flags.enable_emoji_doc_icon.$
+  );
 
   const Icon = useCallback(
     ({ className }: { className?: string }) => {
@@ -202,10 +208,11 @@ export const ExplorerDocNode = ({
   return (
     <ExplorerTreeNode
       icon={Icon}
-      name={typeof docTitle === 'string' ? docTitle : t[docTitle.key]()}
+      name={t.t(docTitle)}
       dndData={dndData}
       onDrop={handleDropOnDoc}
       renameable
+      extractEmojiAsIcon={enableEmojiIcon}
       collapsed={collapsed}
       setCollapsed={setCollapsed}
       canDrop={handleCanDrop}

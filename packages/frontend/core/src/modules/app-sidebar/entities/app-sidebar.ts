@@ -3,8 +3,6 @@ import { map } from 'rxjs';
 
 import type { AppSidebarState } from '../providers/storage';
 
-const isMobile = !BUILD_CONFIG.isElectron && window.innerWidth < 768;
-
 enum APP_SIDEBAR_STATE {
   OPEN = 'open',
   WIDTH = 'width',
@@ -15,11 +13,15 @@ export class AppSidebar extends Entity {
     super();
   }
 
+  /**
+   * whether the sidebar is open,
+   * even if the sidebar is not open, hovering can show the floating sidebar
+   */
   open$ = LiveData.from(
     this.appSidebarState
       .watch<boolean>(APP_SIDEBAR_STATE.OPEN)
-      .pipe(map(value => value ?? !isMobile)),
-    !isMobile
+      .pipe(map(value => value ?? true)),
+    true
   );
 
   width$ = LiveData.from(
@@ -28,8 +30,16 @@ export class AppSidebar extends Entity {
       .pipe(map(value => value ?? 248)),
     248
   );
-  responsiveFloating$ = new LiveData<boolean>(isMobile);
-  hoverFloating$ = new LiveData<boolean>(false);
+
+  /**
+   * hovering can show the floating sidebar, without open it
+   */
+  hovering$ = new LiveData<boolean>(false);
+
+  /**
+   * small screen mode, will disable hover effect
+   */
+  smallScreenMode$ = new LiveData<boolean>(false);
   resizing$ = new LiveData<boolean>(false);
 
   getCachedAppSidebarOpenState = () => {
@@ -42,23 +52,15 @@ export class AppSidebar extends Entity {
 
   setOpen = (open: boolean) => {
     this.appSidebarState.set(APP_SIDEBAR_STATE.OPEN, open);
-    if (!open && this.hoverFloating$.value) {
-      const timeout = setTimeout(() => {
-        this.setHoverFloating(false);
-      }, 500);
-      return () => {
-        clearTimeout(timeout);
-      };
-    }
     return;
   };
 
-  setResponsiveFloating = (floating: boolean) => {
-    this.responsiveFloating$.next(floating);
+  setSmallScreenMode = (smallScreenMode: boolean) => {
+    this.smallScreenMode$.next(smallScreenMode);
   };
 
-  setHoverFloating = (hoverFloating: boolean) => {
-    this.hoverFloating$.next(hoverFloating);
+  setHovering = (hoverFloating: boolean) => {
+    this.hovering$.next(hoverFloating);
   };
 
   setResizing = (resizing: boolean) => {

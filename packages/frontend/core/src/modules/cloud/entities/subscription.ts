@@ -1,4 +1,8 @@
-import { type SubscriptionQuery, SubscriptionRecurring } from '@affine/graphql';
+import {
+  type SubscriptionQuery,
+  SubscriptionRecurring,
+  SubscriptionVariant,
+} from '@affine/graphql';
 import { SubscriptionPlan } from '@affine/graphql';
 import {
   backoffRetry,
@@ -40,6 +44,9 @@ export class Subscription extends Entity {
   );
   isBeliever$ = this.pro$.map(
     sub => sub?.recurring === SubscriptionRecurring.Lifetime
+  );
+  isOnetime$ = this.pro$.map(
+    sub => sub?.variant === SubscriptionVariant.Onetime
   );
 
   constructor(
