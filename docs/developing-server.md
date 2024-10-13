@@ -29,7 +29,7 @@ docker run --rm --name mailhog -p 1025:1025 -p 8025:8025 mailhog/mailhog
 
 ```
 docker ps
-docker exec -it CONTAINER_ID psql -U postgres ## change container_id
+docker exec -it affine-postgres psql -U postgres ## `affine-postgres` is the container name from the previous step
 ```
 
 ### in the terminal, following the example to user & table
