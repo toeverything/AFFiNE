@@ -6,6 +6,7 @@ import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 import request from 'supertest';
+import * as Y from 'yjs';
 
 import { buildAppModule } from '../../src/app.module';
 import { ServerService } from '../../src/core/config';
@@ -17,12 +18,26 @@ const test = ava as TestFn<{
   db: PrismaClient;
 }>;
 
+const mobileUAString =
+  'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
+
 function initTestStaticFiles(staticPath: string) {
   const files = {
     'selfhost/index.html': `<!DOCTYPE html><html><body>AFFiNE</body><script src="main.js"/></html>`,
     'selfhost/main.js': `const name = 'affine'`,
     'admin/selfhost/index.html': `<!DOCTYPE html><html><body>AFFiNE Admin</body><script src="/admin/main.js"/></html>`,
     'admin/selfhost/main.js': `const name = 'affine-admin'`,
+    'mobile/selfhost/index.html': `<!DOCTYPE html><html><body>AFFiNE Mobile</body><script src="main.js"/></html>`,
+    'mobile/selfhost/main.js': `const name = 'affine-mobile'`,
+    'mobile/selfhost/main.abcd.js': `const name = 'affine-mobile-abcd'`,
+    'mobile/selfhost/main.css': `body { background-color: red; }`,
+    'mobile/selfhost/assets-manifest.json': JSON.stringify({
+      js: ['/mobile/main.abcd.js'],
+      css: ['/mobile/main.abcd.css'],
+      publicPath: '/mobile/',
+      gitHash: '',
+      description: '',
+    }),
   };
 
   for (const [filename, content] of Object.entries(files)) {
@@ -35,6 +50,7 @@ function initTestStaticFiles(staticPath: string) {
 test.before('init selfhost server', async t => {
   // @ts-expect-error override
   AFFiNE.isSelfhosted = true;
+  AFFiNE.flavor.renderer = true;
   const { app } = await createTestingApp({
     imports: [buildAppModule()],
   });
@@ -79,6 +95,11 @@ test('should always return static asset files', async t => {
   t.is(res.text, "const name = 'affine'");
 
   res = await request(t.context.app.getHttpServer())
+    .get('/mobile/main.js')
+    .expect(200);
+  t.is(res.text, "const name = 'affine-mobile'");
+
+  res = await request(t.context.app.getHttpServer())
     .get('/admin/main.js')
     .expect(200);
   t.is(res.text, "const name = 'affine-admin'");
@@ -99,6 +120,67 @@ test('should always return static asset files', async t => {
     .get('/admin/main.js')
     .expect(200);
   t.is(res.text, "const name = 'affine-admin'");
+});
+
+test('doc renderer should return mobile assets for mobile user agent', async t => {
+  let res = await request(t.context.app.getHttpServer())
+    .get(
+      '/workspace/3aa2e665-7b0d-41c6-9979-db17c8d93836/Sabgfj_trVBY6_iM_6uaO'
+    )
+    .set('User-Agent', mobileUAString)
+    .expect(200);
+
+  t.true(res.text.includes('AFFiNE Mobile'));
+
+  res = await request(t.context.app.getHttpServer())
+    .get(
+      '/workspace/3aa2e665-7b0d-41c6-9979-db17c8d93836/Sabgfj_trVBY6_iM_6uaO'
+    )
+    .expect(200);
+
+  t.false(res.text.includes('AFFiNE Mobile'));
+  t.true(res.text.includes('AFFiNE'));
+});
+
+test('doc renderer should return mobile assets defined in assets-manifest.json for mobile user agent', async t => {
+  await t.context.db.workspacePage.create({
+    data: {
+      workspace: {
+        create: {
+          id: '3aa2e665-7b0d-41c6-9979-db17c8d93836',
+          public: true,
+        },
+      },
+      pageId: 'Sabgfj_trVBY6_iM_6uaO',
+      public: true,
+    },
+  });
+  const doc = createEmptyPage();
+  const update = Y.encodeStateAsUpdate(doc);
+
+  await t.context.db.update.createMany({
+    data: [
+      {
+        id: 'Sabgfj_trVBY6_iM_6uaO',
+        workspaceId: '3aa2e665-7b0d-41c6-9979-db17c8d93836',
+        blob: Buffer.from(update),
+        seq: 1,
+        createdAt: new Date(Date.now() + 1),
+        createdBy: null,
+      },
+    ],
+  });
+
+  const res = await request(t.context.app.getHttpServer())
+    .get(
+      '/workspace/3aa2e665-7b0d-41c6-9979-db17c8d93836/Sabgfj_trVBY6_iM_6uaO'
+    )
+    .set('User-Agent', mobileUAString)
+    .expect(200);
+
+  t.true(res.text.includes('New Page | AFFiNE'));
+  t.true(res.text.includes('/mobile/main.abcd.js'));
+  t.true(res.text.includes('/mobile/main.abcd.css'));
 });
 
 test('should be able to call apis', async t => {
@@ -167,3 +249,18 @@ test('should redirect to admin if initialized', async t => {
 
   t.is(res.header.location, '/admin');
 });
+
+function createEmptyPage() {
+  const doc = new Y.Doc();
+
+  const blocks = doc.getMap<Y.Map<Y.Map<any>>>('blocks');
+  doc.share.set('blocks', blocks as any);
+
+  const rootBlock = new Y.Map<any>();
+  blocks.set('root', rootBlock);
+  rootBlock.set('type', 'block');
+  rootBlock.set('sys:flavour', 'affine:page');
+  rootBlock.set('prop:title', 'New Page');
+
+  return doc;
+}
