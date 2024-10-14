@@ -90,22 +90,17 @@ yarn workspace @affine/server-native build
 yarn workspace @affine/native build
 ```
 
-## Optionally, create a default user
-
-```sh
-echo "INSERT INTO \"users\"(\"id\",\"name\",\"email\",\"email_verified\",\"created_at\",\"password\") VALUES('99f3ad04-7c9b-441e-a6db-79f73aa64db9','affine','affine@affine.pro','2024-02-26 15:54:16.974','2024-02-26 15:54:16.974+00','\$argon2id\$v=19\$m=19456,t=2,p=1\$esDS3QCHRH0Kmeh87YPm5Q\$9S+jf+xzw2Hicj6nkWltvaaaXX3dQIxAFwCfFa9o38A');" | yarn workspace @affine/server prisma db execute --stdin
-```
-
-Create a default user, so you can login with the following credentials:
-
-email: affine@affine.pro  
-password: affine
-
 ## start server
 
 ```
 yarn workspace @affine/server dev
 ```
+
+when server started, it will created a default user:
+
+email: dev@affine.pro
+name: Dev User
+password: dev
 
 ## start core (web)
 
