@@ -412,6 +412,10 @@ jobs:
           - name: 'Server Desktop E2E Test'
             script: |
               yarn workspace @affine/electron build:dev
+              # Workaround for Electron apps failing to initialize on Ubuntu 24.04 due to AppArmor restrictions
+              # Disables unprivileged user namespaces restriction to allow Electron apps to run
+              # Reference: https://github.com/electron/electron/issues/42510
+              sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
               xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-desktop-cloud e2e
     needs:
       - build-server-native
@@ -561,7 +565,12 @@ jobs:
 
       - name: Run desktop tests
         if: ${{ matrix.spec.os == 'ubuntu-latest' }}
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-desktop e2e
+        run: |
+          # Workaround for Electron apps failing to initialize on Ubuntu 24.04 due to AppArmor restrictions
+          # Disables unprivileged user namespaces restriction to allow Electron apps to run
+          # Reference: https://github.com/electron/electron/issues/42510
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn workspace @affine-test/affine-desktop e2e
 
       - name: Run desktop tests
         if: ${{ matrix.spec.test && matrix.spec.os != 'ubuntu-latest' }}

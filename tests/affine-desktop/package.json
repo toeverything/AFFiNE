@@ -2,7 +2,7 @@
   "name": "@affine-test/affine-desktop",
   "private": true,
   "scripts": {
-    "e2e": "yarn playwright test"
+    "e2e": "DEBUG=pw:browser yarn playwright test"
   },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
