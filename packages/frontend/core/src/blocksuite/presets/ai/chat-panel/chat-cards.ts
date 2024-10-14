@@ -359,7 +359,7 @@ export class ChatCards extends WithDisposable(LitElement) {
           (
             this.host.doc.getBlock(data.currentImageSelections[0].blockId)
               ?.model as ImageBlockModel
-          ).caption ?? '';
+          )?.caption ?? '';
       }
 
       this._updateCards({

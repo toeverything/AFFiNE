@@ -29,7 +29,7 @@
     "lint:eslint:fix": "yarn lint:eslint --fix",
     "lint:prettier": "prettier --ignore-unknown --cache --check .",
     "lint:prettier:fix": "prettier --ignore-unknown --cache --write .",
-    "lint:ox": "oxlint -c oxlint.json --deny-warnings --import-plugin -D correctness -D perf",
+    "lint:ox": "oxlint -c oxlint.json --deny-warnings --import-plugin",
     "lint": "yarn lint:eslint && yarn lint:prettier",
     "lint:fix": "yarn lint:eslint:fix && yarn lint:prettier:fix",
     "test": "vitest --run",
