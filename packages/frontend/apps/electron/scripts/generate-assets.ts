@@ -71,9 +71,9 @@ if (!process.env.SKIP_WEB_BUILD) {
         const fullpath = path.join(affineWebOutDir, file);
         let content = await fs.readFile(fullpath, 'utf-8');
         // replace # sourceMappingURL=76-6370cd185962bc89.js.map
-        // to      # sourceMappingURL=assets://./{dir}/76-6370cd185962bc89.js.map
+        // to      # sourceMappingURL=/{dir}/76-6370cd185962bc89.js.map
         content = content.replace(/# sourceMappingURL=(.*)\.map/g, (_, p1) => {
-          return `# sourceMappingURL=assets://./${dir}/${p1}.map`;
+          return `# sourceMappingURL=assets:///${dir}/${p1}.map`;
         });
         try {
           await fs.writeFile(fullpath, content);

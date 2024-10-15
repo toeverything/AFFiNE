@@ -3,10 +3,7 @@ import { app, shell } from 'electron';
 app.on('web-contents-created', (_, contents) => {
   const isInternalUrl = (url: string) => {
     return (
-      (process.env.DEV_SERVER_URL &&
-        url.startsWith(process.env.DEV_SERVER_URL)) ||
-      url.startsWith('affine://') ||
-      url.startsWith('file://.')
+      process.env.DEV_SERVER_URL && url.startsWith(process.env.DEV_SERVER_URL)
     );
   };
   /**

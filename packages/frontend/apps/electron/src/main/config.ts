@@ -30,5 +30,7 @@ const API_URL_MAPPING = {
   internal: `https://insider.affine.pro`,
 };
 
+export const DEV_SERVER_URL = process.env.DEV_SERVER_URL;
+
 export const CLOUD_BASE_URL =
   process.env.DEV_SERVER_URL || API_URL_MAPPING[buildType];

@@ -2,7 +2,6 @@ import { join } from 'node:path';
 
 import {
   app,
-  type CookiesSetDetails,
   session,
   type View,
   type WebContents,
@@ -28,7 +27,6 @@ import { mainWindowOrigin, shellViewUrl } from '../constants';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
 import { globalStateStorage } from '../shared-storage/storage';
-import { parseCookie } from '../utils';
 import { getCustomThemeWindow } from './custom-theme-window';
 import { getMainWindow, MainWindowManager } from './main-window';
 import {
@@ -738,17 +736,6 @@ export class WebContentViewsManager {
     });
   };
 
-  setCookie = async (cookiesSetDetails: CookiesSetDetails) => {
-    const views = this.allViews;
-    if (!views) {
-      return;
-    }
-    logger.info('setting cookie to main window view(s)', cookiesSetDetails);
-    for (const view of views) {
-      await view.webContents.session.cookies.set(cookiesSetDetails);
-    }
-  };
-
   getViewById = (id: string) => {
     if (id === 'shell') {
       return this.shellView;
@@ -853,30 +840,6 @@ export class WebContentViewsManager {
     logger.info(`view ${viewId} created in ${performance.now() - start}ms`);
     return view;
   };
-}
-
-export async function setCookie(cookie: CookiesSetDetails): Promise<void>;
-export async function setCookie(origin: string, cookie: string): Promise<void>;
-
-export async function setCookie(
-  arg0: CookiesSetDetails | string,
-  arg1?: string
-) {
-  const details =
-    typeof arg1 === 'string' && typeof arg0 === 'string'
-      ? parseCookie(arg0, arg1)
-      : arg0;
-
-  logger.info('setting cookie to main window', details);
-
-  if (typeof details !== 'object') {
-    throw new Error('invalid cookie details');
-  }
-  return WebContentViewsManager.instance.setCookie(details);
-}
-
-export function getCookies() {
-  return WebContentViewsManager.instance.cookies;
 }
 
 // there is no proper way to listen to webContents resize event
