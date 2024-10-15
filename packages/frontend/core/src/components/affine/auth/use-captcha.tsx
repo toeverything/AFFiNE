@@ -73,15 +73,19 @@ export const Captcha = () => {
   );
 };
 
-export const useCaptcha = (): [string | undefined, string?] => {
+export const useCaptcha = (): [string | undefined, string?, (() => void)?] => {
   const [verifyToken] = useAtom(captchaAtom);
   const [response, setResponse] = useAtom(responseAtom);
   const hasCaptchaFeature = useHasCaptcha();
 
-  const { data: challenge } = useSWR('/api/auth/challenge', challengeFetcher, {
-    suspense: false,
-    revalidateOnFocus: false,
-  });
+  const { data: challenge, mutate } = useSWR(
+    '/api/auth/challenge',
+    challengeFetcher,
+    {
+      suspense: false,
+      revalidateOnFocus: false,
+    }
+  );
   const prevChallenge = useRef('');
 
   useEffect(() => {
@@ -106,7 +110,7 @@ export const useCaptcha = (): [string | undefined, string?] => {
 
   if (BUILD_CONFIG.isElectron) {
     if (response) {
-      return [response, challenge?.challenge];
+      return [response, challenge?.challenge, mutate];
     } else {
       return [undefined, challenge?.challenge];
     }

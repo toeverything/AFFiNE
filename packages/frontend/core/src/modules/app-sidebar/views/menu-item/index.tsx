@@ -1,4 +1,4 @@
-import { WorkbenchLink } from '@affine/core/modules/workbench';
+import { WorkbenchLink } from '@affine/core/modules/workbench/view/workbench-link';
 import { ArrowDownSmallIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import React from 'react';

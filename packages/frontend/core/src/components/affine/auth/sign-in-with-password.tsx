@@ -25,7 +25,7 @@ export const SignInWithPassword: FC<AuthPanelProps<'signInWithPassword'>> = ({
 
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
-  const [verifyToken, challenge] = useCaptcha();
+  const [verifyToken, challenge, refreshChallenge] = useCaptcha();
   const [isLoading, setIsLoading] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
 
@@ -43,10 +43,19 @@ export const SignInWithPassword: FC<AuthPanelProps<'signInWithPassword'>> = ({
     } catch (err) {
       console.error(err);
       setPasswordError(true);
+      refreshChallenge?.();
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading, authService, email, password, verifyToken, challenge]);
+  }, [
+    isLoading,
+    verifyToken,
+    authService,
+    email,
+    password,
+    challenge,
+    refreshChallenge,
+  ]);
 
   const sendMagicLink = useAsyncCallback(async () => {
     if (sendingEmail) return;
