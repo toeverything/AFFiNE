@@ -18,7 +18,6 @@ interface RenderOptions {
 }
 
 interface HtmlAssets {
-  html: string;
   css: string[];
   js: string[];
   publicPath: string;
@@ -27,7 +26,6 @@ interface HtmlAssets {
 }
 
 const defaultAssets: HtmlAssets = {
-  html: '',
   css: [],
   js: [],
   publicPath: '/',
@@ -152,9 +150,15 @@ export class DocRendererController {
     return null;
   }
 
+  // @TODO(@forehalo): pre-compile html template to accelerate serializing
   _render(opts: RenderOptions | null, assets: HtmlAssets): string {
-    if (!opts && assets.html) {
-      return assets.html;
+    // TODO(@forehalo): how can we enable the type reference to @affine/env
+    const env: Record<string, any> = {
+      publicPath: assets.publicPath,
+    };
+
+    if (this.config.isSelfhosted) {
+      env.isSelfHosted = true;
     }
 
     const title = opts?.title
@@ -182,7 +186,7 @@ export class DocRendererController {
 
     <title>${title}</title>
     <meta name="theme-color" content="#fafafa" />
-    <link rel="preconnect" href="${assets.publicPath}">
+    ${assets.publicPath.startsWith('/') ? '' : `<link rel="preconnect" href="${assets.publicPath}">`}
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" sizes="192x192" href="/favicon-192.png" />
@@ -199,6 +203,10 @@ export class DocRendererController {
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${summary}" />
     <meta property="og:image" content="${image}" />
+    <meta name="renderer" content="ssr" />
+    ${Object.entries(env)
+      .map(([key, val]) => `<meta name="env:${key}" content="${val}" />`)
+      .join('\n')}
     ${assets.css.map(url => `<link rel="stylesheet" href="${url}" />`).join('\n')}
   </head>
   <body>
@@ -214,11 +222,20 @@ export class DocRendererController {
    */
   private readHtmlAssets(path: string): HtmlAssets {
     const manifestPath = join(path, 'assets-manifest.json');
-    const htmlPath = join(path, 'index.html');
 
     try {
-      const assets = JSON.parse(readFileSync(manifestPath, 'utf-8'));
-      assets.html = readFileSync(htmlPath, 'utf-8');
+      const assets: HtmlAssets = JSON.parse(
+        readFileSync(manifestPath, 'utf-8')
+      );
+
+      const publicPath = this.config.isSelfhosted
+        ? this.config.server.host + '/'
+        : assets.publicPath;
+
+      assets.publicPath = publicPath;
+      assets.js = assets.js.map(path => publicPath + path);
+      assets.css = assets.css.map(path => publicPath + path);
+
       return assets;
     } catch (e) {
       if (this.config.node.prod) {

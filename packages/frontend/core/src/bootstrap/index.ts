@@ -4,11 +4,12 @@ import { setupEnvironment } from './app';
 import { polyfillBrowser, polyfillElectron } from './polyfill';
 
 export function setupElectron() {
-  polyfillElectron();
   setupEnvironment();
+  polyfillElectron();
 }
 
 export async function setupBrowser() {
-  await polyfillBrowser();
   setupEnvironment();
+  __webpack_public_path__ = environment.publicPath;
+  await polyfillBrowser();
 }

@@ -6,7 +6,6 @@ import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 import request from 'supertest';
-import * as Y from 'yjs';
 
 import { buildAppModule } from '../../src/app.module';
 import { ServerService } from '../../src/core/config';
@@ -23,21 +22,12 @@ const mobileUAString =
 
 function initTestStaticFiles(staticPath: string) {
   const files = {
-    'selfhost/index.html': `<!DOCTYPE html><html><body>AFFiNE</body><script src="main.js"/></html>`,
-    'selfhost/main.js': `const name = 'affine'`,
-    'admin/selfhost/index.html': `<!DOCTYPE html><html><body>AFFiNE Admin</body><script src="/admin/main.js"/></html>`,
-    'admin/selfhost/main.js': `const name = 'affine-admin'`,
-    'mobile/selfhost/index.html': `<!DOCTYPE html><html><body>AFFiNE Mobile</body><script src="main.js"/></html>`,
-    'mobile/selfhost/main.js': `const name = 'affine-mobile'`,
-    'mobile/selfhost/main.abcd.js': `const name = 'affine-mobile-abcd'`,
-    'mobile/selfhost/main.css': `body { background-color: red; }`,
-    'mobile/selfhost/assets-manifest.json': JSON.stringify({
-      js: ['/mobile/main.abcd.js'],
-      css: ['/mobile/main.abcd.css'],
-      publicPath: '/mobile/',
-      gitHash: '',
-      description: '',
-    }),
+    'selfhost.html': `<!DOCTYPE html><html><body>AFFiNE</body><script src="main.a.js"/></html>`,
+    'main.a.js': `const name = 'affine'`,
+    'admin/selfhost.html': `<!DOCTYPE html><html><body>AFFiNE Admin</body><script src="/admin/main.b.js"/></html>`,
+    'admin/main.b.js': `const name = 'affine-admin'`,
+    'mobile/selfhost.html': `<!DOCTYPE html><html><body>AFFiNE mobile</body><script src="/mobile/main.c.js"/></html>`,
+    'mobile/main.c.js': `const name = 'affine-mobile'`,
   };
 
   for (const [filename, content] of Object.entries(files)) {
@@ -70,7 +60,7 @@ test.beforeEach(async t => {
   server._initialized = false;
 });
 
-test.afterEach.always(async t => {
+test.after.always(async t => {
   await t.context.app.close();
 });
 
@@ -86,23 +76,27 @@ test('do not allow visit index.html directly', async t => {
     .expect(302);
 
   t.is(res.header.location, '/admin');
+
+  res = await request(t.context.app.getHttpServer())
+    .get('/mobile/index.html')
+    .expect(302);
 });
 
 test('should always return static asset files', async t => {
   let res = await request(t.context.app.getHttpServer())
-    .get('/main.js')
+    .get('/main.a.js')
     .expect(200);
   t.is(res.text, "const name = 'affine'");
 
   res = await request(t.context.app.getHttpServer())
-    .get('/mobile/main.js')
-    .expect(200);
-  t.is(res.text, "const name = 'affine-mobile'");
-
-  res = await request(t.context.app.getHttpServer())
-    .get('/admin/main.js')
+    .get('/test-@b.js')
     .expect(200);
   t.is(res.text, "const name = 'affine-admin'");
+
+  res = await request(t.context.app.getHttpServer())
+    .get('/main.c.js')
+    .expect(200);
+  t.is(res.text, "const name = 'affine-mobile'");
 
   await t.context.db.user.create({
     data: {
@@ -112,75 +106,19 @@ test('should always return static asset files', async t => {
   });
 
   res = await request(t.context.app.getHttpServer())
-    .get('/main.js')
+    .get('/main.a.js')
     .expect(200);
   t.is(res.text, "const name = 'affine'");
 
   res = await request(t.context.app.getHttpServer())
-    .get('/admin/main.js')
+    .get('/main.b.js')
     .expect(200);
   t.is(res.text, "const name = 'affine-admin'");
-});
-
-test('doc renderer should return mobile assets for mobile user agent', async t => {
-  let res = await request(t.context.app.getHttpServer())
-    .get(
-      '/workspace/3aa2e665-7b0d-41c6-9979-db17c8d93836/Sabgfj_trVBY6_iM_6uaO'
-    )
-    .set('User-Agent', mobileUAString)
-    .expect(200);
-
-  t.true(res.text.includes('AFFiNE Mobile'));
 
   res = await request(t.context.app.getHttpServer())
-    .get(
-      '/workspace/3aa2e665-7b0d-41c6-9979-db17c8d93836/Sabgfj_trVBY6_iM_6uaO'
-    )
+    .get('/main.c.js')
     .expect(200);
-
-  t.false(res.text.includes('AFFiNE Mobile'));
-  t.true(res.text.includes('AFFiNE'));
-});
-
-test('doc renderer should return mobile assets defined in assets-manifest.json for mobile user agent', async t => {
-  await t.context.db.workspacePage.create({
-    data: {
-      workspace: {
-        create: {
-          id: '3aa2e665-7b0d-41c6-9979-db17c8d93836',
-          public: true,
-        },
-      },
-      pageId: 'Sabgfj_trVBY6_iM_6uaO',
-      public: true,
-    },
-  });
-  const doc = createEmptyPage();
-  const update = Y.encodeStateAsUpdate(doc);
-
-  await t.context.db.update.createMany({
-    data: [
-      {
-        id: 'Sabgfj_trVBY6_iM_6uaO',
-        workspaceId: '3aa2e665-7b0d-41c6-9979-db17c8d93836',
-        blob: Buffer.from(update),
-        seq: 1,
-        createdAt: new Date(Date.now() + 1),
-        createdBy: null,
-      },
-    ],
-  });
-
-  const res = await request(t.context.app.getHttpServer())
-    .get(
-      '/workspace/3aa2e665-7b0d-41c6-9979-db17c8d93836/Sabgfj_trVBY6_iM_6uaO'
-    )
-    .set('User-Agent', mobileUAString)
-    .expect(200);
-
-  t.true(res.text.includes('New Page | AFFiNE'));
-  t.true(res.text.includes('/mobile/main.abcd.js'));
-  t.true(res.text.includes('/mobile/main.abcd.css'));
+  t.is(res.text, "const name = 'affine-mobile'");
 });
 
 test('should be able to call apis', async t => {
@@ -250,17 +188,18 @@ test('should redirect to admin if initialized', async t => {
   t.is(res.header.location, '/admin');
 });
 
-function createEmptyPage() {
-  const doc = new Y.Doc();
+test('should return mobile assets if visited by mobile', async t => {
+  await t.context.db.user.create({
+    data: {
+      name: 'test',
+      email: 'test@affine.pro',
+    },
+  });
 
-  const blocks = doc.getMap<Y.Map<Y.Map<any>>>('blocks');
-  doc.share.set('blocks', blocks as any);
+  const res = await request(t.context.app.getHttpServer())
+    .get('/')
+    .set('user-agent', mobileUAString)
+    .expect(200);
 
-  const rootBlock = new Y.Map<any>();
-  blocks.set('root', rootBlock);
-  rootBlock.set('type', 'block');
-  rootBlock.set('sys:flavour', 'affine:page');
-  rootBlock.set('prop:title', 'New Page');
-
-  return doc;
-}
+  t.true(res.text.includes('AFFiNE mobile'));
+});
