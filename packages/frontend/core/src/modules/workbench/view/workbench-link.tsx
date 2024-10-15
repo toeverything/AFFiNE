@@ -1,4 +1,4 @@
-import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { isNewTabTrigger } from '@affine/core/utils';
 import {
   FeatureFlagService,
@@ -32,7 +32,7 @@ export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
     const link =
       basename +
       (typeof to === 'string' ? to : `${to.pathname}${to.search}${to.hash}`);
-    const handleClick = useCatchEventCallback(
+    const handleClick = useAsyncCallback(
       async (event: React.MouseEvent<HTMLAnchorElement>) => {
         onClick?.(event);
         if (event.defaultPrevented) {
@@ -48,6 +48,7 @@ export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
         })();
         workbench.open(to, { at, replaceHistory });
         event.preventDefault();
+        event.stopPropagation();
       },
       [enableMultiView, onClick, replaceHistory, to, workbench]
     );

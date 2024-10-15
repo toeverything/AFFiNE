@@ -302,13 +302,19 @@ export const ExplorerTreeNode = ({
     [onRename]
   );
 
-  const handleClick = useCallback(() => {
-    if (!clickForCollapse) {
-      onClick?.();
-    } else {
-      setCollapsed(!collapsed);
-    }
-  }, [clickForCollapse, collapsed, onClick, setCollapsed]);
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.defaultPrevented) {
+        return;
+      }
+      if (!clickForCollapse) {
+        onClick?.();
+      } else {
+        setCollapsed(!collapsed);
+      }
+    },
+    [clickForCollapse, collapsed, onClick, setCollapsed]
+  );
 
   const content = (
     <div
@@ -346,18 +352,15 @@ export const ExplorerTreeNode = ({
               />
             ))}
         </div>
-
         <div className={mobile ? styles.mobileItemContent : styles.itemContent}>
           {name}
         </div>
-
         {postfix}
         {mobile ? null : (
           <div
             className={styles.postfix}
             onClick={e => {
               // prevent jump to page
-              e.stopPropagation();
               e.preventDefault();
             }}
           >
