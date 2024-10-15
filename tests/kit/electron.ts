@@ -96,6 +96,9 @@ export const test = base.extend<{
       timeout: 30000,
     });
 
+    // wait until the page is stable enough
+    await page.waitForTimeout(2000);
+
     await use(page as Page);
   },
   views: async ({ electronApp, page }, use) => {
@@ -131,6 +134,7 @@ export const test = base.extend<{
           env[key] = value;
         }
       }
+      env.DEBUG = 'pw:browser';
 
       env.SKIP_ONBOARDING = '1';
 

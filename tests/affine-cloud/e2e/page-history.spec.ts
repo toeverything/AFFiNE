@@ -23,7 +23,7 @@ let user: {
 
 test.beforeEach(async ({ page }) => {
   user = await createRandomUser();
-  await loginUser(page, user.email);
+  await loginUser(page, user);
 });
 
 test.afterEach(async () => {

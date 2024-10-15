@@ -105,6 +105,7 @@ export async function createRandomUser(): Promise<{
   password: string;
   id: string;
 }> {
+  const startTime = Date.now();
   const user = {
     name: faker.internet.userName(),
     email: faker.internet.email().toLowerCase(),
@@ -140,6 +141,8 @@ export async function createRandomUser(): Promise<{
       },
     });
   });
+  const endTime = Date.now();
+  console.log(`createRandomUser takes: ${endTime - startTime}ms`);
   cloudUserSchema.parse(result);
   return {
     ...result,
@@ -159,7 +162,10 @@ export async function deleteUser(email: string) {
 
 export async function loginUser(
   page: Page,
-  userEmail: string,
+  user: {
+    email: string;
+    password: string;
+  },
   config?: {
     isElectron?: boolean;
     beforeLogin?: () => Promise<void>;
@@ -172,14 +178,12 @@ export async function loginUser(
   }
 
   await clickSideBarCurrentWorkspaceBanner(page);
-  await page.getByTestId('cloud-signin-button').click({
-    delay: 200,
-  });
-  await page.getByPlaceholder('Enter your email address').fill(userEmail);
+  await page.getByTestId('cloud-signin-button').click();
+  await page.getByPlaceholder('Enter your email address').fill(user.email);
   await page.getByTestId('continue-login-button').click({
     delay: 200,
   });
-  await page.getByTestId('password-input').fill('123456');
+  await page.getByTestId('password-input').fill(user.password);
   if (config?.beforeLogin) {
     await config.beforeLogin();
   }

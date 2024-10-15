@@ -27,7 +27,7 @@ test.beforeEach(async () => {
 });
 
 test.beforeEach(async ({ page }) => {
-  await loginUser(page, user.email);
+  await loginUser(page, user);
 });
 
 test('can enable share page', async ({ page, browser }) => {

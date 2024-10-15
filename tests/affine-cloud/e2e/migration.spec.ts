@@ -30,7 +30,7 @@ test.beforeEach(async () => {
 });
 
 test.beforeEach(async ({ page, context }) => {
-  await loginUser(page, user.email, {
+  await loginUser(page, user, {
     beforeLogin: async () => {
       expect(await getLoginCookie(context)).toBeUndefined();
     },
@@ -56,7 +56,7 @@ test.skip('migration', async ({ page, browser }) => {
     // create the old cloud workspace in another browser
     const context = await browser.newContext();
     const page = await context.newPage();
-    await loginUser(page, user.email);
+    await loginUser(page, user);
     await page.reload();
     await createLocalWorkspace(
       {

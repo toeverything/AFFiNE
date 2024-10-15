@@ -28,7 +28,7 @@ let user: {
 
 test.beforeEach(async ({ page }) => {
   user = await createRandomUser();
-  await loginUser(page, user.email);
+  await loginUser(page, user);
 });
 
 test('should have pagination in member list', async ({ page }) => {

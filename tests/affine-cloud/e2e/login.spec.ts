@@ -36,7 +36,7 @@ test.describe('login first', () => {
 
   test.beforeEach(async ({ page }) => {
     user = await createRandomUser();
-    await loginUser(page, user.email);
+    await loginUser(page, user);
   });
 
   test('exit successfully and re-login', async ({ page }) => {

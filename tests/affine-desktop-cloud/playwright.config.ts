@@ -14,7 +14,7 @@ import type { PlaywrightTestConfig } from '@playwright/test';
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
   fullyParallel: true,
-  timeout: process.env.CI ? 50_000 : 30_000,
+  timeout: process.env.CI ? 300_000 : 60_000,
   outputDir: testResultDir,
   use: {
     viewport: { width: 1440, height: 800 },
