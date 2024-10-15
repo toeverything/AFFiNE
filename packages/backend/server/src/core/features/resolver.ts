@@ -37,7 +37,7 @@ export class AvailableUserFeatureConfig {
 
   async availableUserFeatures() {
     return this.config.isSelfhosted
-      ? [FeatureType.Admin]
+      ? [FeatureType.Admin, FeatureType.UnlimitedCopilot]
       : [FeatureType.EarlyAccess, FeatureType.AIEarlyAccess, FeatureType.Admin];
   }
 }
