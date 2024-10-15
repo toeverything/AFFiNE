@@ -29,7 +29,7 @@ export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
   const authService = useService(AuthService);
   const [searchParams] = useSearchParams();
   const [isMutating, setIsMutating] = useState(false);
-  const [verifyToken, challenge] = useCaptcha();
+  const [verifyToken, challenge, refreshChallenge] = useCaptcha();
   const [email, setEmail] = useState('');
 
   const [isValidEmail, setIsValidEmail] = useState(true);
@@ -53,6 +53,7 @@ export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
           // provider password sign-in if user has by default
           //  If with payment, onl support email sign in to avoid redirect to affine app
           if (hasPassword) {
+            refreshChallenge?.();
             setAuthState({
               state: 'signInWithPassword',
               email,
@@ -82,7 +83,14 @@ export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
     }
 
     setIsMutating(false);
-  }, [authService, challenge, email, setAuthState, verifyToken]);
+  }, [
+    authService,
+    challenge,
+    email,
+    refreshChallenge,
+    setAuthState,
+    verifyToken,
+  ]);
 
   return (
     <>
