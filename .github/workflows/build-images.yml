@@ -135,83 +135,6 @@ jobs:
           path: ./packages/frontend/apps/mobile/dist
           if-no-files-found: error
 
-  build-web-selfhost:
-    name: Build @affine/web selfhost
-    runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Version
-        id: version
-        uses: ./.github/actions/setup-version
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-      - name: Build Core
-        run: yarn nx build @affine/web --skip-nx-cache
-        env:
-          BUILD_TYPE: ${{ github.event.inputs.flavor }}
-          PUBLIC_PATH: '/'
-          SELF_HOSTED: true
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-      - name: Download selfhost fonts
-        run: node ./scripts/download-blocksuite-fonts.mjs
-      - name: Upload web artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: selfhost-web
-          path: ./packages/frontend/apps/web/dist
-          if-no-files-found: error
-
-  build-mobile-selfhost:
-    name: Build @affine/mobile selfhost
-    runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Version
-        id: version
-        uses: ./.github/actions/setup-version
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-      - name: Build Mobile
-        run: yarn nx build @affine/mobile --skip-nx-cache
-        env:
-          BUILD_TYPE: ${{ github.event.inputs.flavor }}
-          PUBLIC_PATH: '/mobile/'
-          SELF_HOSTED: true
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-      - name: Upload mobile artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: selfhost-mobile
-          path: ./packages/frontend/apps/mobile/dist
-          if-no-files-found: error
-
-  build-admin-selfhost:
-    name: Build @affine/admin selfhost
-    runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.flavor }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Version
-        id: version
-        uses: ./.github/actions/setup-version
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-      - name: Build admin
-        run: yarn nx build @affine/admin --skip-nx-cache
-        env:
-          BUILD_TYPE: ${{ github.event.inputs.flavor }}
-          PUBLIC_PATH: '/admin/'
-          SELF_HOSTED: true
-          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
-      - name: Upload admin artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: selfhost-admin
-          path: ./packages/frontend/admin/dist
-          if-no-files-found: error
-
   build-server-native:
     name: Build Server native - ${{ matrix.targets.name }}
     runs-on: ubuntu-latest
@@ -256,9 +179,6 @@ jobs:
       - build-web
       - build-mobile
       - build-admin
-      - build-web-selfhost
-      - build-mobile-selfhost
-      - build-admin-selfhost
       - build-server-native
     steps:
       - uses: actions/checkout@v4
@@ -333,24 +253,6 @@ jobs:
         with:
           name: admin
           path: ./packages/frontend/admin/dist
-
-      - name: Download selfhost web artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: selfhost-web
-          path: ./packages/frontend/apps/web/dist/selfhost
-
-      - name: Download selfhost mobile artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: selfhost-mobile
-          path: ./packages/frontend/apps/mobile/dist/selfhost
-
-      - name: Download selfhost admin artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: selfhost-admin
-          path: ./packages/frontend/admin/dist/selfhost
 
       - name: Install Node.js dependencies
         run: |

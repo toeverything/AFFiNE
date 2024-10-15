@@ -3,7 +3,7 @@ import { defineStartupConfig, ModuleConfig } from '../../fundamentals/config';
 export interface ServerStartupConfigurations {
   /**
    * Base url of AFFiNE server, used for generating external urls.
-   * default to be `[AFFiNE.protocol]://[AFFiNE.host][:AFFiNE.port]?[AFFiNE.path]` if not specified
+   * default to be `[AFFiNE.protocol]://[AFFiNE.host][:AFFiNE.port]/[AFFiNE.path]` if not specified
    */
   externalUrl: string;
   /**

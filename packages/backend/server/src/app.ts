@@ -24,6 +24,10 @@ export async function createApp() {
     logger: AFFiNE.affine.stable ? ['log'] : ['verbose'],
   });
 
+  if (AFFiNE.server.path) {
+    app.setGlobalPrefix(AFFiNE.server.path);
+  }
+
   app.use(serverTimingAndCache);
 
   app.use(
