@@ -88,6 +88,7 @@ export class PagePropertiesMetaManager {
     type: PagePropertyType;
     icon?: string;
   }) {
+    this.adapter.ensureRootProperties();
     const id = nanoid();
     const { type, icon } = schema;
     const newOrder =
@@ -109,6 +110,7 @@ export class PagePropertiesMetaManager {
   }
 
   updatePropertyMeta(id: string, opt: Partial<PageInfoCustomPropertyMeta>) {
+    this.adapter.ensureRootProperties();
     if (!this.checkPropertyExists(id)) {
       logger.warn(`property ${id} not found`);
       return;
@@ -122,6 +124,7 @@ export class PagePropertiesMetaManager {
 
   removePropertyMeta(id: string) {
     // should warn if the property is in use
+    this.adapter.ensureRootProperties();
     delete this.customPropertiesSchema[id];
   }
 
