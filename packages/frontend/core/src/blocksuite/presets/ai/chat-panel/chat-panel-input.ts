@@ -371,6 +371,7 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
               }
             }
           }}
+          data-testid="chat-panel-input"
         ></textarea>
         <div class="chat-panel-input-actions">
           <div
@@ -378,6 +379,7 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
             @click=${async () => {
               await this.cleanupHistories();
             }}
+            data-testid="chat-panel-clear"
           >
             ${ChatClearIcon}
           </div>
@@ -410,6 +412,7 @@ export class ChatPanelInput extends WithDisposable(LitElement) {
                 @click="${this.send}"
                 class="chat-panel-send"
                 aria-disabled=${this.isInputEmpty}
+                data-testid="chat-panel-send"
               >
                 ${ChatSendIcon}
               </div>`}

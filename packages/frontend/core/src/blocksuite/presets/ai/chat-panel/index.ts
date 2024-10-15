@@ -244,7 +244,7 @@ export class ChatPanel extends WithDisposable(ShadowlessElement) {
   override render() {
     return html` <div class="chat-panel-container">
       <div class="chat-panel-title">
-        <div>AFFINE AI</div>
+        <div>AFFiNE AI</div>
         <div
           @click=${() => {
             AIProvider.toggleGeneralAIOnboarding?.(true);

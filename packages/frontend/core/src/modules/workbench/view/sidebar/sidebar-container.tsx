@@ -40,6 +40,7 @@ export const SidebarContainer = ({
               styles.sidebarBodyTarget,
               !BUILD_CONFIG.isElectron && styles.borderTop
             )}
+            data-testid={`sidebar-tab-content-${sidebar.id}`}
           />
         ))
       ) : (

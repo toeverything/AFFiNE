@@ -178,13 +178,17 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
                   this._notifySuccess('Copied to clipboard');
                 }
               }}
+              data-testid="action-copy-button"
             >
               ${CopyIcon}
               <affine-tooltip>Copy</affine-tooltip>
             </div>`
           : nothing}
         ${isLast
-          ? html`<div @click=${() => this.retry()}>
+          ? html`<div
+              @click=${() => this.retry()}
+              data-testid="action-retry-button"
+            >
               ${RetryIcon}
               <affine-tooltip>Retry</affine-tooltip>
             </div>`
