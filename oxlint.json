@@ -1,4 +1,8 @@
 {
+  "categories": {
+    "correctness": "error",
+    "perf": "error"
+  },
   "rules": {
     // allow
     "import/named": "allow",
