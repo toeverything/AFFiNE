@@ -611,6 +611,21 @@ jobs:
           path: ./test-results
           if-no-files-found: ignore
 
+  test-build-mobile-app:
+    runs-on: ubuntu-latest
+    name: Call mobile build
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: call mobile release by push
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: release-mobile.yml
+          inputs: '{ "build-type": "canary", "build-target": "development" }'
+          ref: ${{ github.event.pull_request.head.ref  }}
+
   test-done:
     needs:
       - analyze

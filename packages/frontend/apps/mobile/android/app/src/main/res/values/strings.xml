@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AFFiNE</string>
+    <string name="title_activity_main">AFFiNE</string>
+    <string name="package_name">pro.app.affine</string>
+    <string name="custom_url_scheme">pro.app.affine</string>
+</resources>

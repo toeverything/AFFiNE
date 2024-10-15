@@ -1,0 +1,36 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    api_key = app_store_connect_api_key(
+      key_id: ENV['APPLE_STORE_CONNECT_API_KEY_ID'],
+      issuer_id: ENV['APPLE_STORE_CONNECT_API_ISSUER_ID'],
+      key_content: ENV['APPLE_STORE_CONNECT_API_KEY'],
+      is_key_content_base64: true,
+      duration: 1200, # optional (maximum 1200)
+      in_house: false # optional but may be required if using match/sigh
+    )
+    increment_build_number(xcodeproj: "App.xcodeproj")
+    build_app(
+      workspace: "App.xcworkspace",
+      scheme: "App"
+    )
+    upload_to_testflight(skip_waiting_for_build_processing: true, api_key: api_key) if ENV['BUILD_TARGET'] == 'distribution'
+  end
+end
