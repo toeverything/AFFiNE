@@ -7,7 +7,6 @@ import {
   getPageByTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import { waitForLogMessage } from '@affine-test/kit/utils/utils';
 import { expect } from '@playwright/test';
 
 test('New a page and open it, then favorite it', async ({
@@ -60,23 +59,6 @@ test('Export to html, markdown and png', async ({ page }) => {
   //   await page.getByTestId('export-to-png').click();
   //   await downloadPromise;
   // }
-});
-
-test.skip('Export to pdf', async ({ page }) => {
-  const CheckedMessage = '[test] beforeprint event emitted';
-  page.addInitScript(() => {
-    window.addEventListener('beforeprint', () => {
-      console.log(CheckedMessage);
-    });
-  });
-  await openHomePage(page);
-  await waitForEditorLoad(page);
-  {
-    await clickPageMoreActions(page);
-    await page.getByTestId('export-menu').click();
-    await page.getByTestId('export-to-pdf').click();
-    expect(waitForLogMessage(page, CheckedMessage)).toBeTruthy();
-  }
 });
 
 test('Cancel favorite', async ({ page, workspace }) => {

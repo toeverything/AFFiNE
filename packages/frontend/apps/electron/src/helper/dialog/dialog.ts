@@ -9,11 +9,8 @@ import { storeWorkspaceMeta } from '../workspace';
 import { getWorkspaceDBPath, getWorkspacesBasePath } from '../workspace/meta';
 
 export type ErrorMessage =
-  | 'DB_FILE_ALREADY_LOADED'
   | 'DB_FILE_PATH_INVALID'
   | 'DB_FILE_INVALID'
-  | 'DB_FILE_MIGRATION_FAILED'
-  | 'FILE_ALREADY_EXISTS'
   | 'UNKNOWN_ERROR';
 
 export interface LoadDBFileResult {

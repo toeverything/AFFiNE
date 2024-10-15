@@ -176,23 +176,6 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
 
     unsubs.push(
       registerAffineCommand({
-        id: `editor:${mode}-export-to-pdf`,
-        preconditionStrategy: () => mode === 'page' && !trash,
-        category: `editor:${mode}`,
-        icon: mode === 'page' ? <PageIcon /> : <EdgelessIcon />,
-        label: t['Export to PDF'](),
-        async run() {
-          track.$.cmdk.editor.export({
-            type: 'pdf',
-          });
-
-          exportHandler('pdf');
-        },
-      })
-    );
-
-    unsubs.push(
-      registerAffineCommand({
         id: `editor:${mode}-export-to-html`,
         preconditionStrategy,
         category: `editor:${mode}`,

@@ -8,11 +8,7 @@ import {
   type MenuProps,
   Skeleton,
 } from '@affine/component';
-import {
-  authAtom,
-  openSettingModalAtom,
-  openSignOutModalAtom,
-} from '@affine/core/components/atoms';
+import { authAtom, openSettingModalAtom } from '@affine/core/components/atoms';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { AccountIcon, SignOutIcon } from '@blocksuite/icons/rc';
@@ -32,6 +28,7 @@ import {
   UserQuotaService,
 } from '../../modules/cloud';
 import { UserPlanButton } from '../affine/auth/user-plan-button';
+import { useSignOut } from '../hooks/affine/use-sign-out';
 import * as styles from './index.css';
 import { UnknownUserIcon } from './unknow-user';
 
@@ -79,7 +76,7 @@ const UnauthorizedUserInfo = () => {
 
 const AccountMenu = () => {
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
-  const setOpenSignOutModalAtom = useSetAtom(openSignOutModalAtom);
+  const openSignOutModal = useSignOut();
 
   const onOpenAccountSetting = useCallback(() => {
     track.$.navigationPanel.profileAndBadge.openSettings({ to: 'account' });
@@ -89,10 +86,6 @@ const AccountMenu = () => {
       activeTab: 'account',
     }));
   }, [setSettingModalAtom]);
-
-  const onOpenSignOutModal = useCallback(() => {
-    setOpenSignOutModalAtom(true);
-  }, [setOpenSignOutModalAtom]);
 
   const t = useI18n();
 
@@ -108,7 +101,7 @@ const AccountMenu = () => {
       <MenuItem
         prefixIcon={<SignOutIcon />}
         data-testid="workspace-modal-sign-out-option"
-        onClick={onOpenSignOutModal}
+        onClick={openSignOutModal}
       >
         {t['com.affine.workspace.cloud.account.logout']()}
       </MenuItem>
