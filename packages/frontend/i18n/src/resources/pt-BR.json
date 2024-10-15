@@ -1095,7 +1095,6 @@
   "com.affine.settings.workspace.properties.add_property": "Adicionar propriedade",
   "com.affine.settings.workspace.properties.all": "Todos",
   "com.affine.settings.workspace.properties.delete-property": "Excluir propriedade",
-  "com.affine.settings.workspace.properties.delete-property-prompt": "A propriedade \"<1>{{ name }}</1>\" será removida de {{ count }} página(s). Esta ação não pode ser desfeita.",
   "com.affine.settings.workspace.properties.doc": "<0>{{count}}</0> página",
   "com.affine.settings.workspace.properties.doc_others": "<0>{{count}}</0> páginas",
   "com.affine.settings.workspace.properties.edit-property": "Editar propriedade",

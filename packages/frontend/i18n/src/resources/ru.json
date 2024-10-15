@@ -927,7 +927,6 @@
   "com.affine.settings.workspace.properties.add_property": "Добавить свойство",
   "com.affine.settings.workspace.properties.all": "Все",
   "com.affine.settings.workspace.properties.delete-property": "Удалить свойство",
-  "com.affine.settings.workspace.properties.delete-property-prompt": "Свойство \"<1>{{ name }}</1>\" будет удалено из {{ count }} документ(ов). Это действие не может быть отменено.\n\n\n\n\n\n",
   "com.affine.settings.workspace.properties.doc": "<0>{{count}}</0> документ(ов)",
   "com.affine.settings.workspace.properties.doc_others": "<0>{{count}}</0> документ(ов)",
   "com.affine.settings.workspace.properties.edit-property": "Изменить свойство",

@@ -842,7 +842,6 @@
   "com.affine.settings.workspace.properties.add_property": "Ajouter des propriétés",
   "com.affine.settings.workspace.properties.all": "Tout",
   "com.affine.settings.workspace.properties.delete-property": "Supprimer la propriété",
-  "com.affine.settings.workspace.properties.delete-property-prompt": "La propriété \"<1>{{name}}</1>\" sera supprimée de {{count}} document(s). Cette action est irréversible.",
   "com.affine.settings.workspace.properties.doc": "<0>{{count}}</0> document",
   "com.affine.settings.workspace.properties.doc_others": "<0>{{count}}</0> documents",
   "com.affine.settings.workspace.properties.edit-property": "Modifier la propriété",
