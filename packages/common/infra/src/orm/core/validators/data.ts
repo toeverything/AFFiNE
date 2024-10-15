@@ -6,7 +6,7 @@ import type { DataValidator } from './types';
 function inputType(val: any) {
   return val === null ||
     Array.isArray(val) ||
-    val.constructor === 'Object' ||
+    val.constructor === Object ||
     !val.constructor /* Object.create(null) */
     ? 'json'
     : typeof val;

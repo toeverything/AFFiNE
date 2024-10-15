@@ -3,6 +3,8 @@ import {
   IconButton,
   Input,
   Menu,
+  MenuItem,
+  MenuSeparator,
   RowInput,
   Scrollable,
 } from '@affine/component';
@@ -19,8 +21,6 @@ import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { useCallback, useMemo, useReducer, useRef, useState } from 'react';
 
 import { TagItem, TempTagItem } from '../../page-list';
-import type { MenuItemOption } from './menu-items';
-import { renderMenuItemOptions } from './menu-items';
 import * as styles from './tags-inline-editor.css';
 
 interface TagsEditorProps {
@@ -93,73 +93,12 @@ export const EditTagMenu = ({
   const navigate = useNavigateHelper();
 
   const menuProps = useMemo(() => {
-    const options: MenuItemOption[] = [];
     const updateTagName = (name: string) => {
       if (name.trim() === '') {
         return;
       }
       tag?.rename(name);
     };
-    options.push(
-      <Input
-        defaultValue={tagValue}
-        onBlur={e => {
-          updateTagName(e.currentTarget.value);
-        }}
-        onKeyDown={e => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            updateTagName(e.currentTarget.value);
-          }
-          e.stopPropagation();
-        }}
-        placeholder={t['Untitled']()}
-      />
-    );
-
-    options.push('-');
-
-    options.push({
-      text: t['Delete'](),
-      icon: <DeleteIcon />,
-      type: 'danger',
-      onClick() {
-        onTagDelete([tag?.id || '']);
-      },
-    });
-
-    options.push({
-      text: t['com.affine.page-properties.tags.open-tags-page'](),
-      icon: <TagsIcon />,
-      onClick() {
-        navigate.jumpToTag(legacyProperties.workspaceId, tag?.id || '');
-      },
-    });
-
-    options.push('-');
-
-    options.push(
-      tagService.tagColors.map(([name, color], i) => {
-        return {
-          text: name,
-          icon: (
-            <div key={i} className={styles.tagColorIconWrapper}>
-              <div
-                className={styles.tagColorIcon}
-                style={{
-                  backgroundColor: color,
-                }}
-              />
-            </div>
-          ),
-          checked: tagColor === color,
-          onClick() {
-            tag?.changeColor(color);
-          },
-        };
-      })
-    );
-    const items = renderMenuItemOptions(options);
 
     return {
       contentOptions: {
@@ -167,7 +106,69 @@ export const EditTagMenu = ({
           e.stopPropagation();
         },
       },
-      items,
+      items: (
+        <>
+          <Input
+            defaultValue={tagValue}
+            onBlur={e => {
+              updateTagName(e.currentTarget.value);
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                updateTagName(e.currentTarget.value);
+              }
+              e.stopPropagation();
+            }}
+            placeholder={t['Untitled']()}
+          />
+          <MenuSeparator />
+          <MenuItem
+            prefixIcon={<DeleteIcon />}
+            type="danger"
+            onClick={() => {
+              onTagDelete([tag?.id || '']);
+            }}
+          >
+            {t['Delete']()}
+          </MenuItem>
+          <MenuItem
+            prefixIcon={<TagsIcon />}
+            onClick={() => {
+              navigate.jumpToTag(legacyProperties.workspaceId, tag?.id || '');
+            }}
+          >
+            {t['com.affine.page-properties.tags.open-tags-page']()}
+          </MenuItem>
+          <MenuSeparator />
+          <Scrollable.Root>
+            <Scrollable.Viewport className={styles.menuItemList}>
+              {tagService.tagColors.map(([name, color], i) => (
+                <MenuItem
+                  key={i}
+                  checked={tagColor === color}
+                  prefixIcon={
+                    <div key={i} className={styles.tagColorIconWrapper}>
+                      <div
+                        className={styles.tagColorIcon}
+                        style={{
+                          backgroundColor: color,
+                        }}
+                      />
+                    </div>
+                  }
+                  onClick={() => {
+                    tag?.changeColor(color);
+                  }}
+                >
+                  {name}
+                </MenuItem>
+              ))}
+              <Scrollable.Scrollbar className={styles.menuItemListScrollbar} />
+            </Scrollable.Viewport>
+          </Scrollable.Root>
+        </>
+      ),
     } satisfies Partial<MenuProps>;
   }, [
     legacyProperties.workspaceId,

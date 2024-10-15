@@ -260,27 +260,27 @@ export const ExplorerFolderNodeFolder = ({
           node.moveHere(data.source.data.entity.id, node.indexAt('before'));
           track.$.navigationPanel.organize.moveOrganizeItem({ type: 'folder' });
         } else if (
-          data.source.data.from?.at === 'explorer:organize:folder-node'
-        ) {
-          node.moveHere(data.source.data.from.nodeId, node.indexAt('before'));
-          track.$.navigationPanel.organize.moveOrganizeItem({
-            type: 'link',
-            target: data.source.data.entity?.type,
-          });
-        } else if (
           data.source.data.entity?.type === 'collection' ||
           data.source.data.entity?.type === 'doc' ||
           data.source.data.entity?.type === 'tag'
         ) {
-          node.createLink(
-            data.source.data.entity?.type,
-            data.source.data.entity.id,
-            node.indexAt('before')
-          );
-          track.$.navigationPanel.organize.createOrganizeItem({
-            type: 'link',
-            target: data.source.data.entity?.type,
-          });
+          if (data.source.data.from?.at === 'explorer:organize:folder-node') {
+            node.moveHere(data.source.data.from.nodeId, node.indexAt('before'));
+            track.$.navigationPanel.organize.moveOrganizeItem({
+              type: 'link',
+              target: data.source.data.entity?.type,
+            });
+          } else {
+            node.createLink(
+              data.source.data.entity?.type,
+              data.source.data.entity.id,
+              node.indexAt('before')
+            );
+            track.$.navigationPanel.organize.createOrganizeItem({
+              type: 'link',
+              target: data.source.data.entity?.type,
+            });
+          }
         }
       } else {
         onDrop?.(data);
@@ -331,26 +331,26 @@ export const ExplorerFolderNodeFolder = ({
         node.moveHere(data.source.data.entity.id, node.indexAt('before'));
         track.$.navigationPanel.organize.moveOrganizeItem({ type: 'folder' });
       } else if (
-        data.source.data.from?.at === 'explorer:organize:folder-node'
-      ) {
-        node.moveHere(data.source.data.from.nodeId, node.indexAt('before'));
-        track.$.navigationPanel.organize.moveOrganizeItem({
-          type: data.source.data.entity?.type,
-        });
-      } else if (
         data.source.data.entity?.type === 'collection' ||
         data.source.data.entity?.type === 'doc' ||
         data.source.data.entity?.type === 'tag'
       ) {
-        node.createLink(
-          data.source.data.entity?.type,
-          data.source.data.entity.id,
-          node.indexAt('before')
-        );
-        track.$.navigationPanel.organize.createOrganizeItem({
-          type: 'link',
-          target: data.source.data.entity?.type,
-        });
+        if (data.source.data.from?.at === 'explorer:organize:folder-node') {
+          node.moveHere(data.source.data.from.nodeId, node.indexAt('before'));
+          track.$.navigationPanel.organize.moveOrganizeItem({
+            type: data.source.data.entity?.type,
+          });
+        } else {
+          node.createLink(
+            data.source.data.entity?.type,
+            data.source.data.entity.id,
+            node.indexAt('before')
+          );
+          track.$.navigationPanel.organize.createOrganizeItem({
+            type: 'link',
+            target: data.source.data.entity?.type,
+          });
+        }
       }
     },
     [node]
@@ -380,31 +380,31 @@ export const ExplorerFolderNodeFolder = ({
           );
           track.$.navigationPanel.organize.moveOrganizeItem({ type: 'folder' });
         } else if (
-          data.source.data.from?.at === 'explorer:organize:folder-node'
-        ) {
-          node.moveHere(
-            data.source.data.from.nodeId,
-            node.indexAt(at, dropAtNode.id)
-          );
-          track.$.navigationPanel.organize.moveOrganizeItem({
-            type: 'link',
-            target: data.source.data.entity?.type,
-          });
-        } else if (
           data.source.data.entity?.type === 'collection' ||
           data.source.data.entity?.type === 'doc' ||
           data.source.data.entity?.type === 'tag'
         ) {
-          node.createLink(
-            data.source.data.entity?.type,
-            data.source.data.entity.id,
-            node.indexAt(at, dropAtNode.id)
-          );
+          if (data.source.data.from?.at === 'explorer:organize:folder-node') {
+            node.moveHere(
+              data.source.data.from.nodeId,
+              node.indexAt(at, dropAtNode.id)
+            );
+            track.$.navigationPanel.organize.moveOrganizeItem({
+              type: 'link',
+              target: data.source.data.entity?.type,
+            });
+          } else {
+            node.createLink(
+              data.source.data.entity?.type,
+              data.source.data.entity.id,
+              node.indexAt(at, dropAtNode.id)
+            );
 
-          track.$.navigationPanel.organize.createOrganizeItem({
-            type: 'link',
-            target: data.source.data.entity?.type,
-          });
+            track.$.navigationPanel.organize.createOrganizeItem({
+              type: 'link',
+              target: data.source.data.entity?.type,
+            });
+          }
         }
       } else if (data.treeInstruction?.type === 'reparent') {
         const currentLevel = data.treeInstruction.currentLevel;

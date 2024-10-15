@@ -17,6 +17,7 @@
     "@blocksuite/affine": "0.17.18",
     "@datastructures-js/binary-search-tree": "^5.3.2",
     "foxact": "^0.2.33",
+    "fractional-indexing": "^3.2.0",
     "fuse.js": "^7.0.0",
     "graphemer": "^1.4.0",
     "idb": "^8.0.0",

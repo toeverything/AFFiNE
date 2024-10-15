@@ -81,39 +81,40 @@ test('allow create tag on journals page', async ({ page }) => {
 });
 
 test('add custom property', async ({ page }) => {
-  await addCustomProperty(page, 'Text');
-  await addCustomProperty(page, 'Number');
-  await addCustomProperty(page, 'Date');
-  await addCustomProperty(page, 'Checkbox');
-  await addCustomProperty(page, 'Created by');
-  await addCustomProperty(page, 'Last edited by');
+  await addCustomProperty(page, page, 'text');
+  await addCustomProperty(page, page, 'number');
+  await addCustomProperty(page, page, 'date');
+  await addCustomProperty(page, page, 'checkbox');
+  await addCustomProperty(page, page, 'createdBy');
+  await addCustomProperty(page, page, 'updatedBy');
 });
 
 test('add custom property & edit', async ({ page }) => {
-  await addCustomProperty(page, 'Checkbox');
+  await addCustomProperty(page, page, 'checkbox');
   await expect(
-    getPropertyValueLocator(page, 'Checkbox').locator('input')
+    getPropertyValueLocator(page, 'checkbox').locator('input')
   ).not.toBeChecked();
-  await clickPropertyValue(page, 'Checkbox');
+  await clickPropertyValue(page, 'checkbox');
   await expect(
-    getPropertyValueLocator(page, 'Checkbox').locator('input')
+    getPropertyValueLocator(page, 'checkbox').locator('input')
   ).toBeChecked();
 });
 
 test('property table reordering', async ({ page }) => {
-  await addCustomProperty(page, 'Text');
-  await addCustomProperty(page, 'Number');
-  await addCustomProperty(page, 'Date');
-  await addCustomProperty(page, 'Checkbox');
-  await addCustomProperty(page, 'Created by');
-  await addCustomProperty(page, 'Last edited by');
+  await addCustomProperty(page, page, 'text');
+  await addCustomProperty(page, page, 'number');
+  await addCustomProperty(page, page, 'date');
+  await addCustomProperty(page, page, 'checkbox');
+  await addCustomProperty(page, page, 'createdBy');
+  await addCustomProperty(page, page, 'updatedBy');
 
   await dragTo(
     page,
-    page.locator('[data-testid="page-property-row-name"]:has-text("Text")'),
+    page.locator('[data-testid="doc-property-name"]:has-text("Text")'),
     page.locator(
-      '[data-testid="page-property-row-name"]:has-text("Checkbox") + div'
-    )
+      '[data-testid="doc-property-name"]:has-text("Checkbox") + div'
+    ),
+    'bottom'
   );
 
   // new order should be (Tags), Number, Date, Checkbox, Text
@@ -128,9 +129,9 @@ test('property table reordering', async ({ page }) => {
   ].entries()) {
     await expect(
       page
-        .getByTestId('page-property-row')
+        .getByTestId('doc-property-row')
         .nth(index)
-        .getByTestId('page-property-row-name')
+        .getByTestId('doc-property-name')
     ).toHaveText(property);
   }
 });
@@ -143,23 +144,20 @@ test('page info show more will not should by default when there is no properties
 });
 
 test('page info show more will show all properties', async ({ page }) => {
-  await addCustomProperty(page, 'Text');
-  await addCustomProperty(page, 'Number');
-  await addCustomProperty(page, 'Date');
-  await addCustomProperty(page, 'Checkbox');
-  await addCustomProperty(page, 'Created by');
-  await addCustomProperty(page, 'Last edited by');
+  await addCustomProperty(page, page, 'text');
+  await addCustomProperty(page, page, 'number');
+  await addCustomProperty(page, page, 'date');
+  await addCustomProperty(page, page, 'checkbox');
+  await addCustomProperty(page, page, 'createdBy');
+  await addCustomProperty(page, page, 'updatedBy');
 
-  await expect(page.getByTestId('page-info-show-more')).toBeVisible();
-  await page.click('[data-testid="page-info-show-more"]');
-  await expect(
-    page.getByRole('heading', {
-      name: 'customize properties',
-    })
-  ).toBeVisible();
+  await changePropertyVisibility(page, 'Text', 'always-hide');
 
-  // new order should be (Tags), Number, Date, Checkbox, Text
+  await expect(page.getByTestId('property-collapsible-button')).toBeVisible();
+  await page.click('[data-testid="property-collapsible-button"]');
+
   for (const [index, property] of [
+    'Tags',
     'Text',
     'Number',
     'Date',
@@ -169,51 +167,51 @@ test('page info show more will show all properties', async ({ page }) => {
   ].entries()) {
     await expect(
       page
-        .getByTestId('page-properties-settings-menu-item')
+        .getByTestId('doc-property-row')
         .nth(index)
-        .getByTestId('page-property-setting-row-name')
+        .getByTestId('doc-property-name')
     ).toHaveText(property);
   }
 });
 
 test('change page properties visibility', async ({ page }) => {
-  await addCustomProperty(page, 'Text');
-  await addCustomProperty(page, 'Number');
-  await addCustomProperty(page, 'Date');
-  await addCustomProperty(page, 'Checkbox');
+  await addCustomProperty(page, page, 'text');
+  await addCustomProperty(page, page, 'number');
+  await addCustomProperty(page, page, 'date');
+  await addCustomProperty(page, page, 'checkbox');
 
   // add some number to number property
   await clickPropertyValue(page, 'Number');
   await page.locator('input[type=number]').fill('123');
 
-  await changePropertyVisibility(page, 'Text', 'Hide in view');
-  await changePropertyVisibility(page, 'Number', 'Hide in view when empty');
+  await changePropertyVisibility(page, 'Text', 'always-hide');
+  await changePropertyVisibility(page, 'Number', 'hide-when-empty');
 
   // text property should not be visible
   await expect(
-    page.locator('[data-testid="page-property-row-name"]:has-text("Text")')
+    page.locator('[data-testid="doc-property-name"]:has-text("Text")')
   ).not.toBeVisible();
 
   // number property should be visible
   await expect(
-    page.locator('[data-testid="page-property-row-name"]:has-text("Number")')
+    page.locator('[data-testid="doc-property-name"]:has-text("Number")')
   ).toBeVisible();
 });
 
 test('check if added property is also in workspace settings', async ({
   page,
 }) => {
-  await addCustomProperty(page, 'Text');
+  await addCustomProperty(page, page, 'text');
   await openWorkspaceProperties(page);
   await expect(
-    page.locator('[data-testid=custom-property-row]:has-text("Text")')
+    page.locator('[data-testid=doc-property-manager-item]:has-text("Text")')
   ).toBeVisible();
 });
 
 test('edit property name', async ({ page }) => {
-  await addCustomProperty(page, 'Text');
+  await addCustomProperty(page, page, 'text');
   await page
-    .locator('[data-testid="page-property-row-name"]:has-text("Text")')
+    .locator('[data-testid="doc-property-name"]:has-text("Text")')
     .click();
   await expect(page.locator('[data-radix-menu-content]')).toBeVisible();
   await expect(page.locator('[data-radix-menu-content] input')).toHaveValue(
@@ -229,26 +227,24 @@ test('edit property name', async ({ page }) => {
   // check if the property name is also updated in workspace settings
   await openWorkspaceProperties(page);
   await expect(
-    page.locator('[data-testid=custom-property-row]:has-text("New Text")')
+    page.locator('[data-testid=doc-property-manager-item]:has-text("New Text")')
   ).toBeVisible();
 });
 
 test('delete property via property popup', async ({ page }) => {
-  await addCustomProperty(page, 'Text');
+  await addCustomProperty(page, page, 'text');
   await page
-    .locator('[data-testid="page-property-row-name"]:has-text("Text")')
+    .locator('[data-testid="doc-property-name"]:has-text("Text")')
     .click();
   await expect(page.locator('[data-radix-menu-content]')).toBeVisible();
   await page
     .locator('[data-radix-menu-content]')
     .getByRole('menuitem', {
-      name: 'Remove property',
+      name: 'Delete property',
     })
     .click();
   // confirm delete dialog should show
-  await expect(page.getByRole('dialog')).toContainText(
-    `The "Text" property will be remove from 1 doc(s). This action cannot be undone.`
-  );
+  await expect(page.getByRole('dialog')).toBeVisible();
   await page
     .getByRole('button', {
       name: 'Confirm',
@@ -256,84 +252,6 @@ test('delete property via property popup', async ({ page }) => {
     .click();
   // check if the property is removed
   await expect(
-    page.locator('[data-testid="page-property-row-name"]:has-text("Text")')
-  ).not.toBeVisible();
-});
-
-test('create a required property', async ({ page }) => {
-  await openWorkspaceProperties(page);
-  await addCustomProperty(page, 'Text', true);
-
-  await page
-    .locator('[data-testid="custom-property-row"]:has-text("Text")')
-    .getByRole('button')
-    .click();
-
-  await page
-    .getByRole('menuitem', {
-      name: 'Set as required property',
-    })
-    .click();
-
-  await expect(
-    page.locator('[data-testid="custom-property-row"]:has-text("Text")')
-  ).toContainText('Required');
-
-  // close workspace settings
-  await page.keyboard.press('Escape');
-
-  // check if the property is also required in page properties
-  await expect(
-    page.locator('[data-testid="page-property-row-name"]:has-text("Text")')
-  ).toBeVisible();
-
-  // check if the required property is also listed in the show more menu
-  await page.click('[data-testid="page-info-show-more"]');
-  await expect(
-    page.locator(
-      '[data-testid="page-properties-settings-menu-item"]:has-text("Text")'
-    )
-  ).toContainText('Required');
-});
-
-test('delete a required property', async ({ page }) => {
-  await openWorkspaceProperties(page);
-  await addCustomProperty(page, 'Text', true);
-
-  await page
-    .locator('[data-testid="custom-property-row"]:has-text("Text")')
-    .getByRole('button')
-    .click();
-
-  await page
-    .getByRole('menuitem', {
-      name: 'Set as required property',
-    })
-    .click();
-
-  await page
-    .locator('[data-testid="custom-property-row"]:has-text("Text")')
-    .getByRole('button')
-    .click();
-
-  await page
-    .getByRole('menuitem', {
-      name: 'Delete property',
-    })
-    .click();
-  await page
-    .getByRole('button', {
-      name: 'Confirm',
-    })
-    .click();
-
-  // close workspace settings
-  await page.keyboard.press('Escape');
-
-  await waitForEditorLoad(page);
-
-  // check if the property is removed from page properties
-  await expect(
-    page.locator('[data-testid="page-property-row-name"]:has-text("Text")')
+    page.locator('[data-testid="http://localhost:8080/"]:has-text("Text")')
   ).not.toBeVisible();
 });

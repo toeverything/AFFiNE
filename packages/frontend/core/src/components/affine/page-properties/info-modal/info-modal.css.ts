@@ -1,7 +1,6 @@
 import { cssVar } from '@toeverything/theme';
-import { style } from '@vanilla-extract/css';
-
-import { rowHPadding } from '../styles.css';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const container = style({
   maxWidth: 480,
@@ -9,9 +8,6 @@ export const container = style({
   padding: '20px 0',
   alignSelf: 'start',
   marginTop: '120px',
-  vars: {
-    [rowHPadding]: '6px',
-  },
 });
 
 export const titleContainer = style({
@@ -52,4 +48,37 @@ export const hiddenInput = style({
 export const timeRow = style({
   marginTop: 20,
   borderBottom: 4,
+});
+
+export const tableBodyRoot = style({
+  display: 'flex',
+  flexDirection: 'column',
+  position: 'relative',
+});
+
+export const addPropertyButton = style({
+  alignSelf: 'flex-start',
+  fontSize: cssVar('fontSm'),
+  color: `${cssVarV2('text/secondary')}`,
+  padding: '0 4px',
+  height: 36,
+  fontWeight: 400,
+  gap: 6,
+  '@media': {
+    print: {
+      display: 'none',
+    },
+  },
+  selectors: {
+    [`[data-property-collapsed="true"] &`]: {
+      display: 'none',
+    },
+  },
+});
+globalStyle(`${addPropertyButton} svg`, {
+  fontSize: 16,
+  color: cssVarV2('icon/secondary'),
+});
+globalStyle(`${addPropertyButton}:hover svg`, {
+  color: cssVarV2('icon/primary'),
 });

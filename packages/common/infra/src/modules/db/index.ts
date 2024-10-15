@@ -4,7 +4,7 @@ import { WorkspaceDB } from './entities/db';
 import { WorkspaceDBTable } from './entities/table';
 import { WorkspaceDBService } from './services/db';
 
-export type { DocProperties } from './schema';
+export type { DocCustomPropertyInfo, DocProperties } from './schema';
 export { WorkspaceDBService } from './services/db';
 export { transformWorkspaceDBLocalToCloud } from './services/db';
 

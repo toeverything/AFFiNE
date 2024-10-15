@@ -1,0 +1,276 @@
+import type { Edge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
+import { ArrowDownSmallIcon, ArrowUpSmallIcon } from '@blocksuite/icons/rc';
+import clsx from 'clsx';
+import {
+  createContext,
+  forwardRef,
+  type HTMLProps,
+  type PropsWithChildren,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
+
+import { Button } from '../button';
+import { DropIndicator } from '../dnd';
+import { Menu } from '../menu';
+import * as styles from './property.css';
+
+const PropertyTableContext = createContext<{
+  mountProperty: (payload: { isHide: boolean }) => () => void;
+  showAllHide: boolean;
+} | null>(null);
+
+export const PropertyCollapsible = forwardRef<
+  HTMLDivElement,
+  PropsWithChildren<{
+    collapsible?: boolean;
+    defaultCollapsed?: boolean;
+    collapsed?: boolean;
+    onCollapseChange?: (collapsed: boolean) => void;
+    collapseButtonText?: (option: {
+      total: number;
+      hide: number;
+      isCollapsed: boolean;
+    }) => ReactNode;
+  }> &
+    HTMLProps<HTMLDivElement>
+>(
+  (
+    {
+      children,
+      collapsible = true,
+      collapsed,
+      defaultCollapsed,
+      onCollapseChange,
+      collapseButtonText,
+      ...props
+    },
+    ref
+  ) => {
+    const [propertyCount, setPropertyCount] = useState({ total: 0, hide: 0 });
+    const [showAllHide, setShowAllHide] = useState(!defaultCollapsed);
+    const finalCollapsible = collapsible ? propertyCount.hide !== 0 : false;
+    const controlled = collapsed !== undefined;
+    const finalShowAllHide = finalCollapsible
+      ? !controlled
+        ? showAllHide
+        : !collapsed
+      : true;
+
+    const mountProperty = useCallback((payload: { isHide: boolean }) => {
+      setPropertyCount(prev => ({
+        total: prev.total + 1,
+        hide: prev.hide + (payload.isHide ? 1 : 0),
+      }));
+      return () => {
+        setPropertyCount(prev => ({
+          total: prev.total - 1,
+          hide: prev.hide - (payload.isHide ? 1 : 0),
+        }));
+      };
+    }, []);
+
+    const contextValue = useMemo(
+      () => ({ mountProperty, showAllHide: finalShowAllHide }),
+      [mountProperty, finalShowAllHide]
+    );
+
+    const handleShowAllHide = useCallback(() => {
+      setShowAllHide(!finalShowAllHide);
+      onCollapseChange?.(finalShowAllHide);
+    }, [finalShowAllHide, onCollapseChange]);
+
+    return (
+      <div
+        ref={ref}
+        data-property-collapsible={finalCollapsible}
+        data-property-collapsed={!finalShowAllHide}
+        {...props}
+      >
+        <PropertyTableContext.Provider value={contextValue}>
+          {children}
+          {finalCollapsible && (
+            <Button
+              variant="plain"
+              prefix={
+                !finalShowAllHide ? (
+                  <ArrowDownSmallIcon />
+                ) : (
+                  <ArrowUpSmallIcon />
+                )
+              }
+              className={styles.tableButton}
+              onClick={handleShowAllHide}
+              data-testid="property-collapsible-button"
+            >
+              {collapseButtonText
+                ? collapseButtonText({
+                    total: propertyCount.total,
+                    hide: propertyCount.hide,
+                    isCollapsed: !finalShowAllHide,
+                  })
+                : !finalShowAllHide
+                  ? 'Show All'
+                  : 'Hide'}
+            </Button>
+          )}
+        </PropertyTableContext.Provider>
+      </div>
+    );
+  }
+);
+
+PropertyCollapsible.displayName = 'PropertyCollapsible';
+
+const PropertyRootContext = createContext<{
+  mountValue: (payload: { isEmpty: boolean }) => () => void;
+} | null>(null);
+
+export const PropertyRoot = forwardRef<
+  HTMLDivElement,
+  {
+    dropIndicatorEdge?: Edge | null;
+    hideEmpty?: boolean;
+    hide?: boolean;
+  } & HTMLProps<HTMLDivElement>
+>(
+  (
+    { children, className, dropIndicatorEdge, hideEmpty, hide, ...props },
+    ref
+  ) => {
+    const [isEmpty, setIsEmpty] = useState(false);
+    const context = useContext(PropertyTableContext);
+
+    const preferHide = hide || (hideEmpty && isEmpty);
+    const showAllHide = context?.showAllHide;
+    const shouldHide = preferHide && !showAllHide;
+
+    useLayoutEffect(() => {
+      if (context) {
+        return context.mountProperty({ isHide: !!preferHide });
+      }
+      return;
+    }, [context, preferHide]);
+
+    const contextValue = useMemo(
+      () => ({
+        mountValue: (payload: { isEmpty: boolean }) => {
+          setIsEmpty(payload.isEmpty);
+          return () => {
+            setIsEmpty(false);
+          };
+        },
+      }),
+      [setIsEmpty]
+    );
+
+    return (
+      <PropertyRootContext.Provider value={contextValue}>
+        <div
+          ref={ref}
+          className={clsx(
+            styles.propertyRoot,
+            shouldHide && styles.hide,
+            className
+          )}
+          {...props}
+        >
+          {children}
+          <DropIndicator edge={dropIndicatorEdge} />
+        </div>
+      </PropertyRootContext.Provider>
+    );
+  }
+);
+PropertyRoot.displayName = 'PropertyRoot';
+
+export const PropertyName = ({
+  icon,
+  name,
+  className,
+  menuItems,
+  defaultOpenMenu,
+  ...props
+}: {
+  icon?: ReactNode;
+  name?: ReactNode;
+  menuItems?: ReactNode;
+  defaultOpenMenu?: boolean;
+} & HTMLProps<HTMLDivElement>) => {
+  const [menuOpen, setMenuOpen] = useState(defaultOpenMenu);
+  const hasMenu = !!menuItems;
+
+  const handleClick = useCallback(() => {
+    if (!hasMenu) return;
+    setMenuOpen(true);
+  }, [hasMenu]);
+
+  const handleMenuClose = useCallback((open: boolean) => {
+    if (!open) {
+      setMenuOpen(false);
+    }
+  }, []);
+
+  const content = (
+    <div
+      className={clsx(styles.propertyNameContainer, className)}
+      data-has-menu={hasMenu}
+      onClick={handleClick}
+      {...props}
+    >
+      <div className={styles.propertyNameInnerContainer}>
+        {icon && <div className={styles.propertyIconContainer}>{icon}</div>}
+        <div className={styles.propertyNameContent}>{name}</div>
+      </div>
+    </div>
+  );
+
+  if (menuOpen && menuItems) {
+    // Do not mount <Menu /> when menuOpen is false, as <Menu /> will cause draggable to not work
+    return (
+      <Menu
+        items={menuItems}
+        rootOptions={{
+          open: true,
+          modal: true, // false will case bug
+          onOpenChange: handleMenuClose,
+        }}
+      >
+        {content}
+      </Menu>
+    );
+  }
+  return content;
+};
+
+export const PropertyValue = forwardRef<
+  HTMLDivElement,
+  { readonly?: boolean; isEmpty?: boolean } & HTMLProps<HTMLDivElement>
+>(({ children, className, readonly, isEmpty, ...props }, ref) => {
+  const context = useContext(PropertyRootContext);
+
+  useLayoutEffect(() => {
+    if (context) {
+      return context.mountValue({ isEmpty: !!isEmpty });
+    }
+    return;
+  }, [context, isEmpty]);
+
+  return (
+    <div
+      ref={ref}
+      className={clsx(styles.propertyValueContainer, className)}
+      data-readonly={readonly ? 'true' : 'false'}
+      data-empty={isEmpty ? 'true' : 'false'}
+      data-property-value
+      {...props}
+    >
+      {children}
+    </div>
+  );
+});
+PropertyValue.displayName = 'PropertyValue';

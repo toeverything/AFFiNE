@@ -18,6 +18,10 @@ export interface AffineDNDData extends DNDData {
       | {
           type: 'tag';
           id: string;
+        }
+      | {
+          type: 'custom-property';
+          id: string;
         };
     from?:
       | {
@@ -62,6 +66,14 @@ export interface AffineDNDData extends DNDData {
       | {
           at: 'app-header:tabs';
           tabId: string;
+        }
+      | {
+          at: 'doc-property:table';
+          docId: string;
+        }
+      | {
+          at: 'doc-property:manager';
+          workspaceId: string;
         };
   };
   dropTarget:

@@ -34,6 +34,14 @@ export class Doc extends Entity {
   readonly title$ = this.record.title$;
   readonly trash$ = this.record.trash$;
 
+  customProperty$(propertyId: string) {
+    return this.record.customProperty$(propertyId);
+  }
+
+  setCustomProperty(propertyId: string, value: string) {
+    return this.record.setCustomProperty(propertyId, value);
+  }
+
   setPrimaryMode(mode: DocMode) {
     return this.record.setPrimaryMode(mode);
   }

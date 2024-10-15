@@ -13,6 +13,7 @@ import type {
   DocProperties,
 } from '../../db/schema/schema';
 import type { WorkspaceService } from '../../workspace';
+import { BUILT_IN_CUSTOM_PROPERTY_TYPE } from '../constants';
 
 interface LegacyDocProperties {
   custom?: Record<string, { value: unknown } | undefined>;
@@ -23,6 +24,7 @@ type LegacyDocPropertyInfo = {
   id?: string;
   name?: string;
   type?: string;
+  icon?: string;
 };
 
 type LegacyDocPropertyInfoList = Record<
@@ -50,11 +52,18 @@ export class DocPropertiesStore extends Store {
     const legacy = this.upgradeLegacyDocPropertyInfoList(
       this.getLegacyDocPropertyInfoList()
     );
-    const notOverridden = differenceBy(legacy, db, i => i.id);
-    return [...db, ...notOverridden].filter(i => !i.isDeleted);
+    const builtIn = BUILT_IN_CUSTOM_PROPERTY_TYPE;
+    const withLegacy = [...db, ...differenceBy(legacy, db, i => i.id)];
+    const all = [
+      ...withLegacy,
+      ...differenceBy(builtIn, withLegacy, i => i.id),
+    ];
+    return all.filter(i => !i.isDeleted);
   }
 
-  createDocPropertyInfo(config: DocCustomPropertyInfo) {
+  createDocPropertyInfo(
+    config: Omit<DocCustomPropertyInfo, 'id'> & { id?: string }
+  ) {
     return this.dbService.db.docCustomPropertyInfo.create(config).id;
   }
 
@@ -67,7 +76,11 @@ export class DocPropertiesStore extends Store {
 
   updateDocPropertyInfo(id: string, config: Partial<DocCustomPropertyInfo>) {
     const needMigration = !this.dbService.db.docCustomPropertyInfo.get(id);
-    if (needMigration) {
+    const isBuiltIn =
+      needMigration && BUILT_IN_CUSTOM_PROPERTY_TYPE.some(i => i.id === id);
+    if (isBuiltIn) {
+      this.createPropertyFromBuiltIn(id, config);
+    } else if (needMigration) {
       // if this property is not in db, we need to migration it from legacy to db, only type and name is needed
       this.migrateLegacyDocPropertyInfo(id, config);
     } else {
@@ -90,16 +103,32 @@ export class DocPropertiesStore extends Store {
     });
   }
 
+  createPropertyFromBuiltIn(
+    id: string,
+    override: Partial<DocCustomPropertyInfo>
+  ) {
+    const builtIn = BUILT_IN_CUSTOM_PROPERTY_TYPE.find(i => i.id === id);
+    if (!builtIn) {
+      return;
+    }
+    this.createDocPropertyInfo({ ...builtIn, ...override });
+  }
+
   watchDocPropertyInfoList() {
     return combineLatest([
       this.watchLegacyDocPropertyInfoList().pipe(
         map(this.upgradeLegacyDocPropertyInfoList)
       ),
-      this.dbService.db.docCustomPropertyInfo.find$({}),
+      this.dbService.db.docCustomPropertyInfo.find$(),
     ]).pipe(
       map(([legacy, db]) => {
-        const notOverridden = differenceBy(legacy, db, i => i.id);
-        return [...db, ...notOverridden].filter(i => !i.isDeleted);
+        const builtIn = BUILT_IN_CUSTOM_PROPERTY_TYPE;
+        const withLegacy = [...db, ...differenceBy(legacy, db, i => i.id)];
+        const all = [
+          ...withLegacy,
+          ...differenceBy(builtIn, withLegacy, i => i.id),
+        ];
+        return all.filter(i => !i.isDeleted);
       })
     );
   }
@@ -133,15 +162,15 @@ export class DocPropertiesStore extends Store {
     if (!properties) {
       return {};
     }
-    const newProperties: Record<string, unknown> = {};
+    const newProperties: Record<string, string> = {};
     for (const [key, info] of Object.entries(properties.system ?? {})) {
-      if (info?.value !== undefined) {
-        newProperties[key] = info.value;
+      if (info?.value !== undefined && info.value !== null) {
+        newProperties[key] = info.value.toString();
       }
     }
     for (const [key, info] of Object.entries(properties.custom ?? {})) {
-      if (info?.value !== undefined) {
-        newProperties['custom:' + key] = info.value;
+      if (info?.value !== undefined && info.value !== null) {
+        newProperties['custom:' + key] = info.value.toString();
       }
     }
     return newProperties;
@@ -162,6 +191,7 @@ export class DocPropertiesStore extends Store {
           id,
           name: info.name,
           type: info.type,
+          icon: info.icon,
         });
       }
     }

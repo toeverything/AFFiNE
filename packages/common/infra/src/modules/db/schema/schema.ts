@@ -23,6 +23,7 @@ export const AFFiNE_WORKSPACE_DB_SCHEMA = {
     type: f.string(),
     show: f.string().optional(),
     index: f.string().optional(),
+    icon: f.string().optional(),
     additionalData: f.json().optional(),
     isDeleted: f.boolean().optional(),
     // we will keep deleted properties in the database, for override legacy data

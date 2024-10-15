@@ -1,5 +1,7 @@
-import { generateFractionalIndexingKeyBetween } from '@affine/core/utils/fractional-indexing';
-import { Entity } from '@toeverything/infra';
+import {
+  Entity,
+  generateFractionalIndexingKeyBetween,
+} from '@toeverything/infra';
 
 import type { FavoriteSupportType } from '../constant';
 import type { FavoriteRecord, FavoriteStore } from '../stores/favorite';

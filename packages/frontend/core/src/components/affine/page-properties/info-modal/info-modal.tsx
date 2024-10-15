@@ -1,12 +1,16 @@
 import {
+  Button,
   Divider,
   type InlineEditHandle,
+  Menu,
   Modal,
+  PropertyCollapsible,
   Scrollable,
 } from '@affine/component';
 import { DocInfoService } from '@affine/core/modules/doc-info';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { useI18n } from '@affine/i18n';
+import { PlusIcon } from '@blocksuite/icons/rc';
 import type { Doc } from '@toeverything/infra';
 import {
   DocsService,
@@ -16,27 +20,13 @@ import {
   useService,
   useServices,
 } from '@toeverything/infra';
-import {
-  Suspense,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { BlocksuiteHeaderTitle } from '../../../blocksuite/block-suite-header/title';
-import { managerContext } from '../common';
-import {
-  PagePropertiesAddProperty,
-  PagePropertyRow,
-  SortableProperties,
-  usePagePropertiesManager,
-} from '../table';
+import { CreatePropertyMenuItems } from '../menu/create-doc-property';
+import { PagePropertyRow } from '../table';
 import * as styles from './info-modal.css';
 import { LinksRow } from './links-row';
-import { TagsRow } from './tags-row';
 import { TimeRow } from './time-row';
 
 export const InfoModal = () => {
@@ -68,14 +58,9 @@ const InfoModalOpened = ({ docId }: { docId: string }) => {
   const modal = useService(DocInfoService).modal;
 
   const titleInputHandleRef = useRef<InlineEditHandle>(null);
-  const manager = usePagePropertiesManager(docId ?? '');
   const handleClose = useCallback(() => {
     modal.close();
   }, [modal]);
-
-  if (!manager.page || manager.readonly) {
-    return null;
-  }
 
   return (
     <Modal
@@ -98,15 +83,7 @@ const InfoModalOpened = ({ docId }: { docId: string }) => {
               inputHandleRef={titleInputHandleRef}
             />
           </div>
-          <managerContext.Provider value={manager}>
-            <Suspense>
-              <InfoTable
-                docId={docId}
-                onClose={handleClose}
-                readonly={manager.readonly}
-              />
-            </Suspense>
-          </managerContext.Provider>
+          <InfoTable docId={docId} onClose={handleClose} />
         </Scrollable.Viewport>
         <Scrollable.Scrollbar className={styles.scrollBar} />
       </Scrollable.Root>
@@ -117,17 +94,17 @@ const InfoModalOpened = ({ docId }: { docId: string }) => {
 export const InfoTable = ({
   onClose,
   docId,
-  readonly,
 }: {
   docId: string;
   onClose: () => void;
-  readonly: boolean;
 }) => {
   const t = useI18n();
-  const manager = useContext(managerContext);
-  const { docsSearchService } = useServices({
+  const { docsSearchService, docsService } = useServices({
     DocsSearchService,
+    DocsService,
   });
+  const [newPropertyId, setNewPropertyId] = useState<string | null>(null);
+  const properties = useLiveData(docsService.propertyList.sortedProperties$);
   const links = useLiveData(
     useMemo(
       () => LiveData.from(docsSearchService.watchRefsFrom(docId), null),
@@ -165,33 +142,50 @@ export const InfoTable = ({
           <Divider size="thinner" />
         </>
       ) : null}
-      <TagsRow docId={docId} readonly={readonly} />
-      <SortableProperties>
-        {properties =>
-          properties.length ? (
-            <div>
-              {properties
-                .filter(
-                  property =>
-                    manager.isPropertyRequired(property.id) ||
-                    (property.visibility !== 'hide' &&
-                      !(
-                        property.visibility === 'hide-if-empty' &&
-                        !property.value
-                      ))
-                )
-                .map(property => (
-                  <PagePropertyRow
-                    key={property.id}
-                    property={property}
-                    rowNameClassName={styles.rowNameContainer}
-                  />
-                ))}
-            </div>
-          ) : null
+      <PropertyCollapsible
+        className={styles.tableBodyRoot}
+        collapseButtonText={({ hide, isCollapsed }) =>
+          isCollapsed
+            ? hide === 1
+              ? t['com.affine.page-properties.more-property.one']({
+                  count: hide.toString(),
+                })
+              : t['com.affine.page-properties.more-property.more']({
+                  count: hide.toString(),
+                })
+            : hide === 1
+              ? t['com.affine.page-properties.hide-property.one']({
+                  count: hide.toString(),
+                })
+              : t['com.affine.page-properties.hide-property.more']({
+                  count: hide.toString(),
+                })
         }
-      </SortableProperties>
-      {manager.readonly ? null : <PagePropertiesAddProperty />}
+      >
+        {properties.map(property => (
+          <PagePropertyRow
+            key={property.id}
+            propertyInfo={property}
+            defaultOpenEditMenu={newPropertyId === property.id}
+          />
+        ))}
+        <Menu
+          items={<CreatePropertyMenuItems onCreated={setNewPropertyId} />}
+          contentOptions={{
+            onClick(e) {
+              e.stopPropagation();
+            },
+          }}
+        >
+          <Button
+            variant="plain"
+            prefix={<PlusIcon />}
+            className={styles.addPropertyButton}
+          >
+            {t['com.affine.page-properties.add-property']()}
+          </Button>
+        </Menu>
+      </PropertyCollapsible>
     </div>
   );
 };

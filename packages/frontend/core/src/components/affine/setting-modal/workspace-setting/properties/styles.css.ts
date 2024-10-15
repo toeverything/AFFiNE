@@ -11,7 +11,7 @@ export const main = style({
 export const listHeader = style({
   display: 'flex',
   flexDirection: 'row',
-  justifyContent: 'space-between',
+  justifyItems: 'flex-end',
   alignItems: 'center',
   padding: '6px 0',
   marginBottom: 16,

@@ -3,6 +3,7 @@ import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { ChatPanel } from '@affine/core/blocksuite/presets/ai';
 import { AIProvider } from '@affine/core/blocksuite/presets/ai';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
+import { DocPropertySidebar } from '@affine/core/components/affine/page-properties/sidebar';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
@@ -13,7 +14,13 @@ import { useI18n } from '@affine/i18n';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/blocks';
 import { DisposableGroup } from '@blocksuite/affine/global/utils';
 import { type AffineEditorContainer } from '@blocksuite/affine/presets';
-import { AiIcon, FrameIcon, TocIcon, TodayIcon } from '@blocksuite/icons/rc';
+import {
+  AiIcon,
+  FrameIcon,
+  PropertyIcon,
+  TocIcon,
+  TodayIcon,
+} from '@blocksuite/icons/rc';
 import {
   DocService,
   FeatureFlagService,
@@ -283,6 +290,10 @@ const DetailPageImpl = memo(function DetailPageImpl() {
           <EditorChatPanel editor={editorContainer} ref={chatPanelRef} />
         </ViewSidebarTab>
       )}
+
+      <ViewSidebarTab tabId="properties" icon={<PropertyIcon />}>
+        <DocPropertySidebar />
+      </ViewSidebarTab>
 
       <ViewSidebarTab tabId="journal" icon={<TodayIcon />}>
         <EditorJournalPanel />

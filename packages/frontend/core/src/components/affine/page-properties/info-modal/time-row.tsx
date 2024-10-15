@@ -1,33 +1,18 @@
+import { PropertyName, PropertyRoot, PropertyValue } from '@affine/component';
 import { i18nTime, useI18n } from '@affine/i18n';
 import { DateTimeIcon, HistoryIcon } from '@blocksuite/icons/rc';
-import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
+import {
+  DocsService,
+  useLiveData,
+  useService,
+  WorkspaceService,
+} from '@toeverything/infra';
 import clsx from 'clsx';
 import type { ConfigType } from 'dayjs';
 import { useDebouncedValue } from 'foxact/use-debounced-value';
-import { type ReactNode, useContext, useMemo } from 'react';
+import { useMemo } from 'react';
 
-import { managerContext } from '../common';
 import * as styles from './time-row.css';
-
-const RowComponent = ({
-  name,
-  icon,
-  time,
-}: {
-  name: string;
-  icon: ReactNode;
-  time?: string | null;
-}) => {
-  return (
-    <div className={styles.rowCell}>
-      <div className={styles.rowNameContainer}>
-        <div className={styles.icon}>{icon}</div>
-        <span className={styles.rowName}>{name}</span>
-      </div>
-      <div className={styles.time}>{time ? time : 'unknown'}</div>
-    </div>
-  );
-};
 
 export const TimeRow = ({
   docId,
@@ -37,11 +22,13 @@ export const TimeRow = ({
   className?: string;
 }) => {
   const t = useI18n();
-  const manager = useContext(managerContext);
   const workspaceService = useService(WorkspaceService);
+  const docsService = useService(DocsService);
   const { syncing, retrying, serverClock } = useLiveData(
     workspaceService.workspace.engine.doc.docState$(docId)
   );
+  const docRecord = useLiveData(docsService.list.doc$(docId));
+  const docMeta = useLiveData(docRecord?.meta$);
 
   const timestampElement = useMemo(() => {
     const formatI18nTime = (time: ConfigType) =>
@@ -54,44 +41,43 @@ export const TimeRow = ({
           accuracy: 'day',
         },
       });
-    const localizedCreateTime = manager.createDate
-      ? formatI18nTime(manager.createDate)
+    const localizedCreateTime = docMeta
+      ? formatI18nTime(docMeta.createDate)
       : null;
 
     return (
       <>
-        <RowComponent
-          icon={<DateTimeIcon />}
-          name={t['Created']()}
-          time={
-            manager.createDate
-              ? formatI18nTime(manager.createDate)
-              : localizedCreateTime
-          }
-        />
+        <PropertyRoot>
+          <PropertyName name={t['Created']()} icon={<DateTimeIcon />} />
+          <PropertyValue>
+            {docMeta ? formatI18nTime(docMeta.createDate) : localizedCreateTime}
+          </PropertyValue>
+        </PropertyRoot>
         {serverClock ? (
-          <RowComponent
-            icon={<HistoryIcon />}
-            name={t[!syncing && !retrying ? 'Updated' : 'com.affine.syncing']()}
-            time={!syncing && !retrying ? formatI18nTime(serverClock) : null}
-          />
-        ) : manager.updatedDate ? (
-          <RowComponent
-            icon={<HistoryIcon />}
-            name={t['Updated']()}
-            time={formatI18nTime(manager.updatedDate)}
-          />
+          <PropertyRoot>
+            <PropertyName
+              name={t[
+                !syncing && !retrying ? 'Updated' : 'com.affine.syncing'
+              ]()}
+              icon={<HistoryIcon />}
+            />
+            <PropertyValue>
+              {!syncing && !retrying
+                ? formatI18nTime(serverClock)
+                : docMeta?.updatedDate
+                  ? formatI18nTime(docMeta.updatedDate)
+                  : null}
+            </PropertyValue>
+          </PropertyRoot>
+        ) : docMeta?.updatedDate ? (
+          <PropertyRoot>
+            <PropertyName name={t['Updated']()} icon={<HistoryIcon />} />
+            <PropertyValue>{formatI18nTime(docMeta.updatedDate)}</PropertyValue>
+          </PropertyRoot>
         ) : null}
       </>
     );
-  }, [
-    manager.createDate,
-    manager.updatedDate,
-    retrying,
-    serverClock,
-    syncing,
-    t,
-  ]);
+  }, [docMeta, retrying, serverClock, syncing, t]);
 
   const dTimestampElement = useDebouncedValue(timestampElement, 500);
 

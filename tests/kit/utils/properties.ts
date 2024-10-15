@@ -1,9 +1,9 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 export const getPropertyValueLocator = (page: Page, property: string) => {
   return page.locator(
-    `[data-testid="page-property-row-name"]:has-text("${property}") + *`
+    `[data-testid="doc-property-name"]:has-text("${property}") + *`
   );
 };
 
@@ -66,9 +66,12 @@ export const searchAndCreateTag = async (page: Page, name: string) => {
     .click();
 };
 
-export const expectTagsVisible = async (page: Page, tags: string[]) => {
-  const tagListPanel = page
-    .getByTestId('page-property-row')
+export const expectTagsVisible = async (
+  root: Locator | Page,
+  tags: string[]
+) => {
+  const tagListPanel = root
+    .getByTestId('property-tags-value')
     .getByTestId('inline-tags-list');
 
   expect(await tagListPanel.locator('[data-tag-value]').count()).toBe(
@@ -82,8 +85,8 @@ export const expectTagsVisible = async (page: Page, tags: string[]) => {
   }
 };
 
-export const clickAddPropertyButton = async (page: Page) => {
-  await page
+export const clickAddPropertyButton = async (root: Locator | Page) => {
+  await root
     .getByRole('button', {
       name: 'Add property',
     })
@@ -92,40 +95,17 @@ export const clickAddPropertyButton = async (page: Page) => {
 
 export const addCustomProperty = async (
   page: Page,
-  type: string,
-  inSettings?: boolean
+  root: Locator | Page,
+  type: string
 ) => {
-  await clickAddPropertyButton(page);
-  if (!inSettings) {
-    await expect(
-      page.getByRole('heading', {
-        name: 'Properties',
-      })
-    ).toBeVisible();
-    await page
-      .getByRole('menuitem', {
-        name: 'Create property',
-      })
-      .click();
-  }
-  await expect(
-    page.getByRole('heading', {
-      name: 'Type',
-    })
-  ).toBeVisible();
+  await clickAddPropertyButton(root);
   await page
-    .getByRole('menuitem', {
-      name: type,
-    })
+    .locator(
+      `[data-testid="${'create-property-menu-item'}"][data-property-type="${type}"]`
+    )
     .click();
-  if (!inSettings) {
-    await expect(
-      page
-        .getByRole('menuitem', {
-          name: type,
-        })
-        .locator('.selected')
-    ).toBeVisible();
+  if (await page.getByTestId('edit-property-menu-item').isVisible()) {
+    // is edit property menu opened, close it
     await page.keyboard.press('Escape');
   }
   await page.waitForTimeout(500);
@@ -184,12 +164,10 @@ export const changePropertyVisibility = async (
   name: string,
   option: string
 ) => {
-  await expect(page.getByTestId('page-info-show-more')).toBeVisible();
-  await page.click('[data-testid="page-info-show-more"]');
-  await expect(
-    page.getByRole('heading', {
-      name: 'customize properties',
-    })
-  ).toBeVisible();
-  await selectVisibilitySelector(page, name, option);
+  await page
+    .locator(`[data-testid="doc-property-name"]:has-text("${name}")`)
+    .click();
+  await page.locator(`[data-property-visibility="${option}"]`).click();
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(500);
 };

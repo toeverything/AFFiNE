@@ -31,8 +31,16 @@ export class DocRecord extends Entity<{ id: string }> {
     { id: this.id }
   );
 
-  setProperties(properties: Partial<DocProperties>): void {
-    this.docPropertiesStore.updateDocProperties(this.id, properties);
+  customProperty$(propertyId: string) {
+    return this.properties$.selector(
+      p => p['custom:' + propertyId]
+    ) as LiveData<string | undefined | null>;
+  }
+
+  setCustomProperty(propertyId: string, value: string) {
+    this.docPropertiesStore.updateDocProperties(this.id, {
+      ['custom:' + propertyId]: value,
+    });
   }
 
   setMeta(meta: Partial<DocMeta>): void {

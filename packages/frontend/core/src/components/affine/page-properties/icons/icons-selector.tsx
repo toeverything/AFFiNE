@@ -1,37 +1,23 @@
 import { Menu, Scrollable } from '@affine/component';
 import { useI18n } from '@affine/i18n';
+import type { DocCustomPropertyInfo } from '@toeverything/infra';
 import { chunk } from 'lodash-es';
-import { useEffect, useRef } from 'react';
 
-import type { PagePropertyIcon } from './icons-mapping';
-import { iconNames, nameToIcon } from './icons-mapping';
+import { type DocPropertyIconName, DocPropertyIconNames } from './constant';
+import { DocPropertyIcon, iconNameToComponent } from './doc-property-icon';
 import * as styles from './icons-selector.css';
 
 const iconsPerRow = 6;
 
-const iconRows = chunk(iconNames, iconsPerRow);
+const iconRows = chunk(DocPropertyIconNames, iconsPerRow);
 
-export const IconsSelectorPanel = ({
-  selected,
+const IconsSelectorPanel = ({
+  selectedIcon,
   onSelectedChange,
 }: {
-  selected: PagePropertyIcon;
-  onSelectedChange: (icon: PagePropertyIcon) => void;
+  selectedIcon?: string | null;
+  onSelectedChange: (icon: DocPropertyIconName) => void;
 }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!ref.current) {
-      return;
-    }
-    const iconButton = ref.current.querySelector(
-      `[data-name="${selected}"]`
-    ) as HTMLDivElement;
-    if (!iconButton) {
-      return;
-    }
-    iconButton.scrollIntoView({ block: 'center' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const t = useI18n();
   return (
     <Scrollable.Root>
@@ -39,19 +25,19 @@ export const IconsSelectorPanel = ({
         {t['com.affine.page-properties.icons']()}
       </div>
       <Scrollable.Viewport className={styles.iconsContainerScrollable}>
-        <div className={styles.iconsContainer} ref={ref}>
+        <div className={styles.iconsContainer}>
           {iconRows.map((iconRow, index) => {
             return (
               <div key={index} className={styles.iconsRow}>
                 {iconRow.map(iconName => {
-                  const Icon = nameToIcon(iconName);
+                  const Icon = iconNameToComponent(iconName);
                   return (
                     <div
                       onClick={() => onSelectedChange(iconName)}
                       key={iconName}
                       className={styles.iconButton}
                       data-name={iconName}
-                      data-active={selected === iconName}
+                      data-active={iconName === selectedIcon}
                     >
                       <Icon key={iconName} />
                     </div>
@@ -67,25 +53,24 @@ export const IconsSelectorPanel = ({
   );
 };
 
-export const IconsSelectorButton = ({
-  selected,
+export const DocPropertyIconSelector = ({
+  propertyInfo,
   onSelectedChange,
 }: {
-  selected: PagePropertyIcon;
-  onSelectedChange: (icon: PagePropertyIcon) => void;
+  propertyInfo: DocCustomPropertyInfo;
+  onSelectedChange: (icon: DocPropertyIconName) => void;
 }) => {
-  const Icon = nameToIcon(selected);
   return (
     <Menu
       items={
         <IconsSelectorPanel
-          selected={selected}
+          selectedIcon={propertyInfo.icon}
           onSelectedChange={onSelectedChange}
         />
       }
     >
       <div className={styles.iconSelectorButton}>
-        <Icon />
+        <DocPropertyIcon propertyInfo={propertyInfo} />
       </div>
     </Menu>
   );

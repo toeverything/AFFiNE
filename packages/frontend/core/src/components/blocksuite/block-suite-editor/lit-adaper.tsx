@@ -34,7 +34,7 @@ import React, {
   useRef,
 } from 'react';
 
-import { PagePropertiesTable } from '../../affine/page-properties';
+import { DocPropertiesTable } from '../../affine/page-properties';
 import {
   AffinePageReference,
   AffineSharedPageReference,
@@ -232,7 +232,7 @@ export const BlocksuiteDocEditor = forwardRef<
         ) : (
           <BlocksuiteEditorJournalDocTitle page={page} />
         )}
-        {!shared ? <PagePropertiesTable docId={page.id} /> : null}
+        {!shared ? <DocPropertiesTable /> : null}
         <adapted.DocEditor
           className={styles.docContainer}
           ref={onDocRef}

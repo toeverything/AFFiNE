@@ -86,7 +86,7 @@ export const ExplorerOrganize = () => {
       const entity = data.source.data.entity;
       if (!entity) return;
       const { type, id } = entity;
-      if (type === 'folder') return;
+      if (type !== 'doc' && type !== 'tag' && type !== 'collection') return;
 
       const folder = newFolder$.value;
       if (!folder) return;

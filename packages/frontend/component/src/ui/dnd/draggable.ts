@@ -182,6 +182,11 @@ export const useDraggable = <D extends DNDData = DNDData>(
         let previewPosition: DraggableDragPreviewPosition =
           options.dragPreviewPosition ?? 'native';
 
+        source.element.dataset['dragPreview'] = 'true';
+        requestAnimationFrame(() => {
+          delete source.element.dataset['dragPreview'];
+        });
+
         if (enableCustomDragPreview.current) {
           setCustomNativeDragPreview({
             getOffset: (...args) => {

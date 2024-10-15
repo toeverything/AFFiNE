@@ -1,5 +1,8 @@
-import { generateFractionalIndexingKeyBetween } from '@affine/core/utils';
-import { Entity, LiveData } from '@toeverything/infra';
+import {
+  Entity,
+  generateFractionalIndexingKeyBetween,
+  LiveData,
+} from '@toeverything/infra';
 import { map, of, switchMap } from 'rxjs';
 
 import type { FolderStore } from '../stores/folder';
