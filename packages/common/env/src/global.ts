@@ -31,12 +31,12 @@ export type BUILD_CONFIG_TYPE = {
   // see: tools/workers
   imageProxyUrl: string;
   linkPreviewUrl: string;
-
-  // TODO(@forehalo): remove
-  isSelfHosted: boolean;
 };
 
 export type Environment = {
+  // Variant
+  isSelfHosted: boolean;
+
   // Device
   isLinux: boolean;
   isMacOs: boolean;
@@ -47,8 +47,10 @@ export type Environment = {
   isMobile: boolean;
   isChrome: boolean;
   isPwa: boolean;
-
   chromeVersion?: number;
+
+  // runtime configs
+  publicPath: string;
 };
 
 export function setupGlobal() {
@@ -56,24 +58,25 @@ export function setupGlobal() {
     return;
   }
 
-  let environment: Environment;
+  let environment: Environment = {
+    isLinux: false,
+    isMacOs: false,
+    isSafari: false,
+    isWindows: false,
+    isFireFox: false,
+    isChrome: false,
+    isIOS: false,
+    isPwa: false,
+    isMobile: false,
+    isSelfHosted: false,
+    publicPath: '/',
+  };
 
-  if (!globalThis.navigator) {
-    environment = {
-      isLinux: false,
-      isMacOs: false,
-      isSafari: false,
-      isWindows: false,
-      isFireFox: false,
-      isChrome: false,
-      isIOS: false,
-      isPwa: false,
-      isMobile: false,
-    };
-  } else {
+  if (globalThis.navigator) {
     const uaHelper = new UaHelper(globalThis.navigator);
 
     environment = {
+      ...environment,
       isMobile: uaHelper.isMobile,
       isLinux: uaHelper.isLinux,
       isMacOs: uaHelper.isMacOs,
@@ -96,7 +99,31 @@ export function setupGlobal() {
     }
   }
 
-  globalThis.environment = environment;
+  applyEnvironmentOverrides(environment);
 
+  globalThis.environment = environment;
   globalThis.$AFFINE_SETUP = true;
+}
+
+function applyEnvironmentOverrides(environment: Environment) {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const metaTags = document.querySelectorAll('meta');
+
+  metaTags.forEach(meta => {
+    if (!meta.name.startsWith('env:')) {
+      return;
+    }
+
+    const name = meta.name.substring(4);
+
+    // all environments should have default value
+    // so ignore non-defined overrides
+    if (name in environment) {
+      // @ts-expect-error safe
+      environment[name] = meta.content;
+    }
+  });
 }

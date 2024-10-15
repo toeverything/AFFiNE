@@ -18,18 +18,18 @@ interface RenderOptions {
 }
 
 interface HtmlAssets {
-  html: string;
   css: string[];
   js: string[];
+  selfhostPublicPath: string;
   publicPath: string;
   gitHash: string;
   description: string;
 }
 
 const defaultAssets: HtmlAssets = {
-  html: '',
   css: [],
   js: [],
+  selfhostPublicPath: '/',
   publicPath: '/',
   gitHash: '',
   description: '',
@@ -153,8 +153,13 @@ export class DocRendererController {
   }
 
   _render(opts: RenderOptions | null, assets: HtmlAssets): string {
-    if (!opts && assets.html) {
-      return assets.html;
+    // TODO(@forehalo): how can we enable the type reference to @affine/env
+    let env: Record<string, any> = {};
+    if (this.config.isSelfhosted) {
+      env = {
+        isSelfHosted: true,
+        publicPath: assets.selfhostPublicPath,
+      };
     }
 
     const title = opts?.title
@@ -199,6 +204,9 @@ export class DocRendererController {
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${summary}" />
     <meta property="og:image" content="${image}" />
+    ${Object.entries(env)
+      .map(([key, val]) => `<meta name="env:${key}" content="${val}" />`)
+      .join('\n')}
     ${assets.css.map(url => `<link rel="stylesheet" href="${url}" />`).join('\n')}
   </head>
   <body>
@@ -214,11 +222,24 @@ export class DocRendererController {
    */
   private readHtmlAssets(path: string): HtmlAssets {
     const manifestPath = join(path, 'assets-manifest.json');
-    const htmlPath = join(path, 'index.html');
 
     try {
-      const assets = JSON.parse(readFileSync(manifestPath, 'utf-8'));
-      assets.html = readFileSync(htmlPath, 'utf-8');
+      const assets: HtmlAssets = JSON.parse(
+        readFileSync(manifestPath, 'utf-8')
+      );
+
+      const publicPath = this.config.isSelfhosted
+        ? this.config.server.host + assets.selfhostPublicPath
+        : assets.publicPath;
+
+      if (this.config.isSelfhosted) {
+        // append `config.server.host` to public path
+        assets.selfhostPublicPath = publicPath;
+      }
+
+      assets.js = assets.js.map(path => publicPath + path);
+      assets.css = assets.css.map(path => publicPath + path);
+
       return assets;
     } catch (e) {
       if (this.config.node.prod) {

@@ -8,7 +8,12 @@ import { once } from 'lodash-es';
 import webpack from 'webpack';
 import { merge } from 'webpack-merge';
 
-import { createConfiguration, rootPath, workspaceRoot } from './config.js';
+import {
+  createConfiguration,
+  getPublicPath,
+  rootPath,
+  workspaceRoot,
+} from './config.js';
 import { getBuildConfig } from './runtime-config.js';
 
 const DESCRIPTION = `There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together.`;
@@ -41,46 +46,89 @@ export function createWebpackConfig(cwd: string, flags: BuildFlags) {
         }
       : flags.entry;
 
-  const createHTMLPlugin = (entryName = 'app') => {
-    return new HTMLPlugin({
-      template: join(rootPath, 'webpack', 'template.html'),
-      inject: 'body',
-      minify: false,
-      chunks: [entryName],
-      filename: `${entryName === 'app' ? 'index' : entryName}.html`, // main entry should take name index.html
-      templateParameters: (compilation, assets) => {
-        if (entryName === 'app') {
-          // emit assets manifest for ssr
-          compilation.emitAsset(
-            `assets-manifest.json`,
-            new webpack.sources.RawSource(
-              JSON.stringify(
-                {
-                  ...assets,
-                  gitHash: gitShortHash(),
-                  description: DESCRIPTION,
-                },
-                null,
-                2
-              )
-            ),
-            {
-              immutable: true,
-            }
-          );
-        }
-        return {
-          GIT_SHORT_SHA: gitShortHash(),
-          DESCRIPTION,
-          PUBLIC_PATH: config.output?.publicPath,
-          VIEWPORT_FIT: flags.distribution === 'mobile' ? 'cover' : 'auto',
-        };
-      },
-    });
+  const publicPath = getPublicPath(flags);
+  const selfhostPublicPath = publicPath.startsWith('/')
+    ? publicPath
+    : new URL(publicPath).pathname;
+  const cdnOrigin = publicPath.startsWith('/')
+    ? undefined
+    : new URL(publicPath).origin;
+
+  const templateParams = {
+    GIT_SHORT_SHA: gitShortHash(),
+    DESCRIPTION,
+    PRECONNECT: cdnOrigin ? `<link rel="preconnect" href="${cdnOrigin}"` : '',
+    VIEWPORT_FIT: flags.distribution === 'mobile' ? 'cover' : 'auto',
+  };
+
+  const htmlPluginOptions = {
+    template: join(rootPath, 'webpack', 'template.html'),
+    inject: 'body',
+    filename: 'index.html',
+    minify: false,
+    templateParameters: templateParams,
+    publicPath,
+  } satisfies HTMLPlugin.Options;
+
+  const createHTMLPlugins = (entryName: string) => {
+    if (entryName === 'app') {
+      return [
+        new HTMLPlugin({
+          ...htmlPluginOptions,
+          templateParameters: (compilation, assets) => {
+            const params = htmlPluginOptions.templateParameters;
+
+            // emit assets manifest for ssr
+            compilation.emitAsset(
+              `assets-manifest.json`,
+              new webpack.sources.RawSource(
+                JSON.stringify(
+                  {
+                    ...assets,
+                    publicPath,
+                    selfhostPublicPath,
+                    gitHash: params.GIT_SHORT_SHA,
+                    description: params.DESCRIPTION,
+                  },
+                  null,
+                  2
+                )
+              ),
+              {
+                immutable: true,
+              }
+            );
+
+            return params;
+          },
+        }),
+        // selfhost html
+        new HTMLPlugin({
+          ...htmlPluginOptions,
+          publicPath: selfhostPublicPath,
+          meta: {
+            'env:isSelfHosted': 'true',
+            'env:publicPath': selfhostPublicPath,
+          },
+          filename: 'selfhost.html',
+          templateParameters: {
+            ...htmlPluginOptions.templateParameters,
+            PRECONNECT: '',
+          },
+        }),
+      ];
+    } else {
+      return [
+        new HTMLPlugin({
+          ...htmlPluginOptions,
+          filename: `${entryName}.html`,
+        }),
+      ];
+    }
   };
 
   return merge(config, {
-    entry: entry,
-    plugins: Object.keys(entry).map(createHTMLPlugin),
+    entry,
+    plugins: Object.keys(entry).map(createHTMLPlugins).flat(),
   });
 }

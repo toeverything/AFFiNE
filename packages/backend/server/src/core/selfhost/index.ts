@@ -58,50 +58,58 @@ export class SelfhostModule implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    // selfhost static file location
-    // web => 'static/selfhost'
-    // admin => 'static/admin/selfhost'
-    // mobile => 'static/mobile/selfhost'
-    const staticPath = join(this.config.projectRoot, 'static');
     // in command line mode
     if (!this.adapterHost.httpAdapter) {
       return;
     }
 
     const app = this.adapterHost.httpAdapter.getInstance<Application>();
+
+    // web => {
+    //   affine: 'static/index.html',
+    //   selfhost: 'static/selfhost.html'
+    // }
+    // admin => {
+    //   affine: 'static/admin/index.html',
+    //   selfhost: 'static/admin/selfhost.html'
+    // }
+    // mobile => {
+    //   affine: 'static/mobile/index.html',
+    //   selfhost: 'static/mobile/selfhost.html'
+    // }
+    this.serveStatic(app, '/admin');
+    this.serveStatic(app, '/mobile');
+    this.serveStatic(app, '/');
+  }
+
+  serveStatic(app: Application, baseRoute: string) {
+    // for example, '/affine' in host [//host.com/affine]
     const basePath = this.config.server.path;
+    const staticPath = join(this.config.projectRoot, 'static');
 
-    app.get(basePath + '/admin/index.html', (_req, res) => {
-      res.redirect(basePath + '/admin');
+    // do not allow '/index.html' url, redirect to '/'
+    const route = basePath + baseRoute;
+    app.get(route + '/index.html', (_req, res) => {
+      return res.redirect(route);
     });
+
+    // serve all static files
     app.use(
-      basePath + '/admin',
-      serveStatic(join(staticPath, 'admin', 'selfhost'), {
+      route,
+      serveStatic(join(staticPath, baseRoute), {
         redirect: false,
         index: false,
       })
     );
 
-    app.get(
-      [basePath + '/admin', basePath + '/admin/*'],
-      this.check.use,
-      (_req, res) => {
-        res.sendFile(join(staticPath, 'admin', 'selfhost', 'index.html'));
-      }
-    );
-
-    app.get(basePath + '/index.html', (_req, res) => {
-      res.redirect(basePath);
-    });
-    app.use(
-      basePath,
-      serveStatic(join(staticPath, 'selfhost'), {
-        redirect: false,
-        index: false,
-      })
-    );
-    app.get('*', this.check.use, (_req, res) => {
-      res.sendFile(join(staticPath, 'selfhost', 'index.html'));
+    // fallback all unknown links to root path
+    app.use([route, route + '/*'], this.check.use, (_req, res) => {
+      res.sendFile(
+        join(
+          staticPath,
+          this.config.isSelfhosted ? 'selfhost.html' : 'index.html'
+        )
+      );
     });
   }
 }

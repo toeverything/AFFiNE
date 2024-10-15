@@ -11,4 +11,5 @@ export function setupElectron() {
 export async function setupBrowser() {
   await polyfillBrowser();
   setupEnvironment();
+  __webpack_public_path__ = environment.publicPath;
 }

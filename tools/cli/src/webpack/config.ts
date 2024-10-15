@@ -71,19 +71,40 @@ export const getPublicPath = (buildFlags: BuildFlags) => {
   if (typeof process.env.PUBLIC_PATH === 'string') {
     return process.env.PUBLIC_PATH;
   }
-  const publicPath = '/';
+
   if (process.env.COVERAGE || buildFlags.distribution === 'desktop') {
+    return '/';
+  }
+
+  let publicPath: string;
+  switch (buildFlags.distribution) {
+    case 'admin':
+      publicPath = '/admin/';
+      break;
+    case 'mobile':
+      publicPath = '/mobile/';
+      break;
+    default:
+      publicPath = '/';
+  }
+
+  let cdn: string;
+  switch (BUILD_TYPE) {
+    case 'stable':
+      cdn = 'https://prod.affineassets.com';
+      break;
+    case 'beta':
+      cdn = 'https://beta.affineassets.com';
+      break;
+    default:
+      cdn = 'https://dev.affineassets.com';
+  }
+
+  if (buildFlags.mode === 'development') {
     return publicPath;
   }
 
-  if (BUILD_TYPE === 'canary') {
-    return `https://dev.affineassets.com/`;
-  } else if (BUILD_TYPE === 'beta') {
-    return `https://beta.affineassets.com/`;
-  } else if (BUILD_TYPE === 'stable') {
-    return `https://prod.affineassets.com/`;
-  }
-  return publicPath;
+  return cdn + publicPath;
 };
 
 export const createConfiguration: (
@@ -126,7 +147,8 @@ export const createConfiguration: (
       path: join(cwd, 'dist'),
       clean: buildFlags.mode === 'production',
       globalObject: 'globalThis',
-      publicPath: getPublicPath(buildFlags),
+      // NOTE(@forehalo): always keep it '/'
+      publicPath: '/',
       workerPublicPath: '/',
     },
     target: ['web', 'es2022'],

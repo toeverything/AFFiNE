@@ -35,8 +35,8 @@ function createMixpanel() {
         appVersion: BUILD_CONFIG.appVersion,
         environment: BUILD_CONFIG.appBuildType,
         editorVersion: BUILD_CONFIG.editorVersion,
-        isSelfHosted: BUILD_CONFIG.isSelfHosted,
         isDesktop: BUILD_CONFIG.isElectron,
+        isSelfHosted: environment.isSelfHosted,
       });
     },
     reset() {
