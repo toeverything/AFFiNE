@@ -14,8 +14,8 @@ import {
   toDraftModel,
 } from '@blocksuite/affine/store';
 
+import { getContentFromSlice } from '../../_common';
 import { getEdgelessCopilotWidget, getService } from './edgeless';
-import { getContentFromSlice } from './markdown-utils';
 
 export const getRootService = (host: EditorHost) => {
   return host.std.getService('affine:page');

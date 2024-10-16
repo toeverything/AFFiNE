@@ -50,9 +50,9 @@ import {
   QuickSearchExtension,
   ReferenceNodeConfigExtension,
 } from '@blocksuite/affine/blocks';
-import { AIChatBlockSchema } from '@blocksuite/affine/presets';
 import { type BlockSnapshot, Text } from '@blocksuite/affine/store';
 import {
+  AIChatBlockSchema,
   type DocProps,
   type DocService,
   DocsService,

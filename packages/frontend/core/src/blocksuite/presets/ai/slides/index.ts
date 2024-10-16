@@ -2,7 +2,7 @@ import type { EditorHost } from '@blocksuite/affine/block-std';
 import type { EdgelessRootService } from '@blocksuite/affine/blocks';
 import type { BlockSnapshot } from '@blocksuite/affine/store';
 
-import { markdownToSnapshot } from '../utils/markdown-utils';
+import { markdownToSnapshot } from '../../_common';
 import { getSurfaceElementFromEditor } from '../utils/selection-utils';
 import {
   basicTheme,

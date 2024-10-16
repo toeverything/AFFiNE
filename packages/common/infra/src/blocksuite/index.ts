@@ -1,3 +1,4 @@
+export * from './blocks';
 export {
   migratePages as forceUpgradePages,
   migrateGuidCompatibility,

@@ -1,6 +1,6 @@
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import { type AIError, openFileOrFiles } from '@blocksuite/affine/blocks';
-import { type ChatMessage } from '@blocksuite/affine/presets';
+import type { ChatMessage } from '@toeverything/infra';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';

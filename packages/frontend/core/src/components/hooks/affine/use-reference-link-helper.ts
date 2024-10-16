@@ -1,3 +1,5 @@
+import type { AffineTextAttributes } from '@blocksuite/affine/blocks';
+import type { DeltaInsert } from '@blocksuite/affine/inline';
 import type { DocCollection } from '@blocksuite/affine/store';
 import { useCallback } from 'react';
 
@@ -8,7 +10,7 @@ export function useReferenceLinkHelper(docCollection: DocCollection) {
       if (!page) {
         return;
       }
-      const text = page.Text.fromDelta([
+      const text = new page.Text([
         {
           insert: ' ',
           attributes: {
@@ -18,7 +20,7 @@ export function useReferenceLinkHelper(docCollection: DocCollection) {
             },
           },
         },
-      ]);
+      ] as DeltaInsert<AffineTextAttributes>[]);
       const [frame] = page.getBlockByFlavour('affine:note');
 
       frame && page.addBlock('affine:paragraph', { text }, frame.id);

@@ -12,6 +12,7 @@ import {
 import { assertExists, Bound } from '@blocksuite/affine/global/utils';
 import type { TemplateResult } from 'lit';
 
+import { createTextRenderer, insertFromMarkdown } from '../_common';
 import {
   AIPenIcon,
   AIStarIconWithAnimation,
@@ -24,7 +25,6 @@ import {
   RetryIcon,
 } from './_common/icons';
 import { INSERT_ABOVE_ACTIONS } from './actions/consts';
-import { createTextRenderer } from './messages/text';
 import { AIProvider } from './provider';
 import { reportResponse } from './utils/action-reporter';
 import { findNoteBlockModel, getService } from './utils/edgeless';
@@ -34,7 +34,6 @@ import {
   insertBelow,
   replace,
 } from './utils/editor-actions';
-import { insertFromMarkdown } from './utils/markdown-utils';
 import { getSelections } from './utils/selection-utils';
 
 function getSelection(host: EditorHost) {

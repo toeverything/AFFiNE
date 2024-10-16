@@ -24,14 +24,14 @@ import {
   getElementsBound,
   type SerializedXYWH,
 } from '@blocksuite/affine/global/utils';
-import { type ChatMessage } from '@blocksuite/affine/presets';
 import type { Doc } from '@blocksuite/affine/store';
+import type { ChatMessage } from '@toeverything/infra/blocksuite';
 import type { TemplateResult } from 'lit';
 
+import { insertFromMarkdown } from '../../_common';
 import { AIProvider, type AIUserInfo } from '../provider';
 import { reportResponse } from '../utils/action-reporter';
 import { insertBelow, replace } from '../utils/editor-actions';
-import { insertFromMarkdown } from '../utils/markdown-utils';
 import { BlockIcon, CreateIcon, InsertBelowIcon, ReplaceIcon } from './icons';
 
 const { matchFlavours } = BlocksUtils;

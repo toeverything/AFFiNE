@@ -7,6 +7,7 @@ import type {
 import { assertExists } from '@blocksuite/affine/global/utils';
 import type { TemplateResult } from 'lit';
 
+import { createTextRenderer } from '../../_common';
 import {
   buildCopyConfig,
   buildErrorConfig,
@@ -14,7 +15,6 @@ import {
   buildGeneratingConfig,
   getAIPanel,
 } from '../ai-panel';
-import { createTextRenderer } from '../messages/text';
 import { AIProvider } from '../provider';
 import { reportResponse } from '../utils/action-reporter';
 import {

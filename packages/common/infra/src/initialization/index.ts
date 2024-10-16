@@ -30,7 +30,7 @@ export function initDocFromProps(doc: Doc, props?: DocProps) {
       'affine:page',
       props?.page || { title: new Text('') }
     );
-    doc.addBlock('affine:surface', props?.surface || {}, pageBlockId);
+    doc.addBlock('affine:surface' as never, props?.surface || {}, pageBlockId);
     const noteBlockId = doc.addBlock(
       'affine:note',
       {

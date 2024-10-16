@@ -8,8 +8,8 @@ import type {
   SurfaceRefBlockModel,
 } from '@blocksuite/affine/blocks';
 import { AffineReference } from '@blocksuite/affine/blocks';
-import type { AIChatBlockModel } from '@blocksuite/affine/presets';
 import type { BlockModel } from '@blocksuite/affine/store';
+import type { AIChatBlockModel } from '@toeverything/infra';
 import { Entity, LiveData } from '@toeverything/infra';
 import type { TemplateResult } from 'lit';
 import { firstValueFrom, map, race } from 'rxjs';

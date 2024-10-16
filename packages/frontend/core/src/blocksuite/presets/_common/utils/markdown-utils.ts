@@ -12,7 +12,8 @@ import {
   PlainTextAdapter,
   titleMiddleware,
 } from '@blocksuite/affine/blocks';
-import { assertExists } from '@blocksuite/affine/global/utils';
+import { DocCollection, Job } from '@blocksuite/affine/store';
+import { assertExists } from '@blocksuite/global/utils';
 import type {
   BlockModel,
   BlockSnapshot,
@@ -20,8 +21,7 @@ import type {
   DraftModel,
   Slice,
   SliceSnapshot,
-} from '@blocksuite/affine/store';
-import { DocCollection, Job } from '@blocksuite/affine/store';
+} from '@blocksuite/store';
 
 const updateSnapshotText = (
   point: TextRangePoint,

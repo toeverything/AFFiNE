@@ -11,24 +11,16 @@ import type {
   DatabaseBlockModel,
   MenuOptions,
 } from '@blocksuite/affine/blocks';
+import { menu } from '@blocksuite/affine-components/context-menu';
 import { LinkIcon } from '@blocksuite/icons/lit';
 import type { FrameworkProvider } from '@toeverything/infra';
-import type { TemplateResult } from 'lit';
 
 export function createDatabaseOptionsConfig(framework: FrameworkProvider) {
   return {
     configure: (model: DatabaseBlockModel, options: MenuOptions) => {
       const items = options.items;
 
-      const copyIndex = items.findIndex(
-        item => item.type === 'action' && item.name === 'Copy'
-      );
-
-      items.splice(
-        copyIndex + 1,
-        0,
-        createCopyLinkToBlockMenuItem(framework, model)
-      );
+      items.splice(2, 0, createCopyLinkToBlockMenuItem(framework, model));
 
       return options;
     },
@@ -38,17 +30,10 @@ export function createDatabaseOptionsConfig(framework: FrameworkProvider) {
 function createCopyLinkToBlockMenuItem(
   framework: FrameworkProvider,
   model: DatabaseBlockModel
-): {
-  type: 'action';
-  name: string;
-  icon?: TemplateResult<1>;
-  hide?: () => boolean;
-  select: () => void;
-} {
-  return {
-    type: 'action',
+) {
+  return menu.action({
     name: 'Copy link to block',
-    icon: LinkIcon({ width: '20', height: '20' }),
+    prefix: LinkIcon({ width: '20', height: '20' }),
     hide: () => {
       const { editor } = framework.get(EditorService);
       const mode = editor.mode$.value;
@@ -91,5 +76,5 @@ function createCopyLinkToBlockMenuItem(
         })
         .catch(console.error);
     },
-  };
+  });
 }

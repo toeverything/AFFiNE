@@ -1,22 +1,22 @@
 import { BlockStdScope, type EditorHost } from '@blocksuite/affine/block-std';
-import {
-  type AffineAIPanelState,
-  type AffineAIPanelWidgetConfig,
+import type {
+  AffineAIPanelState,
+  AffineAIPanelWidgetConfig,
 } from '@blocksuite/affine/blocks';
 import {
   CodeBlockComponent,
   DividerBlockComponent,
   ListBlockComponent,
   ParagraphBlockComponent,
+  SpecProvider,
 } from '@blocksuite/affine/blocks';
 import { WithDisposable } from '@blocksuite/affine/global/utils';
 import { BlockViewType, type Doc, type Query } from '@blocksuite/affine/store';
-import { css, html, LitElement, type PropertyValues } from 'lit';
+import { css, html, LitElement, nothing, type PropertyValues } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { keyed } from 'lit/directives/keyed.js';
 
-import { CustomPageEditorBlockSpecs } from '../utils/custom-specs';
 import { markDownToDoc } from '../utils/markdown-utils';
 
 const textBlockStyles = css`
@@ -67,12 +67,12 @@ const customHeadingStyles = css`
   }
 `;
 
-type TextRendererOptions = {
+export type TextRendererOptions = {
   maxHeight?: number;
   customHeading?: boolean;
 };
 
-export class AIAnswerText extends WithDisposable(LitElement) {
+export class TextRenderer extends WithDisposable(LitElement) {
   static override styles = css`
     .ai-answer-text-editor.affine-page-viewport {
       background: transparent;
@@ -138,42 +138,13 @@ export class AIAnswerText extends WithDisposable(LitElement) {
       editor-host * {
         box-sizing: border-box;
       }
-      editor-host {
-        isolation: isolate;
-      }
     }
 
     ${textBlockStyles}
     ${customHeadingStyles}
   `;
 
-  @query('.ai-answer-text-container')
-  private accessor _container!: HTMLDivElement;
-
-  private _doc!: Doc;
-
   private _answers: string[] = [];
-
-  private _timer?: ReturnType<typeof setInterval> | null = null;
-
-  @property({ attribute: false })
-  accessor host!: EditorHost;
-
-  @property({ attribute: false })
-  accessor answer!: string;
-
-  @property({ attribute: false })
-  accessor options!: TextRendererOptions;
-
-  @property({ attribute: false })
-  accessor state: AffineAIPanelState | undefined = undefined;
-
-  private _onWheel(e: MouseEvent) {
-    e.stopPropagation();
-    if (this.state === 'generating') {
-      e.preventDefault();
-    }
-  }
 
   private readonly _clearTimer = () => {
     if (this._timer) {
@@ -181,6 +152,8 @@ export class AIAnswerText extends WithDisposable(LitElement) {
       this._timer = null;
     }
   };
+
+  private _doc: Doc | null = null;
 
   private readonly _query: Query = {
     mode: 'strict',
@@ -194,6 +167,8 @@ export class AIAnswerText extends WithDisposable(LitElement) {
       'affine:divider',
     ].map(flavour => ({ flavour, viewType: BlockViewType.Display })),
   };
+
+  private _timer?: ReturnType<typeof setInterval> | null = null;
 
   private readonly _updateDoc = () => {
     if (this._answers.length > 0) {
@@ -222,13 +197,11 @@ export class AIAnswerText extends WithDisposable(LitElement) {
     }
   };
 
-  override shouldUpdate(changedProperties: PropertyValues) {
-    if (changedProperties.has('answer')) {
-      this._answers.push(this.answer);
-      return false;
+  private _onWheel(e: MouseEvent) {
+    e.stopPropagation();
+    if (this.state === 'generating') {
+      e.preventDefault();
     }
-
-    return true;
   }
 
   override connectedCallback() {
@@ -246,16 +219,13 @@ export class AIAnswerText extends WithDisposable(LitElement) {
     this._clearTimer();
   }
 
-  override updated(changedProperties: PropertyValues) {
-    super.updated(changedProperties);
-    requestAnimationFrame(() => {
-      if (!this._container) return;
-      this._container.scrollTop = this._container.scrollHeight;
-    });
-  }
-
   override render() {
+    if (!this._doc) {
+      return nothing;
+    }
+
     const { maxHeight, customHeading } = this.options;
+    const previewSpec = SpecProvider.getInstance().getSpec('page:preview');
     const classes = classMap({
       'ai-answer-text-container': true,
       'show-scrollbar': !!maxHeight,
@@ -273,18 +243,50 @@ export class AIAnswerText extends WithDisposable(LitElement) {
           html`<div class="ai-answer-text-editor affine-page-viewport">
             ${new BlockStdScope({
               doc: this._doc,
-              extensions: CustomPageEditorBlockSpecs,
+              extensions: previewSpec.value,
             }).render()}
           </div>`
         )}
       </div>
     `;
   }
+
+  override shouldUpdate(changedProperties: PropertyValues) {
+    if (changedProperties.has('answer')) {
+      this._answers.push(this.answer);
+      return false;
+    }
+
+    return true;
+  }
+
+  override updated(changedProperties: PropertyValues) {
+    super.updated(changedProperties);
+    requestAnimationFrame(() => {
+      if (!this._container) return;
+      this._container.scrollTop = this._container.scrollHeight;
+    });
+  }
+
+  @query('.ai-answer-text-container')
+  private accessor _container!: HTMLDivElement;
+
+  @property({ attribute: false })
+  accessor answer!: string;
+
+  @property({ attribute: false })
+  accessor host!: EditorHost;
+
+  @property({ attribute: false })
+  accessor options!: TextRendererOptions;
+
+  @property({ attribute: false })
+  accessor state: AffineAIPanelState | undefined = undefined;
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ai-answer-text': AIAnswerText;
+    'text-renderer': TextRenderer;
   }
 }
 
@@ -293,11 +295,11 @@ export const createTextRenderer: (
   options: TextRendererOptions
 ) => AffineAIPanelWidgetConfig['answerRenderer'] = (host, options) => {
   return (answer, state) => {
-    return html`<ai-answer-text
+    return html`<text-renderer
       .host=${host}
       .answer=${answer}
       .state=${state}
       .options=${options}
-    ></ai-answer-text>`;
+    ></text-renderer>`;
   };
 };

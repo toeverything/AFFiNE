@@ -11,7 +11,7 @@ import {
   insertFromMarkdown,
   markDownToDoc,
   markdownToSnapshot,
-} from './markdown-utils';
+} from '../../_common';
 
 const getNoteId = (blockElement: BlockComponent) => {
   let element = blockElement;

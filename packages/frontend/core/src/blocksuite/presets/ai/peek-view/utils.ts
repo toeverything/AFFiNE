@@ -4,7 +4,7 @@ import {
   type AIChatBlockModel,
   CHAT_BLOCK_HEIGHT,
   CHAT_BLOCK_WIDTH,
-} from '@blocksuite/affine/presets';
+} from '@toeverything/infra';
 
 /**
  * Calculates the bounding box for a child block

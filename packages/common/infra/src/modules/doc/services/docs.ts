@@ -1,5 +1,9 @@
 import { Unreachable } from '@affine/env/constant';
-import { type DocMode } from '@blocksuite/affine/blocks';
+import {
+  type AffineTextAttributes,
+  type DocMode,
+} from '@blocksuite/affine/blocks';
+import type { DeltaInsert } from '@blocksuite/affine/inline';
 
 import { Service } from '../../../framework';
 import { type DocProps, initDocFromProps } from '../../../initialization';
@@ -77,7 +81,7 @@ export class DocsService extends Service {
     const { doc, release } = this.open(targetDocId);
     doc.setPriorityLoad(10);
     await doc.waitForSyncReady();
-    const text = doc.blockSuiteDoc.Text.fromDelta([
+    const text = new doc.blockSuiteDoc.Text([
       {
         insert: ' ',
         attributes: {
@@ -87,7 +91,7 @@ export class DocsService extends Service {
           },
         },
       },
-    ]);
+    ] as DeltaInsert<AffineTextAttributes>[]);
     const [frame] = doc.blockSuiteDoc.getBlocksByFlavour('affine:note');
     frame &&
       doc.blockSuiteDoc.addBlock(
