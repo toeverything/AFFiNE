@@ -384,10 +384,6 @@ function updateEdgelessAIPanelConfig<
     },
   };
   config.discardCallback = () => {
-    getTracker(host).action_panel.discardAction({
-      action: id,
-      control: 'discard_button',
-    });
     reportResponse('result:discard');
   };
   config.hideCallback = () => {
@@ -498,7 +494,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
 
     togglePanel()
       .then(isEmpty => {
-        getTracker(host).action_panel.invokeAction({ action: id });
+        getTracker(host, false).invokeAction({ action: id });
         aiPanel.toggle(referenceElement, isEmpty ? undefined : 'placeholder');
       })
       .catch(console.error);
