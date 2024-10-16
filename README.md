@@ -55,17 +55,17 @@ Star us, and you will receive all release notifications from GitHub without any 
 
 ## What is AFFiNE
 
-AFFiNE is an open-source, all-in-one workspace and an operating system for all the building blocks that assemble your knowledge base and much more -- wiki, knowledge management, presentation and digital assets. It's a better alternative to Notion and Miro.
+[AFFiNE](https://affine.pro) is an open-source, all-in-one workspace and an operating system for all the building blocks that assemble your knowledge base and much more -- wiki, knowledge management, presentation and digital assets. It's a better alternative to Notion and Miro.
 
 ## Features
 
 **A true canvas for blocks in any form. Docs and whiteboard are now fully merged.**
 
-- Many editor apps claim to be a canvas for productivity, but AFFiNE is one of the very few which allows you to put any building block on an edgeless canvas -- rich text, sticky notes, any embedded web pages, multi-view databases, linked pages, shapes and even slides. We have it all.
+- Many editor apps claim to be a canvas for productivity, but AFFiNE is one of the very few which allows you to put any building block on an edgeless canvas -- rich text, sticky notes, any embedded web pages, multi-view databases, linked pages, shapes and even slides. We have it all. 
 
 **Multimodal AI partner ready to kick in any work**
 
-- Write up professional work report? Turn an outline into expressive and presentable slides? Summary an article into a well-structured mindmap? Sorting your job plan and backlog for tasks? Or... draw and code prototype apps and web pages directly all with one prompt? With you, AFFiNE AI pushes your creativity to the edge of your imagination.
+- Write up professional work report? Turn an outline into expressive and presentable slides? Summary an article into a well-structured mindmap? Sorting your job plan and backlog for tasks? Or... draw and code prototype apps and web pages directly all with one prompt? With you, [AFFiNE AI](https://affine.pro/ai) pushes your creativity to the edge of your imagination,just like [Canvas AI](https://affine.pro/blog/best-canvas-ai) to generate mind map for brainstorming.
 
 **Local-first & Real-time collaborative**
 
@@ -107,6 +107,36 @@ For **translation** and **language support** you can visit our [i18n General Spa
 Looking for **other ways to contribute** and wondering where to start? Check out the [AFFiNE Ambassador program](https://community.affine.pro/c/start-here/affine-ambassador), we work closely with passionate community members and provide them with a wide range of support and resources.
 
 If you have questions, you are welcome to contact us. One of the best places to get more info and learn more is in the [AFFiNE Community](https://community.affine.pro) where you can engage with other like-minded individuals.
+
+## Templates
+AFFiNE now provides pre-built [templates](https://affine.pro/templates) from our team. Following are the Top 10 most popular templates among AFFiNE users,if you want to contribute, you can contribute your own template so other people can use it too.
+
+- [vision board template](https://affine.pro/templates/category-vision-board-template)
+- [one pager template](https://affine.pro/templates/category-one-pager-template-free)
+- [sample lesson plan math template](https://affine.pro/templates/sample-lesson-plan-math-template)
+- [grr lesson plan template free](https://affine.pro/templates/grr-lesson-plan-template-free)
+- [free editable lesson plan template for pre k](https://affine.pro/templates/free-editable-lesson-plan-template-for-pre-k)
+- [high note collection planners](https://affine.pro/templates/high-note-collection-planners)
+- [digital planner](https://affine.pro/templates/category-digital-planner)
+- [ADHD Planner](https://affine.pro/templates/adhd-planner)
+- [Reading Log](https://affine.pro/templates/reading-log)
+- [Cornell Notes Template](https://affine.pro/templates/category-cornell-notes-template)  
+
+## Blog
+
+Welcome to the AFFiNE blog section! Here, you’ll find the latest insights, tips, and guides on how to maximize your experience with AFFiNE and AFFiNE AI, the leading Canvas AI tool for flexible note-taking and creative organization. 
+
+- [vision board template](https://affine.pro/blog/8-free-printable-vision-board-templates-examples-2023)
+- [itinerary template](https://affine.pro/blog/free-customized-travel-itinerary-planner-templates)
+- [one pager template](https://affine.pro/blog/top-12-one-pager-examples-how-to-create-your-own)
+- [cornell notes template](https://affine.pro/blog/the-cornell-notes-template-and-system-learning-tips)
+- [swot chart template](https://affine.pro/blog/top-10-free-editable-swot-analysis-template-examples)
+- [apps like luna task](https://affine.pro/blog/apps-like-luna-task)
+- [note taking ai from rough notes to mind map](https://affine.pro/blog/dynamic-AI-notes)
+- [canvas ai](https://affine.pro/blog/best-canvas-ai)
+- [one pager](https://affine.pro/blog/top-12-one-pager-examples-how-to-create-your-own)
+- [SOP Template](https://affine.pro/blog/how-to-write-sop-step-by-step-guide-5-best-free-tools-templates)
+- [Chore Chart](https://affine.pro/blog/10-best-free-chore-chart-templates-kids-adults)
 
 ## Ecosystem
 
