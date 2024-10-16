@@ -249,6 +249,15 @@ const PageEvents = {
     },
     appTabsHeader: {
       $: ['tabAction'],
+      chat: [
+        'startChat',
+        'abortChat',
+        'resetChat',
+        'addChatAttachment',
+        'invokeAction',
+        'discardAction',
+        'acceptAction',
+      ],
     },
     header: {
       actions: [
@@ -275,10 +284,24 @@ const PageEvents = {
   },
   doc: {
     editor: {
-      slashMenu: ['linkDoc', 'createDoc', 'bookmark'],
+      slashMenu: [
+        'linkDoc',
+        'createDoc',
+        'bookmark',
+        // copilot actions
+        'invokeAction',
+        'discardAction',
+        'acceptAction',
+      ],
       atMenu: ['linkDoc'],
       quickSearch: ['createDoc'],
-      formatToolbar: ['bold'],
+      formatToolbar: [
+        'bold',
+        // copilot actions
+        'invokeAction',
+        'discardAction',
+        'acceptAction',
+      ],
       pageRef: ['navigate'],
       toolbar: ['copyBlockToLink'],
     },
@@ -286,24 +309,17 @@ const PageEvents = {
       $: ['toggle'],
     },
   },
-  copilot: {
-    chat: {
-      $: ['startChat', 'abortChat', 'resetChat', 'addChatAttachment'],
-    },
-    page: {
-      action_panel: ['invokeAction', 'discardAction', 'acceptAction'],
-      inline_panel: ['invokeAction', 'discardAction', 'acceptAction'],
-      chat: ['invokeAction', 'discardAction', 'acceptAction'],
-    },
-    edgeless: {
-      action_panel: ['invokeAction', 'discardAction', 'acceptAction'],
-      inline_panel: ['invokeAction', 'discardAction', 'acceptAction'],
-      chat: ['invokeAction', 'discardAction', 'acceptAction'],
+  edgeless: {
+    editor: {
+      slashMenu: [
+        // copilot actions
+        'invokeAction',
+        'discardAction',
+        'acceptAction',
+      ],
+      formatToolbar: ['invokeAction', 'discardAction', 'acceptAction'],
     },
   },
-  // remove when type added
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  edgeless: {},
   workspace: {
     $: {
       $: ['upgradeWorkspace'],

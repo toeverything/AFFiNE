@@ -88,18 +88,11 @@ export function discard(panel: AffineAIPanelWidget): AIItemConfig {
   };
 }
 
-export function retry<T extends keyof BlockSuitePresets.AIActions>(
-  panel: AffineAIPanelWidget,
-  id: T
-): AIItemConfig {
+export function retry(panel: AffineAIPanelWidget): AIItemConfig {
   return {
     name: 'Retry',
     icon: ResetIcon,
     handler: () => {
-      getTracker(panel.host).action_panel.invokeAction({
-        action: id,
-        retry: true,
-      });
       reportResponse('result:retry');
       panel.generate();
     },
@@ -148,10 +141,6 @@ export function createInsertResp<T extends keyof BlockSuitePresets.AIActions>(
         );
       },
       handler: () => {
-        getTracker(host).action_panel.acceptAction({
-          action: id,
-          control: 'insert',
-        });
         reportResponse('result:insert');
         handler(host, ctx);
         const panel = getAIPanel(host);
@@ -173,10 +162,6 @@ export function asCaption<T extends keyof BlockSuitePresets.AIActions>(
       return id === 'generateCaption' && !!panel.answer;
     },
     handler: () => {
-      getTracker(host).action_panel.acceptAction({
-        action: id,
-        control: 'as_caption',
-      });
       reportResponse('result:use-as-caption');
       const panel = getAIPanel(host);
       const caption = panel.answer;
@@ -595,10 +580,6 @@ export function actionToResponse<T extends keyof BlockSuitePresets.AIActions>(
             name: 'Continue in chat',
             icon: ChatWithAIIcon,
             handler: () => {
-              getTracker(host).action_panel.acceptAction({
-                action: id,
-                control: 'continue_in_chat',
-              });
               reportResponse('result:continue-in-chat');
               const panel = getAIPanel(host);
               AIProvider.slots.requestOpenWithChat.emit({ host });
@@ -607,7 +588,7 @@ export function actionToResponse<T extends keyof BlockSuitePresets.AIActions>(
           },
           ...getInsertAndReplaceHandler(id, host, ctx, variants),
           asCaption(id, host),
-          retry(getAIPanel(host), id),
+          retry(getAIPanel(host)),
           discard(getAIPanel(host)),
         ],
       },
@@ -640,7 +621,7 @@ export function actionToErrorResponse<
 ): ErrorConfig {
   return {
     upgrade: () => {
-      getTracker(host).action_panel.discardAction({
+      getTracker(host, false).discardAction({
         action: id,
         control: 'paywall',
       });
@@ -648,7 +629,7 @@ export function actionToErrorResponse<
       panel.hide();
     },
     login: () => {
-      getTracker(host).action_panel.discardAction({
+      getTracker(host, false).discardAction({
         action: id,
         control: 'login_required',
       });
@@ -656,7 +637,7 @@ export function actionToErrorResponse<
       panel.hide();
     },
     cancel: () => {
-      getTracker(host).action_panel.discardAction({
+      getTracker(host, false).discardAction({
         action: id,
         control: 'paywall',
       });
@@ -669,7 +650,7 @@ export function actionToErrorResponse<
       },
       {
         name: '',
-        items: [retry(getAIPanel(host), id), discard(getAIPanel(host))],
+        items: [retry(getAIPanel(host)), discard(getAIPanel(host))],
       },
     ],
   };
