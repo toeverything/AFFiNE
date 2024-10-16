@@ -1,4 +1,3 @@
-import track from '@affine/track';
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import type {
   AffineAIPanelWidget,
@@ -42,6 +41,7 @@ import {
   getSelectedNoteAnchor,
   getSelections,
 } from '../utils/selection-utils';
+import { getTracker } from '../utils/track';
 import { EXCLUDING_COPY_ACTIONS, IMAGE_ACTIONS } from './consts';
 import { bindTextStream } from './doc-handler';
 import {
@@ -385,7 +385,10 @@ function updateEdgelessAIPanelConfig<
     },
   };
   config.discardCallback = () => {
-    track.copilot.edgeless.$.discardAction({ action: id });
+    getTracker(host).action_panel.discardAction({
+      action: id,
+      control: 'discard_button',
+    });
     reportResponse('result:discard');
   };
   config.hideCallback = () => {
@@ -496,7 +499,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
 
     togglePanel()
       .then(isEmpty => {
-        track.copilot.edgeless.$.startAction({ action: id });
+        getTracker(host).action_panel.invokeAction({ action: id });
         aiPanel.toggle(referenceElement, isEmpty ? undefined : 'placeholder');
       })
       .catch(console.error);

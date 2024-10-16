@@ -67,7 +67,10 @@ function asCaption<T extends keyof BlockSuitePresets.AIActions>(
       return id === 'generateCaption' && !!panel.answer;
     },
     handler: () => {
-      getTracker(host).finishAction({ action: id });
+      getTracker(host).action_panel.acceptAction({
+        action: id,
+        control: 'as_caption',
+      });
       reportResponse('result:use-as-caption');
       const panel = getAIPanel(host);
       const caption = panel.answer;
@@ -97,7 +100,10 @@ function createNewNote<T extends keyof BlockSuitePresets.AIActions>(
       return !!panel.answer && isInsideEdgelessEditor(host);
     },
     handler: () => {
-      getTracker(host).finishAction({ action: id });
+      getTracker(host).action_panel.acceptAction({
+        action: id,
+        control: 'insert_note',
+      });
       reportResponse('result:add-note');
       // get the note block
       const { selectedBlocks } = getSelections(host);
@@ -203,7 +209,10 @@ export function buildTextResponseConfig<
           showWhen: () =>
             !!panel.answer && (!id || !INSERT_ABOVE_ACTIONS.includes(id)),
           handler: () => {
-            getTracker(host).finishAction({ action: id });
+            getTracker(host).action_panel.acceptAction({
+              action: id,
+              control: 'insert',
+            });
             reportResponse('result:insert');
             insertAnswerBelow(panel).catch(console.error);
           },
@@ -214,7 +223,10 @@ export function buildTextResponseConfig<
           showWhen: () =>
             !!panel.answer && !!id && INSERT_ABOVE_ACTIONS.includes(id),
           handler: () => {
-            getTracker(host).finishAction({ action: id });
+            getTracker(host).action_panel.acceptAction({
+              action: id,
+              control: 'insert',
+            });
             reportResponse('result:insert');
             insertAnswerAbove(panel).catch(console.error);
           },
@@ -225,7 +237,10 @@ export function buildTextResponseConfig<
           icon: ReplaceIcon,
           showWhen: () => !!panel.answer,
           handler: () => {
-            getTracker(host).finishAction({ action: id });
+            getTracker(host).action_panel.acceptAction({
+              action: id,
+              control: 'replace',
+            });
             reportResponse('result:replace');
             replaceWithAnswer(panel).catch(console.error);
           },
@@ -240,7 +255,10 @@ export function buildTextResponseConfig<
           name: 'Continue in chat',
           icon: ChatWithAIIcon,
           handler: () => {
-            getTracker(host).finishAction({ action: id });
+            getTracker(host).action_panel.acceptAction({
+              action: id,
+              control: 'continue_in_chat',
+            });
             reportResponse('result:continue-in-chat');
             AIProvider.slots.requestOpenWithChat.emit({ host });
             panel.hide();
@@ -250,7 +268,10 @@ export function buildTextResponseConfig<
           name: 'Regenerate',
           icon: RetryIcon,
           handler: () => {
-            getTracker(host).retryAction({ action: id });
+            getTracker(host).action_panel.invokeAction({
+              action: id,
+              retry: true,
+            });
             reportResponse('result:retry');
             panel.generate();
           },
@@ -281,7 +302,10 @@ export function buildErrorResponseConfig<
           icon: ReplaceIcon,
           showWhen: () => !!panel.answer,
           handler: () => {
-            getTracker(host).finishAction({ action: id });
+            getTracker(host).action_panel.acceptAction({
+              action: id,
+              control: 'replace',
+            });
             replaceWithAnswer(panel).catch(console.error);
           },
         },
@@ -291,7 +315,10 @@ export function buildErrorResponseConfig<
           showWhen: () =>
             !!panel.answer && (!id || !INSERT_ABOVE_ACTIONS.includes(id)),
           handler: () => {
-            getTracker(host).finishAction({ action: id });
+            getTracker(host).action_panel.acceptAction({
+              action: id,
+              control: 'insert',
+            });
             insertAnswerBelow(panel).catch(console.error);
           },
         },
@@ -301,7 +328,10 @@ export function buildErrorResponseConfig<
           showWhen: () =>
             !!panel.answer && !!id && INSERT_ABOVE_ACTIONS.includes(id),
           handler: () => {
-            getTracker(host).finishAction({ action: id });
+            getTracker(host).action_panel.acceptAction({
+              action: id,
+              control: 'insert',
+            });
             reportResponse('result:insert');
             insertAnswerAbove(panel).catch(console.error);
           },
@@ -318,7 +348,10 @@ export function buildErrorResponseConfig<
           icon: RetryIcon,
           showWhen: () => true,
           handler: () => {
-            getTracker(host).retryAction({ action: id });
+            getTracker(host).action_panel.invokeAction({
+              action: id,
+              retry: true,
+            });
             reportResponse('result:retry');
             panel.generate();
           },
@@ -354,17 +387,26 @@ export function buildErrorConfig<T extends keyof BlockSuitePresets.AIActions>(
 
   return {
     upgrade: () => {
-      getTracker(host).discardAction({ action: id });
+      getTracker(host).action_panel.discardAction({
+        action: id,
+        control: 'paywall',
+      });
       AIProvider.slots.requestUpgradePlan.emit({ host: panel.host });
       panel.hide();
     },
     login: () => {
-      getTracker(host).discardAction({ action: id });
+      getTracker(host).action_panel.discardAction({
+        action: id,
+        control: 'login_required',
+      });
       AIProvider.slots.requestLogin.emit({ host: panel.host });
       panel.hide();
     },
     cancel: () => {
-      getTracker(host).discardAction({ action: id });
+      getTracker(host).action_panel.discardAction({
+        action: id,
+        control: 'paywall',
+      });
       panel.hide();
     },
     responses: buildErrorResponseConfig(panel, id),

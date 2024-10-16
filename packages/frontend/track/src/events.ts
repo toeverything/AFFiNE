@@ -111,14 +111,11 @@ type PaymentEvents =
 type CopilotEvents =
   | 'startChat'
   | 'resetChat'
-  | 'retryChat'
-  | 'failureChat'
+  | 'abortChat'
   | 'addChatAttachment'
-  | 'startAction'
-  | 'retryAction'
+  | 'invokeAction'
   | 'discardAction'
-  | 'failureAction'
-  | 'finishAction';
+  | 'acceptAction';
 // END SECTION
 
 type UserEvents =
@@ -291,31 +288,17 @@ const PageEvents = {
   },
   copilot: {
     chat: {
-      $: [
-        'startChat',
-        'retryChat',
-        'resetChat',
-        'failureChat',
-        'addChatAttachment',
-      ],
+      $: ['startChat', 'abortChat', 'resetChat', 'addChatAttachment'],
     },
     page: {
-      $: [
-        'startAction',
-        'retryAction',
-        'discardAction',
-        'failureAction',
-        'finishAction',
-      ],
+      action_panel: ['invokeAction', 'discardAction', 'acceptAction'],
+      inline_panel: ['invokeAction', 'discardAction', 'acceptAction'],
+      chat: ['invokeAction', 'discardAction', 'acceptAction'],
     },
     edgeless: {
-      $: [
-        'startAction',
-        'retryAction',
-        'discardAction',
-        'failureAction',
-        'finishAction',
-      ],
+      action_panel: ['invokeAction', 'discardAction', 'acceptAction'],
+      inline_panel: ['invokeAction', 'discardAction', 'acceptAction'],
+      chat: ['invokeAction', 'discardAction', 'acceptAction'],
     },
   },
   // remove when type added
@@ -441,11 +424,30 @@ export type EventArgs = {
     type: string;
   };
   // copilot
-  startAction: { action: string };
-  retryAction: { action: string };
-  discardAction: { action: string };
-  failureAction: { action: string };
-  finishAction: { action: string };
+  invokeAction: {
+    action: string;
+    retry?: boolean;
+  };
+  discardAction: {
+    action: string;
+    control:
+      | 'stop_button'
+      | 'discard_button'
+      | 'paywall'
+      | 'backend_policy'
+      | 'backend_error'
+      | 'login_required'
+      | 'retry';
+  };
+  acceptAction: {
+    action: string;
+    control:
+      | 'insert'
+      | 'insert_note'
+      | 'replace'
+      | 'as_caption'
+      | 'continue_in_chat';
+  };
 };
 
 // for type checking

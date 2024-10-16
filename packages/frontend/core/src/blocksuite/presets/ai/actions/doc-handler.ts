@@ -181,7 +181,10 @@ function updateAIPanelConfig<T extends keyof BlockSuitePresets.AIActions>(
   config.errorStateConfig = buildErrorConfig(aiPanel);
   config.copy = buildCopyConfig(aiPanel);
   config.discardCallback = () => {
-    getTracker(host).discardAction({ action: id });
+    getTracker(host).action_panel.discardAction({
+      action: id,
+      control: 'discard_button',
+    });
     reportResponse('result:discard');
   };
 }
@@ -202,7 +205,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
     if (!blocks || blocks.length === 0) return;
     const block = blocks.at(-1);
     assertExists(block);
-    getTracker(host).startAction({ action: id });
+    getTracker(host).action_panel.invokeAction({ action: id });
     aiPanel.toggle(block, 'placeholder');
   };
 }
