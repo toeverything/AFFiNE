@@ -32,7 +32,7 @@ jobs:
           skip_untranslated_strings: true
           localization_branch_name: l10n_crowdin_translations
           create_pull_request: true
-          pull_request_title: 'New Crowdin Translations'
+          pull_request_title: 'chore(i18n): sync translations'
           pull_request_body: 'New Crowdin translations by [Crowdin GH Action](https://github.com/crowdin/github-action)'
           pull_request_base_branch_name: 'canary'
           config: packages/frontend/i18n/crowdin.yml
