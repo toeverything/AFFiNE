@@ -15,6 +15,7 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
+import { ServerConfigService } from '@affine/core/modules/cloud';
 import {
   EditorSettingService,
   type FontFamily,
@@ -402,8 +403,13 @@ export const SpellCheckSettings = () => {
 const AISettings = () => {
   const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
-  const { featureFlagService } = useServices({ FeatureFlagService });
-
+  const { featureFlagService, serverConfigService } = useServices({
+    FeatureFlagService,
+    ServerConfigService,
+  });
+  const serverFeatures = useLiveData(
+    serverConfigService.serverConfig.features$
+  );
   const enableAI = useLiveData(featureFlagService.flags.enable_ai.$);
 
   const onAIChange = useCallback(
@@ -439,6 +445,10 @@ const AISettings = () => {
     },
     [openConfirmModal, t, onAIChange]
   );
+
+  if (!serverFeatures?.copilot) {
+    return null;
+  }
 
   return (
     <SettingRow
