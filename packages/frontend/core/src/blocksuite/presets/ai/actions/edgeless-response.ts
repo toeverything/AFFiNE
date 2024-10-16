@@ -96,7 +96,10 @@ export function retry<T extends keyof BlockSuitePresets.AIActions>(
     name: 'Retry',
     icon: ResetIcon,
     handler: () => {
-      getTracker(panel.host).retryAction({ action: id });
+      getTracker(panel.host).action_panel.invokeAction({
+        action: id,
+        retry: true,
+      });
       reportResponse('result:retry');
       panel.generate();
     },
@@ -145,7 +148,10 @@ export function createInsertResp<T extends keyof BlockSuitePresets.AIActions>(
         );
       },
       handler: () => {
-        getTracker(host).finishAction({ action: id });
+        getTracker(host).action_panel.acceptAction({
+          action: id,
+          control: 'insert',
+        });
         reportResponse('result:insert');
         handler(host, ctx);
         const panel = getAIPanel(host);
@@ -167,7 +173,10 @@ export function asCaption<T extends keyof BlockSuitePresets.AIActions>(
       return id === 'generateCaption' && !!panel.answer;
     },
     handler: () => {
-      getTracker(host).finishAction({ action: id });
+      getTracker(host).action_panel.acceptAction({
+        action: id,
+        control: 'as_caption',
+      });
       reportResponse('result:use-as-caption');
       const panel = getAIPanel(host);
       const caption = panel.answer;
@@ -586,7 +595,10 @@ export function actionToResponse<T extends keyof BlockSuitePresets.AIActions>(
             name: 'Continue in chat',
             icon: ChatWithAIIcon,
             handler: () => {
-              getTracker(host).finishAction({ action: id });
+              getTracker(host).action_panel.acceptAction({
+                action: id,
+                control: 'continue_in_chat',
+              });
               reportResponse('result:continue-in-chat');
               const panel = getAIPanel(host);
               AIProvider.slots.requestOpenWithChat.emit({ host });
@@ -628,17 +640,26 @@ export function actionToErrorResponse<
 ): ErrorConfig {
   return {
     upgrade: () => {
-      getTracker(host).failureAction({ action: id });
+      getTracker(host).action_panel.discardAction({
+        action: id,
+        control: 'paywall',
+      });
       AIProvider.slots.requestUpgradePlan.emit({ host: panel.host });
       panel.hide();
     },
     login: () => {
-      getTracker(host).failureAction({ action: id });
+      getTracker(host).action_panel.discardAction({
+        action: id,
+        control: 'login_required',
+      });
       AIProvider.slots.requestLogin.emit({ host: panel.host });
       panel.hide();
     },
     cancel: () => {
-      getTracker(host).discardAction({ action: id });
+      getTracker(host).action_panel.discardAction({
+        action: id,
+        control: 'paywall',
+      });
       panel.hide();
     },
     responses: [
