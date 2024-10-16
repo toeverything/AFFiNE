@@ -61,7 +61,7 @@ Star us, and you will receive all release notifications from GitHub without any 
 
 **A true canvas for blocks in any form. Docs and whiteboard are now fully merged.**
 
-- Many editor apps claim to be a canvas for productivity, but AFFiNE is one of the very few which allows you to put any building block on an edgeless canvas -- rich text, sticky notes, any embedded web pages, multi-view databases, linked pages, shapes and even slides. We have it all. 
+- Many editor apps claim to be a canvas for productivity, but AFFiNE is one of the very few which allows you to put any building block on an edgeless canvas -- rich text, sticky notes, any embedded web pages, multi-view databases, linked pages, shapes and even slides. We have it all.
 
 **Multimodal AI partner ready to kick in any work**
 
@@ -109,6 +109,7 @@ Looking for **other ways to contribute** and wondering where to start? Check out
 If you have questions, you are welcome to contact us. One of the best places to get more info and learn more is in the [AFFiNE Community](https://community.affine.pro) where you can engage with other like-minded individuals.
 
 ## Templates
+
 AFFiNE now provides pre-built [templates](https://affine.pro/templates) from our team. Following are the Top 10 most popular templates among AFFiNE users,if you want to contribute, you can contribute your own template so other people can use it too.
 
 - [vision board template](https://affine.pro/templates/category-vision-board-template)
@@ -120,11 +121,11 @@ AFFiNE now provides pre-built [templates](https://affine.pro/templates) from our
 - [digital planner](https://affine.pro/templates/category-digital-planner)
 - [ADHD Planner](https://affine.pro/templates/adhd-planner)
 - [Reading Log](https://affine.pro/templates/reading-log)
-- [Cornell Notes Template](https://affine.pro/templates/category-cornell-notes-template)  
+- [Cornell Notes Template](https://affine.pro/templates/category-cornell-notes-template)
 
 ## Blog
 
-Welcome to the AFFiNE blog section! Here, you’ll find the latest insights, tips, and guides on how to maximize your experience with AFFiNE and AFFiNE AI, the leading Canvas AI tool for flexible note-taking and creative organization. 
+Welcome to the AFFiNE blog section! Here, you’ll find the latest insights, tips, and guides on how to maximize your experience with AFFiNE and AFFiNE AI, the leading Canvas AI tool for flexible note-taking and creative organization.
 
 - [vision board template](https://affine.pro/blog/8-free-printable-vision-board-templates-examples-2023)
 - [itinerary template](https://affine.pro/blog/free-customized-travel-itinerary-planner-templates)
