@@ -5,10 +5,16 @@ import type { BuildFlags } from '@affine/cli/config';
 import { Repository } from '@napi-rs/simple-git';
 import HTMLPlugin from 'html-webpack-plugin';
 import { once } from 'lodash-es';
+import type { Compiler } from 'webpack';
 import webpack from 'webpack';
 import { merge } from 'webpack-merge';
 
-import { createConfiguration, rootPath, workspaceRoot } from './config.js';
+import {
+  createConfiguration,
+  getPublicPath,
+  rootPath,
+  workspaceRoot,
+} from './config.js';
 import { getBuildConfig } from './runtime-config.js';
 
 const DESCRIPTION = `There can be more than Notion and Miro. AFFiNE is a next-gen knowledge base that brings planning, sorting and creating all together.`;
@@ -41,46 +47,106 @@ export function createWebpackConfig(cwd: string, flags: BuildFlags) {
         }
       : flags.entry;
 
-  const createHTMLPlugin = (entryName = 'app') => {
-    return new HTMLPlugin({
+  const publicPath = getPublicPath(flags);
+  const cdnOrigin = publicPath.startsWith('/')
+    ? undefined
+    : new URL(publicPath).origin;
+
+  const templateParams = {
+    GIT_SHORT_SHA: gitShortHash(),
+    DESCRIPTION,
+    PRECONNECT: cdnOrigin
+      ? `<link rel="preconnect" href="${cdnOrigin}" />`
+      : '',
+    VIEWPORT_FIT: flags.distribution === 'mobile' ? 'cover' : 'auto',
+  };
+
+  const createHTMLPlugins = (entryName: string) => {
+    const htmlPluginOptions = {
       template: join(rootPath, 'webpack', 'template.html'),
       inject: 'body',
+      filename: 'index.html',
       minify: false,
+      templateParameters: templateParams,
       chunks: [entryName],
-      filename: `${entryName === 'app' ? 'index' : entryName}.html`, // main entry should take name index.html
-      templateParameters: (compilation, assets) => {
-        if (entryName === 'app') {
-          // emit assets manifest for ssr
-          compilation.emitAsset(
-            `assets-manifest.json`,
-            new webpack.sources.RawSource(
-              JSON.stringify(
-                {
-                  ...assets,
-                  gitHash: gitShortHash(),
-                  description: DESCRIPTION,
-                },
-                null,
-                2
-              )
-            ),
-            {
-              immutable: true,
-            }
-          );
-        }
-        return {
-          GIT_SHORT_SHA: gitShortHash(),
-          DESCRIPTION,
-          PUBLIC_PATH: config.output?.publicPath,
-          VIEWPORT_FIT: flags.distribution === 'mobile' ? 'cover' : 'auto',
-        };
-      },
-    });
+    } satisfies HTMLPlugin.Options;
+
+    if (entryName === 'app') {
+      return [
+        {
+          apply(compiler: Compiler) {
+            compiler.hooks.compilation.tap(
+              'assets-manifest-plugin',
+              compilation => {
+                HTMLPlugin.getHooks(compilation).beforeAssetTagGeneration.tap(
+                  'assets-manifest-plugin',
+                  arg => {
+                    if (!compilation.getAsset('assets-manifest.json')) {
+                      compilation.emitAsset(
+                        `assets-manifest.json`,
+                        new webpack.sources.RawSource(
+                          JSON.stringify(
+                            {
+                              ...arg.assets,
+                              js: arg.assets.js.map(file =>
+                                file.substring(arg.assets.publicPath.length)
+                              ),
+                              css: arg.assets.css.map(file =>
+                                file.substring(arg.assets.publicPath.length)
+                              ),
+                              gitHash: templateParams.GIT_SHORT_SHA,
+                              description: templateParams.DESCRIPTION,
+                            },
+                            null,
+                            2
+                          )
+                        ),
+                        {
+                          immutable: false,
+                        }
+                      );
+                    }
+
+                    return arg;
+                  }
+                );
+              }
+            );
+          },
+        },
+        new HTMLPlugin({
+          ...htmlPluginOptions,
+          publicPath,
+          meta: {
+            'env:publicPath': publicPath,
+          },
+        }),
+        // selfhost html
+        new HTMLPlugin({
+          ...htmlPluginOptions,
+          meta: {
+            'env:isSelfHosted': 'true',
+            'env:publicPath': '/',
+          },
+          filename: 'selfhost.html',
+          templateParameters: {
+            ...htmlPluginOptions.templateParameters,
+            PRECONNECT: '',
+          },
+        }),
+      ];
+    } else {
+      return [
+        new HTMLPlugin({
+          ...htmlPluginOptions,
+          filename: `${entryName}.html`,
+        }),
+      ];
+    }
   };
 
   return merge(config, {
-    entry: entry,
-    plugins: Object.keys(entry).map(createHTMLPlugin),
+    entry,
+    plugins: Object.keys(entry).map(createHTMLPlugins).flat(),
   });
 }

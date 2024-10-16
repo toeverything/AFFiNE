@@ -26,7 +26,7 @@ export class WebpackS3Plugin implements WebpackPluginInstance {
     compiler.hooks.assetEmitted.tapPromise(
       'WebpackS3Plugin',
       async (asset, { outputPath }) => {
-        if (asset === 'index.html') {
+        if (asset.endsWith('.html')) {
           return;
         }
         const assetPath = join(outputPath, asset);

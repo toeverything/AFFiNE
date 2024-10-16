@@ -17,12 +17,17 @@ const test = ava as TestFn<{
   db: PrismaClient;
 }>;
 
+const mobileUAString =
+  'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
+
 function initTestStaticFiles(staticPath: string) {
   const files = {
-    'selfhost/index.html': `<!DOCTYPE html><html><body>AFFiNE</body><script src="main.js"/></html>`,
-    'selfhost/main.js': `const name = 'affine'`,
-    'admin/selfhost/index.html': `<!DOCTYPE html><html><body>AFFiNE Admin</body><script src="/admin/main.js"/></html>`,
-    'admin/selfhost/main.js': `const name = 'affine-admin'`,
+    'selfhost.html': `<!DOCTYPE html><html><body>AFFiNE</body><script src="main.a.js"/></html>`,
+    'main.a.js': `const name = 'affine'`,
+    'admin/selfhost.html': `<!DOCTYPE html><html><body>AFFiNE Admin</body><script src="/admin/main.b.js"/></html>`,
+    'admin/main.b.js': `const name = 'affine-admin'`,
+    'mobile/selfhost.html': `<!DOCTYPE html><html><body>AFFiNE mobile</body><script src="/mobile/main.c.js"/></html>`,
+    'mobile/main.c.js': `const name = 'affine-mobile'`,
   };
 
   for (const [filename, content] of Object.entries(files)) {
@@ -35,6 +40,7 @@ function initTestStaticFiles(staticPath: string) {
 test.before('init selfhost server', async t => {
   // @ts-expect-error override
   AFFiNE.isSelfhosted = true;
+  AFFiNE.flavor.renderer = true;
   const { app } = await createTestingApp({
     imports: [buildAppModule()],
   });
@@ -54,7 +60,7 @@ test.beforeEach(async t => {
   server._initialized = false;
 });
 
-test.afterEach.always(async t => {
+test.after.always(async t => {
   await t.context.app.close();
 });
 
@@ -70,18 +76,27 @@ test('do not allow visit index.html directly', async t => {
     .expect(302);
 
   t.is(res.header.location, '/admin');
+
+  res = await request(t.context.app.getHttpServer())
+    .get('/mobile/index.html')
+    .expect(302);
 });
 
 test('should always return static asset files', async t => {
   let res = await request(t.context.app.getHttpServer())
-    .get('/main.js')
+    .get('/main.a.js')
     .expect(200);
   t.is(res.text, "const name = 'affine'");
 
   res = await request(t.context.app.getHttpServer())
-    .get('/admin/main.js')
+    .get('/main.b.js')
     .expect(200);
   t.is(res.text, "const name = 'affine-admin'");
+
+  res = await request(t.context.app.getHttpServer())
+    .get('/main.c.js')
+    .expect(200);
+  t.is(res.text, "const name = 'affine-mobile'");
 
   await t.context.db.user.create({
     data: {
@@ -91,14 +106,19 @@ test('should always return static asset files', async t => {
   });
 
   res = await request(t.context.app.getHttpServer())
-    .get('/main.js')
+    .get('/main.a.js')
     .expect(200);
   t.is(res.text, "const name = 'affine'");
 
   res = await request(t.context.app.getHttpServer())
-    .get('/admin/main.js')
+    .get('/main.b.js')
     .expect(200);
   t.is(res.text, "const name = 'affine-admin'");
+
+  res = await request(t.context.app.getHttpServer())
+    .get('/main.c.js')
+    .expect(200);
+  t.is(res.text, "const name = 'affine-mobile'");
 });
 
 test('should be able to call apis', async t => {
@@ -166,4 +186,20 @@ test('should redirect to admin if initialized', async t => {
     .expect(302);
 
   t.is(res.header.location, '/admin');
+});
+
+test('should return mobile assets if visited by mobile', async t => {
+  await t.context.db.user.create({
+    data: {
+      name: 'test',
+      email: 'test@affine.pro',
+    },
+  });
+
+  const res = await request(t.context.app.getHttpServer())
+    .get('/')
+    .set('user-agent', mobileUAString)
+    .expect(200);
+
+  t.true(res.text.includes('AFFiNE mobile'));
 });

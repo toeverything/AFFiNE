@@ -10,10 +10,9 @@ const fontPath = join(
   '..',
   'packages',
   'frontend',
-  'apps',
-  'web',
-  'dist',
-  'assets'
+  'core',
+  'public',
+  'fonts'
 );
 
 await Promise.all(
