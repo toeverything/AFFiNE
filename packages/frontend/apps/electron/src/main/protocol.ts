@@ -33,8 +33,6 @@ async function handleHttpRequest(request: Request) {
   const pathname = url.pathname;
   const sameSite = url.host === new URL(CLOUD_BASE_URL).host;
 
-  console.log('request', request.url);
-
   const isStaticResource = sameSite && !isNetworkResource(pathname);
   if (isStaticResource) {
     return fetchLocalResource(request);

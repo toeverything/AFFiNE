@@ -4,6 +4,7 @@ import { createVar, style } from '@vanilla-extract/css';
 
 export const tabOverlayWidth = createVar('0px');
 export const tabButtonWidth = createVar('16px');
+export const tabMaxWidth = createVar('200px');
 
 export const root = style({
   width: '100%',
@@ -79,7 +80,7 @@ export const tabWrapper = style({
 export const tab = style({
   height: 32,
   minWidth: 32,
-  maxWidth: 200,
+  maxWidth: tabMaxWidth,
   overflow: 'clip',
   background: cssVarV2('tab/tabBackground/default'),
   display: 'flex',
@@ -97,9 +98,6 @@ export const tab = style({
     '&[data-active="true"]': {
       boxShadow: `0 0 0 1px ${cssVarV2('button/innerBlackBorder')}`,
     },
-    '&[data-pinned="true"]': {
-      maxWidth: 64,
-    },
     [`${tabWrapper}[data-dragging="true"] &`]: {
       boxShadow: `0 0 0 1px ${cssVar('primaryColor')}`,
     },
@@ -107,7 +105,7 @@ export const tab = style({
 });
 
 export const splitViewLabel = style({
-  minWidth: 32,
+  minWidth: 48,
   padding: '0 8px',
   height: '100%',
   display: 'flex',

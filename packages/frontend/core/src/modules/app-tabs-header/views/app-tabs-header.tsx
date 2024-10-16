@@ -19,6 +19,7 @@ import {
   useService,
   useServiceOptional,
 } from '@toeverything/infra';
+import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { partition } from 'lodash-es';
 import {
@@ -207,6 +208,12 @@ const WorkbenchTab = ({
         data-active={tabActive}
         data-pinned={workbench.pinned}
         className={styles.tab}
+        style={assignInlineVars({
+          [styles.tabMaxWidth]: `${Math.max(
+            workbench.views.length * 52,
+            workbench.pinned ? 64 : 200
+          )}px`,
+        })}
       >
         {workbench.views.map((view, viewIdx) => {
           return (
