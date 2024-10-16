@@ -10,8 +10,6 @@ import { StarAFFiNEModal } from '@affine/core/components/affine/star-affine-moda
 import { InfoModal } from '@affine/core/components/doc-properties';
 import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
 import { MoveToTrash } from '@affine/core/components/page-list';
-import { SignOutConfirmModal } from '@affine/core/components/providers/modal-provider';
-import { CreateWorkspaceDialogProvider } from '@affine/core/modules/create-workspace';
 import { PeekViewManagerModal } from '@affine/core/modules/peek-view';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useService, WorkspaceService } from '@toeverything/infra';
@@ -68,9 +66,7 @@ export const AllWorkspaceModals = () => {
   return (
     <>
       <NotificationCenter />
-      <CreateWorkspaceDialogProvider />
       <MobileSignInModal />
-      <SignOutConfirmModal />
     </>
   );
 };

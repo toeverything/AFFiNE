@@ -9,7 +9,8 @@ import { ImportTemplateService } from './services/import';
 import { TemplateDownloaderStore } from './store/downloader';
 
 export { ImportTemplateDialogService } from './services/dialog';
-export { ImportTemplateDialogProvider } from './views/dialog';
+export { TemplateDownloaderService } from './services/downloader';
+export { ImportTemplateService } from './services/import';
 
 export function configureImportTemplateModule(framework: Framework) {
   framework
