@@ -9,8 +9,10 @@ import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/us
 import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
 import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import { DocInfoService } from '@affine/core/modules/doc-info';
-import { FavoriteService } from '@affine/core/modules/favorite';
-import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
+import {
+  CompatibleFavoriteItemsAdapter,
+  FavoriteService,
+} from '@affine/core/modules/favorite';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';

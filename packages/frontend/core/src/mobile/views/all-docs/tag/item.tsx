@@ -1,6 +1,6 @@
 import { IconButton } from '@affine/component';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
-import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import type { Tag } from '@affine/core/modules/tag';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useLiveData, useService } from '@toeverything/infra';

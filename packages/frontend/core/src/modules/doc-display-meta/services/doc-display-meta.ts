@@ -29,7 +29,7 @@ import { LiveData, Service } from '@toeverything/infra';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 
-import type { WorkspacePropertiesAdapter } from '../../properties';
+import type { JournalService } from '../../journal';
 
 type IconType = 'rc' | 'lit';
 interface DocDisplayIconOptions<T extends IconType> {
@@ -83,7 +83,7 @@ const icons = { rc: rcIcons, lit: litIcons } as {
 
 export class DocDisplayMetaService extends Service {
   constructor(
-    private readonly propertiesAdapter: WorkspacePropertiesAdapter,
+    private readonly journalService: JournalService,
     private readonly docsService: DocsService,
     private readonly featureFlagService: FeatureFlagService
   ) {
@@ -110,7 +110,7 @@ export class DocDisplayMetaService extends Service {
 
       // journal icon
       const journalDate = this._toDayjs(
-        this.propertiesAdapter.getJournalPageDateString(docId)
+        this.journalService.journalDate$(docId).value
       );
       if (journalDate) {
         if (!options?.compareDate) return iconSet.TodayIcon;
@@ -148,8 +148,7 @@ export class DocDisplayMetaService extends Service {
       const doc = get(this.docsService.list.doc$(docId));
       const docTitle = doc ? get(doc.title$) : undefined;
 
-      const journalDateString =
-        this.propertiesAdapter.getJournalPageDateString(docId);
+      const journalDateString = get(this.journalService.journalDate$(docId));
 
       // journal
       if (journalDateString) {

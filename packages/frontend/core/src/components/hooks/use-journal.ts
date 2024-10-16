@@ -1,4 +1,5 @@
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
+import { JournalService } from '@affine/core/modules/journal';
 import { i18nTime } from '@affine/i18n';
 import { track } from '@affine/track';
 import { type DocCollection, Text } from '@blocksuite/affine/store';
@@ -13,7 +14,6 @@ import dayjs from 'dayjs';
 import { useCallback, useMemo } from 'react';
 
 import { WorkbenchService } from '../../modules/workbench';
-import { useCurrentWorkspacePropertiesAdapter } from './use-affine-adapter';
 import { useDocCollectionHelper } from './use-block-suite-workspace-helper';
 
 type MaybeDate = Date | string | number;
@@ -30,14 +30,16 @@ function toDayjs(j?: string | false) {
   return day;
 }
 
+/**
+ * @deprecated use `JournalService` directly
+ */
 export const useJournalHelper = (docCollection: DocCollection) => {
   const bsWorkspaceHelper = useDocCollectionHelper(docCollection);
-  const { docsService, editorSettingService } = useServices({
+  const { docsService, editorSettingService, journalService } = useServices({
     DocsService,
     EditorSettingService,
+    JournalService,
   });
-  const adapter = useCurrentWorkspacePropertiesAdapter();
-  const { isPageJournal } = useJournalInfoHelper();
 
   /**
    * @internal
@@ -62,10 +64,10 @@ export const useJournalHelper = (docCollection: DocCollection) => {
         note: editorSettingService.editorSetting.get('affine:note'),
       };
       initDocFromProps(page, docProps);
-      adapter.setJournalPageDateString(page.id, title);
+      journalService.setJournalDate(page.id, title);
       return page;
     },
-    [adapter, bsWorkspaceHelper, docsService.list, editorSettingService]
+    [journalService, bsWorkspaceHelper, docsService.list, editorSettingService]
   );
 
   /**
@@ -73,17 +75,11 @@ export const useJournalHelper = (docCollection: DocCollection) => {
    */
   const getJournalsByDate = useCallback(
     (maybeDate: MaybeDate) => {
-      const day = dayjs(maybeDate);
-      return Array.from(docCollection.docs.values()).filter(page => {
-        const pageId = page.id;
-        if (!isPageJournal(pageId)) return false;
-        if (page.meta?.trash) return false;
-        const journalDate = adapter.getJournalPageDateString(page.id);
-        if (!journalDate) return false;
-        return day.isSame(journalDate, 'day');
-      });
+      return journalService.getJournalsByDate(
+        dayjs(maybeDate).format(JOURNAL_DATE_FORMAT)
+      );
     },
-    [adapter, isPageJournal, docCollection.docs]
+    [journalService]
   );
 
   /**
@@ -92,34 +88,18 @@ export const useJournalHelper = (docCollection: DocCollection) => {
   const getJournalByDate = useCallback(
     (maybeDate: MaybeDate) => {
       const pages = getJournalsByDate(maybeDate);
-      if (pages.length) return pages[0].getDoc();
+      if (pages.length) return pages[0];
       return _createJournal(maybeDate);
     },
     [_createJournal, getJournalsByDate]
-  );
-
-  const appendContentToToday = useCallback(
-    async (content: string) => {
-      if (!content) return;
-      const page = getJournalByDate(dayjs().format(JOURNAL_DATE_FORMAT));
-      if (!page) return;
-      const blockId = page.addBlock(
-        'affine:paragraph',
-        { text: new page.Text(content) },
-        page.getBlockByFlavour('affine:note')[0].id
-      );
-      return { page, blockId };
-    },
-    [getJournalByDate]
   );
 
   return useMemo(
     () => ({
       getJournalsByDate,
       getJournalByDate,
-      appendContentToToday,
     }),
-    [getJournalsByDate, getJournalByDate, appendContentToToday]
+    [getJournalsByDate, getJournalByDate]
   );
 };
 
@@ -164,31 +144,33 @@ export const useJournalRouteHelper = (docCollection: DocCollection) => {
   );
 };
 
-// get journal info that don't rely on `docCollection`
+/**
+ * @deprecated use `JournalService` directly
+ */
 export const useJournalInfoHelper = (pageId?: string | null) => {
-  const adapter = useCurrentWorkspacePropertiesAdapter();
+  const journalService = useService(JournalService);
 
   const isPageJournal = useCallback(
     (pageId: string) => {
-      return !!adapter.getJournalPageDateString(pageId);
+      return !!journalService.journalDate$(pageId).value;
     },
-    [adapter]
+    [journalService]
   );
 
   const isPageTodayJournal = useCallback(
     (pageId: string) => {
       const date = dayjs().format(JOURNAL_DATE_FORMAT);
-      const d = adapter.getJournalPageDateString(pageId);
+      const d = journalService.journalDate$(pageId).value;
       return isPageJournal(pageId) && d === date;
     },
-    [adapter, isPageJournal]
+    [isPageJournal, journalService]
   );
 
   const getJournalDateString = useCallback(
     (pageId: string) => {
-      return adapter.getJournalPageDateString(pageId);
+      return journalService.journalDate$(pageId).value;
     },
-    [adapter]
+    [journalService]
   );
 
   const getLocalizedJournalDateString = useCallback(

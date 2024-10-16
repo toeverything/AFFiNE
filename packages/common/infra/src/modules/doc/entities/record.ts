@@ -43,6 +43,12 @@ export class DocRecord extends Entity<{ id: string }> {
     });
   }
 
+  setProperty(propertyId: string, value: string) {
+    this.docPropertiesStore.updateDocProperties(this.id, {
+      [propertyId]: value,
+    });
+  }
+
   setMeta(meta: Partial<DocMeta>): void {
     this.docsStore.setDocMeta(this.id, meta);
   }

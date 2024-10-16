@@ -15,11 +15,11 @@ import {
   useSelectDoc,
   useSelectTag,
 } from '@affine/core/components/page-list/selector';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import {
   type FolderNode,
   OrganizeService,
 } from '@affine/core/modules/organize';
-import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { Unreachable } from '@affine/env/constant';

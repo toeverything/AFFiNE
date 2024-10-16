@@ -9,12 +9,11 @@ import {
   Scrollable,
 } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
-import { WorkspaceLegacyProperties } from '@affine/core/modules/properties';
 import type { Tag } from '@affine/core/modules/tag';
 import { DeleteTagConfirmModal, TagService } from '@affine/core/modules/tag';
 import { useI18n } from '@affine/i18n';
 import { DeleteIcon, MoreHorizontalIcon, TagsIcon } from '@blocksuite/icons/rc';
-import { useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { clamp } from 'lodash-es';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
@@ -84,7 +83,7 @@ export const EditTagMenu = ({
   onTagDelete: (tagIds: string[]) => void;
 }>) => {
   const t = useI18n();
-  const legacyProperties = useService(WorkspaceLegacyProperties);
+  const workspaceService = useService(WorkspaceService);
   const tagService = useService(TagService);
   const tagList = tagService.tagList;
   const tag = useLiveData(tagList.tagByTagId$(tagId));
@@ -135,7 +134,7 @@ export const EditTagMenu = ({
           <MenuItem
             prefixIcon={<TagsIcon />}
             onClick={() => {
-              navigate.jumpToTag(legacyProperties.workspaceId, tag?.id || '');
+              navigate.jumpToTag(workspaceService.workspace.id, tag?.id || '');
             }}
           >
             {t['com.affine.page-properties.tags.open-tags-page']()}
@@ -171,7 +170,7 @@ export const EditTagMenu = ({
       ),
     } satisfies Partial<MenuProps>;
   }, [
-    legacyProperties.workspaceId,
+    workspaceService,
     navigate,
     onTagDelete,
     t,

@@ -6,7 +6,8 @@ import { LiveData, Service } from '@toeverything/infra';
 import { defaultsDeep } from 'lodash-es';
 import { Observable } from 'rxjs';
 
-import type { FavoriteService, FavoriteSupportType } from '../../favorite';
+import type { FavoriteSupportType } from '../../constant';
+import type { FavoriteService } from '../favorite';
 import {
   PagePropertyType,
   PageSystemPropertyId,
@@ -23,8 +24,10 @@ const AFFINE_PROPERTIES_ID = 'affine:workspace-properties';
  * May abstract the adapter for each property type, e.g. PagePropertiesAdapter, SchemaAdapter, etc.
  * So that the adapter could be more focused and easier to maintain (like assigning default values)
  * However the properties for an abstraction may not be limited to a single yjs map.
+ *
+ * @deprecated use docService.doc.properties$
  */
-export class WorkspacePropertiesAdapter extends Service {
+class WorkspacePropertiesAdapter {
   // provides a easy-to-use interface for workspace properties
   public readonly proxy: WorkspaceAffineProperties;
   public readonly properties: Y.Map<any>;
@@ -38,7 +41,6 @@ export class WorkspacePropertiesAdapter extends Service {
   }
 
   constructor(public readonly workspaceService: WorkspaceService) {
-    super();
     // check if properties exists, if not, create one
     const rootDoc = workspaceService.workspace.docCollection.doc;
     this.properties = rootDoc.getMap(AFFINE_PROPERTIES_ID);
@@ -165,7 +167,9 @@ export class WorkspacePropertiesAdapter extends Service {
 }
 
 export class MigrationFavoriteItemsAdapter extends Service {
-  constructor(private readonly adapter: WorkspacePropertiesAdapter) {
+  adapter = new WorkspacePropertiesAdapter(this.workspaceService);
+
+  constructor(public readonly workspaceService: WorkspaceService) {
     super();
   }
 

@@ -2,7 +2,7 @@ import { IconButton } from '@affine/component';
 import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
 import { PagePreview } from '@affine/core/components/page-list/page-content-preview';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
-import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import {
   WorkbenchLink,
   type WorkbenchLinkProps,

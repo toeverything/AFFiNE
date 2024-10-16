@@ -1,5 +1,5 @@
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
-import { WorkspacePropertiesAdapter } from '@affine/core/modules/properties';
+import { JournalService } from '@affine/core/modules/journal';
 import { I18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { EditorHost } from '@blocksuite/affine/block-std';
@@ -21,9 +21,9 @@ export function createLinkedWidgetConfig(
     ) => {
       const currentWorkspace = framework.get(WorkspaceService).workspace;
       const rawMetas = currentWorkspace.docCollection.meta.docMetas;
-      const adapter = framework.get(WorkspacePropertiesAdapter);
+      const journalService = framework.get(JournalService);
       const isJournal = (d: DocMeta) =>
-        !!adapter.getJournalPageDateString(d.id);
+        !!journalService.journalDate$(d.id).value;
 
       const docDisplayMetaService = framework.get(DocDisplayMetaService);
       const docMetas = rawMetas

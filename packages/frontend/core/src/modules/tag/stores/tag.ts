@@ -1,24 +1,43 @@
-import type { Tag as TagSchema } from '@affine/env/filter';
-import { Store } from '@toeverything/infra';
+import type { Tag, Tag as TagSchema } from '@affine/env/filter';
+import type { DocsPropertiesMeta } from '@blocksuite/affine/store';
+import type { WorkspaceService } from '@toeverything/infra';
+import { LiveData, Store } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-
-import type { WorkspaceLegacyProperties } from '../../properties';
+import { Observable } from 'rxjs';
 
 export class TagStore extends Store {
-  constructor(private readonly properties: WorkspaceLegacyProperties) {
+  get properties() {
+    return this.workspaceService.workspace.docCollection.meta.properties;
+  }
+  get tagOptions() {
+    return this.properties.tags?.options ?? [];
+  }
+
+  tagOptions$ = LiveData.from(
+    new Observable<Tag[]>(sub => {
+      return this.subscribe(() => sub.next(this.tagOptions));
+    }),
+    this.tagOptions
+  );
+
+  subscribe(cb: () => void) {
+    const disposable =
+      this.workspaceService.workspace.docCollection.meta.docMetaUpdated.on(cb);
+    return disposable.dispose;
+  }
+
+  constructor(private readonly workspaceService: WorkspaceService) {
     super();
   }
 
   watchTagIds() {
-    return this.properties.tagOptions$
-      .map(tags => tags.map(tag => tag.id))
-      .asObservable();
+    return this.tagOptions$.map(tags => tags.map(tag => tag.id)).asObservable();
   }
 
   createNewTag(value: string, color: string) {
     const newId = nanoid();
-    this.properties.updateTagOptions([
-      ...this.properties.tagOptions$.value,
+    this.updateTagOptions([
+      ...this.tagOptions$.value,
       {
         id: newId,
         value,
@@ -30,24 +49,65 @@ export class TagStore extends Store {
     return newId;
   }
 
+  updateProperties = (properties: DocsPropertiesMeta) => {
+    this.workspaceService.workspace.docCollection.meta.setProperties(
+      properties
+    );
+  };
+
+  updateTagOptions = (options: Tag[]) => {
+    this.updateProperties({
+      ...this.properties,
+      tags: {
+        options,
+      },
+    });
+  };
+
+  updateTagOption = (id: string, option: Tag) => {
+    this.updateTagOptions(this.tagOptions.map(o => (o.id === id ? option : o)));
+  };
+
+  removeTagOption = (id: string) => {
+    this.workspaceService.workspace.docCollection.doc.transact(() => {
+      this.updateTagOptions(this.tagOptions.filter(o => o.id !== id));
+      // need to remove tag from all pages
+      this.workspaceService.workspace.docCollection.docs.forEach(doc => {
+        const tags = doc.meta?.tags ?? [];
+        if (tags.includes(id)) {
+          this.updatePageTags(
+            doc.id,
+            tags.filter(t => t !== id)
+          );
+        }
+      });
+    });
+  };
+
+  updatePageTags = (pageId: string, tags: string[]) => {
+    this.workspaceService.workspace.docCollection.setDocMeta(pageId, {
+      tags,
+    });
+  };
+
   deleteTag(id: string) {
-    this.properties.removeTagOption(id);
+    this.removeTagOption(id);
   }
 
   watchTagInfo(id: string) {
-    return this.properties.tagOptions$.map(
+    return this.tagOptions$.map(
       tags => tags.find(tag => tag.id === id) as TagSchema | undefined
     );
   }
 
   updateTagInfo(id: string, tagInfo: Partial<TagSchema>) {
-    const tag = this.properties.tagOptions$.value.find(tag => tag.id === id) as
+    const tag = this.tagOptions$.value.find(tag => tag.id === id) as
       | TagSchema
       | undefined;
     if (!tag) {
       return;
     }
-    this.properties.updateTagOption(id, {
+    this.updateTagOption(id, {
       id: id,
       value: tag.value,
       color: tag.color,

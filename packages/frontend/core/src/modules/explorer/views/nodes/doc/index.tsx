@@ -56,7 +56,6 @@ export const ExplorerDocNode = ({
     DocDisplayMetaService,
     FeatureFlagService,
   });
-  // const pageInfoAdapter = useCurrentWorkspacePropertiesAdapter();
 
   const active =
     useLiveData(globalContextService.globalContext.docId.$) === docId;

@@ -16,11 +16,11 @@ import { configureFavoriteModule } from './favorite';
 import { configureFindInPageModule } from './find-in-page';
 import { configureI18nModule } from './i18n';
 import { configureImportTemplateModule } from './import-template';
+import { configureJournalModule } from './journal';
 import { configureNavigationModule } from './navigation';
 import { configureOrganizeModule } from './organize';
 import { configurePeekViewModule } from './peek-view';
 import { configurePermissionsModule } from './permissions';
-import { configureWorkspacePropertiesModule } from './properties';
 import { configureQuickSearchModule } from './quicksearch';
 import { configureShareDocsModule } from './share-doc';
 import { configureShareSettingModule } from './share-setting';
@@ -36,7 +36,6 @@ export function configureCommonModules(framework: Framework) {
   configureCollectionModule(framework);
   configureNavigationModule(framework);
   configureTagModule(framework);
-  configureWorkspacePropertiesModule(framework);
   configureCloudModule(framework);
   configureQuotaModule(framework);
   configurePermissionsModule(framework);
@@ -61,4 +60,5 @@ export function configureCommonModules(framework: Framework) {
   configureUserspaceModule(framework);
   configureDocInfoModule(framework);
   configureAppSidebarModule(framework);
+  configureJournalModule(framework);
 }

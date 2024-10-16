@@ -5,7 +5,7 @@ import {
 } from '@affine/core/commands';
 import { DocInfoService } from '@affine/core/modules/doc-info';
 import type { Editor } from '@affine/core/modules/editor';
-import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';

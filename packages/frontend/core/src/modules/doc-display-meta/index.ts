@@ -5,7 +5,7 @@ import {
   WorkspaceScope,
 } from '@toeverything/infra';
 
-import { WorkspacePropertiesAdapter } from '../properties';
+import { JournalService } from '../journal';
 import { DocDisplayMetaService } from './services/doc-display-meta';
 
 export { DocDisplayMetaService };
@@ -14,7 +14,7 @@ export function configureDocDisplayMetaModule(framework: Framework) {
   framework
     .scope(WorkspaceScope)
     .service(DocDisplayMetaService, [
-      WorkspacePropertiesAdapter,
+      JournalService,
       DocsService,
       FeatureFlagService,
     ]);

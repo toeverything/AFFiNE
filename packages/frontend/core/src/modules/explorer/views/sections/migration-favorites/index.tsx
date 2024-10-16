@@ -1,6 +1,6 @@
 import { IconButton, useConfirmModal } from '@affine/component';
 import { ExplorerTreeRoot } from '@affine/core/modules/explorer/views/tree';
-import { MigrationFavoriteItemsAdapter } from '@affine/core/modules/properties';
+import { MigrationFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { Trans, useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { BroomIcon, HelpIcon } from '@blocksuite/icons/rc';
