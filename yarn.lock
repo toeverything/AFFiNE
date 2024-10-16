@@ -365,6 +365,7 @@ __metadata:
     "@affine/templates": "workspace:*"
     "@affine/track": "workspace:*"
     "@blocksuite/affine": "npm:0.17.18"
+    "@blocksuite/data-view": "npm:0.17.18"
     "@blocksuite/icons": "npm:2.1.68"
     "@dnd-kit/core": "npm:^6.1.0"
     "@dnd-kit/modifiers": "npm:^7.0.0"

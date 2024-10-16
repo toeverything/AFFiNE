@@ -10,6 +10,7 @@ import {
   useDraggable,
   useDropTarget,
 } from '@affine/component';
+import { DocDatabaseBacklinkInfo } from '@affine/core/modules/doc-info';
 import { DocLinksService } from '@affine/core/modules/doc-link';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -443,18 +444,24 @@ DocPropertiesTableBody.displayName = 'PagePropertiesTableBody';
 const DocPropertiesTableInner = () => {
   const [expanded, setExpanded] = useState(false);
   return (
-    <div className={styles.root}>
-      <Collapsible.Root
-        open={expanded}
-        onOpenChange={setExpanded}
-        className={styles.rootCentered}
-      >
-        <DocPropertiesTableHeader open={expanded} onOpenChange={setExpanded} />
-        <Collapsible.Content asChild>
-          <DocPropertiesTableBody />
-        </Collapsible.Content>
-      </Collapsible.Root>
-    </div>
+    <>
+      <div className={styles.root}>
+        <Collapsible.Root
+          open={expanded}
+          onOpenChange={setExpanded}
+          className={styles.rootCentered}
+        >
+          <DocPropertiesTableHeader
+            open={expanded}
+            onOpenChange={setExpanded}
+          />
+          <Collapsible.Content asChild>
+            <DocPropertiesTableBody />
+          </Collapsible.Content>
+        </Collapsible.Root>
+      </div>
+      <DocDatabaseBacklinkInfo />
+    </>
   );
 };
 
