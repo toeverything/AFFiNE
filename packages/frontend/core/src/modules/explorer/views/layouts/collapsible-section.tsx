@@ -7,18 +7,11 @@ import {
   type ReactNode,
   type RefObject,
   useCallback,
-  useContext,
 } from 'react';
 
 import { ExplorerService } from '../../services/explorer';
 import type { CollapsibleSectionName } from '../../types';
-import { ExplorerMobileContext } from '../mobile.context';
-import {
-  content,
-  header,
-  mobileContent,
-  root,
-} from './collapsible-section.css';
+import { content, header, root } from './collapsible-section.css';
 
 interface CollapsibleSectionProps extends PropsWithChildren {
   name: CollapsibleSectionName;
@@ -50,7 +43,6 @@ export const CollapsibleSection = ({
 
   contentClassName,
 }: CollapsibleSectionProps) => {
-  const mobile = useContext(ExplorerMobileContext);
   const section = useService(ExplorerService).sections[name];
 
   const collapsed = useLiveData(section.collapsed$);
@@ -70,7 +62,6 @@ export const CollapsibleSection = ({
       data-testid={testId}
     >
       <CategoryDivider
-        mobile={mobile}
         data-testid={headerTestId}
         label={title}
         setCollapsed={setCollapsed}
@@ -82,7 +73,7 @@ export const CollapsibleSection = ({
       </CategoryDivider>
       <Collapsible.Content
         data-testid="collapsible-section-content"
-        className={clsx(mobile ? mobileContent : content, contentClassName)}
+        className={clsx(content, contentClassName)}
       >
         {children}
       </Collapsible.Content>
