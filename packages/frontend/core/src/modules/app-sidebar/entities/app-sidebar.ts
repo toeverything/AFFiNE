@@ -8,9 +8,19 @@ enum APP_SIDEBAR_STATE {
   WIDTH = 'width',
 }
 
+export const floatingMaxWidth = 768;
+
 export class AppSidebar extends Entity {
   constructor(private readonly appSidebarState: AppSidebarState) {
     super();
+
+    // detect user's screen size and set small screen mode (for mobile devices)
+    if (!BUILD_CONFIG.isElectron) {
+      const isFloatingMaxWidth = window.matchMedia(
+        `(max-width: ${floatingMaxWidth}px)`
+      ).matches;
+      this.setSmallScreenMode(isFloatingMaxWidth);
+    }
   }
 
   /**

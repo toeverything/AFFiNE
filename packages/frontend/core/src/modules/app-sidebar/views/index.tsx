@@ -14,10 +14,10 @@ import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { floatingMaxWidth } from '../entities/app-sidebar';
 import { AppSidebarService } from '../services/app-sidebar';
 import * as styles from './fallback.css';
 import {
-  floatingMaxWidth,
   hoverNavWrapperStyle,
   navBodyStyle,
   navHeaderStyle,
@@ -90,7 +90,6 @@ export function AppSidebar({ children }: PropsWithChildren) {
     }
 
     const dOnResize = debounce(onResize, 50);
-    onResize();
     window.addEventListener('resize', dOnResize);
     return () => {
       window.removeEventListener('resize', dOnResize);
