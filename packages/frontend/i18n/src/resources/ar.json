@@ -953,7 +953,6 @@
   "com.affine.settings.workspace.properties.add_property": "إضافة خاصية",
   "com.affine.settings.workspace.properties.all": "الكل",
   "com.affine.settings.workspace.properties.delete-property": "حذف الخاصية",
-  "com.affine.settings.workspace.properties.delete-property-prompt": "سيتم إزالة الخاصية \"<1>{{ name }}</1>\" من {{ count }} مستند. لا يمكن التراجع عن هذا الإجراء.",
   "com.affine.settings.workspace.properties.doc": "<0>{{count}}</0> مستند",
   "com.affine.settings.workspace.properties.doc_others": "<0>{{count}}</0> مستندات",
   "com.affine.settings.workspace.properties.edit-property": "تحرير الخاصية",
