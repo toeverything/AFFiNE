@@ -1,6 +1,6 @@
 import type { Backlink, Link } from '@affine/core/modules/doc-link';
 
-import { AffinePageReference } from '../../reference-link';
+import { AffinePageReference } from '../../affine/reference-link';
 import * as styles from './links-row.css';
 
 export const LinksRow = ({

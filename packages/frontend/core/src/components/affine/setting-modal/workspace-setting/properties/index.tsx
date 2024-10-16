@@ -1,12 +1,12 @@
 import { Button, Menu } from '@affine/component';
 import { SettingHeader } from '@affine/component/setting-components';
+import { DocPropertyManager } from '@affine/core/components/doc-properties/manager';
+import { CreatePropertyMenuItems } from '@affine/core/components/doc-properties/menu/create-doc-property';
 import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-info';
 import { Trans, useI18n } from '@affine/i18n';
 import { FrameworkScope, type WorkspaceMetadata } from '@toeverything/infra';
 
 import { useWorkspace } from '../../../../../components/hooks/use-workspace';
-import { DocPropertyManager } from '../../../page-properties/manager';
-import { CreatePropertyMenuItems } from '../../../page-properties/menu/create-doc-property';
 import * as styles from './styles.css';
 
 const WorkspaceSettingPropertiesMain = () => {

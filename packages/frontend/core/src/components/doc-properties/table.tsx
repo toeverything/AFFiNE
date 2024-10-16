@@ -34,21 +34,21 @@ import type React from 'react';
 import type { HTMLProps, PropsWithChildren } from 'react';
 import { forwardRef, useCallback, useMemo, useState } from 'react';
 
-import { AffinePageReference } from '../reference-link';
+import { AffinePageReference } from '../affine/reference-link';
 import { DocPropertyIcon } from './icons/doc-property-icon';
 import { CreatePropertyMenuItems } from './menu/create-doc-property';
 import { EditDocPropertyMenuItems } from './menu/edit-doc-property';
 import * as styles from './table.css';
 import { DocPropertyTypes, isSupportedDocPropertyType } from './types/constant';
 
-type PageBacklinksPopupProps = PropsWithChildren<{
+type DocBacklinksPopupProps = PropsWithChildren<{
   backlinks: { docId: string; blockId: string; title: string }[];
 }>;
 
-export const PageBacklinksPopup = ({
+export const DocBacklinksPopup = ({
   backlinks,
   children,
-}: PageBacklinksPopupProps) => {
+}: DocBacklinksPopupProps) => {
   return (
     <Menu
       contentOptions={{
@@ -74,7 +74,7 @@ export const PageBacklinksPopup = ({
   );
 };
 
-interface PagePropertiesTableHeaderProps {
+interface DocPropertiesTableHeaderProps {
   className?: string;
   style?: React.CSSProperties;
   open: boolean;
@@ -84,25 +84,25 @@ interface PagePropertiesTableHeaderProps {
 // backlinks - #no                Updated yyyy-mm-dd
 // ─────────────────────────────────────────────────
 // Page Info ...
-export const PagePropertiesTableHeader = ({
+export const DocPropertiesTableHeader = ({
   className,
   style,
   open,
   onOpenChange,
-}: PagePropertiesTableHeaderProps) => {
+}: DocPropertiesTableHeaderProps) => {
   const t = useI18n();
   const {
-    docLinksServices,
+    docLinksService,
     docService,
     workspaceService,
     editorSettingService,
   } = useServices({
-    DocLinksServices: DocLinksService,
+    DocLinksService,
     DocService,
     WorkspaceService,
     EditorSettingService,
   });
-  const docBacklinks = docLinksServices.backlinks;
+  const docBacklinks = docLinksService.backlinks;
   const backlinks = useLiveData(docBacklinks.backlinks$);
 
   const displayDocInfo = useLiveData(
@@ -187,11 +187,11 @@ export const PagePropertiesTableHeader = ({
       {/* TODO(@Peng): add click handler to backlinks */}
       <div className={styles.tableHeaderInfoRow}>
         {backlinks.length > 0 ? (
-          <PageBacklinksPopup backlinks={backlinks}>
+          <DocBacklinksPopup backlinks={backlinks}>
             <div className={styles.tableHeaderBacklinksHint}>
               {t['com.affine.page-properties.backlinks']()} · {backlinks.length}
             </div>
-          </PageBacklinksPopup>
+          </DocBacklinksPopup>
         ) : null}
         {dTimestampElement}
       </div>
@@ -220,16 +220,16 @@ export const PagePropertiesTableHeader = ({
   );
 };
 
-interface PagePropertyRowProps {
+interface DocPropertyRowProps {
   propertyInfo: DocCustomPropertyInfo;
   showAll?: boolean;
   defaultOpenEditMenu?: boolean;
 }
 
-export const PagePropertyRow = ({
+export const DocPropertyRow = ({
   propertyInfo,
   defaultOpenEditMenu,
-}: PagePropertyRowProps) => {
+}: DocPropertyRowProps) => {
   const t = useI18n();
   const docService = useService(DocService);
   const docsService = useService(DocsService);
@@ -338,7 +338,7 @@ export const PagePropertyRow = ({
   );
 };
 
-interface PagePropertiesTableBodyProps {
+interface DocPropertiesTableBodyProps {
   className?: string;
   style?: React.CSSProperties;
 }
@@ -346,9 +346,9 @@ interface PagePropertiesTableBodyProps {
 // 🏷️ Tags     (⋅ xxx) (⋅ yyy)
 // #️⃣ Number   123456
 // +  Add a property
-export const PagePropertiesTableBody = forwardRef<
+export const DocPropertiesTableBody = forwardRef<
   HTMLDivElement,
-  PagePropertiesTableBodyProps & HTMLProps<HTMLDivElement>
+  DocPropertiesTableBodyProps & HTMLProps<HTMLDivElement>
 >(({ className, style, ...props }, ref) => {
   const t = useI18n();
   const docsService = useService(DocsService);
@@ -390,7 +390,7 @@ export const PagePropertiesTableBody = forwardRef<
         }
       >
         {properties.map(property => (
-          <PagePropertyRow
+          <DocPropertyRow
             key={property.id}
             propertyInfo={property}
             defaultOpenEditMenu={newPropertyId === property.id}
@@ -438,7 +438,7 @@ export const PagePropertiesTableBody = forwardRef<
     </div>
   );
 });
-PagePropertiesTableBody.displayName = 'PagePropertiesTableBody';
+DocPropertiesTableBody.displayName = 'PagePropertiesTableBody';
 
 const DocPropertiesTableInner = () => {
   const [expanded, setExpanded] = useState(false);
@@ -449,9 +449,9 @@ const DocPropertiesTableInner = () => {
         onOpenChange={setExpanded}
         className={styles.rootCentered}
       >
-        <PagePropertiesTableHeader open={expanded} onOpenChange={setExpanded} />
+        <DocPropertiesTableHeader open={expanded} onOpenChange={setExpanded} />
         <Collapsible.Content asChild>
-          <PagePropertiesTableBody />
+          <DocPropertiesTableBody />
         </Collapsible.Content>
       </Collapsible.Root>
     </div>

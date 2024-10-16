@@ -20,7 +20,7 @@ import { clamp } from 'lodash-es';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { useCallback, useMemo, useReducer, useRef, useState } from 'react';
 
-import { TagItem, TempTagItem } from '../../page-list';
+import { TagItem, TempTagItem } from '../page-list';
 import * as styles from './tags-inline-editor.css';
 
 interface TagsEditorProps {

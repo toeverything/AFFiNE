@@ -22,9 +22,9 @@ import {
 } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { BlocksuiteHeaderTitle } from '../../../blocksuite/block-suite-header/title';
+import { BlocksuiteHeaderTitle } from '../../blocksuite/block-suite-header/title';
 import { CreatePropertyMenuItems } from '../menu/create-doc-property';
-import { PagePropertyRow } from '../table';
+import { DocPropertyRow } from '../table';
 import * as styles from './info-modal.css';
 import { LinksRow } from './links-row';
 import { TimeRow } from './time-row';
@@ -163,7 +163,7 @@ export const InfoTable = ({
         }
       >
         {properties.map(property => (
-          <PagePropertyRow
+          <DocPropertyRow
             key={property.id}
             propertyInfo={property}
             defaultOpenEditMenu={newPropertyId === property.id}

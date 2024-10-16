@@ -34,11 +34,11 @@ import React, {
   useRef,
 } from 'react';
 
-import { DocPropertiesTable } from '../../affine/page-properties';
 import {
   AffinePageReference,
   AffineSharedPageReference,
 } from '../../affine/reference-link';
+import { DocPropertiesTable } from '../../doc-properties';
 import { BiDirectionalLinkPanel } from './bi-directional-link-panel';
 import { BlocksuiteEditorJournalDocTitle } from './journal-doc-title';
 import {

@@ -21,7 +21,6 @@ import { AuthModal } from '../affine/auth';
 import { AiLoginRequiredModal } from '../affine/auth/ai-login-required';
 import { HistoryTipsModal } from '../affine/history-tips-modal';
 import { IssueFeedbackModal } from '../affine/issue-feedback-modal';
-import { InfoModal } from '../affine/page-properties/info-modal/info-modal';
 import {
   CloudQuotaModal,
   LocalQuotaModal,
@@ -31,6 +30,7 @@ import { SignOutModal } from '../affine/sign-out-modal';
 import { StarAFFiNEModal } from '../affine/star-affine-modal';
 import type { SettingAtom } from '../atoms';
 import { openSettingModalAtom, openSignOutModalAtom } from '../atoms';
+import { InfoModal } from '../doc-properties/info-modal/info-modal';
 import { useTrashModalHelper } from '../hooks/affine/use-trash-modal-helper';
 import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';

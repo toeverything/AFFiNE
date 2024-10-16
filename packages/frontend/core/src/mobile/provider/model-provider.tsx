@@ -2,12 +2,12 @@ import { NotificationCenter } from '@affine/component';
 import { AiLoginRequiredModal } from '@affine/core/components/affine/auth/ai-login-required';
 import { HistoryTipsModal } from '@affine/core/components/affine/history-tips-modal';
 import { IssueFeedbackModal } from '@affine/core/components/affine/issue-feedback-modal';
-import { InfoModal } from '@affine/core/components/affine/page-properties';
 import {
   CloudQuotaModal,
   LocalQuotaModal,
 } from '@affine/core/components/affine/quota-reached-modal';
 import { StarAFFiNEModal } from '@affine/core/components/affine/star-affine-modal';
+import { InfoModal } from '@affine/core/components/doc-properties';
 import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import { SignOutConfirmModal } from '@affine/core/components/providers/modal-provider';
