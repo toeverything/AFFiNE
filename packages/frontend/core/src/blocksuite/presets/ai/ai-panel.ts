@@ -36,6 +36,7 @@ import {
 } from './utils/editor-actions';
 import { insertFromMarkdown } from './utils/markdown-utils';
 import { getSelections } from './utils/selection-utils';
+import { getTracker } from './utils/track';
 
 function getSelection(host: EditorHost) {
   const textSelection = host.selection.find('text');
@@ -270,6 +271,7 @@ export function buildErrorResponseConfig<
           icon: ReplaceIcon,
           showWhen: () => !!panel.answer,
           handler: () => {
+            reportResponse('result:replace');
             replaceWithAnswer(panel).catch(console.error);
           },
         },
@@ -279,6 +281,7 @@ export function buildErrorResponseConfig<
           showWhen: () =>
             !!panel.answer && (!id || !INSERT_ABOVE_ACTIONS.includes(id)),
           handler: () => {
+            reportResponse('result:insert');
             insertAnswerBelow(panel).catch(console.error);
           },
         },
@@ -335,16 +338,30 @@ export function buildErrorConfig<T extends keyof BlockSuitePresets.AIActions>(
   panel: AffineAIPanelWidget,
   id?: T
 ) {
+  const host = panel.host;
+
   return {
     upgrade: () => {
+      getTracker(host, false).discardAction({
+        action: id,
+        control: 'paywall',
+      });
       AIProvider.slots.requestUpgradePlan.emit({ host: panel.host });
       panel.hide();
     },
     login: () => {
+      getTracker(host, false).discardAction({
+        action: id,
+        control: 'login_required',
+      });
       AIProvider.slots.requestLogin.emit({ host: panel.host });
       panel.hide();
     },
     cancel: () => {
+      getTracker(host, false).discardAction({
+        action: id,
+        control: 'paywall',
+      });
       panel.hide();
     },
     responses: buildErrorResponseConfig(panel, id),

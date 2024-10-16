@@ -4,6 +4,7 @@ import {
   UnauthorizedError,
 } from '@blocksuite/affine/blocks';
 import { Slot } from '@blocksuite/affine/store';
+import { captureException } from '@sentry/react';
 
 export interface AIUserInfo {
   id: string;
@@ -171,7 +172,9 @@ export class AIProvider {
       if (isTextStream(result)) {
         return {
           [Symbol.asyncIterator]: async function* () {
+            let user = null;
             try {
+              user = await AIProvider.userInfo;
               yield* result;
               slots.actions.emit({
                 action: id,
@@ -201,6 +204,13 @@ export class AIProvider {
                   action: id,
                   options,
                   event: 'aborted:server-error',
+                });
+                captureException(err, {
+                  user: { id: user?.id },
+                  extra: {
+                    action: id,
+                    session: AIProvider.LAST_ACTION_SESSIONID,
+                  },
                 });
               }
               throw err;
