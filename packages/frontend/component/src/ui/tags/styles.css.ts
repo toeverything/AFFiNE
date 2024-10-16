@@ -115,20 +115,6 @@ export const spacer = style({
   flexGrow: 1,
 });
 
-export const tagColorIconWrapper = style({
-  width: 20,
-  height: 20,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-});
-
-export const tagColorIcon = style({
-  width: 16,
-  height: 16,
-  borderRadius: '50%',
-});
-
 export const menuItemListScrollable = style({});
 
 export const menuItemListScrollbar = style({

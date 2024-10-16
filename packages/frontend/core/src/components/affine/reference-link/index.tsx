@@ -8,6 +8,7 @@ import { track } from '@affine/track';
 import type { DocMode } from '@blocksuite/affine/blocks';
 import type { DocCollection } from '@blocksuite/affine/store';
 import { useLiveData, useService } from '@toeverything/infra';
+import clsx from 'clsx';
 import { nanoid } from 'nanoid';
 import {
   type PropsWithChildren,
@@ -24,10 +25,12 @@ export function AffinePageReference({
   pageId,
   wrapper: Wrapper,
   params,
+  className,
 }: {
   pageId: string;
   wrapper?: React.ComponentType<PropsWithChildren>;
   params?: URLSearchParams;
+  className?: string;
 }) {
   const docDisplayMetaService = useService(DocDisplayMetaService);
   const journalService = useService(JournalService);
@@ -108,7 +111,7 @@ export function AffinePageReference({
       ref={ref}
       to={`/${pageId}${query}`}
       onClick={onClick}
-      className={styles.pageReferenceLink}
+      className={clsx(styles.pageReferenceLink, className)}
     >
       {Wrapper ? <Wrapper>{el}</Wrapper> : el}
     </WorkbenchLink>

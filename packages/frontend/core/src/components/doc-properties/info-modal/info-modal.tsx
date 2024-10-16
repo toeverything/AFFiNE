@@ -7,7 +7,10 @@ import {
   PropertyCollapsible,
   Scrollable,
 } from '@affine/component';
-import { DocInfoService } from '@affine/core/modules/doc-info';
+import {
+  DocDatabaseBacklinkInfo,
+  DocInfoService,
+} from '@affine/core/modules/doc-info';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
@@ -186,6 +189,8 @@ export const InfoTable = ({
           </Button>
         </Menu>
       </PropertyCollapsible>
+      <Divider size="thinner" />
+      <DocDatabaseBacklinkInfo />
     </div>
   );
 };

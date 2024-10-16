@@ -2,8 +2,8 @@ import { style } from '@vanilla-extract/css';
 
 export const tagInlineEditor = style({
   width: '100%',
-  minHeight: 34,
   padding: `6px`,
+  minHeight: 34,
 });
 
 export const container = style({

@@ -10,6 +10,7 @@ import {
   useDraggable,
   useDropTarget,
 } from '@affine/component';
+import { DocDatabaseBacklinkInfo } from '@affine/core/modules/doc-info';
 import { DocLinksService } from '@affine/core/modules/doc-link';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -103,10 +104,7 @@ export const DocPropertiesTableHeader = ({
     EditorSettingService,
   });
   const docBacklinks = docLinksService.backlinks;
-  const backlinks = useMemo(
-    () => docBacklinks.backlinks$.value,
-    [docBacklinks]
-  );
+  const backlinks = useLiveData(docBacklinks.backlinks$);
 
   const displayDocInfo = useLiveData(
     editorSettingService.editorSetting.settings$.selector(s => s.displayDocInfo)
@@ -363,84 +361,108 @@ export const DocPropertiesTableBody = forwardRef<
 
   const [newPropertyId, setNewPropertyId] = useState<string | null>(null);
 
+  const [open, setOpen] = useState(true);
+
+  const handleCollapse = useCallback(() => {
+    setOpen(prev => !prev);
+  }, []);
+
   return (
-    <div
+    <Collapsible.Root
       ref={ref}
       className={clsx(styles.tableBodyRoot, className)}
       style={style}
+      open={open}
+      onOpenChange={setOpen}
       {...props}
     >
-      <PropertyCollapsible
-        collapsible
-        collapsed={propertyCollapsed}
-        onCollapseChange={setPropertyCollapsed}
-        className={styles.tableBodySortable}
-        collapseButtonText={({ hide, isCollapsed }) =>
-          isCollapsed
-            ? hide === 1
-              ? t['com.affine.page-properties.more-property.one']({
-                  count: hide.toString(),
-                })
-              : t['com.affine.page-properties.more-property.more']({
-                  count: hide.toString(),
-                })
-            : hide === 1
-              ? t['com.affine.page-properties.hide-property.one']({
-                  count: hide.toString(),
-                })
-              : t['com.affine.page-properties.hide-property.more']({
-                  count: hide.toString(),
-                })
-        }
-      >
-        {properties.map(property => (
-          <DocPropertyRow
-            key={property.id}
-            propertyInfo={property}
-            defaultOpenEditMenu={newPropertyId === property.id}
+      <div className={styles.header}>
+        <Collapsible.Trigger
+          role="button"
+          onClick={handleCollapse}
+          className={styles.headerTrigger}
+        >
+          <div className={styles.headerName}>
+            {t.t('com.affine.workspace.properties')}
+          </div>
+          <ToggleExpandIcon
+            className={styles.collapsedIcon}
+            data-collapsed={!open}
           />
-        ))}
-        <div className={styles.actionContainer}>
-          <Menu
-            items={
-              <CreatePropertyMenuItems
-                at="after"
-                onCreated={setNewPropertyId}
-              />
-            }
-            contentOptions={{
-              onClick(e) {
-                e.stopPropagation();
-              },
-            }}
-          >
+        </Collapsible.Trigger>
+      </div>
+      <Collapsible.Content asChild>
+        <PropertyCollapsible
+          collapsible
+          collapsed={propertyCollapsed}
+          onCollapseChange={setPropertyCollapsed}
+          className={styles.tableBodySortable}
+          collapseButtonText={({ hide, isCollapsed }) =>
+            isCollapsed
+              ? hide === 1
+                ? t['com.affine.page-properties.more-property.one']({
+                    count: hide.toString(),
+                  })
+                : t['com.affine.page-properties.more-property.more']({
+                    count: hide.toString(),
+                  })
+              : hide === 1
+                ? t['com.affine.page-properties.hide-property.one']({
+                    count: hide.toString(),
+                  })
+                : t['com.affine.page-properties.hide-property.more']({
+                    count: hide.toString(),
+                  })
+          }
+        >
+          {properties.map(property => (
+            <DocPropertyRow
+              key={property.id}
+              propertyInfo={property}
+              defaultOpenEditMenu={newPropertyId === property.id}
+            />
+          ))}
+          <div className={styles.actionContainer}>
+            <Menu
+              items={
+                <CreatePropertyMenuItems
+                  at="after"
+                  onCreated={setNewPropertyId}
+                />
+              }
+              contentOptions={{
+                onClick(e) {
+                  e.stopPropagation();
+                },
+              }}
+            >
+              <Button
+                variant="plain"
+                prefix={<PlusIcon />}
+                className={styles.propertyActionButton}
+                data-testid="add-property-button"
+              >
+                {t['com.affine.page-properties.add-property']()}
+              </Button>
+            </Menu>
             <Button
               variant="plain"
-              prefix={<PlusIcon />}
-              className={styles.propertyActionButton}
-              data-testid="add-property-button"
+              prefix={<PropertyIcon />}
+              className={clsx(
+                styles.propertyActionButton,
+                styles.propertyConfigButton
+              )}
+              onClick={() => {
+                viewService.view.activeSidebarTab('properties');
+                workbenchService.workbench.openSidebar();
+              }}
             >
-              {t['com.affine.page-properties.add-property']()}
+              {t['com.affine.page-properties.config-properties']()}
             </Button>
-          </Menu>
-          <Button
-            variant="plain"
-            prefix={<PropertyIcon />}
-            className={clsx(
-              styles.propertyActionButton,
-              styles.propertyConfigButton
-            )}
-            onClick={() => {
-              viewService.view.activeSidebarTab('properties');
-              workbenchService.workbench.openSidebar();
-            }}
-          >
-            {t['com.affine.page-properties.config-properties']()}
-          </Button>
-        </div>
-      </PropertyCollapsible>
-      <div className={styles.tableHeaderDivider} />
-    </div>
+          </div>
+        </PropertyCollapsible>
+      </Collapsible.Content>
+    </Collapsible.Root>
   );
 });
 DocPropertiesTableBody.displayName = 'PagePropertiesTableBody';
@@ -455,8 +477,10 @@ const DocPropertiesTableInner = () => {
         className={styles.rootCentered}
       >
         <DocPropertiesTableHeader open={expanded} onOpenChange={setExpanded} />
-        <Collapsible.Content asChild>
+        <Collapsible.Content>
           <DocPropertiesTableBody />
+          <div className={styles.tableHeaderDivider} />
+          <DocDatabaseBacklinkInfo />
         </Collapsible.Content>
       </Collapsible.Root>
     </div>

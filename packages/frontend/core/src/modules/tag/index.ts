@@ -1,7 +1,7 @@
 export { Tag } from './entities/tag';
-export { tagColorMap } from './entities/utils';
+export { paletteLineToTag, tagToPaletteLine } from './entities/utils';
 export { TagService } from './service/tag';
-export { DeleteTagConfirmModal } from './view/delete-tag-modal';
+export { useDeleteTagConfirmModal } from './view/delete-tag-modal';
 
 import {
   DocsService,

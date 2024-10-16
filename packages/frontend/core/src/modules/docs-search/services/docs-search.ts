@@ -509,6 +509,41 @@ export class DocsSearchService extends Service {
       );
   }
 
+  watchDatabasesTo(docId: string) {
+    return this.indexer.blockIndex
+      .search$(
+        {
+          type: 'boolean',
+          occur: 'must',
+          queries: [
+            {
+              type: 'match',
+              field: 'refDocId',
+              match: docId,
+            },
+            {
+              type: 'match',
+              field: 'parentFlavour',
+              match: 'affine:database',
+            },
+          ],
+        },
+        {
+          fields: ['refDocId', 'ref', 'blockId'],
+          pagination: {
+            limit: 100,
+          },
+        }
+      )
+      .pipe(
+        switchMap(({ nodes }) => {
+          return fromPromise(async () => {
+            return nodes;
+          });
+        })
+      );
+  }
+
   async getDocTitle(docId: string) {
     const doc = await this.indexer.docIndex.get(docId);
     const title = doc?.get('title');
