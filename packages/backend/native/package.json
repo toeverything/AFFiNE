@@ -35,7 +35,7 @@
   "devDependencies": {
     "@napi-rs/cli": "3.0.0-alpha.62",
     "lib0": "^0.2.93",
-    "nx": "^19.0.0",
+    "nx": "^20.0.0",
     "nx-cloud": "^19.0.0",
     "tiktoken": "^1.0.15",
     "tinybench": "^2.8.0",
