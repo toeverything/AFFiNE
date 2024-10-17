@@ -1,3 +1,1 @@
-import { setupBrowser } from '@affine/core/bootstrap';
-
-await setupBrowser();
+import '@affine/core/bootstrap/browser';
