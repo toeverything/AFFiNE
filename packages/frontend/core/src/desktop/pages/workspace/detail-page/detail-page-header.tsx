@@ -14,9 +14,9 @@ import { BlocksuiteHeaderTitle } from '@affine/core/components/blocksuite/block-
 import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
 import { useRegisterCopyLinkCommands } from '@affine/core/components/hooks/affine/use-register-copy-link-commands';
 import { useDocCollectionPageTitle } from '@affine/core/components/hooks/use-block-suite-workspace-page-title';
-import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { HeaderDivider } from '@affine/core/components/pure/header';
 import { EditorService } from '@affine/core/modules/editor';
+import { JournalService } from '@affine/core/modules/journal';
 import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
 import type { Doc } from '@blocksuite/affine/store';
 import { useLiveData, useService, type Workspace } from '@toeverything/infra';
@@ -155,7 +155,8 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
 
 export function DetailPageHeader(props: PageHeaderProps) {
   const { page, workspace } = props;
-  const { isJournal } = useJournalInfoHelper(page.id);
+  const journalService = useService(JournalService);
+  const isJournal = !!useLiveData(journalService.journalDate$(page.id));
   const isInTrash = page.meta?.trash;
 
   useRegisterCopyLinkCommands({
