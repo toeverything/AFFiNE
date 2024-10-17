@@ -1,7 +1,6 @@
 import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
-export const floatingMaxWidth = 768;
 export const navWrapperStyle = style({
   '@media': {
     print: {
@@ -23,6 +22,10 @@ export const navWrapperStyle = style({
 });
 export const hoverNavWrapperStyle = style({
   selectors: {
+    '&[data-is-electron="true"]': {
+      // adjust the transition of the desktop floating sidebar
+      transition: `margin-top 300ms, margin-left 300ms, margin-right 300ms, transform 300ms, background 300ms`,
+    },
     '&[data-is-floating="true"]': {
       backgroundColor: cssVarV2('layer/background/primary'),
       height: 'calc(100% - 60px)',
