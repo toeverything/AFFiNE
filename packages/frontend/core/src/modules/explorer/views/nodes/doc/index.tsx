@@ -23,6 +23,7 @@ import {
 } from '@toeverything/infra';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 
+import { ExplorerService } from '../../../services/explorer';
 import { ExplorerTreeNode, type ExplorerTreeNodeDropEffect } from '../../tree';
 import type { GenericExplorerNode } from '../types';
 import { Empty } from './empty';
@@ -38,9 +39,11 @@ export const ExplorerDocNode = ({
   canDrop,
   operations: additionalOperations,
   dropEffect,
+  explorerKey,
 }: {
   docId: string;
   isLinked?: boolean;
+  explorerKey: string;
 } & GenericExplorerNode) => {
   const t = useI18n();
   const {
@@ -49,17 +52,33 @@ export const ExplorerDocNode = ({
     globalContextService,
     docDisplayMetaService,
     featureFlagService,
+    explorerService,
   } = useServices({
     DocsSearchService,
     DocsService,
     GlobalContextService,
     DocDisplayMetaService,
     FeatureFlagService,
+    ExplorerService,
   });
 
   const active =
     useLiveData(globalContextService.globalContext.docId.$) === docId;
-  const [collapsed, setCollapsed] = useState(true);
+
+  const noteExplorer = explorerService.notes;
+
+  const collapsedKey = useMemo(() => {
+    return explorerKey + ':doc:' + docId;
+  }, [docId, explorerKey]);
+
+  const collapsed = useLiveData(noteExplorer.collapsed$(collapsedKey));
+
+  const setCollapsed = useCallback(
+    (collapsed: boolean) => {
+      noteExplorer.setCollapsed(collapsedKey, collapsed);
+    },
+    [collapsedKey, noteExplorer]
+  );
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
   const DocIcon = useLiveData(
@@ -189,7 +208,7 @@ export const ExplorerDocNode = ({
         openInfoModal: () => docInfoModal.open(docId),
         openNodeCollapsed: () => setCollapsed(false),
       }),
-      [docId, docInfoModal]
+      [docId, docInfoModal, setCollapsed]
     )
   );
 
@@ -240,6 +259,7 @@ export const ExplorerDocNode = ({
         <ExplorerDocNode
           key={child.docId}
           docId={child.docId}
+          explorerKey={collapsedKey}
           reorderable={false}
           location={{
             at: 'explorer:doc:linked-docs',
