@@ -1,5 +1,9 @@
 [workspace]
-members  = ["./packages/backend/native", "./packages/frontend/native", "./packages/frontend/native/schema"]
+members  = [
+  "./packages/backend/native",
+  "./packages/frontend/native",
+  "./packages/frontend/native/schema",
+]
 resolver = "2"
 
 [workspace.dependencies]
@@ -8,9 +12,9 @@ chrono       = "0.4"
 dotenv       = "0.15"
 file-format  = { version = "0.25", features = ["reader"] }
 mimalloc     = "0.1"
-napi         = { version = "3.0.0-alpha.12", features = ["async", "chrono_date", "error_anyhow", "napi9", "serde"] }
+napi         = { version = "3.0.0-alpha.14", features = ["async", "chrono_date", "error_anyhow", "napi9", "serde"] }
 napi-build   = { version = "2" }
-napi-derive  = { version = "3.0.0-alpha.12" }
+napi-derive  = { version = "3.0.0-alpha.14" }
 notify       = { version = "6", features = ["serde"] }
 once_cell    = "1"
 parking_lot  = "0.12"

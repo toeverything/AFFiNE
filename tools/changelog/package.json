@@ -6,7 +6,7 @@
   "private": true,
   "description": "Generate changelog from version changes",
   "dependencies": {
-    "@napi-rs/simple-git": "^0.1.18",
+    "@napi-rs/simple-git": "^0.1.19",
     "@slack/web-api": "^7.3.4",
     "changelogithub": "^0.13.9",
     "jsx-slack": "^6.1.1",

@@ -10,7 +10,7 @@
     "@clack/core": "^0.3.4",
     "@clack/prompts": "^0.7.0",
     "@magic-works/i18n-codegen": "^0.6.0",
-    "@napi-rs/simple-git": "^0.1.16",
+    "@napi-rs/simple-git": "^0.1.19",
     "@perfsee/webpack": "^1.12.2",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@sentry/webpack-plugin": "^2.16.1",

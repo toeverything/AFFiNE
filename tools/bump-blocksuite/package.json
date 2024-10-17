@@ -7,7 +7,7 @@
   "description": "Generate changelog from blocksuite version change",
   "dependencies": {
     "@napi-rs/clipboard": "^1.1.2",
-    "@napi-rs/simple-git": "^0.1.18",
+    "@napi-rs/simple-git": "^0.1.19",
     "chalk": "^5.3.0",
     "undici": "^6.12.0"
   }

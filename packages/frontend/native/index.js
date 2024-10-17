@@ -361,7 +361,16 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
+module.exports.Document = nativeBinding.Document
+module.exports.ImageData = nativeBinding.ImageData
+module.exports.Page = nativeBinding.Page
+module.exports.PagerSize = nativeBinding.PagerSize
+module.exports.Pages = nativeBinding.Pages
+module.exports.Rect = nativeBinding.Rect
 module.exports.SqliteConnection = nativeBinding.SqliteConnection
+module.exports.Viewer = nativeBinding.Viewer
 module.exports.mintChallengeResponse = nativeBinding.mintChallengeResponse
+module.exports.Orientation = nativeBinding.Orientation
+module.exports.Rotation = nativeBinding.Rotation
 module.exports.ValidationResult = nativeBinding.ValidationResult
 module.exports.verifyChallengeResponse = nativeBinding.verifyChallengeResponse
