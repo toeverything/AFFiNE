@@ -1,16 +1,20 @@
 import type { DateCell } from '@affine/component';
-import { DatePicker, IconButton, Menu, Scrollable } from '@affine/component';
-import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
 import {
-  useJournalHelper,
-  useJournalInfoHelper,
-  useJournalRouteHelper,
-} from '@affine/core/components/hooks/use-journal';
+  DatePicker,
+  IconButton,
+  Menu,
+  MenuItem,
+  MenuSeparator,
+  Scrollable,
+} from '@affine/component';
+import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
+import { useJournalRouteHelper } from '@affine/core/components/hooks/use-journal';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
+import { JournalService } from '@affine/core/modules/journal';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
-import { MoreHorizontalIcon } from '@blocksuite/icons/rc';
+import { CalendarXmarkIcon, EditIcon } from '@blocksuite/icons/rc';
 import type { DocRecord } from '@toeverything/infra';
 import {
   DocService,
@@ -41,8 +45,15 @@ interface PageItemProps
   extends Omit<HTMLAttributes<HTMLAnchorElement>, 'onClick'> {
   docId: string;
   right?: ReactNode;
+  duplicate?: boolean;
 }
-const PageItem = ({ docId, right, className, ...attrs }: PageItemProps) => {
+const PageItem = ({
+  docId,
+  right,
+  duplicate,
+  className,
+  ...attrs
+}: PageItemProps) => {
   const i18n = useI18n();
   const docDisplayMetaService = useService(DocDisplayMetaService);
   const Icon = useLiveData(
@@ -53,6 +64,7 @@ const PageItem = ({ docId, right, className, ...attrs }: PageItemProps) => {
 
   return (
     <WorkbenchLink
+      data-testid="journal-conflict-item"
       aria-label={title}
       to={`/${docId}`}
       className={clsx(className, styles.pageItem)}
@@ -61,7 +73,14 @@ const PageItem = ({ docId, right, className, ...attrs }: PageItemProps) => {
       <div className={styles.pageItemIcon}>
         <Icon width={20} height={20} />
       </div>
-      <span className={styles.pageItemLabel}>{title}</span>
+      <div className={styles.pageItemLabel}>
+        {title}
+        {duplicate ? (
+          <div className={styles.duplicateTag}>
+            {i18n['com.affine.page-properties.property.journal-duplicated']()}
+          </div>
+        ) : null}
+      </div>
       {right}
     </WorkbenchLink>
   );
@@ -82,7 +101,10 @@ export const EditorJournalPanel = () => {
   const t = useI18n();
   const doc = useService(DocService).doc;
   const workspace = useService(WorkspaceService).workspace;
-  const { journalDate, isJournal } = useJournalInfoHelper(doc.id);
+  const journalService = useService(JournalService);
+  const journalDateStr = useLiveData(journalService.journalDate$(doc.id));
+  const journalDate = journalDateStr ? dayjs(journalDateStr) : null;
+  const isJournal = !!journalDate;
   const { openJournal } = useJournalRouteHelper(workspace.docCollection);
 
   const onDateSelect = useCallback(
@@ -93,12 +115,11 @@ export const EditorJournalPanel = () => {
     [journalDate, openJournal]
   );
 
+  const allJournalDates = useLiveData(journalService.allJournalDates$);
+
   const customDayRenderer = useCallback(
     (cell: DateCell) => {
-      // TODO(@catsjuice): add a dot to indicate journal
-      // has performance issue for now, better to calculate it in advance
-      // const hasJournal = !!getJournalsByDate(cell.date.format('YYYY-MM-DD'))?.length;
-      const hasJournal = false;
+      const hasJournal = allJournalDates.has(cell.date.format('YYYY-MM-DD'));
       return (
         <button
           className={styles.journalDateCell}
@@ -118,11 +139,15 @@ export const EditorJournalPanel = () => {
         </button>
       );
     },
-    [isJournal]
+    [allJournalDates, isJournal]
   );
 
   return (
-    <div className={styles.journalPanel} data-is-journal={isJournal}>
+    <div
+      className={styles.journalPanel}
+      data-is-journal={isJournal}
+      data-testid="sidebar-journal-panel"
+    >
       <div data-mobile={mobile} className={styles.calendar}>
         <DatePicker
           weekDays={t['com.affine.calendar-date-picker.week-days']()}
@@ -284,7 +309,9 @@ const ConflictList = ({
   className,
   ...attrs
 }: ConflictListProps) => {
+  const t = useI18n();
   const currentDoc = useService(DocService).doc;
+  const journalService = useService(JournalService);
   const { setTrashModal } = useTrashModalHelper();
 
   const handleOpenTrashModal = useCallback(
@@ -297,9 +324,19 @@ const ConflictList = ({
     },
     [setTrashModal]
   );
+  const handleRemoveJournalMark = useCallback(
+    (docId: string) => {
+      journalService.removeJournalDate(docId);
+    },
+    [journalService]
+  );
 
   return (
-    <div className={clsx(styles.journalConflictWrapper, className)} {...attrs}>
+    <div
+      data-testid="journal-conflict-list"
+      className={clsx(styles.journalConflictWrapper, className)}
+      {...attrs}
+    >
       {docRecords.map(docRecord => {
         const isCurrent = docRecord.id === currentDoc.id;
         return (
@@ -307,17 +344,40 @@ const ConflictList = ({
             aria-selected={isCurrent}
             docId={docRecord.id}
             key={docRecord.id}
+            duplicate
             right={
               <Menu
+                contentOptions={{
+                  style: { width: 237, maxWidth: '100%' },
+                  align: 'end',
+                  alignOffset: -4,
+                  sideOffset: 8,
+                }}
                 items={
-                  <MoveToTrash
-                    onSelect={() => handleOpenTrashModal(docRecord)}
-                  />
+                  <>
+                    <MenuItem
+                      prefixIcon={<CalendarXmarkIcon />}
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleRemoveJournalMark(docRecord.id);
+                      }}
+                      data-testid="journal-conflict-remove-mark"
+                    >
+                      {t[
+                        'com.affine.page-properties.property.journal-remove'
+                      ]()}
+                    </MenuItem>
+                    <MenuSeparator />
+                    <MoveToTrash
+                      onSelect={() => handleOpenTrashModal(docRecord)}
+                    />
+                  </>
                 }
               >
-                <IconButton>
-                  <MoreHorizontalIcon />
-                </IconButton>
+                <IconButton
+                  data-testid="journal-conflict-edit"
+                  icon={<EditIcon />}
+                />
               </Menu>
             }
           />
@@ -329,10 +389,15 @@ const ConflictList = ({
 };
 const JournalConflictBlock = ({ date }: JournalBlockProps) => {
   const t = useI18n();
-  const workspace = useService(WorkspaceService).workspace;
   const docRecordList = useService(DocsService).list;
-  const journalHelper = useJournalHelper(workspace.docCollection);
-  const docs = journalHelper.getJournalsByDate(date.format('YYYY-MM-DD'));
+  const journalService = useService(JournalService);
+  const dateString = date.format('YYYY-MM-DD');
+  const docs = useLiveData(
+    useMemo(
+      () => journalService.journalsByDate$(dateString),
+      [dateString, journalService]
+    )
+  );
   const docRecords = useLiveData(
     docRecordList.docs$.map(records =>
       records.filter(v => {

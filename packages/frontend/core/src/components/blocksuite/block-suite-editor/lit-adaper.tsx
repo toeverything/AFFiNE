@@ -3,10 +3,10 @@ import {
   useConfirmModal,
   useLitPortalFactory,
 } from '@affine/component';
-import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { ServerConfigService } from '@affine/core/modules/cloud';
 import { EditorService } from '@affine/core/modules/editor';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
+import { JournalService } from '@affine/core/modules/journal';
 import { toURLSearchParams } from '@affine/core/modules/navigation';
 import { PeekViewService } from '@affine/core/modules/peek-view/services/peek-view';
 import type { DocMode } from '@blocksuite/affine/blocks';
@@ -196,7 +196,8 @@ export const BlocksuiteDocEditor = forwardRef<
 ) {
   const titleRef = useRef<DocTitle | null>(null);
   const docRef = useRef<PageEditor | null>(null);
-  const { isJournal } = useJournalInfoHelper(page.id);
+  const journalService = useService(JournalService);
+  const isJournal = !!useLiveData(journalService.journalDate$(page.id));
 
   const editorSettingService = useService(EditorSettingService);
 

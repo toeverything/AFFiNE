@@ -1,5 +1,5 @@
-import { useJournalInfoHelper } from '@affine/core/components/hooks/use-journal';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
+import { JournalService } from '@affine/core/modules/journal';
 import { PeekViewService } from '@affine/core/modules/peek-view/services/peek-view';
 import { useInsidePeekView } from '@affine/core/modules/peek-view/view/modal-container';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
@@ -30,7 +30,8 @@ export function AffinePageReference({
   params?: URLSearchParams;
 }) {
   const docDisplayMetaService = useService(DocDisplayMetaService);
-  const journalHelper = useJournalInfoHelper();
+  const journalService = useService(JournalService);
+  const isJournal = !!useLiveData(journalService.journalDate$(pageId));
   const i18n = useI18n();
 
   let linkWithMode: DocMode | null = null;
@@ -67,7 +68,6 @@ export function AffinePageReference({
 
   const peekView = useService(PeekViewService).peekView;
   const isInPeekView = useInsidePeekView();
-  const isJournal = journalHelper.isPageJournal(pageId);
 
   const onClick = useCallback(
     (e: React.MouseEvent) => {
@@ -127,7 +127,8 @@ export function AffineSharedPageReference({
   params?: URLSearchParams;
 }) {
   const docDisplayMetaService = useService(DocDisplayMetaService);
-  const journalHelper = useJournalInfoHelper();
+  const journalService = useService(JournalService);
+  const isJournal = !!useLiveData(journalService.journalDate$(pageId));
   const i18n = useI18n();
 
   let linkWithMode: DocMode | null = null;
@@ -158,8 +159,6 @@ export function AffineSharedPageReference({
   const ref = useRef<HTMLAnchorElement>(null);
 
   const [refreshKey, setRefreshKey] = useState<string>(() => nanoid());
-
-  const isJournal = journalHelper.isPageJournal(pageId);
 
   const onClick = useCallback(
     (e: React.MouseEvent) => {
