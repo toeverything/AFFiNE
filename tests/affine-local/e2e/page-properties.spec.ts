@@ -22,6 +22,7 @@ import {
   openWorkspaceProperties,
   removeSelectedTag,
   searchAndCreateTag,
+  togglePropertyListVisibility,
 } from '@affine-test/kit/utils/properties';
 import { expect } from '@playwright/test';
 
@@ -117,8 +118,9 @@ test('property table reordering', async ({ page }) => {
     'bottom'
   );
 
-  // new order should be (Tags), Number, Date, Checkbox, Text
+  // new order should be Doc mode, (Tags), Number, Date, Checkbox, Text
   for (const [index, property] of [
+    'Doc mode',
     'Tags',
     'Number',
     'Date',
@@ -157,6 +159,7 @@ test('page info show more will show all properties', async ({ page }) => {
   await page.click('[data-testid="property-collapsible-button"]');
 
   for (const [index, property] of [
+    'Doc mode',
     'Tags',
     'Text',
     'Number',
@@ -179,6 +182,7 @@ test('change page properties visibility', async ({ page }) => {
   await addCustomProperty(page, page, 'number');
   await addCustomProperty(page, page, 'date');
   await addCustomProperty(page, page, 'checkbox');
+  await togglePropertyListVisibility(page);
 
   // add some number to number property
   await clickPropertyValue(page, 'Number');

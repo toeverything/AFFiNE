@@ -93,11 +93,36 @@ export const clickAddPropertyButton = async (root: Locator | Page) => {
     .click();
 };
 
+export const ensureAddPropertyButtonVisible = async (
+  page: Page,
+  root: Locator | Page
+) => {
+  if (
+    await root
+      .getByRole('button', {
+        name: 'Add property',
+      })
+      .isVisible()
+  ) {
+    return;
+  }
+  await togglePropertyListVisibility(page);
+  await page.waitForTimeout(500);
+  await expect(
+    root.getByRole('button', { name: 'Add property' })
+  ).toBeVisible();
+};
+
+export const togglePropertyListVisibility = async (page: Page) => {
+  await page.getByTestId('property-collapsible-button').click();
+};
+
 export const addCustomProperty = async (
   page: Page,
   root: Locator | Page,
   type: string
 ) => {
+  ensureAddPropertyButtonVisible(page, root);
   await clickAddPropertyButton(root);
   await page
     .locator(

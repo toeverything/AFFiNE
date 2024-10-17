@@ -682,7 +682,6 @@
   "com.affine.editCollectionName.name": "이름",
   "com.affine.editCollectionName.name.placeholder": "컬렉션 이름",
   "com.affine.editor.reference-not-found": "연결된 페이지를 찾을 수 없음",
-  "com.affine.editorModeSwitch.tooltip": "전환",
   "com.affine.empty.collection-detail.action.add-doc": "문서 추가",
   "com.affine.empty.collection-detail.action.add-rule": "규칙 추가",
   "com.affine.empty.collection-detail.description": "컬렉션은 페이지를 수동으로 추가하거나 규칙을 통해 자동으로 페이지를 추가할 수 있는 스마트 폴더입니다.",

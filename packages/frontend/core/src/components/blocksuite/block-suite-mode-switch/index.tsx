@@ -1,4 +1,4 @@
-import { RadioGroup, type RadioItem, toast, Tooltip } from '@affine/component';
+import { RadioGroup, type RadioItem, Tooltip } from '@affine/component';
 import { registerAffineCommand } from '@affine/core/commands';
 import { EditorService } from '@affine/core/modules/editor';
 import { useI18n } from '@affine/i18n';
@@ -41,19 +41,15 @@ export const EditorModeSwitch = () => {
     if (currentMode === 'page' || isSharedMode || trash) return;
     editor.setMode('page');
     editor.setSelector(undefined);
-    editor.doc.setPrimaryMode('page');
-    toast(t['com.affine.toastMessage.pageMode']());
     track.$.header.actions.switchPageMode({ mode: 'page' });
-  }, [currentMode, editor, isSharedMode, t, trash]);
+  }, [currentMode, editor, isSharedMode, trash]);
 
   const toggleEdgeless = useCallback(() => {
     if (currentMode === 'edgeless' || isSharedMode || trash) return;
     editor.setMode('edgeless');
     editor.setSelector(undefined);
-    editor.doc.setPrimaryMode('edgeless');
-    toast(t['com.affine.toastMessage.edgelessMode']());
     track.$.header.actions.switchPageMode({ mode: 'edgeless' });
-  }, [currentMode, editor, isSharedMode, t, trash]);
+  }, [currentMode, editor, isSharedMode, trash]);
 
   const onModeChange = useCallback(
     (mode: DocMode) => {

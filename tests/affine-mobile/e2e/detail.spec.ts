@@ -18,7 +18,7 @@ test('switch to page mode', async ({ page }) => {
   await page.click('[data-testid="detail-page-header-more-button"]');
   await expect(page.getByRole('dialog')).toBeVisible();
 
-  await page.getByRole('menuitem', { name: 'convert to page' }).click();
+  await page.getByRole('menuitem', { name: 'Default to Page mode' }).click();
   await expect(page.locator('.doc-title-container')).toBeVisible();
 });
 

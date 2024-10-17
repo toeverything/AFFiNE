@@ -1,4 +1,4 @@
-import { IconButton, toast } from '@affine/component';
+import { IconButton, notify } from '@affine/component';
 import {
   MenuSeparator,
   MobileMenu,
@@ -39,21 +39,29 @@ export const PageHeaderMenuButton = () => {
   const isInTrash = useLiveData(
     editorService.editor.doc.meta$.map(meta => meta.trash)
   );
-  const currentMode = useLiveData(editorService.editor.mode$);
+  const primaryMode = useLiveData(editorService.editor.doc.primaryMode$);
 
   const { favorite, toggleFavorite } = useFavorite(docId);
 
   const handleSwitchMode = useCallback(() => {
-    editorService.editor.toggleMode();
+    const mode = primaryMode === 'page' ? 'edgeless' : 'page';
+    // TODO(@JimmFly): remove setMode when there has view mode switch
+    editorService.editor.setMode(mode);
+    editorService.editor.doc.setPrimaryMode(mode);
     track.$.header.docOptions.switchPageMode({
-      mode: currentMode === 'page' ? 'edgeless' : 'page',
+      mode,
     });
-    toast(
-      currentMode === 'page'
-        ? t['com.affine.toastMessage.edgelessMode']()
-        : t['com.affine.toastMessage.pageMode']()
-    );
-  }, [currentMode, editorService, t]);
+    notify.success({
+      title:
+        primaryMode === 'page'
+          ? t['com.affine.toastMessage.defaultMode.edgeless.title']()
+          : t['com.affine.toastMessage.defaultMode.page.title'](),
+      message:
+        primaryMode === 'page'
+          ? t['com.affine.toastMessage.defaultMode.edgeless.message']()
+          : t['com.affine.toastMessage.defaultMode.page.message'](),
+    });
+  }, [primaryMode, editorService, t]);
 
   const handleMenuOpenChange = useCallback((open: boolean) => {
     if (open) {
@@ -75,14 +83,13 @@ export const PageHeaderMenuButton = () => {
   const EditMenu = (
     <>
       <MobileMenuItem
-        prefixIcon={currentMode === 'page' ? <EdgelessIcon /> : <PageIcon />}
+        prefixIcon={primaryMode === 'page' ? <EdgelessIcon /> : <PageIcon />}
         data-testid="editor-option-menu-mode-switch"
         onSelect={handleSwitchMode}
       >
-        {t['Convert to ']()}
-        {currentMode === 'page'
-          ? t['com.affine.pageMode.edgeless']()
-          : t['com.affine.pageMode.page']()}
+        {primaryMode === 'page'
+          ? t['com.affine.editorDefaultMode.edgeless']()
+          : t['com.affine.editorDefaultMode.page']()}
       </MobileMenuItem>
       <MobileMenuItem
         data-testid="editor-option-menu-favorite"

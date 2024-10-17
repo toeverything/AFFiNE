@@ -65,6 +65,7 @@ export const hide = style({
 export const propertyNameContainer = style({
   display: 'flex',
   flexDirection: 'column',
+  justifyContent: 'center',
   position: 'relative',
   borderRadius: 4,
   fontSize: cssVar('fontSm'),

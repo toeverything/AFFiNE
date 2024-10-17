@@ -11,4 +11,9 @@ export const BUILT_IN_CUSTOM_PROPERTY_TYPE = [
     type: 'tags',
     index: 'a0000001',
   },
+  {
+    id: 'docPrimaryMode',
+    type: 'docPrimaryMode',
+    show: 'always-hide',
+  },
 ] as DocCustomPropertyInfo[];

@@ -3,6 +3,7 @@ import {
   CheckBoxCheckLinearIcon,
   CreatedEditedIcon,
   DateTimeIcon,
+  FileIcon,
   NumberIcon,
   TagIcon,
   TextIcon,
@@ -11,6 +12,7 @@ import {
 import { CheckboxValue } from './checkbox';
 import { CreatedByValue, UpdatedByValue } from './created-updated-by';
 import { DateValue } from './date';
+import { DocPrimaryModeValue } from './doc-primary-mode';
 import { NumberValue } from './number';
 import { TagsValue } from './tags';
 import { TextValue } from './text';
@@ -53,6 +55,11 @@ export const DocPropertyTypes = {
     name: 'com.affine.page-properties.property.tags',
     uniqueId: 'tags',
     renameable: false,
+  },
+  docPrimaryMode: {
+    icon: FileIcon,
+    value: DocPrimaryModeValue,
+    name: 'com.affine.page-properties.property.docPrimaryMode',
   },
 } as Record<
   string,
