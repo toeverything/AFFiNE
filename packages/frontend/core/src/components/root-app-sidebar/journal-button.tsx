@@ -25,7 +25,8 @@ export const AppSidebarJournalButton = ({
   const workbench = useService(WorkbenchService).workbench;
   const location = useLiveData(workbench.location$);
   const { openToday } = useJournalRouteHelper(docCollection);
-  const { isJournal } = useJournalInfoHelper(location.pathname.split('/')[1]);
+  const maybeDocId = location.pathname.split('/')[1];
+  const { isJournal } = useJournalInfoHelper(maybeDocId);
 
   const handleOpenToday = useCatchEventCallback(
     (e: MouseEvent) => {
@@ -35,7 +36,7 @@ export const AppSidebarJournalButton = ({
   );
 
   const JournalIcon = useLiveData(
-    docDisplayMetaService.icon$(docCollection.id, {
+    docDisplayMetaService.icon$(maybeDocId, {
       compareDate: new Date(),
     })
   );
