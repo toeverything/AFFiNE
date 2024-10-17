@@ -1,0 +1,10 @@
+{
+  "i18n_lng": "en-US",
+  "global-state:workspace-state:PL1Iva9wfpSglVaP6weyo:page:s_F2490nY_lEYSeK1jNYv:mode": "\"edgeless\"",
+  "global-state:workspace-state:PL1Iva9wfpSglVaP6weyo:docs-indexer-version": "2",
+  "global-cache:workspace-information:PL1Iva9wfpSglVaP6weyo": "{\"name\":\"Demo Workspace\",\"isOwner\":true}",
+  "is-first-open": "false",
+  "last_workspace_id": "PL1Iva9wfpSglVaP6weyo",
+  "debug": "*,-micromark",
+  "affine-local-workspace": "[\"PL1Iva9wfpSglVaP6weyo\"]"
+}
