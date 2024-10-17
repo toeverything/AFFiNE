@@ -20,6 +20,11 @@ Table(Clocks)
 | docId | clock  |
 |-------|--------|
 |  str  | number |
+
+Table(Blobs)
+| key | data | mime | size | createdAt | deletedAt |
+|-----|------|------|------|-----------|-----------|
+| str |  bin |  str | num  |   Date    |   Date    |
  */
 export interface DocStorageSchema extends DBSchema {
   snapshots: {
@@ -55,15 +60,15 @@ export interface DocStorageSchema extends DBSchema {
       timestamp: number;
     };
   };
-  peerClocks: {
-    key: [string, string];
+  blobs: {
+    key: string;
     value: {
-      docId: string;
-      peerId: string;
-      clock: number;
-    };
-    indexes: {
-      clock: number;
+      key: string;
+      data: Uint8Array;
+      mime: string;
+      size: number;
+      createdAt: Date;
+      deletedAt: Date | null;
     };
   };
 }
@@ -110,6 +115,11 @@ const init: Migrate = db => {
   });
 
   clocks.createIndex('timestamp', 'timestamp', { unique: false });
+
+  db.createObjectStore('blobs', {
+    keyPath: 'key',
+    autoIncrement: false,
+  });
 };
 // END REGION
 

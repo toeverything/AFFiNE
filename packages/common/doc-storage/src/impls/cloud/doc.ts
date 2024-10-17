@@ -1,85 +1,11 @@
-import type { Socket } from 'socket.io-client';
-
 import { DocStorage, type DocStorageOptions } from '../../storage';
-
-// TODO(@forehalo): use [UserFriendlyError]
-interface EventError {
-  name: string;
-  message: string;
-}
-
-type WebsocketResponse<T> =
-  | {
-      error: EventError;
-    }
-  | {
-      data: T;
-    };
-
-interface ServerEvents {
-  'space:broadcast-doc-updates': {
-    spaceType: string;
-    spaceId: string;
-    docId: string;
-    updates: string[];
-    timestamp: number;
-  };
-}
-
-interface ClientEvents {
-  'space:join': [
-    { spaceType: string; spaceId: string; clientVersion: string },
-    { clientId: string },
-  ];
-  'space:leave': { spaceType: string; spaceId: string };
-  'space:push-doc-updates': [
-    { spaceType: string; spaceId: string; docId: string; updates: string[] },
-    { timestamp: number },
-  ];
-  'space:load-doc-timestamps': [
-    {
-      spaceType: string;
-      spaceId: string;
-      timestamp?: number;
-    },
-    Record<string, number>,
-  ];
-  'space:load-doc': [
-    {
-      spaceType: string;
-      spaceId: string;
-      docId: string;
-      stateVector?: string;
-    },
-    {
-      missing: string;
-      state: string;
-      timestamp: number;
-    },
-  ];
-}
-
-type ServerEventsMap = {
-  [Key in keyof ServerEvents]: (data: ServerEvents[Key]) => void;
-};
-type ClientEventsMap = {
-  [Key in keyof ClientEvents]: ClientEvents[Key] extends Array<any>
-    ? (
-        data: ClientEvents[Key][0],
-        ack: (res: WebsocketResponse<ClientEvents[Key][1]>) => void
-      ) => void
-    : (data: ClientEvents[Key]) => void;
-};
+import type { ServerEventsMap, Socket } from './socket';
 
 interface CloudDocStorageOptions extends DocStorageOptions {
-  socket: Socket<ServerEventsMap, ClientEventsMap>;
+  socket: Socket;
 }
 
 export class CloudDocStorage extends DocStorage<CloudDocStorageOptions> {
-  constructor(options: CloudDocStorageOptions) {
-    super(options);
-  }
-
   get name() {
     // @ts-expect-error we need it
     return this.options.socket.io.uri;
