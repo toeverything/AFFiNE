@@ -51,7 +51,6 @@
     "idb": "^8.0.0",
     "idb-keyval": "^6.2.1",
     "image-blob-reduce": "^4.1.0",
-    "intl-segmenter-polyfill-rs": "^0.1.7",
     "is-svg": "^5.0.0",
     "jotai": "^2.8.0",
     "jotai-scope": "^0.7.0",

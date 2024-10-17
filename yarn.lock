@@ -406,7 +406,6 @@ __metadata:
     idb: "npm:^8.0.0"
     idb-keyval: "npm:^6.2.1"
     image-blob-reduce: "npm:^4.1.0"
-    intl-segmenter-polyfill-rs: "npm:^0.1.7"
     is-svg: "npm:^5.0.0"
     jotai: "npm:^2.8.0"
     jotai-scope: "npm:^0.7.0"
@@ -22564,13 +22563,6 @@ __metadata:
   version: 3.1.1
   resolution: "interpret@npm:3.1.1"
   checksum: 10/bc9e11126949c4e6ff49b0b819e923a9adc8e8bf3f9d4f2d782de6d5f592774f6fee4457c10bd08c6a2146b4baee460ccb242c99e5397defa9c846af0d00505a
-  languageName: node
-  linkType: hard
-
-"intl-segmenter-polyfill-rs@npm:^0.1.7":
-  version: 0.1.7
-  resolution: "intl-segmenter-polyfill-rs@npm:0.1.7"
-  checksum: 10/e216d8e4c299ea319f8098fbf03df6a06e841fcbbfcfbb4735d3df8cf8088e2d644398b70ff21b14514f818424833efb03ff6cb9fee3d43df57f9588ee3a07f9
   languageName: node
   linkType: hard
 
