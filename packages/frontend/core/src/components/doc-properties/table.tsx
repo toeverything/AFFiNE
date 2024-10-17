@@ -318,6 +318,7 @@ export const DocPropertyRow = ({
       hideEmpty={hideEmpty}
       hide={hide}
       data-testid="doc-property-row"
+      data-info-id={propertyInfo.id}
     >
       <PropertyName
         defaultOpenMenu={defaultOpenEditMenu}
@@ -414,6 +415,7 @@ export const DocPropertiesTableBody = forwardRef<
               variant="plain"
               prefix={<PlusIcon />}
               className={styles.propertyActionButton}
+              data-testid="add-property-button"
             >
               {t['com.affine.page-properties.add-property']()}
             </Button>

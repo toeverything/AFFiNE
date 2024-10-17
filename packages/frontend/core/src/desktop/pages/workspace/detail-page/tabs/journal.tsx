@@ -64,6 +64,7 @@ const PageItem = ({
 
   return (
     <WorkbenchLink
+      data-testid="journal-conflict-item"
       aria-label={title}
       to={`/${docId}`}
       className={clsx(className, styles.pageItem)}
@@ -118,9 +119,6 @@ export const EditorJournalPanel = () => {
 
   const customDayRenderer = useCallback(
     (cell: DateCell) => {
-      // TODO(@catsjuice): add a dot to indicate journal
-      // has performance issue for now, better to calculate it in advance
-      // const hasJournal = !!getJournalsByDate(cell.date.format('YYYY-MM-DD'))?.length;
       const hasJournal = allJournalDates.has(cell.date.format('YYYY-MM-DD'));
       return (
         <button
@@ -145,7 +143,11 @@ export const EditorJournalPanel = () => {
   );
 
   return (
-    <div className={styles.journalPanel} data-is-journal={isJournal}>
+    <div
+      className={styles.journalPanel}
+      data-is-journal={isJournal}
+      data-testid="sidebar-journal-panel"
+    >
       <div data-mobile={mobile} className={styles.calendar}>
         <DatePicker
           weekDays={t['com.affine.calendar-date-picker.week-days']()}
@@ -330,7 +332,11 @@ const ConflictList = ({
   );
 
   return (
-    <div className={clsx(styles.journalConflictWrapper, className)} {...attrs}>
+    <div
+      data-testid="journal-conflict-list"
+      className={clsx(styles.journalConflictWrapper, className)}
+      {...attrs}
+    >
       {docRecords.map(docRecord => {
         const isCurrent = docRecord.id === currentDoc.id;
         return (
@@ -355,6 +361,7 @@ const ConflictList = ({
                         e.stopPropagation();
                         handleRemoveJournalMark(docRecord.id);
                       }}
+                      data-testid="journal-conflict-remove-mark"
                     >
                       {t[
                         'com.affine.page-properties.property.journal-remove'
@@ -367,7 +374,10 @@ const ConflictList = ({
                   </>
                 }
               >
-                <IconButton icon={<EditIcon />} />
+                <IconButton
+                  data-testid="journal-conflict-edit"
+                  icon={<EditIcon />}
+                />
               </Menu>
             }
           />

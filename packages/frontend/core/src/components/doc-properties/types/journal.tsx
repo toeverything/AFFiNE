@@ -99,6 +99,7 @@ export const JournalValue = () => {
               style: { padding: 20 },
             }}
             rootOptions={{
+              modal: true,
               open: showDatePicker,
               onOpenChange: setShowDatePicker,
             }}
@@ -112,12 +113,18 @@ export const JournalValue = () => {
               />
             }
           >
-            <div className={styles.date}>{displayDate}</div>
+            <div data-testid="date-selector" className={styles.date}>
+              {displayDate}
+            </div>
           </Menu>
         ) : null}
 
         {checked && conflict ? (
-          <div className={styles.duplicateTag} onClick={handleOpenDuplicate}>
+          <div
+            data-testid="conflict-tag"
+            className={styles.duplicateTag}
+            onClick={handleOpenDuplicate}
+          >
             {t['com.affine.page-properties.property.journal-duplicated']()}
           </div>
         ) : null}

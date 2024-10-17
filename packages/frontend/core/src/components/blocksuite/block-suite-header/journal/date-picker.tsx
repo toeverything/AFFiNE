@@ -34,6 +34,7 @@ export const JournalWeekDatePicker = ({
 
   return (
     <WeekDatePicker
+      data-testid="journal-week-picker"
       handleRef={handleRef}
       style={weekStyle}
       value={date}
