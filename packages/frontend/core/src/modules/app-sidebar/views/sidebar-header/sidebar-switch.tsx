@@ -16,15 +16,23 @@ export const SidebarSwitch = ({
 }) => {
   const appSidebarService = useService(AppSidebarService).sidebar;
   const open = useLiveData(appSidebarService.open$);
+  const preventHovering = useLiveData(appSidebarService.preventHovering$);
   const switchRef = useRef<HTMLDivElement>(null);
 
   const handleMouseEnter = useCallback(() => {
+    if (preventHovering) {
+      appSidebarService.setPreventHovering(false);
+      return;
+    }
     appSidebarService.setHovering(true);
-  }, [appSidebarService]);
+  }, [appSidebarService, preventHovering]);
 
   const handleClickSwitch = useCallback(() => {
+    if (open) {
+      appSidebarService.setPreventHovering(true);
+    }
     appSidebarService.toggleSidebar();
-  }, [appSidebarService]);
+  }, [appSidebarService, open]);
 
   const handleMouseLeave = useCallback(() => {
     appSidebarService.setHovering(false);

@@ -37,6 +37,11 @@ export class AppSidebar extends Entity {
   hovering$ = new LiveData<boolean>(false);
 
   /**
+   * prevent it from setting hovering once when the sidebar is closed
+   */
+  preventHovering$ = new LiveData<boolean>(false);
+
+  /**
    * small screen mode, will disable hover effect
    */
   smallScreenMode$ = new LiveData<boolean>(false);
@@ -61,6 +66,10 @@ export class AppSidebar extends Entity {
 
   setHovering = (hoverFloating: boolean) => {
     this.hovering$.next(hoverFloating);
+  };
+
+  setPreventHovering = (preventHovering: boolean) => {
+    this.preventHovering$.next(preventHovering);
   };
 
   setResizing = (resizing: boolean) => {
