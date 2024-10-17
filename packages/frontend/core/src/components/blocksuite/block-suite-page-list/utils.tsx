@@ -1,4 +1,5 @@
 import { toast } from '@affine/component';
+import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { DocMode } from '@blocksuite/affine/blocks';
@@ -7,16 +8,24 @@ import { type DocProps, DocsService, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
 export const usePageHelper = (docCollection: DocCollection) => {
-  const { docsService, workbenchService, editorSettingService } = useServices({
+  const {
+    docsService,
+    workbenchService,
+    editorSettingService,
+    appSidebarService,
+  } = useServices({
     DocsService,
     WorkbenchService,
     EditorSettingService,
+    AppSidebarService,
   });
   const workbench = workbenchService.workbench;
   const docRecordList = docsService.list;
+  const appSidebar = appSidebarService.sidebar;
 
   const createPageAndOpen = useCallback(
     (mode?: DocMode, open?: boolean | 'new-tab') => {
+      appSidebar.setHovering(false);
       const docProps: DocProps = {
         note: editorSettingService.editorSetting.get('affine:note'),
       };
@@ -31,7 +40,13 @@ export const usePageHelper = (docCollection: DocCollection) => {
         });
       return page;
     },
-    [docRecordList, docsService, editorSettingService, workbench]
+    [
+      appSidebar,
+      docRecordList,
+      docsService,
+      editorSettingService.editorSetting,
+      workbench,
+    ]
   );
 
   const createEdgelessAndOpen = useCallback(
