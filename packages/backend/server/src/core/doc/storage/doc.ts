@@ -1,8 +1,10 @@
 import {
   applyUpdate,
+  diffUpdate,
   Doc,
   encodeStateAsUpdate,
   encodeStateVector,
+  encodeStateVectorFromUpdate,
   mergeUpdates,
   UndoManager,
 } from 'yjs';
@@ -17,6 +19,12 @@ export interface DocRecord {
   bin: Uint8Array;
   timestamp: number;
   editor?: string;
+}
+
+export interface DocDiff {
+  missing: Uint8Array;
+  state: Uint8Array;
+  timestamp: number;
 }
 
 export interface DocUpdate {
@@ -94,6 +102,27 @@ export abstract class DocStorageAdapter extends Connection {
     }
 
     return snapshot;
+  }
+
+  async getDocDiff(
+    spaceId: string,
+    docId: string,
+    stateVector?: Uint8Array
+  ): Promise<DocDiff | null> {
+    const doc = await this.getDoc(spaceId, docId);
+
+    if (!doc) {
+      return null;
+    }
+
+    const missing = stateVector ? diffUpdate(doc.bin, stateVector) : doc.bin;
+    const state = encodeStateVectorFromUpdate(doc.bin);
+
+    return {
+      missing,
+      state,
+      timestamp: doc.timestamp,
+    };
   }
 
   abstract pushDocUpdates(
