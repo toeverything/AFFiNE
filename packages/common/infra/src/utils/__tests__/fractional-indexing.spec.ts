@@ -39,3 +39,21 @@ test('fractional-indexing', () => {
     }
   }
 });
+
+test('no postfix', () => {
+  expect(
+    generateFractionalIndexingKeyBetween('a0', null).startsWith('a1')
+  ).toBe(true);
+  expect(
+    generateFractionalIndexingKeyBetween('a01', null).startsWith('a1')
+  ).toBe(true);
+  expect(
+    generateFractionalIndexingKeyBetween('a0001', null).startsWith('a1')
+  ).toBe(true);
+  expect(
+    generateFractionalIndexingKeyBetween(null, 'a0').startsWith('Zz')
+  ).toBe(true);
+  expect(
+    generateFractionalIndexingKeyBetween('a0', 'a01').startsWith('a00V')
+  ).toBe(true);
+});

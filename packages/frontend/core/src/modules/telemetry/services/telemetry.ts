@@ -1,4 +1,3 @@
-import type { QuotaQuery } from '@affine/graphql';
 import { mixpanel } from '@affine/track';
 import type { GlobalContextService } from '@toeverything/infra';
 import { ApplicationStarted, OnEvent, Service } from '@toeverything/infra';
@@ -9,16 +8,11 @@ import {
   type AuthService,
 } from '../../cloud';
 import { AccountLoggedOut } from '../../cloud/services/auth';
-import { UserQuotaChanged } from '../../cloud/services/user-quota';
 
 @OnEvent(ApplicationStarted, e => e.onApplicationStart)
 @OnEvent(AccountChanged, e => e.updateIdentity)
 @OnEvent(AccountLoggedOut, e => e.onAccountLoggedOut)
-@OnEvent(UserQuotaChanged, e => e.onUserQuotaChanged)
 export class TelemetryService extends Service {
-  private prevQuota: NonNullable<QuotaQuery['currentUser']>['quota'] | null =
-    null;
-
   constructor(
     private readonly auth: AuthService,
     private readonly globalContextService: GlobalContextService
@@ -46,17 +40,6 @@ export class TelemetryService extends Service {
 
   onAccountLoggedOut() {
     mixpanel.reset();
-  }
-
-  onUserQuotaChanged(quota: NonNullable<QuotaQuery['currentUser']>['quota']) {
-    const plan = quota?.humanReadable.name;
-    // only set when plan is not empty and changed
-    if (plan !== this.prevQuota?.humanReadable.name && plan) {
-      mixpanel.people.set({
-        plan: quota?.humanReadable.name,
-      });
-    }
-    this.prevQuota = quota;
   }
 
   registerMiddlewares() {

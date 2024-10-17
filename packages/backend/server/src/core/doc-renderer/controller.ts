@@ -56,16 +56,10 @@ export class DocRendererController {
     private readonly url: URLHelper
   ) {
     this.webAssets = this.readHtmlAssets(
-      join(
-        this.config.projectRoot,
-        this.config.isSelfhosted ? 'static/selfhost' : 'static'
-      )
+      join(this.config.projectRoot, 'static')
     );
     this.mobileAssets = this.readHtmlAssets(
-      join(
-        this.config.projectRoot,
-        this.config.isSelfhosted ? 'static/mobile/selfhost' : 'static/mobile'
-      )
+      join(this.config.projectRoot, 'static/mobile')
     );
   }
 
