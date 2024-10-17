@@ -213,6 +213,7 @@ const CollectionListItemWrapper = forwardRef(
 
     const commonProps = useMemo(
       () => ({
+        role: 'list-item',
         'data-testid': 'collection-list-item',
         'data-collection-id': collectionId,
         'data-draggable': draggable,

@@ -198,6 +198,7 @@ const TagListItemWrapper = forwardRef(
 
     const commonProps = useMemo(
       () => ({
+        role: 'list-item',
         'data-testid': 'tag-list-item',
         'data-tag-id': tagId,
         'data-draggable': draggable,

@@ -345,6 +345,7 @@ const PageListItemWrapper = forwardRef(
 
     const commonProps = useMemo(
       () => ({
+        role: 'list-item',
         'data-testid': 'page-list-item',
         'data-page-id': pageId,
         'data-draggable': draggable,
