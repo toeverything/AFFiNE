@@ -130,10 +130,12 @@ export const SettingSidebar = ({
     },
     [onTabChange]
   );
+
   const onAccountSettingClick = useCallback(() => {
     track.$.settingsPanel.menu.openSettings({ to: 'account' });
     onTabChange('account', null);
   }, [onTabChange]);
+
   const onWorkspaceSettingClick = useCallback(
     (subTab: WorkspaceSubTab, workspaceMetadata: WorkspaceMetadata) => {
       track.$.settingsPanel.menu.openSettings({
@@ -145,14 +147,20 @@ export const SettingSidebar = ({
     [onTabChange]
   );
 
+  const isMobile = window.innerWidth <= 768;
+
   return (
     <div className={style.settingSlideBar} data-testid="settings-sidebar">
-      <div className={style.sidebarTitle}>
-        {t['com.affine.settingSidebar.title']()}
-      </div>
-      <div className={style.sidebarSubtitle}>
-        {t['com.affine.settingSidebar.settings.general']()}
-      </div>
+      {!isMobile && (
+        <div className={style.sidebarTitle}>
+          {t['com.affine.settingSidebar.title']()}
+        </div>
+      )}
+      {!isMobile && (
+        <div className={style.sidebarSubtitle}>
+          {t['com.affine.settingSidebar.settings.general']()}
+        </div>
+      )}
       <div className={style.sidebarItemsWrapper}>
         {generalList.map(({ title, icon, key, testId }) => {
           return (
@@ -173,9 +181,11 @@ export const SettingSidebar = ({
         })}
       </div>
 
-      <div className={style.sidebarSubtitle}>
-        {t['com.affine.settingSidebar.settings.workspace']()}
-      </div>
+      {!isMobile && (
+        <div className={style.sidebarSubtitle}>
+          {t['com.affine.settingSidebar.settings.workspace']()}
+        </div>
+      )}
       <div className={clsx(style.sidebarItemsWrapper, 'scroll')}>
         <Suspense fallback={<WorkspaceListSkeleton />}>
           <WorkspaceList

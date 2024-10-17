@@ -1,15 +1,18 @@
 import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
+
 export const settingHeader = style({
   borderBottom: `1px solid ${cssVar('borderColor')}`,
   paddingBottom: '16px',
   marginBottom: '24px',
 });
+
 globalStyle(`${settingHeader} .title`, {
   fontSize: cssVar('fontBase'),
   fontWeight: 600,
   lineHeight: '24px',
 });
+
 globalStyle(`${settingHeader} .subtitle`, {
   paddingTop: '4px',
   paddingBottom: '8px',
@@ -17,6 +20,7 @@ globalStyle(`${settingHeader} .subtitle`, {
   lineHeight: '16px',
   color: cssVar('textSecondaryColor'),
 });
+
 export const wrapper = style({
   borderBottom: `1px solid ${cssVar('borderColor')}`,
   paddingBottom: '24px',
@@ -29,6 +33,7 @@ export const wrapper = style({
     },
   },
 });
+
 globalStyle(`${wrapper} .title`, {
   fontSize: cssVar('fontSm'),
   fontWeight: 600,
@@ -36,6 +41,7 @@ globalStyle(`${wrapper} .title`, {
   color: cssVar('textSecondaryColor'),
   marginBottom: '16px',
 });
+
 export const settingRow = style({
   marginBottom: '25px',
   color: cssVar('textPrimaryColor'),
@@ -45,6 +51,12 @@ export const settingRow = style({
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
+      '@media': {
+        'screen and (max-width: 768px)': {
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+        },
+      },
     },
     '&:last-of-type': {
       marginBottom: '0',
@@ -63,26 +75,37 @@ export const settingRow = style({
     },
   },
 });
+
 globalStyle(`${settingRow} .left-col`, {
   flex: 1,
   maxWidth: '100%',
 });
+
 globalStyle(`${settingRow}.two-col .left-col`, {
   flexShrink: 0,
   maxWidth: '80%',
 });
+
 globalStyle(`${settingRow} .name`, {
   marginBottom: '2px',
   fontSize: cssVar('fontSm'),
   fontWeight: 600,
 });
+
 globalStyle(`${settingRow} .desc`, {
   fontSize: cssVar('fontXs'),
   color: cssVar('textSecondaryColor'),
 });
+
 globalStyle(`${settingRow} .right-col`, {
   display: 'flex',
   justifyContent: 'flex-end',
   paddingLeft: '15px',
   flexShrink: 0,
+  '@media': {
+    'screen and (max-width: 768px)': {
+      justifyContent: 'flex-start',
+      width: '100%',
+    },
+  },
 });
