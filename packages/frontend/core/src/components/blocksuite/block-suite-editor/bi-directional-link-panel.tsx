@@ -1,6 +1,10 @@
-import { DocLinksService } from '@affine/core/modules/doc-link';
+import {
+  type Backlink,
+  DocLinksService,
+  type Link,
+} from '@affine/core/modules/doc-link';
 import { useI18n } from '@affine/i18n';
-import { useLiveData, useServices } from '@toeverything/infra';
+import { LiveData, useLiveData, useServices } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
 import { AffinePageReference } from '../../affine/reference-link';
@@ -13,8 +17,12 @@ export const BiDirectionalLinkPanel = () => {
   });
   const t = useI18n();
 
-  const links = useLiveData(docLinksService.links.links$);
-  const backlinks = useLiveData(docLinksService.backlinks.backlinks$);
+  const links = useLiveData(
+    show ? docLinksService.links.links$ : new LiveData([] as Link[])
+  );
+  const backlinks = useLiveData(
+    show ? docLinksService.backlinks.backlinks$ : new LiveData([] as Backlink[])
+  );
   const handleClickShow = useCallback(() => {
     setShow(!show);
   }, [show]);
