@@ -4,6 +4,7 @@ import {
   WorkspaceScope,
 } from '@toeverything/infra';
 
+import { NoteExplorer } from './entities/explore-note';
 import { ExplorerSection } from './entities/explore-section';
 import { ExplorerService } from './services/explorer';
 export { ExplorerService } from './services/explorer';
@@ -19,5 +20,6 @@ export function configureExplorerModule(framework: Framework) {
   framework
     .scope(WorkspaceScope)
     .service(ExplorerService)
-    .entity(ExplorerSection, [GlobalCache]);
+    .entity(ExplorerSection, [GlobalCache])
+    .entity(NoteExplorer, [GlobalCache]);
 }

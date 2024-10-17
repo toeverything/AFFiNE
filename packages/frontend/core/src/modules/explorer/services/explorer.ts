@@ -1,5 +1,6 @@
 import { Service } from '@toeverything/infra';
 
+import { NoteExplorer } from '../entities/explore-note';
 import { ExplorerSection } from '../entities/explore-section';
 import type { CollapsibleSectionName } from '../types';
 
@@ -21,4 +22,6 @@ export class ExplorerService extends Service {
       }),
     {} as Record<CollapsibleSectionName, ExplorerSection>
   );
+
+  readonly notes = this.framework.createEntity(NoteExplorer);
 }

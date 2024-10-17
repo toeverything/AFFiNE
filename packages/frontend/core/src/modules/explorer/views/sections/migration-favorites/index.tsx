@@ -7,6 +7,7 @@ import { BroomIcon, HelpIcon } from '@blocksuite/icons/rc';
 import { DocsService, useLiveData, useServices } from '@toeverything/infra';
 import { useCallback } from 'react';
 
+import { EXPLORER_KEY } from '../../../config';
 import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { ExplorerCollectionNode } from '../../nodes/collection';
 import { ExplorerDocNode } from '../../nodes/doc';
@@ -143,6 +144,7 @@ const ExplorerMigrationFavoriteNode = ({
     type: 'collection' | 'doc';
   };
 }) => {
+  const explorerKey = EXPLORER_KEY.migrationFavorites;
   return favorite.type === 'doc' ? (
     <ExplorerDocNode
       key={favorite.id}
@@ -150,6 +152,7 @@ const ExplorerMigrationFavoriteNode = ({
       location={childLocation}
       reorderable={false}
       canDrop={false}
+      explorerKey={explorerKey}
     />
   ) : (
     <ExplorerCollectionNode
@@ -158,6 +161,7 @@ const ExplorerMigrationFavoriteNode = ({
       location={childLocation}
       reorderable={false}
       canDrop={false}
+      explorerKey={explorerKey}
     />
   );
 };

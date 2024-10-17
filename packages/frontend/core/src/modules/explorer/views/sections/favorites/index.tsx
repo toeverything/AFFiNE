@@ -26,6 +26,7 @@ import {
 } from '@toeverything/infra';
 import { type MouseEventHandler, useCallback } from 'react';
 
+import { EXPLORER_KEY } from '../../../config';
 import { ExplorerService } from '../../../services/explorer';
 import { CollapsibleSection } from '../../layouts/collapsible-section';
 import { ExplorerCollectionNode } from '../../nodes/collection';
@@ -247,6 +248,7 @@ const ExplorerFavoriteNode = ({
     },
     [favorite, onDrop]
   );
+
   return favorite.type === 'doc' ? (
     <ExplorerDocNode
       key={favorite.id}
@@ -255,6 +257,7 @@ const ExplorerFavoriteNode = ({
       onDrop={handleOnChildrenDrop}
       dropEffect={favoriteChildrenDropEffect}
       canDrop={favoriteChildrenCanDrop}
+      explorerKey={EXPLORER_KEY.favorites}
     />
   ) : favorite.type === 'tag' ? (
     <ExplorerTagNode
@@ -264,6 +267,7 @@ const ExplorerFavoriteNode = ({
       onDrop={handleOnChildrenDrop}
       dropEffect={favoriteChildrenDropEffect}
       canDrop={favoriteChildrenCanDrop}
+      explorerKey={EXPLORER_KEY.favorites}
     />
   ) : favorite.type === 'folder' ? (
     <ExplorerFolderNode
@@ -273,6 +277,7 @@ const ExplorerFavoriteNode = ({
       onDrop={handleOnChildrenDrop}
       dropEffect={favoriteChildrenDropEffect}
       canDrop={favoriteChildrenCanDrop}
+      explorerKey={EXPLORER_KEY.favorites}
     />
   ) : (
     <ExplorerCollectionNode
@@ -282,6 +287,7 @@ const ExplorerFavoriteNode = ({
       onDrop={handleOnChildrenDrop}
       dropEffect={favoriteChildrenDropEffect}
       canDrop={favoriteChildrenCanDrop}
+      explorerKey={EXPLORER_KEY.favorites}
     />
   );
 };
