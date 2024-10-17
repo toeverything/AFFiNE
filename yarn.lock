@@ -726,7 +726,7 @@ __metadata:
     graphql-upload: "npm:^17.0.0"
     html-validate: "npm:^8.20.1"
     ioredis: "npm:^5.3.2"
-    is-mobile: "npm:^4.0.0"
+    is-mobile: "npm:^5.0.0"
     keyv: "npm:^5.0.0"
     lodash-es: "npm:^4.17.21"
     mixpanel: "npm:^0.18.0"
@@ -22834,10 +22834,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-mobile@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "is-mobile@npm:4.0.0"
-  checksum: 10/1c4f32ab030ac6c203d63b547ef23933eacfebe81fd9d800c86739d5a73afad7983aea4c5e832c3d9c0a63d1e68cd318637490e6406bdda1cbadc8f701d5d557
+"is-mobile@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "is-mobile@npm:5.0.0"
+  checksum: 10/426f6bacfffa4166e9af49a915f3389d27c4cbc5cdce1585c3f5f11a0c2983c6d3d2c739985c32f948c0fe4f6b66fc88f71d8f79802608be232d799a27615a37
   languageName: node
   linkType: hard
 
