@@ -17,4 +17,13 @@ CREATE INDEX updates_doc_id ON v2_updates (doc_id);
 CREATE TABLE "v2_clocks" (
   doc_id TEXT PRIMARY KEY NOT NULL,
   timestamp TIMESTAMP NOT NULL
-)
+);
+
+CREATE TABLE "v2_blobs" (
+  key VARCHAR PRIMARY KEY NOT NULL,
+  data BLOB NOT NULL,
+  mime VARCHAR NOT NULL,
+  size INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  deleted_at TIMESTAMP
+);

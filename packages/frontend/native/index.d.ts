@@ -5,6 +5,11 @@ export declare class DocStorage {
   connect(): Promise<void>
   close(): Promise<void>
   get isClosed(): Promise<boolean>
+  /**
+   * Flush the WAL file to the database file.
+   * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
+   */
+  checkpoint(): Promise<void>
   pushUpdates(docId: string, updates: Array<Uint8Array>): Promise<number>
   getDocSnapshot(docId: string): Promise<DocRecord | null>
   setDocSnapshot(snapshot: DocRecord): Promise<boolean>
@@ -12,11 +17,11 @@ export declare class DocStorage {
   markUpdatesMerged(docId: string, updates: Array<Date>): Promise<number>
   deleteDoc(docId: string): Promise<void>
   getDocClocks(after?: number | undefined | null): Promise<Array<DocClock>>
-  /**
-   * Flush the WAL file to the database file.
-   * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
-   */
-  checkpoint(): Promise<void>
+  getBlob(key: string): Promise<Blob | null>
+  setBlob(blob: Blob): Promise<void>
+  deleteBlob(key: string, permanently: boolean): Promise<void>
+  releaseBlobs(): Promise<void>
+  listBlobs(): Promise<Array<ListedBlob>>
 }
 
 export declare class SqliteConnection {
@@ -56,6 +61,12 @@ export declare class SqliteConnection {
   checkpoint(): Promise<void>
 }
 
+export interface Blob {
+  key: string
+  data: Buffer
+  mime: string
+}
+
 export interface BlobRow {
   key: string
   data: Buffer
@@ -82,6 +93,11 @@ export interface DocUpdate {
 export interface InsertRow {
   docId?: string
   data: Uint8Array
+}
+
+export interface ListedBlob {
+  key: string
+  size: number
 }
 
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>

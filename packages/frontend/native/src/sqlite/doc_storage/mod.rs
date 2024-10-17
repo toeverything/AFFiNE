@@ -28,6 +28,19 @@ pub struct DocClock {
   pub timestamp: NaiveDateTime,
 }
 
+#[napi(object)]
+pub struct Blob {
+  pub key: String,
+  pub data: Buffer,
+  pub mime: String,
+}
+
+#[napi(object)]
+pub struct ListedBlob {
+  pub key: String,
+  pub size: i64,
+}
+
 #[napi]
 pub struct DocStorage {
   storage: storage::SqliteDocStorage,
@@ -57,6 +70,15 @@ impl DocStorage {
   #[napi(getter)]
   pub async fn is_closed(&self) -> napi::Result<bool> {
     Ok(self.storage.is_closed())
+  }
+
+  /**
+   * Flush the WAL file to the database file.
+   * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
+   */
+  #[napi]
+  pub async fn checkpoint(&self) -> napi::Result<()> {
+    self.storage.checkpoint().await.map_err(map_err)
   }
 
   #[napi]
@@ -111,12 +133,32 @@ impl DocStorage {
     self.storage.get_doc_clocks(after).await.map_err(map_err)
   }
 
-  /**
-   * Flush the WAL file to the database file.
-   * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
-   */
   #[napi]
-  pub async fn checkpoint(&self) -> napi::Result<()> {
-    self.storage.checkpoint().await.map_err(map_err)
+  pub async fn get_blob(&self, key: String) -> napi::Result<Option<Blob>> {
+    self.storage.get_blob(key).await.map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn set_blob(&self, blob: Blob) -> napi::Result<()> {
+    self.storage.set_blob(blob).await.map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn delete_blob(&self, key: String, permanently: bool) -> napi::Result<()> {
+    self
+      .storage
+      .delete_blob(key, permanently)
+      .await
+      .map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn release_blobs(&self) -> napi::Result<()> {
+    self.storage.release_blobs().await.map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn list_blobs(&self) -> napi::Result<Vec<ListedBlob>> {
+    self.storage.list_blobs().await.map_err(map_err)
   }
 }
