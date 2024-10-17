@@ -1,6 +1,10 @@
 import { Button, Loading } from '@affine/component';
-import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
-import { mixpanel, track } from '@affine/track';
+import {
+  SubscriptionPlan,
+  SubscriptionRecurring,
+  SubscriptionVariant,
+} from '@affine/graphql';
+import { track } from '@affine/track';
 import { effect, fromPromise, useServices } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useEffect, useMemo, useState } from 'react';
@@ -15,6 +19,74 @@ import {
 import { AuthService, SubscriptionService } from '../../modules/cloud';
 import { container } from './subscribe.css';
 
+interface ProductTriple {
+  plan: SubscriptionPlan;
+  recurring: SubscriptionRecurring;
+  variant: SubscriptionVariant | null;
+}
+
+const products = {
+  ai: 'ai_yearly',
+  pro: 'pro_yearly',
+  'monthly-pro': 'pro_monthly',
+  believer: 'pro_lifetime',
+  'oneyear-ai': 'ai_yearly_onetime',
+  'oneyear-pro': 'pro_yearly_onetime',
+  'onemonth-pro': 'pro_monthly_onetime',
+};
+
+const allowedPlan = {
+  ai: SubscriptionPlan.AI,
+  pro: SubscriptionPlan.Pro,
+};
+const allowedRecurring = {
+  monthly: SubscriptionRecurring.Monthly,
+  yearly: SubscriptionRecurring.Yearly,
+  lifetime: SubscriptionRecurring.Lifetime,
+};
+
+const allowedVariant = {
+  earlyaccess: SubscriptionVariant.EA,
+  onetime: SubscriptionVariant.Onetime,
+};
+
+function getProductTriple(searchParams: URLSearchParams): ProductTriple {
+  const triple: ProductTriple = {
+    plan: SubscriptionPlan.Pro,
+    recurring: SubscriptionRecurring.Yearly,
+    variant: null,
+  };
+
+  const productName = searchParams.get('product') as
+    | keyof typeof products
+    | null;
+  let plan = searchParams.get('plan') as keyof typeof allowedPlan | null;
+  let recurring = searchParams.get('recurring') as
+    | keyof typeof allowedRecurring
+    | null;
+  let variant = searchParams.get('variant') as
+    | keyof typeof allowedVariant
+    | null;
+
+  if (productName && products[productName]) {
+    // @ts-expect-error safe
+    [plan, recurring, variant] = products[productName].split('_');
+  }
+
+  if (plan) {
+    triple.plan = allowedPlan[plan];
+  }
+
+  if (recurring) {
+    triple.recurring = allowedRecurring[recurring];
+  }
+  if (variant) {
+    triple.variant = allowedVariant[variant];
+  }
+
+  return triple;
+}
+
 export const Component = () => {
   const { authService, subscriptionService } = useServices({
     AuthService,
@@ -27,24 +99,10 @@ export const Component = () => {
   const { jumpToSignIn, jumpToIndex } = useNavigateHelper();
   const idempotencyKey = useMemo(() => nanoid(), []);
 
-  const plan = searchParams.get('plan') as string | null;
-  const recurring = searchParams.get('recurring') as string | null;
+  const { plan, recurring, variant } = getProductTriple(searchParams);
+  const coupon = searchParams.get('coupon');
 
   useEffect(() => {
-    const allowedPlan = ['ai', 'pro'];
-    const allowedRecurring = ['monthly', 'yearly', 'lifetime'];
-    const receivedPlan = plan?.toLowerCase() ?? '';
-    const receivedRecurring = recurring?.toLowerCase() ?? '';
-
-    const invalids = [];
-    if (!allowedPlan.includes(receivedPlan)) invalids.push('plan');
-    if (!allowedRecurring.includes(receivedRecurring))
-      invalids.push('recurring');
-    if (invalids.length) {
-      setError(`Invalid ${invalids.join(', ')}`);
-      return;
-    }
-
     const call = effect(
       switchMap(() => {
         return fromPromise(async signal => {
@@ -66,11 +124,12 @@ export const Component = () => {
           setMessage('Checking subscription status...');
           await subscriptionService.subscription.waitForRevalidation(signal);
           const subscribed =
-            receivedPlan === 'ai'
+            plan === SubscriptionPlan.AI
               ? !!subscriptionService.subscription.ai$.value
-              : receivedRecurring === 'lifetime'
+              : recurring === SubscriptionRecurring.Lifetime
                 ? !!subscriptionService.subscription.isBeliever$.value
                 : !!subscriptionService.subscription.pro$.value;
+
           if (!subscribed) {
             setMessage('Creating checkout...');
 
@@ -78,43 +137,27 @@ export const Component = () => {
               const account = authService.session.account$.value;
               // should never reach
               if (!account) throw new Error('No account');
-              const targetPlan =
-                receivedPlan === 'ai'
-                  ? SubscriptionPlan.AI
-                  : SubscriptionPlan.Pro;
-              const targetRecurring =
-                receivedRecurring === 'monthly'
-                  ? SubscriptionRecurring.Monthly
-                  : receivedRecurring === 'yearly'
-                    ? SubscriptionRecurring.Yearly
-                    : SubscriptionRecurring.Lifetime;
 
               track.subscriptionLanding.$.$.checkout({
                 control: 'pricing',
-                plan: targetPlan,
-                recurring: targetRecurring,
+                plan,
+                recurring,
               });
 
               const checkout = await subscriptionService.createCheckoutSession({
                 idempotencyKey,
-                plan: targetPlan,
-                coupon: null,
-                recurring: targetRecurring,
-                variant: null,
+                plan,
+                recurring,
+                variant,
+                coupon,
                 successCallbackLink: generateSubscriptionCallbackLink(
                   account,
-                  targetPlan,
-                  targetRecurring
+                  plan,
+                  recurring
                 ),
               });
               setMessage('Redirecting...');
               location.href = checkout;
-              if (plan) {
-                mixpanel.people.set({
-                  [SubscriptionPlan.AI === plan ? 'ai plan' : plan]: plan,
-                  recurring: recurring,
-                });
-              }
             } catch (err) {
               console.error(err);
               setError('Something went wrong. Please try again.');
@@ -144,6 +187,8 @@ export const Component = () => {
     jumpToIndex,
     recurring,
     retryKey,
+    variant,
+    coupon,
   ]);
 
   useEffect(() => {
