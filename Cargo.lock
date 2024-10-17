@@ -25,6 +25,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "dotenv",
+ "log",
  "napi",
  "napi-build",
  "napi-derive",
