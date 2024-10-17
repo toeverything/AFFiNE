@@ -72,7 +72,8 @@
       "@affine/native/*": ["./packages/frontend/native/*"],
       "@affine/server-native": ["./packages/backend/native/index.d.ts"],
       // Development only
-      "@affine/electron/*": ["./packages/frontend/apps/electron/src/*"]
+      "@affine/electron/*": ["./packages/frontend/apps/electron/src/*"],
+      "@affine/doc-storage": ["./packages/common/doc-storage/src"]
     }
   },
   "include": [],
@@ -130,6 +131,9 @@
     },
     {
       "path": "./packages/common/infra"
+    },
+    {
+      "path": "./packages/common/doc-storage"
     },
     // Tools
     {

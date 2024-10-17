@@ -8,7 +8,6 @@ import {
   WebSocketGateway,
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
-import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 
 import {
   AlreadyInSpace,
@@ -233,31 +232,25 @@ export class SpaceSyncGateway
     @MessageBody()
     { spaceType, spaceId, docId, stateVector }: LoadDocMessage
   ): Promise<
-    EventResponse<{ missing: string; state?: string; timestamp: number }>
+    EventResponse<{ missing: string; state: string; timestamp: number }>
   > {
     const adapter = this.selectAdapter(client, spaceType);
     adapter.assertIn(spaceId);
 
-    const doc = await adapter.get(spaceId, docId);
+    const doc = await adapter.diff(
+      spaceId,
+      docId,
+      stateVector ? Buffer.from(stateVector, 'base64') : undefined
+    );
 
     if (!doc) {
       throw new DocNotFound({ spaceId, docId });
     }
 
-    const missing = Buffer.from(
-      stateVector
-        ? diffUpdate(doc.bin, Buffer.from(stateVector, 'base64'))
-        : doc.bin
-    ).toString('base64');
-
-    const state = Buffer.from(encodeStateVectorFromUpdate(doc.bin)).toString(
-      'base64'
-    );
-
     return {
       data: {
-        missing,
-        state,
+        missing: Buffer.from(doc.missing).toString('base64'),
+        state: Buffer.from(doc.state).toString('base64'),
         timestamp: doc.timestamp,
       },
     };
@@ -600,9 +593,9 @@ abstract class SyncSocketAdapter {
     return this.storage.pushDocUpdates(spaceId, docId, updates, editorId);
   }
 
-  get(spaceId: string, docId: string) {
+  diff(spaceId: string, docId: string, stateVector?: Uint8Array) {
     this.assertIn(spaceId);
-    return this.storage.getDoc(spaceId, docId);
+    return this.storage.getDocDiff(spaceId, docId, stateVector);
   }
 
   getTimestamps(spaceId: string, timestamp?: number) {
@@ -630,9 +623,9 @@ class WorkspaceSyncAdapter extends SyncSocketAdapter {
     return super.push(spaceId, id.guid, updates, editorId);
   }
 
-  override get(spaceId: string, docId: string) {
+  override diff(spaceId: string, docId: string, stateVector?: Uint8Array) {
     const id = new DocID(docId, spaceId);
-    return this.storage.getDoc(spaceId, id.guid);
+    return this.storage.getDocDiff(spaceId, id.guid, stateVector);
   }
 
   async assertAccessible(

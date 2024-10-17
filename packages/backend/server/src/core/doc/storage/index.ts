@@ -1,4 +1,6 @@
-// TODO(@forehalo): share with frontend
+// This is a totally copy of definitions in [@affine/doc-storage]
+// because currently importing cross workspace package from [@affine/server] is not yet supported
+// should be kept updated with the original definitions in [@affine/doc-storage]
 import type { BlobStorageAdapter } from './blob';
 import { Connection } from './connection';
 import type { DocStorageAdapter } from './doc';

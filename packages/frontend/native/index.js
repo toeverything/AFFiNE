@@ -361,6 +361,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
+module.exports.DocStorage = nativeBinding.DocStorage
 module.exports.SqliteConnection = nativeBinding.SqliteConnection
 module.exports.mintChallengeResponse = nativeBinding.mintChallengeResponse
 module.exports.ValidationResult = nativeBinding.ValidationResult
