@@ -559,6 +559,7 @@ export class ChatSessionService {
       this.logger.error(`Prompt not found: ${options.promptName}`);
       throw new CopilotPromptNotFound({ name: options.promptName });
     }
+
     return await this.setSession({
       ...options,
       sessionId,

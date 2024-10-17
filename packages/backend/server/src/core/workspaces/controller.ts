@@ -6,7 +6,7 @@ import {
   AccessDenied,
   ActionForbidden,
   BlobNotFound,
-  CallTimer,
+  CallMetric,
   DocHistoryNotFound,
   DocNotFound,
   InvalidHistoryTimestamp,
@@ -32,7 +32,7 @@ export class WorkspacesController {
   // NOTE: because graphql can't represent a File, so we have to use REST API to get blob
   @Public()
   @Get('/:id/blobs/:name')
-  @CallTimer('controllers', 'workspace_get_blob')
+  @CallMetric('controllers', 'workspace_get_blob')
   async blob(
     @CurrentUser() user: CurrentUser | undefined,
     @Param('id') workspaceId: string,
@@ -76,7 +76,7 @@ export class WorkspacesController {
   // get doc binary
   @Public()
   @Get('/:id/docs/:guid')
-  @CallTimer('controllers', 'workspace_get_doc')
+  @CallMetric('controllers', 'workspace_get_doc')
   async doc(
     @CurrentUser() user: CurrentUser | undefined,
     @Param('id') ws: string,
@@ -128,7 +128,7 @@ export class WorkspacesController {
   }
 
   @Get('/:id/docs/:guid/histories/:timestamp')
-  @CallTimer('controllers', 'workspace_get_history')
+  @CallMetric('controllers', 'workspace_get_history')
   async history(
     @CurrentUser() user: CurrentUser,
     @Param('id') ws: string,

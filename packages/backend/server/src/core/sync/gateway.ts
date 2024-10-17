@@ -12,7 +12,7 @@ import { diffUpdate, encodeStateVectorFromUpdate } from 'yjs';
 
 import {
   AlreadyInSpace,
-  CallTimer,
+  CallMetric,
   Config,
   DocNotFound,
   GatewayErrorWrapper,
@@ -33,7 +33,7 @@ import { DocID } from '../utils/doc';
 const SubscribeMessage = (event: string) =>
   applyDecorators(
     GatewayErrorWrapper(event),
-    CallTimer('socketio', 'event_duration', { event }),
+    CallMetric('socketio', 'event_duration', undefined, { event }),
     RawSubscribeMessage(event)
   );
 

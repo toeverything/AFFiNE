@@ -7,7 +7,7 @@ import {
   UndoManager,
 } from 'yjs';
 
-import { CallTimer } from '../../../fundamentals';
+import { CallMetric } from '../../../fundamentals';
 import { Connection } from './connection';
 import { SingletonLocker } from './lock';
 
@@ -165,7 +165,7 @@ export abstract class DocStorageAdapter extends Connection {
     force?: boolean
   ): Promise<boolean>;
 
-  @CallTimer('doc', 'squash')
+  @CallMetric('doc', 'squash')
   protected async squash(updates: DocUpdate[]): Promise<DocUpdate> {
     const merge = this.options?.mergeUpdates ?? mergeUpdates;
     const lastUpdate = updates.at(-1);

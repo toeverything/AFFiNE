@@ -24,6 +24,7 @@ import { Admin } from '../../core/common';
 import { PermissionService } from '../../core/permission';
 import { UserType } from '../../core/user';
 import {
+  CallMetric,
   CopilotFailedToCreateMessage,
   FileUpload,
   RequestMutex,
@@ -308,6 +309,7 @@ export class CopilotResolver {
   }
 
   @ResolveField(() => [CopilotHistoriesType], {})
+  @CallMetric('ai', 'histories')
   async histories(
     @Parent() copilot: CopilotType,
     @CurrentUser() user: CurrentUser,
@@ -334,6 +336,7 @@ export class CopilotResolver {
       options,
       true
     );
+
     return histories.map(h => ({
       ...h,
       // filter out empty messages
@@ -344,6 +347,7 @@ export class CopilotResolver {
   @Mutation(() => String, {
     description: 'Create a chat session',
   })
+  @CallMetric('ai', 'chat_session_create')
   async createCopilotSession(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => CreateChatSessionInput })
@@ -362,16 +366,16 @@ export class CopilotResolver {
 
     await this.chatSession.checkQuota(user.id);
 
-    const session = await this.chatSession.create({
+    return await this.chatSession.create({
       ...options,
       userId: user.id,
     });
-    return session;
   }
 
   @Mutation(() => String, {
     description: 'Create a chat session',
   })
+  @CallMetric('ai', 'chat_session_fork')
   async forkCopilotSession(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => ForkChatSessionInput })
@@ -390,16 +394,16 @@ export class CopilotResolver {
 
     await this.chatSession.checkQuota(user.id);
 
-    const session = await this.chatSession.fork({
+    return await this.chatSession.fork({
       ...options,
       userId: user.id,
     });
-    return session;
   }
 
   @Mutation(() => [String], {
     description: 'Cleanup sessions',
   })
+  @CallMetric('ai', 'chat_session_cleanup')
   async cleanupCopilotSession(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => DeleteSessionInput })
@@ -428,6 +432,7 @@ export class CopilotResolver {
   @Mutation(() => String, {
     description: 'Create a chat message',
   })
+  @CallMetric('ai', 'chat_message_create')
   async createCopilotMessage(
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => CreateChatMessageInput })
