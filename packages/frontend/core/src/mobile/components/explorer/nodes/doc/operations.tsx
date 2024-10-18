@@ -9,6 +9,7 @@ import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-pa
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
+import type { NodeOperation } from '@affine/core/modules/explorer';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
@@ -26,12 +27,11 @@ import {
   DocsService,
   FeatureFlagService,
   useLiveData,
+  useService,
   useServices,
   WorkspaceService,
 } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
-
-import type { NodeOperation } from '../../tree/types';
 
 export const useExplorerDocNodeOperations = (
   docId: string,
@@ -39,24 +39,20 @@ export const useExplorerDocNodeOperations = (
     openInfoModal: () => void;
     openNodeCollapsed: () => void;
   }
-): NodeOperation[] => {
+) => {
   const t = useI18n();
   const {
     workbenchService,
     workspaceService,
     docsService,
     compatibleFavoriteItemsAdapter,
-    featureFlagService,
   } = useServices({
     DocsService,
     WorkbenchService,
     WorkspaceService,
     CompatibleFavoriteItemsAdapter,
-    FeatureFlagService,
   });
-  const enableMultiView = useLiveData(
-    featureFlagService.flags.enable_multi_view.$
-  );
+
   const { openConfirmModal } = useConfirmModal();
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
@@ -138,6 +134,54 @@ export const useExplorerDocNodeOperations = (
       type: 'doc',
     });
   }, [docId, compatibleFavoriteItemsAdapter]);
+
+  return useMemo(
+    () => ({
+      favorite,
+      handleAddLinkedPage,
+      handleDuplicate,
+      handleToggleFavoriteDoc,
+      handleOpenInSplitView,
+      handleOpenInNewTab,
+      handleMoveToTrash,
+      handleOpenInfoModal,
+    }),
+    [
+      favorite,
+      handleAddLinkedPage,
+      handleDuplicate,
+      handleMoveToTrash,
+      handleOpenInNewTab,
+      handleOpenInSplitView,
+      handleOpenInfoModal,
+      handleToggleFavoriteDoc,
+    ]
+  );
+};
+
+export const useExplorerDocNodeOperationsMenu = (
+  docId: string,
+  options: {
+    openInfoModal: () => void;
+    openNodeCollapsed: () => void;
+  }
+): NodeOperation[] => {
+  const t = useI18n();
+  const featureFlagService = useService(FeatureFlagService);
+  const {
+    favorite,
+    handleAddLinkedPage,
+    handleDuplicate,
+    handleToggleFavoriteDoc,
+    handleOpenInSplitView,
+    handleOpenInNewTab,
+    handleMoveToTrash,
+    handleOpenInfoModal,
+  } = useExplorerDocNodeOperations(docId, options);
+
+  const enableMultiView = useLiveData(
+    featureFlagService.flags.enable_multi_view.$
+  );
 
   return useMemo(
     () => [
