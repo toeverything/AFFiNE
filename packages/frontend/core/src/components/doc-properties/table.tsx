@@ -103,7 +103,10 @@ export const DocPropertiesTableHeader = ({
     EditorSettingService,
   });
   const docBacklinks = docLinksService.backlinks;
-  const backlinks = useLiveData(docBacklinks.backlinks$);
+  const backlinks = useMemo(
+    () => docBacklinks.backlinks$.value,
+    [docBacklinks]
+  );
 
   const displayDocInfo = useLiveData(
     editorSettingService.editorSetting.settings$.selector(s => s.displayDocInfo)

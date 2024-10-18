@@ -21,7 +21,11 @@ export interface InvertedIndex {
 }
 
 export class StringInvertedIndex implements InvertedIndex {
-  constructor(readonly fieldKey: string) {}
+  constructor(
+    readonly fieldKey: string,
+    readonly index: boolean = true,
+    readonly store: boolean = true
+  ) {}
 
   async match(trx: DataStructROTransaction, term: string): Promise<Match> {
     const objs = await trx
@@ -69,7 +73,11 @@ export class StringInvertedIndex implements InvertedIndex {
 }
 
 export class IntegerInvertedIndex implements InvertedIndex {
-  constructor(readonly fieldKey: string) {}
+  constructor(
+    readonly fieldKey: string,
+    readonly index: boolean = true,
+    readonly store: boolean = true
+  ) {}
 
   async match(trx: DataStructROTransaction, term: string): Promise<Match> {
     const objs = await trx
@@ -118,7 +126,11 @@ export class IntegerInvertedIndex implements InvertedIndex {
 }
 
 export class BooleanInvertedIndex implements InvertedIndex {
-  constructor(readonly fieldKey: string) {}
+  constructor(
+    readonly fieldKey: string,
+    readonly index: boolean = true,
+    readonly store: boolean = true
+  ) {}
 
   // eslint-disable-next-line sonarjs/no-identical-functions
   async all(trx: DataStructROTransaction): Promise<Match> {
@@ -172,7 +184,11 @@ export class BooleanInvertedIndex implements InvertedIndex {
 }
 
 export class FullTextInvertedIndex implements InvertedIndex {
-  constructor(readonly fieldKey: string) {}
+  constructor(
+    readonly fieldKey: string,
+    readonly index: boolean = true,
+    readonly store: boolean = true
+  ) {}
 
   async match(trx: DataStructROTransaction, term: string): Promise<Match> {
     const queryTokens = new GeneralTokenizer().tokenize(term);
