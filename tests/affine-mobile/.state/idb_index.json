@@ -1,0 +1,17 @@
+[
+  {
+    "name": "__BINARY__1",
+    "start": 0,
+    "end": 8
+  },
+  {
+    "name": "__BINARY__2",
+    "start": 8,
+    "end": 1112
+  },
+  {
+    "name": "__BINARY__3",
+    "start": 1112,
+    "end": 37036
+  }
+]

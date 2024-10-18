@@ -11,16 +11,22 @@ const config: PlaywrightTestConfig = {
   outputDir: testResultDir,
   projects: [
     {
+      name: 'setup',
+      testMatch: /e2e\/setup\.ts/,
+    },
+    {
       name: 'Mobile Safari',
       use: {
         ...devices['iPhone 14'],
       },
+      dependencies: ['setup'],
     },
     {
       name: 'Mobile Chrome',
       use: {
         ...devices['Pixel 5'],
       },
+      dependencies: ['setup'],
     },
   ],
   expect: {
