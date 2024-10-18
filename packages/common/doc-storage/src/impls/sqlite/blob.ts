@@ -1,10 +1,10 @@
 import type { DocStorage as NativeDocStorage } from '@affine/native';
 
 import {
-  type Blob,
+  type BlobRecord,
   BlobStorage,
   type BlobStorageOptions,
-  type ListedBlob,
+  type ListedBlobRecord,
 } from '../../storage';
 
 interface SqliteBlobStorageOptions extends BlobStorageOptions {
@@ -16,10 +16,27 @@ export class SqliteBlobStorage extends BlobStorage<SqliteBlobStorageOptions> {
     return this.options.db;
   }
 
-  override getBlob(key: string): Promise<Blob | null> {
-    return this.db.getBlob(key);
+  protected override doConnect(): Promise<void> {
+    return Promise.resolve();
   }
-  override setBlob(blob: Blob): Promise<void> {
+  protected override doDisconnect(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  override async getBlob(key: string): Promise<BlobRecord | null> {
+    const blob = await this.db.getBlob(key);
+
+    if (!blob) {
+      return null;
+    }
+
+    return {
+      ...blob,
+      data: blob.data.buffer,
+      createdAt: blob.createdAt.getTime(),
+    };
+  }
+  override setBlob(blob: BlobRecord): Promise<void> {
     return this.db.setBlob({
       ...blob,
       data: Buffer.from(blob.data),
@@ -31,7 +48,13 @@ export class SqliteBlobStorage extends BlobStorage<SqliteBlobStorageOptions> {
   override releaseBlobs(): Promise<void> {
     return this.db.releaseBlobs();
   }
-  override listBlobs(): Promise<ListedBlob[]> {
-    return this.db.listBlobs();
+
+  override async listBlobs(): Promise<ListedBlobRecord[]> {
+    const blobs = await this.db.listBlobs();
+
+    return blobs.map(blob => ({
+      ...blob,
+      createdAt: blob.createdAt.getTime(),
+    }));
   }
 }

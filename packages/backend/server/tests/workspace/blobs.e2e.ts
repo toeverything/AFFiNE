@@ -2,11 +2,10 @@ import type { INestApplication } from '@nestjs/common';
 import test from 'ava';
 import request from 'supertest';
 
-import { AppModule } from '../src/app.module';
-import { FeatureManagementService, FeatureType } from '../src/core/features';
-import { QuotaService, QuotaType } from '../src/core/quota';
+import { AppModule } from '../../src/app.module';
+import { FeatureManagementService, FeatureType } from '../../src/core/features';
+import { QuotaService, QuotaType } from '../../src/core/quota';
 import {
-  checkBlobSize,
   collectAllBlobSizes,
   createTestingApp,
   createWorkspace,
@@ -14,7 +13,7 @@ import {
   listBlobs,
   setBlob,
   signUp,
-} from './utils';
+} from '../utils';
 
 const OneMB = 1024 * 1024;
 
@@ -114,58 +113,6 @@ test('should calc all blobs size', async t => {
 
   const size = await collectAllBlobSizes(app, u1.token.token);
   t.is(size, 8, 'failed to collect all blob sizes');
-
-  const size1 = await checkBlobSize(
-    app,
-    u1.token.token,
-    workspace1.id,
-    10 * 1024 * 1024 * 1024 - 8
-  );
-  t.is(size1, 0, 'failed to check blob size');
-
-  const size2 = await checkBlobSize(
-    app,
-    u1.token.token,
-    workspace1.id,
-    10 * 1024 * 1024 * 1024 - 7
-  );
-  t.is(size2, -1, 'failed to check blob size');
-});
-
-test('should be able calc quota after switch plan', async t => {
-  const u1 = await signUp(app, 'darksky', 'darksky@affine.pro', '1');
-
-  const workspace1 = await createWorkspace(app, u1.token.token);
-
-  const buffer1 = Buffer.from([0, 0]);
-  await setBlob(app, u1.token.token, workspace1.id, buffer1);
-  const buffer2 = Buffer.from([0, 1]);
-  await setBlob(app, u1.token.token, workspace1.id, buffer2);
-
-  const workspace2 = await createWorkspace(app, u1.token.token);
-
-  const buffer3 = Buffer.from([0, 0]);
-  await setBlob(app, u1.token.token, workspace2.id, buffer3);
-  const buffer4 = Buffer.from([0, 1]);
-  await setBlob(app, u1.token.token, workspace2.id, buffer4);
-
-  const size1 = await checkBlobSize(
-    app,
-    u1.token.token,
-    workspace1.id,
-    10 * 1024 * 1024 * 1024 - 8
-  );
-  t.is(size1, 0, 'failed to check free plan blob size');
-
-  await quota.switchUserQuota(u1.id, QuotaType.ProPlanV1);
-
-  const size2 = await checkBlobSize(
-    app,
-    u1.token.token,
-    workspace1.id,
-    100 * 1024 * 1024 * 1024 - 8
-  );
-  t.is(size2, 0, 'failed to check pro plan blob size');
 });
 
 test('should reject blob exceeded limit', async t => {

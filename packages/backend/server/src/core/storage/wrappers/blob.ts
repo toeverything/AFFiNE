@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 
 import {
-  type BlobInputType,
-  Cache,
   Config,
   EventEmitter,
   type EventPayload,
-  type ListObjectsMetadata,
+  type GetObjectMetadata,
+  ListObjectsMetadata,
   OnEvent,
   type StorageProvider,
   StorageProviderFactory,
@@ -14,60 +14,162 @@ import {
 
 @Injectable()
 export class WorkspaceBlobStorage {
+  private readonly logger = new Logger(WorkspaceBlobStorage.name);
   public readonly provider: StorageProvider;
 
   constructor(
     private readonly config: Config,
     private readonly event: EventEmitter,
     private readonly storageFactory: StorageProviderFactory,
-    private readonly cache: Cache
+    private readonly db: PrismaClient
   ) {
     this.provider = this.storageFactory.create(this.config.storages.blob);
   }
 
-  async put(workspaceId: string, key: string, blob: BlobInputType) {
-    await this.provider.put(`${workspaceId}/${key}`, blob);
-    await this.cache.delete(`blob-list:${workspaceId}`);
+  async put(workspaceId: string, key: string, blob: Buffer, mime: string) {
+    const meta: GetObjectMetadata = {
+      contentType: mime,
+      contentLength: blob.byteLength,
+      lastModified: new Date(),
+    };
+    await this.provider.put(`${workspaceId}/${key}`, blob, meta);
+    this.trySyncBlobMeta(workspaceId, key, meta);
   }
 
   async get(workspaceId: string, key: string) {
-    return this.provider.get(`${workspaceId}/${key}`);
+    const blob = await this.provider.get(`${workspaceId}/${key}`);
+    this.trySyncBlobMeta(workspaceId, key, blob.metadata);
+    return blob;
   }
 
   async list(workspaceId: string) {
-    const cachedList = await this.cache.list<ListObjectsMetadata>(
-      `blob-list:${workspaceId}`,
-      0,
-      -1
-    );
+    const blobsInDb = await this.db.blob.findMany({
+      where: {
+        workspaceId,
+        deletedAt: null,
+      },
+    });
 
-    if (cachedList.length > 0) {
-      return cachedList;
+    if (blobsInDb.length > 0) {
+      return blobsInDb;
     }
 
     const blobs = await this.provider.list(workspaceId + '/');
+    this.trySyncBlobsMeta(workspaceId, blobs);
 
-    blobs.forEach(item => {
-      // trim workspace prefix
-      item.key = item.key.slice(workspaceId.length + 1);
-    });
-
-    await this.cache.pushBack(`blob-list:${workspaceId}`, ...blobs);
-
-    return blobs;
+    return blobs.map(blob => ({
+      key: blob.key,
+      size: blob.contentLength,
+      createdAt: blob.lastModified,
+      mime: 'application/octet-stream',
+    }));
   }
 
-  /**
-   * we won't really delete the blobs until the doc blobs manager is implemented sounded
-   */
-  async delete(_workspaceId: string, _key: string) {
-    // return this.provider.delete(`${workspaceId}/${key}`);
+  async delete(workspaceId: string, key: string, permanently = false) {
+    if (permanently) {
+      await this.provider.delete(`${workspaceId}/${key}`);
+      await this.db.blob.deleteMany({
+        where: {
+          workspaceId,
+          key,
+        },
+      });
+    } else {
+      await this.db.blob.update({
+        where: {
+          workspaceId_key: {
+            workspaceId,
+            key,
+          },
+        },
+        data: {
+          deletedAt: new Date(),
+        },
+      });
+    }
+  }
+
+  async release(workspaceId: string) {
+    const deletedBlobs = await this.db.blob.findMany({
+      where: {
+        workspaceId,
+        deletedAt: {
+          not: null,
+        },
+      },
+    });
+
+    deletedBlobs.forEach(blob => {
+      this.event.emit('workspace.blob.deleted', {
+        workspaceId: workspaceId,
+        key: blob.key,
+      });
+    });
   }
 
   async totalSize(workspaceId: string) {
     const blobs = await this.list(workspaceId);
-    // how could we ignore the ones get soft-deleted?
     return blobs.reduce((acc, item) => acc + item.size, 0);
+  }
+
+  private trySyncBlobsMeta(workspaceId: string, blobs: ListObjectsMetadata[]) {
+    for (const blob of blobs) {
+      this.trySyncBlobMeta(workspaceId, blob.key, {
+        contentType: 'application/octet-stream',
+        ...blob,
+      });
+    }
+  }
+
+  private trySyncBlobMeta(
+    workspaceId: string,
+    key: string,
+    meta?: GetObjectMetadata
+  ) {
+    setImmediate(() => {
+      this.syncBlobMeta(workspaceId, key, meta).catch(() => {
+        /* never throw */
+      });
+    });
+  }
+
+  private async syncBlobMeta(
+    workspaceId: string,
+    key: string,
+    meta?: GetObjectMetadata
+  ) {
+    try {
+      if (meta) {
+        await this.db.blob.upsert({
+          where: {
+            workspaceId_key: {
+              workspaceId,
+              key,
+            },
+          },
+          update: {
+            mime: meta.contentType,
+            size: meta.contentLength,
+          },
+          create: {
+            workspaceId,
+            key,
+            mime: meta.contentType,
+            size: meta.contentLength,
+          },
+        });
+      } else {
+        await this.db.blob.deleteMany({
+          where: {
+            workspaceId,
+            key,
+          },
+        });
+      }
+    } catch (e) {
+      // never throw
+      this.logger.error('failed to sync blob meta to DB', e);
+    }
   }
 
   @OnEvent('workspace.deleted')
@@ -78,7 +180,7 @@ export class WorkspaceBlobStorage {
     blobs.forEach(blob => {
       this.event.emit('workspace.blob.deleted', {
         workspaceId: workspaceId,
-        name: blob.key,
+        key: blob.key,
       });
     });
   }
@@ -86,8 +188,14 @@ export class WorkspaceBlobStorage {
   @OnEvent('workspace.blob.deleted')
   async onDeleteWorkspaceBlob({
     workspaceId,
-    name,
+    key,
   }: EventPayload<'workspace.blob.deleted'>) {
-    await this.delete(workspaceId, name);
+    await this.db.blob.deleteMany({
+      where: {
+        workspaceId,
+        key,
+      },
+    });
+    await this.delete(workspaceId, key);
   }
 }

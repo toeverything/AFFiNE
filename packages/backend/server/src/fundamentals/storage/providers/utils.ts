@@ -24,7 +24,7 @@ export async function autoMetadata(
   try {
     // length
     if (!metadata.contentLength) {
-      metadata.contentLength = blob.length;
+      metadata.contentLength = blob.byteLength;
     }
 
     // checksum

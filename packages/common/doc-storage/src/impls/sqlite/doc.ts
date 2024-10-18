@@ -20,8 +20,12 @@ export class SqliteDocStorage extends DocStorage<SqliteDocStorageOptions> {
     return this.options.db;
   }
 
-  constructor(options: SqliteDocStorageOptions) {
-    super(options);
+  protected override doConnect(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  protected override doDisconnect(): Promise<void> {
+    return Promise.resolve();
   }
 
   override pushDocUpdates(

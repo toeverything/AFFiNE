@@ -469,6 +469,14 @@ export interface ListUserInput {
   skip: InputMaybe<Scalars['Int']['input']>;
 }
 
+export interface ListedBlob {
+  __typename?: 'ListedBlob';
+  createdAt: Scalars['String']['output'];
+  key: Scalars['String']['output'];
+  mime: Scalars['String']['output'];
+  size: Scalars['Int']['output'];
+}
+
 export interface ManageUserInput {
   /** User email */
   email: InputMaybe<Scalars['String']['input']>;
@@ -517,6 +525,7 @@ export interface Mutation {
   leaveWorkspace: Scalars['Boolean']['output'];
   publishPage: WorkspacePage;
   recoverDoc: Scalars['DateTime']['output'];
+  releaseDeletedBlobs: Scalars['Boolean']['output'];
   /** Remove user avatar */
   removeAvatar: RemoveAvatar;
   removeWorkspaceFeature: Scalars['Int']['output'];
@@ -614,7 +623,9 @@ export interface MutationCreateWorkspaceArgs {
 }
 
 export interface MutationDeleteBlobArgs {
-  hash: Scalars['String']['input'];
+  hash: InputMaybe<Scalars['String']['input']>;
+  key: InputMaybe<Scalars['String']['input']>;
+  permanently?: Scalars['Boolean']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
@@ -652,6 +663,10 @@ export interface MutationPublishPageArgs {
 export interface MutationRecoverDocArgs {
   guid: Scalars['String']['input'];
   timestamp: Scalars['DateTime']['input'];
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationReleaseDeletedBlobsArgs {
   workspaceId: Scalars['String']['input'];
 }
 
@@ -800,9 +815,7 @@ export enum PublicPageMode {
 
 export interface Query {
   __typename?: 'Query';
-  /** @deprecated no more needed */
-  checkBlobSize: WorkspaceBlobSizes;
-  /** @deprecated use `user.storageUsage` instead */
+  /** @deprecated use `user.quotaUsage` instead */
   collectAllBlobSizes: WorkspaceBlobSizes;
   /** Get current user */
   currentUser: Maybe<UserType>;
@@ -839,11 +852,6 @@ export interface Query {
   workspace: WorkspaceType;
   /** Get all accessible workspaces for current user */
   workspaces: Array<WorkspaceType>;
-}
-
-export interface QueryCheckBlobSizeArgs {
-  size: Scalars['SafeInt']['input'];
-  workspaceId: Scalars['String']['input'];
 }
 
 export interface QueryErrorArgs {
@@ -1123,6 +1131,11 @@ export interface UserQuotaHumanReadable {
   storageQuota: Scalars['String']['output'];
 }
 
+export interface UserQuotaUsage {
+  __typename?: 'UserQuotaUsage';
+  storageQuota: Scalars['SafeInt']['output'];
+}
+
 export interface UserSubscription {
   __typename?: 'UserSubscription';
   canceledAt: Maybe<Scalars['DateTime']['output']>;
@@ -1169,6 +1182,7 @@ export interface UserType {
   /** User name */
   name: Scalars['String']['output'];
   quota: Maybe<UserQuota>;
+  quotaUsage: UserQuotaUsage;
   /** @deprecated use `UserType.subscriptions` */
   subscription: Maybe<UserSubscription>;
   subscriptions: Array<UserSubscription>;
@@ -1221,7 +1235,7 @@ export interface WorkspaceType {
   /** Available features of workspace */
   availableFeatures: Array<FeatureType>;
   /** List blobs of workspace */
-  blobs: Array<Scalars['String']['output']>;
+  blobs: Array<ListedBlob>;
   /** Blobs size of workspace */
   blobsSize: Scalars['Int']['output'];
   /** Workspace created date */
@@ -1311,7 +1325,8 @@ export type AdminServerConfigQuery = {
 
 export type DeleteBlobMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
-  hash: Scalars['String']['input'];
+  key: Scalars['String']['input'];
+  permanently: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 export type DeleteBlobMutation = {
@@ -1323,7 +1338,28 @@ export type ListBlobsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
 }>;
 
-export type ListBlobsQuery = { __typename?: 'Query'; listBlobs: Array<string> };
+export type ListBlobsQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    blobs: Array<{
+      __typename?: 'ListedBlob';
+      key: string;
+      size: number;
+      mime: string;
+      createdAt: string;
+    }>;
+  };
+};
+
+export type ReleaseDeletedBlobsMutationVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+}>;
+
+export type ReleaseDeletedBlobsMutation = {
+  __typename?: 'Mutation';
+  releaseDeletedBlobs: boolean;
+};
 
 export type SetBlobMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
@@ -2051,8 +2087,8 @@ export type QuotaQuery = {
         memberLimit: string;
       };
     } | null;
+    quotaUsage: { __typename?: 'UserQuotaUsage'; storageQuota: number };
   } | null;
-  collectAllBlobSizes: { __typename?: 'WorkspaceBlobSizes'; size: number };
 };
 
 export type RecoverDocMutationVariables = Exact<{
@@ -2677,6 +2713,11 @@ export type Mutations =
       name: 'deleteBlobMutation';
       variables: DeleteBlobMutationVariables;
       response: DeleteBlobMutation;
+    }
+  | {
+      name: 'releaseDeletedBlobsMutation';
+      variables: ReleaseDeletedBlobsMutationVariables;
+      response: ReleaseDeletedBlobsMutation;
     }
   | {
       name: 'setBlobMutation';

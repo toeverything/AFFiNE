@@ -1,3 +1,7 @@
-mutation deleteBlob($workspaceId: String!, $hash: String!) {
-  deleteBlob(workspaceId: $workspaceId, hash: $hash)
+mutation deleteBlob(
+  $workspaceId: String!
+  $key: String!
+  $permanently: Boolean
+) {
+  deleteBlob(workspaceId: $workspaceId, key: $key, permanently: $permanently)
 }

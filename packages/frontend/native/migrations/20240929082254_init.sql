@@ -1,21 +1,25 @@
+CREATE TABLE "v2_meta" (
+  space_id VARCHAR PRIMARY KEY NOT NULL
+);
+
 CREATE TABLE "v2_snapshots" (
-  doc_id TEXT PRIMARY KEY NOT NULL,
+  doc_id VARCHAR PRIMARY KEY NOT NULL,
   data BLOB NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
   updated_at TIMESTAMP NOT NULL
 );
-CREATE INDEX snapshots_doc_id ON v2_snapshots(doc_id);
 
 CREATE TABLE "v2_updates" (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  doc_id TEXT NOT NULL,
+  doc_id VARCHAR NOT NULL,
   data BLOB NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-CREATE INDEX updates_doc_id ON v2_updates (doc_id);
+CREATE INDEX v2_updates_doc_id ON v2_updates (doc_id);
+CREATE UNIQUE INDEX v2_updates_doc_id_created_at ON v2_updates (doc_id, created_at);
 
 CREATE TABLE "v2_clocks" (
-  doc_id TEXT PRIMARY KEY NOT NULL,
+  doc_id VARCHAR PRIMARY KEY NOT NULL,
   timestamp TIMESTAMP NOT NULL
 );
 
@@ -26,4 +30,12 @@ CREATE TABLE "v2_blobs" (
   size INTEGER NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
   deleted_at TIMESTAMP
+);
+
+CREATE TABLE "v2_peer_clocks" (
+  peer VARCHAR NOT NULL,
+  doc_id VARCHAR NOT NULL,
+  clock TIMESTAMP NOT NULL,
+  pushed_clock TIMESTAMP NOT NULL,
+  PRIMARY KEY (peer, doc_id)
 );

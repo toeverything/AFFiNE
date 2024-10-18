@@ -1,3 +1,10 @@
 query listBlobs($workspaceId: String!) {
-  listBlobs(workspaceId: $workspaceId)
+  workspace(id: $workspaceId) {
+    blobs {
+      key
+      size
+      mime
+      createdAt
+    }
+  }
 }

@@ -2,7 +2,12 @@
 /* eslint-disable */
 export declare class DocStorage {
   constructor(path: string)
-  connect(): Promise<void>
+  /**
+   * Initialize the database and run migrations.
+   * If `migrations` folder is provided, it should be a path to a directory containing SQL migration files.
+   * If not, it will to try read migrations under './migrations' related to where this program is running(PWD).
+   */
+  init(migrationsFolder?: string | undefined | null): Promise<void>
   close(): Promise<void>
   get isClosed(): Promise<boolean>
   /**
@@ -18,10 +23,14 @@ export declare class DocStorage {
   deleteDoc(docId: string): Promise<void>
   getDocClocks(after?: number | undefined | null): Promise<Array<DocClock>>
   getBlob(key: string): Promise<Blob | null>
-  setBlob(blob: Blob): Promise<void>
+  setBlob(blob: SetBlob): Promise<void>
   deleteBlob(key: string, permanently: boolean): Promise<void>
   releaseBlobs(): Promise<void>
   listBlobs(): Promise<Array<ListedBlob>>
+  getPeerClocks(peer: string): Promise<Array<DocClock>>
+  setPeerClock(peer: string, docId: string, clock: Date): Promise<void>
+  getPeerPushedClocks(peer: string): Promise<Array<DocClock>>
+  setPeerPushedClock(peer: string, docId: string, clock: Date): Promise<void>
 }
 
 export declare class SqliteConnection {
@@ -65,6 +74,8 @@ export interface Blob {
   key: string
   data: Buffer
   mime: string
+  size: number
+  createdAt: Date
 }
 
 export interface BlobRow {
@@ -98,9 +109,17 @@ export interface InsertRow {
 export interface ListedBlob {
   key: string
   size: number
+  mime: string
+  createdAt: Date
 }
 
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
+
+export interface SetBlob {
+  key: string
+  data: Buffer
+  mime: string
+}
 
 export interface UpdateRow {
   id: number

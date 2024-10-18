@@ -21,7 +21,7 @@ export interface PutObjectMetadata {
 export interface ListObjectsMetadata {
   key: string;
   lastModified: Date;
-  size: number;
+  contentLength: number;
 }
 
 export type BlobInputType = Buffer | Readable | string;

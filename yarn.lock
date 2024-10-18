@@ -471,6 +471,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/doc-storage@workspace:packages/common/doc-storage"
   dependencies:
+    "@affine/graphql": "workspace:*"
     "@affine/native": "workspace:*"
     "@types/lodash-es": "npm:^4.17.12"
     idb: "npm:^8.0.0"
