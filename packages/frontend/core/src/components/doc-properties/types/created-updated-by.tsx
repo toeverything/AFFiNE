@@ -5,6 +5,8 @@ import { useI18n } from '@affine/i18n';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
 import { useEffect, useMemo } from 'react';
 
+import { userWrapper } from './created-updated-by.css';
+
 const CloudUserAvatar = (props: { type: 'CreatedBy' | 'UpdatedBy' }) => {
   const cloudDocMetaService = useService(CloudDocMetaService);
   const cloudDocMeta = useLiveData(cloudDocMetaService.cloudDocMeta.meta$);
@@ -46,10 +48,10 @@ const CloudUserAvatar = (props: { type: 'CreatedBy' | 'UpdatedBy' }) => {
   }
   if (user) {
     return (
-      <>
-        <Avatar url={user.avatarUrl || ''} name={user.name} size={20} />
+      <div className={userWrapper}>
+        <Avatar url={user.avatarUrl || ''} name={user.name} size={22} />
         <span>{user.name}</span>
-      </>
+      </div>
     );
   }
   return <NoRecordValue />;
