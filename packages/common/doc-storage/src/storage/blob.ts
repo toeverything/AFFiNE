@@ -1,9 +1,6 @@
-import { Connection } from './connection';
+import { BaseStorage, type StorageOptions } from './storage';
 
-export interface BlobStorageOptions {
-  spaceType: string;
-  spaceId: string;
-}
+export interface BlobStorageOptions extends StorageOptions {}
 
 export interface Blob {
   key: string;
@@ -18,22 +15,7 @@ export interface ListedBlob {
 
 export abstract class BlobStorage<
   Options extends BlobStorageOptions = BlobStorageOptions,
-> extends Connection {
-  public readonly options: Options;
-
-  constructor(opts: Options) {
-    super();
-    this.options = opts;
-  }
-
-  get spaceType() {
-    return this.options.spaceType;
-  }
-
-  get spaceId() {
-    return this.options.spaceId;
-  }
-
+> extends BaseStorage<Options> {
   abstract getBlob(key: string): Promise<Blob | null>;
   abstract setBlob(blob: Blob): Promise<void>;
   abstract deleteBlob(key: string, permanently: boolean): Promise<void>;

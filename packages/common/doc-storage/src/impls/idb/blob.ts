@@ -1,13 +1,18 @@
-import { type Blob, BlobStorage, type ListedBlob } from '../../storage';
-import { type SpaceIDB, SpaceIndexedDbManager } from './db';
+import {
+  type Blob,
+  BlobStorage,
+  type BlobStorageOptions,
+  type ListedBlob,
+} from '../../storage';
+import { type SpaceIDB } from './db';
 
-export class IndexedDBBlobStorage extends BlobStorage {
-  private db!: SpaceIDB;
+export interface IndexedDBBlobStorageOptions extends BlobStorageOptions {
+  db: SpaceIDB;
+}
 
-  override async connect(): Promise<void> {
-    this.db = await SpaceIndexedDbManager.open(
-      `${this.spaceType}:${this.spaceId}`
-    );
+export class IndexedDBBlobStorage extends BlobStorage<IndexedDBBlobStorageOptions> {
+  get db() {
+    return this.options.db;
   }
 
   override async getBlob(key: string): Promise<Blob | null> {
