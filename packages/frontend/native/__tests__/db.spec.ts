@@ -1,12 +1,13 @@
-import test from 'ava';
 import { fileURLToPath } from 'node:url';
+
+import { expect, test } from 'vitest';
 
 import { SqliteConnection, ValidationResult } from '../index';
 
-test('db validate', async t => {
+test('db validate', async () => {
   const path = fileURLToPath(
     new URL('./fixtures/test01.affine', import.meta.url)
   );
   const result = await SqliteConnection.validate(path);
-  t.is(result, ValidationResult.MissingVersionColumn);
+  expect(result).toBe(ValidationResult.MissingVersionColumn);
 });
