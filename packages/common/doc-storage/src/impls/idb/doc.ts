@@ -1,5 +1,5 @@
 import { type DocRecord, DocStorage, type DocUpdate } from '../../storage';
-import { type SpaceIDB, SpaceIndexedDbManager } from './db';
+import { IDBProtocol, type SpaceIDB } from './db';
 
 export class IndexedDBDocStorage extends DocStorage {
   private db!: SpaceIDB;
@@ -9,12 +9,10 @@ export class IndexedDBDocStorage extends DocStorage {
   }
 
   override async connect(): Promise<void> {
-    this.db = await SpaceIndexedDbManager.open(
-      `${this.spaceType}:${this.spaceId}`
-    );
+    this.db = await IDBProtocol.open(`${this.spaceType}:${this.spaceId}`);
   }
 
-  override async disconnect(): Promise<void> {
+  override async disconnect() {
     this.db.close();
   }
 

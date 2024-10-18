@@ -9,46 +9,52 @@ import {
   UndoManager,
 } from 'yjs';
 
-import { Connection } from '../connection';
-import { SingletonLocker } from '../lock';
-import type {
-  DocDiff,
-  DocRecord,
-  DocUpdate,
-  Editor,
-  HistoryFilter,
-} from './types';
+import { SingletonLocker } from './lock';
+import { Storage, type StorageOptions } from './storage';
 
-export type SpaceType = 'workspace' | 'userspace';
-export interface DocStorageOptions {
-  spaceType: string;
+export interface DocRecord {
   spaceId: string;
+  docId: string;
+  bin: Uint8Array;
+  timestamp: number;
+  editor?: string;
+}
+
+export interface DocDiff {
+  missing: Uint8Array;
+  state: Uint8Array;
+  timestamp: number;
+}
+
+export interface DocUpdate {
+  bin: Uint8Array;
+  timestamp: number;
+  editor?: string;
+}
+
+export interface HistoryFilter {
+  before?: number;
+  limit?: number;
+}
+
+export interface Editor {
+  name: string;
+  avatarUrl: string | null;
+}
+
+export interface DocStorageOptions extends StorageOptions {
   mergeUpdates?: (updates: Uint8Array[]) => Promise<Uint8Array> | Uint8Array;
 }
 
 export abstract class DocStorage<
   Opts extends DocStorageOptions = DocStorageOptions,
-> extends Connection {
+> extends Storage<Opts> {
   abstract get name(): string;
 
-  public readonly options: Opts;
   private readonly locker = new SingletonLocker();
   protected readonly updatesListeners = new Set<
     (docId: string, updates: Uint8Array[], timestamp: number) => void
   >();
-
-  get spaceType() {
-    return this.options.spaceType;
-  }
-
-  get spaceId() {
-    return this.options.spaceId;
-  }
-
-  constructor(options: Opts) {
-    super();
-    this.options = options;
-  }
 
   // REGION: open apis
   /**
