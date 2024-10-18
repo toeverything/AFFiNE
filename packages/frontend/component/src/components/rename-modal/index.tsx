@@ -51,6 +51,7 @@ export const RenameModal = ({
         sideOffset: -12,
         onClick: e => e.stopPropagation(),
         style: { borderRadius: 10, padding: 8 },
+        role: 'rename-modal',
       }}
       items={
         <Input

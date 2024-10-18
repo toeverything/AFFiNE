@@ -26,10 +26,6 @@ export const SidebarSwitch = ({
     appSidebarService.toggleSidebar();
   }, [appSidebarService]);
 
-  const handleMouseLeave = useCallback(() => {
-    appSidebarService.setHovering(false);
-  }, [appSidebarService]);
-
   const t = useI18n();
   const tooltipContent = open
     ? t['com.affine.sidebarSwitch.collapse']()
@@ -42,7 +38,6 @@ export const SidebarSwitch = ({
       className={styles.sidebarSwitchClip}
       data-testid={`app-sidebar-arrow-button-${open ? 'collapse' : 'expand'}`}
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
     >
       <IconButton
         tooltip={tooltipContent}
