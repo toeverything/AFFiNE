@@ -20,6 +20,7 @@ serde         = { workspace = true }
 serde_json    = { workspace = true }
 sha3          = { workspace = true }
 sqlx          = { workspace = true, default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
+log           = { workspace = true }
 tokio         = { workspace = true, features = ["full"] }
 uuid          = { workspace = true, features = ["fast-rng", "serde", "v4"] }
 
