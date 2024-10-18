@@ -9,6 +9,7 @@ import { z, ZodType } from 'zod';
 import {
   CopilotPromptInvalid,
   CopilotProviderSideError,
+  metrics,
   UserFriendlyError,
 } from '../../../fundamentals';
 import {
@@ -217,6 +218,7 @@ export class FalProvider
     // by default, image prompt assumes there is only one message
     const prompt = this.extractPrompt(messages.pop());
     try {
+      metrics.ai.counter('chat_text_calls').add(1, { model });
       const response = await fetch(`https://fal.run/fal-ai/${model}`, {
         method: 'POST',
         headers: {
@@ -237,6 +239,7 @@ export class FalProvider
       }
       return data.output;
     } catch (e: any) {
+      metrics.ai.counter('chat_text_errors').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -246,15 +249,21 @@ export class FalProvider
     model: string = 'llava-next',
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
-    const result = await this.generateText(messages, model, options);
+    try {
+      metrics.ai.counter('chat_text_stream_calls').add(1, { model });
+      const result = await this.generateText(messages, model, options);
 
-    for await (const content of result) {
-      if (content) {
-        yield content;
-        if (options.signal?.aborted) {
-          break;
+      for await (const content of result) {
+        if (content) {
+          yield content;
+          if (options.signal?.aborted) {
+            break;
+          }
         }
       }
+    } catch (e) {
+      metrics.ai.counter('chat_text_stream_errors').add(1, { model });
+      throw e;
     }
   }
 
@@ -299,6 +308,8 @@ export class FalProvider
     }
 
     try {
+      metrics.ai.counter('generate_images_calls').add(1, { model });
+
       const data = await this.buildResponse(messages, model, options);
 
       if (!data.images?.length && !data.image?.url) {
@@ -315,6 +326,7 @@ export class FalProvider
           .map(image => image.url) || []
       );
     } catch (e: any) {
+      metrics.ai.counter('generate_images_errors').add(1, { model });
       throw this.handleError(e);
     }
   }
@@ -324,9 +336,15 @@ export class FalProvider
     model: string = this.availableModels[0],
     options: CopilotImageOptions = {}
   ): AsyncIterable<string> {
-    const ret = await this.generateImages(messages, model, options);
-    for (const url of ret) {
-      yield url;
+    try {
+      metrics.ai.counter('generate_images_stream_calls').add(1, { model });
+      const ret = await this.generateImages(messages, model, options);
+      for (const url of ret) {
+        yield url;
+      }
+    } catch (e) {
+      metrics.ai.counter('generate_images_stream_errors').add(1, { model });
+      throw e;
     }
   }
 }

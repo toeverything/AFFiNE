@@ -3,7 +3,7 @@ import { chunk } from 'lodash-es';
 import * as Y from 'yjs';
 
 import {
-  CallTimer,
+  CallMetric,
   Config,
   mergeUpdatesInApplyWay as yotcoMergeUpdates,
   metrics,
@@ -89,12 +89,12 @@ export class DocStorageOptions implements IDocStorageOptions {
     return this.config.doc.history.interval;
   };
 
-  @CallTimer('doc', 'yjs_merge_updates')
+  @CallMetric('doc', 'yjs_merge_updates')
   private simpleMergeUpdates(updates: Uint8Array[]) {
     return Y.mergeUpdates(updates);
   }
 
-  @CallTimer('doc', 'yjs_recover_updates_to_doc')
+  @CallMetric('doc', 'yjs_recover_updates_to_doc')
   private recoverDoc(updates: Uint8Array[]): Promise<Y.Doc> {
     const doc = new Y.Doc();
     const chunks = chunk(updates, 10);
