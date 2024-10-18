@@ -31,13 +31,15 @@ export class DataStruct {
 
   constructor(schema: Schema) {
     for (const [key, type] of Object.entries(schema)) {
-      if (type === 'String') {
+      const typeInfo = typeof type === 'string' ? { type } : type;
+
+      if (typeInfo.type === 'String') {
         this.invertedIndex.set(key, new StringInvertedIndex(key));
-      } else if (type === 'Integer') {
+      } else if (typeInfo.type === 'Integer') {
         this.invertedIndex.set(key, new IntegerInvertedIndex(key));
-      } else if (type === 'FullText') {
+      } else if (typeInfo.type === 'FullText') {
         this.invertedIndex.set(key, new FullTextInvertedIndex(key));
-      } else if (type === 'Boolean') {
+      } else if (typeInfo.type === 'Boolean') {
         this.invertedIndex.set(key, new BooleanInvertedIndex(key));
       } else {
         throw new Error(`Field type '${type}' not supported`);
