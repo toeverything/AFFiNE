@@ -2,7 +2,6 @@ import type { EditorHost } from '@blocksuite/affine/block-std';
 import type {
   AffineAIPanelWidget,
   AIItemConfig,
-  EdgelessCopilotWidget,
   EdgelessElementToolbarWidget,
   EdgelessRootService,
   MindmapElementModel,
@@ -46,6 +45,7 @@ import {
   getEdgelessService,
   getSurfaceElementFromEditor,
 } from '../utils/selection-utils';
+import { getTracker } from '../utils/track';
 import { EXCLUDING_INSERT_ACTIONS, generatingStages } from './consts';
 import type { CtxRecord } from './types';
 
@@ -77,10 +77,7 @@ export function getTriggerEntry(host: EditorHost) {
   return copilotWidget.visible ? 'selection' : 'toolbar';
 }
 
-export function discard(
-  panel: AffineAIPanelWidget,
-  _: EdgelessCopilotWidget
-): AIItemConfig {
+export function discard(panel: AffineAIPanelWidget): AIItemConfig {
   return {
     name: 'Discard',
     icon: DeleteIcon,
@@ -592,7 +589,7 @@ export function actionToResponse<T extends keyof BlockSuitePresets.AIActions>(
           ...getInsertAndReplaceHandler(id, host, ctx, variants),
           asCaption(id, host),
           retry(getAIPanel(host)),
-          discard(getAIPanel(host), getEdgelessCopilotWidget(host)),
+          discard(getAIPanel(host)),
         ],
       },
     ],
@@ -624,14 +621,26 @@ export function actionToErrorResponse<
 ): ErrorConfig {
   return {
     upgrade: () => {
+      getTracker(host, false).discardAction({
+        action: id,
+        control: 'paywall',
+      });
       AIProvider.slots.requestUpgradePlan.emit({ host: panel.host });
       panel.hide();
     },
     login: () => {
+      getTracker(host, false).discardAction({
+        action: id,
+        control: 'login_required',
+      });
       AIProvider.slots.requestLogin.emit({ host: panel.host });
       panel.hide();
     },
     cancel: () => {
+      getTracker(host, false).discardAction({
+        action: id,
+        control: 'paywall',
+      });
       panel.hide();
     },
     responses: [
@@ -641,10 +650,7 @@ export function actionToErrorResponse<
       },
       {
         name: '',
-        items: [
-          retry(getAIPanel(host)),
-          discard(getAIPanel(host), getEdgelessCopilotWidget(host)),
-        ],
+        items: [retry(getAIPanel(host)), discard(getAIPanel(host))],
       },
     ],
   };

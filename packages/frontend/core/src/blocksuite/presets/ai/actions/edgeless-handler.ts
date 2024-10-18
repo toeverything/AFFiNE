@@ -40,6 +40,7 @@ import {
   getSelectedNoteAnchor,
   getSelections,
 } from '../utils/selection-utils';
+import { getTracker } from '../utils/track';
 import { EXCLUDING_COPY_ACTIONS, IMAGE_ACTIONS } from './consts';
 import { bindTextStream } from './doc-handler';
 import {
@@ -493,6 +494,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
 
     togglePanel()
       .then(isEmpty => {
+        getTracker(host, false).invokeAction({ action: id });
         aiPanel.toggle(referenceElement, isEmpty ? undefined : 'placeholder');
       })
       .catch(console.error);
