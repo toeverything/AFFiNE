@@ -61,7 +61,7 @@
   },
   "devDependencies": {
     "@blocksuite/affine": "0.17.19",
-    "@blocksuite/icons": "2.1.68",
+    "@blocksuite/icons": "2.1.69",
     "@chromatic-com/storybook": "^2.0.0",
     "@storybook/addon-essentials": "^8.2.9",
     "@storybook/addon-interactions": "^8.2.9",

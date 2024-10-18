@@ -295,7 +295,7 @@ __metadata:
     "@atlaskit/pragmatic-drag-and-drop": "npm:^1.2.1"
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^1.0.3"
     "@blocksuite/affine": "npm:0.17.19"
-    "@blocksuite/icons": "npm:2.1.68"
+    "@blocksuite/icons": "npm:2.1.69"
     "@chromatic-com/storybook": "npm:^2.0.0"
     "@emotion/react": "npm:^11.11.4"
     "@emotion/styled": "npm:^11.11.5"
@@ -365,7 +365,7 @@ __metadata:
     "@affine/templates": "workspace:*"
     "@affine/track": "workspace:*"
     "@blocksuite/affine": "npm:0.17.19"
-    "@blocksuite/icons": "npm:2.1.68"
+    "@blocksuite/icons": "npm:2.1.69"
     "@dnd-kit/core": "npm:^6.1.0"
     "@dnd-kit/modifiers": "npm:^7.0.0"
     "@dnd-kit/sortable": "npm:^8.0.0"
@@ -2731,9 +2731,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/icons@npm:2.1.68, @blocksuite/icons@npm:^2.1.67, @blocksuite/icons@npm:^2.1.68":
-  version: 2.1.68
-  resolution: "@blocksuite/icons@npm:2.1.68"
+"@blocksuite/icons@npm:2.1.69, @blocksuite/icons@npm:^2.1.67, @blocksuite/icons@npm:^2.1.68":
+  version: 2.1.69
+  resolution: "@blocksuite/icons@npm:2.1.69"
   peerDependencies:
     "@types/react": ^18.0.25
     lit: ^3.1.1
@@ -2743,7 +2743,7 @@ __metadata:
       optional: true
     react:
       optional: true
-  checksum: 10/e95f1ba03ac6a7d19f02beb3b52d5686936b51e639118c810110b16d4c2299a142dfd50cd4cfaa857507aaf97c1fc3862ae0f7fc1a3271c52fa45740cdd601ff
+  checksum: 10/c2d8e7d72bb950fbaa6de8fd6c67d354932c32c72932c9c6f1132fbde6f2fb865a767ab17035ee3c83fe779b05b09a0d71506c623b17e5f7d1eb7c4bce61df02
   languageName: node
   linkType: hard
 
