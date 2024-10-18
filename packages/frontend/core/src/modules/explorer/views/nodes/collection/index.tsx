@@ -27,8 +27,10 @@ import {
   useService,
   useServices,
 } from '@toeverything/infra';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
+import { EXPLORER_KEY } from '../../../config';
+import { ExplorerService } from '../../../services/explorer';
 import { ExplorerTreeNode, type ExplorerTreeNodeDropEffect } from '../../tree';
 import type { ExplorerTreeNodeIcon } from '../../tree/node';
 import { ExplorerDocNode } from '../doc';
@@ -55,18 +57,39 @@ export const ExplorerCollectionNode = ({
   operations: additionalOperations,
   canDrop,
   dropEffect,
+  explorerKey,
 }: {
   collectionId: string;
+  explorerKey?: string;
 } & GenericExplorerNode) => {
   const t = useI18n();
-  const { globalContextService } = useServices({
+  const { globalContextService, explorerService } = useServices({
     GlobalContextService,
+    ExplorerService,
   });
   const { open: openEditCollectionModal } = useEditCollection();
   const active =
     useLiveData(globalContextService.globalContext.collectionId.$) ===
     collectionId;
-  const [collapsed, setCollapsed] = useState(true);
+
+  const noteExplorer = explorerService.notes;
+
+  const collapsedKey = useMemo(() => {
+    return (
+      (explorerKey ? explorerKey : EXPLORER_KEY.collections) +
+      ':collection:' +
+      collectionId
+    );
+  }, [collectionId, explorerKey]);
+
+  const collapsed = useLiveData(noteExplorer.collapsed$(collapsedKey));
+
+  const setCollapsed = useCallback(
+    (collapsed: boolean) => {
+      noteExplorer.setCollapsed(collapsedKey, collapsed);
+    },
+    [collapsedKey, noteExplorer]
+  );
 
   const collectionService = useService(CollectionService);
   const collection = useLiveData(collectionService.collection$(collectionId));
@@ -164,7 +187,7 @@ export const ExplorerCollectionNode = ({
 
   const handleOpenCollapsed = useCallback(() => {
     setCollapsed(false);
-  }, []);
+  }, [setCollapsed]);
 
   const handleEditCollection = useCallback(() => {
     if (!collection) {
@@ -228,15 +251,20 @@ export const ExplorerCollectionNode = ({
       dropEffect={handleDropEffectOnCollection}
       data-testid={`explorer-collection-${collectionId}`}
     >
-      <ExplorerCollectionNodeChildren collection={collection} />
+      <ExplorerCollectionNodeChildren
+        collection={collection}
+        explorerKey={collapsedKey}
+      />
     </ExplorerTreeNode>
   );
 };
 
 const ExplorerCollectionNodeChildren = ({
   collection,
+  explorerKey,
 }: {
   collection: Collection;
+  explorerKey: string;
 }) => {
   const t = useI18n();
   const {
@@ -303,6 +331,7 @@ const ExplorerCollectionNodeChildren = ({
     <ExplorerDocNode
       key={doc.id}
       docId={doc.id}
+      explorerKey={explorerKey}
       reorderable={false}
       location={{
         at: 'explorer:collection:filtered-docs',

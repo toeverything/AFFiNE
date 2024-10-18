@@ -14,8 +14,10 @@ import {
   useServices,
 } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 
+import { EXPLORER_KEY } from '../../../config';
+import { ExplorerService } from '../../../services/explorer';
 import { ExplorerTreeNode, type ExplorerTreeNodeDropEffect } from '../../tree';
 import { ExplorerDocNode } from '../doc';
 import type { GenericExplorerNode } from '../types';
@@ -32,18 +34,35 @@ export const ExplorerTagNode = ({
   dropEffect,
   canDrop,
   defaultRenaming,
+  explorerKey,
 }: {
   tagId: string;
   defaultRenaming?: boolean;
+  explorerKey?: string;
 } & GenericExplorerNode) => {
   const t = useI18n();
-  const { tagService, globalContextService } = useServices({
+  const { tagService, globalContextService, explorerService } = useServices({
     TagService,
     GlobalContextService,
+    ExplorerService,
   });
   const active =
     useLiveData(globalContextService.globalContext.tagId.$) === tagId;
-  const [collapsed, setCollapsed] = useState(true);
+
+  const noteExplorer = explorerService.notes;
+
+  const collapsedKey = useMemo(() => {
+    return (explorerKey ? explorerKey : EXPLORER_KEY.tags) + ':tag:' + tagId;
+  }, [explorerKey, tagId]);
+
+  const collapsed = useLiveData(noteExplorer.collapsed$(collapsedKey));
+
+  const setCollapsed = useCallback(
+    (collapsed: boolean) => {
+      noteExplorer.setCollapsed(collapsedKey, collapsed);
+    },
+    [collapsedKey, noteExplorer]
+  );
 
   const tagRecord = useLiveData(tagService.tagList.tagByTagId$(tagId));
   const tagColor = useLiveData(tagRecord?.color$);
@@ -153,7 +172,7 @@ export const ExplorerTagNode = ({
       () => ({
         openNodeCollapsed: () => setCollapsed(false),
       }),
-      []
+      [setCollapsed]
     )
   );
 
@@ -188,7 +207,7 @@ export const ExplorerTagNode = ({
       dropEffect={handleDropEffectOnTag}
       data-testid={`explorer-tag-${tagId}`}
     >
-      <ExplorerTagNodeDocs tag={tagRecord} />
+      <ExplorerTagNodeDocs tag={tagRecord} explorerKey={collapsedKey} />
     </ExplorerTreeNode>
   );
 };
@@ -198,7 +217,13 @@ export const ExplorerTagNode = ({
  * so we split the tag node children into a separate component,
  * so it won't be rendered when the tag node is collapsed.
  */
-export const ExplorerTagNodeDocs = ({ tag }: { tag: Tag }) => {
+export const ExplorerTagNodeDocs = ({
+  tag,
+  explorerKey,
+}: {
+  tag: Tag;
+  explorerKey: string;
+}) => {
   const tagDocIds = useLiveData(tag.pageIds$);
 
   return tagDocIds.map(docId => (
@@ -206,6 +231,7 @@ export const ExplorerTagNodeDocs = ({ tag }: { tag: Tag }) => {
       key={docId}
       docId={docId}
       reorderable={false}
+      explorerKey={explorerKey}
       location={{
         at: 'explorer:tags:docs',
       }}
