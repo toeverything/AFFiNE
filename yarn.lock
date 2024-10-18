@@ -2482,19 +2482,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/affine-block-embed@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/affine-block-embed@npm:0.17.19"
+"@blocksuite/affine-block-embed@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-embed::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-block-embed@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-embed::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/affine-block-surface": "npm:0.17.19"
-    "@blocksuite/affine-components": "npm:0.17.19"
-    "@blocksuite/affine-model": "npm:0.17.19"
-    "@blocksuite/affine-shared": "npm:0.17.19"
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
+    "@blocksuite/affine-block-surface": "workspace:*"
+    "@blocksuite/affine-components": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/global": "workspace:*"
     "@blocksuite/icons": "npm:^2.1.68"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/store": "npm:0.17.19"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/store": "workspace:*"
     "@floating-ui/dom": "npm:^1.6.10"
     "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
@@ -2502,21 +2502,20 @@ __metadata:
     lit: "npm:^3.2.0"
     minimatch: "npm:^10.0.1"
     zod: "npm:^3.23.8"
-  checksum: 10/33586d045e67766ab2f2ef6f2df1776fb1a43e036e4bf10b99d523c4844d781ef9037afbd5203665cf5e30566d934e33a292593afb4e15261efe8268ff051290
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/affine-block-list@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/affine-block-list@npm:0.17.19"
+"@blocksuite/affine-block-list@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-list::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-block-list@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-list::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/affine-components": "npm:0.17.19"
-    "@blocksuite/affine-model": "npm:0.17.19"
-    "@blocksuite/affine-shared": "npm:0.17.19"
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/store": "npm:0.17.19"
+    "@blocksuite/affine-components": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/store": "workspace:*"
     "@floating-ui/dom": "npm:^1.6.10"
     "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
@@ -2524,21 +2523,20 @@ __metadata:
     lit: "npm:^3.2.0"
     minimatch: "npm:^10.0.1"
     zod: "npm:^3.23.8"
-  checksum: 10/e804d4ea2bef41efe7ee323aecde1339b3c8a499f16854c4a67877a39bae2d100e590dc758f004ec90fb8b7ebe1a61f003d045389557838230a905f2a187446d
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/affine-block-paragraph@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/affine-block-paragraph@npm:0.17.19"
+"@blocksuite/affine-block-paragraph@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-paragraph::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-block-paragraph@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-paragraph::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/affine-components": "npm:0.17.19"
-    "@blocksuite/affine-model": "npm:0.17.19"
-    "@blocksuite/affine-shared": "npm:0.17.19"
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/store": "npm:0.17.19"
+    "@blocksuite/affine-components": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/store": "workspace:*"
     "@floating-ui/dom": "npm:^1.6.10"
     "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
@@ -2546,21 +2544,20 @@ __metadata:
     lit: "npm:^3.2.0"
     minimatch: "npm:^10.0.1"
     zod: "npm:^3.23.8"
-  checksum: 10/a8caa526260b16ded0dae7bd4caae0d38f4fa7bcbdf96e36acf5cdb7e0fc14c330b2d0727b08c84384e19e3115ea1eec6a4061d29ccbc638bd68f7bcadb6fb98
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/affine-block-surface@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/affine-block-surface@npm:0.17.19"
+"@blocksuite/affine-block-surface@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-surface::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-block-surface@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-surface::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/affine-components": "npm:0.17.19"
-    "@blocksuite/affine-model": "npm:0.17.19"
-    "@blocksuite/affine-shared": "npm:0.17.19"
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/store": "npm:0.17.19"
+    "@blocksuite/affine-components": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/store": "workspace:*"
     "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
     "@toeverything/theme": "npm:^1.0.8"
@@ -2569,21 +2566,20 @@ __metadata:
     lodash.chunk: "npm:^4.2.0"
     nanoid: "npm:^5.0.7"
     zod: "npm:^3.23.8"
-  checksum: 10/037831fca259761d23972958eff52d93068cf564efc4a149195a1979e754bad225232c20adb4eff0dbdfad37d1c07850042dde50efdeba1f9446bf5075cd9183
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/affine-components@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/affine-components@npm:0.17.19"
+"@blocksuite/affine-components@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/components::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-components@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/components::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/affine-model": "npm:0.17.19"
-    "@blocksuite/affine-shared": "npm:0.17.19"
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/global": "workspace:*"
     "@blocksuite/icons": "npm:^2.1.68"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/store": "npm:0.17.19"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/store": "workspace:*"
     "@floating-ui/dom": "npm:^1.6.10"
     "@lit/context": "npm:^1.1.2"
     "@lottiefiles/dotlottie-wc": "npm:^0.2.16"
@@ -2594,33 +2590,31 @@ __metadata:
     lit: "npm:^3.2.0"
     shiki: "npm:^1.12.0"
     zod: "npm:^3.23.8"
-  checksum: 10/d77ec6a908851b06c3efb97ce6e8d3e944ce383f1804763a20b1956bb4fac9feb5d61e8bdd1abb968102989716a64246908017c93002d2d7996b4271ebdae324
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/affine-model@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/affine-model@npm:0.17.19"
+"@blocksuite/affine-model@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/model::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-model@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/model::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/store": "npm:0.17.19"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/store": "workspace:*"
     fractional-indexing: "npm:^3.2.0"
     zod: "npm:^3.23.8"
-  checksum: 10/a47c149ed8dfde0bd56cc81be38d12884eb52e94df0484870fe6bb44ad5ea0ad82abe7a1a33e71d2ea9d6a1ffdf48d7bbb543318c4a97dbf0f09b39278700eaa
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/affine-shared@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/affine-shared@npm:0.17.19"
+"@blocksuite/affine-shared@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/shared::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-shared@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/shared::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/affine-model": "npm:0.17.19"
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/store": "npm:0.17.19"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/store": "workspace:*"
     "@floating-ui/dom": "npm:^1.6.10"
     "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
@@ -2630,46 +2624,43 @@ __metadata:
     lodash.mergewith: "npm:^4.6.2"
     minimatch: "npm:^10.0.1"
     zod: "npm:^3.23.8"
-  checksum: 10/2771454709f2a6f595b386464707c51a8e952cc36424ca1efe2fbb89444401f725a24bd66bddd1afa1f9668f005d4a6462306e70c672936f50e0d37092495a66
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/affine-widget-scroll-anchoring@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/affine-widget-scroll-anchoring@npm:0.17.19"
+"@blocksuite/affine-widget-scroll-anchoring@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/widget-scroll-anchoring::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-widget-scroll-anchoring@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/widget-scroll-anchoring::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/affine-model": "npm:0.17.19"
-    "@blocksuite/affine-shared": "npm:0.17.19"
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/global": "workspace:*"
     "@preact/signals-core": "npm:^1.8.0"
     "@toeverything/theme": "npm:^1.0.8"
     lit: "npm:^3.2.0"
-  checksum: 10/ef2bbfe1b024404356ad4ceee00c0373bcd3627d32dc5ea4a241cf3539a6de2f5feb02e09f14b54721add9a30e7616c6f56234d3cf481f0625ea81ddbb555fab
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/affine@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/affine@npm:0.17.19"
+"@blocksuite/affine@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/all::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/all::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/blocks": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/presets": "npm:0.17.19"
-    "@blocksuite/store": "npm:0.17.19"
-  checksum: 10/58ec92eaa00624fbe9a6a180315afe7bbebafa5465cb86b01b38c378fa18a1a8cf5f9ff9325bf356fbd96448cdf5a6fcc4c002d08db3d34fc84b0b0b2b28f23a
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/blocks": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/presets": "workspace:*"
+    "@blocksuite/store": "workspace:*"
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/block-std@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/block-std@npm:0.17.19"
+"@blocksuite/block-std@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/block-std::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/block-std@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/block-std::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/global": "npm:0.17.19"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/store": "npm:0.17.19"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/store": "workspace:*"
     "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
     "@types/hast": "npm:^3.0.4"
@@ -2681,28 +2672,27 @@ __metadata:
     unified: "npm:^11.0.5"
     w3c-keyname: "npm:^2.2.8"
     zod: "npm:^3.23.8"
-  checksum: 10/b6011fc979f9711811b9ed8357df6c943fe4769db7fe4911a211964dbfd1fa38ba006df0a9d3c859c827a7f9f785d1865084b68d64c558a240139817b16c919f
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/blocks@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/blocks@npm:0.17.19"
+"@blocksuite/blocks@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/blocks::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/blocks@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/blocks::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/affine-block-embed": "npm:0.17.19"
-    "@blocksuite/affine-block-list": "npm:0.17.19"
-    "@blocksuite/affine-block-paragraph": "npm:0.17.19"
-    "@blocksuite/affine-block-surface": "npm:0.17.19"
-    "@blocksuite/affine-components": "npm:0.17.19"
-    "@blocksuite/affine-model": "npm:0.17.19"
-    "@blocksuite/affine-shared": "npm:0.17.19"
-    "@blocksuite/affine-widget-scroll-anchoring": "npm:0.17.19"
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/data-view": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
+    "@blocksuite/affine-block-embed": "workspace:*"
+    "@blocksuite/affine-block-list": "workspace:*"
+    "@blocksuite/affine-block-paragraph": "workspace:*"
+    "@blocksuite/affine-block-surface": "workspace:*"
+    "@blocksuite/affine-components": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/affine-widget-scroll-anchoring": "workspace:*"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/data-view": "workspace:*"
+    "@blocksuite/global": "workspace:*"
     "@blocksuite/icons": "npm:^2.1.68"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/store": "npm:0.17.19"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/store": "workspace:*"
     "@floating-ui/dom": "npm:^1.6.10"
     "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
@@ -2741,20 +2731,19 @@ __metadata:
     sortablejs: "npm:^1.15.2"
     unified: "npm:^11.0.5"
     zod: "npm:^3.23.8"
-  checksum: 10/b3ab015d3d622638056bc831a2a21ba4877e8beb303895e0e8ca1dbe722172714f248c26fec52dab065db3976c47b76fb57a897bee5f2cd4fe70792eb6d3a92c
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/data-view@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/data-view@npm:0.17.19"
+"@blocksuite/data-view@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/data-view::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/data-view@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/data-view::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/affine-components": "npm:0.17.19"
-    "@blocksuite/affine-shared": "npm:0.17.19"
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
+    "@blocksuite/affine-components": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/global": "workspace:*"
     "@blocksuite/icons": "npm:^2.1.68"
-    "@blocksuite/store": "npm:0.17.19"
+    "@blocksuite/store": "workspace:*"
     "@floating-ui/dom": "npm:^1.6.10"
     "@lit/context": "npm:^1.1.2"
     "@preact/signals-core": "npm:^1.8.0"
@@ -2763,21 +2752,19 @@ __metadata:
     lit: "npm:^3.2.0"
     sortablejs: "npm:^1.15.2"
     zod: "npm:^3.23.8"
-  checksum: 10/8e874f7038f1ca35f0f01db8b03d2ba8f84b83ae268ca92d7ebd6e3341e3fff9897bcb281e6321fe42e00aae9f8d9025d2ee7770ee0741783acedb15f0181dfe
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/global@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/global@npm:0.17.19"
+"@blocksuite/global@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/global::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/global@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/global::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@preact/signals-core": "npm:^1.8.0"
     lib0: "npm:^0.2.97"
     lit: "npm:^3.2.0"
     zod: "npm:^3.23.8"
-  checksum: 10/eac517fb270f7680f465af3874d64492fcf41d4313336dee2ba778b696b8019fb64cbe0e982da2bc1d4cc4c6b21726e5d81ad06a90017517ffaa579274f87b73
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@blocksuite/icons@npm:2.1.69, @blocksuite/icons@npm:^2.1.67, @blocksuite/icons@npm:^2.1.68":
   version: 2.1.69
@@ -2795,49 +2782,47 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/inline@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/inline@npm:0.17.19"
+"@blocksuite/inline@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/inline::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/inline@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/inline::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/global": "npm:0.17.19"
+    "@blocksuite/global": "workspace:*"
     "@preact/signals-core": "npm:^1.8.0"
     zod: "npm:^3.23.8"
   peerDependencies:
     lit: ^3.2.0
     yjs: ^13.6.18
-  checksum: 10/fa03765e69847b2677548b2f491cd53e9028ca7d48e2ec102147d43d155fb1084bbc7c72cde51070a700e9b511cb462c9406e5f6f68cf8872a5a4f7ae0770b70
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/presets@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/presets@npm:0.17.19"
+"@blocksuite/presets@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/presets::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/presets@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/presets::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/affine-block-surface": "npm:0.17.19"
-    "@blocksuite/affine-model": "npm:0.17.19"
-    "@blocksuite/affine-shared": "npm:0.17.19"
-    "@blocksuite/block-std": "npm:0.17.19"
-    "@blocksuite/blocks": "npm:0.17.19"
-    "@blocksuite/global": "npm:0.17.19"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/store": "npm:0.17.19"
+    "@blocksuite/affine-block-surface": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/blocks": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/store": "workspace:*"
     "@floating-ui/dom": "npm:^1.6.10"
     "@lottiefiles/dotlottie-wc": "npm:^0.2.16"
     "@preact/signals-core": "npm:^1.8.0"
     "@toeverything/theme": "npm:^1.0.8"
     lit: "npm:^3.2.0"
     zod: "npm:^3.23.8"
-  checksum: 10/9f7c34223df50f23f872241e7fd05d163f6731710af01ba8a37fe91eb88596dd565f5e86a71717ba6e07ba888e22e72c75b0298959aebefc1583819a61629384
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/store@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/store@npm:0.17.19"
+"@blocksuite/store@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/store::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/store@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/store::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/global": "npm:0.17.19"
-    "@blocksuite/inline": "npm:0.17.19"
-    "@blocksuite/sync": "npm:0.17.19"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/inline": "workspace:*"
+    "@blocksuite/sync": "workspace:*"
     "@preact/signals-core": "npm:^1.8.0"
     "@types/flexsearch": "npm:^0.7.6"
     "@types/lodash.ismatch": "npm:^4.4.9"
@@ -2853,23 +2838,21 @@ __metadata:
     zod: "npm:^3.23.8"
   peerDependencies:
     yjs: ^13.6.18
-  checksum: 10/64418424c466af8fec004f338fe1931c872af0cc2ec75c669a85ea52bd44c02b359e4f9def5ef1d99518397aae75e0931fe52be080d35410039b46d00243b404
   languageName: node
-  linkType: hard
+  linkType: soft
 
-"@blocksuite/sync@npm:0.17.19":
-  version: 0.17.19
-  resolution: "@blocksuite/sync@npm:0.17.19"
+"@blocksuite/sync@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/sync::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/sync@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/sync::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
-    "@blocksuite/global": "npm:0.17.19"
+    "@blocksuite/global": "workspace:*"
     idb: "npm:^8.0.0"
     idb-keyval: "npm:^6.2.1"
     y-protocols: "npm:^1.0.6"
   peerDependencies:
     yjs: ^13.6.15
-  checksum: 10/e3893e09122559df5d373e8f693683aa971e5c241b032ab2e5236bd91a544d1487ac00e1413805f1c657cf9475842073eeadfbaa6f307998830e40f0591ac921
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@bundled-es-modules/cookie@npm:^2.0.0":
   version: 2.0.0

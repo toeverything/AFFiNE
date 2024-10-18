@@ -11,7 +11,6 @@ import type { EditorService } from '@affine/core/modules/editor';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { resolveLinkToDoc } from '@affine/core/modules/navigation';
 import type { PeekViewService } from '@affine/core/modules/peek-view';
-import type { ActivePeekView } from '@affine/core/modules/peek-view/entities/peek-view';
 import {
   CreationQuickSearchSession,
   DocsQuickSearchSession,
@@ -35,6 +34,8 @@ import type {
   AffineReference,
   DocMode,
   DocModeProvider,
+  PeekOptions,
+  PeekViewService as BSPeekViewService,
   QuickSearchResult,
   RootService,
 } from '@blocksuite/affine/blocks';
@@ -243,11 +244,27 @@ export function patchEmbedLinkedDocBlockConfig(framework: FrameworkProvider) {
 
 export function patchPeekViewService(service: PeekViewService) {
   return PeekViewExtension({
-    peek: (target: ActivePeekView['target'], template?: TemplateResult) => {
-      logger.debug('center peek', target, template);
-      return service.peekView.open(target, template);
+    peek: (
+      element: {
+        target: HTMLElement;
+        docId: string;
+        blockIds?: string[];
+        template?: TemplateResult;
+      },
+      options?: PeekOptions
+    ) => {
+      logger.debug('center peek', element);
+      const { template, target, ...props } = element;
+      return service.peekView.open(
+        {
+          element: target,
+          ...props,
+        },
+        template,
+        options?.abortSignal
+      );
     },
-  });
+  } satisfies BSPeekViewService);
 }
 
 export function patchDocModeService(

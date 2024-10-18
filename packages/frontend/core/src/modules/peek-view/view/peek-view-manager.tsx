@@ -86,8 +86,8 @@ const getRendererProps = (
     children: preview,
     controls,
     target:
-      activePeekView?.target instanceof HTMLElement
-        ? activePeekView.target
+      activePeekView?.target.element instanceof HTMLElement
+        ? activePeekView.target.element
         : undefined,
     mode: getMode(activePeekView.info),
     dialogFrame: activePeekView.info.type !== 'image',
@@ -108,8 +108,8 @@ export const PeekViewManagerModal = () => {
 
   useEffect(() => {
     const subscription = peekViewEntity.show$.subscribe(() => {
-      if (activePeekView?.target instanceof BlockComponent) {
-        activePeekView.target.requestUpdate();
+      if (activePeekView?.target.element instanceof BlockComponent) {
+        activePeekView.target.element.requestUpdate();
       }
     });
 
