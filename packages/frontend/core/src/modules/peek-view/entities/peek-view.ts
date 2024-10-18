@@ -208,7 +208,8 @@ export class PeekViewEntity extends Entity {
   // return true if the peek view will be handled
   open = async (
     target: ActivePeekView['target'],
-    template?: TemplateResult
+    template?: TemplateResult,
+    abortSignal?: AbortSignal
   ) => {
     const resolvedInfo = resolvePeekInfoFromPeekTarget(target, template);
     if (!resolvedInfo) {
@@ -220,7 +221,11 @@ export class PeekViewEntity extends Entity {
     // if there is an active peek view and it is a doc peek view, we will navigate it first
     if (active?.info.type === 'doc' && this.show$.value?.value) {
       // TODO(@pengx17): scroll to the viewing position?
-      this.workbenchService.workbench.openDoc(active.info.docId);
+      this.workbenchService.workbench.openDoc({
+        docId: active.info.docId,
+        blockIds: active.info.blockIds,
+        elementIds: active.info.elementIds,
+      });
     }
 
     this._active$.next({ target, info: resolvedInfo });
@@ -231,6 +236,24 @@ export class PeekViewEntity extends Entity {
           ? 'zoom'
           : 'fade',
     });
+
+    if (abortSignal) {
+      const abortListener = () => {
+        if (this.active$.value?.target === target) {
+          this.close();
+        }
+      };
+
+      abortSignal.addEventListener('abort', abortListener);
+
+      const showSubscription = this.show$.subscribe(v => {
+        if (!v && !abortSignal.aborted) {
+          abortSignal.removeEventListener('abort', abortListener);
+          showSubscription.unsubscribe();
+        }
+      });
+    }
+
     return firstValueFrom(race(this._active$, this.show$).pipe(map(() => {})));
   };
 
