@@ -2,6 +2,7 @@ import './polyfill';
 import '../src/theme';
 import './preview.css';
 import { ThemeProvider } from 'next-themes';
+import { getOrCreateI18n, I18nextProvider } from '@affine/i18n';
 import type { ComponentType } from 'react';
 
 import type { Preview } from '@storybook/react';
@@ -42,14 +43,18 @@ const useTheme = context => {
   }, [theme]);
 };
 
+const i18n = getOrCreateI18n();
+
 export const decorators = [
   (Story: ComponentType, context) => {
     useTheme(context);
     return (
       <ThemeProvider themes={['dark', 'light']} enableSystem={true}>
-        <ConfirmModalProvider>
-          <Story {...context} />
-        </ConfirmModalProvider>
+        <I18nextProvider i18n={i18n}>
+          <ConfirmModalProvider>
+            <Story {...context} />
+          </ConfirmModalProvider>
+        </I18nextProvider>
       </ThemeProvider>
     );
   },
