@@ -1,0 +1,32 @@
+{
+  "name": "@affine/android",
+  "version": "0.17.0",
+  "description": "AFFiNE Desktop Web application",
+  "private": true,
+  "browser": "src/index.tsx",
+  "scripts": {
+    "build": "cross-env DISTRIBUTION=android yarn workspace @affine/cli bundle",
+    "dev": "yarn workspace @affine/cli dev",
+    "static-server": "cross-env DISTRIBUTION=android yarn workspace @affine/cli dev --static"
+  },
+  "dependencies": {
+    "@affine/component": "workspace:*",
+    "@affine/core": "workspace:*",
+    "@affine/i18n": "workspace:*",
+    "@blocksuite/affine": "0.17.19",
+    "@blocksuite/icons": "^2.1.67",
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@sentry/react": "^8.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.26.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "@types/react": "^18.2.75",
+    "@types/react-dom": "^18.2.24",
+    "cross-env": "^7.0.3",
+    "typescript": "^5.4.5"
+  }
+}

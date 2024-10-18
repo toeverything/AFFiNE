@@ -25,6 +25,10 @@ module.exports.getCwdFromDistribution = function getCwdFromDistribution(
       return join(projectRoot, 'packages/frontend/admin');
     case 'mobile':
       return join(projectRoot, 'packages/frontend/apps/mobile');
+    case 'ios':
+      return join(projectRoot, 'packages/frontend/apps/ios');
+    case 'android':
+      return join(projectRoot, 'packages/frontend/apps/android');
     default: {
       throw new Error(
         'DISTRIBUTION must be one of web, desktop, admin, mobile'

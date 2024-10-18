@@ -1,0 +1,69 @@
+{
+  "name": "@affine/android",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "dependsOn": [
+        {
+          "projects": ["tag:infra"],
+          "target": "build",
+          "params": "ignore"
+        },
+        "^build"
+      ],
+      "inputs": [
+        "{projectRoot}/**/*",
+        "{workspaceRoot}/tools/**/*",
+        "{workspaceRoot}/packages/frontend/core/**/*",
+        "{workspaceRoot}/packages/**/*",
+        {
+          "env": "BUILD_TYPE"
+        },
+        {
+          "env": "BUILD_TYPE_OVERRIDE"
+        },
+        {
+          "env": "PERFSEE_TOKEN"
+        },
+        {
+          "env": "SENTRY_ORG"
+        },
+        {
+          "env": "SENTRY_PROJECT"
+        },
+        {
+          "env": "SENTRY_AUTH_TOKEN"
+        },
+        {
+          "env": "SENTRY_DSN"
+        },
+        {
+          "env": "DISTRIBUTION"
+        },
+        {
+          "env": "COVERAGE"
+        },
+        {
+          "env": "DISABLE_DEV_OVERLAY"
+        },
+        {
+          "env": "CAPTCHA_SITE_KEY"
+        },
+        {
+          "env": "R2_ACCOUNT_ID"
+        },
+        {
+          "env": "R2_ACCESS_KEY_ID"
+        },
+        {
+          "env": "R2_SECRET_ACCESS_KEY"
+        }
+      ],
+      "options": {
+        "script": "build"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    }
+  }
+}

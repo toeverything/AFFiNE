@@ -1,4 +1,4 @@
-name: Release Desktop Automatically
+name: Release Desktop/Mobile Automatically
 
 on:
   push:
@@ -23,6 +23,7 @@ jobs:
         with:
           workflow: release-desktop.yml
           inputs: '{ "build-type": "canary", "is-draft": false, "is-pre-release": true }'
+
       - name: dispatch desktop release by schedule
         if: ${{ github.event_name == 'schedule' }}
         uses: benc-uk/workflow-dispatch@v1
@@ -30,3 +31,8 @@ jobs:
           workflow: release-desktop.yml
           inputs: '{ "build-type": "canary", "is-draft": false, "is-pre-release": true }'
           ref: canary
+      - name: dispatch desktop release by tag
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: release-mobile.yml
+          inputs: '{ "build-type": "canary", "build-target": "distribution" }'

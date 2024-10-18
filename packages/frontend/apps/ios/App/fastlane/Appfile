@@ -1,0 +1,8 @@
+app_identifier("app.affine.pro") # The bundle identifier of your app
+apple_id("yinan.long@toeverything.info") # Your Apple Developer Portal username
+
+itc_team_id("126219637") # App Store Connect Team ID
+team_id("73YMMDVT2M") # Developer Portal Team ID
+
+# For more information about the Appfile, see:
+#     https://docs.fastlane.tools/advanced/#appfile

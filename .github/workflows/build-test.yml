@@ -611,6 +611,13 @@ jobs:
           path: ./test-results
           if-no-files-found: ignore
 
+  test-build-ios:
+    uses: ./.github/workflows/release-mobile.yml
+    with:
+      build-type: canary
+      build-target: development
+    secrets: inherit
+
   test-done:
     needs:
       - analyze
@@ -622,9 +629,11 @@ jobs:
       - unit-test
       - build-native
       - build-server-native
+      - build-electron-renderer
       - server-test
       - server-e2e-test
       - desktop-test
+      - test-build-ios
     if: always()
     runs-on: ubuntu-latest
     name: 3, 2, 1 Launch

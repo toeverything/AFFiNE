@@ -1,0 +1,12 @@
+{
+  "extends": "../../../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "lib",
+    "moduleResolution": "Bundler",
+    "types": ["affine__env"],
+    "rootDir": "./src"
+  },
+  "include": ["./src"],
+  "references": [{ "path": "../../core" }]
+}

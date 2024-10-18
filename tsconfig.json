@@ -104,6 +104,12 @@
       "path": "./packages/frontend/apps/mobile"
     },
     {
+      "path": "./packages/frontend/apps/ios"
+    },
+    {
+      "path": "./packages/frontend/apps/android"
+    },
+    {
       "path": "./packages/frontend/apps/electron/tsconfig.test.json"
     },
     {

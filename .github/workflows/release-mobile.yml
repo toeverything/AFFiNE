@@ -1,0 +1,117 @@
+name: Release Mobile App
+
+on:
+  workflow_call:
+    inputs:
+      build-target:
+        description: 'Build Target'
+        type: string
+        required: true
+        default: development
+      build-type:
+        description: 'Build Type'
+        type: string
+        required: true
+        default: canary
+  workflow_dispatch:
+    inputs:
+      build-target:
+        description: 'Build Target'
+        type: choice
+        required: true
+        default: distribution
+        options:
+          - development
+          - distribution
+      build-type:
+        description: 'Build Type'
+        type: choice
+        required: true
+        default: canary
+        options:
+          - canary
+          - beta
+          - stable
+env:
+  BUILD_TYPE: ${{ github.event.inputs.build-type || inputs.build-type }}
+  DEBUG: napi:*
+  KEYCHAIN_NAME: ${{ github.workspace }}/signing_temp
+
+jobs:
+  build-ios-web:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.build-type || inputs.build-type }}
+    outputs:
+      RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Setup @sentry/cli
+        uses: ./.github/actions/setup-sentry
+      - name: Build Mobile
+        run: yarn nx build @affine/ios --skip-nx-cache
+        env:
+          PUBLIC_PATH: '/'
+          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: 'affine'
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_RELEASE: ${{ steps.version.outputs.APP_VERSION }}
+          RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
+          SKIP_NX_CACHE: 'true'
+      - name: Upload ios artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: packages/frontend/apps/ios/dist
+  ios:
+    runs-on: macos-latest
+    needs:
+      - build-ios-web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download mobile artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ios
+          path: packages/frontend/apps/ios/dist
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        timeout-minutes: 10
+        with:
+          extra-flags: workspaces focus @affine/ios
+          playwright-install: false
+          electron-install: false
+          hard-link-nm: false
+          enableScripts: false
+      - name: Cap sync
+        run: yarn workspace @affine/ios cap sync
+      - name: Signing By Apple Developer ID
+        uses: apple-actions/import-codesign-certs@v3
+        id: import-codesign-certs
+        with:
+          p12-file-base64: ${{ secrets.CERTIFICATES_P12_MOBILE }}
+          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD_MOBILE }}
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Testflight
+        if: ${{ github.event.inputs.build-type || inputs.build-type }} != 'stable'
+        working-directory: packages/frontend/apps/ios/App
+        run: |
+          echo -n "${{ env.BUILD_PROVISION_PROFILE }}" | base64 --decode -o $PP_PATH
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+          fastlane beta
+        env:
+          BUILD_TARGET: ${{ github.event.inputs.build-target || inputs.build-target }}
+          BUILD_PROVISION_PROFILE: ${{ secrets.BUILD_PROVISION_PROFILE }}
+          PP_PATH: ${{ runner.temp }}/build_pp.mobileprovision
+          APPLE_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPLE_STORE_CONNECT_API_KEY_ID }}
+          APPLE_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APPLE_STORE_CONNECT_API_ISSUER_ID }}
+          APPLE_STORE_CONNECT_API_KEY: ${{ secrets.APPLE_STORE_CONNECT_API_KEY }}
