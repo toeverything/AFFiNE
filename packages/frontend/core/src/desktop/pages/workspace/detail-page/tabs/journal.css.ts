@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
 const interactive = style({
@@ -161,6 +162,9 @@ export const pageItemLabel = style({
       color: cssVar('primaryColor'),
     },
   },
+  display: 'flex',
+  gap: 6,
+  alignItems: 'center',
 });
 
 // conflict
@@ -185,6 +189,16 @@ export const journalConflictMoreTrigger = style([
     alignItems: 'center',
   },
 ]);
+export const duplicateTag = style({
+  padding: '0 8px',
+  border: `1px solid ${cssVarV2('database/border')}`,
+  background: cssVarV2('layer/background/error'),
+  color: cssVarV2('toast/iconState/error'),
+  borderRadius: 4,
+  fontSize: cssVar('fontXs'),
+  lineHeight: '20px',
+  fontWeight: 400,
+});
 
 // customize date-picker cell
 export const journalDateCell = style([

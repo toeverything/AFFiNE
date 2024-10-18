@@ -16,4 +16,9 @@ export const BUILT_IN_CUSTOM_PROPERTY_TYPE = [
     type: 'docPrimaryMode',
     show: 'always-hide',
   },
+  {
+    id: 'journal',
+    type: 'journal',
+    show: 'always-hide',
+  },
 ] as DocCustomPropertyInfo[];

@@ -11,6 +11,17 @@ export class JournalStore extends Store {
     super();
   }
 
+  allJournalDates$ = LiveData.computed(get => {
+    return new Set(
+      get(this.docsService.list.docs$)
+        .filter(doc => {
+          const journal = get(doc.properties$.selector(p => p.journal));
+          return !!journal && isJournalString(journal);
+        })
+        .map(doc => get(doc.properties$.selector(p => p.journal)))
+    );
+  });
+
   watchDocJournalDate(docId: string): Observable<string | undefined> {
     return LiveData.computed(get => {
       const doc = get(this.docsService.list.doc$(docId));
@@ -35,9 +46,21 @@ export class JournalStore extends Store {
     doc.setProperty('journal', date);
   }
 
+  removeDocJournalDate(docId: string) {
+    this.setDocJournalDate(docId, '');
+  }
+
   getDocsByJournalDate(date: string) {
     return this.docsService.list.docs$.value.filter(
       doc => doc.properties$.value.journal === date
     );
+  }
+  docsByJournalDate$(date: string) {
+    return LiveData.computed(get => {
+      return get(this.docsService.list.docs$).filter(doc => {
+        const journal = get(doc.properties$.selector(p => p.journal));
+        return journal === date;
+      });
+    });
   }
 }

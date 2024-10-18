@@ -7,12 +7,14 @@ import {
   NumberIcon,
   TagIcon,
   TextIcon,
+  TodayIcon,
 } from '@blocksuite/icons/rc';
 
 import { CheckboxValue } from './checkbox';
 import { CreatedByValue, UpdatedByValue } from './created-updated-by';
 import { DateValue } from './date';
 import { DocPrimaryModeValue } from './doc-primary-mode';
+import { JournalValue } from './journal';
 import { NumberValue } from './number';
 import { TagsValue } from './tags';
 import { TextValue } from './text';
@@ -60,6 +62,13 @@ export const DocPropertyTypes = {
     icon: FileIcon,
     value: DocPrimaryModeValue,
     name: 'com.affine.page-properties.property.docPrimaryMode',
+  },
+  journal: {
+    icon: TodayIcon,
+    value: JournalValue,
+    name: 'com.affine.page-properties.property.journal',
+    uniqueId: 'journal',
+    renameable: false,
   },
 } as Record<
   string,
