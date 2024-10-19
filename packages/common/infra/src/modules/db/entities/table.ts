@@ -22,6 +22,8 @@ export class WorkspaceDBTable<
     .docState$(this.props.storageDocId)
     .map(docState => docState.loading);
 
+  ydocId = this.props.storageDocId;
+
   create = this.table.create.bind(this.table);
   update = this.table.update.bind(this.table);
   get = this.table.get.bind(this.table);

@@ -85,7 +85,7 @@ async function crawlingDocData({
   } else {
     const ydoc = new YDoc();
     let docTitle = '';
-    let summaryLenNeeded = 1000;
+    let summaryLenNeeded = 500;
     let summary = '';
     const blockDocuments: Document<BlockIndexSchema>[] = [];
 
@@ -363,16 +363,24 @@ async function crawlingDocData({
   }
 }
 
-function crawlingRootDocData({
+async function crawlingRootDocData({
   allIndexedDocs,
   rootDocBuffer,
   reindexAll,
+  propertyDBDocBuffer,
 }: WorkerInput & {
   type: 'rootDoc';
-}): WorkerOutput {
-  const ydoc = new YDoc();
+}): Promise<WorkerOutput> {
+  const rootDocBufferHash = toHexString(await digest(rootDocBuffer));
 
-  applyUpdate(ydoc, rootDocBuffer);
+  let ydoc;
+  if (cachedRootDoc && cachedRootDoc.hash === rootDocBufferHash) {
+    ydoc = cachedRootDoc.doc;
+  } else {
+    ydoc = new YDoc();
+    applyUpdate(ydoc, rootDocBuffer);
+    cachedRootDoc = { doc: ydoc, hash: rootDocBufferHash };
+  }
 
   const docs = ydoc.getMap('meta').get('pages') as
     | YArray<YMap<any>>
@@ -398,10 +406,16 @@ function crawlingRootDocData({
     }
   }
 
-  const needDelete = difference(allIndexedDocs, availableDocs);
+  const needDelete = difference(
+    allIndexedDocs.map(doc => doc.id),
+    availableDocs
+  );
   const needAdd = reindexAll
     ? availableDocs
-    : difference(availableDocs, allIndexedDocs);
+    : difference(
+        availableDocs,
+        allIndexedDocs.map(doc => doc.id)
+      );
 
   return {
     reindexDoc: [...needAdd, ...needDelete].map(docId => ({
@@ -422,7 +436,7 @@ globalThis.onmessage = async (event: MessageEvent<WorkerIngoingMessage>) => {
     try {
       let data;
       if (input.type === 'rootDoc') {
-        data = crawlingRootDocData(input);
+        data = await crawlingRootDocData(input);
       } else {
         data = await crawlingDocData(input);
       }
