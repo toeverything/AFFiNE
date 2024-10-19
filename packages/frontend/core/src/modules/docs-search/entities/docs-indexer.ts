@@ -6,6 +6,7 @@ import type {
   WorkspaceService,
 } from '@toeverything/infra';
 import {
+  Document,
   Entity,
   IndexedDBIndexStorage,
   IndexedDBJobQueue,
@@ -79,7 +80,8 @@ export class DocsIndexer extends Entity {
 
   constructor(
     private readonly workspaceService: WorkspaceService,
-    private readonly workspaceLocalState: WorkspaceLocalState
+    private readonly workspaceLocalState: WorkspaceLocalState,
+    private readonly workspaceDBService: WorkspaceDBService
   ) {
     super();
   }
@@ -135,7 +137,11 @@ export class DocsIndexer extends Entity {
         await this.workspaceEngine.doc.storage.loadDocFromLocal(
           this.workspaceId
         );
-      if (!rootDocBuffer) {
+      const propertyDBDocBuffer =
+        await this.workspaceEngine.doc.storage.loadDocFromLocal(
+          this.workspaceDBService.db.docProperties.ydocId
+        );
+      if (!rootDocBuffer || !propertyDBDocBuffer) {
         return;
       }
 
@@ -145,18 +151,20 @@ export class DocsIndexer extends Entity {
             type: 'all',
           },
           {
+            fields: ['journal'],
             pagination: {
               limit: Number.MAX_SAFE_INTEGER,
               skip: 0,
             },
           }
         )
-      ).nodes.map(n => n.id);
+      ).nodes.map(n => Document.from(n.id, n.fields));
 
       workerOutput = await worker.run({
         type: 'rootDoc',
         allIndexedDocs,
         rootDocBuffer,
+        propertyDBDocBuffer,
         reindexAll: isUpgrade,
       });
     } else {
