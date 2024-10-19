@@ -124,13 +124,28 @@ export function AppSidebar({ children }: PropsWithChildren) {
     appSidebarService.setOpen(false);
   }, [appSidebarService]);
 
-  const onMouseEnter = useCallback(() => {
-    appSidebarService.setHovering(true);
-  }, [appSidebarService]);
+  useEffect(() => {
+    if (sidebarState !== 'floating' || resizing) {
+      return;
+    }
+    const onMouseMove = (e: MouseEvent) => {
+      const menuElement = document.querySelector(
+        'body > [data-radix-popper-content-wrapper] > [data-radix-menu-content]'
+      );
 
-  const onMouseLeave = useCallback(() => {
-    appSidebarService.setHovering(false);
-  }, [appSidebarService]);
+      if (menuElement) {
+        return;
+      }
+
+      if (e.clientX > width + 20) {
+        appSidebarService.setHovering(false);
+      }
+    };
+    document.addEventListener('mousemove', onMouseMove);
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove);
+    };
+  }, [appSidebarService, resizing, sidebarState, width]);
 
   return (
     <>
@@ -152,8 +167,6 @@ export function AppSidebar({ children }: PropsWithChildren) {
         })}
         resizeHandleOffset={0}
         resizeHandleVerticalPadding={clientBorder ? 16 : 0}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
         data-transparent
         data-open={sidebarState !== 'close'}
         data-has-border={hasRightBorder}
