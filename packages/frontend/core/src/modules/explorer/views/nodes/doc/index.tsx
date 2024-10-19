@@ -22,6 +22,7 @@ import {
   useServices,
 } from '@toeverything/infra';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { NEVER } from 'rxjs';
 
 import { ExplorerTreeNode, type ExplorerTreeNodeDropEffect } from '../../tree';
 import type { GenericExplorerNode } from '../types';
@@ -82,10 +83,15 @@ export const ExplorerDocNode = ({
 
   const children = useLiveData(
     useMemo(
-      () => LiveData.from(docsSearchService.watchRefsFrom(docId), null),
-      [docsSearchService, docId]
+      () =>
+        LiveData.from(
+          !collapsed ? docsSearchService.watchRefsFrom(docId) : NEVER,
+          null
+        ),
+      [docsSearchService, docId, collapsed]
     )
   );
+  const searching = children === null;
 
   const indexerLoading = useLiveData(
     docsSearchService.indexer.status$.map(
@@ -231,7 +237,9 @@ export const ExplorerDocNode = ({
       }
       reorderable={reorderable}
       onRename={handleRename}
-      childrenPlaceholder={<Empty onDrop={handleDropOnPlaceholder} />}
+      childrenPlaceholder={
+        searching ? null : <Empty onDrop={handleDropOnPlaceholder} />
+      }
       operations={finalOperations}
       dropEffect={handleDropEffectOnDoc}
       data-testid={`explorer-doc-${docId}`}

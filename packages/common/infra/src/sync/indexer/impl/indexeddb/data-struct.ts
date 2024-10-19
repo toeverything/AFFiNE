@@ -1,3 +1,4 @@
+import { DebugLogger } from '@affine/debug';
 import {
   type DBSchema,
   type IDBPDatabase,
@@ -24,6 +25,8 @@ import {
   StringInvertedIndex,
 } from './inverted-index';
 import { Match } from './match';
+
+const logger = new DebugLogger('indexeddb');
 
 export interface IndexDB extends DBSchema {
   kvMetadata: {
@@ -75,14 +78,19 @@ export class DataStruct {
 
   constructor(
     readonly databaseName: string,
-    schema: Schema
+    readonly schema: Schema
   ) {
     for (const [key, type] of Object.entries(schema)) {
-      if (type === 'String') {
+      const typeInfo = typeof type === 'string' ? { type } : type;
+      if (typeInfo.index === false) {
+        // If index is false, we don't need to create an inverted index for this field.
+        continue;
+      }
+      if (typeInfo.type === 'String') {
         this.invertedIndex.set(key, new StringInvertedIndex(key));
-      } else if (type === 'Integer') {
+      } else if (typeInfo.type === 'Integer') {
         this.invertedIndex.set(key, new IntegerInvertedIndex(key));
-      } else if (type === 'FullText') {
+      } else if (typeInfo.type === 'FullText') {
         this.invertedIndex.set(key, new FullTextInvertedIndex(key));
       } else if (type === 'Boolean') {
         this.invertedIndex.set(key, new BooleanInvertedIndex(key));
@@ -102,17 +110,29 @@ export class DataStruct {
       throw new Error('Document already exists');
     }
 
+    const dataMap = new Map();
+
+    for (const [key, values] of document.fields) {
+      const type = this.schema[key as string];
+      if (!type) {
+        return;
+      }
+      const typeInfo = typeof type === 'string' ? { type } : type;
+      if (typeInfo.store !== false) {
+        // If store is false, the field will not be stored
+        dataMap.set(key, values);
+      }
+    }
+
     const nid = await trx.objectStore('records').add({
       id: document.id,
-      data: new Map(document.fields as Map<string, string[]>),
+      data: dataMap,
     });
 
     for (const [key, values] of document.fields) {
       const iidx = this.invertedIndex.get(key as string);
       if (!iidx) {
-        throw new Error(
-          `Inverted index '${key.toString()}' not found, document not match schema`
-        );
+        return;
       }
       await iidx.insert(trx, nid, values);
     }
@@ -164,7 +184,7 @@ export class DataStruct {
     if (query.type === 'match') {
       const iidx = this.invertedIndex.get(query.field as string);
       if (!iidx) {
-        throw new Error(`Field '${query.field as string}' not found`);
+        return new Match();
       }
       return await iidx.match(trx, query.match);
     } else if (query.type === 'boolean') {
@@ -187,7 +207,7 @@ export class DataStruct {
     } else if (query.type === 'exists') {
       const iidx = this.invertedIndex.get(query.field as string);
       if (!iidx) {
-        throw new Error(`Field '${query.field as string}' not found`);
+        return new Match();
       }
       return await iidx.all(trx);
     }
@@ -217,31 +237,41 @@ export class DataStruct {
     query: Query<any>,
     options: SearchOptions<any>
   ): Promise<SearchResult<any, any>> {
-    const pagination = {
-      skip: options.pagination?.skip ?? 0,
-      limit: options.pagination?.limit ?? 100,
-    };
+    const startTime = performance.now();
+    try {
+      const pagination = {
+        skip: options.pagination?.skip ?? 0,
+        limit: options.pagination?.limit ?? 100,
+      };
 
-    const match = await this.query(trx, query);
+      const match = await this.query(trx, query);
 
-    const nids = match
-      .toArray()
-      .slice(pagination.skip, pagination.skip + pagination.limit);
+      const nids = match
+        .toArray()
+        .slice(pagination.skip, pagination.skip + pagination.limit);
 
-    const nodes = [];
-    for (const nid of nids) {
-      nodes.push(await this.resultNode(trx, match, nid, options));
+      const nodes = [];
+      for (const nid of nids) {
+        nodes.push(await this.resultNode(trx, match, nid, options));
+      }
+
+      return {
+        pagination: {
+          count: match.size(),
+          hasMore: match.size() > pagination.limit + pagination.skip,
+          limit: pagination.limit,
+          skip: pagination.skip,
+        },
+        nodes: nodes,
+      };
+    } finally {
+      logger.debug(
+        `[indexer ${this.databaseName}] search`,
+        performance.now() - startTime,
+        'ms',
+        query
+      );
     }
-
-    return {
-      pagination: {
-        count: match.size(),
-        hasMore: match.size() > pagination.limit + pagination.skip,
-        limit: pagination.limit,
-        skip: pagination.skip,
-      },
-      nodes: nodes,
-    };
   }
 
   async aggregate(
@@ -250,95 +280,105 @@ export class DataStruct {
     field: string,
     options: AggregateOptions<any>
   ): Promise<AggregateResult<any, any>> {
-    const pagination = {
-      skip: options.pagination?.skip ?? 0,
-      limit: options.pagination?.limit ?? 100,
-    };
+    const startTime = performance.now();
+    try {
+      const pagination = {
+        skip: options.pagination?.skip ?? 0,
+        limit: options.pagination?.limit ?? 100,
+      };
 
-    const hitPagination = options.hits
-      ? {
-          skip: options.hits.pagination?.skip ?? 0,
-          limit: options.hits.pagination?.limit ?? 3,
-        }
-      : {
-          skip: 0,
-          limit: 0,
-        };
+      const hitPagination = options.hits
+        ? {
+            skip: options.hits.pagination?.skip ?? 0,
+            limit: options.hits.pagination?.limit ?? 3,
+          }
+        : {
+            skip: 0,
+            limit: 0,
+          };
 
-    const match = await this.query(trx, query);
+      const match = await this.query(trx, query);
 
-    const nids = match.toArray();
+      const nids = match.toArray();
 
-    const buckets: {
-      key: string;
-      nids: number[];
-      hits: SearchResult<any, any>['nodes'];
-    }[] = [];
+      const buckets: {
+        key: string;
+        nids: number[];
+        hits: SearchResult<any, any>['nodes'];
+      }[] = [];
 
-    for (const nid of nids) {
-      const values = (await trx.objectStore('records').get(nid))?.data.get(
-        field
-      );
-      for (const value of values ?? []) {
-        let bucket;
-        let bucketIndex = buckets.findIndex(b => b.key === value);
-        if (bucketIndex === -1) {
-          bucket = { key: value, nids: [], hits: [] };
-          buckets.push(bucket);
-          bucketIndex = buckets.length - 1;
-        } else {
-          bucket = buckets[bucketIndex];
-        }
+      for (const nid of nids) {
+        const values = (await trx.objectStore('records').get(nid))?.data.get(
+          field
+        );
+        for (const value of values ?? []) {
+          let bucket;
+          let bucketIndex = buckets.findIndex(b => b.key === value);
+          if (bucketIndex === -1) {
+            bucket = { key: value, nids: [], hits: [] };
+            buckets.push(bucket);
+            bucketIndex = buckets.length - 1;
+          } else {
+            bucket = buckets[bucketIndex];
+          }
 
-        if (
-          bucketIndex >= pagination.skip &&
-          bucketIndex < pagination.skip + pagination.limit
-        ) {
-          bucket.nids.push(nid);
           if (
-            bucket.nids.length - 1 >= hitPagination.skip &&
-            bucket.nids.length - 1 < hitPagination.skip + hitPagination.limit
+            bucketIndex >= pagination.skip &&
+            bucketIndex < pagination.skip + pagination.limit
           ) {
-            bucket.hits.push(
-              await this.resultNode(trx, match, nid, options.hits ?? {})
-            );
+            bucket.nids.push(nid);
+            if (
+              bucket.nids.length - 1 >= hitPagination.skip &&
+              bucket.nids.length - 1 < hitPagination.skip + hitPagination.limit
+            ) {
+              bucket.hits.push(
+                await this.resultNode(trx, match, nid, options.hits ?? {})
+              );
+            }
           }
         }
       }
+
+      return {
+        buckets: buckets
+          .slice(pagination.skip, pagination.skip + pagination.limit)
+          .map(bucket => {
+            const result = {
+              key: bucket.key,
+              score: match.getScore(bucket.nids[0]),
+              count: bucket.nids.length,
+            } as AggregateResult<any, any>['buckets'][number];
+
+            if (options.hits) {
+              (result as any).hits = {
+                pagination: {
+                  count: bucket.nids.length,
+                  hasMore:
+                    bucket.nids.length >
+                    hitPagination.limit + hitPagination.skip,
+                  limit: hitPagination.limit,
+                  skip: hitPagination.skip,
+                },
+                nodes: bucket.hits,
+              } as SearchResult<any, any>;
+            }
+
+            return result;
+          }),
+        pagination: {
+          count: buckets.length,
+          hasMore: buckets.length > pagination.limit + pagination.skip,
+          limit: pagination.limit,
+          skip: pagination.skip,
+        },
+      };
+    } finally {
+      logger.debug(
+        `[indexer ${this.databaseName}] aggregate`,
+        performance.now() - startTime,
+        'ms'
+      );
     }
-
-    return {
-      buckets: buckets
-        .slice(pagination.skip, pagination.skip + pagination.limit)
-        .map(bucket => {
-          const result = {
-            key: bucket.key,
-            score: match.getScore(bucket.nids[0]),
-            count: bucket.nids.length,
-          } as AggregateResult<any, any>['buckets'][number];
-
-          if (options.hits) {
-            (result as any).hits = {
-              pagination: {
-                count: bucket.nids.length,
-                hasMore:
-                  bucket.nids.length > hitPagination.limit + hitPagination.skip,
-                limit: hitPagination.limit,
-                skip: hitPagination.skip,
-              },
-              nodes: bucket.hits,
-            } as SearchResult<any, any>;
-          }
-
-          return result;
-        }),
-      pagination: {
-        count: buckets.length,
-        hasMore: buckets.length > pagination.limit + pagination.skip,
-        limit: pagination.limit,
-        skip: pagination.skip,
-      },
-    };
   }
 
   async getAll(

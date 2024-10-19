@@ -9,10 +9,10 @@ import {
   Array as YArray,
   Doc as YDoc,
   Map as YMap,
-  type Text as YText,
+  Text as YText,
 } from 'yjs';
 
-import type { BlockIndexSchema, docIndexSchema } from '../schema';
+import type { BlockIndexSchema, DocIndexSchema } from '../schema';
 import type {
   WorkerIngoingMessage,
   WorkerInput,
@@ -68,12 +68,6 @@ async function crawlingDocData({
     return {};
   }
 
-  const ydoc = new YDoc();
-
-  if (!isEmptyUpdate(docBuffer)) {
-    applyUpdate(ydoc, docBuffer);
-  }
-
   let docExists: boolean | null = null;
 
   (
@@ -89,23 +83,68 @@ async function crawlingDocData({
       deletedDoc: [docId],
     };
   } else {
+    const ydoc = new YDoc();
+    let docTitle = '';
+    let summaryLenNeeded = 1000;
+    let summary = '';
+    const blockDocuments: Document<BlockIndexSchema>[] = [];
+
+    if (!isEmptyUpdate(docBuffer)) {
+      applyUpdate(ydoc, docBuffer);
+    }
+
     const blocks = ydoc.getMap<any>('blocks');
 
     if (blocks.size === 0) {
-      return {};
+      return { deletedDoc: [docId] };
     }
 
-    let docTitle = '';
-
-    const blockDocuments: Document<BlockIndexSchema>[] = [];
-
+    let rootBlockId: string | null = null;
     for (const block of blocks.values()) {
       const flavour = block.get('sys:flavour')?.toString();
       const blockId = block.get('sys:id')?.toString();
-
-      if (!flavour || !blockId) {
-        continue;
+      if (flavour === 'affine:page' && blockId) {
+        rootBlockId = blockId;
       }
+    }
+
+    if (!rootBlockId) {
+      return { deletedDoc: [docId] };
+    }
+
+    const queue: { parent?: string; id: string }[] = [{ id: rootBlockId }];
+    const visited = new Set<string>(); // avoid loop
+
+    const pushChildren = (id: string, block: YMap<any>) => {
+      const children = block.get('sys:children');
+      if (children instanceof YArray && children.length) {
+        for (let i = children.length - 1; i >= 0; i--) {
+          const childId = children.get(i);
+          if (childId && !visited.has(childId)) {
+            queue.push({ parent: id, id: childId });
+            visited.add(childId);
+          }
+        }
+      }
+    };
+
+    while (queue.length) {
+      const next = queue.pop();
+      if (!next) {
+        break;
+      }
+
+      const { parent: parentBlockId, id: blockId } = next;
+      const block = blockId ? blocks.get(blockId) : null;
+      const parentBlock = parentBlockId ? blocks.get(parentBlockId) : null;
+      if (!block) {
+        break;
+      }
+
+      const flavour = block.get('sys:flavour')?.toString();
+      const parentFlavour = parentBlock?.get('sys:flavour')?.toString();
+
+      pushChildren(blockId, block);
 
       if (flavour === 'affine:page') {
         docTitle = block.get('prop:title').toString();
@@ -150,6 +189,11 @@ async function crawlingDocData({
             .filter(ref => !!ref)
         );
 
+        const databaseName =
+          flavour === 'affine:paragraph' && parentFlavour === 'affine:database' // if block is a database row
+            ? parentBlock?.get('prop:title')?.toString()
+            : undefined;
+
         blockDocuments.push(
           Document.from<BlockIndexSchema>(`${docId}:${blockId}`, {
             docId,
@@ -164,8 +208,18 @@ async function crawlingDocData({
               },
               { refDocId: [], ref: [] }
             ),
+            parentFlavour,
+            parentBlockId,
+            additional: databaseName
+              ? JSON.stringify({ databaseName })
+              : undefined,
           })
         );
+
+        if (summaryLenNeeded > 0) {
+          summary += text.toString();
+          summaryLenNeeded -= text.length;
+        }
       }
 
       if (
@@ -183,6 +237,8 @@ async function crawlingDocData({
               blockId,
               refDocId: [pageId],
               ref: [JSON.stringify({ docId: pageId, ...params })],
+              parentFlavour,
+              parentBlockId,
             })
           );
         }
@@ -197,6 +253,8 @@ async function crawlingDocData({
               flavour,
               blockId,
               blob: [blobId],
+              parentFlavour,
+              parentBlockId,
             })
           );
         }
@@ -237,6 +295,8 @@ async function crawlingDocData({
             flavour,
             blockId,
             content: texts,
+            parentFlavour,
+            parentBlockId,
           })
         );
       }
@@ -244,32 +304,35 @@ async function crawlingDocData({
       if (flavour === 'affine:database') {
         const texts = [];
         const columnsObj = block.get('prop:columns');
-        if (!(columnsObj instanceof YArray)) {
-          continue;
+        const databaseTitle = block.get('prop:title');
+        if (databaseTitle instanceof YText) {
+          texts.push(databaseTitle.toString());
         }
-        for (const column of columnsObj) {
-          if (!(column instanceof YMap)) {
-            continue;
-          }
-          if (typeof column.get('name') === 'string') {
-            texts.push(column.get('name'));
-          }
-
-          const data = column.get('data');
-          if (!(data instanceof YMap)) {
-            continue;
-          }
-          const options = data.get('options');
-          if (!(options instanceof YArray)) {
-            continue;
-          }
-          for (const option of options) {
-            if (!(option instanceof YMap)) {
+        if (columnsObj instanceof YArray) {
+          for (const column of columnsObj) {
+            if (!(column instanceof YMap)) {
               continue;
             }
-            const value = option.get('value');
-            if (typeof value === 'string') {
-              texts.push(value);
+            if (typeof column.get('name') === 'string') {
+              texts.push(column.get('name'));
+            }
+
+            const data = column.get('data');
+            if (!(data instanceof YMap)) {
+              continue;
+            }
+            const options = data.get('options');
+            if (!(options instanceof YArray)) {
+              continue;
+            }
+            for (const option of options) {
+              if (!(option instanceof YMap)) {
+                continue;
+              }
+              const value = option.get('value');
+              if (typeof value === 'string') {
+                texts.push(value);
+              }
             }
           }
         }
@@ -289,8 +352,9 @@ async function crawlingDocData({
       addedDoc: [
         {
           id: docId,
-          doc: Document.from<typeof docIndexSchema>(docId, {
+          doc: Document.from<DocIndexSchema>(docId, {
             title: docTitle,
+            summary,
           }),
           blocks: blockDocuments,
         },
