@@ -114,13 +114,8 @@ async function writeAffineDatabase(allDatabases, binaries) {
 async function readAffineLocalStorage() {
   const data = {};
 
-  const keys = [
-    'jotai-workspaces',
-    'last_page_id',
-    'last_workspace_id',
-    'affine-local-workspace',
-    'is-first-open',
-  ];
+  const keys = Object.keys(window.localStorage);
+
   for (const key of keys) {
     const value = window.localStorage.getItem(key);
     data[key] = value;
