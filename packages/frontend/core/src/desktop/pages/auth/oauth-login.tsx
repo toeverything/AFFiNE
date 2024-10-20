@@ -66,7 +66,7 @@ export const Component = () => {
 
   useEffect(() => {
     auth
-      .oauthPreflight(data.provider, data.client, data.redirectUri)
+      .oauthPreflight(data.provider, data.client, true, data.redirectUri)
       .then(url => {
         // this is the url of oauth provider auth page, can't navigate with react-router
         location.href = url;

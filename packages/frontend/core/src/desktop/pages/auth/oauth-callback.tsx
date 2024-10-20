@@ -20,16 +20,33 @@ interface LoaderData {
 export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
   const queries = url.searchParams;
-  const code = queries.get('code');
-  let stateStr = queries.get('state') ?? '{}';
 
-  if (!code || !stateStr) {
-    return redirect('/sign-in?error=Invalid oauth callback parameters');
+  {
+    // new client login flow
+    const token = queries.get('token');
+    const client = queries.get('client');
+    const provider = queries.get('provider');
+    if (token && client && provider) {
+      const authParams = new URLSearchParams();
+      authParams.set('method', 'oauth');
+      authParams.set('payload', JSON.stringify({ token, provider }));
+
+      return redirect(
+        `/open-app/url?url=${encodeURIComponent(`${client}://authentication?${authParams.toString()}`)}`
+      );
+    }
   }
 
+  /** @deprecated */
+  const code = queries.get('code');
+  const stateStr = queries.get('state') ?? '{}';
+
   try {
+    if (!code || !stateStr) {
+      return redirect('/sign-in?error=Invalid oauth callback parameters');
+    }
+
     const { state, client, provider } = JSON.parse(stateStr);
-    stateStr = state;
 
     const payload: LoaderData = {
       state,

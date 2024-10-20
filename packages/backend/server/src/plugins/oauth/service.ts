@@ -9,6 +9,13 @@ import { OAuthProviderFactory } from './register';
 const OAUTH_STATE_KEY = 'OAUTH_STATE';
 
 interface OAuthState {
+  // client id, currently it's the client schema
+  // if not provided, it's web platform
+  clientId?: string;
+  // client state
+  state?: string;
+  // provider authorize code
+  code?: string;
   redirectUri?: string;
   provider: OAuthProviderName;
 }
