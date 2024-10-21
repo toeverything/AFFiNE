@@ -11,6 +11,8 @@
         "core",
         "web",
         "mobile",
+        "ios",
+        "android",
         "docs",
         "storybook",
         "component",
