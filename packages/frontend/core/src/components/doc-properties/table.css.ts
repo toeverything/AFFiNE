@@ -124,6 +124,27 @@ export const tableHeaderDivider = style({
   },
 });
 
+export const header = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  padding: 4,
+});
+
+export const headerTrigger = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  flex: 1,
+});
+
+export const headerName = style({
+  display: 'flex',
+  alignItems: 'center',
+  fontSize: cssVar('fontSm'),
+  fontWeight: 500,
+});
+
 export const tableBodyRoot = style({
   display: 'flex',
   flexDirection: 'column',

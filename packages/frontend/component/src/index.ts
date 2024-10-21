@@ -20,6 +20,7 @@ export * from './ui/menu';
 export * from './ui/modal';
 export * from './ui/notification';
 export * from './ui/popover';
+export * from './ui/progress';
 export * from './ui/property';
 export * from './ui/radio';
 export * from './ui/safe-area';
