@@ -28,7 +28,7 @@ export class MemoryIndex<S extends Schema> implements Index<S> {
     return (await this.getAll([id]))[0] ?? null;
   }
 
-  getAll(ids: string[]): Promise<Document<S>[]> {
+  getAll(ids?: string[]): Promise<Document<S>[]> {
     return Promise.resolve(this.data.getAll(ids));
   }
 
