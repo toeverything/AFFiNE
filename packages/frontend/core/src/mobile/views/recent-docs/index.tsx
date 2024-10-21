@@ -1,9 +1,9 @@
 import { useBlockSuiteDocMeta } from '@affine/core/components/hooks/use-block-suite-page-meta';
-import { CollapsibleSection } from '@affine/core/modules/explorer';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
 import { DocCard } from '../../components/doc-card';
+import { CollapsibleSection } from '../../components/explorer';
 import * as styles from './styles.css';
 
 export const RecentDocs = ({ max = 5 }: { max?: number }) => {

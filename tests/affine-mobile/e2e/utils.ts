@@ -13,3 +13,10 @@ export async function expandCollapsibleSection(page: Page, name: string) {
   await expect(section).toBeVisible();
   return section;
 }
+
+/**
+ * Click header "<" button
+ */
+export async function pageBack(page: Page) {
+  await page.getByTestId('page-header-back').tap();
+}
