@@ -19,9 +19,8 @@ export const SidebarSwitch = ({
   const preventHovering = useLiveData(appSidebarService.preventHovering$);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const switchRef = useRef<HTMLDivElement>(null);
-
   const handleMouseEnter = useCallback(() => {
-    if (open || preventHovering) {
+    if (preventHovering || open) {
       return;
     }
     appSidebarService.setHovering(true);
@@ -32,6 +31,7 @@ export const SidebarSwitch = ({
       clearTimeout(timeoutRef.current);
     }
     if (open) {
+      appSidebarService.setHovering(false);
       timeoutRef.current = setTimeout(() => {
         appSidebarService.setPreventHovering(false);
       }, 500);

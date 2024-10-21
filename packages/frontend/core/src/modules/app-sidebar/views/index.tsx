@@ -181,6 +181,7 @@ export function AppSidebar({ children }: PropsWithChildren) {
         onOpen={handleOpenChange}
         onResizing={handleResizing}
         onWidthChange={handleWidthChange}
+        unmountOnExit={false}
         className={clsx(navWrapperStyle, {
           [hoverNavWrapperStyle]: sidebarState === 'floating',
         })}
