@@ -8,6 +8,7 @@ export const root = style({
   flexShrink: 0,
   width: '100%',
   alignItems: 'stretch',
+  contain: 'strict',
   transition: 'background-color 0.2s, opacity 0.2s',
   ':hover': {
     backgroundColor: cssVar('hoverColor'),

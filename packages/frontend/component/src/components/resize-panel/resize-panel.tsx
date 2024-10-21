@@ -169,7 +169,9 @@ export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
         data-handle-position={resizeHandlePos}
         data-enable-animation={enableAnimation && !resizing}
       >
-        {!(status === 'exited' && unmountOnExit !== false) && children}
+        <div className={styles.content}>
+          {!(status === 'exited' && unmountOnExit !== false) && children}
+        </div>
         <ResizeHandle
           resizeHandlePos={resizeHandlePos}
           resizeHandleOffset={resizeHandleOffset}

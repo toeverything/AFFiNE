@@ -34,7 +34,7 @@ export const root = style({
       },
     '&[data-open="true"][data-handle-position="left"][data-is-floating="true"]':
       {
-        transform: `translateX(-${panelWidthVar})`,
+        transform: `translateX(calc(${panelWidthVar} * -1))`,
       },
     '&[data-enable-animation="true"]': {
       transition: `margin-left ${animationTimeout}, margin-right ${animationTimeout}, transform ${animationTimeout}, background ${animationTimeout}`,
@@ -44,6 +44,12 @@ export const root = style({
       visibility: 'hidden',
     },
   },
+});
+
+export const content = style({
+  contain: 'strict',
+  width: '100%',
+  height: '100%',
 });
 
 export const panelContent = style({

@@ -7,6 +7,7 @@ export const root = style({
   // 42 + 12
   flexShrink: 0,
   width: '100%',
+  contain: 'strict',
   alignItems: 'stretch',
   transition: 'background-color 0.2s, opacity 0.2s',
   ':hover': {

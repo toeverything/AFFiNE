@@ -20,6 +20,7 @@ export const header = style({
   flexShrink: 0,
   background: cssVar('backgroundPrimaryColor'),
   padding: '0 16px',
+  contain: 'strict',
   '@media': {
     print: {
       display: 'none',
@@ -31,6 +32,7 @@ export const viewBodyContainer = style({
   display: 'flex',
   flex: 1,
   overflow: 'hidden',
+  contain: 'strict',
 });
 
 export const leftSidebarButton = style({

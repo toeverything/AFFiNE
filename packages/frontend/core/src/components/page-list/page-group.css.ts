@@ -46,6 +46,7 @@ export const header = style({
   alignItems: 'center',
   padding: '0px 16px 0px 6px',
   height: '28px',
+  contain: 'strict',
   background: cssVar('backgroundPrimaryColor'),
   ':hover': {
     background: cssVar('hoverColorFilled'),
