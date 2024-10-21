@@ -4,6 +4,41 @@ import { GeneralTokenizer } from '../tokenizer';
 
 test('tokenizer', () => {
   {
+    const tokens = new GeneralTokenizer().tokenize('abc123');
+
+    expect(tokens).toEqual([
+      { term: 'abc', start: 0, end: 3 },
+      { term: '123', start: 3, end: 6 },
+    ]);
+  }
+
+  {
+    const tokens = new GeneralTokenizer().tokenize('some url www.example.com');
+
+    expect(tokens).toEqual([
+      { term: 'some', start: 0, end: 4 },
+      { term: 'url', start: 5, end: 8 },
+      { term: 'www.example.com', start: 9, end: 24 },
+    ]);
+  }
+
+  {
+    const tokens = new GeneralTokenizer().tokenize(
+      'long url https://www.example.com/foo/bar/BZZ?xxx=yyy&zzz#fff'
+    );
+
+    expect(tokens).toEqual([
+      { term: 'long', start: 0, end: 4 },
+      { term: 'url', start: 5, end: 8 },
+      {
+        term: 'https://www.example.com/foo/bar/bzz?xxx=yyy&zzz#fff',
+        start: 9,
+        end: 60,
+      },
+    ]);
+  }
+
+  {
     const tokens = new GeneralTokenizer().tokenize('hello  world,\n AFFiNE');
 
     expect(tokens).toEqual([
