@@ -16,15 +16,30 @@ export const SidebarSwitch = ({
 }) => {
   const appSidebarService = useService(AppSidebarService).sidebar;
   const open = useLiveData(appSidebarService.open$);
+  const preventHovering = useLiveData(appSidebarService.preventHovering$);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const switchRef = useRef<HTMLDivElement>(null);
 
   const handleMouseEnter = useCallback(() => {
+    if (open || preventHovering) {
+      return;
+    }
     appSidebarService.setHovering(true);
-  }, [appSidebarService]);
+  }, [appSidebarService, open, preventHovering]);
 
   const handleClickSwitch = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    if (open) {
+      timeoutRef.current = setTimeout(() => {
+        appSidebarService.setPreventHovering(false);
+      }, 500);
+    }
+
+    appSidebarService.setPreventHovering(true);
     appSidebarService.toggleSidebar();
-  }, [appSidebarService]);
+  }, [appSidebarService, open]);
 
   const t = useI18n();
   const tooltipContent = open
