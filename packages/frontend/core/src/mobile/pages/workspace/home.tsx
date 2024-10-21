@@ -1,21 +1,19 @@
 import { SafeArea, useThemeColorV2 } from '@affine/component';
+
+import { AppTabs } from '../../components';
 import {
   ExplorerCollections,
   ExplorerFavorites,
-  ExplorerMigrationFavorites,
-  ExplorerMobileContext,
   ExplorerOrganize,
-} from '@affine/core/modules/explorer';
-import { ExplorerTags } from '@affine/core/modules/explorer/views/sections/tags';
-
-import { AppTabs } from '../../components';
+  ExplorerTags,
+} from '../../components/explorer';
 import { HomeHeader, RecentDocs } from '../../views';
 
 export const Component = () => {
   useThemeColorV2('layer/background/secondary');
 
   return (
-    <ExplorerMobileContext.Provider value={true}>
+    <>
       <HomeHeader />
       <RecentDocs />
       <SafeArea bottom>
@@ -29,12 +27,11 @@ export const Component = () => {
         >
           <ExplorerFavorites />
           <ExplorerOrganize />
-          <ExplorerMigrationFavorites />
           <ExplorerCollections />
           <ExplorerTags />
         </div>
       </SafeArea>
       <AppTabs />
-    </ExplorerMobileContext.Provider>
+    </>
   );
 };
