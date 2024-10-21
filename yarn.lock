@@ -7652,14 +7652,14 @@ __metadata:
   linkType: hard
 
 "@nestjs/event-emitter@npm:^2.0.4":
-  version: 2.0.4
-  resolution: "@nestjs/event-emitter@npm:2.0.4"
+  version: 2.1.1
+  resolution: "@nestjs/event-emitter@npm:2.1.1"
   dependencies:
     eventemitter2: "npm:6.4.9"
   peerDependencies:
     "@nestjs/common": ^8.0.0 || ^9.0.0 || ^10.0.0
     "@nestjs/core": ^8.0.0 || ^9.0.0 || ^10.0.0
-  checksum: 10/9cc071370ee9fa388dad3fb25e87f47c2cbc77dd1e765c8f2deabb01b4d5b8b2128723d4c4e4872070e4e7dd7f157881a3296ae913b3e56e994de1dc271e443c
+  checksum: 10/79b1ae873515a11b577d9e57b2c605b6aa9830ba60017cc54097c49e543dc23abcfe625425e375fa3525998b87319b1b1c0437a75deabdedf7ebeb02ab487e0c
   languageName: node
   linkType: hard
 
