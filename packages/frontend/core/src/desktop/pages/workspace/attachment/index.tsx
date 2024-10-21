@@ -4,8 +4,8 @@ import type { ReactElement } from 'react';
 export const AttachmentPage = (): ReactElement => {
   return (
     <>
-      <div>{'Attachment Viewer'}</div>
       <PDFViewer />
+      <div>{'Attachment Viewer'}</div>
     </>
   );
 };
