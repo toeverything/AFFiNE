@@ -1,6 +1,8 @@
 import { cssVar } from '@toeverything/theme';
 import { style, type StyleRule } from '@vanilla-extract/css';
 
+const editorBottomPadding = 32;
+
 export const docEditorRoot = style({
   display: 'block',
   background: cssVar('backgroundPrimaryColor'),
@@ -29,10 +31,13 @@ export const docEditorGap = style({
   display: 'block',
   width: '100%',
   margin: '0 auto',
-  paddingTop: 50,
+  // hack to cover the bottom padding of the editor
+  marginTop: -editorBottomPadding,
+  paddingTop: 50 + editorBottomPadding,
   paddingBottom: 50,
   cursor: 'text',
   flexGrow: 1,
+  zIndex: 1,
 });
 
 const titleTagBasic = style({

@@ -126,10 +126,24 @@ export const BlocksuiteEditorContainer = forwardRef<
 
   const handleClickPageModeBlank = useCallback(() => {
     if (shared || page.readonly) return;
-    affineEditorContainerProxy.host?.std.command.exec(
-      'appendParagraph' as never,
-      {}
-    );
+    const std = affineEditorContainerProxy.host?.std;
+    if (!std) {
+      return;
+    }
+    const blocks = page.getBlocks();
+    const lastBlock = blocks[blocks.length - 1];
+    if (
+      lastBlock &&
+      lastBlock.flavour === 'affine:paragraph' &&
+      lastBlock.text?.length === 0
+    ) {
+      std.command.exec('focusBlockEnd' as never, {
+        focusBlock: std.view.getBlock(lastBlock.id) as never,
+      });
+      return;
+    }
+
+    std.command.exec('appendParagraph' as never, {});
   }, [affineEditorContainerProxy, page, shared]);
 
   return (
