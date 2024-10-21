@@ -1,79 +1,49 @@
 import { Button, type ButtonProps, Skeleton } from '@affine/component';
 import { generateSubscriptionCallbackLink } from '@affine/core/components/hooks/affine/use-subscription-notify';
-import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AuthService, SubscriptionService } from '@affine/core/modules/cloud';
-import { popupWindow } from '@affine/core/utils';
 import { SubscriptionPlan, SubscriptionRecurring } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { useLiveData, useService } from '@toeverything/infra';
-import { nanoid } from 'nanoid';
-import { useEffect, useState } from 'react';
+import { useCallback, useMemo } from 'react';
+
+import { CheckoutSlot } from '../../checkout-slot';
 
 export interface AISubscribeProps extends ButtonProps {
-  displayedFrequency?: 'yearly' | 'monthly';
+  displayedFrequency?: 'yearly' | 'monthly' | null;
 }
 
 export const AISubscribe = ({
   displayedFrequency = 'yearly',
   ...btnProps
 }: AISubscribeProps) => {
-  const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
-  const [isMutating, setMutating] = useState(false);
-  const [isOpenedExternalWindow, setOpenedExternalWindow] = useState(false);
   const authService = useService(AuthService);
 
   const subscriptionService = useService(SubscriptionService);
   const price = useLiveData(subscriptionService.prices.aiPrice$);
-  useEffect(() => {
-    subscriptionService.prices.revalidate();
-  }, [subscriptionService]);
 
   const t = useI18n();
 
-  useEffect(() => {
-    if (isOpenedExternalWindow) {
-      // when the external window is opened, revalidate the subscription when window get focus
-      window.addEventListener(
-        'focus',
-        subscriptionService.subscription.revalidate
-      );
-      return () => {
-        window.removeEventListener(
-          'focus',
-          subscriptionService.subscription.revalidate
-        );
-      };
-    }
-    return;
-  }, [isOpenedExternalWindow, subscriptionService]);
-
-  const subscribe = useAsyncCallback(async () => {
-    setMutating(true);
+  const onBeforeCheckout = useCallback(() => {
     track.$.settingsPanel.plans.checkout({
       plan: SubscriptionPlan.AI,
       recurring: SubscriptionRecurring.Yearly,
     });
-    try {
-      const session = await subscriptionService.createCheckoutSession({
-        recurring: SubscriptionRecurring.Yearly,
-        idempotencyKey,
-        plan: SubscriptionPlan.AI,
-        variant: null,
-        coupon: null,
-        successCallbackLink: generateSubscriptionCallbackLink(
-          authService.session.account$.value,
-          SubscriptionPlan.AI,
-          SubscriptionRecurring.Yearly
-        ),
-      });
-      popupWindow(session);
-      setOpenedExternalWindow(true);
-      setIdempotencyKey(nanoid());
-    } finally {
-      setMutating(false);
-    }
-  }, [authService, idempotencyKey, subscriptionService]);
+  }, []);
+  const checkoutOptions = useMemo(
+    () => ({
+      recurring: SubscriptionRecurring.Yearly,
+      plan: SubscriptionPlan.AI,
+      variant: null,
+      coupon: null,
+      successCallbackLink: generateSubscriptionCallbackLink(
+        authService.session.account$.value,
+        SubscriptionPlan.AI,
+        SubscriptionRecurring.Yearly
+      ),
+    }),
+    [authService.session.account$.value]
+  );
 
   if (!price || !price.yearlyAmount) {
     return (
@@ -100,25 +70,26 @@ export const AISubscribe = ({
       : t['com.affine.payment.billing-setting.month']();
 
   return (
-    <Button
-      loading={isMutating}
-      onClick={subscribe}
-      variant="primary"
-      {...btnProps}
-    >
-      {btnProps.children ?? `${priceReadable} / ${priceFrequency}`}
-      {displayedFrequency === 'monthly' ? (
-        <span
-          style={{
-            fontSize: 10,
-            opacity: 0.75,
-            letterSpacing: -0.2,
-            paddingLeft: 4,
-          }}
-        >
-          {t['com.affine.payment.ai.subscribe.billed-annually']()}
-        </span>
-      ) : null}
-    </Button>
+    <CheckoutSlot
+      onBeforeCheckout={onBeforeCheckout}
+      checkoutOptions={checkoutOptions}
+      renderer={props => (
+        <Button variant="primary" {...props} {...btnProps}>
+          {btnProps.children ?? `${priceReadable} / ${priceFrequency}`}
+          {displayedFrequency === 'monthly' ? (
+            <span
+              style={{
+                fontSize: 10,
+                opacity: 0.75,
+                letterSpacing: -0.2,
+                paddingLeft: 4,
+              }}
+            >
+              {t['com.affine.payment.ai.subscribe.billed-annually']()}
+            </span>
+          ) : null}
+        </Button>
+      )}
+    />
   );
 };
