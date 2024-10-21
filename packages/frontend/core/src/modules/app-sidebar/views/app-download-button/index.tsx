@@ -2,7 +2,7 @@ import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-e
 import { track } from '@affine/track';
 import { CloseIcon, DownloadIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 import * as styles from './index.css';
 
@@ -14,10 +14,16 @@ export function AppDownloadButton({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(null);
+
+  useEffect(() => {
+    const isClosed = localStorage.getItem('appDownloadClosed') === 'true';
+    setShow(!isClosed);
+  }, []);
 
   const handleClose = useCatchEventCallback(() => {
     setShow(false);
+    localStorage.setItem('appDownloadClosed', 'true');
   }, []);
 
   // TODO(@JimmFly): unify this type of literal value.
