@@ -49,6 +49,22 @@ export function AppSidebar({ children }: PropsWithChildren) {
   const hovering = useLiveData(appSidebarService.hovering$) && open !== true;
   const resizing = useLiveData(appSidebarService.resizing$);
   const [deferredHovering, setDeferredHovering] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (BUILD_CONFIG.isElectron) {
+      setInitialized(true);
+      return;
+    }
+    const shouldFloating = window.matchMedia(
+      `(max-width: ${floatingMaxWidth}px)`
+    ).matches;
+
+    appSidebarService.setSmallScreenMode(shouldFloating);
+    setInitialized(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (open) {
       // if open, we don't need to show the floating sidebar
@@ -90,7 +106,6 @@ export function AppSidebar({ children }: PropsWithChildren) {
     }
 
     const dOnResize = debounce(onResize, 50);
-    onResize();
     window.addEventListener('resize', dOnResize);
     return () => {
       window.removeEventListener('resize', dOnResize);
@@ -146,6 +161,10 @@ export function AppSidebar({ children }: PropsWithChildren) {
       document.removeEventListener('mousemove', onMouseMove);
     };
   }, [appSidebarService, resizing, sidebarState, width]);
+
+  if (!initialized) {
+    return null;
+  }
 
   return (
     <>
