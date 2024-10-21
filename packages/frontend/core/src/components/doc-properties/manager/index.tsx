@@ -134,7 +134,7 @@ const PropertyItem = ({
           <MoreHorizontalIcon />
         </IconButton>
       </Menu>
-      <DropIndicator edge={closestEdge} />
+      <DropIndicator edge={closestEdge} noTerminal />
     </div>
   );
 };

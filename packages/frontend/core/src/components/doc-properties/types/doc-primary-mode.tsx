@@ -9,6 +9,8 @@ import type { DocMode } from '@blocksuite/affine/blocks';
 import { DocService, useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
+import * as styles from './doc-primary-mode.css';
+
 export const DocPrimaryModeValue = () => {
   const t = useI18n();
   const doc = useService(DocService).doc;
@@ -46,12 +48,14 @@ export const DocPrimaryModeValue = () => {
     [doc, t]
   );
   return (
-    <PropertyValue>
+    <PropertyValue className={styles.container}>
       <RadioGroup
         width={194}
+        itemHeight={24}
         value={primaryMode}
         onChange={handleChange}
         items={DocModeItems}
+        className={styles.radioGroup}
       />
     </PropertyValue>
   );

@@ -120,9 +120,9 @@ test('property table reordering', async ({ page }) => {
 
   // new order should be Doc mode, (Tags), Number, Date, Checkbox, Text
   for (const [index, property] of [
-    'Journal',
-    'Doc mode',
     'Tags',
+    'Doc mode',
+    'Journal',
     'Number',
     'Date',
     'Checkbox',
@@ -160,9 +160,9 @@ test('page info show more will show all properties', async ({ page }) => {
   await page.click('[data-testid="property-collapsible-button"]');
 
   for (const [index, property] of [
-    'Journal',
-    'Doc mode',
     'Tags',
+    'Doc mode',
+    'Journal',
     'Text',
     'Number',
     'Date',

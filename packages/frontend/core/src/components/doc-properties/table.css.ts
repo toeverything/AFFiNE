@@ -148,7 +148,7 @@ export const tableBodySortable = style({
 export const actionContainer = style({
   display: 'flex',
   flexDirection: 'row',
-  gap: 8,
+  paddingTop: '2px',
   selectors: {
     [`[data-property-collapsed="true"] &`]: {
       display: 'none',
@@ -157,13 +157,15 @@ export const actionContainer = style({
 });
 
 export const propertyActionButton = style({
-  alignSelf: 'flex-start',
   fontSize: cssVar('fontSm'),
   color: `${cssVarV2('text/secondary')}`,
   padding: '0 6px',
-  height: 36,
+  height: 34,
   fontWeight: 400,
   gap: 6,
+  width: '160px',
+  borderRadius: '4px',
+  justifyContent: 'start',
   '@media': {
     print: {
       display: 'none',

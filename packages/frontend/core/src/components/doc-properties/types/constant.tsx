@@ -21,6 +21,13 @@ import { TextValue } from './text';
 import type { PropertyValueProps } from './types';
 
 export const DocPropertyTypes = {
+  tags: {
+    icon: TagIcon,
+    value: TagsValue,
+    name: 'com.affine.page-properties.property.tags',
+    uniqueId: 'tags',
+    renameable: false,
+  },
   text: {
     icon: TextIcon,
     value: TextValue,
@@ -31,15 +38,15 @@ export const DocPropertyTypes = {
     value: NumberValue,
     name: 'com.affine.page-properties.property.number',
   },
-  date: {
-    icon: DateTimeIcon,
-    value: DateValue,
-    name: 'com.affine.page-properties.property.date',
-  },
   checkbox: {
     icon: CheckBoxCheckLinearIcon,
     value: CheckboxValue,
     name: 'com.affine.page-properties.property.checkbox',
+  },
+  date: {
+    icon: DateTimeIcon,
+    value: DateValue,
+    name: 'com.affine.page-properties.property.date',
   },
   createdBy: {
     icon: CreatedEditedIcon,
@@ -51,13 +58,6 @@ export const DocPropertyTypes = {
     value: UpdatedByValue,
     name: 'com.affine.page-properties.property.updatedBy',
   },
-  tags: {
-    icon: TagIcon,
-    value: TagsValue,
-    name: 'com.affine.page-properties.property.tags',
-    uniqueId: 'tags',
-    renameable: false,
-  },
   docPrimaryMode: {
     icon: FileIcon,
     value: DocPrimaryModeValue,
@@ -67,8 +67,6 @@ export const DocPropertyTypes = {
     icon: TodayIcon,
     value: JournalValue,
     name: 'com.affine.page-properties.property.journal',
-    uniqueId: 'journal',
-    renameable: false,
   },
 } as Record<
   string,
