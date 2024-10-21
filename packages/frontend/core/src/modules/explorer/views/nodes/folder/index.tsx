@@ -43,6 +43,8 @@ import {
 import { difference } from 'lodash-es';
 import { useCallback, useMemo, useState } from 'react';
 
+import { EXPLORER_KEY } from '../../../config';
+import { ExplorerService } from '../../../services/explorer';
 import { ExplorerTreeNode, type ExplorerTreeNodeDropEffect } from '../../tree';
 import type { ExplorerTreeNodeIcon } from '../../tree/node';
 import type { NodeOperation } from '../../tree/types';
@@ -62,10 +64,12 @@ export const ExplorerFolderNode = ({
   dropEffect,
   canDrop,
   reorderable,
+  explorerKey,
 }: {
   defaultRenaming?: boolean;
   nodeId: string;
   onDrop?: (data: DropTargetDropEvent<AffineDNDData>, node: FolderNode) => void;
+  explorerKey?: string;
   operations?:
     | NodeOperation[]
     | ((type: string, node: FolderNode) => NodeOperation[]);
@@ -76,6 +80,8 @@ export const ExplorerFolderNode = ({
   const node = useLiveData(organizeService.folderTree.folderNode$(nodeId));
   const type = useLiveData(node?.type$);
   const data = useLiveData(node?.data$);
+
+  const collapsedKey = explorerKey || EXPLORER_KEY.organize;
   const handleDrop = useCallback(
     (data: DropTargetDropEvent<AffineDNDData>) => {
       if (!node) {
@@ -109,6 +115,7 @@ export const ExplorerFolderNode = ({
         dropEffect={dropEffect}
         reorderable={reorderable}
         canDrop={canDrop}
+        explorerKey={collapsedKey}
       />
     );
   } else if (type === 'doc') {
@@ -122,6 +129,7 @@ export const ExplorerFolderNode = ({
           canDrop={canDrop}
           dropEffect={dropEffect}
           operations={additionalOperations}
+          explorerKey={collapsedKey}
         />
       )
     );
@@ -136,6 +144,7 @@ export const ExplorerFolderNode = ({
           reorderable={reorderable}
           dropEffect={dropEffect}
           operations={additionalOperations}
+          explorerKey={collapsedKey}
         />
       )
     );
@@ -150,6 +159,7 @@ export const ExplorerFolderNode = ({
           reorderable
           dropEffect={dropEffect}
           operations={additionalOperations}
+          explorerKey={collapsedKey}
         />
       )
     );
@@ -182,18 +192,25 @@ export const ExplorerFolderNodeFolder = ({
   canDrop,
   dropEffect,
   reorderable,
+  explorerKey,
 }: {
   defaultRenaming?: boolean;
+  explorerKey: string;
   node: FolderNode;
 } & GenericExplorerNode) => {
   const t = useI18n();
-  const { workbenchService, workspaceService, featureFlagService } =
-    useServices({
-      WorkbenchService,
-      WorkspaceService,
-      CompatibleFavoriteItemsAdapter,
-      FeatureFlagService,
-    });
+  const {
+    workbenchService,
+    workspaceService,
+    featureFlagService,
+    explorerService,
+  } = useServices({
+    WorkbenchService,
+    WorkspaceService,
+    CompatibleFavoriteItemsAdapter,
+    FeatureFlagService,
+    ExplorerService,
+  });
   const openDocsSelector = useSelectDoc();
   const openTagsSelector = useSelectTag();
   const openCollectionsSelector = useSelectCollection();
@@ -201,7 +218,21 @@ export const ExplorerFolderNodeFolder = ({
   const enableEmojiIcon = useLiveData(
     featureFlagService.flags.enable_emoji_folder_icon.$
   );
-  const [collapsed, setCollapsed] = useState(true);
+
+  const noteExplorer = explorerService.notes;
+
+  const collapsedKey = useMemo(() => {
+    return explorerKey + ':folder:' + node.id;
+  }, [explorerKey, node.id]);
+
+  const collapsed = useLiveData(noteExplorer.collapsed$(collapsedKey));
+
+  const setCollapsed = useCallback(
+    (collapsed: boolean) => {
+      noteExplorer.setCollapsed(collapsedKey, collapsed);
+    },
+    [collapsedKey, noteExplorer]
+  );
   const [newFolderId, setNewFolderId] = useState<string | null>(null);
 
   const { createPage } = usePageHelper(
@@ -559,7 +590,7 @@ export const ExplorerFolderNodeFolder = ({
       target: 'doc',
     });
     setCollapsed(false);
-  }, [createPage, node, workbenchService.workbench]);
+  }, [createPage, node, setCollapsed, workbenchService.workbench]);
 
   const handleCreateSubfolder = useCallback(() => {
     const newFolderId = node.createFolder(
@@ -569,7 +600,7 @@ export const ExplorerFolderNodeFolder = ({
     track.$.navigationPanel.organize.createOrganizeItem({ type: 'folder' });
     setCollapsed(false);
     setNewFolderId(newFolderId);
-  }, [node, t]);
+  }, [node, setCollapsed, t]);
 
   const handleAddToFolder = useCallback(
     (type: 'doc' | 'collection' | 'tag') => {
@@ -613,6 +644,7 @@ export const ExplorerFolderNodeFolder = ({
       openCollectionsSelector,
       openDocsSelector,
       openTagsSelector,
+      setCollapsed,
     ]
   );
 
@@ -747,14 +779,17 @@ export const ExplorerFolderNodeFolder = ({
     [t]
   );
 
-  const handleCollapsedChange = useCallback((collapsed: boolean) => {
-    if (collapsed) {
-      setNewFolderId(null); // reset new folder id to clear the renaming state
-      setCollapsed(true);
-    } else {
-      setCollapsed(false);
-    }
-  }, []);
+  const handleCollapsedChange = useCallback(
+    (collapsed: boolean) => {
+      if (collapsed) {
+        setNewFolderId(null); // reset new folder id to clear the renaming state
+        setCollapsed(true);
+      } else {
+        setCollapsed(false);
+      }
+    },
+    [setCollapsed]
+  );
 
   return (
     <ExplorerTreeNode
@@ -785,6 +820,7 @@ export const ExplorerFolderNodeFolder = ({
           onDrop={handleDropOnChildren}
           operations={childrenOperations}
           dropEffect={handleDropEffectOnChildren}
+          explorerKey={collapsedKey}
           canDrop={handleChildrenCanDrop}
           location={{
             at: 'explorer:organize:folder-node',
