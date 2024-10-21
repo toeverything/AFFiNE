@@ -1,11 +1,11 @@
 export class Connection {
-  protected connected: boolean = false;
-  connect(): Promise<void> {
+  connected = false;
+
+  async connect() {
     this.connected = true;
-    return Promise.resolve();
   }
-  disconnect(): Promise<void> {
+
+  async disconnect() {
     this.connected = false;
-    return Promise.resolve();
   }
 }

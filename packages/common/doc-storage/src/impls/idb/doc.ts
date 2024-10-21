@@ -1,21 +1,22 @@
-import { type DocRecord, DocStorage, type DocUpdate } from '../../storage';
-import { type SpaceIDB, SpaceIndexedDbManager } from './db';
+import {
+  type DocRecord,
+  DocStorage,
+  type DocStorageOptions,
+  type DocUpdate,
+} from '../../storage';
+import { type SpaceIDB } from './db';
 
-export class IndexedDBDocStorage extends DocStorage {
-  private db!: SpaceIDB;
+export interface IndexedDBDocStorageOptions extends DocStorageOptions {
+  db: SpaceIDB;
+}
 
+export class IndexedDBDocStorage extends DocStorage<IndexedDBDocStorageOptions> {
   get name() {
     return 'idb';
   }
 
-  override async connect(): Promise<void> {
-    this.db = await SpaceIndexedDbManager.open(
-      `${this.spaceType}:${this.spaceId}`
-    );
-  }
-
-  override async disconnect(): Promise<void> {
-    this.db.close();
+  get db() {
+    return this.options.db;
   }
 
   override async pushDocUpdates(

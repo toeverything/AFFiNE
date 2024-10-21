@@ -113,6 +113,7 @@ interface UpdateAwarenessMessage {
   docId: string;
   awarenessUpdate: string;
 }
+
 @WebSocketGateway()
 export class SpaceSyncGateway
   implements OnGatewayConnection, OnGatewayDisconnect
@@ -178,26 +179,6 @@ export class SpaceSyncGateway
         version: version || 'unknown',
         serverVersion: AFFiNE.version,
       });
-    }
-  }
-
-  async joinWorkspace(
-    client: Socket,
-    room: `${string}:${'sync' | 'awareness'}`
-  ) {
-    await client.join(room);
-  }
-
-  async leaveWorkspace(
-    client: Socket,
-    room: `${string}:${'sync' | 'awareness'}`
-  ) {
-    await client.leave(room);
-  }
-
-  assertInWorkspace(client: Socket, room: `${string}:${'sync' | 'awareness'}`) {
-    if (!client.rooms.has(room)) {
-      throw new NotInSpace({ spaceId: room.split(':')[0] });
     }
   }
 

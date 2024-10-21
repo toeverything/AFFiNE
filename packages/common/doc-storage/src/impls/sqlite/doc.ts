@@ -20,10 +20,6 @@ export class SqliteDocStorage extends DocStorage<SqliteDocStorageOptions> {
     return this.options.db;
   }
 
-  constructor(options: SqliteDocStorageOptions) {
-    super(options);
-  }
-
   override pushDocUpdates(
     docId: string,
     updates: Uint8Array[]
