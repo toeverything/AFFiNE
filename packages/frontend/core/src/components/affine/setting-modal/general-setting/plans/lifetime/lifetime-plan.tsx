@@ -17,7 +17,7 @@ export const LifetimePlan = () => {
     subscriptionService.prices.readableLifetimePrice$
   );
   const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
-  const isOnetime = useLiveData(subscriptionService.subscription.isOnetime$);
+  const isOnetime = useLiveData(subscriptionService.subscription.isOnetimePro$);
 
   if (!readableLifetimePrice) return null;
 

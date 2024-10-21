@@ -789,6 +789,7 @@
   "com.affine.payment.cloud.free.description": "Open-source under MIT license.",
   "com.affine.payment.cloud.free.name": "FOSS + Basic",
   "com.affine.payment.cloud.free.title": "Free forever",
+  "com.affine.payment.cloud.onetime.included": "Included in Pro plan",
   "com.affine.payment.cloud.lifetime.included": "Included in Believer plan",
   "com.affine.payment.cloud.pricing-plan.select.caption": "We host, no technical setup required.",
   "com.affine.payment.cloud.pricing-plan.select.title": "Hosted by AFFiNE.Pro",
