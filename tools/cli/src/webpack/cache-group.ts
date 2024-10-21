@@ -5,11 +5,6 @@ function testPackageName(regexp: RegExp): (module: any) => boolean {
 
 // https://hackernoon.com/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
 export const productionCacheGroups = {
-  errorHandler: {
-    test: /global-error-handler/,
-    priority: 1000,
-    enforce: true,
-  },
   asyncVendor: {
     test: /[\\/]node_modules[\\/]/,
     name(module: any) {

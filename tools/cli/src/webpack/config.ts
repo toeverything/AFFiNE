@@ -400,11 +400,6 @@ export const createConfiguration: (
         maxInitialRequests: Infinity,
         chunks: 'all',
         cacheGroups: {
-          errorHandler: {
-            test: /global-error-handler/,
-            priority: 1000,
-            enforce: true,
-          },
           defaultVendors: {
             test: `[\\/]node_modules[\\/](?!.*vanilla-extract)`,
             priority: -10,

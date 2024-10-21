@@ -1,4 +1,5 @@
 import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import type { BuildFlags } from '@affine/cli/config';
@@ -52,6 +53,14 @@ export function createWebpackConfig(cwd: string, flags: BuildFlags) {
     ? undefined
     : new URL(publicPath).origin;
 
+  const globalErrorHandler = [
+    'js/global-error-handler.js',
+    readFileSync(
+      join(workspaceRoot, 'tools/cli/src/webpack/error-handler.js'),
+      'utf-8'
+    ),
+  ];
+
   const templateParams = {
     GIT_SHORT_SHA: gitShortHash(),
     DESCRIPTION,
@@ -86,7 +95,24 @@ export function createWebpackConfig(cwd: string, flags: BuildFlags) {
                 HTMLPlugin.getHooks(compilation).beforeAssetTagGeneration.tap(
                   'assets-manifest-plugin',
                   arg => {
+                    if (
+                      flags.distribution !== 'desktop' &&
+                      !compilation.getAsset(globalErrorHandler[0])
+                    ) {
+                      compilation.emitAsset(
+                        globalErrorHandler[0],
+                        new webpack.sources.RawSource(globalErrorHandler[1])
+                      );
+                      arg.assets.js.unshift(
+                        arg.assets.publicPath + globalErrorHandler[0]
+                      );
+                    }
+
                     if (!compilation.getAsset('assets-manifest.json')) {
+                      compilation.emitAsset(
+                        globalErrorHandler[0],
+                        new webpack.sources.RawSource(globalErrorHandler[1])
+                      );
                       compilation.emitAsset(
                         `assets-manifest.json`,
                         new webpack.sources.RawSource(
