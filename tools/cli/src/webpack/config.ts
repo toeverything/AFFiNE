@@ -69,7 +69,9 @@ export const getPublicPath = (buildFlags: BuildFlags) => {
   if (
     buildFlags.mode === 'development' ||
     process.env.COVERAGE ||
-    buildFlags.distribution === 'desktop'
+    buildFlags.distribution === 'desktop' ||
+    buildFlags.distribution === 'ios' ||
+    buildFlags.distribution === 'android'
   ) {
     return '/';
   }

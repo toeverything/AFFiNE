@@ -3,9 +3,10 @@ import { apis } from '@affine/electron-api';
 
 const logger = new DebugLogger('popup');
 
-const origin = BUILD_CONFIG.isElectron
-  ? BUILD_CONFIG.serverUrlPrefix
-  : location.origin;
+const origin =
+  BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
+    ? BUILD_CONFIG.serverUrlPrefix
+    : location.origin;
 
 /**
  * @deprecated need to be refactored as [UrlService] dependencies on [ServerConfigService]

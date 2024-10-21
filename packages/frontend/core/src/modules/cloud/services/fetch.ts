@@ -5,7 +5,7 @@ import { fromPromise, Service } from '@toeverything/infra';
 import { BackendError, NetworkError } from '../error';
 
 export function getAffineCloudBaseUrl(): string {
-  if (BUILD_CONFIG.isElectron) {
+  if (BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid) {
     return BUILD_CONFIG.serverUrlPrefix;
   }
   const { protocol, hostname, port } = window.location;

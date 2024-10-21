@@ -58,7 +58,12 @@ export function createWebpackConfig(cwd: string, flags: BuildFlags) {
     PRECONNECT: cdnOrigin
       ? `<link rel="preconnect" href="${cdnOrigin}" />`
       : '',
-    VIEWPORT_FIT: flags.distribution === 'mobile' ? 'cover' : 'auto',
+    VIEWPORT_FIT:
+      flags.distribution === 'mobile' ||
+      flags.distribution === 'ios' ||
+      flags.distribution === 'android'
+        ? 'cover'
+        : 'auto',
   };
 
   const createHTMLPlugins = (entryName: string) => {

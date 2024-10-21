@@ -30,7 +30,11 @@ export const SafeArea = forwardRef<HTMLDivElement, SafeAreaProps>(
       <div
         ref={ref}
         className={clsx(safeArea, className)}
-        data-standalone={environment.isPwa ? '' : undefined}
+        data-standalone={
+          environment.isPwa || BUILD_CONFIG.isAndroid || BUILD_CONFIG.isIOS
+            ? ''
+            : undefined
+        }
         data-bottom={bottom ? '' : undefined}
         data-top={top ? '' : undefined}
         style={{

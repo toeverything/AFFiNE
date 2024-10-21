@@ -2,7 +2,7 @@ import { UaHelper } from './ua-helper.js';
 
 export type BUILD_CONFIG_TYPE = {
   debug: boolean;
-  distribution: 'web' | 'desktop' | 'admin' | 'mobile';
+  distribution: 'web' | 'desktop' | 'admin' | 'mobile' | 'ios' | 'android';
   /**
    * 'web' | 'desktop' | 'admin'
    */
@@ -15,6 +15,8 @@ export type BUILD_CONFIG_TYPE = {
   isElectron: boolean;
   isWeb: boolean;
   isMobileWeb: boolean;
+  isIOS: boolean;
+  isAndroid: boolean;
 
   // this is for the electron app
   /**

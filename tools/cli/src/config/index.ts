@@ -1,5 +1,5 @@
 export type BuildFlags = {
-  distribution: 'web' | 'desktop' | 'admin' | 'mobile';
+  distribution: 'web' | 'desktop' | 'admin' | 'mobile' | 'ios' | 'android';
   mode: 'development' | 'production';
   channel: 'stable' | 'beta' | 'canary' | 'internal';
   static: boolean;
