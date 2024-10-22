@@ -7,12 +7,10 @@ on:
         description: 'Build Target'
         type: string
         required: true
-        default: development
       build-type:
         description: 'Build Type'
         type: string
         required: true
-        default: canary
   workflow_dispatch:
     inputs:
       build-target:
@@ -33,14 +31,15 @@ on:
           - beta
           - stable
 env:
-  BUILD_TYPE: ${{ github.event.inputs.build-type || inputs.build-type }}
+  BUILD_TYPE: ${{ inputs.build-type || github.event.inputs.build-type }}
+  BUILD_TARGET: ${{ inputs.build-target || github.event.inputs.build-target }}
   DEBUG: napi:*
   KEYCHAIN_NAME: ${{ github.workspace }}/signing_temp
 
 jobs:
   build-ios-web:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.build-type || inputs.build-type }}
+    environment: ${{ inputs.build-type || github.event.inputs.build-type }}
     outputs:
       RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
     steps:
@@ -69,6 +68,39 @@ jobs:
         with:
           name: ios
           path: packages/frontend/apps/ios/dist
+
+  build-android-web:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.build-type || inputs.build-type }}
+    outputs:
+      RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+      - name: Setup @sentry/cli
+        uses: ./.github/actions/setup-sentry
+      - name: Build Mobile
+        run: yarn nx build @affine/android --skip-nx-cache
+        env:
+          PUBLIC_PATH: '/'
+          MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: 'affine'
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_RELEASE: ${{ steps.version.outputs.APP_VERSION }}
+          RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
+          SKIP_NX_CACHE: 'true'
+      - name: Upload android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: packages/frontend/apps/android/dist
+
   ios:
     runs-on: macos-latest
     needs:
@@ -101,7 +133,7 @@ jobs:
         with:
           xcode-version: latest-stable
       - name: Testflight
-        if: ${{ github.event.inputs.build-type || inputs.build-type }} != 'stable'
+        if: ${{ env.BUILD_TYPE != 'stable' }}
         working-directory: packages/frontend/apps/ios/App
         run: |
           echo -n "${{ env.BUILD_PROVISION_PROFILE }}" | base64 --decode -o $PP_PATH
@@ -109,9 +141,71 @@ jobs:
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
           fastlane beta
         env:
-          BUILD_TARGET: ${{ github.event.inputs.build-target || inputs.build-target }}
           BUILD_PROVISION_PROFILE: ${{ secrets.BUILD_PROVISION_PROFILE }}
           PP_PATH: ${{ runner.temp }}/build_pp.mobileprovision
           APPLE_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPLE_STORE_CONNECT_API_KEY_ID }}
           APPLE_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APPLE_STORE_CONNECT_API_ISSUER_ID }}
           APPLE_STORE_CONNECT_API_KEY: ${{ secrets.APPLE_STORE_CONNECT_API_KEY }}
+
+  android:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: 'write'
+    needs:
+      - build-android-web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download mobile artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android
+          path: packages/frontend/apps/android/dist
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        timeout-minutes: 10
+        with:
+          extra-flags: workspaces focus @affine/android @affine/playstore-auto-bump
+          playwright-install: false
+          electron-install: false
+          hard-link-nm: false
+          enableScripts: false
+      - name: Cap sync
+        run: yarn workspace @affine/android cap sync
+      - name: Auth gcloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        if: ${{ env.BUILD_TARGET == 'distribution' }}
+        with:
+          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-helm-deploy'
+          service_account: '${{ secrets.GCP_HELM_DEPLOY_SERVICE_ACCOUNT }}'
+          token_format: 'access_token'
+          project_id: '${{ secrets.GCP_PROJECT_ID }}'
+          access_token_scopes: 'https://www.googleapis.com/auth/androidpublisher'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Auto increment version code
+        id: bump
+        if: ${{ env.BUILD_TARGET == 'distribution' }}
+        run: yarn workspace @affine/playstore-auto-bump bump
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+      - name: Build
+        run: |
+          echo -n "${{ env.AFFINE_ANDROID_SIGN_KEYSTORE }}" | base64 --decode > packages/frontend/apps/android/affine.keystore
+          yarn workspace @affine/android cap build android
+        env:
+          AFFINE_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.AFFINE_ANDROID_KEYSTORE_PASSWORD }}
+          AFFINE_ANDROID_KEYSTORE_ALIAS_PASSWORD: ${{ secrets.AFFINE_ANDROID_KEYSTORE_ALIAS_PASSWORD }}
+          AFFINE_ANDROID_SIGN_KEYSTORE: ${{ secrets.AFFINE_ANDROID_SIGN_KEYSTORE }}
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        if: ${{ env.BUILD_TARGET == 'distribution' }}
+        with:
+          serviceAccountJson: ${{ steps.auth.outputs.credentials_file_path }}
+          packageName: app.affine.pro
+          releaseFiles: packages/frontend/apps/android/App/app/build/outputs/bundle/release/app-release-signed.aab
+          track: internal
+          status: draft
+          existingEditId: ${{ steps.bump.outputs.EDIT_ID }}

@@ -74,7 +74,7 @@
     "@types/react-dom": "^18.2.24",
     "@vanilla-extract/css": "^1.14.2",
     "storybook": "^8.2.9",
-    "typescript": "^5.4.5",
+    "typescript": "^5.6.3",
     "unplugin-swc": "^1.5.1",
     "vite": "^5.2.8",
     "vitest": "2.1.1"

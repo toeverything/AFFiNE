@@ -225,7 +225,7 @@ __metadata:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     react-router-dom: "npm:^6.26.1"
-    typescript: "npm:^5.4.5"
+    typescript: "npm:^5.6.3"
   languageName: unknown
   linkType: soft
 
@@ -364,7 +364,7 @@ __metadata:
     sonner: "npm:^1.4.41"
     storybook: "npm:^8.2.9"
     swr: "npm:^2.2.5"
-    typescript: "npm:^5.4.5"
+    typescript: "npm:^5.6.3"
     unplugin-swc: "npm:^1.5.1"
     vite: "npm:^5.2.8"
     vitest: "npm:2.1.1"
@@ -606,7 +606,7 @@ __metadata:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     react-router-dom: "npm:^6.26.1"
-    typescript: "npm:^5.4.5"
+    typescript: "npm:^5.6.3"
   languageName: unknown
   linkType: soft
 
@@ -626,7 +626,7 @@ __metadata:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     react-router-dom: "npm:^6.26.1"
-    typescript: "npm:^5.4.5"
+    typescript: "npm:^5.6.3"
   languageName: unknown
   linkType: soft
 
@@ -672,7 +672,7 @@ __metadata:
     prettier: "npm:^3.3.3"
     semver: "npm:^7.6.0"
     serve: "npm:^14.2.1"
-    typescript: "npm:^5.4.5"
+    typescript: "npm:^5.6.3"
     unplugin-swc: "npm:^1.4.5"
     vite: "npm:^5.2.8"
     vitest: "npm:2.1.1"
@@ -688,7 +688,18 @@ __metadata:
     ava: "npm:^6.1.2"
     nx: "npm:^20.0.3"
     ts-node: "npm:^10.9.2"
-    typescript: "npm:^5.4.5"
+    typescript: "npm:^5.6.3"
+  languageName: unknown
+  linkType: soft
+
+"@affine/playstore-auto-bump@workspace:tools/playstore-auto-bump":
+  version: 0.0.0-use.local
+  resolution: "@affine/playstore-auto-bump@workspace:tools/playstore-auto-bump"
+  dependencies:
+    "@googleapis/androidpublisher": "npm:^22.0.0"
+    "@oxc-node/core": "npm:^0.0.15"
+    "@types/node": "npm:^20.14.12"
+    typescript: "npm:^5.6.3"
   languageName: unknown
   linkType: soft
 
@@ -796,7 +807,7 @@ __metadata:
     stripe: "npm:^17.0.0"
     supertest: "npm:^7.0.0"
     ts-node: "npm:^10.9.2"
-    typescript: "npm:^5.4.5"
+    typescript: "npm:^5.6.3"
     yjs: "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
     zod: "npm:^3.22.4"
   bin:
@@ -838,7 +849,7 @@ __metadata:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     react-router-dom: "npm:^6.22.3"
-    typescript: "npm:^5.4.5"
+    typescript: "npm:^5.6.3"
   languageName: unknown
   linkType: soft
 
@@ -4888,6 +4899,15 @@ __metadata:
   version: 4.0.0
   resolution: "@google-cloud/precise-date@npm:4.0.0"
   checksum: 10/7c897bcad6a40efd77df165fca8a57bd3fbb84e6ace848085b16233c1086c32c06258caa88b9c9aaf7d4029ded13d01b57d1b5fd808dc5722cf57626ac4a386b
+  languageName: node
+  linkType: hard
+
+"@googleapis/androidpublisher@npm:^22.0.0":
+  version: 22.0.0
+  resolution: "@googleapis/androidpublisher@npm:22.0.0"
+  dependencies:
+    googleapis-common: "npm:^7.0.0"
+  checksum: 10/8776867d8b23781af6f4e45816e8316955d11d5e308df08f8403736092be297bf1545ae28c1e6ad4090a16dbbdd3dfc0bc3e1bf71e4fd004da9b00689c306f6d
   languageName: node
   linkType: hard
 
@@ -9159,6 +9179,177 @@ __metadata:
   peerDependencies:
     "@opentelemetry/api": ^1.1.0
   checksum: 10/f887b4135be56c9ef6e29f040c9f75f34709e38c11897d59d284d7e73175a2dd2c6267c18061144e81a0045fc461b7813769db2e49c42a8d6becc58b1456d55c
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-android-arm-eabi@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-android-arm-eabi@npm:0.0.15"
+  conditions: os=android & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-android-arm64@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-android-arm64@npm:0.0.15"
+  conditions: os=android & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-darwin-arm64@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-darwin-arm64@npm:0.0.15"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-darwin-x64@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-darwin-x64@npm:0.0.15"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-freebsd-x64@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-freebsd-x64@npm:0.0.15"
+  conditions: os=freebsd & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-linux-arm-gnueabihf@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-linux-arm-gnueabihf@npm:0.0.15"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-linux-arm64-gnu@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-linux-arm64-gnu@npm:0.0.15"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-linux-arm64-musl@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-linux-arm64-musl@npm:0.0.15"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-linux-ppc64-gnu@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-linux-ppc64-gnu@npm:0.0.15"
+  conditions: os=linux & cpu=ppc64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-linux-s390x-gnu@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-linux-s390x-gnu@npm:0.0.15"
+  conditions: os=linux & cpu=s390x & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-linux-x64-gnu@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-linux-x64-gnu@npm:0.0.15"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-linux-x64-musl@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-linux-x64-musl@npm:0.0.15"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-wasm32-wasi@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-wasm32-wasi@npm:0.0.15"
+  dependencies:
+    "@napi-rs/wasm-runtime": "npm:^0.2.4"
+  conditions: cpu=wasm32
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-win32-arm64-msvc@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-win32-arm64-msvc@npm:0.0.15"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-win32-ia32-msvc@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-win32-ia32-msvc@npm:0.0.15"
+  conditions: os=win32 & cpu=ia32
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core-win32-x64-msvc@npm:0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core-win32-x64-msvc@npm:0.0.15"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@oxc-node/core@npm:^0.0.15":
+  version: 0.0.15
+  resolution: "@oxc-node/core@npm:0.0.15"
+  dependencies:
+    "@oxc-node/core-android-arm-eabi": "npm:0.0.15"
+    "@oxc-node/core-android-arm64": "npm:0.0.15"
+    "@oxc-node/core-darwin-arm64": "npm:0.0.15"
+    "@oxc-node/core-darwin-x64": "npm:0.0.15"
+    "@oxc-node/core-freebsd-x64": "npm:0.0.15"
+    "@oxc-node/core-linux-arm-gnueabihf": "npm:0.0.15"
+    "@oxc-node/core-linux-arm64-gnu": "npm:0.0.15"
+    "@oxc-node/core-linux-arm64-musl": "npm:0.0.15"
+    "@oxc-node/core-linux-ppc64-gnu": "npm:0.0.15"
+    "@oxc-node/core-linux-s390x-gnu": "npm:0.0.15"
+    "@oxc-node/core-linux-x64-gnu": "npm:0.0.15"
+    "@oxc-node/core-linux-x64-musl": "npm:0.0.15"
+    "@oxc-node/core-wasm32-wasi": "npm:0.0.15"
+    "@oxc-node/core-win32-arm64-msvc": "npm:0.0.15"
+    "@oxc-node/core-win32-ia32-msvc": "npm:0.0.15"
+    "@oxc-node/core-win32-x64-msvc": "npm:0.0.15"
+  dependenciesMeta:
+    "@oxc-node/core-android-arm-eabi":
+      optional: true
+    "@oxc-node/core-android-arm64":
+      optional: true
+    "@oxc-node/core-darwin-arm64":
+      optional: true
+    "@oxc-node/core-darwin-x64":
+      optional: true
+    "@oxc-node/core-freebsd-x64":
+      optional: true
+    "@oxc-node/core-linux-arm-gnueabihf":
+      optional: true
+    "@oxc-node/core-linux-arm64-gnu":
+      optional: true
+    "@oxc-node/core-linux-arm64-musl":
+      optional: true
+    "@oxc-node/core-linux-ppc64-gnu":
+      optional: true
+    "@oxc-node/core-linux-s390x-gnu":
+      optional: true
+    "@oxc-node/core-linux-x64-gnu":
+      optional: true
+    "@oxc-node/core-linux-x64-musl":
+      optional: true
+    "@oxc-node/core-wasm32-wasi":
+      optional: true
+    "@oxc-node/core-win32-arm64-msvc":
+      optional: true
+    "@oxc-node/core-win32-ia32-msvc":
+      optional: true
+    "@oxc-node/core-win32-x64-msvc":
+      optional: true
+  checksum: 10/16aabb772170450e115e95191a47920d901701675b22a4f0c1a58d8d7900632107a823b849848b1ba96e1fbdddf32ad56451a8caeafb1f321beb9e9559aa3318
   languageName: node
   linkType: hard
 
@@ -32466,23 +32657,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.3.3, typescript@npm:^5.4.5":
-  version: 5.6.2
-  resolution: "typescript@npm:5.6.2"
+"typescript@npm:^5.3.3, typescript@npm:^5.6.3":
+  version: 5.6.3
+  resolution: "typescript@npm:5.6.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10/f95365d4898f357823e93d334ecda9fcade54f009b397c7d05b7621cd9e865981033cf89ccde0f3e3a7b73b1fdbae18e92bc77db237b43e912f053fef0f9a53b
+  checksum: 10/c328e418e124b500908781d9f7b9b93cf08b66bf5936d94332b463822eea2f4e62973bfb3b8a745fdc038785cb66cf59d1092bac3ec2ac6a3e5854687f7833f1
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.3.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.4.5#optional!builtin<compat/typescript>":
-  version: 5.6.2
-  resolution: "typescript@patch:typescript@npm%3A5.6.2#optional!builtin<compat/typescript>::version=5.6.2&hash=8c6c40"
+"typescript@patch:typescript@npm%3A^5.3.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.6.3#optional!builtin<compat/typescript>":
+  version: 5.6.3
+  resolution: "typescript@patch:typescript@npm%3A5.6.3#optional!builtin<compat/typescript>::version=5.6.3&hash=8c6c40"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10/8bfc7ca0d9feca4c3fcbd6c70741abfcd714197d6448e68225ae71e462447d904d3bfba49759a8fbe4956d87f054e2d346833c8349c222daa594a2626d4e1be8
+  checksum: 10/00504c01ee42d470c23495426af07512e25e6546bce7e24572e72a9ca2e6b2e9bea63de4286c3cfea644874da1467dcfca23f4f98f7caf20f8b03c0213bb6837
   languageName: node
   linkType: hard
 
