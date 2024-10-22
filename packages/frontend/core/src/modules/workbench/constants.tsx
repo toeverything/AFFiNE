@@ -1,7 +1,9 @@
 import {
   AllDocsIcon,
+  AttachmentIcon,
   DeleteIcon,
   EdgelessIcon,
+  ExportToPdfIcon,
   PageIcon,
   TagIcon,
   TodayIcon,
@@ -18,6 +20,8 @@ export const iconNameToIcon = {
   journal: <TodayIcon />,
   tag: <TagIcon />,
   trash: <DeleteIcon />,
+  attachment: <AttachmentIcon />,
+  pdf: <ExportToPdfIcon />,
 } satisfies Record<string, ReactNode>;
 
 export type ViewIconName = keyof typeof iconNameToIcon;

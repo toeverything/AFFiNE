@@ -1,11 +1,23 @@
-import { PDFViewer } from '@affine/component/pdf-viewer';
+import { AttachmentViewer } from '@affine/component/attachment-viewer';
 import type { ReactElement } from 'react';
+
+import {
+  // useIsActiveView,
+  ViewBody,
+  ViewHeader,
+  ViewIcon,
+  ViewTitle,
+} from '../../../../modules/workbench';
 
 export const AttachmentPage = (): ReactElement => {
   return (
     <>
-      <PDFViewer />
-      <div>{'Attachment Viewer'}</div>
+      <ViewTitle title={'Attachment'} />
+      <ViewIcon icon={'pdf'} />
+      <ViewHeader></ViewHeader>
+      <ViewBody>
+        <AttachmentViewer />
+      </ViewBody>
     </>
   );
 };
