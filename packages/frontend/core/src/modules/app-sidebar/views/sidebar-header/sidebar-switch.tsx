@@ -57,7 +57,10 @@ export const SidebarSwitch = ({
       <IconButton
         tooltip={tooltipContent}
         tooltipShortcut={['$mod', '/']}
-        tooltipOptions={{ side: open ? 'bottom' : 'right' }}
+        tooltipOptions={{
+          side: open ? 'bottom' : 'right',
+          rootOptions: { delayDuration: 700 },
+        }}
         className={className}
         size="24"
         style={{
