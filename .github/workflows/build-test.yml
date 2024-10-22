@@ -394,7 +394,7 @@ jobs:
 
   copilot-e2e-test:
     name: Server Copilot E2E Test
-    runs-on: self-hosted
+    runs-on: [self-hosted, copilot-ci]
     env:
       DISTRIBUTION: web
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -425,6 +425,7 @@ jobs:
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:
+          corepack-install: true
           playwright-install: true
           hard-link-nm: false
 
