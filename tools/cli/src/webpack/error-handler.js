@@ -33,23 +33,37 @@
     document.body.append(errorEl);
   }
 
-  function registerGlobalErrorHandler() {
-    function handler(e) {
-      var error =
-        'error' in e ? e.error : e.reason instanceof Error ? e.reason : null;
-      console.error('unhandled unrecoverable error', error);
+  /**
+   * @param event {PromiseRejectionEvent|ErrorEvent}
+   */
+  function handler(event) {
+    var error;
 
-      const shouldCache =
-        // syntax error
-        error && error instanceof SyntaxError;
-
-      if (!shouldCache) {
-        return;
-      }
-
-      e.stopImmediatePropagation();
-      showGlobalErrorPage();
+    if ('error' in event) {
+      error =
+        event.error ||
+        (event.message === 'Script error.'
+          ? new SyntaxError(event.message)
+          : new Error(event.message));
+    } else {
+      error = event.reason;
     }
+
+    console.error('unhandled unrecoverable error', error);
+
+    var shouldCache =
+      // syntax error
+      error && error instanceof SyntaxError;
+
+    if (!shouldCache) {
+      return;
+    }
+
+    event.stopImmediatePropagation();
+    showGlobalErrorPage();
+  }
+
+  function registerGlobalErrorHandler() {
     if (typeof document !== 'undefined') {
       globalThis.addEventListener('unhandledrejection', handler);
       globalThis.addEventListener('error', handler);
