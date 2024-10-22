@@ -33,7 +33,6 @@
 [![Releases](https://img.shields.io/github/downloads/toeverything/AFFiNE/total)](https://github.com/toeverything/AFFiNE/releases/latest)
 [![All Contributors][all-contributors-badge]](#contributors)
 [![TypeScript-version-icon]](https://www.typescriptlang.org/)
-[![Rust-version-icon]](https://www.rust-lang.org/)
 
 </div>
 
@@ -222,7 +221,6 @@ See [LICENSE] for details.
 [jobs available]: ./docs/jobs.md
 [latest packages]: https://github.com/toeverything/AFFiNE/pkgs/container/affine-self-hosted
 [contributor license agreement]: https://github.com/toeverything/affine/edit/canary/.github/CLA.md
-[rust-version-icon]: https://img.shields.io/badge/Rust-1.79.0-dea584
 [stars-icon]: https://img.shields.io/github/stars/toeverything/AFFiNE.svg?style=flat&logo=github&colorB=red&label=stars
 [codecov]: https://codecov.io/gh/toeverything/affine/branch/canary/graphs/badge.svg?branch=canary
 [node-version-icon]: https://img.shields.io/badge/node-%3E=18.16.1-success
