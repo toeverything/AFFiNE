@@ -26,7 +26,8 @@ platform :ios do
       duration: 1200, # optional (maximum 1200)
       in_house: false # optional but may be required if using match/sigh
     )
-    increment_build_number(xcodeproj: "App.xcodeproj")
+    current_build_number = app_store_build_number(live: false)
+    increment_build_number(xcodeproj: "App.xcodeproj", build_number: current_build_number + 1)
     build_app(
       workspace: "App.xcworkspace",
       scheme: "App"
