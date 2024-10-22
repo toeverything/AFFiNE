@@ -27,46 +27,55 @@ export const DocPropertyTypes = {
     name: 'com.affine.page-properties.property.tags',
     uniqueId: 'tags',
     renameable: false,
+    description: 'com.affine.page-properties.property.tags.tooltips',
   },
   text: {
     icon: TextIcon,
     value: TextValue,
     name: 'com.affine.page-properties.property.text',
+    description: 'com.affine.page-properties.property.text.tooltips',
   },
   number: {
     icon: NumberIcon,
     value: NumberValue,
     name: 'com.affine.page-properties.property.number',
+    description: 'com.affine.page-properties.property.number.tooltips',
   },
   checkbox: {
     icon: CheckBoxCheckLinearIcon,
     value: CheckboxValue,
     name: 'com.affine.page-properties.property.checkbox',
+    description: 'com.affine.page-properties.property.checkbox.tooltips',
   },
   date: {
     icon: DateTimeIcon,
     value: DateValue,
     name: 'com.affine.page-properties.property.date',
+    description: 'com.affine.page-properties.property.date.tooltips',
   },
   createdBy: {
     icon: CreatedEditedIcon,
     value: CreatedByValue,
     name: 'com.affine.page-properties.property.createdBy',
+    description: 'com.affine.page-properties.property.createdBy.tooltips',
   },
   updatedBy: {
     icon: CreatedEditedIcon,
     value: UpdatedByValue,
     name: 'com.affine.page-properties.property.updatedBy',
+    description: 'com.affine.page-properties.property.updatedBy.tooltips',
   },
   docPrimaryMode: {
     icon: FileIcon,
     value: DocPrimaryModeValue,
     name: 'com.affine.page-properties.property.docPrimaryMode',
+    description: 'com.affine.page-properties.property.docPrimaryMode.tooltips',
   },
   journal: {
     icon: TodayIcon,
     value: JournalValue,
     name: 'com.affine.page-properties.property.journal',
+    description: 'com.affine.page-properties.property.journal.tooltips',
   },
 } as Record<
   string,
@@ -79,6 +88,7 @@ export const DocPropertyTypes = {
     uniqueId?: string;
     name: I18nString;
     renameable?: boolean;
+    description?: I18nString;
   }
 >;
 

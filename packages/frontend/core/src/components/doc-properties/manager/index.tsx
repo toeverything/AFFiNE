@@ -2,6 +2,7 @@ import {
   DropIndicator,
   IconButton,
   Menu,
+  Tooltip,
   useDraggable,
   useDropTarget,
 } from '@affine/component';
@@ -98,44 +99,46 @@ const PropertyItem = ({
   );
 
   return (
-    <div
-      className={styles.itemContainer}
-      ref={elem => {
-        dropTargetRef.current = elem;
-        dragRef.current = elem;
-      }}
-      onClick={handleClick}
-      data-testid="doc-property-manager-item"
-    >
-      <DocPropertyIcon
-        className={styles.itemIcon}
-        propertyInfo={propertyInfo}
-      />
-      <span className={styles.itemName}>
-        {propertyInfo.name ||
-          (typeInfo?.name ? t.t(typeInfo.name) : t['unnamed']())}
-      </span>
-      <span className={styles.itemVisibility}>
-        {propertyInfo.show === 'hide-when-empty'
-          ? t['com.affine.page-properties.property.hide-when-empty']()
-          : propertyInfo.show === 'always-hide'
-            ? t['com.affine.page-properties.property.always-hide']()
-            : t['com.affine.page-properties.property.always-show']()}
-      </span>
-      <Menu
-        rootOptions={{
-          open: moreMenuOpen,
-          onOpenChange: setMoreMenuOpen,
-          modal: true,
+    <Tooltip content={t.t(typeInfo?.description || propertyInfo.type)}>
+      <div
+        className={styles.itemContainer}
+        ref={elem => {
+          dropTargetRef.current = elem;
+          dragRef.current = elem;
         }}
-        items={<EditDocPropertyMenuItems propertyId={propertyInfo.id} />}
+        onClick={handleClick}
+        data-testid="doc-property-manager-item"
       >
-        <IconButton size={20} iconClassName={styles.itemMore}>
-          <MoreHorizontalIcon />
-        </IconButton>
-      </Menu>
-      <DropIndicator edge={closestEdge} noTerminal />
-    </div>
+        <DocPropertyIcon
+          className={styles.itemIcon}
+          propertyInfo={propertyInfo}
+        />
+        <span className={styles.itemName}>
+          {propertyInfo.name ||
+            (typeInfo?.name ? t.t(typeInfo.name) : t['unnamed']())}
+        </span>
+        <span className={styles.itemVisibility}>
+          {propertyInfo.show === 'hide-when-empty'
+            ? t['com.affine.page-properties.property.hide-when-empty']()
+            : propertyInfo.show === 'always-hide'
+              ? t['com.affine.page-properties.property.always-hide']()
+              : t['com.affine.page-properties.property.always-show']()}
+        </span>
+        <Menu
+          rootOptions={{
+            open: moreMenuOpen,
+            onOpenChange: setMoreMenuOpen,
+            modal: true,
+          }}
+          items={<EditDocPropertyMenuItems propertyId={propertyInfo.id} />}
+        >
+          <IconButton size={20} iconClassName={styles.itemMore}>
+            <MoreHorizontalIcon />
+          </IconButton>
+        </Menu>
+        <DropIndicator edge={closestEdge} noTerminal />
+      </div>
+    </Tooltip>
   );
 };
 
