@@ -15,7 +15,13 @@
         { "fileset": "{workspaceRoot}/rust-toolchain.toml" },
         { "fileset": "{workspaceRoot}/Cargo.lock" },
         { "fileset": "{workspaceRoot}/packages/backend/native/**/*.rs" },
-        { "fileset": "{workspaceRoot}/packages/backend/native/Cargo.toml" }
+        { "fileset": "{workspaceRoot}/packages/backend/native/Cargo.toml" },
+        {
+          "runtime": "rustc --version"
+        },
+        {
+          "externalDependencies": ["nx"]
+        }
       ],
       "outputs": ["{projectRoot}/*.node"]
     }

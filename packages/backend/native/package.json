@@ -35,8 +35,8 @@
   "devDependencies": {
     "@napi-rs/cli": "3.0.0-alpha.62",
     "lib0": "^0.2.93",
-    "nx": "^19.0.0",
-    "nx-cloud": "^19.0.0",
+    "nx": "^20.0.3",
+    "nx-cloud": "^19.1.0",
     "tiktoken": "^1.0.15",
     "tinybench": "^2.8.0",
     "yjs": "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"

@@ -16,7 +16,7 @@
           "runtime": "rustc --version"
         },
         {
-          "runtime": "node -v"
+          "externalDependencies": ["nx"]
         }
       ],
       "outputs": ["{projectRoot}/*.node", "{workspaceRoot}/affine.db"]
