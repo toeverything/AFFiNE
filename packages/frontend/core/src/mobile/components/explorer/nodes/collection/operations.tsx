@@ -8,6 +8,7 @@ import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-pa
 import { useDeleteCollectionInfo } from '@affine/core/components/hooks/affine/use-delete-collection-info';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { CollectionService } from '@affine/core/modules/collection';
+import type { NodeOperation } from '@affine/core/modules/explorer';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
@@ -27,26 +28,22 @@ import {
 } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
-import type { NodeOperation } from '../../tree/types';
-
 export const useExplorerCollectionNodeOperations = (
   collectionId: string,
   onOpenCollapsed: () => void,
   onOpenEdit: () => void
-): NodeOperation[] => {
+) => {
   const t = useI18n();
   const {
     workbenchService,
     workspaceService,
     collectionService,
     compatibleFavoriteItemsAdapter,
-    featureFlagService,
   } = useServices({
     WorkbenchService,
     WorkspaceService,
     CollectionService,
     CompatibleFavoriteItemsAdapter,
-    FeatureFlagService,
   });
   const deleteInfo = useDeleteCollectionInfo();
 
@@ -54,9 +51,6 @@ export const useExplorerCollectionNodeOperations = (
     workspaceService.workspace.docCollection
   );
 
-  const enableMultiView = useLiveData(
-    featureFlagService.flags.enable_multi_view.$
-  );
   const favorite = useLiveData(
     useMemo(
       () =>
@@ -118,6 +112,53 @@ export const useExplorerCollectionNodeOperations = (
   const handleShowEdit = useCallback(() => {
     onOpenEdit();
   }, [onOpenEdit]);
+
+  return useMemo(
+    () => ({
+      favorite,
+      handleAddDocToCollection,
+      handleDeleteCollection,
+      handleOpenInNewTab,
+      handleOpenInSplitView,
+      handleShowEdit,
+      handleToggleFavoriteCollection,
+    }),
+    [
+      favorite,
+      handleAddDocToCollection,
+      handleDeleteCollection,
+      handleOpenInNewTab,
+      handleOpenInSplitView,
+      handleShowEdit,
+      handleToggleFavoriteCollection,
+    ]
+  );
+};
+
+export const useExplorerCollectionNodeOperationsMenu = (
+  collectionId: string,
+  onOpenCollapsed: () => void,
+  onOpenEdit: () => void
+): NodeOperation[] => {
+  const t = useI18n();
+  const { featureFlagService } = useServices({ FeatureFlagService });
+  const enableMultiView = useLiveData(
+    featureFlagService.flags.enable_multi_view.$
+  );
+
+  const {
+    favorite,
+    handleAddDocToCollection,
+    handleDeleteCollection,
+    handleOpenInNewTab,
+    handleOpenInSplitView,
+    handleShowEdit,
+    handleToggleFavoriteCollection,
+  } = useExplorerCollectionNodeOperations(
+    collectionId,
+    onOpenCollapsed,
+    onOpenEdit
+  );
 
   return useMemo(
     () => [

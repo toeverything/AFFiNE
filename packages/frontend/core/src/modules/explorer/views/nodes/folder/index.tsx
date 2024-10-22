@@ -20,7 +20,6 @@ import {
   type FolderNode,
   OrganizeService,
 } from '@affine/core/modules/organize';
-import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { Unreachable } from '@affine/env/constant';
 import { useI18n } from '@affine/i18n';
@@ -173,7 +172,7 @@ const ExplorerFolderIcon: ExplorerTreeNodeIcon = ({
   />
 );
 
-export const ExplorerFolderNodeFolder = ({
+const ExplorerFolderNodeFolder = ({
   node,
   onDrop,
   defaultRenaming,
@@ -187,13 +186,11 @@ export const ExplorerFolderNodeFolder = ({
   node: FolderNode;
 } & GenericExplorerNode) => {
   const t = useI18n();
-  const { workbenchService, workspaceService, featureFlagService } =
-    useServices({
-      WorkbenchService,
-      WorkspaceService,
-      CompatibleFavoriteItemsAdapter,
-      FeatureFlagService,
-    });
+  const { workspaceService, featureFlagService } = useServices({
+    WorkspaceService,
+    CompatibleFavoriteItemsAdapter,
+    FeatureFlagService,
+  });
   const openDocsSelector = useSelectDoc();
   const openTagsSelector = useSelectTag();
   const openCollectionsSelector = useSelectCollection();
@@ -552,14 +549,13 @@ export const ExplorerFolderNodeFolder = ({
   const handleNewDoc = useCallback(() => {
     const newDoc = createPage();
     node.createLink('doc', newDoc.id, node.indexAt('before'));
-    workbenchService.workbench.openDoc(newDoc.id);
     track.$.navigationPanel.folders.createDoc();
     track.$.navigationPanel.organize.createOrganizeItem({
       type: 'link',
       target: 'doc',
     });
     setCollapsed(false);
-  }, [createPage, node, workbenchService.workbench]);
+  }, [createPage, node]);
 
   const handleCreateSubfolder = useCallback(() => {
     const newFolderId = node.createFolder(

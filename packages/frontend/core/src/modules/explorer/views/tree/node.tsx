@@ -37,7 +37,6 @@ import {
   useState,
 } from 'react';
 
-import { ExplorerMobileContext } from '../mobile.context';
 import { ExplorerTreeContext } from './context';
 import { DropEffect } from './drop-effect';
 import * as styles from './node.css';
@@ -56,6 +55,38 @@ export type ExplorerTreeNodeIcon = React.ComponentType<{
   treeInstruction?: DropTargetTreeInstruction | null;
   collapsed?: boolean;
 }>;
+
+export interface BaseExplorerTreeNodeProps {
+  name?: string;
+  icon?: ExplorerTreeNodeIcon;
+  children?: React.ReactNode;
+  active?: boolean;
+  defaultRenaming?: boolean;
+  extractEmojiAsIcon?: boolean;
+  collapsed: boolean;
+  setCollapsed: (collapsed: boolean) => void;
+  renameable?: boolean;
+  onRename?: (newName: string) => void;
+  disabled?: boolean;
+  onClick?: () => void;
+  to?: To;
+  postfix?: React.ReactNode;
+  operations?: NodeOperation[];
+  childrenOperations?: NodeOperation[];
+  childrenPlaceholder?: React.ReactNode;
+  linkComponent?: React.ComponentType<
+    React.PropsWithChildren<{ to: To; className?: string }> & RefAttributes<any>
+  >;
+  [key: `data-${string}`]: any;
+}
+
+interface WebExplorerTreeNodeProps extends BaseExplorerTreeNodeProps {
+  canDrop?: DropTargetOptions<AffineDNDData>['canDrop'];
+  reorderable?: boolean;
+  dndData?: AffineDNDData;
+  onDrop?: (data: DropTargetDropEvent<AffineDNDData>) => void;
+  dropEffect?: ExplorerTreeNodeDropEffect;
+}
 
 export const ExplorerTreeNode = ({
   children,
@@ -82,34 +113,7 @@ export const ExplorerTreeNode = ({
   onDrop,
   dropEffect,
   ...otherProps
-}: {
-  name?: string;
-  icon?: ExplorerTreeNodeIcon;
-  children?: React.ReactNode;
-  active?: boolean;
-  reorderable?: boolean;
-  defaultRenaming?: boolean;
-  extractEmojiAsIcon?: boolean;
-  collapsed: boolean;
-  setCollapsed: (collapsed: boolean) => void;
-  renameable?: boolean;
-  onRename?: (newName: string) => void;
-  disabled?: boolean;
-  onClick?: () => void;
-  to?: To;
-  postfix?: React.ReactNode;
-  canDrop?: DropTargetOptions<AffineDNDData>['canDrop'];
-  operations?: NodeOperation[];
-  childrenOperations?: NodeOperation[];
-  childrenPlaceholder?: React.ReactNode;
-  linkComponent?: React.ComponentType<
-    React.PropsWithChildren<{ to: To; className?: string }> & RefAttributes<any>
-  >;
-  dndData?: AffineDNDData;
-  onDrop?: (data: DropTargetDropEvent<AffineDNDData>) => void;
-  dropEffect?: ExplorerTreeNodeDropEffect;
-} & { [key in `data-${string}`]?: any }) => {
-  const mobile = useContext(ExplorerMobileContext);
+}: WebExplorerTreeNodeProps) => {
   const t = useI18n();
   const cid = useId();
   const context = useContext(ExplorerTreeContext);
@@ -141,21 +145,19 @@ export const ExplorerTreeNode = ({
     AffineDNDData & { draggable: { __cid: string } }
   >(
     () => ({
-      canDrag: () => !mobile,
       data: { ...dndData?.draggable, __cid: cid },
       dragPreviewPosition: 'pointer-outside',
     }),
-    [cid, dndData, mobile]
+    [cid, dndData]
   );
   const handleCanDrop = useMemo<DropTargetOptions<AffineDNDData>['canDrop']>(
     () => args => {
-      if (mobile) return false;
       if (!reorderable && args.treeInstruction?.type !== 'make-child') {
         return false;
       }
       return (typeof canDrop === 'function' ? canDrop(args) : canDrop) ?? true;
     },
-    [canDrop, mobile, reorderable]
+    [canDrop, reorderable]
   );
   const {
     dropTargetRef,
@@ -319,7 +321,7 @@ export const ExplorerTreeNode = ({
   const content = (
     <div
       onClick={handleClick}
-      className={mobile ? styles.mobileItemRoot : styles.itemRoot}
+      className={styles.itemRoot}
       data-active={active}
       data-disabled={disabled}
     >
@@ -327,11 +329,7 @@ export const ExplorerTreeNode = ({
         data-disabled={disabled}
         onClick={handleCollapsedChange}
         data-testid="explorer-collapsed-button"
-        className={
-          mobile
-            ? styles.mobileCollapsedIconContainer
-            : styles.collapsedIconContainer
-        }
+        className={styles.collapsedIconContainer}
       >
         <ArrowDownSmallIcon
           className={styles.collapsedIcon}
@@ -339,10 +337,8 @@ export const ExplorerTreeNode = ({
         />
       </div>
 
-      <div className={clsx(mobile ? styles.mobileItemMain : styles.itemMain)}>
-        <div
-          className={mobile ? styles.mobileIconContainer : styles.iconContainer}
-        >
+      <div className={styles.itemMain}>
+        <div className={styles.iconContainer}>
           {emoji ??
             (Icon && (
               <Icon
@@ -352,38 +348,34 @@ export const ExplorerTreeNode = ({
               />
             ))}
         </div>
-        <div className={mobile ? styles.mobileItemContent : styles.itemContent}>
-          {name}
-        </div>
+        <div className={styles.itemContent}>{name}</div>
         {postfix}
-        {mobile ? null : (
-          <div
-            className={styles.postfix}
-            onClick={e => {
-              // prevent jump to page
-              e.preventDefault();
-            }}
-          >
-            {inlineOperations.map(({ view }, index) => (
-              <Fragment key={index}>{view}</Fragment>
-            ))}
-            {menuOperations.length > 0 && (
-              <Menu
-                items={menuOperations.map(({ view }, index) => (
-                  <Fragment key={index}>{view}</Fragment>
-                ))}
+        <div
+          className={styles.postfix}
+          onClick={e => {
+            // prevent jump to page
+            e.preventDefault();
+          }}
+        >
+          {inlineOperations.map(({ view }, index) => (
+            <Fragment key={index}>{view}</Fragment>
+          ))}
+          {menuOperations.length > 0 && (
+            <Menu
+              items={menuOperations.map(({ view }, index) => (
+                <Fragment key={index}>{view}</Fragment>
+              ))}
+            >
+              <IconButton
+                size="16"
+                data-testid="explorer-tree-node-operation-button"
+                style={{ marginLeft: 4 }}
               >
-                <IconButton
-                  size="16"
-                  data-testid="explorer-tree-node-operation-button"
-                  style={{ marginLeft: 4 }}
-                >
-                  <MoreHorizontalIcon />
-                </IconButton>
-              </Menu>
-            )}
-          </div>
-        )}
+                <MoreHorizontalIcon />
+              </IconButton>
+            </Menu>
+          )}
+        </div>
       </div>
 
       {renameable && (
@@ -411,10 +403,7 @@ export const ExplorerTreeNode = ({
       {...otherProps}
     >
       <div
-        className={clsx(
-          mobile ? styles.mobileContentContainer : styles.contentContainer,
-          styles.draggedOverEffect
-        )}
+        className={clsx(styles.contentContainer, styles.draggedOverEffect)}
         data-open={!collapsed}
         data-self-dragged-over={isSelfDraggedOver}
         ref={dropTargetRef}

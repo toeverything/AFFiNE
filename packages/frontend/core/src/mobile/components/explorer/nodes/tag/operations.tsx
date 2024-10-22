@@ -1,6 +1,7 @@
 import { IconButton, MenuItem, MenuSeparator, toast } from '@affine/component';
 import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
+import type { NodeOperation } from '@affine/core/modules/explorer';
 import { FavoriteService } from '@affine/core/modules/favorite';
 import { TagService } from '@affine/core/modules/tag';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -16,12 +17,11 @@ import {
   DocsService,
   FeatureFlagService,
   useLiveData,
+  useService,
   useServices,
   WorkspaceService,
 } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
-
-import type { NodeOperation } from '../../tree/types';
 
 export const useExplorerTagNodeOperations = (
   tagId: string,
@@ -30,30 +30,21 @@ export const useExplorerTagNodeOperations = (
   }: {
     openNodeCollapsed: () => void;
   }
-): NodeOperation[] => {
+) => {
   const t = useI18n();
-  const {
-    workbenchService,
-    workspaceService,
-    tagService,
-    favoriteService,
-    featureFlagService,
-  } = useServices({
-    WorkbenchService,
-    WorkspaceService,
-    TagService,
-    DocsService,
-    FavoriteService,
-    FeatureFlagService,
-  });
+  const { workbenchService, workspaceService, tagService, favoriteService } =
+    useServices({
+      WorkbenchService,
+      WorkspaceService,
+      TagService,
+      DocsService,
+      FavoriteService,
+    });
 
   const favorite = useLiveData(
     favoriteService.favoriteList.favorite$('tag', tagId)
   );
   const tagRecord = useLiveData(tagService.tagList.tagByTagId$(tagId));
-  const enableMultiView = useLiveData(
-    featureFlagService.flags.enable_multi_view.$
-  );
 
   const { createPage } = usePageHelper(
     workspaceService.workspace.docCollection
@@ -94,6 +85,45 @@ export const useExplorerTagNodeOperations = (
     });
     track.$.navigationPanel.organize.openInNewTab({ type: 'tag' });
   }, [tagId, workbenchService]);
+
+  return useMemo(
+    () => ({
+      favorite,
+      handleNewDoc,
+      handleMoveToTrash,
+      handleOpenInSplitView,
+      handleToggleFavoriteTag,
+      handleOpenInNewTab,
+    }),
+    [
+      favorite,
+      handleMoveToTrash,
+      handleNewDoc,
+      handleOpenInNewTab,
+      handleOpenInSplitView,
+      handleToggleFavoriteTag,
+    ]
+  );
+};
+export const useExplorerTagNodeOperationsMenu = (
+  tagId: string,
+  option: {
+    openNodeCollapsed: () => void;
+  }
+): NodeOperation[] => {
+  const t = useI18n();
+  const featureFlagService = useService(FeatureFlagService);
+  const enableMultiView = useLiveData(
+    featureFlagService.flags.enable_multi_view.$
+  );
+  const {
+    favorite,
+    handleNewDoc,
+    handleMoveToTrash,
+    handleOpenInSplitView,
+    handleToggleFavoriteTag,
+    handleOpenInNewTab,
+  } = useExplorerTagNodeOperations(tagId, option);
 
   return useMemo(
     () => [

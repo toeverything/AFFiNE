@@ -84,6 +84,7 @@ export const PageHeader = forwardRef<HTMLDivElement, PageHeaderProps>(
                   style={{ padding: 10 }}
                   onClick={handleRouteBack}
                   icon={<ArrowLeftSmallIcon />}
+                  data-testid="page-header-back"
                 />
               ) : null}
               {prefix}

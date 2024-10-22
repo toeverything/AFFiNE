@@ -13,7 +13,6 @@ import {
   FavoriteService,
   isFavoriteSupportType,
 } from '@affine/core/modules/favorite';
-import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { isNewTabTrigger } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
@@ -41,14 +40,8 @@ import {
 import { RootEmpty } from './empty';
 
 export const ExplorerFavorites = () => {
-  const {
-    favoriteService,
-    workspaceService,
-    workbenchService,
-    explorerService,
-  } = useServices({
+  const { favoriteService, workspaceService, explorerService } = useServices({
     FavoriteService,
-    WorkbenchService,
     WorkspaceService,
     ExplorerService,
   });
@@ -88,23 +81,18 @@ export const ExplorerFavorites = () => {
 
   const handleCreateNewFavoriteDoc: MouseEventHandler = useCallback(
     e => {
-      const newDoc = createPage();
+      const newDoc = createPage(
+        undefined,
+        isNewTabTrigger(e) ? 'new-tab' : true
+      );
       favoriteService.favoriteList.add(
         'doc',
         newDoc.id,
         favoriteService.favoriteList.indexAt('before')
       );
-      workbenchService.workbench.openDoc(newDoc.id, {
-        at: isNewTabTrigger(e) ? 'new-tab' : 'active',
-      });
       explorerSection.setCollapsed(false);
     },
-    [
-      createPage,
-      explorerSection,
-      favoriteService.favoriteList,
-      workbenchService.workbench,
-    ]
+    [createPage, explorerSection, favoriteService.favoriteList]
   );
 
   const handleOnChildrenDrop = useCallback(
