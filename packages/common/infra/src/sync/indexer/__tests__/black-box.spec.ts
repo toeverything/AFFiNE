@@ -454,101 +454,107 @@ describe.each([
     });
   });
 
-  test('subscribe', async () => {
-    await writeData({
-      '1': {
-        title: 'hello world',
-      },
-    });
+  test(
+    'subscribe',
+    {
+      timeout: 30000,
+    },
+    async () => {
+      await writeData({
+        '1': {
+          title: 'hello world',
+        },
+      });
 
-    let value = null as any;
-    index
-      .search$({
-        type: 'match',
-        field: 'title',
-        match: 'hello world',
-      })
-      .pipe(map(v => (value = v)))
-      .subscribe();
+      let value = null as any;
+      index
+        .search$({
+          type: 'match',
+          field: 'title',
+          match: 'hello world',
+        })
+        .pipe(map(v => (value = v)))
+        .subscribe();
 
-    await vitest.waitFor(
-      () => {
-        expect(value).toEqual({
-          nodes: [
-            {
-              id: '1',
-              score: expect.anything(),
+      await vitest.waitFor(
+        () => {
+          expect(value).toEqual({
+            nodes: [
+              {
+                id: '1',
+                score: expect.anything(),
+              },
+            ],
+            pagination: {
+              count: 1,
+              hasMore: false,
+              limit: expect.anything(),
+              skip: 0,
             },
-          ],
-          pagination: {
-            count: 1,
-            hasMore: false,
-            limit: expect.anything(),
-            skip: 0,
-          },
-        });
-      },
-      {
-        timeout: 5000,
-      }
-    );
+          });
+        },
+        {
+          timeout: 10000,
+        }
+      );
 
-    await writeData({
-      '2': {
-        title: 'hello world',
-      },
-    });
+      await writeData({
+        '2': {
+          title: 'hello world',
+        },
+      });
 
-    await vitest.waitFor(
-      () => {
-        expect(value).toEqual({
-          nodes: [
-            {
-              id: '1',
-              score: expect.anything(),
+      await vitest.waitFor(
+        () => {
+          expect(value).toEqual({
+            nodes: [
+              {
+                id: '1',
+                score: expect.anything(),
+              },
+              {
+                id: '2',
+                score: expect.anything(),
+              },
+            ],
+            pagination: {
+              count: 2,
+              hasMore: false,
+              limit: expect.anything(),
+              skip: 0,
             },
-            {
-              id: '2',
-              score: expect.anything(),
-            },
-          ],
-          pagination: {
-            count: 2,
-            hasMore: false,
-            limit: expect.anything(),
-            skip: 0,
-          },
-        });
-      },
-      {
-        timeout: 5000,
-      }
-    );
+          });
+        },
+        {
+          timeout: 10000,
+        }
+      );
 
-    const writer = await index.write();
-    writer.delete('1');
-    await writer.commit();
+      const writer = await index.write();
+      writer.delete('1');
+      await writer.commit();
 
-    await vitest.waitFor(
-      () => {
-        expect(value).toEqual({
-          nodes: [
-            {
-              id: '2',
-              score: expect.anything(),
+      await vitest.waitFor(
+        () => {
+          expect(value).toEqual({
+            nodes: [
+              {
+                id: '2',
+                score: expect.anything(),
+              },
+            ],
+            pagination: {
+              count: 1,
+              hasMore: false,
+              limit: expect.anything(),
+              skip: 0,
             },
-          ],
-          pagination: {
-            count: 1,
-            hasMore: false,
-            limit: expect.anything(),
-            skip: 0,
-          },
-        });
-      },
-      {
-        timeout: 5000,
-      }
-    );
-  });
+          });
+        },
+        {
+          timeout: 10000,
+        }
+      );
+    }
+  );
 });

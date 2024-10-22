@@ -31,7 +31,7 @@ export interface IndexWriter<S extends Schema>
 export interface IndexReader<S extends Schema> {
   get(id: string): Promise<Document<S> | null>;
 
-  getAll(ids: string[]): Promise<Document<S>[]>;
+  getAll(ids?: string[]): Promise<Document<S>[]>;
 
   has(id: string): Promise<boolean>;
 }

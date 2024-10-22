@@ -100,7 +100,7 @@ export class DataStruct {
     }
   }
 
-  async insert(trx: DataStructRWTransaction, document: Document) {
+  private async insert(trx: DataStructRWTransaction, document: Document) {
     const exists = await trx
       .objectStore('records')
       .index('id')
@@ -138,7 +138,7 @@ export class DataStruct {
     }
   }
 
-  async delete(trx: DataStructRWTransaction, id: string) {
+  private async delete(trx: DataStructRWTransaction, id: string) {
     const nid = await trx.objectStore('records').index('id').getKey(id);
 
     if (nid) {
@@ -159,11 +159,30 @@ export class DataStruct {
     deletes: string[],
     inserts: Document[]
   ) {
-    for (const del of deletes) {
-      await this.delete(trx, del);
-    }
-    for (const inst of inserts) {
-      await this.insert(trx, inst);
+    const startTime = performance.now();
+    try {
+      for (const del of deletes) {
+        await this.delete(trx, del);
+      }
+      for (const inst of inserts) {
+        await this.insert(trx, inst);
+      }
+    } finally {
+      const endTime = performance.now();
+      if (BUILD_CONFIG.debug) {
+        performance.measure(
+          `[IndexedDB Indexer] Batch Write (${this.databaseName})`,
+          {
+            start: startTime,
+            end: endTime,
+          }
+        );
+      }
+      logger.debug(
+        `[indexer ${this.databaseName}] batchWrite`,
+        endTime - startTime,
+        'ms'
+      );
     }
   }
 
@@ -214,18 +233,6 @@ export class DataStruct {
     throw new Error(`Query type '${query.type}' not supported`);
   }
 
-  private async query(
-    trx: DataStructROTransaction,
-    query: Query<any>
-  ): Promise<Match> {
-    const match = await this.queryRaw(trx, query);
-    const filteredMatch = match.asyncFilter(async nid => {
-      const record = await trx.objectStore('records').getKey(nid);
-      return record !== undefined;
-    });
-    return filteredMatch;
-  }
-
   async clear(trx: DataStructRWTransaction) {
     await trx.objectStore('records').clear();
     await trx.objectStore('invertedIndex').clear();
@@ -244,7 +251,7 @@ export class DataStruct {
         limit: options.pagination?.limit ?? 100,
       };
 
-      const match = await this.query(trx, query);
+      const match = await this.queryRaw(trx, query);
 
       const nids = match
         .toArray()
@@ -252,7 +259,11 @@ export class DataStruct {
 
       const nodes = [];
       for (const nid of nids) {
-        nodes.push(await this.resultNode(trx, match, nid, options));
+        const record = await trx.objectStore('records').get(nid);
+        if (!record) {
+          continue;
+        }
+        nodes.push(this.resultNode(record, options, match, nid));
       }
 
       return {
@@ -265,9 +276,20 @@ export class DataStruct {
         nodes: nodes,
       };
     } finally {
+      const endTime = performance.now();
+      if (BUILD_CONFIG.debug) {
+        performance.measure(
+          `[IndexedDB Indexer] Search (${this.databaseName})`,
+          {
+            detail: { query, options },
+            start: startTime,
+            end: endTime,
+          }
+        );
+      }
       logger.debug(
         `[indexer ${this.databaseName}] search`,
-        performance.now() - startTime,
+        endTime - startTime,
         'ms',
         query
       );
@@ -297,7 +319,7 @@ export class DataStruct {
             limit: 0,
           };
 
-      const match = await this.query(trx, query);
+      const match = await this.queryRaw(trx, query);
 
       const nids = match.toArray();
 
@@ -308,9 +330,11 @@ export class DataStruct {
       }[] = [];
 
       for (const nid of nids) {
-        const values = (await trx.objectStore('records').get(nid))?.data.get(
-          field
-        );
+        const record = await trx.objectStore('records').get(nid);
+        if (!record) {
+          continue;
+        }
+        const values = record.data.get(field);
         for (const value of values ?? []) {
           let bucket;
           let bucketIndex = buckets.findIndex(b => b.key === value);
@@ -332,7 +356,7 @@ export class DataStruct {
               bucket.nids.length - 1 < hitPagination.skip + hitPagination.limit
             ) {
               bucket.hits.push(
-                await this.resultNode(trx, match, nid, options.hits ?? {})
+                this.resultNode(record, options.hits ?? {}, match, nid)
               );
             }
           }
@@ -373,9 +397,20 @@ export class DataStruct {
         },
       };
     } finally {
+      const endTime = performance.now();
+      if (BUILD_CONFIG.debug) {
+        performance.measure(
+          `[IndexedDB Indexer] Aggregate (${this.databaseName})`,
+          {
+            detail: { query, field, options },
+            start: startTime,
+            end: endTime,
+          }
+        );
+      }
       logger.debug(
         `[indexer ${this.databaseName}] aggregate`,
-        performance.now() - startTime,
+        endTime - startTime,
         'ms'
       );
     }
@@ -383,12 +418,19 @@ export class DataStruct {
 
   async getAll(
     trx: DataStructROTransaction,
-    ids: string[]
+    ids?: string[]
   ): Promise<Document[]> {
     const docs = [];
-    for (const id of ids) {
-      const record = await trx.objectStore('records').index('id').get(id);
-      if (record) {
+    if (ids) {
+      for (const id of ids) {
+        const record = await trx.objectStore('records').index('id').get(id);
+        if (record) {
+          docs.push(Document.from(record.id, record.data));
+        }
+      }
+    } else {
+      const records = await trx.objectStore('records').getAll();
+      for (const record of records) {
         docs.push(Document.from(record.id, record.data));
       }
     }
@@ -405,7 +447,10 @@ export class DataStruct {
     await this.ensureInitialized();
     return this.database.transaction(
       ['records', 'invertedIndex', 'kvMetadata'],
-      'readonly'
+      'readonly',
+      {
+        durability: 'relaxed',
+      }
     );
   }
 
@@ -413,7 +458,10 @@ export class DataStruct {
     await this.ensureInitialized();
     return this.database.transaction(
       ['records', 'invertedIndex', 'kvMetadata'],
-      'readwrite'
+      'readwrite',
+      {
+        durability: 'relaxed',
+      }
     );
   }
 
@@ -446,20 +494,15 @@ export class DataStruct {
     });
   }
 
-  private async resultNode(
-    trx: DataStructROTransaction,
-    match: Match,
-    nid: number,
-    options: SearchOptions<any>
-  ): Promise<SearchResult<any, any>['nodes'][number]> {
-    const record = await trx.objectStore('records').get(nid);
-    if (!record) {
-      throw new Error(`Record not found for nid ${nid}`);
-    }
-
+  private resultNode(
+    record: { id: string; data: Map<string, string[]> },
+    options: SearchOptions<any>,
+    match?: Match,
+    nid?: number
+  ): SearchResult<any, any>['nodes'][number] {
     const node = {
       id: record.id,
-      score: match.getScore(nid),
+      score: match && nid ? match.getScore(nid) : 1,
     } as any;
 
     if (options.fields) {
@@ -473,7 +516,7 @@ export class DataStruct {
       node.fields = fields;
     }
 
-    if (options.highlights) {
+    if (match && nid && options.highlights) {
       const highlights = {} as Record<string, string[]>;
       for (const { field, before, end } of options.highlights) {
         const highlightValues = match.getHighlighters(nid, field);

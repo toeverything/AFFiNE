@@ -139,19 +139,7 @@ export class DocsIndexer extends Entity {
         return;
       }
 
-      const allIndexedDocs = (
-        await this.docIndex.search(
-          {
-            type: 'all',
-          },
-          {
-            pagination: {
-              limit: Number.MAX_SAFE_INTEGER,
-              skip: 0,
-            },
-          }
-        )
-      ).nodes.map(n => n.id);
+      const allIndexedDocs = (await this.docIndex.getAll()).map(d => d.id);
 
       workerOutput = await worker.run({
         type: 'rootDoc',

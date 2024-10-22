@@ -202,6 +202,12 @@ export class FullTextInvertedIndex implements InvertedIndex {
         }
       >
     >();
+    const avgFieldLength =
+      (
+        await trx
+          .objectStore('kvMetadata')
+          .get(`full-text:avg-field-length:${this.fieldKey}`)
+      )?.value ?? 0;
     for (const token of queryTokens) {
       const key = InvertedIndexKey.forString(this.fieldKey, token.term);
       const objs = await trx
@@ -229,12 +235,6 @@ export class FullTextInvertedIndex implements InvertedIndex {
         };
         const termFreq = position.rs.length;
         const totalCount = objs.length;
-        const avgFieldLength =
-          (
-            await trx
-              .objectStore('kvMetadata')
-              .get(`full-text:avg-field-length:${this.fieldKey}`)
-          )?.value ?? 0;
         const fieldLength = position.l;
         const score =
           bm25(termFreq, 1, totalCount, fieldLength, avgFieldLength) *

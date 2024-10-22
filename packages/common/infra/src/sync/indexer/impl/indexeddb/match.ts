@@ -95,28 +95,6 @@ export class Match {
       .map(e => e[0]);
   }
 
-  filter(predicate: (id: number) => boolean) {
-    const newWeight = new Match();
-    for (const [id, score] of this.scores) {
-      if (predicate(id)) {
-        newWeight.addScore(id, score);
-        newWeight.copyExtData(this, id);
-      }
-    }
-    return newWeight;
-  }
-
-  async asyncFilter(predicate: (id: number) => Promise<boolean>) {
-    const newWeight = new Match();
-    for (const [id, score] of this.scores) {
-      if (await predicate(id)) {
-        newWeight.addScore(id, score);
-        newWeight.copyExtData(this, id);
-      }
-    }
-    return newWeight;
-  }
-
   private copyExtData(from: Match, id: number) {
     for (const [field, values] of from.highlighters.get(id) ?? []) {
       for (const [index, ranges] of values) {

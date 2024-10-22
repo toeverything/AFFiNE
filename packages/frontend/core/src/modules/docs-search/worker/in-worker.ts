@@ -20,7 +20,10 @@ import type {
   WorkerOutput,
 } from './types';
 
-let cachedRootDoc: { doc: YDoc; hash: string } | null = null;
+const LRU_CACHE_SIZE = 5;
+
+// lru cache for ydoc instances, last used at the end of the array
+const lruCache = [] as { doc: YDoc; hash: string }[];
 
 async function digest(data: Uint8Array) {
   if (
@@ -35,6 +38,29 @@ async function digest(data: Uint8Array) {
   return lib0Digest(data);
 }
 
+async function getOrCreateCachedYDoc(data: Uint8Array) {
+  try {
+    const hash = toHexString(await digest(data));
+    const cachedIndex = lruCache.findIndex(item => item.hash === hash);
+    if (cachedIndex !== -1) {
+      const cached = lruCache.splice(cachedIndex, 1)[0];
+      lruCache.push(cached);
+      return cached.doc;
+    } else {
+      const doc = new YDoc();
+      if (!isEmptyUpdate(data)) {
+        applyUpdate(doc, data);
+      }
+      lruCache.push({ doc, hash });
+      return doc;
+    }
+  } finally {
+    if (lruCache.length > LRU_CACHE_SIZE) {
+      lruCache.shift();
+    }
+  }
+}
+
 async function crawlingDocData({
   docBuffer,
   storageDocId,
@@ -45,16 +71,7 @@ async function crawlingDocData({
     return {};
   }
 
-  const rootDocBufferHash = toHexString(await digest(rootDocBuffer));
-
-  let yRootDoc;
-  if (cachedRootDoc && cachedRootDoc.hash === rootDocBufferHash) {
-    yRootDoc = cachedRootDoc.doc;
-  } else {
-    yRootDoc = new YDoc();
-    applyUpdate(yRootDoc, rootDocBuffer);
-    cachedRootDoc = { doc: yRootDoc, hash: rootDocBufferHash };
-  }
+  const yRootDoc = await getOrCreateCachedYDoc(rootDocBuffer);
 
   let docId = null;
   for (const [id, subdoc] of yRootDoc.getMap('spaces')) {
@@ -83,15 +100,17 @@ async function crawlingDocData({
       deletedDoc: [docId],
     };
   } else {
-    const ydoc = new YDoc();
+    if (isEmptyUpdate(docBuffer)) {
+      return {
+        deletedDoc: [docId],
+      };
+    }
+
+    const ydoc = await getOrCreateCachedYDoc(docBuffer);
     let docTitle = '';
     let summaryLenNeeded = 1000;
     let summary = '';
     const blockDocuments: Document<BlockIndexSchema>[] = [];
-
-    if (!isEmptyUpdate(docBuffer)) {
-      applyUpdate(ydoc, docBuffer);
-    }
 
     const blocks = ydoc.getMap<any>('blocks');
 
@@ -363,16 +382,14 @@ async function crawlingDocData({
   }
 }
 
-function crawlingRootDocData({
+async function crawlingRootDocData({
   allIndexedDocs,
   rootDocBuffer,
   reindexAll,
 }: WorkerInput & {
   type: 'rootDoc';
-}): WorkerOutput {
-  const ydoc = new YDoc();
-
-  applyUpdate(ydoc, rootDocBuffer);
+}): Promise<WorkerOutput> {
+  const ydoc = await getOrCreateCachedYDoc(rootDocBuffer);
 
   const docs = ydoc.getMap('meta').get('pages') as
     | YArray<YMap<any>>
@@ -422,7 +439,7 @@ globalThis.onmessage = async (event: MessageEvent<WorkerIngoingMessage>) => {
     try {
       let data;
       if (input.type === 'rootDoc') {
-        data = crawlingRootDocData(input);
+        data = await crawlingRootDocData(input);
       } else {
         data = await crawlingDocData(input);
       }
