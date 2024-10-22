@@ -1,5 +1,7 @@
 import Graphemer from 'graphemer';
 
+import { matchUrl } from '../../../../utils/match-url';
+
 export interface Tokenizer {
   tokenize(text: string): Token[];
 }
@@ -87,6 +89,10 @@ export class GeneralTokenizer implements Tokenizer {
   tokenizeWord(word: string, lang: string): Token[] {
     if (lang === 'en') {
       return [{ term: word.toLowerCase(), start: 0, end: word.length }];
+    } else if (lang === 'url') {
+      return [{ term: word.toLowerCase(), start: 0, end: word.length }];
+    } else if (lang === 'number') {
+      return [{ term: word, start: 0, end: word.length }];
     } else if (lang === 'cjk') {
       if (word.length < 3) {
         return [{ term: word, start: 0, end: word.length }];
@@ -102,7 +108,9 @@ export class GeneralTokenizer implements Tokenizer {
   }
 
   testLang(c: string): string {
-    if (c.match(/[\p{Emoji}]/u)) {
+    if (c.match(/\d/u)) {
+      return 'number';
+    } else if (c.match(/[\p{Emoji}]/u)) {
       return 'emoji';
     } else if (c.match(/[\p{sc=Han}\p{scx=Hira}\p{scx=Kana}\p{sc=Hang}]/u)) {
       return 'cjk';
@@ -113,17 +121,34 @@ export class GeneralTokenizer implements Tokenizer {
     }
   }
 
+  testGroup(text: string): { start: number; end: number; lang: string }[] {
+    const tokens: { start: number; end: number; lang: string }[] = [];
+
+    for (const match of matchUrl(text)) {
+      tokens.push({
+        start: match.index,
+        end: match.index + match[0].length,
+        lang: 'url',
+      });
+    }
+
+    return tokens;
+  }
+
   tokenize(text: string): Token[] {
     const tokens: Token[] = [];
     let start = 0;
     let end = 0;
     let lang: string | null = null;
 
+    const groups = this.testGroup(text);
+
     for (let i = 0; i < text.length; ) {
       const nextBreak = Graphemer.nextBreak(text, i);
       const c = text.substring(i, nextBreak);
 
-      const l = this.testLang(c);
+      const g = groups.find(g => g.start <= i && i < g.end);
+      const l = g ? g.lang : this.testLang(c);
       if (lang !== l) {
         if (lang !== null) {
           end = i;
