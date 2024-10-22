@@ -5,6 +5,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
 
 import { AICancel, AILogin, AIResume, AISubscribe } from './actions';
+import { AIRedeemCodeButton } from './actions/redeem';
 import * as styles from './ai-plan.css';
 import { AIPlanLayout } from './layout';
 
@@ -17,6 +18,7 @@ export const AIPlan = () => {
   const price = useLiveData(subscriptionService.prices.aiPrice$);
   const isLoggedIn =
     useLiveData(authService.session.status$) === 'authenticated';
+  const isOnetime = useLiveData(subscriptionService.subscription.isOnetimeAI$);
 
   useEffect(() => {
     subscriptionService.subscription.revalidate();
@@ -52,7 +54,9 @@ export const AIPlan = () => {
       actionButtons={
         isLoggedIn ? (
           subscription ? (
-            subscription.canceledAt ? (
+            isOnetime ? (
+              <AIRedeemCodeButton className={styles.purchaseButton} />
+            ) : subscription.canceledAt ? (
               <AIResume className={styles.purchaseButton} />
             ) : (
               <AICancel className={styles.purchaseButton} />

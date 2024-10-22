@@ -39,6 +39,7 @@ import {
 } from '../../../../atoms';
 import { CancelAction, ResumeAction } from '../plans/actions';
 import { AICancel, AIResume, AISubscribe } from '../plans/ai/actions';
+import { AIRedeemCodeButton } from '../plans/ai/actions/redeem';
 import { BelieverCard } from '../plans/lifetime/believer-card';
 import { BelieverBenefits } from '../plans/lifetime/benefits';
 import * as styles from './style.css';
@@ -94,7 +95,7 @@ const SubscriptionSettings = () => {
   const proSubscription = useLiveData(subscriptionService.subscription.pro$);
   const proPrice = useLiveData(subscriptionService.prices.proPrice$);
   const isBeliever = useLiveData(subscriptionService.subscription.isBeliever$);
-  const isOnetime = useLiveData(subscriptionService.subscription.isOnetime$);
+  const isOnetime = useLiveData(subscriptionService.subscription.isOnetimeAI$);
 
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const setOpenSettingModalAtom = useSetAtom(openSettingModalAtom);
@@ -347,6 +348,7 @@ const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
   }, [subscriptionService]);
   const price = useLiveData(subscriptionService.prices.aiPrice$);
   const subscription = useLiveData(subscriptionService.subscription.ai$);
+  const isOnetime = useLiveData(subscriptionService.subscription.isOnetimeAI$);
 
   const priceReadable = price?.yearlyAmount
     ? `$${(price.yearlyAmount / 100).toFixed(2)}`
@@ -389,7 +391,9 @@ const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
         />
         {price?.yearlyAmount ? (
           subscription ? (
-            subscription.canceledAt ? (
+            isOnetime ? (
+              <AIRedeemCodeButton className={styles.planAction} />
+            ) : subscription.canceledAt ? (
               <AIResume className={styles.planAction} />
             ) : (
               <AICancel className={styles.planAction} />

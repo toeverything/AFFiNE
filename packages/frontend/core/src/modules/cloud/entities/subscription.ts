@@ -45,7 +45,10 @@ export class Subscription extends Entity {
   isBeliever$ = this.pro$.map(
     sub => sub?.recurring === SubscriptionRecurring.Lifetime
   );
-  isOnetime$ = this.pro$.map(
+  isOnetimePro$ = this.pro$.map(
+    sub => sub?.variant === SubscriptionVariant.Onetime
+  );
+  isOnetimeAI$ = this.ai$.map(
     sub => sub?.variant === SubscriptionVariant.Onetime
   );
 
