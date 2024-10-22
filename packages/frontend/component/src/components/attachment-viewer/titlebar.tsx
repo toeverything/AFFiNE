@@ -1,3 +1,4 @@
+import type { AttachmentBlockModel } from '@blocksuite/blocks';
 import {
   EditIcon,
   LocalDataIcon,
@@ -11,16 +12,6 @@ import { useState } from 'react';
 import { IconButton } from '../../ui/button';
 import { Menu, MenuItem } from '../../ui/menu';
 import * as styles from './styles.css';
-
-export interface TitlebarProps {
-  id: string;
-  name: string;
-  ext: string;
-  size: number;
-  unit: string;
-  zoom: number;
-  isPDF: boolean;
-}
 
 const items = [
   {
@@ -42,13 +33,22 @@ export const MenuItems = () =>
     </MenuItem>
   ));
 
+export interface TitlebarProps {
+  model: AttachmentBlockModel;
+  name: string;
+  ext: string;
+  filesize: string;
+  isPDF: boolean;
+  zoom?: number;
+}
+
 export const Titlebar = ({
+  model: _,
   name,
   ext,
-  size,
-  unit,
-  isPDF = false,
+  filesize,
   zoom = 100,
+  isPDF = false,
 }: TitlebarProps) => {
   const [openMenu, setOpenMenu] = useState(false);
 
@@ -57,12 +57,9 @@ export const Titlebar = ({
       <div className={styles.titlebarChild}>
         <div className={styles.titlebarName}>
           <div>{name}</div>
-          <span>{ext}</span>
+          <span>.{ext}</span>
         </div>
-        <div>
-          {size}
-          {unit}
-        </div>
+        <div>{filesize}</div>
         <IconButton icon={<LocalDataIcon />}></IconButton>
         <Menu
           items={<MenuItems />}

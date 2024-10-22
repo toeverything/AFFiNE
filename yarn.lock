@@ -341,6 +341,7 @@ __metadata:
     "@storybook/react": "npm:^8.2.9"
     "@storybook/react-vite": "npm:^8.2.9"
     "@testing-library/react": "npm:^16.0.0"
+    "@toeverything/pdf-viewer": "workspace:*"
     "@toeverything/theme": "npm:^1.0.11"
     "@types/react": "npm:^18.2.75"
     "@types/react-dom": "npm:^18.2.24"
@@ -349,6 +350,7 @@ __metadata:
     check-password-strength: "npm:^2.0.10"
     clsx: "npm:^2.1.0"
     dayjs: "npm:^1.11.10"
+    file-type: "npm:^19.1.0"
     jotai: "npm:^2.8.0"
     lit: "npm:^3.1.2"
     lodash-es: "npm:^4.17.21"
@@ -2482,9 +2484,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/affine-block-embed@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-embed::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/affine-block-embed@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-embed::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/affine-block-embed@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-embed::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/affine-block-embed@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-embed::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/affine-block-surface": "workspace:*"
     "@blocksuite/affine-components": "workspace:*"
@@ -2505,9 +2507,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/affine-block-list@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-list::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/affine-block-list@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-list::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/affine-block-list@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-list::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/affine-block-list@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-list::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/affine-components": "workspace:*"
     "@blocksuite/affine-model": "workspace:*"
@@ -2526,9 +2528,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/affine-block-paragraph@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-paragraph::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/affine-block-paragraph@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-paragraph::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/affine-block-paragraph@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-paragraph::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/affine-block-paragraph@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-paragraph::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/affine-components": "workspace:*"
     "@blocksuite/affine-model": "workspace:*"
@@ -2547,9 +2549,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/affine-block-surface@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-surface::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/affine-block-surface@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-surface::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/affine-block-surface@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-surface::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/affine-block-surface@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/block-surface::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/affine-components": "workspace:*"
     "@blocksuite/affine-model": "workspace:*"
@@ -2569,9 +2571,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/affine-components@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/components::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/affine-components@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/components::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/affine-components@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/components::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/affine-components@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/components::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/affine-model": "workspace:*"
     "@blocksuite/affine-shared": "workspace:*"
@@ -2593,9 +2595,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/affine-model@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/model::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/affine-model@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/model::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/affine-model@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/model::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/affine-model@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/model::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/block-std": "workspace:*"
     "@blocksuite/global": "workspace:*"
@@ -2606,9 +2608,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/affine-shared@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/shared::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/affine-shared@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/shared::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/affine-shared@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/shared::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/affine-shared@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/shared::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/affine-model": "workspace:*"
     "@blocksuite/block-std": "workspace:*"
@@ -2627,9 +2629,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/affine-widget-scroll-anchoring@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/widget-scroll-anchoring::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/affine-widget-scroll-anchoring@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/widget-scroll-anchoring::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/affine-widget-scroll-anchoring@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/widget-scroll-anchoring::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/affine-widget-scroll-anchoring@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/widget-scroll-anchoring::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/affine-model": "workspace:*"
     "@blocksuite/affine-shared": "workspace:*"
@@ -2641,9 +2643,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/affine@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/all::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/affine@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/all::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/affine@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/all::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/affine@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/all::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/block-std": "workspace:*"
     "@blocksuite/blocks": "workspace:*"
@@ -2654,9 +2656,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/block-std@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/block-std::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/block-std@portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/block-std::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/block-std@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/block-std::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/block-std@portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/block-std::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/global": "workspace:*"
     "@blocksuite/inline": "workspace:*"
@@ -2675,9 +2677,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/blocks@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/blocks::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/blocks@portal:/Users/fundon/dev/toeverything/blocksuite/packages/blocks::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/blocks@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/blocks::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/blocks@portal:/Users/fundon/dev/toeverything/blocksuite/packages/blocks::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/affine-block-embed": "workspace:*"
     "@blocksuite/affine-block-list": "workspace:*"
@@ -2734,9 +2736,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/data-view@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/data-view::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/data-view@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/data-view::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/data-view@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/data-view::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/data-view@portal:/Users/fundon/dev/toeverything/blocksuite/packages/affine/data-view::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/affine-components": "workspace:*"
     "@blocksuite/affine-shared": "workspace:*"
@@ -2755,9 +2757,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/global@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/global::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/global@portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/global::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/global@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/global::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/global@portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/global::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@preact/signals-core": "npm:^1.8.0"
     lib0: "npm:^0.2.97"
@@ -2782,9 +2784,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blocksuite/inline@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/inline::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/inline@portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/inline::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/inline@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/inline::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/inline@portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/inline::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/global": "workspace:*"
     "@preact/signals-core": "npm:^1.8.0"
@@ -2795,9 +2797,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/presets@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/presets::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/presets@portal:/Users/fundon/dev/toeverything/blocksuite/packages/presets::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/presets@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/presets::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/presets@portal:/Users/fundon/dev/toeverything/blocksuite/packages/presets::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/affine-block-surface": "workspace:*"
     "@blocksuite/affine-model": "workspace:*"
@@ -2816,9 +2818,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/store@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/store::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/store@portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/store::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/store@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/store::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/store@portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/store::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/global": "workspace:*"
     "@blocksuite/inline": "workspace:*"
@@ -2841,9 +2843,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@blocksuite/sync@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/sync::locator=%40affine%2Fmonorepo%40workspace%3A.":
+"@blocksuite/sync@portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/sync::locator=%40affine%2Fmonorepo%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@blocksuite/sync@portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/sync::locator=%40affine%2Fmonorepo%40workspace%3A."
+  resolution: "@blocksuite/sync@portal:/Users/fundon/dev/toeverything/blocksuite/packages/framework/sync::locator=%40affine%2Fmonorepo%40workspace%3A."
   dependencies:
     "@blocksuite/global": "workspace:*"
     idb: "npm:^8.0.0"
@@ -13104,6 +13106,27 @@ __metadata:
     yjs:
       optional: true
   languageName: unknown
+  linkType: soft
+
+"@toeverything/pdf-viewer-types@portal:/Users/fundon/dev/toeverything/pdfium-builder/packages/types::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@toeverything/pdf-viewer-types@portal:/Users/fundon/dev/toeverything/pdfium-builder/packages/types::locator=%40affine%2Fmonorepo%40workspace%3A."
+  languageName: node
+  linkType: soft
+
+"@toeverything/pdf-viewer@portal:/Users/fundon/dev/toeverything/pdfium-builder/packages/pdf-viewer::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@toeverything/pdf-viewer@portal:/Users/fundon/dev/toeverything/pdfium-builder/packages/pdf-viewer::locator=%40affine%2Fmonorepo%40workspace%3A."
+  dependencies:
+    "@toeverything/pdf-viewer-types": "workspace:*"
+    "@toeverything/pdfium": "workspace:*"
+  languageName: node
+  linkType: soft
+
+"@toeverything/pdfium@portal:/Users/fundon/dev/toeverything/pdfium-builder/packages/pdfium::locator=%40affine%2Fmonorepo%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@toeverything/pdfium@portal:/Users/fundon/dev/toeverything/pdfium-builder/packages/pdfium::locator=%40affine%2Fmonorepo%40workspace%3A."
+  languageName: node
   linkType: soft
 
 "@toeverything/theme@npm:^1.0.11, @toeverything/theme@npm:^1.0.8":

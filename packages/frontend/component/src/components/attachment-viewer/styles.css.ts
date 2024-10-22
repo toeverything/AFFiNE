@@ -6,6 +6,7 @@ export const viewerContainer = style({
   display: 'flex',
   flexDirection: 'column',
   width: '100%',
+  height: '100%',
 });
 
 export const titlebar = style({
@@ -60,9 +61,6 @@ export const body = style({
       opacity: 0.25,
       backgroundSize: '20px 20px',
       backgroundImage: `linear-gradient(${cssVarV2('button/grabber/default')} 1px, transparent 1px), linear-gradient(to right, ${cssVarV2('button/grabber/default')} 1px, transparent 1px)`,
-    },
-    '&.scrollable': {
-      overflowY: 'auto',
     },
   },
 });
