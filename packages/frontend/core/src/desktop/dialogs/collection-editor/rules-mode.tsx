@@ -1,4 +1,13 @@
 import { Button, IconButton, Tooltip } from '@affine/component';
+import type { AllPageListConfig } from '@affine/core/components/hooks/affine/use-all-page-list-config';
+import {
+  AffineShapeIcon,
+  FilterList,
+  filterPageByRules,
+  List,
+  type ListItem,
+  ListScrollContainer,
+} from '@affine/core/components/page-list';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import type { Collection } from '@affine/env/filter';
 import { Trans, useI18n } from '@affine/i18n';
@@ -15,12 +24,6 @@ import clsx from 'clsx';
 import type { ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 
-import type { AllPageListConfig } from '../../../hooks/affine/use-all-page-list-config';
-import { FilterList } from '../../filter';
-import { List, ListScrollContainer } from '../../list';
-import type { ListItem } from '../../types';
-import { filterPageByRules } from '../../use-collection-manager';
-import { AffineShapeIcon } from '../affine-shape';
 import * as styles from './edit-collection.css';
 
 export const RulesMode = ({

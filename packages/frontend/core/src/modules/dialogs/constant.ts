@@ -23,5 +23,8 @@ export type WORKSPACE_DIALOG_SCHEMA = {
   'collection-selector': (props: {
     selectedCollectionIds: string[];
   }) => string[];
-  'collection-editor': (props: { collectionId: string }) => void;
+  'collection-editor': (props: {
+    collectionId: string;
+    mode?: 'page' | 'rule';
+  }) => void;
 };

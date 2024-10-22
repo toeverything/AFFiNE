@@ -4,8 +4,8 @@ import { configureInfraModules, type Framework } from '@toeverything/infra';
 import { configureAppSidebarModule } from './app-sidebar';
 import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
+import { configureDialogModule } from './dialogs';
 import { configureDocDisplayMetaModule } from './doc-display-meta';
-import { configureDocInfoModule } from './doc-info';
 import { configureDocLinksModule } from './doc-link';
 import { configureDocsSearchModule } from './docs-search';
 import { configureEditorModule } from './editor';
@@ -56,7 +56,7 @@ export function configureCommonModules(framework: Framework) {
   configureEditorSettingModule(framework);
   configureImportTemplateModule(framework);
   configureUserspaceModule(framework);
-  configureDocInfoModule(framework);
   configureAppSidebarModule(framework);
   configureJournalModule(framework);
+  configureDialogModule(framework);
 }

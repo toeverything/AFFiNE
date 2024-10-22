@@ -1,5 +1,4 @@
 import { AffineOtherPageLayout } from '@affine/component/affine-other-page-layout';
-import { AppFallback } from '@affine/core/components/affine/app-container';
 import { workbenchRoutes } from '@affine/core/desktop/workbench-router';
 import { ZipTransformer } from '@blocksuite/affine/blocks';
 import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
@@ -15,9 +14,10 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { matchPath, useLocation, useParams } from 'react-router-dom';
 
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
-import { WorkspaceLayout } from '../../../components/layouts/workspace-layout';
 import { WorkbenchRoot } from '../../../modules/workbench';
+import { AppContainer } from '../../components/app-container';
 import { PageNotFound } from '../404';
+import { WorkspaceLayout } from './layouts/workspace-layout';
 import { SharePage } from './share/share-page';
 
 declare global {
@@ -115,7 +115,7 @@ export const Component = (): ReactElement => {
     );
   }
   if (!meta) {
-    return <AppFallback />;
+    return <AppContainer fallback />;
   }
 
   return <WorkspacePage meta={meta} />;
@@ -208,7 +208,7 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
   if (!isRootDocReady) {
     return (
       <FrameworkScope scope={workspace.scope}>
-        <AppFallback />
+        <AppContainer fallback />
       </FrameworkScope>
     );
   }

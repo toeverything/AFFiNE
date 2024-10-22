@@ -1,23 +1,13 @@
 import { events } from '@affine/electron-api';
-import { WorkspaceFlavour } from '@affine/env/workspace';
 import { useService, WorkspaceService } from '@toeverything/infra';
 import { useAtom } from 'jotai';
 import { useCallback, useEffect } from 'react';
 
 import { FindInPageModal } from '../../modules/find-in-page/view/find-in-page-modal';
 import { PeekViewManagerModal } from '../../modules/peek-view';
-import { AiLoginRequiredModal } from '../affine/auth/ai-login-required';
-import { HistoryTipsModal } from '../affine/history-tips-modal';
-import { IssueFeedbackModal } from '../affine/issue-feedback-modal';
-import {
-  CloudQuotaModal,
-  LocalQuotaModal,
-} from '../affine/quota-reached-modal';
 import { SettingModal } from '../affine/setting-modal';
-import { StarAFFiNEModal } from '../affine/star-affine-modal';
 import type { SettingAtom } from '../atoms';
 import { openSettingModalAtom } from '../atoms';
-import { InfoModal } from '../doc-properties/info-modal/info-modal';
 import { useTrashModalHelper } from '../hooks/affine/use-trash-modal-helper';
 import { MoveToTrash } from '../page-list';
 
@@ -91,19 +81,7 @@ export function CurrentWorkspaceModals() {
 
   return (
     <>
-      <StarAFFiNEModal />
-      <IssueFeedbackModal />
       {currentWorkspace ? <Setting /> : null}
-      {currentWorkspace?.flavour === WorkspaceFlavour.LOCAL && (
-        <>
-          <LocalQuotaModal />
-          <HistoryTipsModal />
-        </>
-      )}
-      {currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD && (
-        <CloudQuotaModal />
-      )}
-      <AiLoginRequiredModal />
       <PeekViewManagerModal />
       {BUILD_CONFIG.isElectron && <FindInPageModal />}
       <MoveToTrash.ConfirmModal
@@ -112,7 +90,6 @@ export function CurrentWorkspaceModals() {
         onOpenChange={onTrashConfirmOpenChange}
         titles={deletePageTitles}
       />
-      {currentWorkspace ? <InfoModal /> : null}
     </>
   );
 }

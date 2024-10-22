@@ -4,7 +4,6 @@ import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-he
 import { useWorkspaceName } from '@affine/core/components/hooks/use-workspace-info';
 import { WorkspaceSelector } from '@affine/core/components/workspace-selector';
 import { AuthService } from '@affine/core/modules/cloud';
-import type { CreateWorkspaceCallbackPayload } from '@affine/core/modules/create-workspace';
 import {
   type DialogComponentProps,
   type GLOBAL_DIALOG_SCHEMA,
@@ -107,8 +106,8 @@ const Dialog = ({
   );
 
   const handleCreatedWorkspace = useCallback(
-    (payload: CreateWorkspaceCallbackPayload) => {
-      return setSelectedWorkspace(payload.meta);
+    (payload: { metadata: WorkspaceMetadata; defaultDocId?: string }) => {
+      return setSelectedWorkspace(payload.metadata);
     },
     []
   );

@@ -1,7 +1,5 @@
 import { cssVar, lightCssVariables } from '@toeverything/theme';
-import { createVar, globalStyle, style } from '@vanilla-extract/css';
-
-export const panelWidthVar = createVar('panel-width');
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const appStyle = style({
   width: '100%',
@@ -40,6 +38,38 @@ globalStyle(`html[data-theme="dark"] ${appStyle}`, {
       vars: lightCssVariables,
     },
   },
+});
+
+export const browserAppViewContainer = style({
+  display: 'flex',
+  flexFlow: 'row',
+  height: '100%',
+  width: '100%',
+  position: 'relative',
+});
+
+export const desktopAppViewContainer = style({
+  display: 'flex',
+  flexFlow: 'column',
+  height: '100%',
+  width: '100%',
+});
+
+export const desktopAppViewMain = style({
+  display: 'flex',
+  flexFlow: 'row',
+  width: '100%',
+  height: 'calc(100% - 52px)',
+  position: 'relative',
+});
+
+export const desktopTabsHeader = style({
+  display: 'flex',
+  flexFlow: 'row',
+  height: '52px',
+  zIndex: 1,
+  width: '100%',
+  overflow: 'hidden',
 });
 
 export const mainContainerStyle = style({
@@ -82,27 +112,4 @@ export const mainContainerStyle = style({
       backgroundColor: 'transparent',
     },
   },
-});
-export const toolStyle = style({
-  position: 'absolute',
-  right: 16,
-  bottom: 16,
-  zIndex: 1,
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: '12px',
-  selectors: {
-    '&.trash': {
-      bottom: '78px',
-    },
-  },
-});
-
-export const fallbackRootStyle = style({
-  paddingTop: 52,
-  display: 'flex',
-  flex: 1,
-  width: '100%',
-  height: '100%',
 });

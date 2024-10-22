@@ -5,11 +5,9 @@ import {
   MenuItem,
   toast,
 } from '@affine/component';
-import {
-  filterPage,
-  useEditCollection,
-} from '@affine/core/components/page-list';
+import { filterPage } from '@affine/core/components/page-list';
 import { CollectionService } from '@affine/core/modules/collection';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { ShareDocsListService } from '@affine/core/modules/share-doc';
 import type { AffineDNDData } from '@affine/core/types/dnd';
@@ -59,10 +57,10 @@ export const ExplorerCollectionNode = ({
   collectionId: string;
 } & GenericExplorerNode) => {
   const t = useI18n();
-  const { globalContextService } = useServices({
+  const { globalContextService, workspaceDialogService } = useServices({
     GlobalContextService,
+    WorkspaceDialogService,
   });
-  const { open: openEditCollectionModal } = useEditCollection();
   const active =
     useLiveData(globalContextService.globalContext.collectionId.$) ===
     collectionId;
@@ -170,17 +168,10 @@ export const ExplorerCollectionNode = ({
     if (!collection) {
       return;
     }
-    openEditCollectionModal(collection)
-      .then(collection => {
-        return collectionService.updateCollection(
-          collection.id,
-          () => collection
-        );
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, [collection, collectionService, openEditCollectionModal]);
+    workspaceDialogService.open('collection-editor', {
+      collectionId: collection.id,
+    });
+  }, [collection, workspaceDialogService]);
 
   const collectionOperations = useExplorerCollectionNodeOperations(
     collectionId,

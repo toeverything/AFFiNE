@@ -3,7 +3,7 @@ import {
   PreconditionStrategy,
   registerAffineCommand,
 } from '@affine/core/commands';
-import { DocInfoService } from '@affine/core/modules/doc-info';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { Editor } from '@affine/core/modules/editor';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -36,7 +36,7 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
   const trash = useLiveData(doc.trash$);
 
   const setPageHistoryModalState = useSetAtom(pageHistoryModalAtom);
-  const docInfoModal = useService(DocInfoService).modal;
+  const workspaceDialogService = useService(WorkspaceDialogService);
 
   const openHistoryModal = useCallback(() => {
     setPageHistoryModalState(() => ({
@@ -46,8 +46,8 @@ export function useRegisterBlocksuiteEditorCommands(editor: Editor) {
   }, [docId, setPageHistoryModalState]);
 
   const openInfoModal = useCallback(() => {
-    docInfoModal.open(docId);
-  }, [docId, docInfoModal]);
+    workspaceDialogService.open('doc-info', { docId });
+  }, [docId, workspaceDialogService]);
 
   const { duplicate } = useBlockSuiteMetaHelper();
   const exportHandler = useExportPage();

@@ -1,7 +1,13 @@
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
-import { AppFallback } from '@affine/core/components/affine/app-container';
-import { WorkspaceLayoutProviders } from '@affine/core/components/layouts/workspace-layout';
+import { AiLoginRequiredModal } from '@affine/core/components/affine/auth/ai-login-required';
+import {
+  CloudQuotaModal,
+  LocalQuotaModal,
+} from '@affine/core/components/affine/quota-reached-modal';
 import { SWRConfigProvider } from '@affine/core/components/providers/swr-config-provider';
+import { WorkspaceSideEffects } from '@affine/core/components/providers/workspace-side-effects';
+import { AppContainer } from '@affine/core/desktop/components/app-container';
+import { WorkspaceFlavour } from '@affine/env/workspace';
 import type { Workspace, WorkspaceMetadata } from '@toeverything/infra';
 import {
   FrameworkScope,
@@ -86,7 +92,7 @@ export const WorkspaceLayout = ({
   if (!isRootDocReady) {
     return (
       <FrameworkScope scope={workspace.scope}>
-        <AppFallback />
+        <AppContainer fallback />
       </FrameworkScope>
     );
   }
@@ -96,7 +102,18 @@ export const WorkspaceLayout = ({
       <AffineErrorBoundary height="100dvh">
         <SWRConfigProvider>
           <MobileCurrentWorkspaceModals />
-          <WorkspaceLayoutProviders>{children}</WorkspaceLayoutProviders>
+
+          {/* ---- some side-effect components ---- */}
+          {currentWorkspace?.flavour === WorkspaceFlavour.LOCAL && (
+            <LocalQuotaModal />
+          )}
+          {currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD && (
+            <CloudQuotaModal />
+          )}
+          <AiLoginRequiredModal />
+
+          <WorkspaceSideEffects />
+          {children}
         </SWRConfigProvider>
       </AffineErrorBoundary>
     </FrameworkScope>

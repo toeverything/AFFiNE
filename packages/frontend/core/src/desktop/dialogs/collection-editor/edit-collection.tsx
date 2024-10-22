@@ -1,80 +1,16 @@
-import { Button, Modal, RadioGroup } from '@affine/component';
+import { Button, RadioGroup } from '@affine/component';
 import { useAllPageListConfig } from '@affine/core/components/hooks/affine/use-all-page-list-config';
+import { SelectPage } from '@affine/core/components/page-list/docs/select-page';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
-import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { useCallback, useMemo, useState } from 'react';
 
 import * as styles from './edit-collection.css';
 import { RulesMode } from './rules-mode';
-import { SelectPage } from './select-page';
 
 export type EditCollectionMode = 'page' | 'rule';
 
-export interface EditCollectionModalProps {
-  init?: Collection;
-  title?: string;
-  open: boolean;
-  mode?: EditCollectionMode;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: (view: Collection) => void;
-}
-
-const contentOptions: DialogContentProps = {
-  style: {
-    padding: 0,
-    maxWidth: 944,
-    backgroundColor: 'var(--affine-background-primary-color)',
-  },
-};
-export const EditCollectionModal = ({
-  init,
-  onConfirm,
-  open,
-  onOpenChange,
-  title,
-  mode,
-}: EditCollectionModalProps) => {
-  const t = useI18n();
-  const onConfirmOnCollection = useCallback(
-    (view: Collection) => {
-      onConfirm(view);
-      onOpenChange(false);
-    },
-    [onConfirm, onOpenChange]
-  );
-  const onCancel = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
-
-  if (!(open && init)) {
-    return null;
-  }
-
-  return (
-    <Modal
-      open={open}
-      onOpenChange={onOpenChange}
-      withoutCloseButton
-      width="calc(100% - 64px)"
-      height="80%"
-      contentOptions={contentOptions}
-      persistent
-    >
-      <EditCollection
-        title={title}
-        onConfirmText={t['com.affine.editCollection.save']()}
-        init={init}
-        mode={mode}
-        onCancel={onCancel}
-        onConfirm={onConfirmOnCollection}
-      />
-    </Modal>
-  );
-};
-
 export interface EditCollectionProps {
-  title?: string;
   onConfirmText?: string;
   init: Collection;
   mode?: EditCollectionMode;

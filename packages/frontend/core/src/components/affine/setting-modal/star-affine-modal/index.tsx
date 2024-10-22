@@ -1,11 +1,14 @@
 import { OverlayModal } from '@affine/component';
-import { openStarAFFiNEModalAtom } from '@affine/core/components/atoms';
 import { useI18n } from '@affine/i18n';
-import { useAtom } from 'jotai';
 
-export const StarAFFiNEModal = () => {
+export const StarAFFiNEModal = ({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}) => {
   const t = useI18n();
-  const [open, setOpen] = useAtom(openStarAFFiNEModalAtom);
 
   return (
     <OverlayModal

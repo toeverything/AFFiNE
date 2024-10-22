@@ -1,6 +1,5 @@
 import { Menu, type MenuProps } from '@affine/component';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
-import type { CreateWorkspaceCallbackPayload } from '@affine/core/modules/create-workspace';
 import { track } from '@affine/track';
 import {
   GlobalContextService,
@@ -18,7 +17,10 @@ interface WorkspaceSelectorProps {
   open?: boolean;
   workspaceMetadata?: WorkspaceMetadata;
   onSelectWorkspace?: (workspaceMetadata: WorkspaceMetadata) => void;
-  onCreatedWorkspace?: (payload: CreateWorkspaceCallbackPayload) => void;
+  onCreatedWorkspace?: (payload: {
+    metadata: WorkspaceMetadata;
+    defaultDocId?: string;
+  }) => void;
   showSettingsButton?: boolean;
   showEnableCloudButton?: boolean;
   showArrowDownIcon?: boolean;
@@ -140,14 +142,14 @@ export const WorkspaceNavigator = ({
     [onSelectWorkspace, jumpToPage]
   );
   const handleCreatedWorkspace = useCallback(
-    (payload: CreateWorkspaceCallbackPayload) => {
+    (payload: { metadata: WorkspaceMetadata; defaultDocId?: string }) => {
       onCreatedWorkspace?.(payload);
       if (document.startViewTransition) {
         document.startViewTransition(() => {
           if (payload.defaultDocId) {
-            jumpToPage(payload.meta.id, payload.defaultDocId);
+            jumpToPage(payload.metadata.id, payload.defaultDocId);
           } else {
-            jumpToPage(payload.meta.id, 'all');
+            jumpToPage(payload.metadata.id, 'all');
           }
           return new Promise(resolve =>
             setTimeout(resolve, 150)
@@ -155,9 +157,9 @@ export const WorkspaceNavigator = ({
         });
       } else {
         if (payload.defaultDocId) {
-          jumpToPage(payload.meta.id, payload.defaultDocId);
+          jumpToPage(payload.metadata.id, payload.defaultDocId);
         } else {
-          jumpToPage(payload.meta.id, 'all');
+          jumpToPage(payload.metadata.id, 'all');
         }
       }
     },

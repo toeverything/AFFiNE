@@ -1,7 +1,7 @@
 import { Divider, Scrollable } from '@affine/component';
 import { DocPropertiesTable } from '@affine/core/components/doc-properties';
-import { LinksRow } from '@affine/core/components/doc-properties/info-modal/links-row';
-import { TimeRow } from '@affine/core/components/doc-properties/info-modal/time-row';
+import { LinksRow } from '@affine/core/desktop/dialogs/doc-info/links-row';
+import { TimeRow } from '@affine/core/desktop/dialogs/doc-info/time-row';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { useI18n } from '@affine/i18n';
 import { LiveData, useLiveData, useService } from '@toeverything/infra';

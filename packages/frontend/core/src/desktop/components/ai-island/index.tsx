@@ -3,7 +3,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 
-import { ToolContainer } from '../../workspace';
+import { IslandContainer } from './container';
 import { AIIcon } from './icons';
 import { aiIslandBtn, aiIslandWrapper, toolStyle } from './styles.css';
 
@@ -24,7 +24,7 @@ export const AIIsland = () => {
   }, [activeTab, haveChatTab, sidebarOpen]);
 
   return (
-    <ToolContainer className={clsx(toolStyle, { hide })}>
+    <IslandContainer className={clsx(toolStyle, { hide })}>
       <div className={aiIslandWrapper} data-hide={hide}>
         <button
           className={aiIslandBtn}
@@ -38,6 +38,6 @@ export const AIIsland = () => {
           <AIIcon />
         </button>
       </div>
-    </ToolContainer>
+    </IslandContainer>
   );
 };

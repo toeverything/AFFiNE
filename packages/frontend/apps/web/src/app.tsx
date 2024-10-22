@@ -1,5 +1,5 @@
 import { AffineContext } from '@affine/component/context';
-import { AppFallback } from '@affine/core/components/affine/app-container';
+import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { router } from '@affine/core/desktop/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { I18nProvider } from '@affine/core/modules/i18n';
@@ -50,7 +50,7 @@ export function App() {
           <I18nProvider>
             <AffineContext store={getCurrentStore()}>
               <RouterProvider
-                fallbackElement={<AppFallback key="RouterFallback" />}
+                fallbackElement={<AppContainer fallback />}
                 router={router}
                 future={future}
               />

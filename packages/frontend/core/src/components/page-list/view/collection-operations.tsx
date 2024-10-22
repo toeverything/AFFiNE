@@ -1,6 +1,7 @@
 import type { MenuItemProps } from '@affine/component';
 import { Menu, MenuItem } from '@affine/component';
 import { useDeleteCollectionInfo } from '@affine/core/components/hooks/affine/use-delete-collection-info';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import type { Collection } from '@affine/env/filter';
@@ -25,10 +26,7 @@ import { useCallback, useMemo } from 'react';
 import { CollectionService } from '../../../modules/collection';
 import { IsFavoriteIcon } from '../../pure/icons';
 import * as styles from './collection-operations.css';
-import {
-  useEditCollection,
-  useEditCollectionName,
-} from './use-edit-collection';
+import { useEditCollectionName } from './use-edit-collection';
 
 export const CollectionOperations = ({
   collection,
@@ -44,14 +42,15 @@ export const CollectionOperations = ({
     collectionService: service,
     workbenchService,
     featureFlagService,
+    workspaceDialogService,
   } = useServices({
     CollectionService,
     WorkbenchService,
     FeatureFlagService,
+    WorkspaceDialogService,
   });
   const deleteInfo = useDeleteCollectionInfo();
   const workbench = workbenchService.workbench;
-  const { open: openEditCollectionModal } = useEditCollection();
   const t = useI18n();
   const { open: openEditCollectionNameModal } = useEditCollectionName({
     title: t['com.affine.editCollection.renameCollection'](),
@@ -78,14 +77,10 @@ export const CollectionOperations = ({
   }, [openRenameModal, openEditCollectionNameModal, collection, service]);
 
   const showEdit = useCallback(() => {
-    openEditCollectionModal(collection)
-      .then(collection => {
-        return service.updateCollection(collection.id, () => collection);
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  }, [openEditCollectionModal, collection, service]);
+    workspaceDialogService.open('collection-editor', {
+      collectionId: collection.id,
+    });
+  }, [workspaceDialogService, collection.id]);
 
   const openCollectionSplitView = useCallback(() => {
     workbench.openCollection(collection.id, { at: 'tail' });

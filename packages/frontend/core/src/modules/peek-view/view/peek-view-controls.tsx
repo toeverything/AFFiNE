@@ -18,7 +18,7 @@ import {
   useMemo,
 } from 'react';
 
-import { DocInfoService } from '../../doc-info';
+import { WorkspaceDialogService } from '../../dialogs';
 import { WorkbenchService } from '../../workbench';
 import { PeekViewService } from '../services/peek-view';
 import * as styles from './peek-view-controls.css';
@@ -102,7 +102,7 @@ export const DocPeekViewControls = ({
   const peekView = useService(PeekViewService).peekView;
   const workbench = useService(WorkbenchService).workbench;
   const t = useI18n();
-  const docInfoService = useService(DocInfoService);
+  const workspaceDialogService = useService(WorkspaceDialogService);
   const controls = useMemo(() => {
     return [
       {
@@ -146,7 +146,7 @@ export const DocPeekViewControls = ({
         nameKey: 'info',
         name: t['com.affine.peek-view-controls.open-info'](),
         onClick: () => {
-          docInfoService.modal.open(docId);
+          workspaceDialogService.open('doc-info', { docId });
         },
       },
     ].filter((opt): opt is ControlButtonProps => Boolean(opt));
@@ -158,7 +158,7 @@ export const DocPeekViewControls = ({
     mode,
     blockIds,
     elementIds,
-    docInfoService.modal,
+    workspaceDialogService,
   ]);
   return (
     <div {...rest} className={clsx(styles.root, className)}>

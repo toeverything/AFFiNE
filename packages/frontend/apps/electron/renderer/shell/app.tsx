@@ -1,14 +1,13 @@
 import { ThemeProvider } from '@affine/component/theme-provider';
-import { ShellAppFallback } from '@affine/core/components/affine/app-container';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { configureAppSidebarModule } from '@affine/core/modules/app-sidebar';
+import { ShellAppSidebarFallback } from '@affine/core/modules/app-sidebar/views';
 import {
   AppTabsHeader,
   configureAppTabsHeaderModule,
 } from '@affine/core/modules/app-tabs-header';
 import { configureI18nModule, I18nProvider } from '@affine/core/modules/i18n';
 import { configureElectronStateStorageImpls } from '@affine/core/modules/storage';
-import { SplitViewFallback } from '@affine/core/modules/workbench/view/split-view/split-view';
 import {
   configureGlobalStorageModule,
   Framework,
@@ -37,12 +36,44 @@ export function App() {
         <I18nProvider>
           <div className={styles.root} data-translucent={translucent}>
             <AppTabsHeader mode="shell" className={styles.appTabsHeader} />
-            <ShellAppFallback className={styles.fallbackRoot}>
-              <SplitViewFallback className={styles.splitViewFallback} />
-            </ShellAppFallback>
+            <div className={styles.body}>
+              <ShellAppSidebarFallback />
+            </div>
           </div>
         </I18nProvider>
       </ThemeProvider>
     </FrameworkRoot>
   );
 }
+
+// const AppContainer = ({
+//   children,
+//   className,
+//   ...rest
+// }: PropsWithChildren<{
+//   className?: string;
+//   fallback?: boolean;
+//   shell?: boolean;
+// }>) => {
+//   const { appSettings } = useAppSettingHelper();
+
+//   const noisyBackground =
+//     BUILD_CONFIG.isElectron && appSettings.enableNoisyBackground;
+//   const blurBackground =
+//     BUILD_CONFIG.isElectron &&
+//     environment.isMacOs &&
+//     appSettings.enableBlurBackground;
+//   return (
+//     <div
+//       {...rest}
+//       className={clsx(styles.appStyle, className, {
+//         'noisy-background': noisyBackground,
+//         'blur-background': blurBackground,
+//       })}
+//       data-noise-background={noisyBackground}
+//       data-blur-background={blurBackground}
+//     >
+//       {children}
+//     </div>
+//   );
+// };

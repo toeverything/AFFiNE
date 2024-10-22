@@ -1,12 +1,11 @@
 import { Scrollable } from '@affine/component';
-import { AppFallback } from '@affine/core/components/affine/app-container';
 import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
 import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
 import { usePageDocumentTitle } from '@affine/core/components/hooks/use-global-state';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
 import { SharePageNotFoundError } from '@affine/core/components/share-page-not-found-error';
-import { AppContainer, MainContainer } from '@affine/core/components/workspace';
+import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { AuthService } from '@affine/core/modules/cloud';
 import {
   type Editor,
@@ -98,7 +97,7 @@ export const SharePage = ({
   }, [shareReaderService, docId, workspaceId]);
 
   if (isLoading) {
-    return <AppFallback />;
+    return <AppContainer fallback />;
   }
 
   if (error) {
@@ -273,45 +272,43 @@ const SharePageInner = ({
   }
 
   return (
-    <FrameworkScope scope={workspace.scope}>
-      <FrameworkScope scope={page.scope}>
-        <FrameworkScope scope={editor.scope}>
-          <AppContainer>
-            <MainContainer>
-              <div className={styles.root}>
-                <div className={styles.mainContainer}>
-                  <ShareHeader
-                    pageId={page.id}
-                    publishMode={publishMode}
-                    isTemplate={isTemplate}
-                    templateName={templateName}
-                    snapshotUrl={templateSnapshotUrl}
-                  />
-                  <Scrollable.Root>
-                    <Scrollable.Viewport
-                      className={clsx(
-                        'affine-page-viewport',
-                        styles.editorContainer
-                      )}
-                    >
-                      <PageDetailEditor onLoad={onEditorLoad} />
-                      {publishMode === 'page' ? <ShareFooter /> : null}
-                    </Scrollable.Viewport>
-                    <Scrollable.Scrollbar />
-                  </Scrollable.Root>
-                  <EditorOutlineViewer
-                    editor={editorContainer}
-                    show={publishMode === 'page'}
-                  />
-                  <SharePageFooter />
-                </div>
+    <AppContainer>
+      <FrameworkScope scope={workspace.scope}>
+        <FrameworkScope scope={page.scope}>
+          <FrameworkScope scope={editor.scope}>
+            <div className={styles.root}>
+              <div className={styles.mainContainer}>
+                <ShareHeader
+                  pageId={page.id}
+                  publishMode={publishMode}
+                  isTemplate={isTemplate}
+                  templateName={templateName}
+                  snapshotUrl={templateSnapshotUrl}
+                />
+                <Scrollable.Root>
+                  <Scrollable.Viewport
+                    className={clsx(
+                      'affine-page-viewport',
+                      styles.editorContainer
+                    )}
+                  >
+                    <PageDetailEditor onLoad={onEditorLoad} />
+                    {publishMode === 'page' ? <ShareFooter /> : null}
+                  </Scrollable.Viewport>
+                  <Scrollable.Scrollbar />
+                </Scrollable.Root>
+                <EditorOutlineViewer
+                  editor={editorContainer}
+                  show={publishMode === 'page'}
+                />
+                <SharePageFooter />
               </div>
-            </MainContainer>
+            </div>
             <PeekViewManagerModal />
-          </AppContainer>
+          </FrameworkScope>
         </FrameworkScope>
       </FrameworkScope>
-    </FrameworkScope>
+    </AppContainer>
   );
 };
 

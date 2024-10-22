@@ -18,13 +18,13 @@ import {
 } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { AppFallback } from '../../../components/affine/app-container';
 import {
   RouteLogic,
   useNavigateHelper,
 } from '../../../components/hooks/use-navigate-helper';
 import { WorkspaceNavigator } from '../../../components/workspace-selector';
 import { AuthService } from '../../../modules/cloud';
+import { AppContainer } from '../../components/app-container';
 
 /**
  * index page
@@ -148,7 +148,7 @@ export const Component = ({
   }, [jumpToPage, openPage, workspacesService]);
 
   if (navigating || creating) {
-    return <AppFallback></AppFallback>;
+    return <AppContainer fallback />;
   }
 
   // TODO(@eyhn): We need a no workspace page

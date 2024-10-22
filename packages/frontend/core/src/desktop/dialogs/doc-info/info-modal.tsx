@@ -1,95 +1,20 @@
-import {
-  Button,
-  Divider,
-  type InlineEditHandle,
-  Menu,
-  Modal,
-  PropertyCollapsible,
-  Scrollable,
-} from '@affine/component';
-import { DocInfoService } from '@affine/core/modules/doc-info';
+import { Button, Divider, Menu, PropertyCollapsible } from '@affine/component';
+import { CreatePropertyMenuItems } from '@affine/core/components/doc-properties/menu/create-doc-property';
+import { DocPropertyRow } from '@affine/core/components/doc-properties/table';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import type { Doc } from '@toeverything/infra';
 import {
   DocsService,
-  FrameworkScope,
   LiveData,
   useLiveData,
-  useService,
   useServices,
 } from '@toeverything/infra';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import { BlocksuiteHeaderTitle } from '../../blocksuite/block-suite-header/title';
-import { CreatePropertyMenuItems } from '../menu/create-doc-property';
-import { DocPropertyRow } from '../table';
 import * as styles from './info-modal.css';
 import { LinksRow } from './links-row';
 import { TimeRow } from './time-row';
-
-export const InfoModal = () => {
-  const modal = useService(DocInfoService).modal;
-  const docId = useLiveData(modal.docId$);
-  const docsService = useService(DocsService);
-
-  const [doc, setDoc] = useState<Doc | null>(null);
-  useEffect(() => {
-    if (!docId) return;
-    const docRef = docsService.open(docId);
-    setDoc(docRef.doc);
-    return () => {
-      docRef.release();
-      setDoc(null);
-    };
-  }, [docId, docsService]);
-
-  if (!doc || !docId) return null;
-
-  return (
-    <FrameworkScope scope={doc.scope}>
-      <InfoModalOpened docId={docId} />
-    </FrameworkScope>
-  );
-};
-
-const InfoModalOpened = ({ docId }: { docId: string }) => {
-  const modal = useService(DocInfoService).modal;
-
-  const titleInputHandleRef = useRef<InlineEditHandle>(null);
-  const handleClose = useCallback(() => {
-    modal.close();
-  }, [modal]);
-
-  return (
-    <Modal
-      contentOptions={{
-        className: styles.container,
-      }}
-      open
-      onOpenChange={v => modal.onOpenChange(v)}
-      withoutCloseButton
-    >
-      <Scrollable.Root>
-        <Scrollable.Viewport
-          className={styles.viewport}
-          data-testid="info-modal"
-        >
-          <div className={styles.titleContainer} data-testid="info-modal-title">
-            <BlocksuiteHeaderTitle
-              docId={docId}
-              className={styles.titleStyle}
-              inputHandleRef={titleInputHandleRef}
-            />
-          </div>
-          <InfoTable docId={docId} onClose={handleClose} />
-        </Scrollable.Viewport>
-        <Scrollable.Scrollbar className={styles.scrollBar} />
-      </Scrollable.Root>
-    </Modal>
-  );
-};
 
 export const InfoTable = ({
   onClose,

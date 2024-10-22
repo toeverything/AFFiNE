@@ -7,7 +7,6 @@ import {
 } from '@affine/component/ui/menu';
 import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
 import { ShareMenuContent } from '@affine/core/components/affine/share-page-modal/share-menu';
-import { openHistoryTipsModalAtom } from '@affine/core/components/atoms';
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { useExportPage } from '@affine/core/components/hooks/affine/use-export-page';
@@ -17,7 +16,7 @@ import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-
 import { Export, MoveToTrash } from '@affine/core/components/page-list';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { useDetailPageHeaderResponsive } from '@affine/core/desktop/pages/workspace/detail-page/use-header-responsive';
-import { DocInfoService } from '@affine/core/modules/doc-info';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { EditorService } from '@affine/core/modules/editor';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
@@ -41,12 +40,12 @@ import {
   TocIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useService, WorkspaceService } from '@toeverything/infra';
-import { useSetAtom } from 'jotai';
 import { useCallback, useState } from 'react';
 
 import { HeaderDropDownButton } from '../../../pure/header-drop-down-button';
 import { usePageHelper } from '../../block-suite-page-list/utils';
 import { useFavorite } from '../favorite';
+import { HistoryTipsModal } from './history-tips-modal';
 
 type PageMenuProps = {
   rename?: () => void;
@@ -106,7 +105,7 @@ export const PageHeaderMenuButton = ({
   }, [openSidePanel]);
 
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
-  const setOpenHistoryTipsModal = useSetAtom(openHistoryTipsModalAtom);
+  const [openHistoryTipsModal, setOpenHistoryTipsModal] = useState(false);
 
   const openHistoryModal = useCallback(() => {
     track.$.header.history.open();
@@ -116,11 +115,11 @@ export const PageHeaderMenuButton = ({
     return setOpenHistoryTipsModal(true);
   }, [setOpenHistoryTipsModal, workspace.flavour]);
 
-  const docInfoModal = useService(DocInfoService).modal;
+  const workspaceDialogService = useService(WorkspaceDialogService);
   const openInfoModal = useCallback(() => {
     track.$.header.pageInfo.open();
-    docInfoModal.open(pageId);
-  }, [docInfoModal, pageId]);
+    workspaceDialogService.open('doc-info', { docId: pageId });
+  }, [workspaceDialogService, pageId]);
 
   const handleOpenInNewTab = useCallback(() => {
     workbench.openDoc(pageId, {
@@ -388,6 +387,10 @@ export const PageHeaderMenuButton = ({
           onOpenChange={setHistoryModalOpen}
         />
       ) : null}
+      <HistoryTipsModal
+        open={openHistoryTipsModal}
+        setOpen={setOpenHistoryTipsModal}
+      />
     </>
   );
 };

@@ -8,7 +8,7 @@ import {
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { useTrashModalHelper } from '@affine/core/components/hooks/affine/use-trash-modal-helper';
 import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
-import { DocInfoService } from '@affine/core/modules/doc-info';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import {
   CompatibleFavoriteItemsAdapter,
   FavoriteService,
@@ -51,7 +51,7 @@ import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
 import { CreateOrEditTag } from './tags/create-tag';
 import type { TagMeta } from './types';
 import { ColWrapper } from './utils';
-import { useEditCollection, useEditCollectionName } from './view';
+import { useEditCollectionName } from './view';
 
 const tooltipSideTop = { side: 'top' as const };
 const tooltipSideTopAlignEnd = { side: 'top' as const, align: 'end' as const };
@@ -89,11 +89,13 @@ export const PageOperationCell = ({
   const { duplicate } = useBlockSuiteMetaHelper();
   const blocksuiteDoc = currentWorkspace.docCollection.getDoc(page.id);
 
-  const docInfoModal = useService(DocInfoService).modal;
+  const workspaceDialogService = useService(WorkspaceDialogService);
   const onOpenInfoModal = useCallback(() => {
-    track.$.docInfoPanel.$.open();
-    docInfoModal.open(blocksuiteDoc?.id);
-  }, [blocksuiteDoc?.id, docInfoModal]);
+    if (blocksuiteDoc?.id) {
+      track.$.docInfoPanel.$.open();
+      workspaceDialogService.open('doc-info', { docId: blocksuiteDoc.id });
+    }
+  }, [blocksuiteDoc?.id, workspaceDialogService]);
 
   const onDisablePublicSharing = useCallback(() => {
     // TODO(@EYHN): implement disable public sharing
@@ -297,19 +299,21 @@ export const CollectionOperationCell = ({
   info,
 }: CollectionOperationCellProps) => {
   const t = useI18n();
-  const { compatibleFavoriteItemsAdapter: favAdapter, workspaceService } =
-    useServices({
-      CompatibleFavoriteItemsAdapter,
-      WorkspaceService,
-    });
+  const {
+    compatibleFavoriteItemsAdapter: favAdapter,
+    workspaceService,
+    workspaceDialogService,
+  } = useServices({
+    CompatibleFavoriteItemsAdapter,
+    WorkspaceService,
+    WorkspaceDialogService,
+  });
   const docCollection = workspaceService.workspace.docCollection;
   const { createPage } = usePageHelper(docCollection);
   const { openConfirmModal } = useConfirmModal();
   const favourite = useLiveData(
     favAdapter.isFavorite$(collection.id, 'collection')
   );
-
-  const { open: openEditCollectionModal } = useEditCollection();
 
   const { open: openEditCollectionNameModal } = useEditCollectionName({
     title: t['com.affine.editCollection.renameCollection'](),
@@ -347,15 +351,11 @@ export const CollectionOperationCell = ({
   const handleEdit = useCallback(
     (event: MouseEvent) => {
       handlePropagation(event);
-      openEditCollectionModal(collection)
-        .then(collection => {
-          return service.updateCollection(collection.id, () => collection);
-        })
-        .catch(err => {
-          console.error(err);
-        });
+      workspaceDialogService.open('collection-editor', {
+        collectionId: collection.id,
+      });
     },
-    [handlePropagation, openEditCollectionModal, collection, service]
+    [handlePropagation, workspaceDialogService, collection.id]
   );
 
   const handleDelete = useCallback(() => {

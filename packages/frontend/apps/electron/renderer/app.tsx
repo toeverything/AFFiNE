@@ -1,6 +1,6 @@
 import { AffineContext } from '@affine/component/context';
-import { AppFallback } from '@affine/core/components/affine/app-container';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
+import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { router } from '@affine/core/desktop/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { configureAppTabsHeaderModule } from '@affine/core/modules/app-tabs-header';
@@ -71,7 +71,7 @@ export function App() {
           <I18nProvider>
             <AffineContext store={getCurrentStore()}>
               <RouterProvider
-                fallbackElement={<AppFallback />}
+                fallbackElement={<AppContainer fallback />}
                 router={router}
                 future={future}
               />

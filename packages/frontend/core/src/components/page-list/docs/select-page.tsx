@@ -13,18 +13,17 @@ import {
 } from '@toeverything/infra';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 
-import { FavoriteTag } from '../../components/favorite-tag';
-import { FilterList } from '../../filter';
-import { VariableSelect } from '../../filter/vars';
-import { usePageHeaderColsDef } from '../../header-col-def';
-import { PageListItemRenderer } from '../../page-group';
-import { ListTableHeader } from '../../page-header';
-import type { BaseSelectorDialogProps } from '../../selector';
-import { SelectorLayout } from '../../selector/selector-layout';
-import type { ListItem } from '../../types';
-import { VirtualizedList } from '../../virtualized-list';
-import { AffineShapeIcon } from '../affine-shape';
-import * as styles from './edit-collection.css';
+import { AffineShapeIcon, FavoriteTag } from '..';
+import { FilterList } from '../filter';
+import { VariableSelect } from '../filter/vars';
+import { usePageHeaderColsDef } from '../header-col-def';
+import { PageListItemRenderer } from '../page-group';
+import { ListTableHeader } from '../page-header';
+import type { BaseSelectorDialogProps } from '../selector';
+import { SelectorLayout } from '../selector/selector-layout';
+import type { ListItem } from '../types';
+import { VirtualizedList } from '../virtualized-list';
+import * as styles from './select-page.css';
 import { useFilter } from './use-filter';
 import { useSearch } from './use-search';
 

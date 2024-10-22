@@ -5,25 +5,6 @@ export const ellipsis = style({
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
 });
-export const pagesTabContent = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  gap: 8,
-  alignItems: 'center',
-  padding: '16px 16px 8px 16px',
-});
-export const pagesTab = style({
-  display: 'flex',
-  flexDirection: 'column',
-  width: '100%',
-  height: '100%',
-  overflow: 'hidden',
-});
-export const pagesList = style({
-  display: 'flex',
-  flex: 1,
-  overflow: 'hidden',
-});
 export const bottomLeft = style({
   display: 'flex',
   gap: 8,
@@ -128,9 +109,6 @@ export const confirmButton = style({
   marginLeft: 20,
 });
 export const resultPages = style({
-  width: '100%',
-});
-export const pageList = style({
   width: '100%',
 });
 export const previewCountTipsHighlight = style({
