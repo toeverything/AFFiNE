@@ -1,12 +1,12 @@
 import './polyfill';
 import '../src/theme';
 import './preview.css';
-import { ThemeProvider } from 'next-themes';
-import type { ComponentType } from 'react';
-
-import type { Preview } from '@storybook/react';
-import React, { useEffect } from 'react';
 import { ConfirmModalProvider } from '../src/ui/modal/confirm-modal';
+
+import { ThemeProvider, useTheme as useNextTheme } from 'next-themes';
+import type { ComponentType } from 'react';
+import React, { useEffect } from 'react';
+import type { Preview } from '@storybook/react';
 import { setupGlobal } from '@affine/env/global';
 
 setupGlobal();
@@ -34,19 +34,22 @@ export const globalTypes = {
   },
 };
 
-const useTheme = context => {
+const ThemeToggle = ({ context }) => {
   const { theme } = context.globals;
+  const { setTheme } = useNextTheme();
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
+    setTheme(theme);
   }, [theme]);
+
+  return null;
 };
 
 export const decorators = [
   (Story: ComponentType, context) => {
-    useTheme(context);
     return (
       <ThemeProvider themes={['dark', 'light']} enableSystem={true}>
+        <ThemeToggle context={context} />
         <ConfirmModalProvider>
           <Story {...context} />
         </ConfirmModalProvider>
