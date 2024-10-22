@@ -150,6 +150,7 @@ export const PageHeaderMenuButton = ({
 
   const handleSwitchMode = useCallback(() => {
     const mode = primaryMode === 'page' ? 'edgeless' : 'page';
+    editorService.editor.setMode(mode);
     editorService.editor.doc.setPrimaryMode(mode);
     track.$.header.docOptions.switchPageMode({
       mode,
