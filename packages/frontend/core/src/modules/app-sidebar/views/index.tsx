@@ -48,7 +48,6 @@ export function AppSidebar({ children }: PropsWithChildren) {
   const smallScreenMode = useLiveData(appSidebarService.smallScreenMode$);
   const hovering = useLiveData(appSidebarService.hovering$) && open !== true;
   const resizing = useLiveData(appSidebarService.resizing$);
-  const [deferredHovering, setDeferredHovering] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -65,29 +64,13 @@ export function AppSidebar({ children }: PropsWithChildren) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (open) {
-      // if open, we don't need to show the floating sidebar
-      setDeferredHovering(false);
-      return;
-    }
-    // we make a little delay here.
-    // this allow the sidebar close animation to complete.
-    const timeout = setTimeout(() => {
-      setDeferredHovering(hovering);
-    }, 150);
-    return () => {
-      clearTimeout(timeout);
-    };
-  }, [hovering, open]);
-
   const sidebarState = smallScreenMode
     ? open
       ? 'floating-with-mask'
       : 'close'
     : open
       ? 'open'
-      : deferredHovering
+      : hovering
         ? 'floating'
         : 'close';
 
