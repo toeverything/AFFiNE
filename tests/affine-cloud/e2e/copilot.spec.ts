@@ -116,7 +116,7 @@ test('can chat after login at chat side panel', async ({ page }) => {
   (await loginTips.$('div'))!.click();
   // login
   const user = await createRandomAIUser();
-  await loginUserDirectly(page, user.email);
+  await loginUserDirectly(page, user);
   // after login
   await makeChat(page, 'hello');
   const history = await collectChat(page);
@@ -134,7 +134,7 @@ test.describe('chat panel', () => {
 
   test.beforeEach(async ({ page }) => {
     user = await createRandomAIUser();
-    await loginUser(page, user.email);
+    await loginUser(page, user);
   });
 
   test('basic chat', async ({ page }) => {
@@ -316,7 +316,7 @@ test.describe('chat with block', () => {
 
   test.beforeEach(async ({ page }) => {
     user = await createRandomAIUser();
-    await loginUser(page, user.email);
+    await loginUser(page, user);
   });
 
   test.describe('chat with image block', () => {

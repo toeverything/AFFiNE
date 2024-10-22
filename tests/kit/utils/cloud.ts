@@ -240,7 +240,24 @@ export async function loginUser(
   }
 
   await clickSideBarCurrentWorkspaceBanner(page);
-  await page.getByTestId('cloud-signin-button').click();
+  await page.getByTestId('cloud-signin-button').click({
+    delay: 200,
+  });
+  await loginUserDirectly(page, user, config);
+}
+
+export async function loginUserDirectly(
+  page: Page,
+  user: {
+    email: string;
+    password: string;
+  },
+  config?: {
+    isElectron?: boolean;
+    beforeLogin?: () => Promise<void>;
+    afterLogin?: () => Promise<void>;
+  }
+) {
   await page.getByPlaceholder('Enter your email address').fill(user.email);
   await page.getByTestId('continue-login-button').click({
     delay: 200,
