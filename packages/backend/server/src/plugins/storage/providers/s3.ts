@@ -140,7 +140,7 @@ export class S3StorageProvider implements StorageProvider {
             listResult.Contents.map(r => ({
               key: r.Key!,
               lastModified: r.LastModified!,
-              size: r.Size!,
+              contentLength: r.Size!,
             }))
           );
         }

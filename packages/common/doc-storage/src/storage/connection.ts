@@ -1,11 +1,26 @@
-export class Connection {
-  protected connected: boolean = false;
-  connect(): Promise<void> {
-    this.connected = true;
-    return Promise.resolve();
+export abstract class Connection {
+  protected _connected = false;
+
+  protected abstract doConnect(): Promise<void>;
+  protected abstract doDisconnect(): Promise<void>;
+
+  get connected() {
+    return this._connected;
   }
-  disconnect(): Promise<void> {
-    this.connected = false;
-    return Promise.resolve();
+
+  async connect() {
+    if (!this._connected) {
+      await this.doConnect();
+      this._connected = true;
+    }
+  }
+
+  async disconnect() {
+    if (!this._connected) {
+      return;
+    }
+
+    await this.doDisconnect();
+    this._connected = false;
   }
 }

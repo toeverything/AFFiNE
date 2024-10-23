@@ -119,7 +119,7 @@ export class FsStorageProvider implements StorageProvider {
             results.push({
               key: res,
               lastModified: stat.mtime,
-              size: stat.size,
+              contentLength: stat.size,
             });
           }
         }

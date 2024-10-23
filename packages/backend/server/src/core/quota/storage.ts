@@ -40,7 +40,7 @@ export class QuotaManagementService {
     };
   }
 
-  async getUserUsage(userId: string) {
+  async getUserStorageUsage(userId: string) {
     const workspaces = await this.permissions.getOwnedWorkspaces(userId);
 
     const sizes = await Promise.allSettled(
@@ -88,7 +88,7 @@ export class QuotaManagementService {
   async getQuotaCalculator(userId: string) {
     const quota = await this.getUserQuota(userId);
     const { storageQuota, businessBlobLimit } = quota;
-    const usedSize = await this.getUserUsage(userId);
+    const usedSize = await this.getUserStorageUsage(userId);
 
     return this.generateQuotaCalculator(
       storageQuota,
@@ -128,7 +128,7 @@ export class QuotaManagementService {
       },
     } = await this.quota.getUserQuota(owner.id);
     // get all workspaces size of owner used
-    const usedSize = await this.getUserUsage(owner.id);
+    const usedSize = await this.getUserStorageUsage(owner.id);
     // relax restrictions if workspace has unlimited feature
     // todo(@darkskygit): need a mechanism to allow feature as a middleware to edit quota
     const unlimited = await this.feature.hasWorkspaceFeature(

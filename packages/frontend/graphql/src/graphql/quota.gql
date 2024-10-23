@@ -15,8 +15,8 @@ query quota {
         memberLimit
       }
     }
-  }
-  collectAllBlobSizes {
-    size
+    quotaUsage {
+      storageQuota
+    }
   }
 }

@@ -10,6 +10,7 @@
     "./storage": "./storage/index.ts"
   },
   "dependencies": {
+    "@affine/graphql": "workspace:*",
     "@affine/native": "workspace:*",
     "idb": "^8.0.0",
     "lodash-es": "^4.17.21",

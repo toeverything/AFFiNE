@@ -7,19 +7,34 @@ IndexedDB
      > Table(...)
 
 Table(Snapshots)
-|docId|blob|createdAt|updatedAt|
-|-----|----|---------|---------|
-| str | bin| Date    | Date    |
+| docId | blob | createdAt | updatedAt |
+|-------|------|-----------|-----------|
+|  str  | bin  | timestamp | timestamp |
 
 Table(Updates)
-| id |docId|blob|createdAt|
-|----|-----|----|---------|
-|auto| str | bin| Date    |
+| id | docId | blob | createdAt |
+|----|-------|------|-----------|
+|auto|  str  | bin  | timestamp |
 
 Table(Clocks)
-| docId | clock  |
-|-------|--------|
-|  str  | number |
+| docId |   clock   |
+|-------|-----------|
+|  str  | timestamp |
+
+Table(Blobs)
+| key | mime | size | createdAt | deletedAt |
+|-----|------|------|-----------|-----------|
+| str |  str | num  | timestamp | timestamp |
+
+Table(BlobData)
+| key | data |
+|-----|------|
+| str | bin  |
+
+Table(PeerClocks)
+| peer | docId |   clock   |  pushed   |
+|------|-------|-----------|-----------|
+| str  |  str  | timestamp | timestamp |
  */
 export interface DocStorageSchema extends DBSchema {
   snapshots: {
@@ -55,15 +70,33 @@ export interface DocStorageSchema extends DBSchema {
       timestamp: number;
     };
   };
+  blobs: {
+    key: string;
+    value: {
+      key: string;
+      mime: string;
+      size: number;
+      createdAt: number;
+      deletedAt: number | null;
+    };
+  };
+  blobData: {
+    key: string;
+    value: {
+      key: string;
+      data: ArrayBuffer;
+    };
+  };
   peerClocks: {
     key: [string, string];
     value: {
+      peer: string;
       docId: string;
-      peerId: string;
       clock: number;
+      pushedClock: number;
     };
     indexes: {
-      clock: number;
+      peer: string;
     };
   };
 }
@@ -110,6 +143,23 @@ const init: Migrate = db => {
   });
 
   clocks.createIndex('timestamp', 'timestamp', { unique: false });
+
+  const peerClocks = db.createObjectStore('peerClocks', {
+    keyPath: ['peerId', 'docId'],
+    autoIncrement: false,
+  });
+
+  peerClocks.createIndex('peer', 'peer', { unique: false });
+
+  db.createObjectStore('blobs', {
+    keyPath: 'key',
+    autoIncrement: false,
+  });
+
+  db.createObjectStore('blobData', {
+    keyPath: 'key',
+    autoIncrement: false,
+  });
 };
 // END REGION
 

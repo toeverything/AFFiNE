@@ -7,7 +7,7 @@ export interface WorkspaceEvents {
   blob: {
     deleted: Payload<{
       workspaceId: Workspace['id'];
-      name: string;
+      key: string;
     }>;
   };
 }

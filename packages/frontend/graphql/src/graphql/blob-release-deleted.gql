@@ -1,0 +1,3 @@
+mutation releaseDeletedBlobs($workspaceId: String!) {
+  releaseDeletedBlobs(workspaceId: $workspaceId)
+}

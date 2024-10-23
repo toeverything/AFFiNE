@@ -1,4 +1,9 @@
+mod blob;
+mod doc;
 mod storage;
+mod sync;
+
+use std::path::PathBuf;
 
 use chrono::NaiveDateTime;
 use napi::bindgen_prelude::{Buffer, Uint8Array};
@@ -28,6 +33,30 @@ pub struct DocClock {
   pub timestamp: NaiveDateTime,
 }
 
+#[napi(object)]
+pub struct SetBlob {
+  pub key: String,
+  pub data: Buffer,
+  pub mime: String,
+}
+
+#[napi(object)]
+pub struct Blob {
+  pub key: String,
+  pub data: Buffer,
+  pub mime: String,
+  pub size: i64,
+  pub created_at: NaiveDateTime,
+}
+
+#[napi(object)]
+pub struct ListedBlob {
+  pub key: String,
+  pub size: i64,
+  pub mime: String,
+  pub created_at: NaiveDateTime,
+}
+
 #[napi]
 pub struct DocStorage {
   storage: storage::SqliteDocStorage,
@@ -43,8 +72,20 @@ impl DocStorage {
   }
 
   #[napi]
-  pub async fn connect(&self) -> napi::Result<()> {
-    self.storage.connect().await.map_err(map_err)
+  /// Initialize the database and run migrations.
+  /// If `migrations` folder is provided, it should be a path to a directory containing SQL migration files.
+  /// If not, it will to try read migrations under './migrations' related to where this program is running(PWD).
+  pub async fn init(&self, migrations_folder: Option<String>) -> napi::Result<()> {
+    self.storage.connect().await.map_err(map_err)?;
+    self
+      .storage
+      .migrate(
+        migrations_folder
+          .map(PathBuf::from)
+          .unwrap_or_else(|| std::env::current_dir().unwrap().join("migrations")),
+      )
+      .await
+      .map_err(map_err)
   }
 
   #[napi]
@@ -57,6 +98,15 @@ impl DocStorage {
   #[napi(getter)]
   pub async fn is_closed(&self) -> napi::Result<bool> {
     Ok(self.storage.is_closed())
+  }
+
+  /**
+   * Flush the WAL file to the database file.
+   * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
+   */
+  #[napi]
+  pub async fn checkpoint(&self) -> napi::Result<()> {
+    self.storage.checkpoint().await.map_err(map_err)
   }
 
   #[napi]
@@ -111,12 +161,74 @@ impl DocStorage {
     self.storage.get_doc_clocks(after).await.map_err(map_err)
   }
 
-  /**
-   * Flush the WAL file to the database file.
-   * See https://www.sqlite.org/pragma.html#pragma_wal_checkpoint:~:text=PRAGMA%20schema.wal_checkpoint%3B
-   */
   #[napi]
-  pub async fn checkpoint(&self) -> napi::Result<()> {
-    self.storage.checkpoint().await.map_err(map_err)
+  pub async fn get_blob(&self, key: String) -> napi::Result<Option<Blob>> {
+    self.storage.get_blob(key).await.map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn set_blob(&self, blob: SetBlob) -> napi::Result<()> {
+    self.storage.set_blob(blob).await.map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn delete_blob(&self, key: String, permanently: bool) -> napi::Result<()> {
+    self
+      .storage
+      .delete_blob(key, permanently)
+      .await
+      .map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn release_blobs(&self) -> napi::Result<()> {
+    self.storage.release_blobs().await.map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn list_blobs(&self) -> napi::Result<Vec<ListedBlob>> {
+    self.storage.list_blobs().await.map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn get_peer_clocks(&self, peer: String) -> napi::Result<Vec<DocClock>> {
+    self.storage.get_peer_clocks(peer).await.map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn set_peer_clock(
+    &self,
+    peer: String,
+    doc_id: String,
+    clock: NaiveDateTime,
+  ) -> napi::Result<()> {
+    self
+      .storage
+      .set_peer_clock(peer, doc_id, clock)
+      .await
+      .map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn get_peer_pushed_clocks(&self, peer: String) -> napi::Result<Vec<DocClock>> {
+    self
+      .storage
+      .get_peer_pushed_clocks(peer)
+      .await
+      .map_err(map_err)
+  }
+
+  #[napi]
+  pub async fn set_peer_pushed_clock(
+    &self,
+    peer: String,
+    doc_id: String,
+    clock: NaiveDateTime,
+  ) -> napi::Result<()> {
+    self
+      .storage
+      .set_peer_pushed_clock(peer, doc_id, clock)
+      .await
+      .map_err(map_err)
   }
 }

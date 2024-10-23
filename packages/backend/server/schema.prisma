@@ -106,6 +106,7 @@ model Workspace {
   permissions     WorkspaceUserPermission[]
   pagePermissions WorkspacePageUserPermission[]
   features        WorkspaceFeature[]
+  blobs           Blob[]
 
   @@map("workspaces")
 }
@@ -335,7 +336,7 @@ model UserSubscription {
   // yearly/monthly/lifetime
   recurring            String    @db.VarChar(20)
   // onetime subscription or anything else
-  variant              String?    @db.VarChar(20)
+  variant              String?   @db.VarChar(20)
   // subscription.id, null for linefetime payment or one time payment subscription
   stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
   // subscription.status, active/past_due/canceled/unpaid...
@@ -498,4 +499,21 @@ model RuntimeConfig {
 
   @@unique([module, key])
   @@map("app_runtime_settings")
+}
+
+// Blob table only exists for fast non-data queries.
+// like, total size of blobs in a workspace, or blob list for sync service.
+// it should only be a map of metadata of blobs stored anywhere else
+model Blob {
+  workspaceId String   @map("workspace_id") @db.VarChar
+  key         String   @db.VarChar
+  size        Int      @db.Integer
+  mime        String   @db.VarChar
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, key])
+  @@map("blobs")
 }

@@ -1,28 +1,39 @@
 import { Logger, UseGuards } from '@nestjs/common';
 import {
   Args,
+  Field,
   Int,
   Mutation,
+  ObjectType,
   Parent,
   Query,
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { SafeIntResolver } from 'graphql-scalars';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import type { FileUpload } from '../../../fundamentals';
-import {
-  BlobQuotaExceeded,
-  CloudThrottlerGuard,
-  MakeCache,
-  PreventCache,
-} from '../../../fundamentals';
+import { BlobQuotaExceeded, CloudThrottlerGuard } from '../../../fundamentals';
 import { CurrentUser } from '../../auth';
 import { Permission, PermissionService } from '../../permission';
 import { QuotaManagementService } from '../../quota';
 import { WorkspaceBlobStorage } from '../../storage';
 import { WorkspaceBlobSizes, WorkspaceType } from '../types';
+
+@ObjectType()
+class ListedBlob {
+  @Field()
+  key!: string;
+
+  @Field()
+  mime!: string;
+
+  @Field()
+  size!: number;
+
+  @Field()
+  createdAt!: string;
+}
 
 @UseGuards(CloudThrottlerGuard)
 @Resolver(() => WorkspaceType)
@@ -34,7 +45,7 @@ export class WorkspaceBlobResolver {
     private readonly storage: WorkspaceBlobStorage
   ) {}
 
-  @ResolveField(() => [String], {
+  @ResolveField(() => [ListedBlob], {
     description: 'List blobs of workspace',
     complexity: 2,
   })
@@ -44,9 +55,7 @@ export class WorkspaceBlobResolver {
   ) {
     await this.permissions.checkWorkspace(workspace.id, user.id);
 
-    return this.storage
-      .list(workspace.id)
-      .then(list => list.map(item => item.key));
+    return this.storage.list(workspace.id);
   }
 
   @ResolveField(() => Int, {
@@ -64,7 +73,6 @@ export class WorkspaceBlobResolver {
     description: 'List blobs of workspace',
     deprecationReason: 'use `workspace.blobs` instead',
   })
-  @MakeCache(['blobs'], ['workspaceId'])
   async listBlobs(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string
@@ -76,42 +84,15 @@ export class WorkspaceBlobResolver {
       .then(list => list.map(item => item.key));
   }
 
-  /**
-   * @deprecated use `user.storageUsage` instead
-   */
   @Query(() => WorkspaceBlobSizes, {
-    deprecationReason: 'use `user.storageUsage` instead',
+    deprecationReason: 'use `user.quotaUsage` instead',
   })
   async collectAllBlobSizes(@CurrentUser() user: CurrentUser) {
-    const size = await this.quota.getUserUsage(user.id);
+    const size = await this.quota.getUserStorageUsage(user.id);
     return { size };
   }
 
-  /**
-   * @deprecated mutation `setBlob` will check blob limit & quota usage
-   */
-  @Query(() => WorkspaceBlobSizes, {
-    deprecationReason: 'no more needed',
-  })
-  async checkBlobSize(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args('size', { type: () => SafeIntResolver }) blobSize: number
-  ) {
-    const canWrite = await this.permissions.tryCheckWorkspace(
-      workspaceId,
-      user.id,
-      Permission.Write
-    );
-    if (canWrite) {
-      const size = await this.quota.checkBlobQuota(workspaceId, blobSize);
-      return { size };
-    }
-    return false;
-  }
-
   @Mutation(() => String)
-  @PreventCache(['blobs'], ['workspaceId'])
   async setBlob(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
@@ -155,20 +136,44 @@ export class WorkspaceBlobResolver {
       });
     });
 
-    await this.storage.put(workspaceId, blob.filename, buffer);
+    await this.storage.put(workspaceId, blob.filename, buffer, blob.mimetype);
     return blob.filename;
   }
 
   @Mutation(() => Boolean)
-  @PreventCache(['blobs'], ['workspaceId'])
   async deleteBlob(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
-    @Args('hash') name: string
+    @Args('hash', {
+      type: () => String,
+      deprecationReason: 'use parameter [key]',
+      nullable: true,
+    })
+    hash?: string,
+    @Args('key', { type: () => String, nullable: true }) key?: string,
+    @Args('permanently', { type: () => Boolean, defaultValue: false })
+    permanently = false
+  ) {
+    key = key ?? hash;
+    if (!key) {
+      return false;
+    }
+
+    await this.permissions.checkWorkspace(workspaceId, user.id);
+
+    await this.storage.delete(workspaceId, key, permanently);
+
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  async releaseDeletedBlobs(
+    @CurrentUser() user: CurrentUser,
+    @Args('workspaceId') workspaceId: string
   ) {
     await this.permissions.checkWorkspace(workspaceId, user.id);
 
-    await this.storage.delete(workspaceId, name);
+    await this.storage.release(workspaceId);
 
     return true;
   }

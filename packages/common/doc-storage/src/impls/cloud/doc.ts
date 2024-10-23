@@ -1,101 +1,26 @@
-import type { Socket } from 'socket.io-client';
-
 import { DocStorage, type DocStorageOptions } from '../../storage';
-
-// TODO(@forehalo): use [UserFriendlyError]
-interface EventError {
-  name: string;
-  message: string;
-}
-
-type WebsocketResponse<T> =
-  | {
-      error: EventError;
-    }
-  | {
-      data: T;
-    };
-
-interface ServerEvents {
-  'space:broadcast-doc-updates': {
-    spaceType: string;
-    spaceId: string;
-    docId: string;
-    updates: string[];
-    timestamp: number;
-  };
-}
-
-interface ClientEvents {
-  'space:join': [
-    { spaceType: string; spaceId: string; clientVersion: string },
-    { clientId: string },
-  ];
-  'space:leave': { spaceType: string; spaceId: string };
-  'space:push-doc-updates': [
-    { spaceType: string; spaceId: string; docId: string; updates: string[] },
-    { timestamp: number },
-  ];
-  'space:load-doc-timestamps': [
-    {
-      spaceType: string;
-      spaceId: string;
-      timestamp?: number;
-    },
-    Record<string, number>,
-  ];
-  'space:load-doc': [
-    {
-      spaceType: string;
-      spaceId: string;
-      docId: string;
-      stateVector?: string;
-    },
-    {
-      missing: string;
-      state: string;
-      timestamp: number;
-    },
-  ];
-}
-
-type ServerEventsMap = {
-  [Key in keyof ServerEvents]: (data: ServerEvents[Key]) => void;
-};
-type ClientEventsMap = {
-  [Key in keyof ClientEvents]: ClientEvents[Key] extends Array<any>
-    ? (
-        data: ClientEvents[Key][0],
-        ack: (res: WebsocketResponse<ClientEvents[Key][1]>) => void
-      ) => void
-    : (data: ClientEvents[Key]) => void;
-};
+import {
+  base64ToUint8Array,
+  type ServerEventsMap,
+  type Socket,
+  uint8ArrayToBase64,
+} from './socket';
 
 interface CloudDocStorageOptions extends DocStorageOptions {
-  socket: Socket<ServerEventsMap, ClientEventsMap>;
+  endpoint: string;
+  socket: Socket;
 }
 
 export class CloudDocStorage extends DocStorage<CloudDocStorageOptions> {
-  constructor(options: CloudDocStorageOptions) {
-    super(options);
-  }
-
-  get name() {
-    // @ts-expect-error we need it
-    return this.options.socket.io.uri;
-  }
-
-  get socket() {
+  private get socket() {
     return this.options.socket;
   }
 
-  override async connect(): Promise<void> {
-    // the event will be polled, there is no need to wait for socket to be connected
-    await this.clientHandShake();
-    this.socket.on('space:broadcast-doc-updates', this.onServerUpdates);
+  get name() {
+    return this.options.endpoint;
   }
 
-  private async clientHandShake() {
+  override async doConnect(): Promise<void> {
     const res = await this.socket.emitWithAck('space:join', {
       spaceType: this.spaceType,
       spaceId: this.spaceId,
@@ -103,17 +28,17 @@ export class CloudDocStorage extends DocStorage<CloudDocStorageOptions> {
     });
 
     if ('error' in res) {
-      // TODO(@forehalo): use [UserFriendlyError]
       throw new Error(res.error.message);
     }
+    this.socket?.on('space:broadcast-doc-updates', this.onServerUpdates);
   }
 
-  override async disconnect(): Promise<void> {
+  override async doDisconnect(): Promise<void> {
     this.socket.emit('space:leave', {
       spaceType: this.spaceType,
       spaceId: this.spaceId,
     });
-    this.socket.off('space:broadcast-doc-updates', this.onServerUpdates);
+    this.socket?.off('space:broadcast-doc-updates', this.onServerUpdates);
   }
 
   onServerUpdates: ServerEventsMap['space:broadcast-doc-updates'] = message => {
@@ -225,33 +150,4 @@ export class CloudDocStorage extends DocStorage<CloudDocStorageOptions> {
   protected override async createDocHistory() {
     return false;
   }
-}
-
-export function uint8ArrayToBase64(array: Uint8Array): Promise<string> {
-  return new Promise<string>(resolve => {
-    // Create a blob from the Uint8Array
-    const blob = new Blob([array]);
-
-    const reader = new FileReader();
-    reader.onload = function () {
-      const dataUrl = reader.result as string | null;
-      if (!dataUrl) {
-        resolve('');
-        return;
-      }
-      // The result includes the `data:` URL prefix and the MIME type. We only want the Base64 data
-      const base64 = dataUrl.split(',')[1];
-      resolve(base64);
-    };
-
-    reader.readAsDataURL(blob);
-  });
-}
-
-export function base64ToUint8Array(base64: string) {
-  const binaryString = atob(base64);
-  const binaryArray = binaryString.split('').map(function (char) {
-    return char.charCodeAt(0);
-  });
-  return new Uint8Array(binaryArray);
 }
