@@ -6,6 +6,7 @@ import { useEffect, useMemo } from 'react';
 
 import type { ActivePeekView } from '../entities/peek-view';
 import { PeekViewService } from '../services/peek-view';
+import { AttachmentPreviewPeekView } from './attachment-preview';
 import { DocPeekPreview } from './doc-preview';
 import { ImagePreviewPeekView } from './image-preview';
 import {
@@ -29,6 +30,15 @@ function renderPeekView({ info }: ActivePeekView) {
         docId={info.docId}
         blockIds={info.blockIds}
         elementIds={info.elementIds}
+      />
+    );
+  }
+
+  if (info.type === 'attachment') {
+    return (
+      <AttachmentPreviewPeekView
+        docId={info.docId}
+        blockId={info.blockIds[0]}
       />
     );
   }
@@ -58,6 +68,8 @@ const renderControls = ({ info }: ActivePeekView) => {
       />
     );
   }
+
+  // TODO(@fundon): attachment's controls
 
   if (info.type === 'image') {
     return null; // image controls are rendered in the image preview
