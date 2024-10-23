@@ -65,7 +65,7 @@ const collectChat = async (page: Page) => {
     Array.from(await chatPanel.$$('.message')).map(async m => ({
       name: await m.$('.user-info').then(i => i?.innerText()),
       content: await m
-        .$('ai-answer-text')
+        .$('chat-text')
         .then(t => t?.$('editor-host'))
         .then(e => e?.innerText()),
     }))

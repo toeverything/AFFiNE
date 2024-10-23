@@ -267,7 +267,9 @@ export async function loginUserDirectly(
     await config.beforeLogin();
   }
   await page.waitForTimeout(200);
-  await page.getByTestId('sign-in-button').click();
+  const signIn = page.getByTestId('sign-in-button');
+  await signIn.click();
+  await signIn.waitFor({ state: 'detached' });
   await page.waitForTimeout(200);
   if (config?.afterLogin) {
     await config.afterLogin();
