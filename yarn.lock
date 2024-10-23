@@ -389,6 +389,8 @@ __metadata:
     "@affine/track": "workspace:*"
     "@blocksuite/affine": "npm:0.17.19"
     "@blocksuite/icons": "npm:2.1.69"
+    "@capacitor/app": "npm:^6.0.1"
+    "@capacitor/browser": "npm:^6.0.3"
     "@dnd-kit/core": "npm:^6.1.0"
     "@dnd-kit/modifiers": "npm:^7.0.0"
     "@dnd-kit/sortable": "npm:^8.0.0"
@@ -596,6 +598,8 @@ __metadata:
     "@affine/i18n": "workspace:*"
     "@blocksuite/affine": "npm:0.17.19"
     "@blocksuite/icons": "npm:^2.1.67"
+    "@capacitor/app": "npm:^6.0.1"
+    "@capacitor/browser": "npm:^6.0.3"
     "@capacitor/cli": "npm:^6.1.2"
     "@capacitor/core": "npm:^6.1.2"
     "@capacitor/ios": "npm:^6.1.2"
@@ -2905,6 +2909,24 @@ __metadata:
   peerDependencies:
     "@capacitor/core": ^6.1.0
   checksum: 10/be2488dda52a5b054af150c784546a8c89a61eca333e7bbf71244365b9b86561b6d3b9e69baaecfdbbe801c9540bff028a141def00af3a970ade26ff12b4fc7c
+  languageName: node
+  linkType: hard
+
+"@capacitor/app@npm:^6.0.1":
+  version: 6.0.1
+  resolution: "@capacitor/app@npm:6.0.1"
+  peerDependencies:
+    "@capacitor/core": ^6.0.0
+  checksum: 10/3e8bc85c3a43728c003c80511dde913872b1263dbc27931b1168f52442b8d95f35e5a6a85423d6ac61253a5e4b2198bbb7b899cae9f5e343edfed24010399ade
+  languageName: node
+  linkType: hard
+
+"@capacitor/browser@npm:^6.0.3":
+  version: 6.0.3
+  resolution: "@capacitor/browser@npm:6.0.3"
+  peerDependencies:
+    "@capacitor/core": ^6.0.0
+  checksum: 10/e19e66c12b5c3a05e0c4a93715c0bec760781ddeb215a93da0a9ee3e9e4ede2f2893d399ffb8d7b5ded6ac70651ab482689ff57e5e0d067cd4398cc3247c4f81
   languageName: node
   linkType: hard
 

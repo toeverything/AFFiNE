@@ -52,6 +52,9 @@ const buildFlags = process.argv.includes('--static')
               {
                 value: 'mobile',
               },
+              {
+                value: 'ios',
+              },
             ],
             initialValue: 'web',
           }),

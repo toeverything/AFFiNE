@@ -86,6 +86,10 @@ export const topLevelRoutes = [
         lazy: () => import('@affine/core/desktop/pages/redirect'),
       },
       {
+        path: '/open-app/:action',
+        lazy: () => import('@affine/core/desktop/pages/open-app'),
+      },
+      {
         path: '*',
         lazy: () => import('./pages/404'),
       },

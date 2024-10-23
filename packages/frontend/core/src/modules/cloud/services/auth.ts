@@ -116,13 +116,18 @@ export class AuthService extends Service {
   ) {
     track.$.$.auth.signIn({ method: 'magic-link' });
     try {
+      const scheme = BUILD_CONFIG.isElectron
+        ? appInfo?.schema
+        : BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
+          ? 'affine'
+          : 'web';
       await this.fetchService.fetch('/api/auth/sign-in', {
         method: 'POST',
         body: JSON.stringify({
           email,
           // we call it [callbackUrl] instead of [redirect_uri]
           // to make it clear the url is used to finish the sign-in process instead of redirect after signed-in
-          callbackUrl: `/magic-link?client=${BUILD_CONFIG.isElectron ? appInfo?.schema : 'web'}`,
+          callbackUrl: `/magic-link?client=${scheme}`,
         }),
         headers: {
           'content-type': 'application/json',
