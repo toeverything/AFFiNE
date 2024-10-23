@@ -16,7 +16,11 @@ import {
   RouteLogic,
   useNavigateHelper,
 } from '../../components/hooks/use-navigate-helper';
-import { AuthService, SubscriptionService } from '../../modules/cloud';
+import {
+  AuthService,
+  BackendError,
+  SubscriptionService,
+} from '../../modules/cloud';
 import { container } from './subscribe.css';
 
 interface ProductTriple {
@@ -113,6 +117,7 @@ export const Component = () => {
           await authService.session.waitForRevalidation(signal);
           const loggedIn =
             authService.session.status$.value === 'authenticated';
+
           if (!loggedIn) {
             setMessage('Redirecting to sign in...');
             jumpToSignIn(
@@ -121,53 +126,40 @@ export const Component = () => {
             );
             return;
           }
-          setMessage('Checking subscription status...');
-          await subscriptionService.subscription.waitForRevalidation(signal);
-          const subscribed =
-            plan === SubscriptionPlan.AI
-              ? !!subscriptionService.subscription.ai$.value
-              : recurring === SubscriptionRecurring.Lifetime
-                ? !!subscriptionService.subscription.isBeliever$.value
-                : !!subscriptionService.subscription.pro$.value;
+          setMessage('Checkout...');
 
-          if (!subscribed) {
-            setMessage('Creating checkout...');
+          try {
+            const account = authService.session.account$.value;
+            // should never reach
+            if (!account) throw new Error('No account');
 
-            try {
-              const account = authService.session.account$.value;
-              // should never reach
-              if (!account) throw new Error('No account');
-
-              track.subscriptionLanding.$.$.checkout({
-                control: 'pricing',
-                plan,
-                recurring,
-              });
-
-              const checkout = await subscriptionService.createCheckoutSession({
-                idempotencyKey,
-                plan,
-                recurring,
-                variant,
-                coupon,
-                successCallbackLink: generateSubscriptionCallbackLink(
-                  account,
-                  plan,
-                  recurring
-                ),
-              });
-              setMessage('Redirecting...');
-              location.href = checkout;
-            } catch (err) {
-              console.error(err);
-              setError('Something went wrong. Please try again.');
-            }
-          } else {
-            setMessage('Your account is already subscribed. Redirecting...');
-            await new Promise(resolve => {
-              setTimeout(resolve, 5000);
+            track.subscriptionLanding.$.$.checkout({
+              control: 'pricing',
+              plan,
+              recurring,
             });
-            jumpToIndex(RouteLogic.REPLACE);
+
+            const checkout = await subscriptionService.createCheckoutSession({
+              idempotencyKey,
+              plan,
+              recurring,
+              variant,
+              coupon,
+              successCallbackLink: generateSubscriptionCallbackLink(
+                account,
+                plan,
+                recurring
+              ),
+            });
+            setMessage('Redirecting...');
+            location.href = checkout;
+          } catch (err) {
+            if (err instanceof BackendError) {
+              setMessage(err.originError.message);
+            } else {
+              console.log(err);
+              setError('Something went wrong, please contact support.');
+            }
           }
         }).pipe(mergeMap(() => EMPTY));
       })
@@ -190,10 +182,6 @@ export const Component = () => {
     variant,
     coupon,
   ]);
-
-  useEffect(() => {
-    authService.session.revalidate();
-  }, [authService]);
 
   return (
     <div className={container}>
