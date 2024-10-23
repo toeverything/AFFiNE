@@ -16,6 +16,7 @@ export type AppSetting = {
   autoCheckUpdate: boolean;
   autoDownloadUpdate: boolean;
   enableTelemetry: boolean;
+  enableSnapshotImportExport: boolean;
 };
 export const windowFrameStyleOptions: AppSetting['windowFrameStyle'][] = [
   'frameless',
@@ -30,6 +31,7 @@ const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
   autoCheckUpdate: true,
   autoDownloadUpdate: true,
   enableTelemetry: true,
+  enableSnapshotImportExport: false,
 });
 
 type SetStateAction<Value> = Value | ((prev: Value) => Value);

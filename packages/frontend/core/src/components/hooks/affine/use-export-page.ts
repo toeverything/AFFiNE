@@ -11,6 +11,7 @@ import {
   HtmlTransformer,
   MarkdownTransformer,
   printToPdf,
+  ZipTransformer,
 } from '@blocksuite/affine/blocks';
 import type { AffineEditorContainer } from '@blocksuite/affine/presets';
 import type { Doc } from '@blocksuite/affine/store';
@@ -20,7 +21,7 @@ import { nanoid } from 'nanoid';
 
 import { useAsyncCallback } from '../affine-async-hooks';
 
-type ExportType = 'pdf' | 'html' | 'png' | 'markdown';
+type ExportType = 'pdf' | 'html' | 'png' | 'markdown' | 'snapshot';
 
 interface ExportHandlerOptions {
   page: Doc;
@@ -43,6 +44,9 @@ async function exportHandler({
       return;
     case 'markdown':
       await MarkdownTransformer.exportDoc(page);
+      return;
+    case 'snapshot':
+      await ZipTransformer.exportDocs(page.collection, [page]);
       return;
     case 'pdf':
       await printToPdf(editorContainer);

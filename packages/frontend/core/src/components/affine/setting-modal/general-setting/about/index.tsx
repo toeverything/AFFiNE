@@ -53,6 +53,13 @@ export const AboutAffine = () => {
     [updateSettings]
   );
 
+  const onSwitchSnapshotImportExport = useCallback(
+    (checked: boolean) => {
+      updateSettings('enableSnapshotImportExport', checked);
+    },
+    [updateSettings]
+  );
+
   return (
     <>
       <SettingHeader
@@ -136,6 +143,16 @@ export const AboutAffine = () => {
           {t['com.affine.aboutAFFiNE.contact.community']()}
           <OpenInNewIcon className="icon" />
         </a>
+        <SettingRow
+          name={t['com.affine.snapshot.import-export.enable']()}
+          desc={t['com.affine.snapshot.import-export.enable.desc']()}
+          className={styles.snapshotImportExportRow}
+        >
+          <Switch
+            checked={appSettings.enableSnapshotImportExport}
+            onChange={onSwitchSnapshotImportExport}
+          />
+        </SettingRow>
       </SettingWrapper>
       <SettingWrapper title={t['com.affine.aboutAFFiNE.community.title']()}>
         <div className={styles.communityWrapper}>
