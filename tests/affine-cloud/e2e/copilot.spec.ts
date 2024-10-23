@@ -4,7 +4,7 @@ import {
   loginUser,
   loginUserDirectly,
 } from '@affine-test/kit/utils/cloud';
-import { openHomePage } from '@affine-test/kit/utils/load-page';
+import { openHomePage, setCoreUrl } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   getBlockSuiteEditorTitle,
@@ -13,6 +13,34 @@ import {
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect, type Page } from '@playwright/test';
+
+let isProduction = process.env.NODE_ENV === 'production';
+if (
+  process.env.PLAYWRIGHT_USER_AGENT &&
+  process.env.PLAYWRIGHT_EMAIL &&
+  !process.env.PLAYWRIGHT_PASSWORD
+) {
+  test.use({
+    userAgent: process.env.PLAYWRIGHT_USER_AGENT || 'affine-tester',
+  });
+  setCoreUrl(process.env.PLAYWRIGHT_CORE_URL || 'http://localhost:8080');
+  isProduction = true;
+}
+
+function getUser() {
+  if (
+    !isProduction ||
+    !process.env.PLAYWRIGHT_EMAIL ||
+    !process.env.PLAYWRIGHT_PASSWORD
+  ) {
+    return createRandomAIUser();
+  }
+
+  return {
+    email: process.env.PLAYWRIGHT_EMAIL,
+    password: process.env.PLAYWRIGHT_PASSWORD,
+  };
+}
 
 test.skip(
   () =>
@@ -115,7 +143,7 @@ test('can chat after login at chat side panel', async ({ page }) => {
   const loginTips = await page.waitForSelector('ai-error-wrapper');
   (await loginTips.$('div'))!.click();
   // login
-  const user = await createRandomAIUser();
+  const user = await getUser();
   await loginUserDirectly(page, user);
   // after login
   await makeChat(page, 'hello');
@@ -126,14 +154,12 @@ test('can chat after login at chat side panel', async ({ page }) => {
 
 test.describe('chat panel', () => {
   let user: {
-    id: string;
-    name: string;
     email: string;
     password: string;
   };
 
   test.beforeEach(async ({ page }) => {
-    user = await createRandomAIUser();
+    user = await getUser();
     await loginUser(page, user);
   });
 
@@ -308,14 +334,12 @@ test.describe('chat panel', () => {
 
 test.describe('chat with block', () => {
   let user: {
-    id: string;
-    name: string;
     email: string;
     password: string;
   };
 
   test.beforeEach(async ({ page }) => {
-    user = await createRandomAIUser();
+    user = await getUser();
     await loginUser(page, user);
   });
 
