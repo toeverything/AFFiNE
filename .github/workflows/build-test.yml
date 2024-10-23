@@ -456,7 +456,7 @@ jobs:
           yarn workspace @affine/server data-migration run
 
       - name: Server Copilot E2E Test
-        run: yarn workspace @affine-test/affine-cloud e2e --forbid-only
+        run: yarn workspace @affine-test/affine-cloud e2e:copilot --forbid-only
         env:
           DEV_SERVER_URL: http://localhost:8080
           COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}

@@ -2,7 +2,8 @@
   "name": "@affine-test/affine-cloud",
   "private": true,
   "scripts": {
-    "e2e": "yarn playwright test"
+    "e2e": "yarn playwright test",
+    "e2e:copilot": "yarn playwright test e2e/copilot.spec.ts"
   },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
