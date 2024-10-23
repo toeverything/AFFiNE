@@ -13,7 +13,7 @@
     "@node-rs/argon2": "^2.0.0",
     "@playwright/test": "=1.47.2",
     "express": "^4.19.2",
-    "http-proxy-middleware": "^3.0.0"
+    "http-proxy-middleware": "^3.0.3"
   },
   "peerDependencies": {
     "@playwright/test": "*",

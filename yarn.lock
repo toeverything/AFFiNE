@@ -26,7 +26,7 @@ __metadata:
     "@affine-test/kit": "workspace:*"
     "@playwright/test": "npm:=1.47.2"
     express: "npm:^4.19.2"
-    http-proxy-middleware: "npm:^3.0.0"
+    http-proxy-middleware: "npm:^3.0.3"
     serve: "npm:^14.2.1"
   languageName: unknown
   linkType: soft
@@ -38,7 +38,7 @@ __metadata:
     "@affine-test/kit": "workspace:*"
     "@playwright/test": "npm:=1.47.2"
     express: "npm:^4.19.2"
-    http-proxy-middleware: "npm:^3.0.0"
+    http-proxy-middleware: "npm:^3.0.3"
     serve: "npm:^14.2.1"
   languageName: unknown
   linkType: soft
@@ -50,7 +50,7 @@ __metadata:
     "@affine-test/kit": "workspace:*"
     "@playwright/test": "npm:=1.47.2"
     express: "npm:^4.19.2"
-    http-proxy-middleware: "npm:^3.0.0"
+    http-proxy-middleware: "npm:^3.0.3"
     serve: "npm:^14.2.1"
   languageName: unknown
   linkType: soft
@@ -62,7 +62,7 @@ __metadata:
     "@affine-test/kit": "workspace:*"
     "@playwright/test": "npm:=1.47.2"
     express: "npm:^4.19.2"
-    http-proxy-middleware: "npm:^3.0.0"
+    http-proxy-middleware: "npm:^3.0.3"
     serve: "npm:^14.2.1"
   languageName: unknown
   linkType: soft
@@ -138,7 +138,7 @@ __metadata:
     "@node-rs/argon2": "npm:^2.0.0"
     "@playwright/test": "npm:=1.47.2"
     express: "npm:^4.19.2"
-    http-proxy-middleware: "npm:^3.0.0"
+    http-proxy-middleware: "npm:^3.0.3"
   peerDependencies:
     "@playwright/test": "*"
     express: "*"
@@ -22396,9 +22396,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"http-proxy-middleware@npm:^3.0.0":
-  version: 3.0.2
-  resolution: "http-proxy-middleware@npm:3.0.2"
+"http-proxy-middleware@npm:^3.0.3":
+  version: 3.0.3
+  resolution: "http-proxy-middleware@npm:3.0.3"
   dependencies:
     "@types/http-proxy": "npm:^1.17.15"
     debug: "npm:^4.3.6"
@@ -22406,7 +22406,7 @@ __metadata:
     is-glob: "npm:^4.0.3"
     is-plain-object: "npm:^5.0.0"
     micromatch: "npm:^4.0.8"
-  checksum: 10/59be307aca2e0a8ba016bc8356e8a87cbfd53d65db5386edc65acd867ebd0a4683ff9be2e0eea12388cac13dffe387f0d374d35b01e625c98aee30c8f3023e72
+  checksum: 10/32f58c29288ca63e109909fb998bd0f6f50eb15a98dec9487eac07dfc4f09d8507dbfa00b44442d868bafa904bd633c8bbd55686bb13b4d4af4f5c5b3bbca430
   languageName: node
   linkType: hard
 
