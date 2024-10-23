@@ -1,7 +1,7 @@
 import { Loading } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
-import { DocInfoService } from '@affine/core/modules/doc-info';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import type { NodeOperation } from '@affine/core/modules/explorer';
 import { useI18n } from '@affine/i18n';
@@ -100,13 +100,13 @@ export const ExplorerDocNode = ({
     [docId, docsService]
   );
 
-  const docInfoModal = useService(DocInfoService).modal;
+  const workspaceDialogService = useService(WorkspaceDialogService);
   const option = useMemo(
     () => ({
-      openInfoModal: () => docInfoModal.open(docId),
+      openInfoModal: () => workspaceDialogService.open('doc-info', { docId }),
       openNodeCollapsed: () => setCollapsed(false),
     }),
-    [docId, docInfoModal]
+    [docId, workspaceDialogService]
   );
   const operations = useExplorerDocNodeOperationsMenu(docId, option);
   const { handleAddLinkedPage } = useExplorerDocNodeOperations(docId, option);

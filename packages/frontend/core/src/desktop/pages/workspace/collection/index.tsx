@@ -1,11 +1,8 @@
 import { notify } from '@affine/component';
 import { EmptyCollectionDetail } from '@affine/core/components/affine/empty/collection-detail';
-import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import {
-  useEditCollection,
-  VirtualizedPageList,
-} from '@affine/core/components/page-list';
+import { VirtualizedPageList } from '@affine/core/components/page-list';
 import { CollectionService } from '@affine/core/modules/collection';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import { ViewLayersIcon } from '@blocksuite/icons/rc';
@@ -34,14 +31,16 @@ export const CollectionDetail = ({
 }: {
   collection: Collection;
 }) => {
-  const { open } = useEditCollection();
-  const collectionService = useService(CollectionService);
+  const { workspaceDialogService } = useServices({
+    WorkspaceDialogService,
+  });
   const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
 
-  const handleEditCollection = useAsyncCallback(async () => {
-    const ret = await open({ ...collection }, 'page');
-    collectionService.updateCollection(ret.id, () => ret);
-  }, [collection, collectionService, open]);
+  const handleEditCollection = useCallback(() => {
+    workspaceDialogService.open('collection-editor', {
+      collectionId: collection.id,
+    });
+  }, [collection, workspaceDialogService]);
 
   return (
     <>

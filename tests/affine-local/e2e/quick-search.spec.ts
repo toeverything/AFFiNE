@@ -364,7 +364,6 @@ test('can use cmdk to delete page and restore it', async ({ page }) => {
   await page.waitForTimeout(100);
   await openQuickSearchByShortcut(page);
   expect(await commandsIsVisible(page, 'Move to trash')).toBe(false);
-  expect(await commandsIsVisible(page, 'Export to PDF')).toBe(false);
   expect(await commandsIsVisible(page, 'Restore from trash')).toBe(true);
   await keyboardDownAndSelect(page, 'Restore from trash');
   await expect(restoreButton).not.toBeVisible();

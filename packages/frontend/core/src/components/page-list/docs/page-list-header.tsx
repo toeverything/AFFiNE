@@ -8,6 +8,7 @@ import {
 } from '@affine/component';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { Tag } from '@affine/core/modules/tag';
 import { TagService } from '@affine/core/modules/tag';
 import { isNewTabTrigger } from '@affine/core/utils';
@@ -36,10 +37,7 @@ import { CollectionService } from '../../../modules/collection';
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import { createTagFilter } from '../filter/utils';
 import { createEmptyCollection } from '../use-collection-manager';
-import {
-  useEditCollection,
-  useEditCollectionName,
-} from '../view/use-edit-collection';
+import { useEditCollectionName } from '../view/use-edit-collection';
 import * as styles from './page-list-header.css';
 import { PageListNewPageButton } from './page-list-new-page-button';
 
@@ -102,21 +100,22 @@ export const CollectionPageListHeader = ({
 }) => {
   const t = useI18n();
   const { jumpToCollections } = useNavigateHelper();
-  const { collectionService, workspaceService } = useServices({
-    CollectionService,
-    WorkspaceService,
-  });
+  const { collectionService, workspaceService, workspaceDialogService } =
+    useServices({
+      CollectionService,
+      WorkspaceService,
+      WorkspaceDialogService,
+    });
 
   const handleJumpToCollections = useCallback(() => {
     jumpToCollections(workspaceId);
   }, [jumpToCollections, workspaceId]);
 
-  const { open } = useEditCollection();
-
-  const handleEdit = useAsyncCallback(async () => {
-    const ret = await open({ ...collection }, 'page');
-    collectionService.updateCollection(collection.id, () => ret);
-  }, [collection, collectionService, open]);
+  const handleEdit = useCallback(() => {
+    workspaceDialogService.open('collection-editor', {
+      collectionId: collection.id,
+    });
+  }, [collection, workspaceDialogService]);
 
   const workspace = workspaceService.workspace;
   const { createEdgeless, createPage } = usePageHelper(workspace.docCollection);

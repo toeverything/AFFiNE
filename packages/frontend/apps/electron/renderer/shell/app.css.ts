@@ -16,16 +16,15 @@ export const root = style({
   },
 });
 
+export const body = style({
+  flex: 1,
+  paddingTop: 52,
+});
+
 export const appTabsHeader = style({
   zIndex: 1,
   position: 'absolute',
   top: 0,
-});
-
-export const fallbackRoot = style({
-  width: '100%',
-  height: '100%',
-  paddingTop: 52,
 });
 
 export const splitViewFallback = style({

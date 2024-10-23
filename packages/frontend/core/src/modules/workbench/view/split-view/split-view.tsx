@@ -13,13 +13,13 @@ import {
 } from '@dnd-kit/sortable';
 import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
-import type { HTMLAttributes, PropsWithChildren, RefObject } from 'react';
+import type { HTMLAttributes, RefObject } from 'react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { View } from '../../entities/view';
 import { WorkbenchService } from '../../services/workbench';
-import { SplitViewPanel, SplitViewPanelContainer } from './panel';
+import { SplitViewPanel } from './panel';
 import { ResizeHandle } from './resize-handle';
 import * as styles from './split-view.css';
 
@@ -138,23 +138,6 @@ export const SplitView = ({
           `portalToSplitViewPanel_${view.id}`
         );
       })}
-    </div>
-  );
-};
-
-export const SplitViewFallback = ({
-  children,
-  className,
-}: PropsWithChildren<{ className?: string }>) => {
-  const { appSettings } = useAppSettingHelper();
-
-  return (
-    <div
-      className={clsx(styles.splitViewRoot, className)}
-      data-client-border={appSettings.clientBorder}
-    >
-      {/* todo: support multiple split views */}
-      <SplitViewPanelContainer>{children}</SplitViewPanelContainer>
     </div>
   );
 };

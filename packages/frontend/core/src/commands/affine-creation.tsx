@@ -4,17 +4,17 @@ import type { DocMode } from '@blocksuite/affine/blocks';
 import { ImportIcon, PlusIcon } from '@blocksuite/icons/rc';
 
 import type { usePageHelper } from '../components/blocksuite/block-suite-page-list/utils';
-import type { CreateWorkspaceDialogService } from '../modules/create-workspace';
+import type { GlobalDialogService } from '../modules/dialogs';
 import { registerAffineCommand } from './registry';
 
 export function registerAffineCreationCommands({
   pageHelper,
   t,
-  createWorkspaceDialogService,
+  globalDialogService,
 }: {
   t: ReturnType<typeof useI18n>;
   pageHelper: ReturnType<typeof usePageHelper>;
-  createWorkspaceDialogService: CreateWorkspaceDialogService;
+  globalDialogService: GlobalDialogService;
 }) {
   const unsubs: Array<() => void> = [];
   unsubs.push(
@@ -62,7 +62,7 @@ export function registerAffineCreationCommands({
       run() {
         track.$.cmdk.workspace.createWorkspace();
 
-        createWorkspaceDialogService.dialog.open('new');
+        globalDialogService.open('create-workspace', undefined);
       },
     })
   );
@@ -80,7 +80,7 @@ export function registerAffineCreationCommands({
           control: 'import',
         });
 
-        createWorkspaceDialogService.dialog.open('add');
+        globalDialogService.open('import-workspace', undefined);
       },
     })
   );

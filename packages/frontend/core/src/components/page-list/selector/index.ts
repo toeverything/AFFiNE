@@ -1,6 +1,6 @@
 import { SelectCollection } from '../collections';
+import { SelectPage } from '../docs/select-page';
 import { SelectTag } from '../tags';
-import { SelectPage } from '../view/edit-collection/select-page';
 import { useSelectDialog } from './use-select-dialog';
 
 export interface BaseSelectorDialogProps<T> {

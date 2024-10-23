@@ -2,10 +2,6 @@ import { Loading, Scrollable } from '@affine/component';
 import { WorkspaceDetailSkeleton } from '@affine/component/setting-components';
 import type { ModalProps } from '@affine/component/ui/modal';
 import { Modal } from '@affine/component/ui/modal';
-import {
-  openIssueFeedbackModalAtom,
-  openStarAFFiNEModalAtom,
-} from '@affine/core/components/atoms';
 import { AuthService } from '@affine/core/modules/cloud';
 import { Trans } from '@affine/i18n';
 import { ContactWithUsIcon } from '@blocksuite/icons/rc';
@@ -22,12 +18,15 @@ import {
   useEffect,
   useLayoutEffect,
   useRef,
+  useState,
 } from 'react';
 
 import { AccountSetting } from './account-setting';
 import { settingModalScrollContainerAtom } from './atoms';
 import { GeneralSetting } from './general-setting';
+import { IssueFeedbackModal } from './issue-feedback-modal';
 import { SettingSidebar } from './setting-sidebar';
+import { StarAFFiNEModal } from './star-affine-modal';
 import * as style from './style.css';
 import type { ActiveTab, GeneralSettingKey, WorkspaceSubTab } from './types';
 import { GeneralSettingKeys } from './types';
@@ -121,8 +120,8 @@ const SettingModalInner = ({
     },
     [onSettingClick]
   );
-  const setOpenIssueFeedbackModal = useSetAtom(openIssueFeedbackModalAtom);
-  const setOpenStarAFFiNEModal = useSetAtom(openStarAFFiNEModalAtom);
+  const [openIssueFeedbackModal, setOpenIssueFeedbackModal] = useState(false);
+  const [openStarAFFiNEModal, setOpenStarAFFiNEModal] = useState(false);
 
   const handleOpenIssueFeedbackModal = useCallback(() => {
     setOpenIssueFeedbackModal(true);
@@ -183,6 +182,14 @@ const SettingModalInner = ({
                 }}
               />
             </div>
+            <StarAFFiNEModal
+              open={openStarAFFiNEModal}
+              setOpen={setOpenStarAFFiNEModal}
+            />
+            <IssueFeedbackModal
+              open={openIssueFeedbackModal}
+              setOpen={setOpenIssueFeedbackModal}
+            />
           </div>
           <Scrollable.Scrollbar />
         </Scrollable.Viewport>

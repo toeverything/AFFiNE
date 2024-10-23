@@ -2,8 +2,7 @@ import { Divider } from '@affine/component/ui/divider';
 import { MenuItem } from '@affine/component/ui/menu';
 import { authAtom } from '@affine/core/components/atoms';
 import { AuthService } from '@affine/core/modules/cloud';
-import { CreateWorkspaceDialogService } from '@affine/core/modules/create-workspace';
-import type { CreateWorkspaceCallbackPayload } from '@affine/core/modules/create-workspace/types';
+import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { Logo1Icon } from '@blocksuite/icons/rc';
@@ -62,7 +61,10 @@ export const SignInItem = () => {
 interface UserWithWorkspaceListProps {
   onEventEnd?: () => void;
   onClickWorkspace?: (workspace: WorkspaceMetadata) => void;
-  onCreatedWorkspace?: (payload: CreateWorkspaceCallbackPayload) => void;
+  onCreatedWorkspace?: (payload: {
+    metadata: WorkspaceMetadata;
+    defaultDocId?: string;
+  }) => void;
   showSettingsButton?: boolean;
   showEnableCloudButton?: boolean;
 }
@@ -74,7 +76,7 @@ const UserWithWorkspaceListInner = ({
   showSettingsButton,
   showEnableCloudButton,
 }: UserWithWorkspaceListProps) => {
-  const createWorkspaceDialogService = useService(CreateWorkspaceDialogService);
+  const globalDialogService = useService(GlobalDialogService);
   const session = useLiveData(useService(AuthService).session.session$);
   const featureFlagService = useService(FeatureFlagService);
 
@@ -97,14 +99,14 @@ const UserWithWorkspaceListInner = ({
       return openSignInModal();
     }
     track.$.navigationPanel.workspaceList.createWorkspace();
-    createWorkspaceDialogService.dialog.open('new', payload => {
+    globalDialogService.open('create-workspace', undefined, payload => {
       if (payload) {
         onCreatedWorkspace?.(payload);
       }
     });
     onEventEnd?.();
   }, [
-    createWorkspaceDialogService,
+    globalDialogService,
     featureFlagService,
     isAuthenticated,
     onCreatedWorkspace,
@@ -116,13 +118,13 @@ const UserWithWorkspaceListInner = ({
     track.$.navigationPanel.workspaceList.createWorkspace({
       control: 'import',
     });
-    createWorkspaceDialogService.dialog.open('add', payload => {
+    globalDialogService.open('import-workspace', undefined, payload => {
       if (payload) {
-        onCreatedWorkspace?.(payload);
+        onCreatedWorkspace?.({ metadata: payload.workspace });
       }
     });
     onEventEnd?.();
-  }, [createWorkspaceDialogService.dialog, onCreatedWorkspace, onEventEnd]);
+  }, [globalDialogService, onCreatedWorkspace, onEventEnd]);
 
   const workspaceManager = useService(WorkspacesService);
   const workspaces = useLiveData(workspaceManager.list.workspaces$);

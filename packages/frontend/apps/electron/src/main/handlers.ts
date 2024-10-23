@@ -3,7 +3,6 @@ import { ipcMain } from 'electron';
 import { AFFINE_API_CHANNEL_NAME } from '../shared/type';
 import { clipboardHandlers } from './clipboard';
 import { configStorageHandlers } from './config-storage';
-import { exportHandlers } from './export';
 import { findInPageHandlers } from './find-in-page';
 import { getLogFilePath, logger, revealLogFile } from './logger';
 import { sharedStorageHandlers } from './shared-storage';
@@ -24,7 +23,6 @@ export const allHandlers = {
   debug: debugHandlers,
   ui: uiHandlers,
   clipboard: clipboardHandlers,
-  export: exportHandlers,
   updater: updaterHandlers,
   configStorage: configStorageHandlers,
   findInPage: findInPageHandlers,
