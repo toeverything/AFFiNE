@@ -31,6 +31,7 @@ runs:
       shell: bash
       run: yarn workspace @affine-test/affine-cloud e2e:copilot --forbid-only
       env:
+        COPILOT: true
         DEV_SERVER_URL: http://localhost:8080
         COPILOT_OPENAI_API_KEY: ${{ inputs.openai-key }}
         COPILOT_FAL_API_KEY: ${{ inputs.fal-key }}
