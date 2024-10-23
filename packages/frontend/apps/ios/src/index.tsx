@@ -18,6 +18,12 @@ import { App } from './app';
 
 function main() {
   if (BUILD_CONFIG.debug || window.SENTRY_RELEASE) {
+    // TODO: workaround
+    if ('CapacitorWebXMLHttpRequest' in window) {
+      window.XMLHttpRequest.prototype = (
+        window.CapacitorWebXMLHttpRequest as any
+      ).prototype;
+    }
     // https://docs.sentry.io/platforms/javascript/guides/react/#configure
     init({
       dsn: process.env.SENTRY_DSN,
