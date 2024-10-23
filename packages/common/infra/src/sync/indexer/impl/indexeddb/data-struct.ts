@@ -115,7 +115,7 @@ export class DataStruct {
     for (const [key, values] of document.fields) {
       const type = this.schema[key as string];
       if (!type) {
-        return;
+        continue;
       }
       const typeInfo = typeof type === 'string' ? { type } : type;
       if (typeInfo.store !== false) {
@@ -132,7 +132,7 @@ export class DataStruct {
     for (const [key, values] of document.fields) {
       const iidx = this.invertedIndex.get(key as string);
       if (!iidx) {
-        return;
+        continue;
       }
       await iidx.insert(trx, nid, values);
     }
