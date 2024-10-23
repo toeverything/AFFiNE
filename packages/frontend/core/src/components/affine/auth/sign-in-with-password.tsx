@@ -19,6 +19,7 @@ import { useCaptcha } from './use-captcha';
 export const SignInWithPassword: FC<AuthPanelProps<'signInWithPassword'>> = ({
   setAuthData,
   email,
+  redirectUrl,
 }) => {
   const t = useI18n();
   const authService = useService(AuthService);
@@ -62,7 +63,12 @@ export const SignInWithPassword: FC<AuthPanelProps<'signInWithPassword'>> = ({
     setSendingEmail(true);
     try {
       if (verifyToken) {
-        await authService.sendEmailMagicLink(email, verifyToken, challenge);
+        await authService.sendEmailMagicLink(
+          email,
+          verifyToken,
+          challenge,
+          redirectUrl
+        );
         setAuthData({ state: 'afterSignInSendEmail' });
       }
     } catch (err) {
@@ -73,7 +79,15 @@ export const SignInWithPassword: FC<AuthPanelProps<'signInWithPassword'>> = ({
       // TODO(@eyhn): handle error better
     }
     setSendingEmail(false);
-  }, [sendingEmail, verifyToken, authService, email, challenge, setAuthData]);
+  }, [
+    sendingEmail,
+    verifyToken,
+    authService,
+    email,
+    challenge,
+    redirectUrl,
+    setAuthData,
+  ]);
 
   const sendChangePasswordEmail = useCallback(() => {
     setAuthData({ state: 'sendEmail', emailType: 'changePassword' });

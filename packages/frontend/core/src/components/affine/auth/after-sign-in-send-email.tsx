@@ -19,6 +19,7 @@ import { Captcha, useCaptcha } from './use-captcha';
 export const AfterSignInSendEmail = ({
   setAuthData: setAuth,
   email,
+  redirectUrl,
 }: AuthPanelProps<'afterSignInSendEmail'>) => {
   const [resendCountDown, setResendCountDown] = useState(60);
 
@@ -44,7 +45,12 @@ export const AfterSignInSendEmail = ({
     try {
       if (verifyToken) {
         setResendCountDown(60);
-        await authService.sendEmailMagicLink(email, verifyToken, challenge);
+        await authService.sendEmailMagicLink(
+          email,
+          verifyToken,
+          challenge,
+          redirectUrl
+        );
       }
     } catch (err) {
       console.error(err);
@@ -53,7 +59,7 @@ export const AfterSignInSendEmail = ({
       });
     }
     setIsSending(false);
-  }, [authService, challenge, email, verifyToken]);
+  }, [authService, challenge, email, redirectUrl, verifyToken]);
 
   const onSignInWithPasswordClick = useCallback(() => {
     setAuth({ state: 'signInWithPassword' });

@@ -12,7 +12,11 @@ import {
   useNavigateHelper,
 } from '../../../components/hooks/use-navigate-helper';
 
-export const SignIn = () => {
+export const SignIn = ({
+  redirectUrl: redirectUrlFromProps,
+}: {
+  redirectUrl?: string;
+}) => {
   const session = useService(AuthService).session;
   const status = useLiveData(session.status$);
   const isRevalidating = useLiveData(session.isRevalidating$);
@@ -20,12 +24,12 @@ export const SignIn = () => {
   const { jumpToIndex } = useNavigateHelper();
   const [searchParams] = useSearchParams();
   const isLoggedIn = status === 'authenticated' && !isRevalidating;
+  const redirectUrl = redirectUrlFromProps ?? searchParams.get('redirect_uri');
 
   useEffect(() => {
     if (isLoggedIn) {
-      const redirectUri = searchParams.get('redirect_uri');
-      if (redirectUri) {
-        navigate(redirectUri, {
+      if (redirectUrl) {
+        navigate(redirectUrl, {
           replace: true,
         });
       } else {
@@ -34,12 +38,12 @@ export const SignIn = () => {
         });
       }
     }
-  }, [jumpToIndex, navigate, isLoggedIn, searchParams]);
+  }, [jumpToIndex, navigate, isLoggedIn, redirectUrl, searchParams]);
 
   return (
     <SignInPageContainer>
       <div style={{ maxWidth: '400px', width: '100%' }}>
-        <AuthPanel onSkip={jumpToIndex} />
+        <AuthPanel onSkip={jumpToIndex} redirectUrl={redirectUrl} />
       </div>
     </SignInPageContainer>
   );

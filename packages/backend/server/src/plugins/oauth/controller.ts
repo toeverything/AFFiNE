@@ -111,7 +111,6 @@ export class OAuthController {
     await this.auth.setCookies(req, res, user.id);
     res.send({
       id: user.id,
-      /* @deprecated */
       redirectUri: state.redirectUri,
     });
   }

@@ -141,6 +141,7 @@ export const SendEmail = ({
   setAuthData,
   email,
   emailType,
+  // todo(@pengx17): impl redirectUrl for sendEmail?
 }: AuthPanelProps<'sendEmail'>) => {
   const t = useI18n();
   const serverConfig = useService(ServerConfigService).serverConfig;
