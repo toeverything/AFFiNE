@@ -414,11 +414,6 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-      mailer:
-        image: mailhog/mailhog
-        ports:
-          - 1025:1025
-          - 8025:8025
     steps:
       - uses: actions/checkout@v4
 
@@ -441,34 +436,11 @@ jobs:
           name: affine.linux-x64-gnu.node
           path: ./packages/frontend/native
 
-      - name: Initialize database
-        run: |
-          psql -h localhost -U postgres -c "CREATE DATABASE affine;"
-          psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
-          psql -h localhost -U postgres -c "ALTER USER affine WITH SUPERUSER;"
-        env:
-          PGPASSWORD: affine
-
-      - name: Run init-db script
-        run: |
-          yarn workspace @affine/server exec prisma generate
-          yarn workspace @affine/server exec prisma db push
-          yarn workspace @affine/server data-migration run
-
-      - name: Server Copilot E2E Test
-        run: yarn workspace @affine-test/affine-cloud e2e:copilot --forbid-only
-        env:
-          DEV_SERVER_URL: http://localhost:8080
-          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
-          COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
-
-      - name: Upload test results
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
+      - name: Run Copilot E2E Test
+        uses: ./.github/actions/copilot-test
         with:
-          name: test-results-e2e-server
-          path: ./test-results
-          if-no-files-found: ignore
+          openai-key: ${{ secrets.COPILOT_OPENAI_API_KEY }}
+          fal-key: ${{ secrets.COPILOT_FAL_API_KEY }}
 
   server-e2e-test:
     name: ${{ matrix.tests.name }}
