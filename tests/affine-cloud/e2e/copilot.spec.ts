@@ -351,7 +351,7 @@ test.describe('chat with block', () => {
         'affine-ai-panel-widget .response-list-container'
       );
       const answer = await page.waitForSelector(
-        'affine-ai-panel-widget ai-answer-text editor-host'
+        'affine-ai-panel-widget ai-panel-answer editor-host'
       );
       return answer.innerText();
     };
