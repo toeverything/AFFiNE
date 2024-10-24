@@ -1,5 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import { apis } from '@affine/electron-api';
+import { Browser } from '@capacitor/browser';
 
 const logger = new DebugLogger('popup');
 
@@ -35,6 +36,11 @@ export function popupWindow(target: string) {
     apis?.ui.openExternal(url).catch(e => {
       logger.error('Failed to open external URL', e);
     });
+  } else if (BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid) {
+    Browser.open({
+      url,
+      presentationStyle: 'popover',
+    }).catch(console.error);
   } else {
     window.open(url, '_blank', `noreferrer noopener`);
   }

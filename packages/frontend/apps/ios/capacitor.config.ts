@@ -7,6 +7,17 @@ const config: CapacitorConfig = {
   ios: {
     path: '.',
   },
+  server: {
+    // url: 'http://localhost:8080',
+  },
+  plugins: {
+    CapacitorCookies: {
+      enabled: true,
+    },
+    CapacitorHttp: {
+      enabled: true,
+    },
+  },
 };
 
 export default config;

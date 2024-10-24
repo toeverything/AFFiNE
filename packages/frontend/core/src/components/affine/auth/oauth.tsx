@@ -58,6 +58,13 @@ function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
       oauthUrl += `&client=${appInfo?.schema}`;
     }
 
+    if (BUILD_CONFIG.isIOS) {
+      // app scheme: "affine"
+      oauthUrl += `&client=affine`;
+    }
+    // TODO: Android app scheme not implemented
+    // if (BUILD_CONFIG.isAndroid) {}
+
     popupWindow(oauthUrl);
   }, [provider]);
 

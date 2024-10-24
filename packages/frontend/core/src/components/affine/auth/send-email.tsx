@@ -122,7 +122,11 @@ const useSendEmail = (emailType: AuthPanelProps<'sendEmail'>['emailType']) => {
         return trigger({
           email,
           callbackUrl: `/auth/${callbackUrl}?isClient=${
-            BUILD_CONFIG.isElectron ? 'true' : 'false'
+            BUILD_CONFIG.isElectron ||
+            BUILD_CONFIG.isIOS ||
+            BUILD_CONFIG.isAndroid
+              ? 'true'
+              : 'false'
           }`,
         });
       },
