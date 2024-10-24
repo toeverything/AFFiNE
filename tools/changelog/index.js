@@ -30,12 +30,29 @@ const repo = new Repository(rootDir);
 
 /**
  * @param {import('@napi-rs/simple-git').Repository} repo
+ * @param {string} name
+ */
+function findTagByName(repo, name) {
+  let tag = null;
+  repo.tagForeach((id, tagName) => {
+    if (`refs/tags/v${name}` === tagName.toString('utf-8')) {
+      tag = repo.findCommit(id);
+      return false;
+    }
+    return true;
+  });
+  return tag;
+}
+
+/**
+ * @param {import('@napi-rs/simple-git').Repository} repo
  * @param {string} previousCommit
  * @param {string | undefined} currentCommit
  * @returns {Promise<string>}
  */
 async function getChangeLog(repo, previousCommit, currentCommit) {
-  const prevCommit = repo.findCommit(previousCommit);
+  const prevCommit =
+    repo.findCommit(previousCommit) ?? findTagByName(repo, previousCommit);
   if (!prevCommit) {
     console.log(
       `Previous commit ${previousCommit} in ${repo.path()} not found`
@@ -48,7 +65,8 @@ async function getChangeLog(repo, previousCommit, currentCommit) {
   const revWalk = repo.revWalk();
 
   if (currentCommit) {
-    const commit = repo.findCommit(currentCommit);
+    const commit =
+      repo.findCommit(currentCommit) ?? findTagByName(repo, previousCommit);
     if (!commit) {
       console.log(
         `Current commit ${currentCommit} not found in ${repo.path()}`
@@ -93,7 +111,7 @@ const pkgJsonPath = 'packages/frontend/core/package.json';
 
 const content = await readFile(join(rootDir, pkgJsonPath), 'utf8');
 const { dependencies } = JSON.parse(content);
-const blocksuiteVersion = dependencies['@blocksuite/block-std'];
+const blocksuiteVersion = dependencies['@blocksuite/affine'];
 
 const prevCommit = repo.findCommit(PREV_VERSION);
 
@@ -113,15 +131,20 @@ const previousPkgJson = JSON.parse(
   Buffer.from(previousPkgJsonBlob.content()).toString('utf8')
 );
 const previousBlocksuiteVersion =
-  previousPkgJson.dependencies['@blocksuite/block-std'];
+  previousPkgJson.dependencies['@blocksuite/affine'];
+
 if (blocksuiteVersion !== previousBlocksuiteVersion) {
-  const current = blocksuiteVersion.split('-').pop();
-  const previous = previousBlocksuiteVersion.split('-').pop();
   const blockSuiteRepo = new Repository(
     BLOCKSUITE_REPO_PATH ?? join(rootDir, '..', 'blocksuite')
   );
-  console.log(`Blocksuite ${previous} -> ${current}`);
-  blockSuiteChangelog = await getChangeLog(blockSuiteRepo, previous, current);
+  console.log(
+    `Blocksuite ${previousBlocksuiteVersion} -> ${blocksuiteVersion}`
+  );
+  blockSuiteChangelog = await getChangeLog(
+    blockSuiteRepo,
+    previousBlocksuiteVersion,
+    blocksuiteVersion
+  );
 }
 
 const messageHead =
@@ -147,7 +170,7 @@ ${blockSuiteChangelog}`;
 
 const { ok } = await slack.chat.postMessage({
   channel: CHANNEL_ID,
-  text: `Server deployed`,
+  text: `${DEPLOYMENT === 'server' ? 'Server' : 'Client'} deployed`,
   blocks: render(changelogMessage),
 });
 
