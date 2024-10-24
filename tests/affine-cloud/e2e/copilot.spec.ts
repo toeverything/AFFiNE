@@ -417,7 +417,7 @@ test.describe('chat with block', () => {
       'Brainstorm ideas about this',
     ];
     for (const option of options) {
-      test.only(option, async ({ page }) => {
+      test(option, async ({ page }) => {
         await page
           .waitForSelector(
             `.ai-item-${option.replaceAll(' ', '-').toLowerCase()}`
@@ -534,7 +534,12 @@ test.describe('chat with block', () => {
         expect(await collectImageAnswer(page)).toBeTruthy();
       });
 
-      const processes = ['Clearer', 'Remove background', 'Convert to sticker'];
+      const processes = [
+        'Clearer',
+        'Remove background',
+        // skip by default, need a face in image
+        // 'Convert to sticker',
+      ];
       for (const process of processes) {
         test(`image processing ${process}`, async ({ page }) => {
           await page
