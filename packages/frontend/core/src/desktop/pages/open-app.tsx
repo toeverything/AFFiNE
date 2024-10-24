@@ -5,7 +5,7 @@ import { Trans, useI18n } from '@affine/i18n';
 import { Logo1Icon } from '@blocksuite/icons/rc';
 import { useCallback, useMemo } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
-import { useLoaderData, useSearchParams } from 'react-router-dom';
+import { redirect, useLoaderData, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 
 import * as styles from './open-app.css';
@@ -19,6 +19,18 @@ const appSchemas = z.enum([
   'affine-internal',
   'affine-dev',
 ]);
+
+const appSchemaUrl = z.custom<string>(
+  url => {
+    try {
+      return appSchemas.safeParse(new URL(url).protocol.replace(':', ''))
+        .success;
+    } catch (e) {
+      return false;
+    }
+  },
+  { message: 'Invalid URL or protocol' }
+);
 
 const appChannelSchema = z.enum(['stable', 'canary', 'beta', 'internal']);
 
@@ -52,10 +64,15 @@ interface OpenAppProps {
   channel: Channel;
 }
 
-interface LoaderData {
-  action: 'url' | 'signin-redirect';
+const LoaderData = z.object({
+  action: z.enum(['url', 'signin-redirect']),
+  url: appSchemaUrl,
+  params: z.record(z.string()),
+});
+
+type LoaderData = z.infer<typeof LoaderData> & {
   currentUser?: GetCurrentUserQuery['currentUser'];
-}
+};
 
 const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
   const t = useI18n();
@@ -147,16 +164,14 @@ const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
 };
 
 const OpenUrl = () => {
-  const [params] = useSearchParams();
-  const urlToOpen = params.get('url');
-  params.delete('url');
+  const { params, url } = useLoaderData() as LoaderData;
 
-  const urlObj = new URL(urlToOpen || '');
+  const urlObj = new URL(url);
   const maybeSchema = appSchemas.safeParse(urlObj.protocol.replace(':', ''));
   const channel =
     schemaToChanel[maybeSchema.success ? maybeSchema.data : 'affine'];
 
-  params.forEach((v, k) => {
+  Object.entries(params).forEach(([k, v]) => {
     urlObj.searchParams.set(k, v);
   });
 
@@ -167,12 +182,11 @@ const OpenUrl = () => {
  * @deprecated
  */
 const OpenOAuthJwt = () => {
-  const { currentUser } = useLoaderData() as LoaderData;
-  const [params] = useSearchParams();
+  const { currentUser, params } = useLoaderData() as LoaderData;
 
-  const maybeSchema = appSchemas.safeParse(params.get('schema'));
+  const maybeSchema = appSchemas.safeParse(params['schema']);
   const schema = maybeSchema.success ? maybeSchema.data : 'affine';
-  const next = params.get('next');
+
   const channel = schemaToChanel[schema as Schema];
 
   if (!currentUser || !currentUser?.token?.sessionToken) {
@@ -181,7 +195,7 @@ const OpenOAuthJwt = () => {
 
   const urlToOpen = `${schema}://signin-redirect?token=${
     currentUser.token.sessionToken
-  }&next=${next || ''}`;
+  }&next=${params['next'] || ''}`;
 
   return <OpenAppImpl urlToOpen={urlToOpen} channel={channel} />;
 };
@@ -203,8 +217,18 @@ export const loader: LoaderFunction = async args => {
     query: getCurrentUserQuery,
   }).catch(console.error);
 
-  return {
-    action,
-    currentUser: res?.currentUser || null,
-  };
+  try {
+    const { url, ...params } = Array.from(
+      new URL(args.request.url).searchParams.entries()
+    ).reduce(
+      (acc, [k, v]) => ((acc[k] = v), acc),
+      {} as Record<string, string>
+    );
+    return Object.assign(LoaderData.parse({ action, url, params }), {
+      currentUser: res?.currentUser || null,
+    });
+  } catch (e) {
+    console.error(e);
+    return redirect('/404');
+  }
 };
