@@ -1,5 +1,6 @@
 import { IconButton } from '@affine/component';
 import { useI18n } from '@affine/i18n';
+import { track } from '@affine/track';
 import { SidebarIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useRef } from 'react';
@@ -27,6 +28,9 @@ export const SidebarSwitch = ({
   }, [appSidebarService, open, preventHovering]);
 
   const handleClickSwitch = useCallback(() => {
+    track.$.navigationPanel.$.toggle({
+      type: open ? 'collapse' : 'expand',
+    });
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }

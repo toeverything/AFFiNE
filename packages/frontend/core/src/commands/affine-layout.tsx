@@ -27,7 +27,9 @@ export function registerAffineLayoutCommands({
         binding: '$mod+/',
       },
       run() {
-        track.$.navigationPanel.$.toggle();
+        track.$.navigationPanel.$.toggle({
+          type: appSidebarService.sidebar.open$.value ? 'collapse' : 'expand',
+        });
         appSidebarService.sidebar.toggleSidebar();
       },
     })

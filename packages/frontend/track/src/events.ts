@@ -386,6 +386,7 @@ export type EventArgs = {
     action: TabActionType;
   };
   toggleFavorite: OrganizeItemArgs & { on: boolean };
+  toggle: { type: 'collapse' | 'expand' };
   createDoc: { mode?: 'edgeless' | 'page' };
   switchPageMode: { mode: 'edgeless' | 'page' };
   createShareLink: { mode: 'edgeless' | 'page' };
