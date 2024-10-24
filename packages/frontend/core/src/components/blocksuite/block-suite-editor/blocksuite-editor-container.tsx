@@ -1,11 +1,15 @@
-import type { DocMode } from '@blocksuite/affine/blocks';
+import {
+  type DocMode,
+  type NoteBlockModel,
+  NoteDisplayMode,
+} from '@blocksuite/affine/blocks';
 import type {
   AffineEditorContainer,
   DocTitle,
   EdgelessEditor,
   PageEditor,
 } from '@blocksuite/affine/presets';
-import { type Doc, Slot } from '@blocksuite/affine/store';
+import { type BlockModel, type Doc, Slot } from '@blocksuite/affine/store';
 import clsx from 'clsx';
 import type React from 'react';
 import {
@@ -126,10 +130,26 @@ export const BlocksuiteEditorContainer = forwardRef<
 
   const handleClickPageModeBlank = useCallback(() => {
     if (shared || page.readonly) return;
-    affineEditorContainerProxy.host?.std.command.exec(
-      'appendParagraph' as never,
-      {}
-    );
+    const std = affineEditorContainerProxy.host?.std;
+    if (!std) {
+      return;
+    }
+    const note = getLastNoteBlock(page);
+    if (note) {
+      const lastBlock = note.lastChild();
+      if (
+        lastBlock &&
+        lastBlock.flavour === 'affine:paragraph' &&
+        lastBlock.text?.length === 0
+      ) {
+        std.command.exec('focusBlockEnd' as never, {
+          focusBlock: std.view.getBlock(lastBlock.id) as never,
+        });
+        return;
+      }
+    }
+
+    std.command.exec('appendParagraph' as never, {});
   }, [affineEditorContainerProxy, page, shared]);
 
   return (
@@ -162,3 +182,32 @@ export const BlocksuiteEditorContainer = forwardRef<
     </div>
   );
 });
+
+// copy from '@blocksuite/affine-shared/utils'
+export function getLastNoteBlock(doc: Doc) {
+  let note: NoteBlockModel | null = null;
+  if (!doc.root) return null;
+  const { children } = doc.root;
+  for (let i = children.length - 1; i >= 0; i--) {
+    const child = children[i];
+    if (
+      matchFlavours(child, ['affine:note']) &&
+      child.displayMode !== NoteDisplayMode.EdgelessOnly
+    ) {
+      note = child as NoteBlockModel;
+      break;
+    }
+  }
+  return note;
+}
+export function matchFlavours<Key extends (keyof BlockSuite.BlockModels)[]>(
+  model: BlockModel | null,
+  expected: Key
+): model is BlockSuite.BlockModels[Key[number]] {
+  return (
+    !!model &&
+    expected.some(
+      key => (model.flavour as keyof BlockSuite.BlockModels) === key
+    )
+  );
+}

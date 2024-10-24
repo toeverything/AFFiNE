@@ -64,3 +64,25 @@ test('link page is useable', async ({ page }) => {
     page.locator('.doc-title-container:has-text("page1")')
   ).toBeVisible();
 });
+
+test('append paragraph when click editor gap', async ({ page }) => {
+  await openHomePage(page);
+  await waitForEditorLoad(page);
+  await clickNewPageButton(page);
+  await waitForEditorLoad(page);
+
+  const title = getBlockSuiteEditorTitle(page);
+  await title.pressSequentially('test title');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.insertText('test content');
+
+  const paragraph = page.locator('affine-paragraph');
+  const numParagraphs = await paragraph.count();
+
+  await page.locator('[data-testid=page-editor-blank]').click();
+  expect(await paragraph.count()).toBe(numParagraphs + 1);
+
+  // click the gap again, should not append another paragraph
+  await page.locator('[data-testid=page-editor-blank]').click();
+  expect(await paragraph.count()).toBe(numParagraphs + 1);
+});
