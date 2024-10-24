@@ -17,12 +17,17 @@ import { firstValueFrom, map, race } from 'rxjs';
 import { resolveLinkToDoc } from '../../navigation';
 import type { WorkbenchService } from '../../workbench';
 
-export type PeekViewTarget =
+export type PeekViewElement =
   | HTMLElement
   | BlockComponent
   | AffineReference
-  | HTMLAnchorElement
-  | { docId: string; blockIds?: string[] };
+  | HTMLAnchorElement;
+
+export interface PeekViewTarget {
+  element?: PeekViewElement;
+  docId?: string;
+  blockIds?: string[];
+}
 
 export interface DocPeekViewInfo {
   type: 'doc';
@@ -101,79 +106,83 @@ function resolvePeekInfoFromPeekTarget(
     };
   }
 
-  if (peekTarget instanceof AffineReference) {
-    const referenceInfo = peekTarget.referenceInfo;
-    if (referenceInfo) {
-      const { pageId: docId } = referenceInfo;
-      const info: DocPeekViewInfo = {
-        type: 'doc',
-        docId,
-      };
-      Object.assign(info, referenceInfo.params);
-      return info;
-    }
-  } else if ('model' in peekTarget) {
-    const blockModel = peekTarget.model;
-    if (isEmbedLinkedDocModel(blockModel)) {
-      const info: DocPeekViewInfo = {
-        type: 'doc',
-        docId: blockModel.pageId,
-      };
-      Object.assign(info, blockModel.params);
-      return info;
-    } else if (isEmbedSyncedDocModel(blockModel)) {
-      return {
-        type: 'doc',
-        docId: blockModel.pageId,
-      };
-    } else if (isSurfaceRefModel(blockModel)) {
-      const refModel = (peekTarget as SurfaceRefBlockComponent).referenceModel;
-      // refModel can be null if the reference is invalid
-      if (refModel) {
-        const docId =
-          'doc' in refModel ? refModel.doc.id : refModel.surface.doc.id;
-        return {
+  const element = peekTarget.element;
+
+  if (element) {
+    if (element instanceof AffineReference) {
+      const referenceInfo = element.referenceInfo;
+      if (referenceInfo) {
+        const { pageId: docId } = referenceInfo;
+        const info: DocPeekViewInfo = {
           type: 'doc',
           docId,
-          mode: 'edgeless',
-          xywh: refModel.xywh,
+        };
+        Object.assign(info, referenceInfo.params);
+        return info;
+      }
+    } else if ('model' in element) {
+      const blockModel = element.model;
+      if (isEmbedLinkedDocModel(blockModel)) {
+        const info: DocPeekViewInfo = {
+          type: 'doc',
+          docId: blockModel.pageId,
+        };
+        Object.assign(info, blockModel.params);
+        return info;
+      } else if (isEmbedSyncedDocModel(blockModel)) {
+        return {
+          type: 'doc',
+          docId: blockModel.pageId,
+        };
+      } else if (isSurfaceRefModel(blockModel)) {
+        const refModel = (element as SurfaceRefBlockComponent).referenceModel;
+        // refModel can be null if the reference is invalid
+        if (refModel) {
+          const docId =
+            'doc' in refModel ? refModel.doc.id : refModel.surface.doc.id;
+          return {
+            type: 'doc',
+            docId,
+            mode: 'edgeless',
+            xywh: refModel.xywh,
+          };
+        }
+      } else if (isImageBlockModel(blockModel)) {
+        return {
+          type: 'image',
+          docId: blockModel.doc.id,
+          blockIds: [blockModel.id],
+        };
+      } else if (isAIChatBlockModel(blockModel)) {
+        return {
+          type: 'ai-chat-block',
+          docId: blockModel.doc.id,
+          model: blockModel,
+          host: element.host,
         };
       }
-    } else if (isImageBlockModel(blockModel)) {
-      return {
-        type: 'image',
-        docId: blockModel.doc.id,
-        blockIds: [blockModel.id],
-      };
-    } else if (isAIChatBlockModel(blockModel)) {
-      return {
-        type: 'ai-chat-block',
-        docId: blockModel.doc.id,
-        model: blockModel,
-        host: peekTarget.host,
-      };
-    }
-  } else if (peekTarget instanceof HTMLAnchorElement) {
-    const maybeDoc = resolveLinkToDoc(peekTarget.href);
-    if (maybeDoc) {
-      const info: DocPeekViewInfo = {
-        type: 'doc',
-        docId: maybeDoc.docId,
-      };
+    } else if (element instanceof HTMLAnchorElement) {
+      const maybeDoc = resolveLinkToDoc(element.href);
+      if (maybeDoc) {
+        const info: DocPeekViewInfo = {
+          type: 'doc',
+          docId: maybeDoc.docId,
+        };
 
-      if (maybeDoc.mode) {
-        info.mode = maybeDoc.mode;
-      }
-      if (maybeDoc.blockIds?.length) {
-        info.blockIds = maybeDoc.blockIds;
-      }
-      if (maybeDoc.elementIds?.length) {
-        info.elementIds = maybeDoc.elementIds;
-      }
+        if (maybeDoc.mode) {
+          info.mode = maybeDoc.mode;
+        }
+        if (maybeDoc.blockIds?.length) {
+          info.blockIds = maybeDoc.blockIds;
+        }
+        if (maybeDoc.elementIds?.length) {
+          info.elementIds = maybeDoc.elementIds;
+        }
 
-      return info;
+        return info;
+      }
     }
-  } else if ('docId' in peekTarget) {
+  } else if ('docId' in peekTarget && peekTarget.docId) {
     return {
       type: 'doc',
       docId: peekTarget.docId,
@@ -208,7 +217,8 @@ export class PeekViewEntity extends Entity {
   // return true if the peek view will be handled
   open = async (
     target: ActivePeekView['target'],
-    template?: TemplateResult
+    template?: TemplateResult,
+    abortSignal?: AbortSignal
   ) => {
     const resolvedInfo = resolvePeekInfoFromPeekTarget(target, template);
     if (!resolvedInfo) {
@@ -220,7 +230,11 @@ export class PeekViewEntity extends Entity {
     // if there is an active peek view and it is a doc peek view, we will navigate it first
     if (active?.info.type === 'doc' && this.show$.value?.value) {
       // TODO(@pengx17): scroll to the viewing position?
-      this.workbenchService.workbench.openDoc(active.info.docId);
+      this.workbenchService.workbench.openDoc({
+        docId: active.info.docId,
+        blockIds: active.info.blockIds,
+        elementIds: active.info.elementIds,
+      });
     }
 
     this._active$.next({ target, info: resolvedInfo });
@@ -231,6 +245,24 @@ export class PeekViewEntity extends Entity {
           ? 'zoom'
           : 'fade',
     });
+
+    if (abortSignal) {
+      const abortListener = () => {
+        if (this.active$.value?.target === target) {
+          this.close();
+        }
+      };
+
+      abortSignal.addEventListener('abort', abortListener);
+
+      const showSubscription = this.show$.subscribe(v => {
+        if (!v && !abortSignal.aborted) {
+          abortSignal.removeEventListener('abort', abortListener);
+          showSubscription.unsubscribe();
+        }
+      });
+    }
+
     return firstValueFrom(race(this._active$, this.show$).pipe(map(() => {})));
   };
 

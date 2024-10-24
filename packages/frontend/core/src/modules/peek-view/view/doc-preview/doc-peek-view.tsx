@@ -96,10 +96,10 @@ function DocPeekPreviewEditor({
       if (!refNodeSlots) return;
       // doc change event inside peek view should be handled by peek view
       disposableGroup.add(
+        // todo(@pengx17): seems not working
         refNodeSlots.docLinkClicked.on(options => {
           peekView
             .open({
-              type: 'doc',
               docId: options.pageId,
               ...options.params,
             })

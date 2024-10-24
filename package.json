@@ -155,6 +155,23 @@
     "which-typed-array": "npm:@nolyfill/which-typed-array@latest",
     "@reforged/maker-appimage/@electron-forge/maker-base": "7.5.0",
     "macos-alias": "npm:@napi-rs/macos-alias@0.0.4",
-    "fs-xattr": "npm:@napi-rs/xattr@latest"
+    "fs-xattr": "npm:@napi-rs/xattr@latest",
+    "@blocksuite/affine": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/all",
+    "@blocksuite/affine-block-embed": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-embed",
+    "@blocksuite/affine-block-list": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-list",
+    "@blocksuite/affine-block-paragraph": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-paragraph",
+    "@blocksuite/affine-block-surface": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/block-surface",
+    "@blocksuite/affine-components": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/components",
+    "@blocksuite/data-view": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/data-view",
+    "@blocksuite/affine-model": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/model",
+    "@blocksuite/affine-shared": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/shared",
+    "@blocksuite/affine-widget-scroll-anchoring": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/affine/widget-scroll-anchoring",
+    "@blocksuite/blocks": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/blocks",
+    "@blocksuite/block-std": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/block-std",
+    "@blocksuite/global": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/global",
+    "@blocksuite/inline": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/inline",
+    "@blocksuite/store": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/store",
+    "@blocksuite/sync": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/framework/sync",
+    "@blocksuite/presets": "portal:/C:/Users/xp/Documents/GitHub/blocksuite/packages/presets"
   }
 }
