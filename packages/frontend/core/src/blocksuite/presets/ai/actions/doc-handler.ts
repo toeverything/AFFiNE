@@ -23,6 +23,7 @@ import {
   getSelections,
   selectAboveBlocks,
 } from '../utils/selection-utils';
+import { getTracker } from '../utils/track';
 
 export function bindTextStream(
   stream: BlockSuitePresets.TextStream,
@@ -200,6 +201,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
     if (!blocks || blocks.length === 0) return;
     const block = blocks.at(-1);
     assertExists(block);
+    getTracker(host, false).invokeAction({ action: id });
     aiPanel.toggle(block, 'placeholder');
   };
 }

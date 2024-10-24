@@ -107,6 +107,17 @@ type PaymentEvents =
   | 'confirmResumingSubscription';
 // END SECTION
 
+// SECTION: copilot events
+type CopilotEvents =
+  | 'startChat'
+  | 'resetChat'
+  | 'abortChat'
+  | 'addChatAttachment'
+  | 'invokeAction'
+  | 'discardAction'
+  | 'acceptAction';
+// END SECTION
+
 type UserEvents =
   | GeneralEvents
   | AppEvents
@@ -120,7 +131,8 @@ type UserEvents =
   | ShareEvents
   | AuthEvents
   | AccountEvents
-  | PaymentEvents;
+  | PaymentEvents
+  | CopilotEvents;
 
 interface PageDivision {
   [page: string]: {
@@ -237,6 +249,15 @@ const PageEvents = {
     },
     appTabsHeader: {
       $: ['tabAction'],
+      chat: [
+        'startChat',
+        'abortChat',
+        'resetChat',
+        'addChatAttachment',
+        'invokeAction',
+        'discardAction',
+        'acceptAction',
+      ],
     },
     header: {
       actions: [
@@ -263,10 +284,24 @@ const PageEvents = {
   },
   doc: {
     editor: {
-      slashMenu: ['linkDoc', 'createDoc', 'bookmark'],
+      slashMenu: [
+        'linkDoc',
+        'createDoc',
+        'bookmark',
+        // copilot actions
+        'invokeAction',
+        'discardAction',
+        'acceptAction',
+      ],
       atMenu: ['linkDoc'],
       quickSearch: ['createDoc'],
-      formatToolbar: ['bold'],
+      formatToolbar: [
+        'bold',
+        // copilot actions
+        'invokeAction',
+        'discardAction',
+        'acceptAction',
+      ],
       pageRef: ['navigate'],
       toolbar: ['copyBlockToLink'],
     },
@@ -274,9 +309,17 @@ const PageEvents = {
       $: ['toggle'],
     },
   },
-  // remove when type added
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  edgeless: {},
+  edgeless: {
+    editor: {
+      slashMenu: [
+        // copilot actions
+        'invokeAction',
+        'discardAction',
+        'acceptAction',
+      ],
+      formatToolbar: ['invokeAction', 'discardAction', 'acceptAction'],
+    },
+  },
   workspace: {
     $: {
       $: ['upgradeWorkspace'],
@@ -396,6 +439,31 @@ export type EventArgs = {
   export: { type: string };
   copyBlockToLink: {
     type: string;
+  };
+  // copilot
+  invokeAction: {
+    action: string;
+    retry?: boolean;
+  };
+  discardAction: {
+    action: string;
+    control:
+      | 'stop_button'
+      | 'discard_button'
+      | 'paywall'
+      | 'backend_policy'
+      | 'backend_error'
+      | 'login_required'
+      | 'retry';
+  };
+  acceptAction: {
+    action: string;
+    control:
+      | 'insert'
+      | 'insert_note'
+      | 'replace'
+      | 'as_caption'
+      | 'continue_in_chat';
   };
 };
 
