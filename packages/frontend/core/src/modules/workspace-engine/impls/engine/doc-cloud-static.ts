@@ -1,11 +1,16 @@
+import type { FetchService } from '@affine/core/modules/cloud';
+
 export class CloudStaticDocStorage {
   name = 'cloud-static';
-  constructor(private readonly workspaceId: string) {}
+  constructor(
+    private readonly workspaceId: string,
+    private readonly fetchService: FetchService
+  ) {}
 
   async pull(
     docId: string
   ): Promise<{ data: Uint8Array; state?: Uint8Array | undefined } | null> {
-    const response = await fetch(
+    const response = await this.fetchService.fetch(
       `/api/workspaces/${this.workspaceId}/docs/${docId}`,
       {
         priority: 'high',

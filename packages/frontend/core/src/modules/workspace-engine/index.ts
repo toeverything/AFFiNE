@@ -1,5 +1,6 @@
 import {
   AuthService,
+  FetchService,
   GraphQLService,
   WebSocketService,
 } from '@affine/core/modules/cloud';
@@ -33,6 +34,7 @@ export function configureBrowserWorkspaceFlavours(framework: Framework) {
       WorkspaceEngineStorageProvider,
       GraphQLService,
       WebSocketService,
+      FetchService,
     ])
     .impl(WorkspaceFlavourProvider('CLOUD'), p =>
       p.get(CloudWorkspaceFlavourProviderService)
