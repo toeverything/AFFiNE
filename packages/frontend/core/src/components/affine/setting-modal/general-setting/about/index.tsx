@@ -5,13 +5,16 @@ import {
   SettingWrapper,
 } from '@affine/component/setting-components';
 import { useAppUpdater } from '@affine/core/components/hooks/use-app-updater';
+import {
+  appIconMap,
+  appNames,
+} from '@affine/core/modules/open-in-app/constant';
 import { useI18n } from '@affine/i18n';
 import { mixpanel } from '@affine/track';
 import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons/rc';
 import { useCallback } from 'react';
 
 import { useAppSettingHelper } from '../../../../../components/hooks/affine/use-app-setting-helper';
-import { appIconMap, appNames } from '../../../../../desktop/pages/open-app';
 import { popupWindow } from '../../../../../utils';
 import { relatedLinks } from './config';
 import * as styles from './style.css';

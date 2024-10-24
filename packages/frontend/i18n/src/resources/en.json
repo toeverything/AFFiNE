@@ -478,6 +478,7 @@
   "com.affine.filterList.button.add": "Add filter",
   "com.affine.header.option.add-tag": "Add tag",
   "com.affine.header.option.duplicate": "Duplicate",
+  "com.affine.header.option.open-in-desktop": "Open in desktop app",
   "com.affine.header.option.view-frame": "View all frames",
   "com.affine.header.option.view-toc": "View table of contents",
   "com.affine.helpIsland.contactUs": "Contact us",

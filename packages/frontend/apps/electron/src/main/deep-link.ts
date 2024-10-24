@@ -6,6 +6,7 @@ import { buildType, isDev } from './config';
 import { logger } from './logger';
 import { uiSubjects } from './ui';
 import {
+  addTab,
   getMainWindow,
   openUrlInHiddenWindow,
   openUrlInMainWindow,
@@ -80,6 +81,23 @@ async function handleAffineUrl(url: string) {
     uiSubjects.authenticationRequest$.next({
       method,
       payload,
+    });
+  } else if (
+    urlObj.searchParams.get('new-tab') &&
+    urlObj.pathname.startsWith('/workspace')
+  ) {
+    // basename of /workspace/xxx/yyy is /workspace/xxx
+    const basename = urlObj.pathname.split('/').slice(0, 3).join('/');
+    const pathname = '/' + urlObj.pathname.split('/').slice(3).join('/');
+
+    await addTab({
+      basename,
+      show: true,
+      view: {
+        path: {
+          pathname: pathname,
+        },
+      },
     });
   } else {
     const hiddenWindow = urlObj.searchParams.get('hidden')

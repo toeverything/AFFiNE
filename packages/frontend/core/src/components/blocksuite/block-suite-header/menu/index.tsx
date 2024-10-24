@@ -19,6 +19,7 @@ import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { useDetailPageHeaderResponsive } from '@affine/core/desktop/pages/workspace/detail-page/use-header-responsive';
 import { DocInfoService } from '@affine/core/modules/doc-info';
 import { EditorService } from '@affine/core/modules/editor';
+import { getOpenUrlInDesktopAppLink } from '@affine/core/modules/open-in-app/utils';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { WorkspaceFlavour } from '@affine/env/workspace';
@@ -33,6 +34,7 @@ import {
   HistoryIcon,
   ImportIcon,
   InformationIcon,
+  LocalWorkspaceIcon,
   OpenInNewIcon,
   PageIcon,
   SaveIcon,
@@ -258,6 +260,13 @@ export const PageHeaderMenuButton = ({
     </>
   );
 
+  const onOpenInDesktop = useCallback(() => {
+    const url = getOpenUrlInDesktopAppLink(window.location.href, true);
+    if (url) {
+      window.open(url, '_blank');
+    }
+  }, []);
+
   const EditMenu = (
     <>
       {showResponsiveMenu ? ResponsiveMenuItems : null}
@@ -362,6 +371,15 @@ export const PageHeaderMenuButton = ({
         data-testid="editor-option-menu-delete"
         onSelect={handleOpenTrashModal}
       />
+      {BUILD_CONFIG.isWeb ? (
+        <MenuItem
+          prefixIcon={<LocalWorkspaceIcon />}
+          data-testid="editor-option-menu-link"
+          onSelect={onOpenInDesktop}
+        >
+          {t['com.affine.header.option.open-in-desktop']()}
+        </MenuItem>
+      ) : null}
     </>
   );
   if (isInTrash) {
