@@ -474,8 +474,7 @@ test.describe('chat with block', () => {
 
       const processes = ['Clearer', 'Remove background', 'Convert to sticker'];
       for (const process of processes) {
-        // skip by default, image processing depends on image content
-        test.skip(`image processing ${process}`, async ({ page }) => {
+        test(`image processing ${process}`, async ({ page }) => {
           await page
             .waitForSelector('.ai-item-image-processing')
             .then(i => i.hover());
@@ -492,10 +491,7 @@ test.describe('chat with block', () => {
 
       const filters = ['Clay', 'Sketch', 'Anime', 'Pixel'];
       for (const filter of filters) {
-        // skip by default, image generate is very slow
-        test.skip(`ai image ${filter.toLowerCase()} filter`, async ({
-          page,
-        }) => {
+        test(`ai image ${filter.toLowerCase()} filter`, async ({ page }) => {
           await page
             .waitForSelector('.ai-item-ai-image-filter')
             .then(i => i.hover());
