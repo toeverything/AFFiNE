@@ -2,7 +2,11 @@ import { toast } from '@affine/component';
 import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import { EditorSettingService } from '@affine/core/modules/editor-settting';
 import { WorkbenchService } from '@affine/core/modules/workbench';
-import type { DocMode } from '@blocksuite/affine/blocks';
+import {
+  type DocMode,
+  openFileOrFiles,
+  ZipTransformer,
+} from '@blocksuite/affine/blocks';
 import type { DocCollection } from '@blocksuite/affine/store';
 import { type DocProps, DocsService, useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
@@ -98,12 +102,42 @@ export const usePageHelper = (docCollection: DocCollection) => {
     [docCollection, workbench]
   );
 
+  const importSnapshotAndOpen = useCallback(async () => {
+    try {
+      const file = await openFileOrFiles({ acceptType: 'Zip' });
+      if (!file) return;
+
+      const importedDocs = await ZipTransformer.importDocs(docCollection, file);
+      if (importedDocs.length === 0) {
+        toast('No valid documents found in the imported file.');
+        return;
+      }
+
+      toast(`Successfully imported ${importedDocs.length} doc(s).`);
+
+      if (importedDocs.length > 1) {
+        workbench.openAll();
+      } else if (importedDocs[0]?.id) {
+        workbench.openDoc(importedDocs[0].id);
+      }
+    } catch (error) {
+      console.error('Error importing snapshot:', error);
+      toast('Failed to import snapshot. Please try again.');
+    }
+  }, [docCollection, workbench]);
+
   return useMemo(() => {
     return {
       createPage: (mode?: DocMode, open?: boolean | 'new-tab') =>
         createPageAndOpen(mode, open),
       createEdgeless: createEdgelessAndOpen,
       importFile: importFileAndOpen,
+      importSnapshotFile: importSnapshotAndOpen,
     };
-  }, [createEdgelessAndOpen, createPageAndOpen, importFileAndOpen]);
+  }, [
+    createEdgelessAndOpen,
+    createPageAndOpen,
+    importFileAndOpen,
+    importSnapshotAndOpen,
+  ]);
 };

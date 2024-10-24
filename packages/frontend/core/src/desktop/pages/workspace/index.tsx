@@ -152,19 +152,12 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
         })
       );
       window.exportWorkspaceSnapshot = async (docs?: string[]) => {
-        const zip = await ZipTransformer.exportDocs(
+        await ZipTransformer.exportDocs(
           workspace.docCollection,
           Array.from(workspace.docCollection.docs.values())
             .filter(doc => (docs ? docs.includes(doc.id) : true))
             .map(doc => doc.getDoc())
         );
-        const url = URL.createObjectURL(zip);
-        // download url
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${workspace.docCollection.meta.name}.zip`;
-        a.click();
-        URL.revokeObjectURL(url);
       };
       window.importWorkspaceSnapshot = async () => {
         const input = document.createElement('input');

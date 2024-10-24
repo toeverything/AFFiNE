@@ -71,3 +71,6 @@ globalStyle(`${appImageRow} .right-col`, {
   paddingLeft: '0',
   paddingRight: '20px',
 });
+export const snapshotImportExportRow = style({
+  marginTop: '12px',
+});
