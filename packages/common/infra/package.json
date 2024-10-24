@@ -14,7 +14,7 @@
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@blocksuite/affine": "0.17.19",
+    "@blocksuite/affine": "0.17.20",
     "@datastructures-js/binary-search-tree": "^5.3.2",
     "foxact": "^0.2.33",
     "fractional-indexing": "^3.2.0",

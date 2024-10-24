@@ -62,7 +62,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@blocksuite/affine": "0.17.19",
+    "@blocksuite/affine": "0.17.20",
     "@blocksuite/icons": "2.1.69",
     "@chromatic-com/storybook": "^3.0.0",
     "@storybook/addon-essentials": "^8.2.9",
