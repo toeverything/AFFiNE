@@ -24,6 +24,7 @@ function validateEmail(email: string) {
 export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
   setAuthData: setAuthState,
   onSkip,
+  redirectUrl,
 }) => {
   const t = useI18n();
   const authService = useService(AuthService);
@@ -59,14 +60,24 @@ export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
               email,
             });
           } else {
-            await authService.sendEmailMagicLink(email, verifyToken, challenge);
+            await authService.sendEmailMagicLink(
+              email,
+              verifyToken,
+              challenge,
+              redirectUrl
+            );
             setAuthState({
               state: 'afterSignInSendEmail',
               email,
             });
           }
         } else {
-          await authService.sendEmailMagicLink(email, verifyToken, challenge);
+          await authService.sendEmailMagicLink(
+            email,
+            verifyToken,
+            challenge,
+            redirectUrl
+          );
           setAuthState({
             state: 'afterSignUpSendEmail',
             email,
@@ -87,6 +98,7 @@ export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
     authService,
     challenge,
     email,
+    redirectUrl,
     refreshChallenge,
     setAuthState,
     verifyToken,
@@ -99,7 +111,7 @@ export const SignIn: FC<AuthPanelProps<'signIn'>> = ({
         subTitle={t['com.affine.brand.affineCloud']()}
       />
 
-      <OAuth />
+      <OAuth redirectUrl={redirectUrl} />
 
       <div className={style.authModalContent}>
         <AuthInput

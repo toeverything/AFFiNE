@@ -19,7 +19,7 @@ import { Captcha, useCaptcha } from './use-captcha';
 
 export const AfterSignUpSendEmail: FC<
   AuthPanelProps<'afterSignUpSendEmail'>
-> = ({ setAuthData, email }) => {
+> = ({ setAuthData, email, redirectUrl }) => {
   const [resendCountDown, setResendCountDown] = useState(60);
 
   useEffect(() => {
@@ -42,7 +42,12 @@ export const AfterSignUpSendEmail: FC<
     setIsSending(true);
     try {
       if (verifyToken) {
-        await authService.sendEmailMagicLink(email, verifyToken, challenge);
+        await authService.sendEmailMagicLink(
+          email,
+          verifyToken,
+          challenge,
+          redirectUrl
+        );
       }
       setResendCountDown(60);
     } catch (err) {
@@ -52,7 +57,7 @@ export const AfterSignUpSendEmail: FC<
       });
     }
     setIsSending(false);
-  }, [authService, challenge, email, verifyToken]);
+  }, [authService, challenge, email, redirectUrl, verifyToken]);
 
   return (
     <>

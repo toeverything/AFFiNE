@@ -44,6 +44,10 @@ export const PageNotFound = ({
     apis?.ui.pingAppLayoutReady().catch(console.error);
   }, []);
 
+  // not using workbench location or router location deliberately
+  // strip the origin
+  const currentUrl = window.location.href.replace(window.location.origin, '');
+
   return (
     <>
       {noPermission ? (
@@ -51,7 +55,7 @@ export const PageNotFound = ({
           user={account}
           onBack={handleBackButtonClick}
           onSignOut={handleOpenSignOutModal}
-          signInComponent={<SignIn />}
+          signInComponent={<SignIn redirectUrl={currentUrl} />}
         />
       ) : (
         <NotFoundPage

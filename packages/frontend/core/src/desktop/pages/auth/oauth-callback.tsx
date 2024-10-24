@@ -1,5 +1,5 @@
 import { useService } from '@toeverything/infra';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   type LoaderFunction,
   redirect,
@@ -62,9 +62,17 @@ export const Component = () => {
   const auth = useService(AuthService);
   const data = useLoaderData() as LoaderData;
 
+  // loader data from useLoaderData is not reactive, so that we can safely
+  // assume the effect below is only triggered once
+  const triggeredRef = useRef(false);
+
   const nav = useNavigate();
 
   useEffect(() => {
+    if (triggeredRef.current) {
+      return;
+    }
+    triggeredRef.current = true;
     auth
       .signInOauth(data.code, data.state, data.provider)
       .then(({ redirectUri }) => {

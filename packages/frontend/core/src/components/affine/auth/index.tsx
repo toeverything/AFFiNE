@@ -30,6 +30,7 @@ export type AuthPanelProps<State extends AuthAtomData['state']> = {
     updates: { state: T } & Difference<AuthAtomType<State>, AuthAtomType<T>>
   ) => void;
   onSkip?: () => void;
+  redirectUrl?: string;
 } & Extract<AuthAtomData, { state: State }>;
 
 const config: {
@@ -58,7 +59,13 @@ export function AuthModal() {
   );
 }
 
-export function AuthPanel({ onSkip }: { onSkip?: () => void }) {
+export function AuthPanel({
+  onSkip,
+  redirectUrl,
+}: {
+  onSkip?: () => void;
+  redirectUrl?: string | null;
+}) {
   const t = useI18n();
   const [authAtomValue, setAuthAtom] = useAtom(authAtom);
   const authService = useService(AuthService);
@@ -98,6 +105,7 @@ export function AuthPanel({ onSkip }: { onSkip?: () => void }) {
   const props = {
     ...authAtomValue,
     onSkip,
+    redirectUrl,
     setAuthData,
   };
 

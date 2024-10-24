@@ -29,7 +29,7 @@ const OAuthProviderMap: Record<
   },
 };
 
-export function OAuth() {
+export function OAuth({ redirectUrl }: { redirectUrl?: string }) {
   const serverConfig = useService(ServerConfigService).serverConfig;
   const oauth = useLiveData(serverConfig.features$.map(r => r?.oauth));
   const oauthProviders = useLiveData(
@@ -41,25 +41,43 @@ export function OAuth() {
   }
 
   return oauthProviders?.map(provider => (
-    <OAuthProvider key={provider} provider={provider} />
+    <OAuthProvider
+      key={provider}
+      provider={provider}
+      redirectUrl={redirectUrl}
+    />
   ));
 }
 
-function OAuthProvider({ provider }: { provider: OAuthProviderType }) {
+function OAuthProvider({
+  provider,
+  redirectUrl,
+}: {
+  provider: OAuthProviderType;
+  redirectUrl?: string;
+}) {
   const { icon } = OAuthProviderMap[provider];
 
   const onClick = useCallback(() => {
-    let oauthUrl =
-      (BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
-        ? BUILD_CONFIG.serverUrlPrefix
-        : '') + `/oauth/login?provider=${provider}`;
+    const params = new URLSearchParams();
 
-    if (BUILD_CONFIG.isElectron) {
-      oauthUrl += `&client=${appInfo?.schema}`;
+    params.set('provider', provider);
+
+    if (redirectUrl) {
+      params.set('redirect_uri', redirectUrl);
     }
 
+    if (BUILD_CONFIG.isElectron && appInfo) {
+      params.set('client', appInfo.schema);
+    }
+
+    const oauthUrl =
+      (BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
+        ? BUILD_CONFIG.serverUrlPrefix
+        : '') + `/oauth/login?${params.toString()}`;
+
     popupWindow(oauthUrl);
-  }, [provider]);
+  }, [provider, redirectUrl]);
 
   return (
     <Button
