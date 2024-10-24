@@ -343,6 +343,87 @@ test.describe('chat with block', () => {
     await loginUser(page, user);
   });
 
+  const collectTextAnswer = async (page: Page) => {
+    // wait ai response
+    await page.waitForSelector(
+      'affine-ai-panel-widget .response-list-container',
+      { timeout: 1000 * 60 }
+    );
+    const answer = await page.waitForSelector(
+      'affine-ai-panel-widget ai-panel-answer editor-host'
+    );
+    return answer.innerText();
+  };
+
+  const collectImageAnswer = async (page: Page, timeout = 1000 * 10) => {
+    // wait ai response
+    await page.waitForSelector(
+      'affine-ai-panel-widget .response-list-container',
+      { timeout }
+    );
+    const answer = await page.waitForSelector(
+      'affine-ai-panel-widget .ai-answer-image img'
+    );
+    return answer.getAttribute('src');
+  };
+
+  test.describe('chat with text', () => {
+    const pasteTextToPageEditor = async (page: Page, content: string) => {
+      await focusToEditor(page);
+      await page.keyboard.type(content);
+    };
+
+    test.beforeEach(async ({ page }) => {
+      await page.reload();
+      await clickSideBarAllPageButton(page);
+      await page.waitForTimeout(200);
+      await createLocalWorkspace({ name: 'test' }, page);
+      await clickNewPageButton(page);
+      await pasteTextToPageEditor(page, 'hello');
+    });
+
+    test.beforeEach(async ({ page }) => {
+      await page.waitForSelector('affine-paragraph').then(i => i.click());
+      await page.keyboard.press('ControlOrMeta+A');
+      await page
+        .waitForSelector('page-editor editor-toolbar ask-ai-button')
+        .then(b => b.click());
+    });
+
+    const options = [
+      // review with ai
+      'Fix spelling',
+      'Fix Grammar',
+      // edit with ai
+      'Explain selection',
+      'Improve writing',
+      'Make it longer',
+      'Make it shorter',
+      'Continue writing',
+      // generate with ai
+      'Summarize',
+      'Generate headings',
+      'Generate outline',
+      'Find actions',
+      // draft with ai
+      'Write an article about this',
+      'Write a tweet about this',
+      'Write a poem about this',
+      'Write a blog post about this',
+      'Brainstorm ideas about this',
+    ];
+    for (const option of options) {
+      test.only(option, async ({ page }) => {
+        await page
+          .waitForSelector(
+            `.ai-item-${option.replaceAll(' ', '-').toLowerCase()}`
+          )
+          .then(i => i.click());
+        expect(await collectTextAnswer(page)).toBeTruthy();
+      });
+    }
+  });
+
   test.describe('chat with image block', () => {
     const pasteImageToPageEditor = async (page: Page) => {
       await page.evaluate(async () => {
@@ -368,29 +449,6 @@ test.describe('chat with block', () => {
       await clickNewPageButton(page);
       await pasteImageToPageEditor(page);
     });
-
-    const collectTextAnswer = async (page: Page) => {
-      // wait ai response
-      await page.waitForSelector(
-        'affine-ai-panel-widget .response-list-container'
-      );
-      const answer = await page.waitForSelector(
-        'affine-ai-panel-widget ai-panel-answer editor-host'
-      );
-      return answer.innerText();
-    };
-
-    const collectImageAnswer = async (page: Page, timeout = 1000 * 10) => {
-      // wait ai response
-      await page.waitForSelector(
-        'affine-ai-panel-widget .response-list-container',
-        { timeout }
-      );
-      const answer = await page.waitForSelector(
-        'affine-ai-panel-widget .ai-answer-image img'
-      );
-      return answer.getAttribute('src');
-    };
 
     test.describe('page mode', () => {
       test.beforeEach(async ({ page }) => {
