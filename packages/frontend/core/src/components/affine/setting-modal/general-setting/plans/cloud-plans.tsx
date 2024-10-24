@@ -174,6 +174,9 @@ export const CloudPlans = () => {
   const prices = useLiveData(subscriptionService.prices.prices$);
   const loggedIn = useLiveData(authService.session.status$) === 'authenticated';
   const proSubscription = useLiveData(subscriptionService.subscription.pro$);
+  const isOnetimePro = useLiveData(
+    subscriptionService.subscription.isOnetimePro$
+  );
 
   const [recurring, setRecurring] = useState<SubscriptionRecurring>(
     proSubscription?.recurring ?? SubscriptionRecurring.Yearly
@@ -334,7 +337,7 @@ export const CloudPlans = () => {
       toggle={cloudToggle}
       scroll={cloudScroll}
       scrollRef={scrollWrapper}
-      lifetime={<LifetimePlan />}
+      lifetime={isOnetimePro ? null : <LifetimePlan />}
     />
   );
 };

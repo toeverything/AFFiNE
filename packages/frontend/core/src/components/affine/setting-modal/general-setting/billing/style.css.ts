@@ -21,6 +21,7 @@ export const currentPlan = style({
   flex: '1 0 0',
 });
 export const planAction = style({
+  width: 'auto',
   marginTop: '8px',
 });
 export const planPrice = style({
