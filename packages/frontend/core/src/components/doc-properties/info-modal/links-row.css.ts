@@ -1,13 +1,6 @@
 import { cssVar } from '@toeverything/theme';
 import { globalStyle, style } from '@vanilla-extract/css';
 
-export const title = style({
-  fontSize: cssVar('fontSm'),
-  fontWeight: '500',
-  color: cssVar('textSecondaryColor'),
-  padding: '6px',
-});
-
 export const wrapper = style({
   width: '100%',
   borderRadius: 4,
@@ -15,11 +8,7 @@ export const wrapper = style({
   display: 'flex',
   flexDirection: 'row',
   alignItems: 'center',
-  gap: 2,
-  padding: '6px',
-  ':hover': {
-    backgroundColor: cssVar('hoverColor'),
-  },
+  padding: 4,
 });
 
 globalStyle(`${wrapper} svg`, {

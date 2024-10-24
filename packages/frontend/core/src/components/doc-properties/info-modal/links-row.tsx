@@ -1,3 +1,4 @@
+import { PropertyCollapsibleSection } from '@affine/component';
 import type { Backlink, Link } from '@affine/core/modules/doc-link';
 
 import { AffinePageReference } from '../../affine/reference-link';
@@ -15,10 +16,10 @@ export const LinksRow = ({
   onClick?: () => void;
 }) => {
   return (
-    <div className={className}>
-      <div className={styles.title}>
-        {label} · {references.length}
-      </div>
+    <PropertyCollapsibleSection
+      title={`${label} · ${references.length}`}
+      className={className}
+    >
       {references.map((link, index) => (
         <AffinePageReference
           key={index}
@@ -29,6 +30,6 @@ export const LinksRow = ({
           )}
         />
       ))}
-    </div>
+    </PropertyCollapsibleSection>
   );
 };

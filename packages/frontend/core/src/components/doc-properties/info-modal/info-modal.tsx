@@ -4,10 +4,14 @@ import {
   type InlineEditHandle,
   Menu,
   Modal,
-  PropertyCollapsible,
+  PropertyCollapsibleContent,
+  PropertyCollapsibleSection,
   Scrollable,
 } from '@affine/component';
-import { DocInfoService } from '@affine/core/modules/doc-info';
+import {
+  DocDatabaseBacklinkInfo,
+  DocInfoService,
+} from '@affine/core/modules/doc-info';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
@@ -27,7 +31,6 @@ import { CreatePropertyMenuItems } from '../menu/create-doc-property';
 import { DocPropertyRow } from '../table';
 import * as styles from './info-modal.css';
 import { LinksRow } from './links-row';
-import { TimeRow } from './time-row';
 
 export const InfoModal = () => {
   const modal = useService(DocInfoService).modal;
@@ -119,9 +122,7 @@ export const InfoTable = ({
   );
 
   return (
-    <div>
-      <TimeRow className={styles.timeRow} docId={docId} />
-      <Divider size="thinner" />
+    <>
       {backlinks && backlinks.length > 0 ? (
         <>
           <LinksRow
@@ -142,50 +143,56 @@ export const InfoTable = ({
           <Divider size="thinner" />
         </>
       ) : null}
-      <PropertyCollapsible
-        className={styles.tableBodyRoot}
-        collapseButtonText={({ hide, isCollapsed }) =>
-          isCollapsed
-            ? hide === 1
-              ? t['com.affine.page-properties.more-property.one']({
-                  count: hide.toString(),
-                })
-              : t['com.affine.page-properties.more-property.more']({
-                  count: hide.toString(),
-                })
-            : hide === 1
-              ? t['com.affine.page-properties.hide-property.one']({
-                  count: hide.toString(),
-                })
-              : t['com.affine.page-properties.hide-property.more']({
-                  count: hide.toString(),
-                })
-        }
+      <PropertyCollapsibleSection
+        title={t.t('com.affine.workspace.properties')}
       >
-        {properties.map(property => (
-          <DocPropertyRow
-            key={property.id}
-            propertyInfo={property}
-            defaultOpenEditMenu={newPropertyId === property.id}
-          />
-        ))}
-        <Menu
-          items={<CreatePropertyMenuItems onCreated={setNewPropertyId} />}
-          contentOptions={{
-            onClick(e) {
-              e.stopPropagation();
-            },
-          }}
+        <PropertyCollapsibleContent
+          className={styles.tableBodyRoot}
+          collapseButtonText={({ hide, isCollapsed }) =>
+            isCollapsed
+              ? hide === 1
+                ? t['com.affine.page-properties.more-property.one']({
+                    count: hide.toString(),
+                  })
+                : t['com.affine.page-properties.more-property.more']({
+                    count: hide.toString(),
+                  })
+              : hide === 1
+                ? t['com.affine.page-properties.hide-property.one']({
+                    count: hide.toString(),
+                  })
+                : t['com.affine.page-properties.hide-property.more']({
+                    count: hide.toString(),
+                  })
+          }
         >
-          <Button
-            variant="plain"
-            prefix={<PlusIcon />}
-            className={styles.addPropertyButton}
+          {properties.map(property => (
+            <DocPropertyRow
+              key={property.id}
+              propertyInfo={property}
+              defaultOpenEditMenu={newPropertyId === property.id}
+            />
+          ))}
+          <Menu
+            items={<CreatePropertyMenuItems onCreated={setNewPropertyId} />}
+            contentOptions={{
+              onClick(e) {
+                e.stopPropagation();
+              },
+            }}
           >
-            {t['com.affine.page-properties.add-property']()}
-          </Button>
-        </Menu>
-      </PropertyCollapsible>
-    </div>
+            <Button
+              variant="plain"
+              prefix={<PlusIcon />}
+              className={styles.addPropertyButton}
+            >
+              {t['com.affine.page-properties.add-property']()}
+            </Button>
+          </Menu>
+        </PropertyCollapsibleContent>
+      </PropertyCollapsibleSection>
+      <Divider size="thinner" />
+      <DocDatabaseBacklinkInfo />
+    </>
   );
 };

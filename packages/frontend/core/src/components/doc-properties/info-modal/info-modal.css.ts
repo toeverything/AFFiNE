@@ -14,11 +14,15 @@ export const titleContainer = style({
   display: 'flex',
   width: '100%',
   flexDirection: 'column',
+  marginBottom: 20,
+  padding: 2,
 });
 
 export const titleStyle = style({
-  fontSize: cssVar('fontH6'),
+  fontSize: cssVar('fontH2'),
   fontWeight: '600',
+  minHeight: 42,
+  padding: 0,
 });
 
 export const rowNameContainer = style({

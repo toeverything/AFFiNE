@@ -4,6 +4,7 @@ import {
   CreatedEditedIcon,
   DateTimeIcon,
   FileIcon,
+  HistoryIcon,
   NumberIcon,
   TagIcon,
   TextIcon,
@@ -12,7 +13,7 @@ import {
 
 import { CheckboxValue } from './checkbox';
 import { CreatedByValue, UpdatedByValue } from './created-updated-by';
-import { DateValue } from './date';
+import { CreateDateValue, DateValue, UpdatedDateValue } from './date';
 import { DocPrimaryModeValue } from './doc-primary-mode';
 import { JournalValue } from './journal';
 import { NumberValue } from './number';
@@ -64,6 +65,20 @@ export const DocPropertyTypes = {
     value: UpdatedByValue,
     name: 'com.affine.page-properties.property.updatedBy',
     description: 'com.affine.page-properties.property.updatedBy.tooltips',
+  },
+  updatedAt: {
+    icon: DateTimeIcon,
+    value: UpdatedDateValue,
+    name: 'com.affine.page-properties.property.updatedAt',
+    renameable: false,
+    uniqueId: 'updatedAt',
+  },
+  createdAt: {
+    icon: HistoryIcon,
+    value: CreateDateValue,
+    name: 'com.affine.page-properties.property.createdAt',
+    renameable: false,
+    uniqueId: 'createdAt',
   },
   docPrimaryMode: {
     icon: FileIcon,

@@ -23,4 +23,14 @@ export const BUILT_IN_CUSTOM_PROPERTY_TYPE = [
     show: 'always-hide',
     index: 'a0000003',
   },
+  {
+    id: 'createdAt',
+    type: 'createdAt',
+    index: 'a0000004',
+  },
+  {
+    id: 'updatedAt',
+    type: 'updatedAt',
+    index: 'a0000005',
+  },
 ] as DocCustomPropertyInfo[];

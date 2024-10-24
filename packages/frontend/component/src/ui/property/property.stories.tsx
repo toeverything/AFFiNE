@@ -3,7 +3,8 @@ import { FrameIcon } from '@blocksuite/icons/rc';
 import { useDraggable, useDropTarget } from '../dnd';
 import { MenuItem } from '../menu';
 import {
-  PropertyCollapsible,
+  PropertyCollapsibleContent,
+  PropertyCollapsibleSection,
   PropertyName,
   PropertyRoot,
   PropertyValue,
@@ -100,9 +101,9 @@ export const HideEmptyProperty = () => {
   );
 };
 
-export const BasicPropertyCollapsible = () => {
+export const BasicPropertyCollapsibleContent = () => {
   return (
-    <PropertyCollapsible collapsible>
+    <PropertyCollapsibleContent collapsible>
       <PropertyRoot>
         <PropertyName name="Always show" icon={<FrameIcon />} />
         <PropertyValue>Value</PropertyValue>
@@ -115,13 +116,24 @@ export const BasicPropertyCollapsible = () => {
         <PropertyName name="Hide" icon={<FrameIcon />} />
         <PropertyValue>Value</PropertyValue>
       </PropertyRoot>
-    </PropertyCollapsible>
+    </PropertyCollapsibleContent>
+  );
+};
+
+export const BasicPropertyCollapsibleSection = () => {
+  return (
+    <PropertyCollapsibleSection
+      icon={<FrameIcon />}
+      title="Collapsible Section"
+    >
+      <BasicPropertyCollapsibleContent />
+    </PropertyCollapsibleSection>
   );
 };
 
 export const PropertyCollapsibleCustomButton = () => {
   return (
-    <PropertyCollapsible
+    <PropertyCollapsibleContent
       collapsible
       collapseButtonText={({ hide, isCollapsed }) =>
         `${isCollapsed ? 'Show' : 'Hide'} ${hide} properties`
@@ -139,6 +151,6 @@ export const PropertyCollapsibleCustomButton = () => {
         <PropertyName name="Hide" icon={<FrameIcon />} />
         <PropertyValue>Value</PropertyValue>
       </PropertyRoot>
-    </PropertyCollapsible>
+    </PropertyCollapsibleContent>
   );
 };

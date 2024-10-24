@@ -1,7 +1,7 @@
 import type { DocCustomPropertyInfo } from '@toeverything/infra';
 
 export interface PropertyValueProps {
-  propertyInfo: DocCustomPropertyInfo;
+  propertyInfo?: DocCustomPropertyInfo;
   value: any;
   onChange: (value: any) => void;
 }

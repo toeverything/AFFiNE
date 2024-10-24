@@ -1,8 +1,8 @@
 import { Menu } from '@affine/component';
-import { useCatchEventCallback } from '@affine/core/components/hooks/use-catch-event-hook';
+import { TagItem as TagItemComponent } from '@affine/component/ui/tags';
 import type { Tag } from '@affine/core/modules/tag';
 import { stopPropagation } from '@affine/core/utils';
-import { CloseIcon, MoreHorizontalIcon } from '@blocksuite/icons/rc';
+import { MoreHorizontalIcon } from '@blocksuite/icons/rc';
 import { LiveData, useLiveData } from '@toeverything/infra';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
@@ -27,77 +27,24 @@ interface TagItemProps {
   style?: React.CSSProperties;
 }
 
-export const TempTagItem = ({
-  value,
-  color,
-  maxWidth = '100%',
-}: {
-  value: string;
-  color: string;
-  maxWidth?: number | string;
-}) => {
-  return (
-    <div className={styles.tag} title={value}>
-      <div style={{ maxWidth: maxWidth }} className={styles.tagInline}>
-        <div
-          className={styles.tagIndicator}
-          style={{
-            backgroundColor: color,
-          }}
-        />
-        <div className={styles.tagLabel}>{value}</div>
-      </div>
-    </div>
-  );
-};
-
-export const TagItem = ({
-  tag,
-  idx,
-  mode,
-  focused,
-  onRemoved,
-  style,
-  maxWidth,
-}: TagItemProps) => {
+export const TagItem = ({ tag, ...props }: TagItemProps) => {
   const value = useLiveData(tag?.value$);
   const color = useLiveData(tag?.color$);
-  const handleRemove = useCatchEventCallback(() => {
-    onRemoved?.();
-  }, [onRemoved]);
+
+  if (!tag || !value || !color) {
+    return null;
+  }
+
   return (
-    <div
-      data-testid="page-tag"
-      className={styles.tag}
-      data-idx={idx}
-      data-tag-id={tag?.id}
-      data-tag-value={value}
-      title={value}
-      style={style}
-    >
-      <div
-        style={{ maxWidth: maxWidth }}
-        data-focused={focused}
-        className={mode === 'inline' ? styles.tagInline : styles.tagListItem}
-      >
-        <div
-          className={styles.tagIndicator}
-          style={{
-            backgroundColor: color,
-          }}
-        />
-        <div className={styles.tagLabel}>{value}</div>
-        {onRemoved ? (
-          <div
-            data-testid="remove-tag-button"
-            className={styles.tagRemove}
-            onClick={handleRemove}
-          >
-            <CloseIcon />
-          </div>
-        ) : null}
-      </div>
-    </div>
+    <TagItemComponent
+      {...props}
+      mode={props.mode === 'inline' ? 'inline-tag' : 'list-tag'}
+      tag={{
+        id: tag?.id,
+        value: value,
+        color: color,
+      }}
+    />
   );
 };
 

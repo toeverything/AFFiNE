@@ -5,7 +5,10 @@ import {
   openJournalsPage,
 } from '@affine-test/kit/utils/load-page';
 import {
+  addDatabase,
+  addDatabaseRow,
   clickNewPageButton,
+  createLinkedPage,
   dragTo,
   waitForEditorLoad,
   waitForEmptyEditor,
@@ -118,11 +121,13 @@ test('property table reordering', async ({ page }) => {
     'bottom'
   );
 
-  // new order should be Doc mode, (Tags), Number, Date, Checkbox, Text
+  // new order should be Doc mode, (Tags), Created at, Updated at, Number, Date, Checkbox, Text
   for (const [index, property] of [
     'Tags',
     'Doc mode',
     'Journal',
+    'Created at',
+    'Updated at',
     'Number',
     'Date',
     'Checkbox',
@@ -163,6 +168,8 @@ test('page info show more will show all properties', async ({ page }) => {
     'Tags',
     'Doc mode',
     'Journal',
+    'Created at',
+    'Updated at',
     'Text',
     'Number',
     'Date',
@@ -260,4 +267,90 @@ test('delete property via property popup', async ({ page }) => {
   await expect(
     page.locator('[data-testid="http://localhost:8080/"]:has-text("Text")')
   ).not.toBeVisible();
+});
+
+test('workspace properties can be collapsed', async ({ page }) => {
+  await expect(page.getByTestId('doc-property-row').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Workspace properties' }).click();
+  await expect(page.getByTestId('doc-property-row').first()).not.toBeVisible();
+  await page.getByRole('button', { name: 'Workspace properties' }).click();
+  await expect(page.getByTestId('doc-property-row').first()).toBeVisible();
+});
+
+// todo: add more tests for database backlink info for different cell types
+test('can show database backlink info', async ({ page }) => {
+  const pageTitle = 'some page title';
+  await clickNewPageButton(page, pageTitle);
+  await page.keyboard.press('Enter');
+
+  const databaseTitle = 'some database title';
+  await addDatabase(page, databaseTitle);
+
+  await expect(page.locator('affine-database-title')).toContainText(
+    databaseTitle
+  );
+
+  await expect(
+    page.locator(`affine-database-title:has-text("${databaseTitle}")`)
+  ).toBeVisible();
+
+  await addDatabaseRow(page, databaseTitle);
+
+  // the new row's title cell should have been focused at the point of adding the row
+  await createLinkedPage(page, 'linked page');
+
+  // change status label
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('Done');
+  await page
+    .locator('affine-multi-tag-select .select-option:has-text("Done")')
+    .click();
+
+  // go back to title cell
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('Enter');
+
+  // goto the linked page
+  await page.locator('.affine-reference-title:has-text("linked page")').click();
+
+  // ensure the page properties are visible
+  await ensurePagePropertiesVisible(page);
+
+  // database backlink property should be rendered, but collapsed
+  const linkedDatabaseSection = page
+    .getByTestId('property-collapsible-section')
+    .filter({
+      hasText: 'some database title',
+    });
+  await expect(linkedDatabaseSection).toBeVisible();
+
+  await expect(
+    linkedDatabaseSection.getByTestId('property-collapsible-section-content')
+  ).not.toBeVisible();
+
+  await expect(
+    linkedDatabaseSection.locator(
+      `.affine-reference-title:has-text("${pageTitle}")`
+    )
+  ).toBeVisible();
+
+  // expand the linked database section
+  await linkedDatabaseSection
+    .getByTestId('property-collapsible-section-trigger')
+    .click();
+
+  await expect(
+    linkedDatabaseSection.getByTestId('property-collapsible-section-content')
+  ).toBeVisible();
+
+  await expect(
+    linkedDatabaseSection
+      .getByTestId('database-backlink-cell')
+      .getByTestId('inline-tags-list')
+      .filter({
+        hasText: 'Done',
+      })
+  ).toBeVisible();
 });

@@ -1,5 +1,10 @@
 import type { Edge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
-import { ArrowDownSmallIcon, ArrowUpSmallIcon } from '@blocksuite/icons/rc';
+import {
+  ArrowDownSmallIcon,
+  ArrowUpSmallIcon,
+  ToggleExpandIcon,
+} from '@blocksuite/icons/rc';
+import * as Collapsible from '@radix-ui/react-collapsible';
 import clsx from 'clsx';
 import {
   createContext,
@@ -24,7 +29,92 @@ const PropertyTableContext = createContext<{
   showAllHide: boolean;
 } | null>(null);
 
-export const PropertyCollapsible = forwardRef<
+export const PropertyCollapsibleSection = forwardRef<
+  HTMLDivElement,
+  PropsWithChildren<{
+    defaultCollapsed?: boolean;
+    icon?: ReactNode;
+    title: ReactNode;
+    suffix?: ReactNode;
+    collapsed?: boolean;
+    onCollapseChange?: (collapsed: boolean) => void;
+  }> &
+    HTMLProps<HTMLDivElement>
+>(
+  (
+    {
+      children,
+      defaultCollapsed = false,
+      collapsed,
+      onCollapseChange,
+      icon,
+      title,
+      suffix,
+      className,
+      ...props
+    },
+    ref
+  ) => {
+    const [internalCollapsed, setInternalCollapsed] =
+      useState(defaultCollapsed);
+
+    const handleCollapse = useCallback(
+      (open: boolean) => {
+        setInternalCollapsed(!open);
+        onCollapseChange?.(!open);
+      },
+      [onCollapseChange]
+    );
+
+    const finalCollapsed =
+      collapsed !== undefined ? collapsed : internalCollapsed;
+
+    return (
+      <Collapsible.Root
+        {...props}
+        ref={ref}
+        className={clsx(styles.section, className)}
+        open={!finalCollapsed}
+        onOpenChange={handleCollapse}
+        data-testid="property-collapsible-section"
+      >
+        <div
+          className={styles.sectionHeader}
+          data-testid="property-collapsible-section-header"
+        >
+          <Collapsible.Trigger
+            role="button"
+            data-testid="property-collapsible-section-trigger"
+            className={styles.sectionHeaderTrigger}
+          >
+            {icon && <div className={styles.sectionHeaderIcon}>{icon}</div>}
+            <div
+              data-collapsed={finalCollapsed}
+              className={styles.sectionHeaderName}
+            >
+              {title}
+            </div>
+            <ToggleExpandIcon
+              className={styles.sectionCollapsedIcon}
+              data-collapsed={finalCollapsed}
+            />
+          </Collapsible.Trigger>
+          {suffix}
+        </div>
+        <Collapsible.Content
+          data-testid="property-collapsible-section-content"
+          className={styles.sectionContent}
+        >
+          {children}
+        </Collapsible.Content>
+      </Collapsible.Root>
+    );
+  }
+);
+
+PropertyCollapsibleSection.displayName = 'PropertyCollapsibleSection';
+
+export const PropertyCollapsibleContent = forwardRef<
   HTMLDivElement,
   PropsWithChildren<{
     collapsible?: boolean;
@@ -124,7 +214,7 @@ export const PropertyCollapsible = forwardRef<
   }
 );
 
-PropertyCollapsible.displayName = 'PropertyCollapsible';
+PropertyCollapsibleContent.displayName = 'PropertyCollapsible';
 
 const PropertyRootContext = createContext<{
   mountValue: (payload: { isEmpty: boolean }) => () => void;
@@ -249,28 +339,38 @@ export const PropertyName = ({
 
 export const PropertyValue = forwardRef<
   HTMLDivElement,
-  { readonly?: boolean; isEmpty?: boolean } & HTMLProps<HTMLDivElement>
->(({ children, className, readonly, isEmpty, ...props }, ref) => {
-  const context = useContext(PropertyRootContext);
+  {
+    readonly?: boolean;
+    isEmpty?: boolean;
+    hoverable?: boolean;
+  } & HTMLProps<HTMLDivElement>
+>(
+  (
+    { children, className, readonly, isEmpty, hoverable = true, ...props },
+    ref
+  ) => {
+    const context = useContext(PropertyRootContext);
 
-  useLayoutEffect(() => {
-    if (context) {
-      return context.mountValue({ isEmpty: !!isEmpty });
-    }
-    return;
-  }, [context, isEmpty]);
+    useLayoutEffect(() => {
+      if (context) {
+        return context.mountValue({ isEmpty: !!isEmpty });
+      }
+      return;
+    }, [context, isEmpty]);
 
-  return (
-    <div
-      ref={ref}
-      className={clsx(styles.propertyValueContainer, className)}
-      data-readonly={readonly ? 'true' : 'false'}
-      data-empty={isEmpty ? 'true' : 'false'}
-      data-property-value
-      {...props}
-    >
-      {children}
-    </div>
-  );
-});
+    return (
+      <div
+        ref={ref}
+        className={clsx(styles.propertyValueContainer, className)}
+        data-readonly={readonly ? 'true' : 'false'}
+        data-empty={isEmpty ? 'true' : 'false'}
+        data-hoverable={hoverable ? 'true' : 'false'}
+        data-property-value
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
 PropertyValue.displayName = 'PropertyValue';

@@ -282,7 +282,8 @@ body {
 /**
  * A hack to make the anchor wrapper not affect the layout of the page.
  */
-[data-lit-react-wrapper] {
+[data-lit-react-wrapper],
+affine-lit-template-wrapper {
   display: contents;
 }
 

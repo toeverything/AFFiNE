@@ -129,15 +129,13 @@ export const propertyValueContainer = style({
     color: cssVarV2('text/placeholder'),
   },
   selectors: {
-    '&[data-readonly="false"]': {
+    '&[data-readonly="false"][data-hoverable="true"]': {
       cursor: 'pointer',
     },
-    '&[data-readonly="false"]:hover': {
-      backgroundColor: cssVarV2('layer/background/hoverOverlay'),
-    },
-    '&[data-readonly="false"]:focus-within': {
-      backgroundColor: cssVarV2('layer/background/hoverOverlay'),
-    },
+    '&[data-readonly="false"][data-hoverable="true"]:is(:hover, :focus-within)':
+      {
+        backgroundColor: cssVarV2('layer/background/hoverOverlay'),
+      },
   },
 });
 
@@ -161,4 +159,68 @@ globalStyle(`${tableButton} svg`, {
 });
 globalStyle(`${tableButton}:hover svg`, {
   color: cssVarV2('icon/primary'),
+});
+
+export const section = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+});
+
+export const sectionHeader = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  padding: '4px 6px',
+  minHeight: 30,
+});
+
+export const sectionHeaderTrigger = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  flex: 1,
+});
+
+export const sectionHeaderIcon = style({
+  width: 16,
+  height: 16,
+  fontSize: 16,
+  color: cssVarV2('icon/primary'),
+});
+
+export const sectionHeaderName = style({
+  display: 'flex',
+  alignItems: 'center',
+  fontSize: cssVar('fontSm'),
+  fontWeight: 500,
+  whiteSpace: 'nowrap',
+  selectors: {
+    '&[data-collapsed="true"]': {
+      color: cssVarV2('text/secondary'),
+    },
+  },
+});
+
+export const sectionCollapsedIcon = style({
+  transition: 'all 0.2s ease-in-out',
+  color: cssVarV2('icon/primary'),
+  fontSize: 20,
+  selectors: {
+    '&[data-collapsed="true"]': {
+      transform: 'rotate(90deg)',
+      color: cssVarV2('icon/secondary'),
+    },
+  },
+});
+
+export const sectionContent = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
+  selectors: {
+    '&[hidden]': {
+      display: 'none',
+    },
+  },
 });

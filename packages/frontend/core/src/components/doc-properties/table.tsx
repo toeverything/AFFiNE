@@ -1,21 +1,19 @@
 import {
   Button,
-  IconButton,
   Menu,
   MenuItem,
-  PropertyCollapsible,
+  PropertyCollapsibleContent,
+  PropertyCollapsibleSection,
   PropertyName,
   PropertyRoot,
-  Tooltip,
   useDraggable,
   useDropTarget,
 } from '@affine/component';
-import { DocLinksService } from '@affine/core/modules/doc-link';
-import { EditorSettingService } from '@affine/core/modules/editor-settting';
+import { DocDatabaseBacklinkInfo } from '@affine/core/modules/doc-info';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import type { AffineDNDData } from '@affine/core/types/dnd';
-import { i18nTime, useI18n } from '@affine/i18n';
+import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { PlusIcon, PropertyIcon, ToggleExpandIcon } from '@blocksuite/icons/rc';
 import * as Collapsible from '@radix-ui/react-collapsible';
@@ -25,14 +23,11 @@ import {
   DocsService,
   useLiveData,
   useService,
-  useServices,
-  WorkspaceService,
 } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useDebouncedValue } from 'foxact/use-debounced-value';
 import type React from 'react';
 import type { HTMLProps, PropsWithChildren } from 'react';
-import { forwardRef, useCallback, useMemo, useState } from 'react';
+import { forwardRef, useCallback, useState } from 'react';
 
 import { AffinePageReference } from '../affine/reference-link';
 import { DocPropertyIcon } from './icons/doc-property-icon';
@@ -81,145 +76,38 @@ interface DocPropertiesTableHeaderProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// backlinks - #no                Updated yyyy-mm-dd
+// Info
 // ─────────────────────────────────────────────────
-// Page Info ...
 export const DocPropertiesTableHeader = ({
   className,
   style,
   open,
   onOpenChange,
 }: DocPropertiesTableHeaderProps) => {
-  const t = useI18n();
-  const {
-    docLinksService,
-    docService,
-    workspaceService,
-    editorSettingService,
-  } = useServices({
-    DocLinksService,
-    DocService,
-    WorkspaceService,
-    EditorSettingService,
-  });
-  const docBacklinks = docLinksService.backlinks;
-  const backlinks = useMemo(
-    () => docBacklinks.backlinks$.value,
-    [docBacklinks]
-  );
-
-  const displayDocInfo = useLiveData(
-    editorSettingService.editorSetting.settings$.selector(s => s.displayDocInfo)
-  );
-
-  const { syncing, retrying, serverClock } = useLiveData(
-    workspaceService.workspace.engine.doc.docState$(docService.doc.id)
-  );
-
-  const { createDate, updatedDate } = useLiveData(
-    docService.doc.meta$.selector(m => ({
-      createDate: m.createDate,
-      updatedDate: m.updatedDate,
-    }))
-  );
-
-  const timestampElement = useMemo(() => {
-    const localizedCreateTime = createDate ? i18nTime(createDate) : null;
-
-    const createTimeElement = (
-      <div className={styles.tableHeaderTimestamp}>
-        {t['Created']()} {localizedCreateTime}
-      </div>
-    );
-
-    return serverClock ? (
-      <Tooltip
-        side="right"
-        content={
-          <>
-            <div className={styles.tableHeaderTimestamp}>
-              {t['Updated']()} {i18nTime(serverClock)}
-            </div>
-            {createDate && (
-              <div className={styles.tableHeaderTimestamp}>
-                {t['Created']()} {i18nTime(createDate)}
-              </div>
-            )}
-          </>
-        }
-      >
-        <div className={styles.tableHeaderTimestamp}>
-          {!syncing && !retrying ? (
-            <>
-              {t['Updated']()}{' '}
-              {i18nTime(serverClock, {
-                relative: {
-                  max: [1, 'day'],
-                  accuracy: 'minute',
-                },
-                absolute: {
-                  accuracy: 'day',
-                },
-              })}
-            </>
-          ) : (
-            <>{t['com.affine.syncing']()}</>
-          )}
-        </div>
-      </Tooltip>
-    ) : updatedDate ? (
-      <Tooltip side="right" content={createTimeElement}>
-        <div className={styles.tableHeaderTimestamp}>
-          {t['Updated']()} {i18nTime(updatedDate)}
-        </div>
-      </Tooltip>
-    ) : (
-      createTimeElement
-    );
-  }, [createDate, updatedDate, retrying, serverClock, syncing, t]);
-
-  const dTimestampElement = useDebouncedValue(timestampElement, 500);
-
   const handleCollapse = useCallback(() => {
     track.doc.inlineDocInfo.$.toggle();
     onOpenChange(!open);
   }, [onOpenChange, open]);
-
+  const t = useI18n();
   return (
-    <div className={clsx(styles.tableHeader, className)} style={style}>
-      {/* TODO(@Peng): add click handler to backlinks */}
-      <div className={styles.tableHeaderInfoRow}>
-        {backlinks.length > 0 ? (
-          <DocBacklinksPopup backlinks={backlinks}>
-            <div className={styles.tableHeaderBacklinksHint}>
-              {t['com.affine.page-properties.backlinks']()} · {backlinks.length}
-            </div>
-          </DocBacklinksPopup>
-        ) : null}
-        {dTimestampElement}
-      </div>
-      <div className={styles.tableHeaderDivider} />
-      {displayDocInfo ? (
-        <div className={styles.tableHeaderSecondaryRow}>
-          <div className={clsx(!open ? styles.pageInfoDimmed : null)}>
-            {t['com.affine.page-properties.page-info']()}
-          </div>
-          <Collapsible.Trigger asChild role="button" onClick={handleCollapse}>
-            <div
-              className={styles.tableHeaderCollapseButtonWrapper}
-              data-testid="page-info-collapse"
-            >
-              <IconButton size="20">
-                <ToggleExpandIcon
-                  className={styles.collapsedIcon}
-                  data-collapsed={!open}
-                />
-              </IconButton>
-            </div>
-          </Collapsible.Trigger>
+    <Collapsible.Trigger style={style} role="button" onClick={handleCollapse}>
+      <div className={clsx(styles.tableHeader, className)}>
+        <div className={clsx(!open ? styles.pageInfoDimmed : null)}>
+          {t['com.affine.page-properties.page-info']()}
         </div>
-      ) : null}
-    </div>
+        <div
+          className={styles.tableHeaderCollapseButtonWrapper}
+          data-testid="page-info-collapse"
+        >
+          <ToggleExpandIcon
+            className={styles.collapsedIcon}
+            data-collapsed={!open}
+          />
+        </div>
+      </div>
+
+      <div className={styles.tableHeaderDivider} />
+    </Collapsible.Trigger>
   );
 };
 
@@ -364,13 +252,14 @@ export const DocPropertiesTableBody = forwardRef<
   const [newPropertyId, setNewPropertyId] = useState<string | null>(null);
 
   return (
-    <div
+    <PropertyCollapsibleSection
       ref={ref}
       className={clsx(styles.tableBodyRoot, className)}
       style={style}
+      title={t.t('com.affine.workspace.properties')}
       {...props}
     >
-      <PropertyCollapsible
+      <PropertyCollapsibleContent
         collapsible
         collapsed={propertyCollapsed}
         onCollapseChange={setPropertyCollapsed}
@@ -438,9 +327,8 @@ export const DocPropertiesTableBody = forwardRef<
             {t['com.affine.page-properties.config-properties']()}
           </Button>
         </div>
-      </PropertyCollapsible>
-      <div className={styles.tableHeaderDivider} />
-    </div>
+      </PropertyCollapsibleContent>
+    </PropertyCollapsibleSection>
   );
 });
 DocPropertiesTableBody.displayName = 'PagePropertiesTableBody';
@@ -455,8 +343,10 @@ const DocPropertiesTableInner = () => {
         className={styles.rootCentered}
       >
         <DocPropertiesTableHeader open={expanded} onOpenChange={setExpanded} />
-        <Collapsible.Content asChild>
+        <Collapsible.Content>
           <DocPropertiesTableBody />
+          <div className={styles.tableHeaderDivider} />
+          <DocDatabaseBacklinkInfo />
         </Collapsible.Content>
       </Collapsible.Root>
     </div>

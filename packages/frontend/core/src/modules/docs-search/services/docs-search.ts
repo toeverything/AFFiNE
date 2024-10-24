@@ -8,7 +8,8 @@ import {
   WorkspaceEngineBeforeStart,
 } from '@toeverything/infra';
 import { isEmpty, omit } from 'lodash-es';
-import { type Observable, switchMap } from 'rxjs';
+import { map, type Observable, switchMap } from 'rxjs';
+import { z } from 'zod';
 
 import { DocsIndexer } from '../entities/docs-indexer';
 
@@ -504,6 +505,76 @@ export class DocsSearchService extends Service {
                 title: typeof title === 'string' ? title : title[0],
               };
             });
+          });
+        })
+      );
+  }
+
+  watchDatabasesTo(docId: string) {
+    const DatabaseAdditionalSchema = z.object({
+      databaseName: z.string().optional(),
+    });
+    return this.indexer.blockIndex
+      .search$(
+        {
+          type: 'boolean',
+          occur: 'must',
+          queries: [
+            {
+              type: 'match',
+              field: 'refDocId',
+              match: docId,
+            },
+            {
+              type: 'match',
+              field: 'parentFlavour',
+              match: 'affine:database',
+            },
+            // Ignore if it is a link to the current document.
+            {
+              type: 'boolean',
+              occur: 'must_not',
+              queries: [
+                {
+                  type: 'match',
+                  field: 'docId',
+                  match: docId,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          fields: ['docId', 'blockId', 'parentBlockId', 'additional'],
+          pagination: {
+            limit: 100,
+          },
+        }
+      )
+      .pipe(
+        map(({ nodes }) => {
+          return nodes.map(node => {
+            const additional =
+              typeof node.fields.additional === 'string'
+                ? node.fields.additional
+                : node.fields.additional[0];
+
+            return {
+              docId:
+                typeof node.fields.docId === 'string'
+                  ? node.fields.docId
+                  : node.fields.docId[0],
+              rowId:
+                typeof node.fields.blockId === 'string'
+                  ? node.fields.blockId
+                  : node.fields.blockId[0],
+              databaseBlockId:
+                typeof node.fields.parentBlockId === 'string'
+                  ? node.fields.parentBlockId
+                  : node.fields.parentBlockId[0],
+              databaseName: DatabaseAdditionalSchema.safeParse(additional).data
+                ?.databaseName as string | undefined,
+            };
           });
         })
       );

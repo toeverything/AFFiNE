@@ -134,3 +134,27 @@ export const focusInlineEditor = async (page: Page) => {
     .locator('.inline-editor')
     .focus();
 };
+
+export const addDatabase = async (page: Page, title?: string) => {
+  await page.keyboard.press('/');
+  await expect(page.locator('affine-slash-menu .slash-menu')).toBeVisible();
+  await page.keyboard.type('database');
+  await page.getByTestId('Table View').click();
+
+  if (title) {
+    await page.locator('affine-database-title').click();
+    await page
+      .locator('affine-database-title rich-text [contenteditable]')
+      .fill(title);
+    await page
+      .locator('affine-database-title rich-text [contenteditable]')
+      .blur();
+  }
+};
+
+export const addDatabaseRow = async (page: Page, databaseTitle: string) => {
+  const db = page.locator(`affine-database-table`, {
+    has: page.locator(`affine-database-title:has-text("${databaseTitle}")`),
+  });
+  await db.locator('.data-view-table-group-add-row-button').click();
+};

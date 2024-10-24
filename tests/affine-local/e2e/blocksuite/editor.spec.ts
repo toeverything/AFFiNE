@@ -1,21 +1,12 @@
 import { test } from '@affine-test/kit/playwright';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
+  addDatabase,
   clickNewPageButton,
   getBlockSuiteEditorTitle,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
-import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
-
-const addDatabase = async (page: Page) => {
-  await page.keyboard.press('/', { delay: 500 });
-  await page.keyboard.press('d', { delay: 500 });
-  await page.keyboard.press('a', { delay: 500 });
-  await page.keyboard.press('t', { delay: 500 });
-  await page.keyboard.press('a', { delay: 500 });
-  await page.getByTestId('Table View').click();
-};
 
 test('database is useable', async ({ page }) => {
   test.slow();

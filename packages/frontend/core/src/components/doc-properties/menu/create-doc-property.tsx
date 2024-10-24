@@ -74,7 +74,11 @@ export const CreatePropertyMenuItems = ({
           >
             <div className={styles.propertyItem}>
               {name}
-              {isUniqueExist && <span>Added</span>}
+              {isUniqueExist && (
+                <span>
+                  {t['com.affine.page-properties.create-property.added']()}
+                </span>
+              )}
             </div>
           </MenuItem>
         );

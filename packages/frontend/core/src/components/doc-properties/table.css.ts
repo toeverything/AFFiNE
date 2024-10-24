@@ -39,36 +39,12 @@ export const rootCentered = style({
 
 export const tableHeader = style({
   display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'space-between',
-});
-
-export const tableHeaderInfoRow = style({
-  display: 'flex',
-  flexDirection: 'row',
+  height: 30,
+  padding: 4,
   justifyContent: 'space-between',
   alignItems: 'center',
   color: cssVarV2('text/secondary'),
-  fontSize: fontSize,
   fontWeight: 500,
-  minHeight: 34,
-  '@media': {
-    print: {
-      display: 'none',
-    },
-  },
-});
-
-export const tableHeaderSecondaryRow = style({
-  display: 'flex',
-  flexDirection: 'row',
-  alignItems: 'center',
-  color: cssVar('textPrimaryColor'),
-  fontSize: fontSize,
-  fontWeight: 500,
-  padding: `0 6px`,
-  gap: '8px',
-  height: 24,
   '@media': {
     print: {
       display: 'none',
@@ -81,6 +57,7 @@ export const tableHeaderCollapseButtonWrapper = style({
   flex: 1,
   justifyContent: 'flex-end',
   cursor: 'pointer',
+  fontSize: 20,
 });
 
 export const pageInfoDimmed = style({

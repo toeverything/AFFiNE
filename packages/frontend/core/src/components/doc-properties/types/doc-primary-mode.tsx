@@ -48,7 +48,7 @@ export const DocPrimaryModeValue = () => {
     [doc, t]
   );
   return (
-    <PropertyValue className={styles.container}>
+    <PropertyValue className={styles.container} hoverable={false}>
       <RadioGroup
         width={194}
         itemHeight={24}
