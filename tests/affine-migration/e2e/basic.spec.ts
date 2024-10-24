@@ -1,5 +1,5 @@
 import { patchDataEnhancement } from '@affine-test/kit/e2e-enhance/initializer';
-import { SnapshotStorage } from '@affine-test/kit/e2e-enhance/snapshot';
+import { LegacySnapshotStorage } from '@affine-test/kit/e2e-enhance/snapshot';
 import { test } from '@affine-test/kit/playwright';
 import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
 import { coreUrl } from '@affine-test/kit/utils/load-page';
@@ -9,7 +9,7 @@ import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 async function open404PageToInitData(page: Page, version: string) {
-  const snapshotStorage = new SnapshotStorage(version);
+  const snapshotStorage = new LegacySnapshotStorage(version);
   const { binaries, idbData, localStorageData } = await snapshotStorage.read();
 
   // Open other page to init data

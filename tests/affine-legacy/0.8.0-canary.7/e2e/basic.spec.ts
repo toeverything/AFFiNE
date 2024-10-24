@@ -1,5 +1,5 @@
 import { patchDataEnhancement } from '@affine-test/kit/e2e-enhance/initializer';
-import { SnapshotStorage } from '@affine-test/kit/e2e-enhance/snapshot';
+import { LegacySnapshotStorage } from '@affine-test/kit/e2e-enhance/snapshot';
 import { test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
@@ -31,7 +31,7 @@ test('record 0.8.0-canary.7 database legacy data', async ({ page }) => {
     window.readAffineDatabase()
   );
 
-  const snapshotStorage = new SnapshotStorage('0.8.0-canary.7');
+  const snapshotStorage = new LegacySnapshotStorage('0.8.0-canary.7');
   await snapshotStorage.write({
     idbData,
     localStorageData,

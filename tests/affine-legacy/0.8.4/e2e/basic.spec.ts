@@ -1,5 +1,5 @@
 import { patchDataEnhancement } from '@affine-test/kit/e2e-enhance/initializer';
-import { SnapshotStorage } from '@affine-test/kit/e2e-enhance/snapshot';
+import { LegacySnapshotStorage } from '@affine-test/kit/e2e-enhance/snapshot';
 import { getBlockSuiteEditorTitle } from '@affine-test/kit/utils/page-logic';
 import { test } from '@playwright/test';
 
@@ -45,7 +45,7 @@ test('record 0.8.4 surface legacy data', async ({ page }) => {
     window.readAffineDatabase()
   );
 
-  const snapshotStorage = new SnapshotStorage('0.8.4');
+  const snapshotStorage = new LegacySnapshotStorage('0.8.4');
   await snapshotStorage.write({
     idbData,
     localStorageData,
