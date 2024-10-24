@@ -42,6 +42,7 @@ import { AICancel, AIResume, AISubscribe } from '../plans/ai/actions';
 import { AIRedeemCodeButton } from '../plans/ai/actions/redeem';
 import { BelieverCard } from '../plans/lifetime/believer-card';
 import { BelieverBenefits } from '../plans/lifetime/benefits';
+import { RedeemCode } from '../plans/plan-card';
 import * as styles from './style.css';
 
 const DescriptionI18NKey = {
@@ -146,20 +147,23 @@ const SubscriptionSettings = () => {
                 spreadCol={false}
                 name={t['com.affine.payment.billing-setting.current-plan']()}
                 desc={
-                  <Trans
-                    i18nKey={getMessageKey(currentPlan, currentRecurring)}
-                    values={{
-                      planName: currentPlan,
-                    }}
-                    components={{
-                      1: (
-                        <span
-                          onClick={gotoCloudPlansSetting}
-                          className={styles.currentPlanName}
-                        />
-                      ),
-                    }}
-                  />
+                  <>
+                    <Trans
+                      i18nKey={getMessageKey(currentPlan, currentRecurring)}
+                      values={{
+                        planName: currentPlan,
+                      }}
+                      components={{
+                        1: (
+                          <span
+                            onClick={gotoCloudPlansSetting}
+                            className={styles.currentPlanName}
+                          />
+                        ),
+                      }}
+                    />
+                    <CloudExpirationInfo />
+                  </>
                 }
               />
               <PlanAction
@@ -196,28 +200,6 @@ const SubscriptionSettings = () => {
             >
               <PaymentMethodUpdater />
             </SettingRow>
-            {proSubscription.nextBillAt && (
-              <SettingRow
-                name={t['com.affine.payment.billing-setting.renew-date']()}
-                desc={t[
-                  'com.affine.payment.billing-setting.renew-date.description'
-                ]({
-                  renewDate: new Date(
-                    proSubscription.nextBillAt
-                  ).toLocaleDateString(),
-                })}
-              />
-            )}
-            {isOnetime && proSubscription.end && (
-              <SettingRow
-                name={t['com.affine.payment.billing-setting.due-date']()}
-                desc={t[
-                  'com.affine.payment.billing-setting.due-date.description'
-                ]({
-                  dueDate: new Date(proSubscription.end).toLocaleDateString(),
-                })}
-              />
-            )}
             {isBeliever || isOnetime ? null : proSubscription.end &&
               proSubscription.canceledAt ? (
               <SettingRow
@@ -261,6 +243,34 @@ const SubscriptionSettings = () => {
       )}
     </div>
   );
+};
+
+const CloudExpirationInfo = () => {
+  const t = useI18n();
+  const subscriptionService = useService(SubscriptionService);
+  const subscription = useLiveData(subscriptionService.subscription.pro$);
+
+  let text = '';
+  if (subscription?.nextBillAt) {
+    text = t['com.affine.payment.billing-setting.renew-date.description']({
+      renewDate: i18nTime(subscription.nextBillAt, {
+        absolute: { accuracy: 'day' },
+      }),
+    });
+  } else if (subscription?.end) {
+    text = t['com.affine.payment.billing-setting.due-date.description']({
+      dueDate: i18nTime(subscription.end, {
+        absolute: { accuracy: 'day' },
+      }),
+    });
+  }
+
+  return text ? (
+    <>
+      <br />
+      {text}
+    </>
+  ) : null;
 };
 
 const TypeFormLink = () => {
@@ -375,7 +385,7 @@ const AIPlanCard = ({ onClick }: { onClick: () => void }) => {
           absolute: { accuracy: 'day' },
         }),
       })
-    ) : subscription?.canceledAt && subscription.end ? (
+    ) : (isOnetime || subscription?.canceledAt) && subscription.end ? (
       t['com.affine.payment.ai.billing-tip.end-at']({
         end: i18nTime(subscription.end, { absolute: { accuracy: 'day' } }),
       })
@@ -421,6 +431,13 @@ const PlanAction = ({
   gotoPlansSetting: () => void;
 }) => {
   const t = useI18n();
+
+  const subscription = useService(SubscriptionService).subscription;
+  const isOnetimePro = useLiveData(subscription.isOnetimePro$);
+
+  if (isOnetimePro) {
+    return <RedeemCode variant="primary" className={styles.planAction} />;
+  }
 
   return (
     <Button
