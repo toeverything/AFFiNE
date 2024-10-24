@@ -126,7 +126,7 @@ export const AFFINE_FLAGS = {
     category: 'affine',
     displayName: 'Offline Mode',
     description:
-      'Enable Offline Mode, the affine client will disconnect from all network connections. You will not be able to use any online features. For testing only.',
+      'Stop Connecting to the Internet. Even with AFFiNE Cloud, enabling this toggle stops internet connection and keeps everything local, but syncing will be disabled.',
     configurable: isDesktopEnvironment,
     defaultState: false,
   },
