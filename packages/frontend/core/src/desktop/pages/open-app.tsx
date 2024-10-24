@@ -1,52 +1,22 @@
 import { Button } from '@affine/component/ui/button';
+import {
+  appIconMap,
+  appNames,
+  appSchemes,
+  type Channel,
+  schemeToChannel,
+} from '@affine/core/modules/open-in-app/constant';
 import type { GetCurrentUserQuery } from '@affine/graphql';
 import { fetcher, getCurrentUserQuery } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
 import { Logo1Icon } from '@blocksuite/icons/rc';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import type { LoaderFunction } from 'react-router-dom';
 import { useLoaderData, useSearchParams } from 'react-router-dom';
-import { z } from 'zod';
 
 import * as styles from './open-app.css';
 
 let lastOpened = '';
-
-const appSchemas = z.enum([
-  'affine',
-  'affine-canary',
-  'affine-beta',
-  'affine-internal',
-  'affine-dev',
-]);
-
-const appChannelSchema = z.enum(['stable', 'canary', 'beta', 'internal']);
-
-type Schema = z.infer<typeof appSchemas>;
-type Channel = z.infer<typeof appChannelSchema>;
-
-const schemaToChanel = {
-  affine: 'stable',
-  'affine-canary': 'canary',
-  'affine-beta': 'beta',
-  'affine-internal': 'internal',
-  'affine-dev': 'canary', // dev does not have a dedicated app. use canary as the placeholder.
-} as Record<Schema, Channel>;
-
-export const appIconMap = {
-  stable: '/imgs/app-icon-stable.ico',
-  canary: '/imgs/app-icon-canary.ico',
-  beta: '/imgs/app-icon-beta.ico',
-  internal: '/imgs/app-icon-internal.ico',
-} satisfies Record<Channel, string>;
-
-export const appNames = {
-  stable: 'AFFiNE',
-  canary: 'AFFiNE Canary',
-  beta: 'AFFiNE Beta',
-  internal: 'AFFiNE Internal',
-} satisfies Record<Channel, string>;
-
 interface OpenAppProps {
   urlToOpen?: string | null;
   channel: Channel;
@@ -65,10 +35,8 @@ const OpenAppImpl = ({ urlToOpen, channel }: OpenAppProps) => {
   }, [channel]);
   const appIcon = appIconMap[channel];
   const appName = appNames[channel];
-  const [params] = useSearchParams();
-  const autoOpen = useMemo(() => params.get('open') !== 'false', [params]);
 
-  if (urlToOpen && lastOpened !== urlToOpen && autoOpen) {
+  if (urlToOpen && lastOpened !== urlToOpen) {
     lastOpened = urlToOpen;
     location.href = urlToOpen;
   }
@@ -152,9 +120,9 @@ const OpenUrl = () => {
   params.delete('url');
 
   const urlObj = new URL(urlToOpen || '');
-  const maybeSchema = appSchemas.safeParse(urlObj.protocol.replace(':', ''));
+  const maybeScheme = appSchemes.safeParse(urlObj.protocol.replace(':', ''));
   const channel =
-    schemaToChanel[maybeSchema.success ? maybeSchema.data : 'affine'];
+    schemeToChannel[maybeScheme.success ? maybeScheme.data : 'affine'];
 
   params.forEach((v, k) => {
     urlObj.searchParams.set(k, v);
@@ -170,10 +138,10 @@ const OpenOAuthJwt = () => {
   const { currentUser } = useLoaderData() as LoaderData;
   const [params] = useSearchParams();
 
-  const maybeSchema = appSchemas.safeParse(params.get('schema'));
+  const maybeSchema = appSchemes.safeParse(params.get('schema'));
   const schema = maybeSchema.success ? maybeSchema.data : 'affine';
   const next = params.get('next');
-  const channel = schemaToChanel[schema as Schema];
+  const channel = schemeToChannel[schema];
 
   if (!currentUser || !currentUser?.token?.sessionToken) {
     return null;
@@ -199,12 +167,19 @@ export const Component = () => {
 
 export const loader: LoaderFunction = async args => {
   const action = args.params.action || '';
-  const res = await fetcher({
-    query: getCurrentUserQuery,
-  }).catch(console.error);
 
-  return {
-    action,
-    currentUser: res?.currentUser || null,
-  };
+  if (action === 'signin-redirect') {
+    const res = await fetcher({
+      query: getCurrentUserQuery,
+    }).catch(console.error);
+
+    return {
+      action,
+      currentUser: res?.currentUser || null,
+    };
+  } else {
+    return {
+      action,
+    };
+  }
 };
