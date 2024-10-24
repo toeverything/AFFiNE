@@ -1,4 +1,4 @@
-use sqlx::sqlite::SqliteConnectOptions;
+use sqlx::{migrate, sqlite::SqliteConnectOptions};
 use std::fs;
 
 #[tokio::main]
@@ -29,5 +29,7 @@ async fn main() -> Result<(), std::io::Error> {
     .execute(&pool)
     .await
     .unwrap();
+
+  migrate!().run(&pool).await.unwrap();
   Ok(())
 }

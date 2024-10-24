@@ -469,6 +469,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@affine/doc-storage@workspace:packages/common/doc-storage":
+  version: 0.0.0-use.local
+  resolution: "@affine/doc-storage@workspace:packages/common/doc-storage"
+  dependencies:
+    "@affine/native": "workspace:*"
+    "@types/lodash-es": "npm:^4.17.12"
+    idb: "npm:^8.0.0"
+    lodash-es: "npm:^4.17.21"
+    socket.io-client: "npm:^4.7.5"
+    yjs: "patch:yjs@npm%3A13.6.18#~/.yarn/patches/yjs-npm-13.6.18-ad0d5f7c43.patch"
+  languageName: unknown
+  linkType: soft
+
 "@affine/docs@workspace:docs/reference":
   version: 0.0.0-use.local
   resolution: "@affine/docs@workspace:docs/reference"
