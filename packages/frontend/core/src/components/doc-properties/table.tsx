@@ -23,6 +23,7 @@ import {
   DocsService,
   useLiveData,
   useService,
+  useServiceOptional,
 } from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
@@ -245,7 +246,7 @@ export const DocPropertiesTableBody = forwardRef<
   const t = useI18n();
   const docsService = useService(DocsService);
   const workbenchService = useService(WorkbenchService);
-  const viewService = useService(ViewService);
+  const viewService = useServiceOptional(ViewService);
   const properties = useLiveData(docsService.propertyList.sortedProperties$);
   const [propertyCollapsed, setPropertyCollapsed] = useState(true);
 
@@ -312,20 +313,22 @@ export const DocPropertiesTableBody = forwardRef<
               {t['com.affine.page-properties.add-property']()}
             </Button>
           </Menu>
-          <Button
-            variant="plain"
-            prefix={<PropertyIcon />}
-            className={clsx(
-              styles.propertyActionButton,
-              styles.propertyConfigButton
-            )}
-            onClick={() => {
-              viewService.view.activeSidebarTab('properties');
-              workbenchService.workbench.openSidebar();
-            }}
-          >
-            {t['com.affine.page-properties.config-properties']()}
-          </Button>
+          {viewService ? (
+            <Button
+              variant="plain"
+              prefix={<PropertyIcon />}
+              className={clsx(
+                styles.propertyActionButton,
+                styles.propertyConfigButton
+              )}
+              onClick={() => {
+                viewService.view.activeSidebarTab('properties');
+                workbenchService.workbench.openSidebar();
+              }}
+            >
+              {t['com.affine.page-properties.config-properties']()}
+            </Button>
+          ) : null}
         </div>
       </PropertyCollapsibleContent>
     </PropertyCollapsibleSection>
