@@ -753,7 +753,7 @@ __metadata:
     "@prisma/instrumentation": "npm:^5.15.0"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@types/cookie-parser": "npm:^1.4.7"
-    "@types/express": "npm:^4.17.21"
+    "@types/express": "npm:^5.0.0"
     "@types/graphql-upload": "npm:^16.0.7"
     "@types/keyv": "npm:^4.2.0"
     "@types/lodash-es": "npm:^4.17.12"
@@ -13561,7 +13561,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/express@npm:*":
+"@types/express@npm:*, @types/express@npm:^5.0.0":
   version: 5.0.0
   resolution: "@types/express@npm:5.0.0"
   dependencies:
