@@ -26,7 +26,7 @@ export function getRequestResponseFromHost(host: ArgumentsHost) {
     }
     case 'ws': {
       const ws = host.switchToWs();
-      const req = ws.getClient<Socket>().client.conn.request as Request;
+      const req = ws.getClient<Socket>().request as Request;
       parseCookies(req);
       return { req };
     }

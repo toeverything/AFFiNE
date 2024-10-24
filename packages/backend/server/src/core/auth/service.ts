@@ -298,7 +298,7 @@ export class AuthService implements OnApplicationBootstrap {
 
     const userId: string | undefined =
       req.cookies[AuthService.userCookieName] ||
-      req.headers[AuthService.userCookieName];
+      req.headers[AuthService.userCookieName.replaceAll('_', '-')];
 
     return {
       sessionId,

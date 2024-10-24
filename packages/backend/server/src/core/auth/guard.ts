@@ -7,12 +7,12 @@ import type {
 import { Injectable, SetMetadata } from '@nestjs/common';
 import { ModuleRef, Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
+import { Socket } from 'socket.io';
 
 import {
   AuthenticationRequired,
   Config,
   getRequestResponseFromContext,
-  mapAnyError,
   parseCookies,
 } from '../../fundamentals';
 import { WEBSOCKET_OPTIONS } from '../../fundamentals/websocket';
@@ -64,9 +64,6 @@ export class AuthGuard implements CanActivate, OnModuleInit {
       return req.session;
     }
 
-    // compatibility with websocket request
-    parseCookies(req);
-
     // TODO(@forehalo): a cache for user session
     const userSession = await this.auth.getUserSessionFromRequest(req, res);
 
@@ -93,27 +90,22 @@ export const AuthWebsocketOptionsProvider: FactoryProvider = {
   useFactory: (config: Config, guard: AuthGuard) => {
     return {
       ...config.websocket,
-      allowRequest: async (
-        req: any,
-        pass: (err: string | null | undefined, success: boolean) => void
-      ) => {
-        if (!config.websocket.requireAuthentication) {
-          return pass(null, true);
-        }
+      canActivate: async (socket: Socket) => {
+        const upgradeReq = socket.client.request as Request;
+        const handshake = socket.handshake;
 
-        try {
-          const authentication = await guard.signIn(req);
+        // compatibility with websocket request
+        parseCookies(upgradeReq);
 
-          if (authentication) {
-            return pass(null, true);
-          } else {
-            return pass('unauthenticated', false);
-          }
-        } catch (e) {
-          const error = mapAnyError(e);
-          error.log('Websocket');
-          return pass('unauthenticated', false);
-        }
+        upgradeReq.cookies = {
+          [AuthService.sessionCookieName]: handshake.auth.token,
+          [AuthService.userCookieName]: handshake.auth.userId,
+          ...upgradeReq.cookies,
+        };
+
+        const session = await guard.signIn(upgradeReq);
+
+        return !!session;
       },
     };
   },
