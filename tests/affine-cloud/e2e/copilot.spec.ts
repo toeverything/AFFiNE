@@ -14,6 +14,10 @@ import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect, type Page } from '@playwright/test';
 
+const ONE_SECOND = 1000;
+const TEN_SECONDS = 10 * ONE_SECOND;
+const ONE_MINUTE = 60 * ONE_SECOND;
+
 let isProduction = process.env.NODE_ENV === 'production';
 if (
   process.env.PLAYWRIGHT_USER_AGENT &&
@@ -42,14 +46,14 @@ function getUser() {
   };
 }
 
-test.skip(
-  () =>
-    !process.env.COPILOT_OPENAI_API_KEY ||
-    !process.env.COPILOT_FAL_API_KEY ||
-    process.env.COPILOT_OPENAI_API_KEY === '1' ||
-    process.env.COPILOT_FAL_API_KEY === '1',
-  'skip test if no copilot api key'
-);
+// test.skip(
+//   () =>
+//     !process.env.COPILOT_OPENAI_API_KEY ||
+//     !process.env.COPILOT_FAL_API_KEY ||
+//     process.env.COPILOT_OPENAI_API_KEY === '1' ||
+//     process.env.COPILOT_FAL_API_KEY === '1',
+//   'skip test if no copilot api key'
+// );
 
 test('can open chat side panel', async ({ page }) => {
   await openHomePage(page);
@@ -88,7 +92,7 @@ const collectChat = async (page: Page) => {
   await page.waitForSelector('.chat-panel-messages .message chat-copy-more');
   const lastMessage = await chatPanel.$$('.message').then(m => m[m.length - 1]);
   await lastMessage.waitForSelector('chat-copy-more');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(ONE_SECOND);
   return Promise.all(
     Array.from(await chatPanel.$$('.message')).map(async m => ({
       name: await m.$('.user-info').then(i => i?.innerText()),
@@ -347,7 +351,7 @@ test.describe('chat with block', () => {
     // wait ai response
     await page.waitForSelector(
       'affine-ai-panel-widget .response-list-container',
-      { timeout: 1000 * 60 }
+      { timeout: ONE_MINUTE }
     );
     const answer = await page.waitForSelector(
       'affine-ai-panel-widget ai-panel-answer editor-host'
@@ -355,7 +359,7 @@ test.describe('chat with block', () => {
     return answer.innerText();
   };
 
-  const collectImageAnswer = async (page: Page, timeout = 1000 * 10) => {
+  const collectImageAnswer = async (page: Page, timeout = TEN_SECONDS) => {
     // wait ai response
     await page.waitForSelector(
       'affine-ai-panel-widget .response-list-container',
@@ -536,14 +540,13 @@ test.describe('chat with block', () => {
           await page
             .waitForSelector('.ai-item-image-processing')
             .then(i => i.hover());
-          await page.getByText(`${process} style`).click();
+          await page.getByText(process).click();
           {
             // to be remove
-            await page.keyboard.type('test');
+            await page.keyboard.type(',');
             await page.keyboard.press('Enter');
           }
-
-          expect(await collectImageAnswer(page)).toBeTruthy();
+          expect(await collectImageAnswer(page, ONE_MINUTE * 2)).toBeTruthy();
         });
       }
 
@@ -556,10 +559,10 @@ test.describe('chat with block', () => {
           await page.getByText(`${filter} style`).click();
           {
             // to be remove
-            await page.keyboard.type('test');
+            await page.keyboard.type(',');
             await page.keyboard.press('Enter');
           }
-          expect(await collectImageAnswer(page, 1000 * 60)).toBeTruthy();
+          expect(await collectImageAnswer(page, ONE_MINUTE * 2)).toBeTruthy();
         });
       }
     });
