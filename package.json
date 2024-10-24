@@ -91,7 +91,7 @@
     "prettier": "^3.3.3",
     "semver": "^7.6.0",
     "serve": "^14.2.1",
-    "typescript": "^5.4.5",
+    "typescript": "^5.6.3",
     "unplugin-swc": "^1.4.5",
     "vite": "^5.2.8",
     "vitest": "2.1.1"

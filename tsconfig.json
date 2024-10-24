@@ -135,6 +135,9 @@
     {
       "path": "./tools/cli"
     },
+    {
+      "path": "./tools/playstore-auto-bump"
+    },
     // Tests
     {
       "path": "./tests/kit"
