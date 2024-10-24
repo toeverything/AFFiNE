@@ -319,7 +319,7 @@ __metadata:
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:^1.0.3"
     "@blocksuite/affine": "npm:0.17.19"
     "@blocksuite/icons": "npm:2.1.69"
-    "@chromatic-com/storybook": "npm:^2.0.0"
+    "@chromatic-com/storybook": "npm:^3.0.0"
     "@emotion/react": "npm:^11.11.4"
     "@emotion/styled": "npm:^11.11.5"
     "@radix-ui/react-avatar": "npm:^1.0.4"
@@ -2955,16 +2955,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@chromatic-com/storybook@npm:^2.0.0":
-  version: 2.0.2
-  resolution: "@chromatic-com/storybook@npm:2.0.2"
+"@chromatic-com/storybook@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@chromatic-com/storybook@npm:3.0.0"
   dependencies:
+    "@storybook/channels": "npm:^8.3.0"
+    "@storybook/telemetry": "npm:^8.3.0"
+    "@storybook/types": "npm:^8.3.0"
     chromatic: "npm:^11.4.0"
     filesize: "npm:^10.0.12"
     jsonfile: "npm:^6.1.0"
     react-confetti: "npm:^6.1.0"
     strip-ansi: "npm:^7.1.0"
-  checksum: 10/acd23f87072aaec2a4db174ec19b2479d9a0a4390f10ca804198f6453dce0c35055861bc19a4905fee97f8fd87e43b6c51fda7ce3e30bb355a2729af85f53440
+  peerDependencies:
+    storybook: ^8.3.0
+  checksum: 10/6a64122b3b895767593aa7e0acc0561425d88e4eb1efbf4db6e26be66317aab289f73b259c5f2fa4e3c9657d9ff569e89c1da740a3b4fdfc4e39cf145774de35
   languageName: node
   linkType: hard
 
@@ -12653,6 +12658,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@storybook/channels@npm:^8.3.0":
+  version: 8.3.6
+  resolution: "@storybook/channels@npm:8.3.6"
+  peerDependencies:
+    storybook: ^8.3.6
+  checksum: 10/edd97c042d5ac6f604efd9a4bbf4a2dce1948cc38412ef0f23f07e401e6d01bdd5312f7b11f56edf603afffe140a50fb288d5b69f9926bc38a8c15cf8f5a61b6
+  languageName: node
+  linkType: hard
+
 "@storybook/components@npm:^8.3.3":
   version: 8.3.3
   resolution: "@storybook/components@npm:8.3.3"
@@ -12823,6 +12837,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@storybook/telemetry@npm:^8.3.0":
+  version: 8.3.6
+  resolution: "@storybook/telemetry@npm:8.3.6"
+  peerDependencies:
+    storybook: ^8.3.6
+  checksum: 10/26876685d5bc9e10c969af3ae7e7938a18ea653bd0a8caf0ff88159ea1f0bb2748f0f1399042a50f2d91dd3dc5ab9e2edac9fb5334bd45836dae35a54a3cff85
+  languageName: node
+  linkType: hard
+
 "@storybook/test@npm:8.3.3":
   version: 8.3.3
   resolution: "@storybook/test@npm:8.3.3"
@@ -12848,6 +12871,15 @@ __metadata:
   peerDependencies:
     storybook: ^8.3.3
   checksum: 10/e0560e617158e57cb3efb61a1405d9a5351b353e1a685f5647a9bf8b491e481297316c6748ccff3eaae65324608802bb394ca7d6a809d33e9671c49d80a331ab
+  languageName: node
+  linkType: hard
+
+"@storybook/types@npm:^8.3.0":
+  version: 8.3.6
+  resolution: "@storybook/types@npm:8.3.6"
+  peerDependencies:
+    storybook: ^8.3.6
+  checksum: 10/7122388d848cf1d8b7d95c81b8a601d82a455d764f7a625372f344dc0402bbd398db22e1c6cedd66ca3987d61b0f8204ff757e0ff5fc2a77745094dc7b882a2a
   languageName: node
   linkType: hard
 
