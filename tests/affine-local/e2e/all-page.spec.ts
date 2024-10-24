@@ -16,31 +16,13 @@ import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   clickPageMoreActions,
+  getAllPage,
   getBlockSuiteEditorTitle,
   waitForAllPagesLoad,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
-import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
-
-function getAllPage(page: Page) {
-  const newPageButton = page.getByTestId('new-page-button-trigger');
-  const newPageDropdown = newPageButton.locator('svg');
-  const edgelessBlockCard = page.getByTestId('new-edgeless-button-in-all-page');
-
-  async function clickNewPageButton() {
-    const newPageButton = page.getByTestId('new-page-button-trigger');
-    return await newPageButton.click();
-  }
-
-  async function clickNewEdgelessDropdown() {
-    await newPageDropdown.click();
-    await edgelessBlockCard.click();
-  }
-
-  return { clickNewPageButton, clickNewEdgelessDropdown };
-}
 
 test('all page', async ({ page }) => {
   await openHomePage(page);

@@ -1,7 +1,11 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
-export const coreUrl = 'http://localhost:8080';
+export let coreUrl = 'http://localhost:8080';
+
+export function setCoreUrl(url: string) {
+  coreUrl = url;
+}
 
 export async function openHomePage(page: Page) {
   await page.goto(coreUrl);

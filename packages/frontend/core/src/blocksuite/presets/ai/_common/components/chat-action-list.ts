@@ -153,6 +153,9 @@ export class ChatActionList extends LitElement {
                     });
                   }
                 }}
+                data-testid="action-${action.title
+                  .toLowerCase()
+                  .replaceAll(' ', '-')}"
               >
                 ${action.title}
               </div>

@@ -17,6 +17,10 @@ inputs:
     description: 'Download the Electron binary'
     required: false
     default: 'true'
+  corepack-install:
+    description: 'Install CorePack'
+    required: false
+    default: 'false'
   hard-link-nm:
     description: 'set nmMode to hardlinks-local in .yarnrc.yml'
     required: false
@@ -41,6 +45,11 @@ runs:
         node-version-file: '.nvmrc'
         registry-url: https://npm.pkg.github.com
         scope: '@toeverything'
+
+    - name: Init CorePack
+      if: ${{ inputs.corepack-install == 'true' }}
+      shell: bash
+      run: corepack enable
 
     - name: Set nmMode
       if: ${{ inputs.hard-link-nm == 'false' }}

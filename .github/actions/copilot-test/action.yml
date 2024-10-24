@@ -1,0 +1,45 @@
+name: 'Run Copilot E2E Test'
+description: 'Run Copilot E2E Test'
+inputs:
+  openai-key:
+    description: 'OpenAI secret key'
+    required: true
+  fal-key:
+    description: 'Fal secret key'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Initialize database
+      shell: bash
+      run: |
+        psql -h localhost -U postgres -c "CREATE DATABASE affine;"
+        psql -h localhost -U postgres -c "CREATE USER affine WITH PASSWORD 'affine';"
+        psql -h localhost -U postgres -c "ALTER USER affine WITH SUPERUSER;"
+      env:
+        PGPASSWORD: affine
+
+    - name: Run init-db script
+      shell: bash
+      run: |
+        yarn workspace @affine/server exec prisma generate
+        yarn workspace @affine/server exec prisma db push
+        yarn workspace @affine/server data-migration run
+
+    - name: Server Copilot E2E Test
+      shell: bash
+      run: yarn workspace @affine-test/affine-cloud e2e:copilot --forbid-only
+      env:
+        COPILOT: true
+        DEV_SERVER_URL: http://localhost:8080
+        COPILOT_OPENAI_API_KEY: ${{ inputs.openai-key }}
+        COPILOT_FAL_API_KEY: ${{ inputs.fal-key }}
+
+    - name: Upload test results
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-e2e-server-copilot
+        path: ./test-results
+        if-no-files-found: ignore

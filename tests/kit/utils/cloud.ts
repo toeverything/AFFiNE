@@ -150,6 +150,68 @@ export async function createRandomUser(): Promise<{
   } as any;
 }
 
+export async function createRandomAIUser(): Promise<{
+  name: string;
+  email: string;
+  password: string;
+  id: string;
+}> {
+  const user = {
+    name: faker.internet.userName(),
+    email: faker.internet.email().toLowerCase(),
+    password: '123456',
+  };
+  const result = await runPrisma(async client => {
+    const freeFeatureId = await client.feature
+      .findFirst({
+        where: { feature: 'free_plan_v1' },
+        select: { id: true },
+        orderBy: { version: 'desc' },
+      })
+      .then(f => f!.id);
+    const aiFeatureId = await client.feature
+      .findFirst({
+        where: { feature: 'unlimited_copilot' },
+        select: { id: true },
+        orderBy: { version: 'desc' },
+      })
+      .then(f => f!.id);
+
+    await client.user.create({
+      data: {
+        ...user,
+        emailVerifiedAt: new Date(),
+        password: await hash(user.password),
+        features: {
+          create: [
+            {
+              reason: 'created by test case',
+              activated: true,
+              featureId: freeFeatureId,
+            },
+            {
+              reason: 'created by test case',
+              activated: true,
+              featureId: aiFeatureId,
+            },
+          ],
+        },
+      },
+    });
+
+    return await client.user.findUnique({
+      where: {
+        email: user.email,
+      },
+    });
+  });
+  cloudUserSchema.parse(result);
+  return {
+    ...result,
+    password: user.password,
+  } as any;
+}
+
 export async function deleteUser(email: string) {
   await runPrisma(async client => {
     await client.user.delete({
@@ -178,7 +240,24 @@ export async function loginUser(
   }
 
   await clickSideBarCurrentWorkspaceBanner(page);
-  await page.getByTestId('cloud-signin-button').click();
+  await page.getByTestId('cloud-signin-button').click({
+    delay: 200,
+  });
+  await loginUserDirectly(page, user, config);
+}
+
+export async function loginUserDirectly(
+  page: Page,
+  user: {
+    email: string;
+    password: string;
+  },
+  config?: {
+    isElectron?: boolean;
+    beforeLogin?: () => Promise<void>;
+    afterLogin?: () => Promise<void>;
+  }
+) {
   await page.getByPlaceholder('Enter your email address').fill(user.email);
   await page.getByTestId('continue-login-button').click({
     delay: 200,
@@ -188,7 +267,9 @@ export async function loginUser(
     await config.beforeLogin();
   }
   await page.waitForTimeout(200);
-  await page.getByTestId('sign-in-button').click();
+  const signIn = page.getByTestId('sign-in-button');
+  await signIn.click();
+  await signIn.waitFor({ state: 'detached' });
   await page.waitForTimeout(200);
   if (config?.afterLogin) {
     await config.afterLogin();
