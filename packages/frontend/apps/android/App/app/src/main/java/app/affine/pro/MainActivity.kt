@@ -1,13 +1,17 @@
 package app.affine.pro
 
 import android.content.res.ColorStateList
+import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.updateMargins
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.findNavController
+import app.affine.pro.chat.ChatActivity
 import app.affine.pro.plugin.AIButtonPlugin
 import app.affine.pro.plugin.AffineThemePlugin
 import app.affine.pro.utils.dp
@@ -75,6 +79,6 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AffineThemePlugi
     }
 
     override fun onClick(v: View) {
-        Toast.makeText(this, "TODO: Start AI chat~", Toast.LENGTH_SHORT).show()
+        ChatActivity.open(this)
     }
 }

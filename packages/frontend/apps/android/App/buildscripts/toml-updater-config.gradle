@@ -1,0 +1,30 @@
+versionCatalogUpdate {
+    sortByKey.set(true)
+
+    keep {
+        // keep versions without any library or plugin reference
+        keepUnusedVersions.set(true)
+        // keep all libraries that aren't used in the project
+        keepUnusedLibraries.set(true)
+        // keep all plugins that aren't used in the project
+        keepUnusedPlugins.set(true)
+    }
+}
+
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+
+tasks.named("dependencyUpdates").configure {
+    resolutionStrategy {
+        componentSelection {
+            all {
+                if (isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)) {
+                    reject('Release candidate')
+                }
+            }
+        }
+    }
+}

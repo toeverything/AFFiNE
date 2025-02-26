@@ -1,46 +1,72 @@
 [versions]
-androidGradlePlugin  = "8.9.1"
-androidxEspressoCore = "3.6.1"
-androidxJunit        = "1.2.1"
-apollo               = "4.1.1"
-appcompat            = "1.7.0"
-browser              = "1.8.0"
-coordinatorLayout    = "1.3.0"
-coreKtx              = "1.16.0"
-coreSplashScreen     = "1.0.1"
-googleServices       = "4.4.2"
-jna                  = "5.17.0"
-junitVersion         = "4.13.2"
-kotlin               = "2.1.20"
-kotlinxCoroutines    = "1.10.2"
-material             = "1.12.0"
-material3            = "1.3.2"
-rustAndroid          = "0.9.6"
+# @keep
+android-gradle-plugin = "8.9.1"
+androidx-activity-compose = "1.10.1"
+androidx-appcompat = "1.7.0"
+androidx-browser = "1.8.0"
+androidx-coordinatorlayout = "1.3.0"
+androidx-core-ktx = "1.15.0"
+androidx-core-splashscreen = "1.0.1"
+androidx-espresso-core = "3.6.1"
+androidx-junit = "1.2.1"
+androidx-lifecycle-compose = "2.8.7"
+androidx-material3 = "1.3.1"
+androidx-navigation = "2.8.9"
+apollo = "4.1.1"
+# @keep
+compileSdk = "35"
+google-services = "4.4.2"
+gradle-versions = "0.52.0"
+jna = "5.17.0"
+junit = "4.13.2"
+kotlin = "2.1.20"
+kotlinx-coroutines = "1.10.1"
+# @keep
+minSdk = "22"
+mozilla-rust-android = "0.9.6"
+# @keep
+targetSdk = "35"
+version-catalog-update = "0.8.5"
 
 [libraries]
-androidx-appcompat         = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
-androidx-browser           = { module = "androidx.browser:browser", version.ref = "browser" }
-androidx-coordinatorlayout = { module = "androidx.coordinatorlayout:coordinatorlayout", version.ref = "coordinatorLayout" }
-androidx-core-ktx          = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
-androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashScreen" }
-androidx-espresso-core     = { module = "androidx.test.espresso:espresso-core", version.ref = "androidxEspressoCore" }
-androidx-junit             = { module = "androidx.test.ext:junit", version.ref = "androidxJunit" }
-androidx-material3         = { module = "androidx.compose.material3:material3", version.ref = "material3" }
-kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
-kotlinx-coroutines-core    = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
-
-android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "androidGradlePlugin" }
-apollo-api           = { module = "com.apollographql.apollo:apollo-api", version.ref = "apollo" }
-apollo-runtime       = { module = "com.apollographql.apollo:apollo-runtime", version.ref = "apollo" }
-google-material      = { module = "com.google.android.material:material", version.ref = "material" }
-google-services      = { module = "com.google.gms:google-services", version.ref = "googleServices" }
-jna                  = { module = "net.java.dev.jna:jna", version.ref = "jna" }
-junit                = { module = "junit:junit", version.ref = "junitVersion" }
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle-plugin" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
+androidx-browser = { module = "androidx.browser:browser", version.ref = "androidx-browser" }
+androidx-compose-foundation-layout = { module = "androidx.compose.foundation:foundation-layout" }
+androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "androidx-material3" }
+androidx-compose-runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata" }
+androidx-compose-ui-googlefonts = { module = "androidx.compose.ui:ui-text-google-fonts" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-ui-util = { module = "androidx.compose.ui:ui-util" }
+androidx-compose-ui-viewbinding = { module = "androidx.compose.ui:ui-viewbinding" }
+androidx-coordinatorlayout = { module = "androidx.coordinatorlayout:coordinatorlayout", version.ref = "androidx-coordinatorlayout" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core-ktx" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-core-splashscreen" }
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-espresso-core" }
+androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-junit" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle-compose" }
+androidx-lifecycle-viewModelCompose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle-compose" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "androidx-navigation" }
+androidx-navigation-fragment = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "androidx-navigation" }
+androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "androidx-navigation" }
+apollo-api = { module = "com.apollographql.apollo:apollo-api", version.ref = "apollo" }
+apollo-runtime = { module = "com.apollographql.apollo:apollo-runtime", version.ref = "apollo" }
+google-services = { module = "com.google.gms:google-services", version.ref = "google-services" }
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+junit = { module = "junit:junit", version.ref = "junit" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
 
 [plugins]
-android-application  = { id = "com.android.application", version.ref = "androidGradlePlugin" }
-android-library      = { id = "com.android.library", version.ref = "androidGradlePlugin" }
-apollo-android       = { id = "com.apollographql.apollo", version.ref = "apollo" }
+android-application = { id = "com.android.application", version.ref = "android-gradle-plugin" }
+android-library = { id = "com.android.library", version.ref = "android-gradle-plugin" }
+apollo-android = { id = "com.apollographql.apollo", version.ref = "apollo" }
+compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+gradle-versions = { id = "com.github.ben-manes.versions", version.ref = "gradle-versions" }
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-kotlin-android       = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-rust-android         = { id = "org.mozilla.rust-android-gradle.rust-android", version.ref = "rustAndroid" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+rust-android = { id = "org.mozilla.rust-android-gradle.rust-android", version.ref = "mozilla-rust-android" }
+version-catalog-update = { id = "nl.littlerobots.version-catalog-update", version.ref = "version-catalog-update" }

@@ -5,6 +5,7 @@ plugins {
     alias libs.plugins.android.application
     alias libs.plugins.kotlin.android
     alias libs.plugins.rust.android
+    alias libs.plugins.compose
 }
 
 apply from: 'capacitor.build.gradle'
@@ -30,7 +31,9 @@ android {
         }
     }
     buildFeatures {
+        compose true
         buildConfig true
+        viewBinding true
     }
     buildTypes {
         release {
@@ -66,17 +69,33 @@ dependencies {
     implementation project(':capacitor-android')
     implementation project(':capacitor-cordova-android-plugins')
     implementation project(':service')
-    implementation libs.kotlinx.coroutines.core
-    implementation libs.kotlinx.coroutines.android
+
+    implementation libs.androidx.activity.compose
     implementation libs.androidx.appcompat
     implementation libs.androidx.browser
+    implementation libs.androidx.compose.foundation.layout
+    implementation libs.androidx.compose.material3
+    implementation libs.androidx.compose.material.icons.extended
+    implementation libs.androidx.compose.runtime.livedata
+    debugImplementation libs.androidx.compose.ui.test.manifest
+    debugImplementation libs.androidx.compose.ui.tooling
+    implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.compose.ui.util
+    implementation libs.androidx.compose.ui.viewbinding
+    implementation libs.androidx.compose.ui.googlefonts
     implementation libs.androidx.coordinatorlayout
-    implementation libs.androidx.core.splashscreen
     implementation libs.androidx.core.ktx
-    implementation libs.androidx.material3
+    implementation libs.androidx.core.splashscreen
+    implementation libs.androidx.lifecycle.viewModelCompose
+    implementation libs.androidx.lifecycle.runtime.compose
+    implementation libs.androidx.navigation.compose
+    implementation libs.androidx.navigation.fragment
+    implementation libs.androidx.navigation.ui.ktx
+
     implementation libs.apollo.runtime
-    implementation libs.google.material
     implementation libs.jna
+    implementation libs.kotlinx.coroutines.android
+
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core

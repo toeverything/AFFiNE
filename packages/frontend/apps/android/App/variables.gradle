@@ -1,5 +1,5 @@
 ext {
-    minSdkVersion = 22
-    compileSdkVersion = 35
-    targetSdkVersion = 35
+    minSdkVersion = libs.versions.minSdk.get().toInteger()
+    compileSdkVersion = libs.versions.compileSdk.get().toInteger()
+    targetSdkVersion = libs.versions.targetSdk.get().toInteger()
 }
