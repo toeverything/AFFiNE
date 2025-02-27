@@ -7,7 +7,14 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-val AffineDarkColorScheme = darkColorScheme()
+val AffineDarkColorScheme = darkColorScheme(
+    background = Dark.BackgroundPrimary,
+    onSurface = Dark.TextPrimary,
+    onSurfaceVariant = Dark.IconPrimary,
+    surfaceContainer = Dark.Surface,
+    surface = Dark.BackgroundPrimary,
+    inverseSurface = Dark.InverseBackgroundPrimary,
+)
 val AffineLightColorScheme = lightColorScheme()
 
 @SuppressLint("NewApi")

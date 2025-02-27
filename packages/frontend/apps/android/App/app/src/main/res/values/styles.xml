@@ -15,8 +15,8 @@
         <item name="android:background">@null</item>
     </style>
 
-
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#FFFFFF</item>
     </style>
+
 </resources>

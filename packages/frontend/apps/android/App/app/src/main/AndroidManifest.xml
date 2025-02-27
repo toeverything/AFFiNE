@@ -41,7 +41,10 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".chat.ChatActivity" />
+        <activity
+            android:name=".ai.AIActivity"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
