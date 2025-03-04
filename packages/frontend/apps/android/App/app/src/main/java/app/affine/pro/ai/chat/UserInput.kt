@@ -23,12 +23,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.InsertPhoto
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +38,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import app.affine.pro.theme.AffineTheme
 
 enum class InputSelector {
     NONE,
@@ -60,7 +63,9 @@ enum class InputSelector {
 @Preview
 @Composable
 fun UserInputPreview() {
-    UserInput(onMessageSent = {})
+    AffineTheme(isDarkTheme = true) {
+        UserInput(onMessageSent = {})
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -150,7 +155,6 @@ private fun UserInputSelector(
             Icon(
                 imageVector = Icons.Outlined.CameraAlt,
                 contentDescription = "Camera",
-//                tint = MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -163,9 +167,21 @@ private fun UserInputSelector(
             Icon(
                 imageVector = Icons.Outlined.InsertPhoto,
                 contentDescription = "Picture",
-//                tint = MaterialTheme.colorScheme.onSurface
             )
         }
+
+        Spacer(modifier = Modifier.width(14.dp))
+
+        VerticalDivider(modifier = Modifier.height(10.dp))
+
+        Checkbox(
+            modifier = Modifier.scale(0.8f),
+            checked = true,
+            enabled = false,
+            onCheckedChange = {},
+        )
+
+        Text(text = "Embed this doc")
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -178,7 +194,6 @@ private fun UserInputSelector(
             Icon(
                 imageVector = Icons.AutoMirrored.Default.Send,
                 contentDescription = "Send message",
-//                tint = MaterialTheme.colorScheme.onSurface
             )
         }
     }

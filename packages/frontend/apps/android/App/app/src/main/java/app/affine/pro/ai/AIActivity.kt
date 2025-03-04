@@ -48,9 +48,10 @@ class AIActivity : AppCompatActivity() {
             AffineTheme(isDarkTheme = true) {
                 Scaffold(
                     topBar = {
-                        ChatAppBar(scrollBehavior = scrollBehavior) {
-                            finish()
-                        }
+                        ChatAppBar(
+                            scrollBehavior = scrollBehavior,
+                            onBackClick = { finish() },
+                        )
                     },
                     contentWindowInsets = ScaffoldDefaults
                         .contentWindowInsets
@@ -78,8 +79,6 @@ class AIActivity : AppCompatActivity() {
                                     scrollState.scrollToItem(0)
                                 }
                             },
-                            // let this element handle the padding so that the elevation is shown behind the
-                            // navigation bar
                             modifier = Modifier
                                 .navigationBarsPadding()
                                 .imePadding()
