@@ -14,13 +14,13 @@ export class StoreSelectionExtension extends StoreExtension {
 
   private readonly _id = `${this.store.id}:${nanoid()}`;
   private _selectionConstructors: Record<string, SelectionConstructor> = {};
-  private readonly _selections = signal<BaseSelection[]>([]);
-  private readonly _remoteSelections = signal<Map<number, BaseSelection[]>>(
+  private readonly _selections$ = signal<BaseSelection[]>([]);
+  private readonly _remoteSelections$ = signal<Map<number, BaseSelection[]>>(
     new Map()
   );
 
   private readonly _itemAdded = (event: { stackItem: StackItem }) => {
-    event.stackItem.meta.set('selection-state', this._selections.value);
+    event.stackItem.meta.set('selection-state', this.value);
   };
 
   private readonly _itemPopped = (event: { stackItem: StackItem }) => {
@@ -59,21 +59,14 @@ export class StoreSelectionExtension extends StoreExtension {
         const all = change.updated.concat(change.added).concat(change.removed);
         const localClientID = this.store.awarenessStore.awareness.clientID;
         const exceptLocal = all.filter(id => id !== localClientID);
-        const hasLocal = all.includes(localClientID);
-        if (hasLocal) {
-          const localSelectionJson =
-            this.store.awarenessStore.getLocalSelection(this._id);
-          const localSelection = localSelectionJson.map(json => {
-            return this._jsonToSelection(json);
-          });
-          this._selections.value = localSelection;
-        }
 
         // Only consider remote selections from other clients
-        if (exceptLocal.length > 0) {
-          const map = new Map<number, BaseSelection[]>();
-          this.store.awarenessStore.getStates().forEach((state, id) => {
-            if (id === this.store.awarenessStore.awareness.clientID) return;
+        if (exceptLocal.length === 0) return;
+
+        const map = new Map<number, BaseSelection[]>();
+        Array.from(this.store.awarenessStore.getStates().entries())
+          .filter(([id]) => id !== localClientID)
+          .forEach(([id, state]) => {
             // selection id starts with the same block collection id from others clients would be considered as remote selections
             const selection = Object.entries(state.selectionV2)
               .filter(([key]) => key.startsWith(this.store.id))
@@ -97,9 +90,8 @@ export class StoreSelectionExtension extends StoreExtension {
 
             map.set(id, selections);
           });
-          this._remoteSelections.value = map;
-          this.slots.remoteChanged.next(map);
-        }
+        this._remoteSelections$.value = map;
+        this.slots.remoteChanged.next(map);
       }
     );
 
@@ -108,18 +100,16 @@ export class StoreSelectionExtension extends StoreExtension {
   }
 
   get value() {
-    return this._selections.value;
+    return this._selections$.peek();
   }
 
   get remoteSelections() {
-    return this._remoteSelections.value;
+    return this._remoteSelections$.peek();
   }
 
   clear(types?: string[]) {
     if (types) {
-      const values = this.value.filter(
-        selection => !types.includes(selection.type)
-      );
+      const values = this.value.filter(s => !types.includes(s.type));
       this.set(values);
     } else {
       this.set([]);
@@ -138,22 +128,28 @@ export class StoreSelectionExtension extends StoreExtension {
   }
 
   filter<T extends SelectionConstructor>(type: T) {
-    return this.filter$(type).value;
+    return this.filter$(type).peek();
   }
 
   filter$<T extends SelectionConstructor>(type: T) {
     return computed(() =>
-      this.value.filter((sel): sel is InstanceType<T> => sel.is(type))
+      this._selections$.value.filter((s): s is InstanceType<T> => s.is(type))
     );
   }
 
-  find<T extends SelectionConstructor>(type: T) {
-    return this.find$(type).value;
+  find<T extends SelectionConstructor>(
+    type: T,
+    predicate?: (s: InstanceType<T>) => boolean
+  ) {
+    return this.find$(type, predicate).peek();
   }
 
-  find$<T extends SelectionConstructor>(type: T) {
+  find$<T extends SelectionConstructor>(
+    type: T,
+    predicate?: (s: InstanceType<T>) => boolean
+  ) {
     return computed(() =>
-      this.value.find((sel): sel is InstanceType<T> => sel.is(type))
+      this.filter$(type).value.find(s => predicate?.(s) ?? true)
     );
   }
 
@@ -162,6 +158,7 @@ export class StoreSelectionExtension extends StoreExtension {
       this._id,
       selections.map(s => s.toJSON())
     );
+    this._selections$.value = selections;
     this.slots.changed.next(selections);
   }
 
@@ -176,9 +173,7 @@ export class StoreSelectionExtension extends StoreExtension {
   }
 
   fromJSON(json: Record<string, unknown>[]) {
-    const selections = json.map(json => {
-      return this._jsonToSelection(json);
-    });
+    const selections = json.map(json => this._jsonToSelection(json));
     return this.set(selections);
   }
 }

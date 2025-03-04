@@ -174,17 +174,11 @@ export class DataViewBlockComponent extends CaptionedBlockComponent<DataViewBloc
     }
   );
 
-  selection$ = computed(() => {
-    const databaseSelection = this.selection.value.find(
-      (selection): selection is DatabaseSelection => {
-        if (selection.blockId !== this.blockId) {
-          return false;
-        }
-        return selection instanceof DatabaseSelection;
-      }
-    );
-    return databaseSelection?.viewSelection;
-  });
+  selection$ = computed(
+    () =>
+      this.selection.find$(DatabaseSelection, s => s.blockId === this.blockId)
+        .value?.viewSelection
+  );
 
   setSelection = (selection: DataViewSelection | undefined) => {
     this.selection.setGroup(

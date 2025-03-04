@@ -231,9 +231,8 @@ export class PageRootBlockComponent extends BlockComponent<
       },
       ArrowUp: () => {
         const selection = this.host.selection;
-        const sel = selection.value.find(
-          sel => sel.is(TextSelection) || sel.is(BlockSelection)
-        );
+        const sel =
+          selection.find(TextSelection) ?? selection.find(BlockSelection);
         if (!sel) return;
         let model: BlockModel | null = null;
         let current = this.doc.getModelById(sel.blockId);

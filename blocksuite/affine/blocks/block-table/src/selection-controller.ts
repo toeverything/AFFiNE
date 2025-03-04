@@ -519,9 +519,10 @@ export class SelectionController implements ReactiveController {
   }
   selected$ = computed(() => this.getSelected());
   getSelected(): TableSelectionData | undefined {
-    const selection = this.host.selection.value.find(
-      selection => selection.blockId === this.host.model.id
+    const selection = this.host.selection.find(
+      TableSelection,
+      s => s.blockId === this.host.model.id
     );
-    return selection?.is(TableSelection) ? selection.data : undefined;
+    return selection?.data;
   }
 }

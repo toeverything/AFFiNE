@@ -198,13 +198,14 @@ export function toGfxBlockComponent<
 
     readonly transformState$ = signal<'idle' | 'active'>('active');
 
-    override selected$ = computed(() => {
-      const selection = this.std.selection.value.find(
-        selection => selection.blockId === this.model?.id
-      );
-      if (!selection) return false;
-      return selection.is(SurfaceSelection);
-    });
+    override selected$ = computed(() =>
+      Boolean(
+        this.std.selection.find$(
+          SurfaceSelection,
+          s => s.blockId === this.model.id
+        ).value
+      )
+    );
 
     onDragMove({ dx, dy, currentBound }: DragMoveContext) {
       this.model.xywh = currentBound.moveDelta(dx, dy).serialize();

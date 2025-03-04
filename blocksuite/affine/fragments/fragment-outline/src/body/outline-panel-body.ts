@@ -268,8 +268,8 @@ export class OutlinePanelBody extends SignalWatcher(
       if (mode !== 'edgeless') return;
 
       const currSelectedNotes = std.selection
-        .filter(SurfaceSelection)
-        .map(({ blockId }) => doc.getBlock(blockId)?.model)
+        .filter$(SurfaceSelection)
+        .value.map(({ blockId }) => doc.getBlock(blockId)?.model)
         .filter(model => {
           return !!model && matchModels(model, [NoteBlockModel]);
         });

@@ -319,17 +319,11 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
     ],
   });
 
-  viewSelection$ = computed(() => {
-    const databaseSelection = this.selection.value.find(
-      (selection): selection is DatabaseSelection => {
-        if (selection.blockId !== this.blockId) {
-          return false;
-        }
-        return selection instanceof DatabaseSelection;
-      }
-    );
-    return databaseSelection?.viewSelection;
-  });
+  viewSelection$ = computed(
+    () =>
+      this.selection.find$(DatabaseSelection, s => s.blockId === this.blockId)
+        .value?.viewSelection
+  );
 
   virtualPadding$ = signal(0);
 

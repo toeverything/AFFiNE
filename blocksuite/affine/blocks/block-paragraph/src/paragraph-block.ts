@@ -32,13 +32,12 @@ import { paragraphBlockStyles } from './styles.js';
 export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBlockModel> {
   static override styles = paragraphBlockStyles;
 
-  focused$ = computed(() => {
-    const selection = this.std.selection.value.find(
-      selection => selection.blockId === this.model?.id
-    );
-    if (!selection) return false;
-    return selection.is(TextSelection);
-  });
+  focused$ = computed(() =>
+    Boolean(
+      this.selection.find$(TextSelection, s => s.blockId === this.model.id)
+        .value
+    )
+  );
 
   private readonly _composing = signal(false);
 
@@ -129,7 +128,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
           this._displayPlaceholder.value = false;
           return;
         }
-        const textSelection = this.host.selection.find(TextSelection);
+        const textSelection = this.host.selection.find$(TextSelection).value;
         const isCollapsed = textSelection?.isCollapsed() ?? false;
         if (!this.focused$.value || !isCollapsed) {
           this._displayPlaceholder.value = false;
@@ -169,7 +168,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
         // reset text selection when selected block is collapsed
         if (this.model.props.type$.value.startsWith('h') && collapsed) {
           const collapsedSiblings = this.collapsedSiblings;
-          const textSelection = this.host.selection.find(TextSelection);
+          const textSelection = this.host.selection.find$(TextSelection).value;
 
           if (
             textSelection &&
