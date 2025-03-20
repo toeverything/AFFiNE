@@ -403,7 +403,7 @@ export class AffineToolbarWidget extends WidgetComponent {
 
         // TODO(@fundon): improves here
         const isNote = flavour === 'affine:note';
-        let placement = isNote ? ('top' as Placement) : undefined;
+        let placement = isNote ? ('top-start' as Placement) : undefined;
         let virtualEl: ReferenceElement | null = null;
 
         if (flags.check(Flag.Hovering, value)) {
