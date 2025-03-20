@@ -84,7 +84,7 @@ export class AffineToolbarWidget extends WidgetComponent {
     }
   `;
 
-  placement$ = signal<Placement>('top');
+  placement$ = signal<Placement>('top-start');
 
   sideOptions$ = signal<Partial<SideObject> | null>(null);
 
