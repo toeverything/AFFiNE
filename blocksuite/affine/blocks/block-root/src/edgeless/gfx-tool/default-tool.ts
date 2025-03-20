@@ -1,6 +1,5 @@
 import { insertEdgelessTextCommand } from '@blocksuite/affine-block-edgeless-text';
 import {
-  EdgelessFrameManagerIdentifier,
   type FrameOverlay,
   isFrameBlock,
 } from '@blocksuite/affine-block-frame';
@@ -12,7 +11,6 @@ import {
 import { addText, mountTextElementEditor } from '@blocksuite/affine-gfx-text';
 import type {
   EdgelessTextBlockModel,
-  FrameBlockModel,
   NoteBlockModel,
 } from '@blocksuite/affine-model';
 import {
@@ -31,46 +29,38 @@ import {
   handleNativeRangeAtPoint,
   resetNativeSelection,
 } from '@blocksuite/affine-shared/utils';
-import type { PointerEventState } from '@blocksuite/block-std';
+import { mountFrameTitleEditor } from '@blocksuite/affine-widget-frame-title';
+import type { BlockComponent, PointerEventState } from '@blocksuite/block-std';
 import {
   BaseTool,
   getTopElements,
-  type GfxBlockElementModel,
   type GfxModel,
-  type GfxPrimitiveElementModel,
   isGfxGroupCompatibleModel,
   type PointTestOptions,
+  TransformManagerIdentifier,
 } from '@blocksuite/block-std/gfx';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { IVec } from '@blocksuite/global/gfx';
 import { Bound, getCommonBoundWithRotation, Vec } from '@blocksuite/global/gfx';
-import { noop } from '@blocksuite/global/utils';
 import { effect } from '@preact/signals-core';
 import clamp from 'lodash-es/clamp';
 import last from 'lodash-es/last';
 
-import type { EdgelessRootBlockComponent } from '../edgeless-root-block.js';
+import type { EdgelessRootBlockComponent } from '../index.js';
 import { prepareCloneData } from '../utils/clone-utils.js';
 import { calPanDelta } from '../utils/panning-utils.js';
 import { isCanvasElement, isEdgelessTextBlock } from '../utils/query.js';
-import type { SnapManager } from '../utils/snap-manager.js';
 import {
   mountConnectorLabelEditor,
-  mountFrameTitleEditor,
   mountGroupTitleEditor,
   mountShapeTextEditor,
 } from '../utils/text.js';
-import { CanvasElementEventExt } from './default-tool-ext/event-ext.js';
-import type { DefaultToolExt } from './default-tool-ext/ext.js';
 import { DefaultModeDragType } from './default-tool-ext/ext.js';
-import { MindMapExt } from './default-tool-ext/mind-map-ext/mind-map-ext.js';
 
 export class DefaultTool extends BaseTool {
   static override toolName: string = 'default';
 
   private _accumulateDelta: IVec = [0, 0];
-
-  private _alignBound = new Bound();
 
   private _autoPanTimer: number | null = null;
 
@@ -84,41 +74,18 @@ export class DefaultTool extends BaseTool {
   private readonly _clearSelectingState = () => {
     this._stopAutoPanning();
     this._clearDisposable();
-
-    this._wheeling = false;
   };
 
   private _disposables: DisposableGroup | null = null;
 
-  private _extHandlers: {
-    dragStart?: (evt: PointerEventState) => void;
-    dragMove?: (evt: PointerEventState) => void;
-    dragEnd?: (evt: PointerEventState) => void;
-  }[] = [];
-
-  private _exts: DefaultToolExt[] = [];
-
-  private _hoveredFrame: FrameBlockModel | null = null;
-
   // Do not select the text, when click again after activating the note.
   private _isDoubleClickedOnMask = false;
-
-  private _lock = false;
 
   private readonly _panViewport = (delta: IVec) => {
     this._accumulateDelta[0] += delta[0];
     this._accumulateDelta[1] += delta[1];
     this.gfx.viewport.applyDeltaCenter(delta[0], delta[1]);
   };
-
-  private readonly _pendingUpdates = new Map<
-    GfxBlockElementModel | GfxPrimitiveElementModel,
-    Partial<GfxBlockElementModel>
-  >();
-
-  private _rafId: number | null = null;
-
-  private _selectedBounds: Bound[] = [];
 
   // For moving the connector label
   private _selectedConnector: ConnectorElementModel | null = null;
@@ -219,26 +186,12 @@ export class DefaultTool extends BaseTool {
     });
   };
 
-  private _wheeling = false;
-
   dragType = DefaultModeDragType.None;
 
   enableHover = true;
 
-  private get _edgeless(): EdgelessRootBlockComponent | null {
-    const block = this.std.view.getBlock(this.doc.root!.id);
-
-    return (block as EdgelessRootBlockComponent) ?? null;
-  }
-
-  private get _frameMgr() {
-    return this.std.get(EdgelessFrameManagerIdentifier);
-  }
-
-  private get _supportedExts() {
-    return this._exts.filter(ext =>
-      ext.supportedDragTypes.includes(this.dragType)
-    );
+  private get _edgeless(): BlockComponent | null {
+    return this.std.view.getBlock(this.doc.root!.id);
   }
 
   /**
@@ -263,12 +216,12 @@ export class DefaultTool extends BaseTool {
     return this.gfx.selection;
   }
 
-  private get frameOverlay() {
-    return this.std.get(OverlayIdentifier('frame')) as FrameOverlay;
+  get elementTransformMgr() {
+    return this.std.getOptional(TransformManagerIdentifier);
   }
 
-  get snapOverlay() {
-    return this.std.get(OverlayIdentifier('snap-manager')) as SnapManager;
+  private get frameOverlay() {
+    return this.std.get(OverlayIdentifier('frame')) as FrameOverlay;
   }
 
   private _addEmptyParagraphBlock(
@@ -285,11 +238,13 @@ export class DefaultTool extends BaseTool {
   }
 
   private async _cloneContent() {
-    this._lock = true;
-
     if (!this._edgeless) return;
 
-    const clipboardController = this._edgeless?.clipboardController;
+    // FIXME: edgeless clipboard should be an extension
+    const clipboardController = (
+      this._edgeless as EdgelessRootBlockComponent | null
+    )?.clipboardController;
+    if (!clipboardController) return;
     const snapshot = prepareCloneData(this._toBeMoved, this.std);
 
     const bound = getCommonBoundWithRotation(this._toBeMoved);
@@ -374,91 +329,6 @@ export class DefaultTool extends BaseTool {
     }
   }
 
-  private _filterConnectedConnector() {
-    this._toBeMoved = this._toBeMoved.filter(ele => {
-      // eslint-disable-next-line sonarjs/no-collapsible-if
-      if (
-        ele instanceof ConnectorElementModel &&
-        ele.source?.id &&
-        ele.target?.id
-      ) {
-        if (
-          this._toBeMoved.some(e => e.id === ele.source.id) &&
-          this._toBeMoved.some(e => e.id === ele.target.id)
-        ) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }
-
-  private _isDraggable(element: GfxModel) {
-    return !(
-      element instanceof ConnectorElementModel &&
-      !ConnectorUtils.isConnectorAndBindingsAllSelected(
-        element,
-        this._toBeMoved
-      )
-    );
-  }
-
-  private _moveContent(
-    [dx, dy]: IVec,
-    alignBound: Bound,
-    shifted?: boolean,
-    shouldClone?: boolean
-  ) {
-    alignBound.x += dx;
-    alignBound.y += dy;
-
-    const alignRst = this.snapOverlay.align(alignBound);
-    const delta = [dx + alignRst.dx, dy + alignRst.dy];
-
-    if (shifted) {
-      const angle = Math.abs(Math.atan2(delta[1], delta[0]));
-      const direction =
-        angle < Math.PI / 4 || angle > 3 * (Math.PI / 4) ? 'x' : 'y';
-      delta[direction === 'x' ? 1 : 0] = 0;
-    }
-
-    this._toBeMoved.forEach((element, index) => {
-      const isGraphicElement = isCanvasElement(element);
-
-      if (isGraphicElement && !this._isDraggable(element)) return;
-
-      let bound = this._selectedBounds[index];
-      if (shouldClone) bound = bound.clone();
-
-      bound.x += delta[0];
-      bound.y += delta[1];
-
-      if (isGraphicElement) {
-        if (!this._lock) {
-          this._lock = true;
-          this.doc.captureSync();
-        }
-
-        if (element instanceof ConnectorElementModel) {
-          element.moveTo(bound);
-        }
-      }
-
-      this._scheduleUpdate(element, {
-        xywh: bound.serialize(),
-      });
-    });
-
-    this._hoveredFrame = this._frameMgr.getFrameFromPoint(
-      this.dragLastPos,
-      this._toBeMoved.filter(ele => isFrameBlock(ele))
-    );
-
-    this._hoveredFrame && !this._hoveredFrame.isLocked()
-      ? this.frameOverlay.highlight(this._hoveredFrame)
-      : this.frameOverlay.clear();
-  }
-
   private _moveLabel(delta: IVec) {
     const connector = this._selectedConnector;
     let bounds = this._selectedConnectorLabelBounds;
@@ -535,61 +405,14 @@ export class DefaultTool extends BaseTool {
     return tryGetLockedAncestor(result);
   }
 
-  private _scheduleUpdate(
-    element: GfxBlockElementModel | GfxPrimitiveElementModel,
-    updates: Partial<GfxBlockElementModel>
-  ) {
-    this._pendingUpdates.set(element, updates);
-
-    if (this._rafId !== null) return;
-
-    this._rafId = requestAnimationFrame(() => {
-      this._pendingUpdates.forEach((updates, element) => {
-        this.gfx.updateElement(element, updates);
-      });
-      this._pendingUpdates.clear();
-      this._rafId = null;
-    });
-  }
-
   private initializeDragState(
     dragType: DefaultModeDragType,
     event: PointerEventState
   ) {
     this.dragType = dragType;
 
-    const mindmaps: MindmapElementModel[] = this._toBeMoved.reduce(
-      (pre, elem) => {
-        if (
-          elem.group instanceof MindmapElementModel &&
-          !pre.includes(elem.group)
-        ) {
-          pre.push(elem.group);
-        }
-
-        return pre;
-      },
-      [] as MindmapElementModel[]
-    );
-
-    this._alignBound = this.snapOverlay.setMovingElements(this._toBeMoved, [
-      ...mindmaps,
-      ...mindmaps.flatMap(m => m.childElements),
-    ]);
-
     this._clearDisposable();
     this._disposables = new DisposableGroup();
-
-    const ctx = {
-      movedElements: this._toBeMoved,
-      dragType,
-      event,
-    };
-
-    this._extHandlers = this._supportedExts.map(ext => ext.initDrag(ctx));
-    this._selectedBounds = this._toBeMoved.map(element =>
-      Bound.deserialize(element.xywh)
-    );
 
     // If the drag type is selecting, set up the dragging area disposable group
     // If the viewport updates when dragging, should update the dragging area and selection
@@ -609,36 +432,16 @@ export class DefaultTool extends BaseTool {
     }
 
     if (this.dragType === DefaultModeDragType.ContentMoving) {
-      this._disposables.add(
-        this.gfx.viewport.viewportMoved.subscribe(delta => {
-          if (
-            this.dragType === DefaultModeDragType.ContentMoving &&
-            this.controller.dragging$.peek() &&
-            !this._autoPanTimer
-          ) {
-            if (
-              this._toBeMoved.every(ele => {
-                return !this._isDraggable(ele);
-              })
-            ) {
-              return;
-            }
-
-            if (!this._wheeling) {
-              this._wheeling = true;
-              this._selectedBounds = this._toBeMoved.map(element =>
-                Bound.deserialize(element.xywh)
-              );
-            }
-
-            this._alignBound = this.snapOverlay.setMovingElements(
-              this._toBeMoved
-            );
-
-            this._moveContent(delta, this._alignBound);
-          }
-        })
-      );
+      if (this.elementTransformMgr) {
+        this.doc.captureSync();
+        this.elementTransformMgr.initializeDrag({
+          movingElements: this._toBeMoved,
+          event: event.raw,
+          onDragEnd: () => {
+            this.doc.captureSync();
+          },
+        });
+      }
       return;
     }
   }
@@ -742,14 +545,13 @@ export class DefaultTool extends BaseTool {
     }
 
     this._isDoubleClickedOnMask = false;
-    this._supportedExts.forEach(ext => ext.click?.(e));
+    this.elementTransformMgr?.dispatch('click', e);
   }
 
   override deactivate() {
     this._stopAutoPanning();
     this._clearDisposable();
     this._accumulateDelta = [0, 0];
-    noop();
   }
 
   override doubleClick(e: PointerEventState) {
@@ -819,7 +621,7 @@ export class DefaultTool extends BaseTool {
       }
     }
 
-    this._supportedExts.forEach(ext => ext.click?.(e));
+    this.elementTransformMgr?.dispatch('dblclick', e);
 
     if (
       e.raw.target &&
@@ -832,48 +634,9 @@ export class DefaultTool extends BaseTool {
     }
   }
 
-  override dragEnd(e: PointerEventState) {
-    this._extHandlers.forEach(handler => handler.dragEnd?.(e));
-
-    this._toBeMoved.forEach(el => {
-      this.doc.transact(() => {
-        el.pop('xywh');
-      });
-
-      if (el instanceof ConnectorElementModel) {
-        el.pop('labelXYWH');
-      }
-    });
-
-    {
-      const frameManager = this._frameMgr;
-      const toBeMovedTopElements = getTopElements(
-        this._toBeMoved.map(el =>
-          el.group instanceof MindmapElementModel ? el.group : el
-        )
-      );
-      if (this._hoveredFrame) {
-        frameManager.addElementsToFrame(
-          this._hoveredFrame,
-          toBeMovedTopElements
-        );
-      } else {
-        // only apply to root nodes of trees
-        toBeMovedTopElements.forEach(element =>
-          frameManager.removeFromParentFrame(element)
-        );
-      }
-    }
-
-    if (this._lock) {
-      this.doc.captureSync();
-      this._lock = false;
-    }
-
+  override dragEnd() {
     if (this.edgelessSelectionManager.editing) return;
 
-    this._selectedBounds = [];
-    this.snapOverlay.clear();
     this.frameOverlay.clear();
     this._toBeMoved = [];
     this._selectedConnector = null;
@@ -897,28 +660,7 @@ export class DefaultTool extends BaseTool {
         }
         break;
       }
-      case DefaultModeDragType.AltCloning:
       case DefaultModeDragType.ContentMoving: {
-        if (
-          this._toBeMoved.length &&
-          this._toBeMoved.every(ele => {
-            return !this._isDraggable(ele);
-          })
-        ) {
-          return;
-        }
-
-        if (this._wheeling) {
-          this._wheeling = false;
-        }
-
-        const dx = this.dragLastPos[0] - this.dragStartPos[0];
-        const dy = this.dragLastPos[1] - this.dragStartPos[1];
-        const alignBound = this._alignBound.clone();
-        const shifted = e.keys.shift || this.gfx.keyboard.shiftKey$.peek();
-
-        this._moveContent([dx, dy], alignBound, shifted, true);
-        this._extHandlers.forEach(handler => handler.dragMove?.(e));
         break;
       }
       case DefaultModeDragType.ConnectorLabelMoving: {
@@ -956,30 +698,12 @@ export class DefaultTool extends BaseTool {
     this._toBeMoved = Array.from(toBeMoved);
 
     // If alt key is pressed and content is moving, clone the content
-    if (e.keys.alt && dragType === DefaultModeDragType.ContentMoving) {
-      dragType = DefaultModeDragType.AltCloning;
+    if (dragType === DefaultModeDragType.ContentMoving && e.keys.alt) {
       await this._cloneContent();
     }
-    this._filterConnectedConnector();
-
-    // Connector needs to be updated first
-    this._toBeMoved.sort((a, _) =>
-      a instanceof ConnectorElementModel ? -1 : 1
-    );
 
     // Set up drag state
     this.initializeDragState(dragType, e);
-
-    // stash the state
-    this._toBeMoved.forEach(ele => {
-      ele.stash('xywh');
-
-      if (ele instanceof ConnectorElementModel) {
-        ele.stash('labelXYWH');
-      }
-    });
-
-    this._extHandlers.forEach(handler => handler.dragStart?.(e));
   }
 
   override mounted() {
@@ -1003,15 +727,10 @@ export class DefaultTool extends BaseTool {
         }
       })
     );
-
-    this._exts = [MindMapExt, CanvasElementEventExt].map(
-      constructor => new constructor(this)
-    );
-    this._exts.forEach(ext => ext.mounted());
   }
 
   override pointerDown(e: PointerEventState): void {
-    this._supportedExts.forEach(ext => ext.pointerDown(e));
+    this.elementTransformMgr?.dispatch('pointerdown', e);
   }
 
   override pointerMove(e: PointerEventState) {
@@ -1030,20 +749,18 @@ export class DefaultTool extends BaseTool {
       this.frameOverlay.clear();
     }
 
-    this._supportedExts.forEach(ext => ext.pointerMove(e));
+    this.elementTransformMgr?.dispatch('pointermove', e);
   }
 
   override pointerUp(e: PointerEventState) {
-    this._supportedExts.forEach(ext => ext.pointerUp(e));
+    this.elementTransformMgr?.dispatch('pointerup', e);
   }
 
   override tripleClick() {
     if (this._isDoubleClickedOnMask) return;
   }
 
-  override unmounted(): void {
-    this._exts.forEach(ext => ext.unmounted());
-  }
+  override unmounted(): void {}
 }
 
 declare module '@blocksuite/block-std/gfx' {

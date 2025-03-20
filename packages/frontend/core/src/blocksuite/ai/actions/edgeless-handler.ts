@@ -45,7 +45,7 @@ import {
   actionToErrorResponse,
   actionToGenerating,
   actionToResponse,
-  getElementToolbar,
+  getToolbar,
 } from './edgeless-response';
 
 async function getContentFromEmbedSyncedDocModel(
@@ -400,7 +400,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
       trackerOptions
     );
 
-    const elementToolbar = getElementToolbar(host);
+    const toolbar = getToolbar(host);
     const isEmpty = selectedElements.length === 0;
     const isCreateImageAction = id === 'createImage';
     const isMakeItRealAction = !isCreateImageAction && id === 'makeItReal';
@@ -411,8 +411,8 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
       referenceElement = selectedBlocks.at(-1);
     } else if (edgelessCopilot.visible && edgelessCopilot.selectionElem) {
       referenceElement = edgelessCopilot.selectionElem;
-    } else if (elementToolbar.toolbarVisible) {
-      referenceElement = getElementToolbar(host);
+    } else if (toolbar?.dataset.open) {
+      referenceElement = toolbar;
     } else if (!isEmpty) {
       const lastSelected = selectedElements.at(-1)?.id;
       if (!lastSelected) return;

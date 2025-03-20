@@ -10,8 +10,10 @@ import supertest from 'supertest';
 
 import { AFFiNELogger, ApplyType, GlobalExceptionFilter } from '../../base';
 import { AuthService } from '../../core/auth';
+import { Mailer } from '../../core/mail';
 import { UserModel } from '../../models';
 import { createFactory, MockedUser, MockUser, MockUserInput } from '../mocks';
+import { MockMailer } from '../mocks/mailer.mock';
 import { createTestingModule } from './testing-module';
 import { initTestingDB, TEST_LOG_LEVEL } from './utils';
 
@@ -82,6 +84,7 @@ export class TestingApp extends ApplyType<INestApplication>() {
   private readonly userCookies: Set<string> = new Set();
 
   readonly create!: ReturnType<typeof createFactory>;
+  readonly mails!: MockMailer;
 
   [Symbol.asyncDispose](): Promise<void> {
     return this.close();
@@ -280,6 +283,8 @@ function makeTestingApp(app: INestApplication): TestingApp {
 
   // @ts-expect-error allow
   testingApp.create = createFactory(app.get(PrismaClient, { strict: false }));
+  // @ts-expect-error allow
+  testingApp.mails = app.get(Mailer, { strict: false }) as MockMailer;
 
   return new Proxy(testingApp, {
     get(target, prop) {

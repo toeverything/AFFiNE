@@ -5,6 +5,7 @@ export const BasicTextStyle: CSSProperties = {
   fontWeight: '400',
   lineHeight: '24px',
   fontFamily: 'Inter, Arial, Helvetica, sans-serif',
-  margin: '24px 0 0',
+  marginTop: '24px',
+  marginBottom: '0',
   color: '#141414',
 };

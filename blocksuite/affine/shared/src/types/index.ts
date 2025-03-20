@@ -4,6 +4,7 @@ import type {
   ReferenceInfo,
 } from '@blocksuite/affine-model';
 import type { BlockComponent } from '@blocksuite/block-std';
+import type { InlineEditor } from '@blocksuite/block-std/inline';
 import type { BlockModel } from '@blocksuite/store';
 export * from './uni-component';
 export interface EditingState {
@@ -73,3 +74,5 @@ export interface AffineTextAttributes {
   latex?: string | null;
   footnote?: FootNote | null;
 }
+
+export type AffineInlineEditor = InlineEditor<AffineTextAttributes>;

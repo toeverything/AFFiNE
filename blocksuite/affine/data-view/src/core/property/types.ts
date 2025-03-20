@@ -39,7 +39,7 @@ export type PropertyConfig<Data, RawValue = unknown, JsonValue = unknown> = {
         data: Data;
       }>
     ) => JsonValue;
-    fromJson: (
+    fromJson?: (
       config: WithCommonPropertyConfig<{
         value: JsonValue;
         data: Data;

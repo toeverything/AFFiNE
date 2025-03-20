@@ -8,6 +8,7 @@ import { EditorToolbarSeparator } from './separator.js';
 import { EditorToolbar } from './toolbar.js';
 import { Tooltip } from './tooltip.js';
 
+export { EditorChevronDown } from './chevron-down.js';
 export { ToolbarMoreMenuConfigExtension } from './config.js';
 export { EditorIconButton } from './icon-button.js';
 export {

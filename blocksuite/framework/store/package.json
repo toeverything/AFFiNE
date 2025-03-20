@@ -11,7 +11,6 @@
   "license": "MIT",
   "dependencies": {
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/inline": "workspace:*",
     "@blocksuite/sync": "workspace:*",
     "@preact/signals-core": "^1.8.0",
     "@types/lodash.ismatch": "^4.4.9",
@@ -30,7 +29,7 @@
   "devDependencies": {
     "@types/lodash.clonedeep": "^4.5.9",
     "@types/lodash.merge": "^4.6.9",
-    "vitest": "3.0.8"
+    "vitest": "3.0.9"
   },
   "exports": {
     ".": "./src/index.ts",

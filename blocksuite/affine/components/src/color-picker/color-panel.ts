@@ -205,12 +205,13 @@ export class EdgelessColorPanel extends LitElement {
     }
   `;
 
-  onSelect(palette: Palette) {
+  select(palette: Palette) {
     this.dispatchEvent(
       new ColorEvent('select', {
         detail: palette,
-        composed: true,
         bubbles: true,
+        composed: true,
+        cancelable: true,
       })
     );
   }
@@ -236,7 +237,7 @@ export class EdgelessColorPanel extends LitElement {
             .hollowCircle=${this.hollowCircle}
             ?active=${activated}
             @click=${() => {
-              this.onSelect(palette);
+              this.select(palette);
               this.value = resolvedColor;
             }}
           >

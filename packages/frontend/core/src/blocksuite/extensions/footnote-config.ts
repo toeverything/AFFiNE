@@ -1,4 +1,4 @@
-import { FootNoteNodeConfigExtension } from '@blocksuite/affine/rich-text';
+import { FootNoteNodeConfigExtension } from '@blocksuite/affine/inlines/footnote';
 import type { SpecBuilder } from '@blocksuite/affine/shared/utils';
 
 // Disable hover effect for footnote node

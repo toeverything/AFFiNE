@@ -1,15 +1,15 @@
 import {
   addProperty,
   copyCellsByProperty,
-  databaseBlockColumns,
+  databaseBlockProperties,
   deleteColumn,
   getCell,
   getProperty,
   updateCell,
 } from '@blocksuite/affine-block-database';
 import {
-  type Cell,
-  type Column,
+  type CellDataType,
+  type ColumnDataType,
   type DatabaseBlockModel,
   DatabaseBlockSchemaExtension,
   NoteBlockSchemaExtension,
@@ -55,9 +55,9 @@ describe('DatabaseManager', () => {
   let databaseBlockId: BlockModel['id'];
   let p1: BlockModel['id'];
   let p2: BlockModel['id'];
-  let col1: Column['id'];
-  let col2: Column['id'];
-  let col3: Column['id'];
+  let col1: ColumnDataType['id'];
+  let col2: ColumnDataType['id'];
+  let col3: ColumnDataType['id'];
 
   const selection = [
     { id: '1', value: 'Done', color: 'var(--affine-tag-white)' },
@@ -90,7 +90,7 @@ describe('DatabaseManager', () => {
     col1 = addProperty(
       db,
       'end',
-      databaseBlockColumns.numberColumnConfig.create('Number')
+      databaseBlockProperties.numberColumnConfig.create('Number')
     );
     col2 = addProperty(
       db,
@@ -102,7 +102,7 @@ describe('DatabaseManager', () => {
     col3 = addProperty(
       db,
       'end',
-      databaseBlockColumns.richTextColumnConfig.create('Rich Text')
+      databaseBlockProperties.richTextColumnConfig.create('Rich Text')
     );
 
     doc.updateBlock(databaseModel, {
@@ -136,7 +136,7 @@ describe('DatabaseManager', () => {
 
   test('getColumn', () => {
     const column = {
-      ...databaseBlockColumns.numberColumnConfig.create('testColumnId'),
+      ...databaseBlockProperties.numberColumnConfig.create('testColumnId'),
       id: 'testColumnId',
     };
     addProperty(db, 'end', column);
@@ -147,7 +147,7 @@ describe('DatabaseManager', () => {
 
   test('addColumn', () => {
     const column =
-      databaseBlockColumns.numberColumnConfig.create('Test Column');
+      databaseBlockProperties.numberColumnConfig.create('Test Column');
     const id = addProperty(db, 'end', column);
     const result = getProperty(db, id);
 
@@ -157,7 +157,7 @@ describe('DatabaseManager', () => {
 
   test('deleteColumn', () => {
     const column = {
-      ...databaseBlockColumns.numberColumnConfig.create('Test Column'),
+      ...databaseBlockProperties.numberColumnConfig.create('Test Column'),
       id: 'testColumnId',
     };
     addProperty(db, 'end', column);
@@ -176,10 +176,10 @@ describe('DatabaseManager', () => {
       noteBlockId
     );
     const column = {
-      ...databaseBlockColumns.numberColumnConfig.create('Test Column'),
+      ...databaseBlockProperties.numberColumnConfig.create('Test Column'),
       id: 'testColumnId',
     };
-    const cell: Cell = {
+    const cell: CellDataType = {
       columnId: column.id,
       value: 42,
     };

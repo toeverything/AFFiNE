@@ -56,11 +56,13 @@ export class GuardService extends Service {
    * guardService.can$('Workspace_Properties_Update');
    * guardService.can$('Doc_Update', docId);
    * ```
+   *
+   * @returns LiveData<boolean | undefined> the value is undefined if the permission is loading
    */
   can$<T extends WorkspacePermissionActions | DocPermissionActions>(
     action: T,
     ...args: T extends DocPermissionActions ? [string] : []
-  ): LiveData<boolean> {
+  ): LiveData<boolean | undefined> {
     const docId = args[0];
     return LiveData.from(
       new Observable(subscriber => {
@@ -75,14 +77,14 @@ export class GuardService extends Service {
           this.workspacePermissionService.permission.revalidate();
         }
 
-        let prev = false;
+        let prev: boolean | undefined = undefined;
 
         const subscription = combineLatest([
           (docId
             ? this.docPermissions$.pipe(
-                map(permissions => permissions[docId] ?? false)
+                map(permissions => permissions[docId] ?? {})
               )
-            : this.workspacePermissions$) as Observable<
+            : this.workspacePermissions$.asObservable()) as Observable<
             Record<string, boolean>
           >,
           this.isAdmin$,
@@ -90,7 +92,7 @@ export class GuardService extends Service {
           if (isAdmin) {
             return subscriber.next(true);
           }
-          const current = permissions[action] ?? false;
+          const current = permissions[action] ?? undefined;
           if (current !== prev) {
             prev = current;
             subscriber.next(current);
@@ -101,7 +103,7 @@ export class GuardService extends Service {
           subscription.unsubscribe();
         };
       }),
-      false
+      undefined
     );
   }
 

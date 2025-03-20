@@ -1,4 +1,4 @@
-import type { DeltaInsert } from '@blocksuite/inline';
+import type { DeltaInsert } from '@blocksuite/store';
 import { expect } from '@playwright/test';
 
 import {
@@ -8,6 +8,7 @@ import {
   dragBetweenIndices,
   enterPlaygroundRoom,
   focusRichText,
+  focusRichTextEnd,
   focusTitle,
   getBoundingBox,
   getEditorHostLocator,
@@ -330,12 +331,21 @@ test('should format quick bar be able to link text', async ({
   const linkPopoverInput = page.locator('.affine-link-popover-input');
   await expect(linkPopoverInput).toBeVisible();
 
-  await type(page, 'https://www.example.com');
+  const url = 'https://www.example.com';
+
+  await type(page, url);
   await pressEnter(page);
 
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_init.json`
   );
+
+  const linkLocator = page.locator('affine-link a');
+  await expect(linkLocator).toHaveAttribute('href', url);
+
+  await focusRichTextEnd(page);
+
+  await dragBetweenIndices(page, [1, 3], [1, 0]);
 
   // The link button should be active after click
   await expect(linkBtn).toHaveAttribute('active', '');

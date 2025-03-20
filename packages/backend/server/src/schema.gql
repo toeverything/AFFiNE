@@ -18,6 +18,14 @@ input AddRemoveContextCategoryInput {
   type: ContextCategories!
 }
 
+enum AiJobStatus {
+  claimed
+  failed
+  finished
+  pending
+  running
+}
+
 type AlreadyInSpaceDataType {
   spaceId: String!
 }
@@ -72,6 +80,8 @@ type ContextWorkspaceEmbeddingStatus {
 }
 
 type Copilot {
+  audioTranscription(jobId: String): [TranscriptionResultType!]!
+
   """Get the context list of a session"""
   contexts(contextId: String, sessionId: String): [CopilotContext!]!
   histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]!
@@ -376,7 +386,7 @@ type EditorType {
   name: String!
 }
 
-union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CopilotContextFileNotSupportedDataType | CopilotDocNotFoundDataType | CopilotFailedToMatchContextDataType | CopilotFailedToModifyContextDataType | CopilotInvalidContextDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NotInSpaceDataType | QueryTooLongDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspaceMembersExceedLimitToDowngradeDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
+union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CopilotContextFileNotSupportedDataType | CopilotDocNotFoundDataType | CopilotFailedToMatchContextDataType | CopilotFailedToModifyContextDataType | CopilotInvalidContextDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NotInSpaceDataType | QueryTooLongDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspaceMembersExceedLimitToDowngradeDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
 
 enum ErrorNames {
   ACCESS_DENIED
@@ -409,6 +419,7 @@ enum ErrorNames {
   COPILOT_QUOTA_EXCEEDED
   COPILOT_SESSION_DELETED
   COPILOT_SESSION_NOT_FOUND
+  COPILOT_TRANSCRIPTION_JOB_EXISTS
   CUSTOMER_PORTAL_CREATE_FAILED
   DOC_ACTION_DENIED
   DOC_DEFAULT_ROLE_CAN_NOT_BE_OWNER
@@ -429,6 +440,7 @@ enum ErrorNames {
   FAILED_TO_SAVE_UPDATES
   FAILED_TO_UPSERT_SNAPSHOT
   GRAPHQL_BAD_REQUEST
+  HTTP_REQUEST_ERROR
   INTERNAL_SERVER_ERROR
   INVALID_AUTH_STATE
   INVALID_CHECKOUT_PARAMETERS
@@ -470,6 +482,7 @@ enum ErrorNames {
   SPACE_NOT_FOUND
   SPACE_OWNER_NOT_FOUND
   SPACE_SHOULD_HAVE_ONLY_ONE_OWNER
+  STORAGE_QUOTA_EXCEEDED
   SUBSCRIPTION_ALREADY_EXISTS
   SUBSCRIPTION_EXPIRED
   SUBSCRIPTION_HAS_BEEN_CANCELED
@@ -551,6 +564,10 @@ type GrantedDocUserTypeEdge {
 
 type GraphqlBadRequestDataType {
   code: String!
+  message: String!
+}
+
+type HttpRequestErrorDataType {
   message: String!
 }
 
@@ -836,6 +853,7 @@ type Mutation {
   cancelSubscription(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, workspaceId: String): SubscriptionType!
   changeEmail(email: String!, token: String!): UserType!
   changePassword(newPassword: String!, token: String!, userId: String): Boolean!
+  claimAudioTranscription(jobId: String!): TranscriptionResultType
 
   """Cleanup sessions"""
   cleanupCopilotSession(options: DeleteSessionInput!): [String!]!
@@ -928,6 +946,7 @@ type Mutation {
   sendVerifyChangeEmail(callbackUrl: String!, email: String!, token: String!): Boolean!
   sendVerifyEmail(callbackUrl: String!): Boolean!
   setBlob(blob: Upload!, workspaceId: String!): String!
+  submitAudioTranscription(blob: Upload!, blobId: String!, workspaceId: String!): TranscriptionResultType
 
   """Update a copilot prompt"""
   updateCopilotPrompt(messages: [CopilotPromptMessageInput!]!, name: String!): CopilotPromptType!
@@ -1378,6 +1397,20 @@ type SubscriptionType {
 enum SubscriptionVariant {
   EA
   Onetime
+}
+
+type TranscriptionItemType {
+  end: String!
+  speaker: String!
+  start: String!
+  transcription: String!
+}
+
+type TranscriptionResultType {
+  id: ID!
+  status: AiJobStatus!
+  summary: String
+  transcription: [TranscriptionItemType!]
 }
 
 union UnionNotificationBodyType = InvitationAcceptedNotificationBodyType | InvitationBlockedNotificationBodyType | InvitationNotificationBodyType | MentionNotificationBodyType

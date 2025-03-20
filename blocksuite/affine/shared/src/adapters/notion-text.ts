@@ -1,10 +1,10 @@
 import { DefaultTheme } from '@blocksuite/affine-model';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import type { DeltaInsert } from '@blocksuite/inline';
 import {
   type AssetsManager,
   BaseAdapter,
   type BlockSnapshot,
+  type DeltaInsert,
   type DocSnapshot,
   type ExtensionType,
   type FromBlockSnapshotResult,

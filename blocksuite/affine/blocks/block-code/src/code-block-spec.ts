@@ -12,7 +12,8 @@ import {
   CodeBlockInlineManagerExtension,
   CodeBlockUnitSpecExtension,
 } from './code-block-inline.js';
-import { CodeBlockService } from './code-block-service.js';
+import { CodeBlockHighlighter } from './code-block-service.js';
+import { CodeKeymapExtension } from './code-keymap.js';
 import { AFFINE_CODE_TOOLBAR_WIDGET } from './code-toolbar/index.js';
 import { codeSlashMenuConfig } from './configs/slash-menu.js';
 
@@ -24,11 +25,12 @@ export const codeToolbarWidget = WidgetViewExtension(
 
 export const CodeBlockSpec: ExtensionType[] = [
   FlavourExtension('affine:code'),
-  CodeBlockService,
+  CodeBlockHighlighter,
   BlockViewExtension('affine:code', literal`affine-code`),
   codeToolbarWidget,
   CodeBlockInlineManagerExtension,
   CodeBlockUnitSpecExtension,
   CodeBlockAdapterExtensions,
   SlashMenuConfigExtension('affine:code', codeSlashMenuConfig),
+  CodeKeymapExtension,
 ].flat();

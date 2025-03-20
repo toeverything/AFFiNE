@@ -29,7 +29,7 @@ const linkedDocSlashMenuConfig: SlashMenuConfig = {
         model.doc.schema.flavourSchemaMap.has('affine:embed-linked-doc'),
       action: ({ std, model }) => {
         const newDoc = createDefaultDoc(std.host.doc.workspace);
-        insertContent(std.host, model, REFERENCE_NODE, {
+        insertContent(std, model, REFERENCE_NODE, {
           reference: {
             type: 'LinkedPage',
             pageId: newDoc.id,
@@ -70,9 +70,9 @@ const linkedDocSlashMenuConfig: SlashMenuConfig = {
         // @ts-expect-error same as above
         const triggerKey = linkedDocWidget.config.triggerKeys[0];
 
-        insertContent(std.host, model, triggerKey);
+        insertContent(std, model, triggerKey);
 
-        const inlineEditor = getInlineEditorByModel(std.host, model);
+        const inlineEditor = getInlineEditorByModel(std, model);
         if (inlineEditor) {
           // Wait for range to be updated
           const subscription = inlineEditor.slots.inlineRangeSync.subscribe(

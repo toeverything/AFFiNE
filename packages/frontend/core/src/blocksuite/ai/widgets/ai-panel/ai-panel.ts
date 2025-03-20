@@ -424,18 +424,20 @@ export class AffineAIPanelWidget extends WidgetComponent {
       'pointerdown',
       this._onDocumentClick
     );
-    this.disposables.add(
-      this.block.host.event.add('pointerDown', evtState =>
-        this._onDocumentClick(
-          evtState.get('pointerState').event as PointerEvent
+    if (this.block) {
+      this.disposables.add(
+        this.block.host.event.add('pointerDown', evtState =>
+          this._onDocumentClick(
+            evtState.get('pointerState').event as PointerEvent
+          )
         )
-      )
-    );
-    this.disposables.add(
-      this.block.host.event.add('click', () => {
-        return this.state !== 'hidden' ? true : false;
-      })
-    );
+      );
+      this.disposables.add(
+        this.block.host.event.add('click', () => {
+          return this.state !== 'hidden' ? true : false;
+        })
+      );
+    }
     this.disposables.addFromEvent(this, 'wheel', stopPropagation);
     this.disposables.addFromEvent(this, 'pointerdown', stopPropagation);
     this.disposables.addFromEvent(this, 'pointerup', stopPropagation);

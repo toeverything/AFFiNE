@@ -146,15 +146,14 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
         this._morePopper?.dispose();
         this._morePopper = null;
       } else if (!this._morePopper) {
-        this._morePopper = createButtonPopper(
-          this._moreButton,
-          this._moreMenu,
-          ({ display }) => (this._showMoreMenu = display === 'show'),
-          {
-            mainAxis: 0,
-            crossAxis: -100,
-          }
-        );
+        this._morePopper = createButtonPopper({
+          reference: this._moreButton,
+          popperElement: this._moreMenu,
+          stateUpdated: ({ display }) =>
+            (this._showMoreMenu = display === 'show'),
+          mainAxis: 0,
+          crossAxis: -100,
+        });
       }
     }
   }

@@ -161,6 +161,8 @@ export class PointerEventWatcher {
     if (this.widget.isGfxDragHandleVisible) return;
 
     const point = new Point(state.raw.x, state.raw.y);
+    if (!this.widget.rootComponent) return;
+
     const closestBlock = getClosestBlockByPoint(
       this.widget.host,
       this.widget.rootComponent,
@@ -245,6 +247,8 @@ export class PointerEventWatcher {
 
       // When pointer on drag handle, should do nothing
       if (element.closest('.affine-drag-handle-container')) return;
+
+      if (!this.widget.rootComponent) return;
 
       // When pointer out of note block hover area or inside database, should hide drag handle
       const point = new Point(state.raw.x, state.raw.y);

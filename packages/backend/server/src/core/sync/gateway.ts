@@ -300,7 +300,8 @@ export class SpaceSyncGateway
     const adapter = this.selectAdapter(client, spaceType);
     const id = new DocID(docId, spaceId);
 
-    await this.ac.user(user.id).doc(spaceId, id.guid).assert('Doc.Update');
+    // TODO(@forehalo): enable after frontend supporting doc revert
+    // await this.ac.user(user.id).doc(spaceId, id.guid).assert('Doc.Update');
     const timestamp = await adapter.push(
       spaceId,
       id.guid,
@@ -340,8 +341,8 @@ export class SpaceSyncGateway
     const { spaceType, spaceId, docId, update } = message;
     const adapter = this.selectAdapter(client, spaceType);
 
-    // TODO(@forehalo): change action to 'Doc.Write' after frontend supporting doc revert
-    await this.ac.user(user.id).doc(spaceId, docId).assert('Doc.Read');
+    // TODO(@forehalo): enable after frontend supporting doc revert
+    // await this.ac.user(user.id).doc(spaceId, docId).assert('Doc.Update');
     const timestamp = await adapter.push(
       spaceId,
       docId,
@@ -512,8 +513,7 @@ abstract class SyncSocketAdapter {
     updates: Buffer[],
     editorId: string
   ) {
-    // TODO(@forehalo): enable this after 0.19 goes out of life
-    // this.assertIn(spaceId);
+    this.assertIn(spaceId);
     return await this.storage.pushDocUpdates(spaceId, docId, updates, editorId);
   }
 

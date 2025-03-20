@@ -7,8 +7,8 @@ import {
   getPageMode,
   getSelectedXYWH,
   locateEditorContainer,
-  locateElementToolbar,
   locateModeSwitchButton,
+  locateToolbar,
   moveToView,
   resizeElementByHandle,
   toViewCoord,
@@ -201,8 +201,8 @@ test.describe('edgeless note element toolbar', () => {
     page,
   }) => {
     await selectAllByKeyboard(page);
-    const toolbar = locateElementToolbar(page);
-    const autoHeight = toolbar.getByTestId('edgeless-note-auto-height');
+    const toolbar = locateToolbar(page);
+    const autoHeight = toolbar.getByTestId('auto-height');
     const displayInPage = toolbar.getByTestId('display-in-page');
 
     await expect(toolbar).toBeVisible();
@@ -218,8 +218,8 @@ test.describe('edgeless note element toolbar', () => {
     await clickView(page, [0, 0]);
     await clickView(page, [100, 100]);
 
-    const toolbar = locateElementToolbar(page);
-    const autoHeight = toolbar.getByTestId('edgeless-note-auto-height');
+    const toolbar = locateToolbar(page);
+    const autoHeight = toolbar.getByTestId('auto-height');
     const displayInPage = toolbar.getByTestId('display-in-page');
 
     await expect(toolbar).toBeVisible();
@@ -234,10 +234,10 @@ test.describe('edgeless note element toolbar', () => {
     await createEdgelessNoteBlock(page, [100, 100]);
     await page.waitForSelector('.affine-paragraph-placeholder.visible');
     await page.keyboard.type('Note 2');
-    await clickView(page, [0, 0]);
+    await clickView(page, [0, 300]);
     await clickView(page, [100, 100]);
 
-    const toolbar = locateElementToolbar(page);
+    const toolbar = locateToolbar(page);
     const displayInPage = toolbar.getByTestId('display-in-page');
 
     await displayInPage.click();
@@ -300,7 +300,7 @@ test.describe('edgeless note element toolbar', () => {
       }, noteId);
     };
 
-    const toolbar = locateElementToolbar(page);
+    const toolbar = locateToolbar(page);
 
     await selectAllByKeyboard(page);
     const noteId = (await getEdgelessSelectedIds(page))[0];
@@ -341,7 +341,11 @@ test.describe('edgeless note element toolbar', () => {
     });
 
     await toolbar.getByRole('button', { name: 'Corners' }).click();
-    await toolbar.locator('edgeless-size-panel').getByText('Large').click();
+    // TODO(@fundon): delete duplicate components
+    await toolbar
+      .locator('affine-size-dropdown-menu')
+      .getByText('Large')
+      .click();
 
     expect(await getNoteEdgelessProps(page, noteId)).toEqual({
       style: {

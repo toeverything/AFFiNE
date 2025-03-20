@@ -57,6 +57,7 @@ export const ExplorerDocNode = ({
       reference: isLinked,
     })
   );
+
   const docTitle = useLiveData(docDisplayMetaService.title$(docId));
   const isInTrash = useLiveData(docRecord?.trash$);
   const enableEmojiIcon = useLiveData(
@@ -133,10 +134,19 @@ export const ExplorerDocNode = ({
       operations={finalOperations}
       data-testid={`explorer-doc-${docId}`}
     >
-      {children?.map(child => (
-        <ExplorerDocNode key={child.docId} docId={child.docId} isLinked />
-      ))}
-
+      <DocPermissionGuard docId={docId} permission="Doc_Read">
+        {canRead =>
+          canRead
+            ? children?.map((child, index) => (
+                <ExplorerDocNode
+                  key={`${child.docId}-${index}`}
+                  docId={child.docId}
+                  isLinked
+                />
+              ))
+            : null
+        }
+      </DocPermissionGuard>
       <DocPermissionGuard docId={docId} permission="Doc_Update">
         {canEdit =>
           canEdit ? (

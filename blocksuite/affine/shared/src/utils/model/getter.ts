@@ -1,5 +1,5 @@
 import { NoteBlockModel, NoteDisplayMode } from '@blocksuite/affine-model';
-import type { BlockComponent, EditorHost } from '@blocksuite/block-std';
+import type { BlockComponent, BlockStdScope } from '@blocksuite/block-std';
 import type { BlockModel, Store } from '@blocksuite/store';
 
 import { matchModels } from './checker.js';
@@ -23,16 +23,16 @@ export function findAncestorModel(
  *
  */
 export async function asyncGetBlockComponent(
-  editorHost: EditorHost,
+  std: BlockStdScope,
   id: string
 ): Promise<BlockComponent | null> {
-  const rootBlockId = editorHost.doc.root?.id;
+  const rootBlockId = std.store.root?.id;
   if (!rootBlockId) return null;
-  const rootComponent = editorHost.view.getBlock(rootBlockId);
+  const rootComponent = std.view.getBlock(rootBlockId);
   if (!rootComponent) return null;
   await rootComponent.updateComplete;
 
-  return editorHost.view.getBlock(id);
+  return std.view.getBlock(id);
 }
 
 export function findNoteBlockModel(model: BlockModel) {

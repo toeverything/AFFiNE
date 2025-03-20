@@ -144,6 +144,10 @@ export class AffineDocRemoteSelectionWidget extends WidgetComponent {
   }
 
   private _getCursorRect(selections: BaseSelection[]): SelectionRect | null {
+    if (!this.block) {
+      return null;
+    }
+
     if (this.block.model.flavour !== 'affine:page') {
       console.error('remote selection widget must be used in page component');
       return null;
@@ -208,6 +212,10 @@ export class AffineDocRemoteSelectionWidget extends WidgetComponent {
   private readonly _getSelectionRect = (
     selections: BaseSelection[]
   ): SelectionRect[] => {
+    if (!this.block) {
+      return [];
+    }
+
     if (this.block.model.flavour !== 'affine:page') {
       console.error('remote selection widget must be used in page component');
       return [];

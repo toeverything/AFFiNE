@@ -5,7 +5,6 @@ import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
-import { MailService } from '../../base';
 import { AuthModule } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
 import { FeatureModule } from '../../core/features';
@@ -20,26 +19,16 @@ import {
 const test = ava as TestFn<{
   auth: AuthService;
   db: PrismaClient;
-  mailer: Sinon.SinonStubbedInstance<MailService>;
   app: TestingApp;
 }>;
 
 test.before(async t => {
   const app = await createTestingApp({
     imports: [FeatureModule, UserModule, AuthModule],
-    tapModule: m => {
-      m.overrideProvider(MailService).useValue(
-        Sinon.stub(
-          // @ts-expect-error safe
-          new MailService()
-        )
-      );
-    },
   });
 
   t.context.auth = app.get(AuthService);
   t.context.db = app.get(PrismaClient);
-  t.context.mailer = app.get(MailService);
   t.context.app = app;
 });
 
@@ -67,11 +56,9 @@ test('should be able to sign in with credential', async t => {
 });
 
 test('should be able to sign in with email', async t => {
-  const { app, mailer } = t.context;
+  const { app } = t.context;
 
   const u1 = await app.createUser('u1@affine.pro');
-  // @ts-expect-error mock
-  mailer.sendSignInMail.resolves({ rejected: [] });
 
   const res = await app
     .POST('/api/auth/sign-in')
@@ -79,10 +66,11 @@ test('should be able to sign in with email', async t => {
     .expect(200);
 
   t.is(res.body.email, u1.email);
-  t.true(mailer.sendSignInMail.calledOnce);
+  const signInMail = app.mails.last('SignIn');
 
-  const [, { url: signInLink }] = mailer.sendSignInMail.firstCall.args;
-  const url = new URL(signInLink);
+  t.is(signInMail.to, u1.email);
+
+  const url = new URL(signInMail.props.url);
   const email = url.searchParams.get('email');
   const token = url.searchParams.get('token');
 
@@ -93,10 +81,7 @@ test('should be able to sign in with email', async t => {
 });
 
 test('should be able to sign up with email', async t => {
-  const { app, mailer } = t.context;
-
-  // @ts-expect-error mock
-  mailer.sendSignUpMail.resolves({ rejected: [] });
+  const { app } = t.context;
 
   const res = await app
     .POST('/api/auth/sign-in')
@@ -104,10 +89,11 @@ test('should be able to sign up with email', async t => {
     .expect(200);
 
   t.is(res.body.email, 'u2@affine.pro');
-  t.true(mailer.sendSignUpMail.calledOnce);
+  const signUpMail = app.mails.last('SignUp');
 
-  const [, { url: signUpLink }] = mailer.sendSignUpMail.firstCall.args;
-  const url = new URL(signUpLink);
+  t.is(signUpMail.to, 'u2@affine.pro');
+
+  const url = new URL(signUpMail.props.url);
   const email = url.searchParams.get('email');
   const token = url.searchParams.get('token');
 
@@ -129,7 +115,7 @@ test('should not be able to sign in if email is invalid', async t => {
 });
 
 test('should not be able to sign in if forbidden', async t => {
-  const { app, auth, mailer } = t.context;
+  const { app, auth } = t.context;
 
   const u1 = await app.createUser('u1@affine.pro');
   const canSignInStub = Sinon.stub(auth, 'canSignIn').resolves(false);
@@ -139,9 +125,8 @@ test('should not be able to sign in if forbidden', async t => {
     .send({ email: u1.email })
     .expect(HttpStatus.FORBIDDEN);
 
-  t.true(mailer.sendSignInMail.notCalled);
-
   canSignInStub.restore();
+  t.pass();
 });
 
 test('should be able to sign out', async t => {
@@ -253,12 +238,10 @@ test('should be able to sign out multiple accounts in one session', async t => {
 });
 
 test('should be able to sign in with email and client nonce', async t => {
-  const { app, mailer } = t.context;
+  const { app } = t.context;
 
   const clientNonce = randomUUID();
   const u1 = await app.createUser();
-  // @ts-expect-error mock
-  mailer.sendSignInMail.resolves({ rejected: [] });
 
   const res = await app
     .POST('/api/auth/sign-in')
@@ -266,10 +249,11 @@ test('should be able to sign in with email and client nonce', async t => {
     .expect(200);
 
   t.is(res.body.email, u1.email);
-  t.true(mailer.sendSignInMail.calledOnce);
+  const signInMail = app.mails.last('SignIn');
 
-  const [, { url: signInLink }] = mailer.sendSignInMail.firstCall.args;
-  const url = new URL(signInLink);
+  t.is(signInMail.to, u1.email);
+
+  const url = new URL(signInMail.props.url);
   const email = url.searchParams.get('email');
   const token = url.searchParams.get('token');
 
@@ -283,12 +267,10 @@ test('should be able to sign in with email and client nonce', async t => {
 });
 
 test('should not be able to sign in with email and client nonce if invalid', async t => {
-  const { app, mailer } = t.context;
+  const { app } = t.context;
 
   const clientNonce = randomUUID();
   const u1 = await app.createUser();
-  // @ts-expect-error mock
-  mailer.sendSignInMail.resolves({ rejected: [] });
 
   const res = await app
     .POST('/api/auth/sign-in')
@@ -296,10 +278,11 @@ test('should not be able to sign in with email and client nonce if invalid', asy
     .expect(200);
 
   t.is(res.body.email, u1.email);
-  t.true(mailer.sendSignInMail.calledOnce);
+  const signInMail = app.mails.last('SignIn');
 
-  const [, { url: signInLink }] = mailer.sendSignInMail.firstCall.args;
-  const url = new URL(signInLink);
+  t.is(signInMail.to, u1.email);
+
+  const url = new URL(signInMail.props.url);
   const email = url.searchParams.get('email');
   const token = url.searchParams.get('token');
 

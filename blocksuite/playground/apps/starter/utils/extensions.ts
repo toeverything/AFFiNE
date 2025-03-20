@@ -2,7 +2,7 @@ import {
   EdgelessEditorBlockSpecs,
   PageEditorBlockSpecs,
 } from '@blocksuite/affine/extensions';
-import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   CommunityCanvasTextFonts,
   DocModeProvider,

@@ -1,6 +1,9 @@
 import '../declare-test-window.js';
 
-import type { InlineRange, InlineRootElement } from '@blocksuite/affine/inline';
+import type {
+  InlineRange,
+  InlineRootElement,
+} from '@blocksuite/affine/block-std/inline';
 import type { DatabaseBlockModel, ListType } from '@blocksuite/affine/model';
 import type { RichText } from '@blocksuite/affine/rich-text';
 import type { BlockModel } from '@blocksuite/affine/store';
@@ -8,6 +11,7 @@ import { uuidv4 } from '@blocksuite/affine/store';
 import type { TestAffineEditorContainer } from '@blocksuite/integration-test';
 import type { ConsoleMessage, Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import stringify from 'json-stable-stringify';
 import lz from 'lz-string';
 
 import { currentEditorIndex } from '../multiple-editor.js';
@@ -881,7 +885,7 @@ export async function getPageSnapshot(page: Page, toJSON?: boolean) {
     return snapshot.blocks;
   });
   if (toJSON) {
-    return JSON.stringify(json, null, 2);
+    return stringify(json, { space: '  ' });
   }
   return json;
 }

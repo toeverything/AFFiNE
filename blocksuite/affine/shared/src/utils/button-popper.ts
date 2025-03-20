@@ -32,6 +32,17 @@ export function listenClickAway(
 type Display = 'show' | 'hidden';
 
 const ATTR_SHOW = 'data-show';
+
+export type ButtonPopperOptions = {
+  reference: HTMLElement;
+  popperElement: HTMLElement;
+  stateUpdated?: (state: { display: Display }) => void;
+  mainAxis?: number;
+  crossAxis?: number;
+  rootBoundary?: Rect | (() => Rect | undefined);
+  ignoreShift?: boolean;
+  offsetHeight?: number;
+};
 /**
  * Using attribute 'data-show' to control popper visibility.
  *
@@ -44,28 +55,19 @@ const ATTR_SHOW = 'data-show';
  * }
  * ```
  */
-export function createButtonPopper(
-  reference: HTMLElement,
-  popperElement: HTMLElement,
-  stateUpdated: (state: { display: Display }) => void = () => {
-    /** DEFAULT EMPTY FUNCTION */
-  },
-  {
+export function createButtonPopper(options: ButtonPopperOptions) {
+  let display: Display = 'hidden';
+  let cleanup: (() => void) | void;
+  const {
+    reference,
+    popperElement,
+    stateUpdated = () => {},
     mainAxis,
     crossAxis,
     rootBoundary,
     ignoreShift,
     offsetHeight,
-  }: {
-    mainAxis?: number;
-    crossAxis?: number;
-    rootBoundary?: Rect | (() => Rect | undefined);
-    ignoreShift?: boolean;
-    offsetHeight?: number;
-  } = {}
-) {
-  let display: Display = 'hidden';
-  let cleanup: (() => void) | void;
+  } = options;
 
   const originMaxHeight = window.getComputedStyle(popperElement).maxHeight;
 

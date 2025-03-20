@@ -8,13 +8,13 @@
   "include": ["./src"],
   "references": [
     { "path": "../../components" },
+    { "path": "../../inlines/preset" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },
     { "path": "../../widgets/widget-slash-menu" },
     { "path": "../../../framework/block-std" },
     { "path": "../../../framework/global" },
-    { "path": "../../../framework/inline" },
     { "path": "../../../framework/store" }
   ]
 }

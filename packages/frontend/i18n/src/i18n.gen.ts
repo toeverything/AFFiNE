@@ -3256,6 +3256,12 @@ export function useAFFiNEI18N(): {
         readonly due: string;
     }): string;
     /**
+      * `Your recent payment failed, the next payment date is {{due}}.`
+      */
+    ["com.affine.payment.billing-tip.past-due"](options: {
+        readonly due: string;
+    }): string;
+    /**
       * `You are currently on the Free plan.`
       */
     ["com.affine.payment.ai.pricing-plan.caption-free"](): string;
@@ -3310,6 +3316,18 @@ export function useAFFiNEI18N(): {
         used: string;
         limit: string;
     }>): string;
+    /**
+      * `Active`
+      */
+    ["com.affine.payment.subscription-status.active"](): string;
+    /**
+      * `Past-due bill`
+      */
+    ["com.affine.payment.subscription-status.past-due"](): string;
+    /**
+      * `Trialing`
+      */
+    ["com.affine.payment.subscription-status.trialing"](): string;
     /**
       * `Unlimited local workspaces`
       */
@@ -4634,6 +4652,34 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.selector-tag.search.placeholder"](): string;
     /**
+      * `Notifications`
+      */
+    ["com.affine.setting.notifications"](): string;
+    /**
+      * `Notifications`
+      */
+    ["com.affine.setting.notifications.header.title"](): string;
+    /**
+      * `Email notifications`
+      */
+    ["com.affine.setting.notifications.email.title"](): string;
+    /**
+      * `Mention`
+      */
+    ["com.affine.setting.notifications.email.mention.title"](): string;
+    /**
+      * `You will be notified through email when other members of the workspace @ you.`
+      */
+    ["com.affine.setting.notifications.email.mention.subtitle"](): string;
+    /**
+      * `Invites`
+      */
+    ["com.affine.setting.notifications.email.invites.title"](): string;
+    /**
+      * `Invitation related messages will be sent through emails.`
+      */
+    ["com.affine.setting.notifications.email.invites.subtitle"](): string;
+    /**
       * `Account settings`
       */
     ["com.affine.setting.account"](): string;
@@ -5414,7 +5460,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-callout.name"](): string;
     /**
-      * `Let your words stand out.`
+      * `Let your words stand out. This also include the callout in the transcription block.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-callout.description"](): string;
     /**
@@ -5521,6 +5567,14 @@ export function useAFFiNEI18N(): {
       * `Once enabled, you can preview PDF in embed view.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-pdf-embed-preview.description"](): string;
+    /**
+      * `Audio block`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-audio-block.name"](): string;
+    /**
+      * `Audio block allows you to play audio files globally and add notes to them.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-audio-block.description"](): string;
     /**
       * `Editor RTL`
       */
@@ -5958,6 +6012,10 @@ export function useAFFiNEI18N(): {
       * `Can read`
       */
     ["com.affine.share-menu.option.permission.can-read"](): string;
+    /**
+      * `No access`
+      */
+    ["com.affine.share-menu.option.permission.no-access"](): string;
     /**
       * `Members in workspace`
       */
@@ -6812,6 +6870,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.editor.at-menu.recent-docs"](): string;
     /**
+      * `Tags`
+      */
+    ["com.affine.editor.at-menu.tags"](): string;
+    /**
+      * `Collections`
+      */
+    ["com.affine.editor.at-menu.collections"](): string;
+    /**
       * `Loading...`
       */
     ["com.affine.editor.at-menu.loading"](): string;
@@ -7118,6 +7184,152 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.fail-to-join-workspace.description-2"](): string;
     /**
+      * `Readwise`
+      */
+    ["com.affine.integration.name.readwise"](): string;
+    /**
+      * `Integrations`
+      */
+    ["com.affine.integration.integrations"](): string;
+    /**
+      * `Elevate your AFFiNE experience with diverse add-ons and seamless integrations.`
+      */
+    ["com.affine.integration.setting.description"](): string;
+    /**
+      * `Learn how to develop a integration for AFFiNE`
+      */
+    ["com.affine.integration.setting.learn"](): string;
+    /**
+      * `Readwise`
+      */
+    ["com.affine.integration.readwise.name"](): string;
+    /**
+      * `Manually import your content to AFFiNE from Readwise`
+      */
+    ["com.affine.integration.readwise.desc"](): string;
+    /**
+      * `Connect`
+      */
+    ["com.affine.integration.readwise.connect"](): string;
+    /**
+      * `Connect to Readwise`
+      */
+    ["com.affine.integration.readwise.connect.title"](): string;
+    /**
+      * `Paste your access token here`
+      */
+    ["com.affine.integration.readwise.connect.placeholder"](): string;
+    /**
+      * `Please enter a valid access token.`
+      */
+    ["com.affine.integration.readwise.connect.input-error"](): string;
+    /**
+      * `Access Token failed validation`
+      */
+    ["com.affine.integration.readwise.connect.error-notify-title"](): string;
+    /**
+      * `The token could not access Readwise. Please verify access and try again.`
+      */
+    ["com.affine.integration.readwise.connect.error-notify-desc"](): string;
+    /**
+      * `Import`
+      */
+    ["com.affine.integration.readwise.import"](): string;
+    /**
+      * `Disconnect`
+      */
+    ["com.affine.integration.readwise.disconnect"](): string;
+    /**
+      * `Disconnect Readwise?`
+      */
+    ["com.affine.integration.readwise.disconnect.title"](): string;
+    /**
+      * `Once disconnected, content will no longer be imported. Do you want to keep your existing highlights in AFFiNE?`
+      */
+    ["com.affine.integration.readwise.disconnect.desc"](): string;
+    /**
+      * `Keep`
+      */
+    ["com.affine.integration.readwise.disconnect.keep"](): string;
+    /**
+      * `Delete`
+      */
+    ["com.affine.integration.readwise.disconnect.delete"](): string;
+    /**
+      * `Highlights to be imported this time`
+      */
+    ["com.affine.integration.readwise.import.title"](): string;
+    /**
+      * `Importing everything from the start`
+      */
+    ["com.affine.integration.readwise.import.desc-from-start"](): string;
+    /**
+      * `Content`
+      */
+    ["com.affine.integration.readwise.import.cell-h-content"](): string;
+    /**
+      * `Todo`
+      */
+    ["com.affine.integration.readwise.import.cell-h-todo"](): string;
+    /**
+      * `Last update on Readwise`
+      */
+    ["com.affine.integration.readwise.import.cell-h-time"](): string;
+    /**
+      * `New`
+      */
+    ["com.affine.integration.readwise.import.todo-new"](): string;
+    /**
+      * `Skip`
+      */
+    ["com.affine.integration.readwise.import.todo-skip"](): string;
+    /**
+      * `Updated`
+      */
+    ["com.affine.integration.readwise.import.todo-update"](): string;
+    /**
+      * `No highlights needs to be imported`
+      */
+    ["com.affine.integration.readwise.import.empty"](): string;
+    /**
+      * `Importing...`
+      */
+    ["com.affine.integration.readwise.import.importing"](): string;
+    /**
+      * `Please keep this app active until it's finished`
+      */
+    ["com.affine.integration.readwise.import.importing-desc"](): string;
+    /**
+      * `Stop Importing`
+      */
+    ["com.affine.integration.readwise.import.importing-stop"](): string;
+    /**
+      * `Importing aborted`
+      */
+    ["com.affine.integration.readwise.import.abort-notify-title"](): string;
+    /**
+      * `Import aborted, with {{finished}} highlights processed`
+      */
+    ["com.affine.integration.readwise.import.abort-notify-desc"](options: {
+        readonly finished: string;
+    }): string;
+    /**
+      * `Author`
+      */
+    ["com.affine.integration.readwise-prop.author"](): string;
+    /**
+      * `Source`
+      */
+    ["com.affine.integration.readwise-prop.source"](): string;
+    /**
+      * `Notes`
+      */
+    ["com.affine.attachmentViewer.audio.notes"](): string;
+    /**
+      * `Transcribing`
+      */
+    ["com.affine.attachmentViewer.audio.transcribing"](): string;
+    /**
       * `An internal error occurred.`
       */
     ["error.INTERNAL_SERVER_ERROR"](): string;
@@ -7144,6 +7356,12 @@ export function useAFFiNEI18N(): {
         code: string;
         message: string;
     }>): string;
+    /**
+      * `HTTP request error, message: {{message}}`
+      */
+    ["error.HTTP_REQUEST_ERROR"](options: {
+        readonly message: string;
+    }): string;
     /**
       * `Query is too long, max length is {{max}}.`
       */
@@ -7582,9 +7800,17 @@ export function useAFFiNEI18N(): {
       */
     ["error.COPILOT_EMBEDDING_UNAVAILABLE"](): string;
     /**
-      * `You have exceeded your blob storage quota.`
+      * `Transcription job already exists`
+      */
+    ["error.COPILOT_TRANSCRIPTION_JOB_EXISTS"](): string;
+    /**
+      * `You have exceeded your blob size quota.`
       */
     ["error.BLOB_QUOTA_EXCEEDED"](): string;
+    /**
+      * `You have exceeded your storage quota.`
+      */
+    ["error.STORAGE_QUOTA_EXCEEDED"](): string;
     /**
       * `You have exceeded your workspace member quota.`
       */
@@ -8118,5 +8344,19 @@ export const TypedTrans: {
     }, {
         ["1"]: JSX.Element;
         ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `Import your Readwise highlights to AFFiNE. Please visit Readwise, click <a>"Get Access Token"</a>, and paste the token below.`
+      */
+    ["com.affine.integration.readwise.connect.desc"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        a: JSX.Element;
+    }>>;
+    /**
+      * `Updates to be imported since last successful import on {{lastImportedAt}} <a>Import everything instead</a>`
+      */
+    ["com.affine.integration.readwise.import.desc-from-last"]: ComponentType<TypedTransProps<{
+        readonly lastImportedAt: string;
+    }, {
+        a: JSX.Element;
     }>>;
 } = /*#__PURE__*/ createProxy(createComponent);

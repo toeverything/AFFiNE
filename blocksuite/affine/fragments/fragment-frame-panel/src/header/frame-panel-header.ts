@@ -172,17 +172,15 @@ export class FramePanelHeader extends WithDisposable(LitElement) {
   override firstUpdated() {
     const disposables = this.disposables;
 
-    this._framesSettingMenuPopper = createButtonPopper(
-      this._frameSettingButton,
-      this._frameSettingMenu,
-      ({ display }) => {
+    this._framesSettingMenuPopper = createButtonPopper({
+      reference: this._frameSettingButton,
+      popperElement: this._frameSettingMenu,
+      stateUpdated: ({ display }) => {
         this._settingPopperShow = display === 'show';
       },
-      {
-        mainAxis: 14,
-        crossAxis: -100,
-      }
-    );
+      mainAxis: 14,
+      crossAxis: -100,
+    });
     disposables.add(this._framesSettingMenuPopper);
   }
 

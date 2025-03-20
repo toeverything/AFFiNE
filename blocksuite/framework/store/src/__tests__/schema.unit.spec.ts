@@ -54,6 +54,34 @@ const TestInvalidNoteBlockSchemaExtension = BlockSchemaExtension(
   TestInvalidNoteBlockSchema
 );
 
+const TestRoleBlockSchema = defineBlockSchema({
+  flavour: 'affine:note-block-role-test',
+  metadata: {
+    version: 1,
+    role: 'content',
+    parent: ['affine:note'],
+    children: ['@test'],
+  },
+  props: internal => ({
+    text: internal.Text(),
+  }),
+});
+
+const TestRoleBlockSchemaExtension = BlockSchemaExtension(TestRoleBlockSchema);
+
+const TestParagraphBlockSchema = defineBlockSchema({
+  flavour: 'affine:test-paragraph',
+  metadata: {
+    version: 1,
+    role: 'test',
+    parent: ['@content'],
+  },
+});
+
+const TestParagraphBlockSchemaExtension = BlockSchemaExtension(
+  TestParagraphBlockSchema
+);
+
 const extensions = [
   RootBlockSchemaExtension,
   ParagraphBlockSchemaExtension,
@@ -62,6 +90,8 @@ const extensions = [
   DividerBlockSchemaExtension,
   TestCustomNoteBlockSchemaExtension,
   TestInvalidNoteBlockSchemaExtension,
+  TestRoleBlockSchemaExtension,
+  TestParagraphBlockSchemaExtension,
 ];
 
 const defaultDocId = 'doc0';
@@ -127,5 +157,29 @@ describe('schema', () => {
     expect(consoleMock.mock.calls[1]).toSatisfy((call: unknown[]) => {
       return call[0] instanceof SchemaValidateError;
     });
+  });
+
+  it('should be able to validate schema by role', () => {
+    const consoleMock = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    const doc = createTestDoc();
+    const rootId = doc.addBlock('affine:page', {});
+    const noteId = doc.addBlock('affine:note', {}, rootId);
+    const roleId = doc.addBlock('affine:note-block-role-test', {}, noteId);
+
+    doc.addBlock('affine:paragraph', {}, roleId);
+    doc.addBlock('affine:paragraph', {}, roleId);
+
+    expect(consoleMock.mock.calls[1]).toSatisfy((call: unknown[]) => {
+      return call[0] instanceof SchemaValidateError;
+    });
+
+    consoleMock.mockClear();
+    doc.addBlock('affine:test-paragraph', {}, roleId);
+    doc.addBlock('affine:test-paragraph', {}, roleId);
+    expect(consoleMock).not.toBeCalled();
+
+    expect(doc.getBlocksByFlavour('affine:test-paragraph')).toHaveLength(2);
   });
 });

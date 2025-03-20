@@ -36,7 +36,7 @@ const ALIGN_THRESHOLD = 8;
 const DISTRIBUTION_LINE_OFFSET = 1;
 const STROKE_WIDTH = 2;
 
-export class SnapManager extends Overlay {
+export class SnapOverlay extends Overlay {
   static override overlayName: string = 'snap-manager';
 
   private _skippedElements: Set<GfxModel> = new Set();
@@ -76,8 +76,6 @@ export class SnapManager extends Overlay {
   };
 
   override clear() {
-    super.clear();
-
     this._referenceBounds = {
       vertical: [],
       horizontal: [],
@@ -89,6 +87,8 @@ export class SnapManager extends Overlay {
     };
     this._distributedAlignLines = [];
     this._skippedElements.clear();
+
+    super.clear();
   }
 
   private _alignDistributeHorizontally(

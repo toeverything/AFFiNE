@@ -143,10 +143,12 @@ test('should reject blob exceeded limit', async t => {
   const buffer1 = Buffer.from(
     Array.from({ length: RESTRICTED_QUOTA.blobLimit + 1 }, () => 0)
   );
-  await t.throwsAsync(setBlob(app, workspace1.id, buffer1));
+  await t.throwsAsync(setBlob(app, workspace1.id, buffer1), {
+    message: 'You have exceeded your blob size quota.',
+  });
 });
 
-test('should reject blob exceeded quota', async t => {
+test('should reject blob exceeded storage quota', async t => {
   await app.signupV1('u1@affine.pro');
 
   const workspace = await createWorkspace(app);
@@ -155,7 +157,9 @@ test('should reject blob exceeded quota', async t => {
   const buffer = Buffer.from(Array.from({ length: OneMB }, () => 0));
 
   await t.notThrowsAsync(setBlob(app, workspace.id, buffer));
-  await t.throwsAsync(setBlob(app, workspace.id, buffer));
+  await t.throwsAsync(setBlob(app, workspace.id, buffer), {
+    message: 'You have exceeded your storage quota.',
+  });
 });
 
 test('should accept blob even storage out of quota if workspace has unlimited feature', async t => {
@@ -168,4 +172,16 @@ test('should accept blob even storage out of quota if workspace has unlimited fe
   const buffer = Buffer.from(Array.from({ length: OneMB }, () => 0));
   await t.notThrowsAsync(setBlob(app, workspace.id, buffer));
   await t.notThrowsAsync(setBlob(app, workspace.id, buffer));
+});
+
+test('should throw error when blob size large than max file size', async t => {
+  await app.signup();
+
+  const workspace = await createWorkspace(app);
+
+  const buffer = Buffer.from(new Uint8Array(1024 * 1024 * 11));
+  await t.throwsAsync(setBlob(app, workspace.id, buffer), {
+    message:
+      'HTTP request error, message: File truncated as it exceeds the 10485760 byte size limit.',
+  });
 });

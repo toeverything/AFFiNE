@@ -77,7 +77,7 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
     doc.deleteBlock(model, {
       bringChildrenTo: parent,
     });
-    asyncSetInlineRange(editorHost, prevBlock, {
+    asyncSetInlineRange(editorHost.std, prevBlock, {
       index: lengthBeforeJoin,
       length: 0,
     }).catch(console.error);

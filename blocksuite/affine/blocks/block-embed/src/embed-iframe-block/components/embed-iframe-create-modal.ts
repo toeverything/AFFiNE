@@ -1,13 +1,16 @@
+import { EmbedIframeService } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { isValidUrl, stopPropagation } from '@blocksuite/affine-shared/utils';
 import type { BlockStdScope } from '@blocksuite/block-std';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { CloseIcon, EmbedIcon } from '@blocksuite/icons/lit';
 import type { BlockModel } from '@blocksuite/store';
-import { css, html, LitElement, nothing } from 'lit';
+import { baseTheme } from '@toeverything/theme';
+import { css, html, LitElement, nothing, unsafeCSS } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
 
-import { EmbedIframeService } from '../extension/embed-iframe-service';
+type EmbedModalVariant = 'default' | 'compact';
 
 export class EmbedIframeCreateModal extends WithDisposable(LitElement) {
   static override styles = css`
@@ -40,12 +43,12 @@ export class EmbedIframeCreateModal extends WithDisposable(LitElement) {
       background: ${unsafeCSSVarV2('layer/background/overlayPanel')};
       box-shadow: ${unsafeCSSVar('overlayPanelShadow')};
       z-index: var(--affine-z-index-modal);
+      font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
     }
 
     .modal-content-wrapper {
       display: flex;
       flex-direction: column;
-      gap: 24px;
     }
 
     .modal-close-button {
@@ -85,17 +88,17 @@ export class EmbedIframeCreateModal extends WithDisposable(LitElement) {
           border-radius: 50%;
           background: var(--affine-background-secondary-color);
           color: ${unsafeCSSVarV2('icon/primary')};
-        }
-      }
 
-      .title,
-      .description {
-        text-align: center;
+          svg {
+            width: 32px;
+            height: 32px;
+          }
+        }
       }
 
       .title {
         /* Client/h6 */
-        font-family: Inter;
+        text-align: center;
         font-size: 18px;
         font-style: normal;
         font-weight: 600;
@@ -103,32 +106,30 @@ export class EmbedIframeCreateModal extends WithDisposable(LitElement) {
         letter-spacing: -0.24px;
         color: ${unsafeCSSVarV2('text/primary')};
       }
+    }
 
-      .description {
-        font-feature-settings:
-          'liga' off,
-          'clig' off;
-        /* Client/xs */
-        font-family: Inter;
-        font-size: 12px;
-        font-style: normal;
-        font-weight: 400;
-        line-height: 20px; /* 166.667% */
-        color: ${unsafeCSSVarV2('text/secondary')};
-      }
+    .description {
+      margin-top: 8px;
+      text-align: center;
+      font-feature-settings:
+        'liga' off,
+        'clig' off;
+      /* Client/xs */
+      font-size: 12px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: 20px; /* 166.667% */
+      color: ${unsafeCSSVarV2('text/secondary')};
     }
 
     .input-container {
       width: 100%;
+      margin-top: 24px;
 
       .link-input {
         box-sizing: border-box;
         width: 100%;
-        display: flex;
         padding: 4px 10px;
-        align-items: center;
-        gap: 8px;
-        align-self: stretch;
         border-radius: 8px;
         border: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
         background: ${unsafeCSSVarV2('input/background')};
@@ -148,7 +149,6 @@ export class EmbedIframeCreateModal extends WithDisposable(LitElement) {
       display: flex;
       justify-content: center;
       padding: 20px 0px;
-      cursor: pointer;
 
       .confirm-button {
         width: 100%;
@@ -163,14 +163,87 @@ export class EmbedIframeCreateModal extends WithDisposable(LitElement) {
 
         color: ${unsafeCSSVarV2('button/pureWhiteText')};
         /* Client/xsMedium */
-        font-family: Inter;
         font-size: 12px;
         font-style: normal;
         font-weight: 500;
+        cursor: pointer;
       }
 
       .confirm-button[disabled] {
         opacity: 0.5;
+      }
+    }
+
+    .modal-main-wrapper.compact {
+      padding: 12px 16px;
+
+      .modal-content-wrapper {
+        gap: 0;
+
+        .icon-container {
+          padding: 0;
+
+          .icon-background {
+            width: 56px;
+            height: 56px;
+
+            svg {
+              width: 28px;
+              height: 28px;
+            }
+          }
+        }
+
+        .title {
+          padding: 10px 0;
+          font-weight: 500;
+        }
+
+        .link-input {
+          padding: 10px;
+          font-size: 17px;
+          font-style: normal;
+          font-weight: 400;
+          letter-spacing: -0.43px;
+        }
+
+        .description,
+        .input-container {
+          margin-top: 0;
+        }
+
+        .title,
+        .description {
+          font-size: 17px;
+          font-style: normal;
+          line-height: 22px; /* 129.412% */
+          letter-spacing: -0.43px;
+        }
+
+        .description {
+          font-weight: 400;
+          text-align: left;
+          order: 2;
+          padding: 10px 0;
+          color: ${unsafeCSSVarV2('text/secondary')};
+        }
+
+        .input-container {
+          order: 1;
+        }
+      }
+
+      .button-container {
+        padding: 4px 0;
+
+        .confirm-button {
+          height: 40px;
+          line-height: 40px;
+          font-size: 17px;
+          font-style: normal;
+          font-weight: 400;
+          letter-spacing: -0.43px;
+        }
       }
     }
   `;
@@ -270,13 +343,20 @@ export class EmbedIframeCreateModal extends WithDisposable(LitElement) {
 
   override render() {
     const { showCloseButton } = this;
+    const { variant } = this;
+
+    const modalMainWrapperClass = classMap({
+      'modal-main-wrapper': true,
+      compact: variant === 'compact',
+    });
+
     return html`
       <div class="embed-iframe-create-modal">
         <div
           class="embed-iframe-create-modal-mask"
           @click=${this._onClose}
         ></div>
-        <div class="modal-main-wrapper">
+        <div class=${modalMainWrapperClass}>
           ${showCloseButton
             ? html`
                 <div class="modal-close-button" @click=${this._onClose}>
@@ -287,16 +367,12 @@ export class EmbedIframeCreateModal extends WithDisposable(LitElement) {
           <div class="modal-content-wrapper">
             <div class="modal-content-header">
               <div class="icon-container">
-                <div class="icon-background">
-                  ${EmbedIcon({ width: '32px', height: '32px' })}
-                </div>
+                <div class="icon-background">${EmbedIcon()}</div>
               </div>
-              <div>
-                <div class="title">Embed Link</div>
-                <div class="description">
-                  Works with links of PDFs, Google Drive, Google Maps, CodePen…
-                </div>
-              </div>
+              <div class="title">Embed Link</div>
+            </div>
+            <div class="description">
+              Works with links of PDFs, Google Drive, Google Maps, CodePen…
             </div>
             <div class="input-container">
               <input
@@ -342,6 +418,9 @@ export class EmbedIframeCreateModal extends WithDisposable(LitElement) {
 
   @property({ attribute: false })
   accessor showCloseButton: boolean = true;
+
+  @property({ attribute: false })
+  accessor variant: EmbedModalVariant = 'default';
 }
 
 export async function toggleEmbedIframeCreateModal(
@@ -349,6 +428,7 @@ export async function toggleEmbedIframeCreateModal(
   createOptions: {
     parentModel: BlockModel;
     index?: number;
+    variant?: EmbedModalVariant;
   }
 ): Promise<void> {
   std.selection.clear();
@@ -357,6 +437,7 @@ export async function toggleEmbedIframeCreateModal(
   embedIframeCreateModal.std = std;
   embedIframeCreateModal.parentModel = createOptions.parentModel;
   embedIframeCreateModal.index = createOptions.index;
+  embedIframeCreateModal.variant = createOptions.variant ?? 'default';
 
   document.body.append(embedIframeCreateModal);
 

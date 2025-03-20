@@ -39,6 +39,10 @@ export class ParagraphLayoutHandlerExtension extends BlockLayoutHandlerExtension
     };
 
     paragraphNodes.forEach(paragraphNode => {
+      const computedStyle = window.getComputedStyle(paragraphNode);
+      const fontSizeStr = computedStyle.fontSize;
+      const fontSize = parseInt(fontSizeStr);
+
       const sentences = segmentSentences(paragraphNode.textContent || '');
       const sentenceLayouts = sentences.map(sentence => {
         const sentenceRects = getSentenceRects(paragraphNode, sentence);
@@ -60,6 +64,7 @@ export class ParagraphLayoutHandlerExtension extends BlockLayoutHandlerExtension
         return {
           text: sentence,
           rects,
+          fontSize,
         };
       });
 

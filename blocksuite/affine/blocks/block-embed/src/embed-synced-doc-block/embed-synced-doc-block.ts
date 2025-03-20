@@ -1,15 +1,15 @@
 import { Peekable } from '@blocksuite/affine-components/peek';
 import {
+  type DocLinkClickedEvent,
+  RefNodeSlotsProvider,
+} from '@blocksuite/affine-inline-reference';
+import {
   type AliasInfo,
   type DocMode,
   type EmbedSyncedDocModel,
   NoteDisplayMode,
   type ReferenceInfo,
 } from '@blocksuite/affine-model';
-import {
-  type DocLinkClickedEvent,
-  RefNodeSlotsProvider,
-} from '@blocksuite/affine-rich-text';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
 import {
   DocDisplayMetaProvider,
@@ -306,7 +306,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     ]);
   };
 
-  covertToInline = () => {
+  convertToInline = () => {
     const { doc } = this.model;
     const parent = doc.getParent(this.model);
     if (!parent) {

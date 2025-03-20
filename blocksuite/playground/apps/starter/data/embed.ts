@@ -4,7 +4,7 @@ import type { InitFn } from './utils.js';
 
 export const embed: InitFn = (collection: Workspace, id: string) => {
   const doc = collection.getDoc(id) ?? collection.createDoc({ id });
-  doc.clear();
+  doc.doc.clear();
 
   doc.load(() => {
     // Add root block and surface block at root level

@@ -11,12 +11,14 @@ import { ThrottlerException } from '@nestjs/throttler';
 import { BaseWsExceptionFilter } from '@nestjs/websockets';
 import { Response } from 'express';
 import { GraphQLError } from 'graphql';
+import { HttpError } from 'http-errors';
 import { of } from 'rxjs';
 import { Socket } from 'socket.io';
 import { ZodError } from 'zod';
 
 import {
   GraphqlBadRequest,
+  HttpRequestError,
   InternalServerError,
   NotFound,
   TooManyRequest,
@@ -57,6 +59,16 @@ export function mapAnyError(error: any): UserFriendlyError {
     return new ValidationError({
       errors: error.message,
     });
+  } else if (
+    error instanceof HttpError &&
+    error.status >= 400 &&
+    error.status < 500
+  ) {
+    const e = new HttpRequestError({
+      message: error.message,
+    });
+    e.status = error.status;
+    return e;
   } else {
     const e = new InternalServerError();
     e.cause = error;

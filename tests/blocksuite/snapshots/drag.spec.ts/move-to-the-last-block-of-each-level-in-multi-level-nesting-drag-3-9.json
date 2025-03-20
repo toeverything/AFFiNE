@@ -1,47 +1,16 @@
 {
-  "type": "block",
-  "id": "0",
-  "flavour": "affine:page",
-  "version": 2,
-  "props": {
-    "title": {
-      "$blocksuite:internal:text$": true,
-      "delta": []
-    }
-  },
   "children": [
     {
-      "type": "block",
-      "id": "1",
-      "flavour": "affine:note",
-      "version": 1,
-      "props": {
-        "xywh": "[0,0,498,92]",
-        "background": {
-          "dark": "#000000",
-          "light": "#ffffff"
-        },
-        "index": "a0",
-        "lockedBySelf": false,
-        "hidden": false,
-        "displayMode": "both",
-        "edgeless": {
-          "style": {
-            "borderRadius": 8,
-            "borderSize": 4,
-            "borderStyle": "none",
-            "shadowType": "--affine-note-shadow-box"
-          }
-        }
-      },
       "children": [
         {
-          "type": "block",
-          "id": "4",
+          "children": [
+          ],
           "flavour": "affine:list",
-          "version": 1,
+          "id": "4",
           "props": {
-            "type": "bulleted",
+            "checked": false,
+            "collapsed": false,
+            "order": null,
             "text": {
               "$blocksuite:internal:text$": true,
               "delta": [
@@ -50,39 +19,22 @@
                 }
               ]
             },
-            "checked": false,
-            "collapsed": false,
-            "order": null
+            "type": "bulleted"
           },
-          "children": []
+          "type": "block",
+          "version": 1
         },
         {
-          "type": "block",
-          "id": "5",
-          "flavour": "affine:list",
-          "version": 1,
-          "props": {
-            "type": "bulleted",
-            "text": {
-              "$blocksuite:internal:text$": true,
-              "delta": [
-                {
-                  "insert": "C"
-                }
-              ]
-            },
-            "checked": false,
-            "collapsed": false,
-            "order": null
-          },
           "children": [
             {
-              "type": "block",
-              "id": "6",
+              "children": [
+              ],
               "flavour": "affine:list",
-              "version": 1,
+              "id": "6",
               "props": {
-                "type": "bulleted",
+                "checked": false,
+                "collapsed": false,
+                "order": null,
                 "text": {
                   "$blocksuite:internal:text$": true,
                   "delta": [
@@ -91,39 +43,22 @@
                     }
                   ]
                 },
-                "checked": false,
-                "collapsed": false,
-                "order": null
+                "type": "bulleted"
               },
-              "children": []
+              "type": "block",
+              "version": 1
             },
             {
-              "type": "block",
-              "id": "7",
-              "flavour": "affine:list",
-              "version": 1,
-              "props": {
-                "type": "bulleted",
-                "text": {
-                  "$blocksuite:internal:text$": true,
-                  "delta": [
-                    {
-                      "insert": "E"
-                    }
-                  ]
-                },
-                "checked": false,
-                "collapsed": false,
-                "order": null
-              },
               "children": [
                 {
-                  "type": "block",
-                  "id": "8",
+                  "children": [
+                  ],
                   "flavour": "affine:list",
-                  "version": 1,
+                  "id": "8",
                   "props": {
-                    "type": "bulleted",
+                    "checked": false,
+                    "collapsed": false,
+                    "order": null,
                     "text": {
                       "$blocksuite:internal:text$": true,
                       "delta": [
@@ -132,19 +67,20 @@
                         }
                       ]
                     },
-                    "checked": false,
-                    "collapsed": false,
-                    "order": null
+                    "type": "bulleted"
                   },
-                  "children": []
+                  "type": "block",
+                  "version": 1
                 },
                 {
-                  "type": "block",
-                  "id": "9",
+                  "children": [
+                  ],
                   "flavour": "affine:list",
-                  "version": 1,
+                  "id": "9",
                   "props": {
-                    "type": "bulleted",
+                    "checked": false,
+                    "collapsed": false,
+                    "order": null,
                     "text": {
                       "$blocksuite:internal:text$": true,
                       "delta": [
@@ -153,19 +89,20 @@
                         }
                       ]
                     },
-                    "checked": false,
-                    "collapsed": false,
-                    "order": null
+                    "type": "bulleted"
                   },
-                  "children": []
+                  "type": "block",
+                  "version": 1
                 },
                 {
-                  "type": "block",
-                  "id": "3",
+                  "children": [
+                  ],
                   "flavour": "affine:list",
-                  "version": 1,
+                  "id": "3",
                   "props": {
-                    "type": "bulleted",
+                    "checked": false,
+                    "collapsed": false,
+                    "order": null,
                     "text": {
                       "$blocksuite:internal:text$": true,
                       "delta": [
@@ -174,17 +111,86 @@
                         }
                       ]
                     },
-                    "checked": false,
-                    "collapsed": false,
-                    "order": null
+                    "type": "bulleted"
                   },
-                  "children": []
+                  "type": "block",
+                  "version": 1
+                }
+              ],
+              "flavour": "affine:list",
+              "id": "7",
+              "props": {
+                "checked": false,
+                "collapsed": false,
+                "order": null,
+                "text": {
+                  "$blocksuite:internal:text$": true,
+                  "delta": [
+                    {
+                      "insert": "E"
+                    }
+                  ]
+                },
+                "type": "bulleted"
+              },
+              "type": "block",
+              "version": 1
+            }
+          ],
+          "flavour": "affine:list",
+          "id": "5",
+          "props": {
+            "checked": false,
+            "collapsed": false,
+            "order": null,
+            "text": {
+              "$blocksuite:internal:text$": true,
+              "delta": [
+                {
+                  "insert": "C"
                 }
               ]
-            }
-          ]
+            },
+            "type": "bulleted"
+          },
+          "type": "block",
+          "version": 1
         }
+      ],
+      "flavour": "affine:note",
+      "id": "1",
+      "props": {
+        "background": {
+          "dark": "#000000",
+          "light": "#ffffff"
+        },
+        "displayMode": "both",
+        "edgeless": {
+          "style": {
+            "borderRadius": 8,
+            "borderSize": 4,
+            "borderStyle": "none",
+            "shadowType": "--affine-note-shadow-box"
+          }
+        },
+        "hidden": false,
+        "index": "a0",
+        "lockedBySelf": false,
+        "xywh": "[0,0,498,92]"
+      },
+      "type": "block",
+      "version": 1
+    }
+  ],
+  "flavour": "affine:page",
+  "id": "0",
+  "props": {
+    "title": {
+      "$blocksuite:internal:text$": true,
+      "delta": [
       ]
     }
-  ]
+  },
+  "type": "block",
+  "version": 2
 }

@@ -14,7 +14,6 @@
     "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "^2.1.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.0.3",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/inline": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
@@ -34,12 +33,13 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "vitest": "3.0.8"
+    "vitest": "3.0.9"
   },
   "exports": {
     ".": "./src/index.ts",
     "./gfx": "./src/gfx/index.ts",
-    "./effects": "./src/effects.ts"
+    "./effects": "./src/effects.ts",
+    "./inline": "./src/inline/index.ts"
   },
   "files": [
     "src",

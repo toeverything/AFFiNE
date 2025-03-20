@@ -28,6 +28,7 @@ AFFiNE.ENV_MAP = {
   CAPTCHA_TURNSTILE_SECRET: ['plugins.captcha.turnstile.secret', 'string'],
   COPILOT_OPENAI_API_KEY: 'plugins.copilot.openai.apiKey',
   COPILOT_FAL_API_KEY: 'plugins.copilot.fal.apiKey',
+  COPILOT_GOOGLE_API_KEY: 'plugins.copilot.google.apiKey',
   COPILOT_PERPLEXITY_API_KEY: 'plugins.copilot.perplexity.apiKey',
   COPILOT_UNSPLASH_API_KEY: 'plugins.copilot.unsplashKey',
   REDIS_SERVER_HOST: 'redis.host',

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaClient } from '@prisma/client';
 
-import { JobQueue, OnJob } from '../../base';
+import { JobQueue, metrics, OnJob } from '../../base';
 import { PgWorkspaceDocStorageAdapter } from '../doc';
 
 declare global {
@@ -11,6 +11,7 @@ declare global {
       workspaceId: string;
       docId: string;
     };
+    'doc.recordPendingDocUpdatesCount': {};
   }
 }
 
@@ -53,5 +54,24 @@ export class DocServiceCronJob {
         );
       }
     }
+  }
+
+  @OnJob('doc.recordPendingDocUpdatesCount')
+  async recordPendingDocUpdatesCount() {
+    const count = await this.prisma.update.count();
+    metrics.doc.gauge('pending_updates').record(count);
+  }
+
+  @Cron(CronExpression.EVERY_30_SECONDS)
+  async scheduleRecordPendingDocUpdatesCount() {
+    await this.job.add(
+      'doc.recordPendingDocUpdatesCount',
+      {},
+      {
+        // make sure only one job is running at a time
+        delay: 30 * 1000,
+        jobId: 'doc:record-pending-updates-count',
+      }
+    );
   }
 }

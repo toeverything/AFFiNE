@@ -89,7 +89,7 @@ export class PublicUserService extends Service {
             return {
               id,
               name: user.name,
-              avatarUrl: user.avatarUrl,
+              avatar: user.avatarUrl,
             };
           }).pipe(
             smartRetry(),

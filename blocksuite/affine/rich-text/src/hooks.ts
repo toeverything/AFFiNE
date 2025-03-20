@@ -4,7 +4,7 @@ import type {
   BeforeinputHookCtx,
   CompositionEndHookCtx,
   HookContext,
-} from '@blocksuite/inline';
+} from '@blocksuite/block-std/inline';
 
 const EDGE_IGNORED_ATTRIBUTES = ['code', 'link'] as const;
 const GLOBAL_IGNORED_ATTRIBUTES = [] as const;

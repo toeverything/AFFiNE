@@ -1,14 +1,14 @@
 {
   "type": "page",
   "meta": {
-    "id": "NJwLoscdk4",
-    "title": "BlockSuite Playground",
-    "createDate": 1725610138401,
+    "id": "fXqbv1zt2j",
+    "title": "TextDoc",
+    "createDate": 1739027555513,
     "tags": []
   },
   "blocks": {
     "type": "block",
-    "id": "W-A_1geJy3",
+    "id": "Mz1SM8_rfE",
     "flavour": "affine:page",
     "version": 2,
     "props": {
@@ -16,7 +16,7 @@
         "$blocksuite:internal:text$": true,
         "delta": [
           {
-            "insert": "BlockSuite Playground"
+            "insert": "TextDoc"
           }
         ]
       }
@@ -24,7 +24,7 @@
     "children": [
       {
         "type": "block",
-        "id": "KNi1ipoyX6",
+        "id": "AnKvfM9lyB",
         "flavour": "affine:surface",
         "version": 5,
         "props": {
@@ -33,63 +33,7 @@
         "children": [
           {
             "type": "block",
-            "id": "bv-d4LA-Nr",
-            "flavour": "affine:edgeless-text",
-            "version": 1,
-            "props": {
-              "xywh": "[18.221401559354234,201.98389611782602,800.6283921393511,489.15472412109375]",
-              "index": "a0",
-              "color": "#53b2ef",
-              "fontFamily": "blocksuite:surface:Inter",
-              "fontStyle": "normal",
-              "fontWeight": "400",
-              "textAlign": "left",
-              "scale": 5.435052533564726,
-              "rotate": 0,
-              "hasMaxWidth": true
-            },
-            "children": [
-              {
-                "type": "block",
-                "id": "vkzwo90EHS",
-                "flavour": "affine:paragraph",
-                "version": 1,
-                "props": {
-                  "type": "text",
-                  "text": {
-                    "$blocksuite:internal:text$": true,
-                    "delta": [
-                      {
-                        "insert": "To Shape,"
-                      }
-                    ]
-                  }
-                },
-                "children": []
-              },
-              {
-                "type": "block",
-                "id": "0ugn1XiO-U",
-                "flavour": "affine:paragraph",
-                "version": 1,
-                "props": {
-                  "type": "text",
-                  "text": {
-                    "$blocksuite:internal:text$": true,
-                    "delta": [
-                      {
-                        "insert": "Not to Adopt."
-                      }
-                    ]
-                  }
-                },
-                "children": []
-              }
-            ]
-          },
-          {
-            "type": "block",
-            "id": "mkbmK_R1sC",
+            "id": "xLced7EEmu",
             "flavour": "affine:frame",
             "version": 1,
             "props": {
@@ -102,13 +46,74 @@
                 ]
               },
               "background": "transparent",
-              "xywh": "[-21.778598440645766,126.5612581783729,880.6283921393511,640]",
-              "index": "a1",
               "childElementIds": {
-                "bv-d4LA-Nr": true
-              }
+                "1jGoMnK9qs": true
+              },
+              "presentationIndex": "a00CUHgMs6ZxMev19SDevIeF8BK3qMhj6Bb",
+              "xywh": "[-15.226806640625,-27.208251953125,517.9283447265625,256.18646240234375]",
+              "index": "Zz",
+              "lockedBySelf": false
             },
             "children": []
+          },
+          {
+            "type": "block",
+            "id": "1jGoMnK9qs",
+            "flavour": "affine:edgeless-text",
+            "version": 1,
+            "props": {
+              "xywh": "[112.00732421875,29.2640380859375,273.905029296875,127.79339599609375]",
+              "index": "a0",
+              "lockedBySelf": false,
+              "color": "#53b2ef",
+              "fontFamily": "blocksuite:surface:Inter",
+              "fontStyle": "normal",
+              "fontWeight": "400",
+              "textAlign": "left",
+              "scale": 2.7781175713153754,
+              "rotate": 0,
+              "hasMaxWidth": true
+            },
+            "children": [
+              {
+                "type": "block",
+                "id": "EC2iyFQ3aU",
+                "flavour": "affine:paragraph",
+                "version": 1,
+                "props": {
+                  "type": "text",
+                  "text": {
+                    "$blocksuite:internal:text$": true,
+                    "delta": [
+                      {
+                        "insert": "To Shape,"
+                      }
+                    ]
+                  },
+                  "collapsed": false
+                },
+                "children": []
+              },
+              {
+                "type": "block",
+                "id": "Ss-EVG-70C",
+                "flavour": "affine:paragraph",
+                "version": 1,
+                "props": {
+                  "type": "text",
+                  "text": {
+                    "$blocksuite:internal:text$": true,
+                    "delta": [
+                      {
+                        "insert": "Not to Adopt."
+                      }
+                    ]
+                  },
+                  "collapsed": false
+                },
+                "children": []
+              }
+            ]
           }
         ]
       }

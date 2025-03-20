@@ -11,6 +11,7 @@ import { CommandManager } from '../command/index.js';
 import { UIEventDispatcher } from '../event/index.js';
 import { DndController } from '../extension/dnd/index.js';
 import { EditorLifeCycleExtension } from '../extension/editor-life-cycle.js';
+import { ServiceManager } from '../extension/service-manager.js';
 import { GfxController } from '../gfx/controller.js';
 import { GridManager, LayerManager } from '../gfx/index.js';
 import { GfxSelectionManager } from '../gfx/selection.js';
@@ -21,8 +22,7 @@ import {
   LifeCycleWatcherIdentifier,
   StdIdentifier,
 } from '../identifier.js';
-import { RangeManager } from '../range/index.js';
-import { ServiceManager } from '../service/index.js';
+import { RangeManager } from '../inline/index.js';
 import { EditorHost } from '../view/element/index.js';
 import { ViewStore } from '../view/view-store.js';
 

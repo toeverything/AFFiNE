@@ -147,6 +147,7 @@ jobs:
         with:
           script: yarn affine @affine-test/affine-cloud-copilot e2e --forbid-only --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
           openai-key: ${{ secrets.COPILOT_OPENAI_API_KEY }}
+          google-key: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
           fal-key: ${{ secrets.COPILOT_FAL_API_KEY }}
           perplexity-key: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
 

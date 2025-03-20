@@ -6,6 +6,7 @@ import {
   dragBetweenViewCoords,
   edgelessCommonSetup,
   getFirstContainerId,
+  locatorComponentToolbar,
   Shape,
   shiftClickView,
   triggerComponentToolbarAction,
@@ -45,15 +46,16 @@ test.describe('group', () => {
       page,
     }) => {
       await clickView(page, [50, 50]);
-      await expect(
-        page.locator('edgeless-element-toolbar-widget')
-      ).toBeVisible();
-      await expect(page.locator('edgeless-add-group-button')).not.toBeVisible();
+      const toolbar = locatorComponentToolbar(page);
+      await expect(toolbar).toBeVisible();
+      await expect(toolbar.getByLabel(/^Group$/)).not.toBeVisible();
     });
 
     test('create button show up when multi select', async ({ page }) => {
       await selectAllByKeyboard(page);
-      await expect(page.locator('edgeless-add-group-button')).toBeVisible();
+      const toolbar = locatorComponentToolbar(page);
+      await expect(toolbar).toBeVisible();
+      await expect(toolbar.getByLabel(/^Group$/)).toBeVisible();
     });
 
     test('create group by component toolbar', async ({ page }) => {

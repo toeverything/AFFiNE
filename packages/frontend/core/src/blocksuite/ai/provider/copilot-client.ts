@@ -273,6 +273,7 @@ export class CopilotClient {
         content,
         options,
       },
+      timeout: 60000,
     });
     return res.addContextFile;
   }

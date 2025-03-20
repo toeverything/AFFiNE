@@ -1,4 +1,8 @@
-import type { SearchDocMenuAction } from '@affine/core/modules/doc-search-menu/services';
+import type {
+  SearchCollectionMenuAction,
+  SearchDocMenuAction,
+  SearchTagMenuAction,
+} from '@affine/core/modules/search-menu/services';
 import type { LinkedMenuGroup } from '@blocksuite/affine/blocks/root';
 import type { Store } from '@blocksuite/affine/store';
 import type { Signal } from '@preact/signals-core';
@@ -29,10 +33,20 @@ export interface DocDisplayConfig {
   getDoc: (docId: string) => Store | null;
 }
 
-export interface DocSearchMenuConfig {
+export interface SearchMenuConfig {
   getDocMenuGroup: (
     query: string,
     action: SearchDocMenuAction,
+    abortSignal: AbortSignal
+  ) => LinkedMenuGroup;
+  getTagMenuGroup: (
+    query: string,
+    action: SearchTagMenuAction,
+    abortSignal: AbortSignal
+  ) => LinkedMenuGroup;
+  getCollectionMenuGroup: (
+    query: string,
+    action: SearchCollectionMenuAction,
     abortSignal: AbortSignal
   ) => LinkedMenuGroup;
 }

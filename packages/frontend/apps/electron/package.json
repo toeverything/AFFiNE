@@ -72,7 +72,7 @@
     "tree-kill": "^1.2.2",
     "ts-node": "^10.9.2",
     "uuid": "^11.0.3",
-    "vitest": "3.0.8",
+    "vitest": "3.0.9",
     "zod": "^3.24.1"
   },
   "dependencies": {

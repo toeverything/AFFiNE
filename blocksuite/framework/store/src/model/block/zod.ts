@@ -8,10 +8,9 @@ import type { BlockModel } from './block-model.js';
 const FlavourSchema = z.string();
 const ParentSchema = z.array(z.string()).optional();
 const ContentSchema = z.array(z.string()).optional();
-const role = ['root', 'hub', 'content'] as const;
-const RoleSchema = z.enum(role);
+const RoleSchema = z.string();
 
-export type RoleType = (typeof role)[number];
+export type RoleType = 'root' | 'content' | string;
 
 export interface InternalPrimitives {
   Text: (input?: Y.Text | string) => Text;

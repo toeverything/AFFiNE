@@ -5,11 +5,9 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { TextBackgroundDuotoneIcon } from '@blocksuite/affine-components/icons';
+import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
 import type { TableColumn, TableRow } from '@blocksuite/affine-model';
-import {
-  DefaultInlineManagerExtension,
-  RichText,
-} from '@blocksuite/affine-rich-text';
+import { RichText } from '@blocksuite/affine-rich-text';
 import { cssVarV2 } from '@blocksuite/affine-shared/theme';
 import { getViewportElement } from '@blocksuite/affine-shared/utils';
 import { ShadowlessElement } from '@blocksuite/block-std';

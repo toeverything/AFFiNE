@@ -1,8 +1,9 @@
 import {
   ColorSchema,
   ConnectorMode,
-  DEFAULT_FRONT_END_POINT_STYLE,
-  DEFAULT_REAR_END_POINT_STYLE,
+  DEFAULT_CONNECTOR_MODE,
+  DEFAULT_FRONT_ENDPOINT_STYLE,
+  DEFAULT_REAR_ENDPOINT_STYLE,
   DEFAULT_ROUGHNESS,
   DefaultTheme,
   EdgelessTextZodSchema,
@@ -61,13 +62,13 @@ export const ConnectorSchema = z
     }),
   })
   .default({
-    frontEndpointStyle: DEFAULT_FRONT_END_POINT_STYLE,
-    rearEndpointStyle: DEFAULT_REAR_END_POINT_STYLE,
+    frontEndpointStyle: DEFAULT_FRONT_ENDPOINT_STYLE,
+    rearEndpointStyle: DEFAULT_REAR_ENDPOINT_STYLE,
     stroke: DefaultTheme.connectorColor,
     strokeStyle: StrokeStyle.Solid,
     strokeWidth: LineWidth.Two,
     rough: false,
-    mode: ConnectorMode.Curve,
+    mode: DEFAULT_CONNECTOR_MODE,
     labelStyle: {
       color: DefaultTheme.black,
       fontSize: 16,

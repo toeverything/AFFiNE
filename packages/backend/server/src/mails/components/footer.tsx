@@ -6,7 +6,6 @@ import { BasicTextStyle } from './common';
 const TextStyles: CSSProperties = {
   ...BasicTextStyle,
   color: '#8e8d91',
-  margin: 1,
   marginTop: '8px',
 };
 
@@ -16,7 +15,8 @@ export const Footer = () => {
       style={{
         backgroundColor: '#fafafa',
         maxWidth: '450px',
-        margin: '0 auto 32px auto',
+        marginTop: '0',
+        marginBottom: '32px',
         borderRadius: '0 0 16px 16px',
         boxShadow: '0px 0px 20px 0px rgba(66, 65, 73, 0.04)',
         padding: '24px',

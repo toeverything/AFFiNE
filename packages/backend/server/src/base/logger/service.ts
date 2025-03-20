@@ -1,6 +1,8 @@
 import { ConsoleLogger, Injectable, type LogLevel } from '@nestjs/common';
 import { ClsServiceManager } from 'nestjs-cls';
 
+import { UserFriendlyError } from '../error';
+
 // DO NOT use this Logger directly
 // Use it via this way: `private readonly logger = new Logger(MyService.name)`
 @Injectable()
@@ -20,7 +22,14 @@ export class AFFiNELogger extends ConsoleLogger {
 
   static formatStack(stackOrError?: Error | string | unknown) {
     if (stackOrError instanceof Error) {
-      const err = stackOrError;
+      let err = stackOrError;
+
+      // most of the internal error are caught and created by `GlobalExceptionFilter`,
+      // and their error stack is helpless
+      if (err instanceof UserFriendlyError) {
+        return err.stacktrace;
+      }
+
       let stack = err.stack ?? '';
       if (err.cause instanceof Error && err.cause.stack) {
         stack += `\n\nCaused by:\n\n${err.cause.stack}`;

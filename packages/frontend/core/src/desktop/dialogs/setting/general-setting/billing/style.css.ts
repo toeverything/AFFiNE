@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { globalStyle, style } from '@vanilla-extract/css';
 export const subscription = style({});
 export const history = style({
@@ -14,7 +15,7 @@ export const planCard = style({
   display: 'flex',
   justifyContent: 'space-between',
   padding: '12px',
-  border: `1px solid ${cssVar('borderColor')}`,
+  border: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
   borderRadius: '8px',
 });
 export const currentPlan = style({
@@ -35,10 +36,10 @@ export const paymentMethod = style({
   marginTop: '24px',
 });
 globalStyle('.dangerous-setting .name', {
-  color: cssVar('errorColor'),
+  color: cssVarV2('status/error'),
 });
 export const noInvoice = style({
-  color: cssVar('textSecondaryColor'),
+  color: cssVarV2('text/secondary'),
   fontSize: cssVar('fontXs'),
 });
 export const currentPlanName = style({
@@ -70,13 +71,13 @@ export const believerTitle = style({
   fontSize: cssVar('fontSm'),
   fontWeight: 600,
   lineHeight: '22px',
-  color: cssVar('textPrimaryColor'),
+  color: cssVarV2('text/primary'),
 });
 export const believerSubtitle = style({
   fontSize: cssVar('fontXs'),
   lineHeight: '20px',
   fontWeight: 400,
-  color: cssVar('textSecondaryColor'),
+  color: cssVarV2('text/secondary'),
 });
 globalStyle(`.${believerSubtitle} > a`, {
   color: cssVar('brandColor'),
@@ -91,11 +92,44 @@ export const believerPrice = style({
   fontSize: '18px',
   fontWeight: 600,
   lineHeight: '26px',
-  color: cssVar('textPrimaryColor'),
+  color: cssVarV2('text/primary'),
 });
 export const believerPriceCaption = style({
   fontSize: cssVar('fontXs'),
   lineHeight: '20px',
   fontWeight: 500,
-  color: cssVar('textSecondaryColor'),
+  color: cssVarV2('text/secondary'),
+});
+export const cardNameLabelRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '16px',
+});
+export const cardName = style({
+  fontSize: cssVar('fontSm'),
+  fontWeight: 600,
+  color: cssVarV2('text/primary'),
+  lineHeight: '22px',
+});
+export const cardLabelContainer = style({
+  display: 'flex',
+  gap: '4px',
+  color: cssVarV2('button/primary'),
+  selectors: {
+    '&.past-due': {
+      color: cssVarV2('button/error'),
+    },
+  },
+});
+export const cardLabel = style({
+  fontSize: cssVar('fontXs'),
+  fontWeight: 500,
+});
+export const cardLabelIcon = style({
+  width: '14px',
+  height: '14px',
+});
+export const manageMentInCard = style({
+  marginTop: '8px',
+  marginLeft: '12px',
 });

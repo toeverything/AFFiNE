@@ -14,8 +14,7 @@ export class OpenAIEmbeddingClient extends EmbeddingClient {
     const resp = await this.client.embeddings.create(
       {
         input,
-        model: 'text-embedding-3-small',
-        dimensions: 512,
+        model: 'text-embedding-3-large',
         encoding_format: 'float',
       },
       { signal }

@@ -38,6 +38,7 @@ import { memo, useCallback } from 'react';
 import { WorkbenchService } from '../../modules/workbench';
 import { WorkspaceNavigator } from '../workspace-selector';
 import {
+  bottomContainer,
   quickSearch,
   quickSearchAndNewPage,
   workspaceAndUserWrapper,
@@ -45,6 +46,7 @@ import {
 } from './index.css';
 import { AppSidebarJournalButton } from './journal-button';
 import { NotificationButton } from './notification-button';
+import { SidebarAudioPlayer } from './sidebar-audio-player';
 import { TemplateDocEntrance } from './template-doc-entrance';
 import { TrashButton } from './trash-button';
 import { UpdaterButton } from './updater-button';
@@ -204,7 +206,8 @@ export const RootAppSidebar = memo((): ReactElement => {
           />
         </CollapsibleSection>
       </SidebarScrollableContainer>
-      <SidebarContainer>
+      <SidebarContainer className={bottomContainer}>
+        <SidebarAudioPlayer />
         {BUILD_CONFIG.isElectron ? <UpdaterButton /> : <AppDownloadButton />}
       </SidebarContainer>
     </AppSidebar>

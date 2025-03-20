@@ -5,21 +5,19 @@ import {
   NewDocIcon,
 } from '@blocksuite/affine-components/icons';
 import { toast } from '@blocksuite/affine-components/toast';
-import {
-  type AffineInlineEditor,
-  insertLinkedNode,
-} from '@blocksuite/affine-rich-text';
+import { insertLinkedNode } from '@blocksuite/affine-inline-reference';
 import {
   DocModeProvider,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
+import type { AffineInlineEditor } from '@blocksuite/affine-shared/types';
 import {
   createDefaultDoc,
   isFuzzyMatch,
   type Signal,
 } from '@blocksuite/affine-shared/utils';
 import type { BlockStdScope, EditorHost } from '@blocksuite/block-std';
-import type { InlineRange } from '@blocksuite/inline';
+import type { InlineRange } from '@blocksuite/block-std/inline';
 import type { TemplateResult } from 'lit';
 
 import { showImportModal } from './import-doc/index.js';

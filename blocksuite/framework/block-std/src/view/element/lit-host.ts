@@ -18,7 +18,7 @@ import { html, type StaticValue, unsafeStatic } from 'lit/static-html.js';
 import type { CommandManager } from '../../command/index.js';
 import type { UIEventDispatcher } from '../../event/index.js';
 import { WidgetViewIdentifier } from '../../identifier.js';
-import type { RangeManager } from '../../range/index.js';
+import type { RangeManager } from '../../inline/index.js';
 import type { BlockStdScope } from '../../scope/block-std-scope.js';
 import { PropTypes, requiredProperties } from '../decorators/index.js';
 import type { ViewStore } from '../view-store.js';

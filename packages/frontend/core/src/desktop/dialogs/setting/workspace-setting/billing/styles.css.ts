@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
 export const paymentMethod = style({
@@ -16,7 +17,7 @@ export const historyContent = style({
 });
 
 export const noInvoice = style({
-  color: cssVar('textSecondaryColor'),
+  color: cssVarV2('text/secondary'),
   fontSize: cssVar('fontXs'),
 });
 
@@ -38,7 +39,7 @@ export const planCard = style({
   display: 'flex',
   justifyContent: 'space-between',
   padding: '12px',
-  border: `1px solid ${cssVar('borderColor')}`,
+  border: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
   borderRadius: '8px',
 });
 
@@ -58,10 +59,44 @@ export const billingFrequency = style({
 export const currentPlanName = style({
   fontSize: cssVar('fontXs'),
   fontWeight: 500,
-  color: cssVar('textEmphasisColor'),
+  color: cssVarV2('text/emphasis'),
   cursor: 'pointer',
 });
 
 export const cancelPlanButton = style({
   marginTop: '8px',
+});
+
+export const cardNameLabelRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '16px',
+});
+
+export const cardName = style({
+  fontSize: cssVar('fontSm'),
+  fontWeight: 600,
+  color: cssVarV2('text/primary'),
+  lineHeight: '22px',
+});
+
+export const cardLabelContainer = style({
+  display: 'flex',
+  gap: '4px',
+  color: cssVarV2('button/primary'),
+  selectors: {
+    '&.past-due': {
+      color: cssVarV2('button/error'),
+    },
+  },
+});
+
+export const cardLabel = style({
+  fontSize: cssVar('fontXs'),
+  fontWeight: 500,
+});
+
+export const cardLabelIcon = style({
+  width: '14px',
+  height: '14px',
 });

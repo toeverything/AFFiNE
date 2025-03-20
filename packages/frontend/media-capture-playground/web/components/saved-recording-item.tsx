@@ -378,11 +378,12 @@ function RecordingHeader({
   transcriptionError: string | null;
 }): ReactElement {
   const [imgError, setImgError] = React.useState(false);
+  const isGlobalRecording = metadata?.isGlobal;
 
   return (
     <div className="flex items-start space-x-4 p-4 bg-gray-50/30">
       <div className="relative w-12 h-12 flex-shrink-0">
-        {!imgError ? (
+        {!imgError && !isGlobalRecording ? (
           <img
             src={`/api/recordings/${fileName}/icon.png`}
             alt={metadata?.appName || 'Unknown Application'}
@@ -401,7 +402,12 @@ function RecordingHeader({
             <span className="text-gray-900 font-semibold text-base truncate">
               {metadata?.appName || 'Unknown Application'}
             </span>
-            <span className="text-xs px-2 py-0.5 bg-blue-50 rounded-full text-blue-600 font-medium border border-blue-100">
+            {isGlobalRecording && (
+              <span className="text-xs px-2 py-0.5 bg-blue-50 rounded-full text-blue-600 font-medium border border-blue-100">
+                System Audio
+              </span>
+            )}
+            <span className="text-xs px-2 py-0.5 bg-gray-50 rounded-full text-gray-600 font-medium border border-gray-100">
               {duration}
             </span>
           </div>

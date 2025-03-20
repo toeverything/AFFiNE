@@ -29,7 +29,7 @@ const config: PlaywrightTestConfig = {
 
 if (process.env.CI) {
   config.retries = 5;
-  config.workers = 2;
+  config.workers = 1;
 }
 
 if (process.env.DEV_SERVER_URL) {

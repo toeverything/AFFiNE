@@ -35,7 +35,7 @@ async function openScalePanel(page: Page, noteId: string) {
   await selectNoteInEdgeless(page, noteId);
   await triggerComponentToolbarAction(page, 'changeNoteScale');
   await waitNextFrame(page);
-  const scalePanel = page.locator('edgeless-scale-panel');
+  const scalePanel = page.locator('.scale-menu');
   await expect(scalePanel).toBeVisible();
   return scalePanel;
 }
@@ -90,7 +90,7 @@ test.describe('note scale', () => {
     const noteId = await setupAndAddNote(page);
     const scalePanel = await openScalePanel(page, noteId);
 
-    const scaleInput = scalePanel.locator('.scale-input');
+    const scaleInput = scalePanel.locator('input');
     await scaleInput.click();
     await page.keyboard.type('50');
     await page.keyboard.press('Enter');
@@ -102,7 +102,7 @@ test.describe('note scale', () => {
     const noteId = await setupAndAddNote(page);
     const scalePanel = await openScalePanel(page, noteId);
 
-    const scaleInput = scalePanel.locator('.scale-input');
+    const scaleInput = scalePanel.locator('input');
     await scaleInput.click();
     await page.keyboard.type('50');
     await selectAllByKeyboard(page);

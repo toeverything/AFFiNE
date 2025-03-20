@@ -1,15 +1,10 @@
 import { EmbedYoutubeBlockSchema } from '@blocksuite/affine-model';
-import { ToolbarModuleExtension } from '@blocksuite/affine-shared/services';
 import { SlashMenuConfigExtension } from '@blocksuite/affine-widget-slash-menu';
-import {
-  BlockServiceIdentifier,
-  BlockViewExtension,
-  FlavourExtension,
-} from '@blocksuite/block-std';
+import { BlockViewExtension, FlavourExtension } from '@blocksuite/block-std';
 import type { ExtensionType } from '@blocksuite/store';
 import { literal } from 'lit/static-html.js';
 
-import { createBuiltinToolbarConfigForExternal } from '../configs/toolbar';
+import { createBuiltinToolbarConfigExtension } from '../configs/toolbar';
 import { EmbedYoutubeBlockAdapterExtensions } from './adapters/extension';
 import { embedYoutubeSlashMenuConfig } from './configs/slash-menu';
 import { EmbedYoutubeBlockComponent } from './embed-youtube-block';
@@ -30,9 +25,6 @@ export const EmbedYoutubeBlockSpec: ExtensionType[] = [
   }),
   EmbedYoutubeBlockAdapterExtensions,
   EmbedYoutubeBlockOptionConfig,
-  ToolbarModuleExtension({
-    id: BlockServiceIdentifier(flavour),
-    config: createBuiltinToolbarConfigForExternal(EmbedYoutubeBlockComponent),
-  }),
+  createBuiltinToolbarConfigExtension(flavour, EmbedYoutubeBlockComponent),
   SlashMenuConfigExtension('affine:embed-youtube', embedYoutubeSlashMenuConfig),
 ].flat();

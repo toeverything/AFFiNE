@@ -3,16 +3,20 @@ import type { ExtensionType } from '@blocksuite/store';
 
 import { ConfigIdentifier } from '../identifier.js';
 
+export interface ConfigFactory<Config extends Record<string, any>> {
+  (config: Config): ExtensionType;
+  identifier: ServiceIdentifier<Config>;
+}
+
 /**
  * Create a config extension.
  * A config extension provides a configuration object for a block flavour.
  * The configuration object can be used like:
  * ```ts
- * const config = std.provider.get(ConfigIdentifier('my-flavour'));
+ * const config = std.provider.getOptional(ConfigIdentifier('my-flavour'));
  * ```
  *
- * @param flavor The flavour of the block that the config is for.
- * @param config The configuration object.
+ * @param configId The id of the config. Should be unique for each config.
  *
  * @example
  * ```ts
@@ -25,14 +29,14 @@ import { ConfigIdentifier } from '../identifier.js';
  * ```
  */
 export function ConfigExtensionFactory<Config extends Record<string, any>>(
-  flavor: string
-): ((config: Config) => ExtensionType) & {
-  identifier: ServiceIdentifier<Config>;
-} {
-  const identifier = ConfigIdentifier(flavor) as ServiceIdentifier<Config>;
+  configId: string
+): ConfigFactory<Config> {
+  const identifier = ConfigIdentifier(configId) as ServiceIdentifier<Config>;
   const extensionFactory = (config: Config): ExtensionType => ({
     setup: di => {
-      di.addImpl(ConfigIdentifier(flavor), () => config);
+      di.override(ConfigIdentifier(configId), () => {
+        return config;
+      });
     },
   });
   extensionFactory.identifier = identifier;

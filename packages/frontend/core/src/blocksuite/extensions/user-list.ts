@@ -8,6 +8,10 @@ export function patchUserListExtensions(memberSearch: MemberSearchService) {
     loadMore() {
       memberSearch.loadMore();
     },
+    // eslint-disable-next-line rxjs/finnish
+    isLoading$: memberSearch.isLoading$.signal,
+    // eslint-disable-next-line rxjs/finnish
+    searchText$: memberSearch.searchText$.signal,
     search(keyword) {
       memberSearch.search(keyword);
     },

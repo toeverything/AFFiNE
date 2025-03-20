@@ -86,7 +86,7 @@ export const updateBlockType: Command<
     if (!id) return;
     const model = doc.getModelById(id);
     if (!model) return;
-    asyncSetInlineRange(host, model, {
+    asyncSetInlineRange(std, model, {
       index: model.text?.length ?? 0,
       length: 0,
     }).catch(console.error);
@@ -132,7 +132,7 @@ export const updateBlockType: Command<
     const lastNewModel = updatedBlocks[updatedBlocks.length - 1];
 
     const allTextUpdated = updatedBlocks.map(model =>
-      onModelTextUpdated(host, model)
+      onModelTextUpdated(std, model)
     );
     const selectionManager = host.selection;
     const textSelection = selectionManager.find(TextSelection);

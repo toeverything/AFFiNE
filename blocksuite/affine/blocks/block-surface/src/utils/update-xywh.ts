@@ -51,7 +51,7 @@ export function updateXYWH(
     bound.w = clamp(bound.w, NOTE_MIN_WIDTH * scale, Infinity);
     bound.h = clamp(bound.h, NOTE_MIN_HEIGHT * scale, Infinity);
     if (bound.h >= NOTE_MIN_HEIGHT * scale) {
-      updateBlock(ele, () => {
+      updateBlock.call(ele.doc, ele, () => {
         ele.props.edgeless.collapse = true;
         ele.props.edgeless.collapsedHeight = bound.h / scale;
       });

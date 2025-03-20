@@ -1,46 +1,15 @@
 {
-  "type": "block",
-  "id": "0",
-  "flavour": "affine:page",
-  "version": 2,
-  "props": {
-    "title": {
-      "$blocksuite:internal:text$": true,
-      "delta": []
-    }
-  },
   "children": [
     {
-      "type": "block",
-      "id": "1",
-      "flavour": "affine:note",
-      "version": 1,
-      "props": {
-        "xywh": "[0,0,498,92]",
-        "background": {
-          "dark": "#000000",
-          "light": "#ffffff"
-        },
-        "index": "a0",
-        "lockedBySelf": false,
-        "hidden": false,
-        "displayMode": "both",
-        "edgeless": {
-          "style": {
-            "borderRadius": 8,
-            "borderSize": 4,
-            "borderStyle": "none",
-            "shadowType": "--affine-note-shadow-box"
-          }
-        }
-      },
       "children": [
         {
-          "type": "block",
-          "id": "5",
+          "children": [
+          ],
           "flavour": "affine:code",
-          "version": 1,
+          "id": "5",
           "props": {
+            "caption": "",
+            "language": null,
             "text": {
               "$blocksuite:internal:text$": true,
               "delta": [
@@ -49,13 +18,46 @@
                 }
               ]
             },
-            "language": null,
-            "wrap": false,
-            "caption": ""
+            "wrap": false
           },
-          "children": []
+          "type": "block",
+          "version": 1
         }
+      ],
+      "flavour": "affine:note",
+      "id": "1",
+      "props": {
+        "background": {
+          "dark": "#000000",
+          "light": "#ffffff"
+        },
+        "displayMode": "both",
+        "edgeless": {
+          "style": {
+            "borderRadius": 8,
+            "borderSize": 4,
+            "borderStyle": "none",
+            "shadowType": "--affine-note-shadow-box"
+          }
+        },
+        "hidden": false,
+        "index": "a0",
+        "lockedBySelf": false,
+        "xywh": "[0,0,498,92]"
+      },
+      "type": "block",
+      "version": 1
+    }
+  ],
+  "flavour": "affine:page",
+  "id": "0",
+  "props": {
+    "title": {
+      "$blocksuite:internal:text$": true,
+      "delta": [
       ]
     }
-  ]
+  },
+  "type": "block",
+  "version": 2
 }

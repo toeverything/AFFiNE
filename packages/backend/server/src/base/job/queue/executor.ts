@@ -13,7 +13,7 @@ import { metrics, wrapCallMetric } from '../../metrics';
 import { QueueRedis } from '../../redis';
 import { Runtime } from '../../runtime';
 import { genRequestId } from '../../utils';
-import { namespace, Queue, QUEUES } from './def';
+import { JOB_SIGNAL, namespace, Queue, QUEUES } from './def';
 import { JobHandlerScanner } from './scanner';
 
 @Injectable()
@@ -69,8 +69,12 @@ export class JobExecutor
           try {
             this.logger.debug(`Job started: ${signature}`);
             const result = await handler.fn(payload);
+
+            if (result === JOB_SIGNAL.RETRY) {
+              throw new Error(`Manually job retry`);
+            }
+
             this.logger.debug(`Job finished: ${signature}`);
-            return result;
           } catch (e) {
             this.logger.error(`Job failed: ${signature}`, e);
             throw e;
@@ -88,7 +92,7 @@ export class JobExecutor
     const activeJobs = metrics.queue.counter('active_jobs');
     activeJobs.add(1, { queue: ns });
     try {
-      return await fn();
+      await fn();
     } finally {
       activeJobs.add(-1, { queue: ns });
     }

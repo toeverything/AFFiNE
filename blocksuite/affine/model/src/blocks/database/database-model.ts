@@ -5,13 +5,17 @@ import {
   defineBlockSchema,
 } from '@blocksuite/store';
 
-import type { Column, SerializedCells, ViewBasicDataType } from './types.js';
+import type {
+  ColumnDataType,
+  SerializedCells,
+  ViewBasicDataType,
+} from './types.js';
 
 export type DatabaseBlockProps = {
   views: ViewBasicDataType[];
   title: Text;
   cells: SerializedCells;
-  columns: Array<Column>;
+  columns: Array<ColumnDataType>;
 };
 
 export class DatabaseBlockModel extends BlockModel<DatabaseBlockProps> {}

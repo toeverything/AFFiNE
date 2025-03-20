@@ -1,10 +1,10 @@
 import { createLitPortal } from '@blocksuite/affine-components/portal';
-import type { AffineInlineEditor } from '@blocksuite/affine-rich-text';
 import {
   cleanSpecifiedTail,
   getInlineEditorByModel,
   getTextContentFromInlineRange,
 } from '@blocksuite/affine-rich-text';
+import type { AffineInlineEditor } from '@blocksuite/affine-shared/types';
 import {
   createKeydownObserver,
   getCurrentNativeRange,
@@ -56,7 +56,7 @@ export class SlashMenu extends WithDisposable(LitElement) {
     // We must to do clean the slash string before we do the action
     // Otherwise, the action may change the model and cause the slash string to be changed
     cleanSpecifiedTail(
-      this.host,
+      this.context.std,
       this.context.model,
       AFFINE_SLASH_MENU_TRIGGER_KEY + (this._query || '')
     );
@@ -496,7 +496,7 @@ export class InnerSlashMenu extends WithDisposable(LitElement) {
     });
 
     const inlineEditor = getInlineEditorByModel(
-      this.context.std.host,
+      this.context.std,
       this.context.model
     );
 

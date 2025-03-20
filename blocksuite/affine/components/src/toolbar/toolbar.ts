@@ -35,7 +35,9 @@ export class EditorToolbar extends WithDisposable(LitElement) {
       e.stopPropagation();
       e.preventDefault();
     });
-    this._disposables.addFromEvent(this, 'wheel', stopPropagation);
+    this._disposables.addFromEvent(this, 'wheel', stopPropagation, {
+      passive: false,
+    });
   }
 
   override render() {

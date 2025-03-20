@@ -8,7 +8,7 @@ import {
   LinkedWidgetUtils,
 } from '@blocksuite/affine/blocks/root';
 import type { DocMode } from '@blocksuite/affine/model';
-import type { AffineInlineEditor } from '@blocksuite/affine/rich-text';
+import type { AffineInlineEditor } from '@blocksuite/affine/shared/types';
 import type { DocMeta } from '@blocksuite/affine/store';
 import { Text } from '@blocksuite/affine/store';
 import {
@@ -24,9 +24,9 @@ import { html } from 'lit';
 import type { WorkspaceDialogService } from '../../dialogs';
 import type { DocsService } from '../../doc';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
-import type { DocSearchMenuService } from '../../doc-search-menu/services';
 import type { EditorSettingService } from '../../editor-setting';
 import { type JournalService, suggestJournalDate } from '../../journal';
+import type { SearchMenuService } from '../../search-menu/services';
 
 function resolveSignal<T>(data: T | Signal<T>): T {
   return data instanceof Signal ? data.value : data;
@@ -45,7 +45,7 @@ export class AtMenuConfigService extends Service {
     private readonly dialogService: WorkspaceDialogService,
     private readonly editorSettingService: EditorSettingService,
     private readonly docsService: DocsService,
-    private readonly docsSearchMenuService: DocSearchMenuService
+    private readonly searchMenuService: SearchMenuService
   ) {
     super();
   }
@@ -292,7 +292,7 @@ export class AtMenuConfigService extends Service {
       track.doc.editor.atMenu.linkDoc();
       this.insertDoc(inlineEditor, meta.id);
     };
-    const result = this.docsSearchMenuService.getDocMenuGroup(
+    const result = this.searchMenuService.getDocMenuGroup(
       query,
       action,
       abortSignal

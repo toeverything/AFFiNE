@@ -1,4 +1,3 @@
-import type { PropertyMetaConfig } from '@blocksuite/data-view';
 import { propertyPresets } from '@blocksuite/data-view/property-presets';
 
 import { linkColumnConfig } from './link/cell-renderer.js';
@@ -14,7 +13,7 @@ const {
   progressPropertyConfig,
   selectPropertyConfig,
 } = propertyPresets;
-export const databaseBlockColumns = {
+export const databaseBlockProperties = {
   checkboxColumnConfig: checkboxPropertyConfig,
   dateColumnConfig: datePropertyConfig,
   multiSelectColumnConfig: multiSelectPropertyConfig,
@@ -26,7 +25,3 @@ export const databaseBlockColumns = {
   richTextColumnConfig,
   titleColumnConfig,
 };
-export const databaseBlockPropertyList = Object.values(databaseBlockColumns);
-export const databaseBlockAllPropertyMap = Object.fromEntries(
-  databaseBlockPropertyList.map(v => [v.type, v as PropertyMetaConfig])
-);

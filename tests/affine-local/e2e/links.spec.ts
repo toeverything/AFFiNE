@@ -156,7 +156,7 @@ test('not allowed to switch to embed view when linking to block', async ({
 
   await cardLink.click();
 
-  await toolbar.getByLabel('More').click();
+  await toolbar.getByLabel('more-menu').click();
   await toolbar.getByLabel('Copy link to block').click();
 
   await page.keyboard.press('Enter');

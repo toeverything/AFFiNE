@@ -6,15 +6,19 @@ import {
   type EditorHost,
   ShadowlessElement,
 } from '@blocksuite/affine/block-std';
-import { defaultImageProxyMiddleware } from '@blocksuite/affine/blocks/image';
+import {
+  defaultImageProxyMiddleware,
+  ImageProxyService,
+} from '@blocksuite/affine/blocks/image';
 import { PageEditorBlockSpecs } from '@blocksuite/affine/extensions';
 import { Container, type ServiceProvider } from '@blocksuite/affine/global/di';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import {
   InlineDeltaToMarkdownAdapterExtensions,
   MarkdownInlineToDeltaAdapterExtensions,
-} from '@blocksuite/affine/rich-text';
+} from '@blocksuite/affine/inlines/preset';
 import { codeBlockWrapMiddleware } from '@blocksuite/affine/shared/adapters';
+import { LinkPreviewerService } from '@blocksuite/affine/shared/services';
 import type {
   ExtensionType,
   Query,
@@ -253,6 +257,20 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
     this._updateDoc();
     if (this.state === 'generating') {
       this._timer = setInterval(this._updateDoc, 600);
+    }
+
+    // LinkPreviewerService & ImageProxyService config should read from host settings
+    const linkPreviewerService = this.host?.std.store.get(LinkPreviewerService);
+    const imageProxyService = this.host?.std.store.get(ImageProxyService);
+    if (linkPreviewerService) {
+      this._doc
+        ?.get(LinkPreviewerService)
+        .setEndpoint(linkPreviewerService.endpoint);
+    }
+    if (imageProxyService) {
+      this._doc
+        ?.get(ImageProxyService)
+        .setImageProxyURL(imageProxyService.imageProxyURL);
     }
   }
 

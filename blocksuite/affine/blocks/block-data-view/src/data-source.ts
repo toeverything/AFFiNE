@@ -1,8 +1,8 @@
 import {
-  databaseBlockAllPropertyMap,
+  DatabaseBlockDataSource,
   databasePropertyConverts,
 } from '@blocksuite/affine-block-database';
-import type { Column } from '@blocksuite/affine-model';
+import type { ColumnDataType } from '@blocksuite/affine-model';
 import {
   insertPositionToIndex,
   type InsertToPosition,
@@ -171,7 +171,7 @@ export class BlockQueryDataSource extends DataSourceBase {
   ): string {
     const doc = this.block.doc;
     doc.captureSync();
-    const column = databaseBlockAllPropertyMap[
+    const column = DatabaseBlockDataSource.propertiesMap.value[
       type ?? propertyPresets.multiSelectPropertyConfig.type
     ].create(this.newColumnName());
 
@@ -180,7 +180,7 @@ export class BlockQueryDataSource extends DataSourceBase {
       return id;
     }
     doc.transact(() => {
-      const col: Column = {
+      const col: ColumnDataType = {
         ...column,
         id,
       };
@@ -287,7 +287,9 @@ export class BlockQueryDataSource extends DataSourceBase {
         currentCells as any
       ) ?? {
         property:
-          databaseBlockAllPropertyMap[toType].config.propertyData.default(),
+          DatabaseBlockDataSource.propertiesMap.value[
+            toType
+          ].config.propertyData.default(),
         cells: currentCells.map(() => undefined),
       };
       this.block.doc.captureSync();

@@ -8,12 +8,12 @@ import { getViewportElement } from '@blocksuite/affine-shared/utils';
 import type { BlockComponent } from '@blocksuite/block-std';
 import { BLOCK_ID_ATTR, WidgetComponent } from '@blocksuite/block-std';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
-import { IS_MOBILE } from '@blocksuite/global/env';
 import {
   INLINE_ROOT_ATTR,
   type InlineEditor,
   type InlineRootElement,
-} from '@blocksuite/inline';
+} from '@blocksuite/block-std/inline';
+import { IS_MOBILE } from '@blocksuite/global/env';
 import { signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 import { choose } from 'lit/directives/choose.js';
@@ -72,7 +72,7 @@ export class AffineLinkedDocWidget extends WidgetComponent<
   }
 
   private readonly _renderLinkedDocMenu = () => {
-    if (!this.block.rootComponent) return nothing;
+    if (!this.block?.rootComponent) return nothing;
 
     return html`<affine-mobile-linked-doc-menu
       .context=${this._context}

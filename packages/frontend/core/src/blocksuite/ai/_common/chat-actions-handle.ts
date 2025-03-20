@@ -13,12 +13,12 @@ import {
   getCommonBoundWithRotation,
   type SerializedXYWH,
 } from '@blocksuite/affine/global/gfx';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   type DocMode,
   NoteBlockModel,
   NoteDisplayMode,
 } from '@blocksuite/affine/model';
-import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
 import {
   getFirstBlockCommand,
   getLastBlockCommand,

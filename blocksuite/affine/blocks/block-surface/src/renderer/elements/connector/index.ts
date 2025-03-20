@@ -5,11 +5,11 @@ import {
   type LocalConnectorElementModel,
   type PointStyle,
 } from '@blocksuite/affine-model';
+import { deltaInsertsToChunks } from '@blocksuite/block-std/inline';
 import {
   getBezierParameters,
   type PointLocation,
 } from '@blocksuite/global/gfx';
-import { deltaInsertsToChunks } from '@blocksuite/inline';
 
 import { isConnectorWithLabel } from '../../../managers/connector-manager.js';
 import type { RoughCanvas } from '../../../utils/rough/canvas.js';

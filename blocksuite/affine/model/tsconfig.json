@@ -9,7 +9,6 @@
   "references": [
     { "path": "../../framework/block-std" },
     { "path": "../../framework/global" },
-    { "path": "../../framework/inline" },
     { "path": "../../framework/store" }
   ]
 }

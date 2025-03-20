@@ -12,9 +12,9 @@
   },
   "include": ["./src"],
   "references": [
-    { "path": "../../../tests/kit" },
     { "path": "../../../tools/cli" },
     { "path": "../../../tools/utils" },
+    { "path": "../../common/graphql" },
     { "path": "../native" }
   ]
 }

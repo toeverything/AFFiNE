@@ -9,11 +9,11 @@ import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { getSelectedRect } from '@blocksuite/affine-shared/utils';
 import {
   type BlockStdScope,
-  RANGE_SYNC_EXCLUDE_ATTR,
   ShadowlessElement,
   stdContext,
 } from '@blocksuite/block-std';
 import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
+import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/block-std/inline';
 import { Bound, toRadian, Vec } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { consume } from '@lit/context';

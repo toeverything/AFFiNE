@@ -26,7 +26,7 @@ import type {
   AINetworkSearchConfig,
   AppSidebarConfig,
   DocDisplayConfig,
-  DocSearchMenuConfig,
+  SearchMenuConfig,
 } from './chat-config';
 import type {
   ChatChip,
@@ -269,7 +269,7 @@ export class ChatPanel extends SignalWatcher(
   accessor appSidebarConfig!: AppSidebarConfig;
 
   @property({ attribute: false })
-  accessor docSearchMenuConfig!: DocSearchMenuConfig;
+  accessor searchMenuConfig!: SearchMenuConfig;
 
   @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
@@ -574,7 +574,7 @@ export class ChatPanel extends SignalWatcher(
         .updateContext=${this.updateContext}
         .pollContextDocsAndFiles=${this._pollContextDocsAndFiles}
         .docDisplayConfig=${this.docDisplayConfig}
-        .docSearchMenuConfig=${this.docSearchMenuConfig}
+        .searchMenuConfig=${this.searchMenuConfig}
       ></chat-panel-chips>
       <chat-panel-input
         .chatContextValue=${this.chatContextValue}

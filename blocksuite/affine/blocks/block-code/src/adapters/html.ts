@@ -5,7 +5,7 @@ import {
   CODE_BLOCK_WRAP_KEY,
   HastUtils,
 } from '@blocksuite/affine-shared/adapters';
-import type { DeltaInsert } from '@blocksuite/inline';
+import type { DeltaInsert } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import { bundledLanguagesInfo, codeToHast } from 'shiki';
 

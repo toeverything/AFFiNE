@@ -9,6 +9,8 @@
   "include": ["./src"],
   "references": [
     { "path": "../../components" },
+    { "path": "../../inlines/preset" },
+    { "path": "../../inlines/reference" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },
@@ -17,7 +19,6 @@
     { "path": "../../../framework/block-std" },
     { "path": "../../data-view" },
     { "path": "../../../framework/global" },
-    { "path": "../../../framework/inline" },
     { "path": "../../../framework/store" }
   ]
 }

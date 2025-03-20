@@ -10,18 +10,10 @@ import {
   Section,
   Text as EmailText,
 } from '@react-email/components';
-import type { CSSProperties, PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 
+import { BasicTextStyle } from './common';
 import { Footer } from './footer';
-
-const BasicTextStyle: CSSProperties = {
-  fontSize: '15px',
-  fontWeight: '400',
-  lineHeight: '24px',
-  fontFamily: 'Inter, Arial, Helvetica, sans-serif',
-  margin: '24px 0 0',
-  color: '#141414',
-};
 
 export function Title(props: PropsWithChildren) {
   return (

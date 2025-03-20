@@ -2,27 +2,16 @@
   "name": "@affine-test/blocksuite",
   "private": true,
   "type": "module",
-  "main": "index.js",
   "scripts": {
     "test": "yarn playwright test"
   },
   "dependencies": {
     "@blocksuite/affine": "workspace:*",
     "@blocksuite/integration-test": "workspace:*",
-    "@playwright/test": "=1.51.0",
+    "@playwright/test": "=1.51.1",
     "@toeverything/theme": "^1.1.12",
+    "json-stable-stringify": "^1.2.1",
     "rxjs": "^7.8.1"
-  },
-  "bsImport": {
-    "@atlaskit/pragmatic-drag-and-drop/element/adapter": "@atlaskit/pragmatic-drag-and-drop/dist/cjs/entry-point/element/adapter.js",
-    "@atlaskit/pragmatic-drag-and-drop/element/disable-native-drag-preview": "@atlaskit/pragmatic-drag-and-drop/dist/cjs/entry-point/element/disable-native-drag-preview.js",
-    "@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview": "@atlaskit/pragmatic-drag-and-drop/dist/cjs/entry-point/element/set-custom-native-drag-preview.js",
-    "@atlaskit/pragmatic-drag-and-drop-auto-scroll/element": "@atlaskit/pragmatic-drag-and-drop-auto-scroll/dist/cjs/entry-point/element.js",
-    "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge": "@atlaskit/pragmatic-drag-and-drop-hitbox/dist/cjs/closest-edge.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/toeverything/blocksuite.git"
   },
   "version": "0.20.0"
 }

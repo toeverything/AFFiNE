@@ -114,6 +114,12 @@ export class UserFriendlyError extends Error {
     );
   }
 
+  get stacktrace() {
+    return this.name === 'internal_server_error'
+      ? ((this.cause as Error)?.stack ?? super.stack)
+      : super.stack;
+  }
+
   toJSON() {
     return {
       status: this.status,
@@ -263,6 +269,11 @@ export const USER_FRIENDLY_ERRORS = {
     args: { code: 'string', message: 'string' },
     message: ({ code, message }) =>
       `GraphQL bad request, code: ${code}, ${message}`,
+  },
+  http_request_error: {
+    type: 'bad_request',
+    args: { message: 'string' },
+    message: ({ message }) => `HTTP request error, message: ${message}`,
   },
 
   // Input errors
@@ -686,11 +697,19 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'action_forbidden',
     message: `Embedding feature not available, you may need to install pgvector extension to your database`,
   },
+  copilot_transcription_job_exists: {
+    type: 'bad_request',
+    message: () => 'Transcription job already exists',
+  },
 
   // Quota & Limit errors
   blob_quota_exceeded: {
     type: 'quota_exceeded',
-    message: 'You have exceeded your blob storage quota.',
+    message: 'You have exceeded your blob size quota.',
+  },
+  storage_quota_exceeded: {
+    type: 'quota_exceeded',
+    message: 'You have exceeded your storage quota.',
   },
   member_quota_exceeded: {
     type: 'quota_exceeded',

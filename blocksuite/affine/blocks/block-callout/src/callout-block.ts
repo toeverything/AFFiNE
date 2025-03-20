@@ -1,7 +1,7 @@
 import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
 import { createLitPortal } from '@blocksuite/affine-components/portal';
+import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
 import { type CalloutBlockModel } from '@blocksuite/affine-model';
-import { DefaultInlineManagerExtension } from '@blocksuite/affine-rich-text';
 import { NOTE_SELECTOR } from '@blocksuite/affine-shared/consts';
 import {
   DocModeProvider,
@@ -12,7 +12,6 @@ import type { BlockComponent } from '@blocksuite/block-std';
 import { flip, offset } from '@floating-ui/dom';
 import { css, html } from 'lit';
 import { query } from 'lit/decorators.js';
-
 export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockModel> {
   static override styles = css`
     :host {

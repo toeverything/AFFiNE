@@ -22,7 +22,7 @@ export class AffineKeyboardToolbarWidget extends WidgetComponent<
     if (blur) {
       if (document.activeElement === this._docTitle?.inlineEditorContainer) {
         this._docTitle?.inlineEditor?.setInlineRange(null);
-      } else if (document.activeElement === this.block.rootComponent) {
+      } else if (document.activeElement === this.block?.rootComponent) {
         this.std.selection.clear();
       }
     }
@@ -46,7 +46,7 @@ export class AffineKeyboardToolbarWidget extends WidgetComponent<
   override connectedCallback(): void {
     super.connectedCallback();
 
-    const { rootComponent } = this.block;
+    const rootComponent = this.block?.rootComponent;
     if (rootComponent) {
       this.disposables.addFromEvent(rootComponent, 'focus', () => {
         this._show$.value = true;
@@ -79,7 +79,7 @@ export class AffineKeyboardToolbarWidget extends WidgetComponent<
 
     if (!this._show$.value) return nothing;
 
-    if (!this.block.rootComponent) return nothing;
+    if (!this.block?.rootComponent) return nothing;
 
     return html`<blocksuite-portal
       .shadowDom=${false}

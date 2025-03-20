@@ -1,6 +1,7 @@
 import { notify } from '@affine/component';
 import { I18n } from '@affine/i18n';
 import { OnEvent, Service } from '@toeverything/infra';
+import type { To } from 'history';
 import { debounce } from 'lodash-es';
 
 import { AuthService, DefaultServerService, ServersService } from '../../cloud';
@@ -30,6 +31,25 @@ export class DesktopApiService extends Service {
 
   get sharedStorage() {
     return this.api.sharedStorage;
+  }
+
+  async showTab(tabId: string, to?: To) {
+    if (to) {
+      const url = new URL(to.toString());
+      const tabs = await this.api.handler.ui.getTabViewsMeta();
+      const tab = tabs.workbenches.find(t => t.id === tabId);
+      if (tab) {
+        const basename = tab.basename;
+        if (url.pathname.startsWith(basename)) {
+          const pathname = url.pathname.slice(basename.length);
+          await this.api.handler.ui.tabGoTo(
+            tabId,
+            pathname + url.search + url.hash
+          );
+        }
+      }
+    }
+    await this.api.handler.ui.showTab(tabId);
   }
 
   private setupStartListener() {

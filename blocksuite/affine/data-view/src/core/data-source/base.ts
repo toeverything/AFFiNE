@@ -1,4 +1,4 @@
-import type { Column } from '@blocksuite/affine-model';
+import type { ColumnDataType } from '@blocksuite/affine-model';
 import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 
@@ -256,7 +256,7 @@ export abstract class DataSourceBase implements DataSource {
 
   protected abstract getNormalPropertyAndIndex(propertyId: string):
     | {
-        column: Column<Record<string, unknown>>;
+        column: ColumnDataType<Record<string, unknown>>;
         index: number;
       }
     | undefined;

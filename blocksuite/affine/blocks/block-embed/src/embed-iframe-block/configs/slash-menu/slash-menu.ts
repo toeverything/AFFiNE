@@ -34,6 +34,7 @@ export const embedIframeSlashMenuConfig: SlashMenuConfig = {
           await toggleEmbedIframeCreateModal(std, {
             parentModel,
             index,
+            variant: 'default',
           });
           if (model.text?.length === 0) std.store.deleteBlock(model);
         })().catch(console.error);

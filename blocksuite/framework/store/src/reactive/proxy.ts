@@ -6,7 +6,7 @@ import { BaseReactiveYData } from './base-reactive-data.js';
 import { Boxed, type OnBoxedChange } from './boxed.js';
 import { proxies } from './memory.js';
 import { native2Y, y2Native } from './native-y.js';
-import { type OnTextChange, Text } from './text.js';
+import { type OnTextChange, Text } from './text/index.js';
 import type { ProxyOptions, TransformOptions, UnRecord } from './types.js';
 
 export class ReactiveYArray extends BaseReactiveYData<

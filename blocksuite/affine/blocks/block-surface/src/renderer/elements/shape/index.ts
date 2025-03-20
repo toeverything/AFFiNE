@@ -4,9 +4,9 @@ import type {
   ShapeType,
 } from '@blocksuite/affine-model';
 import { DefaultTheme, TextAlign } from '@blocksuite/affine-model';
+import { deltaInsertsToChunks } from '@blocksuite/block-std/inline';
 import type { IBound } from '@blocksuite/global/gfx';
 import { Bound } from '@blocksuite/global/gfx';
-import { deltaInsertsToChunks } from '@blocksuite/inline';
 
 import type { RoughCanvas } from '../../../utils/rough/canvas.js';
 import type { CanvasRenderer } from '../../canvas-renderer.js';

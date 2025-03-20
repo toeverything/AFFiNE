@@ -114,7 +114,7 @@ export class AffinePageDraggingAreaWidget extends WidgetComponent<
     });
     this._lastPointerState = state;
 
-    if (shouldAutoScroll) {
+    if (shouldAutoScroll && this.scrollContainer) {
       const rect = this.scrollContainer.getBoundingClientRect();
       const result = autoScroll(this.scrollContainer, state.raw.y - rect.top);
       if (!result) {
@@ -173,6 +173,9 @@ export class AffinePageDraggingAreaWidget extends WidgetComponent<
   }
 
   private get scrollContainer() {
+    if (!this.block) {
+      return null;
+    }
     return getScrollContainer(this.block);
   }
 

@@ -75,7 +75,7 @@ const PropertyItem = ({
     () => ({
       canDrop(data) {
         return (
-          canEditPropertyInfo &&
+          !!canEditPropertyInfo &&
           data.source.data.entity?.type === 'custom-property' &&
           data.source.data.from?.at === 'doc-property:manager' &&
           data.source.data.from?.workspaceId ===

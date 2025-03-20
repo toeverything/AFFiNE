@@ -111,7 +111,6 @@ export const PeekViewManagerModal = () => {
   }, []);
 
   const onAnimationEnd = useCallback(() => {
-    console.log('onAnimationEnd');
     setAnimating(false);
   }, []);
 

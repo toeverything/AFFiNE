@@ -68,9 +68,6 @@ export class MemberSearchService extends Service {
   }
 
   search(searchText?: string) {
-    if (this.searchText$.value === searchText) {
-      return;
-    }
     this.reset();
     this.searchText$.setValue(searchText ?? '');
     this.loadMore();

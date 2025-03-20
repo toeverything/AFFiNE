@@ -493,7 +493,12 @@ export class WorkspaceResolver {
 
       if (sendInviteMail) {
         try {
-          await this.workspaceService.sendInviteEmail(role.id);
+          await this.workspaceService.sendInviteEmail({
+            workspaceId,
+            inviteeEmail: email,
+            inviterUserId: user.id,
+            inviteId: role.id,
+          });
         } catch (e) {
           await this.models.workspaceUser.delete(workspaceId, user.id);
 
@@ -577,7 +582,7 @@ export class WorkspaceResolver {
         userId,
         workspaceId,
       });
-    } else {
+    } else if (role.status === WorkspaceMemberStatus.Accepted) {
       this.event.emit('workspace.members.removed', {
         userId,
         workspaceId,
@@ -688,13 +693,7 @@ export class WorkspaceResolver {
     await this.models.workspaceUser.delete(workspaceId, user.id);
 
     if (sendLeaveMail) {
-      this.event.emit('workspace.members.leave', {
-        workspaceId,
-        user: {
-          id: user.id,
-          email: user.email,
-        },
-      });
+      await this.workspaceService.sendLeaveEmail(workspaceId, user.id);
     }
 
     return true;

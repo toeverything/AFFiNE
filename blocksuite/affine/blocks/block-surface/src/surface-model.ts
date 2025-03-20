@@ -21,7 +21,7 @@ export const SurfaceBlockSchema = defineBlockSchema({
   metadata: {
     version: 5,
     role: 'hub',
-    parent: ['affine:page'],
+    parent: ['@root'],
     children: [
       'affine:frame',
       'affine:image',

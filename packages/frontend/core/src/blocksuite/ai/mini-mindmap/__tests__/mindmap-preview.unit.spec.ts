@@ -3,7 +3,7 @@ import { Container } from '@blocksuite/affine/global/di';
 import {
   InlineDeltaToMarkdownAdapterExtensions,
   MarkdownInlineToDeltaAdapterExtensions,
-} from '@blocksuite/affine/rich-text';
+} from '@blocksuite/affine/inlines/preset';
 import { TestWorkspace } from '@blocksuite/affine/store/test';
 import { describe, expect, test } from 'vitest';
 

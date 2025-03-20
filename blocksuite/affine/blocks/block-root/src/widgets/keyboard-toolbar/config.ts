@@ -1,5 +1,6 @@
 import { addSiblingAttachmentBlocks } from '@blocksuite/affine-block-attachment';
 import { insertDatabaseBlockCommand } from '@blocksuite/affine-block-database';
+import { toggleEmbedIframeCreateModal } from '@blocksuite/affine-block-embed';
 import { insertImagesCommand } from '@blocksuite/affine-block-image';
 import { insertLatexBlockCommand } from '@blocksuite/affine-block-latex';
 import {
@@ -19,21 +20,23 @@ import { getSurfaceBlock } from '@blocksuite/affine-block-surface';
 import { insertSurfaceRefBlockCommand } from '@blocksuite/affine-block-surface-ref';
 import { toggleEmbedCardCreateModal } from '@blocksuite/affine-components/embed-card-modal';
 import { toast } from '@blocksuite/affine-components/toast';
-import type { FrameBlockModel } from '@blocksuite/affine-model';
+import { toggleLink } from '@blocksuite/affine-inline-link';
 import {
   formatBlockCommand,
   formatNativeCommand,
   formatTextCommand,
-  getInlineEditorByModel,
   getTextStyle,
-  insertContent,
   insertInlineLatex,
   toggleBold,
   toggleCode,
   toggleItalic,
-  toggleLink,
   toggleStrike,
   toggleUnderline,
+} from '@blocksuite/affine-inline-preset';
+import type { FrameBlockModel } from '@blocksuite/affine-model';
+import {
+  getInlineEditorByModel,
+  insertContent,
 } from '@blocksuite/affine-rich-text';
 import {
   copySelectedModelsCommand,
@@ -45,7 +48,10 @@ import {
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
-import { FileSizeLimitService } from '@blocksuite/affine-shared/services';
+import {
+  FeatureFlagService,
+  FileSizeLimitService,
+} from '@blocksuite/affine-shared/services';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import {
   createDefaultDoc,
@@ -70,6 +76,7 @@ import {
   DeleteIcon,
   DividerIcon,
   DuplicateIcon,
+  EmbedIcon,
   FontIcon,
   FrameIcon,
   GithubIcon,
@@ -313,7 +320,7 @@ const pageToolGroup: KeyboardToolPanelGroup = {
           .pipe(({ selectedModels }) => {
             const newDoc = createDefaultDoc(std.store.workspace);
             if (!selectedModels?.length) return;
-            insertContent(std.host, selectedModels[0], REFERENCE_NODE, {
+            insertContent(std, selectedModels[0], REFERENCE_NODE, {
               reference: {
                 type: 'LinkedPage',
                 pageId: newDoc.id,
@@ -355,9 +362,9 @@ const pageToolGroup: KeyboardToolPanelGroup = {
             if (!selectedModels?.length) return;
 
             const currentModel = selectedModels[0];
-            insertContent(std.host, currentModel, triggerKey);
+            insertContent(std, currentModel, triggerKey);
 
-            const inlineEditor = getInlineEditorByModel(std.host, currentModel);
+            const inlineEditor = getInlineEditorByModel(std, currentModel);
             // Wait for range to be updated
             if (inlineEditor) {
               const subscription = inlineEditor.slots.inlineRangeSync.subscribe(
@@ -439,6 +446,59 @@ const contentMediaToolGroup: KeyboardToolPanelGroup = {
         const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
 
         await addSiblingAttachmentBlocks(std.host, [file], maxFileSize, model);
+        if (model.text?.length === 0) {
+          std.store.deleteBlock(model);
+        }
+      },
+    },
+    {
+      name: 'Equation',
+      icon: TeXIcon(),
+      showWhen: ({ std }) =>
+        std.store.schema.flavourSchemaMap.has('affine:latex'),
+      action: ({ std }) => {
+        std.command
+          .chain()
+          .pipe(getSelectedModelsCommand)
+          .pipe(insertLatexBlockCommand, {
+            place: 'after',
+            removeEmptyLine: true,
+          })
+          .run();
+      },
+    },
+  ],
+};
+
+const embedToolGroup: KeyboardToolPanelGroup = {
+  name: 'Embeds',
+  items: [
+    {
+      name: 'Embed',
+      icon: EmbedIcon({ style: `color: black` }),
+      showWhen: ({ std }) => {
+        const featureFlagService = std.get(FeatureFlagService);
+        return (
+          featureFlagService.getFlag('enable_embed_iframe_block') &&
+          std.store.schema.flavourSchemaMap.has('affine:embed-iframe')
+        );
+      },
+      action: async ({ std }) => {
+        const [_, { selectedModels }] = std.command.exec(
+          getSelectedModelsCommand
+        );
+        const model = selectedModels?.[0];
+        if (!model) return;
+
+        const parentModel = std.store.getParent(model);
+        if (!parentModel) return;
+
+        const index = parentModel.children.indexOf(model) + 1;
+        await toggleEmbedIframeCreateModal(std, {
+          parentModel,
+          index,
+          variant: 'compact',
+        });
         if (model.text?.length === 0) {
           std.store.deleteBlock(model);
         }
@@ -644,7 +704,7 @@ const dateToolGroup: KeyboardToolPanelGroup = {
         const model = selectedModels?.[0];
         if (!model) return;
 
-        insertContent(std.host, model, formatDate(new Date()));
+        insertContent(std, model, formatDate(new Date()));
       },
     },
     {
@@ -659,7 +719,7 @@ const dateToolGroup: KeyboardToolPanelGroup = {
 
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-        insertContent(std.host, model, formatDate(tomorrow));
+        insertContent(std, model, formatDate(tomorrow));
       },
     },
     {
@@ -674,7 +734,7 @@ const dateToolGroup: KeyboardToolPanelGroup = {
 
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        insertContent(std.host, model, formatDate(yesterday));
+        insertContent(std, model, formatDate(yesterday));
       },
     },
     {
@@ -687,7 +747,7 @@ const dateToolGroup: KeyboardToolPanelGroup = {
         const model = selectedModels?.[0];
         if (!model) return;
 
-        insertContent(std.host, model, formatTime(new Date()));
+        insertContent(std, model, formatTime(new Date()));
       },
     },
   ],
@@ -744,6 +804,7 @@ const moreToolPanel: KeyboardToolPanelConfig = {
     { name: 'List', items: listToolActionItems },
     pageToolGroup,
     contentMediaToolGroup,
+    embedToolGroup,
     documentGroupFrameToolGroup,
     dateToolGroup,
     databaseToolGroup,

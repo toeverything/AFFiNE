@@ -8,16 +8,18 @@ import {
   type InternalPrimitives,
 } from '@blocksuite/store';
 
+import type { BlockMeta } from './types';
+
+export type EmbedProps<Props = object> = Props & GfxCompatibleProps & BlockMeta;
+
 export function defineEmbedModel<
   Props extends object,
   T extends Constructor<BlockModel<Props>> = Constructor<BlockModel<Props>>,
 >(BlockModelSuperClass: T) {
-  return GfxCompatible<Props & GfxCompatibleProps>(
-    BlockModelSuperClass as Constructor<BlockModel<Props & GfxCompatibleProps>>
+  return GfxCompatible<EmbedProps<Props>>(
+    BlockModelSuperClass as Constructor<BlockModel<EmbedProps<Props>>>
   );
 }
-
-export type EmbedProps<Props = object> = Props & GfxCompatibleProps;
 
 export type EmbedBlockModel<Props = object> = BlockModel<EmbedProps<Props>>;
 
@@ -50,6 +52,10 @@ export function createEmbedBlockSchema<
         xywh: '[0,0,0,0]',
         lockedBySelf: false,
         rotate: 0,
+        'meta:createdAt': undefined,
+        'meta:updatedAt': undefined,
+        'meta:createdBy': undefined,
+        'meta:updatedBy': undefined,
         ...userProps,
       } as unknown as EmbedProps<Props>;
     },

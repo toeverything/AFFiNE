@@ -20,6 +20,7 @@ impl From<LameError> for napi::Error {
 }
 
 #[napi]
+#[derive(Debug, Clone)]
 ///Possible quality parameter.
 ///From best(0) to worst(9)
 pub enum Quality {
@@ -64,6 +65,7 @@ impl From<Quality> for mp3lame_encoder::Quality {
 
 #[napi]
 #[repr(u16)]
+#[derive(Debug, Clone)]
 ///Enumeration of valid values for `set_brate`
 pub enum Bitrate {
   ///8_000
@@ -124,6 +126,7 @@ impl From<Bitrate> for mp3lame_encoder::Bitrate {
 }
 
 #[napi]
+#[derive(Debug, Clone)]
 /// MPEG mode
 pub enum Mode {
   Mono,
@@ -146,6 +149,7 @@ impl From<Mode> for mp3lame_encoder::Mode {
 }
 
 #[napi(object, object_to_js = false)]
+#[derive(Debug, Clone)]
 pub struct EncodeOptions {
   pub channels: u32,
   pub quality: Option<Quality>,

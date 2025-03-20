@@ -1,8 +1,4 @@
-import {
-  ConfirmModalProvider,
-  PromptModalProvider,
-  uniReactRoot,
-} from '@affine/component';
+import { ConfirmModalProvider, PromptModalProvider } from '@affine/component';
 import { ProviderComposer } from '@affine/component/provider-composer';
 import { ThemeProvider } from '@affine/core/components/theme-provider';
 import type { createStore } from 'jotai';
@@ -29,7 +25,6 @@ export function AffineContext(props: AffineContextProps) {
       )}
     >
       {props.children}
-      <uniReactRoot.Root />,
     </ProviderComposer>
   );
 }

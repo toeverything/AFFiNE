@@ -1,4 +1,4 @@
-import type { DeltaInsert } from '@blocksuite/inline/types';
+import type { DeltaInsert } from '@blocksuite/store';
 
 import type { MindMapTreeNode } from '../types/mindmap.js';
 import { buildMindMapTree } from './mindmap.js';

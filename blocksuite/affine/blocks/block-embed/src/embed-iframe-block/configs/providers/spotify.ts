@@ -1,4 +1,5 @@
-import { EmbedIframeConfigExtension } from '../../extension/embed-iframe-config';
+import { EmbedIframeConfigExtension } from '@blocksuite/affine-shared/services';
+
 import {
   type EmbedIframeUrlValidationOptions,
   validateEmbedIframeUrl,
@@ -36,8 +37,7 @@ const spotifyConfig = {
     heightInSurface: SPOTIFY_DEFAULT_HEIGHT_IN_SURFACE,
     heightInNote: SPOTIFY_DEFAULT_HEIGHT_IN_NOTE,
     widthPercent: SPOTIFY_DEFAULT_WIDTH_PERCENT,
-    allow:
-      'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture',
+    allow: 'autoplay; clipboard-write; encrypted-media; picture-in-picture',
     style: 'border-radius: 8px;',
     allowFullscreen: true,
   },

@@ -11,13 +11,6 @@
 - [~~BlockService~~](classes/BlockService.md)
 - [CommandManager](classes/CommandManager.md)
 - [LifeCycleWatcher](classes/LifeCycleWatcher.md)
-- [RangeBinding](classes/RangeBinding.md)
-- [RangeManager](classes/RangeManager.md)
-
-## Variables
-
-- [RANGE\_QUERY\_EXCLUDE\_ATTR](variables/RANGE_QUERY_EXCLUDE_ATTR.md)
-- [RANGE\_SYNC\_EXCLUDE\_ATTR](variables/RANGE_SYNC_EXCLUDE_ATTR.md)
 
 ## Functions
 

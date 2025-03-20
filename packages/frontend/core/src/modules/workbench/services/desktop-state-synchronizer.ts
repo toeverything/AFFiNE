@@ -84,6 +84,12 @@ export class DesktopStateSynchronizer extends Service {
       }
     });
 
+    this.electronApi.events.ui.onTabGoToRequest(opts => {
+      if (opts.tabId === appInfo?.viewId) {
+        this.workbenchService.workbench.open(opts.to);
+      }
+    });
+
     // sync workbench state with main process
     // also fill tab view meta with title & moduleName
     LiveData.computed(get => {

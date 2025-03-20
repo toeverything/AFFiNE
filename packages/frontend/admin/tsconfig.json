@@ -9,7 +9,7 @@
   "references": [
     { "path": "../component" },
     { "path": "../core" },
-    { "path": "../graphql" },
+    { "path": "../../common/graphql" },
     { "path": "../../common/infra" }
   ]
 }

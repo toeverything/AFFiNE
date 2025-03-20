@@ -42,4 +42,4 @@ export class JobModule {
 }
 
 export { JobQueue };
-export { OnJob } from './def';
+export { JOB_SIGNAL, OnJob } from './def';

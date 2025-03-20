@@ -38,7 +38,7 @@ export class LinkedDocPopover extends SignalWatcher(
     this.context.close();
     // clear input query
     cleanSpecifiedTail(
-      this.context.std.host,
+      this.context.std,
       this.context.inlineEditor,
       this.context.triggerKey + (this._query || '')
     );

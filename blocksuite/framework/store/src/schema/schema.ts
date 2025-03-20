@@ -59,7 +59,7 @@ export class Schema {
     if (!parentFlavour) {
       throw new SchemaValidateError(
         schema.model.flavour,
-        'Hub/Content must have parent.'
+        'None root block must have parent.'
       );
     }
 
@@ -86,33 +86,84 @@ export class Schema {
     );
   }
 
+  private _matchFlavourOrRole(
+    childValue: string,
+    parentValue: string,
+    childRole: string,
+    parentRole: string
+  ): boolean {
+    // Check if either value starts with '@' indicating it's a role
+    const isChildRole = childValue.startsWith('@');
+    const isParentRole = parentValue.startsWith('@');
+
+    // If both are roles, do exact match
+    if (isChildRole && isParentRole) {
+      return childValue === parentValue;
+    }
+    // If child is role, compare with parent's actual role
+    if (isChildRole) {
+      return childValue === `@${parentRole}`;
+    }
+    // If parent is role, compare with child's actual role
+    if (isParentRole) {
+      return parentValue === `@${childRole}`;
+    }
+    // If neither is role, use flavour matching
+    return this._matchFlavour(childValue, parentValue);
+  }
+
   private _validateParent(
     child: BlockSchemaType,
     parent: BlockSchemaType
   ): boolean {
     const _childFlavour = child.model.flavour;
     const _parentFlavour = parent.model.flavour;
+    const _childRole = child.model.role;
+    const _parentRole = parent.model.role;
 
-    const childValidFlavours = child.model.parent || ['*'];
-    const parentValidFlavours = parent.model.children || ['*'];
+    const childValidFlavourOrRole = child.model.parent || ['*'];
+    const parentValidFlavourOrRole = parent.model.children || ['*'];
 
-    return parentValidFlavours.some(parentValidFlavour => {
-      return childValidFlavours.some(childValidFlavour => {
-        if (parentValidFlavour === '*' && childValidFlavour === '*') {
+    return parentValidFlavourOrRole.some(parentValidFlavourOrRole => {
+      return childValidFlavourOrRole.some(childValidFlavourOrRole => {
+        if (
+          parentValidFlavourOrRole === '*' &&
+          childValidFlavourOrRole === '*'
+        ) {
           return true;
         }
 
-        if (parentValidFlavour === '*') {
-          return this._matchFlavour(childValidFlavour, _parentFlavour);
+        if (parentValidFlavourOrRole === '*') {
+          return this._matchFlavourOrRole(
+            childValidFlavourOrRole,
+            _parentFlavour,
+            _childRole,
+            _parentRole
+          );
         }
 
-        if (childValidFlavour === '*') {
-          return this._matchFlavour(_childFlavour, parentValidFlavour);
+        if (childValidFlavourOrRole === '*') {
+          return this._matchFlavourOrRole(
+            _childFlavour,
+            parentValidFlavourOrRole,
+            _childRole,
+            _parentRole
+          );
         }
 
         return (
-          this._matchFlavour(_childFlavour, parentValidFlavour) &&
-          this._matchFlavour(childValidFlavour, _parentFlavour)
+          this._matchFlavourOrRole(
+            _childFlavour,
+            parentValidFlavourOrRole,
+            _childRole,
+            _parentRole
+          ) &&
+          this._matchFlavourOrRole(
+            childValidFlavourOrRole,
+            _parentFlavour,
+            _childRole,
+            _parentRole
+          )
         );
       });
     });
@@ -120,7 +171,6 @@ export class Schema {
 
   private _validateRole(child: BlockSchemaType, parent: BlockSchemaType) {
     const childRole = child.model.role;
-    const parentRole = parent.model.role;
     const childFlavour = child.model.flavour;
     const parentFlavour = parent.model.flavour;
 
@@ -128,20 +178,6 @@ export class Schema {
       throw new SchemaValidateError(
         childFlavour,
         `Root block cannot have parent: ${parentFlavour}.`
-      );
-    }
-
-    if (childRole === 'hub' && parentRole === 'content') {
-      throw new SchemaValidateError(
-        childFlavour,
-        `Hub block cannot be child of content block: ${parentFlavour}.`
-      );
-    }
-
-    if (childRole === 'content' && parentRole === 'root') {
-      throw new SchemaValidateError(
-        childFlavour,
-        `Content block can only be child of hub block or itself. But get: ${parentFlavour}.`
       );
     }
   }

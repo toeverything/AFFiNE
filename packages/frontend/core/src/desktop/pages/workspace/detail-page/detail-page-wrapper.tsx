@@ -68,10 +68,12 @@ export const DetailPageWrapper = ({
   children,
   skeleton,
   notFound,
+  canAccess,
 }: PropsWithChildren<{
   pageId: string;
   skeleton: ReactNode;
   notFound: ReactNode;
+  canAccess?: boolean;
 }>) => {
   const { doc, editor, docListReady } = useLoadDoc(pageId);
   // if sync engine has been synced and the page is null, show 404 page.
@@ -79,8 +81,10 @@ export const DetailPageWrapper = ({
     return notFound;
   }
 
-  if (!doc || !editor) {
+  if (canAccess === undefined || !doc || !editor) {
     return skeleton;
+  } else if (!canAccess) {
+    return notFound;
   }
 
   return (

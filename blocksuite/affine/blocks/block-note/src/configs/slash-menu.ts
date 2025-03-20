@@ -1,9 +1,11 @@
 import {
   formatBlockCommand,
-  type TextConversionConfig,
-  textConversionConfigs,
   type TextFormatConfig,
   textFormatConfigs,
+} from '@blocksuite/affine-inline-preset';
+import {
+  type TextConversionConfig,
+  textConversionConfigs,
 } from '@blocksuite/affine-rich-text';
 import { isInsideBlockByFlavour } from '@blocksuite/affine-shared/utils';
 import {

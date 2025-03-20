@@ -71,5 +71,8 @@ BEGIN -- check if pgvector extension is installed
 
     -- AddForeignKey
     ALTER TABLE "ai_workspace_embeddings" ADD CONSTRAINT "ai_workspace_embeddings_workspace_id_doc_id_fkey" FOREIGN KEY ("workspace_id", "doc_id") REFERENCES "snapshots"("workspace_id", "guid") ON DELETE CASCADE ON UPDATE CASCADE;
+
+    -- CreateIndex
+    CREATE UNIQUE INDEX "ai_workspace_embeddings_workspace_id_doc_id_chunk_key" ON "ai_workspace_embeddings"("workspace_id", "doc_id", "chunk");
   END IF;
 END $$;

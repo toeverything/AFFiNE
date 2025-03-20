@@ -1,10 +1,8 @@
 import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
 import { TOGGLE_BUTTON_PARENT_CLASS } from '@blocksuite/affine-components/toggle-button';
+import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
 import type { ParagraphBlockModel } from '@blocksuite/affine-model';
-import {
-  DefaultInlineManagerExtension,
-  type RichText,
-} from '@blocksuite/affine-rich-text';
+import type { RichText } from '@blocksuite/affine-rich-text';
 import {
   BLOCK_CHILDREN_CONTAINER_PADDING_LEFT,
   NOTE_SELECTOR,
@@ -16,8 +14,11 @@ import {
   getViewportElement,
 } from '@blocksuite/affine-shared/utils';
 import type { BlockComponent } from '@blocksuite/block-std';
-import { getInlineRangeProvider, TextSelection } from '@blocksuite/block-std';
-import type { InlineRangeProvider } from '@blocksuite/inline';
+import { TextSelection } from '@blocksuite/block-std';
+import {
+  getInlineRangeProvider,
+  type InlineRangeProvider,
+} from '@blocksuite/block-std/inline';
 import { computed, effect, signal } from '@preact/signals-core';
 import { html, nothing, type TemplateResult } from 'lit';
 import { query, state } from 'lit/decorators.js';
@@ -25,13 +26,10 @@ import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
-import type { ParagraphBlockService } from './paragraph-service.js';
+import { ParagraphBlockConfigExtension } from './paragraph-block-config.js';
 import { paragraphBlockStyles } from './styles.js';
 
-export class ParagraphBlockComponent extends CaptionedBlockComponent<
-  ParagraphBlockModel,
-  ParagraphBlockService
-> {
+export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBlockModel> {
   static override styles = paragraphBlockStyles;
 
   focused$ = computed(() => {
@@ -58,6 +56,12 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
     }
     return false;
   };
+
+  private get _placeholder() {
+    return this.std
+      .get(ParagraphBlockConfigExtension.identifier)
+      ?.getPlaceholder(this.model);
+  }
 
   get attributeRenderer() {
     return this.inlineManager.getRenderer();
@@ -309,7 +313,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<
                     visible: this._displayPlaceholder.value,
                   })}
                 >
-                  ${this.service.placeholderGenerator(this.model)}
+                  ${this._placeholder}
                 </div>
               `}
         </div>

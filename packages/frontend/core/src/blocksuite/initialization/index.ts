@@ -12,6 +12,14 @@ export interface DocProps {
   surface?: Partial<SurfaceBlockProps>;
   note?: Partial<NoteProps>;
   paragraph?: Partial<ParagraphProps>;
+  onStoreLoad?: (
+    doc: Store,
+    props: {
+      noteId: string;
+      paragraphId: string;
+      surfaceId: string;
+    }
+  ) => void;
 }
 
 export function initDocFromProps(doc: Store, props?: DocProps) {
@@ -20,7 +28,11 @@ export function initDocFromProps(doc: Store, props?: DocProps) {
       'affine:page',
       props?.page || { title: new Text('') }
     );
-    doc.addBlock('affine:surface' as never, props?.surface || {}, pageBlockId);
+    const surfaceId = doc.addBlock(
+      'affine:surface' as never,
+      props?.surface || {},
+      pageBlockId
+    );
     const noteBlockId = doc.addBlock(
       'affine:note',
       {
@@ -29,7 +41,16 @@ export function initDocFromProps(doc: Store, props?: DocProps) {
       },
       pageBlockId
     );
-    doc.addBlock('affine:paragraph', props?.paragraph || {}, noteBlockId);
+    const paragraphBlockId = doc.addBlock(
+      'affine:paragraph',
+      props?.paragraph || {},
+      noteBlockId
+    );
+    props?.onStoreLoad?.(doc, {
+      noteId: noteBlockId,
+      paragraphId: paragraphBlockId,
+      surfaceId,
+    });
     doc.history.clear();
   });
 }

@@ -22,17 +22,15 @@ export class OutlinePanelHeader extends SignalWatcher(
   private readonly _settingPopperShow$ = signal(false);
 
   override firstUpdated() {
-    this._notePreviewSettingMenuPopper = createButtonPopper(
-      this._noteSettingButton,
-      this._notePreviewSettingMenu,
-      ({ display }) => {
+    this._notePreviewSettingMenuPopper = createButtonPopper({
+      reference: this._noteSettingButton,
+      popperElement: this._notePreviewSettingMenu,
+      stateUpdated: ({ display }) => {
         this._settingPopperShow$.value = display === 'show';
       },
-      {
-        mainAxis: 14,
-        crossAxis: -30,
-      }
-    );
+      mainAxis: 14,
+      crossAxis: -30,
+    });
     this.disposables.add(this._notePreviewSettingMenuPopper);
   }
 

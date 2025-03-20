@@ -4,7 +4,7 @@ import {
   type BlockNotionHtmlAdapterMatcher,
   HastUtils,
 } from '@blocksuite/affine-shared/adapters';
-import type { DeltaInsert } from '@blocksuite/inline';
+import type { DeltaInsert } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 
 const listBlockMatchTags = new Set(['ul', 'ol', 'li']);

@@ -115,6 +115,7 @@ class HelperProcessManager {
         unknownMessage: false,
       },
       channel: new MessageEventChannel(this.#process),
+      log: false,
     });
   }
 }

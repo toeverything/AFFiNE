@@ -2,6 +2,7 @@ import './config';
 
 import { ServerFeature } from '../../core/config';
 import { FeatureModule } from '../../core/features';
+import { MailModule } from '../../core/mail';
 import { PermissionModule } from '../../core/permission';
 import { QuotaModule } from '../../core/quota';
 import { UserModule } from '../../core/user';
@@ -33,6 +34,7 @@ import { StripeWebhook } from './webhook';
     UserModule,
     PermissionModule,
     WorkspaceModule,
+    MailModule,
   ],
   providers: [
     StripeProvider,

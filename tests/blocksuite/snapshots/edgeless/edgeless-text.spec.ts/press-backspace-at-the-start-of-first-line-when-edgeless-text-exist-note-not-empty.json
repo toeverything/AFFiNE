@@ -1,50 +1,16 @@
 {
-  "type": "block",
-  "id": "0",
-  "flavour": "affine:page",
-  "version": 2,
-  "props": {
-    "title": {
-      "$blocksuite:internal:text$": true,
-      "delta": []
-    }
-  },
   "children": [
     {
-      "type": "block",
-      "id": "1",
-      "flavour": "affine:surface",
-      "version": 5,
-      "props": {
-        "elements": {}
-      },
       "children": [
         {
-          "type": "block",
-          "id": "3",
-          "flavour": "affine:edgeless-text",
-          "version": 1,
-          "props": {
-            "xywh": "[-25,-25,220,26]",
-            "index": "a1",
-            "lockedBySelf": false,
-            "color": "#84cfff",
-            "fontFamily": "blocksuite:surface:Inter",
-            "fontStyle": "normal",
-            "fontWeight": "400",
-            "textAlign": "left",
-            "scale": 1,
-            "rotate": 0,
-            "hasMaxWidth": true
-          },
           "children": [
             {
-              "type": "block",
-              "id": "4",
+              "children": [
+              ],
               "flavour": "affine:paragraph",
-              "version": 1,
+              "id": "4",
               "props": {
-                "type": "text",
+                "collapsed": false,
                 "text": {
                   "$blocksuite:internal:text$": true,
                   "delta": [
@@ -53,28 +19,67 @@
                     }
                   ]
                 },
-                "collapsed": false
+                "type": "text"
               },
-              "children": []
+              "type": "block",
+              "version": 1
             }
-          ]
+          ],
+          "flavour": "affine:edgeless-text",
+          "id": "3",
+          "props": {
+            "color": "#84cfff",
+            "fontFamily": "blocksuite:surface:Inter",
+            "fontStyle": "normal",
+            "fontWeight": "400",
+            "hasMaxWidth": true,
+            "index": "a1",
+            "lockedBySelf": false,
+            "rotate": 0,
+            "scale": 1,
+            "textAlign": "left",
+            "xywh": "[-25,-25,220,26]"
+          },
+          "type": "block",
+          "version": 1
         }
-      ]
+      ],
+      "flavour": "affine:surface",
+      "id": "1",
+      "props": {
+        "elements": {
+        }
+      },
+      "type": "block",
+      "version": 5
     },
     {
-      "type": "block",
-      "id": "2",
+      "children": [
+        {
+          "children": [
+          ],
+          "flavour": "affine:paragraph",
+          "id": "5",
+          "props": {
+            "collapsed": false,
+            "text": {
+              "$blocksuite:internal:text$": true,
+              "delta": [
+              ]
+            },
+            "type": "text"
+          },
+          "type": "block",
+          "version": 1
+        }
+      ],
       "flavour": "affine:note",
-      "version": 1,
+      "id": "2",
       "props": {
-        "xywh": "[0,0,498,48]",
         "background": {
           "dark": "#000000",
           "light": "#ffffff"
         },
-        "index": "a0",
-        "lockedBySelf": false,
-        "hidden": false,
         "displayMode": "both",
         "edgeless": {
           "style": {
@@ -83,25 +88,25 @@
             "borderStyle": "none",
             "shadowType": "--affine-note-shadow-box"
           }
-        }
+        },
+        "hidden": false,
+        "index": "a0",
+        "lockedBySelf": false,
+        "xywh": "[0,0,498,48]"
       },
-      "children": [
-        {
-          "type": "block",
-          "id": "5",
-          "flavour": "affine:paragraph",
-          "version": 1,
-          "props": {
-            "type": "text",
-            "text": {
-              "$blocksuite:internal:text$": true,
-              "delta": []
-            },
-            "collapsed": false
-          },
-          "children": []
-        }
+      "type": "block",
+      "version": 1
+    }
+  ],
+  "flavour": "affine:page",
+  "id": "0",
+  "props": {
+    "title": {
+      "$blocksuite:internal:text$": true,
+      "delta": [
       ]
     }
-  ]
+  },
+  "type": "block",
+  "version": 2
 }

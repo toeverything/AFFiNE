@@ -24,7 +24,7 @@ import {
 } from 'rxjs';
 
 import { isMacOS } from '../../shared/utils';
-import { beforeAppQuit } from '../cleanup';
+import { beforeAppQuit, onTabClose } from '../cleanup';
 import { mainWindowOrigin, shellViewUrl } from '../constants';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
@@ -400,6 +400,8 @@ export class WebContentViewsManager {
         });
       }
     }, 500); // delay a bit to get rid of the flicker
+
+    onTabClose(id);
   };
 
   undoCloseTab = async () => {
@@ -1051,6 +1053,13 @@ export const addTabWithUrl = (url: string) => {
 export const loadUrlInActiveTab = async (_url: string) => {
   // todo: implement
   throw new Error('loadUrlInActiveTab not implemented');
+};
+export const ensureTabLoaded = async (tabId: string) => {
+  const tab = WebContentViewsManager.instance.tabViewsMap.get(tabId);
+  if (tab) {
+    return tab;
+  }
+  return WebContentViewsManager.instance.loadTab(tabId);
 };
 export const showTab = WebContentViewsManager.instance.showTab;
 export const closeTab = WebContentViewsManager.instance.closeTab;

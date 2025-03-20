@@ -24,6 +24,10 @@ export { SubscriptionService } from './services/subscription';
 export { UserCopilotQuotaService } from './services/user-copilot-quota';
 export { UserFeatureService } from './services/user-feature';
 export { UserQuotaService } from './services/user-quota';
+export {
+  type UserSettings,
+  UserSettingsService,
+} from './services/user-settings';
 export { WorkspaceInvoicesService } from './services/workspace-invoices';
 export { WorkspaceServerService } from './services/workspace-server';
 export { WorkspaceSubscriptionService } from './services/workspace-subscription';
@@ -71,6 +75,7 @@ import { SubscriptionService } from './services/subscription';
 import { UserCopilotQuotaService } from './services/user-copilot-quota';
 import { UserFeatureService } from './services/user-feature';
 import { UserQuotaService } from './services/user-quota';
+import { UserSettingsService } from './services/user-settings';
 import { WorkspaceInvoicesService } from './services/workspace-invoices';
 import { WorkspaceServerService } from './services/workspace-server';
 import { WorkspaceSubscriptionService } from './services/workspace-subscription';
@@ -88,6 +93,7 @@ import { SubscriptionStore } from './stores/subscription';
 import { UserCopilotQuotaStore } from './stores/user-copilot-quota';
 import { UserFeatureStore } from './stores/user-feature';
 import { UserQuotaStore } from './stores/user-quota';
+import { UserSettingsStore } from './stores/user-settings';
 
 export function configureCloudModule(framework: Framework) {
   configureDefaultAuthProvider(framework);
@@ -150,7 +156,9 @@ export function configureCloudModule(framework: Framework) {
     .service(AcceptInviteService, [AcceptInviteStore, InviteInfoStore])
     .store(AcceptInviteStore, [GraphQLService])
     .service(PublicUserService, [PublicUserStore])
-    .store(PublicUserStore, [GraphQLService]);
+    .store(PublicUserStore, [GraphQLService])
+    .service(UserSettingsService, [UserSettingsStore])
+    .store(UserSettingsStore, [GraphQLService]);
 
   framework
     .scope(WorkspaceScope)

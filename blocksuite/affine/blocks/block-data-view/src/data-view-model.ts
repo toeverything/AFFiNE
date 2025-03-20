@@ -1,4 +1,4 @@
-import type { Column } from '@blocksuite/affine-model';
+import type { ColumnDataType } from '@blocksuite/affine-model';
 import {
   arrayMove,
   insertPositionToIndex,
@@ -14,7 +14,7 @@ import {
 type Props = {
   title: string;
   views: DataViewDataType[];
-  columns: Column[];
+  columns: ColumnDataType[];
   cells: Record<string, Record<string, unknown>>;
 };
 

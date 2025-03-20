@@ -5,7 +5,7 @@ import {
   InlineDeltaToPlainTextAdapterExtensions,
   MarkdownInlineToDeltaAdapterExtensions,
   NotionHtmlInlineToDeltaAdapterExtensions,
-} from '@blocksuite/affine-rich-text';
+} from '@blocksuite/affine-inline-preset';
 import {
   AttachmentAdapterFactoryExtension,
   HtmlAdapterFactoryExtension,

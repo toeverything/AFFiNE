@@ -5,6 +5,7 @@ import {
   VirtualizedPageList,
 } from '@affine/core/components/page-list';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { IntegrationService } from '@affine/core/modules/integration';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import type { Filter } from '@affine/env/filter';
@@ -29,10 +30,12 @@ export const AllPage = () => {
   const currentWorkspace = useService(WorkspaceService).workspace;
   const globalContext = useService(GlobalContextService).globalContext;
   const permissionService = useService(WorkspacePermissionService);
+  const integrationService = useService(IntegrationService);
   const pageMetas = useBlockSuiteDocMeta(currentWorkspace.docCollection);
   const [hideHeaderCreateNew, setHideHeaderCreateNew] = useState(true);
   const isAdmin = useLiveData(permissionService.permission.isAdmin$);
   const isOwner = useLiveData(permissionService.permission.isOwner$);
+  const importing = useLiveData(integrationService.importing$);
 
   const [filters, setFilters] = useState<Filter[]>([]);
   const filteredPageMetas = useFilteredPageMetas(pageMetas, {
@@ -53,6 +56,10 @@ export const AllPage = () => {
   }, [globalContext, isActiveView]);
 
   const t = useI18n();
+
+  if (importing) {
+    return null;
+  }
 
   return (
     <>

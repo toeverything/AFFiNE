@@ -14,9 +14,9 @@ import { SpecProvider } from '@blocksuite/affine-shared/utils';
 import {
   BlockStdScope,
   type EditorHost,
-  RANGE_QUERY_EXCLUDE_ATTR,
   ShadowlessElement,
 } from '@blocksuite/block-std';
+import { RANGE_QUERY_EXCLUDE_ATTR } from '@blocksuite/block-std/inline';
 import { deserializeXYWH } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { type BlockModel, type Query } from '@blocksuite/store';

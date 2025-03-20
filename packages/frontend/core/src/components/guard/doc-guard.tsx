@@ -12,7 +12,7 @@ export const DocPermissionGuard = ({
 }: {
   docId: string;
   permission: DocPermissionActions;
-  children: (can: boolean) => React.ReactNode;
+  children: (can: boolean | undefined) => React.ReactNode;
 }) => {
   const guardService = useService(GuardService);
   const can = useLiveData(guardService.can$(permission, docId));

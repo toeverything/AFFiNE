@@ -29,14 +29,12 @@ export class EdgelessFrameOrderButton extends WithDisposable(LitElement) {
   }
 
   override firstUpdated() {
-    this._edgelessFrameOrderPopper = createButtonPopper(
-      this._edgelessFrameOrderButton,
-      this._edgelessFrameOrderMenu,
-      ({ display }) => this.setPopperShow(display === 'show'),
-      {
-        mainAxis: 22,
-      }
-    );
+    this._edgelessFrameOrderPopper = createButtonPopper({
+      reference: this._edgelessFrameOrderButton,
+      popperElement: this._edgelessFrameOrderMenu,
+      stateUpdated: ({ display }) => this.setPopperShow(display === 'show'),
+      mainAxis: 22,
+    });
   }
 
   protected override render() {

@@ -42,7 +42,7 @@
     "vite": "^6.1.0",
     "vite-plugin-istanbul": "^7.0.0",
     "vite-plugin-wasm": "^3.4.1",
-    "vitest": "^3.0.0"
+    "vitest": "3.0.9"
   },
   "version": "0.20.0"
 }

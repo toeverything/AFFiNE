@@ -29,3 +29,33 @@ export function validateEmbedIframeUrl(
     return false;
   }
 }
+
+/**
+ * Safely extracts the src URL from an iframe HTML string
+ * @param htmlString The iframe HTML string to parse
+ * @param options Optional validation configuration
+ * @returns The validated src URL or undefined if validation fails
+ */
+export function safeGetIframeSrc(htmlString: string): string | undefined {
+  try {
+    // Create a DOMParser instance
+    const parser = new DOMParser();
+    // Parse the HTML string
+    const doc = parser.parseFromString(htmlString, 'text/html');
+    // Get the iframe element
+    const iframe = doc.querySelector('iframe');
+    if (!iframe) {
+      return undefined;
+    }
+
+    // Get the src attribute
+    const src = iframe.getAttribute('src');
+    if (!src) {
+      return undefined;
+    }
+
+    return src;
+  } catch {
+    return undefined;
+  }
+}

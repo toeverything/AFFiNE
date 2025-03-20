@@ -10,7 +10,6 @@ import {
   StdIdentifier,
 } from '../identifier.js';
 import type { BlockStdScope } from '../scope/index.js';
-import { getSlots } from '../spec/index.js';
 
 /**
  * @deprecated
@@ -26,8 +25,6 @@ export abstract class BlockService extends Extension {
   readonly disposables = new DisposableGroup();
 
   readonly flavour: string;
-
-  readonly specSlots = getSlots();
 
   get collection() {
     return this.std.workspace;
@@ -108,13 +105,9 @@ export abstract class BlockService extends Extension {
   }
   // life cycle end
 
-  mounted() {
-    this.specSlots.mounted.next({ service: this });
-  }
+  mounted() {}
 
   unmounted() {
-    this.dispose();
-    this.specSlots.unmounted.next({ service: this });
+    this.disposables.dispose();
   }
-  // event handlers end
 }

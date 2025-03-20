@@ -258,14 +258,14 @@ export class QuotaService {
         this.logger.warn(
           `storage size limit exceeded: ${currentSize} > ${storageQuota}`
         );
-        return true;
+        return { storageQuotaExceeded: true, blobQuotaExceeded: false };
       } else if (recvSize > blobLimit) {
         this.logger.warn(
           `blob size limit exceeded: ${recvSize} > ${blobLimit}`
         );
-        return true;
+        return { storageQuotaExceeded: false, blobQuotaExceeded: true };
       } else {
-        return false;
+        return;
       }
     };
     return checkExceeded;

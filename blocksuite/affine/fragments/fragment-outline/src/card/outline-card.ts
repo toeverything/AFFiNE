@@ -152,17 +152,15 @@ export class OutlineNoteCard extends SignalWatcher(
   }
 
   override firstUpdated() {
-    this._displayModePopper = createButtonPopper(
-      this._displayModeButtonGroup,
-      this._displayModePanel,
-      ({ display }) => {
+    this._displayModePopper = createButtonPopper({
+      reference: this._displayModeButtonGroup,
+      popperElement: this._displayModePanel,
+      stateUpdated: ({ display }) => {
         this._showPopper$.value = display === 'show';
       },
-      {
-        mainAxis: 0,
-        crossAxis: -60,
-      }
-    );
+      mainAxis: 0,
+      crossAxis: -60,
+    });
 
     this.disposables.add(this._displayModePopper);
   }

@@ -66,7 +66,7 @@ export const MemberManagement = ({
           grantedUserList={grantedUserList}
           grantedUserCount={grantedUserCount}
           loadMore={loadMore}
-          canManageUsers={canManageUsers}
+          canManageUsers={!!canManageUsers}
         />
       ) : (
         <Skeleton className={styles.scrollableRootStyle} />

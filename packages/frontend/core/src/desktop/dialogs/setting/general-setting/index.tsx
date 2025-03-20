@@ -8,6 +8,7 @@ import {
   FolderIcon,
   InformationIcon,
   KeyboardIcon,
+  NotificationIcon,
   PenIcon,
 } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
@@ -22,6 +23,7 @@ import { BillingSettings } from './billing';
 import { EditorSettings } from './editor';
 import { ExperimentalFeatures } from './experimental-features';
 import { PaymentIcon, UpgradeIcon } from './icons';
+import { NotificationSettings } from './notifications';
 import { AFFiNEPricingPlans } from './plans';
 import { Shortcuts } from './shortcuts';
 
@@ -37,6 +39,7 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       FeatureFlagService,
     });
   const status = useLiveData(authService.session.status$);
+  const loggedIn = status === 'authenticated';
   const hasPaymentFeature = useLiveData(
     serverService.server.features$.map(f => f?.payment)
   );
@@ -62,6 +65,14 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       testId: 'shortcuts-panel-trigger',
     },
   ];
+  if (loggedIn) {
+    settings.push({
+      key: 'notifications',
+      title: t['com.affine.setting.notifications'](),
+      icon: <NotificationIcon />,
+      testId: 'notifications-panel-trigger',
+    });
+  }
   if (enableEditorSettings) {
     // add editor settings to second position
     settings.splice(1, 0, {
@@ -73,14 +84,14 @@ export const useGeneralSettingList = (): GeneralSettingList => {
   }
 
   if (hasPaymentFeature) {
-    settings.splice(3, 0, {
+    settings.splice(4, 0, {
       key: 'plans',
       title: t['com.affine.payment.title'](),
       icon: <UpgradeIcon />,
       testId: 'plans-panel-trigger',
     });
-    if (status === 'authenticated') {
-      settings.splice(3, 0, {
+    if (loggedIn) {
+      settings.splice(4, 0, {
         key: 'billing',
         title: t['com.affine.payment.billing-setting.title'](),
         icon: <PaymentIcon />,
@@ -130,6 +141,8 @@ export const GeneralSetting = ({
   switch (activeTab) {
     case 'shortcuts':
       return <Shortcuts />;
+    case 'notifications':
+      return <NotificationSettings />;
     case 'editor':
       return <EditorSettings />;
     case 'appearance':

@@ -96,14 +96,12 @@ export class EdgelessNavigatorSettingButton extends WithDisposable(LitElement) {
   }
 
   override firstUpdated() {
-    this._navigatorSettingPopper = createButtonPopper(
-      this._navigatorSettingButton,
-      this._navigatorSettingMenu,
-      ({ display }) => this.setPopperShow(display === 'show'),
-      {
-        mainAxis: 22,
-      }
-    );
+    this._navigatorSettingPopper = createButtonPopper({
+      reference: this._navigatorSettingButton,
+      popperElement: this._navigatorSettingMenu,
+      stateUpdated: ({ display }) => this.setPopperShow(display === 'show'),
+      mainAxis: 22,
+    });
   }
 
   override render() {

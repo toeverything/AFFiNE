@@ -5,46 +5,25 @@ import {
   DocModeProvider,
   FeatureFlagService,
 } from '@blocksuite/affine/shared/services';
-import {
-  isInsidePageEditor,
-  type SpecBuilder,
-} from '@blocksuite/affine/shared/utils';
+import { type SpecBuilder } from '@blocksuite/affine/shared/utils';
 import type { BaseSelection } from '@blocksuite/affine/store';
-import {
-  AiIcon,
-  ArrowDownBigIcon as ArrowDownIcon,
-} from '@blocksuite/icons/lit';
+import { ArrowDownBigIcon as ArrowDownIcon } from '@blocksuite/icons/lit';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { debounce } from 'lodash-es';
 
-import {
-  EdgelessEditorActions,
-  PageEditorActions,
-} from '../_common/chat-actions-handle';
 import { AffineIcon } from '../_common/icons';
-import {
-  type AIError,
-  PaymentRequiredError,
-  UnauthorizedError,
-} from '../components/ai-item/types';
-import { AIChatErrorRenderer } from '../messages/error';
+import { type AIError, UnauthorizedError } from '../components/ai-item/types';
 import { AIProvider } from '../provider';
 import {
   type ChatContextValue,
-  type ChatItem,
   type ChatMessage,
+  isChatAction,
   isChatMessage,
 } from './chat-context';
 import { HISTORY_IMAGE_ACTIONS } from './const';
 import { AIPreloadConfig } from './preload-config';
-
-const AffineAvatarIcon = AiIcon({
-  width: '20px',
-  height: '20px',
-  style: 'color: var(--affine-primary-color)',
-});
 
 export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   static override styles = css`
@@ -59,6 +38,22 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       height: 100%;
       position: relative;
       overflow-y: auto;
+    }
+
+    chat-panel-assistant-message,
+    chat-panel-user-message {
+      display: contents;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+      color: var(--affine-text-primary-color);
+      font-size: var(--affine-font-sm);
+      font-weight: 500;
+      user-select: none;
     }
 
     .messages-placeholder {
@@ -114,46 +109,6 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       font-weight: 400;
       color: var(--affine-text-primary-color);
       white-space: nowrap;
-    }
-
-    .item-wrapper {
-      margin-left: 32px;
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 4px;
-      color: var(--affine-text-primary-color);
-      font-size: var(--affine-font-sm);
-      font-weight: 500;
-      user-select: none;
-    }
-
-    .message-info {
-      color: var(--affine-placeholder-color);
-      font-size: var(--affine-font-xs);
-      font-weight: 400;
-    }
-
-    .avatar-container {
-      width: 24px;
-      height: 24px;
-    }
-
-    .avatar {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      background-color: var(--affine-primary-color);
-    }
-
-    .avatar-container img {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
     }
 
     .down-indicator {
@@ -247,7 +202,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   };
 
   protected override render() {
-    const { items } = this.chatContextValue;
+    const { items, status, error } = this.chatContextValue;
     const { isLoading } = this;
     const filteredItems = items.filter(item => {
       return (
@@ -287,12 +242,28 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
               (_, index) => index,
               (item, index) => {
                 const isLast = index === filteredItems.length - 1;
-                return html`<div class="message">
-                  ${this.renderAvatar(item)}
-                  <div class="item-wrapper">
-                    ${this.renderItem(item, isLast)}
-                  </div>
-                </div>`;
+                if (isChatMessage(item) && item.role === 'user') {
+                  return html`<chat-message-user
+                    .item=${item}
+                  ></chat-message-user>`;
+                } else if (isChatMessage(item) && item.role === 'assistant') {
+                  return html`<chat-message-assistant
+                    .host=${this.host}
+                    .item=${item}
+                    .isLast=${isLast}
+                    .status=${isLast ? status : 'idle'}
+                    .error=${isLast ? error : null}
+                    .previewSpecBuilder=${this.previewSpecBuilder}
+                    .getSessionId=${this.getSessionId}
+                    .retry=${() => this.retry()}
+                  ></chat-message-assistant>`;
+                } else if (isChatAction(item)) {
+                  return html`<chat-message-action
+                    .host=${this.host}
+                    .item=${item}
+                  ></chat-message-action>`;
+                }
+                return nothing;
               }
             )}
       </div>
@@ -345,108 +316,6 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
     if (_changedProperties.has('isLoading')) {
       this.canScrollDown = false;
     }
-  }
-
-  renderItem(item: ChatItem, isLast: boolean) {
-    const { status, error } = this.chatContextValue;
-    const { host } = this;
-
-    if (isLast && status === 'loading') {
-      return this.renderLoading();
-    }
-
-    if (
-      isLast &&
-      status === 'error' &&
-      (error instanceof PaymentRequiredError ||
-        error instanceof UnauthorizedError)
-    ) {
-      return AIChatErrorRenderer(host, error);
-    }
-
-    if (isChatMessage(item)) {
-      const state = isLast
-        ? status !== 'loading' && status !== 'transmitting'
-          ? 'finished'
-          : 'generating'
-        : 'finished';
-      const shouldRenderError = isLast && status === 'error' && !!error;
-      return html`<chat-text
-          .host=${host}
-          .attachments=${item.attachments}
-          .text=${item.content}
-          .state=${state}
-          .previewSpecBuilder=${this.previewSpecBuilder}
-        ></chat-text>
-        ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
-        ${this.renderEditorActions(item, isLast)}`;
-    } else {
-      switch (item.action) {
-        case 'Create a presentation':
-          return html`<action-slides
-            .host=${host}
-            .item=${item}
-          ></action-slides>`;
-        case 'Make it real':
-          return html`<action-make-real
-            .host=${host}
-            .item=${item}
-          ></action-make-real>`;
-        case 'Brainstorm mindmap':
-          return html`<action-mindmap
-            .host=${host}
-            .item=${item}
-          ></action-mindmap>`;
-        case 'Explain this image':
-        case 'Generate a caption':
-          return html`<action-image-to-text
-            .host=${host}
-            .item=${item}
-          ></action-image-to-text>`;
-        default:
-          if (HISTORY_IMAGE_ACTIONS.includes(item.action)) {
-            return html`<action-image
-              .host=${host}
-              .item=${item}
-            ></action-image>`;
-          }
-
-          return html`<action-text
-            .item=${item}
-            .host=${host}
-            .isCode=${item.action === 'Explain this code' ||
-            item.action === 'Check code error'}
-          ></action-text>`;
-      }
-    }
-  }
-
-  renderAvatar(item: ChatItem) {
-    const isUser = isChatMessage(item) && item.role === 'user';
-    const isAssistant = isChatMessage(item) && item.role === 'assistant';
-    const isWithDocs =
-      isAssistant &&
-      item.content &&
-      item.content.includes('[^') &&
-      /\[\^\d+\]:{"type":"doc","docId":"[^"]+"}/.test(item.content);
-
-    return html`<div class="user-info">
-      ${isUser
-        ? html`<div class="avatar-container">
-            ${this.avatarUrl
-              ? html`<img .src=${this.avatarUrl} />`
-              : html`<div class="avatar"></div>`}
-          </div>`
-        : AffineAvatarIcon}
-      ${isUser ? 'You' : 'AFFiNE AI'}
-      ${isWithDocs
-        ? html`<span class="message-info">with your docs</span>`
-        : nothing}
-    </div>`;
-  }
-
-  renderLoading() {
-    return html` <ai-loading></ai-loading>`;
   }
 
   scrollToEnd() {
@@ -504,49 +373,6 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       this.updateContext({ abortController: null });
     }
   };
-
-  renderEditorActions(item: ChatMessage, isLast: boolean) {
-    const { status } = this.chatContextValue;
-
-    if (item.role !== 'assistant') return nothing;
-
-    if (
-      isLast &&
-      status !== 'success' &&
-      status !== 'idle' &&
-      status !== 'error'
-    )
-      return nothing;
-
-    const { host } = this;
-    const { content, id: messageId } = item;
-    const actions = isInsidePageEditor(host)
-      ? PageEditorActions
-      : EdgelessEditorActions;
-
-    return html`
-      <chat-copy-more
-        .host=${host}
-        .actions=${actions}
-        .content=${content}
-        .isLast=${isLast}
-        .getSessionId=${this.getSessionId}
-        .messageId=${messageId}
-        .withMargin=${true}
-        .retry=${() => this.retry()}
-      ></chat-copy-more>
-      ${isLast && !!content
-        ? html`<chat-action-list
-            .actions=${actions}
-            .host=${host}
-            .content=${content}
-            .getSessionId=${this.getSessionId}
-            .messageId=${messageId ?? undefined}
-            .withMargin=${true}
-          ></chat-action-list>`
-        : nothing}
-    `;
-  }
 }
 
 declare global {

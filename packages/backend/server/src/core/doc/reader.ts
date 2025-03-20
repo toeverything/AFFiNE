@@ -14,6 +14,7 @@ import {
   getOrGenRequestId,
   UserFriendlyError,
 } from '../../base';
+import { Models } from '../../models';
 import { WorkspaceBlobStorage } from '../storage';
 import {
   type PageDocContent,
@@ -33,7 +34,13 @@ export interface WorkspaceDocInfo {
 }
 
 export abstract class DocReader {
-  constructor(protected readonly cache: Cache) {}
+  protected readonly logger = new Logger(DocReader.name);
+
+  constructor(
+    protected readonly cache: Cache,
+    protected readonly models: Models,
+    protected readonly blobStorage: WorkspaceBlobStorage
+  ) {}
 
   parseDocContent(bin: Uint8Array) {
     const doc = new YDoc();
@@ -78,19 +85,36 @@ export abstract class DocReader {
     return content;
   }
 
-  // TODO(@fengmk2): should remove this method after frontend support workspace content update
+  /**
+   * Get workspace content, try to read from database first.
+   * If not exists, read from `getWorkspaceContentWithoutCache()` and save it back to database.
+   */
   async getWorkspaceContent(
     workspaceId: string
   ): Promise<WorkspaceDocInfo | null> {
-    const cacheKey = this.cacheKey(workspaceId, workspaceId);
-    const cachedResult = await this.cache.get<WorkspaceDocInfo>(cacheKey);
-    if (cachedResult) {
-      return cachedResult;
+    const workspace = await this.models.workspace.get(workspaceId);
+    if (!workspace) {
+      return null;
+    }
+    if (workspace.name) {
+      return {
+        id: workspaceId,
+        name: workspace.name,
+        avatarKey: workspace.avatarKey ?? undefined,
+        avatarUrl: workspace.avatarKey
+          ? this.blobStorage.getAvatarUrl(workspaceId, workspace.avatarKey)
+          : undefined,
+      };
     }
 
     const content = await this.getWorkspaceContentWithoutCache(workspaceId);
     if (content) {
-      await this.cache.set(cacheKey, content);
+      await this.models.workspace.update(workspaceId, {
+        name: content.name,
+        avatarKey: content.avatarKey,
+      });
+    } else {
+      this.logger.warn(`Workspace ${workspaceId} content not found`);
     }
     return content;
   }
@@ -128,10 +152,11 @@ export abstract class DocReader {
 export class DatabaseDocReader extends DocReader {
   constructor(
     protected override readonly cache: Cache,
-    protected readonly workspace: PgWorkspaceDocStorageAdapter,
-    protected readonly blobStorage: WorkspaceBlobStorage
+    protected override readonly models: Models,
+    protected override readonly blobStorage: WorkspaceBlobStorage,
+    protected readonly workspace: PgWorkspaceDocStorageAdapter
   ) {
-    super(cache);
+    super(cache, models, blobStorage);
   }
 
   async getDoc(workspaceId: string, docId: string): Promise<DocRecord | null> {
@@ -190,16 +215,17 @@ export class DatabaseDocReader extends DocReader {
 
 @Injectable()
 export class RpcDocReader extends DatabaseDocReader {
-  private readonly logger = new Logger(DocReader.name);
+  protected override readonly logger = new Logger(DocReader.name);
 
   constructor(
     private readonly config: Config,
     private readonly crypto: CryptoHelper,
     protected override readonly cache: Cache,
-    protected override readonly workspace: PgWorkspaceDocStorageAdapter,
-    protected override readonly blobStorage: WorkspaceBlobStorage
+    protected override readonly models: Models,
+    protected override readonly blobStorage: WorkspaceBlobStorage,
+    protected override readonly workspace: PgWorkspaceDocStorageAdapter
   ) {
-    super(cache, workspace, blobStorage);
+    super(cache, models, blobStorage, workspace);
   }
 
   private async fetch(

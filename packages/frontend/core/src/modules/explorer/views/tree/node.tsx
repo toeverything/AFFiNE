@@ -73,6 +73,7 @@ export interface BaseExplorerTreeNodeProps {
   operations?: NodeOperation[];
   childrenOperations?: NodeOperation[];
   childrenPlaceholder?: React.ReactNode;
+
   linkComponent?: React.ComponentType<
     React.PropsWithChildren<{ to: To; className?: string }> &
       RefAttributes<any> & { draggable?: boolean }
@@ -492,7 +493,7 @@ export const ExplorerTreeNode = ({
       <Collapsible.Content style={{ display: dragging ? 'none' : undefined }}>
         {/* For lastInGroup check, the placeholder must be placed above all children in the dom */}
         <div className={styles.collapseContentPlaceholder}>
-          {childCount === 0 && !collapsed && childrenPlaceholder}
+          {childCount === 0 && !collapsed ? childrenPlaceholder : null}
         </div>
         <ExplorerTreeContext.Provider value={contextValue}>
           {collapsed ? null : children}

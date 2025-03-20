@@ -1,12 +1,9 @@
-use std::{fmt::Display, mem, ptr};
+use std::fmt::Display;
 
-use coreaudio::sys::{
-  kAudioHardwareNoError, kAudioObjectPropertyElementMain, kAudioObjectPropertyScopeGlobal,
-  kAudioTapPropertyFormat, AudioObjectGetPropertyData, AudioObjectID, AudioObjectPropertyAddress,
-};
+use coreaudio::sys::{kAudioTapPropertyFormat, AudioObjectID};
 use objc2::{Encode, Encoding, RefEncode};
 
-use crate::error::CoreAudioError;
+use crate::{error::CoreAudioError, utils::get_global_main_property};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
@@ -248,12 +245,6 @@ impl Display for AudioStreamDescription {
 pub fn read_audio_stream_basic_description(
   tap_id: AudioObjectID,
 ) -> std::result::Result<AudioStreamDescription, CoreAudioError> {
-  let mut data_size = mem::size_of::<AudioStreamBasicDescription>();
-  let address = AudioObjectPropertyAddress {
-    mSelector: kAudioTapPropertyFormat,
-    mScope: kAudioObjectPropertyScopeGlobal,
-    mElement: kAudioObjectPropertyElementMain,
-  };
   let mut data = AudioStreamBasicDescription {
     mSampleRate: 0.0,
     mFormatID: 0,
@@ -265,18 +256,7 @@ pub fn read_audio_stream_basic_description(
     mBitsPerChannel: 0,
     mReserved: 0,
   };
-  let status = unsafe {
-    AudioObjectGetPropertyData(
-      tap_id,
-      &address,
-      0,
-      ptr::null_mut(),
-      (&mut data_size as *mut usize).cast(),
-      (&mut data as *mut AudioStreamBasicDescription).cast(),
-    )
-  };
-  if status != kAudioHardwareNoError as i32 {
-    return Err(CoreAudioError::GetAudioStreamBasicDescriptionFailed(status));
-  }
+  get_global_main_property(tap_id, kAudioTapPropertyFormat, &mut data)?;
+
   Ok(AudioStreamDescription(data))
 }

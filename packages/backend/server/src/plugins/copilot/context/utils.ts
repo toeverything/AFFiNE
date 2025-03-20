@@ -2,7 +2,7 @@ import { Readable } from 'node:stream';
 
 import { PrismaClient } from '@prisma/client';
 
-import { BlobQuotaExceeded } from '../../../base';
+import { readBufferWithLimit } from '../../../base';
 import { MAX_EMBEDDABLE_SIZE } from './types';
 
 export class GqlSignal implements AsyncDisposable {
@@ -31,27 +31,6 @@ export async function checkEmbeddingAvailable(
 export function readStream(
   readable: Readable,
   maxSize = MAX_EMBEDDABLE_SIZE
-): Promise<Buffer<ArrayBuffer>> {
-  return new Promise<Buffer<ArrayBuffer>>((resolve, reject) => {
-    const chunks: Uint8Array[] = [];
-    let totalSize = 0;
-
-    readable.on('data', chunk => {
-      totalSize += chunk.length;
-      if (totalSize > maxSize) {
-        reject(new BlobQuotaExceeded());
-        readable.destroy(new BlobQuotaExceeded());
-        return;
-      }
-      chunks.push(chunk);
-    });
-
-    readable.on('end', () => {
-      resolve(Buffer.concat(chunks, totalSize));
-    });
-
-    readable.on('error', err => {
-      reject(err);
-    });
-  });
+): Promise<Buffer> {
+  return readBufferWithLimit(readable, maxSize);
 }

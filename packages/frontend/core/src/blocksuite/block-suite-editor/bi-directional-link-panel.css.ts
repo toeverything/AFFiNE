@@ -110,6 +110,13 @@ globalStyle(`${linkPreview} *`, {
   cursor: 'default',
 });
 
+export const notFound = style({
+  color: cssVarV2('text/secondary'),
+  fontSize: '12px',
+  lineHeight: '16px',
+  textAlign: 'center',
+});
+
 export const linkPreviewRenderer = style({
   cursor: 'pointer',
 });

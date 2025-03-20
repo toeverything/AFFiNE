@@ -3,7 +3,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyUpdate, type Doc, encodeStateAsUpdate } from 'yjs';
 
 import type { BlockModel, DocMeta, Store } from '../index.js';
-import { Text } from '../reactive/text.js';
+import { Text } from '../reactive/text/index.js';
 import { createAutoIncrementIdGenerator } from '../test/index.js';
 import { TestWorkspace } from '../test/test-workspace.js';
 import {

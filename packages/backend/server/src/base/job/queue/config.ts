@@ -54,4 +54,8 @@ defineRuntimeConfig('job', {
     default: 1,
     desc: 'Concurrency of worker consuming of doc job queue',
   },
+  'queues.copilot.concurrency': {
+    default: 1,
+    desc: 'Concurrency of worker consuming of copilot job queue',
+  },
 });

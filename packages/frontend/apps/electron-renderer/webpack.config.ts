@@ -1,6 +1,6 @@
 export const config = {
   entry: {
-    app: './src/index.tsx',
+    app: './src/app/index.tsx',
     shell: './src/shell/index.tsx',
     backgroundWorker: './src/background-worker/index.ts',
   },

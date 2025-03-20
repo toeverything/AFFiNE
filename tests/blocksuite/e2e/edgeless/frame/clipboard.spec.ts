@@ -107,8 +107,13 @@ test.describe('frame copy and paste', () => {
     const frameTitles = page.locator('affine-frame-title');
 
     await frameTitles.nth(0).click();
-    await page.locator('edgeless-more-button').click();
-    await page.locator('editor-menu-action', { hasText: 'Duplicate' }).click();
+
+    const moreMenu = page.getByLabel('more-menu');
+
+    await moreMenu.click();
+    await moreMenu
+      .locator('editor-menu-action', { hasText: 'Duplicate' })
+      .click();
     await pressEscape(page);
 
     await frameTitles.nth(0).click();

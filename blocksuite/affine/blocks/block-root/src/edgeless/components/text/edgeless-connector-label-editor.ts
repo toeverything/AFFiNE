@@ -1,23 +1,21 @@
 import {
   EdgelessCRUDIdentifier,
+  getSurfaceBlock,
   TextUtils,
 } from '@blocksuite/affine-block-surface';
 import type { ConnectorElementModel } from '@blocksuite/affine-model';
 import type { RichText } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { almostEqual } from '@blocksuite/affine-shared/utils';
-import {
-  RANGE_SYNC_EXCLUDE_ATTR,
-  ShadowlessElement,
-} from '@blocksuite/block-std';
+import { type BlockComponent, ShadowlessElement } from '@blocksuite/block-std';
+import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
+import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/block-std/inline';
 import { Bound, Vec } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { css, html, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import * as Y from 'yjs';
-
-import type { EdgelessRootBlockComponent } from '../../edgeless-root-block.js';
 
 const HORIZONTAL_PADDING = 2;
 const VERTICAL_PADDING = 2;
@@ -61,6 +59,14 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
 
   get crud() {
     return this.edgeless.std.get(EdgelessCRUDIdentifier);
+  }
+
+  get gfx() {
+    return this.edgeless.std.get(GfxControllerIdentifier);
+  }
+
+  get selection() {
+    return this.gfx.selection;
   }
 
   private _isComposition = false;
@@ -113,8 +119,9 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
   }
 
   override firstUpdated() {
-    const { edgeless, connector } = this;
-    const { dispatcher } = edgeless;
+    const { edgeless, connector, selection } = this;
+    const dispatcher = edgeless.std.event;
+    const store = edgeless.std.store;
 
     this._resizeObserver = new ResizeObserver(() => {
       this._updateLabelRect();
@@ -142,7 +149,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
             if (!isComposing && (isModEnter || isEscape)) {
               this.inlineEditorContainer?.blur();
 
-              edgeless.service.selection.set({
+              selection.set({
                 elements: [connector.id],
                 editing: false,
               });
@@ -152,14 +159,18 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
           })
         );
 
-        this.disposables.add(
-          edgeless.service.surface.elementUpdated.subscribe(({ id }) => {
-            if (id === connector.id) this.requestUpdate();
-          })
-        );
+        const surface = getSurfaceBlock(store);
+
+        if (surface) {
+          this.disposables.add(
+            surface.elementUpdated.subscribe(({ id }) => {
+              if (id === connector.id) this.requestUpdate();
+            })
+          );
+        }
 
         this.disposables.add(
-          edgeless.service.viewport.viewportUpdated.subscribe(() => {
+          this.gfx.viewport.viewportUpdated.subscribe(() => {
             this.requestUpdate();
           })
         );
@@ -189,7 +200,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
 
           connector.lableEditing = false;
 
-          edgeless.service.selection.set({
+          selection.set({
             elements: [],
             editing: false,
           });
@@ -254,7 +265,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
       fontSize,
       fontWeight
     );
-    const { translateX, translateY, zoom } = this.edgeless.service.viewport;
+    const { translateX, translateY, zoom } = this.gfx.viewport;
     const [x, y] = Vec.mul(connector.getPointByOffsetDistance(distance), zoom);
     const transformOperation = [
       'translate(-50%, -50%)',
@@ -316,7 +327,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
   accessor connector!: ConnectorElementModel;
 
   @property({ attribute: false })
-  accessor edgeless!: EdgelessRootBlockComponent;
+  accessor edgeless!: BlockComponent;
 
   @query('rich-text')
   accessor richText!: RichText;

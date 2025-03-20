@@ -1,4 +1,3 @@
-import { ZERO_WIDTH_SPACE } from '@blocksuite/inline';
 import { expect } from '@playwright/test';
 
 import {
@@ -25,6 +24,7 @@ import {
   assertRichTextInlineDeltas,
   assertRichTextInlineRange,
 } from '../utils/asserts.js';
+import { ZERO_WIDTH_SPACE } from '../utils/inline-editor.js';
 import { test } from '../utils/playwright.js';
 
 test('add inline latex at the start of line', async ({ page }) => {

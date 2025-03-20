@@ -43,6 +43,7 @@ import {
   compareLayer,
   type GfxBlockElementModel,
   type GfxCompatibleProps,
+  GfxControllerIdentifier,
   type GfxModel,
   type GfxPrimitiveElementModel,
   type SerializedElement,
@@ -406,7 +407,7 @@ export class EdgelessClipboardController extends PageClipboard {
   }
 
   private get selectionManager() {
-    return this.host.service.selection;
+    return this.std.get(GfxControllerIdentifier).selection;
   }
 
   private get std() {

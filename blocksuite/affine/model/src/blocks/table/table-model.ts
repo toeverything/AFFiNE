@@ -1,5 +1,4 @@
-import type { DeltaInsert } from '@blocksuite/inline';
-import type { Text } from '@blocksuite/store';
+import type { DeltaInsert, Text } from '@blocksuite/store';
 import {
   BlockModel,
   BlockSchemaExtension,

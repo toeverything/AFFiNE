@@ -3,11 +3,7 @@ import {
   type ToolbarAction,
   ToolbarContext,
 } from '@blocksuite/affine-shared/services';
-import {
-  PropTypes,
-  requiredProperties,
-  ShadowlessElement,
-} from '@blocksuite/block-std';
+import { PropTypes, requiredProperties } from '@blocksuite/block-std';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import { PaletteIcon } from '@blocksuite/icons/lit';
 import {
@@ -15,26 +11,39 @@ import {
   type ReadonlySignal,
   type Signal,
 } from '@preact/signals-core';
+import { LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { html, type TemplateResult } from 'lit-html';
 import { ifDefined } from 'lit-html/directives/if-defined.js';
 import { repeat } from 'lit-html/directives/repeat.js';
 
 import {
+  EmbedCardDarkCubeIcon,
   EmbedCardDarkHorizontalIcon,
   EmbedCardDarkListIcon,
+  EmbedCardDarkVerticalIcon,
+  EmbedCardLightCubeIcon,
   EmbedCardLightHorizontalIcon,
   EmbedCardLightListIcon,
+  EmbedCardLightVerticalIcon,
 } from '../icons';
 
 const cardStyleMap: Record<ColorScheme, Record<string, TemplateResult>> = {
   light: {
+    cube: EmbedCardLightCubeIcon,
+    cubeThick: EmbedCardLightCubeIcon,
     horizontal: EmbedCardLightHorizontalIcon,
+    horizontalThin: EmbedCardLightListIcon,
     list: EmbedCardLightListIcon,
+    vertical: EmbedCardLightVerticalIcon,
   },
   dark: {
+    cube: EmbedCardDarkCubeIcon,
+    cubeThick: EmbedCardDarkCubeIcon,
     horizontal: EmbedCardDarkHorizontalIcon,
+    horizontalThin: EmbedCardDarkListIcon,
     list: EmbedCardDarkListIcon,
+    vertical: EmbedCardDarkVerticalIcon,
   },
 };
 
@@ -43,7 +52,7 @@ const cardStyleMap: Record<ColorScheme, Record<string, TemplateResult>> = {
   context: PropTypes.instanceOf(ToolbarContext),
   style$: PropTypes.object,
 })
-export class CardStyleDropdownMenu extends SignalWatcher(ShadowlessElement) {
+export class CardStyleDropdownMenu extends SignalWatcher(LitElement) {
   @property({ attribute: false })
   accessor actions!: ToolbarAction[];
 
@@ -53,25 +62,18 @@ export class CardStyleDropdownMenu extends SignalWatcher(ShadowlessElement) {
   @property({ attribute: false })
   accessor style$!: Signal<string> | ReadonlySignal<string>;
 
-  @property({ attribute: false })
-  accessor toggle: ((e: CustomEvent<boolean>) => void) | undefined;
-
-  icons$ = computed(
-    () => cardStyleMap[this.context.themeProvider.theme$.value]
-  );
+  icons$ = computed(() => cardStyleMap[this.context.theme.theme$.value]);
 
   override render() {
     const {
       actions,
       context,
-      toggle,
       style$: { value: style },
       icons$: { value: icons },
     } = this;
 
     return html`
       <editor-menu-button
-        @toggle=${toggle}
         .contentPadding="${'8px'}"
         .button=${html`
           <editor-icon-button
@@ -88,12 +90,13 @@ export class CardStyleDropdownMenu extends SignalWatcher(ShadowlessElement) {
             action => action.id,
             ({ id, label, icon, disabled, run }) => html`
               <editor-icon-button
-                aria-label="${label}"
+                aria-label="${ifDefined(label)}"
                 data-testid="${id}"
                 .tooltip="${label}"
                 .activeMode="${'border'}"
                 .iconContainerWidth="${'76px'}"
                 .iconContainerHeight="${'76px'}"
+                .justify="${'center'}"
                 ?active="${id === style}"
                 ?disabled="${ifDefined(disabled)}"
                 @click=${() => run?.(context)}

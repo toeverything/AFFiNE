@@ -1,19 +1,16 @@
 import './config';
 
-import { STATUS_CODES } from 'node:http';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { ApolloDriverConfig } from '@nestjs/apollo';
 import { ApolloDriver } from '@nestjs/apollo';
-import { Global, HttpStatus, Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { Request, Response } from 'express';
-import { GraphQLError } from 'graphql';
 
 import { Config } from '../config';
-import { UserFriendlyError } from '../error';
-import { isGraphQLBadRequest, mapAnyError } from '../nestjs/exception';
+import { mapAnyError } from '../nestjs/exception';
 import { GQLLoggerPlugin } from './logger-plugin';
 
 export type GraphqlContext = {
@@ -52,39 +49,15 @@ export type GraphqlContext = {
             res,
             isAdminQuery: false,
           }),
-          includeStacktraceInErrorResponses: !config.node.prod,
           plugins: [new GQLLoggerPlugin()],
           formatError: (formattedError, error) => {
+            let ufe = mapAnyError(error);
+
             // @ts-expect-error allow assign
-            formattedError.extensions ??= {};
-
-            if (
-              error instanceof GraphQLError &&
-              error.originalError instanceof UserFriendlyError
-            ) {
-              // @ts-expect-error allow assign
-              formattedError.extensions = error.originalError.toJSON();
-              formattedError.extensions.stacktrace = error.originalError.stack;
-              return formattedError;
-            } else if (
-              error instanceof GraphQLError &&
-              isGraphQLBadRequest(error)
-            ) {
-              const err = mapAnyError(error);
-              // @ts-expect-error allow assign
-              formattedError.extensions = err.toJSON();
-              formattedError.extensions.stacktrace = err.stack;
-              return formattedError;
-            } else {
-              // @ts-expect-error allow assign
-              formattedError.message = 'Internal Server Error';
-
-              formattedError.extensions['status'] =
-                HttpStatus.INTERNAL_SERVER_ERROR;
-              formattedError.extensions['code'] =
-                STATUS_CODES[HttpStatus.INTERNAL_SERVER_ERROR];
+            formattedError.extensions = ufe.toJSON();
+            if (config.affine.canary) {
+              formattedError.extensions.stacktrace = ufe.stacktrace;
             }
-
             return formattedError;
           },
         };

@@ -22,11 +22,11 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
       flex-direction: column;
       justify-content: center;
       align-items: flex-start;
-      gap: 12px;
+      gap: 8px;
       align-self: stretch;
       border-radius: 4px;
       padding: 8px 8px 12px 8px;
-      background-color: ${unsafeCSSVarV2('layer/background/error')};
+      background-color: ${unsafeCSSVarV2('aI/errorBackground')};
       font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
 
       .content {
@@ -34,7 +34,7 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
         display: flex;
         gap: 8px;
         align-self: stretch;
-        color: ${unsafeCSSVarV2('status/error')};
+        color: ${unsafeCSSVarV2('aI/errorText')};
         font-feature-settings:
           'clig' off,
           'liga' off;
@@ -70,10 +70,9 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
         cursor: pointer;
       }
       .detail-content {
-        padding: 4px;
+        padding: 8px;
         border-radius: 4px;
-        background-color: ${unsafeCSSVarV2('layer/background/translucentUI')};
-        height: 66px;
+        background-color: ${unsafeCSSVarV2('aI/errorDetailBackground')};
         overflow: auto;
       }
       ${scrollbarStyle('.detail-content')}

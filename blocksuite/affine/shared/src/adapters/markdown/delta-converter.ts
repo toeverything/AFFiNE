@@ -2,8 +2,7 @@ import {
   createIdentifier,
   type ServiceIdentifier,
 } from '@blocksuite/global/di';
-import type { DeltaInsert } from '@blocksuite/inline/types';
-import type { ExtensionType } from '@blocksuite/store';
+import type { DeltaInsert, ExtensionType } from '@blocksuite/store';
 import type { PhrasingContent } from 'mdast';
 
 import type { AffineTextAttributes } from '../../types/index.js';

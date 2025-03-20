@@ -9,6 +9,7 @@ import type { SpecBuilder } from '@blocksuite/affine/shared/utils';
 import type { FrameworkProvider } from '@toeverything/infra';
 
 import { AIChatBlockSpec } from '../blocks';
+import { AITranscriptionBlockSpec } from '../blocks/ai-chat-block/ai-transcription-block';
 import { AICodeBlockSpec } from './ai-code';
 import { createAIEdgelessRootBlockSpec } from './ai-edgeless-root';
 import { AIImageBlockSpec } from './ai-image';
@@ -39,4 +40,5 @@ export function enableAIExtension(
   }
 
   specBuilder.extend(AIChatBlockSpec);
+  specBuilder.extend(AITranscriptionBlockSpec);
 }

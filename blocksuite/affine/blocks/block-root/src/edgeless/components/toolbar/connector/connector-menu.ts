@@ -1,4 +1,8 @@
-import { ConnectorMode, DefaultTheme } from '@blocksuite/affine-model';
+import {
+  ConnectorMode,
+  DefaultTheme,
+  type LineWidth,
+} from '@blocksuite/affine-model';
 import {
   EditPropsStore,
   FeatureFlagService,
@@ -16,7 +20,6 @@ import { computed } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import type { LineWidthEvent } from '../../panel/line-width-panel.js';
 import { EdgelessToolbarToolMixin } from '../mixins/tool.mixin.js';
 
 function ConnectorModeButtonGroup(
@@ -124,7 +127,7 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
           <div class="submenu-divider"></div>
           <edgeless-line-width-panel
             .selectedSize=${strokeWidth}
-            @select=${(e: LineWidthEvent) =>
+            @select=${(e: CustomEvent<LineWidth>) =>
               this.onChange({ strokeWidth: e.detail })}
           >
           </edgeless-line-width-panel>

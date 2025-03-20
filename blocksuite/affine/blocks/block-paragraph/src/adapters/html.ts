@@ -5,8 +5,8 @@ import {
   HastUtils,
   type HtmlAST,
 } from '@blocksuite/affine-shared/adapters';
-import type { DeltaInsert } from '@blocksuite/inline';
-import { nanoid, type NodeProps } from '@blocksuite/store';
+import type { DeltaInsert, NodeProps } from '@blocksuite/store';
+import { nanoid } from '@blocksuite/store';
 
 const paragraphBlockMatchTags = new Set([
   'p',

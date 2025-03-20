@@ -35,6 +35,10 @@ export class AffineCodeToolbarWidget extends WidgetComponent<
       this,
       ({ abortController }) => {
         const codeBlock = this.block;
+        if (!codeBlock) {
+          return null;
+        }
+
         const selection = this.host.selection;
 
         const textSelection = selection.find(TextSelection);
@@ -105,6 +109,9 @@ export class AffineCodeToolbarWidget extends WidgetComponent<
     );
 
     const codeBlock = this.block;
+    if (!codeBlock) {
+      return;
+    }
     this._hoverController.setReference(codeBlock);
     this._hoverController.onAbort = () => {
       // If the more menu is opened, don't close it.

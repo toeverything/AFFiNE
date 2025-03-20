@@ -1,6 +1,7 @@
 export * from './auto-scroll';
 export * from './button-popper';
 export * from './collapsed';
+export * from './computing';
 export * from './dnd';
 export * from './dom';
 export * from './drag-helper';

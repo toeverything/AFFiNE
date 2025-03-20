@@ -118,7 +118,12 @@ export class TeamWorkspaceResolver {
         // after user click the invite link, we can check again and reject if charge failed
         if (sendInviteMail) {
           try {
-            await this.workspaceService.sendInviteEmail(ret.inviteId);
+            await this.workspaceService.sendInviteEmail({
+              workspaceId,
+              inviteeEmail: target.email,
+              inviterUserId: user.id,
+              inviteId: role.id,
+            });
             ret.sentSuccess = true;
           } catch (e) {
             this.logger.warn(

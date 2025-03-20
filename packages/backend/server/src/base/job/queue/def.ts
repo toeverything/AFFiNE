@@ -26,6 +26,7 @@ export enum Queue {
   NIGHTLY_JOB = 'nightly',
   NOTIFICATION = 'notification',
   DOC = 'doc',
+  COPILOT = 'copilot',
 }
 
 export const QUEUES = Object.values(Queue);
@@ -61,4 +62,8 @@ If you want to introduce new job queue, please modify the Queue enum first in ${
 
 export function getJobHandlerMetadata(target: any): JobName[] {
   return sliceMetadata<JobName>(JOB_METADATA, target);
+}
+
+export enum JOB_SIGNAL {
+  RETRY = 'retry',
 }

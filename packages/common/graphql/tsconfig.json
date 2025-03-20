@@ -1,0 +1,14 @@
+{
+  "extends": "../../../tsconfig.web.json",
+  "include": ["./src"],
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "references": [
+    { "path": "../debug" },
+    { "path": "../env" },
+    { "path": "../error" }
+  ]
+}

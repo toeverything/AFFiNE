@@ -3,7 +3,7 @@ import {
   BlockPlainTextAdapterExtension,
   type BlockPlainTextAdapterMatcher,
 } from '@blocksuite/affine-shared/adapters';
-import type { DeltaInsert } from '@blocksuite/inline';
+import type { DeltaInsert } from '@blocksuite/store';
 
 export const listBlockPlainTextAdapterMatcher: BlockPlainTextAdapterMatcher = {
   flavour: ListBlockSchema.model.flavour,

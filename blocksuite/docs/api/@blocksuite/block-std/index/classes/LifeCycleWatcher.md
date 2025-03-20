@@ -29,7 +29,6 @@ In the life cycle watcher, the methods will be called in the following order:
 ## Extended by
 
 - [`CommandManager`](CommandManager.md)
-- [`RangeManager`](RangeManager.md)
 
 ## Methods
 

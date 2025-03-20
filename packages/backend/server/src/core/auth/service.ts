@@ -2,7 +2,7 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
-import { Config, MailService, SignUpForbidden } from '../../base';
+import { Config, SignUpForbidden } from '../../base';
 import {
   Models,
   type User,
@@ -10,6 +10,7 @@ import {
   type UserSession,
 } from '../../models';
 import { FeatureService } from '../features';
+import { Mailer } from '../mail/mailer';
 import type { CurrentUser } from './session';
 
 export function sessionUser(
@@ -47,7 +48,7 @@ export class AuthService implements OnApplicationBootstrap {
   constructor(
     private readonly config: Config,
     private readonly models: Models,
-    private readonly mailer: MailService,
+    private readonly mailer: Mailer,
     private readonly feature: FeatureService
   ) {}
 
@@ -325,23 +326,57 @@ export class AuthService implements OnApplicationBootstrap {
   }
 
   async sendChangePasswordEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendChangePasswordMail(email, { url: callbackUrl });
+    return await this.mailer.send({
+      name: 'ChangePassword',
+      to: email,
+      props: {
+        url: callbackUrl,
+      },
+    });
   }
   async sendSetPasswordEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendSetPasswordMail(email, { url: callbackUrl });
+    return await this.mailer.send({
+      name: 'SetPassword',
+      to: email,
+      props: {
+        url: callbackUrl,
+      },
+    });
   }
   async sendChangeEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendChangeEmailMail(email, { url: callbackUrl });
+    return await this.mailer.send({
+      name: 'ChangeEmail',
+      to: email,
+      props: {
+        url: callbackUrl,
+      },
+    });
   }
   async sendVerifyChangeEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendVerifyChangeEmail(email, { url: callbackUrl });
+    return await this.mailer.send({
+      name: 'VerifyChangeEmail',
+      to: email,
+      props: {
+        url: callbackUrl,
+      },
+    });
   }
   async sendVerifyEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendVerifyEmail(email, { url: callbackUrl });
+    return await this.mailer.send({
+      name: 'VerifyEmail',
+      to: email,
+      props: {
+        url: callbackUrl,
+      },
+    });
   }
   async sendNotificationChangeEmail(email: string) {
-    return this.mailer.sendNotificationChangeEmail(email, {
+    return await this.mailer.send({
+      name: 'EmailChanged',
       to: email,
+      props: {
+        to: email,
+      },
     });
   }
 
@@ -351,8 +386,13 @@ export class AuthService implements OnApplicationBootstrap {
     otp: string,
     signUp: boolean
   ) {
-    return signUp
-      ? await this.mailer.sendSignUpMail(email, { url: link, otp })
-      : await this.mailer.sendSignInMail(email, { url: link, otp });
+    return await this.mailer.send({
+      name: signUp ? 'SignUp' : 'SignIn',
+      to: email,
+      props: {
+        url: link,
+        otp,
+      },
+    });
   }
 }

@@ -106,13 +106,33 @@ const clearChat = async (page: Page) => {
 const collectHistory = async (page: Page) => {
   const chatPanel = await page.waitForSelector('.chat-panel-messages');
   return Promise.all(
-    Array.from(await chatPanel.$$('.message')).map(async m => ({
-      name: await m.$('.user-info').then(i => i?.innerText()),
-      content: await m
-        .$('chat-text')
-        .then(t => t?.$('editor-host'))
-        .then(e => e?.innerText()),
-    }))
+    Array.from(
+      await chatPanel.$$(
+        'chat-message-user,chat-message-assistant,chat-message-action'
+      )
+    ).map(async m => {
+      const isAssistant = await m.evaluate(
+        el => el.tagName.toLocaleLowerCase() === 'chat-message-assistant'
+      );
+      const isChatAction = await m.evaluate(
+        el => el.tagName.toLocaleLowerCase() === 'chat-message-action'
+      );
+
+      return isAssistant || isChatAction
+        ? {
+            name: await m.$('.user-info').then(i => i?.innerText()),
+            content: await m
+              .$('chat-content-rich-text')
+              .then(t => t?.$('editor-host'))
+              .then(e => e?.innerText()),
+          }
+        : {
+            name: 'You',
+            content: await m
+              .$('chat-content-pure-text')
+              .then(i => i?.innerText()),
+          };
+    })
   );
 };
 
@@ -123,12 +143,17 @@ const collectChat = async (page: Page) => {
     return [];
   }
   // wait ai response
-  await page.waitForSelector('.chat-panel-messages .message chat-copy-more', {
-    timeout: ONE_MINUTE,
-  });
+  await page.waitForSelector(
+    '.chat-panel-messages chat-message-assistant chat-copy-more',
+    {
+      timeout: ONE_MINUTE,
+    }
+  );
   await page.waitForTimeout(200);
-  const lastMessage = await chatPanel.$$('.message').then(m => m[m.length - 1]);
-  await lastMessage.waitForSelector('chat-copy-more');
+  await page
+    .locator('.chat-panel-messages > chat-message-assistant')
+    .last()
+    .locator('chat-copy-more');
   await page.waitForTimeout(200);
   return collectHistory(page);
 };

@@ -62,7 +62,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "vitest": "3.0.8"
+    "vitest": "3.0.9"
   },
   "version": "0.20.0"
 }

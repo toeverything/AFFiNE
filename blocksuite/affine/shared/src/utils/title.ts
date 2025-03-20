@@ -1,5 +1,5 @@
 import type { EditorHost } from '@blocksuite/block-std';
-import type { InlineEditor } from '@blocksuite/inline';
+import type { InlineEditor } from '@blocksuite/block-std/inline';
 
 function getDocTitleByEditorHost(editorHost: EditorHost): HTMLElement | null {
   const docViewport = editorHost.closest('.affine-page-viewport');

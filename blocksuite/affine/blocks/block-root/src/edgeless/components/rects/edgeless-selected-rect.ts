@@ -477,7 +477,7 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
     this._scaleDirection = undefined;
     this._updateMode();
 
-    this.block.slots.elementResizeEnd.next();
+    this.block?.slots.elementResizeEnd.next();
 
     this.frameOverlay.clear();
   };
@@ -606,7 +606,7 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
     const rotation = this._resizeManager.rotation;
 
     this._dragEndCallback = [];
-    this.block.slots.elementResizeStart.next();
+    this.block?.slots.elementResizeStart.next();
     this.selection.selectedElements.forEach(el => {
       el.stash('xywh');
 
@@ -846,7 +846,7 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
   }
 
   get edgelessSlots() {
-    return this.block.slots;
+    return this.block?.slots;
   }
 
   get frameOverlay() {
@@ -1327,41 +1327,46 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
       selection.slots.updated.subscribe(this._updateOnSelectionChange)
     );
 
-    _disposables.add(
-      block.slots.readonlyUpdated.subscribe(() => this.requestUpdate())
-    );
+    if (block) {
+      _disposables.add(
+        block.slots.readonlyUpdated.subscribe(() => this.requestUpdate())
+      );
 
-    _disposables.add(
-      block.slots.elementResizeStart.subscribe(() => (this._isResizing = true))
-    );
-    _disposables.add(
-      block.slots.elementResizeEnd.subscribe(() => (this._isResizing = false))
-    );
+      _disposables.add(
+        block.slots.elementResizeStart.subscribe(
+          () => (this._isResizing = true)
+        )
+      );
+      _disposables.add(
+        block.slots.elementResizeEnd.subscribe(() => (this._isResizing = false))
+      );
+
+      block.handleEvent(
+        'keyDown',
+        ctx => {
+          const event = ctx.get('defaultState').event;
+          if (event instanceof KeyboardEvent) {
+            this._shift(event);
+          }
+        },
+        { global: true }
+      );
+
+      block.handleEvent(
+        'keyUp',
+        ctx => {
+          const event = ctx.get('defaultState').event;
+          if (event instanceof KeyboardEvent) {
+            this._shift(event);
+          }
+        },
+        { global: true }
+      );
+    }
+
     _disposables.add(() => {
       this._propDisposables.forEach(disposable => disposable.unsubscribe());
     });
-
-    this.block.handleEvent(
-      'keyDown',
-      ctx => {
-        const event = ctx.get('defaultState').event;
-        if (event instanceof KeyboardEvent) {
-          this._shift(event);
-        }
-      },
-      { global: true }
-    );
-
-    this.block.handleEvent(
-      'keyUp',
-      ctx => {
-        const event = ctx.get('defaultState').event;
-        if (event instanceof KeyboardEvent) {
-          this._shift(event);
-        }
-      },
-      { global: true }
-    );
   }
 
   private _shift(event: KeyboardEvent) {

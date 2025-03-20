@@ -7,10 +7,9 @@ import { MindmapElementModel, TextResizing } from '@blocksuite/affine-model';
 import type { RichText } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { getSelectedRect } from '@blocksuite/affine-shared/utils';
-import {
-  RANGE_SYNC_EXCLUDE_ATTR,
-  ShadowlessElement,
-} from '@blocksuite/block-std';
+import { type BlockComponent, ShadowlessElement } from '@blocksuite/block-std';
+import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
+import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/block-std/inline';
 import { Bound, toRadian, Vec } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { html, nothing } from 'lit';
@@ -18,13 +17,7 @@ import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import * as Y from 'yjs';
 
-import type { EdgelessRootBlockComponent } from '../../edgeless-root-block.js';
-
 export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
-  get crud() {
-    return this.edgeless.std.get(EdgelessCRUDIdentifier);
-  }
-
   private _keeping = false;
 
   private _lastXYWH = '';
@@ -33,6 +26,18 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
 
   get inlineEditor() {
     return this.richText.inlineEditor;
+  }
+
+  get crud() {
+    return this.edgeless.std.get(EdgelessCRUDIdentifier);
+  }
+
+  get gfx() {
+    return this.edgeless.std.get(GfxControllerIdentifier);
+  }
+
+  get selection() {
+    return this.gfx.selection;
   }
 
   get inlineEditorContainer() {
@@ -47,8 +52,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
     if (!this.isMindMapNode) {
       return;
     }
-
-    const service = this.edgeless.service;
+    const selection = this.selection;
 
     this._disposables.addFromEvent(this, 'keydown', evt => {
       switch (evt.key) {
@@ -57,7 +61,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
           if (evt.shiftKey || evt.isComposing) return;
 
           (this.ownerDocument.activeElement as HTMLElement).blur();
-          service.selection.set({
+          selection.set({
             elements: [this.element.id],
             editing: false,
           });
@@ -67,7 +71,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
         case 'Tab': {
           evt.stopPropagation();
           (this.ownerDocument.activeElement as HTMLElement).blur();
-          service.selection.set({
+          selection.set({
             elements: [this.element.id],
             editing: false,
           });
@@ -109,7 +113,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
     this.element.textDisplay = true;
 
     this.remove();
-    this.edgeless.service.selection.set({
+    this.selection.set({
       elements: [],
       editing: false,
     });
@@ -134,8 +138,10 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
         toRadian(-this.element.rotate)
       );
 
-      const [modelLeftTopX, modelLeftTopY] =
-        this.edgeless.service.viewport.toModelCoord(leftTopX, leftTopY);
+      const [modelLeftTopX, modelLeftTopY] = this.gfx.viewport.toModelCoord(
+        leftTopX,
+        leftTopY
+      );
 
       this.crud.updateElement(this.element.id, {
         xywh: new Bound(
@@ -161,7 +167,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
       this.richText.style.minHeight = `${containerHeight}px`;
     }
 
-    this.edgeless.service.selection.set({
+    this.selection.set({
       elements: [this.element.id],
       editing: true,
     });
@@ -173,12 +179,12 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
   }
 
   override firstUpdated(): void {
-    const dispatcher = this.edgeless.dispatcher;
+    const dispatcher = this.edgeless.std.event;
 
     this.element.textDisplay = false;
 
     this.disposables.add(
-      this.edgeless.service.viewport.viewportUpdated.subscribe(() => {
+      this.gfx.viewport.viewportUpdated.subscribe(() => {
         this.requestUpdate();
         this.updateComplete
           .then(() => {
@@ -228,7 +234,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
     this.disposables.addFromEvent(this, 'keydown', evt => {
       if (evt.key === 'Escape') {
         requestAnimationFrame(() => {
-          this.edgeless.service.selection.set({
+          this.selection.set({
             elements: [this.element.id],
             editing: false,
           });
@@ -256,7 +262,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
 
     const [verticalPadding, horiPadding] = this.element.padding;
     const textResizing = this.element.textResizing;
-    const viewport = this.edgeless.service.viewport;
+    const viewport = this.gfx.viewport;
     const zoom = viewport.zoom;
     const rect = getSelectedRect([this.element]);
     const rotate = this.element.rotate;
@@ -265,10 +271,7 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
       [rect.left + rect.width / 2, rect.top + rect.height / 2],
       toRadian(rotate)
     );
-    const [x, y] = this.edgeless.service.viewport.toViewCoord(
-      leftTopX,
-      leftTopY
-    );
+    const [x, y] = this.gfx.viewport.toViewCoord(leftTopX, leftTopY);
     const autoWidth = textResizing === TextResizing.AUTO_WIDTH_AND_HEIGHT;
     const color = this.edgeless.std
       .get(ThemeProvider)
@@ -344,17 +347,14 @@ export class EdgelessShapeTextEditor extends WithDisposable(ShadowlessElement) {
   }
 
   @property({ attribute: false })
-  accessor edgeless!: EdgelessRootBlockComponent;
+  accessor edgeless!: BlockComponent;
 
   @property({ attribute: false })
   accessor element!: ShapeElementModel;
 
   @property({ attribute: false })
   accessor mountEditor:
-    | ((
-        element: ShapeElementModel,
-        edgeless: EdgelessRootBlockComponent
-      ) => void)
+    | ((element: ShapeElementModel, edgeless: BlockComponent) => void)
     | undefined = undefined;
 
   @query('rich-text')

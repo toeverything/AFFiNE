@@ -2,7 +2,7 @@ import { test } from '@affine-test/kit/playwright';
 import {
   clickEdgelessModeButton,
   locateEditorContainer,
-  locateElementToolbar,
+  locateToolbar,
 } from '@affine-test/kit/utils/editor';
 import { pressEnter } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
@@ -31,7 +31,7 @@ test('should close embed editing modal when editor switching to page mode by sho
     .getByTestId('cmdk-label')
     .getByText('Write, Draw, Plan all at Once.')
     .click();
-  const toolbar = locateElementToolbar(page);
+  const toolbar = locateToolbar(page);
   await toolbar.getByLabel('Edit').click();
 
   const editingModal = page.locator('embed-card-edit-modal');

@@ -2,13 +2,13 @@ import './action-wrapper';
 
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { unsafeCSSVar } from '@blocksuite/affine/shared/theme';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { createTextRenderer } from '../../components/text-renderer';
 import type { ChatAction } from '../chat-context';
-
 export class ActionText extends WithDisposable(LitElement) {
   static override styles = css`
     .original-text {
@@ -16,6 +16,21 @@ export class ActionText extends WithDisposable(LitElement) {
       margin-bottom: 12px;
       font-size: var(--affine-font-sm);
       line-height: 22px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .original-text::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    .original-text::-webkit-scrollbar-thumb {
+      background-color: ${unsafeCSSVar('borderColor')};
+    }
+
+    .original-text::-webkit-scrollbar-track {
+      background: transparent;
     }
   `;
 

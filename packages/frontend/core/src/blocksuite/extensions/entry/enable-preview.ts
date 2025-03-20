@@ -21,6 +21,7 @@ import type { FrameworkProvider } from '@toeverything/infra';
 import type { Observable } from 'rxjs';
 
 import { AIChatBlockSpec } from '../../ai/blocks';
+import { AITranscriptionBlockSpec } from '../../ai/blocks/ai-chat-block/ai-transcription-block';
 import { buildDocDisplayMetaExtension } from '../display-meta';
 import { getFontConfigExtension } from '../font-config';
 import { patchPeekViewService } from '../peek-view-service';
@@ -104,6 +105,7 @@ export function enablePreviewExtension(framework: FrameworkProvider): void {
 
   _previewExtensions = [
     ...AIChatBlockSpec,
+    ...AITranscriptionBlockSpec,
     fontConfig,
     getThemeExtension(framework),
     getPagePreviewThemeExtension(framework),

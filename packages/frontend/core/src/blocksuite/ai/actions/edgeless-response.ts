@@ -6,10 +6,6 @@ import {
 } from '@blocksuite/affine/blocks/edgeless-text';
 import { addImages } from '@blocksuite/affine/blocks/image';
 import {
-  EDGELESS_ELEMENT_TOOLBAR_WIDGET,
-  type EdgelessElementToolbarWidget,
-} from '@blocksuite/affine/blocks/root';
-import {
   fitContent,
   getSurfaceBlock,
   MindmapUtils,
@@ -26,6 +22,10 @@ import {
   NoteDisplayMode,
 } from '@blocksuite/affine/model';
 import { TelemetryProvider } from '@blocksuite/affine/shared/services';
+import {
+  AFFINE_TOOLBAR_WIDGET,
+  type AffineToolbarWidget,
+} from '@blocksuite/affine/widgets/toolbar';
 import {
   ChatWithAiIcon,
   DeleteIcon,
@@ -65,16 +65,14 @@ type ErrorConfig = Exclude<
   null
 >['errorStateConfig'];
 
-export function getElementToolbar(
-  host: EditorHost
-): EdgelessElementToolbarWidget {
+export function getToolbar(host: EditorHost) {
   const rootBlockId = host.doc.root?.id as string;
-  const elementToolbar = host.view.getWidget(
-    EDGELESS_ELEMENT_TOOLBAR_WIDGET,
+  const toolbar = host.view.getWidget(
+    AFFINE_TOOLBAR_WIDGET,
     rootBlockId
-  ) as EdgelessElementToolbarWidget;
+  ) as AffineToolbarWidget;
 
-  return elementToolbar;
+  return toolbar.querySelector('editor-toolbar');
 }
 
 export function getTriggerEntry(host: EditorHost) {

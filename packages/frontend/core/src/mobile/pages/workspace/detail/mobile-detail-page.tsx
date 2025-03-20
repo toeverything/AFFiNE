@@ -26,7 +26,7 @@ import {
   ImageProxyService,
 } from '@blocksuite/affine/blocks/image';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
-import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import { LinkPreviewerService } from '@blocksuite/affine/shared/services';
 import {
   FrameworkScope,
@@ -254,6 +254,9 @@ const MobileDetailPage = ({
   const [showTitle, setShowTitle] = useState(checkShowTitle);
   const title = useLiveData(docDisplayMetaService.title$(pageId));
 
+  const guardService = useService(GuardService);
+  const canAccess = useLiveData(guardService.can$('Doc_Read', pageId));
+
   const allJournalDates = useLiveData(journalService.allJournalDates$);
 
   const location = useLiveData(workbench.location$);
@@ -281,6 +284,7 @@ const MobileDetailPage = ({
         skeleton={date ? skeleton : skeletonWithBack}
         notFound={date ? notFound : notFoundWithBack}
         pageId={pageId}
+        canAccess={canAccess}
       >
         <PageHeader
           back={!fromTab}

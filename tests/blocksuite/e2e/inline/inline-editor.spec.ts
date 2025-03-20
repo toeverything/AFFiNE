@@ -1,11 +1,11 @@
 import type {
-  DeltaInsert,
   InlineEditor,
   InlineRange,
-} from '@blocksuite/inline';
-import { ZERO_WIDTH_SPACE } from '@blocksuite/inline';
+} from '@blocksuite/affine/block-std/inline';
+import type { DeltaInsert } from '@blocksuite/affine/store';
 import { expect, type Page, test } from '@playwright/test';
 
+import { ZERO_WIDTH_SPACE } from '../utils/inline-editor.js';
 // FIXME(mirone): copy paste from framework/inline/__tests__/utils.ts
 const defaultPlaygroundURL = new URL(
   `http://localhost:${process.env.CI ? 4173 : 5173}/`

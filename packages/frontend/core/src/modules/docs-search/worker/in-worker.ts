@@ -1,6 +1,10 @@
 import { defaultBlockMarkdownAdapterMatchers } from '@blocksuite/affine/adapters';
 import { Container } from '@blocksuite/affine/global/di';
 import {
+  InlineDeltaToMarkdownAdapterExtensions,
+  MarkdownInlineToDeltaAdapterExtensions,
+} from '@blocksuite/affine/inlines/preset';
+import {
   type AttachmentBlockModel,
   type BookmarkBlockModel,
   type EmbedBlockModel,
@@ -8,10 +12,6 @@ import {
   type TableBlockModel,
   TableModelFlavour,
 } from '@blocksuite/affine/model';
-import {
-  InlineDeltaToMarkdownAdapterExtensions,
-  MarkdownInlineToDeltaAdapterExtensions,
-} from '@blocksuite/affine/rich-text';
 import { MarkdownAdapter } from '@blocksuite/affine/shared/adapters';
 import type { AffineTextAttributes } from '@blocksuite/affine/shared/types';
 import {
@@ -21,7 +21,7 @@ import {
   type TransformerMiddleware,
   type YBlock,
 } from '@blocksuite/affine/store';
-import type { DeltaInsert } from '@blocksuite/inline';
+import type { DeltaInsert } from '@blocksuite/store';
 import { Document } from '@toeverything/infra';
 import { toHexString } from 'lib0/buffer.js';
 import { digest as lib0Digest } from 'lib0/hash/sha256';

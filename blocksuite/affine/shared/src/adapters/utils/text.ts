@@ -1,5 +1,5 @@
 import type { ReferenceParams } from '@blocksuite/affine-model';
-import type { DeltaInsert } from '@blocksuite/inline';
+import type { DeltaInsert } from '@blocksuite/store';
 import isEqual from 'lodash-es/isEqual';
 
 const mergeDeltas = (

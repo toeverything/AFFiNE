@@ -30,6 +30,6 @@
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
     "glob": "^11.0.0",
-    "vitest": "3.0.8"
+    "vitest": "3.0.9"
   }
 }

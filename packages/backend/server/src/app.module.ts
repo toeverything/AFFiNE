@@ -28,7 +28,6 @@ import { GqlModule } from './base/graphql';
 import { HelpersModule } from './base/helpers';
 import { JobModule } from './base/job';
 import { LoggerModule } from './base/logger';
-import { MailModule } from './base/mailer';
 import { MetricsModule } from './base/metrics';
 import { MutexModule } from './base/mutex';
 import { PrismaModule } from './base/prisma';
@@ -43,6 +42,7 @@ import { DocStorageModule } from './core/doc';
 import { DocRendererModule } from './core/doc-renderer';
 import { DocServiceModule } from './core/doc-service';
 import { FeatureModule } from './core/features';
+import { MailModule } from './core/mail';
 import { NotificationModule } from './core/notification';
 import { PermissionModule } from './core/permission';
 import { QuotaModule } from './core/quota';
@@ -101,7 +101,6 @@ export const FunctionalityModules = [
   PrismaModule,
   MetricsModule,
   RateLimiterModule,
-  MailModule,
   StorageProviderModule,
   HelpersModule,
   ErrorModule,
@@ -219,7 +218,13 @@ export function buildAppModule() {
     .use(UserModule, AuthModule, PermissionModule)
 
     // business modules
-    .use(FeatureModule, QuotaModule, DocStorageModule, NotificationModule)
+    .use(
+      FeatureModule,
+      QuotaModule,
+      DocStorageModule,
+      NotificationModule,
+      MailModule
+    )
 
     // sync server only
     .useIf(config => config.flavor.sync, SyncModule)

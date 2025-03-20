@@ -29,6 +29,7 @@ import {
   CONNECTOR_LABEL_MAX_WIDTH,
   ConnectorLabelOffsetAnchor,
   ConnectorMode,
+  DEFAULT_CONNECTOR_MODE,
   DEFAULT_ROUGHNESS,
   FontFamily,
   FontStyle,
@@ -460,7 +461,7 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
   accessor lableEditing: boolean = false;
 
   @field()
-  accessor mode: ConnectorMode = ConnectorMode.Orthogonal;
+  accessor mode: ConnectorMode = DEFAULT_CONNECTOR_MODE;
 
   @derive((path: PointLocation[], instance) => {
     const { x, y } = instance;

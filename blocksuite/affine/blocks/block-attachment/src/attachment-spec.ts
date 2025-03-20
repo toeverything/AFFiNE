@@ -1,18 +1,13 @@
 import { AttachmentBlockSchema } from '@blocksuite/affine-model';
-import { ToolbarModuleExtension } from '@blocksuite/affine-shared/services';
 import { SlashMenuConfigExtension } from '@blocksuite/affine-widget-slash-menu';
-import {
-  BlockFlavourIdentifier,
-  BlockViewExtension,
-  FlavourExtension,
-} from '@blocksuite/block-std';
+import { BlockViewExtension, FlavourExtension } from '@blocksuite/block-std';
 import type { ExtensionType } from '@blocksuite/store';
 import { literal } from 'lit/static-html.js';
 
 import { AttachmentBlockNotionHtmlAdapterExtension } from './adapters/notion-html.js';
 import { AttachmentDropOption } from './attachment-service.js';
 import { attachmentSlashMenuConfig } from './configs/slash-menu.js';
-import { builtinToolbarConfig } from './configs/toolbar';
+import { createBuiltinToolbarConfigExtension } from './configs/toolbar';
 import {
   AttachmentEmbedConfigExtension,
   AttachmentEmbedService,
@@ -31,9 +26,6 @@ export const AttachmentBlockSpec: ExtensionType[] = [
   AttachmentEmbedConfigExtension(),
   AttachmentEmbedService,
   AttachmentBlockNotionHtmlAdapterExtension,
-  ToolbarModuleExtension({
-    id: BlockFlavourIdentifier(flavour),
-    config: builtinToolbarConfig,
-  }),
+  createBuiltinToolbarConfigExtension(flavour),
   SlashMenuConfigExtension(flavour, attachmentSlashMenuConfig),
-];
+].flat();

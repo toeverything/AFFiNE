@@ -4,7 +4,7 @@ import {
   type BlockMarkdownAdapterMatcher,
   type MarkdownAST,
 } from '@blocksuite/affine-shared/adapters';
-import type { DeltaInsert } from '@blocksuite/inline';
+import type { DeltaInsert } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import type { Heading } from 'mdast';
 

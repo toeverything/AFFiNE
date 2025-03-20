@@ -40,6 +40,13 @@
     {
       "groupName": "nestjs",
       "matchPackageNames": ["/^@nestjs/"]
+    },
+    {
+      "groupName": "opentelemetry",
+      "matchPackageNames": [
+        "/^@opentelemetry/",
+        "/^@google-cloud\/opentelemetry-/"
+      ]
     }
   ],
   "commitMessagePrefix": "chore: ",

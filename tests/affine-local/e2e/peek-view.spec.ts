@@ -118,10 +118,10 @@ test('can open peek view for embedded frames', async ({ page }) => {
   // close affine-banner
   await page.locator('[data-testid=local-demo-tips-close-button]').click();
 
+  const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+
   // insert the frame to page
-  await page
-    .locator('edgeless-change-frame-button:has-text("Insert into Page")')
-    .click();
+  await toolbar.getByLabel('Insert into Page').click();
 
   // switch back to page mode
   await clickPageModeButton(page);

@@ -1,10 +1,8 @@
-import { CodeBlockSchema, ColorScheme } from '@blocksuite/affine-model';
-import { textKeymap } from '@blocksuite/affine-rich-text';
+import { ColorScheme } from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
-import { BlockService } from '@blocksuite/block-std';
+import { LifeCycleWatcher } from '@blocksuite/block-std';
 import { type Signal, signal } from '@preact/signals-core';
 import {
-  bundledLanguagesInfo,
   createHighlighterCore,
   createOnigurumaEngine,
   type HighlighterCore,
@@ -18,21 +16,14 @@ import {
   CODE_BLOCK_DEFAULT_LIGHT_THEME,
 } from './highlight/const.js';
 
-export class CodeBlockService extends BlockService {
-  static override readonly flavour = CodeBlockSchema.model.flavour;
+export class CodeBlockHighlighter extends LifeCycleWatcher {
+  static override key = 'code-block-highlighter';
 
   private _darkThemeKey: string | undefined;
 
   private _lightThemeKey: string | undefined;
 
   highlighter$: Signal<HighlighterCore | null> = signal(null);
-
-  get langs() {
-    return (
-      this.std.getOptional(CodeBlockConfigExtension.identifier)?.langs ??
-      bundledLanguagesInfo
-    );
-  }
 
   get themeKey() {
     const theme = this.std.get(ThemeProvider).theme$.value;
@@ -41,34 +32,30 @@ export class CodeBlockService extends BlockService {
       : this._lightThemeKey;
   }
 
+  private readonly _loadTheme = async (
+    highlighter: HighlighterCore
+  ): Promise<void> => {
+    const config = this.std.getOptional(CodeBlockConfigExtension.identifier);
+    const darkTheme = config?.theme?.dark ?? CODE_BLOCK_DEFAULT_DARK_THEME;
+    const lightTheme = config?.theme?.light ?? CODE_BLOCK_DEFAULT_LIGHT_THEME;
+    this._darkThemeKey = (await normalizeGetter(darkTheme)).name;
+    this._lightThemeKey = (await normalizeGetter(lightTheme)).name;
+    await highlighter.loadTheme(darkTheme, lightTheme);
+    this.highlighter$.value = highlighter;
+  };
+
   override mounted(): void {
     super.mounted();
-
-    this.bindHotKey(textKeymap(this.std));
 
     createHighlighterCore({
       engine: createOnigurumaEngine(() => getWasm),
     })
-      .then(async highlighter => {
-        const config = this.std.getOptional(
-          CodeBlockConfigExtension.identifier
-        );
-        const darkTheme = config?.theme?.dark ?? CODE_BLOCK_DEFAULT_DARK_THEME;
-        const lightTheme =
-          config?.theme?.light ?? CODE_BLOCK_DEFAULT_LIGHT_THEME;
-
-        this._darkThemeKey = (await normalizeGetter(darkTheme)).name;
-        this._lightThemeKey = (await normalizeGetter(lightTheme)).name;
-
-        await highlighter.loadTheme(darkTheme, lightTheme);
-
-        this.highlighter$.value = highlighter;
-
-        this.disposables.add(() => {
-          highlighter.dispose();
-        });
-      })
+      .then(this._loadTheme)
       .catch(console.error);
+  }
+
+  override unmounted(): void {
+    this.highlighter$.value?.dispose();
   }
 }
 

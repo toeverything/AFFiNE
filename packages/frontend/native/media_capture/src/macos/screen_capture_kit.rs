@@ -546,9 +546,8 @@ impl ShareableContent {
               "Poisoned RwLock while writing RunningApplications",
             )
           })
-          .and_then(|mut running_applications| {
+          .map(|mut running_applications| {
             *running_applications = audio_process_list();
-            Ok(())
           })
         {
           callback.call(Err(err), ThreadsafeFunctionCallMode::NonBlocking);

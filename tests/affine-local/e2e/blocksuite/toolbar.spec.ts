@@ -1,5 +1,10 @@
 import { test } from '@affine-test/kit/playwright';
-import { locateToolbar } from '@affine-test/kit/utils/editor';
+import {
+  clickEdgelessModeButton,
+  dragView,
+  locateToolbar,
+  setEdgelessTool,
+} from '@affine-test/kit/utils/editor';
 import { selectAllByKeyboard } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
@@ -157,4 +162,37 @@ test.describe('Formatting', () => {
     await expect(textSpan1).toHaveCSS('background-color', hexToRGB(bgColor));
     await expect(textSpan2).toHaveCSS('background-color', hexToRGB(bgColor));
   });
+});
+
+test('should not show toolbar when releasing spacebar and elements have been deleted', async ({
+  page,
+}) => {
+  await clickEdgelessModeButton(page);
+
+  await setEdgelessTool(page, 'shape');
+  await dragView(page, [100, 300], [200, 400]);
+
+  const toolbar = locateToolbar(page);
+
+  await expect(toolbar).toBeVisible();
+
+  await page.keyboard.down('Space');
+
+  await expect(toolbar).toBeHidden();
+
+  await page.keyboard.up('Space');
+
+  await expect(toolbar).toBeVisible();
+
+  await page.keyboard.press('Delete');
+
+  await expect(toolbar).toBeHidden();
+
+  await page.keyboard.down('Space');
+
+  await expect(toolbar).toBeHidden();
+
+  await page.keyboard.up('Space');
+
+  await expect(toolbar).toBeHidden();
 });

@@ -6,13 +6,13 @@
 
 # Function: ConfigExtensionFactory()
 
-> **ConfigExtensionFactory**\<`Config`\>(`flavor`): (`config`) => `ExtensionType` & `object`
+> **ConfigExtensionFactory**\<`Config`\>(`configId`): `ConfigFactory`\<`Config`\>
 
 Create a config extension.
 A config extension provides a configuration object for a block flavour.
 The configuration object can be used like:
 ```ts
-const config = std.provider.get(ConfigIdentifier('my-flavour'));
+const config = std.provider.getOptional(ConfigIdentifier('my-flavour'));
 ```
 
 ## Type Parameters
@@ -23,15 +23,15 @@ const config = std.provider.get(ConfigIdentifier('my-flavour'));
 
 ## Parameters
 
-### flavor
+### configId
 
 `string`
 
-The flavour of the block that the config is for.
+The id of the config. Should be unique for each config.
 
 ## Returns
 
-(`config`) => `ExtensionType` & `object`
+`ConfigFactory`\<`Config`\>
 
 ## Example
 

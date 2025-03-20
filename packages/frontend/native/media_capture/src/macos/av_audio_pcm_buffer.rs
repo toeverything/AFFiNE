@@ -4,7 +4,7 @@ use objc2::{
   runtime::{AnyClass, AnyObject},
 };
 
-use crate::{av_audio_format::AVAudioFormat, error::CoreAudioError, tap_audio::AudioBufferList};
+use crate::{audio_buffer::AudioBufferList, av_audio_format::AVAudioFormat, error::CoreAudioError};
 
 #[allow(unused)]
 pub(crate) struct AVAudioPCMBuffer {

@@ -20,7 +20,6 @@ import {
   CryptoHelper,
   EarlyAccessRequired,
   EmailTokenNotFound,
-  InternalServerError,
   InvalidAuthState,
   InvalidEmail,
   InvalidEmailToken,
@@ -235,16 +234,7 @@ export class AuthController {
       this.logger.debug(`Magic link: ${magicLink}`);
     }
 
-    const result = await this.auth.sendSignInEmail(
-      email,
-      magicLink,
-      otp,
-      !user
-    );
-
-    if (result.rejected.length) {
-      throw new InternalServerError('Failed to send sign-in email.');
-    }
+    await this.auth.sendSignInEmail(email, magicLink, otp, !user);
 
     res.status(HttpStatus.OK).send({
       email: email,

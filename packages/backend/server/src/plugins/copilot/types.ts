@@ -77,6 +77,8 @@ export const PromptConfigStrictSchema = z.object({
     )
     .nullable()
     .optional(),
+  // google
+  audioTimestamp: z.boolean().nullable().optional(),
 });
 
 export const PromptConfigSchema =
@@ -156,6 +158,7 @@ export type ListHistoriesOptions = {
 
 export enum CopilotProviderType {
   FAL = 'fal',
+  Google = 'google',
   OpenAI = 'openai',
   Perplexity = 'perplexity',
   // only for test

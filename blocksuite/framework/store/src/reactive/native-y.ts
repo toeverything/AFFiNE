@@ -2,7 +2,7 @@ import { Array as YArray, Map as YMap, Text as YText } from 'yjs';
 
 import { Boxed } from './boxed.js';
 import { isPureObject } from './is-pure-object.js';
-import { Text } from './text.js';
+import { Text } from './text/index.js';
 import type { Native2Y, TransformOptions } from './types.js';
 
 export function native2Y<T>(

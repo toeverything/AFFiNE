@@ -25,7 +25,6 @@ import {
   StrokeStyleSchema,
 } from '../../consts/note';
 import { type Color, ColorSchema, DefaultTheme } from '../../themes';
-import { TableModelFlavour } from '../table';
 
 export const NoteZodSchema = z
   .object({
@@ -74,22 +73,12 @@ export const NoteBlockSchema = defineBlockSchema({
   metadata: {
     version: 1,
     role: 'hub',
-    parent: ['affine:page'],
+    parent: ['@root'],
     children: [
-      'affine:paragraph',
-      'affine:list',
-      'affine:code',
-      'affine:divider',
+      '@content',
       'affine:database',
       'affine:data-view',
-      'affine:image',
-      'affine:bookmark',
-      'affine:attachment',
-      'affine:surface-ref',
-      'affine:embed-*',
-      'affine:latex',
       'affine:callout',
-      TableModelFlavour,
     ],
   },
   toModel: () => {

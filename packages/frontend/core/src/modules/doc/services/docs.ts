@@ -1,9 +1,9 @@
 import { DebugLogger } from '@affine/debug';
 import { Unreachable } from '@affine/env/constant';
-import type { DeltaInsert } from '@blocksuite/affine/inline';
 import type { DocMode } from '@blocksuite/affine/model';
 import { replaceIdMiddleware } from '@blocksuite/affine/shared/adapters';
 import type { AffineTextAttributes } from '@blocksuite/affine/shared/types';
+import type { DeltaInsert } from '@blocksuite/affine/store';
 import { Slice, Text, Transformer } from '@blocksuite/affine/store';
 import { LiveData, ObjectPool, Service } from '@toeverything/infra';
 import { omitBy } from 'lodash-es';

@@ -1,5 +1,6 @@
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
+import { z } from 'zod';
 
 import { ConfigModule } from '../base/config';
 import { AuthService } from '../core/auth';
@@ -270,6 +271,36 @@ test('should validate markdown list', t => {
 
 const actions = [
   {
+    promptName: ['Transcript audio'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: '',
+        attachments: [
+          'https://cdn.affine.pro/copilot-test/MP9qDGuYgnY+ILoEAmHpp3h9Npuw2403EAYMEA.mp3',
+        ],
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      // cleanup json markdown wrap
+      const cleaned = result
+        .replace(/```[\w\s]+\n/g, '')
+        .replace(/\n```/g, '')
+        .trim();
+      t.notThrows(() => {
+        z.object({
+          speaker: z.string(),
+          start: z.string(),
+          end: z.string(),
+          transcription: z.string(),
+        })
+          .array()
+          .parse(JSON.parse(cleaned));
+      });
+    },
+    type: 'text' as const,
+  },
+  {
     promptName: [
       'Summary',
       'Explain this',
@@ -401,6 +432,7 @@ const actions = [
     type: 'image' as const,
   },
 ];
+
 for (const { promptName, messages, verifier, type } of actions) {
   const prompts = Array.isArray(promptName) ? promptName : [promptName];
   for (const promptName of prompts) {

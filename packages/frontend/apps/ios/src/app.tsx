@@ -36,7 +36,7 @@ import { Container } from '@blocksuite/affine/global/di';
 import {
   InlineDeltaToMarkdownAdapterExtensions,
   MarkdownInlineToDeltaAdapterExtensions,
-} from '@blocksuite/affine/rich-text';
+} from '@blocksuite/affine/inlines/preset';
 import {
   docLinkBaseURLMiddleware,
   MarkdownAdapter,

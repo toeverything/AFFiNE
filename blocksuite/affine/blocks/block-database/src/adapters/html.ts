@@ -1,5 +1,5 @@
 import {
-  type Column,
+  type ColumnDataType,
   DatabaseBlockSchema,
   type SerializedCells,
 } from '@blocksuite/affine-model';
@@ -20,7 +20,7 @@ export const databaseBlockHtmlAdapterMatcher: BlockHtmlAdapterMatcher = {
   fromBlockSnapshot: {
     enter: (o, context) => {
       const { walkerContext } = context;
-      const columns = o.node.props.columns as Array<Column>;
+      const columns = o.node.props.columns as Array<ColumnDataType>;
       const children = o.node.children;
       const cells = o.node.props.cells as SerializedCells;
       const table = processTable(columns, children, cells);

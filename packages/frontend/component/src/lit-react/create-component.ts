@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+import type { PropertyDeclaration } from 'lit';
 import type React from 'react';
 
 const DEV_MODE = process.env.NODE_ENV !== 'production';
@@ -164,6 +165,7 @@ const setProperty = <E extends Element>(
   name: string,
   value: unknown,
   old: unknown,
+  elementProperties?: Map<string, PropertyDeclaration>,
   events?: EventNames
 ) => {
   const event = events?.[name];
@@ -174,6 +176,15 @@ const setProperty = <E extends Element>(
   }
   // But don't dirty check properties; elements are assumed to do this.
   node[name as keyof E] = value as E[keyof E];
+
+  if (elementProperties && elementProperties.has(name)) {
+    const property = elementProperties.get(name);
+    if (property?.attribute) {
+      const attributeName =
+        property.attribute === true ? name : property.attribute;
+      node.setAttribute(attributeName, value as string);
+    }
+  }
 
   // This block is to replicate React's behavior for attributes of native
   // elements where `undefined` or `null` values result in attributes being
@@ -302,6 +313,12 @@ export const createComponent = <
           props[prop],
           // @ts-expect-error: prop is a key of props
           prevPropsRef.current ? prevPropsRef.current[prop] : undefined,
+          'elementProperties' in elementClass
+            ? (elementClass.elementProperties as Map<
+                string,
+                PropertyDeclaration
+              >)
+            : undefined,
           events
         );
       }

@@ -2,10 +2,7 @@ import {
   BlockFlavourIdentifier,
   LifeCycleWatcher,
 } from '@blocksuite/affine/block-std';
-import {
-  EdgelessElementToolbarWidget,
-  EdgelessRootBlockSpec,
-} from '@blocksuite/affine/blocks/root';
+import { EdgelessRootBlockSpec } from '@blocksuite/affine/blocks/root';
 import { ToolbarModuleExtension } from '@blocksuite/affine/shared/services';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import type { FrameworkProvider } from '@toeverything/infra';
@@ -13,8 +10,8 @@ import type { FrameworkProvider } from '@toeverything/infra';
 import { buildAIPanelConfig } from '../ai-panel';
 import { toolbarAIEntryConfig } from '../entries';
 import {
+  edgelessToolbarAIEntryConfig,
   setupEdgelessCopilot,
-  setupEdgelessElementToolbarAIEntry,
 } from '../entries/edgeless/index';
 import { setupSpaceAIEntry } from '../entries/space/setup-space';
 import { CopilotTool } from '../tool/copilot-tool';
@@ -37,9 +34,14 @@ export function createAIEdgelessRootBlockSpec(
     aiPanelWidget,
     edgelessCopilotWidget,
     getAIEdgelessRootWatcher(framework),
+    // In note
     ToolbarModuleExtension({
       id: BlockFlavourIdentifier('custom:affine:note'),
       config: toolbarAIEntryConfig(),
+    }),
+    ToolbarModuleExtension({
+      id: BlockFlavourIdentifier('custom:affine:surface:*'),
+      config: edgelessToolbarAIEntryConfig(),
     }),
     AiSlashMenuConfigExtension(),
   ];
@@ -65,10 +67,6 @@ function getAIEdgelessRootWatcher(framework: FrameworkProvider) {
 
         if (component instanceof EdgelessCopilotWidget) {
           setupEdgelessCopilot(component);
-        }
-
-        if (component instanceof EdgelessElementToolbarWidget) {
-          setupEdgelessElementToolbarAIEntry(component);
         }
       });
     }

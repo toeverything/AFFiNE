@@ -161,9 +161,7 @@ export class AuthResolver {
 
     const url = this.url.link(callbackUrl, { userId: user.id, token });
 
-    const res = await this.auth.sendChangePasswordEmail(user.email, url);
-
-    return !res.rejected.length;
+    return await this.auth.sendChangePasswordEmail(user.email, url);
   }
 
   @Mutation(() => Boolean)
@@ -204,8 +202,7 @@ export class AuthResolver {
 
     const url = this.url.link(callbackUrl, { token });
 
-    const res = await this.auth.sendChangeEmail(user.email, url);
-    return !res.rejected.length;
+    return await this.auth.sendChangeEmail(user.email, url);
   }
 
   @Mutation(() => Boolean)
@@ -248,9 +245,7 @@ export class AuthResolver {
     );
 
     const url = this.url.link(callbackUrl, { token: verifyEmailToken, email });
-    const res = await this.auth.sendVerifyChangeEmail(email, url);
-
-    return !res.rejected.length;
+    return await this.auth.sendVerifyChangeEmail(email, url);
   }
 
   @Mutation(() => Boolean)
@@ -265,8 +260,7 @@ export class AuthResolver {
 
     const url = this.url.link(callbackUrl, { token });
 
-    const res = await this.auth.sendVerifyEmail(user.email, url);
-    return !res.rejected.length;
+    return await this.auth.sendVerifyEmail(user.email, url);
   }
 
   @Mutation(() => Boolean)

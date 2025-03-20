@@ -11,6 +11,8 @@
   "license": "MIT",
   "dependencies": {
     "@blocksuite/affine-components": "workspace:*",
+    "@blocksuite/affine-inline-link": "workspace:*",
+    "@blocksuite/affine-inline-preset": "workspace:*",
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-rich-text": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
@@ -18,7 +20,6 @@
     "@blocksuite/block-std": "workspace:*",
     "@blocksuite/global": "workspace:*",
     "@blocksuite/icons": "^2.2.6",
-    "@blocksuite/inline": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@floating-ui/dom": "^1.6.13",
     "@lit/context": "^1.1.2",

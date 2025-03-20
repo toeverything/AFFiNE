@@ -2,8 +2,9 @@ import type { AttachmentBlockModel } from '@blocksuite/affine/model';
 import { Entity, LiveData, ObjectPool } from '@toeverything/infra';
 import { catchError, from, map, of, startWith, switchMap } from 'rxjs';
 
+import { downloadBlobToBuffer } from '../../media/utils';
 import type { PDFMeta } from '../renderer';
-import { downloadBlobToBuffer, PDFRenderer } from '../renderer';
+import { PDFRenderer } from '../renderer';
 import { PDFPage } from './pdf-page';
 
 export enum PDFStatus {

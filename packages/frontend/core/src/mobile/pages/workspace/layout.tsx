@@ -1,3 +1,4 @@
+import { uniReactRoot } from '@affine/component';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { AiLoginRequiredModal } from '@affine/core/components/affine/auth/ai-login-required';
 import {
@@ -151,6 +152,7 @@ export const WorkspaceLayout = ({
               <LocalQuotaModal />
             )}
             <AiLoginRequiredModal />
+            <uniReactRoot.Root />
             <WorkspaceSideEffects />
             {children}
           </SWRConfigProvider>

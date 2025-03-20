@@ -1,11 +1,12 @@
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { PropTypes, requiredProperties } from '@blocksuite/block-std';
-import { ArrowDownSmallIcon } from '@blocksuite/icons/lit';
 import { LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit-html';
 import { repeat } from 'lit-html/directives/repeat.js';
+
+import { EditorChevronDown } from '../toolbar';
 
 const colors = [
   'default',
@@ -56,8 +57,7 @@ export class HighlightDropdownMenu extends LitElement {
                   'var(--affine-text-primary-color)',
               })}
             ></affine-highlight-duotone-icon>
-
-            ${ArrowDownSmallIcon()}
+            ${EditorChevronDown}
           </editor-icon-button>
         `}
       >

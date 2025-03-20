@@ -1,12 +1,13 @@
 import { createIdentifier, type ServiceProvider } from '@blocksuite/global/di';
-import type { BaseTextAttributes, DeltaInsert } from '@blocksuite/inline';
 import {
   type AssetsManager,
   type ASTWalker,
   type ASTWalkerContext,
   type BaseAdapter,
+  type BaseTextAttributes,
   type BlockSnapshot,
   BlockSnapshotSchema,
+  type DeltaInsert,
   type NodeProps,
   type Transformer,
 } from '@blocksuite/store';

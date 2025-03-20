@@ -20,8 +20,8 @@ async function setupWithColorPickerFunction(page: Page) {
   await switchEditorMode(page);
 }
 
-function getColorPickerButtonWithClass(page: Page, classes: string) {
-  return page.locator(`edgeless-color-picker-button.${classes}`);
+function getColorPanelWithLabel(page: Page, label: string) {
+  return page.locator(`edgeless-color-panel[aria-label="${label}"]`);
 }
 
 function getCurrentColorUnitButton(locator: Locator) {
@@ -71,12 +71,12 @@ test.describe('basic functions', () => {
     const end0 = { x: 150, y: 200 };
     await addBasicShapeElement(page, start0, end0, Shape.Square);
 
-    const fillColorButton = getColorPickerButtonWithClass(page, 'fill-color');
-    await expect(fillColorButton).toBeVisible();
-
     await triggerComponentToolbarAction(page, 'changeShapeFillColor');
 
-    const customButton = getCustomButton(fillColorButton);
+    const fillColorPanel = getColorPanelWithLabel(page, 'Fill color');
+    await expect(fillColorPanel).toBeVisible();
+
+    const customButton = getCustomButton(fillColorPanel);
     await expect(customButton).toBeVisible();
   });
 
@@ -91,12 +91,13 @@ test.describe('basic functions', () => {
 
     await triggerComponentToolbarAction(page, 'changeShapeFillColor');
 
-    const fillColorButton = getColorPickerButtonWithClass(page, 'fill-color');
-    const customButton = getCustomButton(fillColorButton);
+    const fillColorPanel = getColorPanelWithLabel(page, 'Fill color');
+    const customButton = getCustomButton(fillColorPanel);
 
     await customButton.click();
 
-    const colorPickerPanel = getColorPickerPanel(fillColorButton);
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+    const colorPickerPanel = getColorPickerPanel(toolbar);
 
     await expect(colorPickerPanel).toBeVisible();
   });
@@ -112,17 +113,18 @@ test.describe('basic functions', () => {
 
     await triggerComponentToolbarAction(page, 'changeShapeFillColor');
 
-    const fillColorButton = getColorPickerButtonWithClass(page, 'fill-color');
-    const currentColorUnit = getCurrentColorUnitButton(fillColorButton);
+    const fillColorPanel = getColorPanelWithLabel(page, 'Fill color');
+    const currentColorUnit = getCurrentColorUnitButton(fillColorPanel);
 
     const value = await getCurrentColor(currentColorUnit);
     await expect(currentColorUnit.locator('svg')).toHaveCSS('fill', value);
 
-    const customButton = getCustomButton(fillColorButton);
+    const customButton = getCustomButton(fillColorPanel);
 
     await customButton.click();
 
-    const colorPickerPanel = getColorPickerPanel(fillColorButton);
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+    const colorPickerPanel = getColorPickerPanel(toolbar);
 
     await expect(colorPickerPanel).toBeVisible();
 
@@ -143,14 +145,16 @@ test.describe('basic functions', () => {
     const end0 = { x: 150, y: 200 };
     await addBasicShapeElement(page, start0, end0, Shape.Square);
 
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+
     await triggerComponentToolbarAction(page, 'changeShapeFillColor');
 
-    const fillColorButton = getColorPickerButtonWithClass(page, 'fill-color');
-    const customButton = getCustomButton(fillColorButton);
-    const colorPickerPanel = getColorPickerPanel(fillColorButton);
+    const fillColorPanel = getColorPanelWithLabel(page, 'Fill color');
+    const customButton = getCustomButton(fillColorPanel);
 
     await customButton.click();
 
+    const colorPickerPanel = getColorPickerPanel(toolbar);
     await expect(colorPickerPanel).toBeVisible();
 
     await page.mouse.click(0, 0);
@@ -159,7 +163,7 @@ test.describe('basic functions', () => {
 
     await dragBetweenCoords(page, { x: 125, y: 75 }, { x: 175, y: 225 });
 
-    await fillColorButton.click();
+    await toolbar.getByLabel(/^Color$/).click();
 
     await expect(customButton).toBeVisible();
     await expect(colorPickerPanel).toBeHidden();
@@ -174,14 +178,16 @@ test.describe('basic functions', () => {
     const end0 = { x: 150, y: 200 };
     await addBasicShapeElement(page, start0, end0, Shape.Square);
 
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+
     await triggerComponentToolbarAction(page, 'changeShapeFillColor');
 
-    const fillColorButton = getColorPickerButtonWithClass(page, 'fill-color');
-    const customButton = getCustomButton(fillColorButton);
-    const colorPickerPanel = getColorPickerPanel(fillColorButton);
+    const fillColorPanel = getColorPanelWithLabel(page, 'Fill color');
+    const customButton = getCustomButton(fillColorPanel);
 
     await customButton.click();
 
+    const colorPickerPanel = getColorPickerPanel(toolbar);
     const paletteControl = getPaletteControl(colorPickerPanel);
     const hexInput = getHexInput(colorPickerPanel);
 
@@ -203,14 +209,16 @@ test.describe('basic functions', () => {
     const end0 = { x: 150, y: 200 };
     await addBasicShapeElement(page, start0, end0, Shape.Square);
 
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+
     await triggerComponentToolbarAction(page, 'changeShapeFillColor');
 
-    const fillColorButton = getColorPickerButtonWithClass(page, 'fill-color');
-    const customButton = getCustomButton(fillColorButton);
-    const colorPickerPanel = getColorPickerPanel(fillColorButton);
+    const fillColorPanel = getColorPanelWithLabel(page, 'Fill color');
+    const customButton = getCustomButton(fillColorPanel);
 
     await customButton.click();
 
+    const colorPickerPanel = getColorPickerPanel(toolbar);
     const hueControl = getHueControl(colorPickerPanel);
     const hexInput = getHexInput(colorPickerPanel);
 
@@ -230,14 +238,16 @@ test.describe('basic functions', () => {
     const end0 = { x: 150, y: 200 };
     await addBasicShapeElement(page, start0, end0, Shape.Square);
 
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+
     await triggerComponentToolbarAction(page, 'changeShapeFillColor');
 
-    const fillColorButton = getColorPickerButtonWithClass(page, 'fill-color');
-    const customButton = getCustomButton(fillColorButton);
-    const colorPickerPanel = getColorPickerPanel(fillColorButton);
+    const fillColorPanel = getColorPanelWithLabel(page, 'Fill color');
+    const customButton = getCustomButton(fillColorPanel);
 
     await customButton.click();
 
+    const colorPickerPanel = getColorPickerPanel(toolbar);
     const hexInput = getHexInput(colorPickerPanel);
 
     await hexInput.fill('fff');
@@ -266,14 +276,16 @@ test.describe('basic functions', () => {
     const end0 = { x: 150, y: 200 };
     await addBasicShapeElement(page, start0, end0, Shape.Square);
 
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+
     await triggerComponentToolbarAction(page, 'changeShapeFillColor');
 
-    const fillColorButton = getColorPickerButtonWithClass(page, 'fill-color');
-    const customButton = getCustomButton(fillColorButton);
-    const colorPickerPanel = getColorPickerPanel(fillColorButton);
+    const fillColorPanel = getColorPanelWithLabel(page, 'Fill color');
+    const customButton = getCustomButton(fillColorPanel);
 
     await customButton.click();
 
+    const colorPickerPanel = getColorPickerPanel(toolbar);
     const alphaControl = getAlphaControl(colorPickerPanel);
     const alphaInput = getAlphaInput(colorPickerPanel);
 
@@ -295,14 +307,16 @@ test.describe('basic functions', () => {
     const end0 = { x: 150, y: 200 };
     await addBasicShapeElement(page, start0, end0, Shape.Square);
 
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+
     await triggerComponentToolbarAction(page, 'changeShapeFillColor');
 
-    const fillColorButton = getColorPickerButtonWithClass(page, 'fill-color');
-    const customButton = getCustomButton(fillColorButton);
-    const colorPickerPanel = getColorPickerPanel(fillColorButton);
+    const fillColorPanel = getColorPanelWithLabel(page, 'Fill color');
+    const customButton = getCustomButton(fillColorPanel);
 
     await customButton.click();
 
+    const colorPickerPanel = getColorPickerPanel(toolbar);
     const alphaInput = getAlphaInput(colorPickerPanel);
 
     await alphaInput.fill('101');
@@ -336,8 +350,9 @@ test.describe('basic functions', () => {
 
     await triggerComponentToolbarAction(page, 'changeShapeFillColor');
 
-    const fillColorButton = getColorPickerButtonWithClass(page, 'fill-color');
-    const currentColorUnit = getCurrentColorUnitButton(fillColorButton);
+    const fillColorPanel = getColorPanelWithLabel(page, 'Fill color');
+
+    const currentColorUnit = getCurrentColorUnitButton(fillColorPanel);
 
     const value = await getCurrentColor(currentColorUnit);
     let rgba = parseStringToRgba(value);

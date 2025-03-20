@@ -8,6 +8,9 @@ inputs:
   openai-key:
     description: 'OpenAI secret key'
     required: true
+  google-key:
+    description: 'Google secret key'
+    required: true
   fal-key:
     description: 'Fal secret key'
     required: true
@@ -28,6 +31,7 @@ runs:
         COPILOT: true
         DEV_SERVER_URL: http://localhost:8080
         COPILOT_OPENAI_API_KEY: ${{ inputs.openai-key }}
+        COPILOT_GOOGLE_API_KEY: ${{ inputs.google-key }}
         COPILOT_FAL_API_KEY: ${{ inputs.fal-key }}
         COPILOT_PERPLEXITY_API_KEY: ${{ inputs.perplexity-key }}
 

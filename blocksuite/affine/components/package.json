@@ -15,7 +15,6 @@
     "@blocksuite/block-std": "workspace:*",
     "@blocksuite/global": "workspace:*",
     "@blocksuite/icons": "^2.2.6",
-    "@blocksuite/inline": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@floating-ui/dom": "^1.6.13",
     "@lit/context": "^1.1.2",
@@ -65,7 +64,11 @@
     "./view-dropdown-menu": "./src/view-dropdown-menu/index.ts",
     "./card-style-dropdown-menu": "./src/card-style-dropdown-menu/index.ts",
     "./highlight-dropdown-menu": "./src/highlight-dropdown-menu/index.ts",
-    "./tooltip-content-with-shortcut": "./src/tooltip-content-with-shortcut/index.ts"
+    "./tooltip-content-with-shortcut": "./src/tooltip-content-with-shortcut/index.ts",
+    "./size-dropdown-menu": "./src/size-dropdown-menu/index.ts",
+    "./edgeless-line-width-panel": "./src/edgeless-line-width-panel/index.ts",
+    "./edgeless-line-styles-panel": "./src/edgeless-line-styles-panel/index.ts",
+    "./edgeless-shape-color-picker": "./src/edgeless-shape-color-picker/index.ts"
   },
   "files": [
     "src",

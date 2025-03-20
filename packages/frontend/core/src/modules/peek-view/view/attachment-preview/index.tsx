@@ -1,7 +1,7 @@
+import { AttachmentViewer } from '@affine/core/blocksuite/attachment-viewer';
 import type { AttachmentBlockModel } from '@blocksuite/affine/model';
 import { useMemo } from 'react';
 
-import { AttachmentViewer } from '../../../../components/attachment-viewer';
 import { useEditor } from '../utils';
 
 export type AttachmentPreviewModalProps = {

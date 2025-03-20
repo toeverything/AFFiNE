@@ -6,11 +6,8 @@ import { pick } from 'lodash-es';
 import Stripe from 'stripe';
 import { z } from 'zod';
 
-import {
-  MailService,
-  SubscriptionPlanNotFound,
-  URLHelper,
-} from '../../../base';
+import { SubscriptionPlanNotFound, URLHelper } from '../../../base';
+import { Mailer } from '../../../core/mail';
 import {
   KnownStripeInvoice,
   KnownStripePrice,
@@ -49,7 +46,7 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
     stripe: Stripe,
     db: PrismaClient,
     private readonly url: URLHelper,
-    private readonly mailer: MailService
+    private readonly mailer: Mailer
   ) {
     super(stripe, db);
   }
@@ -104,6 +101,10 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
         {
           price: price.price.id,
           quantity,
+          adjustable_quantity: {
+            enabled: true,
+            minimum: 1,
+          },
         },
       ],
       tax_id_collection: {
@@ -140,7 +141,11 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
         }),
       ]);
 
-      await this.mailer.sendTeamLicenseMail(userEmail, { license: key });
+      await this.mailer.send({
+        name: 'TeamLicense',
+        to: userEmail,
+        props: { license: key },
+      });
 
       return subscription;
     } else {

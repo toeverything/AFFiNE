@@ -7,7 +7,7 @@ import {
 } from '@blocksuite/global/gfx';
 import { signal } from '@preact/signals-core';
 import debounce from 'lodash-es/debounce';
-import { Subject } from 'rxjs';
+import { debounceTime, Subject } from 'rxjs';
 
 import type { GfxViewportElement } from '.';
 
@@ -53,6 +53,16 @@ export class Viewport {
   private _cachedOffsetWidth: number | null = null;
 
   private _resizeObserver: ResizeObserver | null = null;
+
+  private readonly _resizeSubject = new Subject<{
+    width: number;
+    height: number;
+    left: number;
+    top: number;
+  }>();
+
+  private _isResizing = false;
+  private _initialTopLeft: IVec | null = null;
 
   protected _center: IPoint = { x: 0, y: 0 };
 
@@ -110,6 +120,35 @@ export class Viewport {
       this._element = el;
       subscription.unsubscribe();
     });
+
+    this._setupResizeObserver();
+  }
+
+  private _setupResizeObserver() {
+    this._resizeSubject
+      .pipe(debounceTime(200))
+      .subscribe(({ width, height, left, top }) => {
+        if (!this._shell || !this._initialTopLeft) return;
+
+        const [initialTopLeftX, initialTopLeftY] = this._initialTopLeft;
+        const newCenterX = initialTopLeftX + width / (2 * this.zoom);
+        const newCenterY = initialTopLeftY + height / (2 * this.zoom);
+
+        this.setCenter(newCenterX, newCenterY);
+        this._width = width;
+        this._height = height;
+        this._left = left;
+        this._top = top;
+        this._isResizing = false;
+        this._initialTopLeft = null;
+
+        this.sizeUpdated.next({
+          left,
+          top,
+          width,
+          height,
+        });
+      });
   }
 
   get boundingClientRect() {
@@ -239,6 +278,8 @@ export class Viewport {
     this.sizeUpdated.complete();
     this.viewportMoved.complete();
     this.viewportUpdated.complete();
+    this._resizeSubject.complete();
+
     this.zooming$.value = false;
     this.panning$.value = false;
   }
@@ -281,18 +322,23 @@ export class Viewport {
 
   onResize() {
     if (!this._shell) return;
-    const { centerX, centerY, zoom, width: oldWidth, height: oldHeight } = this;
+
+    if (!this._isResizing) {
+      this._isResizing = true;
+      this._initialTopLeft = this.toModelCoord(0, 0);
+    }
+
     const { left, top, width, height } = this.boundingClientRect;
     this._cachedOffsetWidth = this._shell.offsetWidth;
 
-    this.setRect(left, top, width, height);
-    this.setCenter(
-      centerX - (oldWidth - width) / zoom / 2,
-      centerY - (oldHeight - height) / zoom / 2
-    );
-
-    this._width = width;
-    this._height = height;
+    this._left = left;
+    this._top = top;
+    this._resizeSubject.next({
+      left,
+      top,
+      width,
+      height,
+    });
   }
 
   setCenter(centerX: number, centerY: number) {
@@ -307,6 +353,12 @@ export class Viewport {
   }
 
   setRect(left: number, top: number, width: number, height: number) {
+    if (this._isResizing) {
+      this._left = left;
+      this._top = top;
+      return;
+    }
+
     this._left = left;
     this._top = top;
     this.sizeUpdated.next({

@@ -42,12 +42,10 @@ import { test } from '../utils/playwright.js';
 
 test.describe('lock', () => {
   const getButtons = (page: Page) => {
-    const elementToolbar = page.locator('edgeless-element-toolbar-widget');
+    const toolbar = page.locator('affine-toolbar-widget');
     return {
-      lock: elementToolbar.locator('edgeless-lock-button[data-locked="false"]'),
-      unlock: elementToolbar.locator(
-        'edgeless-lock-button[data-locked="true"]'
-      ),
+      lock: toolbar.getByTestId('lock'),
+      unlock: toolbar.getByTestId('unlock'),
     };
   };
 

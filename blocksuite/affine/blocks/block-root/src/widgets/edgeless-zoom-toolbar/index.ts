@@ -48,7 +48,7 @@ export class AffineEdgelessZoomToolbarWidget extends WidgetComponent<
 
     this.disposables.add(
       effect(() => {
-        const currentTool = this.edgeless.gfx.tool.currentToolName$.value;
+        const currentTool = this.edgeless?.gfx.tool.currentToolName$.value;
 
         if (currentTool !== 'frameNavigator') {
           this._hide = false;

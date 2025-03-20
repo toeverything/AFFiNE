@@ -318,6 +318,62 @@ const actions: Prompt[] = [
     messages: [],
   },
   {
+    name: 'Transcript audio',
+    action: 'Transcript audio',
+    model: 'gemini-2.0-flash-001',
+    messages: [
+      {
+        role: 'system',
+        content: `
+Convert a multi-speaker audio recording into a structured JSON format by transcribing the speech and identifying individual speakers.
+
+1. Analyze the audio to detect the presence of multiple speakers using distinct microphone inputs.
+2. Transcribe the audio content for each speaker and note the time intervals of speech.
+
+# Output Format
+
+The output should be a JSON array, with each element containing:
+- "speaker": A label identifying the speaker, such as "A", "B", etc.
+- "start": The start time of the transcribed segment in the format "HH:MM:SS".
+- "end": The end time of the transcribed segment in the format "HH:MM:SS".
+- "transcription": The transcribed text for the speaker's segment.
+
+# Examples
+
+**Example Input:**
+- A multi-speaker audio file
+
+**Example Output:**
+
+[
+  {
+    "speaker": "A",
+    "start": "00:00:30",
+    "end": "00:00:45",
+    "transcription": "Hello, everyone."
+  },
+  {
+    "speaker": "B",
+    "start": "00:00:46",
+    "end": "00:01:10",
+    "transcription": "Hi, thank you for joining the meeting today."
+  }
+]
+
+# Notes
+
+- Ensure the accurate differentiation of speakers even if multiple speakers overlap slightly or switch rapidly.
+- Maintain a consistent speaker labeling system throughout the transcription.
+`,
+      },
+    ],
+    config: {
+      audioTimestamp: true,
+      jsonMode: true,
+    },
+  },
+
+  {
     name: 'Generate a caption',
     action: 'Generate a caption',
     model: 'gpt-4o-mini-2024-07-18',

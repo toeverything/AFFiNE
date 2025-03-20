@@ -335,6 +335,9 @@ export class EdgelessToolbarWidget extends WidgetComponent<
   }
 
   private get _quickTools() {
+    if (!this.block) {
+      return [];
+    }
     return getQuickTools({ edgeless: this.block });
   }
 
@@ -376,6 +379,9 @@ export class EdgelessToolbarWidget extends WidgetComponent<
   }
 
   private get _seniorTools() {
+    if (!this.block) {
+      return [];
+    }
     return getSeniorTools({
       edgeless: this.block,
       toolbarContainer: this.toolbarContainer,
@@ -573,6 +579,9 @@ export class EdgelessToolbarWidget extends WidgetComponent<
         .get(ThemeProvider)
         .theme$.subscribe(mode => this._themeProvider.setValue(mode))
     );
+    if (!this.block) {
+      return;
+    }
     this._disposables.add(
       this.block.bindHotKey(
         {
@@ -603,6 +612,9 @@ export class EdgelessToolbarWidget extends WidgetComponent<
 
   override firstUpdated() {
     const { _disposables, block, gfx } = this;
+    if (!block) {
+      return;
+    }
 
     _disposables.add(
       gfx.viewport.viewportUpdated.subscribe(() => this.requestUpdate())

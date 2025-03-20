@@ -12,7 +12,6 @@
   "dependencies": {
     "@blocksuite/block-std": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/inline": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@toeverything/theme": "^1.1.12",
     "@types/lodash-es": "^4.17.12",

@@ -35,30 +35,32 @@ import {
 } from '@blocksuite/affine/components/notification';
 import { isPeekable, peek } from '@blocksuite/affine/components/peek';
 import { toast } from '@blocksuite/affine/components/toast';
-import type {
-  MenuContext,
-  MenuItemGroup,
+import {
+  EditorChevronDown,
+  type MenuContext,
+  type MenuItemGroup,
 } from '@blocksuite/affine/components/toolbar';
 import { watch } from '@blocksuite/affine/global/lit';
+import {
+  AffineReference,
+  toggleReferencePopup,
+} from '@blocksuite/affine/inlines/reference';
 import {
   BookmarkBlockModel,
   EmbedLinkedDocModel,
   EmbedSyncedDocModel,
 } from '@blocksuite/affine/model';
-import {
-  AffineReference,
-  toggleReferencePopup,
-} from '@blocksuite/affine/rich-text';
 import { getSelectedModelsCommand } from '@blocksuite/affine/shared/commands';
 import { ImageSelection } from '@blocksuite/affine/shared/selection';
 import {
   ActionPlacement,
-  FeatureFlagService,
   GenerateDocUrlProvider,
   isRemovedUserInfo,
+  OpenDocExtensionIdentifier,
   type OpenDocMode,
   type ToolbarAction,
-  type ToolbarActionGroup,
+  type ToolbarActionGenerator,
+  type ToolbarActionGroupGenerator,
   type ToolbarContext,
   type ToolbarModuleConfig,
   ToolbarModuleExtension,
@@ -67,7 +69,6 @@ import {
 import { matchModels } from '@blocksuite/affine/shared/utils';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import {
-  ArrowDownSmallIcon,
   CenterPeekIcon,
   CopyAsImgaeIcon,
   CopyIcon,
@@ -217,14 +218,18 @@ function createToolbarMoreMenuConfigV2(baseUrl?: string) {
             id: 'copy-as-image',
             label: 'Copy as Image',
             icon: CopyAsImgaeIcon(),
-            when: ({ isEdgelessMode, gfx }) =>
-              isEdgelessMode && gfx.selection.selectedElements.length > 0,
+            when: ({ isEdgelessMode, gfx, flags }) =>
+              !flags.isHovering() &&
+              isEdgelessMode &&
+              gfx.selection.selectedElements.length > 0,
           },
           {
             id: 'copy-link-to-block',
             label: 'Copy link to block',
             icon: LinkIcon(),
-            when: ({ isPageMode, selection, gfx }) => {
+            when: ({ isPageMode, selection, gfx, flags }) => {
+              if (flags.isHovering()) return false;
+
               const items = selection
                 .getGroup('note')
                 .filter(item =>
@@ -309,33 +314,33 @@ function createToolbarMoreMenuConfigV2(baseUrl?: string) {
         actions: [
           {
             id: 'block-meta-display',
-            when: cx => {
-              const featureFlag = cx.std.get(FeatureFlagService);
-              const isEnabled = featureFlag.getFlag('enable_block_meta');
+            when: ctx => {
+              const isEnabled = ctx.features.getFlag('enable_block_meta');
               if (!isEnabled) return false;
 
               // only display when one block is selected by block selection
-              const { selection, getCurrentBlockBy } = cx;
               const hasBlockSelection =
-                selection.filter(BlockSelection).length === 1;
+                ctx.selection.filter(BlockSelection).length === 1;
               if (!hasBlockSelection) return false;
-              const block = getCurrentBlockBy.call(cx, BlockSelection);
-              if (!block) return false;
+              const model = ctx.getCurrentModelBy(BlockSelection);
+              if (!model) return false;
 
               const createdAt = 'meta:createdAt';
               const createdBy = 'meta:createdBy';
               return (
-                createdAt in block.model.props &&
-                block.model.props[createdAt] !== undefined &&
-                createdBy in block.model.props &&
-                block.model.props[createdBy] !== undefined &&
-                typeof block.model.props[createdBy] === 'string' &&
-                typeof block.model.props[createdAt] === 'number'
+                'props' in model &&
+                createdAt in model.props &&
+                model.props[createdAt] !== undefined &&
+                createdBy in model.props &&
+                model.props[createdBy] !== undefined &&
+                typeof model.props[createdBy] === 'string' &&
+                typeof model.props[createdAt] === 'number'
               );
             },
-            content: cx => {
-              const model = cx.getCurrentModelBy(BlockSelection);
+            content: ctx => {
+              const model = ctx.getCurrentModelBy(BlockSelection);
               if (!model) return null;
+              if (!('props' in model)) return null;
               const createdAt = 'meta:createdAt';
               if (!(createdAt in model.props)) return null;
               const createdBy = 'meta:createdBy';
@@ -343,7 +348,7 @@ function createToolbarMoreMenuConfigV2(baseUrl?: string) {
               const createdByUserId = model.props[createdBy] as string;
               const createdAtTimestamp = model.props[createdAt] as number;
               const date = new Date(createdAtTimestamp);
-              const userProvider = cx.std.get(UserProvider);
+              const userProvider = ctx.std.get(UserProvider);
               userProvider.revalidateUserInfo(createdByUserId);
               const userSignal = userProvider.userInfo$(createdByUserId);
               const isLoadingSignal = userProvider.isLoading$(createdByUserId);
@@ -390,11 +395,13 @@ function createToolbarMoreMenuConfigV2(baseUrl?: string) {
         ],
       },
     ],
+
+    when: ctx => !ctx.getSurfaceModels().some(model => model.isLocked()),
   } as const satisfies ToolbarModuleConfig;
 }
 
 function createExternalLinkableToolbarConfig(
-  kclass:
+  klass:
     | typeof BookmarkBlockComponent
     | typeof EmbedFigmaBlockComponent
     | typeof EmbedGithubBlockComponent
@@ -411,10 +418,7 @@ function createExternalLinkableToolbarConfig(
             tooltip: 'Copy link',
             icon: CopyIcon(),
             run(ctx) {
-              const model = ctx.getCurrentBlockComponentBy(
-                BlockSelection,
-                kclass
-              )?.model;
+              const model = ctx.getCurrentBlockByType(klass)?.model;
               if (!model) return;
 
               const { url } = model.props;
@@ -423,9 +427,6 @@ function createExternalLinkableToolbarConfig(
               toast(ctx.host, 'Copied link to clipboard');
 
               ctx.track('CopiedLink', {
-                segment: 'doc',
-                page: 'doc editor',
-                module: 'toolbar',
                 category: matchModels(model, [BookmarkBlockModel])
                   ? 'bookmark'
                   : 'link',
@@ -439,15 +440,12 @@ function createExternalLinkableToolbarConfig(
             tooltip: 'Edit',
             icon: EditIcon(),
             run(ctx) {
-              const component = ctx.getCurrentBlockComponentBy(
-                BlockSelection,
-                kclass
-              );
-              if (!component) return;
+              const block = ctx.getCurrentBlockByType(klass);
+              if (!block) return;
 
               ctx.hide();
 
-              const model = component.model;
+              const model = block.model;
               const abortController = new AbortController();
               abortController.signal.onabort = () => ctx.show();
 
@@ -459,15 +457,12 @@ function createExternalLinkableToolbarConfig(
                 undefined,
                 (_std, _component, props) => {
                   ctx.store.updateBlock(model, props);
-                  component.requestUpdate();
+                  block.requestUpdate();
                 },
                 abortController
               );
 
               ctx.track('OpenedAliasPopup', {
-                segment: 'doc',
-                page: 'doc editor',
-                module: 'toolbar',
                 category: matchModels(model, [BookmarkBlockModel])
                   ? 'bookmark'
                   : 'link',
@@ -484,76 +479,143 @@ function createExternalLinkableToolbarConfig(
 
 const openDocActions = [
   {
-    id: 'open-in-active-view',
+    mode: 'open-in-active-view',
+    id: 'a.open-in-active-view',
     label: I18n['com.affine.peek-view-controls.open-doc'](),
     icon: ExpandFullIcon(),
+    when: true,
   },
   {
-    id: 'open-in-new-view',
+    mode: 'open-in-new-view',
+    id: 'b.open-in-new-view',
     label: I18n['com.affine.peek-view-controls.open-doc-in-split-view'](),
     icon: SplitViewIcon(),
-    when: () => BUILD_CONFIG.isElectron,
+    when: BUILD_CONFIG.isElectron,
   },
   {
-    id: 'open-in-new-tab',
+    mode: 'open-in-new-tab',
+    id: 'c.open-in-new-tab',
     label: I18n['com.affine.peek-view-controls.open-doc-in-new-tab'](),
     icon: OpenInNewIcon(),
+    when: true,
   },
   {
-    id: 'open-in-center-peek',
+    mode: 'open-in-center-peek',
+    id: 'd.open-in-center-peek',
     label: I18n['com.affine.peek-view-controls.open-doc-in-center-peek'](),
     icon: CenterPeekIcon(),
+    when: true,
   },
-] as const satisfies ToolbarAction[];
+] as const satisfies (Pick<ToolbarAction, 'id' | 'label' | 'icon' | 'when'> & {
+  mode: OpenDocMode;
+})[];
+
+function createOpenDocActions(
+  ctx: ToolbarContext,
+  target:
+    | EmbedLinkedDocBlockComponent
+    | EmbedSyncedDocBlockComponent
+    | AffineReference,
+  isSameDoc: boolean,
+  actions = openDocActions
+) {
+  return actions
+    .filter(action => action.when)
+    .map<ToolbarActionGenerator>(action => {
+      const openMode = action.mode;
+      const shouldOpenInCenterPeek = openMode === 'open-in-center-peek';
+      const shouldOpenInActiveView = openMode === 'open-in-active-view';
+
+      return {
+        ...action,
+        generate(ctx) {
+          const disabled = shouldOpenInActiveView ? isSameDoc : false;
+
+          const when =
+            ctx.std.get(OpenDocExtensionIdentifier).isAllowed(openMode) &&
+            (shouldOpenInCenterPeek ? isPeekable(target) : true);
+
+          const run = shouldOpenInCenterPeek
+            ? (_ctx: ToolbarContext) => peek(target)
+            : (_ctx: ToolbarContext) => target.open({ openMode });
+
+          return { disabled, when, run };
+        },
+      };
+    })
+    .filter(action => {
+      if (typeof action.when === 'function') return action.when(ctx);
+      return action.when ?? true;
+    });
+}
 
 function createOpenDocActionGroup(
   klass:
     | typeof EmbedLinkedDocBlockComponent
     | typeof EmbedSyncedDocBlockComponent
-) {
+): ToolbarAction {
   return {
     placement: ActionPlacement.Start,
     id: 'A.open-doc',
-    actions: openDocActions,
     content(ctx) {
-      const component = ctx.getCurrentBlockComponentBy(BlockSelection, klass);
-      if (!component) return null;
+      const block = ctx.getCurrentBlockByType(klass);
+      if (!block) return null;
 
-      const actions = this.actions
-        .map<ToolbarAction>(action => {
-          const shouldOpenInCenterPeek = action.id === 'open-in-center-peek';
-          const shouldOpenInActiveView = action.id === 'open-in-active-view';
-          const allowed =
-            typeof action.when === 'function'
-              ? action.when(ctx)
-              : (action.when ?? true);
-          return {
-            ...action,
-            disabled: shouldOpenInActiveView
-              ? component.model.props.pageId === ctx.store.id
-              : false,
-            when:
-              allowed &&
-              (shouldOpenInCenterPeek ? isPeekable(component) : true),
-            run: shouldOpenInCenterPeek
-              ? (_ctx: ToolbarContext) => peek(component)
-              : (_ctx: ToolbarContext) =>
-                  component.open({
-                    openMode: action.id as OpenDocMode,
-                  }),
-          };
-        })
-        .filter(action => {
-          if (typeof action.when === 'function') return action.when(ctx);
-          return action.when ?? true;
-        });
+      return renderOpenDocMenu(
+        ctx,
+        block,
+        block.model.props.pageId === ctx.store.id
+      );
+    },
+  };
+}
 
-      return html`
+function createEdgelessOpenDocActionGroup(
+  klass:
+    | typeof EmbedLinkedDocBlockComponent
+    | typeof EmbedSyncedDocBlockComponent
+): ToolbarActionGroupGenerator {
+  return {
+    placement: ActionPlacement.More,
+    id: 'Z.c.open-doc',
+    generate(ctx) {
+      const block = ctx.getCurrentBlockByType(klass);
+      if (!block) return null;
+
+      const actions = createOpenDocActions(
+        ctx,
+        block,
+        block.model.props.pageId === ctx.store.id
+      ).map(action => ({ ...action, ...action.generate(ctx) }));
+
+      return { actions };
+    },
+  };
+}
+
+function renderOpenDocMenu(
+  ctx: ToolbarContext,
+  target:
+    | EmbedLinkedDocBlockComponent
+    | EmbedSyncedDocBlockComponent
+    | AffineReference,
+  isSameDoc: boolean
+) {
+  const actions = createOpenDocActions(ctx, target, isSameDoc).map(action => ({
+    ...action,
+    ...action.generate(ctx),
+  }));
+  if (!actions.length) return null;
+
+  return html`
+    ${keyed(
+      target,
+      html`
         <editor-menu-button
           .contentPadding="${'8px'}"
           .button=${html`
             <editor-icon-button aria-label="Open doc" .tooltip=${'Open doc'}>
-              ${OpenInNewIcon()} ${ArrowDownSmallIcon()}
+              ${OpenInNewIcon()} ${EditorChevronDown}
             </editor-icon-button>
           `}
         >
@@ -564,9 +626,7 @@ function createOpenDocActionGroup(
               ({ label, icon, run, disabled }) => html`
                 <editor-menu-action
                   aria-label=${ifDefined(label)}
-                  ?disabled=${ifDefined(
-                    typeof disabled === 'function' ? disabled(ctx) : disabled
-                  )}
+                  ?disabled=${ifDefined(disabled)}
                   @click=${() => run?.(ctx)}
                 >
                   ${icon}<span class="label">${label}</span>
@@ -575,9 +635,9 @@ function createOpenDocActionGroup(
             )}
           </div>
         </editor-menu-button>
-      `;
-    },
-  } satisfies ToolbarActionGroup<ToolbarAction>;
+      `
+    )}
+  `;
 }
 
 const embedLinkedDocToolbarConfig = {
@@ -591,10 +651,7 @@ const embedLinkedDocToolbarConfig = {
           tooltip: 'Copy link',
           icon: CopyIcon(),
           run(ctx) {
-            const model = ctx.getCurrentModelByType(
-              BlockSelection,
-              EmbedLinkedDocModel
-            );
+            const model = ctx.getCurrentModelByType(EmbedLinkedDocModel);
             if (!model) return;
 
             const { pageId, params } = model.props;
@@ -609,9 +666,6 @@ const embedLinkedDocToolbarConfig = {
             toast(ctx.host, 'Copied link to clipboard');
 
             ctx.track('CopiedLink', {
-              segment: 'doc',
-              page: 'doc editor',
-              module: 'toolbar',
               category: 'linked doc',
               type: 'card view',
               control: 'copy link',
@@ -623,22 +677,21 @@ const embedLinkedDocToolbarConfig = {
           tooltip: 'Edit',
           icon: EditIcon(),
           run(ctx) {
-            const component = ctx.getCurrentBlockComponentBy(
-              BlockSelection,
+            const block = ctx.getCurrentBlockByType(
               EmbedLinkedDocBlockComponent
             );
-            if (!component) return;
+            if (!block) return;
 
             ctx.hide();
 
-            const model = component.model;
+            const model = block.model;
             const doc = ctx.workspace.getDoc(model.props.pageId);
             const abortController = new AbortController();
             abortController.signal.onabort = () => ctx.show();
 
             toggleEmbedCardEditModal(
               ctx.host,
-              component.model,
+              model,
               'card',
               doc
                 ? {
@@ -647,20 +700,17 @@ const embedLinkedDocToolbarConfig = {
                   }
                 : undefined,
               std => {
-                component.refreshData();
+                block.refreshData();
                 notifyLinkedDocClearedAliases(std);
               },
               (_std, _component, props) => {
                 ctx.store.updateBlock(model, props);
-                component.requestUpdate();
+                block.requestUpdate();
               },
               abortController
             );
 
             ctx.track('OpenedAliasPopup', {
-              segment: 'doc',
-              page: 'doc editor',
-              module: 'toolbar',
               category: 'linked doc',
               type: 'embed view',
               control: 'edit',
@@ -684,10 +734,7 @@ const embedSyncedDocToolbarConfig = {
           tooltip: 'Copy link',
           icon: CopyIcon(),
           run(ctx) {
-            const model = ctx.getCurrentModelByType(
-              BlockSelection,
-              EmbedSyncedDocModel
-            );
+            const model = ctx.getCurrentModelByType(EmbedSyncedDocModel);
             if (!model) return;
 
             const { pageId, params } = model.props;
@@ -702,9 +749,6 @@ const embedSyncedDocToolbarConfig = {
             toast(ctx.host, 'Copied link to clipboard');
 
             ctx.track('CopiedLink', {
-              segment: 'doc',
-              page: 'doc editor',
-              module: 'toolbar',
               category: 'linked doc',
               type: 'embed view',
               control: 'copy link',
@@ -716,15 +760,14 @@ const embedSyncedDocToolbarConfig = {
           tooltip: 'Edit',
           icon: EditIcon(),
           run(ctx) {
-            const component = ctx.getCurrentBlockComponentBy(
-              BlockSelection,
+            const block = ctx.getCurrentBlockByType(
               EmbedSyncedDocBlockComponent
             );
-            if (!component) return;
+            if (!block) return;
 
             ctx.hide();
 
-            const model = component.model;
+            const model = block.model;
             const doc = ctx.workspace.getDoc(model.props.pageId);
             const abortController = new AbortController();
             abortController.signal.onabort = () => ctx.show();
@@ -736,7 +779,7 @@ const embedSyncedDocToolbarConfig = {
               doc ? { title: doc.meta?.title } : undefined,
               undefined,
               (std, _component, props) => {
-                component.convertToCard(props);
+                block.convertToCard(props);
 
                 notifyLinkedDocSwitchedToCard(std);
               },
@@ -744,9 +787,6 @@ const embedSyncedDocToolbarConfig = {
             );
 
             ctx.track('OpenedAliasPopup', {
-              segment: 'doc',
-              page: 'doc editor',
-              module: 'toolbar',
               category: 'linked doc',
               type: 'embed view',
               control: 'edit',
@@ -763,78 +803,17 @@ const inlineReferenceToolbarConfig = {
     {
       placement: ActionPlacement.Start,
       id: 'A.open-doc',
-      actions: openDocActions,
       content(ctx) {
-        const registry = ctx.toolbarRegistry;
-        const target = registry.message$.peek()?.element;
+        const target = ctx.message$.peek()?.element;
         if (!(target instanceof AffineReference)) return null;
 
-        const actions = this.actions
-          .map<ToolbarAction>(action => {
-            const shouldOpenInCenterPeek = action.id === 'open-in-center-peek';
-            const shouldOpenInActiveView = action.id === 'open-in-active-view';
-            const allowed =
-              typeof action.when === 'function'
-                ? action.when(ctx)
-                : (action.when ?? true);
-            return {
-              ...action,
-              disabled: shouldOpenInActiveView
-                ? target.referenceInfo.pageId === ctx.store.id
-                : false,
-              when:
-                allowed && (shouldOpenInCenterPeek ? isPeekable(target) : true),
-              run: shouldOpenInCenterPeek
-                ? (_ctx: ToolbarContext) => peek(target)
-                : (_ctx: ToolbarContext) =>
-                    target.open({
-                      openMode: action.id as OpenDocMode,
-                    }),
-            };
-          })
-          .filter(action => {
-            if (typeof action.when === 'function') return action.when(ctx);
-            return action.when ?? true;
-          });
-
-        return html`${keyed(
+        return renderOpenDocMenu(
+          ctx,
           target,
-          html`
-            <editor-menu-button
-              .contentPadding="${'8px'}"
-              .button=${html`
-                <editor-icon-button
-                  aria-label="Open doc"
-                  .tooltip=${'Open doc'}
-                >
-                  ${OpenInNewIcon()} ${ArrowDownSmallIcon()}
-                </editor-icon-button>
-              `}
-            >
-              <div data-size="small" data-orientation="vertical">
-                ${repeat(
-                  actions,
-                  action => action.id,
-                  ({ label, icon, run, disabled }) => html`
-                    <editor-menu-action
-                      aria-label=${ifDefined(label)}
-                      ?disabled=${ifDefined(
-                        typeof disabled === 'function'
-                          ? disabled(ctx)
-                          : disabled
-                      )}
-                      @click=${() => run?.(ctx)}
-                    >
-                      ${icon}<span class="label">${label}</span>
-                    </editor-menu-action>
-                  `
-                )}
-              </div>
-            </editor-menu-button>
-          `
-        )}`;
+          target.referenceInfo.pageId === ctx.store.id
+        );
       },
-    } satisfies ToolbarActionGroup<ToolbarAction>,
+    },
     {
       id: 'b.copy-link-and-edit',
       actions: [
@@ -861,9 +840,6 @@ const inlineReferenceToolbarConfig = {
             toast(ctx.host, 'Copied link to clipboard');
 
             ctx.track('CopiedLink', {
-              segment: 'doc',
-              page: 'doc editor',
-              module: 'toolbar',
               category: 'linked doc',
               type: 'inline view',
               control: 'copy link',
@@ -897,9 +873,6 @@ const inlineReferenceToolbarConfig = {
             abortController.signal.onabort = () => popover.remove();
 
             ctx.track('OpenedAliasPopup', {
-              segment: 'doc',
-              page: 'doc editor',
-              module: 'toolbar',
               category: 'linked doc',
               type: 'inline view',
               control: 'edit',
@@ -921,8 +894,7 @@ const embedIframeToolbarConfig = {
           tooltip: 'Copy link',
           icon: CopyIcon(),
           run(ctx) {
-            const model = ctx.getCurrentBlockComponentBy(
-              BlockSelection,
+            const model = ctx.getCurrentBlockByType(
               EmbedIframeBlockComponent
             )?.model;
             if (!model) return;
@@ -933,9 +905,6 @@ const embedIframeToolbarConfig = {
             toast(ctx.host, 'Copied link to clipboard');
 
             ctx.track('CopiedLink', {
-              segment: 'doc',
-              page: 'doc editor',
-              module: 'toolbar',
               category: matchModels(model, [BookmarkBlockModel])
                 ? 'bookmark'
                 : 'link',
@@ -949,8 +918,7 @@ const embedIframeToolbarConfig = {
           tooltip: 'Edit',
           icon: EditIcon(),
           run(ctx) {
-            const component = ctx.getCurrentBlockComponentBy(
-              BlockSelection,
+            const component = ctx.getCurrentBlockByType(
               EmbedIframeBlockComponent
             );
             if (!component) return;
@@ -975,9 +943,6 @@ const embedIframeToolbarConfig = {
             );
 
             ctx.track('OpenedAliasPopup', {
-              segment: 'doc',
-              page: 'doc editor',
-              module: 'toolbar',
               category: matchModels(model, [BookmarkBlockModel])
                 ? 'bookmark'
                 : 'link',
@@ -1006,8 +971,18 @@ export const createCustomToolbarExtension = (
     }),
 
     ToolbarModuleExtension({
+      id: BlockFlavourIdentifier('custom:affine:surface:bookmark'),
+      config: createExternalLinkableToolbarConfig(BookmarkBlockComponent),
+    }),
+
+    ToolbarModuleExtension({
       id: BlockFlavourIdentifier('custom:affine:embed-figma'),
       config: createExternalLinkableToolbarConfig(EmbedFigmaBlockComponent),
+    }),
+
+    ToolbarModuleExtension({
+      id: BlockFlavourIdentifier('custom:affine:surface:embed-figma'),
+      config: createExternalLinkableToolbarConfig(BookmarkBlockComponent),
     }),
 
     ToolbarModuleExtension({
@@ -1016,8 +991,18 @@ export const createCustomToolbarExtension = (
     }),
 
     ToolbarModuleExtension({
+      id: BlockFlavourIdentifier('custom:affine:surface:embed-github'),
+      config: createExternalLinkableToolbarConfig(BookmarkBlockComponent),
+    }),
+
+    ToolbarModuleExtension({
       id: BlockFlavourIdentifier('custom:affine:embed-loom'),
       config: createExternalLinkableToolbarConfig(EmbedLoomBlockComponent),
+    }),
+
+    ToolbarModuleExtension({
+      id: BlockFlavourIdentifier('custom:affine:surface:embed-loom'),
+      config: createExternalLinkableToolbarConfig(BookmarkBlockComponent),
     }),
 
     ToolbarModuleExtension({
@@ -1026,13 +1011,42 @@ export const createCustomToolbarExtension = (
     }),
 
     ToolbarModuleExtension({
+      id: BlockFlavourIdentifier('custom:affine:surface:embed-youtube'),
+      config: createExternalLinkableToolbarConfig(BookmarkBlockComponent),
+    }),
+
+    ToolbarModuleExtension({
       id: BlockFlavourIdentifier('custom:affine:embed-linked-doc'),
       config: embedLinkedDocToolbarConfig,
     }),
 
     ToolbarModuleExtension({
+      id: BlockFlavourIdentifier('custom:affine:surface:embed-linked-doc'),
+      config: {
+        actions: [
+          embedLinkedDocToolbarConfig.actions,
+          createEdgelessOpenDocActionGroup(EmbedLinkedDocBlockComponent),
+        ].flat(),
+
+        when: ctx => ctx.getSurfaceModels().length === 1,
+      },
+    }),
+
+    ToolbarModuleExtension({
       id: BlockFlavourIdentifier('custom:affine:embed-synced-doc'),
       config: embedSyncedDocToolbarConfig,
+    }),
+
+    ToolbarModuleExtension({
+      id: BlockFlavourIdentifier('custom:affine:surface:embed-synced-doc'),
+      config: {
+        actions: [
+          embedSyncedDocToolbarConfig.actions,
+          createEdgelessOpenDocActionGroup(EmbedSyncedDocBlockComponent),
+        ].flat(),
+
+        when: ctx => ctx.getSurfaceModels().length === 1,
+      },
     }),
 
     ToolbarModuleExtension({

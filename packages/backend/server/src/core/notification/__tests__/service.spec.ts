@@ -18,6 +18,7 @@ import {
 } from '../../../models';
 import { DocReader } from '../../doc';
 import { NotificationService } from '../service';
+
 interface Context {
   module: TestingModule;
   notificationService: NotificationService;
@@ -336,4 +337,47 @@ test('should raw doc title in mention notification if no doc found', async t => 
   const body2 = mention2.body as MentionNotificationBody;
   t.is(body2.doc.title, 'doc-title-1');
   t.is(body2.doc.mode, DocMode.page);
+});
+
+test('should send mention email by user setting', async t => {
+  const { notificationService } = t.context;
+  const docId = randomUUID();
+  const notification = await notificationService.createMention({
+    userId: member.id,
+    body: {
+      workspaceId: workspace.id,
+      createdByUserId: owner.id,
+      doc: {
+        id: docId,
+        title: 'doc-title-1',
+        blockId: 'block-id-1',
+        mode: DocMode.page,
+      },
+    },
+  });
+  t.truthy(notification);
+  // should send mention email
+  const mentionMail = t.context.module.mails.last('Mention');
+  t.is(mentionMail.to, member.email);
+
+  // update user setting to not receive mention email
+  const mentionMailCount = t.context.module.mails.count('Mention');
+  await t.context.models.settings.set(member.id, {
+    receiveMentionEmail: false,
+  });
+  await notificationService.createMention({
+    userId: member.id,
+    body: {
+      workspaceId: workspace.id,
+      createdByUserId: owner.id,
+      doc: {
+        id: docId,
+        title: 'doc-title-2',
+        blockId: 'block-id-2',
+        mode: DocMode.page,
+      },
+    },
+  });
+  // should not send mention email
+  t.is(t.context.module.mails.count('Mention'), mentionMailCount);
 });

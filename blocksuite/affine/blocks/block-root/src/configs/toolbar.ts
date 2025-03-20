@@ -16,9 +16,9 @@ import {
   formatNativeCommand,
   formatTextCommand,
   isFormatSupported,
-  textConversionConfigs,
   textFormatConfigs,
-} from '@blocksuite/affine-rich-text';
+} from '@blocksuite/affine-inline-preset';
+import { textConversionConfigs } from '@blocksuite/affine-rich-text';
 import {
   copySelectedModelsCommand,
   deleteSelectedModelsCommand,
@@ -92,7 +92,7 @@ const conversionsActionGroup = {
           .button=${html`
             <editor-icon-button
               aria-label="Conversions"
-              .tooltip="${'Turn Into'}"
+              .tooltip="${'Turn into'}"
             >
               ${conversion.icon} ${ArrowDownSmallIcon()}
             </editor-icon-button>

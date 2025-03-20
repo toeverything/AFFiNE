@@ -23,6 +23,7 @@ import {
   PerplexityProvider,
   registerCopilotProvider,
 } from './providers';
+import { GoogleProvider } from './providers/google';
 import {
   CopilotResolver,
   PromptsManagementResolver,
@@ -30,10 +31,15 @@ import {
 } from './resolver';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
+import {
+  CopilotTranscriptionResolver,
+  CopilotTranscriptionService,
+} from './transcript';
 import { CopilotWorkflowExecutors, CopilotWorkflowService } from './workflow';
 
 registerCopilotProvider(FalProvider);
 registerCopilotProvider(OpenAIProvider);
+registerCopilotProvider(GoogleProvider);
 registerCopilotProvider(PerplexityProvider);
 
 @Plugin({
@@ -56,6 +62,9 @@ registerCopilotProvider(PerplexityProvider);
     CopilotContextResolver,
     CopilotContextService,
     CopilotContextDocJob,
+    // transcription
+    CopilotTranscriptionService,
+    CopilotTranscriptionResolver,
   ],
   controllers: [CopilotController],
   contributesTo: ServerFeature.Copilot,

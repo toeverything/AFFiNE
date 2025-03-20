@@ -1,5 +1,4 @@
 import type { RichTextCell } from '@blocksuite/affine/blocks/database';
-import { ZERO_WIDTH_SPACE } from '@blocksuite/affine/inline';
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import {
@@ -13,6 +12,7 @@ import {
   getEditorLocator,
   waitNextFrame,
 } from '../utils/actions/misc.js';
+import { ZERO_WIDTH_SPACE } from '../utils/inline-editor.js';
 
 export async function press(page: Page, content: string) {
   await page.keyboard.press(content, { delay: 50 });

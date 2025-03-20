@@ -388,8 +388,8 @@ test('delete frame by click ungroup should not delete its children', async ({
 
   const frameTitle = page.locator('affine-frame-title');
   await frameTitle.click();
-  const elementToolbar = page.locator('edgeless-element-toolbar-widget');
-  const ungroupButton = elementToolbar.getByLabel('Ungroup');
+  const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+  const ungroupButton = toolbar.getByLabel('Ungroup');
   await ungroupButton.click();
 
   await assertCanvasElementsCount(page, 1);

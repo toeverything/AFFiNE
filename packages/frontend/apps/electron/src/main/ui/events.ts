@@ -35,6 +35,12 @@ export const uiEvents = {
   },
   onTabsStatusChange,
   onActiveTabChanged,
+  onTabGoToRequest: (fn: (opts: { tabId: string; to: string }) => void) => {
+    const sub = uiSubjects.tabGoToRequest$.subscribe(fn);
+    return () => {
+      sub.unsubscribe();
+    };
+  },
   onTabShellViewActiveChange,
   onAuthenticationRequest: (fn: (state: AuthenticationRequest) => void) => {
     const sub = uiSubjects.authenticationRequest$.subscribe(fn);

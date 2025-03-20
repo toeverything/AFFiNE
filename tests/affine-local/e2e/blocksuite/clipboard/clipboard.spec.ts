@@ -171,11 +171,10 @@ test('paste surface-ref block to another doc as embed-linked-doc block', async (
   const frameTitle = page.locator('affine-frame-title');
   await frameTitle.click();
   await page.waitForTimeout(50);
-  const changeFrameButton = page.locator('edgeless-change-frame-button');
-  // get insert into page button which with aria-label 'Insert into Page'
-  const insertIntoPageButton = changeFrameButton.locator(
-    `editor-icon-button[aria-label="Insert into Page"]`
-  );
+
+  const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+
+  const insertIntoPageButton = toolbar.getByLabel('Insert into Page');
   await insertIntoPageButton.click();
 
   await clickPageModeButton(page);

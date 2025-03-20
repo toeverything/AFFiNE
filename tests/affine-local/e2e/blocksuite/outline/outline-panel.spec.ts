@@ -7,7 +7,7 @@ import {
   focusDocTitle,
   getEdgelessSelectedIds,
   getViewportCenter,
-  locateElementToolbar,
+  locateToolbar,
   setViewportCenter,
 } from '@affine-test/kit/utils/editor';
 import {
@@ -508,12 +508,10 @@ test.describe('advanced visibility control', () => {
     await expect(edgelessCard).toHaveCount(1);
 
     await clickView(page, [100, 100]);
-    const noteButtons = locateElementToolbar(page).locator(
-      'edgeless-change-note-button'
-    );
+    const toolbar = locateToolbar(page);
 
-    await noteButtons.getByRole('button', { name: 'Mode' }).click();
-    await noteButtons.locator('note-display-mode-panel .item.both').click();
+    await toolbar.getByRole('button', { name: 'Mode' }).click();
+    await toolbar.locator('note-display-mode-panel .item.both').click();
 
     await expect(bothCard).toHaveCount(2);
     await expect(edgelessCard).toHaveCount(0);
@@ -541,10 +539,8 @@ test.describe('advanced visibility control', () => {
     await expect(bothCard).toHaveCount(2);
 
     await clickView(page, [200, 100]);
-    const changeNoteButtons = locateElementToolbar(page).locator(
-      'edgeless-change-note-button'
-    );
-    await changeNoteButtons.getByRole('button', { name: 'Slicer' }).click();
+    const toolbar = locateToolbar(page);
+    await toolbar.getByRole('button', { name: 'Slicer' }).click();
     await expect(page.locator('.note-slicer-button')).toBeVisible();
     await page.locator('.note-slicer-button').click();
 

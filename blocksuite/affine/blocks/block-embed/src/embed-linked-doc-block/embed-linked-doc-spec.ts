@@ -1,15 +1,11 @@
 import { EmbedLinkedDocBlockSchema } from '@blocksuite/affine-model';
-import { ToolbarModuleExtension } from '@blocksuite/affine-shared/services';
-import {
-  BlockServiceIdentifier,
-  BlockViewExtension,
-} from '@blocksuite/block-std';
+import { BlockViewExtension } from '@blocksuite/block-std';
 import type { ExtensionType } from '@blocksuite/store';
 import { literal } from 'lit/static-html.js';
 
 import { EmbedLinkedDocBlockAdapterExtensions } from './adapters/extension';
 import { LinkedDocSlashMenuConfigExtension } from './configs/slash-menu';
-import { builtinToolbarConfig } from './configs/toolbar';
+import { createBuiltinToolbarConfigExtension } from './configs/toolbar';
 
 const flavour = EmbedLinkedDocBlockSchema.model.flavour;
 
@@ -20,9 +16,6 @@ export const EmbedLinkedDocBlockSpec: ExtensionType[] = [
       : literal`affine-embed-linked-doc-block`;
   }),
   EmbedLinkedDocBlockAdapterExtensions,
-  ToolbarModuleExtension({
-    id: BlockServiceIdentifier(flavour),
-    config: builtinToolbarConfig,
-  }),
+  createBuiltinToolbarConfigExtension(flavour),
   LinkedDocSlashMenuConfigExtension,
 ].flat();

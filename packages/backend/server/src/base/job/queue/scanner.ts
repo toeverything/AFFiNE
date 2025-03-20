@@ -1,11 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 
 import { ModuleScanner } from '../../nestjs';
-import { getJobHandlerMetadata } from './def';
+import { getJobHandlerMetadata, JOB_SIGNAL } from './def';
 
 interface JobHandler {
   name: string;
-  fn: (payload: any) => any;
+  fn: (payload: any) => Promise<JOB_SIGNAL | undefined>;
 }
 
 @Injectable()

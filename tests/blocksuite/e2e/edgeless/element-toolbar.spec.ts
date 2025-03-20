@@ -75,14 +75,15 @@ test('should be hidden when resizing element', async ({ page }) => {
   const toolbar = locatorComponentToolbar(page);
   await expect(toolbar).toBeVisible();
 
-  await resizeElementByHandle(page, { x: 400, y: 300 }, 'top-left', 30);
+  await resizeElementByHandle(
+    page,
+    { x: 400, y: 300 },
+    'top-left',
+    30,
+    async () => {
+      await expect(toolbar).toBeHidden();
+    }
+  );
 
-  await page.mouse.move(450, 300);
-  await expect(toolbar).toBeEmpty();
-
-  await page.mouse.move(320, 220);
-  await expect(toolbar).toBeEmpty();
-
-  await page.mouse.up();
   await expect(toolbar).toBeVisible();
 });

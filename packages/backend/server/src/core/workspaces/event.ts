@@ -33,9 +33,12 @@ export class WorkspaceEvents {
     workspaceId,
   }: Events['workspace.members.requestDeclined']) {
     const user = await this.models.user.getWorkspaceUser(userId);
+    if (!user) {
+      return;
+    }
     // send decline mail
     await this.workspaceService.sendReviewDeclinedEmail(
-      user?.email,
+      user.email,
       workspaceId
     );
   }

@@ -19,7 +19,7 @@ import { WorkspaceService } from '@affine/core/modules/workspace';
 import { isNewTabTrigger } from '@affine/core/utils';
 import track from '@affine/track';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
-import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   AiIcon,
   FrameIcon,
@@ -368,6 +368,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 export const Component = () => {
   const params = useParams();
   const recentPages = useService(RecentDocsService);
+  const guardService = useService(GuardService);
 
   useEffect(() => {
     if (params.pageId) {
@@ -379,10 +380,14 @@ export const Component = () => {
   }, [params, recentPages]);
 
   const pageId = params.pageId;
+  const canAccess = useLiveData(
+    pageId ? guardService.can$('Doc_Read', pageId) : undefined
+  );
 
   return pageId ? (
     <DetailPageWrapper
       pageId={pageId}
+      canAccess={canAccess}
       skeleton={<PageDetailSkeleton />}
       notFound={<PageNotFound noPermission />}
     >

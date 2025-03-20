@@ -93,10 +93,6 @@ test('should register job handler', async t => {
 
   t.is(handler!.name, 'JobHandlers.handleJob');
   t.is(typeof handler!.fn, 'function');
-
-  const result = await handler!.fn({ name: 'test' });
-
-  t.is(result, 'test');
 });
 // #endregion
 

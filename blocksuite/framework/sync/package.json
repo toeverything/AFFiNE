@@ -19,7 +19,7 @@
     "y-protocols": "^1.0.6"
   },
   "devDependencies": {
-    "vitest": "3.0.8"
+    "vitest": "3.0.9"
   },
   "peerDependencies": {
     "yjs": "*"

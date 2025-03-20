@@ -1,1 +1,1 @@
-export { JobModule, JobQueue, OnJob } from './queue';
+export { JOB_SIGNAL, JobModule, JobQueue, OnJob } from './queue';

@@ -10,6 +10,7 @@ import {
   activateView,
   addTab,
   closeTab,
+  ensureTabLoaded,
   getMainWindow,
   getOnboardingWindow,
   getTabsStatus,
@@ -186,6 +187,12 @@ export const uiHandlers = {
   },
   showTab: async (_, ...args: Parameters<typeof showTab>) => {
     await showTab(...args);
+  },
+  tabGoTo: async (_, tabId: string, to: string) => {
+    uiSubjects.tabGoToRequest$.next({ tabId, to });
+  },
+  ensureTabLoaded: async (_, ...args: Parameters<typeof ensureTabLoaded>) => {
+    await ensureTabLoaded(...args);
   },
   closeTab: async (_, ...args: Parameters<typeof closeTab>) => {
     await closeTab(...args);

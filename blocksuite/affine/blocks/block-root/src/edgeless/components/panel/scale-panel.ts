@@ -13,6 +13,7 @@ function format(scale: number) {
   return `${scale}%`;
 }
 
+// TODO(@fundon): remove it after refacting is completed
 export class EdgelessScalePanel extends LitElement {
   static override styles = css`
     :host {
@@ -28,7 +29,7 @@ export class EdgelessScalePanel extends LitElement {
     }
 
     .scale-input {
-      display: flx;
+      display: flex;
       align-self: stretch;
       border: 0.5px solid var(--affine-border-color);
       border-radius: 8px;

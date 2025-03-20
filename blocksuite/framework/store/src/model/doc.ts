@@ -29,20 +29,14 @@ export interface Doc {
      */
     historyUpdated: Subject<void>;
     /**
+     * @internal
      * This fires when the doc yBlock is updated.
      */
-    yBlockUpdated: Subject<
-      | {
-          type: 'add';
-          id: string;
-          isLocal: boolean;
-        }
-      | {
-          type: 'delete';
-          id: string;
-          isLocal: boolean;
-        }
-    >;
+    yBlockUpdated: Subject<{
+      type: 'add' | 'delete';
+      id: string;
+      isLocal: boolean;
+    }>;
   };
 
   get history(): Y.UndoManager;

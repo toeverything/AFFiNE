@@ -15,7 +15,6 @@
     { "path": "../../../framework/block-std" },
     { "path": "../../data-view" },
     { "path": "../../../framework/global" },
-    { "path": "../../../framework/inline" },
     { "path": "../../../framework/store" }
   ]
 }

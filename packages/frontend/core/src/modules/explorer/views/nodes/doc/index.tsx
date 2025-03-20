@@ -5,6 +5,7 @@ import {
   toast,
   Tooltip,
 } from '@affine/component';
+import { DocPermissionGuard } from '@affine/core/components/guard/doc-guard';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { DocsService } from '@affine/core/modules/doc';
@@ -43,6 +44,7 @@ export const ExplorerDocNode = ({
 }: {
   docId: string;
   isLinked?: boolean;
+  forwardKey?: string;
 } & GenericExplorerNode) => {
   const t = useI18n();
   const {
@@ -261,24 +263,35 @@ export const ExplorerDocNode = ({
       }}
       onRename={handleRename}
       childrenPlaceholder={
-        searching ? null : <Empty onDrop={handleDropOnPlaceholder} />
+        searching ? null : (
+          <Empty
+            onDrop={handleDropOnPlaceholder}
+            noAccessible={!!children && children.length > 0}
+          />
+        )
       }
       operations={finalOperations}
       dropEffect={handleDropEffectOnDoc}
       data-testid={`explorer-doc-${docId}`}
     >
-      {children?.map(child => (
-        <ExplorerDocNode
-          key={child.docId}
-          docId={child.docId}
-          reorderable={false}
-          location={{
-            at: 'explorer:doc:linked-docs',
-            docId,
-          }}
-          isLinked
-        />
-      ))}
+      <DocPermissionGuard docId={docId} permission="Doc_Read">
+        {canRead =>
+          canRead
+            ? children?.map((child, index) => (
+                <ExplorerDocNode
+                  key={`${child.docId}-${index}`}
+                  docId={child.docId}
+                  reorderable={false}
+                  location={{
+                    at: 'explorer:doc:linked-docs',
+                    docId,
+                  }}
+                  isLinked
+                />
+              ))
+            : null
+        }
+      </DocPermissionGuard>
     </ExplorerTreeNode>
   );
 };

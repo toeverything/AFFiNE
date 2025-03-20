@@ -18,7 +18,7 @@ import { humanFileSize } from '@blocksuite/affine-shared/utils';
 import { BlockSelection } from '@blocksuite/block-std';
 import { Slice } from '@blocksuite/store';
 import { html } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -33,10 +33,6 @@ import { checkAttachmentBlob, downloadAttachmentBlob } from './utils';
 })
 export class AttachmentBlockComponent extends CaptionedBlockComponent<AttachmentBlockModel> {
   static override styles = styles;
-
-  protected _isDragging = false;
-
-  protected _isResizing = false;
 
   blockDraggable = true;
 
@@ -127,25 +123,6 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     this.disposables.add(
       this.std.get(ThemeProvider).theme$.subscribe(() => this.requestUpdate())
     );
-
-    // this is required to prevent iframe from capturing pointer events
-    this.disposables.add(
-      this.selected$.subscribe(selected => {
-        this._showOverlay = this._isResizing || this._isDragging || !selected;
-      })
-    );
-    // this is required to prevent iframe from capturing pointer events
-    this.handleEvent('dragStart', () => {
-      this._isDragging = true;
-      this._showOverlay =
-        this._isResizing || this._isDragging || !this.selected$.peek();
-    });
-
-    this.handleEvent('dragEnd', () => {
-      this._isDragging = false;
-      this._showOverlay =
-        this._isResizing || this._isDragging || !this.selected$.peek();
-    });
   }
 
   override disconnectedCallback() {
@@ -166,7 +143,9 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
 
     event.stopPropagation();
 
-    this._selectBlock();
+    if (!this.selected$.peek()) {
+      this._selectBlock();
+    }
   }
 
   override renderBlock() {
@@ -190,13 +169,6 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
         ${embedView
           ? html`<div class="affine-attachment-embed-container">
               ${embedView}
-
-              <div
-                class=${classMap({
-                  'affine-attachment-iframe-overlay': true,
-                  hide: !this._showOverlay,
-                })}
-              ></div>
             </div>`
           : html`<div
               class=${classMap({
@@ -226,9 +198,6 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
       </div>
     `;
   }
-
-  @state()
-  protected accessor _showOverlay = true;
 
   @property({ attribute: false })
   accessor allowEmbed = false;

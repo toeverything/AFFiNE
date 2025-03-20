@@ -5,14 +5,28 @@ import { type PropsWithChildren } from 'react';
 
 import * as styles from './index.css';
 
-export function SidebarContainer({ children }: PropsWithChildren) {
-  return <div className={clsx([styles.baseContainer])}>{children}</div>;
+interface SidebarContainerProps extends PropsWithChildren {
+  className?: string;
 }
 
-export function SidebarScrollableContainer({ children }: PropsWithChildren) {
+export function SidebarContainer({
+  children,
+  className,
+}: SidebarContainerProps) {
+  return (
+    <div className={clsx([styles.baseContainer, className])}>{children}</div>
+  );
+}
+
+export function SidebarScrollableContainer({
+  children,
+  className,
+}: SidebarContainerProps) {
   const [setContainer, hasScrollTop] = useHasScrollTop();
   return (
-    <ScrollArea.Root className={styles.scrollableContainerRoot}>
+    <ScrollArea.Root
+      className={clsx([styles.scrollableContainerRoot, className])}
+    >
       <div
         data-has-scroll-top={hasScrollTop}
         className={styles.scrollTopBorder}

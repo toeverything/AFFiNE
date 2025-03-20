@@ -181,6 +181,15 @@ export class GfxController extends LifeCycleWatcher {
     return last(picked) ?? null;
   }
 
+  /**
+   * Get the top element in the given point.
+   * If the element is in a group, the group will be returned.
+   * If the group is currently selected, the child element will be returned.
+   * @param x
+   * @param y
+   * @param options
+   * @returns
+   */
   getElementInGroup(
     x: number,
     y: number,

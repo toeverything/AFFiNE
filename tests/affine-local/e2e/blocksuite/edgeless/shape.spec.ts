@@ -35,9 +35,7 @@ test('should add text to shape, default to pure black', async ({ page }) => {
   await page.keyboard.type('text');
   await page.keyboard.press('Escape');
 
-  const toolbar = page.locator(
-    'edgeless-element-toolbar-widget editor-toolbar'
-  );
+  const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
   const textColorContainer = toolbar.locator(
     'edgeless-color-picker-button.text-color'
   );
@@ -76,9 +74,7 @@ test('should add text to shape with pure white', async ({ page }) => {
   await page.keyboard.type('text');
   await page.keyboard.press('Escape');
 
-  const toolbar = page.locator(
-    'edgeless-element-toolbar-widget editor-toolbar'
-  );
+  const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
   const textColorContainer = toolbar.locator(
     'edgeless-color-picker-button.text-color'
   );

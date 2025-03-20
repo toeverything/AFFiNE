@@ -7,6 +7,7 @@ import {
   type Link,
 } from '@affine/core/modules/doc-link';
 import { toURLSearchParams } from '@affine/core/modules/navigation';
+import { GuardService } from '@affine/core/modules/permissions';
 import { GlobalSessionStateService } from '@affine/core/modules/storage';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import {
@@ -15,13 +16,17 @@ import {
 } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import type { TransformerMiddleware } from '@blocksuite/affine/store';
+import type {
+  ExtensionType,
+  TransformerMiddleware,
+} from '@blocksuite/affine/store';
 import { ToggleDownIcon } from '@blocksuite/icons/rc';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import {
   LiveData,
   useFramework,
   useLiveData,
+  useService,
   useServices,
 } from '@toeverything/infra';
 import {
@@ -45,6 +50,18 @@ import {
 import * as styles from './bi-directional-link-panel.css';
 
 const PREFIX = 'bi-directional-link-panel-collapse:';
+
+type BacklinkGroups = {
+  docId: string;
+  title: string;
+  links: Backlink[];
+};
+
+type TextRendererOptions = {
+  customHeading: boolean;
+  extensions: ExtensionType[];
+  additionalMiddlewares: TransformerMiddleware[];
+};
 
 const useBiDirectionalLinkPanelCollapseState = (
   docId: string,
@@ -155,7 +172,7 @@ const usePreviewExtensions = () => {
   return [extensions, portals] as const;
 };
 
-const useBacklinkGroups = () => {
+const useBacklinkGroups: () => BacklinkGroups[] = () => {
   const { docLinksService } = useServices({
     DocLinksService,
   });
@@ -226,72 +243,10 @@ export const BacklinkGroups = () => {
           docId={docService.doc.id}
           linkDocId={linkGroup.docId}
         >
-          <div className={styles.linkPreviewContainer}>
-            {linkGroup.links.map(link => {
-              if (!link.markdownPreview) {
-                return null;
-              }
-              const searchParams = new URLSearchParams();
-              const displayMode = link.displayMode || 'page';
-              searchParams.set('mode', displayMode);
-
-              let blockId = link.blockId;
-              if (
-                link.parentFlavour === 'affine:database' &&
-                link.parentBlockId
-              ) {
-                // if parentBlockFlavour is 'affine:database',
-                // we will fallback to the database block instead
-                blockId = link.parentBlockId;
-              } else if (displayMode === 'edgeless' && link.noteBlockId) {
-                // if note has displayMode === 'edgeless' && has noteBlockId,
-                // set noteBlockId as blockId
-                blockId = link.noteBlockId;
-              }
-
-              searchParams.set('blockIds', blockId);
-
-              const to = {
-                pathname: '/' + linkGroup.docId,
-                search: '?' + searchParams.toString(),
-                hash: '',
-              };
-
-              // if this backlink has no noteBlock && displayMode is edgeless, we will render
-              // the link as a page link
-              const edgelessLink =
-                displayMode === 'edgeless' && !link.noteBlockId;
-
-              return (
-                <WorkbenchLink
-                  to={to}
-                  key={link.blockId}
-                  className={styles.linkPreview}
-                  onClick={() => {
-                    track.doc.biDirectionalLinksPanel.backlinkPreview.navigate();
-                  }}
-                >
-                  {edgelessLink ? (
-                    <>
-                      [Edgeless]
-                      <AffinePageReference
-                        key={link.blockId}
-                        pageId={linkGroup.docId}
-                        params={searchParams}
-                      />
-                    </>
-                  ) : (
-                    <LitTextRenderer
-                      className={styles.linkPreviewRenderer}
-                      answer={link.markdownPreview}
-                      schema={getAFFiNEWorkspaceSchema()}
-                      options={textRendererOptions}
-                    />
-                  )}
-                </WorkbenchLink>
-              );
-            })}
-          </div>
+          <LinkPreview
+            textRendererOptions={textRendererOptions}
+            linkGroup={linkGroup}
+          />
         </CollapsibleSection>
       ))}
       <>
@@ -300,6 +255,90 @@ export const BacklinkGroups = () => {
         ))}
       </>
     </>
+  );
+};
+
+export const LinkPreview = ({
+  linkGroup,
+  textRendererOptions,
+}: {
+  linkGroup: BacklinkGroups;
+  textRendererOptions: TextRendererOptions;
+}) => {
+  const guardService = useService(GuardService);
+  const canAccess = useLiveData(guardService.can$('Doc_Read', linkGroup.docId));
+  const t = useI18n();
+
+  if (!canAccess) {
+    return (
+      <span className={styles.notFound}>
+        {t['com.affine.share-menu.option.permission.no-access']()}
+      </span>
+    );
+  }
+  return (
+    <div className={styles.linkPreviewContainer}>
+      {linkGroup.links.map(link => {
+        if (!link.markdownPreview) {
+          return null;
+        }
+        const searchParams = new URLSearchParams();
+        const displayMode = link.displayMode || 'page';
+        searchParams.set('mode', displayMode);
+
+        let blockId = link.blockId;
+        if (link.parentFlavour === 'affine:database' && link.parentBlockId) {
+          // if parentBlockFlavour is 'affine:database',
+          // we will fallback to the database block instead
+          blockId = link.parentBlockId;
+        } else if (displayMode === 'edgeless' && link.noteBlockId) {
+          // if note has displayMode === 'edgeless' && has noteBlockId,
+          // set noteBlockId as blockId
+          blockId = link.noteBlockId;
+        }
+
+        searchParams.set('blockIds', blockId);
+
+        const to = {
+          pathname: '/' + linkGroup.docId,
+          search: '?' + searchParams.toString(),
+          hash: '',
+        };
+
+        // if this backlink has no noteBlock && displayMode is edgeless, we will render
+        // the link as a page link
+        const edgelessLink = displayMode === 'edgeless' && !link.noteBlockId;
+
+        return (
+          <WorkbenchLink
+            to={to}
+            key={link.blockId}
+            className={styles.linkPreview}
+            onClick={() => {
+              track.doc.biDirectionalLinksPanel.backlinkPreview.navigate();
+            }}
+          >
+            {edgelessLink ? (
+              <>
+                [Edgeless]
+                <AffinePageReference
+                  key={link.blockId}
+                  pageId={linkGroup.docId}
+                  params={searchParams}
+                />
+              </>
+            ) : (
+              <LitTextRenderer
+                className={styles.linkPreviewRenderer}
+                answer={link.markdownPreview}
+                schema={getAFFiNEWorkspaceSchema()}
+                options={textRendererOptions}
+              />
+            )}
+          </WorkbenchLink>
+        );
+      })}
+    </div>
   );
 };
 

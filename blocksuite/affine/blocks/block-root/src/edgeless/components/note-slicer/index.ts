@@ -143,7 +143,7 @@ export class NoteSlicer extends WidgetComponent<
   }
 
   get selectedRectEle() {
-    return this.block.selectedRectWidget;
+    return this.block?.selectedRectWidget;
   }
 
   private _sliceNote() {
@@ -266,6 +266,10 @@ export class NoteSlicer extends WidgetComponent<
 
     this._updateDivingLineAndBlockIds();
 
+    if (!block) {
+      return;
+    }
+
     disposables.add(
       block.slots.elementResizeStart.subscribe(() => {
         this._isResizing = true;
@@ -343,7 +347,7 @@ export class NoteSlicer extends WidgetComponent<
   }
 
   override firstUpdated() {
-    if (!this.block.service) return;
+    if (!this.block?.service) return;
     this.disposables.add(
       this.block.service.uiEventDispatcher.add('wheel', () => {
         this._hidden = true;

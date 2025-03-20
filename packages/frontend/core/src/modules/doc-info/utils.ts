@@ -2,12 +2,13 @@ import { DebugLogger } from '@affine/debug';
 import { BlockStdScope } from '@blocksuite/affine/block-std';
 import { PageEditorBlockSpecs } from '@blocksuite/affine/extensions';
 import type { Store } from '@blocksuite/affine/store';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Observable } from 'rxjs';
 
 const logger = new DebugLogger('doc-info');
 
 interface ReadonlySignal<T> {
+  value: T;
   subscribe: (fn: (value: T) => void) => () => void;
 }
 
@@ -22,6 +23,20 @@ export function signalToObservable<T>(
       unsub();
     };
   });
+}
+export function useSignalValue<T>(signal: ReadonlySignal<T>): T;
+export function useSignalValue<T>(signal?: ReadonlySignal<T>): T | undefined;
+export function useSignalValue<T>(signal?: ReadonlySignal<T>): T | undefined {
+  const [value, setValue] = useState<T | undefined>(signal?.value);
+  useEffect(() => {
+    if (signal == null) {
+      return;
+    }
+    return signal.subscribe(value => {
+      setValue(value);
+    });
+  }, [signal]);
+  return value;
 }
 
 // todo(pengx17): use rc pool?

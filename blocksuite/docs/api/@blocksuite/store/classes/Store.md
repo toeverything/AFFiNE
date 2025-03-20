@@ -16,60 +16,6 @@ A store is a piece of data created from one or a part of a Y.Doc.
 
 ## Block CRUD
 
-### updateBlock()
-
-> **updateBlock**: \<`T`\>(`model`, `props`) => `void`(`model`, `callback`) => `void`
-
-Updates a block's properties or executes a callback in a transaction
-
-#### Type Parameters
-
-##### T
-
-`T` *extends* `Partial`\<`BlockProps`\>
-
-#### Parameters
-
-##### model
-
-`string` | `BlockModel`\<`object`\>
-
-##### props
-
-`T`
-
-#### Returns
-
-`void`
-
-#### Parameters
-
-##### model
-
-`string` | `BlockModel`\<`object`\>
-
-##### callback
-
-() => `void`
-
-#### Returns
-
-`void`
-
-#### Param
-
-The block model or block ID to update
-
-#### Param
-
-Either a callback function to execute or properties to update
-
-#### Throws
-
-When the block is not found or schema validation fails
-
-***
-
 ### blockSize
 
 #### Get Signature
@@ -81,6 +27,92 @@ Get the number of blocks in the store
 ##### Returns
 
 `number`
+
+***
+
+### isEmpty
+
+#### Get Signature
+
+> **get** **isEmpty**(): `boolean`
+
+Check if there are no blocks in the store.
+
+##### Returns
+
+`boolean`
+
+***
+
+### isEmpty$
+
+#### Get Signature
+
+> **get** **isEmpty$**(): `ReadonlySignal`\<`boolean`\>
+
+Get the signal for the empty state of the store.
+
+##### Returns
+
+`ReadonlySignal`\<`boolean`\>
+
+***
+
+### readonly
+
+#### Get Signature
+
+> **get** **readonly**(): `boolean`
+
+Check if the store is readonly.
+
+##### Returns
+
+`boolean`
+
+#### Set Signature
+
+> **set** **readonly**(`value`): `void`
+
+Set the readonly state of the store.
+
+##### Parameters
+
+###### value
+
+`boolean`
+
+##### Returns
+
+`void`
+
+***
+
+### readonly$
+
+#### Get Signature
+
+> **get** **readonly$**(): `Signal`\<`boolean`\>
+
+Get the signal for the readonly state of the store.
+
+##### Returns
+
+`Signal`\<`boolean`\>
+
+***
+
+### root
+
+#### Get Signature
+
+> **get** **root**(): `null` \| `BlockModel`\<`object`\>
+
+Get the root block of the store.
+
+##### Returns
+
+`null` \| `BlockModel`\<`object`\>
 
 ***
 
@@ -530,6 +562,331 @@ Optional flag to insert before sibling
 
 `void`
 
+***
+
+### updateBlock()
+
+> **updateBlock**(`modelOrId`, `callBackOrProps`): `void`
+
+Updates a block's properties or executes a callback in a transaction
+
+#### Parameters
+
+##### modelOrId
+
+The block model or block ID to update
+
+`string` | `BlockModel`\<`object`\>
+
+##### callBackOrProps
+
+Either a callback function to execute or properties to update
+
+`Partial`\<`BlockProps`\> | () => `void`
+
+#### Returns
+
+`void`
+
+#### Throws
+
+When the block is not found or schema validation fails
+
+## Extension
+
+### get
+
+#### Get Signature
+
+> **get** **get**(): \<`T`\>(`identifier`, `options`?) => `T`
+
+Get an extension instance from the store
+
+##### Example
+
+```ts
+const extension = store.get(SomeExtension);
+```
+
+##### Returns
+
+`Function`
+
+The extension instance
+
+###### Type Parameters
+
+###### T
+
+`T`
+
+###### Parameters
+
+###### identifier
+
+`GeneralServiceIdentifier`\<`T`\>
+
+###### options?
+
+`ResolveOptions`
+
+###### Returns
+
+`T`
+
+***
+
+### getOptional
+
+#### Get Signature
+
+> **get** **getOptional**(): \<`T`\>(`identifier`, `options`?) => `null` \| `T`
+
+Optional get an extension instance from the store.
+The major difference between `get` and `getOptional` is that `getOptional` will not throw an error if the extension is not found.
+
+##### Example
+
+```ts
+const extension = store.getOptional(SomeExtension);
+```
+
+##### Returns
+
+`Function`
+
+The extension instance
+
+###### Type Parameters
+
+###### T
+
+`T`
+
+###### Parameters
+
+###### identifier
+
+`GeneralServiceIdentifier`\<`T`\>
+
+###### options?
+
+`ResolveOptions`
+
+###### Returns
+
+`null` \| `T`
+
+***
+
+### provider
+
+#### Get Signature
+
+> **get** **provider**(): `ServiceProvider`
+
+Get the di provider for current store.
+
+##### Returns
+
+`ServiceProvider`
+
+## History
+
+### canRedo
+
+#### Get Signature
+
+> **get** **canRedo**(): `boolean`
+
+Check if the store can redo
+
+##### Returns
+
+`boolean`
+
+***
+
+### canUndo
+
+#### Get Signature
+
+> **get** **canUndo**(): `boolean`
+
+Check if the store can undo
+
+##### Returns
+
+`boolean`
+
+***
+
+### captureSync
+
+#### Get Signature
+
+> **get** **captureSync**(): () => `void`
+
+Force the following history to be captured into a new stack.
+
+##### Example
+
+```ts
+op1();
+op2();
+store.captureSync();
+op3();
+
+store.undo(); // undo op3
+store.undo(); // undo op1, op2
+```
+
+##### Returns
+
+`Function`
+
+###### Returns
+
+`void`
+
+***
+
+### history
+
+#### Get Signature
+
+> **get** **history**(): `UndoManager`
+
+Get the Y.UndoManager instance for current store.
+
+##### Returns
+
+`UndoManager`
+
+***
+
+### redo
+
+#### Get Signature
+
+> **get** **redo**(): () => `void`
+
+Redo the last undone transaction.
+
+##### Returns
+
+`Function`
+
+###### Returns
+
+`void`
+
+***
+
+### resetHistory
+
+#### Get Signature
+
+> **get** **resetHistory**(): () => `void`
+
+Reset the history of the store.
+
+##### Returns
+
+`Function`
+
+###### Returns
+
+`void`
+
+***
+
+### transact
+
+#### Get Signature
+
+> **get** **transact**(): (`fn`, `shouldTransact`?) => `void`
+
+Execute a transaction.
+
+##### Example
+
+```ts
+store.transact(() => {
+  op1();
+  op2();
+});
+```
+
+##### Returns
+
+`Function`
+
+###### Parameters
+
+###### fn
+
+() => `void`
+
+###### shouldTransact?
+
+`boolean`
+
+###### Returns
+
+`void`
+
+***
+
+### undo
+
+#### Get Signature
+
+> **get** **undo**(): () => `void`
+
+Undo the last transaction.
+
+##### Returns
+
+`Function`
+
+###### Returns
+
+`void`
+
+***
+
+### withoutTransact
+
+#### Get Signature
+
+> **get** **withoutTransact**(): (`fn`) => `void`
+
+Execute a transaction without capturing the history.
+
+##### Example
+
+```ts
+store.withoutTransact(() => {
+  op1();
+  op2();
+});
+```
+
+##### Returns
+
+`Function`
+
+###### Parameters
+
+###### fn
+
+() => `void`
+
+###### Returns
+
+`void`
+
 ## Store Lifecycle
 
 ### disposableGroup
@@ -542,51 +899,61 @@ Group of disposable resources managed by the store
 
 ### slots
 
-> `readonly` **slots**: `object` & `object`
+> `readonly` **slots**: [`StoreSlots`](../interfaces/StoreSlots.md)
 
 Slots for receiving events from the store.
+All events are rxjs Subjects, you can subscribe to them like this:
 
-#### Type declaration
+```ts
+store.slots.ready.subscribe(() => {
+  console.log('store is ready');
+});
+```
 
-##### historyUpdated
+You can also use rxjs operators to handle the events.
 
-> **historyUpdated**: `Subject`\<`void`\>
+***
 
-This fires when the doc history is updated.
+### id
 
-##### yBlockUpdated
+#### Get Signature
 
-> **yBlockUpdated**: `Subject`\<\{ `id`: `string`; `isLocal`: `boolean`; `type`: `"add"`; \} \| \{ `id`: `string`; `isLocal`: `boolean`; `type`: `"delete"`; \}\>
+> **get** **id**(): `string`
 
-This fires when the doc yBlock is updated.
+Get the id of the store.
 
-#### Type declaration
+##### Returns
 
-##### blockUpdated
+`string`
 
-> **blockUpdated**: `Subject`\<`BlockUpdatedPayload`\>
+***
 
-This fires when a block is updated via API call or has just been updated from existing ydoc.
+### loaded
 
-##### ready
+#### Get Signature
 
-> **ready**: `Subject`\<`void`\>
+> **get** **loaded**(): `boolean`
 
-This is always triggered after `doc.load` is called.
+Check if the store is loaded.
 
-##### rootAdded
+##### Returns
 
-> **rootAdded**: `Subject`\<`string`\>
+`boolean`
 
-This fires when the root block is added via API call or has just been initialized from existing ydoc.
-useful for internal block UI components to start subscribing following up events.
-Note that at this moment, the whole block tree may not be fully initialized yet.
+***
 
-##### rootDeleted
+### ready
 
-> **rootDeleted**: `Subject`\<`string`\>
+#### Get Signature
 
-This fires when the root block is deleted via API call or has just been removed from existing ydoc.
+> **get** **ready**(): `boolean`
+
+Check if the store is ready.
+Which means the Y.Doc is loaded and the root block is added.
+
+##### Returns
+
+`boolean`
 
 ***
 
@@ -688,99 +1055,28 @@ Get the Doc instance for current store.
 
 ***
 
-### get
+### schema
 
 #### Get Signature
 
-> **get** **get**(): \<`T`\>(`identifier`, `options`?) => `T`
+> **get** **schema**(): `Schema`
 
-Get an extension instance from the store
-
-##### Example
-
-```ts
-const extension = store.get(SomeExtension);
-```
+Get the Schema instance of the store.
 
 ##### Returns
 
-`Function`
-
-The extension instance
-
-###### Type Parameters
-
-###### T
-
-`T`
-
-###### Parameters
-
-###### identifier
-
-`GeneralServiceIdentifier`\<`T`\>
-
-###### options?
-
-`ResolveOptions`
-
-###### Returns
-
-`T`
+`Schema`
 
 ***
 
-### getOptional
+### workspace
 
 #### Get Signature
 
-> **get** **getOptional**(): \<`T`\>(`identifier`, `options`?) => `null` \| `T`
+> **get** **workspace**(): `Workspace`
 
-Optional get an extension instance from the store.
-The major difference between `get` and `getOptional` is that `getOptional` will not throw an error if the extension is not found.
-
-##### Example
-
-```ts
-const extension = store.getOptional(SomeExtension);
-```
+Get the Workspace instance for current store.
 
 ##### Returns
 
-`Function`
-
-The extension instance
-
-###### Type Parameters
-
-###### T
-
-`T`
-
-###### Parameters
-
-###### identifier
-
-`GeneralServiceIdentifier`\<`T`\>
-
-###### options?
-
-`ResolveOptions`
-
-###### Returns
-
-`null` \| `T`
-
-***
-
-### provider
-
-#### Get Signature
-
-> **get** **provider**(): `ServiceProvider`
-
-Get the di provider for current store.
-
-##### Returns
-
-`ServiceProvider`
+`Workspace`

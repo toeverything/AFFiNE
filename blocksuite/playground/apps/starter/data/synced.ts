@@ -20,9 +20,9 @@ export const synced: InitFn = (collection: Workspace, id: string) => {
   const docSyncedEdgelessId = 'doc:synced-edgeless';
   const docSyncedEdgeless = collection.createDoc({ id: docSyncedEdgelessId });
 
-  docMain.clear();
-  docSyncedPage.clear();
-  docSyncedEdgeless.clear();
+  docMain.doc.clear();
+  docSyncedPage.doc.clear();
+  docSyncedEdgeless.doc.clear();
 
   docSyncedPage.load(() => {
     // Add root block and surface block at root level

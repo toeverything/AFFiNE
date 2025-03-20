@@ -37,6 +37,9 @@ export class AffineImageToolbarWidget extends WidgetComponent<
       this,
       ({ abortController }) => {
         const imageBlock = this.block;
+        if (!imageBlock) {
+          return null;
+        }
         const selection = this.host.selection;
 
         const textSelection = selection.find(TextSelection);
@@ -103,6 +106,9 @@ export class AffineImageToolbarWidget extends WidgetComponent<
     );
 
     const imageBlock = this.block;
+    if (!imageBlock) {
+      return;
+    }
     this._hoverController.setReference(imageBlock);
     this._hoverController.onAbort = () => {
       // If the more menu is opened, don't close it.

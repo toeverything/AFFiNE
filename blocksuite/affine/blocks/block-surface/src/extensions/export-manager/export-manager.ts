@@ -1,6 +1,5 @@
 import {
   FrameBlockModel,
-  GroupElementModel,
   ImageBlockModel,
   type NoteBlockModel,
   type RootBlockModel,
@@ -26,6 +25,7 @@ import {
   type GfxController,
   GfxControllerIdentifier,
   type GfxPrimitiveElementModel,
+  isGfxGroupCompatibleModel,
 } from '@blocksuite/block-std/gfx';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { IBound } from '@blocksuite/global/gfx';
@@ -525,8 +525,8 @@ export class ExportManager {
 
     if (surfaces?.length) {
       const surfaceElements = surfaces.flatMap(element =>
-        element instanceof GroupElementModel
-          ? (element.childElements.filter(
+        isGfxGroupCompatibleModel(element)
+          ? (element.descendantElements.filter(
               el => el instanceof SurfaceElementModel
             ) as SurfaceElementModel[])
           : element

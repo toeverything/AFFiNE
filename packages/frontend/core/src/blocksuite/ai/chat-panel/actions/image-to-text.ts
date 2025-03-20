@@ -1,4 +1,5 @@
 import './action-wrapper';
+import '../content/images';
 
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import { ShadowlessElement } from '@blocksuite/affine/block-std';
@@ -8,7 +9,6 @@ import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import type { ChatAction } from '../chat-context';
-import { renderImages } from '../components/images';
 
 export class ActionImageToText extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
@@ -21,8 +21,14 @@ export class ActionImageToText extends WithDisposable(ShadowlessElement) {
     const answer = this.item.messages[1].attachments;
 
     return html`<action-wrapper .host=${this.host} .item=${this.item}>
-      <div style=${styleMap({ marginBottom: '12px' })}>
-        ${answer ? renderImages(answer) : nothing}
+      <div
+        style=${styleMap({
+          marginBottom: '12px',
+        })}
+      >
+        ${answer
+          ? html`<chat-content-images .images=${answer}></chat-content-images>`
+          : nothing}
       </div>
     </action-wrapper>`;
   }

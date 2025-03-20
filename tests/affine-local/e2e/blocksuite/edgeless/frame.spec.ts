@@ -5,7 +5,7 @@ import {
   createEdgelessNoteBlock,
   dragView,
   locateEditorContainer,
-  locateElementToolbar,
+  locateToolbar,
   toViewCoord,
 } from '@affine-test/kit/utils/editor';
 import {
@@ -34,26 +34,26 @@ test.beforeEach(async ({ page }) => {
 test('should update zindex of element when moving it into frame', async ({
   page,
 }) => {
-  const toolbar = locateElementToolbar(page);
+  const toolbar = locateToolbar(page);
 
   // create a top frame
   await page.keyboard.press('f');
-  await dragView(page, [0, 0], [300, 300]);
+  await dragView(page, [0, 100], [300, 400]);
   await toolbar.getByLabel('Background').click();
   await toolbar.getByLabel('LightRed').click();
   await pressEscape(page);
 
   // create a note
-  await createEdgelessNoteBlock(page, [400, 400]);
-  await clickView(page, [0, 0]);
-  await clickView(page, [400, 400]);
-  await toolbar.getByLabel('More').click();
+  await createEdgelessNoteBlock(page, [500, 500]);
+  await clickView(page, [0, 100]);
+  await clickView(page, [500, 500]);
+  await toolbar.getByLabel('more-menu').click();
   await toolbar.getByLabel('Send to Back').click();
   await pressEscape(page);
 
-  await dragView(page, [400, 400], [100, 100]);
+  await dragView(page, [500, 500], [100, 200]);
 
-  const point = await toViewCoord(page, [100, 100]);
+  const point = await toViewCoord(page, [100, 200]);
 
   const isNoteAboveFrame = await page.evaluate(point => {
     return !!document

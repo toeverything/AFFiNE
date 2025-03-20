@@ -86,7 +86,7 @@ export const AICancel = (btnProps: ButtonProps) => {
     <Button
       onClick={cancel}
       loading={isMutating}
-      variant="primary"
+      variant="secondary"
       {...btnProps}
     >
       {t['com.affine.payment.ai.action.cancel.button-label']()}

@@ -32,7 +32,7 @@
     "fake-indexeddb": "^6.0.0",
     "idb": "^8.0.0",
     "socket.io-client": "^4.8.1",
-    "vitest": "3.0.8"
+    "vitest": "3.0.9"
   },
   "peerDependencies": {
     "@affine/error": "workspace:*",

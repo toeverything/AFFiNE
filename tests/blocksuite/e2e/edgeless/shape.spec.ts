@@ -8,7 +8,6 @@ import {
   changeShapeStrokeColor,
   changeShapeStrokeStyle,
   changeShapeStrokeWidth,
-  changeShapeStyle,
   clickComponentToolbarMoreMenuButton,
   getEdgelessSelectedRect,
   locatorComponentToolbar,
@@ -347,17 +346,16 @@ test('change shape stroke width', async ({ page }) => {
   await addBasicRectShapeElement(page, start, end);
 
   await page.mouse.click(start.x + 5, start.y + 5);
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeColor');
+  await triggerComponentToolbarAction(page, 'changeShapeColor');
   await changeShapeStrokeColor(page, 'MediumMagenta');
 
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeStyles');
   await changeShapeStrokeWidth(page);
   await page.mouse.click(start.x + 5, start.y + 5);
   await assertEdgelessSelectedRect(page, [100, 150, 100, 100]);
 
   await waitNextFrame(page);
 
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeStyles');
+  await triggerComponentToolbarAction(page, 'changeShapeColor');
 });
 
 test('change shape stroke style', async ({ page }) => {
@@ -370,14 +368,12 @@ test('change shape stroke style', async ({ page }) => {
   await addBasicRectShapeElement(page, start, end);
 
   await page.mouse.click(start.x + 5, start.y + 5);
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeColor');
+  await triggerComponentToolbarAction(page, 'changeShapeColor');
   await changeShapeStrokeColor(page, 'MediumBlue');
 
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeStyles');
   await changeShapeStrokeStyle(page, 'dash');
   await waitNextFrame(page);
 
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeStyles');
   const activeButton = locatorShapeStrokeStyleButton(page, 'dash');
   const className = await activeButton.evaluate(ele => ele.className);
   expect(className.includes(' active')).toBeTruthy();
@@ -552,12 +548,12 @@ test('change shape style', async ({ page }) => {
   await addBasicRectShapeElement(page, start, end);
 
   await page.mouse.click(start.x + 5, start.y + 5);
-  await triggerComponentToolbarAction(page, 'changeShapeStyle');
-  await changeShapeStyle(page, 'general');
+  await triggerComponentToolbarAction(page, 'changeShapeColor');
+  // The style switching feature has been removed.
+  //await changeShapeStyle(page, 'general');
   await waitNextFrame(page);
 
   await page.mouse.click(start.x + 5, start.y + 5);
-  await triggerComponentToolbarAction(page, 'changeShapeStrokeColor');
   const color = 'LightPurple';
   await changeShapeStrokeColor(page, color);
   await page.waitForTimeout(50);
@@ -638,8 +634,11 @@ test.describe('shape hit test', () => {
     await addBasicRectShapeElement(page, rect.start, rect.end);
 
     await page.mouse.click(rect.start.x + 5, rect.start.y + 5);
-    await triggerComponentToolbarAction(page, 'changeShapeFillColor');
+    // opens color picker
+    await triggerComponentToolbarAction(page, 'changeShapeColor');
     await changeShapeFillColorToTransparent(page);
+    // closes color picker
+    await triggerComponentToolbarAction(page, 'changeShapeColor');
     await page.waitForTimeout(50);
   }
 
@@ -715,15 +714,15 @@ test.describe('shape hit test', () => {
     await pressEscape(page);
     await waitNextFrame(page);
 
-    const textAlignBtn = locatorComponentToolbar(page).getByRole('button', {
+    const alignmentMenu =
+      locatorComponentToolbar(page).getByLabel('alignment-menu');
+
+    const textAlignBtn = alignmentMenu.getByRole('button', {
       name: 'Alignment',
     });
     await textAlignBtn.click();
 
-    await page
-      .locator('edgeless-align-panel')
-      .getByRole('button', { name: 'Left' })
-      .click();
+    await alignmentMenu.getByRole('button', { name: 'Left' }).click();
 
     // creates an edgeless-text
     await page.mouse.dblclick(rect.start.x + 80, rect.start.y + 20);

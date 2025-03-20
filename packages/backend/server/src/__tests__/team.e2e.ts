@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 
-import { getCurrentMailMessageCount } from '@affine-test/kit/utils/cloud';
 import { User, WorkspaceMemberStatus } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
@@ -619,12 +618,9 @@ test('should be able to invite by link', async t => {
 test('should be able to send mails', async t => {
   const { app } = t.context;
   const { inviteBatch } = await init(app, 5);
-  const primitiveMailCount = await getCurrentMailMessageCount();
 
-  {
-    await inviteBatch(['m3@affine.pro', 'm4@affine.pro'], true);
-    t.is(await getCurrentMailMessageCount(), primitiveMailCount + 2);
-  }
+  await inviteBatch(['m3@affine.pro', 'm4@affine.pro'], true);
+  t.is(app.mails.count('MemberInvitation'), 2);
 });
 
 test('should be able to emit events', async t => {

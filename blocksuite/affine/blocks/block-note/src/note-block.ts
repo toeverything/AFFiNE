@@ -2,12 +2,7 @@ import type { NoteBlockModel } from '@blocksuite/affine-model';
 import { BlockComponent } from '@blocksuite/block-std';
 import { css, html } from 'lit';
 
-import type { NoteBlockService } from './note-service.js';
-
-export class NoteBlockComponent extends BlockComponent<
-  NoteBlockModel,
-  NoteBlockService
-> {
+export class NoteBlockComponent extends BlockComponent<NoteBlockModel> {
   static override styles = css`
     .affine-note-block-container {
       display: flow-root;

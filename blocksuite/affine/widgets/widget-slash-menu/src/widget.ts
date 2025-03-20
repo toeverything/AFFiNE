@@ -1,11 +1,9 @@
-import {
-  type AffineInlineEditor,
-  getInlineEditorByModel,
-} from '@blocksuite/affine-rich-text';
+import { getInlineEditorByModel } from '@blocksuite/affine-rich-text';
+import type { AffineInlineEditor } from '@blocksuite/affine-shared/types';
 import type { UIEventStateContext } from '@blocksuite/block-std';
 import { TextSelection, WidgetComponent } from '@blocksuite/block-std';
+import { InlineEditor } from '@blocksuite/block-std/inline';
 import { DisposableGroup } from '@blocksuite/global/disposable';
-import { InlineEditor } from '@blocksuite/inline';
 import debounce from 'lodash-es/debounce';
 
 import { AFFINE_SLASH_MENU_TRIGGER_KEY } from './consts';
@@ -39,10 +37,7 @@ const showSlashMenu = debounce(
       disposables.dispose()
     );
 
-    const inlineEditor = getInlineEditorByModel(
-      context.std.host,
-      context.model
-    );
+    const inlineEditor = getInlineEditorByModel(context.std, context.model);
     if (!inlineEditor) return;
     const slashMenu = new SlashMenu(inlineEditor, abortController);
     disposables.add(() => slashMenu.remove());
@@ -84,7 +79,7 @@ export class AffineSlashMenuWidget extends WidgetComponent {
     const model = this.host.doc.getBlock(textSelection.blockId)?.model;
     if (!model) return;
 
-    return getInlineEditorByModel(this.host, model);
+    return getInlineEditorByModel(this.std, model);
   };
 
   private readonly _handleInput = (
@@ -105,7 +100,7 @@ export class AffineSlashMenuWidget extends WidgetComponent {
       }
     };
 
-    if (this.block.model.flavour !== 'affine:page') {
+    if (this.block?.model.flavour !== 'affine:page') {
       console.error('SlashMenuWidget should be used in RootBlock');
       return;
     }

@@ -19,10 +19,8 @@ import {
   type TelemetryEventMap,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import {
-  type BlockComponent,
-  RANGE_SYNC_EXCLUDE_ATTR,
-} from '@blocksuite/block-std';
+import { type BlockComponent } from '@blocksuite/block-std';
+import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/block-std/inline';
 import {
   createRecordDetail,
   createUniComponentFromWebComponent,

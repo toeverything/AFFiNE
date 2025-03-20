@@ -1,22 +1,15 @@
-import { LifeCycleWatcher } from '@blocksuite/affine/block-std';
 import {
-  ParagraphBlockService,
+  ParagraphBlockConfigExtension,
   ParagraphBlockSpec,
 } from '@blocksuite/affine/blocks/paragraph';
 import type { ExtensionType } from '@blocksuite/affine/store';
 
-class AIParagraphBlockWatcher extends LifeCycleWatcher {
-  static override key = 'ai-paragraph-block-watcher';
-
-  override mounted() {
-    super.mounted();
-    const service = this.std.get(ParagraphBlockService);
-    service.placeholderGenerator = model => {
-      if (model.props.type === 'text') {
-        return "Type '/' for commands, 'space' for AI";
-      }
-
+export const AIParagraphBlockSpec: ExtensionType[] = [
+  ...ParagraphBlockSpec,
+  ParagraphBlockConfigExtension({
+    getPlaceholder: model => {
       const placeholders = {
+        text: "Type '/' for commands, 'space' for AI",
         h1: 'Heading 1',
         h2: 'Heading 2',
         h3: 'Heading 3',
@@ -26,11 +19,6 @@ class AIParagraphBlockWatcher extends LifeCycleWatcher {
         quote: '',
       };
       return placeholders[model.props.type];
-    };
-  }
-}
-
-export const AIParagraphBlockSpec: ExtensionType[] = [
-  ...ParagraphBlockSpec,
-  AIParagraphBlockWatcher,
+    },
+  }),
 ];

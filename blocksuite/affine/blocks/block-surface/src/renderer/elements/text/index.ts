@@ -1,5 +1,5 @@
 import { DefaultTheme, type TextElementModel } from '@blocksuite/affine-model';
-import { deltaInsertsToChunks } from '@blocksuite/inline';
+import { deltaInsertsToChunks } from '@blocksuite/block-std/inline';
 
 import type { CanvasRenderer } from '../../canvas-renderer.js';
 import {

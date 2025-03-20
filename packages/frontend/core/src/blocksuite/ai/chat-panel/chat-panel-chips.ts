@@ -11,7 +11,7 @@ import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { AIProvider } from '../provider';
-import type { DocDisplayConfig, DocSearchMenuConfig } from './chat-config';
+import type { DocDisplayConfig, SearchMenuConfig } from './chat-config';
 import type {
   ChatChip,
   ChatContextValue,
@@ -75,7 +75,7 @@ export class ChatPanelChips extends WithDisposable(ShadowlessElement) {
   accessor docDisplayConfig!: DocDisplayConfig;
 
   @property({ attribute: false })
-  accessor docSearchMenuConfig!: DocSearchMenuConfig;
+  accessor searchMenuConfig!: SearchMenuConfig;
 
   @query('.add-button')
   accessor addButton!: HTMLDivElement;
@@ -158,7 +158,7 @@ export class ChatPanelChips extends WithDisposable(ShadowlessElement) {
       template: html`
         <chat-panel-add-popover
           .addChip=${this._addChip}
-          .docSearchMenuConfig=${this.docSearchMenuConfig}
+          .searchMenuConfig=${this.searchMenuConfig}
           .abortController=${this._abortController}
         ></chat-panel-add-popover>
       `,

@@ -159,8 +159,8 @@ export class UnusedBlobs extends Entity {
       return null;
     }
 
-    const url = URL.createObjectURL(new Blob([blob]));
     const mime = record.mime || fileType?.mime || 'unknown';
+    const url = URL.createObjectURL(new Blob([blob], { type: mime }));
     // todo(@pengx17): the following may not be sufficient
     const extension = fileType?.ext;
     const type = extension ?? (mime?.startsWith('text/') ? 'txt' : 'unknown');

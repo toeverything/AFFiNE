@@ -63,9 +63,7 @@ export class AffineScrollAnchoringWidget extends WidgetComponent {
 
   anchorBounds$ = signal<Bound | null>(null);
 
-  highlighted$ = computed(() =>
-    this.service.selectionManager.find(HighlightSelection)
-  );
+  highlighted$ = computed(() => this.std.selection.find(HighlightSelection));
 
   #getBoundsInEdgeless() {
     const controller = this.std.get(GfxControllerIdentifier);

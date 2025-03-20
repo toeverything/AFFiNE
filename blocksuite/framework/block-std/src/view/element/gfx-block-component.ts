@@ -4,6 +4,10 @@ import { computed } from '@preact/signals-core';
 import { nothing } from 'lit';
 
 import type { BlockService } from '../../extension/index.js';
+import type {
+  DragMoveContext,
+  GfxViewTransformInterface,
+} from '../../gfx/element-transform/view-transform.js';
 import { GfxControllerIdentifier } from '../../gfx/identifiers.js';
 import type { GfxBlockElementModel } from '../../gfx/index.js';
 import { SurfaceSelection } from '../../selection/index.js';
@@ -47,10 +51,13 @@ function handleGfxConnection(instance: GfxBlockComponent) {
 }
 
 export abstract class GfxBlockComponent<
-  Model extends GfxBlockElementModel = GfxBlockElementModel,
-  Service extends BlockService = BlockService,
-  WidgetName extends string = string,
-> extends BlockComponent<Model, Service, WidgetName> {
+    Model extends GfxBlockElementModel = GfxBlockElementModel,
+    Service extends BlockService = BlockService,
+    WidgetName extends string = string,
+  >
+  extends BlockComponent<Model, Service, WidgetName>
+  implements GfxViewTransformInterface
+{
   [GfxElementSymbol] = true;
 
   get gfx() {
@@ -61,6 +68,22 @@ export abstract class GfxBlockComponent<
     super.connectedCallback();
     handleGfxConnection(this);
   }
+
+  onDragMove = ({ dx, dy, currentBound }: DragMoveContext) => {
+    this.model.xywh = currentBound.moveDelta(dx, dy).serialize();
+  };
+
+  onDragStart() {
+    this.model.stash('xywh');
+  }
+
+  onDragEnd() {
+    this.model.pop('xywh');
+  }
+
+  onRotate() {}
+
+  onResize() {}
 
   getCSSTransform() {
     const viewport = this.gfx.viewport;
@@ -150,6 +173,22 @@ export function toGfxBlockComponent<
       if (!selection) return false;
       return selection.is(SurfaceSelection);
     });
+
+    onDragMove({ dx, dy, currentBound }: DragMoveContext) {
+      this.model.xywh = currentBound.moveDelta(dx, dy).serialize();
+    }
+
+    onDragStart() {
+      this.model.stash('xywh');
+    }
+
+    onDragEnd() {
+      this.model.pop('xywh');
+    }
+
+    onRotate() {}
+
+    onResize() {}
 
     get gfx() {
       return this.std.get(GfxControllerIdentifier);

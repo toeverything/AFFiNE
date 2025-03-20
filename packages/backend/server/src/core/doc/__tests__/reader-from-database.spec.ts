@@ -251,4 +251,22 @@ test('should get workspace content with custom avatar', async t => {
     avatarKey,
     avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/${avatarKey}`,
   });
+  // should save to database
+  const workspace2 = await t.context.models.workspace.get(workspace.id);
+  t.truthy(workspace2);
+  t.is(workspace2!.name, 'Test Workspace');
+  t.is(workspace2!.avatarKey, avatarKey);
+
+  // read from database
+  await t.context.models.workspace.update(workspace.id, {
+    name: 'Test Workspace 2',
+  });
+  const workspaceContent2 = await docReader.getWorkspaceContent(workspace.id);
+  t.truthy(workspaceContent2);
+  t.deepEqual(workspaceContent2, {
+    id: workspace.id,
+    name: 'Test Workspace 2',
+    avatarKey,
+    avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/${avatarKey}`,
+  });
 });

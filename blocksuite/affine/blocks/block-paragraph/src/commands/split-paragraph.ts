@@ -15,7 +15,7 @@ export const splitParagraphCommand: Command<
   }
 > = (ctx, next) => {
   const { std } = ctx;
-  const { store, host, selection } = std;
+  const { store, selection } = std;
   let blockId = ctx.blockId;
   if (!blockId) {
     const text = selection.find(TextSelection);
@@ -26,7 +26,7 @@ export const splitParagraphCommand: Command<
   const model = store.getBlock(blockId)?.model;
   if (!model || !matchModels(model, [ParagraphBlockModel])) return;
 
-  const inlineEditor = getInlineEditorByModel(host, model);
+  const inlineEditor = getInlineEditorByModel(std, model);
   const range = inlineEditor?.getInlineRange();
   if (!range) return;
 

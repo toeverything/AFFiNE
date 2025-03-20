@@ -1,0 +1,45 @@
+{
+  "name": "@blocksuite/affine-inline-reference",
+  "description": "Inline reference for BlockSuite.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "sideEffects": false,
+  "keywords": [],
+  "author": "toeverything",
+  "license": "MIT",
+  "dependencies": {
+    "@blocksuite/affine-components": "workspace:*",
+    "@blocksuite/affine-model": "workspace:*",
+    "@blocksuite/affine-shared": "workspace:*",
+    "@blocksuite/block-std": "workspace:*",
+    "@blocksuite/global": "workspace:*",
+    "@blocksuite/icons": "^2.2.6",
+    "@blocksuite/store": "workspace:*",
+    "@floating-ui/dom": "^1.6.13",
+    "@lit/context": "^1.1.2",
+    "@preact/signals-core": "^1.8.0",
+    "@toeverything/theme": "^1.1.12",
+    "@types/lodash-es": "^4.17.12",
+    "collapse-white-space": "^2.1.0",
+    "date-fns": "^4.0.0",
+    "lit": "^3.2.0",
+    "lit-html": "^3.2.1",
+    "lodash-es": "^4.17.21",
+    "rxjs": "^7.8.1",
+    "yjs": "^13.6.21",
+    "zod": "^3.23.8"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./effects": "./src/effects.ts"
+  },
+  "files": [
+    "src",
+    "dist",
+    "!src/__tests__",
+    "!dist/__tests__"
+  ],
+  "version": "0.20.0"
+}

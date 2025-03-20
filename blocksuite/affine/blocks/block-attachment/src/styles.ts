@@ -136,16 +136,4 @@ export const styles = css`
     width: 100%;
     height: 100%;
   }
-
-  .affine-attachment-iframe-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .affine-attachment-iframe-overlay.hide {
-    display: none;
-  }
 `;

@@ -33,6 +33,9 @@ export class EdgelessDraggingAreaRectWidget extends WidgetComponent<
   `;
 
   override render() {
+    if (!this.block) {
+      return nothing;
+    }
     const rect = this.block.gfx.tool.draggingViewArea$.value;
     const tool = this.block.gfx.tool.currentTool$.value;
 

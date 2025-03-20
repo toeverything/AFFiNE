@@ -1,6 +1,6 @@
 import type {
-  Cell,
-  Column,
+  CellDataType,
+  ColumnDataType,
   ColumnUpdater,
   DatabaseBlockModel,
   ViewBasicDataType,
@@ -15,7 +15,7 @@ import type { BlockModel } from '@blocksuite/store';
 export function addProperty(
   model: DatabaseBlockModel,
   position: InsertToPosition,
-  column: Omit<Column, 'id'> & {
+  column: Omit<ColumnDataType, 'id'> & {
     id?: string;
   }
 ): string {
@@ -24,7 +24,7 @@ export function addProperty(
     return id;
   }
   model.doc.transact(() => {
-    const col: Column = {
+    const col: ColumnDataType = {
       ...column,
       id,
     };
@@ -39,8 +39,8 @@ export function addProperty(
 
 export function copyCellsByProperty(
   model: DatabaseBlockModel,
-  fromId: Column['id'],
-  toId: Column['id']
+  fromId: ColumnDataType['id'],
+  toId: ColumnDataType['id']
 ) {
   model.doc.transact(() => {
     Object.keys(model.props.cells).forEach(rowId => {
@@ -57,7 +57,7 @@ export function copyCellsByProperty(
 
 export function deleteColumn(
   model: DatabaseBlockModel,
-  columnId: Column['id']
+  columnId: ColumnDataType['id']
 ) {
   const index = model.props.columns.findIndex(v => v.id === columnId);
   if (index < 0) return;
@@ -101,8 +101,8 @@ export function duplicateView(model: DatabaseBlockModel, id: string): string {
 export function getCell(
   model: DatabaseBlockModel,
   rowId: BlockModel['id'],
-  columnId: Column['id']
-): Cell | null {
+  columnId: ColumnDataType['id']
+): CellDataType | null {
   if (columnId === 'title') {
     return {
       columnId: 'title',
@@ -121,8 +121,8 @@ export function getCell(
 
 export function getProperty(
   model: DatabaseBlockModel,
-  id: Column['id']
-): Column | undefined {
+  id: ColumnDataType['id']
+): ColumnDataType | undefined {
   return model.props.columns.find(v => v.id === id);
 }
 
@@ -143,7 +143,7 @@ export function moveViewTo(
 export function updateCell(
   model: DatabaseBlockModel,
   rowId: string,
-  cell: Cell
+  cell: CellDataType
 ) {
   model.doc.transact(() => {
     const columnId = cell.columnId;

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
-import { NotificationNotFound, PaginationInput } from '../../base';
+import { NotificationNotFound, PaginationInput, URLHelper } from '../../base';
 import {
   InvitationNotificationCreate,
   MentionNotification,
@@ -11,7 +11,9 @@ import {
   UnionNotificationBody,
 } from '../../models';
 import { DocReader } from '../doc';
+import { Mailer } from '../mail';
 import { WorkspaceBlobStorage } from '../storage';
+import { generateDocPath } from '../utils/doc';
 
 @Injectable()
 export class NotificationService {
@@ -20,7 +22,9 @@ export class NotificationService {
   constructor(
     private readonly models: Models,
     private readonly docReader: DocReader,
-    private readonly workspaceBlobStorage: WorkspaceBlobStorage
+    private readonly workspaceBlobStorage: WorkspaceBlobStorage,
+    private readonly mailer: Mailer,
+    private readonly url: URLHelper
   ) {}
 
   async cleanExpiredNotifications() {
@@ -28,7 +32,48 @@ export class NotificationService {
   }
 
   async createMention(input: MentionNotificationCreate) {
-    return await this.models.notification.createMention(input);
+    const notification = await this.models.notification.createMention(input);
+    await this.sendMentionEmail(input);
+    return notification;
+  }
+
+  private async sendMentionEmail(input: MentionNotificationCreate) {
+    const userSetting = await this.models.settings.get(input.userId);
+    if (!userSetting.receiveMentionEmail) {
+      return;
+    }
+    const receiver = await this.models.user.getWorkspaceUser(input.userId);
+    if (!receiver) {
+      return;
+    }
+    const doc = await this.models.doc.getMeta(
+      input.body.workspaceId,
+      input.body.doc.id
+    );
+    const title = doc?.title ?? input.body.doc.title;
+    const url = this.url.link(
+      generateDocPath({
+        workspaceId: input.body.workspaceId,
+        docId: input.body.doc.id,
+        mode: input.body.doc.mode,
+        blockId: input.body.doc.blockId,
+        elementId: input.body.doc.elementId,
+      })
+    );
+    await this.mailer.send({
+      name: 'Mention',
+      to: receiver.email,
+      props: {
+        user: {
+          $$userId: input.body.createdByUserId,
+        },
+        doc: {
+          title,
+          url,
+        },
+      },
+    });
+    this.logger.log(`Mention email sent to user ${receiver.id}`);
   }
 
   async createInvitation(input: InvitationNotificationCreate) {
@@ -74,18 +119,7 @@ export class NotificationService {
   }
 
   private async ensureWorkspaceContentExists(workspaceId: string) {
-    const workspace = await this.models.workspace.get(workspaceId);
-    if (!workspace || workspace.name) {
-      return;
-    }
-    const content = await this.docReader.getWorkspaceContent(workspaceId);
-    if (!content?.name) {
-      return;
-    }
-    await this.models.workspace.update(workspaceId, {
-      name: content.name,
-      avatarKey: content.avatarKey,
-    });
+    await this.docReader.getWorkspaceContent(workspaceId);
   }
 
   async markAsRead(userId: string, notificationId: string) {

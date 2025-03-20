@@ -34,30 +34,133 @@ export type StoreOptions = {
   extensions?: ExtensionType[];
 };
 
-export type BlockUpdatedPayload =
-  | {
-      type: 'add';
-      id: string;
-      isLocal: boolean;
-      init: boolean;
-      flavour: string;
-      model: BlockModel;
-    }
-  | {
-      type: 'delete';
-      id: string;
-      isLocal: boolean;
-      flavour: string;
-      parent: string;
-      model: BlockModel;
-    }
-  | {
-      type: 'update';
-      id: string;
-      isLocal: boolean;
-      flavour: string;
-      props: { key: string };
-    };
+type StoreBlockAddedPayload = {
+  /**
+   * The type of the event.
+   */
+  type: 'add';
+  /**
+   * The id of the block.
+   */
+  id: string;
+  /**
+   * Whether the event is triggered by local changes.
+   */
+  isLocal: boolean;
+  /**
+   * The flavour of the block.
+   */
+  flavour: string;
+  /**
+   * The model of the block.
+   */
+  model: BlockModel;
+  /**
+   * @internal
+   * Whether the event is triggered by initialization.
+   * FIXME: This seems not working as expected now.
+   */
+  init: boolean;
+};
+
+type StoreBlockDeletedPayload = {
+  /**
+   * The type of the event.
+   */
+  type: 'delete';
+  /**
+   * The id of the block.
+   */
+  id: string;
+  /**
+   * Whether the event is triggered by local changes.
+   */
+  isLocal: boolean;
+  /**
+   * The flavour of the block.
+   */
+  flavour: string;
+  /**
+   * The parent id of the block.
+   */
+  parent: string;
+  /**
+   * The model of the block.
+   */
+  model: BlockModel;
+};
+
+type StoreBlockUpdatedPayload = {
+  /**
+   * The type of the event.
+   */
+  type: 'update';
+  /**
+   * The id of the block.
+   */
+  id: string;
+  /**
+   * Whether the event is triggered by local changes.
+   */
+  isLocal: boolean;
+  /**
+   * The flavour of the block.
+   */
+  flavour: string;
+  /**
+   * The changed props of the block.
+   */
+  props: { key: string };
+};
+
+type StoreBlockUpdatedPayloads =
+  | StoreBlockAddedPayload
+  | StoreBlockDeletedPayload
+  | StoreBlockUpdatedPayload;
+
+/**
+ * Slots for receiving events from the store.
+ * All events are rxjs Subjects, you can subscribe to them like this:
+ *
+ * ```ts
+ * store.slots.ready.subscribe(() => {
+ *   console.log('store is ready');
+ * });
+ * ```
+ *
+ * You can also use rxjs operators to handle the events.
+ *
+ * @interface
+ * @category Store
+ */
+export type StoreSlots = Doc['slots'] & {
+  /**
+   * This fires after `doc.load` is called.
+   * The Y.Doc is fully loaded and ready to use.
+   */
+  ready: Subject<void>;
+  /**
+   * This fires when the root block is added via API call or has just been initialized from existing ydoc.
+   * useful for internal block UI components to start subscribing following up events.
+   * Note that at this moment, the whole block tree may not be fully initialized yet.
+   */
+  rootAdded: Subject<string>;
+  /**
+   * This fires when the root block is deleted via API call or has just been removed from existing ydoc.
+   * In most cases, you don't need to subscribe to this event.
+   */
+  rootDeleted: Subject<string>;
+  /**
+   * This fires when a block is updated via API call or has just been updated from existing ydoc.
+   *
+   * The payload can have three types:
+   * - add: When a new block is added
+   * - delete: When a block is removed
+   * - update: When a block's properties are modified
+   *
+   */
+  blockUpdated: Subject<StoreBlockUpdatedPayloads>;
+};
 
 const internalExtensions = [StoreSelectionExtension];
 
@@ -107,28 +210,20 @@ export class Store {
   private readonly _schema: Schema;
 
   /**
-   * Slots for receiving events from the store.
+   * Get the id of the store.
    *
    * @category Store Lifecycle
    */
-  readonly slots: Doc['slots'] & {
-    /** This is always triggered after `doc.load` is called. */
-    ready: Subject<void>;
-    /**
-     * This fires when the root block is added via API call or has just been initialized from existing ydoc.
-     * useful for internal block UI components to start subscribing following up events.
-     * Note that at this moment, the whole block tree may not be fully initialized yet.
-     */
-    rootAdded: Subject<string>;
-    /**
-     * This fires when the root block is deleted via API call or has just been removed from existing ydoc.
-     */
-    rootDeleted: Subject<string>;
-    /**
-     * This fires when a block is updated via API call or has just been updated from existing ydoc.
-     */
-    blockUpdated: Subject<BlockUpdatedPayload>;
-  };
+  get id() {
+    return this._doc.id;
+  }
+
+  /**
+   * {@inheritDoc StoreSlots}
+   *
+   * @category Store Lifecycle
+   */
+  readonly slots: StoreSlots;
 
   private get _yBlocks() {
     return this._doc.yBlocks;
@@ -143,6 +238,8 @@ export class Store {
 
   /**
    * Get the di provider for current store.
+   *
+   * @category Extension
    */
   get provider() {
     return this._provider;
@@ -178,6 +275,11 @@ export class Store {
     return Object.values(this._blocks.peek()).length;
   }
 
+  /**
+   * Check if the store can redo
+   *
+   * @category History
+   */
   get canRedo() {
     if (this.readonly) {
       return false;
@@ -185,6 +287,11 @@ export class Store {
     return this._doc.canRedo;
   }
 
+  /**
+   * Check if the store can undo
+   *
+   * @category History
+   */
   get canUndo() {
     if (this.readonly) {
       return false;
@@ -192,93 +299,11 @@ export class Store {
     return this._doc.canUndo;
   }
 
-  get captureSync() {
-    return this._doc.captureSync.bind(this._doc);
-  }
-
-  get clear() {
-    return this._doc.clear.bind(this._doc);
-  }
-
-  get workspace() {
-    return this._doc.workspace;
-  }
-
-  get history() {
-    return this._doc.history;
-  }
-
-  get id() {
-    return this._doc.id;
-  }
-
-  get isEmpty() {
-    return this._isEmpty.peek();
-  }
-
-  get isEmpty$() {
-    return this._isEmpty;
-  }
-
-  get loaded() {
-    return this._doc.loaded;
-  }
-
-  get meta() {
-    return this._doc.meta;
-  }
-
-  get readonly$() {
-    return this._readonly;
-  }
-
-  get readonly() {
-    return this._readonly.value === true;
-  }
-
-  set readonly(value: boolean) {
-    this._readonly.value = value;
-  }
-
-  get ready() {
-    return this._doc.ready;
-  }
-
-  get redo() {
-    if (this.readonly) {
-      return () => {
-        console.error('cannot undo in readonly mode');
-      };
-    }
-    return this._doc.redo.bind(this._doc);
-  }
-
-  get resetHistory() {
-    return this._doc.resetHistory.bind(this._doc);
-  }
-
-  get root() {
-    const rootId = this._crud.root;
-    if (!rootId) return null;
-    return this.getBlock(rootId)?.model ?? null;
-  }
-
-  get rootDoc() {
-    return this._doc.rootDoc;
-  }
-
-  get schema() {
-    return this._schema;
-  }
-
-  get spaceDoc() {
-    return this._doc.spaceDoc;
-  }
-
-  get transact() {
-    return this._doc.transact.bind(this._doc);
-  }
-
+  /**
+   * Undo the last transaction.
+   *
+   * @category History
+   */
   get undo() {
     if (this.readonly) {
       return () => {
@@ -288,12 +313,214 @@ export class Store {
     return this._doc.undo.bind(this._doc);
   }
 
+  /**
+   * Redo the last undone transaction.
+   *
+   * @category History
+   */
+  get redo() {
+    if (this.readonly) {
+      return () => {
+        console.error('cannot undo in readonly mode');
+      };
+    }
+    return this._doc.redo.bind(this._doc);
+  }
+
+  /**
+   * Reset the history of the store.
+   *
+   * @category History
+   */
+  get resetHistory() {
+    return this._doc.resetHistory.bind(this._doc);
+  }
+
+  /**
+   * Execute a transaction.
+   *
+   * @example
+   * ```ts
+   * store.transact(() => {
+   *   op1();
+   *   op2();
+   * });
+   * ```
+   *
+   * @category History
+   */
+  get transact() {
+    return this._doc.transact.bind(this._doc);
+  }
+
+  /**
+   * Execute a transaction without capturing the history.
+   *
+   * @example
+   * ```ts
+   * store.withoutTransact(() => {
+   *   op1();
+   *   op2();
+   * });
+   * ```
+   *
+   * @category History
+   */
   get withoutTransact() {
     return this._doc.withoutTransact.bind(this._doc);
   }
 
+  /**
+   * Force the following history to be captured into a new stack.
+   *
+   * @example
+   * ```ts
+   * op1();
+   * op2();
+   * store.captureSync();
+   * op3();
+   *
+   * store.undo(); // undo op3
+   * store.undo(); // undo op1, op2
+   * ```
+   *
+   * @category History
+   */
+  get captureSync() {
+    return this._doc.captureSync.bind(this._doc);
+  }
+
+  /**
+   * Get the {@link Workspace} instance for current store.
+   */
+  get workspace() {
+    return this._doc.workspace;
+  }
+
+  /**
+   * Get the {@link Y.UndoManager} instance for current store.
+   *
+   * @category History
+   */
+  get history() {
+    return this._doc.history;
+  }
+
+  /**
+   * Check if there are no blocks in the store.
+   *
+   * @category Block CRUD
+   */
+  get isEmpty() {
+    return this._isEmpty.peek();
+  }
+
+  /**
+   * Get the signal for the empty state of the store.
+   *
+   * @category Block CRUD
+   */
+  get isEmpty$() {
+    return this._isEmpty;
+  }
+
+  /**
+   * Check if the store is loaded.
+   *
+   * @category Store Lifecycle
+   */
+  get loaded() {
+    return this._doc.loaded;
+  }
+
+  /**
+   * Get the meta data of the store.
+   *
+   * @internal
+   */
+  get meta() {
+    return this._doc.meta;
+  }
+
+  /**
+   * Check if the store is readonly.
+   *
+   * @category Block CRUD
+   */
+  get readonly() {
+    return this._readonly.value === true;
+  }
+
+  /**
+   * Get the signal for the readonly state of the store.
+   *
+   * @category Block CRUD
+   */
+  get readonly$() {
+    return this._readonly;
+  }
+
+  /**
+   * Set the readonly state of the store.
+   *
+   * @category Block CRUD
+   */
+  set readonly(value: boolean) {
+    this._readonly.value = value;
+  }
+
+  /**
+   * Check if the store is ready.
+   * Which means the Y.Doc is loaded and the root block is added.
+   *
+   * @category Store Lifecycle
+   */
+  get ready() {
+    return this._doc.ready;
+  }
+
+  /**
+   * Get the root block of the store.
+   *
+   * @category Block CRUD
+   */
+  get root() {
+    const rootId = this._crud.root;
+    if (!rootId) return null;
+    return this.getBlock(rootId)?.model ?? null;
+  }
+
+  /**
+   * @internal
+   * Get the root Y.Doc of sub Y.Doc.
+   * In the current design, store is on a sub Y.Doc, and all sub docs have the same root Y.Doc.
+   */
+  get rootDoc() {
+    return this._doc.rootDoc;
+  }
+
+  /**
+   * Get the {@link Schema} instance of the store.
+   */
+  get schema() {
+    return this._schema;
+  }
+
+  /**
+   * @internal
+   * Get the Y.Doc instance of the store.
+   */
+  get spaceDoc() {
+    return this._doc.spaceDoc;
+  }
+
   private _isDisposed = false;
 
+  /**
+   * @internal
+   * In most cases, you don't need to use the constructor directly.
+   * The store is created by the {@link Doc} instance.
+   */
   constructor({ doc, readonly, query, provider, extensions }: StoreOptions) {
     this._doc = doc;
     this.slots = {
@@ -587,13 +814,10 @@ export class Store {
    *
    * @category Block CRUD
    */
-  updateBlock: {
-    <T extends Partial<BlockProps>>(model: BlockModel | string, props: T): void;
-    (model: BlockModel | string, callback: () => void): void;
-  } = (
+  updateBlock(
     modelOrId: BlockModel | string,
     callBackOrProps: (() => void) | Partial<BlockProps>
-  ) => {
+  ) {
     if (this.readonly) {
       console.error('cannot modify data in readonly mode');
       return;
@@ -657,7 +881,7 @@ export class Store {
       this._runQuery(block);
       return;
     });
-  };
+  }
 
   /**
    * Delete a block from the store
@@ -919,6 +1143,8 @@ export class Store {
    * ```ts
    * const extension = store.get(SomeExtension);
    * ```
+   *
+   * @category Extension
    */
   get get() {
     return this.provider.get.bind(this.provider);
@@ -934,6 +1160,8 @@ export class Store {
    * ```ts
    * const extension = store.getOptional(SomeExtension);
    * ```
+   *
+   * @category Extension
    */
   get getOptional() {
     return this.provider.getOptional.bind(this.provider);

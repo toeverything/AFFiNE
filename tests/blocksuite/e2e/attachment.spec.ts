@@ -329,7 +329,7 @@ test(`support dragging attachment block directly`, async ({
   );
 });
 
-test('press backspace after bookmark block can select bookmark block', async ({
+test('press backspace after attachment block can select attachment block', async ({
   page,
 }) => {
   await enterPlaygroundRoom(page);

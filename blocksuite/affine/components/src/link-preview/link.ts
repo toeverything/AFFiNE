@@ -1,17 +1,13 @@
 import { getHostName } from '@blocksuite/affine-shared/utils';
-import {
-  PropTypes,
-  requiredProperties,
-  ShadowlessElement,
-} from '@blocksuite/block-std';
-import { css } from 'lit';
+import { PropTypes, requiredProperties } from '@blocksuite/block-std';
+import { css, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { html } from 'lit-html';
 
 @requiredProperties({
   url: PropTypes.string,
 })
-export class LinkPreview extends ShadowlessElement {
+export class LinkPreview extends LitElement {
   static override styles = css`
     .affine-link-preview {
       display: flex;

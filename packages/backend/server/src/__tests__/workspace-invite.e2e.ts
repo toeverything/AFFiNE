@@ -1,12 +1,7 @@
-import {
-  getCurrentMailMessageCount,
-  getLatestMailMessage,
-} from '@affine-test/kit/utils/cloud';
 import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 
-import { MailService } from '../base/mailer';
 import { AuthService } from '../core/auth/service';
 import { Models } from '../models';
 import {
@@ -24,7 +19,6 @@ const test = ava as TestFn<{
   app: TestingApp;
   client: PrismaClient;
   auth: AuthService;
-  mail: MailService;
   models: Models;
 }>;
 
@@ -33,7 +27,6 @@ test.before(async t => {
   t.context.app = app;
   t.context.client = app.get(PrismaClient);
   t.context.auth = app.get(AuthService);
-  t.context.mail = app.get(MailService);
   t.context.models = app.get(Models);
 });
 
@@ -125,70 +118,31 @@ test('should invite a user by link', async t => {
 });
 
 test('should send email', async t => {
-  const { mail, app } = t.context;
-  if (mail.hasConfigured()) {
-    const u2 = await app.signupV1('u2@affine.pro');
-    await app.signupV1('u1@affine.pro');
+  const { app } = t.context;
+  const u2 = await app.signupV1('u2@affine.pro');
+  const u1 = await app.signupV1('u1@affine.pro');
 
-    const workspace = await createWorkspace(app);
-    const primitiveMailCount = await getCurrentMailMessageCount();
+  const workspace = await createWorkspace(app);
+  const invite = await inviteUser(app, workspace.id, u2.email, true);
 
-    const invite = await inviteUser(app, workspace.id, u2.email, true);
+  const invitationMail = app.mails.last('MemberInvitation');
 
-    const afterInviteMailCount = await getCurrentMailMessageCount();
-    t.is(
-      primitiveMailCount + 1,
-      afterInviteMailCount,
-      'failed to send invite email'
-    );
-    const inviteEmailContent = await getLatestMailMessage();
+  t.is(invitationMail.name, 'MemberInvitation');
+  t.is(invitationMail.to, u2.email);
 
-    t.not(
-      inviteEmailContent.To.find((item: any) => {
-        return item.Mailbox === 'u2';
-      }),
-      undefined,
-      'invite email address was incorrectly sent'
-    );
+  app.switchUser(u2.id);
+  await acceptInviteById(app, workspace.id, invite, true);
 
-    app.switchUser(u2.id);
-    const accept = await acceptInviteById(app, workspace.id, invite, true);
-    t.true(accept, 'failed to accept invite');
+  const acceptedMail = app.mails.last('MemberAccepted');
+  t.is(acceptedMail.to, u1.email);
+  t.is(acceptedMail.props.user.$$userId, u2.id);
 
-    const afterAcceptMailCount = await getCurrentMailMessageCount();
-    t.is(
-      afterInviteMailCount + 1,
-      afterAcceptMailCount,
-      'failed to send accepted email to owner'
-    );
-    const acceptEmailContent = await getLatestMailMessage();
-    t.not(
-      acceptEmailContent.To.find((item: any) => {
-        return item.Mailbox === 'u1';
-      }),
-      undefined,
-      'accept email address was incorrectly sent'
-    );
+  await leaveWorkspace(app, workspace.id, true);
 
-    await leaveWorkspace(app, workspace.id, true);
+  const leaveMail = app.mails.last('MemberLeave');
 
-    // TODO(@darkskygit): enable this after cluster event system is ready
-    // const afterLeaveMailCount = await getCurrentMailMessageCount();
-    // t.is(
-    //   afterAcceptMailCount + 1,
-    //   afterLeaveMailCount,
-    //   'failed to send leave email to owner'
-    // );
-    const leaveEmailContent = await getLatestMailMessage();
-    t.not(
-      leaveEmailContent.To.find((item: any) => {
-        return item.Mailbox === 'u1';
-      }),
-      undefined,
-      'leave email address was incorrectly sent'
-    );
-  }
-  t.pass();
+  t.is(leaveMail.to, u1.email);
+  t.is(leaveMail.props.user.$$userId, u2.id);
 });
 
 test('should support pagination for member', async t => {

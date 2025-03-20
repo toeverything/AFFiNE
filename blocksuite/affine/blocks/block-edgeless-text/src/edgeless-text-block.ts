@@ -1,10 +1,10 @@
 import { TextUtils } from '@blocksuite/affine-block-surface';
+import { formatBlockCommand } from '@blocksuite/affine-inline-preset';
 import {
   type EdgelessTextBlockModel,
   ListBlockModel,
   ParagraphBlockModel,
 } from '@blocksuite/affine-model';
-import { formatBlockCommand } from '@blocksuite/affine-rich-text';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { matchModels } from '@blocksuite/affine-shared/utils';
 import type { BlockComponent } from '@blocksuite/block-std';

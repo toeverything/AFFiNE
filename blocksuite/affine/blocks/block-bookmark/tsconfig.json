@@ -8,13 +8,13 @@
   "include": ["./src"],
   "references": [
     { "path": "../block-embed" },
+    { "path": "../block-surface" },
     { "path": "../../components" },
     { "path": "../../model" },
     { "path": "../../shared" },
     { "path": "../../widgets/widget-slash-menu" },
     { "path": "../../../framework/block-std" },
     { "path": "../../../framework/global" },
-    { "path": "../../../framework/inline" },
     { "path": "../../../framework/store" }
   ]
 }

@@ -11,9 +11,9 @@
     { "path": "../../components" },
     { "path": "../../model" },
     { "path": "../../shared" },
+    { "path": "../../widgets/widget-frame-title" },
     { "path": "../../../framework/block-std" },
     { "path": "../../../framework/global" },
-    { "path": "../../../framework/inline" },
     { "path": "../../../framework/store" }
   ]
 }

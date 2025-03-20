@@ -17,6 +17,8 @@ export interface RecordingStatus {
   bundleIdentifier: string;
   name: string;
   startTime: number;
+  duration: number;
+  isGlobal?: boolean;
 }
 
 export interface RecordingMetadata {
@@ -31,6 +33,7 @@ export interface RecordingMetadata {
   totalSamples: number;
   icon?: Uint8Array;
   mp3: string;
+  isGlobal?: boolean;
 }
 
 export interface TranscriptionMetadata {

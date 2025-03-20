@@ -6,7 +6,7 @@ import {
   type TextSelection,
 } from '@blocksuite/affine/block-std';
 import { defaultImageProxyMiddleware } from '@blocksuite/affine/blocks/image';
-import { deleteTextCommand } from '@blocksuite/affine/rich-text';
+import { deleteTextCommand } from '@blocksuite/affine/inlines/preset';
 import { isInsideEdgelessEditor } from '@blocksuite/affine/shared/utils';
 import { type BlockModel, Slice } from '@blocksuite/affine/store';
 

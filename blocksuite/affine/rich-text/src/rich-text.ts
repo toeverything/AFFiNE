@@ -1,14 +1,18 @@
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import type {
+  AffineInlineEditor,
+  AffineTextAttributes,
+} from '@blocksuite/affine-shared/types';
 import { ShadowlessElement } from '@blocksuite/block-std';
-import { WithDisposable } from '@blocksuite/global/lit';
 import {
   type AttributeRenderer,
-  type DeltaInsert,
   InlineEditor,
+  type InlineMarkdownMatch,
   type InlineRange,
   type InlineRangeProvider,
   type VLine,
-} from '@blocksuite/inline';
+} from '@blocksuite/block-std/inline';
+import { WithDisposable } from '@blocksuite/global/lit';
+import type { DeltaInsert } from '@blocksuite/store';
 import { Text } from '@blocksuite/store';
 import { effect, signal } from '@preact/signals-core';
 import { css, html, type TemplateResult } from 'lit';
@@ -17,9 +21,7 @@ import { classMap } from 'lit/directives/class-map.js';
 import * as Y from 'yjs';
 import { z } from 'zod';
 
-import type { InlineMarkdownMatch } from './extension/type.js';
 import { onVBeforeinput, onVCompositionEnd } from './hooks.js';
-import type { AffineInlineEditor } from './inline/index.js';
 
 interface RichTextStackItem {
   meta: Map<'richtext-v-range', InlineRange | null>;

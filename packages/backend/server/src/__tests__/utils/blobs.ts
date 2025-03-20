@@ -1,6 +1,7 @@
 import { type Blob } from '@prisma/client';
 
 import { TestingApp } from './testing-app';
+import { TEST_LOG_LEVEL } from './utils';
 
 export async function listBlobs(
   app: TestingApp,
@@ -73,5 +74,13 @@ export async function setBlob(
       `blob-${Math.random().toString(16).substring(2, 10)}.data`
     )
     .expect(200);
+
+  if (res.body.errors?.length) {
+    if (TEST_LOG_LEVEL !== 'fatal') {
+      // print the error stack when log level is not fatal, for better debugging
+      console.error('%o', res.body);
+    }
+    throw new Error(res.body.errors[0].message);
+  }
   return res.body.data.setBlob;
 }

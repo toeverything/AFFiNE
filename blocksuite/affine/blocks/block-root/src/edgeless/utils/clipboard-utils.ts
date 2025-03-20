@@ -1,5 +1,6 @@
 import {
   EdgelessFrameManager,
+  EdgelessFrameManagerIdentifier,
   isFrameBlock,
 } from '@blocksuite/affine-block-frame';
 import { isNoteBlock } from '@blocksuite/affine-block-surface';
@@ -13,6 +14,7 @@ import type {
   ShapeElementModel,
 } from '@blocksuite/affine-model';
 import { getElementsWithoutGroup } from '@blocksuite/affine-shared/utils';
+import type { BlockComponent } from '@blocksuite/block-std';
 import {
   generateKeyBetweenV2,
   type GfxModel,
@@ -99,7 +101,7 @@ type FrameSnapshot = BlockSnapshot & {
 
 export function createNewPresentationIndexes(
   raw: (SerializedElement | BlockSnapshot)[],
-  edgeless: EdgelessRootBlockComponent
+  edgeless: BlockComponent
 ) {
   const frames = raw
     .filter((block): block is FrameSnapshot => {
@@ -108,7 +110,7 @@ export function createNewPresentationIndexes(
     })
     .sort((a, b) => EdgelessFrameManager.framePresentationComparator(a, b));
 
-  const frameMgr = edgeless.service.frame;
+  const frameMgr = edgeless.std.get(EdgelessFrameManagerIdentifier);
   let before = frameMgr.generatePresentationIndex();
   const result = new Map<string, string>();
   frames.forEach(frame => {

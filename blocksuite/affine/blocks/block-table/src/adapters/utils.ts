@@ -10,7 +10,7 @@ import {
 } from '@blocksuite/affine-shared/adapters';
 import { HastUtils } from '@blocksuite/affine-shared/adapters';
 import { generateFractionalIndexingKeyBetween } from '@blocksuite/affine-shared/utils';
-import type { DeltaInsert } from '@blocksuite/inline';
+import type { DeltaInsert } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import type { Element } from 'hast';
 import type { Table as MarkdownTable } from 'mdast';

@@ -1,9 +1,12 @@
 import { DisposableGroup } from '@blocksuite/global/disposable';
 
 import { onSurfaceAdded } from '../../utils/gfx.js';
+import {
+  type GfxBlockComponent,
+  isGfxBlockComponent,
+} from '../../view/index.js';
 import type { GfxController } from '../controller.js';
 import { GfxExtension, GfxExtensionIdentifier } from '../extension.js';
-import { GfxBlockElementModel } from '../model/gfx-block-model.js';
 import type { GfxModel } from '../model/model.js';
 import type { GfxPrimitiveElementModel } from '../model/surface/element-model.js';
 import type { GfxLocalElementModel } from '../model/surface/local-element-model.js';
@@ -34,20 +37,22 @@ export class ViewManager extends GfxExtension {
     });
   }
 
-  get(model: GfxModel | GfxLocalElementModel | string) {
-    if (typeof model === 'string') {
-      if (this._viewMap.has(model)) {
-        return this._viewMap.get(model);
-      }
+  get(
+    model: GfxModel | GfxLocalElementModel | string
+  ): GfxElementModelView | GfxBlockComponent | null {
+    model = typeof model === 'string' ? model : model.id;
 
-      return this.std.view.getBlock(model) ?? null;
-    } else {
-      if (model instanceof GfxBlockElementModel) {
-        return this.std.view.getBlock(model.id) ?? null;
-      } else {
-        return this._viewMap.get(model.id) ?? null;
-      }
+    if (this._viewMap.has(model)) {
+      return this._viewMap.get(model)!;
     }
+
+    const blockView = this.std.view.getBlock(model);
+
+    if (blockView && isGfxBlockComponent(blockView)) {
+      return blockView;
+    }
+
+    return null;
   }
 
   override mounted(): void {

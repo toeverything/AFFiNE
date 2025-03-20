@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "vitest": "3.0.8"
+    "vitest": "3.0.9"
   },
   "exports": {
     "./automation": "./src/automation.ts",

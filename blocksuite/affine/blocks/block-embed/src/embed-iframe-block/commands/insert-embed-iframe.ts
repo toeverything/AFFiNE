@@ -2,6 +2,7 @@ import {
   EdgelessCRUDIdentifier,
   SurfaceBlockComponent,
 } from '@blocksuite/affine-block-surface';
+import { EmbedIframeService } from '@blocksuite/affine-shared/services';
 import {
   BlockSelection,
   type Command,
@@ -15,7 +16,6 @@ import {
   EMBED_IFRAME_DEFAULT_HEIGHT_IN_SURFACE,
   EMBED_IFRAME_DEFAULT_WIDTH_IN_SURFACE,
 } from '../consts';
-import { EmbedIframeService } from '../extension/embed-iframe-service';
 
 export const insertEmbedIframeCommand: Command<
   { url: string },

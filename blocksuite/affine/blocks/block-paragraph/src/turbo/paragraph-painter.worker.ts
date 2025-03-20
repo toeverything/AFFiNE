@@ -9,6 +9,7 @@ import { BlockLayoutPainterExtension } from '@blocksuite/affine-gfx-turbo-render
 interface SentenceLayout {
   text: string;
   rects: TextRect[];
+  fontSize: number;
 }
 
 export interface ParagraphLayout extends BlockLayout {
@@ -24,8 +25,7 @@ const meta = {
 
 const debugSentenceBorder = false;
 
-function getBaseline() {
-  const fontSize = 15;
+function getBaseline(fontSize: number) {
   const lineHeight = 1.2 * fontSize;
 
   const A = fontSize * (meta.hHeadAscent / meta.emSize); // ascent
@@ -89,12 +89,14 @@ class ParagraphLayoutPainter implements BlockLayoutPainter {
 
     if (!isParagraphLayout(layout)) return; // cast to ParagraphLayout
 
-    const fontSize = 15;
-    ctx.font = `300 ${fontSize}px Inter`;
-    const baselineY = getBaseline();
     const renderedPositions = new Set<string>();
 
     layout.sentences.forEach(sentence => {
+      const fontSize = sentence.fontSize;
+      const baselineY = getBaseline(fontSize);
+      if (fontSize !== 15) return; // TODO: fine-tune for heading font sizes
+
+      ctx.font = `${fontSize}px Inter`;
       ctx.strokeStyle = 'yellow';
       sentence.rects.forEach(textRect => {
         const x = textRect.rect.x - layoutBaseX;

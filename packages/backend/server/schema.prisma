@@ -37,6 +37,7 @@ model User {
   updatedSnapshot       Snapshot[]             @relation("updatedSnapshot")
   createdUpdate         Update[]               @relation("createdUpdate")
   createdHistory        SnapshotHistory[]      @relation("createdHistory")
+  createdAiJobs         AiJobs[]               @relation("createdAiJobs")
   // receive notifications
   notifications         Notification[]         @relation("user_notifications")
   settings              Settings?
@@ -471,8 +472,43 @@ model AiWorkspaceEmbedding {
   snapshot Snapshot @relation(fields: [workspaceId, docId], references: [workspaceId, id], onDelete: Cascade)
 
   @@id([workspaceId, docId])
+  @@unique([workspaceId, docId, chunk])
   @@index([embedding], map: "ai_workspace_embeddings_idx")
   @@map("ai_workspace_embeddings")
+}
+
+enum AiJobStatus {
+  pending
+  running
+  finished
+  claimed
+  failed
+}
+
+enum AiJobType {
+  transcription
+}
+
+model AiJobs {
+  id          String      @id @default(uuid()) @db.VarChar
+  workspaceId String      @map("workspace_id") @db.VarChar
+  blobId      String      @map("blob_id") @db.VarChar
+  createdBy   String?     @map("created_by") @db.VarChar
+  // job type, like "transcription"
+  type        AiJobType
+  status      AiJobStatus @default(pending)
+  // job result
+  payload     Json        @db.Json
+
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(3)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(3)
+
+  // will delete creator record if creator's account is deleted
+  createdByUser User? @relation(name: "createdAiJobs", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, blobId])
+  @@index([createdBy, workspaceId, blobId])
+  @@map("ai_jobs")
 }
 
 model DataMigration {
@@ -709,12 +745,12 @@ model Notification {
 }
 
 model Settings {
-  userId       String     @id @map("user_id") @db.VarChar
-  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
-  payload      Json       @db.JsonB
+  userId    String   @id @map("user_id") @db.VarChar
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  payload   Json     @db.JsonB
 
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("settings")
 }

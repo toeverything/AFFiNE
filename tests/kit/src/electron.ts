@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { setTimeout } from 'node:timers/promises';
 
 import { Package } from '@affine-tools/utils/workspace';
 import { expect, type Page } from '@playwright/test';
@@ -71,7 +72,7 @@ export const test = base.extend<{
           return electronApp.windows().length > 1;
         },
         {
-          timeout: 50000,
+          timeout: 10000,
         }
       )
       .toBeTruthy();
@@ -83,7 +84,7 @@ export const test = base.extend<{
           return !!page;
         },
         {
-          timeout: 50000,
+          timeout: 10000,
         }
       )
       .toBeTruthy();
@@ -147,12 +148,25 @@ export const test = base.extend<{
       });
 
       await use(electronApp);
-      const pages = electronApp.windows();
-      for (const page of pages) {
-        await page.close();
-      }
-      await electronApp.close();
-      await removeWithRetry(clonedDist);
+      const cleanup = async () => {
+        const pages = electronApp.windows();
+        for (const page of pages) {
+          if (page.isClosed()) {
+            continue;
+          }
+          await page.close();
+        }
+        await electronApp.close();
+        await removeWithRetry(clonedDist);
+      };
+      await Promise.race([
+        // cleanup may stuck and fail the test, but it should be fine.
+        cleanup(),
+        setTimeout(10000).then(() => {
+          // kill the electron app if it is not closed after 10 seconds
+          electronApp.process().kill();
+        }),
+      ]);
     } catch (error) {
       console.log(error);
     }

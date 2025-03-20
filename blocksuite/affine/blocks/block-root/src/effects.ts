@@ -9,11 +9,8 @@ import {
   NOTE_SLICER_WIDGET,
   NoteSlicer,
 } from './edgeless/components/note-slicer/index.js';
-import { EdgelessAlignPanel } from './edgeless/components/panel/align-panel.js';
-import { CardStylePanel } from './edgeless/components/panel/card-style-panel.js';
 import { EdgelessFontFamilyPanel } from './edgeless/components/panel/font-family-panel.js';
 import { EdgelessFontWeightAndStylePanel } from './edgeless/components/panel/font-weight-and-style-panel.js';
-import { EdgelessLineWidthPanel } from './edgeless/components/panel/line-width-panel.js';
 import { NoteDisplayModePanel } from './edgeless/components/panel/note-display-mode-panel.js';
 import { EdgelessNoteShadowPanel } from './edgeless/components/panel/note-shadow-panel.js';
 import { EdgelessScalePanel } from './edgeless/components/panel/scale-panel.js';
@@ -30,7 +27,6 @@ import {
   EdgelessSelectedRectWidget,
 } from './edgeless/components/rects/edgeless-selected-rect.js';
 import { EdgelessConnectorLabelEditor } from './edgeless/components/text/edgeless-connector-label-editor.js';
-import { EdgelessFrameTitleEditor } from './edgeless/components/text/edgeless-frame-title-editor.js';
 import { EdgelessGroupTitleEditor } from './edgeless/components/text/edgeless-group-title-editor.js';
 import { EdgelessShapeTextEditor } from './edgeless/components/text/edgeless-shape-text-editor.js';
 import { EdgelessBrushMenu } from './edgeless/components/toolbar/brush/brush-menu.js';
@@ -85,7 +81,6 @@ import {
 } from './widgets/edgeless-zoom-toolbar/index.js';
 import { ZoomBarToggleButton } from './widgets/edgeless-zoom-toolbar/zoom-bar-toggle-button.js';
 import { EdgelessZoomToolbar } from './widgets/edgeless-zoom-toolbar/zoom-toolbar.js';
-import { effects as widgetEdgelessElementToolbarEffects } from './widgets/element-toolbar/effects.js';
 import { AffineImageToolbar } from './widgets/image-toolbar/components/image-toolbar.js';
 import { AFFINE_IMAGE_TOOLBAR_WIDGET } from './widgets/image-toolbar/index.js';
 import {
@@ -102,17 +97,12 @@ import {
   AffinePageDraggingAreaWidget,
 } from './widgets/page-dragging-area/page-dragging-area.js';
 import {
-  AFFINE_SURFACE_REF_TOOLBAR,
-  AffineSurfaceRefToolbar,
-} from './widgets/surface-ref-toolbar/surface-ref-toolbar.js';
-import {
   AFFINE_VIEWPORT_OVERLAY_WIDGET,
   AffineViewportOverlayWidget,
 } from './widgets/viewport-overlay/viewport-overlay.js';
 
 export function effects() {
   // Run other effects
-  widgetEdgelessElementToolbarEffects();
   widgetMobileToolbarEffects();
   widgetLinkedDocEffects();
 
@@ -156,7 +146,6 @@ function registerWidgets() {
     AFFINE_EDGELESS_ZOOM_TOOLBAR_WIDGET,
     AffineEdgelessZoomToolbarWidget
   );
-  customElements.define(AFFINE_SURFACE_REF_TOOLBAR, AffineSurfaceRefToolbar);
 }
 
 function registerEdgelessToolbarComponents() {
@@ -223,9 +212,6 @@ function registerEdgelessToolbarComponents() {
 }
 
 function registerEdgelessPanelComponents() {
-  customElements.define('edgeless-align-panel', EdgelessAlignPanel);
-  customElements.define('card-style-panel', CardStylePanel);
-  customElements.define('edgeless-line-width-panel', EdgelessLineWidthPanel);
   customElements.define(
     'edgeless-font-weight-and-style-panel',
     EdgelessFontWeightAndStylePanel
@@ -249,10 +235,6 @@ function registerEdgelessEditorComponents() {
   customElements.define(
     'edgeless-group-title-editor',
     EdgelessGroupTitleEditor
-  );
-  customElements.define(
-    'edgeless-frame-title-editor',
-    EdgelessFrameTitleEditor
   );
 }
 
@@ -321,11 +303,8 @@ declare global {
     'edgeless-toolbar-button': EdgelessToolbarButton;
     'edgeless-connector-handle': EdgelessConnectorHandle;
     'note-slicer': NoteSlicer;
-    'edgeless-align-panel': EdgelessAlignPanel;
-    'card-style-panel': CardStylePanel;
     'edgeless-font-family-panel': EdgelessFontFamilyPanel;
     'edgeless-font-weight-and-style-panel': EdgelessFontWeightAndStylePanel;
-    'edgeless-line-width-panel': EdgelessLineWidthPanel;
     'note-display-mode-panel': NoteDisplayModePanel;
     'edgeless-note-shadow-panel': EdgelessNoteShadowPanel;
     'edgeless-scale-panel': EdgelessScalePanel;
@@ -337,7 +316,6 @@ declare global {
     'edgeless-dragging-area-rect': EdgelessDraggingAreaRectWidget;
     'edgeless-selected-rect': EdgelessSelectedRectWidget;
     'edgeless-connector-label-editor': EdgelessConnectorLabelEditor;
-    'edgeless-frame-title-editor': EdgelessFrameTitleEditor;
     'edgeless-group-title-editor': EdgelessGroupTitleEditor;
     'edgeless-shape-text-editor': EdgelessShapeTextEditor;
     'edgeless-toolbar-widget': EdgelessToolbarWidget;

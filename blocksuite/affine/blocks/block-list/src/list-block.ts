@@ -3,11 +3,9 @@ import '@blocksuite/affine-shared/commands';
 import { CaptionedBlockComponent } from '@blocksuite/affine-components/caption';
 import { playCheckAnimation } from '@blocksuite/affine-components/icons';
 import { TOGGLE_BUTTON_PARENT_CLASS } from '@blocksuite/affine-components/toggle-button';
+import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
 import type { ListBlockModel } from '@blocksuite/affine-model';
-import {
-  DefaultInlineManagerExtension,
-  type RichText,
-} from '@blocksuite/affine-rich-text';
+import type { RichText } from '@blocksuite/affine-rich-text';
 import {
   BLOCK_CHILDREN_CONTAINER_PADDING_LEFT,
   NOTE_SELECTOR,
@@ -15,12 +13,11 @@ import {
 import { DocModeProvider } from '@blocksuite/affine-shared/services';
 import { getViewportElement } from '@blocksuite/affine-shared/utils';
 import type { BlockComponent } from '@blocksuite/block-std';
+import { BlockSelection, TextSelection } from '@blocksuite/block-std';
 import {
-  BlockSelection,
   getInlineRangeProvider,
-  TextSelection,
-} from '@blocksuite/block-std';
-import type { InlineRangeProvider } from '@blocksuite/inline';
+  type InlineRangeProvider,
+} from '@blocksuite/block-std/inline';
 import type { BaseSelection } from '@blocksuite/store';
 import { effect } from '@preact/signals-core';
 import { html, nothing, type TemplateResult } from 'lit';

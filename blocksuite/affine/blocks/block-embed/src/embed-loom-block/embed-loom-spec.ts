@@ -1,15 +1,10 @@
 import { EmbedLoomBlockSchema } from '@blocksuite/affine-model';
-import { ToolbarModuleExtension } from '@blocksuite/affine-shared/services';
 import { SlashMenuConfigExtension } from '@blocksuite/affine-widget-slash-menu';
-import {
-  BlockServiceIdentifier,
-  BlockViewExtension,
-  FlavourExtension,
-} from '@blocksuite/block-std';
+import { BlockViewExtension, FlavourExtension } from '@blocksuite/block-std';
 import type { ExtensionType } from '@blocksuite/store';
 import { literal } from 'lit/static-html.js';
 
-import { createBuiltinToolbarConfigForExternal } from '../configs/toolbar';
+import { createBuiltinToolbarConfigExtension } from '../configs/toolbar';
 import { EmbedLoomBlockAdapterExtensions } from './adapters/extension';
 import { embedLoomSlashMenuConfig } from './configs/slash-menu';
 import { EmbedLoomBlockComponent } from './embed-loom-block';
@@ -30,9 +25,6 @@ export const EmbedLoomBlockSpec: ExtensionType[] = [
   }),
   EmbedLoomBlockAdapterExtensions,
   EmbedLoomBlockOptionConfig,
-  ToolbarModuleExtension({
-    id: BlockServiceIdentifier(flavour),
-    config: createBuiltinToolbarConfigForExternal(EmbedLoomBlockComponent),
-  }),
+  createBuiltinToolbarConfigExtension(flavour, EmbedLoomBlockComponent),
   SlashMenuConfigExtension(flavour, embedLoomSlashMenuConfig),
 ].flat();

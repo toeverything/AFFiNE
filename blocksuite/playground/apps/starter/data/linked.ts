@@ -11,9 +11,9 @@ export const linked: InitFn = (collection: Workspace, id: string) => {
   const docCId = 'doc:linked-edgeless';
   const docC = collection.createDoc({ id: docCId });
 
-  docA.clear();
-  docB.clear();
-  docC.clear();
+  docA.doc.clear();
+  docB.doc.clear();
+  docC.doc.clear();
 
   docB.load(() => {
     const rootId = docB.addBlock('affine:page', {

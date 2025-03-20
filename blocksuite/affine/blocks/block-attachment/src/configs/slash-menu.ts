@@ -29,7 +29,8 @@ export const attachmentSlashMenuConfig: SlashMenuConfig = {
             std.host,
             [file],
             maxFileSize,
-            model
+            model,
+            'after'
           );
           if (model.text?.length === 0) {
             std.store.deleteBlock(model);
@@ -60,8 +61,7 @@ export const attachmentSlashMenuConfig: SlashMenuConfig = {
             [file],
             maxFileSize,
             model,
-            'after',
-            true
+            'after'
           );
           if (model.text?.length === 0) {
             std.store.deleteBlock(model);

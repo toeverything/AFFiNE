@@ -1,9 +1,5 @@
-import {
-  PropTypes,
-  requiredProperties,
-  ShadowlessElement,
-} from '@blocksuite/block-std';
-import { css } from 'lit';
+import { PropTypes, requiredProperties } from '@blocksuite/block-std';
+import { css, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { html } from 'lit-html';
 
@@ -11,7 +7,7 @@ import { html } from 'lit-html';
   title: PropTypes.string,
   open: PropTypes.instanceOf(Function),
 })
-export class DocTitle extends ShadowlessElement {
+export class DocTitle extends LitElement {
   static override styles = css`
     editor-icon-button .label {
       min-width: 60px;

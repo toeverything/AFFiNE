@@ -1,10 +1,9 @@
+import type { LineDetailType } from '@blocksuite/affine-components/edgeless-line-styles-panel';
 import { type ColorScheme, type StrokeStyle } from '@blocksuite/affine-model';
 import type { ColorEvent } from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
-
-import { type LineStyleEvent, LineStylesPanel } from './line-styles-panel.js';
 
 export class StrokeStylePanel extends WithDisposable(LitElement) {
   static override styles = css`
@@ -26,11 +25,12 @@ export class StrokeStylePanel extends WithDisposable(LitElement) {
   override render() {
     return html`
       <div class="line-styles">
-        ${LineStylesPanel({
-          selectedLineSize: this.strokeWidth,
-          selectedLineStyle: this.strokeStyle,
-          onClick: e => this.setStrokeStyle(e),
-        })}
+        <edgeless-line-styles-panel
+          .lineSize=${this.strokeWidth}
+          .lineStyle=${this.strokeStyle}
+          @select=${this.setStrokeStyle}
+        >
+        </edgeless-line-styles-panel>
       </div>
       <editor-toolbar-separator
         data-orientation="horizontal"
@@ -54,7 +54,7 @@ export class StrokeStylePanel extends WithDisposable(LitElement) {
   accessor setStrokeColor!: (e: ColorEvent) => void;
 
   @property({ attribute: false })
-  accessor setStrokeStyle!: (e: LineStyleEvent) => void;
+  accessor setStrokeStyle!: (e: LineDetailType) => void;
 
   @property({ attribute: false })
   accessor strokeColor!: string;

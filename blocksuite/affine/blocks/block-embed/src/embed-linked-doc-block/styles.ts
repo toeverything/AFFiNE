@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css, html } from 'lit';
 
 import { embedNoteContentStyles } from '../common/embed-note-content-styles.js';
@@ -45,6 +46,7 @@ export const styles = css`
     height: 16px;
     justify-content: center;
     align-items: center;
+    color: ${unsafeCSSVarV2('icon/primary')};
   }
   .affine-embed-linked-doc-content-title-icon img,
   .affine-embed-linked-doc-content-title-icon object,

@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 
-import { net, protocol, session } from 'electron';
+import { app, net, protocol, session } from 'electron';
 import cookieParser from 'set-cookie-parser';
 
 import { resourcesPath } from '../shared/utils';
@@ -43,8 +43,10 @@ function isNetworkResource(pathname: string) {
 async function handleFileRequest(request: Request) {
   const urlObject = new URL(request.url);
 
+  const isAbsolutePath = urlObject.host !== '.';
+
   // Redirect to webpack dev server if defined
-  if (process.env.DEV_SERVER_URL) {
+  if (process.env.DEV_SERVER_URL && !isAbsolutePath) {
     const devServerUrl = new URL(
       urlObject.pathname,
       process.env.DEV_SERVER_URL
@@ -56,20 +58,30 @@ async function handleFileRequest(request: Request) {
   });
   // this will be file types (in the web-static folder)
   let filepath = '';
-  // if is a file type, load the file in resources
-  if (urlObject.pathname.split('/').at(-1)?.includes('.')) {
-    // Sanitize pathname to prevent path traversal attacks
-    const decodedPath = decodeURIComponent(urlObject.pathname);
-    const normalizedPath = join(webStaticDir, decodedPath).normalize();
-    if (!normalizedPath.startsWith(webStaticDir)) {
-      // Attempted path traversal - reject by using empty path
-      filepath = join(webStaticDir, '');
+
+  // for relative path, load the file in resources
+  if (!isAbsolutePath) {
+    if (urlObject.pathname.split('/').at(-1)?.includes('.')) {
+      // Sanitize pathname to prevent path traversal attacks
+      const decodedPath = decodeURIComponent(urlObject.pathname);
+      const normalizedPath = join(webStaticDir, decodedPath).normalize();
+      if (!normalizedPath.startsWith(webStaticDir)) {
+        // Attempted path traversal - reject by using empty path
+        filepath = join(webStaticDir, '');
+      } else {
+        filepath = normalizedPath;
+      }
     } else {
-      filepath = normalizedPath;
+      // else, fallback to load the index.html instead
+      filepath = join(webStaticDir, 'index.html');
     }
   } else {
-    // else, fallback to load the index.html instead
-    filepath = join(webStaticDir, 'index.html');
+    filepath = decodeURIComponent(urlObject.pathname);
+    // security check if the filepath is within app.getPath('sessionData')
+    const sessionDataPath = app.getPath('sessionData');
+    if (!filepath.startsWith(sessionDataPath)) {
+      throw new Error('Invalid filepath');
+    }
   }
   return net.fetch('file://' + filepath, clonedRequest);
 }

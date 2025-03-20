@@ -44,13 +44,18 @@ export const CopyLinkButton = ({
   const onCopyBlockLink = useCallback(() => {
     onClickCopyLink(currentMode, blockIds, elementIds);
   }, [onClickCopyLink, currentMode, blockIds, elementIds]);
+
+  const onCopyLink = useCallback(() => {
+    onClickCopyLink();
+  }, [onClickCopyLink]);
+
   return (
     <div
       className={clsx(styles.copyLinkContainerStyle, { secondary: secondary })}
     >
       <Button
         className={styles.copyLinkButtonStyle}
-        onClick={onCopyBlockLink}
+        onClick={onCopyLink}
         withoutHover
         variant={secondary ? 'secondary' : 'primary'}
       >

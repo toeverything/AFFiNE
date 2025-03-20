@@ -4,29 +4,24 @@ import {
   getCurrentNativeRange,
   matchModels,
 } from '@blocksuite/affine-shared/utils';
-import {
-  type BlockStdScope,
-  type EditorHost,
-  TextSelection,
-} from '@blocksuite/block-std';
-import type { InlineEditor, InlineRange } from '@blocksuite/inline';
+import { type BlockStdScope, TextSelection } from '@blocksuite/block-std';
+import type { InlineEditor, InlineRange } from '@blocksuite/block-std/inline';
 import { BlockModel } from '@blocksuite/store';
 
-import type { AffineInlineEditor } from './inline/index.js';
 import type { RichText } from './rich-text.js';
 
 /**
  * In most cases, you not need RichText, you can use {@link getInlineEditorByModel} instead.
  */
-export function getRichTextByModel(editorHost: EditorHost, id: string) {
-  const blockComponent = editorHost.view.getBlock(id);
+export function getRichTextByModel(std: BlockStdScope, id: string) {
+  const blockComponent = std.view.getBlock(id);
   const richText = blockComponent?.querySelector<RichText>('rich-text');
   if (!richText) return null;
   return richText;
 }
 
-export async function asyncGetRichText(editorHost: EditorHost, id: string) {
-  const blockComponent = await asyncGetBlockComponent(editorHost, id);
+export async function asyncGetRichText(std: BlockStdScope, id: string) {
+  const blockComponent = await asyncGetBlockComponent(std, id);
   if (!blockComponent) return null;
   await blockComponent.updateComplete;
   const richText = blockComponent?.querySelector<RichText>('rich-text');
@@ -35,29 +30,27 @@ export async function asyncGetRichText(editorHost: EditorHost, id: string) {
 }
 
 export function getInlineEditorByModel(
-  editorHost: EditorHost,
+  std: BlockStdScope,
   model: BlockModel | string
 ) {
   const blockModel =
-    typeof model === 'string'
-      ? editorHost.std.store.getBlock(model)?.model
-      : model;
+    typeof model === 'string' ? std.store.getBlock(model)?.model : model;
   if (!blockModel || matchModels(blockModel, [DatabaseBlockModel])) {
     // Not support database model since it's may be have multiple inline editor instances.
     // Support to enter the editing state through the Enter key in the database.
     return null;
   }
-  const richText = getRichTextByModel(editorHost, blockModel.id);
+  const richText = getRichTextByModel(std, blockModel.id);
   if (!richText) return null;
   return richText.inlineEditor;
 }
 
 export async function asyncSetInlineRange(
-  editorHost: EditorHost,
+  std: BlockStdScope,
   model: BlockModel,
   inlineRange: InlineRange
 ) {
-  const richText = await asyncGetRichText(editorHost, model.id);
+  const richText = await asyncGetRichText(std, model.id);
   if (!richText) {
     return;
   }
@@ -94,11 +87,11 @@ export function selectTextModel(
 }
 
 export async function onModelTextUpdated(
-  editorHost: EditorHost,
+  std: BlockStdScope,
   model: BlockModel,
   callback?: (text: RichText) => void
 ) {
-  const richText = await asyncGetRichText(editorHost, model.id);
+  const richText = await asyncGetRichText(std, model.id);
   if (!richText) {
     console.error('RichText is not ready yet.');
     return;
@@ -121,8 +114,8 @@ export async function onModelTextUpdated(
  * Remove specified text from the current range.
  */
 export function cleanSpecifiedTail(
-  editorHost: EditorHost,
-  inlineEditorOrModel: AffineInlineEditor | BlockModel,
+  std: BlockStdScope,
+  inlineEditorOrModel: InlineEditor | BlockModel,
   str: string
 ) {
   if (!str) {
@@ -131,7 +124,7 @@ export function cleanSpecifiedTail(
   }
   const inlineEditor =
     inlineEditorOrModel instanceof BlockModel
-      ? getInlineEditorByModel(editorHost, inlineEditorOrModel)
+      ? getInlineEditorByModel(std, inlineEditorOrModel)
       : inlineEditorOrModel;
   if (!inlineEditor) {
     return;

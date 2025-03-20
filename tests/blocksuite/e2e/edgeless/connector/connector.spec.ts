@@ -146,7 +146,7 @@ test('change connector line width', async ({ page }) => {
   await addBasicConnectorElement(page, start, end);
 
   await page.mouse.click(start.x + 5, start.y);
-  await triggerComponentToolbarAction(page, 'changeConnectorStrokeColor');
+  await triggerComponentToolbarAction(page, 'changeConnectorStrokeStyles');
   await changeConnectorStrokeColor(page, 'MediumGrey');
 
   await triggerComponentToolbarAction(page, 'changeConnectorStrokeStyles');
@@ -171,7 +171,7 @@ test('change connector stroke style', async ({ page }) => {
   await addBasicConnectorElement(page, start, end);
 
   await page.mouse.click(start.x + 5, start.y);
-  await triggerComponentToolbarAction(page, 'changeConnectorStrokeColor');
+  await triggerComponentToolbarAction(page, 'changeConnectorStrokeStyles');
   await changeConnectorStrokeColor(page, 'MediumGrey');
 
   await triggerComponentToolbarAction(page, 'changeConnectorStrokeStyles');

@@ -1,13 +1,13 @@
-import type {
-  AffineInlineEditor,
-  RichText,
-} from '@blocksuite/affine-rich-text';
-import { DefaultInlineManagerExtension } from '@blocksuite/affine-rich-text';
+import { DefaultInlineManagerExtension } from '@blocksuite/affine-inline-preset';
+import type { RichText } from '@blocksuite/affine-rich-text';
 import {
   ParseDocUrlProvider,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import type {
+  AffineInlineEditor,
+  AffineTextAttributes,
+} from '@blocksuite/affine-shared/types';
 import {
   getViewportElement,
   isValidUrl,
@@ -18,8 +18,7 @@ import {
   createIcon,
 } from '@blocksuite/data-view';
 import { IS_MAC } from '@blocksuite/global/env';
-import type { DeltaInsert } from '@blocksuite/inline';
-import type { BlockSnapshot } from '@blocksuite/store';
+import type { BlockSnapshot, DeltaInsert } from '@blocksuite/store';
 import { Text } from '@blocksuite/store';
 import { computed, effect, signal } from '@preact/signals-core';
 import { ref } from 'lit/directives/ref.js';

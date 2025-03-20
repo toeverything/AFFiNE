@@ -1,12 +1,12 @@
 import { DefaultTheme, NoteDisplayMode } from '@blocksuite/affine-model';
 import type { ServiceProvider } from '@blocksuite/global/di';
-import type { DeltaInsert } from '@blocksuite/inline';
 import {
   type AssetsManager,
   ASTWalker,
   BaseAdapter,
   type BlockSnapshot,
   BlockSnapshotSchema,
+  type DeltaInsert,
   type DocSnapshot,
   type ExtensionType,
   type FromBlockSnapshotPayload,

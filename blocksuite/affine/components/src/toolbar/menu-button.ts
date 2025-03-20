@@ -1,5 +1,8 @@
 import { PANEL_BASE } from '@blocksuite/affine-shared/styles';
-import { createButtonPopper } from '@blocksuite/affine-shared/utils';
+import {
+  type ButtonPopperOptions,
+  createButtonPopper,
+} from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import {
   css,
@@ -25,13 +28,12 @@ export class EditorMenuButton extends WithDisposable(LitElement) {
   private _popper!: ReturnType<typeof createButtonPopper>;
 
   override firstUpdated() {
-    this._popper = createButtonPopper(
-      this._trigger,
-      this._content,
-      ({ display }) => {
+    this._popper = createButtonPopper({
+      reference: this._trigger,
+      popperElement: this._content,
+      stateUpdated: ({ display }) => {
         const opened = display === 'show';
         this._trigger.showTooltip = !opened;
-
         this.dispatchEvent(
           new CustomEvent('toggle', {
             detail: opened,
@@ -41,12 +43,11 @@ export class EditorMenuButton extends WithDisposable(LitElement) {
           })
         );
       },
-      {
-        mainAxis: 12,
-        ignoreShift: true,
-        offsetHeight: 6 * 4,
-      }
-    );
+      mainAxis: 12,
+      ignoreShift: true,
+      offsetHeight: 6 * 4,
+      ...this.popperOptions,
+    });
     this._disposables.addFromEvent(this, 'keydown', (e: KeyboardEvent) => {
       e.stopPropagation();
       if (e.key === 'Escape') {
@@ -93,6 +94,9 @@ export class EditorMenuButton extends WithDisposable(LitElement) {
 
   @property({ attribute: false })
   accessor contentPadding: string | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor popperOptions: Partial<ButtonPopperOptions> = {};
 }
 
 export class EditorMenuContent extends LitElement {

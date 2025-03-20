@@ -1,0 +1,6 @@
+mutation submitAudioTranscription($workspaceId: String!, $blobId: String!, $blob: Upload!) {
+  submitAudioTranscription(blob: $blob, blobId: $blobId, workspaceId: $workspaceId) {
+    id
+    status
+  }
+}

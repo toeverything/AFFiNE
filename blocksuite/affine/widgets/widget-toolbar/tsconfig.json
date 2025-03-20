@@ -8,6 +8,7 @@
   "include": ["./src"],
   "references": [
     { "path": "../../blocks/block-database" },
+    { "path": "../../blocks/block-surface" },
     { "path": "../../blocks/block-table" },
     { "path": "../../components" },
     { "path": "../../model" },

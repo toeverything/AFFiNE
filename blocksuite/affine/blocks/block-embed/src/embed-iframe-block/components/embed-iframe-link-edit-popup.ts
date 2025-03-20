@@ -1,4 +1,5 @@
 import { type EmbedIframeBlockModel } from '@blocksuite/affine-model';
+import { EmbedIframeService } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { isValidUrl, stopPropagation } from '@blocksuite/affine-shared/utils';
 import { BlockSelection, type BlockStdScope } from '@blocksuite/block-std';
@@ -6,8 +7,6 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { DoneIcon } from '@blocksuite/icons/lit';
 import { css, html, LitElement } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
-
-import { EmbedIframeService } from '../extension/embed-iframe-service';
 
 export class EmbedIframeLinkEditPopup extends SignalWatcher(
   WithDisposable(LitElement)

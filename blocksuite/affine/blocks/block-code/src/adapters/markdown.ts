@@ -5,7 +5,7 @@ import {
   CODE_BLOCK_WRAP_KEY,
   type MarkdownAST,
 } from '@blocksuite/affine-shared/adapters';
-import type { DeltaInsert } from '@blocksuite/inline';
+import type { DeltaInsert } from '@blocksuite/store';
 import { nanoid } from '@blocksuite/store';
 import type { Code } from 'mdast';
 

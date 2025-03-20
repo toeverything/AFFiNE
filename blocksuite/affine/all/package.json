@@ -35,6 +35,10 @@
     "@blocksuite/affine-fragment-outline": "workspace:*",
     "@blocksuite/affine-gfx-text": "workspace:*",
     "@blocksuite/affine-gfx-turbo-renderer": "workspace:*",
+    "@blocksuite/affine-inline-footnote": "workspace:*",
+    "@blocksuite/affine-inline-link": "workspace:*",
+    "@blocksuite/affine-inline-preset": "workspace:*",
+    "@blocksuite/affine-inline-reference": "workspace:*",
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-rich-text": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
@@ -48,7 +52,6 @@
     "@blocksuite/block-std": "workspace:*",
     "@blocksuite/data-view": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/inline": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@blocksuite/sync": "workspace:*",
     "rxjs": "^7.8.1"
@@ -58,6 +61,8 @@
     "./effects": "./src/effects.ts",
     "./block-std": "./src/block-std/index.ts",
     "./block-std/gfx": "./src/block-std/gfx.ts",
+    "./block-std/inline": "./src/block-std/inline.ts",
+    "./block-std/effects": "./src/block-std/effects.ts",
     "./global": "./src/global/index.ts",
     "./global/utils": "./src/global/utils.ts",
     "./global/env": "./src/global/env.ts",
@@ -69,10 +74,6 @@
     "./global/lit": "./src/global/lit.ts",
     "./store": "./src/store/index.ts",
     "./store/test": "./src/store/test.ts",
-    "./inline": "./src/inline/index.ts",
-    "./inline/consts": "./src/inline/consts.ts",
-    "./inline/effects": "./src/inline/effects.ts",
-    "./inline/types": "./src/inline/types.ts",
     "./blocks/attachment": "./src/blocks/attachment.ts",
     "./blocks/bookmark": "./src/blocks/bookmark.ts",
     "./blocks/callout": "./src/blocks/callout.ts",
@@ -94,6 +95,10 @@
     "./blocks/table": "./src/blocks/table.ts",
     "./data-view": "./src/data-view/index.ts",
     "./data-view/effects": "./src/data-view/effects.ts",
+    "./inlines/link": "./src/inlines/link.ts",
+    "./inlines/reference": "./src/inlines/reference.ts",
+    "./inlines/preset": "./src/inlines/preset.ts",
+    "./inlines/footnote": "./src/inlines/footnote.ts",
     "./widgets/drag-handle": "./src/widgets/drag-handle.ts",
     "./widgets/edgeless-auto-connect": "./src/widgets/edgeless-auto-connect.ts",
     "./widgets/frame-title": "./src/widgets/frame-title.ts",
@@ -158,6 +163,6 @@
   "version": "0.20.0",
   "devDependencies": {
     "@vanilla-extract/vite-plugin": "^5.0.0",
-    "vitest": "3.0.8"
+    "vitest": "3.0.9"
   }
 }

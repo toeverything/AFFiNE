@@ -11,7 +11,7 @@ import { DebugLogger } from '@affine/debug';
 import { GfxControllerIdentifier } from '@blocksuite/affine/block-std/gfx';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { Bound } from '@blocksuite/affine/global/gfx';
-import { RefNodeSlotsProvider } from '@blocksuite/affine/rich-text';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   FrameworkScope,
   useLiveData,
@@ -220,9 +220,12 @@ export function DocPeekPreview({
     !animating
   );
 
+  const guardService = useService(GuardService);
+  const canAccess = useLiveData(guardService.can$('Doc_Read', docId));
+
   // if sync engine has been synced and the page is null, show 404 page.
-  if (!doc || !editor) {
-    return loading ? (
+  if (!doc || !editor || !canAccess) {
+    return loading || canAccess === undefined ? (
       <PageDetailSkeleton key="current-page-is-null" />
     ) : (
       <PageNotFound noPermission />

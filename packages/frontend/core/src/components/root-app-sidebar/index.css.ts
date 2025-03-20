@@ -99,3 +99,7 @@ export const freeTag = style({
   color: cssVar('pureWhite'),
   background: cssVar('primaryColor'),
 });
+
+export const bottomContainer = style({
+  gap: 8,
+});

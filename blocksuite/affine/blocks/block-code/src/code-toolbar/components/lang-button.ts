@@ -104,13 +104,11 @@ export class LanguageListButton extends WithDisposable(
     if (langList) {
       this._sortedBundledLanguages = JSON.parse(langList);
     } else {
-      this._sortedBundledLanguages = this.blockComponent.service.langs.map(
-        lang => ({
-          label: lang.name,
-          name: lang.id,
-          aliases: lang.aliases,
-        })
-      );
+      this._sortedBundledLanguages = this.blockComponent.langs.map(lang => ({
+        label: lang.name,
+        name: lang.id,
+        aliases: lang.aliases,
+      }));
     }
 
     this.disposables.add(() => {

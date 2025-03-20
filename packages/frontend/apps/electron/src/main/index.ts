@@ -14,6 +14,8 @@ import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
+import { setupRecording } from './recording';
+import { setupTrayState } from './tray';
 import { registerUpdater } from './updater';
 import { launch } from './windows-manager/launcher';
 import { launchStage } from './windows-manager/stage';
@@ -85,7 +87,9 @@ app
   .then(registerHandlers)
   .then(registerEvents)
   .then(launch)
+  .then(setupRecording)
   .then(createApplicationMenu)
+  .then(setupTrayState)
   .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));
 

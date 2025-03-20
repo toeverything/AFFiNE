@@ -1,4 +1,5 @@
 import './action-wrapper';
+import '../content/images';
 
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import { ShadowlessElement } from '@blocksuite/affine/block-std';
@@ -8,7 +9,6 @@ import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import type { ChatAction } from '../chat-context';
-import { renderImages } from '../components/images';
 
 export class ActionImage extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
@@ -18,11 +18,13 @@ export class ActionImage extends WithDisposable(ShadowlessElement) {
   accessor host!: EditorHost;
 
   protected override render() {
-    const answer = this.item.messages[0].attachments;
+    const images = this.item.messages[0].attachments;
 
     return html`<action-wrapper .host=${this.host} .item=${this.item}>
       <div style=${styleMap({ marginBottom: '12px' })}>
-        ${answer ? renderImages(answer) : nothing}
+        ${images
+          ? html`<chat-content-images .images=${images}></chat-content-images>`
+          : nothing}
       </div>
     </action-wrapper>`;
   }

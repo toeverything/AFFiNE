@@ -1,11 +1,11 @@
 import { SurfaceBlockModel } from '@blocksuite/affine-block-surface';
 import { isPeekable, Peekable } from '@blocksuite/affine-components/peek';
+import { RefNodeSlotsProvider } from '@blocksuite/affine-inline-reference';
 import type {
   DocMode,
   EmbedLinkedDocModel,
   EmbedLinkedDocStyles,
 } from '@blocksuite/affine-model';
-import { RefNodeSlotsProvider } from '@blocksuite/affine-rich-text';
 import {
   EMBED_CARD_HEIGHT,
   EMBED_CARD_WIDTH,
@@ -151,7 +151,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     ]);
   };
 
-  covertToInline = () => {
+  convertToInline = () => {
     const { doc } = this.model;
     const parent = doc.getParent(this.model);
     if (!parent) {

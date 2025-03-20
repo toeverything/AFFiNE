@@ -8,36 +8,30 @@ import {
 } from '@blocksuite/affine-shared/services';
 import { getViewportElement } from '@blocksuite/affine-shared/utils';
 import type { BlockComponent } from '@blocksuite/block-std';
+import { BlockSelection, TextSelection } from '@blocksuite/block-std';
 import {
-  BlockSelection,
   getInlineRangeProvider,
-  TextSelection,
-} from '@blocksuite/block-std';
-import { IS_MAC, IS_MOBILE } from '@blocksuite/global/env';
-import { noop } from '@blocksuite/global/utils';
-import {
   INLINE_ROOT_ATTR,
   type InlineRangeProvider,
   type InlineRootElement,
   type VLine,
-} from '@blocksuite/inline';
+} from '@blocksuite/block-std/inline';
+import { IS_MAC, IS_MOBILE } from '@blocksuite/global/env';
+import { noop } from '@blocksuite/global/utils';
 import { Slice } from '@blocksuite/store';
 import { computed, effect, type Signal, signal } from '@preact/signals-core';
 import { html, nothing, type TemplateResult } from 'lit';
 import { query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import type { ThemedToken } from 'shiki';
+import { bundledLanguagesInfo, type ThemedToken } from 'shiki';
 
 import { CodeClipboardController } from './clipboard/index.js';
 import { CodeBlockConfigExtension } from './code-block-config.js';
 import { CodeBlockInlineManagerExtension } from './code-block-inline.js';
-import type { CodeBlockService } from './code-block-service.js';
+import { CodeBlockHighlighter } from './code-block-service.js';
 import { codeBlockStyles } from './styles.js';
 
-export class CodeBlockComponent extends CaptionedBlockComponent<
-  CodeBlockModel,
-  CodeBlockService
-> {
+export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> {
   static override styles = codeBlockStyles;
 
   private _inlineRangeProvider: InlineRangeProvider | null = null;
@@ -52,7 +46,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
       return 'Plain Text';
     }
 
-    const matchedInfo = this.service.langs.find(info => info.id === lang);
+    const matchedInfo = this.langs.find(info => info.id === lang);
     return matchedInfo ? matchedInfo.name : 'Plain Text';
   });
 
@@ -75,6 +69,17 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
     return this.doc.readonly;
   }
 
+  get langs() {
+    return (
+      this.std.getOptional(CodeBlockConfigExtension.identifier)?.langs ??
+      bundledLanguagesInfo
+    );
+  }
+
+  get highlighter() {
+    return this.std.get(CodeBlockHighlighter);
+  }
+
   override get topContenteditableElement() {
     if (this.std.get(DocModeProvider).getEditorMode() === 'edgeless') {
       return this.closest<BlockComponent>(NOTE_SELECTOR);
@@ -89,7 +94,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
       return;
     }
 
-    const matchedInfo = this.service.langs.find(
+    const matchedInfo = this.langs.find(
       info =>
         info.id === modelLang ||
         info.name === modelLang ||
@@ -101,8 +106,8 @@ export class CodeBlockComponent extends CaptionedBlockComponent<
       const langImport = matchedInfo.import;
       const lang = matchedInfo.id;
 
-      const highlighter = this.service.highlighter$.value;
-      const theme = this.service.themeKey;
+      const highlighter = this.highlighter.highlighter$.value;
+      const theme = this.highlighter.themeKey;
       if (!theme || !highlighter) {
         this.highlightTokens$.value = [];
         return;

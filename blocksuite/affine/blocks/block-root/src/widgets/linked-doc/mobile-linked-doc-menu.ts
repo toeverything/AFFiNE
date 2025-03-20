@@ -134,7 +134,7 @@ export class AffineMobileLinkedDocMenu extends SignalWatcher(
       () => {
         this.context.close();
         cleanSpecifiedTail(
-          this.context.std.host,
+          this.context.std,
           this.context.inlineEditor,
           this.context.triggerKey + (this._query ?? '')
         );

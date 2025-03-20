@@ -4,6 +4,7 @@ export * from './doc-mode-service';
 export * from './drag-handle-config';
 export * from './edit-props-store';
 export * from './editor-setting-service';
+export * from './embed-iframe';
 export * from './embed-option-service';
 export * from './feature-flag-service';
 export * from './file-size-limit-service';
