@@ -26,6 +26,7 @@
 		9D90BE2B2CCB9876006677DB /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 9D90BE1F2CCB9876006677DB /* config.xml */; };
 		9D90BE2D2CCB9876006677DB /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 9D90BE222CCB9876006677DB /* Main.storyboard */; };
 		9D90BE2E2CCB9876006677DB /* public in Resources */ = {isa = PBXBuildFile; fileRef = 9D90BE232CCB9876006677DB /* public */; };
+		9DAE9BD92D8D1AB0000C1D5A /* AppConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DAE9BD82D8D1AA9000C1D5A /* AppConfigManager.swift */; };
 		9DEC59432D323EE40027CEBD /* Mutex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DEC59422D323EE00027CEBD /* Mutex.swift */; };
 		9DFCD1462D27D1D70028C92B /* libaffine_mobile_native.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DFCD1452D27D1D70028C92B /* libaffine_mobile_native.a */; };
 		C4C97C7C2D030BE000BC2AD1 /* affine_mobile_native.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C6F2D0307B700BC2AD1 /* affine_mobile_native.swift */; };
@@ -56,6 +57,7 @@
 		9D90BE202CCB9876006677DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9D90BE212CCB9876006677DB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		9D90BE232CCB9876006677DB /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
+		9DAE9BD82D8D1AA9000C1D5A /* AppConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfigManager.swift; sourceTree = "<group>"; };
 		9DEC59422D323EE00027CEBD /* Mutex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mutex.swift; sourceTree = "<group>"; };
 		9DFCD1452D27D1D70028C92B /* libaffine_mobile_native.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libaffine_mobile_native.a; sourceTree = "<group>"; };
 		AF51FD2D460BCFE21FA515B2 /* Pods-App.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-App.release.xcconfig"; path = "Pods/Target Support Files/Pods-App/Pods-App.release.xcconfig"; sourceTree = "<group>"; };
@@ -177,6 +179,7 @@
 		9D90BE242CCB9876006677DB /* App */ = {
 			isa = PBXGroup;
 			children = (
+				9DAE9BD82D8D1AA9000C1D5A /* AppConfigManager.swift */,
 				9DEC59422D323EE00027CEBD /* Mutex.swift */,
 				9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */,
 				9D90BE1A2CCB9876006677DB /* Plugins */,
@@ -354,6 +357,7 @@
 				5075136E2D1925BC00AD60C0 /* IntelligentsPlugin.swift in Sources */,
 				5075136A2D1924C600AD60C0 /* RootViewController.swift in Sources */,
 				C4C97C7C2D030BE000BC2AD1 /* affine_mobile_native.swift in Sources */,
+				9DAE9BD92D8D1AB0000C1D5A /* AppConfigManager.swift in Sources */,
 				C4C97C7D2D030BE000BC2AD1 /* affine_mobile_nativeFFI.h in Sources */,
 				9D5622962D64A6A5009F1BE4 /* AuthPlugin.swift in Sources */,
 				C4C97C7E2D030BE000BC2AD1 /* affine_mobile_nativeFFI.modulemap in Sources */,

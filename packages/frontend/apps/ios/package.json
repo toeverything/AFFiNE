@@ -7,6 +7,7 @@
   "scripts": {
     "build": "affine bundle",
     "dev": "affine bundle --dev",
+    "xcode": "cap open ios",
     "sync": "cap sync",
     "sync:dev": "CAP_SERVER_URL=http://localhost:8080 cap sync"
   },

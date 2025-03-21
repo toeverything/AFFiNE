@@ -1,11 +1,11 @@
 PODS:
-  - Capacitor (7.0.1):
+  - Capacitor (7.1.0):
     - CapacitorCordova
   - CapacitorApp (7.0.0):
     - Capacitor
   - CapacitorBrowser (7.0.0):
     - Capacitor
-  - CapacitorCordova (7.0.1)
+  - CapacitorCordova (7.1.0)
   - CapacitorHaptics (7.0.0):
     - Capacitor
   - CapacitorKeyboard (7.0.0):
@@ -40,10 +40,10 @@ EXTERNAL SOURCES:
     :path: "../../../../../node_modules/@capacitor/keyboard"
 
 SPEC CHECKSUMS:
-  Capacitor: 23fff43571a4d1e3ee7d67b5a3588c6e757c2913
+  Capacitor: 68ff8eabbcce387e69767c13b5fbcc1c5399eabc
   CapacitorApp: 45cb7cbef4aa380b9236fd6980033eb5cde6fcd2
   CapacitorBrowser: 352a66541b15ceadae1d703802b11979023705e3
-  CapacitorCordova: 63d476958d5022d76f197031e8b7ea3519988c64
+  CapacitorCordova: 866217f32c1d25b326c568a10ea3ed0c36b13e29
   CapacitorHaptics: 1fba3e460e7614349c6d5f868b1fccdc5c87b66d
   CapacitorKeyboard: 2c26c6fccde35023c579fc37d4cae6326d5e6343
   CryptoSwift: 967f37cea5a3294d9cce358f78861652155be483
