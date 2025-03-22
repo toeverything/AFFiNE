@@ -108,7 +108,6 @@ export const styles = css`
     gap: 4px;
     width: max-content;
     max-width: 100%;
-    cursor: pointer;
   }
 
   .affine-bookmark-content-url > span {
@@ -226,9 +225,12 @@ export const styles = css`
       max-height: 120px;
     }
 
-    .affine-bookmark-content-url {
-      flex-grow: 1;
+    .affine-bookmark-content-url-wrapper {
+      max-width: fit-content;
+      display: flex;
       align-items: flex-end;
+      flex-grow: 1;
+      cursor: pointer;
     }
 
     .affine-bookmark-banner {

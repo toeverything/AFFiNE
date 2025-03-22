@@ -125,10 +125,15 @@ export class BookmarkCard extends WithDisposable(ShadowlessElement) {
           <div class="affine-bookmark-content-description">
             ${descriptionText}
           </div>
-          <div class="affine-bookmark-content-url" @click=${this.bookmark.open}>
-            <span>${getHostName(url)}</span>
-            <div class="affine-bookmark-content-url-icon">
-              ${OpenInNewIcon({ width: '12', height: '12' })}
+          <div
+            class="affine-bookmark-content-url-wrapper"
+            @click=${this.bookmark.open}
+          >
+            <div class="affine-bookmark-content-url">
+              <span>${getHostName(url)}</span>
+              <div class="affine-bookmark-content-url-icon">
+                ${OpenInNewIcon({ width: '12', height: '12' })}
+              </div>
             </div>
           </div>
         </div>
