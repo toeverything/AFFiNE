@@ -1,4 +1,5 @@
 import { effects as gfxConnectorEffects } from '@blocksuite/affine-gfx-connector/effects';
+import { effects as gfxGroupEffects } from '@blocksuite/affine-gfx-group/effects';
 import { effects as gfxMindmapEffects } from '@blocksuite/affine-gfx-mindmap/effects';
 import { effects as gfxNoteEffects } from '@blocksuite/affine-gfx-note/effects';
 import { effects as gfxShapeEffects } from '@blocksuite/affine-gfx-shape/effects';
@@ -19,7 +20,6 @@ import {
   EDGELESS_SELECTED_RECT_WIDGET,
   EdgelessSelectedRectWidget,
 } from './edgeless/components/rects/edgeless-selected-rect.js';
-import { EdgelessGroupTitleEditor } from './edgeless/components/text/edgeless-group-title-editor.js';
 import { EdgelessBrushMenu } from './edgeless/components/toolbar/brush/brush-menu.js';
 import { EdgelessBrushToolButton } from './edgeless/components/toolbar/brush/brush-tool-button.js';
 import { EdgelessSlideMenu } from './edgeless/components/toolbar/common/slide-menu.js';
@@ -81,7 +81,6 @@ export function effects() {
   registerGfxEffects();
   registerWidgets();
   registerEdgelessToolbarComponents();
-  registerEdgelessEditorComponents();
   registerMiscComponents();
 }
 
@@ -101,6 +100,7 @@ function registerGfxEffects() {
   gfxNoteEffects();
   gfxConnectorEffects();
   gfxMindmapEffects();
+  gfxGroupEffects();
 }
 
 function registerWidgets() {
@@ -142,13 +142,6 @@ function registerEdgelessToolbarComponents() {
 
   // Toolbar components
   customElements.define('toolbar-arrow-up-icon', ToolbarArrowUpIcon);
-}
-
-function registerEdgelessEditorComponents() {
-  customElements.define(
-    'edgeless-group-title-editor',
-    EdgelessGroupTitleEditor
-  );
 }
 
 function registerMiscComponents() {
@@ -203,7 +196,6 @@ declare global {
     'edgeless-navigator-black-background': EdgelessNavigatorBlackBackgroundWidget;
     'edgeless-dragging-area-rect': EdgelessDraggingAreaRectWidget;
     'edgeless-selected-rect': EdgelessSelectedRectWidget;
-    'edgeless-group-title-editor': EdgelessGroupTitleEditor;
     'edgeless-brush-menu': EdgelessBrushMenu;
     'edgeless-brush-tool-button': EdgelessBrushToolButton;
     'edgeless-slide-menu': EdgelessSlideMenu;

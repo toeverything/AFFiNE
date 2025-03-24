@@ -28,6 +28,7 @@
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-fragment-doc-title": "workspace:*",
     "@blocksuite/affine-gfx-connector": "workspace:*",
+    "@blocksuite/affine-gfx-group": "workspace:*",
     "@blocksuite/affine-gfx-mindmap": "workspace:*",
     "@blocksuite/affine-gfx-note": "workspace:*",
     "@blocksuite/affine-gfx-shape": "workspace:*",

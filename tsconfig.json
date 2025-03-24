@@ -76,6 +76,7 @@
     { "path": "./blocksuite/affine/fragments/fragment-frame-panel" },
     { "path": "./blocksuite/affine/fragments/fragment-outline" },
     { "path": "./blocksuite/affine/gfx/connector" },
+    { "path": "./blocksuite/affine/gfx/group" },
     { "path": "./blocksuite/affine/gfx/mindmap" },
     { "path": "./blocksuite/affine/gfx/note" },
     { "path": "./blocksuite/affine/gfx/shape" },

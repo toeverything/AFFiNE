@@ -29,6 +29,7 @@ export const PackageList = [
       'blocksuite/affine/fragments/fragment-frame-panel',
       'blocksuite/affine/fragments/fragment-outline',
       'blocksuite/affine/gfx/connector',
+      'blocksuite/affine/gfx/group',
       'blocksuite/affine/gfx/mindmap',
       'blocksuite/affine/gfx/note',
       'blocksuite/affine/gfx/shape',
@@ -311,6 +312,7 @@ export const PackageList = [
       'blocksuite/affine/components',
       'blocksuite/affine/fragments/fragment-doc-title',
       'blocksuite/affine/gfx/connector',
+      'blocksuite/affine/gfx/group',
       'blocksuite/affine/gfx/mindmap',
       'blocksuite/affine/gfx/note',
       'blocksuite/affine/gfx/shape',
@@ -450,6 +452,21 @@ export const PackageList = [
   {
     location: 'blocksuite/affine/gfx/connector',
     name: '@blocksuite/affine-gfx-connector',
+    workspaceDependencies: [
+      'blocksuite/affine/blocks/block-surface',
+      'blocksuite/affine/components',
+      'blocksuite/affine/model',
+      'blocksuite/affine/rich-text',
+      'blocksuite/affine/shared',
+      'blocksuite/affine/widgets/widget-edgeless-toolbar',
+      'blocksuite/framework/block-std',
+      'blocksuite/framework/global',
+      'blocksuite/framework/store',
+    ],
+  },
+  {
+    location: 'blocksuite/affine/gfx/group',
+    name: '@blocksuite/affine-gfx-group',
     workspaceDependencies: [
       'blocksuite/affine/blocks/block-surface',
       'blocksuite/affine/components',
@@ -1115,6 +1132,7 @@ export type PackageName =
   | '@blocksuite/affine-fragment-frame-panel'
   | '@blocksuite/affine-fragment-outline'
   | '@blocksuite/affine-gfx-connector'
+  | '@blocksuite/affine-gfx-group'
   | '@blocksuite/affine-gfx-mindmap'
   | '@blocksuite/affine-gfx-note'
   | '@blocksuite/affine-gfx-shape'

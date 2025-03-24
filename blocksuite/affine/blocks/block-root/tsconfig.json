@@ -25,6 +25,7 @@
     { "path": "../../components" },
     { "path": "../../fragments/fragment-doc-title" },
     { "path": "../../gfx/connector" },
+    { "path": "../../gfx/group" },
     { "path": "../../gfx/mindmap" },
     { "path": "../../gfx/note" },
     { "path": "../../gfx/shape" },

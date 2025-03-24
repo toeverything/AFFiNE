@@ -2734,6 +2734,7 @@ __metadata:
     "@blocksuite/affine-components": "workspace:*"
     "@blocksuite/affine-fragment-doc-title": "workspace:*"
     "@blocksuite/affine-gfx-connector": "workspace:*"
+    "@blocksuite/affine-gfx-group": "workspace:*"
     "@blocksuite/affine-gfx-mindmap": "workspace:*"
     "@blocksuite/affine-gfx-note": "workspace:*"
     "@blocksuite/affine-gfx-shape": "workspace:*"
@@ -2974,6 +2975,33 @@ __metadata:
 "@blocksuite/affine-gfx-connector@workspace:*, @blocksuite/affine-gfx-connector@workspace:blocksuite/affine/gfx/connector":
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-gfx-connector@workspace:blocksuite/affine/gfx/connector"
+  dependencies:
+    "@blocksuite/affine-block-surface": "workspace:*"
+    "@blocksuite/affine-components": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-rich-text": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/affine-widget-edgeless-toolbar": "workspace:*"
+    "@blocksuite/block-std": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/icons": "npm:^2.2.6"
+    "@blocksuite/store": "workspace:*"
+    "@lit/context": "npm:^1.1.2"
+    "@preact/signals-core": "npm:^1.8.0"
+    "@toeverything/theme": "npm:^1.1.12"
+    "@types/lodash-es": "npm:^4.17.12"
+    lit: "npm:^3.2.0"
+    lodash-es: "npm:^4.17.21"
+    minimatch: "npm:^10.0.1"
+    rxjs: "npm:^7.8.1"
+    yjs: "npm:^13.6.21"
+    zod: "npm:^3.23.8"
+  languageName: unknown
+  linkType: soft
+
+"@blocksuite/affine-gfx-group@workspace:*, @blocksuite/affine-gfx-group@workspace:blocksuite/affine/gfx/group":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-gfx-group@workspace:blocksuite/affine/gfx/group"
   dependencies:
     "@blocksuite/affine-block-surface": "workspace:*"
     "@blocksuite/affine-components": "workspace:*"
@@ -3574,6 +3602,7 @@ __metadata:
     "@blocksuite/affine-fragment-frame-panel": "workspace:*"
     "@blocksuite/affine-fragment-outline": "workspace:*"
     "@blocksuite/affine-gfx-connector": "workspace:*"
+    "@blocksuite/affine-gfx-group": "workspace:*"
     "@blocksuite/affine-gfx-mindmap": "workspace:*"
     "@blocksuite/affine-gfx-note": "workspace:*"
     "@blocksuite/affine-gfx-shape": "workspace:*"

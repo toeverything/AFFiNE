@@ -31,6 +31,7 @@
     { "path": "../fragments/fragment-frame-panel" },
     { "path": "../fragments/fragment-outline" },
     { "path": "../gfx/connector" },
+    { "path": "../gfx/group" },
     { "path": "../gfx/mindmap" },
     { "path": "../gfx/note" },
     { "path": "../gfx/shape" },
