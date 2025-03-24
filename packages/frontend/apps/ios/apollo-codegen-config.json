@@ -2,7 +2,7 @@
   "schemaNamespace": "AffineGraphQL",
   "input": {
     "operationSearchPaths": ["../../../common/graphql/src/graphql/**/*.gql"],
-    "schemaSearchPaths": ["../../../backend/server/src/*.gql"]
+    "schemaSearchPaths": ["../../../backend/server/src/schema.gql"]
   },
   "output": {
     "testMocks": {
