@@ -5,6 +5,8 @@ plugins {
     alias libs.plugins.android.application
     alias libs.plugins.kotlin.android
     alias libs.plugins.rust.android
+    alias libs.plugins.ksp
+    alias libs.plugins.hilt
     alias libs.plugins.compose
 }
 
@@ -70,25 +72,34 @@ dependencies {
     implementation project(':capacitor-cordova-android-plugins')
     implementation project(':service')
 
-    implementation libs.androidx.activity.compose
     implementation libs.androidx.appcompat
     implementation libs.androidx.browser
+    implementation libs.timber
+
+    implementation libs.hilt.android.core
+    ksp libs.hilt.compiler
+
+    def composeBom = platform(libs.androidx.compose.bom)
+    implementation composeBom
+    implementation libs.androidx.activity.compose
     implementation libs.androidx.compose.foundation.layout
     implementation libs.androidx.compose.material3
     implementation libs.androidx.compose.material.icons.extended
     implementation libs.androidx.compose.runtime.livedata
-    debugImplementation libs.androidx.compose.ui.test.manifest
-    debugImplementation libs.androidx.compose.ui.tooling
     implementation libs.androidx.compose.ui.tooling.preview
     implementation libs.androidx.compose.ui.util
     implementation libs.androidx.compose.ui.viewbinding
     implementation libs.androidx.compose.ui.googlefonts
-    implementation libs.androidx.coordinatorlayout
-    implementation libs.androidx.core.ktx
-    implementation libs.androidx.core.splashscreen
     implementation libs.androidx.lifecycle.viewModelCompose
     implementation libs.androidx.lifecycle.runtime.compose
     implementation libs.androidx.navigation.compose
+    debugImplementation composeBom
+    debugImplementation libs.androidx.compose.ui.test.manifest
+    debugImplementation libs.androidx.compose.ui.tooling
+
+    implementation libs.androidx.coordinatorlayout
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core.splashscreen
     implementation libs.androidx.navigation.fragment
     implementation libs.androidx.navigation.ui.ktx
 
@@ -124,6 +135,7 @@ cargo {
 kotlin {
     compilerOptions {
         apiVersion = KotlinVersion.KOTLIN_2_1
+        languageVersion = KotlinVersion.KOTLIN_2_1
         jvmTarget = JvmTarget.JVM_21
     }
 }

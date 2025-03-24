@@ -2,4 +2,5 @@ ext {
     minSdkVersion = libs.versions.minSdk.get().toInteger()
     compileSdkVersion = libs.versions.compileSdk.get().toInteger()
     targetSdkVersion = libs.versions.targetSdk.get().toInteger()
+    kotlin_version = libs.versions.kotlin.get()
 }

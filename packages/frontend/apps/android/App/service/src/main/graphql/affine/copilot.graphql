@@ -1,0 +1,7 @@
+mutation CreateCopilotSession($options: CreateChatSessionInput!) {
+  createCopilotSession(options: $options)
+}
+
+mutation CreateCopilotMessage($options: CreateChatMessageInput!) {
+  createCopilotMessage(options: $options)
+}

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Box
@@ -28,13 +29,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.core.view.ViewCompat
 import app.affine.pro.ai.chat.ChatAppBar
+import app.affine.pro.ai.chat.ChatViewModel
 import app.affine.pro.ai.chat.UserInput
 import app.affine.pro.theme.AffineTheme
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
+@AndroidEntryPoint
 class AIActivity : AppCompatActivity() {
+
+    private val viewModel by viewModels<ChatViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setupTheme()

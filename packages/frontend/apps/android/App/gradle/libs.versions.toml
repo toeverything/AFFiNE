@@ -4,6 +4,7 @@ android-gradle-plugin = "8.9.1"
 androidx-activity-compose = "1.10.1"
 androidx-appcompat = "1.7.0"
 androidx-browser = "1.8.0"
+androidx-compose-bom = "2025.03.00"
 androidx-coordinatorlayout = "1.3.0"
 androidx-core-ktx = "1.15.0"
 androidx-core-splashscreen = "1.0.1"
@@ -17,15 +18,19 @@ apollo = "4.1.1"
 compileSdk = "35"
 google-services = "4.4.2"
 gradle-versions = "0.52.0"
+hilt = "2.56"
+hilt-ext = "1.2.0"
 jna = "5.17.0"
 junit = "4.13.2"
 kotlin = "2.1.20"
 kotlinx-coroutines = "1.10.1"
+ksp = "2.1.20-1.0.31"
 # @keep
 minSdk = "22"
 mozilla-rust-android = "0.9.6"
 # @keep
 targetSdk = "35"
+timber = "5.0.1"
 version-catalog-update = "0.8.5"
 
 [libraries]
@@ -33,6 +38,7 @@ android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity-compose" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "androidx-browser" }
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "androidx-compose-bom" }
 androidx-compose-foundation-layout = { module = "androidx.compose.foundation:foundation-layout" }
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "androidx-material3" }
@@ -56,9 +62,15 @@ androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx",
 apollo-api = { module = "com.apollographql.apollo:apollo-api", version.ref = "apollo" }
 apollo-runtime = { module = "com.apollographql.apollo:apollo-runtime", version.ref = "apollo" }
 google-services = { module = "com.google.gms:google-services", version.ref = "google-services" }
+hilt-android-core = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hilt" }
+hilt-ext-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "hilt-ext" }
+hilt-ext-work = { module = "androidx.hilt:hilt-work", version.ref = "hilt-ext" }
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android-gradle-plugin" }
@@ -66,7 +78,9 @@ android-library = { id = "com.android.library", version.ref = "android-gradle-pl
 apollo-android = { id = "com.apollographql.apollo", version.ref = "apollo" }
 compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 gradle-versions = { id = "com.github.ben-manes.versions", version.ref = "gradle-versions" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 rust-android = { id = "org.mozilla.rust-android-gradle.rust-android", version.ref = "mozilla-rust-android" }
 version-catalog-update = { id = "nl.littlerobots.version-catalog-update", version.ref = "version-catalog-update" }

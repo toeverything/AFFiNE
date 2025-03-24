@@ -7,11 +7,14 @@ import com.apollographql.apollo.api.ApolloResponse
 import com.apollographql.apollo.api.Mutation
 import com.apollographql.apollo.api.Query
 import com.apollographql.apollo.api.Subscription
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object AffineClient {
+@Singleton
+class AffineClient @Inject constructor() {
 
     private val _client: ApolloClient by lazy {
-        ApolloClient.Builder().serverUrl(BuildConfig.BASE_URL)
+        ApolloClient.Builder().serverUrl("${BuildConfig.BASE_URL}/graphql")
             .addHttpInterceptor(CookieInterceptor)
             .build()
     }
