@@ -13,8 +13,8 @@ let package = Package(
     .library(name: "MarkdownView", targets: ["MarkdownView"]),
   ],
   dependencies: [
-    .package(path: "../MarkdownParserCore"),
     .package(url: "https://github.com/JohnSundell/Splash", from: "0.16.0"),
+    .package(url: "https://github.com/swiftlang/swift-cmark", from: "0.4.0"),
   ],
   targets: [
     .target(name: "MarkdownView", dependencies: [
@@ -22,8 +22,8 @@ let package = Package(
       "Splash",
     ]),
     .target(name: "MarkdownParser", dependencies: [
-      .product(name: "MarkdownParserCore", package: "MarkdownParserCore"),
-      .product(name: "MarkdownParserCoreExtension", package: "MarkdownParserCore"),
+      .product(name: "cmark-gfm", package: "swift-cmark"),
+      .product(name: "cmark-gfm-extensions", package: "swift-cmark"),
     ]),
   ]
 )

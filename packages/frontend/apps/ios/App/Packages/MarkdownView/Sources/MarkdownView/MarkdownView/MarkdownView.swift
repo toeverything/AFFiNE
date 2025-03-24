@@ -39,6 +39,7 @@ public class MarkdownView: UIView {
       )
       anchorY = view.frame.maxY + theme.spacings.final
     }
+    height = blockViews.map(\.frame.maxY).max() ?? 0
     assert(subviews.count == blockViews.count)
   }
 }

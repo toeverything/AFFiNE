@@ -10,6 +10,15 @@
       }
     },
     {
+      "identity" : "chidorimenu",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/ChidoriMenu",
+      "state" : {
+        "revision" : "52c7e488080cfcc9ba76a002517af5347cc8c9d5",
+        "version" : "2.4.2"
+      }
+    },
+    {
       "identity" : "splash",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/JohnSundell/Splash",
@@ -25,6 +34,15 @@
       "state" : {
         "revision" : "a95fc6df17d108bd99210db5e8a9bac90fe984b8",
         "version" : "0.15.3"
+      }
+    },
+    {
+      "identity" : "swift-cmark",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-cmark",
+      "state" : {
+        "revision" : "3ccff77b2dc5b96b77db3da0d68d28068593fa53",
+        "version" : "0.5.0"
       }
     },
     {
