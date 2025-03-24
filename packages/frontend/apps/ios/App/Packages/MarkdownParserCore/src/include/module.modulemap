@@ -1,0 +1,23 @@
+module cmark_gfm {
+    header "cmark-gfm.h"
+    header "cmark-gfm-extension_api.h"
+    header "buffer.h"
+    header "chunk.h"
+    header "cmark_ctype.h"
+    header "footnotes.h"
+    header "houdini.h"
+    header "html.h"
+    header "inlines.h"
+    header "iterator.h"
+    header "map.h"
+    header "node.h"
+    header "parser.h"
+    header "plugin.h"
+    header "references.h"
+    header "registry.h"
+    header "render.h"
+    header "scanners.h"
+    header "syntax_extension.h"
+    header "utf8.h"
+    export *
+}

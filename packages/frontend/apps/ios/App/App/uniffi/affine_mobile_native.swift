@@ -497,7 +497,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
-public protocol DocStoragePoolProtocol: AnyObject {
+public protocol DocStoragePoolProtocol: AnyObject, Sendable {
     
     func clearClocks(universalId: String) async throws 
     
@@ -573,6 +573,9 @@ open class DocStoragePool: DocStoragePoolProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -621,7 +624,7 @@ open func clearClocks(universalId: String)async throws   {
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -641,7 +644,7 @@ open func connect(universalId: String, path: String)async throws   {
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -658,7 +661,7 @@ open func deleteBlob(universalId: String, key: String, permanently: Bool)async t
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -675,7 +678,7 @@ open func deleteDoc(universalId: String, docId: String)async throws   {
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -692,7 +695,7 @@ open func disconnect(universalId: String)async throws   {
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -709,7 +712,7 @@ open func getBlob(universalId: String, key: String)async throws  -> Blob?  {
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterOptionTypeBlob.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -726,7 +729,7 @@ open func getBlobUploadedAt(universalId: String, peer: String, blobId: String)as
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterOptionInt64.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -743,7 +746,7 @@ open func getDocClock(universalId: String, docId: String)async throws  -> DocClo
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterOptionTypeDocClock.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -760,7 +763,7 @@ open func getDocClocks(universalId: String, after: Int64?)async throws  -> [DocC
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterSequenceTypeDocClock.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -777,7 +780,7 @@ open func getDocSnapshot(universalId: String, docId: String)async throws  -> Doc
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterOptionTypeDocRecord.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -794,7 +797,7 @@ open func getDocUpdates(universalId: String, docId: String)async throws  -> [Doc
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterSequenceTypeDocUpdate.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -811,7 +814,7 @@ open func getPeerPulledRemoteClock(universalId: String, peer: String, docId: Str
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterOptionTypeDocClock.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -828,7 +831,7 @@ open func getPeerPulledRemoteClocks(universalId: String, peer: String)async thro
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterSequenceTypeDocClock.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -845,7 +848,7 @@ open func getPeerPushedClock(universalId: String, peer: String, docId: String)as
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterOptionTypeDocClock.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -862,7 +865,7 @@ open func getPeerPushedClocks(universalId: String, peer: String)async throws  ->
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterSequenceTypeDocClock.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -879,7 +882,7 @@ open func getPeerRemoteClock(universalId: String, peer: String, docId: String)as
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterOptionTypeDocClock.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -896,7 +899,7 @@ open func getPeerRemoteClocks(universalId: String, peer: String)async throws  ->
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterSequenceTypeDocClock.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -913,7 +916,7 @@ open func listBlobs(universalId: String)async throws  -> [ListedBlob]  {
             completeFunc: ffi_affine_mobile_native_rust_future_complete_rust_buffer,
             freeFunc: ffi_affine_mobile_native_rust_future_free_rust_buffer,
             liftFunc: FfiConverterSequenceTypeListedBlob.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -930,7 +933,7 @@ open func markUpdatesMerged(universalId: String, docId: String, updates: [Int64]
             completeFunc: ffi_affine_mobile_native_rust_future_complete_u32,
             freeFunc: ffi_affine_mobile_native_rust_future_free_u32,
             liftFunc: FfiConverterUInt32.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -947,7 +950,7 @@ open func pushUpdate(universalId: String, docId: String, update: String)async th
             completeFunc: ffi_affine_mobile_native_rust_future_complete_i64,
             freeFunc: ffi_affine_mobile_native_rust_future_free_i64,
             liftFunc: FfiConverterInt64.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -964,7 +967,7 @@ open func releaseBlobs(universalId: String)async throws   {
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -981,7 +984,7 @@ open func setBlob(universalId: String, blob: SetBlob)async throws   {
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -998,7 +1001,7 @@ open func setBlobUploadedAt(universalId: String, peer: String, blobId: String, u
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -1015,7 +1018,7 @@ open func setDocSnapshot(universalId: String, snapshot: DocRecord)async throws  
             completeFunc: ffi_affine_mobile_native_rust_future_complete_i8,
             freeFunc: ffi_affine_mobile_native_rust_future_free_i8,
             liftFunc: FfiConverterBool.lift,
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -1032,7 +1035,7 @@ open func setPeerPulledRemoteClock(universalId: String, peer: String, docId: Str
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -1049,7 +1052,7 @@ open func setPeerPushedClock(universalId: String, peer: String, docId: String, c
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -1066,7 +1069,7 @@ open func setPeerRemoteClock(universalId: String, peer: String, docId: String, c
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -1083,7 +1086,7 @@ open func setSpaceId(universalId: String, spaceId: String)async throws   {
             completeFunc: ffi_affine_mobile_native_rust_future_complete_void,
             freeFunc: ffi_affine_mobile_native_rust_future_free_void,
             liftFunc: { $0 },
-            errorHandler: FfiConverterTypeUniffiError.lift
+            errorHandler: FfiConverterTypeUniffiError_lift
         )
 }
     
@@ -1627,7 +1630,7 @@ public func FfiConverterTypeSetBlob_lower(_ value: SetBlob) -> RustBuffer {
 }
 
 
-public enum UniffiError {
+public enum UniffiError: Swift.Error {
 
     
     

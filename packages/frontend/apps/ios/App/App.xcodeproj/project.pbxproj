@@ -14,6 +14,8 @@
 		50A285D72D112A5E000D5A6D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D62D112A5E000D5A6D /* Localizable.xcstrings */; };
 		50A285D82D112A5E000D5A6D /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D52D112A5E000D5A6D /* InfoPlist.xcstrings */; };
 		50A285DC2D112B24000D5A6D /* Intelligents in Frameworks */ = {isa = PBXBuildFile; productRef = 50A285DB2D112B24000D5A6D /* Intelligents */; };
+		50FF428A2D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */; };
+		50FF428C2D2E77CC0050AA83 /* AffineViewController+AIButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */; };
 		9D52FC432D26CDBF00105D0A /* JSValueContainerExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */; };
 		9D5622962D64A6A5009F1BE4 /* AuthPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D5622952D64A6A4009F1BE4 /* AuthPlugin.swift */; };
 		9D6A85332CCF6DA700DAB35F /* HashcashPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D6A85322CCF6DA700DAB35F /* HashcashPlugin.swift */; };
@@ -44,6 +46,9 @@
 		50802D5E2D112F7D00694021 /* Intelligents */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Intelligents; sourceTree = "<group>"; };
 		50A285D52D112A5E000D5A6D /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		50A285D62D112A5E000D5A6D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		50FEBD7B2D3F7719002847B5 /* ChidoriMenu */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ChidoriMenu; sourceTree = "<group>"; };
+		50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationBridgedWindowScript.swift; sourceTree = "<group>"; };
+		50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AffineViewController+AIButton.swift"; sourceTree = "<group>"; };
 		9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSValueContainerExt.swift; sourceTree = "<group>"; };
 		9D5622952D64A6A4009F1BE4 /* AuthPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthPlugin.swift; sourceTree = "<group>"; };
 		9D6A85322CCF6DA700DAB35F /* HashcashPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HashcashPlugin.swift; sourceTree = "<group>"; };
@@ -130,6 +135,7 @@
 			isa = PBXGroup;
 			children = (
 				5039CC962D1D42C700874F32 /* AffineGraphQL */,
+				50FEBD7B2D3F7719002847B5 /* ChidoriMenu */,
 				50802D5E2D112F7D00694021 /* Intelligents */,
 			);
 			path = Packages;
@@ -186,6 +192,8 @@
 				9D90BE1C2CCB9876006677DB /* AppDelegate.swift */,
 				507513692D1924C600AD60C0 /* RootViewController.swift */,
 				9D90BE1B2CCB9876006677DB /* AffineViewController.swift */,
+				50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */,
+				50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */,
 				9D90BE1D2CCB9876006677DB /* Assets.xcassets */,
 				9D90BE1E2CCB9876006677DB /* capacitor.config.json */,
 				9D90BE1F2CCB9876006677DB /* config.xml */,
@@ -358,12 +366,14 @@
 				5075136A2D1924C600AD60C0 /* RootViewController.swift in Sources */,
 				C4C97C7C2D030BE000BC2AD1 /* affine_mobile_native.swift in Sources */,
 				9DAE9BD92D8D1AB0000C1D5A /* AppConfigManager.swift in Sources */,
+				50FF428A2D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift in Sources */,
 				C4C97C7D2D030BE000BC2AD1 /* affine_mobile_nativeFFI.h in Sources */,
 				9D5622962D64A6A5009F1BE4 /* AuthPlugin.swift in Sources */,
 				C4C97C7E2D030BE000BC2AD1 /* affine_mobile_nativeFFI.modulemap in Sources */,
 				E93B276C2CED92B1001409B8 /* NavigationGesturePlugin.swift in Sources */,
 				9DEC59432D323EE40027CEBD /* Mutex.swift in Sources */,
 				9D90BE252CCB9876006677DB /* CookieManager.swift in Sources */,
+				50FF428C2D2E77CC0050AA83 /* AffineViewController+AIButton.swift in Sources */,
 				9D90BE262CCB9876006677DB /* CookiePlugin.swift in Sources */,
 				9D6A85332CCF6DA700DAB35F /* HashcashPlugin.swift in Sources */,
 				9D90BE272CCB9876006677DB /* AffineViewController.swift in Sources */,

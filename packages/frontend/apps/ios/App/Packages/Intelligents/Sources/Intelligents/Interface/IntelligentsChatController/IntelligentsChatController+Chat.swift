@@ -7,6 +7,7 @@
 
 import AffineGraphQL
 import LDSwiftEventSource
+import MarkdownParser
 import UIKit
 
 extension IntelligentsChatController {
@@ -29,6 +30,7 @@ extension IntelligentsChatController {
   @objc func chat_onSend() {
     beginProgress()
     let viewModel = inputBox.editor.viewModel.duplicate()
+    viewModel.text = viewModel.text.trimmingCharacters(in: .whitespacesAndNewlines)
     inputBox.editor.viewModel.reset()
     inputBox.editor.updateValues()
     DispatchQueue.global().async {
@@ -75,8 +77,12 @@ private extension IntelligentsChatController {
 
 private extension IntelligentsChatController {
   func chat_onError(_ error: Error) {
-    // TODO: IMPL add error cell
     print("[*] chat error", error)
+    dispatchToMain {
+      let key = UUID()
+      let content = ChatContent.error(text: error.localizedDescription)
+      self.simpleChatContents.updateValue(content, forKey: key)
+    }
   }
 
   func chat_createSession(
@@ -85,9 +91,9 @@ private extension IntelligentsChatController {
   ) {
     Intelligents.qlClient.perform(
       mutation: CreateCopilotSessionMutation(options: .init(
-        docId: "", // TODO: put the real data
+        docId: metadata[.documentID] ?? "",
         promptName: Prompt.general_Chat_With_AFFiNE_AI.rawValue,
-        workspaceId: "" // TODO: put the real data
+        workspaceId: metadata[.workspaceID] ?? ""
       )),
       queue: .global()
     ) { result in
@@ -117,10 +123,10 @@ private extension IntelligentsChatController {
     //    let images = viewModel.attachments
 
     dispatchToMain {
-      self.insertIntoTableView(withChatModel: .init(
-        participant: .user,
-        markdownDocument: text
-      ))
+      let content = ChatContent.user(document: text)
+      let key = UUID()
+      self.simpleChatContents.updateValue(content, forKey: key)
+      self.tableView.scrollLastCellToTop()
     }
 
     let sem = DispatchSemaphore(value: 0)
@@ -173,11 +179,13 @@ private extension IntelligentsChatController {
       return
     }
 
-    let chatModel = ChatTableView.ChatCell.ViewModel(
-      participant: .assistant,
-      markdownDocument: ""
-    )
-    dispatchToMain { self.insertIntoTableView(withChatModel: chatModel) }
+    let contentIdentifier = UUID()
+    dispatchToMain {
+      self.simpleChatContents.updateValue(
+        .assistant(document: "..."),
+        forKey: contentIdentifier
+      )
+    }
 
     let sem = DispatchSemaphore(value: 0)
 
@@ -193,8 +201,14 @@ private extension IntelligentsChatController {
     eventHandler.onErrorBlock = { error in
       self.chat_onError(error)
     }
+
+    var document = ""
     eventHandler.onMessageBlock = { _, message in
-      self.chat_onEvent(message.data, chatModel: chatModel)
+      self.dispatchToMain {
+        document += message.data
+        let content = ChatContent.assistant(document: document)
+        self.simpleChatContents.updateValue(content, forKey: contentIdentifier)
+      }
     }
     let eventSource = EventSource(config: .init(handler: eventHandler, url: url))
     chatTask = eventSource
@@ -202,11 +216,38 @@ private extension IntelligentsChatController {
 
     sem.wait()
   }
+}
 
-  func chat_onEvent(_ data: String, chatModel: ChatTableView.ChatCell.ViewModel) {
-    dispatchToMain { [self] in
-      chatModel.markdownDocument += data
-      tableView.reloadData()
+extension IntelligentsChatController {
+  func updateContentToPublisher() {
+    assert(Thread.isMainThread)
+    let copy = simpleChatContents
+    let input: [MessageListView.Element] = copy.map { key, value in
+      switch value {
+      case let .assistant(document):
+        let nodes = MarkdownParser().feed(document)
+        return .init(
+          id: key,
+          cell: .assistant,
+          viewModel: MessageListView.AssistantCell.ViewModel(blocks: nodes),
+          object: nil
+        )
+      case let .user(document):
+        return .init(
+          id: key,
+          cell: .user,
+          viewModel: MessageListView.UserCell.ViewModel(text: document),
+          object: nil
+        )
+      case let .error(text):
+        return .init(
+          id: key,
+          cell: .hint,
+          viewModel: MessageListView.HintCell.ViewModel(hint: text),
+          object: nil
+        )
+      }
     }
+    publisher.send(input)
   }
 }
