@@ -41,6 +41,7 @@ import { Bound, getCommonBound } from '@blocksuite/global/gfx';
 import { PageKeyboardManager } from '../keyboard/keyboard-manager.js';
 import type { EdgelessRootBlockComponent } from './edgeless-root-block.js';
 import { LassoTool } from './gfx-tool/lasso-tool.js';
+import { createGroupFromSelectedCommand, ungroupCommand } from './group-api.js';
 import {
   DEFAULT_NOTE_CHILD_FLAVOUR,
   DEFAULT_NOTE_CHILD_TYPE,
@@ -227,7 +228,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
             !this.rootComponent.service.selection.editing
           ) {
             ctx.get('keyboardState').event.preventDefault();
-            rootComponent.service.createGroupFromSelected();
+            rootComponent.std.command.exec(createGroupFromSelectedCommand);
           }
         },
         'Shift-Mod-g': ctx => {
@@ -239,7 +240,9 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
             !selection.firstElement.isLocked()
           ) {
             ctx.get('keyboardState').event.preventDefault();
-            rootComponent.service.ungroup(selection.firstElement);
+            rootComponent.std.command.exec(ungroupCommand, {
+              group: selection.firstElement,
+            });
           }
         },
         'Mod-a': ctx => {

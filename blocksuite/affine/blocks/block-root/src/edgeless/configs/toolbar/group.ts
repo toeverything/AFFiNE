@@ -13,7 +13,7 @@ import { getRootBlock } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { Bound } from '@blocksuite/global/gfx';
 import { EditIcon, PageIcon, UngroupIcon } from '@blocksuite/icons/lit';
 
-import { EdgelessRootService } from '../../edgeless-root-service';
+import { ungroupCommand } from '../../group-api';
 import { mountGroupTitleEditor } from '../../utils/text';
 
 export const builtinGroupToolbarConfig = {
@@ -85,10 +85,8 @@ export const builtinGroupToolbarConfig = {
         const models = ctx.getSurfaceModelsByType(GroupElementModel);
         if (!models.length) return;
 
-        const edgelessService = ctx.std.get(EdgelessRootService);
-
         for (const model of models) {
-          edgelessService.ungroup(model);
+          ctx.command.exec(ungroupCommand, { group: model });
         }
       },
     },
