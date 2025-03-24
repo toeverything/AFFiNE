@@ -46,6 +46,15 @@ class AFFiNEViewController: CAPBridgeViewController {
     super.viewDidAppear(animated)
     navigationController?.setNavigationBarHidden(false, animated: animated)
   }
+  
+#if DEBUG
+  override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+    super.motionEnded(motion, with: event)
+    if motion == .motionShake {
+      presentIntelligentsButton()
+    }
+  }
+#endif
 }
 
 

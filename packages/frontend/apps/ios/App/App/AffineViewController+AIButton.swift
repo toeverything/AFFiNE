@@ -102,9 +102,9 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
           presentIntoCurrentContext(withTargetController: controller)
         })
       }
-      view.present(menu: .init(children: actions)) { menu in
-        menu.overrideUserInterfaceStyle = .dark
-      }
+      view.present(menu: .init(children: actions)) { controller  in
+        controller.overrideUserInterfaceStyle = .dark
+      } controllerDidPresent: { _ in }
     case .summary:
       let controller = IntelligentsEphemeralActionController(
         action: .summarize

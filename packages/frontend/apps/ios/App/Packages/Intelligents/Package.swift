@@ -19,7 +19,7 @@ let package = Package(
     .package(url: "https://github.com/apollographql/apollo-ios.git", from: "1.18.0"),
     .package(url: "https://github.com/LaunchDarkly/swift-eventsource.git", from: "3.3.0"),
     .package(url: "https://github.com/apple/swift-collections", from: "1.1.4"),
-    .package(url: "https://github.com/Lakr233/ChidoriMenu", from: "2.4.2"),
+    .package(url: "https://github.com/Lakr233/ChidoriMenu", from: "2.4.3"),
   ],
   targets: [
     .target(name: "Intelligents", dependencies: [
