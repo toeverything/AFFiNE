@@ -10,11 +10,20 @@ import UIKit
 
 extension UIView {
   func diffableUpdate(reusingViews blockViews: inout [BlockView], manifests: [AnyBlockManifest]) {
+    defer {
+      assert(blockViews.count == manifests.count, "blockViews count must match manifests count")
+    }
+    var shouldRemovedIndices: [Int] = []
+    defer {
+      shouldRemovedIndices.sorted(by: >).forEach { index in
+        blockViews.remove(at: index)
+      }
+    }
     for idx in 0 ..< max(blockViews.count, manifests.count) {
       guard let manifest = manifests[safe: idx] else {
         if let view = blockViews[safe: idx] {
           view.removeFromSuperview()
-          blockViews.remove(at: idx)
+          shouldRemovedIndices.append(idx)
         }
         continue
       }

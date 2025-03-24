@@ -33,7 +33,6 @@ public class IntelligentsEphemeralActionController: UIViewController {
   var chatTask: EventSource?
   var copilotDocumentStorage: String = "" {
     didSet {
-      guard copilotDocumentStorage != oldValue else { return }
       updateDocumentPresentationView()
       scrollToBottom()
     }
