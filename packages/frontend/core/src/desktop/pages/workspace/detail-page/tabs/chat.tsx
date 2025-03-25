@@ -88,6 +88,9 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
           return docDisplayMetaService.icon$(docId, { type: 'lit' }).value;
         },
         getTitle: (docId: string) => {
+          return docDisplayMetaService.title$(docId).value;
+        },
+        getTitleSignal: (docId: string) => {
           const title$ = docDisplayMetaService.title$(docId);
           return createSignalFromObservable(title$, '');
         },

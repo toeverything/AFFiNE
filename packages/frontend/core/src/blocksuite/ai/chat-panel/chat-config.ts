@@ -28,7 +28,8 @@ export interface AINetworkSearchConfig {
 
 export interface DocDisplayConfig {
   getIcon: (docId: string) => any;
-  getTitle: (docId: string) => {
+  getTitle: (docId: string) => string;
+  getTitleSignal: (docId: string) => {
     signal: Signal<string>;
     cleanup: () => void;
   };

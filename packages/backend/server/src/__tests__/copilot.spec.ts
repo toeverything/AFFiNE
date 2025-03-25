@@ -1381,19 +1381,24 @@ test('should be able to manage context', async t => {
     }
 
     // doc record
-    const docId = randomUUID();
-    await t.context.db.snapshot.create({
-      data: {
-        workspaceId: session.workspaceId,
-        id: docId,
-        blob: Buffer.from([1, 1]),
-        state: Buffer.from([1, 1]),
-        updatedAt: new Date(),
-        createdAt: new Date(),
-      },
-    });
+
+    const addDoc = async () => {
+      const docId = randomUUID();
+      await t.context.db.snapshot.create({
+        data: {
+          workspaceId: session.workspaceId,
+          id: docId,
+          blob: Buffer.from([1, 1]),
+          state: Buffer.from([1, 1]),
+          updatedAt: new Date(),
+          createdAt: new Date(),
+        },
+      });
+      return docId;
+    };
 
     {
+      const docId = await addDoc();
       await session.addDocRecord(docId);
       const docs = session.docs.map(d => d.id);
       t.deepEqual(docs, [docId], 'should list doc id');
@@ -1405,50 +1410,65 @@ test('should be able to manage context', async t => {
     // tag record
     {
       const tagId = randomUUID();
-      await session.addCategoryRecord(ContextCategories.Tag, tagId, [docId]);
-      const tags = session.tags.map(t => t.id);
-      t.deepEqual(tags, [tagId], 'should list tag id');
+
+      const docId1 = await addDoc();
+      const docId2 = await addDoc();
+
+      {
+        await session.addCategoryRecord(ContextCategories.Tag, tagId, [docId1]);
+        const tags = session.tags.map(t => t.id);
+        t.deepEqual(tags, [tagId], 'should list tag id');
+
+        const docs = session.tags.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1], 'should list doc ids');
+      }
+
+      {
+        await session.addCategoryRecord(ContextCategories.Tag, tagId, [docId2]);
+
+        const docs = session.tags.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1, docId2], 'should list doc ids');
+      }
 
       await session.removeCategoryRecord(ContextCategories.Tag, tagId);
       t.deepEqual(session.tags, [], 'should remove tag id');
-
-      await t.throwsAsync(
-        session.addCategoryRecord(ContextCategories.Tag, tagId, [
-          'not-exists-doc',
-        ]),
-        {
-          instanceOf: Error,
-        },
-        'should throw error if doc id not exists'
-      );
     }
 
     // collection record
     {
       const collectionId = randomUUID();
-      await session.addCategoryRecord(
-        ContextCategories.Collection,
-        collectionId,
-        [docId]
-      );
-      const collection = session.collections.map(l => l.id);
-      t.deepEqual(collection, [collectionId], 'should list collection id');
+
+      const docId1 = await addDoc();
+      const docId2 = await addDoc();
+      {
+        await session.addCategoryRecord(
+          ContextCategories.Collection,
+          collectionId,
+          [docId1]
+        );
+        const collection = session.collections.map(l => l.id);
+        t.deepEqual(collection, [collectionId], 'should list collection id');
+
+        const docs = session.collections.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1], 'should list doc ids');
+      }
+
+      {
+        await session.addCategoryRecord(
+          ContextCategories.Collection,
+          collectionId,
+          [docId2]
+        );
+
+        const docs = session.collections.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1, docId2], 'should list doc ids');
+      }
 
       await session.removeCategoryRecord(
         ContextCategories.Collection,
         collectionId
       );
       t.deepEqual(session.collections, [], 'should remove collection id');
-
-      await t.throwsAsync(
-        session.addCategoryRecord(ContextCategories.Collection, collectionId, [
-          'not-exists-doc',
-        ]),
-        {
-          instanceOf: Error,
-        },
-        'should throw error if doc id not exists'
-      );
     }
   }
 });

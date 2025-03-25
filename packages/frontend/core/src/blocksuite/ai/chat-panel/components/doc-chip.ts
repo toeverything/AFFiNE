@@ -47,7 +47,9 @@ export class ChatPanelDocChip extends SignalWatcher(
   override connectedCallback() {
     super.connectedCallback();
 
-    const { signal, cleanup } = this.docDisplayConfig.getTitle(this.chip.docId);
+    const { signal, cleanup } = this.docDisplayConfig.getTitleSignal(
+      this.chip.docId
+    );
     this.chipName = signal;
     this.disposables.add(cleanup);
 

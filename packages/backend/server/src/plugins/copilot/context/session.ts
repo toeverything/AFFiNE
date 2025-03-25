@@ -1,6 +1,5 @@
 import { nanoid } from 'nanoid';
 
-import { CopilotDocsNotFound } from '../../../base';
 import {
   ContextCategories,
   ContextCategory,
@@ -63,22 +62,35 @@ export class ContextSession implements AsyncDisposable {
   }
 
   async addCategoryRecord(type: ContextCategories, id: string, docs: string[]) {
-    const existDocs = await this.models.doc.existsAll(this.workspaceId, docs);
-    if (!existDocs) {
-      throw new CopilotDocsNotFound();
-    }
-
     const category = this.config.categories.find(
       c => c.type === type && c.id === id
     );
     if (category) {
+      const missingDocs = docs.filter(
+        docId => !category.docs.some(d => d.id === docId)
+      );
+      if (missingDocs.length) {
+        category.docs.push(
+          ...missingDocs.map(id => ({
+            id,
+            createdAt: Date.now(),
+            status: ContextEmbedStatus.processing,
+          }))
+        );
+        await this.save();
+      }
+
       return category;
     }
     const createdAt = Date.now();
     const record = {
       id,
       type,
-      docs: docs.map(id => ({ id, createdAt, status: null })),
+      docs: docs.map(id => ({
+        id,
+        createdAt,
+        status: ContextEmbedStatus.processing,
+      })),
       createdAt,
     };
     this.config.categories.push(record);

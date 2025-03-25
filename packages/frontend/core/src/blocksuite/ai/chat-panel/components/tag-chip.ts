@@ -1,6 +1,7 @@
 import type { TagMeta } from '@affine/core/components/page-list';
 import { ShadowlessElement } from '@blocksuite/affine/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
+import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -21,7 +22,7 @@ export class ChatPanelTagChip extends SignalWatcher(
       height: 8px;
       width: 8px;
       margin: 4px;
-      background-color: var(--affine-color-secondary);
+      background-color: ${unsafeCSSVarV2('icon/secondary')};
     }
   `;
 

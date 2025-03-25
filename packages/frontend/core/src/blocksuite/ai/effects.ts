@@ -27,6 +27,7 @@ import { ChatPanelChips } from './chat-panel/chat-panel-chips';
 import { ChatPanelInput } from './chat-panel/chat-panel-input';
 import { ChatPanelMessages } from './chat-panel/chat-panel-messages';
 import { ChatPanelAddPopover } from './chat-panel/components/add-popover';
+import { ChatPanelCandidatesPopover } from './chat-panel/components/candidates-popover';
 import { ChatPanelChip } from './chat-panel/components/chip';
 import { ChatPanelCollectionChip } from './chat-panel/components/collection-chip';
 import { ChatPanelDocChip } from './chat-panel/components/doc-chip';
@@ -100,6 +101,10 @@ export function registerAIEffects() {
   customElements.define('chat-panel', ChatPanel);
   customElements.define('chat-panel-chips', ChatPanelChips);
   customElements.define('chat-panel-add-popover', ChatPanelAddPopover);
+  customElements.define(
+    'chat-panel-candidates-popover',
+    ChatPanelCandidatesPopover
+  );
   customElements.define('chat-panel-doc-chip', ChatPanelDocChip);
   customElements.define('chat-panel-file-chip', ChatPanelFileChip);
   customElements.define('chat-panel-tag-chip', ChatPanelTagChip);

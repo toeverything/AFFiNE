@@ -19,5 +19,5 @@ runs:
         NODE_ENV: test
       run: |
         yarn affine @affine/server prisma generate
-        yarn affine @affine/server prisma migrate reset -f
+        yarn affine @affine/server prisma migrate deploy
         yarn affine @affine/server data-migration run
