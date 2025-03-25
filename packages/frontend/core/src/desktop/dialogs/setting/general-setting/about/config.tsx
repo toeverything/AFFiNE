@@ -21,7 +21,7 @@ export const relatedLinks = [
   {
     icon: <DiscordIcon />,
     title: 'Discord',
-    link: 'https://discord.gg/Yjf5VFEn',
+    link: 'https://discord.gg/whd5mjYqVw',
   },
   {
     icon: <YouTubeIcon />,

@@ -59,7 +59,7 @@ type ImportConfig = {
   ) => Promise<ImportResult>;
 };
 
-const DISCORD_URL = 'https://discord.gg/Yjf5VFEn';
+const DISCORD_URL = 'https://discord.gg/whd5mjYqVw';
 
 const importOptions = [
   {
@@ -305,7 +305,7 @@ const ImportOptions = ({
         {t['com.affine.import.modal.tip']()}{' '}
         <a
           className={style.link}
-          href="https://discord.gg/Yjf5VFEn"
+          href="https://discord.gg/whd5mjYqVw"
           target="_blank"
           rel="noreferrer"
         >
