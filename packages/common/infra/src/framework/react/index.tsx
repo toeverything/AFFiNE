@@ -71,7 +71,8 @@ export const FrameworkScope = ({
 
   const nextStack = useMemo(() => {
     if (!scope) return provider;
-    return new FrameworkStackProvider([provider, scope.framework]);
+    // make sure the stack order is inside to outside
+    return new FrameworkStackProvider([scope.framework, provider]);
   }, [scope, provider]);
 
   return (

@@ -3,6 +3,8 @@ import {
   ExpiredPage,
   JoinFailedPage,
 } from '@affine/component/member-components';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { WorkspacesService } from '@affine/core/modules/workspace';
 import { UserFriendlyError } from '@affine/error';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect } from 'react';
@@ -17,6 +19,7 @@ import { AcceptInviteService, AuthService } from '../../../modules/cloud';
 const AcceptInvite = ({ inviteId: targetInviteId }: { inviteId: string }) => {
   const { jumpToPage } = useNavigateHelper();
   const acceptInviteService = useService(AcceptInviteService);
+  const workspacesService = useService(WorkspacesService);
   const error = useLiveData(acceptInviteService.error$);
   const inviteId = useLiveData(acceptInviteService.inviteId$);
   const inviteInfo = useLiveData(acceptInviteService.inviteInfo$);
@@ -24,19 +27,20 @@ const AcceptInvite = ({ inviteId: targetInviteId }: { inviteId: string }) => {
   const loading = useLiveData(acceptInviteService.loading$);
   const navigateHelper = useNavigateHelper();
 
-  const openWorkspace = useCallback(() => {
+  const openWorkspace = useAsyncCallback(async () => {
     if (!inviteInfo?.workspace.id) {
       return;
     }
+    await workspacesService.list.waitForRevalidation();
     jumpToPage(inviteInfo.workspace.id, 'all', RouteLogic.REPLACE);
-  }, [jumpToPage, inviteInfo]);
+  }, [inviteInfo, workspacesService, jumpToPage]);
 
   const onOpenAffine = useCallback(() => {
     navigateHelper.jumpToIndex();
   }, [navigateHelper]);
 
   useEffect(() => {
-    acceptInviteService.revalidate({
+    acceptInviteService.acceptInvite({
       inviteId: targetInviteId,
     });
   }, [acceptInviteService, targetInviteId]);
@@ -45,10 +49,10 @@ const AcceptInvite = ({ inviteId: targetInviteId }: { inviteId: string }) => {
     if (error && inviteId === targetInviteId) {
       const err = UserFriendlyError.fromAny(error);
       if (err.is('ALREADY_IN_SPACE')) {
-        return navigateHelper.jumpToIndex();
+        return openWorkspace();
       }
     }
-  }, [error, inviteId, navigateHelper, targetInviteId]);
+  }, [error, inviteId, navigateHelper, openWorkspace, targetInviteId]);
 
   if (loading || inviteId !== targetInviteId) {
     return null;

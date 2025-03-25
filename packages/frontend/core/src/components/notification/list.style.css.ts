@@ -34,6 +34,7 @@ export const itemContainer = style({
   position: 'relative',
   padding: '8px',
   gap: '8px',
+  cursor: 'pointer',
   selectors: {
     [`&:hover:not([data-disabled="true"])`]: {
       backgroundColor: cssVarV2('layer/background/hoverOverlay'),
@@ -81,9 +82,17 @@ export const itemDeleteButton = style({
 export const itemNameLabel = style({
   fontWeight: 'bold',
   color: cssVarV2('text/primary'),
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '4px',
+  lineHeight: '22px',
   selectors: {
     [`&[data-inactived="true"]`]: {
       color: cssVarV2('text/placeholder'),
     },
   },
+});
+
+export const itemActionButton = style({
+  width: 'fit-content',
 });

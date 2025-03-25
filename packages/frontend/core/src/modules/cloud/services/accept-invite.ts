@@ -9,7 +9,7 @@ import {
   Service,
   smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import { EMPTY, mergeMap, switchMap } from 'rxjs';
 
 import type { AcceptInviteStore } from '../stores/accept-invite';
 import type { InviteInfoStore } from '../stores/invite-info';
@@ -29,8 +29,8 @@ export class AcceptInviteService extends Service {
   loading$ = new LiveData(false);
   error$ = new LiveData<any>(null);
 
-  readonly revalidate = effect(
-    exhaustMap(({ inviteId }: { inviteId: string }) => {
+  readonly acceptInvite = effect(
+    switchMap(({ inviteId }: { inviteId: string }) => {
       if (!inviteId) {
         return EMPTY;
       }
@@ -51,7 +51,9 @@ export class AcceptInviteService extends Service {
           this.accepted$.next(res);
           return EMPTY;
         }),
-        smartRetry(),
+        smartRetry({
+          count: 1,
+        }),
         catchErrorInto(this.error$),
         onStart(() => {
           this.inviteId$.setValue(inviteId);
@@ -66,7 +68,21 @@ export class AcceptInviteService extends Service {
     })
   );
 
+  async waitForAcceptInvite(inviteId: string) {
+    this.acceptInvite({ inviteId });
+    await this.loading$.waitFor(f => !f);
+    if (this.accepted$.value) {
+      return true; // invite is accepted
+    }
+
+    if (this.error$.value) {
+      throw this.error$.value;
+    }
+
+    return false; // invite is expired
+  }
+
   override dispose(): void {
-    this.revalidate.unsubscribe();
+    this.acceptInvite.unsubscribe();
   }
 }

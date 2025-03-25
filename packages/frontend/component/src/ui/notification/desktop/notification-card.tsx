@@ -1,3 +1,4 @@
+import { useI18n } from '@affine/i18n';
 import { CloseIcon, InformationFillDuotoneIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import { useCallback } from 'react';
@@ -10,6 +11,7 @@ import * as styles from './styles.css';
 export const DesktopNotificationCard = ({
   notification,
 }: NotificationCardProps) => {
+  const t = useI18n();
   const {
     theme = 'info',
     style = 'normal',
@@ -17,12 +19,19 @@ export const DesktopNotificationCard = ({
     iconColor,
     thumb,
     action,
+    error,
     title,
     footer,
     alignMessage = 'title',
     onDismiss,
     rootAttrs,
   } = notification;
+
+  const errorI18nKey = error ? (`error.${error.name}` as const) : undefined;
+  const errorTitle =
+    errorI18nKey && errorI18nKey in t
+      ? t[errorI18nKey](error?.data)
+      : undefined;
 
   const onActionClicked = useCallback(() => {
     action?.onClick()?.catch(console.error);
@@ -46,7 +55,7 @@ export const DesktopNotificationCard = ({
               {icon}
             </div>
           ) : null}
-          <div className={styles.title}>{title}</div>
+          <div className={styles.title}>{title ?? errorTitle}</div>
 
           {action ? (
             <div className={clsx(styles.headAlignWrapper, styles.action)}>

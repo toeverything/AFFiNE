@@ -1115,6 +1115,10 @@ export function useAFFiNEI18N(): {
         readonly second: string;
     }): string;
     /**
+      * `Sent`
+      */
+    ["com.affine.auth.sent"](): string;
+    /**
       * `The verification link failed to be sent, please try again later.`
       */
     ["com.affine.auth.sent.change.email.fail"](): string;
@@ -7418,6 +7422,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.attachmentViewer.audio.transcribing"](): string;
     /**
+      * `Accept & Join`
+      */
+    ["com.affine.notification.invitation.accept"](): string;
+    /**
       * `An internal error occurred.`
       */
     ["error.INTERNAL_SERVER_ERROR"](): string;
@@ -8450,5 +8458,31 @@ export const TypedTrans: {
         readonly lastImportedAt: string;
     }, {
         a: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> has accept your invitation`
+      */
+    ["com.affine.notification.invitation-accepted"]: ComponentType<TypedTransProps<{
+        readonly username: string;
+    }, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `There is an issue regarding your invitation to <1>{{workspaceName}}</1> `
+      */
+    ["com.affine.notification.invitation-blocked"]: ComponentType<TypedTransProps<{
+        readonly workspaceName: string;
+    }, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> invited you to join <2>{{workspaceName}}</2>`
+      */
+    ["com.affine.notification.invitation"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        workspaceName: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
 } = /*#__PURE__*/ createProxy(createComponent);
