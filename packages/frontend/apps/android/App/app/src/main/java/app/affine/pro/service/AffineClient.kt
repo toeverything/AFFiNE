@@ -19,15 +19,15 @@ class AffineClient @Inject constructor() {
             .build()
     }
 
-    suspend fun <D : Query.Data> query(query: Query<D>): ApolloResponse<D> {
-        return _client.query(query).execute()
+    suspend fun <D : Query.Data> query(query: Query<D>) = runCatching {
+        _client.query(query).execute().dataOrThrow()
     }
 
-    suspend fun <D : Mutation.Data> mutation(mutation: Mutation<D>): ApolloResponse<D> {
-        return _client.mutation(mutation).execute()
+    suspend fun <D : Mutation.Data> mutation(mutation: Mutation<D>) = runCatching {
+        _client.mutation(mutation).execute().dataOrThrow()
     }
 
-    suspend fun <D : Subscription.Data> subscription(subscription: Subscription<D>): ApolloResponse<D> {
-        return _client.subscription(subscription).execute()
+    suspend fun <D : Subscription.Data> subscription(subscription: Subscription<D>) = runCatching {
+        _client.subscription(subscription).execute().dataOrThrow()
     }
 }

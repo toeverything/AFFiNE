@@ -43,9 +43,12 @@ class AIActivity : AppCompatActivity() {
     private val viewModel by viewModels<ChatViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        setupTheme()
+        enableEdgeToEdge()
+        delegate.localNightMode = AppCompatDelegate.MODE_NIGHT_YES
         super.onCreate(savedInstanceState)
-        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets -> insets }
+        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { v, insets ->
+            ViewCompat.onApplyWindowInsets(v, insets)
+        }
         setContent {
             val scope = rememberCoroutineScope()
             val scrollState = rememberLazyListState()
@@ -93,11 +96,6 @@ class AIActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    private fun setupTheme() {
-        enableEdgeToEdge()
-        delegate.localNightMode = AppCompatDelegate.MODE_NIGHT_YES
     }
 
     companion object {
