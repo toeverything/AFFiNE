@@ -1,7 +1,7 @@
 package app.affine.pro.repo
 
 import app.affine.pro.ai.Prompt
-import app.affine.pro.service.AffineClient
+import app.affine.pro.service.GraphQLClient
 import com.affine.pro.graphql.CreateCopilotMessageMutation
 import com.affine.pro.graphql.CreateCopilotSessionMutation
 import com.affine.pro.graphql.GetCopilotHistoriesQuery
@@ -13,8 +13,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NetworkRepo @Inject constructor(
-    private val client: AffineClient
+class GraphQLRepo @Inject constructor(
+    private val client: GraphQLClient
 ) {
 
     suspend fun getCopilotSession(workspaceId: String, docId: String) = client.query(

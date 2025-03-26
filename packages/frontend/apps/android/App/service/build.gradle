@@ -10,8 +10,7 @@ dependencies {
 apollo {
     service("affine") {
         srcDir("../../../../../common/graphql/src/graphql")
-        packageName.set("com.affine.pro.graphql")
         schemaFiles.from("../../../../../backend/server/src/schema.gql")
-        generateSourcesDuringGradleSync.set(true)
+        packageName.set("com.affine.pro.graphql")
     }
 }

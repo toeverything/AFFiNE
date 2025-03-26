@@ -81,7 +81,7 @@ class AIActivity : AppCompatActivity() {
                         }
                         UserInput(
                             onMessageSent = { content ->
-
+                                viewModel.sendMessage(content)
                             },
                             resetScroll = {
                                 scope.launch {

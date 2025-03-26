@@ -107,6 +107,12 @@ dependencies {
     implementation libs.jna
     implementation libs.kotlinx.coroutines.android
 
+    def okhttpBom = platform(libs.okhttp.bom)
+    implementation okhttpBom
+    implementation libs.okhttp
+    implementation libs.okhttp.logging
+    implementation libs.okhttp.sse
+
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
