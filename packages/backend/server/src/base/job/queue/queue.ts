@@ -15,7 +15,7 @@ export class JobQueue {
     const ns = namespace(name);
     const queue = this.getQueue(ns);
     const job = await queue.add(name, payload, opts);
-    this.logger.debug(`Job [${name}] added; id=${job.id}`);
+    this.logger.log(`Job [${name}] added; id=${job.id}`);
     return job;
   }
 
