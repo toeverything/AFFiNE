@@ -7,6 +7,7 @@ import {
   RawBody,
   Res,
 } from '@nestjs/common';
+import { Args } from '@nestjs/graphql';
 import type { Response } from 'express';
 
 import { NotFound, SkipThrottle } from '../../base';
@@ -76,9 +77,12 @@ export class DocRpcController {
   @Get('/workspaces/:workspaceId/docs/:docId/content')
   async getDocContent(
     @Param('workspaceId') workspaceId: string,
-    @Param('docId') docId: string
+    @Param('docId') docId: string,
+    @Args('full', { nullable: true }) fullContent?: boolean
   ) {
-    const content = await this.docReader.getDocContent(workspaceId, docId);
+    const content = fullContent
+      ? await this.docReader.getFullDocContent(workspaceId, docId)
+      : await this.docReader.getDocContent(workspaceId, docId);
     if (!content) {
       throw new NotFound('Doc not found');
     }

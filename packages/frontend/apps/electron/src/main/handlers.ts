@@ -9,6 +9,7 @@ import { recordingHandlers } from './recording';
 import { sharedStorageHandlers } from './shared-storage';
 import { uiHandlers } from './ui/handlers';
 import { updaterHandlers } from './updater';
+import { popupHandlers } from './windows-manager/popup';
 import { workerHandlers } from './worker/handlers';
 
 export const debugHandlers = {
@@ -31,6 +32,7 @@ export const allHandlers = {
   sharedStorage: sharedStorageHandlers,
   worker: workerHandlers,
   recording: recordingHandlers,
+  popup: popupHandlers,
 };
 
 export const registerHandlers = () => {

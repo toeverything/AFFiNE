@@ -5,7 +5,7 @@ import {
   MobileMenuSub,
   useConfirmModal,
 } from '@affine/component';
-import { DocPermissionGuard } from '@affine/core/components/guard/doc-guard';
+import { Guard } from '@affine/core/components/guard';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import {
   type DocRecord,
@@ -59,7 +59,7 @@ export const ResolveConflictOperations = ({
 
   return (
     <>
-      <DocPermissionGuard docId={docRecord.id} permission="Doc_Update">
+      <Guard docId={docRecord.id} permission="Doc_Update">
         {canEdit => (
           <MobileMenuItem
             prefixIcon={<CalendarXmarkIcon />}
@@ -72,15 +72,15 @@ export const ResolveConflictOperations = ({
             {t['com.affine.page-properties.property.journal-remove']()}
           </MobileMenuItem>
         )}
-      </DocPermissionGuard>
-      <DocPermissionGuard docId={docRecord.id} permission="Doc_Trash">
+      </Guard>
+      <Guard docId={docRecord.id} permission="Doc_Trash">
         {canTrash => (
           <MoveToTrash
             onSelect={() => handleOpenTrashModal(docRecord)}
             disabled={!canTrash}
           />
         )}
-      </DocPermissionGuard>
+      </Guard>
     </>
   );
 };

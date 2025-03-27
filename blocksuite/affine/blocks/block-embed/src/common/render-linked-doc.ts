@@ -412,7 +412,8 @@ export function createLinkedDocFromSlice(
   snapshots: BlockSnapshot[],
   docTitle?: string
 ) {
-  const linkedDoc = doc.workspace.createDoc({});
+  const _doc = doc.workspace.createDoc();
+  const linkedDoc = _doc.getStore();
   linkedDoc.load(() => {
     const rootId = linkedDoc.addBlock('affine:page', {
       title: new Text(docTitle),

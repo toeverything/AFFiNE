@@ -316,7 +316,7 @@ export class GfxSelectionManager extends GfxExtension {
     }
 
     const { blocks = [], elements = [] } = groupBy(selection.elements, id => {
-      return this.std.store.getModelById(id) ? 'blocks' : 'elements';
+      return this.std.store.hasBlock(id) ? 'blocks' : 'elements';
     });
     let instances: (SurfaceSelection | CursorSelection)[] = [];
 
@@ -370,6 +370,21 @@ export class GfxSelectionManager extends GfxExtension {
         this._activeGroup = null;
       }
     }
+  }
+
+  /**
+   * Toggle the selection state of single element
+   * @param element
+   * @returns
+   */
+  toggle(element: GfxModel | string) {
+    element = typeof element === 'string' ? element : element.id;
+
+    this.set({
+      elements: this.has(element)
+        ? this.selectedIds.filter(id => id !== element)
+        : [...this.selectedIds, element],
+    });
   }
 
   setCursor(cursor: CursorSelection | IPoint) {

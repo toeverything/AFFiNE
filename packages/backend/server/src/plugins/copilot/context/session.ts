@@ -1,30 +1,24 @@
-import { PrismaClient } from '@prisma/client';
 import { nanoid } from 'nanoid';
 
-import { PrismaTransaction } from '../../../base';
 import {
-  ChunkSimilarity,
   ContextCategories,
+  ContextCategory,
   ContextConfig,
   ContextDoc,
   ContextEmbedStatus,
   ContextFile,
   ContextList,
-  DocChunkSimilarity,
-  EmbeddingClient,
-  FileChunkSimilarity,
-} from './types';
+  Models,
+} from '../../../models';
+import { EmbeddingClient } from './types';
 
 export class ContextSession implements AsyncDisposable {
   constructor(
     private readonly client: EmbeddingClient,
     private readonly contextId: string,
     private readonly config: ContextConfig,
-    private readonly db: PrismaClient,
-    private readonly dispatcher?: (
-      config: ContextConfig,
-      tx?: PrismaTransaction
-    ) => Promise<void>
+    private readonly models: Models,
+    private readonly dispatcher?: (config: ContextConfig) => Promise<void>
   ) {}
 
   get id() {
@@ -35,11 +29,28 @@ export class ContextSession implements AsyncDisposable {
     return this.config.workspaceId;
   }
 
-  listDocs(): ContextDoc[] {
-    return [...this.config.docs];
+  get categories(): ContextCategory[] {
+    return this.config.categories.map(c => ({
+      ...c,
+      docs: c.docs.map(d => ({ ...d })),
+    }));
   }
 
-  listFiles() {
+  get tags() {
+    const categories = this.config.categories;
+    return categories.filter(c => c.type === ContextCategories.Tag);
+  }
+
+  get collections() {
+    const categories = this.config.categories;
+    return categories.filter(c => c.type === ContextCategories.Collection);
+  }
+
+  get docs(): ContextDoc[] {
+    return this.config.docs.map(d => ({ ...d }));
+  }
+
+  get files() {
     return this.config.files.map(f => ({ ...f }));
   }
 
@@ -50,14 +61,38 @@ export class ContextSession implements AsyncDisposable {
     ) as ContextList;
   }
 
-  async addCategoryRecord(type: ContextCategories, id: string) {
+  async addCategoryRecord(type: ContextCategories, id: string, docs: string[]) {
     const category = this.config.categories.find(
       c => c.type === type && c.id === id
     );
     if (category) {
+      const missingDocs = docs.filter(
+        docId => !category.docs.some(d => d.id === docId)
+      );
+      if (missingDocs.length) {
+        category.docs.push(
+          ...missingDocs.map(id => ({
+            id,
+            createdAt: Date.now(),
+            status: ContextEmbedStatus.processing,
+          }))
+        );
+        await this.save();
+      }
+
       return category;
     }
-    const record = { id, type, createdAt: Date.now() };
+    const createdAt = Date.now();
+    const record = {
+      id,
+      type,
+      docs: docs.map(id => ({
+        id,
+        createdAt,
+        status: ContextEmbedStatus.processing,
+      })),
+      createdAt,
+    };
     this.config.categories.push(record);
     await this.save();
     return record;
@@ -79,7 +114,7 @@ export class ContextSession implements AsyncDisposable {
     if (doc) {
       return doc;
     }
-    const record = { id: docId, createdAt: Date.now(), status: null };
+    const record = { id: docId, createdAt: Date.now() };
     this.config.docs.push(record);
     await this.save();
     return record;
@@ -122,14 +157,10 @@ export class ContextSession implements AsyncDisposable {
   }
 
   async removeFile(fileId: string): Promise<boolean> {
-    return await this.db.$transaction(async tx => {
-      await tx.aiContextEmbedding.deleteMany({
-        where: { contextId: this.contextId, fileId },
-      });
-      this.config.files = this.config.files.filter(f => f.id !== fileId);
-      await this.save(tx);
-      return true;
-    });
+    await this.models.copilotContext.deleteEmbedding(this.contextId, fileId);
+    this.config.files = this.config.files.filter(f => f.id !== fileId);
+    await this.save();
+    return true;
   }
 
   /**
@@ -145,21 +176,18 @@ export class ContextSession implements AsyncDisposable {
     topK: number = 5,
     signal?: AbortSignal,
     threshold: number = 0.7
-  ): Promise<FileChunkSimilarity[]> {
+  ) {
     const embedding = await this.client
       .getEmbeddings([content], signal)
       .then(r => r?.[0]?.embedding);
     if (!embedding) return [];
-    const similarityChunks = await this.db.$queryRaw<
-      Array<FileChunkSimilarity>
-    >`
-      SELECT "file_id" as "fileId", "chunk", "content", "embedding" <=> ${embedding}::vector as "distance" 
-      FROM "ai_context_embeddings"
-      WHERE context_id = ${this.id}
-      ORDER BY "distance" ASC
-      LIMIT ${topK};
-    `;
-    return similarityChunks.filter(c => Number(c.distance) <= threshold);
+
+    return this.models.copilotContext.matchContentEmbedding(
+      embedding,
+      this.id,
+      topK,
+      threshold
+    );
   }
 
   /**
@@ -175,19 +203,18 @@ export class ContextSession implements AsyncDisposable {
     topK: number = 5,
     signal?: AbortSignal,
     threshold: number = 0.7
-  ): Promise<ChunkSimilarity[]> {
+  ) {
     const embedding = await this.client
       .getEmbeddings([content], signal)
       .then(r => r?.[0]?.embedding);
     if (!embedding) return [];
-    const similarityChunks = await this.db.$queryRaw<Array<DocChunkSimilarity>>`
-      SELECT "doc_id" as "docId", "chunk", "content", "embedding" <=> ${embedding}::vector as "distance"
-      FROM "ai_workspace_embeddings"
-      WHERE "workspace_id" = ${this.workspaceId}
-      ORDER BY "distance" ASC
-      LIMIT ${topK};
-    `;
-    return similarityChunks.filter(c => Number(c.distance) <= threshold);
+
+    return this.models.copilotContext.matchWorkspaceEmbedding(
+      embedding,
+      this.workspaceId,
+      topK,
+      threshold
+    );
   }
 
   async saveFileRecord(
@@ -195,8 +222,7 @@ export class ContextSession implements AsyncDisposable {
     cb: (
       record: Pick<ContextFile, 'id' | 'status'> &
         Partial<Omit<ContextFile, 'id' | 'status'>>
-    ) => ContextFile,
-    tx?: PrismaTransaction
+    ) => ContextFile
   ) {
     const files = this.config.files;
     const file = files.find(f => f.id === fileId);
@@ -206,11 +232,11 @@ export class ContextSession implements AsyncDisposable {
       const file = { id: fileId, status: ContextEmbedStatus.processing };
       files.push(cb(file));
     }
-    await this.save(tx);
+    await this.save();
   }
 
-  async save(tx?: PrismaTransaction) {
-    await this.dispatcher?.(this.config, tx);
+  async save() {
+    await this.dispatcher?.(this.config);
   }
 
   async [Symbol.asyncDispose]() {

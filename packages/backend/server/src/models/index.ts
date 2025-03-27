@@ -17,10 +17,10 @@ import { HistoryModel } from './history';
 import { NotificationModel } from './notification';
 import { MODELS_SYMBOL } from './provider';
 import { SessionModel } from './session';
-import { SettingsModel } from './settings';
 import { UserModel } from './user';
 import { UserDocModel } from './user-doc';
 import { UserFeatureModel } from './user-feature';
+import { UserSettingsModel } from './user-settings';
 import { VerificationTokenModel } from './verification-token';
 import { WorkspaceModel } from './workspace';
 import { WorkspaceFeatureModel } from './workspace-feature';
@@ -40,7 +40,7 @@ const MODELS = {
   docUser: DocUserModel,
   history: HistoryModel,
   notification: NotificationModel,
-  settings: SettingsModel,
+  userSettings: UserSettingsModel,
   copilotSession: CopilotSessionModel,
   copilotContext: CopilotContextModel,
   copilotJob: CopilotJobModel,
@@ -104,10 +104,10 @@ export * from './feature';
 export * from './history';
 export * from './notification';
 export * from './session';
-export * from './settings';
 export * from './user';
 export * from './user-doc';
 export * from './user-feature';
+export * from './user-settings';
 export * from './verification-token';
 export * from './workspace';
 export * from './workspace-feature';

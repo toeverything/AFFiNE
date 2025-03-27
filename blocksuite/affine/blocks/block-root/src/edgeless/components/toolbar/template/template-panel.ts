@@ -10,6 +10,9 @@ import {
   requestConnectedFrame,
   stopPropagation,
 } from '@blocksuite/affine-shared/utils';
+import { EdgelessDraggableElementController } from '@blocksuite/affine-widget-edgeless-toolbar';
+import type { BlockComponent } from '@blocksuite/block-std';
+import { GfxControllerIdentifier } from '@blocksuite/block-std/gfx';
 import type { Bound } from '@blocksuite/global/gfx';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { baseTheme } from '@toeverything/theme';
@@ -19,8 +22,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { unsafeSVG } from 'lit/directives/unsafe-svg.js';
 
-import type { EdgelessRootBlockComponent } from '../../../edgeless-root-block.js';
-import { EdgelessDraggableElementController } from '../common/draggable/draggable-element.controller.js';
+import { EdgelessRootService } from '../../../edgeless-root-service.js';
 import { builtInTemplates } from './builtin-templates.js';
 import { defaultPreview, Triangle } from './cards.js';
 import type { Template } from './template-type.js';
@@ -252,7 +254,6 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
   private _initDragController() {
     if (this.draggableController) return;
     this.draggableController = new EdgelessDraggableElementController(this, {
-      service: this.edgeless.service,
       edgeless: this.edgeless,
       clickToDrag: true,
       standardWidth: 560,
@@ -273,6 +274,14 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
     });
   }
 
+  get service() {
+    return this.edgeless.std.get(EdgelessRootService);
+  }
+
+  get gfx() {
+    return this.edgeless.std.get(GfxControllerIdentifier);
+  }
+
   private async _insertTemplate(template: Template, bound: Bound) {
     this._loadingTemplate = template;
 
@@ -282,11 +291,7 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
       x: bound.x + bound.w / 2,
       y: bound.y + bound.h / 2,
     };
-    const templateJob = this.edgeless.service.createTemplateJob(
-      template.type,
-      center
-    );
-    const service = this.edgeless.service;
+    const templateJob = this.service.createTemplateJob(template.type, center);
 
     try {
       const { assets } = template;
@@ -304,8 +309,8 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
       const insertedBound = await templateJob.insertTemplate(template.content);
 
       if (insertedBound && template.type === 'template') {
-        const padding = 20 / service.viewport.zoom;
-        service.viewport.setViewportByBound(
+        const padding = 20 / this.gfx.viewport.zoom;
+        this.gfx.viewport.setViewportByBound(
           insertedBound,
           [padding, padding, padding, padding],
           true
@@ -313,7 +318,7 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
       }
     } finally {
       this._loadingTemplate = null;
-      this.edgeless.gfx.tool.setTool('default');
+      this.gfx.tool.setTool('default');
     }
   }
 
@@ -507,7 +512,7 @@ export class EdgelessTemplatePanel extends WithDisposable(LitElement) {
   private accessor _templates: Template[] = [];
 
   @property({ attribute: false })
-  accessor edgeless!: EdgelessRootBlockComponent;
+  accessor edgeless!: BlockComponent;
 
   @state()
   accessor isDragging = false;

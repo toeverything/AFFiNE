@@ -110,6 +110,7 @@ export class MenuInput extends MenuFocusable {
         this.menu.setFocusOnly(this);
       }}"
       @input="${this.onInput}"
+      placeholder="${this.data.placeholder ?? ''}"
       @keydown="${this.onKeydown}"
       @copy="${this.stopPropagation}"
       @paste="${this.stopPropagation}"

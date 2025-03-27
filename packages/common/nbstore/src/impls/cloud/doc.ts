@@ -18,6 +18,7 @@ import {
 
 interface CloudDocStorageOptions extends DocStorageOptions {
   serverBaseUrl: string;
+  isSelfHosted: boolean;
   type: SpaceType;
 }
 
@@ -185,7 +186,7 @@ class CloudDocStorageConnection extends SocketConnection {
     private readonly options: CloudDocStorageOptions,
     private readonly onServerUpdate: ServerEventsMap['space:broadcast-doc-update']
   ) {
-    super(options.serverBaseUrl);
+    super(options.serverBaseUrl, options.isSelfHosted);
   }
 
   idConverter: IdConverter | null = null;

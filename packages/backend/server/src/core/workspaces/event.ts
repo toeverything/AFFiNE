@@ -11,38 +11,6 @@ export class WorkspaceEvents {
     private readonly models: Models
   ) {}
 
-  @OnEvent('workspace.members.reviewRequested')
-  async onReviewRequested({
-    inviteId,
-  }: Events['workspace.members.reviewRequested']) {
-    // send review request mail to owner and admin
-    await this.workspaceService.sendReviewRequestedEmail(inviteId);
-  }
-
-  @OnEvent('workspace.members.requestApproved')
-  async onApproveRequest({
-    inviteId,
-  }: Events['workspace.members.requestApproved']) {
-    // send approve mail
-    await this.workspaceService.sendReviewApproveEmail(inviteId);
-  }
-
-  @OnEvent('workspace.members.requestDeclined')
-  async onDeclineRequest({
-    userId,
-    workspaceId,
-  }: Events['workspace.members.requestDeclined']) {
-    const user = await this.models.user.getWorkspaceUser(userId);
-    if (!user) {
-      return;
-    }
-    // send decline mail
-    await this.workspaceService.sendReviewDeclinedEmail(
-      user.email,
-      workspaceId
-    );
-  }
-
   @OnEvent('workspace.members.roleChanged')
   async onRoleChanged({
     userId,

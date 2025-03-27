@@ -7,27 +7,31 @@ public class GetMembersByWorkspaceIdQuery: GraphQLQuery {
   public static let operationName: String = "getMembersByWorkspaceId"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getMembersByWorkspaceId($workspaceId: String!, $skip: Int!, $take: Int!) { workspace(id: $workspaceId) { __typename memberCount members(skip: $skip, take: $take) { __typename id name email avatarUrl permission inviteId emailVerified status } } }"#
+      #"query getMembersByWorkspaceId($workspaceId: String!, $skip: Int, $take: Int, $query: String) { workspace(id: $workspaceId) { __typename memberCount members(skip: $skip, take: $take, query: $query) { __typename id name email avatarUrl permission inviteId emailVerified status } } }"#
     ))
 
   public var workspaceId: String
-  public var skip: Int
-  public var take: Int
+  public var skip: GraphQLNullable<Int>
+  public var take: GraphQLNullable<Int>
+  public var query: GraphQLNullable<String>
 
   public init(
     workspaceId: String,
-    skip: Int,
-    take: Int
+    skip: GraphQLNullable<Int>,
+    take: GraphQLNullable<Int>,
+    query: GraphQLNullable<String>
   ) {
     self.workspaceId = workspaceId
     self.skip = skip
     self.take = take
+    self.query = query
   }
 
   public var __variables: Variables? { [
     "workspaceId": workspaceId,
     "skip": skip,
-    "take": take
+    "take": take,
+    "query": query
   ] }
 
   public struct Data: AffineGraphQL.SelectionSet {
@@ -55,7 +59,8 @@ public class GetMembersByWorkspaceIdQuery: GraphQLQuery {
         .field("memberCount", Int.self),
         .field("members", [Member].self, arguments: [
           "skip": .variable("skip"),
-          "take": .variable("take")
+          "take": .variable("take"),
+          "query": .variable("query")
         ]),
       ] }
 
@@ -92,6 +97,7 @@ public class GetMembersByWorkspaceIdQuery: GraphQLQuery {
         /// User avatar url
         public var avatarUrl: String? { __data["avatarUrl"] }
         /// User permission in workspace
+        @available(*, deprecated, message: "Use role instead")
         public var permission: GraphQLEnum<AffineGraphQL.Permission> { __data["permission"] }
         /// Invite id
         public var inviteId: String { __data["inviteId"] }

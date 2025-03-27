@@ -1,8 +1,7 @@
 import { File } from 'node:buffer';
 
-import { z } from 'zod';
-
 import { CopilotContextFileNotSupported, OneMB } from '../../../base';
+import { Embedding } from '../../../models';
 import { parseDoc } from '../../../native';
 
 declare global {
@@ -26,97 +25,9 @@ declare global {
 
 export const MAX_EMBEDDABLE_SIZE = 50 * OneMB;
 
-export enum ContextEmbedStatus {
-  processing = 'processing',
-  finished = 'finished',
-  failed = 'failed',
-}
-
-export enum ContextCategories {
-  Tag = 'tag',
-  Collection = 'collection',
-}
-
-export const ContextConfigSchema = z.object({
-  workspaceId: z.string(),
-  files: z
-    .object({
-      id: z.string(),
-      chunkSize: z.number(),
-      name: z.string(),
-      status: z.enum([
-        ContextEmbedStatus.processing,
-        ContextEmbedStatus.finished,
-        ContextEmbedStatus.failed,
-      ]),
-      error: z.string().nullable(),
-      blobId: z.string(),
-      createdAt: z.number(),
-    })
-    .array(),
-  docs: z
-    .object({
-      id: z.string(),
-      // status for workspace doc embedding progress
-      // only exists when the client submits the doc embedding task
-      status: z
-        .enum([
-          ContextEmbedStatus.processing,
-          ContextEmbedStatus.finished,
-          ContextEmbedStatus.failed,
-        ])
-        .nullable(),
-      createdAt: z.number(),
-    })
-    .array(),
-  categories: z
-    .object({
-      id: z.string(),
-      type: z.enum([ContextCategories.Tag, ContextCategories.Collection]),
-      createdAt: z.number(),
-    })
-    .array(),
-});
-
-export const MinimalContextConfigSchema = ContextConfigSchema.pick({
-  workspaceId: true,
-});
-
-export type ContextConfig = z.infer<typeof ContextConfigSchema>;
-export type ContextCategory = z.infer<
-  typeof ContextConfigSchema
->['categories'][number];
-export type ContextDoc = z.infer<typeof ContextConfigSchema>['docs'][number];
-export type ContextFile = z.infer<typeof ContextConfigSchema>['files'][number];
-export type ContextListItem = ContextDoc | ContextFile;
-export type ContextList = ContextListItem[];
-
 export type Chunk = {
   index: number;
   content: string;
-};
-
-export type ChunkSimilarity = {
-  chunk: number;
-  content: string;
-  distance: number | null;
-};
-
-export type FileChunkSimilarity = ChunkSimilarity & {
-  fileId: string;
-};
-
-export type DocChunkSimilarity = ChunkSimilarity & {
-  docId: string;
-};
-
-export type Embedding = {
-  /**
-   * The index of the embedding in the list of embeddings.
-   */
-  index: number;
-  content: string;
-  embedding: Array<number>;
 };
 
 export abstract class EmbeddingClient {
@@ -150,10 +61,10 @@ export abstract class EmbeddingClient {
         });
       }
       const input = doc.chunks.toSorted((a, b) => a.index - b.index);
-      // chunk input into 32 every array
+      // chunk input into 128 every array
       const chunks: Chunk[][] = [];
-      for (let i = 0; i < input.length; i += 32) {
-        chunks.push(input.slice(i, i + 32));
+      for (let i = 0; i < input.length; i += 128) {
+        chunks.push(input.slice(i, i + 128));
       }
       return chunks;
     }

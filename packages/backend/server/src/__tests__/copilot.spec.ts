@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { ProjectRoot } from '@affine-tools/utils/path';
+import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
@@ -9,6 +10,7 @@ import { EventBus } from '../base';
 import { ConfigModule } from '../base/config';
 import { AuthService } from '../core/auth';
 import { QuotaModule } from '../core/quota';
+import { ContextCategories } from '../models';
 import { CopilotModule } from '../plugins/copilot';
 import {
   CopilotContextDocJob,
@@ -54,6 +56,7 @@ import { MockCopilotTestProvider, WorkflowTestCases } from './utils/copilot';
 const test = ava as TestFn<{
   auth: AuthService;
   module: TestingModule;
+  db: PrismaClient;
   event: EventBus;
   context: CopilotContextService;
   prompt: PromptService;
@@ -95,6 +98,7 @@ test.before(async t => {
   });
 
   const auth = module.get(AuthService);
+  const db = module.get(PrismaClient);
   const event = module.get(EventBus);
   const context = module.get(CopilotContextService);
   const prompt = module.get(PromptService);
@@ -106,6 +110,7 @@ test.before(async t => {
 
   t.context.module = module;
   t.context.auth = auth;
+  t.context.db = db;
   t.context.event = event;
   t.context.context = context;
   t.context.prompt = prompt;
@@ -1338,47 +1343,132 @@ test('should be able to manage context', async t => {
   {
     const session = await context.create(chatSession);
 
-    await storage.put(userId, session.workspaceId, 'blob', buffer);
+    // file record
+    {
+      await storage.put(userId, session.workspaceId, 'blob', buffer);
+      const file = await session.addFile('blob', 'sample.pdf');
 
-    const file = await session.addFile('blob', 'sample.pdf');
+      const handler = Sinon.spy(event, 'emit');
 
-    const handler = Sinon.spy(event, 'emit');
-
-    await jobs.embedPendingFile({
-      userId,
-      workspaceId: session.workspaceId,
-      contextId: session.id,
-      blobId: file.blobId,
-      fileId: file.id,
-      fileName: file.name,
-    });
-
-    t.deepEqual(handler.lastCall.args, [
-      'workspace.file.embed.finished',
-      {
+      await jobs.embedPendingFile({
+        userId,
+        workspaceId: session.workspaceId,
         contextId: session.id,
+        blobId: file.blobId,
         fileId: file.id,
-        chunkSize: 1,
-      },
-    ]);
+        fileName: file.name,
+      });
 
-    const list = session.listFiles();
-    t.deepEqual(
-      list.map(f => f.id),
-      [file.id],
-      'should list file id'
-    );
+      t.deepEqual(handler.lastCall.args, [
+        'workspace.file.embed.finished',
+        {
+          contextId: session.id,
+          fileId: file.id,
+          chunkSize: 1,
+        },
+      ]);
 
-    const docId = randomUUID();
-    await session.addDocRecord(docId);
-    const docs = session.listDocs().map(d => d.id);
-    t.deepEqual(docs, [docId], 'should list doc id');
+      const list = session.files;
+      t.deepEqual(
+        list.map(f => f.id),
+        [file.id],
+        'should list file id'
+      );
 
-    await session.removeDocRecord(docId);
-    t.deepEqual(session.listDocs(), [], 'should remove doc id');
+      const result = await session.matchFileChunks('test', 1, undefined, 1);
+      t.is(result.length, 1, 'should match context');
+      t.is(result[0].fileId, file.id, 'should match file id');
+    }
 
-    const result = await session.matchFileChunks('test', 1, undefined, 1);
-    t.is(result.length, 1, 'should match context');
-    t.is(result[0].fileId, file.id, 'should match file id');
+    // doc record
+
+    const addDoc = async () => {
+      const docId = randomUUID();
+      await t.context.db.snapshot.create({
+        data: {
+          workspaceId: session.workspaceId,
+          id: docId,
+          blob: Buffer.from([1, 1]),
+          state: Buffer.from([1, 1]),
+          updatedAt: new Date(),
+          createdAt: new Date(),
+        },
+      });
+      return docId;
+    };
+
+    {
+      const docId = await addDoc();
+      await session.addDocRecord(docId);
+      const docs = session.docs.map(d => d.id);
+      t.deepEqual(docs, [docId], 'should list doc id');
+
+      await session.removeDocRecord(docId);
+      t.deepEqual(session.docs, [], 'should remove doc id');
+    }
+
+    // tag record
+    {
+      const tagId = randomUUID();
+
+      const docId1 = await addDoc();
+      const docId2 = await addDoc();
+
+      {
+        await session.addCategoryRecord(ContextCategories.Tag, tagId, [docId1]);
+        const tags = session.tags.map(t => t.id);
+        t.deepEqual(tags, [tagId], 'should list tag id');
+
+        const docs = session.tags.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1], 'should list doc ids');
+      }
+
+      {
+        await session.addCategoryRecord(ContextCategories.Tag, tagId, [docId2]);
+
+        const docs = session.tags.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1, docId2], 'should list doc ids');
+      }
+
+      await session.removeCategoryRecord(ContextCategories.Tag, tagId);
+      t.deepEqual(session.tags, [], 'should remove tag id');
+    }
+
+    // collection record
+    {
+      const collectionId = randomUUID();
+
+      const docId1 = await addDoc();
+      const docId2 = await addDoc();
+      {
+        await session.addCategoryRecord(
+          ContextCategories.Collection,
+          collectionId,
+          [docId1]
+        );
+        const collection = session.collections.map(l => l.id);
+        t.deepEqual(collection, [collectionId], 'should list collection id');
+
+        const docs = session.collections.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1], 'should list doc ids');
+      }
+
+      {
+        await session.addCategoryRecord(
+          ContextCategories.Collection,
+          collectionId,
+          [docId2]
+        );
+
+        const docs = session.collections.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1, docId2], 'should list doc ids');
+      }
+
+      await session.removeCategoryRecord(
+        ContextCategories.Collection,
+        collectionId
+      );
+      t.deepEqual(session.collections, [], 'should remove collection id');
+    }
   }
 });

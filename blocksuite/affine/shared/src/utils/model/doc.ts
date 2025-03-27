@@ -9,29 +9,30 @@ export function createDefaultDoc(
   collection: Workspace,
   options: { id?: string; title?: string } = {}
 ) {
-  const doc = collection.createDoc({ id: options.id });
-
+  const doc = collection.createDoc(options.id);
   doc.load();
+
+  const store = doc.getStore();
   const title = options.title ?? '';
-  const rootId = doc.addBlock('affine:page', {
+  const rootId = store.addBlock('affine:page', {
     title: new Text(title),
   });
   collection.meta.setDocMeta(doc.id, {
     title,
   });
 
-  doc.addBlock('affine:surface', {}, rootId);
-  const noteId = doc.addBlock(
+  store.addBlock('affine:surface', {}, rootId);
+  const noteId = store.addBlock(
     'affine:note',
     {
       xywh: `[0, 0, ${DEFAULT_PAGE_BLOCK_WIDTH}, ${DEFAULT_PAGE_BLOCK_HEIGHT}]`,
     },
     rootId
   );
-  doc.addBlock('affine:paragraph', {}, noteId);
+  store.addBlock('affine:paragraph', {}, noteId);
   // To make sure the content of new doc would not be clear
   // By undo operation for the first time
   doc.resetHistory();
 
-  return doc;
+  return store;
 }

@@ -37,6 +37,13 @@ export interface Scalars {
   Upload: { input: File; output: File };
 }
 
+export interface AddContextCategoryInput {
+  categoryId: Scalars['String']['input'];
+  contextId: Scalars['String']['input'];
+  docs?: InputMaybe<Array<Scalars['String']['input']>>;
+  type: ContextCategories;
+}
+
 export interface AddContextDocInput {
   contextId: Scalars['String']['input'];
   docId: Scalars['String']['input'];
@@ -45,12 +52,6 @@ export interface AddContextDocInput {
 export interface AddContextFileInput {
   blobId: Scalars['String']['input'];
   contextId: Scalars['String']['input'];
-}
-
-export interface AddRemoveContextCategoryInput {
-  categoryId: Scalars['String']['input'];
-  contextId: Scalars['String']['input'];
-  type: ContextCategories;
 }
 
 export enum AiJobStatus {
@@ -164,32 +165,38 @@ export interface CopilotSessionsArgs {
 
 export interface CopilotContext {
   __typename?: 'CopilotContext';
+  /** list collections in context */
+  collections: Array<CopilotContextCategory>;
   /** list files in context */
   docs: Array<CopilotContextDoc>;
   /** list files in context */
   files: Array<CopilotContextFile>;
   id: Scalars['ID']['output'];
-  /** match file context */
-  matchContext: Array<ContextMatchedFileChunk>;
-  /** match workspace doc content */
-  matchWorkspaceContext: ContextMatchedDocChunk;
+  /** match file in context */
+  matchFiles: Array<ContextMatchedFileChunk>;
+  /** match workspace docs */
+  matchWorkspaceDocs: Array<ContextMatchedDocChunk>;
+  /** list tags in context */
+  tags: Array<CopilotContextCategory>;
   workspaceId: Scalars['String']['output'];
 }
 
-export interface CopilotContextMatchContextArgs {
+export interface CopilotContextMatchFilesArgs {
   content: Scalars['String']['input'];
   limit?: InputMaybe<Scalars['SafeInt']['input']>;
   threshold?: InputMaybe<Scalars['Float']['input']>;
 }
 
-export interface CopilotContextMatchWorkspaceContextArgs {
+export interface CopilotContextMatchWorkspaceDocsArgs {
   content: Scalars['String']['input'];
   limit?: InputMaybe<Scalars['SafeInt']['input']>;
+  threshold?: InputMaybe<Scalars['Float']['input']>;
 }
 
 export interface CopilotContextCategory {
   __typename?: 'CopilotContextCategory';
   createdAt: Scalars['SafeInt']['output'];
+  docs: Array<CopilotDocType>;
   id: Scalars['ID']['output'];
   type: ContextCategories;
 }
@@ -197,6 +204,7 @@ export interface CopilotContextCategory {
 export interface CopilotContextDoc {
   __typename?: 'CopilotContextDoc';
   createdAt: Scalars['SafeInt']['output'];
+  error: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   status: Maybe<ContextEmbedStatus>;
 }
@@ -221,6 +229,13 @@ export interface CopilotContextFileNotSupportedDataType {
 export interface CopilotDocNotFoundDataType {
   __typename?: 'CopilotDocNotFoundDataType';
   docId: Scalars['String']['output'];
+}
+
+export interface CopilotDocType {
+  __typename?: 'CopilotDocType';
+  createdAt: Scalars['SafeInt']['output'];
+  id: Scalars['ID']['output'];
+  status: Maybe<ContextEmbedStatus>;
 }
 
 export interface CopilotFailedToMatchContextDataType {
@@ -549,6 +564,7 @@ export enum ErrorNames {
   CAPTCHA_VERIFICATION_FAILED = 'CAPTCHA_VERIFICATION_FAILED',
   COPILOT_ACTION_TAKEN = 'COPILOT_ACTION_TAKEN',
   COPILOT_CONTEXT_FILE_NOT_SUPPORTED = 'COPILOT_CONTEXT_FILE_NOT_SUPPORTED',
+  COPILOT_DOCS_NOT_FOUND = 'COPILOT_DOCS_NOT_FOUND',
   COPILOT_DOC_NOT_FOUND = 'COPILOT_DOC_NOT_FOUND',
   COPILOT_EMBEDDING_UNAVAILABLE = 'COPILOT_EMBEDDING_UNAVAILABLE',
   COPILOT_FAILED_TO_CREATE_MESSAGE = 'COPILOT_FAILED_TO_CREATE_MESSAGE',
@@ -761,7 +777,7 @@ export interface InvitationAcceptedNotificationBodyType {
   __typename?: 'InvitationAcceptedNotificationBodyType';
   /** The user who created the notification, maybe null when user is deleted or sent by system */
   createdByUser: Maybe<PublicUserType>;
-  inviteId: Scalars['String']['output'];
+  inviteId: Scalars['ID']['output'];
   /** The type of the notification */
   type: NotificationType;
   workspace: Maybe<NotificationWorkspaceType>;
@@ -771,7 +787,7 @@ export interface InvitationBlockedNotificationBodyType {
   __typename?: 'InvitationBlockedNotificationBodyType';
   /** The user who created the notification, maybe null when user is deleted or sent by system */
   createdByUser: Maybe<PublicUserType>;
-  inviteId: Scalars['String']['output'];
+  inviteId: Scalars['ID']['output'];
   /** The type of the notification */
   type: NotificationType;
   workspace: Maybe<NotificationWorkspaceType>;
@@ -787,12 +803,43 @@ export interface InvitationNotificationBodyType {
   workspace: Maybe<NotificationWorkspaceType>;
 }
 
+export interface InvitationReviewApprovedNotificationBodyType {
+  __typename?: 'InvitationReviewApprovedNotificationBodyType';
+  /** The user who created the notification, maybe null when user is deleted or sent by system */
+  createdByUser: Maybe<PublicUserType>;
+  inviteId: Scalars['ID']['output'];
+  /** The type of the notification */
+  type: NotificationType;
+  workspace: Maybe<NotificationWorkspaceType>;
+}
+
+export interface InvitationReviewDeclinedNotificationBodyType {
+  __typename?: 'InvitationReviewDeclinedNotificationBodyType';
+  /** The user who created the notification, maybe null when user is deleted or sent by system */
+  createdByUser: Maybe<PublicUserType>;
+  /** The type of the notification */
+  type: NotificationType;
+  workspace: Maybe<NotificationWorkspaceType>;
+}
+
+export interface InvitationReviewRequestNotificationBodyType {
+  __typename?: 'InvitationReviewRequestNotificationBodyType';
+  /** The user who created the notification, maybe null when user is deleted or sent by system */
+  createdByUser: Maybe<PublicUserType>;
+  inviteId: Scalars['ID']['output'];
+  /** The type of the notification */
+  type: NotificationType;
+  workspace: Maybe<NotificationWorkspaceType>;
+}
+
 export interface InvitationType {
   __typename?: 'InvitationType';
   /** Invitee information */
-  invitee: UserType;
+  invitee: WorkspaceUserType;
+  /** Invitation status in workspace */
+  status: Maybe<WorkspaceMemberStatus>;
   /** User information */
-  user: UserType;
+  user: WorkspaceUserType;
   /** Workspace information */
   workspace: InvitationWorkspaceType;
 }
@@ -1103,7 +1150,7 @@ export interface MutationActivateLicenseArgs {
 }
 
 export interface MutationAddContextCategoryArgs {
-  options: AddRemoveContextCategoryInput;
+  options: AddContextCategoryInput;
 }
 
 export interface MutationAddContextDocArgs {
@@ -1297,7 +1344,7 @@ export interface MutationReleaseDeletedBlobsArgs {
 }
 
 export interface MutationRemoveContextCategoryArgs {
-  options: AddRemoveContextCategoryInput;
+  options: RemoveContextCategoryInput;
 }
 
 export interface MutationRemoveContextDocArgs {
@@ -1409,7 +1456,7 @@ export interface MutationUpdateRuntimeConfigsArgs {
 }
 
 export interface MutationUpdateSettingsArgs {
-  input: UpdateSettingsInput;
+  input: UpdateUserSettingsInput;
 }
 
 export interface MutationUpdateSubscriptionRecurringArgs {
@@ -1486,6 +1533,9 @@ export enum NotificationType {
   InvitationAccepted = 'InvitationAccepted',
   InvitationBlocked = 'InvitationBlocked',
   InvitationRejected = 'InvitationRejected',
+  InvitationReviewApproved = 'InvitationReviewApproved',
+  InvitationReviewDeclined = 'InvitationReviewDeclined',
+  InvitationReviewRequest = 'InvitationReviewRequest',
   Mention = 'Mention',
 }
 
@@ -1695,6 +1745,12 @@ export interface RemoveAvatar {
   success: Scalars['Boolean']['output'];
 }
 
+export interface RemoveContextCategoryInput {
+  categoryId: Scalars['String']['input'];
+  contextId: Scalars['String']['input'];
+  type: ContextCategories;
+}
+
 export interface RemoveContextDocInput {
   contextId: Scalars['String']['input'];
   docId: Scalars['String']['input'];
@@ -1794,14 +1850,6 @@ export interface ServerServiceConfig {
   __typename?: 'ServerServiceConfig';
   config: Scalars['JSONObject']['output'];
   name: Scalars['String']['output'];
-}
-
-export interface SettingsType {
-  __typename?: 'SettingsType';
-  /** Receive invitation email */
-  receiveInvitationEmail: Scalars['Boolean']['output'];
-  /** Receive mention email */
-  receiveMentionEmail: Scalars['Boolean']['output'];
 }
 
 export interface SpaceAccessDeniedDataType {
@@ -1924,6 +1972,9 @@ export type UnionNotificationBodyType =
   | InvitationAcceptedNotificationBodyType
   | InvitationBlockedNotificationBodyType
   | InvitationNotificationBodyType
+  | InvitationReviewApprovedNotificationBodyType
+  | InvitationReviewDeclinedNotificationBodyType
+  | InvitationReviewRequestNotificationBodyType
   | MentionNotificationBodyType;
 
 export interface UnknownOauthProviderDataType {
@@ -1961,16 +2012,16 @@ export interface UpdateDocUserRoleInput {
   workspaceId: Scalars['String']['input'];
 }
 
-export interface UpdateSettingsInput {
+export interface UpdateUserInput {
+  /** User name */
+  name?: InputMaybe<Scalars['String']['input']>;
+}
+
+export interface UpdateUserSettingsInput {
   /** Receive invitation email */
   receiveInvitationEmail?: InputMaybe<Scalars['Boolean']['input']>;
   /** Receive mention email */
   receiveMentionEmail?: InputMaybe<Scalars['Boolean']['input']>;
-}
-
-export interface UpdateUserInput {
-  /** User name */
-  name?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface UpdateWorkspaceInput {
@@ -2022,6 +2073,14 @@ export interface UserQuotaUsageType {
   storageQuota: Scalars['SafeInt']['output'];
 }
 
+export interface UserSettingsType {
+  __typename?: 'UserSettingsType';
+  /** Receive invitation email */
+  receiveInvitationEmail: Scalars['Boolean']['output'];
+  /** Receive mention email */
+  receiveMentionEmail: Scalars['Boolean']['output'];
+}
+
 export interface UserType {
   __typename?: 'UserType';
   /** User avatar url */
@@ -2055,7 +2114,7 @@ export interface UserType {
   quota: UserQuotaType;
   quotaUsage: UserQuotaUsageType;
   /** Get user settings */
-  settings: SettingsType;
+  settings: UserSettingsType;
   subscriptions: Array<SubscriptionType>;
   /** @deprecated use [/api/auth/sign-in?native=true] instead */
   token: TokenType;
@@ -2330,6 +2389,230 @@ export type AdminServerConfigQuery = {
   };
 };
 
+export type CreateChangePasswordUrlMutationVariables = Exact<{
+  callbackUrl: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+}>;
+
+export type CreateChangePasswordUrlMutation = {
+  __typename?: 'Mutation';
+  createChangePasswordUrl: string;
+};
+
+export type GetPromptsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetPromptsQuery = {
+  __typename?: 'Query';
+  listCopilotPrompts: Array<{
+    __typename?: 'CopilotPromptType';
+    name: string;
+    model: string;
+    action: string | null;
+    config: {
+      __typename?: 'CopilotPromptConfigType';
+      jsonMode: boolean | null;
+      frequencyPenalty: number | null;
+      presencePenalty: number | null;
+      temperature: number | null;
+      topP: number | null;
+    } | null;
+    messages: Array<{
+      __typename?: 'CopilotPromptMessageType';
+      role: CopilotPromptMessageRole;
+      content: string;
+      params: Record<string, string> | null;
+    }>;
+  }>;
+};
+
+export type UpdatePromptMutationVariables = Exact<{
+  name: Scalars['String']['input'];
+  messages: Array<CopilotPromptMessageInput> | CopilotPromptMessageInput;
+}>;
+
+export type UpdatePromptMutation = {
+  __typename?: 'Mutation';
+  updateCopilotPrompt: {
+    __typename?: 'CopilotPromptType';
+    name: string;
+    model: string;
+    action: string | null;
+    config: {
+      __typename?: 'CopilotPromptConfigType';
+      jsonMode: boolean | null;
+      frequencyPenalty: number | null;
+      presencePenalty: number | null;
+      temperature: number | null;
+      topP: number | null;
+    } | null;
+    messages: Array<{
+      __typename?: 'CopilotPromptMessageType';
+      role: CopilotPromptMessageRole;
+      content: string;
+      params: Record<string, string> | null;
+    }>;
+  };
+};
+
+export type CreateUserMutationVariables = Exact<{
+  input: CreateUserInput;
+}>;
+
+export type CreateUserMutation = {
+  __typename?: 'Mutation';
+  createUser: { __typename?: 'UserType'; id: string };
+};
+
+export type DeleteUserMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type DeleteUserMutation = {
+  __typename?: 'Mutation';
+  deleteUser: { __typename?: 'DeleteAccount'; success: boolean };
+};
+
+export type DisableUserMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type DisableUserMutation = {
+  __typename?: 'Mutation';
+  banUser: { __typename?: 'UserType'; email: string; disabled: boolean };
+};
+
+export type EnableUserMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+}>;
+
+export type EnableUserMutation = {
+  __typename?: 'Mutation';
+  enableUser: { __typename?: 'UserType'; email: string; disabled: boolean };
+};
+
+export type GetServerRuntimeConfigQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetServerRuntimeConfigQuery = {
+  __typename?: 'Query';
+  serverRuntimeConfig: Array<{
+    __typename?: 'ServerRuntimeConfigType';
+    id: string;
+    module: string;
+    key: string;
+    description: string;
+    value: Record<string, string>;
+    type: RuntimeConfigType;
+    updatedAt: string;
+  }>;
+};
+
+export type GetServerServiceConfigsQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetServerServiceConfigsQuery = {
+  __typename?: 'Query';
+  serverServiceConfigs: Array<{
+    __typename?: 'ServerServiceConfig';
+    name: string;
+    config: any;
+  }>;
+};
+
+export type GetUserByEmailQueryVariables = Exact<{
+  email: Scalars['String']['input'];
+}>;
+
+export type GetUserByEmailQuery = {
+  __typename?: 'Query';
+  userByEmail: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+    features: Array<FeatureType>;
+    hasPassword: boolean | null;
+    emailVerified: boolean;
+    avatarUrl: string | null;
+    disabled: boolean;
+  } | null;
+};
+
+export type GetUsersCountQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetUsersCountQuery = { __typename?: 'Query'; usersCount: number };
+
+export type ImportUsersMutationVariables = Exact<{
+  input: ImportUsersInput;
+}>;
+
+export type ImportUsersMutation = {
+  __typename?: 'Mutation';
+  importUsers: Array<
+    | { __typename: 'UserImportFailedType'; email: string; error: string }
+    | { __typename: 'UserType'; id: string; name: string; email: string }
+  >;
+};
+
+export type ListUsersQueryVariables = Exact<{
+  filter: ListUserInput;
+}>;
+
+export type ListUsersQuery = {
+  __typename?: 'Query';
+  users: Array<{
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+    disabled: boolean;
+    features: Array<FeatureType>;
+    hasPassword: boolean | null;
+    emailVerified: boolean;
+    avatarUrl: string | null;
+  }>;
+};
+
+export type UpdateAccountFeaturesMutationVariables = Exact<{
+  userId: Scalars['String']['input'];
+  features: Array<FeatureType> | FeatureType;
+}>;
+
+export type UpdateAccountFeaturesMutation = {
+  __typename?: 'Mutation';
+  updateUserFeatures: Array<FeatureType>;
+};
+
+export type UpdateAccountMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+  input: ManageUserInput;
+}>;
+
+export type UpdateAccountMutation = {
+  __typename?: 'Mutation';
+  updateUser: {
+    __typename?: 'UserType';
+    id: string;
+    name: string;
+    email: string;
+  };
+};
+
+export type UpdateServerRuntimeConfigsMutationVariables = Exact<{
+  updates: Scalars['JSONObject']['input'];
+}>;
+
+export type UpdateServerRuntimeConfigsMutation = {
+  __typename?: 'Mutation';
+  updateRuntimeConfigs: Array<{
+    __typename?: 'ServerRuntimeConfigType';
+    key: string;
+    value: Record<string, string>;
+  }>;
+};
+
 export type DeleteBlobMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   key: Scalars['String']['input'];
@@ -2401,16 +2684,6 @@ export type ChangeEmailMutation = {
   changeEmail: { __typename?: 'UserType'; id: string; email: string };
 };
 
-export type CreateChangePasswordUrlMutationVariables = Exact<{
-  callbackUrl: Scalars['String']['input'];
-  userId: Scalars['String']['input'];
-}>;
-
-export type CreateChangePasswordUrlMutation = {
-  __typename?: 'Mutation';
-  createChangePasswordUrl: string;
-};
-
 export type ChangePasswordMutationVariables = Exact<{
   token: Scalars['String']['input'];
   userId: Scalars['String']['input'];
@@ -2423,7 +2696,7 @@ export type ChangePasswordMutation = {
 };
 
 export type AddContextCategoryMutationVariables = Exact<{
-  options: AddRemoveContextCategoryInput;
+  options: AddContextCategoryInput;
 }>;
 
 export type AddContextCategoryMutation = {
@@ -2433,11 +2706,17 @@ export type AddContextCategoryMutation = {
     id: string;
     createdAt: number;
     type: ContextCategories;
+    docs: Array<{
+      __typename?: 'CopilotDocType';
+      id: string;
+      createdAt: number;
+      status: ContextEmbedStatus | null;
+    }>;
   };
 };
 
 export type RemoveContextCategoryMutationVariables = Exact<{
-  options: AddRemoveContextCategoryInput;
+  options: RemoveContextCategoryInput;
 }>;
 
 export type RemoveContextCategoryMutation = {
@@ -2466,6 +2745,7 @@ export type AddContextDocMutation = {
     id: string;
     createdAt: number;
     status: ContextEmbedStatus | null;
+    error: string | null;
   };
 };
 
@@ -2497,32 +2777,6 @@ export type AddContextFileMutation = {
   };
 };
 
-export type MatchContextQueryVariables = Exact<{
-  contextId: Scalars['String']['input'];
-  content: Scalars['String']['input'];
-  limit?: InputMaybe<Scalars['SafeInt']['input']>;
-}>;
-
-export type MatchContextQuery = {
-  __typename?: 'Query';
-  currentUser: {
-    __typename?: 'UserType';
-    copilot: {
-      __typename?: 'Copilot';
-      contexts: Array<{
-        __typename?: 'CopilotContext';
-        matchContext: Array<{
-          __typename?: 'ContextMatchedFileChunk';
-          fileId: string;
-          chunk: number;
-          content: string;
-          distance: number | null;
-        }>;
-      }>;
-    };
-  } | null;
-};
-
 export type RemoveContextFileMutationVariables = Exact<{
   options: RemoveContextFileInput;
 }>;
@@ -2550,6 +2804,7 @@ export type ListContextObjectQuery = {
           __typename?: 'CopilotContextDoc';
           id: string;
           status: ContextEmbedStatus | null;
+          error: string | null;
           createdAt: number;
         }>;
         files: Array<{
@@ -2561,6 +2816,30 @@ export type ListContextObjectQuery = {
           error: string | null;
           status: ContextEmbedStatus;
           createdAt: number;
+        }>;
+        tags: Array<{
+          __typename?: 'CopilotContextCategory';
+          type: ContextCategories;
+          id: string;
+          createdAt: number;
+          docs: Array<{
+            __typename?: 'CopilotDocType';
+            id: string;
+            status: ContextEmbedStatus | null;
+            createdAt: number;
+          }>;
+        }>;
+        collections: Array<{
+          __typename?: 'CopilotContextCategory';
+          type: ContextCategories;
+          id: string;
+          createdAt: number;
+          docs: Array<{
+            __typename?: 'CopilotDocType';
+            id: string;
+            status: ContextEmbedStatus | null;
+            createdAt: number;
+          }>;
         }>;
       }>;
     };
@@ -2587,13 +2866,14 @@ export type ListContextQuery = {
   } | null;
 };
 
-export type MatchWorkspaceContextQueryVariables = Exact<{
+export type MatchContextQueryVariables = Exact<{
   contextId: Scalars['String']['input'];
   content: Scalars['String']['input'];
   limit?: InputMaybe<Scalars['SafeInt']['input']>;
+  threshold?: InputMaybe<Scalars['Float']['input']>;
 }>;
 
-export type MatchWorkspaceContextQuery = {
+export type MatchContextQuery = {
   __typename?: 'Query';
   currentUser: {
     __typename?: 'UserType';
@@ -2601,13 +2881,72 @@ export type MatchWorkspaceContextQuery = {
       __typename?: 'Copilot';
       contexts: Array<{
         __typename?: 'CopilotContext';
-        matchWorkspaceContext: {
+        matchFiles: Array<{
+          __typename?: 'ContextMatchedFileChunk';
+          fileId: string;
+          chunk: number;
+          content: string;
+          distance: number | null;
+        }>;
+        matchWorkspaceDocs: Array<{
           __typename?: 'ContextMatchedDocChunk';
           docId: string;
           chunk: number;
           content: string;
           distance: number | null;
-        };
+        }>;
+      }>;
+    };
+  } | null;
+};
+
+export type MatchWorkspaceDocsQueryVariables = Exact<{
+  contextId: Scalars['String']['input'];
+  content: Scalars['String']['input'];
+  limit?: InputMaybe<Scalars['SafeInt']['input']>;
+}>;
+
+export type MatchWorkspaceDocsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      contexts: Array<{
+        __typename?: 'CopilotContext';
+        matchWorkspaceDocs: Array<{
+          __typename?: 'ContextMatchedDocChunk';
+          docId: string;
+          chunk: number;
+          content: string;
+          distance: number | null;
+        }>;
+      }>;
+    };
+  } | null;
+};
+
+export type MatchFilesQueryVariables = Exact<{
+  contextId: Scalars['String']['input'];
+  content: Scalars['String']['input'];
+  limit?: InputMaybe<Scalars['SafeInt']['input']>;
+}>;
+
+export type MatchFilesQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      contexts: Array<{
+        __typename?: 'CopilotContext';
+        matchFiles: Array<{
+          __typename?: 'ContextMatchedFileChunk';
+          fileId: string;
+          chunk: number;
+          content: string;
+          distance: number | null;
+        }>;
       }>;
     };
   } | null;
@@ -2766,61 +3105,6 @@ export type CreateCopilotMessageMutation = {
   createCopilotMessage: string;
 };
 
-export type GetPromptsQueryVariables = Exact<{ [key: string]: never }>;
-
-export type GetPromptsQuery = {
-  __typename?: 'Query';
-  listCopilotPrompts: Array<{
-    __typename?: 'CopilotPromptType';
-    name: string;
-    model: string;
-    action: string | null;
-    config: {
-      __typename?: 'CopilotPromptConfigType';
-      jsonMode: boolean | null;
-      frequencyPenalty: number | null;
-      presencePenalty: number | null;
-      temperature: number | null;
-      topP: number | null;
-    } | null;
-    messages: Array<{
-      __typename?: 'CopilotPromptMessageType';
-      role: CopilotPromptMessageRole;
-      content: string;
-      params: Record<string, string> | null;
-    }>;
-  }>;
-};
-
-export type UpdatePromptMutationVariables = Exact<{
-  name: Scalars['String']['input'];
-  messages: Array<CopilotPromptMessageInput> | CopilotPromptMessageInput;
-}>;
-
-export type UpdatePromptMutation = {
-  __typename?: 'Mutation';
-  updateCopilotPrompt: {
-    __typename?: 'CopilotPromptType';
-    name: string;
-    model: string;
-    action: string | null;
-    config: {
-      __typename?: 'CopilotPromptConfigType';
-      jsonMode: boolean | null;
-      frequencyPenalty: number | null;
-      presencePenalty: number | null;
-      temperature: number | null;
-      topP: number | null;
-    } | null;
-    messages: Array<{
-      __typename?: 'CopilotPromptMessageType';
-      role: CopilotPromptMessageRole;
-      content: string;
-      params: Record<string, string> | null;
-    }>;
-  };
-};
-
 export type CopilotQuotaQueryVariables = Exact<{ [key: string]: never }>;
 
 export type CopilotQuotaQuery = {
@@ -2923,15 +3207,6 @@ export type CreateSelfhostCustomerPortalMutation = {
   createSelfhostWorkspaceCustomerPortal: string;
 };
 
-export type CreateUserMutationVariables = Exact<{
-  input: CreateUserInput;
-}>;
-
-export type CreateUserMutation = {
-  __typename?: 'Mutation';
-  createUser: { __typename?: 'UserType'; id: string };
-};
-
 export type CreateWorkspaceMutationVariables = Exact<{ [key: string]: never }>;
 
 export type CreateWorkspaceMutation = {
@@ -2960,15 +3235,6 @@ export type DeleteAccountMutation = {
   deleteAccount: { __typename?: 'DeleteAccount'; success: boolean };
 };
 
-export type DeleteUserMutationVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type DeleteUserMutation = {
-  __typename?: 'Mutation';
-  deleteUser: { __typename?: 'DeleteAccount'; success: boolean };
-};
-
 export type DeleteWorkspaceMutationVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -2976,15 +3242,6 @@ export type DeleteWorkspaceMutationVariables = Exact<{
 export type DeleteWorkspaceMutation = {
   __typename?: 'Mutation';
   deleteWorkspace: boolean;
-};
-
-export type DisableUserMutationVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type DisableUserMutation = {
-  __typename?: 'Mutation';
-  banUser: { __typename?: 'UserType'; email: string; disabled: boolean };
 };
 
 export type GetDocRolePermissionsQueryVariables = Exact<{
@@ -3016,15 +3273,6 @@ export type GetDocRolePermissionsQuery = {
       };
     };
   };
-};
-
-export type EnableUserMutationVariables = Exact<{
-  id: Scalars['String']['input'];
-}>;
-
-export type EnableUserMutation = {
-  __typename?: 'Mutation';
-  enableUser: { __typename?: 'UserType'; email: string; disabled: boolean };
 };
 
 export type CredentialsRequirementsFragment = {
@@ -3104,6 +3352,7 @@ export type GetInviteInfoQuery = {
   __typename?: 'Query';
   getInviteInfo: {
     __typename?: 'InvitationType';
+    status: WorkspaceMemberStatus | null;
     workspace: {
       __typename?: 'InvitationWorkspaceType';
       id: string;
@@ -3111,9 +3360,16 @@ export type GetInviteInfoQuery = {
       avatar: string;
     };
     user: {
-      __typename?: 'UserType';
+      __typename?: 'WorkspaceUserType';
       id: string;
       name: string;
+      avatarUrl: string | null;
+    };
+    invitee: {
+      __typename?: 'WorkspaceUserType';
+      id: string;
+      name: string;
+      email: string;
       avatarUrl: string | null;
     };
   };
@@ -3248,66 +3504,6 @@ export type GetPublicUserByIdQuery = {
   } | null;
 };
 
-export type GetServerRuntimeConfigQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type GetServerRuntimeConfigQuery = {
-  __typename?: 'Query';
-  serverRuntimeConfig: Array<{
-    __typename?: 'ServerRuntimeConfigType';
-    id: string;
-    module: string;
-    key: string;
-    description: string;
-    value: Record<string, string>;
-    type: RuntimeConfigType;
-    updatedAt: string;
-  }>;
-};
-
-export type GetServerServiceConfigsQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type GetServerServiceConfigsQuery = {
-  __typename?: 'Query';
-  serverServiceConfigs: Array<{
-    __typename?: 'ServerServiceConfig';
-    name: string;
-    config: any;
-  }>;
-};
-
-export type GetUserByEmailQueryVariables = Exact<{
-  email: Scalars['String']['input'];
-}>;
-
-export type GetUserByEmailQuery = {
-  __typename?: 'Query';
-  userByEmail: {
-    __typename?: 'UserType';
-    id: string;
-    name: string;
-    email: string;
-    features: Array<FeatureType>;
-    hasPassword: boolean | null;
-    emailVerified: boolean;
-    avatarUrl: string | null;
-    quota: {
-      __typename?: 'UserQuotaType';
-      humanReadable: {
-        __typename?: 'UserQuotaHumanReadableType';
-        blobLimit: string;
-        historyPeriod: string;
-        memberLimit: string;
-        name: string;
-        storageQuota: string;
-      };
-    };
-  } | null;
-};
-
 export type GetUserFeaturesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetUserFeaturesQuery = {
@@ -3326,7 +3522,7 @@ export type GetUserSettingsQuery = {
   currentUser: {
     __typename?: 'UserType';
     settings: {
-      __typename?: 'SettingsType';
+      __typename?: 'UserSettingsType';
       receiveInvitationEmail: boolean;
       receiveMentionEmail: boolean;
     };
@@ -3355,10 +3551,6 @@ export type GetUserQuery = {
       }
     | null;
 };
-
-export type GetUsersCountQueryVariables = Exact<{ [key: string]: never }>;
-
-export type GetUsersCountQuery = { __typename?: 'Query'; usersCount: number };
 
 export type GetWorkspaceInfoQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
@@ -3520,18 +3712,6 @@ export type ListHistoryQuery = {
   };
 };
 
-export type ImportUsersMutationVariables = Exact<{
-  input: ImportUsersInput;
-}>;
-
-export type ImportUsersMutation = {
-  __typename?: 'Mutation';
-  importUsers: Array<
-    | { __typename: 'UserImportFailedType'; email: string; error: string }
-    | { __typename: 'UserType'; id: string; name: string; email: string }
-  >;
-};
-
 export type GetInvoicesCountQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetInvoicesCountQuery = {
@@ -3607,25 +3787,6 @@ export type ListNotificationsQuery = {
       };
     };
   } | null;
-};
-
-export type ListUsersQueryVariables = Exact<{
-  filter: ListUserInput;
-}>;
-
-export type ListUsersQuery = {
-  __typename?: 'Query';
-  users: Array<{
-    __typename?: 'UserType';
-    id: string;
-    name: string;
-    email: string;
-    disabled: boolean;
-    features: Array<FeatureType>;
-    hasPassword: boolean | null;
-    emailVerified: boolean;
-    avatarUrl: string | null;
-  }>;
 };
 
 export type MentionUserMutationVariables = Exact<{
@@ -3877,31 +4038,6 @@ export type SubscriptionQuery = {
   } | null;
 };
 
-export type UpdateAccountFeaturesMutationVariables = Exact<{
-  userId: Scalars['String']['input'];
-  features: Array<FeatureType> | FeatureType;
-}>;
-
-export type UpdateAccountFeaturesMutation = {
-  __typename?: 'Mutation';
-  updateUserFeatures: Array<FeatureType>;
-};
-
-export type UpdateAccountMutationVariables = Exact<{
-  id: Scalars['String']['input'];
-  input: ManageUserInput;
-}>;
-
-export type UpdateAccountMutation = {
-  __typename?: 'Mutation';
-  updateUser: {
-    __typename?: 'UserType';
-    id: string;
-    name: string;
-    email: string;
-  };
-};
-
 export type UpdateDocDefaultRoleMutationVariables = Exact<{
   input: UpdateDocDefaultRoleInput;
 }>;
@@ -3918,19 +4054,6 @@ export type UpdateDocUserRoleMutationVariables = Exact<{
 export type UpdateDocUserRoleMutation = {
   __typename?: 'Mutation';
   updateDocUserRole: boolean;
-};
-
-export type UpdateServerRuntimeConfigsMutationVariables = Exact<{
-  updates: Scalars['JSONObject']['input'];
-}>;
-
-export type UpdateServerRuntimeConfigsMutation = {
-  __typename?: 'Mutation';
-  updateRuntimeConfigs: Array<{
-    __typename?: 'ServerRuntimeConfigType';
-    key: string;
-    value: Record<string, string>;
-  }>;
 };
 
 export type UpdateSubscriptionMutationVariables = Exact<{
@@ -3960,7 +4083,7 @@ export type UpdateUserProfileMutation = {
 };
 
 export type UpdateUserSettingsMutationVariables = Exact<{
-  input: UpdateSettingsInput;
+  input: UpdateUserSettingsInput;
 }>;
 
 export type UpdateUserSettingsMutation = {
@@ -4220,14 +4343,39 @@ export type Queries =
       response: AdminServerConfigQuery;
     }
   | {
+      name: 'getPromptsQuery';
+      variables: GetPromptsQueryVariables;
+      response: GetPromptsQuery;
+    }
+  | {
+      name: 'getServerRuntimeConfigQuery';
+      variables: GetServerRuntimeConfigQueryVariables;
+      response: GetServerRuntimeConfigQuery;
+    }
+  | {
+      name: 'getServerServiceConfigsQuery';
+      variables: GetServerServiceConfigsQueryVariables;
+      response: GetServerServiceConfigsQuery;
+    }
+  | {
+      name: 'getUserByEmailQuery';
+      variables: GetUserByEmailQueryVariables;
+      response: GetUserByEmailQuery;
+    }
+  | {
+      name: 'getUsersCountQuery';
+      variables: GetUsersCountQueryVariables;
+      response: GetUsersCountQuery;
+    }
+  | {
+      name: 'listUsersQuery';
+      variables: ListUsersQueryVariables;
+      response: ListUsersQuery;
+    }
+  | {
       name: 'listBlobsQuery';
       variables: ListBlobsQueryVariables;
       response: ListBlobsQuery;
-    }
-  | {
-      name: 'matchContextQuery';
-      variables: MatchContextQueryVariables;
-      response: MatchContextQuery;
     }
   | {
       name: 'listContextObjectQuery';
@@ -4240,9 +4388,19 @@ export type Queries =
       response: ListContextQuery;
     }
   | {
-      name: 'matchWorkspaceContextQuery';
-      variables: MatchWorkspaceContextQueryVariables;
-      response: MatchWorkspaceContextQuery;
+      name: 'matchContextQuery';
+      variables: MatchContextQueryVariables;
+      response: MatchContextQuery;
+    }
+  | {
+      name: 'matchWorkspaceDocsQuery';
+      variables: MatchWorkspaceDocsQueryVariables;
+      response: MatchWorkspaceDocsQuery;
+    }
+  | {
+      name: 'matchFilesQuery';
+      variables: MatchFilesQueryVariables;
+      response: MatchFilesQuery;
     }
   | {
       name: 'getWorkspaceEmbeddingStatusQuery';
@@ -4263,11 +4421,6 @@ export type Queries =
       name: 'getAudioTranscriptionQuery';
       variables: GetAudioTranscriptionQueryVariables;
       response: GetAudioTranscriptionQuery;
-    }
-  | {
-      name: 'getPromptsQuery';
-      variables: GetPromptsQueryVariables;
-      response: GetPromptsQuery;
     }
   | {
       name: 'copilotQuotaQuery';
@@ -4345,21 +4498,6 @@ export type Queries =
       response: GetPublicUserByIdQuery;
     }
   | {
-      name: 'getServerRuntimeConfigQuery';
-      variables: GetServerRuntimeConfigQueryVariables;
-      response: GetServerRuntimeConfigQuery;
-    }
-  | {
-      name: 'getServerServiceConfigsQuery';
-      variables: GetServerServiceConfigsQueryVariables;
-      response: GetServerServiceConfigsQuery;
-    }
-  | {
-      name: 'getUserByEmailQuery';
-      variables: GetUserByEmailQueryVariables;
-      response: GetUserByEmailQuery;
-    }
-  | {
       name: 'getUserFeaturesQuery';
       variables: GetUserFeaturesQueryVariables;
       response: GetUserFeaturesQuery;
@@ -4373,11 +4511,6 @@ export type Queries =
       name: 'getUserQuery';
       variables: GetUserQueryVariables;
       response: GetUserQuery;
-    }
-  | {
-      name: 'getUsersCountQuery';
-      variables: GetUsersCountQueryVariables;
-      response: GetUsersCountQuery;
     }
   | {
       name: 'getWorkspaceInfoQuery';
@@ -4440,11 +4573,6 @@ export type Queries =
       response: ListNotificationsQuery;
     }
   | {
-      name: 'listUsersQuery';
-      variables: ListUsersQueryVariables;
-      response: ListUsersQuery;
-    }
-  | {
       name: 'notificationCountQuery';
       variables: NotificationCountQueryVariables;
       response: NotificationCountQuery;
@@ -4497,6 +4625,56 @@ export type Mutations =
       response: ActivateLicenseMutation;
     }
   | {
+      name: 'createChangePasswordUrlMutation';
+      variables: CreateChangePasswordUrlMutationVariables;
+      response: CreateChangePasswordUrlMutation;
+    }
+  | {
+      name: 'updatePromptMutation';
+      variables: UpdatePromptMutationVariables;
+      response: UpdatePromptMutation;
+    }
+  | {
+      name: 'createUserMutation';
+      variables: CreateUserMutationVariables;
+      response: CreateUserMutation;
+    }
+  | {
+      name: 'deleteUserMutation';
+      variables: DeleteUserMutationVariables;
+      response: DeleteUserMutation;
+    }
+  | {
+      name: 'disableUserMutation';
+      variables: DisableUserMutationVariables;
+      response: DisableUserMutation;
+    }
+  | {
+      name: 'enableUserMutation';
+      variables: EnableUserMutationVariables;
+      response: EnableUserMutation;
+    }
+  | {
+      name: 'importUsersMutation';
+      variables: ImportUsersMutationVariables;
+      response: ImportUsersMutation;
+    }
+  | {
+      name: 'updateAccountFeaturesMutation';
+      variables: UpdateAccountFeaturesMutationVariables;
+      response: UpdateAccountFeaturesMutation;
+    }
+  | {
+      name: 'updateAccountMutation';
+      variables: UpdateAccountMutationVariables;
+      response: UpdateAccountMutation;
+    }
+  | {
+      name: 'updateServerRuntimeConfigsMutation';
+      variables: UpdateServerRuntimeConfigsMutationVariables;
+      response: UpdateServerRuntimeConfigsMutation;
+    }
+  | {
       name: 'deleteBlobMutation';
       variables: DeleteBlobMutationVariables;
       response: DeleteBlobMutation;
@@ -4520,11 +4698,6 @@ export type Mutations =
       name: 'changeEmailMutation';
       variables: ChangeEmailMutationVariables;
       response: ChangeEmailMutation;
-    }
-  | {
-      name: 'createChangePasswordUrlMutation';
-      variables: CreateChangePasswordUrlMutationVariables;
-      response: CreateChangePasswordUrlMutation;
     }
   | {
       name: 'changePasswordMutation';
@@ -4587,11 +4760,6 @@ export type Mutations =
       response: CreateCopilotMessageMutation;
     }
   | {
-      name: 'updatePromptMutation';
-      variables: UpdatePromptMutationVariables;
-      response: UpdatePromptMutation;
-    }
-  | {
       name: 'cleanupCopilotSessionMutation';
       variables: CleanupCopilotSessionMutationVariables;
       response: CleanupCopilotSessionMutation;
@@ -4627,11 +4795,6 @@ export type Mutations =
       response: CreateSelfhostCustomerPortalMutation;
     }
   | {
-      name: 'createUserMutation';
-      variables: CreateUserMutationVariables;
-      response: CreateUserMutation;
-    }
-  | {
       name: 'createWorkspaceMutation';
       variables: CreateWorkspaceMutationVariables;
       response: CreateWorkspaceMutation;
@@ -4647,24 +4810,9 @@ export type Mutations =
       response: DeleteAccountMutation;
     }
   | {
-      name: 'deleteUserMutation';
-      variables: DeleteUserMutationVariables;
-      response: DeleteUserMutation;
-    }
-  | {
       name: 'deleteWorkspaceMutation';
       variables: DeleteWorkspaceMutationVariables;
       response: DeleteWorkspaceMutation;
-    }
-  | {
-      name: 'disableUserMutation';
-      variables: DisableUserMutationVariables;
-      response: DisableUserMutation;
-    }
-  | {
-      name: 'enableUserMutation';
-      variables: EnableUserMutationVariables;
-      response: EnableUserMutation;
     }
   | {
       name: 'generateLicenseKeyMutation';
@@ -4675,11 +4823,6 @@ export type Mutations =
       name: 'grantDocUserRolesMutation';
       variables: GrantDocUserRolesMutationVariables;
       response: GrantDocUserRolesMutation;
-    }
-  | {
-      name: 'importUsersMutation';
-      variables: ImportUsersMutationVariables;
-      response: ImportUsersMutation;
     }
   | {
       name: 'leaveWorkspaceMutation';
@@ -4762,16 +4905,6 @@ export type Mutations =
       response: SetWorkspacePublicByIdMutation;
     }
   | {
-      name: 'updateAccountFeaturesMutation';
-      variables: UpdateAccountFeaturesMutationVariables;
-      response: UpdateAccountFeaturesMutation;
-    }
-  | {
-      name: 'updateAccountMutation';
-      variables: UpdateAccountMutationVariables;
-      response: UpdateAccountMutation;
-    }
-  | {
       name: 'updateDocDefaultRoleMutation';
       variables: UpdateDocDefaultRoleMutationVariables;
       response: UpdateDocDefaultRoleMutation;
@@ -4780,11 +4913,6 @@ export type Mutations =
       name: 'updateDocUserRoleMutation';
       variables: UpdateDocUserRoleMutationVariables;
       response: UpdateDocUserRoleMutation;
-    }
-  | {
-      name: 'updateServerRuntimeConfigsMutation';
-      variables: UpdateServerRuntimeConfigsMutationVariables;
-      response: UpdateServerRuntimeConfigsMutation;
     }
   | {
       name: 'updateSubscriptionMutation';

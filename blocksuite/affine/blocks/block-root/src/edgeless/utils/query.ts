@@ -14,7 +14,6 @@ import {
   type EmbedSyncedDocModel,
   type EmbedYoutubeModel,
   type ImageBlockModel,
-  MindmapElementModel,
   ShapeElementModel,
   TextElementModel,
 } from '@blocksuite/affine-model';
@@ -23,7 +22,6 @@ import {
   isTopLevelBlock,
 } from '@blocksuite/affine-shared/utils';
 import type {
-  GfxBlockElementModel,
   GfxModel,
   GfxPrimitiveElementModel,
   GfxToolsFullOptionValue,
@@ -32,10 +30,6 @@ import type {
 import type { PointLocation } from '@blocksuite/global/gfx';
 import { Bound } from '@blocksuite/global/gfx';
 import type { BlockModel } from '@blocksuite/store';
-
-export function isMindmapNode(element: GfxBlockElementModel | GfxModel | null) {
-  return element?.group instanceof MindmapElementModel;
-}
 
 export function isEdgelessTextBlock(
   element: BlockModel | GfxModel | null
@@ -91,6 +85,21 @@ export function isAIChatBlock(element: BlockModel | GfxModel | null) {
     !!element &&
     'flavour' in element &&
     element.flavour === 'affine:embed-ai-chat'
+  );
+}
+
+/**
+ * TODO: Remove this function after the edgeless refactor completed
+ * This function is used to check if the block is an EmbedIframeBlock for edgeless selected rect
+ * Should not be used in the future
+ * Related issue: https://linear.app/affine-design/issue/BS-2841/
+ * @deprecated
+ */
+export function isEmbedIframeBlock(element: BlockModel | GfxModel | null) {
+  return (
+    !!element &&
+    'flavour' in element &&
+    element.flavour === 'affine:embed-iframe'
   );
 }
 

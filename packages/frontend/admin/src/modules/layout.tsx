@@ -216,7 +216,7 @@ export const LeftPanel = ({
       onExpand={onExpand}
       onCollapse={onCollapse}
       className={cn(
-        isCollapsed ? 'min-w-[56px] max-w-[56px]' : 'min-w-56 max-w-56',
+        isCollapsed ? 'min-w-[57px] max-w-[57px]' : 'min-w-56 max-w-56',
         'border-r  h-dvh'
       )}
       style={{ overflow: 'visible' }}
@@ -231,11 +231,18 @@ export const LeftPanel = ({
       >
         <div
           className={cn(
-            'flex h-[56px] items-center gap-2 px-4 text-base font-medium',
+            'flex h-[56px] items-center px-4 text-base font-medium',
             isCollapsed && 'justify-center px-2'
           )}
         >
-          <Logo />
+          <span
+            className={cn(
+              'flex items-center p-0.5 mr-2',
+              isCollapsed && 'justify-center px-2 mr-0'
+            )}
+          >
+            <Logo />
+          </span>
           {!isCollapsed && 'AFFiNE'}
         </div>
         <Nav isCollapsed={isCollapsed} />
@@ -283,12 +290,12 @@ export const RightPanel = ({
       order={2}
       ref={panelRef}
       defaultSize={0}
-      maxSize={30}
+      maxSize={20}
       collapsible={true}
       collapsedSize={0}
       onExpand={onExpand}
       onCollapse={onCollapse}
-      className="border-l"
+      className="border-l max-w-96"
     >
       {panelContent}
     </ResizablePanel>

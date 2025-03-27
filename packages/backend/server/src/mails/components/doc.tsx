@@ -10,7 +10,7 @@ export interface DocProps {
 export const Doc = (props: DocProps) => {
   return (
     <Link href={props.url}>
-      <Bold>{props.title}</Bold>
+      <Bold>{props.title || 'Untitled'}</Bold>
     </Link>
   );
 };

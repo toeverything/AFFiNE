@@ -664,6 +664,12 @@ export class CopilotDocNotFound extends UserFriendlyError {
     super('resource_not_found', 'copilot_doc_not_found', message, args);
   }
 }
+
+export class CopilotDocsNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'copilot_docs_not_found', message);
+  }
+}
 @ObjectType()
 class CopilotMessageNotFoundDataType {
   @Field() messageId!: string
@@ -997,6 +1003,7 @@ export enum ErrorNames {
   UNSPLASH_IS_NOT_CONFIGURED,
   COPILOT_ACTION_TAKEN,
   COPILOT_DOC_NOT_FOUND,
+  COPILOT_DOCS_NOT_FOUND,
   COPILOT_MESSAGE_NOT_FOUND,
   COPILOT_PROMPT_NOT_FOUND,
   COPILOT_PROMPT_INVALID,

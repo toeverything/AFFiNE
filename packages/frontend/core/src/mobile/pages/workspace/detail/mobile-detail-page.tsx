@@ -2,6 +2,7 @@ import { useThemeColorV2 } from '@affine/component';
 import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
+import { useGuard } from '@affine/core/components/guard';
 import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
@@ -16,7 +17,6 @@ import { EditorService } from '@affine/core/modules/editor';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { JournalService } from '@affine/core/modules/journal';
-import { GuardService } from '@affine/core/modules/permissions';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { ViewService } from '@affine/core/modules/workbench/services/view';
 import { WorkspaceService } from '@affine/core/modules/workspace';
@@ -55,7 +55,6 @@ const DetailPageImpl = () => {
     globalContextService,
     featureFlagService,
     aIButtonService,
-    guardService,
   } = useServices({
     WorkbenchService,
     ViewService,
@@ -65,7 +64,6 @@ const DetailPageImpl = () => {
     GlobalContextService,
     FeatureFlagService,
     AIButtonService,
-    GuardService,
   });
   const editor = editorService.editor;
   const workspace = workspaceService.workspace;
@@ -192,7 +190,7 @@ const DetailPageImpl = () => {
     [docCollection.id, editor, jumpToPageBlock, openPage, server]
   );
 
-  const canEdit = useLiveData(guardService.can$('Doc_Update', doc.id));
+  const canEdit = useGuard('Doc_Update', doc.id);
 
   const readonly =
     !canEdit ||
@@ -254,8 +252,7 @@ const MobileDetailPage = ({
   const [showTitle, setShowTitle] = useState(checkShowTitle);
   const title = useLiveData(docDisplayMetaService.title$(pageId));
 
-  const guardService = useService(GuardService);
-  const canAccess = useLiveData(guardService.can$('Doc_Read', pageId));
+  const canAccess = useGuard('Doc_Read', pageId);
 
   const allJournalDates = useLiveData(journalService.allJournalDates$);
 

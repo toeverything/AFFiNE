@@ -97,6 +97,10 @@ export const styles = css`
     font-style: normal;
     font-weight: 400;
     line-height: 20px;
+
+    p {
+      padding: 0 2px;
+    }
   }
 
   .affine-embed-linked-doc-content-note.alias {

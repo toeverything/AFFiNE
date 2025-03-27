@@ -48,7 +48,7 @@ export class MessageEventChannel implements EventBasedChannel {
 export const resourcesPath = join(__dirname, `../resources`);
 
 // credit: https://github.com/facebook/fbjs/blob/main/packages/fbjs/src/core/shallowEqual.js
-export function shallowEqual(objA: any, objB: any) {
+export function shallowEqual<T>(objA: T, objB: T) {
   if (Object.is(objA, objB)) {
     return true;
   }
@@ -73,7 +73,7 @@ export function shallowEqual(objA: any, objB: any) {
   for (const key of keysA) {
     if (
       !Object.prototype.hasOwnProperty.call(objB, key) ||
-      !Object.is(objA[key], objB[key])
+      !Object.is(objA[key as keyof T], objB[key as keyof T])
     ) {
       return false;
     }

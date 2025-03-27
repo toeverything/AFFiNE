@@ -7,7 +7,7 @@ import { createJob } from '../utils/create-job.js';
 import { getProvider } from '../utils/get-provider.js';
 import { nanoidReplacement } from '../utils/nanoid-replacement.js';
 
-getProvider();
+const provider = getProvider();
 
 describe('notion-text to snapshot', () => {
   test('basic', () => {
@@ -98,7 +98,7 @@ describe('notion-text to snapshot', () => {
       pageId: '',
     };
 
-    const ntAdapter = new NotionTextAdapter(createJob());
+    const ntAdapter = new NotionTextAdapter(createJob(), provider);
     const target = ntAdapter.toSliceSnapshot({
       file: notionText,
       workspaceId: '',

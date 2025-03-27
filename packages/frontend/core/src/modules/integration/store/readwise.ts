@@ -81,4 +81,11 @@ export class ReadwiseStore extends Store {
       [key]: value,
     });
   }
+
+  setSettings(settings: Partial<ReadwiseConfig>) {
+    this.globalState.set(this.getStorageKey(), {
+      ...this.getSetting(),
+      ...settings,
+    });
+  }
 }

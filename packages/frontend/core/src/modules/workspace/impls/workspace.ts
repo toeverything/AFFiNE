@@ -4,12 +4,9 @@ import {
 } from '@blocksuite/affine/global/exceptions';
 import { NoopLogger } from '@blocksuite/affine/global/utils';
 import {
-  type CreateBlocksOptions,
   type Doc,
-  type GetBlocksOptions,
   type IdGenerator,
   nanoid,
-  type Store,
   type Workspace,
   type WorkspaceMeta,
 } from '@blocksuite/affine/store';
@@ -113,9 +110,9 @@ export class WorkspaceImpl implements Workspace {
    * If the `init` parameter is passed, a `surface`, `note`, and `paragraph` block
    * will be created in the doc simultaneously.
    */
-  createDoc(options: CreateBlocksOptions = {}) {
-    const { id: docId = this.idGenerator(), query, readonly } = options;
-    if (this._hasDoc(docId)) {
+  createDoc(docId?: string): Doc {
+    const id = docId ?? this.idGenerator();
+    if (this._hasDoc(id)) {
       throw new BlockSuiteError(
         ErrorCode.DocCollectionError,
         'doc already exists'
@@ -123,17 +120,13 @@ export class WorkspaceImpl implements Workspace {
     }
 
     this.meta.addDocMeta({
-      id: docId,
+      id,
       title: '',
       createDate: Date.now(),
       tags: [],
     });
-    this.slots.docCreated.next(docId);
-    return this.getDoc(docId, {
-      id: docId,
-      query,
-      readonly,
-    }) as Store;
+    this.slots.docCreated.next(id);
+    return this.getDoc(id) as Doc;
   }
 
   private _getDoc(docId: string): Doc | null {
@@ -141,12 +134,9 @@ export class WorkspaceImpl implements Workspace {
     return space ?? null;
   }
 
-  getDoc(
-    docId: string,
-    options: GetBlocksOptions = { id: docId }
-  ): Store | null {
-    const collection = this._getDoc(docId);
-    return collection?.getStore(options) ?? null;
+  getDoc(docId: string): Doc | null {
+    const doc = this._getDoc(docId);
+    return doc;
   }
 
   removeDoc(docId: string) {

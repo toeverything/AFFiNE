@@ -61,12 +61,12 @@ function createTestDoc(docId = defaultDocId) {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc = collection.createDoc({
-    id: docId,
+  const doc = collection.createDoc(docId);
+  const store = doc.getStore({
     extensions,
   });
   doc.load();
-  return doc;
+  return store;
 }
 
 function requestIdleCallbackPolyfill(
@@ -97,7 +97,7 @@ describe('basic', () => {
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
 
-    const doc = collection.createDoc({ id: 'doc:home' });
+    const doc = collection.createDoc('doc:home');
     doc.load();
     const actual = serializCollection(collection.doc);
     const actualDoc = actual[spaceMetaId].pages[0] as DocMeta;
@@ -148,23 +148,23 @@ describe('basic', () => {
     const options = createTestOptions();
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
-    const doc = collection.createDoc({
-      id: 'space:0',
+    const doc = collection.createDoc('space:0');
+    const store = doc.getStore({
       extensions,
     });
 
     const readyCallback = vi.fn();
     const rootAddedCallback = vi.fn();
-    doc.slots.ready.subscribe(readyCallback);
-    doc.slots.rootAdded.subscribe(rootAddedCallback);
+    store.slots.ready.subscribe(readyCallback);
+    store.slots.rootAdded.subscribe(rootAddedCallback);
 
-    doc.load(() => {
-      const rootId = doc.addBlock('affine:page', {
+    store.load(() => {
+      const rootId = store.addBlock('affine:page', {
         title: new Text(),
       });
       expect(rootAddedCallback).toBeCalledTimes(1);
 
-      doc.addBlock('affine:note', {}, rootId);
+      store.addBlock('affine:note', {}, rootId);
     });
 
     expect(readyCallback).toBeCalledTimes(1);
@@ -175,12 +175,12 @@ describe('basic', () => {
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
     const collection2 = new TestWorkspace(options);
-    const doc = collection.createDoc({
-      id: 'space:0',
+    const doc = collection.createDoc('space:0');
+    const store = doc.getStore({
       extensions,
     });
     doc.load(() => {
-      doc.addBlock('affine:page', {
+      store.addBlock('affine:page', {
         title: new Text(),
       });
     });
@@ -206,9 +206,7 @@ describe('basic', () => {
       // apply doc update
       const update = encodeStateAsUpdate(doc.spaceDoc);
       expect(collection2.docs.size).toBe(1);
-      const doc2 = collection2.getDoc('space:0', {
-        extensions,
-      });
+      const doc2 = collection2.getDoc('space:0');
       if (!doc2) {
         throw new Error('doc2 is not found');
       }
@@ -382,12 +380,15 @@ describe('addBlock', () => {
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
 
-    const doc0 = collection.createDoc({ id: 'doc:home' });
-    const doc1 = collection.createDoc({ id: 'space:doc1' });
+    const doc0 = collection.createDoc('doc:home');
+    const doc1 = collection.createDoc('space:doc1');
     await Promise.all([doc0.load(), doc1.load()]);
     assert.equal(collection.docs.size, 2);
+    const store0 = doc0.getStore({
+      extensions,
+    });
 
-    doc0.addBlock('affine:page', {
+    store0.addBlock('affine:page', {
       title: new Text(),
     });
     collection.removeDoc(doc0.id);
@@ -407,8 +408,7 @@ describe('addBlock', () => {
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
 
-    const doc0 = collection.createDoc({ id: 'doc:home' });
-
+    const doc0 = collection.createDoc('doc:home');
     collection.removeDoc(doc0.id);
     assert.equal(collection.docs.size, 0);
   });
@@ -417,7 +417,7 @@ describe('addBlock', () => {
     const options = createTestOptions();
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
-    collection.createDoc({ id: 'doc:home' });
+    collection.createDoc('doc:home');
 
     assert.deepEqual(
       collection.meta.docMetas.map(({ id, title }) => ({

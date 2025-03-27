@@ -109,7 +109,7 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
       items: [
         menu.input({
           initialValue: this.model.props.title.toString(),
-          placeholder: 'Untitled',
+          placeholder: 'Database title',
           onChange: text => {
             this.model.props.title.replace(
               0,

@@ -1,164 +1,54 @@
-import type { MenuConfig } from '@blocksuite/affine-components/context-menu';
-import type { GfxToolsMap } from '@blocksuite/block-std/gfx';
-import { html, type TemplateResult } from 'lit';
+import { frameQuickTool } from '@blocksuite/affine-block-frame';
+import { penSeniorTool } from '@blocksuite/affine-gfx-brush';
+import { connectorQuickTool } from '@blocksuite/affine-gfx-connector';
+import { mindMapSeniorTool } from '@blocksuite/affine-gfx-mindmap';
+import { noteSeniorTool } from '@blocksuite/affine-gfx-note';
+import { shapeSeniorTool } from '@blocksuite/affine-gfx-shape';
+import {
+  QuickToolExtension,
+  SeniorToolExtension,
+} from '@blocksuite/affine-widget-edgeless-toolbar';
+import { html } from 'lit';
 
-import type { EdgelessRootBlockComponent } from '../../edgeless-root-block.js';
-import { buildConnectorDenseMenu } from './connector/connector-dense-menu.js';
-import { buildFrameDenseMenu } from './frame/frame-dense-menu.js';
 import { buildLinkDenseMenu } from './link/link-dense-menu.js';
 
-export interface QuickTool {
-  type?: keyof GfxToolsMap;
-  content: TemplateResult;
-  /**
-   * if not configured, the tool will not be shown in dense mode
-   */
-  menu?: MenuConfig;
-}
-export interface SeniorTool {
-  /**
-   * Used to show in nav-button's tooltip
-   */
-  name: string;
-  content: TemplateResult;
-}
-
-/**
- * Get quick-tool list
- */
-export const getQuickTools = ({
-  edgeless,
-}: {
-  edgeless: EdgelessRootBlockComponent;
-}) => {
-  const { doc } = edgeless;
-  const quickTools: QuickTool[] = [];
-
-  // 🔧 Hands / Pointer
-  quickTools.push({
+const defaultQuickTool = QuickToolExtension('default', ({ block }) => {
+  return {
     type: 'default',
     content: html`<edgeless-default-tool-button
-      .edgeless=${edgeless}
+      .edgeless=${block}
     ></edgeless-default-tool-button>`,
-    // menu: will never show because the first tool will never hide
-  });
+  };
+});
 
-  // 🔧 Lasso
-  // if (doc.awarenessStore.getFlag('enable_lasso_tool')) {
-  //   quickTools.push({
-  //     type: 'lasso',
-  //     content: html`<edgeless-lasso-tool-button
-  //       .edgeless=${edgeless}
-  //     ></edgeless-lasso-tool-button>`,
-  //     menu: buildLassoDenseMenu(edgeless),
-  //   });
-  // }
-
-  // 🔧 Frame
-  if (!doc.readonly) {
-    quickTools.push({
-      type: 'frame',
-      content: html`<edgeless-frame-tool-button
-        .edgeless=${edgeless}
-      ></edgeless-frame-tool-button>`,
-      menu: buildFrameDenseMenu(edgeless),
-    });
-  }
-
-  // 🔧 Connector
-  quickTools.push({
-    type: 'connector',
-    content: html`<edgeless-connector-tool-button
-      .edgeless=${edgeless}
-    ></edgeless-connector-tool-button>`,
-    menu: buildConnectorDenseMenu(edgeless),
-  });
-
-  // 🔧 Present
-  // quickTools.push({
-  //   type: 'frameNavigator',
-  //   content: html`<edgeless-present-button
-  //     .edgeless=${edgeless}
-  //   ></edgeless-present-button>`,
-  // });
-
-  // 🔧 Note
-  // if (!doc.readonly) {
-  //   quickTools.push({
-  //     type: 'affine:note',
-  //     content: html`
-  //       <edgeless-note-tool-button
-  //         .edgeless=${edgeless}
-  //       ></edgeless-note-tool-button>
-  //     `,
-  //   });
-  // }
-
-  // Link
-  quickTools.push({
+const linkQuickTool = QuickToolExtension('link', ({ block, gfx }) => {
+  return {
     content: html`<edgeless-link-tool-button
-      .edgeless=${edgeless}
+      .edgeless=${block}
     ></edgeless-link-tool-button>`,
-    menu: buildLinkDenseMenu(edgeless),
-  });
-  return quickTools;
-};
+    menu: buildLinkDenseMenu(block, gfx),
+  };
+});
 
-export const getSeniorTools = ({
-  edgeless,
-  toolbarContainer,
-}: {
-  edgeless: EdgelessRootBlockComponent;
-  toolbarContainer: HTMLElement;
-}): SeniorTool[] => {
-  const { doc } = edgeless;
-  const tools: SeniorTool[] = [];
-
-  if (!doc.readonly) {
-    tools.push({
-      name: 'Note',
-      content: html`<edgeless-note-senior-button .edgeless=${edgeless}>
-      </edgeless-note-senior-button>`,
-    });
-  }
-
-  // Brush / Eraser
-  tools.push({
-    name: 'Pen',
-    content: html`<div class="brush-and-eraser">
-      <edgeless-brush-tool-button
-        .edgeless=${edgeless}
-      ></edgeless-brush-tool-button>
-
-      <edgeless-eraser-tool-button
-        .edgeless=${edgeless}
-      ></edgeless-eraser-tool-button>
-    </div> `,
-  });
-
-  // Shape
-  tools.push({
-    name: 'Shape',
-    content: html`<edgeless-shape-tool-button
-      .edgeless=${edgeless}
-      .toolbarContainer=${toolbarContainer}
-    ></edgeless-shape-tool-button>`,
-  });
-
-  tools.push({
-    name: 'Mind Map',
-    content: html`<edgeless-mindmap-tool-button
-      .edgeless=${edgeless}
-      .toolbarContainer=${toolbarContainer}
-    ></edgeless-mindmap-tool-button>`,
-  });
-
-  // Template
-  tools.push({
+const templateSeniorTool = SeniorToolExtension('template', ({ block }) => {
+  return {
     name: 'Template',
-    content: html`<edgeless-template-button .edgeless=${edgeless}>
+    content: html`<edgeless-template-button .edgeless=${block}>
     </edgeless-template-button>`,
-  });
+  };
+});
 
-  return tools;
-};
+export const quickTools = [
+  defaultQuickTool,
+  frameQuickTool,
+  connectorQuickTool,
+  linkQuickTool,
+];
+
+export const seniorTools = [
+  noteSeniorTool,
+  penSeniorTool,
+  shapeSeniorTool,
+  mindMapSeniorTool,
+  templateSeniorTool,
+];

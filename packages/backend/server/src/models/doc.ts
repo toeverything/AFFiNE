@@ -186,6 +186,23 @@ export class DocModel extends BaseModel {
   }
 
   /**
+   * Check if all doc exists in the workspace.
+   * Ignore pending updates.
+   */
+  async existsAll(workspaceId: string, docIds: string[]) {
+    const count = await this.db.snapshot.count({
+      where: {
+        workspaceId,
+        id: { in: docIds },
+      },
+    });
+    if (count === docIds.length) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Detect a doc exists or not, including updates
    */
   async exists(workspaceId: string, docId: string) {

@@ -8,7 +8,7 @@ export function getDocFromUrlParams(collection: Workspace, url: URL) {
   const docId = decodeURIComponent(url.hash.slice(1));
 
   if (docId) {
-    doc = collection.getDoc(docId);
+    doc = collection.getDoc(docId)?.getStore() ?? null;
   }
   if (!doc) {
     const blockCollection = collection.docs.values().next().value as Doc;

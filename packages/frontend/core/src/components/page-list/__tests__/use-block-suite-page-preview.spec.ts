@@ -33,12 +33,16 @@ beforeEach(async () => {
     const frameId = page.addBlock('affine:note', {}, pageBlockId);
     page.addBlock('affine:paragraph', {}, frameId);
   };
-  await initPage(docCollection.createDoc({ id: 'page0', extensions }));
+  const store = docCollection.createDoc('page0').getStore({ extensions });
+  await initPage(store);
 });
 
 describe('useBlockSuitePagePreview', () => {
   test('basic', async () => {
-    const page = docCollection.getDoc('page0') as Store;
+    const page = docCollection.getDoc('page0')?.getStore();
+    if (!page) {
+      throw new Error('Page not found');
+    }
     const id = page.addBlock(
       'affine:paragraph',
       {

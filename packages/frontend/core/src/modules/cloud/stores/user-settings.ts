@@ -1,7 +1,7 @@
 import {
   type GetUserSettingsQuery,
   getUserSettingsQuery,
-  type UpdateSettingsInput,
+  type UpdateUserSettingsInput,
   updateUserSettingsMutation,
 } from '@affine/graphql';
 import { Store } from '@toeverything/infra';
@@ -12,7 +12,7 @@ export type UserSettings = NonNullable<
   GetUserSettingsQuery['currentUser']
 >['settings'];
 
-export type UpdateUserSettingsInput = UpdateSettingsInput;
+export type { UpdateUserSettingsInput };
 
 export class UserSettingsStore extends Store {
   constructor(private readonly gqlService: GraphQLService) {

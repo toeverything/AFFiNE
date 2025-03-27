@@ -38,7 +38,7 @@ export class MixTextAdapter extends BaseAdapter<MixText> {
   private readonly _markdownAdapter: MarkdownAdapter;
 
   constructor(job: Transformer, provider: ServiceProvider) {
-    super(job);
+    super(job, provider);
     this._markdownAdapter = new MarkdownAdapter(job, provider);
   }
 

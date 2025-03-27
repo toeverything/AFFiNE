@@ -1,9 +1,15 @@
-import type { CopilotContextDoc, CopilotContextFile } from '@affine/graphql';
 import { LoadingIcon } from '@blocksuite/affine/blocks/image';
 import { WarningIcon } from '@blocksuite/icons/lit';
 import { type TemplateResult } from 'lit';
 
-import type { ChatChip, ChipState, DocChip, FileChip } from '../chat-context';
+import type {
+  ChatChip,
+  ChipState,
+  CollectionChip,
+  DocChip,
+  FileChip,
+  TagChip,
+} from '../chat-context';
 
 export function getChipTooltip(
   state: ChipState,
@@ -48,16 +54,12 @@ export function isFileChip(chip: ChatChip): chip is FileChip {
   return 'file' in chip && chip.file instanceof File;
 }
 
-export function isDocContext(
-  context: CopilotContextDoc | CopilotContextFile
-): context is CopilotContextDoc {
-  return !('blobId' in context);
+export function isTagChip(chip: ChatChip): chip is TagChip {
+  return 'tagId' in chip;
 }
 
-export function isFileContext(
-  context: CopilotContextDoc | CopilotContextFile
-): context is CopilotContextFile {
-  return 'blobId' in context;
+export function isCollectionChip(chip: ChatChip): chip is CollectionChip {
+  return 'collectionId' in chip;
 }
 
 export function getChipKey(chip: ChatChip) {
@@ -65,7 +67,13 @@ export function getChipKey(chip: ChatChip) {
     return chip.docId;
   }
   if (isFileChip(chip)) {
-    return chip.fileId;
+    return chip.file.name;
+  }
+  if (isTagChip(chip)) {
+    return chip.tagId;
+  }
+  if (isCollectionChip(chip)) {
+    return chip.collectionId;
   }
   return null;
 }

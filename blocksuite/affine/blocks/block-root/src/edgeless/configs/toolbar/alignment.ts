@@ -6,6 +6,11 @@ import {
 } from '@blocksuite/affine-block-surface';
 import { EditorChevronDown } from '@blocksuite/affine-components/toolbar';
 import type { ToolbarContext } from '@blocksuite/affine-shared/services';
+import type {
+  Menu,
+  MenuItem,
+} from '@blocksuite/affine-widget-edgeless-toolbar';
+import { renderMenuItems } from '@blocksuite/affine-widget-edgeless-toolbar';
 import type { GfxModel } from '@blocksuite/block-std/gfx';
 import { Bound } from '@blocksuite/global/gfx';
 import {
@@ -22,9 +27,6 @@ import {
 } from '@blocksuite/icons/lit';
 import { html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
-
-import type { Menu, MenuItem } from './types';
-import { renderMenuItems } from './utils';
 
 enum Alignment {
   None,

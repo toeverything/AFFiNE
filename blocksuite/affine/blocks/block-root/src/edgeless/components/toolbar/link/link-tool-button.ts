@@ -1,9 +1,8 @@
 import { insertLinkByQuickSearchCommand } from '@blocksuite/affine-block-bookmark';
 import { LinkIcon } from '@blocksuite/affine-components/icons';
 import { TelemetryProvider } from '@blocksuite/affine-shared/services';
+import { QuickToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { css, html, LitElement } from 'lit';
-
-import { QuickToolMixin } from '../mixins/quick-tool.mixin.js';
 
 export class EdgelessLinkToolButton extends QuickToolMixin(LitElement) {
   static override styles = css`

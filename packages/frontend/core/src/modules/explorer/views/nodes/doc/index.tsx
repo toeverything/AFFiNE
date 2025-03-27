@@ -5,7 +5,7 @@ import {
   toast,
   Tooltip,
 } from '@affine/component';
-import { DocPermissionGuard } from '@affine/core/components/guard/doc-guard';
+import { Guard } from '@affine/core/components/guard';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { DocsService } from '@affine/core/modules/doc';
@@ -274,7 +274,7 @@ export const ExplorerDocNode = ({
       dropEffect={handleDropEffectOnDoc}
       data-testid={`explorer-doc-${docId}`}
     >
-      <DocPermissionGuard docId={docId} permission="Doc_Read">
+      <Guard docId={docId} permission="Doc_Read">
         {canRead =>
           canRead
             ? children?.map((child, index) => (
@@ -291,7 +291,7 @@ export const ExplorerDocNode = ({
               ))
             : null
         }
-      </DocPermissionGuard>
+      </Guard>
     </ExplorerTreeNode>
   );
 };

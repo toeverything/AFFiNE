@@ -12,4 +12,4 @@ yarn install
 yarn affine @affine/server-native build
 
 # Create database
-yarn affine @affine/server prisma db push
+yarn affine @affine/server prisma migrate reset -f

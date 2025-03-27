@@ -18,6 +18,7 @@ import {
   OverlayIdentifier,
   TextUtils,
 } from '@blocksuite/affine-block-surface';
+import { isMindmapNode } from '@blocksuite/affine-gfx-mindmap';
 import {
   type BookmarkBlockModel,
   ConnectorElementModel,
@@ -68,6 +69,10 @@ import {
   AI_CHAT_BLOCK_MAX_WIDTH,
   AI_CHAT_BLOCK_MIN_HEIGHT,
   AI_CHAT_BLOCK_MIN_WIDTH,
+  EMBED_IFRAME_BLOCK_MAX_HEIGHT,
+  EMBED_IFRAME_BLOCK_MAX_WIDTH,
+  EMBED_IFRAME_BLOCK_MIN_HEIGHT,
+  EMBED_IFRAME_BLOCK_MIN_WIDTH,
 } from '../../utils/consts.js';
 import {
   getSelectableBounds,
@@ -80,12 +85,12 @@ import {
   isEmbedFigmaBlock,
   isEmbedGithubBlock,
   isEmbedHtmlBlock,
+  isEmbedIframeBlock,
   isEmbedLinkedDocBlock,
   isEmbedLoomBlock,
   isEmbedSyncedDocBlock,
   isEmbedYoutubeBlock,
   isImageBlock,
-  isMindmapNode,
 } from '../../utils/query.js';
 import {
   HandleDirection,
@@ -113,6 +118,13 @@ export type SelectedRect = {
 };
 
 export const EDGELESS_SELECTED_RECT_WIDGET = 'edgeless-selected-rect';
+
+interface ResizeConstraints {
+  minWidth: number;
+  maxWidth: number;
+  minHeight: number;
+  maxHeight: number;
+}
 
 export class EdgelessSelectedRectWidget extends WidgetComponent<
   RootBlockModel,
@@ -523,6 +535,11 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
 
       if (isAIChatBlock(element)) {
         this.#adjustAIChat(element, bound, direction);
+        return;
+      }
+
+      if (isEmbedIframeBlock(element)) {
+        this.#adjustEmbedIframe(element, bound, direction);
         return;
       }
 
@@ -949,41 +966,83 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<
    * TODO: Remove this function after the edgeless refactor completed
    * This function is used to adjust the element bound and scale
    * Should not be used in the future
-   * Related issue: https://linear.app/affine-design/issue/BS-1009/
    * @deprecated
    */
-  #adjustAIChat(element: GfxModel, bound: Bound, direction: HandleDirection) {
+  #adjustBlockWithConstraints(
+    element: GfxModel,
+    bound: Bound,
+    direction: HandleDirection,
+    constraints: ResizeConstraints
+  ) {
     const curBound = Bound.deserialize(element.xywh);
+    const { minWidth, maxWidth, minHeight, maxHeight } = constraints;
 
     let scale = 1;
-    if ('scale' in element) {
-      scale = element.scale as number;
+    if ('props' in element && 'scale' in element.props) {
+      scale = element.props.scale as number;
     }
     let width = curBound.w / scale;
     let height = curBound.h / scale;
+
+    // Handle shift key scaling (maintain aspect ratio)
     if (this._shiftKey) {
       scale = bound.w / width;
       this._scalePercent = `${Math.round(scale * 100)}%`;
       this._scaleDirection = direction;
     }
 
+    // Apply constraints
     width = bound.w / scale;
-    width = clamp(width, AI_CHAT_BLOCK_MIN_WIDTH, AI_CHAT_BLOCK_MAX_WIDTH);
+    width = clamp(width, minWidth, maxWidth);
     bound.w = width * scale;
 
     height = bound.h / scale;
-    height = clamp(height, AI_CHAT_BLOCK_MIN_HEIGHT, AI_CHAT_BLOCK_MAX_HEIGHT);
+    height = clamp(height, minHeight, maxHeight);
     bound.h = height * scale;
 
-    this._isWidthLimit =
-      width === AI_CHAT_BLOCK_MIN_WIDTH || width === AI_CHAT_BLOCK_MAX_WIDTH;
-    this._isHeightLimit =
-      height === AI_CHAT_BLOCK_MIN_HEIGHT ||
-      height === AI_CHAT_BLOCK_MAX_HEIGHT;
+    // Update limit flags
+    this._isWidthLimit = width === minWidth || width === maxWidth;
+    this._isHeightLimit = height === minHeight || height === maxHeight;
 
     this.gfx.updateElement(element.id, {
       scale,
       xywh: bound.serialize(),
+    });
+  }
+
+  /**
+   * TODO: Remove this function after the edgeless refactor completed
+   * This function is used to adjust the element bound and scale
+   * Should not be used in the future
+   * Related issue: https://linear.app/affine-design/issue/BS-1009/
+   * @deprecated
+   */
+  #adjustAIChat(element: GfxModel, bound: Bound, direction: HandleDirection) {
+    this.#adjustBlockWithConstraints(element, bound, direction, {
+      minWidth: AI_CHAT_BLOCK_MIN_WIDTH,
+      maxWidth: AI_CHAT_BLOCK_MAX_WIDTH,
+      minHeight: AI_CHAT_BLOCK_MIN_HEIGHT,
+      maxHeight: AI_CHAT_BLOCK_MAX_HEIGHT,
+    });
+  }
+
+  /**
+   * TODO: Remove this function after the edgeless refactor completed
+   * This function is used to adjust the element bound and scale
+   * Should not be used in the future
+   * Related issue: https://linear.app/affine-design/issue/BS-2841/
+   * @deprecated
+   */
+  #adjustEmbedIframe(
+    element: GfxModel,
+    bound: Bound,
+    direction: HandleDirection
+  ) {
+    this.#adjustBlockWithConstraints(element, bound, direction, {
+      minWidth: EMBED_IFRAME_BLOCK_MIN_WIDTH,
+      maxWidth: EMBED_IFRAME_BLOCK_MAX_WIDTH,
+      minHeight: EMBED_IFRAME_BLOCK_MIN_HEIGHT,
+      maxHeight: EMBED_IFRAME_BLOCK_MAX_HEIGHT,
     });
   }
 

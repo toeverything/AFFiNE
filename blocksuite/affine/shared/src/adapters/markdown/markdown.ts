@@ -170,11 +170,8 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
 
   readonly blockMatchers: BlockMarkdownAdapterMatcher[];
 
-  constructor(
-    job: Transformer,
-    readonly provider: ServiceProvider
-  ) {
-    super(job);
+  constructor(job: Transformer, provider: ServiceProvider) {
+    super(job, provider);
     const blockMatchers = Array.from(
       provider.getAll(BlockMarkdownAdapterMatcherIdentifier).values()
     );

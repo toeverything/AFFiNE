@@ -5,7 +5,7 @@ rustflags = ["-C", "target-feature=+crt-static"]
 [target.'cfg(target_os = "linux")']
 rustflags = ["-C", "link-args=-Wl,--warn-unresolved-symbols"]
 [target.'cfg(target_os = "macos")']
-rustflags = ["-C", "link-args=-all_load"]
+rustflags = ["-C", "link-args=-all_load", "-C", "link-args=-weak_framework ScreenCaptureKit"]
 # https://sourceware.org/bugzilla/show_bug.cgi?id=21032
 # https://sourceware.org/bugzilla/show_bug.cgi?id=21031
 # https://github.com/rust-lang/rust/issues/134820

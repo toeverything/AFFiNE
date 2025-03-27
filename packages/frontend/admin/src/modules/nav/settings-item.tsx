@@ -52,7 +52,7 @@ export const SettingsItem = ({ isCollapsed }: { isCollapsed: boolean }) => {
                     : undefined,
                 })}
               >
-                <SettingsIcon className="h-5 w-5" />
+                <SettingsIcon fontSize={20} />
               </NavLink>
             </NavigationMenuPrimitive.Trigger>
             <NavigationMenuPrimitive.Content>
@@ -119,7 +119,9 @@ export const SettingsItem = ({ isCollapsed }: { isCollapsed: boolean }) => {
             }
           >
             <div className="flex items-center">
-              <SettingsIcon className={cn(!isCollapsed && 'mr-2', 'h-5 w-5')} />
+              <span className="flex items-center p-0.5 mr-2">
+                <SettingsIcon fontSize={20} />
+              </span>
               <span>Settings</span>
             </div>
           </AccordionTrigger>

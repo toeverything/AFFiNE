@@ -2,7 +2,7 @@ import rehypeParse from 'rehype-parse';
 import { unified } from 'unified';
 import { describe, expect, test } from 'vitest';
 
-import { onlyContainImgElement } from '../clipboard/index.js';
+import { onlyContainImgElement } from '../clipboard/utils.js';
 
 describe('only contains img elements', () => {
   test('normal with head', () => {

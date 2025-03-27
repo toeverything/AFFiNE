@@ -79,8 +79,11 @@ export class CloudBlobStorage extends BlobStorageBase {
       });
     } catch (err) {
       const userFriendlyError = UserFriendlyError.fromAny(err);
-      if (userFriendlyError.is('BLOB_QUOTA_EXCEEDED')) {
+      if (userFriendlyError.is('STORAGE_QUOTA_EXCEEDED')) {
         throw new OverCapacityError();
+      }
+      if (userFriendlyError.is('BLOB_QUOTA_EXCEEDED')) {
+        throw new OverSizeError();
       }
       if (userFriendlyError.is('CONTENT_TOO_LARGE')) {
         throw new OverSizeError();

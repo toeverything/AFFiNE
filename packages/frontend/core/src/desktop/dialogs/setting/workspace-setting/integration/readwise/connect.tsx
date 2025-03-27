@@ -18,7 +18,13 @@ import {
   inputErrorMsg,
 } from './index.css';
 
-const ConnectDialog = ({ onClose }: { onClose: () => void }) => {
+const ConnectDialog = ({
+  onClose,
+  onSuccess,
+}: {
+  onClose: () => void;
+  onSuccess: (token: string) => void;
+}) => {
   const t = useI18n();
   const [status, setStatus] = useState<'idle' | 'verifying' | 'error'>('idle');
   const [token, setToken] = useState('');
@@ -43,7 +49,7 @@ const ConnectDialog = ({ onClose }: { onClose: () => void }) => {
   const handleResult = useCallback(
     (success: boolean, token: string) => {
       if (success) {
-        readwise.updateSetting('token', token);
+        onSuccess(token);
       } else {
         setStatus('error');
         notify.error({
@@ -54,7 +60,7 @@ const ConnectDialog = ({ onClose }: { onClose: () => void }) => {
         });
       }
     },
-    [readwise, t]
+    [onSuccess, t]
   );
 
   const handleConnect = useAsyncCallback(
@@ -129,7 +135,11 @@ const ConnectDialog = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-export const ConnectButton = () => {
+export const ConnectButton = ({
+  onSuccess,
+}: {
+  onSuccess: (token: string) => void;
+}) => {
   const t = useI18n();
   const [open, setOpen] = useState(false);
 
@@ -143,7 +153,7 @@ export const ConnectButton = () => {
 
   return (
     <>
-      {open && <ConnectDialog onClose={handleClose} />}
+      {open && <ConnectDialog onClose={handleClose} onSuccess={onSuccess} />}
       <Button variant="primary" className={actionButton} onClick={handleOpen}>
         {t['com.affine.integration.readwise.connect']()}
       </Button>

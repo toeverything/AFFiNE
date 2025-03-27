@@ -300,6 +300,19 @@ class FileCellManager {
   });
 }
 
+const SUPPORTED_IMAGE_MIME_TYPES = new Set([
+  'image/apng',
+  'image/avif',
+  'image/gif',
+  'image/jpeg',
+  'image/png',
+  'image/svg+xml',
+  'image/webp',
+  'image/tiff',
+  'image/bmp',
+  'image/vnd.microsoft.icon',
+]);
+
 const FileCellComponent: ForwardRefRenderFunction<
   DataViewCellLifeCycle,
   CellRenderProps<{}, FileCellRawValueType, FileCellJsonValueType>
@@ -460,7 +473,7 @@ const useFilePreview = (
   const mime =
     loadFileData?.fileType?.mime ??
     (file.type === 'done' ? file.mime : undefined);
-  if (mime?.startsWith('image/')) {
+  if (mime && SUPPORTED_IMAGE_MIME_TYPES.has(mime)) {
     if (loadFileData == null) {
       return {
         preview: null,

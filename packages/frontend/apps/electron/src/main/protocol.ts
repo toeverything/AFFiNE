@@ -79,7 +79,11 @@ async function handleFileRequest(request: Request) {
     filepath = decodeURIComponent(urlObject.pathname);
     // security check if the filepath is within app.getPath('sessionData')
     const sessionDataPath = app.getPath('sessionData');
-    if (!filepath.startsWith(sessionDataPath)) {
+    const tempPath = app.getPath('temp');
+    if (
+      !filepath.startsWith(sessionDataPath) &&
+      !filepath.startsWith(tempPath)
+    ) {
       throw new Error('Invalid filepath');
     }
   }

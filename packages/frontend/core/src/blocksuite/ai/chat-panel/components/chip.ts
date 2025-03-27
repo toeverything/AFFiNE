@@ -1,6 +1,7 @@
 import { ShadowlessElement } from '@blocksuite/affine/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
-import { CloseIcon } from '@blocksuite/icons/lit';
+import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
+import { CloseIcon, PlusIcon } from '@blocksuite/icons/lit';
 import { css, html, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -18,18 +19,26 @@ export class ChatPanelChip extends SignalWatcher(
       margin: 4px;
       padding: 0 4px;
       border-radius: 4px;
-      border: 1px solid var(--affine-border-color);
-      background: var(--affine-background-primary-color);
+      border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+      background: ${unsafeCSSVarV2('layer/background/primary')};
       box-sizing: border-box;
     }
     .chip-card[data-state='candidate'] {
-      border-width: 0.5px;
+      border-width: 1px;
       border-style: dashed;
-      background: var(--affine-background-secondary-color);
+      border-color: ${unsafeCSSVarV2('icon/tertiary')};
+      background: ${unsafeCSSVarV2('layer/background/secondary')};
+      color: ${unsafeCSSVarV2('icon/secondary')};
+    }
+    .chip-card[data-state='candidate']:hover {
+      background: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
+    }
+    .chip-card[data-state='candidate'] svg {
+      color: ${unsafeCSSVarV2('icon/secondary')};
     }
     .chip-card[data-state='failed'] {
-      color: var(--affine-error-color);
-      background: var(--affine-background-error-color);
+      color: ${unsafeCSSVarV2('status/error')};
+      background: ${unsafeCSSVarV2('layer/background/error')};
     }
     .chip-card-content {
       display: flex;
@@ -37,12 +46,12 @@ export class ChatPanelChip extends SignalWatcher(
       justify-content: center;
     }
     .chip-card[data-state='failed'] svg {
-      color: var(--affine-error-color);
+      color: ${unsafeCSSVarV2('status/error')};
     }
     .chip-card svg {
       width: 16px;
       height: 16px;
-      color: var(--affine-v2-icon-primary);
+      color: ${unsafeCSSVarV2('icon/primary')};
     }
     .chip-card-title {
       display: inline-block;
@@ -54,7 +63,7 @@ export class ChatPanelChip extends SignalWatcher(
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .chip-card[data-state='candidate'] .chip-card-title {
+    .chip-card[data-state='candidate'] {
       cursor: pointer;
     }
     .chip-card-close {
@@ -65,7 +74,7 @@ export class ChatPanelChip extends SignalWatcher(
       border-radius: 4px;
     }
     .chip-card-close:hover {
-      background: var(--affine-hover-color);
+      background: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
     }
   `;
 
@@ -91,26 +100,30 @@ export class ChatPanelChip extends SignalWatcher(
   accessor onChipClick: () => void = () => {};
 
   override render() {
+    const isCandidate = this.state === 'candidate';
     return html`
       <div
         class="chip-card"
         data-testid="chat-panel-chip"
         data-state=${this.state}
+        @click=${this.onChipClick}
       >
         <div class="chip-card-content">
           ${this.icon}
-          <span class="chip-card-title" @click=${this.onChipClick}>
+          <span class="chip-card-title">
             <span data-testid="chat-panel-chip-title">${this.name}</span>
           </span>
           <affine-tooltip>${this.tooltip}</affine-tooltip>
         </div>
-        ${this.closeable
-          ? html`
-              <div class="chip-card-close" @click=${this.onChipDelete}>
-                ${CloseIcon()}
-              </div>
-            `
-          : ''}
+        ${isCandidate
+          ? html`${PlusIcon()}`
+          : this.closeable
+            ? html`
+                <div class="chip-card-close" @click=${this.onChipDelete}>
+                  ${CloseIcon()}
+                </div>
+              `
+            : ''}
       </div>
     `;
   }

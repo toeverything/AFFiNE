@@ -57,12 +57,22 @@ public extension UIViewController {
       button.transform = .identity
       button.setNeedsLayout()
       self.view.layoutIfNeeded()
+    } completion: { _ in
+      button.isUserInteractionEnabled = true
     }
   }
 
-  func dismissIntelligentsButton() {
+  func dismissIntelligentsButton(animated: Bool = true) {
     guard let button = findIntelligentsButton() else { return }
     print("[*] \(button) is calling \(#function)")
+
+    button.isUserInteractionEnabled = false
+
+    if !animated {
+      button.stopProgress()
+      button.isHidden = true
+      return
+    }
 
     button.stopProgress()
     button.setNeedsLayout()

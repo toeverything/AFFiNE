@@ -47,6 +47,7 @@ export function getBuildConfig(
         changelogUrl: 'https://affine.pro/what-is-new',
         downloadUrl: 'https://affine.pro/download',
         pricingUrl: 'https://affine.pro/pricing',
+        discordUrl: 'https://affine.pro/redirect/discord',
         imageProxyUrl: '/api/worker/image-proxy',
         linkPreviewUrl: '/api/worker/link-preview',
       };

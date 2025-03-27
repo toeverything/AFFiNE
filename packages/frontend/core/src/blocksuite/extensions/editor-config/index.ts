@@ -29,6 +29,6 @@ export function getEditorConfigExtension(
     }),
     ToolbarMoreMenuConfigExtension(createToolbarMoreMenuConfig(framework)),
 
-    createCustomToolbarExtension(baseUrl),
+    createCustomToolbarExtension(editorSettingService.editorSetting, baseUrl),
   ].flat();
 }

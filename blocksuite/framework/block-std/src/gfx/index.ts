@@ -31,6 +31,7 @@ export type {
   DragMoveContext,
   DragStartContext,
 } from './element-transform/view-transform.js';
+export { type SelectedContext } from './element-transform/view-transform.js';
 export { GfxExtension, GfxExtensionIdentifier } from './extension.js';
 export { GridManager } from './grid.js';
 export { GfxControllerIdentifier } from './identifiers.js';

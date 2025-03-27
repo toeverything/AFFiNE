@@ -15,11 +15,27 @@ export const inviteModalContent = style({
 export const inviteModalButtonContainer = style({
   display: 'flex',
   justifyContent: 'flex-end',
-  // marginTop: 10,
 });
 
 export const inviteName = style({
   color: cssVarV2('text/primary'),
+  fontWeight: '600',
+});
+
+export const avatarWrapper = style({
+  verticalAlign: 'sub',
+  display: 'inline-block',
+});
+
+export const userInfoWrapper = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  marginTop: '28px',
+});
+
+export const lineHeight = style({
+  lineHeight: '1.5',
 });
 
 export const content = style({
@@ -30,7 +46,7 @@ export const content = style({
 });
 
 export const userWrapper = style({
-  display: 'flex',
+  display: 'inline-flex',
   alignItems: 'center',
   gap: '4px',
 });

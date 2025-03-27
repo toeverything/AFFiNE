@@ -1,4 +1,4 @@
-import { insertInlineLatex } from '@blocksuite/affine-inline-preset';
+import { insertInlineLatex } from '@blocksuite/affine-inline-latex';
 import {
   getSelectedModelsCommand,
   getTextSelectionCommand,

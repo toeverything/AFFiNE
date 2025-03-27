@@ -14,12 +14,7 @@ import { SubscriptionPlan } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { ArrowRightSmallIcon, CameraIcon } from '@blocksuite/icons/rc';
-import {
-  useEnsureLiveData,
-  useLiveData,
-  useService,
-  useServices,
-} from '@toeverything/infra';
+import { useLiveData, useService, useServices } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
 
 import { AuthService, ServerService } from '../../../../modules/cloud';
@@ -31,7 +26,7 @@ import * as styles from './style.css';
 export const UserAvatar = () => {
   const t = useI18n();
   const session = useService(AuthService).session;
-  const account = useEnsureLiveData(session.account$);
+  const account = useLiveData(session.account$);
 
   const handleUpdateUserAvatar = useAsyncCallback(
     async (file: File) => {
@@ -63,10 +58,10 @@ export const UserAvatar = () => {
     >
       <Avatar
         size={56}
-        name={account.label}
-        url={account.avatar}
+        name={account?.label}
+        url={account?.avatar}
         hoverIcon={<CameraIcon />}
-        onRemove={account.avatar ? handleRemoveUserAvatar : undefined}
+        onRemove={account?.avatar ? handleRemoveUserAvatar : undefined}
         avatarTooltipOptions={{ content: t['Click to replace photo']() }}
         removeTooltipOptions={{ content: t['Remove photo']() }}
         data-testid="user-setting-avatar"
@@ -81,10 +76,10 @@ export const UserAvatar = () => {
 export const AvatarAndName = () => {
   const t = useI18n();
   const session = useService(AuthService).session;
-  const account = useEnsureLiveData(session.account$);
-  const [input, setInput] = useState<string>(account.label);
+  const account = useLiveData(session.account$);
+  const [input, setInput] = useState<string>(account?.label ?? '');
 
-  const allowUpdate = !!input && input !== account.label;
+  const allowUpdate = !!input && input !== account?.label;
   const handleUpdateUserName = useAsyncCallback(async () => {
     if (account === null) {
       return;
@@ -188,10 +183,13 @@ export const AccountSetting = ({
   useEffect(() => {
     session.revalidate();
   }, [session]);
-  const account = useEnsureLiveData(session.account$);
+  const account = useLiveData(session.account$);
   const openSignOutModal = useSignOut();
 
   const onChangeEmail = useCallback(() => {
+    if (!account) {
+      return;
+    }
     globalDialogService.open('verify-email', {
       server: serverService.server.baseUrl,
       changeEmail: !!account.info?.emailVerified,
@@ -203,6 +201,10 @@ export const AccountSetting = ({
       server: serverService.server.baseUrl,
     });
   }, [globalDialogService, serverService.server.baseUrl]);
+
+  if (!account) {
+    return null;
+  }
 
   return (
     <>

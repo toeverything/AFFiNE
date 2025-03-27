@@ -8,7 +8,7 @@ import {
   Scrollable,
   useConfirmModal,
 } from '@affine/component';
-import { DocPermissionGuard } from '@affine/core/components/guard/doc-guard';
+import { Guard } from '@affine/core/components/guard';
 import { useJournalRouteHelper } from '@affine/core/components/hooks/use-journal';
 import { MoveToTrash } from '@affine/core/components/page-list';
 import {
@@ -367,10 +367,7 @@ const ConflictList = ({
                 }}
                 items={
                   <>
-                    <DocPermissionGuard
-                      docId={docRecord.id}
-                      permission="Doc_Update"
-                    >
+                    <Guard docId={docRecord.id} permission="Doc_Update">
                       {canEdit => (
                         <MenuItem
                           prefixIcon={<CalendarXmarkIcon />}
@@ -386,19 +383,16 @@ const ConflictList = ({
                           ]()}
                         </MenuItem>
                       )}
-                    </DocPermissionGuard>
+                    </Guard>
                     <MenuSeparator />
-                    <DocPermissionGuard
-                      docId={docRecord.id}
-                      permission="Doc_Trash"
-                    >
+                    <Guard docId={docRecord.id} permission="Doc_Trash">
                       {canTrash => (
                         <MoveToTrash
                           onSelect={() => handleOpenTrashModal(docRecord)}
                           disabled={!canTrash}
                         />
                       )}
-                    </DocPermissionGuard>
+                    </Guard>
                   </>
                 }
               >

@@ -66,17 +66,6 @@ export class GuardService extends Service {
     const docId = args[0];
     return LiveData.from(
       new Observable(subscriber => {
-        // revalidate permission
-        if (docId) {
-          this.revalidateDocPermission(docId);
-        } else {
-          this.revalidateWorkspacePermission();
-        }
-        // revalidate workspace permission if it's not initialized
-        if (this.isAdmin$.value === null) {
-          this.workspacePermissionService.permission.revalidate();
-        }
-
         let prev: boolean | undefined = undefined;
 
         const subscription = combineLatest([
@@ -126,6 +115,29 @@ export class GuardService extends Service {
       : this.loadWorkspacePermission());
 
     return permissions[action as keyof typeof permissions] ?? false;
+  }
+
+  revalidateCan<T extends WorkspacePermissionActions | DocPermissionActions>(
+    _action: T,
+    ...args: T extends DocPermissionActions ? [string] : []
+  ) {
+    // revalidate workspace permission if it's not initialized
+    if (this.isAdmin$.value === null) {
+      this.workspacePermissionService.permission.revalidate();
+    }
+
+    if (this.isAdmin$.value === true) {
+      // if the user is admin, the permission is always true
+      return;
+    }
+
+    const docId = args[0];
+    // revalidate permission
+    if (docId) {
+      this.revalidateDocPermission(docId);
+    } else {
+      this.revalidateWorkspacePermission();
+    }
   }
 
   private readonly revalidateWorkspacePermission = effect(

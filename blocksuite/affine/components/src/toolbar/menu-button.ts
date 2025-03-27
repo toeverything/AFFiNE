@@ -25,9 +25,10 @@ export class EditorMenuButton extends WithDisposable(LitElement) {
     }
   `;
 
-  private _popper!: ReturnType<typeof createButtonPopper>;
+  private _popper: ReturnType<typeof createButtonPopper> | null = null;
 
-  override firstUpdated() {
+  private _updatePopper() {
+    this._popper?.dispose();
     this._popper = createButtonPopper({
       reference: this._trigger,
       popperElement: this._content,
@@ -48,16 +49,30 @@ export class EditorMenuButton extends WithDisposable(LitElement) {
       offsetHeight: 6 * 4,
       ...this.popperOptions,
     });
+  }
+
+  override willUpdate(changedProperties: PropertyValues) {
+    if (changedProperties.has('contentPadding')) {
+      this.style.setProperty('--content-padding', this.contentPadding ?? '');
+    }
+
+    if (this.hasUpdated && changedProperties.has('popperOptions')) {
+      this._updatePopper();
+    }
+  }
+
+  override firstUpdated() {
+    this._updatePopper();
     this._disposables.addFromEvent(this, 'keydown', (e: KeyboardEvent) => {
       e.stopPropagation();
       if (e.key === 'Escape') {
-        this._popper.hide();
+        this._popper?.hide();
       }
     });
     this._disposables.addFromEvent(this._trigger, 'click', (_: MouseEvent) => {
-      this._popper.toggle();
+      this._popper?.toggle();
     });
-    this._disposables.add(this._popper);
+    this._disposables.add(() => this._popper?.dispose());
   }
 
   hide() {
@@ -75,12 +90,6 @@ export class EditorMenuButton extends WithDisposable(LitElement) {
 
   show(force = false) {
     this._popper?.show(force);
-  }
-
-  override willUpdate(changedProperties: PropertyValues) {
-    if (changedProperties.has('contentPadding')) {
-      this.style.setProperty('--content-padding', this.contentPadding ?? '');
-    }
   }
 
   @query('editor-menu-content')

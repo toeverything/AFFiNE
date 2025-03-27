@@ -1,4 +1,4 @@
-[**@blocksuite/store**](../../../@blocksuite/store/README.md)
+[**BlockSuite API Documentation**](../../../README.md)
 
 ***
 
@@ -24,7 +24,7 @@ Text [delta](https://docs.yjs.dev/api/delta-format) is a format from Y.js.
 
 ## Constructors
 
-### new Text()
+### Constructor
 
 > **new Text**(`input`?): `Text`
 

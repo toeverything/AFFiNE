@@ -27,7 +27,7 @@ declare module '../../config' {
 
 defineStartupConfig('job', {
   queue: {
-    prefix: 'affine_job',
+    prefix: AFFiNE.node.test ? 'affine_job_test' : 'affine_job',
     defaultJobOptions: {
       attempts: 5,
       // should remove job after it's completed, because we will add a new job with the same job id

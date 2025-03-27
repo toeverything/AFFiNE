@@ -68,6 +68,10 @@ test.before(async () => {
       JobModule.forRoot(),
     ],
     providers: [JobHandlers],
+    tapModule: builder => {
+      // use real JobQueue for testing
+      builder.overrideProvider(JobQueue).useClass(JobQueue);
+    },
   });
 
   queue = module.get(JobQueue);

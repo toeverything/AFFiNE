@@ -1,6 +1,7 @@
 import { ShadowlessElement } from '@blocksuite/block-std';
 import { PlusIcon } from '@blocksuite/icons/lit';
-import { html } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { html, unsafeCSS } from 'lit';
 
 export class NewRecordPreview extends ShadowlessElement {
   override render() {
@@ -15,7 +16,7 @@ export class NewRecordPreview extends ShadowlessElement {
           left: 0;
           height: 32px;
           width: 32px;
-          border: 1px solid var(--affine-border-color);
+          border: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
           border-radius: 50%;
           background: var(--affine-blue-100);
           box-shadow:

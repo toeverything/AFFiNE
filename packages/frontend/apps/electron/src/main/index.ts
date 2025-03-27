@@ -87,11 +87,19 @@ app
   .then(registerHandlers)
   .then(registerEvents)
   .then(launch)
-  .then(setupRecording)
   .then(createApplicationMenu)
-  .then(setupTrayState)
   .then(registerUpdater)
   .catch(e => console.error('Failed create window:', e));
+
+if (isDev) {
+  app
+    .whenReady()
+    .then(setupRecording)
+    .then(setupTrayState)
+    .catch(e => {
+      logger.error('Failed setup recording or tray state:', e);
+    });
+}
 
 if (process.env.SENTRY_RELEASE) {
   // https://docs.sentry.io/platforms/javascript/guides/electron/

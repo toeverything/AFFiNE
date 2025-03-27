@@ -170,25 +170,21 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[214px] p-[5px] gap-2">
-          <div className="px-2 py-[6px] text-sm font-semibold overflow-hidden text-ellipsis text-nowrap">
-            {user.name}
-          </div>
-          <DropdownMenuSeparator />
           <DropdownMenuItem
-            className="px-2 py-[6px] text-sm font-medium gap-2 cursor-pointer"
+            className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
             onSelect={openResetPasswordDialog}
           >
             <LockIcon fontSize={20} /> Reset Password
           </DropdownMenuItem>
           <DropdownMenuItem
             onSelect={handleEdit}
-            className="px-2 py-[6px] text-sm font-medium gap-2 cursor-pointer"
+            className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
           >
             <EditIcon fontSize={20} /> Edit
           </DropdownMenuItem>
           {user.disabled && (
             <DropdownMenuItem
-              className="px-2 py-[6px] text-sm font-medium gap-2 cursor-pointer"
+              className="px-2 py-[6px] text-sm font-normal gap-2 cursor-pointer"
               onSelect={openEnableDialog}
             >
               <AccountBanIcon fontSize={20} /> Enable Email
@@ -197,14 +193,14 @@ export function DataTableRowActions({ user }: DataTableRowActionsProps) {
           <DropdownMenuSeparator />
           {!user.disabled && (
             <DropdownMenuItem
-              className="px-2 py-[6px] text-sm font-medium gap-2 text-red-500 cursor-pointer focus:text-red-500"
+              className="px-2 py-[6px] text-sm font-normal gap-2 text-red-500 cursor-pointer focus:text-red-500"
               onSelect={openDisableDialog}
             >
               <AccountBanIcon fontSize={20} /> Disable & Delete data
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
-            className="px-2 py-[6px] text-sm font-medium gap-2 text-red-500 cursor-pointer focus:text-red-500"
+            className="px-2 py-[6px] text-sm font-normal gap-2 text-red-500 cursor-pointer focus:text-red-500"
             onSelect={openDeleteDialog}
           >
             <DeleteIcon fontSize={20} /> Delete

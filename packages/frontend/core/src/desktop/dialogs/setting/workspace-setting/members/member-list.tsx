@@ -10,11 +10,7 @@ import { UserFriendlyError } from '@affine/error';
 import { Permission, WorkspaceMemberStatus } from '@affine/graphql';
 import { type I18nString, useI18n } from '@affine/i18n';
 import { MoreVerticalIcon } from '@blocksuite/icons/rc';
-import {
-  useEnsureLiveData,
-  useLiveData,
-  useService,
-} from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { clamp } from 'lodash-es';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -44,7 +40,7 @@ export const MemberList = ({
   }, [membersService]);
 
   const session = useService(AuthService).session;
-  const account = useEnsureLiveData(session.account$);
+  const account = useLiveData(session.account$);
 
   const handlePageChange = useCallback(
     (_: number, pageNum: number) => {
@@ -53,6 +49,10 @@ export const MemberList = ({
     },
     [membersService]
   );
+
+  if (!account) {
+    return null;
+  }
 
   return (
     <div>

@@ -32,12 +32,12 @@ public class ApproveWorkspaceTeamMemberMutation: GraphQLMutation {
 
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Mutation }
     public static var __selections: [ApolloAPI.Selection] { [
-      .field("approveMember", String.self, arguments: [
+      .field("approveMember", Bool.self, arguments: [
         "workspaceId": .variable("workspaceId"),
         "userId": .variable("userId")
       ]),
     ] }
 
-    public var approveMember: String { __data["approveMember"] }
+    public var approveMember: Bool { __data["approveMember"] }
   }
 }

@@ -12,7 +12,7 @@ import { WorkspaceMemberStatus } from '@prisma/client';
 import { SafeIntResolver } from 'graphql-scalars';
 
 import { DocRole, WorkspaceRole } from '../permission';
-import { UserType } from '../user/types';
+import { UserType, WorkspaceUserType } from '../user/types';
 
 registerEnumType(WorkspaceRole, {
   name: 'WorkspaceRole',
@@ -120,9 +120,14 @@ export class InvitationType {
   @Field({ description: 'Workspace information' })
   workspace!: InvitationWorkspaceType;
   @Field({ description: 'User information' })
-  user!: UserType;
+  user!: WorkspaceUserType;
   @Field({ description: 'Invitee information' })
-  invitee!: UserType;
+  invitee!: WorkspaceUserType;
+  @Field(() => WorkspaceMemberStatus, {
+    description: 'Invitation status in workspace',
+    nullable: true,
+  })
+  status?: WorkspaceMemberStatus;
 }
 
 @InputType()

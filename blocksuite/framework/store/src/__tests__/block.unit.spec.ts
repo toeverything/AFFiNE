@@ -80,16 +80,16 @@ function createTestDoc(docId = defaultDocId) {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc = collection.createDoc({
-    id: docId,
+  const doc = collection.createDoc(docId);
+  doc.load();
+  const store = doc.getStore({
     extensions: [
       pageSchemaExtension,
       tableSchemaExtension,
       flatTableSchemaExtension,
     ],
   });
-  doc.load();
-  return doc;
+  return store;
 }
 
 test('init block without props should add default props', () => {

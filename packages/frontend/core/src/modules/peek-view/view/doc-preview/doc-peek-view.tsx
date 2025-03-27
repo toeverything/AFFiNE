@@ -4,9 +4,9 @@ import { AIProvider } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
+import { useGuard } from '@affine/core/components/guard';
 import { PageNotFound } from '@affine/core/desktop/pages/404';
 import { EditorService } from '@affine/core/modules/editor';
-import { GuardService } from '@affine/core/modules/permissions';
 import { DebugLogger } from '@affine/debug';
 import { GfxControllerIdentifier } from '@blocksuite/affine/block-std/gfx';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
@@ -58,7 +58,8 @@ function fitViewport(
       viewport.setViewportByBound(
         Bound.deserialize(newViewport.xywh),
         newViewport.padding,
-        false
+        false,
+        true
       );
     } else {
       gfx.fitToScreen({
@@ -85,7 +86,6 @@ function DocPeekPreviewEditor({
   const defaultOpenProperty = useLiveData(editor.defaultOpenProperty$);
   const workbench = useService(WorkbenchService).workbench;
   const peekView = useService(PeekViewService).peekView;
-  const guardService = useService(GuardService);
   const editorElement = useLiveData(editor.editorContainer$);
 
   const isInTrash = useLiveData(doc.record.trash$);
@@ -151,7 +151,7 @@ function DocPeekPreviewEditor({
     peekView.close();
   }, [doc, peekView, workbench]);
 
-  const canEdit = useLiveData(guardService.can$('Doc_Update', doc.id));
+  const canEdit = useGuard('Doc_Update', doc.id);
 
   const readonly = !canEdit || isInTrash;
 
@@ -220,8 +220,7 @@ export function DocPeekPreview({
     !animating
   );
 
-  const guardService = useService(GuardService);
-  const canAccess = useLiveData(guardService.can$('Doc_Read', docId));
+  const canAccess = useGuard('Doc_Read', docId);
 
   // if sync engine has been synced and the page is null, show 404 page.
   if (!doc || !editor || !canAccess) {

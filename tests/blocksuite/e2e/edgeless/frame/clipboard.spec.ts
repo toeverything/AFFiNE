@@ -108,7 +108,7 @@ test.describe('frame copy and paste', () => {
 
     await frameTitles.nth(0).click();
 
-    const moreMenu = page.getByLabel('more-menu');
+    const moreMenu = page.getByLabel('More menu');
 
     await moreMenu.click();
     await moreMenu

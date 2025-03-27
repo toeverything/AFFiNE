@@ -46,6 +46,8 @@ export class OpenAIProvider
     'gpt-4o-2024-08-06',
     'gpt-4o-mini',
     'gpt-4o-mini-2024-07-18',
+    'o1',
+    'o3-mini',
     // embeddings
     'text-embedding-3-large',
     'text-embedding-3-small',
@@ -229,7 +231,7 @@ export class OpenAIProvider
           messages: this.chatToGPTMessage(messages),
           model: model,
           temperature: options.temperature || 0,
-          max_tokens: options.maxTokens || 4096,
+          max_completion_tokens: options.maxTokens || 4096,
           response_format: {
             type: options.jsonMode ? 'json_object' : 'text',
           },
@@ -263,7 +265,7 @@ export class OpenAIProvider
           frequency_penalty: options.frequencyPenalty || 0,
           presence_penalty: options.presencePenalty || 0,
           temperature: options.temperature || 0.5,
-          max_tokens: options.maxTokens || 4096,
+          max_completion_tokens: options.maxTokens || 4096,
           response_format: {
             type: options.jsonMode ? 'json_object' : 'text',
           },

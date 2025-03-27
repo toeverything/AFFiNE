@@ -192,8 +192,10 @@ function generateMarkdownPreviewBuilder(
       schema: getAFFiNEWorkspaceSchema(),
       blobCRUD: markdownPreviewDocCollection.blobSync,
       docCRUD: {
-        create: (id: string) => markdownPreviewDocCollection.createDoc({ id }),
-        get: (id: string) => markdownPreviewDocCollection.getDoc(id),
+        create: (id: string) =>
+          markdownPreviewDocCollection.createDoc(id).getStore({ id }),
+        get: (id: string) =>
+          markdownPreviewDocCollection.getDoc(id)?.getStore({ id }) ?? null,
         delete: (id: string) => markdownPreviewDocCollection.removeDoc(id),
       },
       middlewares: [docLinkBaseURLMiddleware, titleMiddleware],

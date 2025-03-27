@@ -1,6 +1,6 @@
 import { addSiblingAttachmentBlocks } from '@blocksuite/affine-block-attachment';
 import { insertDatabaseBlockCommand } from '@blocksuite/affine-block-database';
-import { toggleEmbedIframeCreateModal } from '@blocksuite/affine-block-embed';
+import { insertEmptyEmbedIframeCommand } from '@blocksuite/affine-block-embed';
 import { insertImagesCommand } from '@blocksuite/affine-block-image';
 import { insertLatexBlockCommand } from '@blocksuite/affine-block-latex';
 import {
@@ -20,13 +20,13 @@ import { getSurfaceBlock } from '@blocksuite/affine-block-surface';
 import { insertSurfaceRefBlockCommand } from '@blocksuite/affine-block-surface-ref';
 import { toggleEmbedCardCreateModal } from '@blocksuite/affine-components/embed-card-modal';
 import { toast } from '@blocksuite/affine-components/toast';
+import { insertInlineLatex } from '@blocksuite/affine-inline-latex';
 import { toggleLink } from '@blocksuite/affine-inline-link';
 import {
   formatBlockCommand,
   formatNativeCommand,
   formatTextCommand,
   getTextStyle,
-  insertInlineLatex,
   toggleBold,
   toggleCode,
   toggleItalic,
@@ -484,24 +484,18 @@ const embedToolGroup: KeyboardToolPanelGroup = {
         );
       },
       action: async ({ std }) => {
-        const [_, { selectedModels }] = std.command.exec(
-          getSelectedModelsCommand
-        );
-        const model = selectedModels?.[0];
-        if (!model) return;
-
-        const parentModel = std.store.getParent(model);
-        if (!parentModel) return;
-
-        const index = parentModel.children.indexOf(model) + 1;
-        await toggleEmbedIframeCreateModal(std, {
-          parentModel,
-          index,
-          variant: 'compact',
-        });
-        if (model.text?.length === 0) {
-          std.store.deleteBlock(model);
-        }
+        std.command
+          .chain()
+          .pipe(getSelectedModelsCommand)
+          .pipe(insertEmptyEmbedIframeCommand, {
+            place: 'after',
+            removeEmptyLine: true,
+            linkInputPopupOptions: {
+              showCloseButton: true,
+              variant: 'mobile',
+            },
+          })
+          .run();
       },
     },
     {

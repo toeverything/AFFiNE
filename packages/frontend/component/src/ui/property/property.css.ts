@@ -4,9 +4,9 @@ import { globalStyle, style } from '@vanilla-extract/css';
 
 export const propertyRoot = style({
   display: 'flex',
-  minHeight: 32,
+  gap: 4,
+  minHeight: 30,
   position: 'relative',
-  padding: '2px 0px 2px 2px',
   flexWrap: 'wrap',
   selectors: {
     '&[draggable="true"]': {
@@ -20,7 +20,7 @@ export const propertyRoot = style({
       display: 'block',
       position: 'absolute',
       cursor: 'grab',
-      top: '50%',
+      top: 15,
       left: 0,
       borderRadius: '2px',
       backgroundColor: cssVarV2('text/placeholder'),
@@ -36,7 +36,7 @@ export const propertyRoot = style({
       display: 'block',
       position: 'absolute',
       cursor: 'grab',
-      top: '50%',
+      top: 15,
       left: 0,
       borderRadius: '2px',
       backgroundColor: 'transparent',
@@ -51,6 +51,11 @@ export const propertyRoot = style({
     },
   },
 });
+export const propertyTableContent = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+});
 
 export const hide = style({
   // Visually hide the property while maintaining its position in the layout.
@@ -61,21 +66,24 @@ export const hide = style({
   padding: '0px',
   visibility: 'hidden',
   pointerEvents: 'none',
+  position: 'absolute',
 });
 
 export const propertyNameContainer = style({
   display: 'flex',
+  alignSelf: 'flex-start',
   flexDirection: 'column',
   justifyContent: 'start',
   position: 'relative',
   borderRadius: 4,
   fontSize: cssVar('fontSm'),
-  padding: `6px 6px 6px 4px`,
+  padding: `4px`,
   flexShrink: 0,
   lineHeight: '22px',
   userSelect: 'none',
-  color: cssVarV2('text/secondary'),
+  color: cssVarV2.text.tertiary,
   width: '160px',
+  height: 30,
   selectors: {
     '&[data-has-menu="true"]': {
       cursor: 'pointer',
@@ -121,7 +129,7 @@ export const propertyValueContainer = style({
   borderRadius: 4,
   fontSize: cssVar('fontSm'),
   lineHeight: '22px',
-  padding: `6px`,
+  padding: `4px`,
   flex: 1,
   ':focus-visible': {
     outline: 'none',
@@ -145,9 +153,9 @@ export const propertyValueContainer = style({
 export const tableButton = style({
   alignSelf: 'flex-start',
   fontSize: cssVar('fontSm'),
-  color: `${cssVarV2('text/secondary')}`,
-  padding: '0 6px',
-  height: 36,
+  color: `${cssVarV2.text.tertiary}`,
+  padding: '0 8px 0px 4px',
+  height: 30,
   fontWeight: 400,
   gap: 6,
   '@media': {
@@ -174,14 +182,14 @@ export const sectionHeader = style({
   display: 'flex',
   alignItems: 'center',
   gap: 20,
-  padding: '4px 6px',
+  padding: '4px',
   minHeight: 30,
 });
 
 export const sectionHeaderTrigger = style({
   display: 'flex',
   alignItems: 'center',
-  gap: 4,
+  gap: 6,
   flex: 1,
   overflow: 'hidden',
 });
@@ -223,7 +231,6 @@ export const sectionContent = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 4,
-  marginTop: 4,
   selectors: {
     '&[hidden]': {
       display: 'none',

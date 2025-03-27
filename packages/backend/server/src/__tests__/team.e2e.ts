@@ -494,6 +494,18 @@ test('should be able to approve team member', async t => {
     t.is(memberInvite.status, 'UnderReview', 'should be under review');
 
     t.true(await approveMember(app, tws.id, member.id));
+    const requestApprovedNotification = app.queue.last(
+      'notification.sendInvitationReviewApproved'
+    );
+    t.truthy(requestApprovedNotification);
+    t.deepEqual(
+      requestApprovedNotification.payload,
+      {
+        inviteId: memberInvite.inviteId,
+        reviewerId: owner.id,
+      },
+      'should send review approved notification'
+    );
   }
 
   {
@@ -532,27 +544,34 @@ test('should be able to invite by link', async t => {
   const [teamInviteId, teamInvite, acceptTeamInvite] =
     await createInviteLink(tws);
 
+  const member = await app.signup();
   {
     // check invite link
-    app.switchUser(owner);
+    app.switchUser(member);
     const info = await getInviteInfo(app, inviteId);
     t.is(info.workspace.id, ws.id, 'should be able to get invite info');
+    t.falsy(info.status);
 
     // check team invite link
     const teamInfo = await getInviteInfo(app, teamInviteId);
     t.is(teamInfo.workspace.id, tws.id, 'should be able to get invite info');
+    t.falsy(info.status);
   }
 
   {
     // invite link
     for (const [i] of Array.from({ length: 5 }).entries()) {
       const user = await invite(`test${i}@affine.pro`);
-      const status = (await models.workspaceUser.get(ws.id, user.id))?.status;
+      const role = await models.workspaceUser.get(ws.id, user.id);
+      t.truthy(role);
+      const status = role!.status;
       t.is(
         status,
         WorkspaceMemberStatus.UnderReview,
         'should be able to check status'
       );
+      const info = await getInviteInfo(app, role!.id);
+      t.is(info.status, WorkspaceMemberStatus.UnderReview);
     }
 
     await t.throwsAsync(
@@ -615,15 +634,19 @@ test('should be able to invite by link', async t => {
   }
 });
 
-test('should be able to send mails', async t => {
+test('should be able to invite batch and send notifications', async t => {
   const { app } = t.context;
   const { inviteBatch } = await init(app, 5);
 
+  const currentCount = app.queue.count('notification.sendInvitation');
   await inviteBatch(['m3@affine.pro', 'm4@affine.pro'], true);
-  t.is(app.mails.count('MemberInvitation'), 2);
+  t.is(app.queue.count('notification.sendInvitation'), currentCount + 2);
+  const job = app.queue.last('notification.sendInvitation');
+  t.truthy(job.payload.inviteId);
+  t.truthy(job.payload.inviterId);
 });
 
-test('should be able to emit events', async t => {
+test('should be able to emit events and send notifications', async t => {
   const { app, event } = t.context;
 
   {
@@ -650,24 +673,35 @@ test('should be able to emit events', async t => {
     app.switchUser(owner);
     const { members } = await getWorkspace(app, tws.id);
     const memberInvite = members.find(m => m.id === user.id)!;
+    const requestRequestNotification = app.queue.last(
+      'notification.sendInvitationReviewRequest'
+    );
+    t.truthy(requestRequestNotification);
+    // find admin
+    const admins = await t.context.models.workspaceUser.getAdmins(tws.id);
     t.deepEqual(
-      event.emit.lastCall.args,
-      [
-        'workspace.members.reviewRequested',
-        { inviteId: memberInvite.inviteId },
-      ],
-      'should emit review requested event'
+      requestRequestNotification.payload,
+      {
+        inviteId: memberInvite.inviteId,
+        reviewerId: admins[0].id,
+      },
+      'should send review request notification'
     );
 
     app.switchUser(owner);
     await revokeUser(app, tws.id, user.id);
+    const requestDeclinedNotification = app.queue.last(
+      'notification.sendInvitationReviewDeclined'
+    );
+    t.truthy(requestDeclinedNotification);
     t.deepEqual(
-      event.emit.lastCall.args,
-      [
-        'workspace.members.requestDeclined',
-        { userId: user.id, workspaceId: tws.id },
-      ],
-      'should emit review requested event'
+      requestDeclinedNotification.payload,
+      {
+        userId: user.id,
+        workspaceId: tws.id,
+        reviewerId: owner.id,
+      },
+      'should send review declined notification'
     );
   }
 

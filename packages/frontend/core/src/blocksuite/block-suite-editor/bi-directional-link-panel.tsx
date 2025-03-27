@@ -1,4 +1,5 @@
 import { Button, Divider, useLitPortalFactory } from '@affine/component';
+import { useGuard } from '@affine/core/components/guard';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
 import { DocService } from '@affine/core/modules/doc';
 import {
@@ -7,7 +8,6 @@ import {
   type Link,
 } from '@affine/core/modules/doc-link';
 import { toURLSearchParams } from '@affine/core/modules/navigation';
-import { GuardService } from '@affine/core/modules/permissions';
 import { GlobalSessionStateService } from '@affine/core/modules/storage';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
 import {
@@ -26,7 +26,6 @@ import {
   LiveData,
   useFramework,
   useLiveData,
-  useService,
   useServices,
 } from '@toeverything/infra';
 import {
@@ -265,8 +264,7 @@ export const LinkPreview = ({
   linkGroup: BacklinkGroups;
   textRendererOptions: TextRendererOptions;
 }) => {
-  const guardService = useService(GuardService);
-  const canAccess = useLiveData(guardService.can$('Doc_Read', linkGroup.docId));
+  const canAccess = useGuard('Doc_Read', linkGroup.docId);
   const t = useI18n();
 
   if (!canAccess) {

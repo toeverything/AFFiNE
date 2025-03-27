@@ -14,7 +14,10 @@ export class EmbedEdgelessIframeBlockComponent extends toGfxBlockComponent(
 
   override blockDraggable = false;
 
-  override accessor blockContainerStyles = { margin: '0' };
+  override accessor blockContainerStyles = {
+    margin: '0',
+    backgroundColor: 'transparent',
+  };
 
   get edgelessSlots() {
     return this.std.get(EdgelessLegacySlotIdentifier);

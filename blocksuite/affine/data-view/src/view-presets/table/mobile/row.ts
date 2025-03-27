@@ -3,7 +3,8 @@ import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { CenterPeekIcon, MoreHorizontalIcon } from '@blocksuite/icons/lit';
-import { css, nothing } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, nothing, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -21,7 +22,7 @@ export class MobileTableRow extends SignalWatcher(
       width: 100%;
       display: flex;
       flex-direction: row;
-      border-bottom: 1px solid var(--affine-border-color);
+      border-bottom: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
       position: relative;
       min-height: 34px;
     }

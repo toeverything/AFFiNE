@@ -1,7 +1,12 @@
 import './chat-panel-input';
 import './chat-panel-messages';
 
-import type { CopilotContextDoc, CopilotContextFile } from '@affine/graphql';
+import type {
+  ContextEmbedStatus,
+  CopilotContextDoc,
+  CopilotContextFile,
+  CopilotDocType,
+} from '@affine/graphql';
 import type { EditorHost } from '@blocksuite/affine/block-std';
 import { ShadowlessElement } from '@blocksuite/affine/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
@@ -32,11 +37,13 @@ import type {
   ChatChip,
   ChatContextValue,
   ChatItem,
+  CollectionChip,
   DocChip,
   FileChip,
+  TagChip,
 } from './chat-context';
 import type { ChatPanelMessages } from './chat-panel-messages';
-import { isDocChip, isDocContext } from './components/utils';
+import { isCollectionChip, isDocChip, isTagChip } from './components/utils';
 
 const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
   quote: '',
@@ -177,49 +184,66 @@ export class ChatPanel extends SignalWatcher(
   };
 
   private readonly _initChips = async () => {
-    // context not initialized, show candidate chip
+    // context not initialized
     if (!this._chatSessionId || !this._chatContextId) {
       return;
     }
 
     // context initialized, show the chips
-    const { docs = [], files = [] } =
-      (await AIProvider.context?.getContextDocsAndFiles(
-        this.doc.workspace.id,
-        this._chatSessionId,
-        this._chatContextId
-      )) || {};
-    const list = [...docs, ...files].sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
-    const chips: ChatChip[] = await Promise.all(
-      list.map(async item => {
-        if (isDocContext(item)) {
-          return {
-            docId: item.id,
-            state: item.status || 'processing',
-          } as DocChip;
-        }
-        const file = await this.host.doc.blobSync.get(item.blobId);
-        if (!file) {
-          return {
-            blobId: item.id,
-            file: new File([], item.name),
-            state: 'failed',
-            tooltip: 'File not found in blob storage',
-          } as FileChip;
-        } else {
-          return {
-            file: new File([file], item.name),
-            blobId: item.blobId,
-            fileId: item.id,
-            state: item.status,
-            tooltip: item.error,
-          } as FileChip;
-        }
+    const {
+      docs = [],
+      files = [],
+      tags = [],
+      collections = [],
+    } = (await AIProvider.context?.getContextDocsAndFiles(
+      this.doc.workspace.id,
+      this._chatSessionId,
+      this._chatContextId
+    )) || {};
+
+    const docChips: DocChip[] = docs.map(doc => ({
+      docId: doc.id,
+      state: doc.status || 'processing',
+      tooltip: doc.error,
+      createdAt: doc.createdAt,
+    }));
+
+    const fileChips: FileChip[] = await Promise.all(
+      files.map(async file => {
+        const blob = await this.host.doc.blobSync.get(file.blobId);
+        return {
+          file: new File(blob ? [blob] : [], file.name),
+          blobId: file.blobId,
+          fileId: file.id,
+          state: blob ? file.status : 'failed',
+          tooltip: blob ? file.error : 'File not found in blob storage',
+          createdAt: file.createdAt,
+        };
       })
     );
+
+    const tagChips: TagChip[] = tags.map(tag => ({
+      tagId: tag.id,
+      state: 'finished',
+      createdAt: tag.createdAt,
+    }));
+
+    const collectionChips: CollectionChip[] = collections.map(collection => ({
+      collectionId: collection.id,
+      state: 'finished',
+      createdAt: collection.createdAt,
+    }));
+
+    const chips: ChatChip[] = [
+      ...docChips,
+      ...fileChips,
+      ...tagChips,
+      ...collectionChips,
+    ].sort((a, b) => {
+      const aTime = a.createdAt ?? Date.now();
+      const bTime = b.createdAt ?? Date.now();
+      return aTime - bTime;
+    });
 
     this.chatContextValue = {
       ...this.chatContextValue,
@@ -304,25 +328,32 @@ export class ChatPanel extends SignalWatcher(
   private readonly _cleanupHistories = async () => {
     const notification = this.host.std.getOptional(NotificationProvider);
     if (!notification) return;
-
-    if (
-      await notification.confirm({
-        title: 'Clear History',
-        message:
-          'Are you sure you want to clear all history? This action will permanently delete all content, including all chat logs and data, and cannot be undone.',
-        confirmText: 'Confirm',
-        cancelText: 'Cancel',
-      })
-    ) {
-      const actionIds = this.chatContextValue.items
-        .filter(item => 'sessionId' in item)
-        .map(item => item.sessionId);
-      await AIProvider.histories?.cleanup(this.doc.workspace.id, this.doc.id, [
-        ...(this._chatSessionId ? [this._chatSessionId] : []),
-        ...(actionIds || []),
-      ]);
-      notification.toast('History cleared');
-      await this._updateHistory();
+    try {
+      if (
+        await notification.confirm({
+          title: 'Clear History',
+          message:
+            'Are you sure you want to clear all history? This action will permanently delete all content, including all chat logs and data, and cannot be undone.',
+          confirmText: 'Confirm',
+          cancelText: 'Cancel',
+        })
+      ) {
+        const actionIds = this.chatContextValue.items
+          .filter(item => 'sessionId' in item)
+          .map(item => item.sessionId);
+        await AIProvider.histories?.cleanup(
+          this.doc.workspace.id,
+          this.doc.id,
+          [
+            ...(this._chatSessionId ? [this._chatSessionId] : []),
+            ...(actionIds || []),
+          ]
+        );
+        notification.toast('History cleared');
+        await this._updateHistory();
+      }
+    } catch {
+      notification.toast('Failed to clear history');
     }
   };
 
@@ -385,38 +416,55 @@ export class ChatPanel extends SignalWatcher(
       this._abortPoll();
       return;
     }
-    const { docs = [], files = [] } = result;
-    const hashMap = new Map<string, CopilotContextDoc | CopilotContextFile>();
-    const totalCount = docs.length + files.length;
-    let processingCount = 0;
+    const {
+      docs: sDocs = [],
+      files = [],
+      tags = [],
+      collections = [],
+    } = result;
+    const docs = [
+      ...sDocs,
+      ...tags.flatMap(tag => tag.docs),
+      ...collections.flatMap(collection => collection.docs),
+    ];
+    const hashMap = new Map<
+      string,
+      CopilotContextDoc | CopilotDocType | CopilotContextFile
+    >();
+    const count: Record<ContextEmbedStatus, number> = {
+      finished: 0,
+      processing: 0,
+      failed: 0,
+    };
     docs.forEach(doc => {
       hashMap.set(doc.id, doc);
-      if (doc.status === 'processing') {
-        processingCount++;
-      }
+      doc.status && count[doc.status]++;
     });
     files.forEach(file => {
       hashMap.set(file.id, file);
-      if (file.status === 'processing') {
-        processingCount++;
-      }
+      file.status && count[file.status]++;
     });
     const nextChips = this.chatContextValue.chips.map(chip => {
+      if (isTagChip(chip) || isCollectionChip(chip)) {
+        return chip;
+      }
       const id = isDocChip(chip) ? chip.docId : chip.fileId;
       const item = id && hashMap.get(id);
       if (item && item.status) {
         return {
           ...chip,
           state: item.status,
+          tooltip: 'error' in item ? item.error : undefined,
         };
       }
       return chip;
     });
+    const total = count.finished + count.processing + count.failed;
     this.updateContext({
       chips: nextChips,
-      embeddingProgress: [totalCount - processingCount, totalCount],
+      embeddingProgress: [count.finished, total],
     });
-    if (processingCount === 0) {
+    if (count.processing === 0) {
       this._abortPoll();
     }
   };

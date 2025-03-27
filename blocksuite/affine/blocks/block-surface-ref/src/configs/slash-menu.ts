@@ -1,6 +1,6 @@
 import { EdgelessFrameManagerIdentifier } from '@blocksuite/affine-block-frame';
 import { EdgelessCRUDExtension } from '@blocksuite/affine-block-surface';
-import { MindmapStyle } from '@blocksuite/affine-model';
+import { MindmapStyle, SurfaceRefBlockSchema } from '@blocksuite/affine-model';
 import {
   type SlashMenuActionItem,
   type SlashMenuConfig,
@@ -20,8 +20,7 @@ const surfaceRefSlashMenuConfig: SlashMenuConfig = {
     const crud = std.get(EdgelessCRUDExtension);
     const frameMgr = std.get(EdgelessFrameManagerIdentifier);
 
-    const findSpace = (bound: Bound) => {
-      const padding = 20;
+    const findSpace = (bound: Bound, padding = 20) => {
       const gfx = std.get(GfxControllerIdentifier);
       let elementInFrameBound = gfx.grid.search(bound);
       while (elementInFrameBound.length > 0) {
@@ -78,7 +77,7 @@ const surfaceRefSlashMenuConfig: SlashMenuConfig = {
       },
       group: `5_Edgeless Element@${index++}`,
       action: () => {
-        const bound = findSpace(Bound.fromXYWH([0, 0, 200, 200]));
+        const bound = findSpace(Bound.fromXYWH([0, 0, 200, 200]), 150);
         const { x, y, h } = bound;
 
         const rootW = 145;
@@ -160,6 +159,6 @@ const surfaceRefSlashMenuConfig: SlashMenuConfig = {
 };
 
 export const SurfaceRefSlashMenuConfigExtension = SlashMenuConfigExtension(
-  'affine:surface-ref',
+  SurfaceRefBlockSchema.model.flavour,
   surfaceRefSlashMenuConfig
 );

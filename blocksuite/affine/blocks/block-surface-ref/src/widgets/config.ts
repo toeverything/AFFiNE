@@ -1,4 +1,4 @@
-import type { SurfaceBlockComponent } from '@blocksuite/affine-block-surface';
+import { type SurfaceBlockComponent } from '@blocksuite/affine-block-surface';
 import {
   CopyIcon,
   DeleteIcon,
@@ -19,7 +19,7 @@ export const BUILT_IN_GROUPS: MenuItemGroup<SurfaceRefToolbarContext>[] = [
     items: [
       {
         type: 'copy',
-        label: 'Copy',
+        label: 'Copy as Image',
         icon: CopyIcon,
         action: ctx => {
           if (!(ctx.blockComponent.referenceModel && ctx.doc.root?.id)) {
@@ -44,7 +44,7 @@ export const BUILT_IN_GROUPS: MenuItemGroup<SurfaceRefToolbarContext>[] = [
             return;
           }
 
-          edgelessToBlob(ctx.host, {
+          edgelessToBlob(editor, {
             surfaceRefBlock: ctx.blockComponent,
             surfaceRenderer,
             edgelessElement: referencedModel,
@@ -56,6 +56,7 @@ export const BUILT_IN_GROUPS: MenuItemGroup<SurfaceRefToolbarContext>[] = [
           ctx.close();
         },
       },
+      // TODO(@L-Sun): add duplicate action after refactoring toolbar
       {
         type: 'download',
         label: 'Download',
@@ -83,7 +84,7 @@ export const BUILT_IN_GROUPS: MenuItemGroup<SurfaceRefToolbarContext>[] = [
             return;
           }
 
-          edgelessToBlob(ctx.host, {
+          edgelessToBlob(editor, {
             surfaceRefBlock: ctx.blockComponent,
             surfaceRenderer,
             edgelessElement: referencedModel,

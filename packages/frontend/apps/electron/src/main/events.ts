@@ -8,6 +8,7 @@ import { recordingEvents } from './recording';
 import { sharedStorageEvents } from './shared-storage';
 import { uiEvents } from './ui/events';
 import { updaterEvents } from './updater/event';
+import { popupEvents } from './windows-manager/popup';
 
 export const allEvents = {
   applicationMenu: applicationMenuEvents,
@@ -15,6 +16,7 @@ export const allEvents = {
   ui: uiEvents,
   sharedStorage: sharedStorageEvents,
   recording: recordingEvents,
+  popup: popupEvents,
 };
 
 function getActiveWindows() {

@@ -2,8 +2,7 @@ import { insertLinkByQuickSearchCommand } from '@blocksuite/affine-block-bookmar
 import { menu } from '@blocksuite/affine-components/context-menu';
 import { LinkIcon } from '@blocksuite/affine-components/icons';
 import { TelemetryProvider } from '@blocksuite/affine-shared/services';
-
-import type { DenseMenuBuilder } from '../common/type.js';
+import type { DenseMenuBuilder } from '@blocksuite/affine-widget-edgeless-toolbar';
 
 export const buildLinkDenseMenu: DenseMenuBuilder = edgeless =>
   menu.action({

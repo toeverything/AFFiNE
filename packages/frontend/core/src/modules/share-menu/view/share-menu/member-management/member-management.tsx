@@ -1,9 +1,9 @@
 import { Skeleton } from '@affine/component';
+import { useGuard } from '@affine/core/components/guard';
 import { DocService } from '@affine/core/modules/doc';
 import {
   DocGrantedUsersService,
   type GrantedUser,
-  GuardService,
 } from '@affine/core/modules/permissions';
 import { useI18n } from '@affine/i18n';
 import { ArrowLeftBigIcon } from '@blocksuite/icons/rc';
@@ -33,11 +33,8 @@ export const MemberManagement = ({
     docGrantedUsersService.grantedUserCount$
   );
   const docService = useService(DocService);
-  const guardService = useService(GuardService);
 
-  const canManageUsers = useLiveData(
-    guardService.can$('Doc_Users_Manage', docService.doc.id)
-  );
+  const canManageUsers = useGuard('Doc_Users_Manage', docService.doc.id);
 
   const t = useI18n();
 

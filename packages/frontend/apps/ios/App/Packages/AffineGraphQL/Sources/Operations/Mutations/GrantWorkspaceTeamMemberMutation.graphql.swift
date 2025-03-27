@@ -36,13 +36,13 @@ public class GrantWorkspaceTeamMemberMutation: GraphQLMutation {
 
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Mutation }
     public static var __selections: [ApolloAPI.Selection] { [
-      .field("grantMember", String.self, arguments: [
+      .field("grantMember", Bool.self, arguments: [
         "workspaceId": .variable("workspaceId"),
         "userId": .variable("userId"),
         "permission": .variable("permission")
       ]),
     ] }
 
-    public var grantMember: String { __data["grantMember"] }
+    public var grantMember: Bool { __data["grantMember"] }
   }
 }

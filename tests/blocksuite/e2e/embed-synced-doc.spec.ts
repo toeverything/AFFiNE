@@ -159,7 +159,7 @@ test.describe('Embed synced doc', () => {
       const noteId = doc.addBlock('affine:note', {}, rootId);
       doc.addBlock('affine:paragraph', {}, noteId);
 
-      const doc2 = collection.createDoc({ id: 'doc2' });
+      const doc2 = collection.createDoc('doc2').getStore();
       doc2.load();
       const rootId2 = doc2.addBlock('affine:page', {
         title: new window.$blocksuite.store.Text('Doc 2'),
@@ -174,7 +174,7 @@ test.describe('Embed synced doc', () => {
         noteId2
       );
 
-      const doc3 = collection.createDoc({ id: 'doc3' });
+      const doc3 = collection.createDoc('doc3').getStore();
       doc3.load();
       const rootId3 = doc3.addBlock('affine:page', {
         title: new window.$blocksuite.store.Text('Doc 3'),
@@ -260,7 +260,7 @@ test.describe('Embed synced doc', () => {
       // go back to previous doc
       await page.evaluate(() => {
         const { collection, editor } = window;
-        editor.doc = collection.getDoc('doc:home')!;
+        editor.doc = collection.getDoc('doc:home')!.getStore();
       });
 
       const databaseFirstCell = page.locator(

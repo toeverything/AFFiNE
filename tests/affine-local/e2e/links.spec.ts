@@ -1,3 +1,4 @@
+import { waitNextFrame } from '@affine-test/kit/bs/misc';
 import { test } from '@affine-test/kit/playwright';
 import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
 import {
@@ -156,7 +157,7 @@ test('not allowed to switch to embed view when linking to block', async ({
 
   await cardLink.click();
 
-  await toolbar.getByLabel('more-menu').click();
+  await toolbar.getByLabel('More menu').click();
   await toolbar.getByLabel('Copy link to block').click();
 
   await page.keyboard.press('Enter');
@@ -594,34 +595,37 @@ test('should show edgeless content when switching card view of linked mode doc i
 
   // move viewport
   const { x, y } = noteBoundingBox;
-  await page.mouse.click(x, y);
+  await page.mouse.click(x - 100, y + 100);
   await page.keyboard.down('Space');
-  await page.waitForTimeout(50);
+  await waitNextFrame(page);
   await page.mouse.down();
-  await page.mouse.move(x + 1000, y);
+  await page.mouse.move(x + 1000, y, {
+    steps: 20,
+  });
   await page.mouse.up();
   await page.keyboard.up('Space');
 
   // create edgeless text
   await page.keyboard.press('t');
-  await page.mouse.click(x, y);
+  await page.mouse.click(x, y + 100);
   await page.locator('affine-edgeless-text').waitFor({ state: 'visible' });
   await page.keyboard.type('Edgeless Text');
 
   const url = new URL(page.url());
 
   await clickNewPageButton(page);
+  const closeAdButton = page.locator(
+    '[data-testid="local-demo-tips-close-button"]'
+  );
+  await closeAdButton.click();
   await clickEdgelessModeButton(page);
 
   await page.mouse.move(x, y);
   await writeTextToClipboard(page, url.toString());
-  await pasteByKeyboard(page);
 
   // Inline
-  await page
-    .locator('affine-embed-edgeless-linked-doc-block')
-    .waitFor({ state: 'visible' });
-  await page.mouse.click(x - 50, y - 50);
+  const embed = page.locator('affine-embed-edgeless-linked-doc-block');
+  await expect(embed).toBeVisible();
   await page.getByLabel('Switch view').click();
   await page.getByTestId('link-to-embed').click();
 
@@ -1034,4 +1038,134 @@ test.describe('Customize linked doc title and description', () => {
     await expect(a.locator('svg')).toBeHidden();
     await expect(a.locator('.affine-reference-title')).toContainText(year);
   });
+});
+
+test('should save open doc mode of internal links', async ({ page }) => {
+  await waitForEditorLoad(page);
+  await enableEmojiDocIcon(page);
+
+  await clickNewPageButton(page);
+  const title = getBlockSuiteEditorTitle(page);
+  await title.click();
+
+  await page.keyboard.press('Enter');
+  await createLinkedPage(page, 'Test Page');
+
+  const { toolbar, switchViewBtn, inlineViewBtn, cardViewBtn, embedViewBtn } =
+    toolbarButtons(page);
+
+  const inlineLink = page.locator('affine-reference');
+  await inlineLink.hover();
+
+  const recentOpenModeBtn = toolbar.getByLabel(/^Open/).nth(0);
+  await expect(recentOpenModeBtn).toHaveAttribute(
+    'aria-label',
+    'Open this doc'
+  );
+  await expect(
+    recentOpenModeBtn.locator('span.label:has-text("Open")')
+  ).toBeVisible();
+
+  const openDocBtn = toolbar.getByLabel(/^Open doc$/);
+  await openDocBtn.click();
+
+  const openDocMenu = toolbar.getByLabel('Open doc menu');
+
+  const openThisDocBtn = openDocMenu.getByLabel('Open this doc');
+  // In Desktop
+  const openInSplitViewBtn = openDocMenu.getByLabel('Open in split view');
+  const openInNewTabBtn = openDocMenu.getByLabel('Open in new tab');
+  const openInCenterPeekBtn = openDocMenu.getByLabel('Open in center peek');
+
+  await expect(openThisDocBtn).toBeVisible();
+  await expect(openInSplitViewBtn).toBeHidden();
+  await expect(openInNewTabBtn).toBeVisible();
+  await expect(openInCenterPeekBtn).toBeVisible();
+
+  await openInCenterPeekBtn.click();
+
+  await page.keyboard.press('Escape');
+
+  await inlineLink.hover();
+
+  await expect(toolbar).toBeVisible();
+  await expect(recentOpenModeBtn).toHaveAttribute(
+    'aria-label',
+    'Open in center peek'
+  );
+
+  await switchViewBtn.click();
+  await cardViewBtn.click();
+
+  await expect(toolbar).toBeVisible();
+  await expect(recentOpenModeBtn).toHaveAttribute(
+    'aria-label',
+    'Open in center peek'
+  );
+
+  await switchViewBtn.click();
+  await embedViewBtn.click();
+
+  await expect(toolbar).toBeVisible();
+  await expect(recentOpenModeBtn).toHaveAttribute(
+    'aria-label',
+    'Open in center peek'
+  );
+
+  await switchViewBtn.click();
+  await inlineViewBtn.click();
+
+  await inlineLink.hover();
+
+  await page.waitForTimeout(250);
+
+  await expect(toolbar).toBeVisible();
+  await expect(recentOpenModeBtn).toHaveAttribute(
+    'aria-label',
+    'Open in center peek'
+  );
+});
+
+test('should show full email address', async ({ page }) => {
+  await page.keyboard.press('Enter');
+
+  await writeTextToClipboard(page, 'dev@affine.pro');
+  await pasteByKeyboard(page);
+
+  const inlineLink = page.locator('affine-link');
+
+  await expect(inlineLink).toHaveText('dev@affine.pro');
+
+  await inlineLink.hover();
+
+  const { toolbar, switchViewBtn } = toolbarButtons(page);
+
+  await expect(toolbar).toBeVisible();
+  await expect(switchViewBtn).toBeHidden();
+
+  await expect(toolbar.locator('affine-link-preview')).toHaveText(
+    'dev@affine.pro'
+  );
+});
+
+test('should not show view toggle button when protocol of link is not http(s)', async ({
+  page,
+}) => {
+  await page.keyboard.press('Enter');
+
+  await writeTextToClipboard(page, 'ftp://affine.pro/blocksuite.pdf');
+  await pasteByKeyboard(page);
+
+  const inlineLink = page.locator('affine-link');
+
+  await expect(inlineLink).toHaveText('ftp://affine.pro/blocksuite.pdf');
+
+  await inlineLink.hover();
+
+  const { toolbar, switchViewBtn } = toolbarButtons(page);
+
+  await expect(toolbar).toBeVisible();
+  await expect(switchViewBtn).toBeHidden();
+
+  await expect(toolbar.locator('affine-link-preview')).toHaveText('affine.pro');
 });

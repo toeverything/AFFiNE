@@ -262,7 +262,7 @@ test('duplicate note should work correctly', async ({ page }) => {
 
   await triggerComponentToolbarAction(page, 'duplicate');
   await waitNextFrame(page, 200); // wait viewport fit animation
-  const moreActionsContainer = page.getByLabel('more-menu').getByRole('menu');
+  const moreActionsContainer = page.getByLabel('More menu').getByRole('menu');
   await expect(moreActionsContainer).toBeHidden();
 
   const noteLocator = page.locator('affine-edgeless-note');

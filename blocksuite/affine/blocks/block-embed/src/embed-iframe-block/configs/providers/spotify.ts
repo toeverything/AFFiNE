@@ -40,6 +40,7 @@ const spotifyConfig = {
     allow: 'autoplay; clipboard-write; encrypted-media; picture-in-picture',
     style: 'border-radius: 8px;',
     allowFullscreen: true,
+    containerBorderRadius: 12,
   },
 };
 

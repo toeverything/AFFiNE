@@ -1,16 +1,25 @@
 import path from 'node:path';
 
 import { ShareableContent } from '@affine/native';
-import { app, nativeImage, Notification } from 'electron';
+import { app } from 'electron';
 import fs from 'fs-extra';
-import { debounce } from 'lodash-es';
-import { BehaviorSubject, distinctUntilChanged, groupBy, mergeMap } from 'rxjs';
+import {
+  BehaviorSubject,
+  distinctUntilChanged,
+  groupBy,
+  interval,
+  mergeMap,
+  Subject,
+  throttleTime,
+} from 'rxjs';
 
-import { isMacOS } from '../../shared/utils';
+import { isMacOS, shallowEqual } from '../../shared/utils';
 import { beforeAppQuit } from '../cleanup';
 import { logger } from '../logger';
 import type { NamespaceHandlers } from '../type';
 import { getMainWindow } from '../windows-manager';
+import { popupManager } from '../windows-manager/popup';
+import { recordingStateMachine } from './state-machine';
 import type {
   AppGroupInfo,
   Recording,
@@ -20,9 +29,10 @@ import type {
 
 const subscribers: Subscriber[] = [];
 
+// adhoc recordings are saved in the temp directory
 const SAVED_RECORDINGS_DIR = path.join(
-  app.getPath('sessionData'),
-  'recordings'
+  app.getPath('temp'),
+  'affine-recordings'
 );
 
 beforeAppQuit(() => {
@@ -40,14 +50,15 @@ let shareableContent: ShareableContent | null = null;
 export const applications$ = new BehaviorSubject<TappableAppInfo[]>([]);
 export const appGroups$ = new BehaviorSubject<AppGroupInfo[]>([]);
 
+export const updateApplicationsPing$ = new Subject<number>();
+
 // recording id -> recording
 // recordings will be saved in memory before consumed and created as an audio block to user's doc
 const recordings = new Map<number, Recording>();
 
 // there should be only one active recording at a time
-export const recordingStatus$ = new BehaviorSubject<RecordingStatus | null>(
-  null
-);
+// We'll now use recordingStateMachine.status$ instead of our own BehaviorSubject
+export const recordingStatus$ = recordingStateMachine.status$;
 
 function createAppGroup(processGroupId: number): AppGroupInfo | undefined {
   const groupProcess =
@@ -113,37 +124,45 @@ function setupNewRunningAppGroup() {
       )
     )
   );
+
+  appGroups$.value.forEach(group => {
+    const recordingStatus = recordingStatus$.value;
+    if (
+      group.isRunning &&
+      (!recordingStatus || recordingStatus.status === 'new')
+    ) {
+      newRecording(group);
+    }
+  });
+
   subscribers.push(
     appGroupRunningChanged$.subscribe(currentGroup => {
+      logger.info(
+        'appGroupRunningChanged',
+        currentGroup.bundleIdentifier,
+        currentGroup.isRunning
+      );
+      const recordingStatus = recordingStatus$.value;
+
       if (currentGroup.isRunning) {
-        // TODO(@pengx17): stub impl. will be replaced with a real one later
-        const notification = new Notification({
-          icon: currentGroup.icon
-            ? nativeImage.createFromBuffer(currentGroup.icon)
-            : undefined,
-          title: 'Recording Meeting',
-          body: `Recording meeting with ${currentGroup.name}`,
-          actions: [
-            {
-              type: 'button',
-              text: 'Start',
-            },
-          ],
-        });
-        notification.on('action', () => {
-          startRecording(currentGroup);
-        });
-        notification.show();
-      } else {
-        // if the group is not running, we should stop the recording (if it is recording)
+        // when the app is running and there is no active recording popup
+        // we should show a new recording popup
         if (
-          recordingStatus$.value?.status === 'recording' &&
-          recordingStatus$.value?.appGroup?.processGroupId ===
-            currentGroup.processGroupId
+          !recordingStatus ||
+          recordingStatus.status === 'new' ||
+          recordingStatus.status === 'ready'
         ) {
-          stopRecording().catch(err => {
-            logger.error('failed to stop recording', err);
-          });
+          newRecording(currentGroup);
+        }
+      } else {
+        // when displaying in "new" state but the app is not running any more
+        // we should remove the recording
+        if (
+          recordingStatus?.status === 'new' &&
+          currentGroup.bundleIdentifier ===
+            recordingStatus.appGroup?.bundleIdentifier
+        ) {
+          removeRecording(recordingStatus.id);
         }
       }
     })
@@ -212,23 +231,60 @@ export async function getRecording(id: number) {
   };
 }
 
+// recording popup status
+// new: recording is started, popup is shown
+// recording: recording is started, popup is shown
+// stopped: recording is stopped, popup showing processing status
+// ready: recording is ready, show "open app" button
+// null: hide popup
 function setupRecordingListeners() {
   subscribers.push(
-    recordingStatus$.pipe(distinctUntilChanged()).subscribe(status => {
-      if (status?.status === 'recording') {
-        let recording = recordings.get(status.id);
-        // create a recording if not exists
-        if (!recording) {
-          recording = createRecording(status);
-          recordings.set(status.id, recording);
+    recordingStatus$
+      .pipe(distinctUntilChanged(shallowEqual))
+      .subscribe(status => {
+        const popup = popupManager.get('recording');
+
+        if (status && !popup.showing) {
+          popup.show().catch(err => {
+            logger.error('failed to show recording popup', err);
+          });
         }
-      } else if (status?.status === 'stopped') {
-        const recording = recordings.get(status.id);
-        if (recording) {
-          recording.stream.stop();
+
+        if (status?.status === 'recording') {
+          let recording = recordings.get(status.id);
+          // create a recording if not exists
+          if (!recording) {
+            recording = createRecording(status);
+            recordings.set(status.id, recording);
+          }
+        } else if (status?.status === 'stopped') {
+          const recording = recordings.get(status.id);
+          if (recording) {
+            recording.stream.stop();
+          }
+        } else if (status?.status === 'ready') {
+          // show the popup for 10s
+          setTimeout(() => {
+            // check again if current status is still ready
+            if (
+              recordingStatus$.value?.status === 'ready' &&
+              recordingStatus$.value.id === status.id
+            ) {
+              popup.hide().catch(err => {
+                logger.error('failed to hide recording popup', err);
+              });
+            }
+          }, 10_000);
+        } else if (!status) {
+          // status is removed, we should hide the popup
+          popupManager
+            .get('recording')
+            .hide()
+            .catch(err => {
+              logger.error('failed to hide recording popup', err);
+            });
         }
-      }
-    })
+      })
   );
 }
 
@@ -236,7 +292,6 @@ function getAllApps(): TappableAppInfo[] {
   if (!shareableContent) {
     return [];
   }
-
   const apps = shareableContent.applications().map(app => {
     try {
       return {
@@ -259,7 +314,6 @@ function getAllApps(): TappableAppInfo[] {
       !v.bundleIdentifier.startsWith('com.apple') &&
       v.processId !== process.pid
   );
-
   return filteredApps;
 }
 
@@ -270,9 +324,17 @@ type Subscriber = {
 function setupMediaListeners() {
   applications$.next(getAllApps());
   subscribers.push(
+    interval(3000).subscribe(() => {
+      updateApplicationsPing$.next(Date.now());
+    }),
     ShareableContent.onApplicationListChanged(() => {
-      applications$.next(getAllApps());
-    })
+      updateApplicationsPing$.next(Date.now());
+    }),
+    updateApplicationsPing$
+      .pipe(distinctUntilChanged(), throttleTime(3000))
+      .subscribe(() => {
+        applications$.next(getAllApps());
+      })
   );
 
   let appStateSubscribers: Subscriber[] = [];
@@ -291,12 +353,9 @@ function setupMediaListeners() {
       apps.forEach(app => {
         try {
           const tappableApp = app.rawInstance;
-          const debouncedAppStateChanged = debounce(() => {
-            applications$.next(getAllApps());
-          }, 100);
           _appStateSubscribers.push(
             ShareableContent.onAppStateChanged(tappableApp, () => {
-              debouncedAppStateChanged();
+              updateApplicationsPing$.next(Date.now());
             })
           );
         } catch (error) {
@@ -339,80 +398,102 @@ export function setupRecording() {
   setupRecordingListeners();
 }
 
-let recordingId = 0;
+function normalizeAppGroupInfo(
+  appGroup?: AppGroupInfo | number
+): AppGroupInfo | undefined {
+  return typeof appGroup === 'number'
+    ? appGroups$.value.find(group => group.processGroupId === appGroup)
+    : appGroup;
+}
+
+export function newRecording(
+  appGroup?: AppGroupInfo | number
+): RecordingStatus | null {
+  if (!shareableContent) {
+    return null; // likely called on unsupported platform
+  }
+
+  return recordingStateMachine.dispatch({
+    type: 'NEW_RECORDING',
+    appGroup: normalizeAppGroupInfo(appGroup),
+  });
+}
 
 export function startRecording(
-  appGroup?: AppGroupInfo
-): RecordingStatus | undefined {
-  if (!shareableContent) {
-    return; // likely called on unsupported platform
-  }
-
-  // hmm, is it possible that there are multiple apps running (listening) in the same group?
-  const appInfo = appGroup?.apps.find(app => app.isRunning);
-
-  const recordingStatus: RecordingStatus = {
-    id: recordingId++,
-    status: 'recording',
-    startTime: Date.now(),
-    app: appInfo,
-    appGroup,
-  };
-
-  recordingStatus$.next(recordingStatus);
-
-  return recordingStatus;
-}
-
-export function pauseRecording() {
-  const recordingStatus = recordingStatus$.value;
-  if (!recordingStatus) {
-    return;
-  }
-
-  recordingStatus$.next({
-    ...recordingStatus,
-    status: 'paused',
+  appGroup?: AppGroupInfo | number
+): RecordingStatus | null {
+  return recordingStateMachine.dispatch({
+    type: 'START_RECORDING',
+    appGroup: normalizeAppGroupInfo(appGroup),
   });
 }
 
-export function resumeRecording() {
-  const recordingStatus = recordingStatus$.value;
-  if (!recordingStatus) {
+export function pauseRecording(id: number) {
+  return recordingStateMachine.dispatch({ type: 'PAUSE_RECORDING', id });
+}
+
+export function resumeRecording(id: number) {
+  return recordingStateMachine.dispatch({ type: 'RESUME_RECORDING', id });
+}
+
+export async function stopRecording(id: number) {
+  const recording = recordings.get(id);
+  if (!recording) {
+    logger.error(`Recording ${id} not found`);
     return;
   }
 
-  recordingStatus$.next({
-    ...recordingStatus,
-    status: 'recording',
-  });
-}
+  if (!recording.file.path) {
+    logger.error(`Recording ${id} has no file path`);
+    return;
+  }
 
-export async function stopRecording() {
-  const recordingStatus = recordingStatus$.value;
+  const recordingStatus = recordingStateMachine.dispatch({
+    type: 'STOP_RECORDING',
+    id,
+    filepath: String(recording.file.path),
+    sampleRate: recording.stream.sampleRate,
+    numberOfChannels: recording.stream.channels,
+  });
+
   if (!recordingStatus) {
     logger.error('No recording status to stop');
     return;
   }
-  const recording = recordings.get(recordingStatus?.id);
-  if (!recording) {
-    logger.error(`Recording ${recordingStatus?.id} not found`);
-    return;
-  }
-
-  // do not remove the last recordingStatus from recordingStatus$
-  recordingStatus$.next({
-    ...recordingStatus,
-    status: 'stopped',
-  });
 
   const { file } = recording;
   file.end();
 
+  // Wait for file to finish writing
   await new Promise<void>(resolve => {
     file.on('finish', () => {
       resolve();
     });
+  });
+
+  return serializeRecordingStatus(recordingStatus);
+}
+
+export async function readyRecording(id: number, buffer: Buffer) {
+  const recordingStatus = recordingStatus$.value;
+  const recording = recordings.get(id);
+  if (!recordingStatus || recordingStatus.id !== id || !recording) {
+    logger.error(`Recording ${id} not found`);
+    return;
+  }
+
+  const filepath = path.join(
+    SAVED_RECORDINGS_DIR,
+    `${recordingStatus.appGroup?.bundleIdentifier ?? 'unknown'}-${recordingStatus.id}-${recordingStatus.startTime}.webm`
+  );
+
+  await fs.writeFile(filepath, buffer);
+
+  // Update the status through the state machine
+  recordingStateMachine.dispatch({
+    type: 'SAVE_RECORDING',
+    id,
+    filepath,
   });
 
   // bring up the window
@@ -427,24 +508,75 @@ export async function stopRecording() {
     });
 }
 
+function removeRecording(id: number) {
+  recordings.delete(id);
+  recordingStateMachine.dispatch({ type: 'REMOVE_RECORDING', id });
+}
+
+export interface SerializedRecordingStatus {
+  id: number;
+  status: RecordingStatus['status'];
+  appName?: string;
+  // if there is no app group, it means the recording is for system audio
+  appGroupId?: number;
+  icon?: Buffer;
+  startTime: number;
+  filepath?: string;
+  sampleRate?: number;
+  numberOfChannels?: number;
+}
+
+function serializeRecordingStatus(
+  status: RecordingStatus
+): SerializedRecordingStatus {
+  return {
+    id: status.id,
+    status: status.status,
+    appName: status.appGroup?.name,
+    appGroupId: status.appGroup?.processGroupId,
+    icon: status.appGroup?.icon,
+    startTime: status.startTime,
+    filepath: status.filepath,
+    sampleRate: status.sampleRate,
+    numberOfChannels: status.numberOfChannels,
+  };
+}
+
 export const recordingHandlers = {
   getRecording: async (_, id: number) => {
     return getRecording(id);
   },
-  deleteCachedRecording: async (_, id: number) => {
-    const recording = recordings.get(id);
-    if (recording) {
-      recording.stream.stop();
-      recordings.delete(id);
-      await fs.unlink(recording.file.path);
-    }
-    return true;
+  getCurrentRecording: async () => {
+    // not all properties are serializable, so we need to return a subset of the status
+    return recordingStatus$.value
+      ? serializeRecordingStatus(recordingStatus$.value)
+      : null;
+  },
+  startRecording: async (_, appGroup?: AppGroupInfo | number) => {
+    return startRecording(appGroup);
+  },
+  pauseRecording: async (_, id: number) => {
+    return pauseRecording(id);
+  },
+  stopRecording: async (_, id: number) => {
+    return stopRecording(id);
+  },
+  // save the encoded recording buffer to the file system
+  readyRecording: async (_, id: number, buffer: Uint8Array) => {
+    return readyRecording(id, Buffer.from(buffer));
+  },
+  removeRecording: async (_, id: number) => {
+    return removeRecording(id);
   },
 } satisfies NamespaceHandlers;
 
 export const recordingEvents = {
-  onRecordingStatusChanged: (fn: (status: RecordingStatus | null) => void) => {
-    const sub = recordingStatus$.subscribe(fn);
+  onRecordingStatusChanged: (
+    fn: (status: SerializedRecordingStatus | null) => void
+  ) => {
+    const sub = recordingStatus$.subscribe(status => {
+      fn(status ? serializeRecordingStatus(status) : null);
+    });
     return () => {
       try {
         sub.unsubscribe();

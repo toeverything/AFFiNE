@@ -17,6 +17,7 @@ import { productionCacheGroups } from './cache-group.js';
 import {
   createBackgroundWorkerHTMLPlugin,
   createHTMLPlugins,
+  createPopupHTMLPlugin,
   createShellHTMLPlugin,
 } from './html-plugin.js';
 import { WebpackS3Plugin } from './s3-plugin.js';
@@ -425,6 +426,7 @@ export function createWebpackConfig(
   if (buildConfig.isElectron) {
     config.plugins.push(createShellHTMLPlugin(flags, buildConfig));
     config.plugins.push(createBackgroundWorkerHTMLPlugin(flags, buildConfig));
+    config.plugins.push(createPopupHTMLPlugin(flags, buildConfig));
 
     // sourcemap url like # sourceMappingURL=76-6370cd185962bc89.js.map wont load in electron
     // this is because the default file:// protocol will be ignored by Chromium

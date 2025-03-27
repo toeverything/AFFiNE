@@ -50,7 +50,7 @@ function createCollectionOptions() {
 }
 
 function initCollection(collection: TestWorkspace) {
-  const doc = collection.createDoc({ id: 'doc:home' });
+  const doc = collection.createDoc('doc:home').getStore();
 
   doc.load(() => {
     const rootId = doc.addBlock('affine:page', {

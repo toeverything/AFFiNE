@@ -183,6 +183,27 @@ test('should get doc content in json format', async t => {
   t.pass();
 });
 
+test('should get full doc content in json format', async t => {
+  const { app } = t.context;
+  mock.method(t.context.databaseDocReader, 'getFullDocContent', async () => {
+    return {
+      title: 'test title',
+      summary: 'test summary',
+    };
+  });
+
+  const docId = randomUUID();
+  await app
+    .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}/content?full=true`)
+    .set('x-access-token', t.context.crypto.sign(docId))
+    .expect({
+      title: 'test title',
+      summary: 'test summary',
+    })
+    .expect(200);
+  t.pass();
+});
+
 test('should 404 when workspace content not found', async t => {
   const { app } = t.context;
 

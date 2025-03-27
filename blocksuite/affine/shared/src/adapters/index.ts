@@ -1,4 +1,5 @@
 export * from './attachment';
+export * from './clipboard';
 export {
   BlockHtmlAdapterExtension,
   type BlockHtmlAdapterMatcher,

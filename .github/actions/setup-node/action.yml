@@ -13,6 +13,10 @@ inputs:
     description: 'Run the install step for Playwright.'
     required: false
     default: 'false'
+  playwright-platform:
+    description: 'The platform to install Playwright for.'
+    required: false
+    default: 'chromium,webkit'
   electron-install:
     description: 'Download the Electron binary'
     required: false
@@ -172,7 +176,7 @@ runs:
     - name: Install Playwright's dependencies
       shell: bash
       if: inputs.playwright-install == 'true'
-      run: yarn playwright install --with-deps chromium webkit
+      run: yarn playwright install --with-deps $(echo "${{ inputs.playwright-platform }}" | tr ',' ' ')
       working-directory: ${{ steps.workspace-path.outputs.workspace_path }}
       env:
         PLAYWRIGHT_BROWSERS_PATH: ${{ steps.workspace-path.outputs.workspace_path }}/node_modules/.cache/ms-playwright

@@ -141,27 +141,3 @@ export function getResizeLabel(target: HTMLElement) {
   const ariaLabel = handle?.getAttribute('aria-label');
   return ariaLabel;
 }
-
-export function launchIntoFullscreen(element: Element) {
-  if (element.requestFullscreen) {
-    element.requestFullscreen().catch(console.error);
-  } else if (
-    'mozRequestFullScreen' in element &&
-    element.mozRequestFullScreen instanceof Function
-  ) {
-    // Firefox
-    element.mozRequestFullScreen();
-  } else if (
-    'webkitRequestFullscreen' in element &&
-    element.webkitRequestFullscreen instanceof Function
-  ) {
-    // Chrome, Safari and Opera
-    element.webkitRequestFullscreen();
-  } else if (
-    'msRequestFullscreen' in element &&
-    element.msRequestFullscreen instanceof Function
-  ) {
-    // IE/Edge
-    element.msRequestFullscreen();
-  }
-}

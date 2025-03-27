@@ -8,6 +8,7 @@
   "include": ["./src"],
   "references": [
     { "path": "../../components" },
+    { "path": "../../inlines/latex" },
     { "path": "../../inlines/link" },
     { "path": "../../inlines/preset" },
     { "path": "../../model" },

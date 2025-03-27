@@ -1,12 +1,12 @@
 import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace.js';
 import { BlockStdScope, type EditorHost } from '@blocksuite/affine/block-std';
+import type { SurfaceBlockModel } from '@blocksuite/affine/blocks/surface';
 import {
   MindmapStyleFour,
   MindmapStyleOne,
   MindmapStyleThree,
   MindmapStyleTwo,
-  type SurfaceBlockModel,
-} from '@blocksuite/affine/blocks/surface';
+} from '@blocksuite/affine/gfx/mindmap';
 import type { ServiceProvider } from '@blocksuite/affine/global/di';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import {
@@ -103,7 +103,8 @@ export class MiniMindmapPreview extends WithDisposable(LitElement) {
       id: 'MINI_MINDMAP_TEMPORARY',
     });
     collection.meta.initialize();
-    const doc = collection.createDoc({ id: 'doc:home' }).load();
+    const doc = collection.createDoc('doc:home').getStore();
+    doc.load();
     const rootId = doc.addBlock('affine:page', {});
     const surfaceId = doc.addBlock('affine:surface', {}, rootId);
     const surface = doc.getModelById(surfaceId) as SurfaceBlockModel;

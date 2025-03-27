@@ -1,0 +1,14 @@
+query matchWorkspaceDocs($contextId: String!, $content: String!, $limit: SafeInt) {
+  currentUser {
+    copilot {
+      contexts(contextId: $contextId) {
+        matchWorkspaceDocs(content: $content, limit: $limit) {
+          docId
+          chunk
+          content
+          distance
+        }
+      }
+    }
+  }
+}

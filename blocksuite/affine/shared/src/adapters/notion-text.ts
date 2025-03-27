@@ -163,8 +163,8 @@ export const NotionTextAdapterFactoryIdentifier =
 
 export const NotionTextAdapterFactoryExtension: ExtensionType = {
   setup: di => {
-    di.addImpl(NotionTextAdapterFactoryIdentifier, () => ({
-      get: (job: Transformer) => new NotionTextAdapter(job),
+    di.addImpl(NotionTextAdapterFactoryIdentifier, provider => ({
+      get: (job: Transformer) => new NotionTextAdapter(job, provider),
     }));
   },
 };

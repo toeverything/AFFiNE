@@ -21,7 +21,7 @@ import {
 } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export const ChangePasswordDialog = ({
   close,
@@ -52,10 +52,12 @@ export const ChangePasswordDialog = ({
   );
   const serverName = useLiveData(server.config$.selector(c => c.serverName));
 
-  if (!email) {
-    // should not happen
-    throw new Unreachable();
-  }
+  useEffect(() => {
+    if (!account) {
+      // we are logged out, close the dialog
+      close();
+    }
+  }, [account, close]);
 
   const onSendEmail = useAsyncCallback(async () => {
     setLoading(true);

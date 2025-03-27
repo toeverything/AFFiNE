@@ -30,7 +30,7 @@ describe('markdownToMindmap: convert markdown list to a mind map tree', () => {
 `;
     const collection = new TestWorkspace();
     collection.meta.initialize();
-    const doc = collection.createDoc();
+    const doc = collection.createDoc().getStore();
     const nodes = markdownToMindmap(markdown, doc, provider);
 
     expect(nodes).toEqual({
@@ -68,7 +68,7 @@ describe('markdownToMindmap: convert markdown list to a mind map tree', () => {
 `;
     const collection = new TestWorkspace();
     collection.meta.initialize();
-    const doc = collection.createDoc();
+    const doc = collection.createDoc().getStore();
     const nodes = markdownToMindmap(markdown, doc, provider);
 
     expect(nodes).toEqual({
@@ -100,7 +100,7 @@ describe('markdownToMindmap: convert markdown list to a mind map tree', () => {
     const markdown = '';
     const collection = new TestWorkspace();
     collection.meta.initialize();
-    const doc = collection.createDoc();
+    const doc = collection.createDoc().getStore();
     const nodes = markdownToMindmap(markdown, doc, provider);
 
     expect(nodes).toEqual(null);

@@ -9,7 +9,7 @@
   "references": [
     { "path": "../block-note" },
     { "path": "../../components" },
-    { "path": "../../inlines/preset" },
+    { "path": "../../inlines/latex" },
     { "path": "../../model" },
     { "path": "../../rich-text" },
     { "path": "../../shared" },

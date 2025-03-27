@@ -60,7 +60,7 @@ const NavItem = ({ icon, label, to, isCollapsed }: NavItemProps) => {
         },
       })}
     >
-      {icon}
+      <span className="flex items-center p-0.5 mr-2">{icon}</span>
       {label}
     </NavLink>
   );
@@ -86,25 +86,19 @@ export function Nav({ isCollapsed = false }: NavProps) {
       >
         <NavItem
           to="/admin/config"
-          icon={
-            <SelfhostIcon className={cn(!isCollapsed && 'mr-2', 'h-5 w-5')} />
-          }
+          icon={<SelfhostIcon fontSize={20} />}
           label="Server"
           isCollapsed={isCollapsed}
         />
         <NavItem
           to="/admin/accounts"
-          icon={
-            <AccountIcon className={cn(!isCollapsed && 'mr-2', 'h-5 w-5')} />
-          }
+          icon={<AccountIcon fontSize={20} />}
           label="Accounts"
           isCollapsed={isCollapsed}
         />
         <NavItem
           to="/admin/ai"
-          icon={
-            <AiOutlineIcon className={cn(!isCollapsed && 'mr-2', 'h-5 w-5')} />
-          }
+          icon={<AiOutlineIcon fontSize={20} />}
           label="AI"
           isCollapsed={isCollapsed}
         />

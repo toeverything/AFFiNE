@@ -164,6 +164,7 @@ export class DataViewHeaderViews extends WidgetBase {
         items: [
           menu.input({
             initialValue: view.name$.value,
+            placeholder: 'View name',
             onChange: text => {
               view.nameSet(text);
             },

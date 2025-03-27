@@ -27,10 +27,12 @@ export interface TagsEditorProps {
 }
 
 export interface TagsInlineEditorProps extends TagsEditorProps {
-  placeholder?: string;
+  placeholder?: ReactNode;
   className?: string;
   readonly?: boolean;
   title?: ReactNode; // only used for mobile
+  modalMenu?: boolean;
+  menuClassName?: string;
 }
 
 type TagOption = TagLike | { readonly create: true; readonly value: string };
@@ -364,6 +366,8 @@ const DesktopTagsInlineEditor = ({
   readonly,
   placeholder,
   className,
+  modalMenu,
+  menuClassName,
   ...props
 }: TagsInlineEditorProps) => {
   const empty = !props.selectedTags || props.selectedTags.length === 0;
@@ -379,10 +383,13 @@ const DesktopTagsInlineEditor = ({
         align: 'start',
         sideOffset: 0,
         avoidCollisions: false,
-        className: styles.tagsMenu,
+        className: clsx(styles.tagsMenu, menuClassName),
         onClick(e) {
           e.stopPropagation();
         },
+      }}
+      rootOptions={{
+        modal: modalMenu,
       }}
       items={<TagsEditor {...props} />}
     >

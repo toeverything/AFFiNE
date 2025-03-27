@@ -66,7 +66,7 @@ export const ConfirmChanges = ({
           'There is no change.'
         )}
         <DialogFooter>
-          <div className="flex justify-end items-center w-full space-x-4">
+          <div className="flex justify-end items-center w-full gap-2">
             <Button type="button" onClick={onClose} variant="outline">
               <span>Cancel</span>
             </Button>

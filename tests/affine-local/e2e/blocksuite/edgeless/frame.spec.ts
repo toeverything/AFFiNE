@@ -47,7 +47,7 @@ test('should update zindex of element when moving it into frame', async ({
   await createEdgelessNoteBlock(page, [500, 500]);
   await clickView(page, [0, 100]);
   await clickView(page, [500, 500]);
-  await toolbar.getByLabel('more-menu').click();
+  await toolbar.getByLabel('More menu').click();
   await toolbar.getByLabel('Send to Back').click();
   await pressEscape(page);
 

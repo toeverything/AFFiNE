@@ -1,10 +1,10 @@
 import { LassoMode } from '@blocksuite/affine-shared/types';
+import { QuickToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { effect } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { query, state } from 'lit/decorators.js';
 
-import { QuickToolMixin } from '../mixins/quick-tool.mixin.js';
 import { LassoFreeHandIcon, LassoPolygonalIcon } from './icons.js';
 
 export class EdgelessLassoToolButton extends QuickToolMixin(
@@ -54,7 +54,7 @@ export class EdgelessLassoToolButton extends QuickToolMixin(
 
     this.disposables.add(
       effect(() => {
-        const tool = this.edgeless.gfx.tool.currentToolOption$.value;
+        const tool = this.gfx.tool.currentToolOption$.value;
 
         if (tool?.type === 'lasso') {
           const { mode } = tool;

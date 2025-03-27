@@ -1,7 +1,4 @@
-import { randomUUID } from 'node:crypto';
-
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
 
 import {
@@ -15,10 +12,11 @@ import {
   OnJob,
 } from '../../../base';
 import { DocReader } from '../../../core/doc';
+import { Models } from '../../../models';
 import { CopilotStorage } from '../storage';
 import { OpenAIEmbeddingClient } from './embedding';
-import { Embedding, EmbeddingClient } from './types';
-import { checkEmbeddingAvailable, readStream } from './utils';
+import { EmbeddingClient } from './types';
+import { readStream } from './utils';
 
 declare global {
   interface Jobs {
@@ -45,10 +43,10 @@ export class CopilotContextDocJob implements OnModuleInit {
 
   constructor(
     config: Config,
-    private readonly db: PrismaClient,
     private readonly doc: DocReader,
     private readonly event: EventBus,
     private readonly logger: AFFiNELogger,
+    private readonly models: Models,
     private readonly queue: JobQueue,
     private readonly storage: CopilotStorage
   ) {
@@ -60,7 +58,8 @@ export class CopilotContextDocJob implements OnModuleInit {
   }
 
   async onModuleInit() {
-    this.supportEmbedding = await checkEmbeddingAvailable(this.db);
+    this.supportEmbedding =
+      await this.models.copilotContext.checkEmbeddingAvailable();
   }
 
   // public this client to allow overriding in tests
@@ -89,23 +88,6 @@ export class CopilotContextDocJob implements OnModuleInit {
     for (const { workspaceId, docId } of docs) {
       await this.queue.add('doc.embedPendingDocs', { workspaceId, docId });
     }
-  }
-
-  private processEmbeddings(
-    contextOrWorkspaceId: string,
-    fileOrDocId: string,
-    embeddings: Embedding[]
-  ) {
-    const groups = embeddings.map(e => [
-      randomUUID(),
-      contextOrWorkspaceId,
-      fileOrDocId,
-      e.index,
-      e.content,
-      Prisma.raw(`'[${e.embedding.join(',')}]'`),
-      new Date(),
-    ]);
-    return Prisma.join(groups.map(row => Prisma.sql`(${Prisma.join(row)})`));
   }
 
   async readCopilotBlob(
@@ -145,14 +127,11 @@ export class CopilotContextDocJob implements OnModuleInit {
 
       for (const chunk of chunks) {
         const embeddings = await this.embeddingClient.generateEmbeddings(chunk);
-        const values = this.processEmbeddings(contextId, fileId, embeddings);
-
-        await this.db.$executeRaw`
-          INSERT INTO "ai_context_embeddings"
-          ("id", "context_id", "file_id", "chunk", "content", "embedding", "updated_at") VALUES ${values}
-          ON CONFLICT (context_id, file_id, chunk) DO UPDATE SET
-          content = EXCLUDED.content, embedding = EXCLUDED.embedding, updated_at = excluded.updated_at;
-        `;
+        await this.models.copilotContext.insertContentEmbedding(
+          contextId,
+          fileId,
+          embeddings
+        );
       }
 
       this.event.emit('workspace.file.embed.finished', {
@@ -180,7 +159,7 @@ export class CopilotContextDocJob implements OnModuleInit {
     if (!this.supportEmbedding) return;
 
     try {
-      const content = await this.doc.getDocContent(workspaceId, docId);
+      const content = await this.doc.getFullDocContent(workspaceId, docId);
       if (content) {
         // no need to check if embeddings is empty, will throw internally
         const embeddings = await this.embeddingClient.getFileEmbeddings(
@@ -188,13 +167,11 @@ export class CopilotContextDocJob implements OnModuleInit {
         );
 
         for (const chunks of embeddings) {
-          const values = this.processEmbeddings(workspaceId, docId, chunks);
-          await this.db.$executeRaw`
-              INSERT INTO "ai_workspace_embeddings"
-              ("workspace_id", "doc_id", "chunk", "content", "embedding", "updated_at") VALUES ${values}
-              ON CONFLICT (context_id, file_id, chunk) DO UPDATE SET
-              embedding = EXCLUDED.embedding, updated_at = excluded.updated_at;
-            `;
+          await this.models.copilotContext.insertWorkspaceEmbedding(
+            workspaceId,
+            docId,
+            chunks
+          );
         }
       }
     } catch (e: any) {

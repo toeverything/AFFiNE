@@ -1,11 +1,11 @@
 import { Button, Modal } from '@affine/component';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { IntegrationService } from '@affine/core/modules/integration';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
 import * as styles from './connected.css';
-import { ImportDialog } from './import-dialog';
 import { actionButton } from './index.css';
 
 export const DisconnectDialog = ({ onClose }: { onClose: () => void }) => {
@@ -23,9 +23,11 @@ export const DisconnectDialog = ({ onClose }: { onClose: () => void }) => {
     readwise.disconnect();
     onClose();
   }, [onClose, readwise]);
-  // const handleDelete = useAsyncCallback(async () => {
-  //   // TODO
-  // }, []);
+  const handleDelete = useAsyncCallback(async () => {
+    await readwise.deleteAll();
+    readwise.disconnect();
+    onClose();
+  }, [onClose, readwise]);
 
   return (
     <Modal
@@ -42,7 +44,7 @@ export const DisconnectDialog = ({ onClose }: { onClose: () => void }) => {
       <footer className={styles.footer}>
         <Button onClick={handleCancel}>{t['Cancel']()}</Button>
         <div className={styles.actions}>
-          <Button variant="error">
+          <Button variant="error" onClick={handleDelete}>
             {t['com.affine.integration.readwise.disconnect.delete']()}
           </Button>
           <Button variant="primary" onClick={handleKeep}>
@@ -54,23 +56,16 @@ export const DisconnectDialog = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
-export const ConnectedActions = () => {
+export const ConnectedActions = ({ onImport }: { onImport: () => void }) => {
   const t = useI18n();
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
-  const [showImportDialog, setShowImportDialog] = useState(false);
 
   return (
     <>
       {showDisconnectDialog && (
         <DisconnectDialog onClose={() => setShowDisconnectDialog(false)} />
       )}
-      {showImportDialog && (
-        <ImportDialog onClose={() => setShowImportDialog(false)} />
-      )}
-      <Button
-        className={actionButton}
-        onClick={() => setShowImportDialog(true)}
-      >
+      <Button className={actionButton} onClick={onImport}>
         {t['com.affine.integration.readwise.import']()}
       </Button>
       <Button

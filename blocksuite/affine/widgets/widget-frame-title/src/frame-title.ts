@@ -5,6 +5,7 @@ import {
   isTransparent,
 } from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
+import { on } from '@blocksuite/affine-shared/utils';
 import {
   type BlockStdScope,
   PropTypes,
@@ -19,6 +20,7 @@ import { themeToVar } from '@toeverything/theme/v2';
 import { LitElement } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
+import { mountFrameTitleEditor } from './mount-frame-title-editor.js';
 import { frameTitleStyle, frameTitleStyleVars } from './styles.js';
 
 export const AFFINE_FRAME_TITLE = 'affine-frame-title';
@@ -200,6 +202,32 @@ export class AffineFrameTitle extends SignalWatcher(
       gfx.viewport.viewportUpdated.subscribe(({ zoom }) => {
         this._zoom = zoom;
         this.requestUpdate();
+      })
+    );
+
+    _disposables.add(
+      on(this, 'click', evt => {
+        if (evt.shiftKey) {
+          this.gfx.selection.toggle(this.model);
+        } else {
+          this.gfx.selection.set({
+            elements: [this.model.id],
+          });
+        }
+      })
+    );
+
+    _disposables.add(
+      on(this, 'dblclick', () => {
+        const edgeless = this.std.view.getBlock(this.std.store.root?.id || '');
+
+        if (edgeless && !this.model.isLocked()) {
+          mountFrameTitleEditor(this.model, edgeless);
+        } else {
+          this.gfx.selection.set({
+            elements: [this.model.id],
+          });
+        }
       })
     );
 

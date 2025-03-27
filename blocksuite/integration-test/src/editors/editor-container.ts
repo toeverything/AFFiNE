@@ -166,7 +166,7 @@ export class TestAffineEditorContainer extends SignalWatcher(
   override firstUpdated() {
     if (this.mode === 'page') {
       setTimeout(() => {
-        if (this.autofocus) {
+        if (this.autofocus && this.mode === 'page') {
           const richText = this.querySelector('rich-text');
           const inlineEditor = richText?.inlineEditor;
           inlineEditor?.focusEnd();

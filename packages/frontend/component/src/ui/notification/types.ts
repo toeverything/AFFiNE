@@ -1,3 +1,4 @@
+import type { UserFriendlyError } from '@affine/error';
 import type { HTMLAttributes, ReactNode } from 'react';
 
 import type { ButtonProps } from '../button';
@@ -29,6 +30,7 @@ export interface Notification {
   thumb?: ReactNode;
   title?: ReactNode;
   message?: ReactNode;
+  error?: UserFriendlyError;
   icon?: ReactNode;
   iconColor?: string;
   footer?: ReactNode;

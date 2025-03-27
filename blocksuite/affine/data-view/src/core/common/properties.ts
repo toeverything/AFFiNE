@@ -7,7 +7,8 @@ import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { InvisibleIcon, ViewIcon } from '@blocksuite/icons/lit';
 import { computed } from '@preact/signals-core';
-import { css, html } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, html, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -33,7 +34,7 @@ export class DataViewPropertiesSettingView extends SignalWatcher(
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--affine-divider-color);
+      border-bottom: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
     }
 
     .properties-group-title {

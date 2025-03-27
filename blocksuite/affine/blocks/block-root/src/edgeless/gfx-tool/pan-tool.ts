@@ -53,9 +53,11 @@ export class PanTool extends BaseTool<PanToolOption> {
 
       evt.raw.preventDefault();
 
+      const selection = this.gfx.selection.surfaceSelections;
       const currentTool = this.controller.currentToolOption$.peek();
       const restoreToPrevious = () => {
         this.controller.setTool(currentTool);
+        this.gfx.selection.set(selection);
       };
 
       this.controller.setTool('pan', {

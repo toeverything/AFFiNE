@@ -6,6 +6,7 @@ import {
 import { showAILoginRequiredAtom } from '@affine/core/components/affine/auth/ai-login-required';
 import type { UserFriendlyError } from '@affine/error';
 import {
+  addContextCategoryMutation,
   addContextDocMutation,
   addContextFileMutation,
   cleanupCopilotSessionMutation,
@@ -22,6 +23,7 @@ import {
   matchContextQuery,
   type QueryOptions,
   type QueryResponse,
+  removeContextCategoryMutation,
   removeContextDocMutation,
   removeContextFileMutation,
   type RequestOptions,
@@ -290,6 +292,30 @@ export class CopilotClient {
     return res.removeContextFile;
   }
 
+  async addContextCategory(
+    options: OptionsField<typeof addContextCategoryMutation>
+  ) {
+    const res = await this.gql({
+      query: addContextCategoryMutation,
+      variables: {
+        options,
+      },
+    });
+    return res.addContextCategory;
+  }
+
+  async removeContextCategory(
+    options: OptionsField<typeof removeContextCategoryMutation>
+  ) {
+    const res = await this.gql({
+      query: removeContextCategoryMutation,
+      variables: {
+        options,
+      },
+    });
+    return res.removeContextCategory;
+  }
+
   async getContextDocsAndFiles(
     workspaceId: string,
     sessionId: string,
@@ -315,7 +341,9 @@ export class CopilotClient {
         limit,
       },
     });
-    return res.currentUser?.copilot?.contexts?.[0]?.matchContext;
+    const { matchFiles: files, matchWorkspaceDocs: docs } =
+      res.currentUser?.copilot?.contexts?.[0] || {};
+    return { files, docs };
   }
 
   async chatText({

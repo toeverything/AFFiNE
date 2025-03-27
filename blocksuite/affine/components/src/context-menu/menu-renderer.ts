@@ -36,7 +36,7 @@ export class MenuComponent
       display: flex;
       flex-direction: column;
       user-select: none;
-      min-width: 276px;
+      min-width: 180px;
       box-shadow: ${unsafeCSSVar('overlayPanelShadow')};
       border-radius: 4px;
       background-color: ${unsafeCSSVarV2('layer/background/overlayPanel')};
@@ -204,7 +204,7 @@ export class MenuComponent
     }
     return html`
       <div
-        style="display:flex;align-items:center;gap: 4px;min-width: 300px;padding:3px 4px 3px 2px"
+        style="display:flex;align-items:center;gap: 4px;padding:3px 4px 3px 2px"
         @mouseenter="${() => this.menu.closeSubMenu()}"
       >
         ${title.onBack

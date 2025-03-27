@@ -9,8 +9,8 @@ export function useDocCollectionPage(
   docCollection: Workspace,
   pageId: string | null
 ): Store | null {
-  const [page, setPage] = useState(
-    pageId ? docCollection.getDoc(pageId) : null
+  const [page, setPage] = useState<Store | null>(
+    pageId ? (docCollection.getDoc(pageId)?.getStore() ?? null) : null
   );
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export function useDocCollectionPage(
     group.add(
       docCollection.slots.docCreated.subscribe(id => {
         if (pageId === id) {
-          setPage(docCollection.getDoc(id));
+          setPage(docCollection.getDoc(id)?.getStore() ?? null);
         }
       })
     );

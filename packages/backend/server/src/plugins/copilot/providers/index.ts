@@ -120,11 +120,16 @@ export class CopilotProviderService {
     return providerFactory(this.config, this.logger);
   }
 
-  getProvider(provider: CopilotProviderType): CopilotProvider {
-    if (!this.cachedProviders.has(provider)) {
-      this.cachedProviders.set(provider, this.create(provider));
+  getProvider(provider: CopilotProviderType): CopilotProvider | null {
+    try {
+      if (!this.cachedProviders.has(provider)) {
+        this.cachedProviders.set(provider, this.create(provider));
+      }
+      return this.cachedProviders.get(provider) as CopilotProvider;
+    } catch {
+      // skip if the provider is not available
+      return null;
     }
-    return this.cachedProviders.get(provider) as CopilotProvider;
   }
 
   async getProviderByCapability<C extends CopilotCapability>(
@@ -146,7 +151,8 @@ export class CopilotProviderService {
         // find first provider that supports the capability and model
         if (providers.includes(selectedProvider)) {
           const provider = this.getProvider(selectedProvider);
-          if (provider.getCapabilities().includes(capability)) {
+
+          if (provider && provider.getCapabilities().includes(capability)) {
             if (model) {
               if (await provider.isModelAvailable(model)) {
                 return provider as CapabilityToCopilotProvider[C];
@@ -180,7 +186,7 @@ export class CopilotProviderService {
       while (selectedProvider) {
         const provider = this.getProvider(selectedProvider);
 
-        if (await provider.isModelAvailable(model)) {
+        if (provider && (await provider.isModelAvailable(model))) {
           return provider as CapabilityToCopilotProvider[C];
         }
 

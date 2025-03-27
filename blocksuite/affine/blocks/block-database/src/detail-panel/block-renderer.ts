@@ -7,7 +7,8 @@ import type {
   TableSingleView,
 } from '@blocksuite/data-view/view-presets';
 import { WithDisposable } from '@blocksuite/global/lit';
-import { css, html } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, html, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 
 export class BlockRenderer
@@ -22,7 +23,7 @@ export class BlockRenderer
       flex-direction: column;
       gap: 16px;
       margin-bottom: 12px;
-      border-bottom: 1px solid var(--affine-border-color);
+      border-bottom: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
       font-size: var(--affine-font-base);
       line-height: var(--affine-line-height);
     }

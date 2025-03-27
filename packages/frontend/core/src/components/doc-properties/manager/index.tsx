@@ -8,7 +8,6 @@ import {
 } from '@affine/component';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
 import { DocsService } from '@affine/core/modules/doc';
-import { GuardService } from '@affine/core/modules/permissions';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
@@ -17,6 +16,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { type HTMLProps, useCallback, useState } from 'react';
 
+import { useGuard } from '../../guard';
 import { DocPropertyIcon } from '../icons/doc-property-icon';
 import { EditDocPropertyMenuItems } from '../menu/edit-doc-property';
 import {
@@ -38,13 +38,10 @@ const PropertyItem = ({
   ) => void;
 }) => {
   const t = useI18n();
-  const guardService = useService(GuardService);
   const workspaceService = useService(WorkspaceService);
   const docsService = useService(DocsService);
   const [moreMenuOpen, setMoreMenuOpen] = useState(defaultOpenEditMenu);
-  const canEditPropertyInfo = useLiveData(
-    guardService.can$('Workspace_Properties_Update')
-  );
+  const canEditPropertyInfo = useGuard('Workspace_Properties_Update');
 
   const typeInfo = isSupportedDocPropertyType(propertyInfo.type)
     ? DocPropertyTypes[propertyInfo.type]

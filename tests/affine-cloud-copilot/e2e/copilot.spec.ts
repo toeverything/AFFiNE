@@ -272,7 +272,7 @@ test.describe('chat panel', () => {
     await page.waitForTimeout(200);
     await createLocalWorkspace({ name: 'test' }, page);
     await clickNewPageButton(page);
-    await makeChat(page, 'hello');
+    await makeChat(page, 'What is AFFiNE?');
     const content = (await collectChat(page))[1].content;
     await page.getByTestId('action-copy-button').click();
     await page.waitForTimeout(500);

@@ -41,9 +41,9 @@ function createTestDoc(docId = 'doc0') {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc = collection.createDoc({ id: docId, extensions });
+  const doc = collection.createDoc(docId);
   doc.load();
-  return doc;
+  return doc.getStore({ extensions });
 }
 
 describe('DatabaseManager', () => {

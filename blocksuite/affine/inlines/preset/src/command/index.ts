@@ -9,7 +9,6 @@ export { deleteTextCommand } from './delete-text.js';
 export { formatBlockCommand } from './format-block.js';
 export { formatNativeCommand } from './format-native.js';
 export { formatTextCommand } from './format-text.js';
-export { insertInlineLatex } from './insert-inline-latex.js';
 export {
   getTextStyle,
   isTextStyleActive,

@@ -1,0 +1,20 @@
+query matchContext($contextId: String!, $content: String!, $limit: SafeInt, $threshold: Float) {
+  currentUser {
+    copilot {
+      contexts(contextId: $contextId) {
+        matchFiles(content: $content, limit: $limit, threshold: $threshold) {
+          fileId
+          chunk
+          content
+          distance
+        }
+        matchWorkspaceDocs(content: $content, limit: $limit, threshold: $threshold) {
+          docId
+          chunk
+          content
+          distance
+        }
+      }
+    }
+  }
+}

@@ -7,9 +7,10 @@ import type { BlockService } from '../../extension/index.js';
 import type {
   DragMoveContext,
   GfxViewTransformInterface,
+  SelectedContext,
 } from '../../gfx/element-transform/view-transform.js';
 import { GfxControllerIdentifier } from '../../gfx/identifiers.js';
-import type { GfxBlockElementModel } from '../../gfx/index.js';
+import { type GfxBlockElementModel } from '../../gfx/model/gfx-block-model.js';
 import { SurfaceSelection } from '../../selection/index.js';
 import { BlockComponent } from './block-component.js';
 
@@ -79,6 +80,14 @@ export abstract class GfxBlockComponent<
 
   onDragEnd() {
     this.model.pop('xywh');
+  }
+
+  onSelected(context: SelectedContext) {
+    if (context.multiSelect) {
+      this.gfx.selection.toggle(this.model);
+    } else {
+      this.gfx.selection.set({ elements: [this.model.id] });
+    }
   }
 
   onRotate() {}
@@ -184,6 +193,15 @@ export function toGfxBlockComponent<
 
     onDragEnd() {
       this.model.pop('xywh');
+    }
+
+    // eslint-disable-next-line sonarjs/no-identical-functions
+    onSelected(context: SelectedContext) {
+      if (context.multiSelect) {
+        this.gfx.selection.toggle(this.model);
+      } else {
+        this.gfx.selection.set({ elements: [this.model.id] });
+      }
     }
 
     onRotate() {}

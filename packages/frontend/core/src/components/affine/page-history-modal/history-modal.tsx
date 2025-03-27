@@ -5,10 +5,7 @@ import { Modal, useConfirmModal } from '@affine/component/ui/modal';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { EditorService } from '@affine/core/modules/editor';
-import {
-  GuardService,
-  WorkspacePermissionService,
-} from '@affine/core/modules/permissions';
+import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
@@ -35,6 +32,7 @@ import { encodeStateAsUpdate } from 'yjs';
 import { BlockSuiteEditor } from '../../../blocksuite/block-suite-editor';
 import { PureEditorModeSwitch } from '../../../blocksuite/block-suite-mode-switch';
 import { pageHistoryModalAtom } from '../../atoms/page-history';
+import { useGuard } from '../../guard';
 import { AffineErrorBoundary } from '../affine-error-boundary';
 import {
   historyListGroupByDay,
@@ -408,8 +406,6 @@ const PageHistoryManager = ({
   const workspaceId = docCollection.id;
   const [activeVersion, setActiveVersion] = useState<string>();
 
-  const guardService = useService(GuardService);
-
   const pageDocId = useMemo(() => {
     return docCollection.getDoc(pageId)?.spaceDoc.guid ?? pageId;
   }, [pageId, docCollection]);
@@ -441,7 +437,7 @@ const PageHistoryManager = ({
   const i18n = useI18n();
 
   const title = useLiveData(docDisplayMetaService.title$(pageId));
-  const canEdit = useLiveData(guardService.can$('Doc_Update', pageDocId));
+  const canEdit = useGuard('Doc_Update', pageDocId);
 
   const onConfirmRestore = useCallback(() => {
     openConfirmModal({

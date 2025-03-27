@@ -13,6 +13,10 @@ type NoteBlockContext = {
 export type NoteConfig = {
   edgelessNoteHeader: (context: NoteBlockContext) => TemplateResult;
   pageBlockTitle: (context: NoteBlockContext) => TemplateResult;
+  /**
+   * @returns if the viewport fit animation executed
+   */
+  pageBlockViewportFitAnimation?: (context: NoteBlockContext) => boolean;
 };
 
 export const NoteConfigExtension =

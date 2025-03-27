@@ -1,6 +1,8 @@
 import type {
   ChatHistoryOrder,
+  ContextMatchedDocChunk,
   ContextMatchedFileChunk,
+  CopilotContextCategory,
   CopilotContextDoc,
   CopilotContextFile,
   CopilotSessionType,
@@ -245,6 +247,8 @@ declare global {
     type AIDocsAndFilesContext = {
       docs: CopilotContextDoc[];
       files: CopilotContextFile[];
+      tags: CopilotContextCategory[];
+      collections: CopilotContextCategory[];
     };
 
     interface AIContextService {
@@ -275,6 +279,24 @@ declare global {
         contextId: string;
         fileId: string;
       }) => Promise<boolean>;
+      addContextTag: (options: {
+        contextId: string;
+        tagId: string;
+        docIds: string[];
+      }) => Promise<CopilotContextCategory>;
+      removeContextTag: (options: {
+        contextId: string;
+        tagId: string;
+      }) => Promise<boolean>;
+      addContextCollection: (options: {
+        contextId: string;
+        collectionId: string;
+        docIds: string[];
+      }) => Promise<CopilotContextCategory>;
+      removeContextCollection: (options: {
+        contextId: string;
+        collectionId: string;
+      }) => Promise<boolean>;
       getContextDocsAndFiles: (
         workspaceId: string,
         sessionId: string,
@@ -291,7 +313,10 @@ declare global {
         contextId: string,
         content: string,
         limit?: number
-      ) => Promise<ContextMatchedFileChunk[] | undefined>;
+      ) => Promise<{
+        files?: ContextMatchedFileChunk[];
+        docs?: ContextMatchedDocChunk[];
+      }>;
     }
 
     // TODO(@Peng): should be refactored to get rid of implement details (like messages, action, role, etc.)

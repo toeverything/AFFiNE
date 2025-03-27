@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { Store } from '../model/store/store';
+import type { Store } from '../model';
 import type { DocMeta, DocsPropertiesMeta } from '../model/workspace-meta';
 
 export type BlockSnapshot = {

@@ -23,13 +23,13 @@ export const DiscardChanges = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:w-[460px]">
         <DialogHeader>
-          <DialogTitle className="leading-7">Discard Changes</DialogTitle>
-          <DialogDescription className="leading-6">
+          <DialogTitle className="leading-6.5">Discard Changes</DialogTitle>
+          <DialogDescription className="leading-6 text-[15px]">
             Changes to this user will not be saved.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <div className="flex justify-end items-center w-full space-x-4">
+          <div className="flex justify-end gap-2 items-center w-full">
             <Button type="button" onClick={onClose} variant="outline">
               <span>Cancel</span>
             </Button>

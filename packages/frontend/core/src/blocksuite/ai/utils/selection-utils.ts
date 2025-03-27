@@ -3,7 +3,11 @@ import {
   GfxControllerIdentifier,
   type GfxModel,
 } from '@blocksuite/affine/block-std/gfx';
-import { isCanvasElement, splitElements } from '@blocksuite/affine/blocks/root';
+import {
+  EdgelessClipboardController,
+  isCanvasElement,
+  splitElements,
+} from '@blocksuite/affine/blocks/root';
 import {
   getSurfaceBlock,
   type SurfaceBlockComponent,
@@ -73,10 +77,9 @@ export async function elementsToCanvas(host: EditorHost, elements: GfxModel[]) {
   }
 
   try {
-    const canvas = await edgelessRoot.clipboardController.toCanvas(
-      blockElements,
-      shapes
-    );
+    const canvas = await edgelessRoot.std
+      .get(EdgelessClipboardController)
+      .toCanvas(blockElements, shapes);
     if (!canvas) {
       return;
     }

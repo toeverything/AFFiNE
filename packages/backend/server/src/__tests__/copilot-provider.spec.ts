@@ -147,6 +147,36 @@ const assertNotWrappedInCodeBlock = (
   );
 };
 
+const citationChecker = (
+  t: ExecutionContext<Tester>,
+  citations: { citationNumber: string; citationJson: string }[]
+) => {
+  t.assert(citations.length > 0, 'should have citation');
+  for (const { citationJson } of citations) {
+    t.notThrows(() => {
+      JSON.parse(citationJson);
+    }, `should be valid json: ${citationJson}`);
+  }
+};
+
+type CitationChecker = typeof citationChecker;
+
+const assertCitation = (
+  t: ExecutionContext<Tester>,
+  result: string,
+  citationCondition: CitationChecker = citationChecker
+) => {
+  const regex = /\[\^(\d+)\]:\s*({.*})/g;
+  const citations = [];
+  let match;
+  while ((match = regex.exec(result)) !== null) {
+    const citationNumber = match[1];
+    const citationJson = match[2];
+    citations.push({ citationNumber, citationJson });
+  }
+  citationCondition(t, citations);
+};
+
 const checkMDList = (text: string) => {
   const lines = text.split('\n');
   const listItemRegex = /^( {2})*(-|\u2010-\u2015|\*|\+)? .+$/;
@@ -270,6 +300,58 @@ test('should validate markdown list', t => {
 // ==================== action ====================
 
 const actions = [
+  {
+    name: 'Should not have citation',
+    promptName: ['Chat With AFFiNE AI'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: 'what is ssot',
+        params: {
+          files: [
+            {
+              blobId: 'euclidean_distance',
+              fileName: 'euclidean_distance.rs',
+              fileType: 'text/rust',
+              fileContent: TestAssets.Code,
+            },
+          ],
+        },
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      assertNotWrappedInCodeBlock(t, result);
+      assertCitation(t, result, (t, c) => {
+        t.assert(c.length === 0, 'should not have citation');
+      });
+    },
+    type: 'text' as const,
+  },
+  {
+    name: 'Should have citation',
+    promptName: ['Chat With AFFiNE AI'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: 'what is ssot',
+        params: {
+          files: [
+            {
+              blobId: 'SSOT',
+              fileName: 'Single source of truth - Wikipedia',
+              fileType: 'text/markdown',
+              fileContent: TestAssets.SSOT,
+            },
+          ],
+        },
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      assertNotWrappedInCodeBlock(t, result);
+      assertCitation(t, result);
+    },
+    type: 'text' as const,
+  },
   {
     promptName: ['Transcript audio'],
     messages: [
@@ -433,11 +515,11 @@ const actions = [
   },
 ];
 
-for (const { promptName, messages, verifier, type } of actions) {
+for (const { name, promptName, messages, verifier, type } of actions) {
   const prompts = Array.isArray(promptName) ? promptName : [promptName];
   for (const promptName of prompts) {
     test(
-      `should be able to run action: ${promptName}`,
+      `should be able to run action: ${promptName}${name ? ` - ${name}` : ''}`,
       runIfCopilotConfigured,
       async t => {
         const { provider: providerService, prompt: promptService } = t.context;

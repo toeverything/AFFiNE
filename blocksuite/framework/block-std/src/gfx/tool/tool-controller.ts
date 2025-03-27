@@ -506,6 +506,7 @@ export class ToolController extends GfxExtension {
       return;
     }
 
+    // explicitly clear the selection when switching tools
     this.gfx.selection.set({ elements: [] });
 
     this.currentTool$.peek()?.deactivate();

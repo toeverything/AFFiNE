@@ -73,6 +73,10 @@ export interface AffineTextAttributes {
   color?: string | null;
   latex?: string | null;
   footnote?: FootNote | null;
+  mention?: {
+    member: string;
+    notification?: string;
+  } | null;
 }
 
 export type AffineInlineEditor = InlineEditor<AffineTextAttributes>;

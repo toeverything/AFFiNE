@@ -1,14 +1,13 @@
+import {
+  type EdgelessToolbarSlots,
+  edgelessToolbarSlotsContext,
+} from '@blocksuite/affine-widget-edgeless-toolbar';
 import { WithDisposable } from '@blocksuite/global/lit';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/lit';
 import { consume } from '@lit/context';
 import { css, html, LitElement } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
-
-import {
-  type EdgelessToolbarSlots,
-  edgelessToolbarSlotsContext,
-} from '../context.js';
 
 export class EdgelessSlideMenu extends WithDisposable(LitElement) {
   static override styles = css`

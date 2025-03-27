@@ -33,8 +33,17 @@ export interface Recording {
 
 export interface RecordingStatus {
   id: number; // corresponds to the recording id
-  status: 'recording' | 'paused' | 'stopped';
+  // the status of the recording in a linear state machine
+  // new: an new app group is listening. note, if there are any active recording, the current recording will not change
+  // recording: the recording is ongoing
+  // paused: the recording is paused
+  // stopped: the recording is stopped (processing audio file for use in the editor)
+  // ready: the recording is ready to be used
+  status: 'new' | 'recording' | 'paused' | 'stopped' | 'ready';
   app?: TappableAppInfo;
   appGroup?: AppGroupInfo;
-  startTime: number;
+  startTime: number; // 0 means not started yet
+  filepath?: string; // the filepath of the recording (only available when status is ready)
+  sampleRate?: number;
+  numberOfChannels?: number;
 }

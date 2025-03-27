@@ -2,10 +2,8 @@ import {
   BlockViewExtension,
   FlavourExtension,
 } from '@blocksuite/affine/block-std';
-import {
-  MindMapView,
-  SurfaceBlockSchema,
-} from '@blocksuite/affine/blocks/surface';
+import { SurfaceBlockSchema } from '@blocksuite/affine/blocks/surface';
+import { MindMapView } from '@blocksuite/affine/gfx/mindmap';
 import { RootBlockSchema } from '@blocksuite/affine/model';
 import {
   DocModeService,

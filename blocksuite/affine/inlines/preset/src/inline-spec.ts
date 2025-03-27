@@ -1,8 +1,9 @@
 import { inlineFootnoteExtensions } from '@blocksuite/affine-inline-footnote';
+import { inlineLatexExtensions } from '@blocksuite/affine-inline-latex';
 import { inlineLinkExtensions } from '@blocksuite/affine-inline-link';
+import { inlineMentionExtensions } from '@blocksuite/affine-inline-mention';
 import { inlineReferenceExtensions } from '@blocksuite/affine-inline-reference';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
-import { StdIdentifier } from '@blocksuite/block-std';
 import {
   type InlineRootElement,
   InlineSpecExtension,
@@ -97,37 +98,6 @@ export const ColorInlineSpecExtension =
     },
   });
 
-export const LatexInlineSpecExtension =
-  InlineSpecExtension<AffineTextAttributes>('latex', provider => {
-    const std = provider.get(StdIdentifier);
-    return {
-      name: 'latex',
-      schema: z.string().optional().nullable().catch(undefined),
-      match: delta => typeof delta.attributes?.latex === 'string',
-      renderer: ({ delta, selected, editor, startOffset, endOffset }) => {
-        return html`<affine-latex-node
-          .std=${std}
-          .delta=${delta}
-          .selected=${selected}
-          .editor=${editor}
-          .startOffset=${startOffset}
-          .endOffset=${endOffset}
-        ></affine-latex-node>`;
-      },
-      embed: true,
-    };
-  });
-
-export const LatexEditorUnitSpecExtension =
-  InlineSpecExtension<AffineTextAttributes>({
-    name: 'latex-editor-unit',
-    schema: z.undefined(),
-    match: () => true,
-    renderer: ({ delta }) => {
-      return html`<latex-editor-unit .delta=${delta}></latex-editor-unit>`;
-    },
-  });
-
 export const InlineSpecExtensions: ExtensionType[] = [
   BoldInlineSpecExtension,
   ItalicInlineSpecExtension,
@@ -136,9 +106,9 @@ export const InlineSpecExtensions: ExtensionType[] = [
   CodeInlineSpecExtension,
   BackgroundInlineSpecExtension,
   ColorInlineSpecExtension,
-  LatexInlineSpecExtension,
   ...inlineLinkExtensions,
   ...inlineReferenceExtensions,
-  LatexEditorUnitSpecExtension,
+  ...inlineLatexExtensions,
   ...inlineFootnoteExtensions,
+  ...inlineMentionExtensions,
 ];

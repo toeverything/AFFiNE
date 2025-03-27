@@ -10,7 +10,7 @@ import {
   useDropTarget,
 } from '@affine/component';
 import { RenameModal } from '@affine/component/rename-modal';
-import { DocPermissionGuard } from '@affine/core/components/guard/doc-guard';
+import { Guard } from '@affine/core/components/guard';
 import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import type { DocPermissionActions } from '@affine/core/modules/permissions';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
@@ -285,7 +285,7 @@ export const ExplorerTreeNode = ({
             ? {
                 index: 0,
                 view: renameableGuard ? (
-                  <DocPermissionGuard
+                  <Guard
                     permission={renameableGuard.action}
                     docId={renameableGuard.docId}
                   >
@@ -300,7 +300,7 @@ export const ExplorerTreeNode = ({
                         {t['com.affine.menu.rename']()}
                       </MenuItem>
                     )}
-                  </DocPermissionGuard>
+                  </Guard>
                 ) : (
                   <MenuItem
                     key={'explorer-tree-rename'}

@@ -6,7 +6,7 @@ import {
   useConfirmModal,
 } from '@affine/component';
 import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/utils';
-import { DocPermissionGuard } from '@affine/core/components/guard/doc-guard';
+import { Guard } from '@affine/core/components/guard';
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
@@ -187,7 +187,7 @@ export const useExplorerDocNodeOperationsMenu = (
       {
         index: 10,
         view: (
-          <DocPermissionGuard docId={docId} permission="Doc_Update">
+          <Guard docId={docId} permission="Doc_Update">
             {canEdit => (
               <DocRenameSubMenu
                 onConfirm={handleRename}
@@ -195,7 +195,7 @@ export const useExplorerDocNodeOperationsMenu = (
                 disabled={!canEdit}
               />
             )}
-          </DocPermissionGuard>
+          </Guard>
         ),
       },
       {
@@ -224,7 +224,7 @@ export const useExplorerDocNodeOperationsMenu = (
       {
         index: 97,
         view: (
-          <DocPermissionGuard docId={docId} permission="Doc_Update">
+          <Guard docId={docId} permission="Doc_Update">
             {canEdit => (
               <MenuItem
                 prefixIcon={<LinkedPageIcon />}
@@ -234,7 +234,7 @@ export const useExplorerDocNodeOperationsMenu = (
                 {t['com.affine.page-operation.add-linked-page']()}
               </MenuItem>
             )}
-          </DocPermissionGuard>
+          </Guard>
         ),
       },
       {
@@ -273,7 +273,7 @@ export const useExplorerDocNodeOperationsMenu = (
       {
         index: 10000,
         view: (
-          <DocPermissionGuard docId={docId} permission="Doc_Trash">
+          <Guard docId={docId} permission="Doc_Trash">
             {canMoveToTrash => (
               <MenuItem
                 type={'danger'}
@@ -284,7 +284,7 @@ export const useExplorerDocNodeOperationsMenu = (
                 {t['com.affine.moveToTrash.title']()}
               </MenuItem>
             )}
-          </DocPermissionGuard>
+          </Guard>
         ),
       },
     ],

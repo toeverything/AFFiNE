@@ -1,6 +1,6 @@
 import type { FlagInfo } from './types';
 
-const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
+// const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
 const isDesktopEnvironment = BUILD_CONFIG.isElectron;
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
 const isMobile = BUILD_CONFIG.isMobileEdition;
@@ -25,24 +25,6 @@ export const AFFINE_FLAGS = {
     hide: true,
     configurable: false,
     defaultState: true,
-  },
-  enable_database_full_width: {
-    category: 'blocksuite',
-    bsFlag: 'enable_database_full_width',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-database-full-width.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-database-full-width.description',
-    configurable: isCanaryBuild,
-  },
-  enable_database_attachment_note: {
-    category: 'blocksuite',
-    bsFlag: 'enable_database_attachment_note',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-database-attachment-note.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-database-attachment-note.description',
-    configurable: isNotStableBuild,
   },
   enable_block_query: {
     category: 'blocksuite',
@@ -279,6 +261,16 @@ export const AFFINE_FLAGS = {
     category: 'affine',
     displayName: 'Enable Integration',
     description: 'Enable Integration',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_edgeless_scribbled_style: {
+    category: 'blocksuite',
+    bsFlag: 'enable_edgeless_scribbled_style',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-edgeless-scribbled-style.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-edgeless-scribbled-style.description',
     configurable: isCanaryBuild,
     defaultState: false,
   },

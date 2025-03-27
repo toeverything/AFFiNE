@@ -42,10 +42,10 @@ export abstract class DocReader {
     protected readonly blobStorage: WorkspaceBlobStorage
   ) {}
 
-  parseDocContent(bin: Uint8Array) {
+  parseDocContent(bin: Uint8Array, maxSummaryLength = 150) {
     const doc = new YDoc();
     applyUpdate(doc, bin);
-    return parsePageDoc(doc);
+    return parsePageDoc(doc, { maxSummaryLength });
   }
 
   parseWorkspaceContent(bin: Uint8Array) {
@@ -83,6 +83,13 @@ export abstract class DocReader {
       });
     }
     return content;
+  }
+
+  async getFullDocContent(
+    workspaceId: string,
+    docId: string
+  ): Promise<PageDocContent | null> {
+    return await this.getDocContentWithoutCache(workspaceId, docId, true);
   }
 
   /**
@@ -131,7 +138,8 @@ export abstract class DocReader {
 
   protected abstract getDocContentWithoutCache(
     workspaceId: string,
-    guid: string
+    guid: string,
+    fullContent?: boolean
   ): Promise<PageDocContent | null>;
 
   protected abstract getWorkspaceContentWithoutCache(
@@ -180,13 +188,14 @@ export class DatabaseDocReader extends DocReader {
 
   protected override async getDocContentWithoutCache(
     workspaceId: string,
-    guid: string
+    guid: string,
+    fullContent?: boolean
   ): Promise<PageDocContent | null> {
     const docRecord = await this.workspace.getDoc(workspaceId, guid);
     if (!docRecord) {
       return null;
     }
-    return this.parseDocContent(docRecord.bin);
+    return this.parseDocContent(docRecord.bin, fullContent ? -1 : 150);
   }
 
   protected override async getWorkspaceContentWithoutCache(
@@ -338,9 +347,10 @@ export class RpcDocReader extends DatabaseDocReader {
 
   protected override async getDocContentWithoutCache(
     workspaceId: string,
-    docId: string
+    docId: string,
+    fullContent = false
   ): Promise<PageDocContent | null> {
-    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/content`;
+    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/content?full=${fullContent}`;
     const accessToken = this.crypto.sign(docId);
     try {
       const res = await this.fetch(accessToken, url, 'GET');
@@ -357,7 +367,11 @@ export class RpcDocReader extends DatabaseDocReader {
         `Failed to fetch doc content ${url}, fallback to database doc reader`,
         err
       );
-      return await super.getDocContentWithoutCache(workspaceId, docId);
+      return await super.getDocContentWithoutCache(
+        workspaceId,
+        docId,
+        fullContent
+      );
     }
   }
 

@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 
-import { Embedding, EmbeddingClient } from './types';
+import { Embedding } from '../../../models';
+import { EmbeddingClient } from './types';
 
 export class OpenAIEmbeddingClient extends EmbeddingClient {
   constructor(private readonly client: OpenAI) {
@@ -15,6 +16,7 @@ export class OpenAIEmbeddingClient extends EmbeddingClient {
       {
         input,
         model: 'text-embedding-3-large',
+        dimensions: 1024,
         encoding_format: 'float',
       },
       { signal }
@@ -28,7 +30,7 @@ export class MockEmbeddingClient extends EmbeddingClient {
     return input.map((_, i) => ({
       index: i,
       content: input[i],
-      embedding: Array.from({ length: 512 }, () => Math.random()),
+      embedding: Array.from({ length: 1024 }, () => Math.random()),
     }));
   }
 }

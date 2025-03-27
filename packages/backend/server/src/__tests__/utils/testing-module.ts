@@ -9,7 +9,7 @@ import {
 import { PrismaClient } from '@prisma/client';
 
 import { AppModule, FunctionalityModules } from '../../app.module';
-import { AFFiNELogger, Runtime } from '../../base';
+import { AFFiNELogger, JobQueue, Runtime } from '../../base';
 import { GqlModule } from '../../base/graphql';
 import { AuthGuard, AuthModule } from '../../core/auth';
 import { Mailer, MailModule } from '../../core/mail';
@@ -17,11 +17,11 @@ import { ModelsModule } from '../../models';
 // for jsdoc inference
 // oxlint-disable-next-line no-unused-vars
 import type { createModule } from '../create-module';
-import { createFactory } from '../mocks';
+import { createFactory, MockJobQueue } from '../mocks';
 import { MockMailer } from '../mocks/mailer.mock';
 import { initTestingDB, TEST_LOG_LEVEL } from './utils';
 
-interface TestingModuleMeatdata extends ModuleMetadata {
+interface TestingModuleMetadata extends ModuleMetadata {
   tapModule?(m: TestingModuleBuilder): void;
 }
 
@@ -29,6 +29,7 @@ export interface TestingModule extends BaseTestingModule {
   initTestingDB(): Promise<void>;
   create: ReturnType<typeof createFactory>;
   mails: MockMailer;
+  queue: MockJobQueue;
   [Symbol.asyncDispose](): Promise<void>;
 }
 
@@ -58,7 +59,7 @@ class MockResolver {
  * @deprecated use {@link createModule} instead
  */
 export async function createTestingModule(
-  moduleDef: TestingModuleMeatdata = {},
+  moduleDef: TestingModuleMetadata = {},
   autoInitialize = true
 ): Promise<TestingModule> {
   // setting up
@@ -88,10 +89,11 @@ export async function createTestingModule(
     controllers: moduleDef.controllers,
   });
 
+  builder.overrideProvider(Mailer).useClass(MockMailer);
+  builder.overrideProvider(JobQueue).useClass(MockJobQueue);
   if (moduleDef.tapModule) {
     moduleDef.tapModule(builder);
   }
-  builder.overrideProvider(Mailer).useClass(MockMailer);
 
   const module = await builder.compile();
 
@@ -114,6 +116,7 @@ export async function createTestingModule(
   };
 
   testingModule.mails = module.get(Mailer, { strict: false }) as MockMailer;
+  testingModule.queue = module.get(JobQueue, { strict: false }) as MockJobQueue;
 
   const logger = new AFFiNELogger();
   // we got a lot smoking tests try to break nestjs

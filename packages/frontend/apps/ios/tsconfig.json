@@ -13,6 +13,8 @@
     { "path": "../../../common/nbstore" },
     { "path": "../../../../blocksuite/affine/all" },
     { "path": "../../../common/infra" },
+    { "path": "../../../../tools/cli" },
+    { "path": "../../../../tools/utils" },
     { "path": "../../native" }
   ]
 }

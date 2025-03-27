@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 
-import { Feature } from '../../models';
+import { Feature, FeatureType } from '../../models';
 import { Mocker } from './factory';
 
 interface MockTeamWorkspaceInput {
@@ -46,6 +46,8 @@ export class MockTeamWorkspace extends Mocker<
         featureId: feature.id,
         reason: 'test',
         activated: true,
+        name: Feature.TeamPlan,
+        type: FeatureType.Quota,
         configs: {
           memberLimit: quantity,
         },

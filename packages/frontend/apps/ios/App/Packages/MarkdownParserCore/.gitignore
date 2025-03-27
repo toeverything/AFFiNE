@@ -1,0 +1,46 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Libraries
+*.lib
+*.a
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+*.pyc
+
+*~
+*.bak
+*.diff
+*#
+*.zip
+bstrlib.txt
+build
+cmark.dSYM/*
+cmark
+.vscode
+.DS_Store
+
+# Testing and benchmark
+alltests.md
+progit/
+bench/benchinput.md
+test/afl_results/
+
+# Build directories for SwiftPM and Xcode
+.swiftpm
+.build

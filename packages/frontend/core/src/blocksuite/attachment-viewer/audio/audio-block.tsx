@@ -1,11 +1,11 @@
-import { Button } from '@affine/component';
+import { Button, Tooltip } from '@affine/component';
 import { AudioPlayer } from '@affine/core/components/audio-player';
+import { AnimatedTranscribeIcon } from '@affine/core/components/audio-player/lottie/animated-transcribe-icon';
 import { useSeekTime } from '@affine/core/components/audio-player/use-seek-time';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
 import type { AudioAttachmentBlock } from '@affine/core/modules/media/entities/audio-attachment-block';
 import { useAttachmentMediaBlock } from '@affine/core/modules/media/views/use-attachment-media';
 import { useI18n } from '@affine/i18n';
-import { TranscriptWithAiIcon } from '@blocksuite/icons/rc';
 import { useLiveData } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
@@ -54,11 +54,14 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
     if (!enableAi) {
       return null;
     }
-    return (
+    const inner = (
       <Button
         variant="plain"
-        prefix={<TranscriptWithAiIcon />}
-        loading={transcribing}
+        prefix={
+          <AnimatedTranscribeIcon
+            state={transcribing ? 'transcribing' : 'idle'}
+          />
+        }
         disabled={transcribing}
         size="large"
         prefixClassName={styles.notesButtonIcon}
@@ -71,11 +74,19 @@ const AttachmentAudioPlayer = ({ block }: { block: AudioAttachmentBlock }) => {
           }
         }}
       >
-        {transcribing
-          ? t['com.affine.attachmentViewer.audio.transcribing']()
-          : t['com.affine.attachmentViewer.audio.notes']()}
+        {t['com.affine.attachmentViewer.audio.notes']()}
       </Button>
     );
+    if (transcribing) {
+      return (
+        <Tooltip
+          content={t['com.affine.attachmentViewer.audio.transcribing']()}
+        >
+          {inner}
+        </Tooltip>
+      );
+    }
+    return inner;
   }, [enableAi, transcribing, t, transcribed, block, expanded]);
 
   return (

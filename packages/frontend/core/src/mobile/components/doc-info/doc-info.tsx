@@ -11,13 +11,13 @@ import {
   DocPropertyRow,
 } from '@affine/core/components/doc-properties';
 import { CreatePropertyMenuItems } from '@affine/core/components/doc-properties/menu/create-doc-property';
+import { useGuard } from '@affine/core/components/guard';
 import { LinksRow } from '@affine/core/desktop/dialogs/doc-info/links-row';
 import { TimeRow } from '@affine/core/desktop/dialogs/doc-info/time-row';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
 import { DocsService } from '@affine/core/modules/doc';
 import { DocDatabaseBacklinkInfo } from '@affine/core/modules/doc-info';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
-import { GuardService } from '@affine/core/modules/permissions';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import { LiveData, useLiveData, useServices } from '@toeverything/infra';
@@ -31,17 +31,14 @@ export const DocInfoSheet = ({
   docId: string;
   defaultOpenProperty?: DefaultOpenProperty;
 }) => {
-  const { docsSearchService, docsService, guardService } = useServices({
+  const { docsSearchService, docsService } = useServices({
     DocsSearchService,
     DocsService,
-    GuardService,
   });
   const t = useI18n();
 
-  const canEditPropertyInfo = useLiveData(
-    guardService.can$('Workspace_Properties_Update')
-  );
-  const canEditProperty = useLiveData(guardService.can$('Doc_Update', docId));
+  const canEditPropertyInfo = useGuard('Workspace_Properties_Update');
+  const canEditProperty = useGuard('Doc_Update', docId);
   const links = useLiveData(
     useMemo(
       () => LiveData.from(docsSearchService.watchRefsFrom(docId), null),

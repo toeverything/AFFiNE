@@ -6,16 +6,17 @@ export function createEmptyDoc() {
   collection.storeExtensions = SpecProvider._.getSpec('store').value;
   collection.meta.initialize();
   const doc = collection.createDoc();
+  const store = doc.getStore();
 
   return {
     doc,
     init() {
       doc.load();
-      const rootId = doc.addBlock('affine:page', {});
-      doc.addBlock('affine:surface', {}, rootId);
-      const noteId = doc.addBlock('affine:note', {}, rootId);
-      doc.addBlock('affine:paragraph', {}, noteId);
-      return doc;
+      const rootId = store.addBlock('affine:page', {});
+      store.addBlock('affine:surface', {}, rootId);
+      const noteId = store.addBlock('affine:note', {}, rootId);
+      store.addBlock('affine:paragraph', {}, noteId);
+      return store;
     },
   };
 }

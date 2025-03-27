@@ -4,7 +4,7 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import type { ChatChip, FileChip } from '../chat-context';
+import type { FileChip } from '../chat-context';
 import { getChipIcon, getChipTooltip } from './utils';
 
 export class ChatPanelFileChip extends SignalWatcher(
@@ -14,7 +14,7 @@ export class ChatPanelFileChip extends SignalWatcher(
   accessor chip!: FileChip;
 
   @property({ attribute: false })
-  accessor removeChip!: (chip: ChatChip) => void;
+  accessor removeChip!: (chip: FileChip) => void;
 
   override render() {
     const { state, file } = this.chip;

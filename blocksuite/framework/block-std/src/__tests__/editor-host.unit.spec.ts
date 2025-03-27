@@ -36,15 +36,16 @@ describe('editor host', () => {
     const collection = new TestWorkspace(createTestOptions());
 
     collection.meta.initialize();
-    const doc = collection.createDoc({ id: 'home', extensions });
+    const doc = collection.createDoc('home');
+    const store = doc.getStore({ extensions });
     doc.load();
-    const rootId = doc.addBlock('test:page');
-    const noteId = doc.addBlock('test:note', {}, rootId);
-    const headingId = doc.addBlock('test:heading', { type: 'h1' }, noteId);
-    const headingBlock = doc.getBlock(headingId)!;
+    const rootId = store.addBlock('test:page');
+    const noteId = store.addBlock('test:note', {}, rootId);
+    const headingId = store.addBlock('test:heading', { type: 'h1' }, noteId);
+    const headingBlock = store.getBlock(headingId)!;
 
     const editorContainer = new TestEditorContainer();
-    editorContainer.doc = doc;
+    editorContainer.doc = store;
     editorContainer.specs = testSpecs;
 
     document.body.append(editorContainer);

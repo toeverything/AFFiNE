@@ -4,6 +4,7 @@ import {
   autoUpdate,
   computePosition,
   offset,
+  type Placement,
   type Rect,
   shift,
   size,
@@ -39,6 +40,7 @@ export type ButtonPopperOptions = {
   stateUpdated?: (state: { display: Display }) => void;
   mainAxis?: number;
   crossAxis?: number;
+  allowedPlacements?: Placement[];
   rootBoundary?: Rect | (() => Rect | undefined);
   ignoreShift?: boolean;
   offsetHeight?: number;
@@ -64,6 +66,7 @@ export function createButtonPopper(options: ButtonPopperOptions) {
     stateUpdated = () => {},
     mainAxis,
     crossAxis,
+    allowedPlacements = ['top', 'bottom'],
     rootBoundary,
     ignoreShift,
     offsetHeight,
@@ -84,7 +87,7 @@ export function createButtonPopper(options: ButtonPopperOptions) {
           crossAxis: crossAxis ?? 0,
         }),
         autoPlacement({
-          allowedPlacements: ['top', 'bottom'],
+          allowedPlacements,
           ...overflowOptions,
         }),
         shift(overflowOptions),

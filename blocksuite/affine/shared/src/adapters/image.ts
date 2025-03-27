@@ -122,8 +122,8 @@ export const ImageAdapterFactoryIdentifier = AdapterFactoryIdentifier('Image');
 
 export const ImageAdapterFactoryExtension: ExtensionType = {
   setup: di => {
-    di.addImpl(ImageAdapterFactoryIdentifier, () => ({
-      get: (job: Transformer) => new ImageAdapter(job),
+    di.addImpl(ImageAdapterFactoryIdentifier, provider => ({
+      get: (job: Transformer) => new ImageAdapter(job, provider),
     }));
   },
 };

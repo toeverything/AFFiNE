@@ -6,13 +6,13 @@ import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { DocPropertySidebar } from '@affine/core/components/doc-properties/sidebar';
+import { useGuard } from '@affine/core/components/guard';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
 import { DocService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { PeekViewService } from '@affine/core/modules/peek-view';
-import { GuardService } from '@affine/core/modules/permissions';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
 import { ViewService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
@@ -69,7 +69,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     docService,
     workspaceService,
     globalContextService,
-    guardService,
   } = useServices({
     WorkbenchService,
     ViewService,
@@ -77,7 +76,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     DocService,
     WorkspaceService,
     GlobalContextService,
-    GuardService,
   });
   const workbench = workbenchService.workbench;
   const editor = editorService.editor;
@@ -262,7 +260,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const [dragging, setDragging] = useState(false);
 
-  const canEdit = useLiveData(guardService.can$('Doc_Update', doc.id));
+  const canEdit = useGuard('Doc_Update', doc.id);
 
   const readonly = !canEdit || isInTrash;
 
@@ -368,7 +366,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 export const Component = () => {
   const params = useParams();
   const recentPages = useService(RecentDocsService);
-  const guardService = useService(GuardService);
 
   useEffect(() => {
     if (params.pageId) {
@@ -380,9 +377,7 @@ export const Component = () => {
   }, [params, recentPages]);
 
   const pageId = params.pageId;
-  const canAccess = useLiveData(
-    pageId ? guardService.can$('Doc_Read', pageId) : undefined
-  );
+  const canAccess = useGuard('Doc_Read', pageId ?? '');
 
   return pageId ? (
     <DetailPageWrapper

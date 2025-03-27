@@ -4,9 +4,9 @@ import type { LottieRef } from 'lottie-react';
 import Lottie from 'lottie-react';
 import { useEffect, useRef } from 'react';
 
-import * as styles from './animated-play-icon.css';
 import pausetoplay from './pausetoplay.json';
 import playtopause from './playtopause.json';
+import * as styles from './styles.css';
 
 export interface AnimatedPlayIconProps {
   state: 'play' | 'pause' | 'loading';

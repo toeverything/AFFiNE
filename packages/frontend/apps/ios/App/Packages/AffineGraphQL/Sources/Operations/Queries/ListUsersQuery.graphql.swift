@@ -7,7 +7,7 @@ public class ListUsersQuery: GraphQLQuery {
   public static let operationName: String = "listUsers"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query listUsers($filter: ListUserInput!) { users(filter: $filter) { __typename id name email features hasPassword emailVerified avatarUrl } }"#
+      #"query listUsers($filter: ListUserInput!) { users(filter: $filter) { __typename id name email disabled features hasPassword emailVerified avatarUrl } }"#
     ))
 
   public var filter: ListUserInput
@@ -43,6 +43,7 @@ public class ListUsersQuery: GraphQLQuery {
         .field("id", AffineGraphQL.ID.self),
         .field("name", String.self),
         .field("email", String.self),
+        .field("disabled", Bool.self),
         .field("features", [GraphQLEnum<AffineGraphQL.FeatureType>].self),
         .field("hasPassword", Bool?.self),
         .field("emailVerified", Bool.self),
@@ -54,6 +55,8 @@ public class ListUsersQuery: GraphQLQuery {
       public var name: String { __data["name"] }
       /// User email
       public var email: String { __data["email"] }
+      /// User is disabled
+      public var disabled: Bool { __data["disabled"] }
       /// Enabled features of a user
       public var features: [GraphQLEnum<AffineGraphQL.FeatureType>] { __data["features"] }
       /// User password has been set

@@ -1,5 +1,6 @@
 import { WithDisposable } from '@blocksuite/global/lit';
-import { css, html, LitElement } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, html, LitElement, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import type { Property } from '../../../../core/view-manager/property.js';
@@ -83,7 +84,7 @@ export class DatabaseNumberFormatBar extends WithDisposable(LitElement) {
     .divider {
       width: 100%;
       height: 1px;
-      background-color: var(--affine-border-color);
+      background-color: ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
     }
   `;
 

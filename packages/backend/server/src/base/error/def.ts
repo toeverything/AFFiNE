@@ -650,6 +650,10 @@ export const USER_FRIENDLY_ERRORS = {
     args: { docId: 'string' },
     message: ({ docId }) => `Doc ${docId} not found.`,
   },
+  copilot_docs_not_found: {
+    type: 'resource_not_found',
+    message: () => `Some docs not found.`,
+  },
   copilot_message_not_found: {
     type: 'resource_not_found',
     args: { messageId: 'string' },

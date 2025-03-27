@@ -1,5 +1,5 @@
 import { Loading } from '@affine/component';
-import { DocPermissionGuard } from '@affine/core/components/guard/doc-guard';
+import { Guard } from '@affine/core/components/guard';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { DocsService } from '@affine/core/modules/doc';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
@@ -134,7 +134,7 @@ export const ExplorerDocNode = ({
       operations={finalOperations}
       data-testid={`explorer-doc-${docId}`}
     >
-      <DocPermissionGuard docId={docId} permission="Doc_Read">
+      <Guard docId={docId} permission="Doc_Read">
         {canRead =>
           canRead
             ? children?.map((child, index) => (
@@ -146,8 +146,8 @@ export const ExplorerDocNode = ({
               ))
             : null
         }
-      </DocPermissionGuard>
-      <DocPermissionGuard docId={docId} permission="Doc_Update">
+      </Guard>
+      <Guard docId={docId} permission="Doc_Update">
         {canEdit =>
           canEdit ? (
             <AddItemPlaceholder
@@ -156,7 +156,7 @@ export const ExplorerDocNode = ({
             />
           ) : null
         }
-      </DocPermissionGuard>
+      </Guard>
     </ExplorerTreeNode>
   );
 };

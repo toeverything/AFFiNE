@@ -1,3 +1,4 @@
+import { ServerDeploymentType } from '@affine/graphql';
 import {
   IndexedDBDocStorage,
   IndexedDBDocSyncStorage,
@@ -64,6 +65,9 @@ export class UserDBEngine extends Entity<{
                 id: this.userId,
                 serverBaseUrl: serverService.server.baseUrl,
                 type: 'userspace',
+                isSelfHosted:
+                  serverService.server.config$.value.type ===
+                  ServerDeploymentType.Selfhosted,
               },
             },
           },

@@ -206,8 +206,8 @@ export class DocsService extends Service {
         schema: getAFFiNEWorkspaceSchema(),
         blobCRUD: collection.blobSync,
         docCRUD: {
-          create: (id: string) => collection.createDoc({ id }),
-          get: (id: string) => collection.getDoc(id),
+          create: (id: string) => collection.createDoc(id).getStore({ id }),
+          get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
           delete: (id: string) => collection.removeDoc(id),
         },
         middlewares: [replaceIdMiddleware(collection.idGenerator)],

@@ -2,9 +2,9 @@ import test from 'ava';
 
 import {
   createTestingApp,
-  getSettings,
+  getUserSettings,
   TestingApp,
-  updateSettings,
+  updateUserSettings,
 } from '../../../__tests__/utils';
 
 let app: TestingApp;
@@ -19,7 +19,7 @@ test.after.always(async () => {
 
 test('should get user settings', async t => {
   await app.signup();
-  const settings = await getSettings(app);
+  const settings = await getUserSettings(app);
   t.deepEqual(settings, {
     receiveInvitationEmail: true,
     receiveMentionEmail: true,
@@ -28,30 +28,30 @@ test('should get user settings', async t => {
 
 test('should update user settings', async t => {
   await app.signup();
-  await updateSettings(app, {
+  await updateUserSettings(app, {
     receiveInvitationEmail: false,
     receiveMentionEmail: false,
   });
-  const settings = await getSettings(app);
+  const settings = await getUserSettings(app);
   t.deepEqual(settings, {
     receiveInvitationEmail: false,
     receiveMentionEmail: false,
   });
 
-  await updateSettings(app, {
+  await updateUserSettings(app, {
     receiveMentionEmail: true,
   });
-  const settings2 = await getSettings(app);
+  const settings2 = await getUserSettings(app);
   t.deepEqual(settings2, {
     receiveInvitationEmail: false,
     receiveMentionEmail: true,
   });
 
-  await updateSettings(app, {
+  await updateUserSettings(app, {
     // ignore undefined value
     receiveInvitationEmail: undefined,
   });
-  const settings3 = await getSettings(app);
+  const settings3 = await getUserSettings(app);
   t.deepEqual(settings3, {
     receiveInvitationEmail: false,
     receiveMentionEmail: true,
@@ -61,7 +61,7 @@ test('should update user settings', async t => {
 test('should throw error when update user settings with invalid input', async t => {
   await app.signup();
   await t.throwsAsync(
-    updateSettings(app, {
+    updateUserSettings(app, {
       receiveInvitationEmail: false,
       // @ts-expect-error invalid value
       receiveMentionEmail: null,
@@ -75,7 +75,7 @@ test('should throw error when update user settings with invalid input', async t 
 test('should not update user settings when not logged in', async t => {
   await app.logout();
   await t.throwsAsync(
-    updateSettings(app, {
+    updateUserSettings(app, {
       receiveInvitationEmail: false,
       receiveMentionEmail: false,
     }),

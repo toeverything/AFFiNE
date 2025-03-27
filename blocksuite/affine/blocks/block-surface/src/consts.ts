@@ -16,3 +16,9 @@ export interface IModelCoord {
   x: number;
   y: number;
 }
+
+export const EXCLUDING_MOUSE_OUT_CLASS_LIST = [
+  'affine-note-mask',
+  'edgeless-block-portal-note',
+  'affine-block-children-container',
+];

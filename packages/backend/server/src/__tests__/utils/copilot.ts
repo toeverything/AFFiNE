@@ -156,6 +156,16 @@ export class MockCopilotTestProvider
   }
 }
 
+export const cleanObject = (
+  obj: any[] | undefined,
+  condition = ['id', 'status', 'error', 'sessionId', 'createdAt']
+) =>
+  JSON.parse(
+    JSON.stringify(obj || [], (k, v) =>
+      condition.includes(k) || v === null ? undefined : v
+    )
+  );
+
 export async function createCopilotSession(
   app: TestingApp,
   workspaceId: string,
@@ -224,7 +234,7 @@ export async function createCopilotContext(
   return res.createCopilotContext;
 }
 
-export async function matchContext(
+export async function matchFiles(
   app: TestingApp,
   contextId: string,
   content: string,
@@ -240,11 +250,11 @@ export async function matchContext(
 > {
   const res = await app.gql(
     `
-        query matchContext($contextId: String!, $content: String!, $limit: SafeInt, $threshold: Float) {
+        query matchFiles($contextId: String!, $content: String!, $limit: SafeInt, $threshold: Float) {
           currentUser {
             copilot {
               contexts(contextId: $contextId) {
-                matchContext(content: $content, limit: $limit, threshold: $threshold) {
+                matchFiles(content: $content, limit: $limit, threshold: $threshold) {
                   fileId
                   chunk
                   content
@@ -258,7 +268,44 @@ export async function matchContext(
     { contextId, content, limit, threshold: 1 }
   );
 
-  return res.currentUser?.copilot?.contexts?.[0]?.matchContext;
+  return res.currentUser?.copilot?.contexts?.[0]?.matchFiles;
+}
+
+export async function matchWorkspaceDocs(
+  app: TestingApp,
+  contextId: string,
+  content: string,
+  limit: number
+): Promise<
+  | {
+      docId: string;
+      chunk: number;
+      content: string;
+      distance: number | null;
+    }[]
+  | undefined
+> {
+  const res = await app.gql(
+    `
+      query matchWorkspaceDocs($contextId: String!, $content: String!, $limit: SafeInt, $threshold: Float) {
+        currentUser {
+          copilot {
+            contexts(contextId: $contextId) {
+              matchWorkspaceDocs(content: $content, limit: $limit, threshold: $threshold) {
+                docId
+                chunk
+                content
+                distance
+              }
+            }
+          }
+        }
+      }
+      `,
+    { contextId, content, limit, threshold: 1 }
+  );
+
+  return res.currentUser?.copilot?.contexts?.[0]?.matchWorkspaceDocs;
 }
 
 export async function listContext(
@@ -376,7 +423,7 @@ export async function removeContextDoc(
   return res.removeContextDoc;
 }
 
-export async function listContextFiles(
+export async function listContextDocAndFiles(
   app: TestingApp,
   workspaceId: string,
   sessionId: string,
@@ -385,6 +432,8 @@ export async function listContextFiles(
   | {
       docs: {
         id: string;
+        status: string;
+        error: string | null;
         createdAt: number;
       }[];
       files: {
@@ -393,6 +442,7 @@ export async function listContextFiles(
         blobId: string;
         chunkSize: number;
         status: string;
+        error: string | null;
         createdAt: number;
       }[];
     }
@@ -405,6 +455,8 @@ export async function listContextFiles(
               contexts(sessionId: "${sessionId}", contextId: "${contextId}") {
                 docs {
                   id
+                  status
+                  error
                   createdAt
                 }
                 files {
@@ -413,6 +465,7 @@ export async function listContextFiles(
                   blobId
                   chunkSize
                   status
+                  error
                   createdAt
                 }
               }

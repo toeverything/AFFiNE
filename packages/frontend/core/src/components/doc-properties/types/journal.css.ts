@@ -3,7 +3,7 @@ import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
 export const property = style({
-  padding: 4,
+  padding: '3px 4px',
 });
 
 export const root = style({

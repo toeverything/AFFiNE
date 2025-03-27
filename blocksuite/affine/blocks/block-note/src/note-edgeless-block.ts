@@ -1,16 +1,22 @@
 import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
 import type { DocTitle } from '@blocksuite/affine-fragment-doc-title';
 import { NoteDisplayMode } from '@blocksuite/affine-model';
+import { focusTextModel } from '@blocksuite/affine-rich-text';
 import { EDGELESS_BLOCK_CHILD_PADDING } from '@blocksuite/affine-shared/consts';
 import { TelemetryProvider } from '@blocksuite/affine-shared/services';
-import { stopPropagation } from '@blocksuite/affine-shared/utils';
+import {
+  handleNativeRangeAtPoint,
+  stopPropagation,
+} from '@blocksuite/affine-shared/utils';
 import { toGfxBlockComponent } from '@blocksuite/block-std';
+import type { SelectedContext } from '@blocksuite/block-std/gfx';
 import { Bound } from '@blocksuite/global/gfx';
 import { html, nothing, type PropertyValues } from 'lit';
 import { query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import clamp from 'lodash-es/clamp';
 
 import { MoreIndicator } from './components/more-indicator';
 import { NoteConfigExtension } from './config';
@@ -294,6 +300,69 @@ export class EdgelessNoteBlockComponent extends toGfxBlockComponent(
         ${this._collapsedContent()}
       </div>
     `;
+  }
+
+  override onSelected(context: SelectedContext) {
+    const { selected, multiSelect, event: e } = context;
+    const { editing } = this.gfx.selection;
+    const alreadySelected = this.gfx.selection.has(this.model.id);
+
+    if (!multiSelect && selected && (alreadySelected || editing)) {
+      if (this.model.isLocked()) return;
+
+      if (alreadySelected && editing) {
+        return;
+      }
+
+      this.gfx.selection.set({
+        elements: [this.model.id],
+        editing: true,
+      });
+
+      this.updateComplete
+        .then(() => {
+          if (!this.isConnected) {
+            return;
+          }
+
+          if (this.model.children.length === 0) {
+            const blockId = this.doc.addBlock(
+              'affine:paragraph',
+              { type: 'text' },
+              this.model.id
+            );
+
+            if (blockId) {
+              focusTextModel(this.std, blockId);
+            }
+          } else {
+            const rect = this.querySelector(
+              '.affine-block-children-container'
+            )?.getBoundingClientRect();
+
+            if (rect) {
+              const offsetY = 8 * this.gfx.viewport.zoom;
+              const offsetX = 2 * this.gfx.viewport.zoom;
+              const x = clamp(
+                e.clientX,
+                rect.left + offsetX,
+                rect.right - offsetX
+              );
+              const y = clamp(
+                e.clientY,
+                rect.top + offsetY,
+                rect.bottom - offsetY
+              );
+              handleNativeRangeAtPoint(x, y);
+            } else {
+              handleNativeRangeAtPoint(e.clientX, e.clientY);
+            }
+          }
+        })
+        .catch(console.error);
+    } else {
+      super.onSelected(context);
+    }
   }
 
   @state()

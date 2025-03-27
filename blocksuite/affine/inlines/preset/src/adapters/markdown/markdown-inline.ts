@@ -1,4 +1,5 @@
 import { markdownFootnoteReferenceToDeltaMatcher } from '@blocksuite/affine-inline-footnote';
+import { markdownInlineMathToDeltaMatcher } from '@blocksuite/affine-inline-latex';
 import { markdownLinkToDeltaMatcher } from '@blocksuite/affine-inline-link';
 import { MarkdownASTToDeltaExtension } from '@blocksuite/affine-shared/adapters';
 
@@ -76,17 +77,6 @@ export const markdownListToDeltaMatcher = MarkdownASTToDeltaExtension({
   name: 'list',
   match: ast => ast.type === 'list',
   toDelta: () => [],
-});
-
-export const markdownInlineMathToDeltaMatcher = MarkdownASTToDeltaExtension({
-  name: 'inlineMath',
-  match: ast => ast.type === 'inlineMath',
-  toDelta: ast => {
-    if (!('value' in ast)) {
-      return [];
-    }
-    return [{ insert: ' ', attributes: { latex: ast.value } }];
-  },
 });
 
 export const MarkdownInlineToDeltaAdapterExtensions = [

@@ -113,53 +113,62 @@ export const LinkInvite = ({
 
   return (
     <>
-      <div className={styles.modalSubTitle}>
-        {t['com.affine.payment.member.team.invite.link-expiration']()}
-      </div>
-      <Menu
-        items={items}
-        contentOptions={{
-          style: {
-            width: 'var(--radix-dropdown-menu-trigger-width)',
-          },
-        }}
-      >
-        <MenuTrigger style={{ width: '100%' }}>
-          {currentSelectedLabel}
-        </MenuTrigger>
-      </Menu>
-      <div className={styles.modalSubTitle}>
-        {t['com.affine.payment.member.team.invite.invitation-link']()}
-      </div>
-      <div className={styles.invitationLinkContent}>
-        <Input
-          value={
-            invitationLink
-              ? invitationLink.link
-              : 'https://your-app.com/invite/xxxxxxxx'
-          }
-          inputMode="none"
-          disabled
-          inputStyle={{
-            fontSize: cssVar('fontXs'),
-            color: cssVarV2(
-              invitationLink ? 'text/primary' : 'text/placeholder'
-            ),
-            backgroundColor: cssVarV2('layer/background/primary'),
+      <div className={styles.invitationLinkContainer}>
+        <div className={styles.modalSubTitle}>
+          {t['com.affine.payment.member.team.invite.link-expiration']()}
+        </div>
+        <Menu
+          items={items}
+          contentOptions={{
+            style: {
+              width: 'var(--radix-dropdown-menu-trigger-width)',
+            },
           }}
-        />
-        {invitationLink ? (
-          <>
-            <Button onClick={onCopy} variant="secondary">
-              {t['com.affine.payment.member.team.invite.copy']()}
+        >
+          <MenuTrigger style={{ width: '100%' }}>
+            {currentSelectedLabel}
+          </MenuTrigger>
+        </Menu>
+      </div>
+      <div className={styles.invitationLinkContainer}>
+        <div className={styles.modalSubTitle}>
+          {t['com.affine.payment.member.team.invite.invitation-link']()}
+        </div>
+        <div className={styles.invitationLinkContent}>
+          <Input
+            value={
+              invitationLink
+                ? invitationLink.link
+                : 'https://your-app.com/invite/xxxxxxxx'
+            }
+            inputMode="none"
+            disabled
+            inputStyle={{
+              fontSize: cssVar('fontXs'),
+              color: cssVarV2(
+                invitationLink ? 'text/primary' : 'text/placeholder'
+              ),
+              backgroundColor: cssVarV2('layer/background/primary'),
+            }}
+          />
+          {invitationLink ? (
+            <>
+              <Button onClick={onCopy} variant="secondary">
+                {t['com.affine.payment.member.team.invite.copy']()}
+              </Button>
+              <IconButton icon={<CloseIcon />} onClick={onReset} />
+            </>
+          ) : (
+            <Button onClick={onGenerate} variant="secondary">
+              {t['com.affine.payment.member.team.invite.generate']()}
             </Button>
-            <IconButton icon={<CloseIcon />} onClick={onReset} />
-          </>
-        ) : (
-          <Button onClick={onGenerate} variant="secondary">
-            {t['com.affine.payment.member.team.invite.generate']()}
-          </Button>
-        )}
+          )}
+        </div>
+        <p className={styles.invitationLinkDescription}>
+          {t[
+            'com.affine.payment.member.team.invite.invitation-link.description'
+          ]()}
+        </p>
       </div>
     </>
   );

@@ -2,13 +2,14 @@ import { ZipTransformer } from '@blocksuite/affine/blocks/root';
 import { AffineSchemas } from '@blocksuite/affine/schemas';
 import { Schema, Text, type Workspace } from '@blocksuite/affine/store';
 export async function affineSnapshot(collection: Workspace, id: string) {
-  const doc = collection.createDoc({ id });
+  const doc = collection.createDoc(id);
   doc.load();
+  const store = doc.getStore();
   // Add root block and surface block at root level
-  const rootId = doc.addBlock('affine:page', {
+  const rootId = store.addBlock('affine:page', {
     title: new Text('Affine Snapshot Test'),
   });
-  doc.addBlock('affine:surface', {}, rootId);
+  store.addBlock('affine:surface', {}, rootId);
 
   const path = '/apps/starter/data/snapshots/affine-default.zip';
   const response = await fetch(path);

@@ -409,7 +409,8 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
   get syncedDoc() {
     const options: GetBlocksOptions = { readonly: true };
     if (this.isPageMode) options.query = this._pageFilter;
-    return this.std.workspace.getDoc(this.model.props.pageId, options);
+    const doc = this.std.workspace.getDoc(this.model.props.pageId);
+    return doc?.getStore(options) ?? null;
   }
 
   private _checkCycle() {

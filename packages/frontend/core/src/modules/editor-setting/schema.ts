@@ -26,6 +26,14 @@ const AffineEditorSettingSchema = z.object({
   edgelessDefaultTheme: z
     .enum(['specified', 'dark', 'light', 'auto'])
     .default('specified'),
+  openDocMode: z
+    .enum([
+      'open-in-active-view',
+      'open-in-new-view',
+      'open-in-new-tab',
+      'open-in-center-peek',
+    ])
+    .default('open-in-active-view'),
 });
 
 export const EditorSettingSchema = BSEditorSettingSchema.merge(

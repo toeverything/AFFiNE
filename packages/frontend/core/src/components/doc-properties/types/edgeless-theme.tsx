@@ -1,9 +1,10 @@
-import { PropertyValue, RadioGroup, type RadioItem } from '@affine/component';
+import { PropertyValue, type RadioItem } from '@affine/component';
 import { DocService } from '@affine/core/modules/doc';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
+import { DocPropertyRadioGroup } from '../widgets/radio-group';
 import * as styles from './edgeless-theme.css';
 import type { PropertyValueProps } from './types';
 
@@ -46,9 +47,7 @@ export const EdgelessThemeValue = ({
       hoverable={false}
       readonly={readonly}
     >
-      <RadioGroup
-        width={BUILD_CONFIG.isMobileEdition ? '100%' : 194}
-        itemHeight={24}
+      <DocPropertyRadioGroup
         value={edgelessTheme || 'system'}
         onChange={handleChange}
         items={themeItems}

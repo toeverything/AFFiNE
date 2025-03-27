@@ -12,13 +12,17 @@ This article has also been published [in PDF format](https://www.inkandswitch.co
 We welcome your feedback: [@inkandswitch](https://twitter.com/inkandswitch) or hello@inkandswitch.com.`;
 
 export const synced: InitFn = (collection: Workspace, id: string) => {
-  const docMain = collection.getDoc(id) ?? collection.createDoc({ id });
+  const docMain =
+    collection.getDoc(id)?.getStore({ id }) ??
+    collection.createDoc(id).getStore({ id });
 
   const docSyncedPageId = 'doc:synced-page';
-  const docSyncedPage = collection.createDoc({ id: docSyncedPageId });
+  const docSyncedPage = collection.createDoc(docSyncedPageId).getStore();
 
   const docSyncedEdgelessId = 'doc:synced-edgeless';
-  const docSyncedEdgeless = collection.createDoc({ id: docSyncedEdgelessId });
+  const docSyncedEdgeless = collection
+    .createDoc(docSyncedEdgelessId)
+    .getStore();
 
   docMain.doc.clear();
   docSyncedPage.doc.clear();

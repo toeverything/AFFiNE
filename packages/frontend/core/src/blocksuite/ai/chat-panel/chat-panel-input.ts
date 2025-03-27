@@ -23,6 +23,7 @@ import type {
   ChatContextValue,
   ChatMessage,
   DocContext,
+  FileChip,
   FileContext,
 } from './chat-context';
 import { isDocChip, isFileChip } from './components/utils';
@@ -556,40 +557,55 @@ export class ChatPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
 
   private async _getMatchedContexts(userInput: string) {
     const contextId = await this.getContextId();
-    const matched = contextId
-      ? (await AIProvider.context?.matchContext(contextId, userInput)) || []
-      : [];
-    const contexts = this.chatContextValue.chips.reduce(
-      (acc, chip, index) => {
-        if (chip.state !== 'finished') {
-          return acc;
-        }
-        if (isDocChip(chip) && !!chip.markdown?.value) {
-          acc.docs.push({
-            docId: chip.docId,
-            refIndex: index + 1,
-            markdown: chip.markdown.value,
+    if (!contextId) {
+      return { files: [], docs: [] };
+    }
+
+    const docContexts = new Map<string, DocContext>();
+    const fileContexts = new Map<string, FileContext>();
+
+    const { files: matchedFiles = [], docs: matchedDocs = [] } =
+      (await AIProvider.context?.matchContext(contextId, userInput)) ?? {};
+
+    matchedDocs.forEach(doc => {
+      docContexts.set(doc.docId, {
+        docId: doc.docId,
+        docContent: doc.content,
+      });
+    });
+
+    matchedFiles.forEach(file => {
+      const context = fileContexts.get(file.fileId);
+      if (context) {
+        context.fileContent += `\n${file.content}`;
+      } else {
+        const fileChip = this.chatContextValue.chips.find(
+          chip => isFileChip(chip) && chip.fileId === file.fileId
+        ) as FileChip | undefined;
+        if (fileChip && fileChip.blobId) {
+          fileContexts.set(file.fileId, {
+            blobId: fileChip.blobId,
+            fileName: fileChip.file.name,
+            fileType: fileChip.file.type,
+            fileContent: file.content,
           });
         }
-        if (isFileChip(chip) && chip.blobId) {
-          const matchedChunks = matched
-            .filter(chunk => chunk.fileId === chip.fileId)
-            .map(chunk => chunk.content);
-          if (matchedChunks.length > 0) {
-            acc.files.push({
-              blobId: chip.blobId,
-              refIndex: index + 1,
-              fileName: chip.file.name,
-              fileType: chip.file.type,
-              chunks: matchedChunks.join('\n'),
-            });
-          }
-        }
-        return acc;
-      },
-      { docs: [], files: [] } as { docs: DocContext[]; files: FileContext[] }
-    );
-    return contexts;
+      }
+    });
+
+    this.chatContextValue.chips.forEach(chip => {
+      if (isDocChip(chip) && !!chip.markdown?.value) {
+        docContexts.set(chip.docId, {
+          docId: chip.docId,
+          docContent: chip.markdown.value,
+        });
+      }
+    });
+
+    return {
+      docs: Array.from(docContexts.values()),
+      files: Array.from(fileContexts.values()),
+    };
   }
 }
 

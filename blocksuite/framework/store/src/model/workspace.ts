@@ -4,8 +4,7 @@ import type { Awareness } from 'y-protocols/awareness.js';
 import type * as Y from 'yjs';
 
 import type { IdGenerator } from '../utils/id-generator.js';
-import type { CreateBlocksOptions, Doc, GetBlocksOptions } from './doc.js';
-import type { Store } from './store/store.js';
+import type { Doc } from './doc.js';
 import type { WorkspaceMeta } from './workspace-meta.js';
 
 export interface Workspace {
@@ -25,8 +24,8 @@ export interface Workspace {
     docRemoved: Subject<string>;
   };
 
-  createDoc(options?: CreateBlocksOptions): Store;
-  getDoc(docId: string, options?: GetBlocksOptions): Store | null;
+  createDoc(docId?: string): Doc;
+  getDoc(docId: string): Doc | null;
   removeDoc(docId: string): void;
 
   dispose(): void;

@@ -25,7 +25,6 @@ import { query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { bundledLanguagesInfo, type ThemedToken } from 'shiki';
 
-import { CodeClipboardController } from './clipboard/index.js';
 import { CodeBlockConfigExtension } from './code-block-config.js';
 import { CodeBlockInlineManagerExtension } from './code-block-inline.js';
 import { CodeBlockHighlighter } from './code-block-service.js';
@@ -35,8 +34,6 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   static override styles = codeBlockStyles;
 
   private _inlineRangeProvider: InlineRangeProvider | null = null;
-
-  clipboardController = new CodeClipboardController(this);
 
   highlightTokens$: Signal<ThemedToken[][]> = signal([]);
 
@@ -144,8 +141,6 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
     super.connectedCallback();
 
     // set highlight options getter used by "exportToHtml"
-    this.clipboardController.hostConnected();
-
     this.disposables.add(
       effect(() => {
         this._updateHighlightTokens();
@@ -371,11 +366,6 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
         this.notificationService?.toast('Copied failed, something went wrong');
         console.error(e);
       });
-  }
-
-  override disconnectedCallback() {
-    super.disconnectedCallback();
-    this.clipboardController.hostDisconnected();
   }
 
   override async getUpdateComplete() {

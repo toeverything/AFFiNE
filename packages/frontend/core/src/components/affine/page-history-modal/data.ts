@@ -174,11 +174,9 @@ export const useSnapshotPage = (
       docCollection.id,
       workspacesService.getWorkspaceFlavourProvider(affineWorkspace.meta)
     );
-    let page = historyShellWorkspace.getDoc(pageId);
+    let page = historyShellWorkspace.getDoc(pageId)?.getStore();
     if (!page && snapshot) {
-      page = historyShellWorkspace.createDoc({
-        id: pageId,
-      });
+      page = historyShellWorkspace.createDoc(pageId).getStore();
       page.readonly = true;
       const spaceDoc = page.spaceDoc;
       page.load(() => {

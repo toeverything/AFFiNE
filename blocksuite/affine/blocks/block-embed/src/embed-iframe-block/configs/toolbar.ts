@@ -1,16 +1,24 @@
+import { reassociateConnectorsCommand } from '@blocksuite/affine-block-surface';
 import { toast } from '@blocksuite/affine-components/toast';
 import {
   BookmarkStyles,
   EmbedIframeBlockModel,
 } from '@blocksuite/affine-model';
 import {
+  EMBED_CARD_HEIGHT,
+  EMBED_CARD_WIDTH,
+} from '@blocksuite/affine-shared/consts';
+import {
   ActionPlacement,
   type ToolbarAction,
   type ToolbarActionGroup,
+  type ToolbarContext,
   type ToolbarModuleConfig,
+  ToolbarModuleExtension,
 } from '@blocksuite/affine-shared/services';
 import { getBlockProps } from '@blocksuite/affine-shared/utils';
-import { BlockSelection } from '@blocksuite/block-std';
+import { BlockFlavourIdentifier, BlockSelection } from '@blocksuite/block-std';
+import { Bound } from '@blocksuite/global/gfx';
 import {
   CaptionIcon,
   CopyIcon,
@@ -18,8 +26,8 @@ import {
   DuplicateIcon,
   ResetIcon,
 } from '@blocksuite/icons/lit';
-import { Slice, Text } from '@blocksuite/store';
-import { signal } from '@preact/signals-core';
+import { type ExtensionType, Slice, Text } from '@blocksuite/store';
+import { computed, signal } from '@preact/signals-core';
 import { html } from 'lit';
 import { keyed } from 'lit/directives/keyed.js';
 import * as Y from 'yjs';
@@ -27,14 +35,19 @@ import * as Y from 'yjs';
 import { EmbedIframeBlockComponent } from '../embed-iframe-block';
 
 const trackBaseProps = {
-  category: 'bookmark',
-  type: 'card view',
+  category: 'embed iframe block',
 };
 
 export const builtinToolbarConfig = {
   actions: [
     {
       id: 'b.conversions',
+      when: (ctx: ToolbarContext) => {
+        const model = ctx.getCurrentModelByType(EmbedIframeBlockModel);
+        if (!model) return false;
+
+        return !!model.props.url;
+      },
       actions: [
         {
           id: 'inline',
@@ -44,6 +57,8 @@ export const builtinToolbarConfig = {
             if (!model) return;
 
             const { title, caption, url } = model.props;
+            if (!url) return;
+
             const { parent } = model;
             const index = parent?.children.indexOf(model);
 
@@ -77,6 +92,8 @@ export const builtinToolbarConfig = {
             if (!model) return;
 
             const { url, caption } = model.props;
+            if (!url) return;
+
             const { parent } = model;
             const index = parent?.children.indexOf(model);
 
@@ -140,6 +157,12 @@ export const builtinToolbarConfig = {
     } satisfies ToolbarActionGroup<ToolbarAction>,
     {
       id: 'c.caption',
+      when: (ctx: ToolbarContext) => {
+        const model = ctx.getCurrentModelByType(EmbedIframeBlockModel);
+        if (!model) return false;
+
+        return !!model.props.url;
+      },
       tooltip: 'Caption',
       icon: CaptionIcon(),
       run(ctx) {
@@ -217,3 +240,183 @@ export const builtinToolbarConfig = {
     },
   ],
 } as const satisfies ToolbarModuleConfig;
+
+export const builtinSurfaceToolbarConfig = {
+  actions: [
+    {
+      id: 'b.conversions',
+      when: (ctx: ToolbarContext) => {
+        const model = ctx.getCurrentModelByType(EmbedIframeBlockModel);
+        if (!model) return false;
+
+        return !!model.props.url;
+      },
+      actions: [
+        {
+          id: 'card',
+          label: 'Card view',
+          run(ctx) {
+            const model = ctx.getCurrentModelByType(EmbedIframeBlockModel);
+            if (!model) return;
+
+            const { id: oldId, xywh, parent } = model;
+            const { url, caption } = model.props;
+
+            if (!url) return;
+
+            const style =
+              BookmarkStyles.find(s => s !== 'vertical' && s !== 'cube') ??
+              BookmarkStyles[1];
+            let flavour = 'affine:bookmark';
+
+            const bounds = Bound.deserialize(xywh);
+            bounds.w = EMBED_CARD_WIDTH[style];
+            bounds.h = EMBED_CARD_HEIGHT[style];
+
+            const newId = ctx.store.addBlock(
+              flavour,
+              { url, caption, style, xywh: bounds.serialize() },
+              parent
+            );
+
+            ctx.command.exec(reassociateConnectorsCommand, { oldId, newId });
+
+            ctx.store.deleteBlock(model);
+
+            // Selects new block
+            ctx.gfx.selection.set({ editing: false, elements: [newId] });
+
+            ctx.track('SelectedView', {
+              ...trackBaseProps,
+              control: 'select view',
+              type: 'card view',
+            });
+          },
+        },
+        {
+          id: 'embed',
+          label: 'Embed view',
+          disabled: true,
+        },
+      ],
+      content(ctx) {
+        const model = ctx.getCurrentModelByType(EmbedIframeBlockModel);
+        if (!model) return null;
+
+        const actions = this.actions.map(action => ({ ...action }));
+        const onToggle = (e: CustomEvent<boolean>) => {
+          if (!e.detail) return;
+
+          ctx.track('OpenedViewSelector', {
+            ...trackBaseProps,
+            control: 'switch view',
+          });
+        };
+
+        return html`${keyed(
+          model,
+          html`<affine-view-dropdown-menu
+            @toggle=${onToggle}
+            .actions=${actions}
+            .context=${ctx}
+            .viewType$=${signal(actions[1].label)}
+          ></affine-view-dropdown-menu>`
+        )}`;
+      },
+    } satisfies ToolbarActionGroup<ToolbarAction>,
+    {
+      id: 'c.caption',
+      when: (ctx: ToolbarContext) => {
+        const model = ctx.getCurrentModelByType(EmbedIframeBlockModel);
+        if (!model) return false;
+
+        return !!model.props.url;
+      },
+      tooltip: 'Caption',
+      icon: CaptionIcon(),
+      run(ctx) {
+        const component = ctx.getCurrentBlockByType(EmbedIframeBlockComponent);
+        component?.captionEditor?.show();
+
+        ctx.track('OpenedCaptionEditor', {
+          ...trackBaseProps,
+          control: 'add caption',
+        });
+      },
+    },
+    {
+      id: 'd.scale',
+      content(ctx) {
+        const model = ctx.getCurrentModelByType(EmbedIframeBlockModel);
+        if (!model) return null;
+
+        const scale$ = computed(() => {
+          const scale = model.props.scale$.value ?? 1;
+          return Math.round(100 * scale);
+        });
+        const onSelect = (e: CustomEvent<number>) => {
+          e.stopPropagation();
+
+          const scale = e.detail / 100;
+
+          const bounds = Bound.deserialize(model.xywh);
+          const oldScale = model.props.scale ?? 1;
+          const ratio = scale / oldScale;
+          bounds.w *= ratio;
+          bounds.h *= ratio;
+          const xywh = bounds.serialize();
+
+          ctx.store.updateBlock(model, () => {
+            model.xywh = xywh;
+            model.props.scale = scale;
+          });
+
+          ctx.track('SelectedCardScale', {
+            ...trackBaseProps,
+            control: 'select card scale',
+          });
+        };
+        const onToggle = (e: CustomEvent<boolean>) => {
+          e.stopPropagation();
+
+          const opened = e.detail;
+          if (!opened) return;
+
+          ctx.track('OpenedCardScaleSelector', {
+            ...trackBaseProps,
+            control: 'switch card scale',
+          });
+        };
+        const format = (value: number) => `${value}%`;
+
+        return html`${keyed(
+          model,
+          html`<affine-size-dropdown-menu
+            @select=${onSelect}
+            @toggle=${onToggle}
+            .format=${format}
+            .size$=${scale$}
+          ></affine-size-dropdown-menu>`
+        )}`;
+      },
+    },
+  ],
+  when: ctx => ctx.getSurfaceModelsByType(EmbedIframeBlockModel).length > 0,
+} as const satisfies ToolbarModuleConfig;
+
+export const createBuiltinToolbarConfigExtension = (
+  flavour: string
+): ExtensionType[] => {
+  const name = flavour.split(':').pop();
+
+  return [
+    ToolbarModuleExtension({
+      id: BlockFlavourIdentifier(flavour),
+      config: builtinToolbarConfig,
+    }),
+    ToolbarModuleExtension({
+      id: BlockFlavourIdentifier(`affine:surface:${name}`),
+      config: builtinSurfaceToolbarConfig,
+    }),
+  ];
+};

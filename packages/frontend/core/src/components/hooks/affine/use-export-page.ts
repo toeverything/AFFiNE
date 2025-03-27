@@ -65,8 +65,8 @@ async function exportDoc(
     schema: getAFFiNEWorkspaceSchema(),
     blobCRUD: doc.workspace.blobSync,
     docCRUD: {
-      create: (id: string) => doc.workspace.createDoc({ id }),
-      get: (id: string) => doc.workspace.getDoc(id),
+      create: (id: string) => doc.workspace.createDoc(id).getStore({ id }),
+      get: (id: string) => doc.workspace.getDoc(id)?.getStore({ id }) ?? null,
       delete: (id: string) => doc.workspace.removeDoc(id),
     },
     middlewares: [

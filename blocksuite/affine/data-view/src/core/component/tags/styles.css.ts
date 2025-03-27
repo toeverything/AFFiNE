@@ -8,7 +8,7 @@ export const tagSelectContainerStyle = style({
   color: cssVarV2('text/primary'),
   border: `0.5px solid ${cssVarV2('layer/insideBorder/blackBorder')}`,
   borderRadius: '8px',
-  background: cssVarV2('layer/background/primary'),
+  backgroundColor: cssVarV2.layer.background.overlayPanel,
   boxShadow: 'var(--affine-shadow-1)',
   fontFamily: 'var(--affine-font-family)',
   maxWidth: '400px',

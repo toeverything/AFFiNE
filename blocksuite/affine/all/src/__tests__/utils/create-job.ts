@@ -34,8 +34,8 @@ export function createJob(middlewares?: TransformerMiddleware[]) {
     blobCRUD: docCollection.blobSync,
     middlewares: testMiddlewares,
     docCRUD: {
-      create: (id: string) => docCollection.createDoc({ id }),
-      get: (id: string) => docCollection.getDoc(id),
+      create: (id: string) => docCollection.createDoc(id).getStore({ id }),
+      get: (id: string) => docCollection.getDoc(id)?.getStore({ id }) ?? null,
       delete: (id: string) => docCollection.removeDoc(id),
     },
   });

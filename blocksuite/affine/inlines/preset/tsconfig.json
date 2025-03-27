@@ -9,7 +9,9 @@
   "references": [
     { "path": "../../components" },
     { "path": "../footnote" },
+    { "path": "../latex" },
     { "path": "../link" },
+    { "path": "../mention" },
     { "path": "../reference" },
     { "path": "../../model" },
     { "path": "../../rich-text" },

@@ -131,8 +131,8 @@ export const AttachmentAdapterFactoryIdentifier =
 
 export const AttachmentAdapterFactoryExtension: ExtensionType = {
   setup: di => {
-    di.addImpl(AttachmentAdapterFactoryIdentifier, () => ({
-      get: (job: Transformer) => new AttachmentAdapter(job),
+    di.addImpl(AttachmentAdapterFactoryIdentifier, provider => ({
+      get: (job: Transformer) => new AttachmentAdapter(job, provider),
     }));
   },
 };

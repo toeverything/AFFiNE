@@ -1,4 +1,3 @@
-export { EDGELESS_TOOLBAR_WIDGET } from '../edgeless/components/toolbar/edgeless-toolbar.js';
 export { AffineEdgelessZoomToolbarWidget } from './edgeless-zoom-toolbar/index.js';
 export { AffineImageToolbarWidget } from './image-toolbar/index.js';
 export { AffineInnerModalWidget } from './inner-modal/inner-modal.js';

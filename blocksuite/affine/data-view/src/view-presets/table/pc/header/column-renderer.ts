@@ -1,6 +1,7 @@
 import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { css } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -29,7 +30,9 @@ export class DataViewColumnPreview extends SignalWatcher(
     const columnIndex = this.tableViewManager.propertyIndexGet(this.column.id);
     return html`
       <div
-        style="background-color: var(--affine-background-primary-color);border-top: 1px solid var(--affine-border-color);box-shadow: var(--affine-shadow-2);"
+        style="background-color: var(--affine-background-primary-color);border-top: 1px solid ${unsafeCSS(
+          cssVarV2.layer.insideBorder.border
+        )};box-shadow: var(--affine-shadow-2);"
       >
         <affine-database-header-column
           .tableViewManager="${this.tableViewManager}"
@@ -43,7 +46,9 @@ export class DataViewColumnPreview extends SignalWatcher(
             height: height + 'px',
           });
           return html`<div
-            style="border-top: 1px solid var(--affine-border-color)"
+            style="border-top: 1px solid ${unsafeCSS(
+              cssVarV2.layer.insideBorder.border
+            )}"
           >
             <div style="${style}">
               <affine-database-cell-container

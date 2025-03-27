@@ -1,7 +1,6 @@
 import type { CanvasRenderer } from '@blocksuite/affine-block-surface';
 import { ExportManager } from '@blocksuite/affine-block-surface';
 import type { SurfaceRefBlockComponent } from '@blocksuite/affine-block-surface-ref';
-import { isTopLevelBlock } from '@blocksuite/affine-shared/utils';
 import type { EditorHost } from '@blocksuite/block-std';
 import {
   GfxControllerIdentifier,
@@ -21,15 +20,14 @@ export const edgelessToBlob = async (
   const { edgelessElement } = options;
   const exportManager = host.std.get(ExportManager);
   const bound = Bound.deserialize(edgelessElement.xywh);
-  const isBlock = isTopLevelBlock(edgelessElement);
   const gfx = host.std.get(GfxControllerIdentifier);
 
   const canvas = await exportManager.edgelessToCanvas(
     options.surfaceRenderer,
     bound,
     gfx,
-    isBlock ? [edgelessElement] : undefined,
-    isBlock ? undefined : [edgelessElement],
+    undefined,
+    undefined,
     { zoom: options.surfaceRenderer.viewport.zoom }
   );
 

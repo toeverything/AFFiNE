@@ -21,6 +21,7 @@ import {
 import type { ExtensionType } from '@blocksuite/store';
 
 import { RootBlockAdapterExtensions } from '../adapters/extension';
+import { clipboardConfigs } from '../clipboard';
 import { builtinToolbarConfig } from '../configs/toolbar';
 import {
   innerModalWidget,
@@ -39,6 +40,7 @@ export const CommonSpecs: ExtensionType[] = [
   FileDropExtension,
   ToolbarRegistryExtension,
   ...RootBlockAdapterExtensions,
+  ...clipboardConfigs,
 
   modalWidget,
   innerModalWidget,

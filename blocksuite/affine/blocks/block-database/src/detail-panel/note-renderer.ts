@@ -14,7 +14,8 @@ import type { DetailSlotProps, SingleView } from '@blocksuite/data-view';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import type { BaseTextAttributes } from '@blocksuite/store';
 import { computed } from '@preact/signals-core';
-import { css, html } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, html, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { isPureText } from '../utils/title-doc.js';
@@ -92,7 +93,9 @@ export class NoteRenderer
   protected override render(): unknown {
     return html`
       <div
-        style="height: 1px;max-width: var(--affine-editor-width);background-color: var(--affine-border-color);margin: auto;margin-bottom: 16px"
+        style="height: 1px;max-width: var(--affine-editor-width);background-color: ${unsafeCSS(
+          cssVarV2.layer.insideBorder.border
+        )};margin: auto;margin-bottom: 16px"
       ></div>
       ${this.renderNote()}
     `;

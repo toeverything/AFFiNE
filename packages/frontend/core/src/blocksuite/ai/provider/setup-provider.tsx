@@ -2,6 +2,7 @@ import { toggleGeneralAIOnboarding } from '@affine/core/components/affine/ai-onb
 import type { GlobalDialogService } from '@affine/core/modules/dialogs';
 import {
   type ChatHistoryOrder,
+  ContextCategories,
   type getCopilotHistoriesQuery,
   type RequestOptions,
 } from '@affine/graphql';
@@ -443,6 +444,47 @@ Could you make a new website based on these notes and send back just the html fi
       fileId: string;
     }) => {
       return client.removeContextFile(options);
+    },
+    addContextTag: async (options: {
+      contextId: string;
+      tagId: string;
+      docIds: string[];
+    }) => {
+      return client.addContextCategory({
+        contextId: options.contextId,
+        type: ContextCategories.Tag,
+        categoryId: options.tagId,
+        docs: options.docIds,
+      });
+    },
+    removeContextTag: async (options: { contextId: string; tagId: string }) => {
+      return client.removeContextCategory({
+        contextId: options.contextId,
+        type: ContextCategories.Tag,
+        categoryId: options.tagId,
+      });
+    },
+    addContextCollection: async (options: {
+      contextId: string;
+      collectionId: string;
+      docIds: string[];
+    }) => {
+      return client.addContextCategory({
+        contextId: options.contextId,
+        type: ContextCategories.Collection,
+        categoryId: options.collectionId,
+        docs: options.docIds,
+      });
+    },
+    removeContextCollection: async (options: {
+      contextId: string;
+      collectionId: string;
+    }) => {
+      return client.removeContextCategory({
+        contextId: options.contextId,
+        type: ContextCategories.Collection,
+        categoryId: options.collectionId,
+      });
     },
     getContextDocsAndFiles: async (
       workspaceId: string,

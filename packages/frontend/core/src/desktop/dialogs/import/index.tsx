@@ -59,8 +59,6 @@ type ImportConfig = {
   ) => Promise<ImportResult>;
 };
 
-const DISCORD_URL = 'https://discord.gg/Yjf5VFEn';
-
 const importOptions = [
   {
     key: 'markdown',
@@ -305,7 +303,7 @@ const ImportOptions = ({
         {t['com.affine.import.modal.tip']()}{' '}
         <a
           className={style.link}
-          href="https://discord.gg/Yjf5VFEn"
+          href={BUILD_CONFIG.discordUrl}
           target="_blank"
           rel="noreferrer"
         >
@@ -342,7 +340,7 @@ const SuccessStatus = ({ onComplete }: { onComplete: () => void }) => {
         {t['com.affine.import.status.success.message']()}{' '}
         <a
           className={style.link}
-          href={DISCORD_URL}
+          href={BUILD_CONFIG.discordUrl}
           target="_blank"
           rel="noreferrer"
         >
@@ -379,7 +377,7 @@ const ErrorStatus = ({
       <div className={style.importModalButtonContainer}>
         <Button
           onClick={() => {
-            urlService.openPopupWindow(DISCORD_URL);
+            urlService.openPopupWindow(BUILD_CONFIG.discordUrl);
           }}
           variant="secondary"
         >

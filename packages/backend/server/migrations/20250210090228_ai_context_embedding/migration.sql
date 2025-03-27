@@ -37,7 +37,7 @@ BEGIN -- check if pgvector extension is installed
         "file_id" VARCHAR NOT NULL,
         "chunk" INTEGER NOT NULL,
         "content" VARCHAR NOT NULL,
-        "embedding" vector(512) NOT NULL,
+        "embedding" vector(1024) NOT NULL,
         "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updated_at" TIMESTAMPTZ(3) NOT NULL,
 
@@ -50,7 +50,7 @@ BEGIN -- check if pgvector extension is installed
         "doc_id" VARCHAR NOT NULL,
         "chunk" INTEGER NOT NULL,
         "content" VARCHAR NOT NULL,
-        "embedding" vector(512) NOT NULL,
+        "embedding" vector(1024) NOT NULL,
         "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updated_at" TIMESTAMPTZ(3) NOT NULL,
 

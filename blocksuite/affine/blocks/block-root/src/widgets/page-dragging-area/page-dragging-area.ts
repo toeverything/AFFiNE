@@ -1,4 +1,5 @@
 import { NoteBlockModel, RootBlockModel } from '@blocksuite/affine-model';
+import { ViewportElementProvider } from '@blocksuite/affine-shared/services';
 import {
   autoScroll,
   getScrollContainer,
@@ -15,8 +16,6 @@ import { html, nothing } from 'lit';
 import { state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import type { PageRootBlockComponent } from '../../index.js';
-
 type Rect = {
   left: number;
   top: number;
@@ -32,10 +31,7 @@ type BlockInfo = {
 export const AFFINE_PAGE_DRAGGING_AREA_WIDGET =
   'affine-page-dragging-area-widget';
 
-export class AffinePageDraggingAreaWidget extends WidgetComponent<
-  RootBlockModel,
-  PageRootBlockComponent
-> {
+export class AffinePageDraggingAreaWidget extends WidgetComponent<RootBlockModel> {
   static excludeFlavours: string[] = ['affine:note', 'affine:surface'];
 
   private _dragging = false;
@@ -167,9 +163,7 @@ export class AffinePageDraggingAreaWidget extends WidgetComponent<
   }
 
   private get _viewport() {
-    const rootComponent = this.block;
-    if (!rootComponent) return;
-    return rootComponent.viewport;
+    return this.std.get(ViewportElementProvider).viewport;
   }
 
   private get scrollContainer() {

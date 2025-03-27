@@ -236,6 +236,7 @@ export const popViewOptions = (
   items.push(
     menu.input({
       initialValue: view.name$.value,
+      placeholder: 'View name',
       onChange: text => {
         view.nameSet(text);
       },

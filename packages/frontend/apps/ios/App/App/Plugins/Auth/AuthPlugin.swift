@@ -82,7 +82,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
         
         let (data, response) = try await self.fetch(endpoint, method: "POST", action: "/api/auth/sign-in", headers: [
           "x-captcha-token": verifyToken,
-          "x-captcha-challenge": challenge,
+          "x-captcha-challenge": challenge
         ], body: ["email": email, "password": password])
         
         if response.statusCode >= 400 {
@@ -157,6 +157,7 @@ public class AuthPlugin: CAPPlugin, CAPBridgedPlugin {
       request.setValue("application/json", forHTTPHeaderField: "Content-Type")
       request.httpBody = try JSONEncoder().encode(body!)
     }
+    request.setValue(AppConfigManager.getAffineVersion(), forHTTPHeaderField: "x-affine-version")
     request.timeoutInterval = 10 // time out 10s
     
     let (data, response) = try await URLSession.shared.data(for: request);

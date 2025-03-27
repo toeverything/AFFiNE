@@ -2,6 +2,13 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AddContextCategoryInput {
+  categoryId: String!
+  contextId: String!
+  docs: [String!]
+  type: ContextCategories!
+}
+
 input AddContextDocInput {
   contextId: String!
   docId: String!
@@ -10,12 +17,6 @@ input AddContextDocInput {
 input AddContextFileInput {
   blobId: String!
   contextId: String!
-}
-
-input AddRemoveContextCategoryInput {
-  categoryId: String!
-  contextId: String!
-  type: ContextCategories!
 }
 
 enum AiJobStatus {
@@ -98,6 +99,9 @@ type Copilot {
 }
 
 type CopilotContext {
+  """list collections in context"""
+  collections: [CopilotContextCategory!]!
+
   """list files in context"""
   docs: [CopilotContextDoc!]!
 
@@ -105,22 +109,27 @@ type CopilotContext {
   files: [CopilotContextFile!]!
   id: ID!
 
-  """match file context"""
-  matchContext(content: String!, limit: SafeInt, threshold: Float): [ContextMatchedFileChunk!]!
+  """match file in context"""
+  matchFiles(content: String!, limit: SafeInt, threshold: Float): [ContextMatchedFileChunk!]!
 
-  """match workspace doc content"""
-  matchWorkspaceContext(content: String!, limit: SafeInt): ContextMatchedDocChunk!
+  """match workspace docs"""
+  matchWorkspaceDocs(content: String!, limit: SafeInt, threshold: Float): [ContextMatchedDocChunk!]!
+
+  """list tags in context"""
+  tags: [CopilotContextCategory!]!
   workspaceId: String!
 }
 
 type CopilotContextCategory {
   createdAt: SafeInt!
+  docs: [CopilotDocType!]!
   id: ID!
   type: ContextCategories!
 }
 
 type CopilotContextDoc {
   createdAt: SafeInt!
+  error: String
   id: ID!
   status: ContextEmbedStatus
 }
@@ -142,6 +151,12 @@ type CopilotContextFileNotSupportedDataType {
 
 type CopilotDocNotFoundDataType {
   docId: String!
+}
+
+type CopilotDocType {
+  createdAt: SafeInt!
+  id: ID!
+  status: ContextEmbedStatus
 }
 
 type CopilotFailedToMatchContextDataType {
@@ -405,6 +420,7 @@ enum ErrorNames {
   CAPTCHA_VERIFICATION_FAILED
   COPILOT_ACTION_TAKEN
   COPILOT_CONTEXT_FILE_NOT_SUPPORTED
+  COPILOT_DOCS_NOT_FOUND
   COPILOT_DOC_NOT_FOUND
   COPILOT_EMBEDDING_UNAVAILABLE
   COPILOT_FAILED_TO_CREATE_MESSAGE
@@ -608,7 +624,7 @@ type InvitationAcceptedNotificationBodyType {
   The user who created the notification, maybe null when user is deleted or sent by system
   """
   createdByUser: PublicUserType
-  inviteId: String!
+  inviteId: ID!
 
   """The type of the notification"""
   type: NotificationType!
@@ -620,7 +636,7 @@ type InvitationBlockedNotificationBodyType {
   The user who created the notification, maybe null when user is deleted or sent by system
   """
   createdByUser: PublicUserType
-  inviteId: String!
+  inviteId: ID!
 
   """The type of the notification"""
   type: NotificationType!
@@ -639,12 +655,50 @@ type InvitationNotificationBodyType {
   workspace: NotificationWorkspaceType
 }
 
+type InvitationReviewApprovedNotificationBodyType {
+  """
+  The user who created the notification, maybe null when user is deleted or sent by system
+  """
+  createdByUser: PublicUserType
+  inviteId: ID!
+
+  """The type of the notification"""
+  type: NotificationType!
+  workspace: NotificationWorkspaceType
+}
+
+type InvitationReviewDeclinedNotificationBodyType {
+  """
+  The user who created the notification, maybe null when user is deleted or sent by system
+  """
+  createdByUser: PublicUserType
+
+  """The type of the notification"""
+  type: NotificationType!
+  workspace: NotificationWorkspaceType
+}
+
+type InvitationReviewRequestNotificationBodyType {
+  """
+  The user who created the notification, maybe null when user is deleted or sent by system
+  """
+  createdByUser: PublicUserType
+  inviteId: ID!
+
+  """The type of the notification"""
+  type: NotificationType!
+  workspace: NotificationWorkspaceType
+}
+
 type InvitationType {
   """Invitee information"""
-  invitee: UserType!
+  invitee: WorkspaceUserType!
+
+  """Invitation status in workspace"""
+  status: WorkspaceMemberStatus
 
   """User information"""
-  user: UserType!
+  user: WorkspaceUserType!
 
   """Workspace information"""
   workspace: InvitationWorkspaceType!
@@ -834,11 +888,11 @@ type MissingOauthQueryParameterDataType {
 }
 
 type Mutation {
-  acceptInviteById(inviteId: String!, sendAcceptMail: Boolean, workspaceId: String!): Boolean!
+  acceptInviteById(inviteId: String!, sendAcceptMail: Boolean @deprecated(reason: "never used"), workspaceId: String!): Boolean!
   activateLicense(license: String!, workspaceId: String!): License!
 
   """add a category to context"""
-  addContextCategory(options: AddRemoveContextCategoryInput!): CopilotContextCategory!
+  addContextCategory(options: AddContextCategoryInput!): CopilotContextCategory!
 
   """add a doc to context"""
   addContextDoc(options: AddContextDocInput!): CopilotContextDoc!
@@ -905,8 +959,8 @@ type Mutation {
 
   """import users"""
   importUsers(input: ImportUsersInput!): [UserImportResultType!]!
-  invite(email: String!, permission: Permission @deprecated(reason: "never used"), sendInviteMail: Boolean, workspaceId: String!): String!
-  inviteBatch(emails: [String!]!, sendInviteMail: Boolean, workspaceId: String!): [InviteResult!]!
+  invite(email: String!, permission: Permission @deprecated(reason: "never used"), sendInviteMail: Boolean @deprecated(reason: "never used"), workspaceId: String!): String!
+  inviteBatch(emails: [String!]!, sendInviteMail: Boolean @deprecated(reason: "never used"), workspaceId: String!): [InviteResult!]!
   leaveWorkspace(sendLeaveMail: Boolean, workspaceId: String!, workspaceName: String @deprecated(reason: "no longer used")): Boolean!
 
   """mention user in a doc"""
@@ -926,7 +980,7 @@ type Mutation {
   removeAvatar: RemoveAvatar!
 
   """remove a category from context"""
-  removeContextCategory(options: AddRemoveContextCategoryInput!): Boolean!
+  removeContextCategory(options: RemoveContextCategoryInput!): Boolean!
 
   """remove a doc from context"""
   removeContextDoc(options: RemoveContextDocInput!): Boolean!
@@ -964,7 +1018,7 @@ type Mutation {
   updateRuntimeConfigs(updates: JSONObject!): [ServerRuntimeConfigType!]!
 
   """Update user settings"""
-  updateSettings(input: UpdateSettingsInput!): Boolean!
+  updateSettings(input: UpdateUserSettingsInput!): Boolean!
   updateSubscriptionRecurring(idempotencyKey: String @deprecated(reason: "use header `Idempotency-Key`"), plan: SubscriptionPlan = Pro, recurring: SubscriptionRecurring!, workspaceId: String): SubscriptionType!
 
   """Update an user"""
@@ -1031,6 +1085,9 @@ enum NotificationType {
   InvitationAccepted
   InvitationBlocked
   InvitationRejected
+  InvitationReviewApproved
+  InvitationReviewDeclined
+  InvitationReviewRequest
   Mention
 }
 
@@ -1192,6 +1249,12 @@ type RemoveAvatar {
   success: Boolean!
 }
 
+input RemoveContextCategoryInput {
+  categoryId: String!
+  contextId: String!
+  type: ContextCategories!
+}
+
 input RemoveContextDocInput {
   contextId: String!
   docId: String!
@@ -1300,14 +1363,6 @@ type ServerServiceConfig {
   name: String!
 }
 
-type SettingsType {
-  """Receive invitation email"""
-  receiveInvitationEmail: Boolean!
-
-  """Receive mention email"""
-  receiveMentionEmail: Boolean!
-}
-
 type SpaceAccessDeniedDataType {
   spaceId: String!
 }
@@ -1413,7 +1468,7 @@ type TranscriptionResultType {
   transcription: [TranscriptionItemType!]
 }
 
-union UnionNotificationBodyType = InvitationAcceptedNotificationBodyType | InvitationBlockedNotificationBodyType | InvitationNotificationBodyType | MentionNotificationBodyType
+union UnionNotificationBodyType = InvitationAcceptedNotificationBodyType | InvitationBlockedNotificationBodyType | InvitationNotificationBodyType | InvitationReviewApprovedNotificationBodyType | InvitationReviewDeclinedNotificationBodyType | InvitationReviewRequestNotificationBodyType | MentionNotificationBodyType
 
 type UnknownOauthProviderDataType {
   name: String!
@@ -1447,17 +1502,17 @@ input UpdateDocUserRoleInput {
   workspaceId: String!
 }
 
-input UpdateSettingsInput {
+input UpdateUserInput {
+  """User name"""
+  name: String
+}
+
+input UpdateUserSettingsInput {
   """Receive invitation email"""
   receiveInvitationEmail: Boolean
 
   """Receive mention email"""
   receiveMentionEmail: Boolean
-}
-
-input UpdateUserInput {
-  """User name"""
-  name: String
 }
 
 input UpdateWorkspaceInput {
@@ -1509,6 +1564,14 @@ type UserQuotaUsageType {
   storageQuota: SafeInt! @deprecated(reason: "use `UserQuotaType['usedStorageQuota']` instead")
 }
 
+type UserSettingsType {
+  """Receive invitation email"""
+  receiveInvitationEmail: Boolean!
+
+  """Receive mention email"""
+  receiveMentionEmail: Boolean!
+}
+
 type UserType {
   """User avatar url"""
   avatarUrl: String
@@ -1549,7 +1612,7 @@ type UserType {
   quotaUsage: UserQuotaUsageType!
 
   """Get user settings"""
-  settings: SettingsType!
+  settings: UserSettingsType!
   subscriptions: [SubscriptionType!]!
   token: tokenType! @deprecated(reason: "use [/api/auth/sign-in?native=true] instead")
 }

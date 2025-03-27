@@ -55,7 +55,7 @@ export class LinkedDocPopover extends SignalWatcher(
     }
     this._updateLinkedDocGroupAbortController = new AbortController();
 
-    if (query === null) {
+    if (query === null || query.startsWith(' ')) {
       this.context.close();
       return;
     }
@@ -249,7 +249,7 @@ export class LinkedDocPopover extends SignalWatcher(
   }
 
   override render() {
-    const MAX_HEIGHT = 380;
+    const MAX_HEIGHT = 390;
     const style = this._position
       ? styleMap({
           transform: `translate(${this._position.x}, ${this._position.y})`,

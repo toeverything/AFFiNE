@@ -28,6 +28,7 @@ public class GetIsOwnerQuery: GraphQLQuery {
     ] }
 
     /// Get is owner of workspace
+    @available(*, deprecated, message: "use WorkspaceType[role] instead")
     public var isOwner: Bool { __data["isOwner"] }
   }
 }

@@ -9,11 +9,11 @@ import {
 } from '@affine/admin/components/ui/dialog';
 import { Label } from '@affine/admin/components/ui/label';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import type { UserType } from '@affine/graphql';
 import { CopyIcon } from '@blocksuite/icons/rc';
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
+import type { UserType } from '../schema';
 import { type ExportField, useExportUsers } from './use-user-management';
 
 interface ExportUsersDialogProps {

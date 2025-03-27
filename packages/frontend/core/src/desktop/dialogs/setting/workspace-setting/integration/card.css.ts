@@ -30,6 +30,9 @@ export const cardIcon = style({
   fontSize: 24,
   padding: 4,
   lineHeight: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 });
 export const cardContent = style([
   spaceY,

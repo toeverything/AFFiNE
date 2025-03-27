@@ -31,7 +31,13 @@ export enum ContextCategories {
   Collection = 'collection',
 }
 
-export const ContextDocSchema = z.object({
+const ContextEmbedStatusSchema = z.enum([
+  ContextEmbedStatus.processing,
+  ContextEmbedStatus.finished,
+  ContextEmbedStatus.failed,
+]);
+
+const ContextDocSchema = z.object({
   id: z.string(),
   createdAt: z.number(),
 });
@@ -40,11 +46,7 @@ export const ContextFileSchema = z.object({
   id: z.string(),
   chunkSize: z.number(),
   name: z.string(),
-  status: z.enum([
-    ContextEmbedStatus.processing,
-    ContextEmbedStatus.finished,
-    ContextEmbedStatus.failed,
-  ]),
+  status: ContextEmbedStatusSchema,
   error: z.string().nullable(),
   blobId: z.string(),
   createdAt: z.number(),
@@ -53,14 +55,18 @@ export const ContextFileSchema = z.object({
 export const ContextCategorySchema = z.object({
   id: z.string(),
   type: z.enum([ContextCategories.Tag, ContextCategories.Collection]),
-  docs: ContextDocSchema.array(),
+  docs: ContextDocSchema.merge(
+    z.object({ status: ContextEmbedStatusSchema })
+  ).array(),
   createdAt: z.number(),
 });
 
 export const ContextConfigSchema = z.object({
   workspaceId: z.string(),
   files: ContextFileSchema.array(),
-  docs: ContextDocSchema.array(),
+  docs: ContextDocSchema.merge(
+    z.object({ status: ContextEmbedStatusSchema.optional() })
+  ).array(),
   categories: ContextCategorySchema.array(),
 });
 
@@ -69,9 +75,9 @@ export const MinimalContextConfigSchema = ContextConfigSchema.pick({
 });
 
 export type ContextCategory = z.infer<typeof ContextCategorySchema>;
-export type ContextDoc = z.infer<typeof ContextDocSchema>;
-export type ContextFile = z.infer<typeof ContextFileSchema>;
 export type ContextConfig = z.infer<typeof ContextConfigSchema>;
+export type ContextDoc = z.infer<typeof ContextConfigSchema>['docs'][number];
+export type ContextFile = z.infer<typeof ContextConfigSchema>['files'][number];
 export type ContextListItem = ContextDoc | ContextFile;
 export type ContextList = ContextListItem[];
 

@@ -231,33 +231,38 @@ export class RecordDetail extends SignalWatcher(
           ${ArrowDownBigIcon()}
         </div>
       </div>
-      <div
-        style="width: 100%;max-width: var(--affine-editor-width);display: flex;flex-direction: column;margin: 0 auto;box-sizing: border-box;"
-      >
-        ${keyed(this.rowId, this.renderHeader())}
-        ${repeat(
-          properties,
-          v => v.id,
-          property => {
-            return keyed(
-              this.rowId,
-              html` <affine-data-view-record-field
-                .view="${this.view}"
-                .column="${property}"
-                .rowId="${this.rowId}"
-                data-column-id="${property.id}"
-              ></affine-data-view-record-field>`
-            );
-          }
-        )}
-        ${!this.readonly
-          ? html` <div class="add-property" @click="${this._clickAddProperty}">
-              <div class="icon">${PlusIcon()}</div>
-              Add Property
-            </div>`
-          : nothing}
+      <div style="flex:1;overflow-y: auto;overflow-x: hidden">
+        <div
+          style="width: 100%;max-width: var(--affine-editor-width);display: flex;flex-direction: column;margin: 0 auto;box-sizing: border-box;"
+        >
+          ${keyed(this.rowId, this.renderHeader())}
+          ${repeat(
+            properties,
+            v => v.id,
+            property => {
+              return keyed(
+                this.rowId,
+                html` <affine-data-view-record-field
+                  .view="${this.view}"
+                  .column="${property}"
+                  .rowId="${this.rowId}"
+                  data-column-id="${property.id}"
+                ></affine-data-view-record-field>`
+              );
+            }
+          )}
+          ${!this.readonly
+            ? html` <div
+                class="add-property"
+                @click="${this._clickAddProperty}"
+              >
+                <div class="icon">${PlusIcon()}</div>
+                Add Property
+              </div>`
+            : nothing}
+        </div>
+        ${keyed(this.rowId, this.renderNote())}
       </div>
-      ${keyed(this.rowId, this.renderNote())}
     `;
   }
 

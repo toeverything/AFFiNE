@@ -20,7 +20,6 @@ import {
   CanNotRevokeYourself,
   DocNotFound,
   EventBus,
-  InternalServerError,
   MemberNotFoundInSpace,
   MemberQuotaExceeded,
   OwnerCanNotLeaveWorkspace,
@@ -446,10 +445,14 @@ export class WorkspaceResolver {
 
   @Mutation(() => String)
   async invite(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() me: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('email') email: string,
-    @Args('sendInviteMail', { nullable: true }) sendInviteMail: boolean,
+    @Args('sendInviteMail', {
+      nullable: true,
+      deprecationReason: 'never used',
+    })
+    _sendInviteMail: boolean,
     @Args('permission', {
       type: () => WorkspaceRole,
       nullable: true,
@@ -458,7 +461,7 @@ export class WorkspaceResolver {
     _permission?: WorkspaceRole
   ) {
     await this.ac
-      .user(user.id)
+      .user(me.id)
       .workspace(workspaceId)
       .assert('Workspace.Users.Manage');
 
@@ -491,26 +494,7 @@ export class WorkspaceResolver {
         WorkspaceRole.Collaborator
       );
 
-      if (sendInviteMail) {
-        try {
-          await this.workspaceService.sendInviteEmail({
-            workspaceId,
-            inviteeEmail: email,
-            inviterUserId: user.id,
-            inviteId: role.id,
-          });
-        } catch (e) {
-          await this.models.workspaceUser.delete(workspaceId, user.id);
-
-          this.logger.warn(
-            `failed to send ${workspaceId} invite email to ${email}, but successfully revoked permission: ${e}`
-          );
-
-          throw new InternalServerError(
-            'Failed to send invite email. Please try again.'
-          );
-        }
-      }
+      await this.workspaceService.sendInvitationNotification(me.id, role.id);
       return role.id;
     } catch (e) {
       // pass through user friendly error
@@ -530,8 +514,8 @@ export class WorkspaceResolver {
   async getInviteInfo(
     @CurrentUser() user: UserType | undefined,
     @Args('inviteId') inviteId: string
-  ) {
-    const { workspaceId, inviteeUserId } =
+  ): Promise<InvitationType> {
+    const { workspaceId, inviteeUserId, isLink } =
       await this.workspaceService.getInviteInfo(inviteId);
     const workspace = await this.workspaceService.getWorkspaceInfo(workspaceId);
     const owner = await this.models.workspaceUser.getOwner(workspaceId);
@@ -539,17 +523,30 @@ export class WorkspaceResolver {
     const inviteeId = inviteeUserId || user?.id;
     if (!inviteeId) throw new UserNotFound();
     const invitee = await this.models.user.getWorkspaceUser(inviteeId);
+    if (!invitee) throw new UserNotFound();
 
-    return { workspace, user: owner, invitee };
+    let status: WorkspaceMemberStatus | undefined;
+    if (isLink) {
+      const invitation = await this.models.workspaceUser.get(
+        workspaceId,
+        inviteeId
+      );
+      status = invitation?.status;
+    } else {
+      const invitation = await this.models.workspaceUser.getById(inviteId);
+      status = invitation?.status;
+    }
+
+    return { workspace, user: owner, invitee, status };
   }
 
   @Mutation(() => Boolean)
   async revoke(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() me: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string
   ) {
-    if (userId === user.id) {
+    if (userId === me.id) {
       throw new CanNotRevokeYourself();
     }
 
@@ -560,7 +557,7 @@ export class WorkspaceResolver {
     }
 
     await this.ac
-      .user(user.id)
+      .user(me.id)
       .workspace(workspaceId)
       .assert(
         role.type === WorkspaceRole.Admin
@@ -578,10 +575,11 @@ export class WorkspaceResolver {
     });
 
     if (role.status === WorkspaceMemberStatus.UnderReview) {
-      this.event.emit('workspace.members.requestDeclined', {
+      await this.workspaceService.sendReviewDeclinedNotification(
         userId,
         workspaceId,
-      });
+        me.id
+      );
     } else if (role.status === WorkspaceMemberStatus.Accepted) {
       this.event.emit('workspace.members.removed', {
         userId,
@@ -598,7 +596,11 @@ export class WorkspaceResolver {
     @CurrentUser() user: CurrentUser | undefined,
     @Args('workspaceId') workspaceId: string,
     @Args('inviteId') inviteId: string,
-    @Args('sendAcceptMail', { nullable: true }) sendAcceptMail: boolean
+    @Args('sendAcceptMail', {
+      nullable: true,
+      deprecationReason: 'never used',
+    })
+    _sendAcceptMail: boolean
   ) {
     const lockFlag = `invite:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
@@ -621,50 +623,48 @@ export class WorkspaceResolver {
         `workspace:inviteLink:${workspaceId}`
       );
       if (invite?.inviteId === inviteId) {
-        const seatAvailable = await this.quota.tryCheckSeat(workspaceId);
-        if (seatAvailable) {
-          const invite = await this.models.workspaceUser.set(
-            workspaceId,
-            user.id,
-            WorkspaceRole.Collaborator,
-            WorkspaceMemberStatus.UnderReview
-          );
-          this.event.emit('workspace.members.reviewRequested', {
-            inviteId: invite.id,
-          });
-          return true;
-        } else {
-          const isTeam =
-            await this.workspaceService.isTeamWorkspace(workspaceId);
-          // only team workspace allow over limit
-          if (isTeam) {
-            await this.models.workspaceUser.set(
-              workspaceId,
-              user.id,
-              WorkspaceRole.Collaborator,
-              WorkspaceMemberStatus.NeedMoreSeatAndReview
-            );
-            const memberCount =
-              await this.models.workspaceUser.count(workspaceId);
-            this.event.emit('workspace.members.updated', {
-              workspaceId,
-              count: memberCount,
-            });
-            return true;
-          } else {
-            throw new MemberQuotaExceeded();
-          }
-        }
+        await this.acceptInviteByLink(user, workspaceId);
+        return true;
       }
     }
 
-    if (sendAcceptMail) {
-      const success = await this.workspaceService.sendAcceptedEmail(inviteId);
-      if (!success) throw new UserNotFound();
+    await this.models.workspaceUser.accept(inviteId);
+    await this.workspaceService.sendInvitationAcceptedNotification(inviteId);
+    return true;
+  }
+
+  private async acceptInviteByLink(user: CurrentUser, workspaceId: string) {
+    const seatAvailable = await this.quota.tryCheckSeat(workspaceId);
+    if (seatAvailable) {
+      const role = await this.models.workspaceUser.set(
+        workspaceId,
+        user.id,
+        WorkspaceRole.Collaborator,
+        WorkspaceMemberStatus.UnderReview
+      );
+      await this.workspaceService.sendReviewRequestNotification(role.id);
+      return;
     }
 
-    await this.models.workspaceUser.accept(inviteId);
-    return true;
+    const isTeam = await this.workspaceService.isTeamWorkspace(workspaceId);
+    // only team workspace allow over limit
+    if (isTeam) {
+      const role = await this.models.workspaceUser.set(
+        workspaceId,
+        user.id,
+        WorkspaceRole.Collaborator,
+        WorkspaceMemberStatus.NeedMoreSeatAndReview
+      );
+      await this.workspaceService.sendReviewRequestNotification(role.id);
+      const memberCount = await this.models.workspaceUser.count(workspaceId);
+      this.event.emit('workspace.members.updated', {
+        workspaceId,
+        count: memberCount,
+      });
+      return;
+    }
+
+    throw new MemberQuotaExceeded();
   }
 
   @Mutation(() => Boolean)

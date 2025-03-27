@@ -7,13 +7,13 @@ export { AccountLoggedOut } from './events/account-logged-out';
 export { AuthProvider } from './provider/auth';
 export { ValidatorProvider } from './provider/validator';
 export { ServerScope } from './scopes/server';
-export { AcceptInviteService } from './services/accept-invite';
 export { AuthService } from './services/auth';
 export { CaptchaService } from './services/captcha';
 export { DefaultServerService } from './services/default-server';
 export { EventSourceService } from './services/eventsource';
 export { FetchService } from './services/fetch';
 export { GraphQLService } from './services/graphql';
+export { InvitationService } from './services/invitation';
 export { InvoicesService } from './services/invoices';
 export { PublicUserService } from './services/public-user';
 export { SelfhostGenerateLicenseService } from './services/selfhost-generate-license';
@@ -33,6 +33,7 @@ export { WorkspaceServerService } from './services/workspace-server';
 export { WorkspaceSubscriptionService } from './services/workspace-subscription';
 export type { ServerConfig } from './types';
 
+// eslint-disable-next-line simple-import-sort/imports
 import { type Framework } from '@toeverything/infra';
 
 import { DocScope } from '../doc/scopes/doc';
@@ -56,7 +57,7 @@ import { configureDefaultAuthProvider } from './impl/auth';
 import { AuthProvider } from './provider/auth';
 import { ValidatorProvider } from './provider/validator';
 import { ServerScope } from './scopes/server';
-import { AcceptInviteService } from './services/accept-invite';
+import { InvitationService } from './services/invitation';
 import { AuthService } from './services/auth';
 import { BlocksuiteWriterInfoService } from './services/blocksuite-writer-info';
 import { CaptchaService } from './services/captcha';
@@ -153,7 +154,7 @@ export function configureCloudModule(framework: Framework) {
     .service(SelfhostGenerateLicenseService, [SelfhostGenerateLicenseStore])
     .store(SelfhostGenerateLicenseStore, [GraphQLService])
     .store(InviteInfoStore, [GraphQLService])
-    .service(AcceptInviteService, [AcceptInviteStore, InviteInfoStore])
+    .service(InvitationService, [AcceptInviteStore, InviteInfoStore])
     .store(AcceptInviteStore, [GraphQLService])
     .service(PublicUserService, [PublicUserStore])
     .store(PublicUserStore, [GraphQLService])

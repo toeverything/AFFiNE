@@ -51,6 +51,7 @@ test('drag handle should be shown when a note is activated in default mode or hi
   await page.mouse.move(0, 0);
   await setEdgelessTool(page, 'default');
   await page.mouse.move(x, y);
+  await page.mouse.click(x, y);
   await expect(page.locator('.affine-drag-handle-container')).toBeVisible();
 });
 

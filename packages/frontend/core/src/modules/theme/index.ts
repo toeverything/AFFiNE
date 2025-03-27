@@ -15,3 +15,7 @@ export function configureAppThemeModule(framework: Framework) {
     .scope(WorkspaceScope)
     .service(EdgelessThemeService, [AppThemeService, EditorSettingService]);
 }
+
+export function configureEssentialThemeModule(framework: Framework) {
+  framework.service(AppThemeService).entity(AppTheme);
+}

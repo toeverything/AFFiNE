@@ -60,7 +60,8 @@ export function affine(strings: TemplateStringsArray, ...values: any[]) {
   // Create a new doc
   const workspace = new TestWorkspace({});
   workspace.meta.initialize();
-  const doc = workspace.createDoc({ id: 'test-doc', extensions });
+  const doc = workspace.createDoc('test-doc');
+  const store = doc.getStore({ extensions });
 
   // Use DOMParser to parse HTML string
   doc.load(() => {
@@ -72,11 +73,11 @@ export function affine(strings: TemplateStringsArray, ...values: any[]) {
       throw new Error('Template must contain a root element');
     }
 
-    buildDocFromElement(doc, root, null);
+    buildDocFromElement(store, root, null);
   });
 
   // Create and return a host object with the document
-  return createTestHost(doc);
+  return createTestHost(store);
 }
 
 /**
@@ -103,7 +104,8 @@ export function block(
   // Create a temporary doc to hold the block
   const workspace = new TestWorkspace({});
   workspace.meta.initialize();
-  const doc = workspace.createDoc({ id: 'temp-doc', extensions });
+  const doc = workspace.createDoc('temp-doc');
+  const store = doc.getStore({ extensions });
 
   let blockId: string | null = null;
 
@@ -117,11 +119,11 @@ export function block(
       throw new Error('Template must contain a root element');
     }
 
-    blockId = buildDocFromElement(doc, root, null);
+    blockId = buildDocFromElement(store, root, null);
   });
 
   // Return the created block
-  return blockId ? (doc.getBlock(blockId) ?? null) : null;
+  return blockId ? (store.getBlock(blockId) ?? null) : null;
 }
 
 /**

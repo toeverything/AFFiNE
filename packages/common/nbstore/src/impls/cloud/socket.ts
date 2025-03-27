@@ -165,10 +165,10 @@ class SocketManager {
   socket: Socket;
   refCount = 0;
 
-  constructor(endpoint: string) {
+  constructor(endpoint: string, isSelfHosted: boolean) {
     this.socketIOManager = new SocketIOManager(endpoint, {
       autoConnect: false,
-      transports: ['websocket'],
+      transports: isSelfHosted ? ['websocket', 'polling'] : ['websocket'], // self-hosted server may not support websocket
       secure: new URL(endpoint).protocol === 'https:',
       // we will handle reconnection by ourselves
       reconnection: false,
@@ -205,10 +205,10 @@ class SocketManager {
 }
 
 const SOCKET_MANAGER_CACHE = new Map<string, SocketManager>();
-function getSocketManager(endpoint: string) {
+function getSocketManager(endpoint: string, isSelfHosted: boolean) {
   let manager = SOCKET_MANAGER_CACHE.get(endpoint);
   if (!manager) {
-    manager = new SocketManager(endpoint);
+    manager = new SocketManager(endpoint, isSelfHosted);
     SOCKET_MANAGER_CACHE.set(endpoint, manager);
   }
   return manager;
@@ -218,9 +218,12 @@ export class SocketConnection extends AutoReconnectConnection<{
   socket: Socket;
   disconnect: () => void;
 }> {
-  manager = getSocketManager(this.endpoint);
+  manager = getSocketManager(this.endpoint, this.isSelfHosted);
 
-  constructor(private readonly endpoint: string) {
+  constructor(
+    private readonly endpoint: string,
+    private readonly isSelfHosted: boolean
+  ) {
     super();
   }
 

@@ -5,14 +5,9 @@ import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import type { PageRootBlockComponent } from '../../index.js';
-
 export const AFFINE_VIEWPORT_OVERLAY_WIDGET = 'affine-viewport-overlay-widget';
 
-export class AffineViewportOverlayWidget extends WidgetComponent<
-  RootBlockModel,
-  PageRootBlockComponent
-> {
+export class AffineViewportOverlayWidget extends WidgetComponent<RootBlockModel> {
   static override styles = css`
     .affine-viewport-overlay-widget {
       position: absolute;

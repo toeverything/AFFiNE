@@ -323,10 +323,6 @@ export abstract class SingleViewBase<
   }
 
   cellValueGet(rowId: string, propertyId: string): unknown {
-    const type = this.propertyTypeGet(propertyId);
-    if (!type) {
-      return;
-    }
     return this.dataSource.cellValueGet(rowId, propertyId);
   }
 

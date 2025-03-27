@@ -4,7 +4,8 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { AddCursorIcon } from '@blocksuite/icons/lit';
-import { css } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, unsafeCSS } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
@@ -119,7 +120,7 @@ const styles = css`
   .cell-divider {
     width: 1px;
     height: 100%;
-    background-color: var(--affine-border-color);
+    background-color: ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
   }
 
   .data-view-table-left-bar {

@@ -33,6 +33,7 @@ import { computed } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 import { property, queryAsync, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
 import throttle from 'lodash-es/throttle';
@@ -238,9 +239,8 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
   }
 
   get linkedDoc() {
-    return this.std.workspace.getDoc(this.model.props.pageId, {
-      id: this.model.props.pageId,
-    });
+    const doc = this.std.workspace.getDoc(this.model.props.pageId);
+    return doc?.getStore({ id: this.model.props.pageId });
   }
 
   private _handleDoubleClick(event: MouseEvent) {
@@ -452,7 +452,10 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
               hasDescriptionAlias,
               () =>
                 html`<div class="affine-embed-linked-doc-content-note alias">
-                  ${description}
+                  ${repeat(
+                    (description.value ?? '').split('\n'),
+                    text => html`<p>${text}</p>`
+                  )}
                 </div>`,
               () =>
                 when(

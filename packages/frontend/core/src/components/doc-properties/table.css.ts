@@ -121,9 +121,9 @@ export const actionContainer = style({
 
 export const propertyActionButton = style({
   fontSize: cssVar('fontSm'),
-  color: `${cssVarV2('text/secondary')}`,
-  padding: '0 6px',
-  height: 34,
+  color: `${cssVarV2.text.tertiary}`,
+  padding: '0 4px',
+  height: 30,
   fontWeight: 400,
   gap: 6,
   width: '160px',

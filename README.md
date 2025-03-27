@@ -23,7 +23,7 @@
 
 <div align="center">
     <a href="https://affine.pro">Home Page</a> |
-    <a href="https://discord.gg/Yjf5VFEn">Discord</a> |
+    <a href="https://affine.pro/redirect/discord">Discord</a> |
     <a href="https://app.affine.pro">Live Demo</a> |
     <a href="https://affine.pro/blog/">Blog</a> |
     <a href="https://docs.affine.pro/docs/">Documentation</a>
@@ -179,7 +179,7 @@ Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiN
 
 ## Hiring
 
-Some amazing companies, including AFFiNE, are looking for developers! Are you interested in joining AFFiNE or its partners? Check out our [Discord channel](https://discord.gg/Yjf5VFEn) for some of the latest jobs available.
+Some amazing companies, including AFFiNE, are looking for developers! Are you interested in joining AFFiNE or its partners? Check out our [Discord channel](https://affine.pro/redirect/discord) for some of the latest jobs available.
 
 ## Feature Request
 

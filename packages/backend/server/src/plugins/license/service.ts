@@ -238,7 +238,7 @@ export class LicenseService implements OnModuleInit {
         const res = await this.revalidateLicense(license);
 
         if (res?.quantity === memberRequired) {
-          break;
+          return;
         }
       } catch (e) {
         this.logger.error('Failed to check license health', e);

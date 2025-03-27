@@ -17,10 +17,15 @@ export const ServerVersion = () => {
     return (
       <Button
         variant="outline"
-        className="flex items-center justify-center gap-1 text-xs p-2 font-medium"
+        className="flex items-center justify-center gap-1 text-xs p-2 font-medium w-full overflow-hidden"
         onClick={handleClick}
+        title={`New Version ${availableUpgrade.version} Available`}
       >
-        New Version <span>{availableUpgrade.version}</span>Available
+        <span className="overflow-hidden text-ellipsis">
+          New Version
+          <span>{availableUpgrade.version}</span>
+          Available
+        </span>
       </Button>
     );
   }

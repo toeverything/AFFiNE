@@ -1,6 +1,12 @@
 import { IconButton } from '@affine/component';
-import { CloseIcon, VoiceIcon } from '@blocksuite/icons/rc';
+import {
+  AddThirtySecondIcon,
+  CloseIcon,
+  ReduceFifteenSecondIcon,
+  VoiceIcon,
+} from '@blocksuite/icons/rc';
 import bytes from 'bytes';
+import { clamp } from 'lodash-es';
 import { type MouseEventHandler, type ReactNode, useCallback } from 'react';
 
 import * as styles from './audio-player.css';
@@ -150,19 +156,19 @@ export const MiniAudioPlayer = ({
   );
 
   const handleRewind = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
+    (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
-      onSeek(seekTime - 15);
+      onSeek(clamp(seekTime - 15, 0, duration));
     },
-    [seekTime, onSeek]
+    [seekTime, duration, onSeek]
   );
 
   const handleForward = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
+    (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
-      onSeek(seekTime + 15);
+      onSeek(clamp(seekTime + 30, 0, duration));
     },
-    [seekTime, onSeek]
+    [seekTime, duration, onSeek]
   );
 
   const handleClose = useCallback(
@@ -186,13 +192,24 @@ export const MiniAudioPlayer = ({
     <div className={styles.miniRoot} onClick={onClick}>
       <div className={styles.miniNameLabel}>{name}</div>
       <div className={styles.miniPlayerContainer}>
-        <div onClick={handleRewind}>-15s</div>
+        <IconButton
+          icon={<ReduceFifteenSecondIcon />}
+          size={18}
+          variant="plain"
+          onClick={handleRewind}
+        />
         <AnimatedPlayIcon
           onClick={handlePlayToggle}
           className={styles.controlButton}
           state={iconState}
         />
-        <div onClick={handleForward}>+15s</div>
+
+        <IconButton
+          icon={<AddThirtySecondIcon />}
+          size={18}
+          variant="plain"
+          onClick={handleForward}
+        />
       </div>
       <IconButton
         className={styles.miniCloseButton}

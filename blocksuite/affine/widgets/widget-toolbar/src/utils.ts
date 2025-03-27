@@ -232,7 +232,7 @@ export function renderToolbar(
           `${flavour}:${key}`,
           html`
             <editor-menu-button
-              aria-label="more-menu"
+              aria-label="More menu"
               .contentPadding="${'8px'}"
               .button=${html`
                 <editor-icon-button aria-label="More" .tooltip="${'More'}">

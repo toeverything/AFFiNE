@@ -36,5 +36,4 @@ export function normalizeWheelDeltaY(delta: number, zoom = 1) {
 export { addNote, addNoteAtPoint } from './add-note';
 export { getBgGridGap } from './get-bg-grip-gap';
 export { getLastPropsKey } from './get-last-props-key';
-export { getSurfaceBlock } from './get-surface-block';
-export * from './mindmap/style-svg.js';
+export * from './get-surface-block';

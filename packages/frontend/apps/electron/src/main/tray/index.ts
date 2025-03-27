@@ -14,11 +14,10 @@ import { beforeAppQuit } from '../cleanup';
 import { logger } from '../logger';
 import {
   appGroups$,
-  pauseRecording,
   recordingStatus$,
-  resumeRecording,
   startRecording,
   stopRecording,
+  updateApplicationsPing$,
 } from '../recording';
 import { getMainWindow } from '../windows-manager';
 import { icons } from './icons';
@@ -132,7 +131,21 @@ class TrayState {
 
     const recordingStatus = recordingStatus$.value;
 
-    if (!recordingStatus || recordingStatus?.status === 'stopped') {
+    if (
+      !recordingStatus ||
+      (recordingStatus?.status !== 'paused' &&
+        recordingStatus?.status !== 'recording')
+    ) {
+      const appMenuItems = runningAppGroups.map(appGroup => ({
+        label: appGroup.name,
+        icon: appGroup.icon || undefined,
+        click: () => {
+          logger.info(
+            `User action: Start Recording Meeting (${appGroup.name})`
+          );
+          startRecording(appGroup);
+        },
+      }));
       return {
         key: 'recording',
         getConfig: () => [
@@ -150,18 +163,10 @@ class TrayState {
                   startRecording();
                 },
               },
-              ...runningAppGroups.map(appGroup => ({
-                label: appGroup.name,
-                icon: appGroup.icon || undefined,
-                click: () => {
-                  logger.info(
-                    `User action: Start Recording Meeting (${appGroup.name})`
-                  );
-                  startRecording(appGroup);
-                },
-              })),
+              ...appMenuItems,
             ],
           },
+          ...appMenuItems,
         ],
       };
     }
@@ -179,26 +184,11 @@ class TrayState {
           icon: icons.recording,
           disabled: true,
         },
-        recordingStatus.status === 'paused'
-          ? {
-              label: 'Resume',
-              click: () => {
-                logger.info('User action: Resume Recording');
-                resumeRecording();
-              },
-            }
-          : {
-              label: 'Pause',
-              click: () => {
-                logger.info('User action: Pause Recording');
-                pauseRecording();
-              },
-            },
         {
           label: 'Stop',
           click: () => {
             logger.info('User action: Stop Recording');
-            stopRecording().catch(err => {
+            stopRecording(recordingStatus.id).catch(err => {
               logger.error('Failed to stop recording:', err);
             });
           },
@@ -260,6 +250,7 @@ class TrayState {
         if (!isMacOS()) {
           this.tray?.popUpContextMenu();
         }
+        updateApplicationsPing$.next(Date.now());
       };
       this.tray.on('click', clickHandler);
       const appGroupsSubscription = appGroups$.subscribe(() => {

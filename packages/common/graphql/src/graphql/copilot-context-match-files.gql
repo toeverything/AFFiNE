@@ -1,0 +1,14 @@
+query matchFiles($contextId: String!, $content: String!, $limit: SafeInt) {
+  currentUser {
+    copilot {
+      contexts(contextId: $contextId) {
+        matchFiles(content: $content, limit: $limit) {
+          fileId
+          chunk
+          content
+          distance
+        }
+      }
+    }
+  }
+}

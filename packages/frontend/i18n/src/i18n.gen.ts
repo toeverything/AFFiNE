@@ -1704,6 +1704,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.confirmModal.button.cancel"](): string;
     /**
+      * `Ok`
+      */
+    ["com.affine.confirmModal.button.ok"](): string;
+    /**
       * `Current year`
       */
     ["com.affine.currentYear"](): string;
@@ -5584,6 +5588,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-editor-rtl.description"](): string;
     /**
+      * `Edgeless scribbled style`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-edgeless-scribbled-style.name"](): string;
+    /**
+      * `Once enabled, you can use scribbled style in edgeless mode.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-edgeless-scribbled-style.description"](): string;
+    /**
       * `Only an owner can edit the workspace avatar and name. Changes will be shown for everyone.`
       */
     ["com.affine.settings.workspace.not-owner"](): string;
@@ -6916,6 +6928,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.editor.at-menu.date-picker"](): string;
     /**
+      * `Mention Members`
+      */
+    ["com.affine.editor.at-menu.mention-members"](): string;
+    /**
       * `Show`
       */
     ["com.affine.editor.bi-directional-link-panel.show"](): string;
@@ -7092,6 +7108,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.notification.empty"](): string;
     /**
+      * `Open workspace`
+      */
+    ["com.affine.notification.invitation-review-approved.open-workspace"](): string;
+    /**
+      * `Accept & Join`
+      */
+    ["com.affine.notification.invitation.accept"](): string;
+    /**
       * `Tips`
       */
     tips(): string;
@@ -7183,6 +7207,18 @@ export function useAFFiNEI18N(): {
       * `Please contact your workspace owner to add more seats.`
       */
     ["com.affine.fail-to-join-workspace.description-2"](): string;
+    /**
+      * `Request to join`
+      */
+    ["com.affine.request-to-join-workspace.button"](): string;
+    /**
+      * `Request Sent successfully`
+      */
+    ["com.affine.sent-request-to-join-workspace.title"](): string;
+    /**
+      * `Request failed to send`
+      */
+    ["com.affine.failed-to-send-request.title"](): string;
     /**
       * `Readwise`
       */
@@ -7314,6 +7350,66 @@ export function useAFFiNEI18N(): {
         readonly finished: string;
     }): string;
     /**
+      * `Configuration`
+      */
+    ["com.affine.integration.readwise.setting.caption"](): string;
+    /**
+      * `New Readwise highlights will be imported to AFFiNE `
+      */
+    ["com.affine.integration.readwise.setting.sync-new-name"](): string;
+    /**
+      * `New highlights in Readwise will be synced to AFFiNE `
+      */
+    ["com.affine.integration.readwise.setting.sync-new-desc"](): string;
+    /**
+      * `Updates to Readwise highlights will be imported`
+      */
+    ["com.affine.integration.readwise.setting.update-name"](): string;
+    /**
+      * `Enable this, so that we will process updates of existing highlights from Readwise `
+      */
+    ["com.affine.integration.readwise.setting.update-desc"](): string;
+    /**
+      * `How do we handle updates`
+      */
+    ["com.affine.integration.readwise.setting.update-strategy"](): string;
+    /**
+      * `Append new version to the end`
+      */
+    ["com.affine.integration.readwise.setting.update-append-name"](): string;
+    /**
+      * `Cited or modified highlights will have future versions added to the end of them`
+      */
+    ["com.affine.integration.readwise.setting.update-append-desc"](): string;
+    /**
+      * `Overwrite with new version`
+      */
+    ["com.affine.integration.readwise.setting.update-override-name"](): string;
+    /**
+      * `Cited or modified highlights will be overwritten if there are future updates`
+      */
+    ["com.affine.integration.readwise.setting.update-override-desc"](): string;
+    /**
+      * `Start Importing`
+      */
+    ["com.affine.integration.readwise.setting.start-import-name"](): string;
+    /**
+      * `Using the settings above`
+      */
+    ["com.affine.integration.readwise.setting.start-import-desc"](): string;
+    /**
+      * `Import`
+      */
+    ["com.affine.integration.readwise.setting.start-import-button"](): string;
+    /**
+      * `Apply tags to highlight imports`
+      */
+    ["com.affine.integration.readwise.setting.tags-label"](): string;
+    /**
+      * `Click to add tags`
+      */
+    ["com.affine.integration.readwise.setting.tags-placeholder"](): string;
+    /**
       * `Author`
       */
     ["com.affine.integration.readwise-prop.author"](): string;
@@ -7322,13 +7418,59 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.readwise-prop.source"](): string;
     /**
+      * `Created`
+      */
+    ["com.affine.integration.readwise-prop.created"](): string;
+    /**
+      * `Updated`
+      */
+    ["com.affine.integration.readwise-prop.updated"](): string;
+    /**
+      * `Integration properties`
+      */
+    ["com.affine.integration.properties"](): string;
+    /**
       * `Notes`
       */
-    ["com.affine.attachmentViewer.audio.notes"](): string;
+    ["com.affine.audio.notes"](): string;
     /**
       * `Transcribing`
       */
-    ["com.affine.attachmentViewer.audio.transcribing"](): string;
+    ["com.affine.audio.transcribing"](): string;
+    /**
+      * `Unable to retrieve AI results for others`
+      */
+    ["com.affine.audio.transcribe.non-owner.confirm.title"](): string;
+    /**
+      * `Audio activity`
+      */
+    ["com.affine.recording.new"](): string;
+    /**
+      * `Open app`
+      */
+    ["com.affine.recording.ready"](): string;
+    /**
+      * `{{appName}}'s audio`
+      */
+    ["com.affine.recording.recording"](options: {
+        readonly appName: string;
+    }): string;
+    /**
+      * `Audio recording`
+      */
+    ["com.affine.recording.recording.unnamed"](): string;
+    /**
+      * `Start`
+      */
+    ["com.affine.recording.start"](): string;
+    /**
+      * `Dismiss`
+      */
+    ["com.affine.recording.dismiss"](): string;
+    /**
+      * `Stop`
+      */
+    ["com.affine.recording.stop"](): string;
     /**
       * `An internal error occurred.`
       */
@@ -7744,6 +7886,10 @@ export function useAFFiNEI18N(): {
     ["error.COPILOT_DOC_NOT_FOUND"](options: {
         readonly docId: string;
     }): string;
+    /**
+      * `Some docs not found.`
+      */
+    ["error.COPILOT_DOCS_NOT_FOUND"](): string;
     /**
       * `Copilot message {{messageId}} not found.`
       */
@@ -8337,6 +8483,62 @@ export const TypedTrans: {
         ["2"]: JSX.Element;
     }>>;
     /**
+      * `<1>{{username}}</1> has accept your invitation`
+      */
+    ["com.affine.notification.invitation-accepted"]: ComponentType<TypedTransProps<{
+        readonly username: string;
+    }, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> has requested to join <2>{{workspaceName}}</2>`
+      */
+    ["com.affine.notification.invitation-review-request"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        workspaceName: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> has declined your request to join <2>{{workspaceName}}</2>`
+      */
+    ["com.affine.notification.invitation-review-declined"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        workspaceName: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> has approved your request to join <2>{{workspaceName}}</2>`
+      */
+    ["com.affine.notification.invitation-review-approved"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        workspaceName: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `There is an issue regarding your invitation to <1>{{workspaceName}}</1> `
+      */
+    ["com.affine.notification.invitation-blocked"]: ComponentType<TypedTransProps<{
+        readonly workspaceName: string;
+    }, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> invited you to join <2>{{workspaceName}}</2>`
+      */
+    ["com.affine.notification.invitation"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        workspaceName: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
       * `Unable to join <1/> <2>{{workspaceName}}</2> due to insufficient seats available.`
       */
     ["com.affine.fail-to-join-workspace.description-1"]: ComponentType<TypedTransProps<{
@@ -8344,6 +8546,28 @@ export const TypedTrans: {
     }, {
         ["1"]: JSX.Element;
         ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `You requested to join <1/> <2>{{workspaceName}}</2> with <3>{{userEmail}}</3>, the workspace owner and team admins will review your request.`
+      */
+    ["com.affine.sent-request-to-join-workspace.description"]: ComponentType<TypedTransProps<Readonly<{
+        workspaceName: string;
+        userEmail: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+        ["3"]: JSX.Element;
+    }>>;
+    /**
+      * `Unable to process your request to join <1/> <2>{{workspaceName}}</2> with <3>{{userEmail}}</3>, the workspace has reached its member limit. Please contact the workspace owner for available seats.`
+      */
+    ["com.affine.failed-to-send-request.description"]: ComponentType<TypedTransProps<Readonly<{
+        workspaceName: string;
+        userEmail: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+        ["3"]: JSX.Element;
     }>>;
     /**
       * `Import your Readwise highlights to AFFiNE. Please visit Readwise, click <a>"Get Access Token"</a>, and paste the token below.`
@@ -8358,5 +8582,13 @@ export const TypedTrans: {
         readonly lastImportedAt: string;
     }, {
         a: JSX.Element;
+    }>>;
+    /**
+      * `Please contact <1>{{user}}</1> to upgrade AI rights or resend the attachment.`
+      */
+    ["com.affine.audio.transcribe.non-owner.confirm.message"]: ComponentType<TypedTransProps<{
+        readonly user: string;
+    }, {
+        ["1"]: JSX.Element;
     }>>;
 } = /*#__PURE__*/ createProxy(createComponent);

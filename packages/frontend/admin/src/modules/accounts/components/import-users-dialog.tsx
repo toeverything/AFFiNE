@@ -2,6 +2,7 @@ import { Button } from '@affine/admin/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -198,7 +199,9 @@ export function ImportUsersDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={isPreviewMode ? 'sm:max-w-[600px]' : 'sm:max-w-[425px]'}
+        className={
+          isPreviewMode ? 'sm:max-w-[600px] flex-col gap-3' : 'sm:max-w-[425px]'
+        }
       >
         <DialogHeader>
           <DialogTitle>
@@ -211,35 +214,32 @@ export function ImportUsersDialog({
                 : 'Import'}
           </DialogTitle>
         </DialogHeader>
-
-        {isFormatError ? (
-          <div className="grid gap-4 py-4">
-            <p className="text-sm text-gray-500">
-              You need to import the accounts by importing a CSV file in the
-              correct format. Please download the CSV template.
-            </p>
-          </div>
-        ) : isPreviewMode ? (
-          <div className="grid gap-4 py-4">
-            <p className="text-sm text-gray-500">
-              {parsedUsers.length} users detected from the CSV file. Please
-              confirm the user list below and import.
-            </p>
-            <UserTable users={parsedUsers} />
-          </div>
-        ) : (
-          <div className="grid gap-4 py-4">
-            <p className="text-sm text-gray-500">
-              You need to import the accounts by importing a CSV file in the
-              correct format. Please download the CSV template.
-            </p>
-
-            <FileUploadArea
-              ref={fileUploadRef}
-              onFileSelected={handleFileSelected}
-            />
-          </div>
-        )}
+        <DialogDescription className="text-[15px]">
+          {isFormatError ? (
+            'You need to import the accounts by importing a CSV file in the correct format. Please download the CSV template.'
+          ) : isPreviewMode ? (
+            <div className="grid gap-3">
+              {isImported ? null : (
+                <p>
+                  {parsedUsers.length} users detected from the CSV file. Please
+                  confirm the user list below and import.
+                </p>
+              )}
+              <UserTable users={parsedUsers} />
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              <p>
+                You need to import the accounts by importing a CSV file in the
+                correct format. Please download the CSV template.
+              </p>
+              <FileUploadArea
+                ref={fileUploadRef}
+                onFileSelected={handleFileSelected}
+              />
+            </div>
+          )}
+        </DialogDescription>
 
         <DialogFooter
           className={`flex-col sm:flex-row sm:justify-between items-center ${isPreviewMode ? 'sm:justify-end' : 'sm:justify-between'}`}
@@ -265,9 +265,8 @@ export function ImportUsersDialog({
             <>
               <Button
                 variant="outline"
-                size="sm"
                 onClick={cancelImport}
-                className="mb-2 sm:mb-0"
+                className="w-full mb-2 sm:mb-0 sm:w-auto"
                 disabled={isImporting}
               >
                 Cancel

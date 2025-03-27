@@ -142,7 +142,10 @@ export class WorkspaceBlobStorage {
     return sum._sum.size ?? 0;
   }
 
-  getAvatarUrl(workspaceId: string, avatarKey: string) {
+  getAvatarUrl(workspaceId: string, avatarKey: string | null) {
+    if (!avatarKey) {
+      return undefined;
+    }
     return this.url.link(`/api/workspaces/${workspaceId}/blobs/${avatarKey}`);
   }
 

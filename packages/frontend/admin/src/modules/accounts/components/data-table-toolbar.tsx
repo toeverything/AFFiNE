@@ -1,7 +1,7 @@
 import { Button } from '@affine/admin/components/ui/button';
 import { Input } from '@affine/admin/components/ui/input';
 import { useQuery } from '@affine/admin/use-query';
-import { getUserByEmailQuery, type UserType } from '@affine/graphql';
+import { getUserByEmailQuery } from '@affine/graphql';
 import { ExportIcon, ImportIcon, PlusIcon } from '@blocksuite/icons/rc';
 import type { Table } from '@tanstack/react-table';
 import {
@@ -14,6 +14,7 @@ import {
 } from 'react';
 
 import { useRightPanel } from '../../panel/context';
+import type { UserType } from '../schema';
 import { DiscardChanges } from './discard-changes';
 import { ExportUsersDialog } from './export-users-dialog';
 import { ImportUsersDialog } from './import-users-dialog';
@@ -22,6 +23,7 @@ import { CreateUserForm } from './user-form';
 interface DataTableToolbarProps<TData> {
   data: TData[];
   setDataTable: (data: TData[]) => void;
+  selectedUsers: UserType[];
   table?: Table<TData>;
 }
 
@@ -58,6 +60,7 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 
 export function DataTableToolbar<TData>({
   data,
+  selectedUsers,
   setDataTable,
   table,
 }: DataTableToolbarProps<TData>) {
@@ -158,9 +161,7 @@ export function DataTableToolbar<TData>({
 
         {table && (
           <ExportUsersDialog
-            users={table
-              .getFilteredSelectedRowModel()
-              .rows.map(row => row.original as UserType)}
+            users={selectedUsers}
             open={exportDialogOpen}
             onOpenChange={setExportDialogOpen}
           />

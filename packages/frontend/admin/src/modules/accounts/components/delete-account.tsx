@@ -56,7 +56,7 @@ export const DeleteAccountDialog = ({
           className="placeholder:opacity-50"
         />
         <DialogFooter>
-          <div className="flex justify-between items-center w-full">
+          <div className="flex justify-end gap-2 items-center w-full">
             <Button type="button" variant="outline" size="sm" onClick={onClose}>
               Cancel
             </Button>

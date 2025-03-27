@@ -1,6 +1,5 @@
+import type { ShapeToolOption } from '@blocksuite/affine-gfx-shape';
 import { ShapeType } from '@blocksuite/affine-model';
-
-import type { ShapeToolOption } from '../gfx-tool/shape-tool.js';
 
 const shapeMap: Record<ShapeToolOption['shapeName'], number> = {
   [ShapeType.Rect]: 0,

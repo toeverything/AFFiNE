@@ -77,6 +77,7 @@ class MemberManager {
       }
       this.ops.onChange([...this.selectedMembers.value, memberId]);
       this.moveSelectionAfterSelect(memberId);
+      this.ops.userListService.search('');
     } else {
       this.ops.onChange(memberId);
     }

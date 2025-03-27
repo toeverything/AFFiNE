@@ -6,6 +6,7 @@ import {
   MenuSub,
 } from '@affine/component/ui/menu';
 import { PageHistoryModal } from '@affine/core/components/affine/page-history-modal';
+import { useGuard } from '@affine/core/components/guard';
 import { useBlockSuiteMetaHelper } from '@affine/core/components/hooks/affine/use-block-suite-meta-helper';
 import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
 import { useExportPage } from '@affine/core/components/hooks/affine/use-export-page';
@@ -333,8 +334,8 @@ const PageHeaderMenuItem = ({
     openInAppService?.showOpenInAppPage();
   }, [openInAppService]);
 
-  const canEdit = useLiveData(guardService.can$('Doc_Update', pageId));
-  const canMoveToTrash = useLiveData(guardService.can$('Doc_Trash', pageId));
+  const canEdit = useGuard('Doc_Update', pageId);
+  const canMoveToTrash = useGuard('Doc_Trash', pageId);
 
   return (
     <>

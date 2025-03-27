@@ -1,7 +1,6 @@
 import { Divider, IconButton, Tooltip } from '@affine/component';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
 import { DocsService } from '@affine/core/modules/doc';
-import { GuardService } from '@affine/core/modules/permissions';
 import { generateUniqueNameInSequence } from '@affine/core/utils/unique-name';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
@@ -13,6 +12,7 @@ import {
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
 
+import { useGuard } from '../../guard';
 import { DocPropertyManager } from '../manager';
 import {
   DocPropertyTypes,
@@ -29,12 +29,9 @@ export const DocPropertySidebar = () => {
   const [newPropertyId, setNewPropertyId] = useState<string>();
 
   const docsService = useService(DocsService);
-  const guardService = useService(GuardService);
   const propertyList = docsService.propertyList;
   const properties = useLiveData(propertyList.properties$);
-  const canEditPropertyInfo = useLiveData(
-    guardService.can$('Workspace_Properties_Update')
-  );
+  const canEditPropertyInfo = useGuard('Workspace_Properties_Update');
   const onAddProperty = useCallback(
     (option: { type: string; name: string }) => {
       if (!isSupportedDocPropertyType(option.type)) {

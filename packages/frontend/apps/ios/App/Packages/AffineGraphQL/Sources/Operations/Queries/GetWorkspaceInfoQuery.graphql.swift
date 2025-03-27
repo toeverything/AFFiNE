@@ -30,8 +30,10 @@ public class GetWorkspaceInfoQuery: GraphQLQuery {
     ] }
 
     /// Get is admin of workspace
+    @available(*, deprecated, message: "use WorkspaceType[role] instead")
     public var isAdmin: Bool { __data["isAdmin"] }
     /// Get is owner of workspace
+    @available(*, deprecated, message: "use WorkspaceType[role] instead")
     public var isOwner: Bool { __data["isOwner"] }
     /// Get workspace by id
     public var workspace: Workspace { __data["workspace"] }

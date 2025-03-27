@@ -37,8 +37,9 @@ const miroConfig = {
     heightInNote: MIRO_DEFAULT_HEIGHT_IN_NOTE,
     widthPercent: MIRO_DEFAULT_WIDTH_PERCENT,
     allow: 'clipboard-read; clipboard-write',
-    style: 'border: 0; border-radius: 8px;',
+    style: 'border: none;',
     allowFullscreen: true,
+    containerBorderRadius: 0,
   },
 };
 

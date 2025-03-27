@@ -33,7 +33,7 @@ export const EnableAccountDialog = ({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <div className="flex justify-end items-center w-full space-x-4">
+          <div className="flex justify-end gap-2 items-center w-full">
             <Button type="button" onClick={onClose} variant="outline">
               <span>Cancel</span>
             </Button>

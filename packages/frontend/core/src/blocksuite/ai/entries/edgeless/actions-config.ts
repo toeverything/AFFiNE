@@ -1,4 +1,7 @@
-import { splitElements } from '@blocksuite/affine/blocks/root';
+import {
+  EdgelessClipboardController,
+  splitElements,
+} from '@blocksuite/affine/blocks/root';
 import { AIStarIconWithAnimation } from '@blocksuite/affine/components/icons';
 import {
   MindmapElementModel,
@@ -52,7 +55,6 @@ import { mindMapToMarkdown } from '../../utils/edgeless';
 import { canvasToBlob, randomSeed } from '../../utils/image';
 import {
   getCopilotSelectedElems,
-  getEdgelessRootFromEditor,
   imageCustomInput,
 } from '../../utils/selection-utils';
 
@@ -312,17 +314,16 @@ const generateGroup: AIItemGroupConfig = {
             };
           }
 
-          // image to image
-          const edgelessRoot = getEdgelessRootFromEditor(host);
-          const canvas = await edgelessRoot.clipboardController.toCanvas(
-            images,
-            pureShapes,
-            {
-              dpr: 1,
-              padding: 0,
-              background: 'white',
-            }
+          const edgelessClipboard = host.std.getOptional(
+            EdgelessClipboardController
           );
+          if (!edgelessClipboard) return;
+          // image to image
+          const canvas = await edgelessClipboard.toCanvas(images, pureShapes, {
+            dpr: 1,
+            padding: 0,
+            background: 'white',
+          });
           if (!canvas) return;
 
           const png = await canvasToBlob(canvas);
@@ -445,8 +446,11 @@ const generateGroup: AIItemGroupConfig = {
             content = aiPanel.inputText?.trim() || '';
           }
 
-          const edgelessRoot = getEdgelessRootFromEditor(host);
-          const canvas = await edgelessRoot.clipboardController.toCanvas(
+          const edgelessClipboard = host.std.getOptional(
+            EdgelessClipboardController
+          );
+          if (!edgelessClipboard) return;
+          const canvas = await edgelessClipboard.toCanvas(
             [...notes, ...frames, ...images],
             shapes,
             {

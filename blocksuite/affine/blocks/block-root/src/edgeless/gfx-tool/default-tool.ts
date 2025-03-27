@@ -1,35 +1,17 @@
-import { insertEdgelessTextCommand } from '@blocksuite/affine-block-edgeless-text';
 import {
   type FrameOverlay,
   isFrameBlock,
 } from '@blocksuite/affine-block-frame';
 import {
   ConnectorUtils,
-  isNoteBlock,
   OverlayIdentifier,
 } from '@blocksuite/affine-block-surface';
-import { addText, mountTextElementEditor } from '@blocksuite/affine-gfx-text';
-import type {
-  EdgelessTextBlockModel,
-  NoteBlockModel,
-} from '@blocksuite/affine-model';
 import {
-  ConnectorElementModel,
+  type ConnectorElementModel,
   GroupElementModel,
   MindmapElementModel,
-  ShapeElementModel,
-  TextElementModel,
 } from '@blocksuite/affine-model';
-import { focusTextModel } from '@blocksuite/affine-rich-text';
-import {
-  FeatureFlagService,
-  TelemetryProvider,
-} from '@blocksuite/affine-shared/services';
-import {
-  handleNativeRangeAtPoint,
-  resetNativeSelection,
-} from '@blocksuite/affine-shared/utils';
-import { mountFrameTitleEditor } from '@blocksuite/affine-widget-frame-title';
+import { resetNativeSelection } from '@blocksuite/affine-shared/utils';
 import type { BlockComponent, PointerEventState } from '@blocksuite/block-std';
 import {
   BaseTool,
@@ -43,18 +25,11 @@ import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { IVec } from '@blocksuite/global/gfx';
 import { Bound, getCommonBoundWithRotation, Vec } from '@blocksuite/global/gfx';
 import { effect } from '@preact/signals-core';
-import clamp from 'lodash-es/clamp';
-import last from 'lodash-es/last';
 
-import type { EdgelessRootBlockComponent } from '../index.js';
+import { createElementsFromClipboardDataCommand } from '../clipboard/command.js';
 import { prepareCloneData } from '../utils/clone-utils.js';
 import { calPanDelta } from '../utils/panning-utils.js';
-import { isCanvasElement, isEdgelessTextBlock } from '../utils/query.js';
-import {
-  mountConnectorLabelEditor,
-  mountGroupTitleEditor,
-  mountShapeTextEditor,
-} from '../utils/text.js';
+import { isCanvasElement } from '../utils/query.js';
 import { DefaultModeDragType } from './default-tool-ext/ext.js';
 
 export class DefaultTool extends BaseTool {
@@ -77,9 +52,6 @@ export class DefaultTool extends BaseTool {
   };
 
   private _disposables: DisposableGroup | null = null;
-
-  // Do not select the text, when click again after activating the note.
-  private _isDoubleClickedOnMask = false;
 
   private readonly _panViewport = (delta: IVec) => {
     this._accumulateDelta[0] += delta[0];
@@ -224,35 +196,21 @@ export class DefaultTool extends BaseTool {
     return this.std.get(OverlayIdentifier('frame')) as FrameOverlay;
   }
 
-  private _addEmptyParagraphBlock(
-    block: NoteBlockModel | EdgelessTextBlockModel
-  ) {
-    const blockId = this.doc.addBlock(
-      'affine:paragraph',
-      { type: 'text' },
-      block.id
-    );
-    if (blockId) {
-      focusTextModel(this.std, blockId);
-    }
-  }
-
   private async _cloneContent() {
     if (!this._edgeless) return;
 
-    // FIXME: edgeless clipboard should be an extension
-    const clipboardController = (
-      this._edgeless as EdgelessRootBlockComponent | null
-    )?.clipboardController;
-    if (!clipboardController) return;
     const snapshot = prepareCloneData(this._toBeMoved, this.std);
 
     const bound = getCommonBoundWithRotation(this._toBeMoved);
-    const { canvasElements, blockModels } =
-      await clipboardController.createElementsFromClipboardData(
-        snapshot,
-        bound.center
-      );
+    const [_, { createdElementsPromise }] = this.std.command.exec(
+      createElementsFromClipboardDataCommand,
+      {
+        elementsRawData: snapshot,
+        pasteCenter: bound.center,
+      }
+    );
+    if (!createdElementsPromise) return;
+    const { canvasElements, blockModels } = await createdElementsPromise;
 
     this._toBeMoved = [...canvasElements, ...blockModels];
     this.edgelessSelectionManager.set({
@@ -357,19 +315,6 @@ export class DefaultTool extends BaseTool {
       return e;
     };
 
-    const frameByPickingTitle = last(
-      this.gfx
-        .getElementByPoint(modelPos[0], modelPos[1], {
-          ...options,
-          all: true,
-        })
-        .filter(
-          el => isFrameBlock(el) && el.externalBound?.isPointInBound(modelPos)
-        )
-    );
-
-    if (frameByPickingTitle) return tryGetLockedAncestor(frameByPickingTitle);
-
     const result = this.gfx.getElementInGroup(
       modelPos[0],
       modelPos[1],
@@ -395,11 +340,6 @@ export class DefaultTool extends BaseTool {
       }
 
       return tryGetLockedAncestor(picked[pickedIdx]) ?? null;
-    }
-
-    // if the frame has title, it only can be picked by clicking the title
-    if (isFrameBlock(result) && result.externalXYWH) {
-      return null;
     }
 
     return tryGetLockedAncestor(result);
@@ -446,105 +386,14 @@ export class DefaultTool extends BaseTool {
     }
   }
 
-  override activate(_: Record<string, unknown>): void {
-    if (this.gfx.selection.lastSurfaceSelections.length) {
-      this.gfx.selection.set(this.gfx.selection.lastSurfaceSelections);
-    }
-  }
-
   override click(e: PointerEventState) {
     if (this.doc.readonly) return;
 
-    const selected = this._pick(e.x, e.y, {
-      ignoreTransparent: true,
-    });
-
-    if (selected) {
-      const { selectedIds, surfaceSelections } = this.edgelessSelectionManager;
-      const editing = surfaceSelections[0]?.editing ?? false;
-
-      // click active canvas text, edgeless text block and note block
-      if (
-        selectedIds.length === 1 &&
-        selectedIds[0] === selected.id &&
-        editing
-      ) {
-        // edgeless text block and note block
-        if (
-          (isNoteBlock(selected) || isEdgelessTextBlock(selected)) &&
-          selected.children.length === 0
-        ) {
-          this._addEmptyParagraphBlock(selected);
-        }
-        // canvas text
-        return;
-      }
-
-      // click non-active edgeless text block and note block, and then enter editing
-      if (
-        !selected.isLocked() &&
-        !e.keys.shift &&
-        selectedIds.length === 1 &&
-        (isNoteBlock(selected) || isEdgelessTextBlock(selected)) &&
-        ((selectedIds[0] === selected.id && !editing) ||
-          (editing && selectedIds[0] !== selected.id))
-      ) {
-        // issue #1809
-        // If the previously selected element is a noteBlock and is in an active state,
-        // then the currently clicked noteBlock should also be in an active state when selected.
-        this.edgelessSelectionManager.set({
-          elements: [selected.id],
-          editing: true,
-        });
-        this._edgeless?.updateComplete
-          .then(() => {
-            // check if block has children blocks, if not, add a paragraph block and focus on it
-            if (selected.children.length === 0) {
-              this._addEmptyParagraphBlock(selected);
-            } else {
-              const block = this.std.host.view.getBlock(selected.id);
-              if (block) {
-                const rect = block
-                  .querySelector('.affine-block-children-container')!
-                  .getBoundingClientRect();
-
-                const offsetY = 8 * this.gfx.viewport.zoom;
-                const offsetX = 2 * this.gfx.viewport.zoom;
-                const x = clamp(
-                  e.raw.clientX,
-                  rect.left + offsetX,
-                  rect.right - offsetX
-                );
-                const y = clamp(
-                  e.raw.clientY,
-                  rect.top + offsetY,
-                  rect.bottom - offsetY
-                );
-                handleNativeRangeAtPoint(x, y);
-              } else {
-                handleNativeRangeAtPoint(e.raw.clientX, e.raw.clientY);
-              }
-            }
-          })
-          .catch(console.error);
-        return;
-      }
-
-      this.edgelessSelectionManager.set({
-        // hold shift key to multi select or de-select element
-        elements: e.keys.shift
-          ? this.edgelessSelectionManager.has(selected.id)
-            ? selectedIds.filter(id => id !== selected.id)
-            : [...selectedIds, selected.id]
-          : [selected.id],
-        editing: false,
-      });
-    } else if (!e.keys.shift) {
+    if (!this.elementTransformMgr?.dispatchOnSelected(e)) {
       this.edgelessSelectionManager.clear();
       resetNativeSelection(null);
     }
 
-    this._isDoubleClickedOnMask = false;
     this.elementTransformMgr?.dispatch('click', e);
   }
 
@@ -567,71 +416,7 @@ export class DefaultTool extends BaseTool {
       return;
     }
 
-    const selected = this._pick(e.x, e.y, {
-      hitThreshold: 10,
-    });
-    if (!this._edgeless) {
-      return;
-    }
-
-    if (!selected) {
-      const textFlag = this.doc
-        .get(FeatureFlagService)
-        .getFlag('enable_edgeless_text');
-
-      if (textFlag) {
-        const [x, y] = this.gfx.viewport.toModelCoord(e.x, e.y);
-        this.std.command.exec(insertEdgelessTextCommand, { x, y });
-      } else {
-        addText(this._edgeless, e);
-      }
-      this.std.getOptional(TelemetryProvider)?.track('CanvasElementAdded', {
-        control: 'canvas:dbclick',
-        page: 'whiteboard editor',
-        module: 'toolbar',
-        segment: 'toolbar',
-        type: 'text',
-      });
-      return;
-    } else {
-      if (selected.isLocked()) return;
-      const [x, y] = this.gfx.viewport.toModelCoord(e.x, e.y);
-      if (selected instanceof TextElementModel) {
-        mountTextElementEditor(selected, this._edgeless, {
-          x,
-          y,
-        });
-        return;
-      }
-      if (selected instanceof ShapeElementModel) {
-        mountShapeTextEditor(selected, this._edgeless);
-        return;
-      }
-      if (selected instanceof ConnectorElementModel) {
-        mountConnectorLabelEditor(selected, this._edgeless, [x, y]);
-        return;
-      }
-      if (isFrameBlock(selected)) {
-        mountFrameTitleEditor(selected, this._edgeless);
-        return;
-      }
-      if (selected instanceof GroupElementModel) {
-        mountGroupTitleEditor(selected, this._edgeless);
-        return;
-      }
-    }
-
     this.elementTransformMgr?.dispatch('dblclick', e);
-
-    if (
-      e.raw.target &&
-      e.raw.target instanceof HTMLElement &&
-      e.raw.target.classList.contains('affine-note-mask')
-    ) {
-      this.click(e);
-      this._isDoubleClickedOnMask = true;
-      return;
-    }
   }
 
   override dragEnd() {
@@ -756,9 +541,7 @@ export class DefaultTool extends BaseTool {
     this.elementTransformMgr?.dispatch('pointerup', e);
   }
 
-  override tripleClick() {
-    if (this._isDoubleClickedOnMask) return;
-  }
+  override tripleClick() {}
 
   override unmounted(): void {}
 }

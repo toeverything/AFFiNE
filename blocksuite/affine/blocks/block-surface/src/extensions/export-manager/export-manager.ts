@@ -1,9 +1,4 @@
-import {
-  FrameBlockModel,
-  ImageBlockModel,
-  type NoteBlockModel,
-  type RootBlockModel,
-} from '@blocksuite/affine-model';
+import { ImageBlockModel, type RootBlockModel } from '@blocksuite/affine-model';
 import { FetchUtils } from '@blocksuite/affine-shared/adapters';
 import {
   CANVAS_EXPORT_IGNORE_TAGS,
@@ -24,15 +19,15 @@ import {
   GfxBlockElementModel,
   type GfxController,
   GfxControllerIdentifier,
-  type GfxPrimitiveElementModel,
+  type GfxModel,
+  GfxPrimitiveElementModel,
   isGfxGroupCompatibleModel,
 } from '@blocksuite/block-std/gfx';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { IBound } from '@blocksuite/global/gfx';
-import { Bound, deserializeXYWH } from '@blocksuite/global/gfx';
+import { deserializeXYWH } from '@blocksuite/global/gfx';
 import type { ExtensionType, Store } from '@blocksuite/store';
 
-import { SurfaceElementModel } from '../../element-model/base.js';
 import type { CanvasRenderer } from '../../renderer/canvas-renderer.js';
 import type { SurfaceBlockComponent } from '../../surface-block.js';
 import { getBgGridGap } from '../../utils/get-bg-grip-gap.js';
@@ -411,8 +406,8 @@ export class ExportManager {
     surfaceRenderer: CanvasRenderer,
     bound: IBound,
     gfx: GfxController,
-    nodes?: GfxBlockElementModel[],
-    surfaces?: GfxPrimitiveElementModel[],
+    blocks?: GfxBlockElementModel[],
+    elements?: GfxPrimitiveElementModel[],
     edgelessBackground?: {
       zoom: number;
     }
@@ -428,10 +423,6 @@ export class ExportManager {
     if (!viewportElement) return;
     const containerComputedStyle = window.getComputedStyle(viewportElement);
 
-    const html2canvas = (element: HTMLElement) =>
-      this._html2canvas(element, {
-        backgroundColor: containerComputedStyle.backgroundColor,
-      });
     const container = rootComponent.querySelector(
       '.affine-block-children-container'
     );
@@ -455,8 +446,33 @@ export class ExportManager {
       });
     }
 
-    const blocks =
-      nodes ?? gfx.getElementsByBound(bound, { type: 'block' }) ?? [];
+    if (!blocks && !elements) {
+      blocks = gfx.getElementsByBound(bound, { type: 'block' });
+      elements = gfx.getElementsByBound(bound, { type: 'canvas' });
+    } else {
+      elements = elements ?? [];
+      blocks = blocks ?? [];
+      const blockSet = new Set<GfxBlockElementModel>();
+      const elementSet = new Set<GfxPrimitiveElementModel>();
+      const addFn = (item: GfxModel) => {
+        if (item instanceof GfxBlockElementModel) {
+          blockSet.add(item);
+        } else if (item instanceof GfxPrimitiveElementModel) {
+          elementSet.add(item);
+        }
+      };
+      [...elements, ...blocks].forEach(item => {
+        addFn(item);
+        if (isGfxGroupCompatibleModel(item)) {
+          item.descendantElements.forEach(descendant => {
+            addFn(descendant);
+          });
+        }
+      });
+      elements = [...elementSet];
+      blocks = [...blockSet];
+    }
+
     for (const block of blocks) {
       if (matchModels(block, [ImageBlockModel])) {
         if (!block.props.sourceId) return;
@@ -495,49 +511,11 @@ export class ExportManager {
         );
       }
 
-      if (matchModels(block, [FrameBlockModel])) {
-        // TODO(@L-Sun): use children of frame instead of bound
-        const blocksInsideFrame = getBlocksInFrameBound(this.doc, block, false);
-        const frameBound = Bound.deserialize(block.xywh);
-
-        // eslint-disable-next-line @typescript-eslint/prefer-for-of
-        for (let i = 0; i < blocksInsideFrame.length; i++) {
-          const element = blocksInsideFrame[i];
-          const htmlElement = this.editorHost.view.getBlock(block.id);
-          const blockBound = xywhArrayToObject(element);
-          const canvasData = await html2canvas(htmlElement as HTMLElement);
-
-          ctx.drawImage(
-            canvasData,
-            blockBound.x - bound.x + 50,
-            blockBound.y - bound.y + 50,
-            blockBound.w,
-            (blockBound.w / canvasData.width) * canvasData.height
-          );
-        }
-        const surfaceCanvas = surfaceRenderer.getCanvasByBound(frameBound);
-
-        ctx.drawImage(surfaceCanvas, 50, 50, frameBound.w, frameBound.h);
-      }
-
       this._checkCanContinueToCanvas(pathname, editorMode);
     }
 
-    if (surfaces?.length) {
-      const surfaceElements = surfaces.flatMap(element =>
-        isGfxGroupCompatibleModel(element)
-          ? (element.descendantElements.filter(
-              el => el instanceof SurfaceElementModel
-            ) as SurfaceElementModel[])
-          : element
-      );
-      const surfaceCanvas = surfaceRenderer.getCanvasByBound(
-        bound,
-        surfaceElements
-      );
-
-      ctx.drawImage(surfaceCanvas, 50, 50, bound.w, bound.h);
-    }
+    const surfaceCanvas = surfaceRenderer.getCanvasByBound(bound, elements);
+    ctx.drawImage(surfaceCanvas, 50, 50, bound.w, bound.h);
 
     return canvas;
   }
@@ -593,50 +571,6 @@ export const ExportManagerExtension: ExtensionType = {
 function xywhArrayToObject(element: GfxBlockElementModel) {
   const [x, y, w, h] = deserializeXYWH(element.xywh);
   return { x, y, w, h };
-}
-
-function getNotesInFrameBound(
-  doc: Store,
-  frame: FrameBlockModel,
-  fullyContained: boolean = true
-): NoteBlockModel[] {
-  const bound = Bound.deserialize(frame.xywh);
-
-  return (doc.getModelsByFlavour('affine:note') as NoteBlockModel[]).filter(
-    ele => {
-      const xywh = Bound.deserialize(ele.xywh);
-
-      return fullyContained
-        ? bound.contains(xywh)
-        : bound.isPointInBound([xywh.x, xywh.y]);
-    }
-  );
-}
-
-function getBlocksInFrameBound(
-  doc: Store,
-  model: FrameBlockModel,
-  fullyContained: boolean = true
-) {
-  const bound = Bound.deserialize(model.xywh);
-  const surface = model.surface;
-  if (!surface) return [];
-
-  return (
-    getNotesInFrameBound(doc, model, fullyContained) as GfxBlockElementModel[]
-  ).concat(
-    surface.children.filter((ele): ele is GfxBlockElementModel => {
-      if (ele.id === model.id) return false;
-      if (ele instanceof GfxBlockElementModel) {
-        const blockBound = Bound.deserialize(ele.xywh);
-        return fullyContained
-          ? bound.contains(blockBound)
-          : bound.containsPoint([blockBound.x, blockBound.y]);
-      }
-
-      return false;
-    })
-  );
 }
 
 type RootBlockComponent = BlockComponent & {

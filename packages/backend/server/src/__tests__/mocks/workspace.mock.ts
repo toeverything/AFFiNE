@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker';
 import type { Prisma, Workspace } from '@prisma/client';
+import { omit } from 'lodash-es';
 
 import { WorkspaceRole } from '../../models';
 import { Mocker } from './factory';
@@ -12,15 +13,17 @@ export type MockedWorkspace = Workspace;
 
 export class MockWorkspace extends Mocker<MockWorkspaceInput, MockedWorkspace> {
   override async create(input?: Partial<MockWorkspaceInput>) {
+    const owner = input?.owner;
+    input = omit(input, 'owner');
     return await this.db.workspace.create({
       data: {
         name: faker.animal.cat(),
         public: false,
         ...input,
-        permissions: input?.owner
+        permissions: owner
           ? {
               create: {
-                userId: 'id' in input.owner ? input.owner.id : input.owner,
+                userId: owner.id,
                 type: WorkspaceRole.Owner,
                 status: 'Accepted',
               },

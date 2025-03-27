@@ -26,6 +26,7 @@ export type IframeOptions = {
   scrolling?: boolean;
   allow?: string;
   allowFullscreen?: boolean;
+  containerBorderRadius?: number;
 };
 
 /**

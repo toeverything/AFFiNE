@@ -1,15 +1,12 @@
-import { type EmbedIframeBlockModel } from '@blocksuite/affine-model';
-import { EmbedIframeService } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import { isValidUrl, stopPropagation } from '@blocksuite/affine-shared/utils';
-import { BlockSelection, type BlockStdScope } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { SignalWatcher } from '@blocksuite/global/lit';
 import { DoneIcon } from '@blocksuite/icons/lit';
-import { css, html, LitElement } from 'lit';
-import { property, query, state } from 'lit/decorators.js';
+import { css, html } from 'lit';
+
+import { EmbedIframeLinkInputBase } from './embed-iframe-link-input-base';
 
 export class EmbedIframeLinkEditPopup extends SignalWatcher(
-  WithDisposable(LitElement)
+  EmbedIframeLinkInputBase
 ) {
   static override styles = css`
     .embed-iframe-link-edit-popup {
@@ -70,90 +67,8 @@ export class EmbedIframeLinkEditPopup extends SignalWatcher(
     }
   `;
 
-  /**
-   * Try to add a bookmark model and remove the current embed iframe model
-   * @param url The url to add as a bookmark
-   */
-  private readonly _tryToAddBookmark = (url: string) => {
-    if (!isValidUrl(url)) {
-      // notify user that the url is invalid
-      console.warn('can not add bookmark', url);
-      return;
-    }
-
-    const { model } = this;
-    const { parent } = model;
-    const index = parent?.children.indexOf(model);
-    const flavour = 'affine:bookmark';
-
-    this.store.transact(() => {
-      const blockId = this.store.addBlock(flavour, { url }, parent, index);
-
-      this.store.deleteBlock(model);
-      this.std.selection.setGroup('note', [
-        this.std.selection.create(BlockSelection, { blockId }),
-      ]);
-    });
-
-    this.abortController.abort();
-  };
-
-  private readonly _onConfirm = () => {
-    if (this._isInputEmpty()) {
-      return;
-    }
-
-    const canEmbed = this.EmbedIframeService.canEmbed(this._linkInputValue);
-    // If the url is not embeddable, try to add it as a bookmark
-    if (!canEmbed) {
-      console.warn('can not embed', this._linkInputValue);
-      this._tryToAddBookmark(this._linkInputValue);
-      return;
-    }
-
-    // Update the embed iframe model
-    this.store.updateBlock(this.model, {
-      url: this._linkInputValue,
-      iframeUrl: '',
-      title: '',
-      description: '',
-    });
-
-    this.abortController.abort();
-  };
-
-  private readonly _handleInput = (e: InputEvent) => {
-    const target = e.target as HTMLInputElement;
-    this._linkInputValue = target.value;
-  };
-
-  private readonly _isInputEmpty = () => {
-    return this._linkInputValue.trim() === '';
-  };
-
-  private readonly _handleKeyDown = (e: KeyboardEvent) => {
-    e.stopPropagation();
-    if (e.key === 'Enter' && !e.isComposing) {
-      this._onConfirm();
-    }
-  };
-
-  override connectedCallback() {
-    super.connectedCallback();
-    this.updateComplete
-      .then(() => {
-        requestAnimationFrame(() => {
-          this.input.focus();
-        });
-      })
-      .catch(console.error);
-    this.disposables.addFromEvent(this, 'cut', stopPropagation);
-    this.disposables.addFromEvent(this, 'copy', stopPropagation);
-    this.disposables.addFromEvent(this, 'paste', stopPropagation);
-  }
-
   override render() {
-    const isInputEmpty = this._isInputEmpty();
+    const isInputEmpty = this.isInputEmpty();
     const { url$ } = this.model.props;
 
     return html`
@@ -165,41 +80,18 @@ export class EmbedIframeLinkEditPopup extends SignalWatcher(
             type="text"
             spellcheck="false"
             placeholder=${url$.value}
-            @input=${this._handleInput}
-            @keydown=${this._handleKeyDown}
+            @input=${this.handleInput}
+            @keydown=${this.handleKeyDown}
           />
         </div>
         <div
           class="confirm-button"
           ?disabled=${isInputEmpty}
-          @click=${this._onConfirm}
+          @click=${this.onConfirm}
         >
           ${DoneIcon({ width: '24px', height: '24px' })}
         </div>
       </div>
     `;
   }
-
-  get store() {
-    return this.model.doc;
-  }
-
-  get EmbedIframeService() {
-    return this.store.get(EmbedIframeService);
-  }
-
-  @state()
-  private accessor _linkInputValue = '';
-
-  @query('input')
-  accessor input!: HTMLInputElement;
-
-  @property({ attribute: false })
-  accessor model!: EmbedIframeBlockModel;
-
-  @property({ attribute: false })
-  accessor abortController!: AbortController;
-
-  @property({ attribute: false })
-  accessor std!: BlockStdScope;
 }

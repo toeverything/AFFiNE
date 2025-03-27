@@ -69,7 +69,7 @@ function useImageBlob(
     ['workspace', 'image', docId, blockId],
     {
       fetcher: async ([_, __, pageId, blockId]) => {
-        const page = docCollection.getDoc(pageId);
+        const page = docCollection.getDoc(pageId)?.getStore();
         const block = page?.getBlock(blockId);
         if (!block) {
           return null;

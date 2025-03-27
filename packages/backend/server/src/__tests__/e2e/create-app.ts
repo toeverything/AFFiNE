@@ -14,6 +14,7 @@ import {
   CacheInterceptor,
   CloudThrottlerGuard,
   GlobalExceptionFilter,
+  JobQueue,
   OneMB,
 } from '../../base';
 import { SocketIoAdapter } from '../../base/websocket';
@@ -22,6 +23,7 @@ import { Mailer } from '../../core/mail';
 import {
   createFactory,
   MockedUser,
+  MockJobQueue,
   MockMailer,
   MockUser,
   MockUserInput,
@@ -40,6 +42,7 @@ export class TestingApp extends NestApplication {
 
   create = createFactory(this.get(PrismaClient, { strict: false }));
   mails = this.get(Mailer, { strict: false }) as MockMailer;
+  queue = this.get(JobQueue, { strict: false }) as MockJobQueue;
 
   get url() {
     const server = this.getHttpServer();
@@ -192,6 +195,9 @@ export async function createApp(
   const builder = Test.createTestingModule({
     imports: [buildAppModule()],
   });
+
+  builder.overrideProvider(Mailer).useValue(new MockMailer());
+  builder.overrideProvider(JobQueue).useValue(new MockJobQueue());
 
   // when custom override happens
   if (tapModule) {

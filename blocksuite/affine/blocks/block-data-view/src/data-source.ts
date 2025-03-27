@@ -86,7 +86,7 @@ export class BlockQueryDataSource extends DataSourceBase {
     this.workspace.slots.docCreated.subscribe(id => {
       const doc = this.workspace.getDoc(id);
       if (doc) {
-        this.listenToDoc(doc);
+        this.listenToDoc(doc.getStore());
       }
     });
     this.workspace.slots.docRemoved.subscribe(id => {

@@ -6,7 +6,6 @@ import { Prisma } from '@prisma/client';
 import { CopilotSessionNotFound } from '../base';
 import { BaseModel } from './base';
 import {
-  ChunkSimilarity,
   ContextConfigSchema,
   ContextDoc,
   ContextEmbedStatus,
@@ -24,7 +23,7 @@ type UpdateCopilotContextInput = Pick<CopilotContext, 'config'>;
  */
 @Injectable()
 export class CopilotContextModel extends BaseModel {
-  // contexts
+  // ================ contexts ================
 
   async create(sessionId: string) {
     const session = await this.db.aiSession.findFirst({
@@ -84,18 +83,15 @@ export class CopilotContextModel extends BaseModel {
     return row;
   }
 
-  async mergeDocStatus(
-    workspaceId: string,
-    docs: (ContextDoc & { status?: ContextEmbedStatus | null })[]
-  ) {
+  async mergeDocStatus(workspaceId: string, docs: ContextDoc[]) {
     const docIds = Array.from(new Set(docs.map(doc => doc.id)));
     const finishedDoc = await this.hasWorkspaceEmbedding(workspaceId, docIds);
 
     for (const doc of docs) {
       const status = finishedDoc.has(doc.id)
         ? ContextEmbedStatus.finished
-        : null;
-      doc.status = status;
+        : undefined;
+      doc.status = status || doc.status;
     }
 
     return docs;
@@ -113,7 +109,7 @@ export class CopilotContextModel extends BaseModel {
     return ret.count > 0;
   }
 
-  // embeddings
+  // ================ embeddings ================
 
   async checkEmbeddingAvailable(): Promise<boolean> {
     const [{ count }] = await this.db.$queryRaw<
@@ -157,7 +153,7 @@ export class CopilotContextModel extends BaseModel {
     return Prisma.join(groups.map(row => Prisma.sql`(${Prisma.join(row)})`));
   }
 
-  async insertEmbedding(
+  async insertContentEmbedding(
     contextId: string,
     fileId: string,
     embeddings: Embedding[]
@@ -172,12 +168,12 @@ export class CopilotContextModel extends BaseModel {
   `;
   }
 
-  async matchEmbedding(
+  async matchContentEmbedding(
     embedding: number[],
     contextId: string,
     topK: number,
     threshold: number
-  ): Promise<ChunkSimilarity[]> {
+  ): Promise<FileChunkSimilarity[]> {
     const similarityChunks = await this.db.$queryRaw<
       Array<FileChunkSimilarity>
     >`
@@ -214,7 +210,7 @@ export class CopilotContextModel extends BaseModel {
     workspaceId: string,
     topK: number,
     threshold: number
-  ): Promise<ChunkSimilarity[]> {
+  ): Promise<DocChunkSimilarity[]> {
     const similarityChunks = await this.db.$queryRaw<Array<DocChunkSimilarity>>`
        SELECT "doc_id" as "docId", "chunk", "content", "embedding" <=> ${embedding}::vector as "distance"
        FROM "ai_workspace_embeddings"

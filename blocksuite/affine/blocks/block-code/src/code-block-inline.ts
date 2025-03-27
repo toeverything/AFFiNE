@@ -1,3 +1,4 @@
+import { LatexInlineSpecExtension } from '@blocksuite/affine-inline-latex';
 import { LinkInlineSpecExtension } from '@blocksuite/affine-inline-link';
 import {
   BackgroundInlineSpecExtension,
@@ -5,7 +6,6 @@ import {
   CodeInlineSpecExtension,
   ColorInlineSpecExtension,
   ItalicInlineSpecExtension,
-  LatexInlineSpecExtension,
   StrikeInlineSpecExtension,
   UnderlineInlineSpecExtension,
 } from '@blocksuite/affine-inline-preset';

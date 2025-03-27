@@ -1,11 +1,12 @@
+import { generateKeyBetween } from '@blocksuite/affine/block-std/gfx';
 import type { EdgelessRootBlockComponent } from '@blocksuite/affine/blocks/root';
 import type { SurfaceElementModel } from '@blocksuite/affine/blocks/surface';
+import { ungroupCommand } from '@blocksuite/affine/gfx/group';
 import type {
   GroupElementModel,
   NoteBlockModel,
 } from '@blocksuite/affine/model';
 import type { BlockComponent } from '@blocksuite/block-std';
-import { generateKeyBetween } from '@blocksuite/block-std/gfx';
 import type { BlockModel, Store } from '@blocksuite/store';
 import { beforeEach, describe, expect, test } from 'vitest';
 import * as Y from 'yjs';
@@ -554,7 +555,9 @@ describe('group related functionality', () => {
     const groupId = createGroup(edgeless.service, elementIds)!;
     expect(isKeptRelativeOrder()).toBeTruthy();
 
-    service.ungroup(service.crud.getElementById(groupId) as GroupElementModel);
+    service.std.command.exec(ungroupCommand, {
+      group: service.crud.getElementById(groupId) as GroupElementModel,
+    });
     expect(isKeptRelativeOrder()).toBeTruthy();
 
     service.doc.undo();

@@ -163,6 +163,7 @@ export async function getInviteInfo(
           name
           avatarUrl
         }
+        status
       }
     }
   `);

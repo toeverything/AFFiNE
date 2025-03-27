@@ -1,4 +1,4 @@
-**@blocksuite/block-std**
+[**BlockSuite API Documentation**](../../README.md)
 
 ***
 

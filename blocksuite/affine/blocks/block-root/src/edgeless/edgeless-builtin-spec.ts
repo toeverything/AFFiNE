@@ -4,28 +4,29 @@ import {
   PresentTool,
 } from '@blocksuite/affine-block-frame';
 import { ConnectionOverlay } from '@blocksuite/affine-block-surface';
-import { TextTool } from '@blocksuite/affine-gfx-text';
+import { BrushTool, EraserTool } from '@blocksuite/affine-gfx-brush';
 import {
-  CanvasEventHandler,
-  ElementTransformManager,
-} from '@blocksuite/block-std/gfx';
+  ConnectorFilter,
+  ConnectorTool,
+} from '@blocksuite/affine-gfx-connector';
+import {
+  MindMapDragExtension,
+  MindMapIndicatorOverlay,
+} from '@blocksuite/affine-gfx-mindmap';
+import { NoteTool } from '@blocksuite/affine-gfx-note';
+import { ShapeTool } from '@blocksuite/affine-gfx-shape';
+import { TextTool } from '@blocksuite/affine-gfx-text';
+import { ElementTransformManager } from '@blocksuite/block-std/gfx';
 import type { ExtensionType } from '@blocksuite/store';
 
 import { EdgelessElementToolbarExtension } from './configs/toolbar';
 import { EdgelessRootBlockSpec } from './edgeless-root-spec.js';
-import { ConnectorFilter } from './element-transform/connector-filter.js';
-import { MindMapDragExtension } from './element-transform/mind-map-drag.js';
+import { DblClickAddEdgelessText } from './element-transform/dblclick-add-edgeless-text.js';
 import { SnapExtension } from './element-transform/snap-manager.js';
-import { MindMapIndicatorOverlay } from './element-transform/utils/indicator-overlay.js';
-import { BrushTool } from './gfx-tool/brush-tool.js';
-import { ConnectorTool } from './gfx-tool/connector-tool.js';
 import { DefaultTool } from './gfx-tool/default-tool.js';
 import { EmptyTool } from './gfx-tool/empty-tool.js';
-import { EraserTool } from './gfx-tool/eraser-tool.js';
 import { LassoTool } from './gfx-tool/lasso-tool.js';
-import { NoteTool } from './gfx-tool/note-tool.js';
 import { PanTool } from './gfx-tool/pan-tool.js';
-import { ShapeTool } from './gfx-tool/shape-tool.js';
 import { TemplateTool } from './gfx-tool/template-tool.js';
 import { EditPropsMiddlewareBuilder } from './middlewares/base.js';
 import { SnapOverlay } from './utils/snap-manager.js';
@@ -50,9 +51,9 @@ export const EdgelessEditExtensions: ExtensionType[] = [
   ElementTransformManager,
   ConnectorFilter,
   SnapExtension,
-  CanvasEventHandler,
   MindMapDragExtension,
   FrameHighlightManager,
+  DblClickAddEdgelessText,
 ];
 
 export const EdgelessBuiltInManager: ExtensionType[] = [

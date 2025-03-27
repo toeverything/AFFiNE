@@ -4,6 +4,7 @@ import {
   deleteWorkspaceMutation,
   getWorkspaceInfoQuery,
   getWorkspacesQuery,
+  ServerDeploymentType,
 } from '@affine/graphql';
 import type {
   BlobStorage,
@@ -468,6 +469,9 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
               type: 'workspace',
               id: workspaceId,
               serverBaseUrl: this.server.serverMetadata.baseUrl,
+              isSelfHosted:
+                this.server.config$.value.type ===
+                ServerDeploymentType.Selfhosted,
             },
           },
           blob: {
@@ -483,6 +487,9 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
               type: 'workspace',
               id: workspaceId,
               serverBaseUrl: this.server.serverMetadata.baseUrl,
+              isSelfHosted:
+                this.server.config$.value.type ===
+                ServerDeploymentType.Selfhosted,
             },
           },
         },

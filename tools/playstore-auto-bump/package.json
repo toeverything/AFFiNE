@@ -11,7 +11,7 @@
   "dependencies": {
     "@affine-tools/cli": "workspace:*",
     "@affine-tools/utils": "workspace:*",
-    "@googleapis/androidpublisher": "^24.0.0",
+    "@googleapis/androidpublisher": "^26.0.0",
     "typescript": "^5.7.2"
   },
   "devDependencies": {

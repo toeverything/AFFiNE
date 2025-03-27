@@ -12,6 +12,7 @@ import type { PointerEventState } from '../../event/state/pointer.js';
 import { type GfxController } from '../controller.js';
 import { GfxExtension, GfxExtensionIdentifier } from '../extension.js';
 import { GfxControllerIdentifier } from '../identifiers.js';
+import type { GfxModel } from '../model/model.js';
 import { type SupportedEvent } from '../view/view.js';
 import type {
   DragExtensionInitializeContext,
@@ -20,6 +21,7 @@ import type {
   ExtensionDragMoveContext,
   ExtensionDragStartContext,
 } from './drag.js';
+import { CanvasEventHandler } from './extension/canvas-event-handler.js';
 
 type ExtensionPointerHandler = Exclude<
   SupportedEvent,
@@ -31,10 +33,7 @@ export const TransformManagerIdentifier = GfxExtensionIdentifier(
 ) as ServiceIdentifier<ElementTransformManager>;
 
 const CAMEL_CASE_MAP: {
-  [key in ExtensionPointerHandler]: keyof Pick<
-    TransformExtension,
-    'click' | 'dblClick' | 'pointerDown' | 'pointerMove' | 'pointerUp'
-  >;
+  [key in ExtensionPointerHandler]: keyof CanvasEventHandler;
 } = {
   click: 'click',
   dblclick: 'dblClick',
@@ -48,8 +47,10 @@ export class ElementTransformManager extends GfxExtension {
 
   private readonly _disposable = new DisposableGroup();
 
+  private canvasEventHandler = new CanvasEventHandler(this.gfx);
+
   override mounted(): void {
-    //
+    this.canvasEventHandler = new CanvasEventHandler(this.gfx);
   }
 
   override unmounted(): void {
@@ -72,18 +73,53 @@ export class ElementTransformManager extends GfxExtension {
     }
   }
 
+  /**
+   * Dispatch the event to canvas elements
+   * @param eventName
+   * @param evt
+   */
   dispatch(eventName: ExtensionPointerHandler, evt: PointerEventState) {
-    const transformExtensions = this.transformExtensions;
+    const handlerName = CAMEL_CASE_MAP[eventName];
 
-    transformExtensions.forEach(ext => {
-      const handlerMethodName = CAMEL_CASE_MAP[eventName];
+    this.canvasEventHandler[handlerName](evt);
 
-      if (ext[handlerMethodName]) {
-        this._safeExecute(() => {
-          ext[handlerMethodName](evt);
-        }, `Error while executing extension \`${handlerMethodName}\` handler`);
-      }
+    const extension = this.transformExtensions;
+
+    extension.forEach(ext => {
+      ext[handlerName]?.(evt);
     });
+  }
+
+  dispatchOnSelected(evt: PointerEventState) {
+    const { raw } = evt;
+    const { gfx } = this;
+    const [x, y] = gfx.viewport.toModelCoordFromClientCoord([raw.x, raw.y]);
+    const picked = this.gfx.getElementInGroup(x, y);
+
+    const tryGetLockedAncestor = (e: GfxModel) => {
+      if (e?.isLockedByAncestor()) {
+        return e.groups.findLast(group => group.isLocked()) ?? e;
+      }
+      return e;
+    };
+
+    if (picked) {
+      const lockedElement = tryGetLockedAncestor(picked);
+      const multiSelect = raw.shiftKey;
+      const view = gfx.view.get(lockedElement);
+      const context = {
+        selected: multiSelect ? !gfx.selection.has(picked.id) : true,
+        multiSelect,
+        event: raw,
+        position: Point.from([x, y]),
+        fallback: lockedElement !== picked,
+      };
+
+      view?.onSelected(context);
+      return true;
+    }
+
+    return false;
   }
 
   initializeDrag(options: DragInitializationOption) {

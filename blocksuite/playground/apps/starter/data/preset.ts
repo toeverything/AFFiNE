@@ -6,7 +6,7 @@ import type { InitFn } from './utils.js';
 const presetMarkdown = `Click the 🔁 button to switch between editors dynamically - they are fully compatible!`;
 
 export const preset: InitFn = async (collection: Workspace, id: string) => {
-  const doc = collection.createDoc({ id });
+  const doc = collection.createDoc(id).getStore({ id });
   doc.load();
   // Add root block and surface block at root level
   const rootId = doc.addBlock('affine:page', {

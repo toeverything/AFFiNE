@@ -26,16 +26,6 @@ declare global {
       workspaceId: string;
       count: number;
     };
-    'workspace.members.reviewRequested': {
-      inviteId: string;
-    };
-    'workspace.members.requestApproved': {
-      inviteId: string;
-    };
-    'workspace.members.requestDeclined': {
-      userId: string;
-      workspaceId: string;
-    };
     'workspace.members.removed': {
       userId: string;
       workspaceId: string;

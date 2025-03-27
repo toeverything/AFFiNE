@@ -82,15 +82,14 @@ export function insertEmbedCard(
       surfaceBlock.model
     );
 
-    gfx.selection.set({
-      elements: [cardId],
-      editing: false,
-    });
-
     gfx.tool.setTool(
       // @ts-expect-error FIXME: resolve after gfx tool refactor
       'default'
     );
+    gfx.selection.set({
+      elements: [cardId],
+      editing: false,
+    });
 
     return cardId;
   }

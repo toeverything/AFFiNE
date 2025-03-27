@@ -112,6 +112,19 @@ export function createBackgroundWorkerHTMLPlugin(
   });
 }
 
+export function createPopupHTMLPlugin(
+  flags: BuildFlags,
+  BUILD_CONFIG: BUILD_CONFIG_TYPE
+) {
+  const htmlPluginOptions = getHTMLPluginOptions(flags, BUILD_CONFIG);
+
+  return new HTMLPlugin({
+    ...htmlPluginOptions,
+    chunks: ['popup'],
+    filename: `popup.html`,
+  });
+}
+
 export function createHTMLPlugins(
   flags: BuildFlags,
   BUILD_CONFIG: BUILD_CONFIG_TYPE

@@ -7,7 +7,7 @@ public class RevokePublicPageMutation: GraphQLMutation {
   public static let operationName: String = "revokePublicPage"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation revokePublicPage($workspaceId: String!, $pageId: String!) { revokePublicPage(workspaceId: $workspaceId, pageId: $pageId) { __typename id mode public } }"#
+      #"mutation revokePublicPage($workspaceId: String!, $pageId: String!) { revokePublicDoc(workspaceId: $workspaceId, docId: $pageId) { __typename id mode public } }"#
     ))
 
   public var workspaceId: String
@@ -32,31 +32,31 @@ public class RevokePublicPageMutation: GraphQLMutation {
 
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Mutation }
     public static var __selections: [ApolloAPI.Selection] { [
-      .field("revokePublicPage", RevokePublicPage.self, arguments: [
+      .field("revokePublicDoc", RevokePublicDoc.self, arguments: [
         "workspaceId": .variable("workspaceId"),
-        "pageId": .variable("pageId")
+        "docId": .variable("pageId")
       ]),
     ] }
 
-    public var revokePublicPage: RevokePublicPage { __data["revokePublicPage"] }
+    public var revokePublicDoc: RevokePublicDoc { __data["revokePublicDoc"] }
 
-    /// RevokePublicPage
+    /// RevokePublicDoc
     ///
-    /// Parent Type: `WorkspacePage`
-    public struct RevokePublicPage: AffineGraphQL.SelectionSet {
+    /// Parent Type: `DocType`
+    public struct RevokePublicDoc: AffineGraphQL.SelectionSet {
       public let __data: DataDict
       public init(_dataDict: DataDict) { __data = _dataDict }
 
-      public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.WorkspacePage }
+      public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.DocType }
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("id", String.self),
-        .field("mode", GraphQLEnum<AffineGraphQL.PublicPageMode>.self),
+        .field("mode", GraphQLEnum<AffineGraphQL.PublicDocMode>.self),
         .field("public", Bool.self),
       ] }
 
       public var id: String { __data["id"] }
-      public var mode: GraphQLEnum<AffineGraphQL.PublicPageMode> { __data["mode"] }
+      public var mode: GraphQLEnum<AffineGraphQL.PublicDocMode> { __data["mode"] }
       public var `public`: Bool { __data["public"] }
     }
   }

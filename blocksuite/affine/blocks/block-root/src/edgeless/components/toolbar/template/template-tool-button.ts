@@ -1,5 +1,6 @@
 import { ArrowDownSmallIcon } from '@blocksuite/affine-components/icons';
 import { once } from '@blocksuite/affine-shared/utils';
+import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import type { GfxToolsFullOptionValue } from '@blocksuite/block-std/gfx';
 import {
   arrow,
@@ -13,7 +14,6 @@ import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { EdgelessToolbarToolMixin } from '../mixins/tool.mixin.js';
 import { TemplateCard1, TemplateCard2, TemplateCard3 } from './cards.js';
 import type { EdgelessTemplatePanel } from './template-panel.js';
 

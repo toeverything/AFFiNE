@@ -5,12 +5,12 @@ import {
   TextSelection,
 } from '@blocksuite/affine/block-std';
 import { defaultImageProxyMiddleware } from '@blocksuite/affine/blocks/image';
-import { pasteMiddleware } from '@blocksuite/affine/blocks/root';
 import type { ServiceProvider } from '@blocksuite/affine/global/di';
 import {
   embedSyncedDocMiddleware,
   MarkdownAdapter,
   MixTextAdapter,
+  pasteMiddleware,
   PlainTextAdapter,
   titleMiddleware,
 } from '@blocksuite/affine/shared/adapters';
@@ -165,8 +165,8 @@ export async function markDownToDoc(
     schema,
     blobCRUD: collection.blobSync,
     docCRUD: {
-      create: (id: string) => collection.createDoc({ id }),
-      get: (id: string) => collection.getDoc(id),
+      create: (id: string) => collection.createDoc(id).getStore({ id }),
+      get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
       delete: (id: string) => collection.removeDoc(id),
     },
     middlewares,

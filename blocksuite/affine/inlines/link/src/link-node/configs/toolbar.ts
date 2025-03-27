@@ -316,6 +316,17 @@ export const builtinInlineLinkToolbarConfig = {
         )
           return false;
 
+        const { link } = target;
+        try {
+          const url = new URL(link);
+          if (!url.protocol.startsWith('http')) {
+            return false;
+          }
+        } catch (err) {
+          console.error(err);
+          return false;
+        }
+
         const { model } = target.block;
         const parent = model.parent;
         if (!parent) return false;

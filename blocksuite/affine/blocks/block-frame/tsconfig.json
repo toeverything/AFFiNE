@@ -11,6 +11,7 @@
     { "path": "../../components" },
     { "path": "../../model" },
     { "path": "../../shared" },
+    { "path": "../../widgets/widget-edgeless-toolbar" },
     { "path": "../../widgets/widget-frame-title" },
     { "path": "../../../framework/block-std" },
     { "path": "../../../framework/global" },

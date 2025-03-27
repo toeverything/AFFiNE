@@ -1,12 +1,12 @@
 import { isFrameBlock } from '@blocksuite/affine-block-frame';
 import { getSurfaceBlock, isNoteBlock } from '@blocksuite/affine-block-surface';
 import type { FrameBlockModel, NoteBlockModel } from '@blocksuite/affine-model';
-import { NoteDisplayMode } from '@blocksuite/affine-model';
+import { replaceIdMiddleware } from '@blocksuite/affine-shared/adapters';
 import { DocModeProvider } from '@blocksuite/affine-shared/services';
 import { getBlockProps } from '@blocksuite/affine-shared/utils';
 import type { EditorHost } from '@blocksuite/block-std';
 import { GfxBlockElementModel, type GfxModel } from '@blocksuite/block-std/gfx';
-import { type BlockModel, type Store, Text } from '@blocksuite/store';
+import { type Store, Text } from '@blocksuite/store';
 
 import {
   getElementProps,
@@ -14,45 +14,29 @@ import {
   sortEdgelessElements,
 } from '../../../edgeless/utils/clone-utils.js';
 
-function addBlocksToDoc(targetDoc: Store, model: BlockModel, parentId: string) {
-  // Add current block to linked doc
-  const blockProps = getBlockProps(model);
-  const newModelId = targetDoc.addBlock(model.flavour, blockProps, parentId);
-  // Add children to linked doc, parent is the new model
-  const children = model.children;
-  if (children.length > 0) {
-    children.forEach(child => {
-      addBlocksToDoc(targetDoc, child, newModelId);
-    });
-  }
-}
-
 export function createLinkedDocFromNote(
   doc: Store,
   note: NoteBlockModel,
   docTitle?: string
 ) {
-  const linkedDoc = doc.workspace.createDoc({});
+  const _doc = doc.workspace.createDoc();
+  const transformer = doc.getTransformer([
+    replaceIdMiddleware(doc.workspace.idGenerator),
+  ]);
+  const blockSnapshot = transformer.blockToSnapshot(note);
+  if (!blockSnapshot) {
+    console.error('Failed to create linked doc from note');
+    return;
+  }
+  const linkedDoc = _doc.getStore({ id: doc.id });
   linkedDoc.load(() => {
     const rootId = linkedDoc.addBlock('affine:page', {
       title: new Text(docTitle),
     });
     linkedDoc.addBlock('affine:surface', {}, rootId);
-    const blockProps = getBlockProps(note);
-    // keep note props & show in both mode
-    const noteId = linkedDoc.addBlock(
-      'affine:note',
-      {
-        ...blockProps,
-        hidden: false,
-        displayMode: NoteDisplayMode.DocAndEdgeless,
-      },
-      rootId
-    );
-    // Add note to linked doc recursively
-    note.children.forEach(model => {
-      addBlocksToDoc(linkedDoc, model, noteId);
-    });
+    transformer
+      .snapshotToBlock(blockSnapshot, linkedDoc, rootId)
+      .catch(console.error);
   });
 
   return linkedDoc;
@@ -63,7 +47,9 @@ export function createLinkedDocFromEdgelessElements(
   elements: GfxModel[],
   docTitle?: string
 ) {
-  const linkedDoc = host.doc.workspace.createDoc({});
+  const _doc = host.doc.workspace.createDoc();
+  const transformer = host.doc.getTransformer();
+  const linkedDoc = _doc.getStore();
   linkedDoc.load(() => {
     const rootId = linkedDoc.addBlock('affine:page', {
       title: new Text(docTitle),
@@ -79,11 +65,12 @@ export function createLinkedDocFromEdgelessElements(
       if (model instanceof GfxBlockElementModel) {
         const blockProps = getBlockProps(model);
         if (isNoteBlock(model)) {
-          newId = linkedDoc.addBlock('affine:note', blockProps, rootId);
-          // Add note children to linked doc recursively
-          model.children.forEach(model => {
-            addBlocksToDoc(linkedDoc, model, newId);
-          });
+          const blockSnapshot = transformer.blockToSnapshot(model);
+          if (blockSnapshot) {
+            transformer
+              .snapshotToBlock(blockSnapshot, linkedDoc, rootId)
+              .catch(console.error);
+          }
         } else {
           if (isFrameBlock(model)) {
             mapFrameIds(blockProps as FrameBlockModel['props'], ids);

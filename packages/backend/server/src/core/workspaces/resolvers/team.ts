@@ -64,7 +64,11 @@ export class TeamWorkspaceResolver {
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args({ name: 'emails', type: () => [String] }) emails: string[],
-    @Args('sendInviteMail', { nullable: true }) sendInviteMail: boolean
+    @Args('sendInviteMail', {
+      nullable: true,
+      deprecationReason: 'never used',
+    })
+    _sendInviteMail: boolean
   ) {
     await this.ac
       .user(user.id)
@@ -116,21 +120,11 @@ export class TeamWorkspaceResolver {
         // NOTE: we always send email even seat not enough
         // because at this moment we cannot know whether the seat increase charge was successful
         // after user click the invite link, we can check again and reject if charge failed
-        if (sendInviteMail) {
-          try {
-            await this.workspaceService.sendInviteEmail({
-              workspaceId,
-              inviteeEmail: target.email,
-              inviterUserId: user.id,
-              inviteId: role.id,
-            });
-            ret.sentSuccess = true;
-          } catch (e) {
-            this.logger.warn(
-              `failed to send ${workspaceId} invite email to ${email}: ${e}`
-            );
-          }
-        }
+        await this.workspaceService.sendInvitationNotification(
+          user.id,
+          ret.inviteId
+        );
+        ret.sentSuccess = true;
       } catch (e) {
         this.logger.error('failed to invite user', e);
       }
@@ -229,12 +223,12 @@ export class TeamWorkspaceResolver {
 
   @Mutation(() => Boolean)
   async approveMember(
-    @CurrentUser() user: CurrentUser,
+    @CurrentUser() me: CurrentUser,
     @Args('workspaceId') workspaceId: string,
     @Args('userId') userId: string
   ) {
     await this.ac
-      .user(user.id)
+      .user(me.id)
       .workspace(workspaceId)
       .assert('Workspace.Users.Manage');
 
@@ -248,9 +242,10 @@ export class TeamWorkspaceResolver {
           WorkspaceMemberStatus.Accepted
         );
 
-        this.event.emit('workspace.members.requestApproved', {
-          inviteId: result.id,
-        });
+        await this.workspaceService.sendReviewApprovedNotification(
+          result.id,
+          me.id
+        );
       }
       return true;
     } else {

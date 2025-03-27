@@ -10,6 +10,7 @@ import {
 } from './socket';
 
 interface CloudAwarenessStorageOptions {
+  isSelfHosted: boolean;
   serverBaseUrl: string;
   type: SpaceType;
   id: string;
@@ -22,7 +23,10 @@ export class CloudAwarenessStorage extends AwarenessStorageBase {
     super();
   }
 
-  connection = new SocketConnection(this.options.serverBaseUrl);
+  connection = new SocketConnection(
+    this.options.serverBaseUrl,
+    this.options.isSelfHosted
+  );
 
   private get socket() {
     return this.connection.inner.socket;

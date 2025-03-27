@@ -115,7 +115,9 @@ export function parsePageDoc(
           continue;
         }
 
-        if (summaryLenNeeded > 0) {
+        if (summaryLenNeeded === -1) {
+          content.summary += text.toString();
+        } else if (summaryLenNeeded > 0) {
           content.summary += text.toString();
           summaryLenNeeded -= text.length;
         } else {

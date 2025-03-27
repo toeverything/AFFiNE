@@ -4,8 +4,6 @@ import { BlockComponent } from '@blocksuite/block-std';
 import { css, html } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 
-import { ReadOnlyClipboard } from '../clipboard/readonly-clipboard';
-
 export class PreviewRootBlockComponent extends BlockComponent {
   static override styles = css`
     affine-preview-root {
@@ -13,16 +11,12 @@ export class PreviewRootBlockComponent extends BlockComponent {
     }
   `;
 
-  clipboardController = new ReadOnlyClipboard(this);
-
   override connectedCallback() {
     super.connectedCallback();
-    this.clipboardController.hostConnected();
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
-    this.clipboardController.hostDisconnected();
   }
 
   override renderBlock() {

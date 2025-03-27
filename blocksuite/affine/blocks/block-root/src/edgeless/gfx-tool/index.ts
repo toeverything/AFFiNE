@@ -1,10 +1,5 @@
-export { BrushTool } from './brush-tool.js';
-export { ConnectorTool, type ConnectorToolOptions } from './connector-tool.js';
 export { DefaultTool } from './default-tool.js';
 export { EmptyTool } from './empty-tool.js';
-export { EraserTool } from './eraser-tool.js';
 export { LassoTool, type LassoToolOption } from './lasso-tool.js';
-export { NoteTool, type NoteToolOption } from './note-tool.js';
 export { PanTool, type PanToolOption } from './pan-tool.js';
-export { ShapeTool, type ShapeToolOption } from './shape-tool.js';
 export { TemplateTool } from './template-tool.js';

@@ -477,7 +477,8 @@ const SAVE_AS_DOC = {
   toast: 'New doc created',
   handler: (host: EditorHost, content: string) => {
     reportResponse('result:add-page');
-    const newDoc = host.doc.workspace.createDoc();
+    const doc = host.doc.workspace.createDoc();
+    const newDoc = doc.getStore();
     newDoc.load();
     const rootId = newDoc.addBlock('affine:page');
     newDoc.addBlock('affine:surface', {}, rootId);
@@ -533,7 +534,7 @@ const CREATE_AS_LINKED_DOC = {
     }
 
     // Create a new doc and add the content to it
-    const newDoc = host.doc.workspace.createDoc();
+    const newDoc = host.doc.workspace.createDoc().getStore();
     newDoc.load();
     const rootId = newDoc.addBlock('affine:page');
     newDoc.addBlock('affine:surface', {}, rootId);

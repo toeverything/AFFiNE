@@ -28,7 +28,6 @@ export const NotificationSettings = () => {
   const error = useLiveData(userSettingsService.error$);
   const errorMessage = useMemo(() => {
     if (error) {
-      console.log('error', error);
       const userFriendlyError = UserFriendlyError.fromAny(error);
       return t[`error.${userFriendlyError.name}`](userFriendlyError.data);
     }
@@ -65,7 +64,7 @@ export const NotificationSettings = () => {
       <SettingWrapper
         title={t['com.affine.setting.notifications.email.title']()}
       >
-        {errorMessage && (
+        {!userSettings && errorMessage && (
           <>
             <div className={styles.errorMessage}>{errorMessage}</div>
             <br />

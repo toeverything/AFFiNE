@@ -109,6 +109,17 @@ export async function getViewportCenter(page: Page, editorIndex = 0) {
   });
 }
 
+export async function getViewportBound(page: Page, editorIndex = 0) {
+  const container = locateEditorContainer(page, editorIndex);
+  return container.evaluate(container => {
+    const root = container.querySelector('affine-edgeless-root');
+    if (!root) {
+      throw new Error('Edgeless root not found');
+    }
+    return root.gfx.viewport.viewportBounds.toXYWH();
+  });
+}
+
 export async function setViewportCenter(
   page: Page,
   center: IVec,

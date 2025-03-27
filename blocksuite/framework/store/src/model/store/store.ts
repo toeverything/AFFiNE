@@ -1127,8 +1127,9 @@ export class Store {
       schema: this.schema,
       blobCRUD: this.workspace.blobSync,
       docCRUD: {
-        create: (id: string) => this.workspace.createDoc({ id }),
-        get: (id: string) => this.workspace.getDoc(id),
+        create: (id: string) => this.workspace.createDoc(id).getStore({ id }),
+        get: (id: string) =>
+          this.workspace.getDoc(id)?.getStore({ id }) ?? null,
         delete: (id: string) => this.workspace.removeDoc(id),
       },
       middlewares,

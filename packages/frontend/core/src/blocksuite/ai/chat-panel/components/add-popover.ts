@@ -6,6 +6,7 @@ import type {
 import { ShadowlessElement } from '@blocksuite/affine/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
+import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { openFileOrFiles } from '@blocksuite/affine/shared/utils';
 import {
   CollectionsIcon,
@@ -34,8 +35,8 @@ export type MenuGroup = {
   items: MenuItem[] | Signal<MenuItem[]>;
   maxDisplay?: number;
   overflowText?: string | Signal<string>;
-  divider?: TemplateResult<1>;
-  noResult?: TemplateResult<1>;
+  divider?: () => TemplateResult<1>;
+  noResult?: () => TemplateResult<1>;
 };
 
 export type MenuItem = {
@@ -43,7 +44,6 @@ export type MenuItem = {
   name: string | TemplateResult<1>;
   icon: TemplateResult<1>;
   action: MenuAction;
-  suffix?: string | TemplateResult<1>;
 };
 
 export type MenuAction = () => Promise<void> | void;
@@ -56,26 +56,26 @@ export class ChatPanelAddPopover extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
   static override styles = css`
-    .add-popover {
+    .ai-add-popover {
       width: 280px;
       max-height: 450px;
       overflow-y: auto;
-      border: 0.5px solid var(--affine-border-color);
+      border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
       border-radius: 4px;
-      background: var(--affine-background-primary-color);
-      box-shadow: var(--affine-shadow-2);
+      background: ${unsafeCSSVarV2('layer/background/overlayPanel')};
+      box-shadow: ${unsafeCSSVar('overlayPanelShadow')};
       padding: 8px;
     }
-    .add-popover icon-button {
+    .ai-add-popover icon-button {
       justify-content: flex-start;
       gap: 8px;
     }
-    .add-popover icon-button svg {
+    .ai-add-popover icon-button svg {
       width: 20px;
       height: 20px;
     }
-    .add-popover .divider {
-      border-top: 0.5px solid var(--affine-border-color);
+    .ai-add-popover .divider {
+      border-top: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
       margin: 8px 0;
     }
     .search-input-wrapper {
@@ -89,11 +89,11 @@ export class ChatPanelAddPopover extends SignalWatcher(
       line-height: 20px;
       height: 20px;
       font-size: var(--affine-font-sm);
-      color: var(--affine-text-primary-color);
+      color: ${unsafeCSSVarV2('text/primary')};
       flex-grow: 1;
     }
     .search-input-wrapper input::placeholder {
-      color: var(--affine-placeholder-color);
+      color: ${unsafeCSSVarV2('text/placeholder')};
     }
     .search-input-wrapper input:focus {
       outline: none;
@@ -101,26 +101,20 @@ export class ChatPanelAddPopover extends SignalWatcher(
     .search-input-wrapper svg {
       width: 20px;
       height: 20px;
-      color: var(--affine-v2-icon-primary);
+      color: ${unsafeCSSVarV2('icon/primary')};
     }
     .no-result {
       padding: 4px;
       font-size: var(--affine-font-sm);
-      color: var(--affine-text-secondary-color);
+      color: ${unsafeCSSVarV2('text/secondary')};
     }
     .menu-items icon-button {
       outline: none;
     }
-    .item-suffix {
-      margin-left: auto;
-      font-size: var(--affine-font-xs);
-      color: var(--affine-text-secondary-color);
-    }
 
-    ${scrollbarStyle('.add-popover')}
+    ${scrollbarStyle('.ai-add-popover')}
   `;
 
-  @state()
   private accessor _query = '';
 
   @state()
@@ -208,26 +202,24 @@ export class ChatPanelAddPopover extends SignalWatcher(
 
     // Process maxDisplay for each group
     return groups.map(group => {
-      let items = resolveSignal(group.items);
+      const items = resolveSignal(group.items);
       const maxDisplay = group.maxDisplay ?? items.length;
       const hasMore = items.length > maxDisplay;
       if (!hasMore) {
         return group;
       }
+      const more = {
+        key: `${group.name} More`,
+        name: resolveSignal(group.overflowText) ?? 'more',
+        icon: MoreHorizontalIcon(),
+        action: () => {
+          this._resetMaxDisplay(group);
+          this._focusSearchInput();
+        },
+      };
       return {
         ...group,
-        items: [
-          ...items.slice(0, maxDisplay),
-          {
-            key: `${group.name} More`,
-            name: resolveSignal(group.overflowText) ?? 'more',
-            icon: MoreHorizontalIcon(),
-            action: () => {
-              this._resetMaxDisplay(group);
-              this._focusSearchInput();
-            },
-          },
-        ],
+        items: [...items.slice(0, maxDisplay), more],
       };
     });
   }
@@ -272,7 +264,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
   }
 
   override render() {
-    return html`<div class="add-popover">
+    return html`<div class="ai-add-popover" data-testid="ai-add-popover">
       ${this._renderSearchInput()} ${this._renderDivider()}
       ${this._renderMenuGroup(this._menuGroup)}
     </div>`;
@@ -287,6 +279,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
         placeholder=${this._getPlaceholder()}
         .value=${this._query}
         @input=${this._onInput}
+        @compositionend=${this._onCompositionEnd}
       />
     </div>`;
   }
@@ -321,9 +314,9 @@ export class ChatPanelAddPopover extends SignalWatcher(
         const menuGroup = html`<div class="menu-group">
           ${items.length > 0
             ? this._renderMenuItems(items, startIndex)
-            : (group.noResult ?? this._renderNoResult())}
+            : (group.noResult?.() ?? this._renderNoResult())}
           ${idx < groups.length - 1
-            ? (group.divider ?? this._renderDivider())
+            ? (group.divider?.() ?? this._renderDivider())
             : ''}
         </div>`;
         startIndex += items.length;
@@ -337,7 +330,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
       ${repeat(
         items,
         item => item.key,
-        ({ key, name, icon, action, suffix }, idx) => {
+        ({ key, name, icon, action }, idx) => {
           const curIdx = startIndex + idx;
           return html`<icon-button
             width="280px"
@@ -350,15 +343,23 @@ export class ChatPanelAddPopover extends SignalWatcher(
             @mousemove=${() => (this._activatedIndex = curIdx)}
           >
             ${icon}
-            ${suffix ? html`<div class="item-suffix">${suffix}</div>` : ''}
           </icon-button>`;
         }
       )}
     </div>`;
   }
 
-  private _onInput(event: Event) {
-    this._query = (event.target as HTMLInputElement).value;
+  private _onCompositionEnd(event: CompositionEvent) {
+    this._updateQuery((event.target as HTMLInputElement).value.trim());
+  }
+
+  private _onInput(event: InputEvent) {
+    if (event.isComposing) return;
+    this._updateQuery((event.target as HTMLInputElement).value.trim());
+  }
+
+  private _updateQuery(query: string) {
+    this._query = query;
     this._activatedIndex = 0;
     this._updateSearchGroup();
   }
@@ -409,36 +410,29 @@ export class ChatPanelAddPopover extends SignalWatcher(
             this._addCollectionChip,
             this.abortController.signal
           );
-          const hasNoResult =
-            resolveSignal(docGroup.items).length === 0 &&
-            resolveSignal(tagGroup.items).length === 0 &&
-            resolveSignal(collectionGroup.items).length === 0;
-          if (hasNoResult) {
-            this._searchGroups = [
-              {
-                name: 'No Result',
-                items: [],
+          const nothing = html``;
+          this._searchGroups = [
+            {
+              ...docGroup,
+              divider: () => nothing,
+              noResult: () => nothing,
+            },
+            {
+              ...tagGroup,
+              divider: () => nothing,
+              noResult: () => nothing,
+            },
+            {
+              ...collectionGroup,
+              divider: () => this._renderDivider(),
+              noResult: () => {
+                const hasNoResult = this._searchGroups.every(group => {
+                  return resolveSignal(group.items).length === 0;
+                });
+                return hasNoResult ? this._renderNoResult() : nothing;
               },
-            ];
-          } else {
-            const nothing = html``;
-            this._searchGroups = [
-              {
-                ...docGroup,
-                divider: nothing,
-                noResult: nothing,
-              },
-              {
-                ...tagGroup,
-                divider: nothing,
-                noResult: nothing,
-              },
-              {
-                ...collectionGroup,
-                noResult: nothing,
-              },
-            ];
-          }
+            },
+          ];
         }
         break;
       }
@@ -453,11 +447,19 @@ export class ChatPanelAddPopover extends SignalWatcher(
     this.abortController.abort();
   };
 
-  private readonly _addTagChip = (_tag: TagMeta) => {
+  private readonly _addTagChip = (tag: TagMeta) => {
+    this.addChip({
+      tagId: tag.id,
+      state: 'processing',
+    });
     this.abortController.abort();
   };
 
-  private readonly _addCollectionChip = (_collection: CollectionMeta) => {
+  private readonly _addCollectionChip = (collection: CollectionMeta) => {
+    this.addChip({
+      collectionId: collection.id,
+      state: 'processing',
+    });
     this.abortController.abort();
   };
 

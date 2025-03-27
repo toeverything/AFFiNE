@@ -4,6 +4,7 @@ import { WorkspaceServerService } from '../cloud';
 import { WorkspaceDBService } from '../db';
 import { DocScope, DocService, DocsService } from '../doc';
 import { GlobalState } from '../storage';
+import { TagService } from '../tag';
 import { WorkspaceScope, WorkspaceService } from '../workspace';
 import { ReadwiseIntegration } from './entities/readwise';
 import { ReadwiseCrawler } from './entities/readwise-crawler';
@@ -15,6 +16,7 @@ import { ReadwiseStore } from './store/readwise';
 
 export { IntegrationService };
 export { IntegrationTypeIcon } from './views/icon';
+export { DocIntegrationPropertiesTable } from './views/properties-table';
 
 export function configureIntegrationModule(framework: Framework) {
   framework
@@ -26,8 +28,8 @@ export function configureIntegrationModule(framework: Framework) {
       WorkspaceServerService,
     ])
     .service(IntegrationService)
-    .entity(IntegrationWriter, [WorkspaceService])
     .entity(ReadwiseCrawler, [ReadwiseStore])
+    .entity(IntegrationWriter, [WorkspaceService, TagService])
     .entity(ReadwiseIntegration, [
       IntegrationRefStore,
       ReadwiseStore,

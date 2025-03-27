@@ -1,13 +1,17 @@
 import { MarkdownTransformer } from '@blocksuite/affine/blocks/root';
 import { Entity } from '@toeverything/infra';
 
+import type { TagService } from '../../tag';
 import {
   getAFFiNEWorkspaceSchema,
   type WorkspaceService,
 } from '../../workspace';
 
 export class IntegrationWriter extends Entity {
-  constructor(private readonly workspaceService: WorkspaceService) {
+  constructor(
+    private readonly workspaceService: WorkspaceService,
+    private readonly tagService: TagService
+  ) {
     super();
   }
 
@@ -32,18 +36,24 @@ export class IntegrationWriter extends Entity {
      * Update strategy, default is `override`
      */
     updateStrategy?: 'override' | 'append';
+    /**
+     * Tags to apply to the doc
+     */
+    tags?: string[];
   }) {
     const {
       title,
       content,
       comment,
       docId,
+      tags,
       updateStrategy = 'override',
     } = options;
 
     const workspace = this.workspaceService.workspace;
     let markdown = comment ? `${content}\n---\n${comment}` : content;
 
+    let finalDocId: string;
     if (!docId) {
       const newDocId = await MarkdownTransformer.importMarkdownToDoc({
         collection: workspace.docCollection,
@@ -52,11 +62,12 @@ export class IntegrationWriter extends Entity {
         fileName: title,
       });
 
-      return newDocId;
+      if (!newDocId) throw new Error('Failed to create a new doc');
+      finalDocId = newDocId;
     } else {
       const collection = workspace.docCollection;
 
-      const doc = collection.getDoc(docId);
+      const doc = collection.getDoc(docId)?.getStore();
       if (!doc) throw new Error('Doc not found');
 
       doc.workspace.meta.setDocMeta(docId, {
@@ -88,7 +99,16 @@ export class IntegrationWriter extends Entity {
       } else {
         throw new Error('Invalid update strategy');
       }
-      return doc.id;
+      finalDocId = doc.id;
     }
+    await this.applyTags(finalDocId, tags);
+    return finalDocId;
+  }
+
+  public async applyTags(docId: string, tags?: string[]) {
+    if (!tags?.length) return;
+    tags.forEach(tag => {
+      this.tagService.tagList.tagByTagId$(tag).value?.tag(docId);
+    });
   }
 }

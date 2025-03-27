@@ -190,8 +190,11 @@ test('outline viewer should be useable in doc peek preview', async ({
   const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
   await expect(toolbar).toBeVisible();
 
-  await toolbar.getByLabel('Open doc').click();
-  await toolbar.getByLabel('Open in center peek').click();
+  await toolbar.getByLabel(/^Open doc$/).click();
+  await toolbar
+    .getByLabel('Open doc menu')
+    .getByLabel('Open in center peek')
+    .click();
 
   const peekView = page.getByTestId('peek-view-modal');
   await expect(peekView).toBeVisible();

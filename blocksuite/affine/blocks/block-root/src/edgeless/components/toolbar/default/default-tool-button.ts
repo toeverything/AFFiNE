@@ -1,10 +1,10 @@
+import { QuickToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import type { GfxToolsFullOptionValue } from '@blocksuite/block-std/gfx';
 import { HandIcon, SelectIcon } from '@blocksuite/icons/lit';
 import { effect } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { query } from 'lit/decorators.js';
 
-import { QuickToolMixin } from '../mixins/quick-tool.mixin.js';
 export class EdgelessDefaultToolButton extends QuickToolMixin(LitElement) {
   static override styles = css`
     .current-icon {
@@ -62,7 +62,7 @@ export class EdgelessDefaultToolButton extends QuickToolMixin(LitElement) {
     }
     this.disposables.add(
       effect(() => {
-        const tool = this.edgeless.gfx.tool.currentToolName$.value;
+        const tool = this.gfx.tool.currentToolName$.value;
         if (tool === 'default' || tool === 'pan') {
           localStorage.defaultTool = tool;
         }

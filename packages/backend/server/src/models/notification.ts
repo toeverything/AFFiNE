@@ -78,9 +78,28 @@ export type InvitationNotificationCreate = z.input<
   typeof InvitationNotificationCreateSchema
 >;
 
+const InvitationReviewDeclinedNotificationBodySchema = z.object({
+  workspaceId: IdSchema,
+  createdByUserId: IdSchema,
+});
+
+export type InvitationReviewDeclinedNotificationBody = z.infer<
+  typeof InvitationReviewDeclinedNotificationBodySchema
+>;
+
+export const InvitationReviewDeclinedNotificationCreateSchema =
+  BaseNotificationCreateSchema.extend({
+    body: InvitationReviewDeclinedNotificationBodySchema,
+  });
+
+export type InvitationReviewDeclinedNotificationCreate = z.input<
+  typeof InvitationReviewDeclinedNotificationCreateSchema
+>;
+
 export type UnionNotificationBody =
   | MentionNotificationBody
-  | InvitationNotificationBody;
+  | InvitationNotificationBody
+  | InvitationReviewDeclinedNotificationBody;
 
 // #endregion
 
@@ -92,7 +111,13 @@ export type MentionNotification = Notification &
 export type InvitationNotification = Notification &
   z.infer<typeof InvitationNotificationCreateSchema>;
 
-export type UnionNotification = MentionNotification | InvitationNotification;
+export type InvitationReviewDeclinedNotification = Notification &
+  z.infer<typeof InvitationReviewDeclinedNotificationCreateSchema>;
+
+export type UnionNotification =
+  | MentionNotification
+  | InvitationNotification
+  | InvitationReviewDeclinedNotification;
 
 // #endregion
 
@@ -133,6 +158,23 @@ export class NotificationModel extends BaseModel {
       `Created ${type} notification ${row.id} to user ${data.userId} in workspace ${data.body.workspaceId}`
     );
     return row as InvitationNotification;
+  }
+
+  async createInvitationReviewDeclined(
+    input: InvitationReviewDeclinedNotificationCreate
+  ) {
+    const data = InvitationReviewDeclinedNotificationCreateSchema.parse(input);
+    const type = NotificationType.InvitationReviewDeclined;
+    const row = await this.create({
+      userId: data.userId,
+      level: data.level,
+      type,
+      body: data.body,
+    });
+    this.logger.log(
+      `Created ${type} notification ${row.id} to user ${data.userId} in workspace ${data.body.workspaceId}`
+    );
+    return row as InvitationReviewDeclinedNotification;
   }
 
   // #endregion

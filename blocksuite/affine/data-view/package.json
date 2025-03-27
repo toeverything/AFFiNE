@@ -14,7 +14,7 @@
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/block-std": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/icons": "^2.2.6",
+    "@blocksuite/icons": "^2.2.8",
     "@blocksuite/store": "workspace:*",
     "@emotion/hash": "^0.9.2",
     "@floating-ui/dom": "^1.6.13",

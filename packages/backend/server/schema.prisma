@@ -40,7 +40,7 @@ model User {
   createdAiJobs         AiJobs[]               @relation("createdAiJobs")
   // receive notifications
   notifications         Notification[]         @relation("user_notifications")
-  settings              Settings?
+  settings              UserSettings?
 
   @@index([email])
   @@map("users")
@@ -444,7 +444,7 @@ model AiContextEmbedding {
   // a file can be divided into multiple chunks and embedded separately.
   chunk     Int                        @db.Integer
   content   String                     @db.VarChar
-  embedding Unsupported("vector(512)")
+  embedding Unsupported("vector(1024)")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -462,7 +462,7 @@ model AiWorkspaceEmbedding {
   // a doc can be divided into multiple chunks and embedded separately.
   chunk       Int                        @db.Integer
   content     String                     @db.VarChar
-  embedding   Unsupported("vector(512)")
+  embedding   Unsupported("vector(1024)")
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -714,6 +714,9 @@ enum NotificationType {
   InvitationAccepted
   InvitationBlocked
   InvitationRejected
+  InvitationReviewRequest
+  InvitationReviewApproved
+  InvitationReviewDeclined
 }
 
 enum NotificationLevel {
@@ -744,7 +747,7 @@ model Notification {
   @@map("notifications")
 }
 
-model Settings {
+model UserSettings {
   userId    String   @id @map("user_id") @db.VarChar
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -752,5 +755,5 @@ model Settings {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("settings")
+  @@map("user_settings")
 }

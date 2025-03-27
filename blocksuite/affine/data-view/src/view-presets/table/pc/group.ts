@@ -7,7 +7,8 @@ import { ShadowlessElement } from '@blocksuite/block-std';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { PlusIcon } from '@blocksuite/icons/lit';
 import { effect } from '@preact/signals-core';
-import { css, html } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, html, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
@@ -39,7 +40,7 @@ const styles = css`
     cursor: pointer;
     transition: opacity 0.2s ease-in-out;
     padding: 4px 8px;
-    border-bottom: 1px solid var(--affine-border-color);
+    border-bottom: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
   }
 
   @media print {
@@ -69,8 +70,9 @@ export class TableGroup extends SignalWatcher(
 
   private readonly clickAddRow = () => {
     this.view.rowAdd('end', this.group?.key);
+    const selectionController = this.viewEle.selectionController;
+    selectionController.selection = undefined;
     requestAnimationFrame(() => {
-      const selectionController = this.viewEle.selectionController;
       const index = this.view.properties$.value.findIndex(
         v => v.type$.value === 'title'
       );
@@ -87,8 +89,9 @@ export class TableGroup extends SignalWatcher(
 
   private readonly clickAddRowInStart = () => {
     this.view.rowAdd('start', this.group?.key);
+    const selectionController = this.viewEle.selectionController;
+    selectionController.selection = undefined;
     requestAnimationFrame(() => {
-      const selectionController = this.viewEle.selectionController;
       const index = this.view.properties$.value.findIndex(
         v => v.type$.value === 'title'
       );

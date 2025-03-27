@@ -15,7 +15,7 @@ import type {
   DatabaseRow,
   DatabaseValueCell,
 } from '@affine/core/modules/doc-info/types';
-import { GuardService } from '@affine/core/modules/permissions';
+import { DocIntegrationPropertiesTable } from '@affine/core/modules/integration';
 import { ViewService, WorkbenchService } from '@affine/core/modules/workbench';
 import type { AffineDNDData } from '@affine/core/types/dnd';
 import { useI18n } from '@affine/i18n';
@@ -31,6 +31,7 @@ import clsx from 'clsx';
 import type React from 'react';
 import { forwardRef, useCallback, useMemo, useState } from 'react';
 
+import { useGuard } from '../guard';
 import { DocPropertyIcon } from './icons/doc-property-icon';
 import { CreatePropertyMenuItems } from './menu/create-doc-property';
 import { EditDocPropertyMenuItems } from './menu/edit-doc-property';
@@ -289,18 +290,13 @@ const DocWorkspacePropertiesTableBody = forwardRef<
     const workbenchService = useService(WorkbenchService);
     const viewService = useServiceOptional(ViewService);
     const docService = useService(DocService);
-    const guardService = useService(GuardService);
     const properties = useLiveData(docsService.propertyList.sortedProperties$);
     const [addMoreCollapsed, setAddMoreCollapsed] = useState(true);
 
     const [newPropertyId, setNewPropertyId] = useState<string | null>(null);
 
-    const canEditProperty = useLiveData(
-      guardService.can$('Doc_Update', docService.doc.id)
-    );
-    const canEditPropertyInfo = useLiveData(
-      guardService.can$('Workspace_Properties_Update')
-    );
+    const canEditProperty = useGuard('Doc_Update', docService.doc.id);
+    const canEditPropertyInfo = useGuard('Workspace_Properties_Update');
 
     const handlePropertyAdded = useCallback(
       (property: DocCustomPropertyInfo) => {
@@ -448,6 +444,9 @@ const DocPropertiesTableInner = ({
           onOpenChange={setExpanded}
         />
         <Collapsible.Content>
+          <DocIntegrationPropertiesTable
+            divider={<div className={styles.tableHeaderDivider} />}
+          />
           <DocWorkspacePropertiesTableBody
             defaultOpen={
               !defaultOpenProperty || defaultOpenProperty.type === 'workspace'

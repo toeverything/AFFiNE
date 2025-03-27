@@ -745,7 +745,8 @@ export class WebContentViewsManager {
     const focusActiveView = () => {
       if (
         !this.activeWorkbenchView ||
-        this.activeWorkbenchView.webContents.isFocused()
+        this.activeWorkbenchView.webContents.isFocused() ||
+        this.activeWorkbenchView.webContents.isDevToolsFocused()
       ) {
         return;
       }

@@ -16,10 +16,14 @@ import type { BlockModel } from '@blocksuite/store';
 import type { TemplateResult } from 'lit';
 
 export const getIcon = (
-  model: BlockModel & { type?: string }
+  model: BlockModel & {
+    props: {
+      type?: string;
+    };
+  }
 ): TemplateResult => {
   if (model.flavour === 'affine:paragraph') {
-    const type = model.type as ParagraphType;
+    const type = model.props.type as ParagraphType;
     return (
       {
         text: TextIcon(),
@@ -39,7 +43,7 @@ export const getIcon = (
         bulleted: BulletedListIcon(),
         numbered: NumberedListIcon(),
         todo: CheckBoxCheckLinearIcon(),
-      }[model.type ?? 'bulleted'] ?? BulletedListIcon()
+      }[model.props.type ?? 'bulleted'] ?? BulletedListIcon()
     );
   }
   return TextIcon();

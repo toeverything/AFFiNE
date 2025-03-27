@@ -1,11 +1,8 @@
 import { footnoteReferenceDeltaToMarkdownAdapterMatcher } from '@blocksuite/affine-inline-footnote';
+import { latexDeltaToMarkdownAdapterMatcher } from '@blocksuite/affine-inline-latex';
 import { linkDeltaToMarkdownAdapterMatcher } from '@blocksuite/affine-inline-link';
 import { referenceDeltaToMarkdownAdapterMatcher } from '@blocksuite/affine-inline-reference';
 import { InlineDeltaToMarkdownAdapterExtension } from '@blocksuite/affine-shared/adapters';
-import type { PhrasingContent } from 'mdast';
-import type RemarkMath from 'remark-math';
-
-declare type _GLOBAL_ = typeof RemarkMath;
 
 export const boldDeltaToMarkdownAdapterMatcher =
   InlineDeltaToMarkdownAdapterExtension({
@@ -54,25 +51,6 @@ export const inlineCodeDeltaToMarkdownAdapterMatcher =
       type: 'inlineCode',
       value: delta.insert,
     }),
-  });
-
-export const latexDeltaToMarkdownAdapterMatcher =
-  InlineDeltaToMarkdownAdapterExtension({
-    name: 'inlineLatex',
-    match: delta => !!delta.attributes?.latex,
-    toAST: delta => {
-      const mdast: PhrasingContent = {
-        type: 'text',
-        value: delta.insert,
-      };
-      if (delta.attributes?.latex) {
-        return {
-          type: 'inlineMath',
-          value: delta.attributes.latex,
-        };
-      }
-      return mdast;
-    },
   });
 
 export const InlineDeltaToMarkdownAdapterExtensions = [

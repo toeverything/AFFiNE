@@ -14,7 +14,6 @@ import {
   CompatibleFavoriteItemsAdapter,
   FavoriteService,
 } from '@affine/core/modules/favorite';
-import { GuardService } from '@affine/core/modules/permissions';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
@@ -41,6 +40,7 @@ import { useCallback, useState } from 'react';
 
 import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import type { CollectionService } from '../../modules/collection';
+import { useGuard } from '../guard';
 import { IsFavoriteIcon } from '../pure/icons';
 import { FavoriteTag } from './components/favorite-tag';
 import * as styles from './list.css';
@@ -68,15 +68,13 @@ const PageOperationCellMenuItem = ({
     workspaceService,
     compatibleFavoriteItemsAdapter: favAdapter,
     workbenchService,
-    guardService,
   } = useServices({
     WorkspaceService,
     CompatibleFavoriteItemsAdapter,
     WorkbenchService,
-    GuardService,
   });
 
-  const canMoveToTrash = useLiveData(guardService.can$('Doc_Trash', page.id));
+  const canMoveToTrash = useGuard('Doc_Trash', page.id);
   const currentWorkspace = workspaceService.workspace;
   const favourite = useLiveData(favAdapter.isFavorite$(page.id, 'doc'));
   const workbench = workbenchService.workbench;

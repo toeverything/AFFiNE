@@ -46,7 +46,9 @@ import { effects as fragmentDocTitleEffects } from '@blocksuite/affine-fragment-
 import { effects as fragmentFramePanelEffects } from '@blocksuite/affine-fragment-frame-panel/effects';
 import { effects as fragmentOutlineEffects } from '@blocksuite/affine-fragment-outline/effects';
 import { effects as inlineFootnoteEffects } from '@blocksuite/affine-inline-footnote/effects';
+import { effects as inlineLatexEffects } from '@blocksuite/affine-inline-latex/effects';
 import { effects as inlineLinkEffects } from '@blocksuite/affine-inline-link/effects';
+import { effects as inlineMentionEffects } from '@blocksuite/affine-inline-mention';
 import { effects as inlinePresetEffects } from '@blocksuite/affine-inline-preset/effects';
 import { effects as inlineReferenceEffects } from '@blocksuite/affine-inline-reference/effects';
 import { effects as richTextEffects } from '@blocksuite/affine-rich-text/effects';
@@ -121,6 +123,8 @@ export function effects() {
   inlinePresetEffects();
   inlineLinkEffects();
   inlineFootnoteEffects();
+  inlineLatexEffects();
+  inlineMentionEffects();
 
   blockNoteEffects();
   blockAttachmentEffects();

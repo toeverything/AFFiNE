@@ -1,3 +1,4 @@
+import type { SettingTab } from '@affine/core/modules/dialogs/constant';
 import { toURLSearchParams } from '@affine/core/modules/navigation';
 import { getOpenUrlInDesktopAppLink } from '@affine/core/modules/open-in-app';
 import type { DocMode } from '@blocksuite/affine/model';
@@ -183,6 +184,25 @@ export function useNavigateHelper() {
     [navigate]
   );
 
+  const jumpToWorkspaceSettings = useCallback(
+    (
+      workspaceId: string,
+      tab?: SettingTab,
+      logic: RouteLogic = RouteLogic.PUSH
+    ) => {
+      const searchParams = new URLSearchParams();
+      if (tab) {
+        searchParams.set('tab', tab);
+      }
+      return navigate(
+        `/workspace/${workspaceId}/settings?${searchParams.toString()}`,
+        {
+          replace: logic === RouteLogic.REPLACE,
+        }
+      );
+    },
+    [navigate]
+  );
   return useMemo(
     () => ({
       jumpToPage,
@@ -198,6 +218,7 @@ export function useNavigateHelper() {
       jumpToTag,
       jumpToOpenInApp,
       jumpToImportTemplate,
+      jumpToWorkspaceSettings,
     }),
     [
       jumpToPage,
@@ -213,6 +234,7 @@ export function useNavigateHelper() {
       jumpToTag,
       jumpToOpenInApp,
       jumpToImportTemplate,
+      jumpToWorkspaceSettings,
     ]
   );
 }

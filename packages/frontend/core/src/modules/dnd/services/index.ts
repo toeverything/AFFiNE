@@ -155,7 +155,7 @@ export class DndService extends Service {
   getBlocksuiteDndAPI(sourceDocId?: string) {
     const collection = this.workspaceService.workspace.docCollection;
     sourceDocId ??= collection.docs.keys().next().value;
-    const doc = sourceDocId ? collection.getDoc(sourceDocId) : null;
+    const doc = sourceDocId ? collection.getDoc(sourceDocId)?.getStore() : null;
 
     if (!doc) {
       return null;

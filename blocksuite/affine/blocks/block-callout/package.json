@@ -18,7 +18,7 @@
     "@blocksuite/affine-widget-slash-menu": "workspace:*",
     "@blocksuite/block-std": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/icons": "^2.2.6",
+    "@blocksuite/icons": "^2.2.8",
     "@blocksuite/store": "workspace:*",
     "@emoji-mart/data": "^1.2.1",
     "@floating-ui/dom": "^1.6.10",

@@ -57,7 +57,7 @@ export class EditorIconButton extends LitElement {
       padding: 0 4px;
       overflow: hidden;
       white-space: nowrap;
-      line-height: var(--label-height, inherit);
+      line-height: var(--label-height, var(--icon-size, 20px));
     }
     ::slotted(.label.padding0) {
       padding: 0;

@@ -129,26 +129,43 @@ export class Viewport {
       .pipe(debounceTime(200))
       .subscribe(({ width, height, left, top }) => {
         if (!this._shell || !this._initialTopLeft) return;
-
-        const [initialTopLeftX, initialTopLeftY] = this._initialTopLeft;
-        const newCenterX = initialTopLeftX + width / (2 * this.zoom);
-        const newCenterY = initialTopLeftY + height / (2 * this.zoom);
-
-        this.setCenter(newCenterX, newCenterY);
-        this._width = width;
-        this._height = height;
-        this._left = left;
-        this._top = top;
-        this._isResizing = false;
-        this._initialTopLeft = null;
-
-        this.sizeUpdated.next({
-          left,
-          top,
-          width,
-          height,
-        });
+        this._completeResize(width, height, left, top);
       });
+  }
+
+  private _completeResize(
+    width: number,
+    height: number,
+    left: number,
+    top: number
+  ) {
+    if (!this._initialTopLeft) return;
+
+    const [initialTopLeftX, initialTopLeftY] = this._initialTopLeft;
+    const newCenterX = initialTopLeftX + width / (2 * this.zoom);
+    const newCenterY = initialTopLeftY + height / (2 * this.zoom);
+
+    this.setCenter(newCenterX, newCenterY);
+    this._width = width;
+    this._height = height;
+    this._left = left;
+    this._top = top;
+    this._isResizing = false;
+    this._initialTopLeft = null;
+
+    this.sizeUpdated.next({
+      left,
+      top,
+      width,
+      height,
+    });
+  }
+
+  private _forceCompleteResize() {
+    if (this._isResizing && this._shell) {
+      const { width, height, left, top } = this.boundingClientRect;
+      this._completeResize(width, height, left, top);
+    }
   }
 
   get boundingClientRect() {
@@ -341,7 +358,17 @@ export class Viewport {
     });
   }
 
-  setCenter(centerX: number, centerY: number) {
+  /**
+   * Set the center of the viewport.
+   * @param centerX The new x coordinate of the center of the viewport.
+   * @param centerY The new y coordinate of the center of the viewport.
+   * @param forceUpdate Whether to force complete any pending resize operations before setting the viewport.
+   */
+  setCenter(centerX: number, centerY: number, forceUpdate = false) {
+    if (forceUpdate && this._isResizing) {
+      this._forceCompleteResize();
+    }
+
     this._center.x = centerX;
     this._center.y = centerY;
     this.panning$.value = true;
@@ -369,11 +396,24 @@ export class Viewport {
     });
   }
 
+  /**
+   * Set the viewport to the new zoom and center.
+   * @param newZoom The new zoom value.
+   * @param newCenter The new center of the viewport.
+   * @param smooth Whether to animate the zooming and panning.
+   * @param forceUpdate Whether to force complete any pending resize operations before setting the viewport.
+   */
   setViewport(
     newZoom: number,
     newCenter = Vec.toVec(this.center),
-    smooth = false
+    smooth = false,
+    forceUpdate = smooth
   ) {
+    // Force complete any pending resize operations if forceUpdate is true
+    if (forceUpdate && this._isResizing) {
+      this._forceCompleteResize();
+    }
+
     const preZoom = this._zoom;
     if (smooth) {
       const cofficient = preZoom / newZoom;
@@ -390,7 +430,7 @@ export class Viewport {
     } else {
       this._center.x = newCenter[0];
       this._center.y = newCenter[1];
-      this.setZoom(newZoom);
+      this.setZoom(newZoom, undefined, false, forceUpdate);
     }
   }
 
@@ -401,11 +441,13 @@ export class Viewport {
    *                the value may be reduced if there is not enough space for the padding.
    *                Use decimal less than 1 to represent percentage padding. e.g. [0.1, 0.1, 0.1, 0.1] means 10% padding.
    * @param smooth whether to animate the zooming
+   * @param forceUpdate whether to force complete any pending resize operations before setting the viewport
    */
   setViewportByBound(
     bound: Bound,
     padding: [number, number, number, number] = [0, 0, 0, 0],
-    smooth = false
+    smooth = false,
+    forceUpdate = smooth
   ) {
     let [pt, pr, pb, pl] = padding;
 
@@ -440,7 +482,7 @@ export class Viewport {
       bound.y + (bound.h + pb / zoom) / 2 - pt / zoom / 2,
     ] as IVec;
 
-    this.setViewport(zoom, center, smooth);
+    this.setViewport(zoom, center, smooth, forceUpdate);
   }
 
   /** This is the outer container of the viewport, which is the host of the viewport element */
@@ -460,7 +502,23 @@ export class Viewport {
     this._resizeObserver.observe(el);
   }
 
-  setZoom(zoom: number, focusPoint?: IPoint, wheel = false) {
+  /**
+   * Set the viewport to the new zoom.
+   * @param zoom The new zoom value.
+   * @param focusPoint The point to focus on after zooming, default is the center of the viewport.
+   * @param wheel Whether the zoom is caused by wheel event.
+   * @param forceUpdate Whether to force complete any pending resize operations before setting the viewport.
+   */
+  setZoom(
+    zoom: number,
+    focusPoint?: IPoint,
+    wheel = false,
+    forceUpdate = false
+  ) {
+    if (forceUpdate && this._isResizing) {
+      this._forceCompleteResize();
+    }
+
     const prevZoom = this.zoom;
     focusPoint = (focusPoint ?? this._center) as IPoint;
     this._zoom = clamp(zoom, this.ZOOM_MIN, this.ZOOM_MAX);
@@ -474,7 +532,7 @@ export class Viewport {
     if (wheel) {
       this.zooming$.value = true;
     }
-    this.setCenter(newCenter[0], newCenter[1]);
+    this.setCenter(newCenter[0], newCenter[1], forceUpdate);
     this.viewportUpdated.next({
       zoom: this.zoom,
       center: Vec.toVec(this.center) as IVec,
@@ -497,7 +555,7 @@ export class Viewport {
         const signY = delta.y > 0 ? 1 : -1;
         nextCenter.x = cutoff(nextCenter.x, x, signX);
         nextCenter.y = cutoff(nextCenter.y, y, signY);
-        this.setCenter(nextCenter.x, nextCenter.y);
+        this.setCenter(nextCenter.x, nextCenter.y, true);
 
         if (nextCenter.x != x || nextCenter.y != y) innerSmoothTranslate();
       });
@@ -515,7 +573,7 @@ export class Viewport {
         const step = delta / numSteps;
         const nextZoom = cutoff(this.zoom + step, zoom, sign);
 
-        this.setZoom(nextZoom, focusPoint);
+        this.setZoom(nextZoom, focusPoint, undefined, true);
 
         if (nextZoom != zoom) innerSmoothZoom();
       });

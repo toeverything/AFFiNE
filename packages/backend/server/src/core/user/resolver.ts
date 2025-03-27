@@ -20,7 +20,7 @@ import {
   Throttle,
   UserNotFound,
 } from '../../base';
-import { Models, SettingsSchema } from '../../models';
+import { Models, UserSettingsSchema } from '../../models';
 import { Public } from '../auth/guard';
 import { sessionUser } from '../auth/service';
 import { CurrentUser } from '../auth/session';
@@ -32,10 +32,10 @@ import {
   ManageUserInput,
   PublicUserType,
   RemoveAvatar,
-  SettingsType,
-  UpdateSettingsInput,
   UpdateUserInput,
+  UpdateUserSettingsInput,
   UserOrLimitedUser,
+  UserSettingsType,
   UserType,
 } from './types';
 
@@ -168,20 +168,20 @@ export class UserSettingsResolver {
   })
   async updateSettings(
     @CurrentUser() user: CurrentUser,
-    @Args('input', { type: () => UpdateSettingsInput })
-    input: UpdateSettingsInput
+    @Args('input', { type: () => UpdateUserSettingsInput })
+    input: UpdateUserSettingsInput
   ) {
-    SettingsSchema.parse(input);
-    await this.models.settings.set(user.id, input);
+    UserSettingsSchema.parse(input);
+    await this.models.userSettings.set(user.id, input);
     return true;
   }
 
-  @ResolveField(() => SettingsType, {
+  @ResolveField(() => UserSettingsType, {
     name: 'settings',
     description: 'Get user settings',
   })
-  async getSettings(@CurrentUser() me: CurrentUser): Promise<SettingsType> {
-    return await this.models.settings.get(me.id);
+  async getSettings(@CurrentUser() me: CurrentUser): Promise<UserSettingsType> {
+    return await this.models.userSettings.get(me.id);
   }
 }
 

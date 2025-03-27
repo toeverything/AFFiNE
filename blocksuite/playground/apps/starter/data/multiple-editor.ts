@@ -4,7 +4,7 @@ import { createTestEditor } from '../utils/extensions.js';
 import type { InitFn } from './utils.js';
 
 export const multiEditor: InitFn = (collection: Workspace, id: string) => {
-  const doc = collection.createDoc({ id });
+  const doc = collection.createDoc(id).getStore({ id });
   doc.load(() => {
     // Add root block and surface block at root level
     const rootId = doc.addBlock('affine:page', {
@@ -39,7 +39,7 @@ export const multiEditorVertical: InitFn = (
   collection: Workspace,
   docId: string
 ) => {
-  const doc = collection.createDoc({ id: docId });
+  const doc = collection.createDoc(docId).getStore();
   doc.load(() => {
     // Add root block and surface block at root level
     const rootId = doc.addBlock('affine:page', {

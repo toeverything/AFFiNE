@@ -2,13 +2,16 @@
   "name": "@affine/ios",
   "version": "0.20.0",
   "description": "AFFiNE Desktop Web application",
+  "type": "module",
   "private": true,
   "browser": "src/index.tsx",
   "scripts": {
     "build": "affine bundle",
     "dev": "affine bundle --dev",
     "sync": "cap sync",
-    "sync:dev": "CAP_SERVER_URL=http://localhost:8080 cap sync"
+    "sync:dev": "CAP_SERVER_URL=http://localhost:8080 cap sync",
+    "xcode": "cap open ios",
+    "codegen": "r ./codegen.ts"
   },
   "dependencies": {
     "@affine/component": "workspace:*",
@@ -16,7 +19,7 @@
     "@affine/i18n": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@blocksuite/affine": "workspace:*",
-    "@blocksuite/icons": "^2.2.6",
+    "@blocksuite/icons": "^2.2.8",
     "@capacitor/app": "^7.0.0",
     "@capacitor/browser": "^7.0.0",
     "@capacitor/core": "^7.0.0",
@@ -34,6 +37,8 @@
     "yjs": "^13.6.21"
   },
   "devDependencies": {
+    "@affine-tools/cli": "workspace:*",
+    "@affine-tools/utils": "workspace:*",
     "@affine/native": "workspace:*",
     "@capacitor/cli": "^7.0.0",
     "@types/react": "^19.0.1",

@@ -15,13 +15,7 @@ import { Awareness } from 'y-protocols/awareness.js';
 import * as Y from 'yjs';
 
 import type { ExtensionType } from '../extension/extension.js';
-import type {
-  CreateBlocksOptions,
-  GetBlocksOptions,
-  Store,
-  Workspace,
-  WorkspaceMeta,
-} from '../model/index.js';
+import type { Doc, Workspace, WorkspaceMeta } from '../model/index.js';
 import { type IdGenerator, nanoid } from '../utils/id-generator.js';
 import { AwarenessStore } from '../yjs/index.js';
 import { TestDoc } from './test-doc.js';
@@ -155,14 +149,9 @@ export class TestWorkspace implements Workspace {
    * If the `init` parameter is passed, a `surface`, `note`, and `paragraph` block
    * will be created in the doc simultaneously.
    */
-  createDoc(options: CreateBlocksOptions = {}) {
-    const {
-      id: docId = this.idGenerator(),
-      query,
-      readonly,
-      extensions,
-    } = options;
-    if (this._hasDoc(docId)) {
+  createDoc(docId?: string): Doc {
+    const id = docId ?? this.idGenerator();
+    if (this._hasDoc(id)) {
       throw new BlockSuiteError(
         ErrorCode.DocCollectionError,
         'doc already exists'
@@ -170,18 +159,13 @@ export class TestWorkspace implements Workspace {
     }
 
     this.meta.addDocMeta({
-      id: docId,
+      id,
       title: '',
       createDate: Date.now(),
       tags: [],
     });
-    this.slots.docCreated.next(docId);
-    return this.getDoc(docId, {
-      id: docId,
-      query,
-      readonly,
-      extensions,
-    }) as Store;
+    this.slots.docCreated.next(id);
+    return this.getDoc(id) as Doc;
   }
 
   dispose() {
@@ -203,12 +187,9 @@ export class TestWorkspace implements Workspace {
     return space ?? null;
   }
 
-  getDoc(
-    docId: string,
-    options: GetBlocksOptions = { id: docId }
-  ): Store | null {
+  getDoc(docId: string): Doc | null {
     const collection = this.getBlockCollection(docId);
-    return collection?.getStore(options) ?? null;
+    return collection;
   }
 
   removeDoc(docId: string) {

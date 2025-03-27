@@ -167,7 +167,8 @@ export const miniNameLabel = style({
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  height: 20,
+  lineHeight: '20px',
+  marginBottom: 2,
 });
 
 export const miniPlayerContainer = style({

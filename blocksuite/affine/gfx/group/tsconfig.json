@@ -1,0 +1,20 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["./src"],
+  "references": [
+    { "path": "../../blocks/block-surface" },
+    { "path": "../../components" },
+    { "path": "../../model" },
+    { "path": "../../rich-text" },
+    { "path": "../../shared" },
+    { "path": "../../widgets/widget-edgeless-toolbar" },
+    { "path": "../../../framework/block-std" },
+    { "path": "../../../framework/global" },
+    { "path": "../../../framework/store" }
+  ]
+}

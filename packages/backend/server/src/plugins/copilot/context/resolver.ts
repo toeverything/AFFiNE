@@ -34,25 +34,41 @@ import {
 } from '../../../base';
 import { CurrentUser } from '../../../core/auth';
 import { AccessController } from '../../../core/permission';
-import { COPILOT_LOCKER, CopilotType } from '../resolver';
-import { ChatSessionService } from '../session';
-import { CopilotStorage } from '../storage';
-import { CopilotContextDocJob } from './job';
-import { CopilotContextService } from './service';
 import {
   ContextCategories,
   ContextCategory,
   ContextDoc,
   ContextEmbedStatus,
-  type ContextFile,
+  ContextFile,
   DocChunkSimilarity,
   FileChunkSimilarity,
-  MAX_EMBEDDABLE_SIZE,
-} from './types';
+  Models,
+} from '../../../models';
+import { COPILOT_LOCKER, CopilotType } from '../resolver';
+import { ChatSessionService } from '../session';
+import { CopilotStorage } from '../storage';
+import { CopilotContextDocJob } from './job';
+import { CopilotContextService } from './service';
+import { MAX_EMBEDDABLE_SIZE } from './types';
 import { readStream } from './utils';
 
 @InputType()
-class AddRemoveContextCategoryInput {
+class AddContextCategoryInput {
+  @Field(() => String)
+  contextId!: string;
+
+  @Field(() => ContextCategories)
+  type!: ContextCategories;
+
+  @Field(() => String)
+  categoryId!: string;
+
+  @Field(() => [String], { nullable: true })
+  docs!: string[] | null;
+}
+
+@InputType()
+class RemoveContextCategoryInput {
   @Field(() => String)
   contextId!: string;
 
@@ -111,21 +127,7 @@ export class CopilotContextType {
 registerEnumType(ContextCategories, { name: 'ContextCategories' });
 
 @ObjectType()
-class CopilotContextCategory implements ContextCategory {
-  @Field(() => ID)
-  id!: string;
-
-  @Field(() => ContextCategories)
-  type!: ContextCategories;
-
-  @Field(() => SafeIntResolver)
-  createdAt!: number;
-}
-
-registerEnumType(ContextEmbedStatus, { name: 'ContextEmbedStatus' });
-
-@ObjectType()
-class CopilotContextDoc implements ContextDoc {
+class CopilotDocType implements Omit<ContextDoc, 'status'> {
   @Field(() => ID)
   id!: string;
 
@@ -134,6 +136,29 @@ class CopilotContextDoc implements ContextDoc {
 
   @Field(() => SafeIntResolver)
   createdAt!: number;
+}
+
+@ObjectType()
+class CopilotContextCategory implements Omit<ContextCategory, 'docs'> {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => ContextCategories)
+  type!: ContextCategories;
+
+  @Field(() => [CopilotDocType])
+  docs!: CopilotDocType[];
+
+  @Field(() => SafeIntResolver)
+  createdAt!: number;
+}
+
+registerEnumType(ContextEmbedStatus, { name: 'ContextEmbedStatus' });
+
+@ObjectType()
+class CopilotContextDoc extends CopilotDocType {
+  @Field(() => String, { nullable: true })
+  error!: string | null;
 }
 
 @ObjectType()
@@ -338,6 +363,7 @@ export class CopilotContextRootResolver {
 export class CopilotContextResolver {
   constructor(
     private readonly ac: AccessController,
+    private readonly models: Models,
     private readonly mutex: RequestMutex,
     private readonly context: CopilotContextService,
     private readonly jobs: CopilotContextDocJob,
@@ -354,13 +380,61 @@ export class CopilotContextResolver {
     return controller.signal;
   }
 
+  @ResolveField(() => [CopilotContextCategory], {
+    description: 'list collections in context',
+  })
+  @CallMetric('ai', 'context_file_list')
+  async collections(
+    @Parent() context: CopilotContextType
+  ): Promise<ContextCategory[]> {
+    const session = await this.context.get(context.id);
+    const collections = session.collections;
+    await this.models.copilotContext.mergeDocStatus(
+      session.workspaceId,
+      collections.flatMap(c => c.docs)
+    );
+
+    return collections;
+  }
+
+  @ResolveField(() => [CopilotContextCategory], {
+    description: 'list tags in context',
+  })
+  @CallMetric('ai', 'context_file_list')
+  async tags(
+    @Parent() context: CopilotContextType
+  ): Promise<ContextCategory[]> {
+    const session = await this.context.get(context.id);
+    const tags = session.tags;
+    await this.models.copilotContext.mergeDocStatus(
+      session.workspaceId,
+      tags.flatMap(c => c.docs)
+    );
+
+    return tags;
+  }
+
   @ResolveField(() => [CopilotContextDoc], {
     description: 'list files in context',
   })
   @CallMetric('ai', 'context_file_list')
-  async docs(@Parent() context: CopilotContextType): Promise<ContextDoc[]> {
+  async docs(@Parent() context: CopilotContextType): Promise<CopilotDocType[]> {
     const session = await this.context.get(context.id);
-    return session.listDocs();
+    const docs = session.docs;
+    await this.models.copilotContext.mergeDocStatus(session.workspaceId, docs);
+
+    return docs.map(doc => ({ ...doc, status: doc.status || null }));
+  }
+
+  @ResolveField(() => [CopilotContextFile], {
+    description: 'list files in context',
+  })
+  @CallMetric('ai', 'context_file_list')
+  async files(
+    @Parent() context: CopilotContextType
+  ): Promise<CopilotContextFile[]> {
+    const session = await this.context.get(context.id);
+    return session.files;
   }
 
   @Mutation(() => CopilotContextCategory, {
@@ -368,18 +442,33 @@ export class CopilotContextResolver {
   })
   @CallMetric('ai', 'context_category_add')
   async addContextCategory(
-    @Args({ name: 'options', type: () => AddRemoveContextCategoryInput })
-    options: AddRemoveContextCategoryInput
-  ) {
+    @Args({ name: 'options', type: () => AddContextCategoryInput })
+    options: AddContextCategoryInput
+  ): Promise<CopilotContextCategory> {
     const lockFlag = `${COPILOT_LOCKER}:context:${options.contextId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
-      return new TooManyRequest('Server is busy');
+      throw new TooManyRequest('Server is busy');
     }
     const session = await this.context.get(options.contextId);
 
     try {
-      return await session.addCategoryRecord(options.type, options.categoryId);
+      const records = await session.addCategoryRecord(
+        options.type,
+        options.categoryId,
+        options.docs || []
+      );
+
+      if (options.docs) {
+        await this.jobs.addDocEmbeddingQueue(
+          options.docs.map(docId => ({
+            workspaceId: session.workspaceId,
+            docId,
+          }))
+        );
+      }
+
+      return records;
     } catch (e: any) {
       throw new CopilotFailedToModifyContext({
         contextId: options.contextId,
@@ -393,8 +482,8 @@ export class CopilotContextResolver {
   })
   @CallMetric('ai', 'context_category_remove')
   async removeContextCategory(
-    @Args({ name: 'options', type: () => AddRemoveContextCategoryInput })
-    options: AddRemoveContextCategoryInput
+    @Args({ name: 'options', type: () => RemoveContextCategoryInput })
+    options: RemoveContextCategoryInput
   ) {
     const lockFlag = `${COPILOT_LOCKER}:context:${options.contextId}`;
     await using lock = await this.mutex.acquire(lockFlag);
@@ -423,16 +512,25 @@ export class CopilotContextResolver {
   async addContextDoc(
     @Args({ name: 'options', type: () => AddContextDocInput })
     options: AddContextDocInput
-  ) {
+  ): Promise<CopilotDocType> {
     const lockFlag = `${COPILOT_LOCKER}:context:${options.contextId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
-      return new TooManyRequest('Server is busy');
+      throw new TooManyRequest('Server is busy');
     }
     const session = await this.context.get(options.contextId);
 
     try {
-      return await session.addDocRecord(options.docId);
+      const record = await session.addDocRecord(options.docId);
+
+      await this.jobs.addDocEmbeddingQueue([
+        {
+          workspaceId: session.workspaceId,
+          docId: options.docId,
+        },
+      ]);
+
+      return { ...record, status: record.status || null };
     } catch (e: any) {
       throw new CopilotFailedToModifyContext({
         contextId: options.contextId,
@@ -464,17 +562,6 @@ export class CopilotContextResolver {
         message: e.message,
       });
     }
-  }
-
-  @ResolveField(() => [CopilotContextFile], {
-    description: 'list files in context',
-  })
-  @CallMetric('ai', 'context_file_list')
-  async files(
-    @Parent() context: CopilotContextType
-  ): Promise<CopilotContextFile[]> {
-    const session = await this.context.get(context.id);
-    return session.listFiles();
   }
 
   @Mutation(() => CopilotContextFile, {
@@ -569,10 +656,10 @@ export class CopilotContextResolver {
   }
 
   @ResolveField(() => [ContextMatchedFileChunk], {
-    description: 'match file context',
+    description: 'match file in context',
   })
   @CallMetric('ai', 'context_file_remove')
-  async matchContext(
+  async matchFiles(
     @Context() ctx: { req: Request },
     @Parent() context: CopilotContextType,
     @Args('content') content: string,
@@ -580,16 +667,11 @@ export class CopilotContextResolver {
     limit?: number,
     @Args('threshold', { type: () => Float, nullable: true })
     threshold?: number
-  ) {
+  ): Promise<ContextMatchedFileChunk[]> {
     if (!this.context.canEmbedding) {
       return [];
     }
 
-    const lockFlag = `${COPILOT_LOCKER}:context:${context.id}`;
-    await using lock = await this.mutex.acquire(lockFlag);
-    if (!lock) {
-      return new TooManyRequest('Server is busy');
-    }
     const session = await this.context.get(context.id);
 
     try {
@@ -609,18 +691,20 @@ export class CopilotContextResolver {
     }
   }
 
-  @ResolveField(() => ContextMatchedDocChunk, {
-    description: 'match workspace doc content',
+  @ResolveField(() => [ContextMatchedDocChunk], {
+    description: 'match workspace docs',
   })
   @CallMetric('ai', 'context_match_workspace_doc')
-  async matchWorkspaceContext(
+  async matchWorkspaceDocs(
     @CurrentUser() user: CurrentUser,
     @Context() ctx: { req: Request },
     @Parent() context: CopilotContextType,
     @Args('content') content: string,
     @Args('limit', { type: () => SafeIntResolver, nullable: true })
-    limit?: number
-  ) {
+    limit?: number,
+    @Args('threshold', { type: () => Float, nullable: true })
+    threshold?: number
+  ): Promise<ContextMatchedDocChunk[]> {
     if (!this.context.canEmbedding) {
       return [];
     }
@@ -636,7 +720,8 @@ export class CopilotContextResolver {
       return await session.matchWorkspaceChunks(
         content,
         limit,
-        this.getSignal(ctx.req)
+        this.getSignal(ctx.req),
+        threshold
       );
     } catch (e: any) {
       throw new CopilotFailedToMatchContext({

@@ -133,6 +133,23 @@ test.describe('reference node', () => {
     await expect(linkedDocPopover).toBeHidden();
   });
 
+  test('close doc popover when start with space', async ({ page }) => {
+    await enterPlaygroundRoom(page);
+    await initEmptyParagraphState(page);
+    await focusRichText(page);
+    await type(page, '@d');
+    const { linkedDocPopover } = getLinkedDocPopover(page);
+    await expect(linkedDocPopover).toBeVisible();
+    await pressBackspace(page);
+    await expect(linkedDocPopover).toBeVisible();
+    await type(page, ' ');
+    await expect(linkedDocPopover).toBeHidden();
+    await type(page, '@');
+    await expect(linkedDocPopover).toBeVisible();
+    await type(page, ' ');
+    await expect(linkedDocPopover).toBeHidden();
+  });
+
   test('should reference node attributes correctly', async ({
     page,
   }, testInfo) => {

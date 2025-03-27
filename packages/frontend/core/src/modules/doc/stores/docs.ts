@@ -21,7 +21,11 @@ export class DocsStore extends Store {
   }
 
   getBlockSuiteDoc(id: string) {
-    return this.workspaceService.workspace.docCollection.getDoc(id);
+    return (
+      this.workspaceService.workspace.docCollection
+        .getDoc(id)
+        ?.getStore({ id }) ?? null
+    );
   }
 
   getBlocksuiteCollection() {
@@ -29,7 +33,8 @@ export class DocsStore extends Store {
   }
 
   createBlockSuiteDoc() {
-    return this.workspaceService.workspace.docCollection.createDoc();
+    const doc = this.workspaceService.workspace.docCollection.createDoc();
+    return doc.getStore({ id: doc.id });
   }
 
   watchDocIds() {

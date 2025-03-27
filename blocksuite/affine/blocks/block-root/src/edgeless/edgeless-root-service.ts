@@ -10,8 +10,6 @@ import {
 } from '@blocksuite/affine-block-surface';
 import {
   type ConnectorElementModel,
-  type GroupElementModel,
-  MindmapElementModel,
   RootBlockSchema,
 } from '@blocksuite/affine-model';
 import type { BlockStdScope } from '@blocksuite/block-std';
@@ -166,70 +164,6 @@ export class EdgelessRootService extends RootService implements SurfaceContext {
     );
   }
 
-  createGroup(elements: GfxModel[] | string[]) {
-    const groups = this.elements.filter(
-      el => el.type === 'group'
-    ) as GroupElementModel[];
-    const groupId = this.crud.addElement('group', {
-      children: elements.reduce(
-        (pre, el) => {
-          const id = typeof el === 'string' ? el : el.id;
-          pre[id] = true;
-          return pre;
-        },
-        {} as Record<string, true>
-      ),
-      title: `Group ${groups.length + 1}`,
-    });
-
-    return groupId;
-  }
-
-  /**
-   * Create a group from selected elements, if the selected elements are in the same group
-   * @returns the id of the created group
-   */
-  createGroupFromSelected() {
-    const { selection } = this;
-
-    if (
-      selection.selectedElements.length === 0 ||
-      !selection.selectedElements.every(
-        element =>
-          element.group === selection.firstElement.group &&
-          !(element.group instanceof MindmapElementModel)
-      )
-    ) {
-      return;
-    }
-
-    const parent = selection.firstElement.group as GroupElementModel;
-
-    if (parent !== null) {
-      selection.selectedElements.forEach(element => {
-        // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-        parent.removeChild(element);
-      });
-    }
-
-    const groupId = this.createGroup(selection.selectedElements);
-    if (!groupId) {
-      return;
-    }
-    const group = this.surface.getElementById(groupId);
-
-    if (parent !== null && group) {
-      parent.addChild(group);
-    }
-
-    selection.set({
-      editing: false,
-      elements: [groupId],
-    });
-
-    return groupId;
-  }
-
   createTemplateJob(
     type: 'template' | 'sticker',
     center?: { x: number; y: number }
@@ -351,46 +285,6 @@ export class EdgelessRootService extends RootService implements SurfaceContext {
 
   setZoomByStep(step: number) {
     this.viewport.smoothZoom(clamp(this.zoom + step, ZOOM_MIN, ZOOM_MAX));
-  }
-
-  ungroup(group: GroupElementModel) {
-    const { selection } = this;
-    const elements = group.childElements;
-    const parent = group.group as GroupElementModel;
-
-    if (group instanceof MindmapElementModel) {
-      return;
-    }
-
-    if (parent !== null) {
-      // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-      parent.removeChild(group);
-    }
-
-    elements.forEach(element => {
-      // oxlint-disable-next-line unicorn/prefer-dom-node-remove
-      group.removeChild(element);
-    });
-
-    // keep relative index order of group children after ungroup
-    elements
-      .sort((a, b) => this.layer.compare(a, b))
-      .forEach(element => {
-        this.doc.transact(() => {
-          element.index = this.layer.generateIndex();
-        });
-      });
-
-    if (parent !== null) {
-      elements.forEach(element => {
-        parent.addChild(element);
-      });
-    }
-
-    selection.set({
-      editing: false,
-      elements: elements.map(ele => ele.id),
-    });
   }
 
   override unmounted() {

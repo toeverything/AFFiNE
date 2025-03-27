@@ -14,6 +14,7 @@ export const inputConfig = (property: Property) => {
         </div>
       `,
       initialValue: property.name$.value,
+      placeholder: 'Property name',
       onChange: text => {
         property.nameSet(text);
       },
@@ -26,6 +27,7 @@ export const inputConfig = (property: Property) => {
       </div>
     `,
     initialValue: property.name$.value,
+    placeholder: 'Property name',
     onComplete: text => {
       property.nameSet(text);
     },

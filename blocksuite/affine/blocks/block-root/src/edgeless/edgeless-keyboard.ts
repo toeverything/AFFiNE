@@ -2,6 +2,17 @@ import { insertLinkByQuickSearchCommand } from '@blocksuite/affine-block-bookmar
 import { EdgelessTextBlockComponent } from '@blocksuite/affine-block-edgeless-text';
 import { isNoteBlock } from '@blocksuite/affine-block-surface';
 import { toast } from '@blocksuite/affine-components/toast';
+import { mountConnectorLabelEditor } from '@blocksuite/affine-gfx-connector';
+import {
+  createGroupFromSelectedCommand,
+  ungroupCommand,
+} from '@blocksuite/affine-gfx-group';
+import {
+  getNearestTranslation,
+  isElementOutsideViewport,
+  isSingleMindMapNode,
+} from '@blocksuite/affine-gfx-mindmap';
+import { mountShapeTextEditor, ShapeTool } from '@blocksuite/affine-gfx-shape';
 import {
   ConnectorElementModel,
   ConnectorMode,
@@ -34,7 +45,6 @@ import { Bound, getCommonBound } from '@blocksuite/global/gfx';
 import { PageKeyboardManager } from '../keyboard/keyboard-manager.js';
 import type { EdgelessRootBlockComponent } from './edgeless-root-block.js';
 import { LassoTool } from './gfx-tool/lasso-tool.js';
-import { ShapeTool } from './gfx-tool/shape-tool.js';
 import {
   DEFAULT_NOTE_CHILD_FLAVOUR,
   DEFAULT_NOTE_CHILD_TYPE,
@@ -42,16 +52,7 @@ import {
 } from './utils/consts.js';
 import { deleteElements } from './utils/crud.js';
 import { getNextShapeType } from './utils/hotkey-utils.js';
-import {
-  getNearestTranslation,
-  isElementOutsideViewport,
-  isSingleMindMapNode,
-} from './utils/mindmap.js';
 import { isCanvasElement } from './utils/query.js';
-import {
-  mountConnectorLabelEditor,
-  mountShapeTextEditor,
-} from './utils/text.js';
 
 export class EdgelessPageKeyboardManager extends PageKeyboardManager {
   get gfx() {
@@ -230,7 +231,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
             !this.rootComponent.service.selection.editing
           ) {
             ctx.get('keyboardState').event.preventDefault();
-            rootComponent.service.createGroupFromSelected();
+            rootComponent.std.command.exec(createGroupFromSelectedCommand);
           }
         },
         'Shift-Mod-g': ctx => {
@@ -242,7 +243,9 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
             !selection.firstElement.isLocked()
           ) {
             ctx.get('keyboardState').event.preventDefault();
-            rootComponent.service.ungroup(selection.firstElement);
+            rootComponent.std.command.exec(ungroupCommand, {
+              group: selection.firstElement,
+            });
           }
         },
         'Mod-a': ctx => {
@@ -704,6 +707,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
     const edgeless = this.rootComponent;
     const selection = edgeless.service.selection;
     const currentTool = edgeless.gfx.tool.currentTool$.peek()!;
+    const currentSel = selection.surfaceSelections;
     const isKeyDown = event.type === 'keydown';
 
     if (edgeless.gfx.tool.dragging$.peek()) {
@@ -717,6 +721,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
           currentTool.toolName,
           currentTool?.activatedOption
         );
+        selection.set(currentSel);
         document.removeEventListener('keyup', revertToPrevTool, false);
       }
     };

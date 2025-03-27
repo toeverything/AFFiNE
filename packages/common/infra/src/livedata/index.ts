@@ -10,4 +10,4 @@ export {
   onStart,
   smartRetry,
 } from './ops';
-export { useEnsureLiveData, useLiveData } from './react';
+export { useLiveData } from './react';

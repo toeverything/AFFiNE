@@ -1,4 +1,5 @@
 import type { I18nString } from '@affine/i18n';
+import type { ComponentType, SVGProps } from 'react';
 
 import type { DocIntegrationRef } from '../db/schema/schema';
 
@@ -11,8 +12,10 @@ export type IntegrationDocPropertiesMap = {
 
 export type IntegrationProperty<T extends IntegrationType> = {
   key: keyof IntegrationDocPropertiesMap[T];
-  label?: I18nString;
+  label: I18nString;
   type: 'link' | 'text' | 'date' | 'source';
+  icon?: ComponentType<SVGProps<SVGSVGElement>>;
+  order?: string;
 };
 
 // ===============================
@@ -77,9 +80,17 @@ export interface ReadwiseConfig {
    */
   lastImportedAt?: string;
   /**
+   * Whether to sync new highlights
+   */
+  syncNewHighlights?: boolean;
+  /**
    * The update strategy
    */
   updateStrategy?: 'override' | 'append';
+  /**
+   * Tag id list to be used when creating highlights
+   */
+  tags?: string[];
 }
 // ===============================
 // Zotero

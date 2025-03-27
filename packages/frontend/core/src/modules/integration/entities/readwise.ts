@@ -30,6 +30,13 @@ export class ReadwiseIntegration extends Entity<{ writer: IntegrationWriter }> {
 
   importing$ = new LiveData(false);
   settings$ = LiveData.from(this.readwiseStore.watchSetting(), undefined);
+
+  setting$<T extends keyof ReadwiseConfig>(
+    key: T
+  ): LiveData<ReadwiseConfig[T]> {
+    return this.settings$.selector(setting => setting?.[key]);
+  }
+
   updateSetting<T extends keyof ReadwiseConfig>(
     key: T,
     value: ReadwiseConfig[T]
@@ -77,6 +84,9 @@ export class ReadwiseIntegration extends Entity<{ writer: IntegrationWriter }> {
         localRefs.map(ref => [ref.refMeta.highlightId, ref])
       );
       const updateStrategy = this.readwiseStore.getSetting('updateStrategy');
+      const syncNewHighlights =
+        this.readwiseStore.getSetting('syncNewHighlights');
+      const tags = this.readwiseStore.getSetting('tags');
       const chunks = chunk(highlights, 2);
       const total = highlights.length;
       let finished = 0;
@@ -99,12 +109,19 @@ export class ReadwiseIntegration extends Entity<{ writer: IntegrationWriter }> {
             const refMeta = localRef?.refMeta;
             const localUpdatedAt = refMeta?.updatedAt;
             const localDocId = localRef?.id;
+            const action = this.getAction({
+              localUpdatedAt,
+              remoteUpdatedAt: highlight.updated_at,
+              updateStrategy,
+              syncNewHighlights,
+            });
             // write if not matched
-            if (localUpdatedAt !== highlight.updated_at && !signal?.aborted) {
+            if (action !== 'skip' && !signal?.aborted) {
               await this.highlightToAffineDoc(highlight, book, localDocId, {
                 updateStrategy,
                 integrationId,
                 userId,
+                tags,
               });
             }
             finished++;
@@ -129,17 +146,19 @@ export class ReadwiseIntegration extends Entity<{ writer: IntegrationWriter }> {
       integrationId: string;
       userId: string;
       updateStrategy?: ReadwiseConfig['updateStrategy'];
+      tags?: string[];
     }
   ) {
-    const { updateStrategy, integrationId } = options;
+    const { updateStrategy, integrationId, tags } = options;
     const { text, ...highlightWithoutText } = highlight;
 
     const writtenDocId = await this.writer.writeDoc({
       content: text,
       title: book.title,
       docId,
+      tags,
       comment: highlight.note,
-      updateStrategy,
+      updateStrategy: updateStrategy ?? 'append',
     });
 
     // write failed
@@ -168,8 +187,60 @@ export class ReadwiseIntegration extends Entity<{ writer: IntegrationWriter }> {
     });
   }
 
+  getAction(info: {
+    localUpdatedAt?: string;
+    remoteUpdatedAt?: string;
+    updateStrategy?: ReadwiseConfig['updateStrategy'];
+    syncNewHighlights?: ReadwiseConfig['syncNewHighlights'];
+  }) {
+    const {
+      localUpdatedAt,
+      remoteUpdatedAt,
+      updateStrategy,
+      syncNewHighlights,
+    } = info;
+
+    return !localUpdatedAt
+      ? syncNewHighlights
+        ? 'new'
+        : 'skip'
+      : localUpdatedAt !== remoteUpdatedAt
+        ? updateStrategy
+          ? 'update'
+          : 'skip'
+        : 'skip';
+  }
+
+  connect(token: string) {
+    this.readwiseStore.setSettings({
+      token,
+      updateStrategy: 'append',
+      syncNewHighlights: true,
+    });
+  }
+
   disconnect() {
-    this.readwiseStore.setSetting('token', undefined);
-    this.readwiseStore.setSetting('lastImportedAt', undefined);
+    this.readwiseStore.setSettings({
+      token: undefined,
+      updateStrategy: undefined,
+      syncNewHighlights: undefined,
+      lastImportedAt: undefined,
+    });
+  }
+
+  /**
+   * Delete all highlights of current user in current workspace
+   */
+  async deleteAll() {
+    const refs = await this.getRefs();
+    await Promise.all(
+      refs.map(ref => {
+        const doc = this.docsService.list.doc$(ref.id).value;
+        if (doc) {
+          doc.moveToTrash();
+        }
+        return this.integrationRefStore.deleteRef(ref.id);
+      })
+    );
   }
 }

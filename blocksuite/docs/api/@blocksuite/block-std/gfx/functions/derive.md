@@ -1,4 +1,4 @@
-[**@blocksuite/block-std**](../../../../@blocksuite/block-std/README.md)
+[**BlockSuite API Documentation**](../../../../README.md)
 
 ***
 

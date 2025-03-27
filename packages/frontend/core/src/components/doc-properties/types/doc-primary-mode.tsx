@@ -1,15 +1,11 @@
-import {
-  notify,
-  PropertyValue,
-  RadioGroup,
-  type RadioItem,
-} from '@affine/component';
+import { notify, PropertyValue, type RadioItem } from '@affine/component';
 import { DocService } from '@affine/core/modules/doc';
 import { useI18n } from '@affine/i18n';
 import type { DocMode } from '@blocksuite/affine/model';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
+import { DocPropertyRadioGroup } from '../widgets/radio-group';
 import * as styles from './doc-primary-mode.css';
 import type { PropertyValueProps } from './types';
 
@@ -59,14 +55,11 @@ export const DocPrimaryModeValue = ({
       hoverable={false}
       readonly={readonly}
     >
-      <RadioGroup
-        width={BUILD_CONFIG.isMobileEdition ? '100%' : 194}
-        itemHeight={24}
+      <DocPropertyRadioGroup
         value={primaryMode}
         onChange={handleChange}
         items={DocModeItems}
         disabled={readonly}
-        className={styles.radioGroup}
       />
     </PropertyValue>
   );

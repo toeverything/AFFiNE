@@ -12,8 +12,6 @@ import {
 } from './extensions';
 import { ExportManagerExtension } from './extensions/export-manager/export-manager';
 import { SurfaceBlockService } from './surface-service';
-import { ConnectorElementView } from './view/connector';
-import { MindMapView } from './view/mindmap';
 
 const CommonSurfaceBlockSpec: ExtensionType[] = [
   FlavourExtension('affine:surface'),
@@ -22,8 +20,6 @@ const CommonSurfaceBlockSpec: ExtensionType[] = [
   EdgelessLegacySlotExtension,
   ExportManagerExtension,
 ];
-
-const ElementModelViews = [MindMapView, ConnectorElementView];
 
 export const PageSurfaceBlockSpec: ExtensionType[] = [
   ...CommonSurfaceBlockSpec,
@@ -34,6 +30,5 @@ export const PageSurfaceBlockSpec: ExtensionType[] = [
 export const EdgelessSurfaceBlockSpec: ExtensionType[] = [
   ...CommonSurfaceBlockSpec,
   ...EdgelessSurfaceBlockAdapterExtensions,
-  ...ElementModelViews,
   BlockViewExtension('affine:surface', literal`affine-surface`),
 ];
