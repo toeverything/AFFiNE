@@ -104,7 +104,9 @@ export class ServerService implements OnApplicationBootstrap {
   private async setup() {
     const overrides = await this.loadDbOverrides();
     this.configFactory.override(overrides);
-    this.event.emit('config.init', { config: this.configFactory.config });
+    await this.event.emitAsync('config.init', {
+      config: this.configFactory.config,
+    });
   }
 
   private async loadDbOverrides() {

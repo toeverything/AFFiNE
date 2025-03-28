@@ -24,15 +24,27 @@ const CONTEXT_SESSION_KEY = 'context-session';
 @Injectable()
 export class CopilotContextService implements OnApplicationBootstrap {
   private supportEmbedding = false;
-  private readonly client: EmbeddingClient | undefined;
+  private client: EmbeddingClient | undefined;
 
   constructor(
-    config: Config,
+    private readonly config: Config,
     private readonly cache: Cache,
     private readonly models: Models
-  ) {
-    const configure = config.copilot.providers.openai;
-    if (configure) {
+  ) {}
+
+  @OnEvent('config.init')
+  onConfigInit() {
+    this.setup();
+  }
+
+  @OnEvent('config.changed')
+  onConfigChanged() {
+    this.setup();
+  }
+
+  private setup() {
+    const configure = this.config.copilot.providers.openai;
+    if (configure.apiKey) {
       this.client = new OpenAIEmbeddingClient(new OpenAI(configure));
     }
   }
