@@ -76,16 +76,17 @@ jobs:
           path: ./packages/backend/server
 
       - name: Prepare Server Test Environment
+        env:
+          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
+          COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
+          COPILOT_GOOGLE_API_KEY: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
+          COPILOT_PERPLEXITY_API_KEY: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
         uses: ./.github/actions/server-test-env
 
       - name: Run server tests
         run: yarn affine @affine/server test:copilot:coverage --forbid-only
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
-          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
-          COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
-          COPILOT_GOOGLE_API_KEY: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
-          COPILOT_PERPLEXITY_API_KEY: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
 
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v5

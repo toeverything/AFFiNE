@@ -1,4 +1,7 @@
-import { once, set } from 'lodash-es';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { merge, once, set } from 'lodash-es';
 import { z } from 'zod';
 
 import { type EnvConfigType, parseEnvValue } from './env';
@@ -205,6 +208,34 @@ export function defineModuleConfig<T extends keyof AppConfigSchema>(
   };
 }
 
+function readConfigJSONOverrides() {
+  if (existsSync(join(env.projectRoot, 'config.json'))) {
+    try {
+      const config = JSON.parse(
+        readFileSync(join(env.projectRoot, 'config.json'), 'utf-8')
+      ) as AppConfig;
+
+      const overrides = {};
+
+      Object.entries(config).forEach(([key, value]) => {
+        if (key === '$schema') {
+          return;
+        }
+
+        Object.entries(value).forEach(([k, v]) => {
+          set(overrides, `${key}.${k}`, v);
+        });
+      });
+
+      return overrides;
+    } catch (e) {
+      console.error('Invalid json config file', e);
+    }
+  }
+
+  return {};
+}
+
 export function getDefaultConfig(): AppConfigSchema {
   const config: Record<string, any> = {};
   const envs = process.env;
@@ -234,6 +265,10 @@ export function getDefaultConfig(): AppConfigSchema {
 
     config[module] = modulizedConfig;
   }
+
+  const fileOverrides = readConfigJSONOverrides();
+
+  merge(config, fileOverrides);
 
   return config as AppConfigSchema;
 }

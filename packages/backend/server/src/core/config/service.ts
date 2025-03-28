@@ -90,9 +90,9 @@ export class ServerService implements OnApplicationBootstrap {
   }
 
   @OnEvent('config.changed.broadcast')
-  onConfigChangedBroadcast(updates: DeepPartial<AppConfig>) {
-    this.configFactory.override(updates);
-    this.event.emit('config.changed', { updates });
+  onConfigChangedBroadcast(event: Events['config.changed.broadcast']) {
+    this.configFactory.override(event.updates);
+    this.event.emit('config.changed', event);
   }
 
   async revalidateConfig() {

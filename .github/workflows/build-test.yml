@@ -555,8 +555,6 @@ jobs:
         run: yarn affine @affine/server test:coverage --forbid-only
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
-          COPILOT_OPENAI_API_KEY: 'use_fake_openai_api_key'
-          COPILOT_GOOGLE_API_KEY: 'use_fake_google_api_key'
           CI_NODE_INDEX: ${{ matrix.node_index }}
           CI_NODE_TOTAL: ${{ matrix.total_nodes }}
 
@@ -617,8 +615,6 @@ jobs:
 
       - name: Run server tests
         run: yarn affine @affine/server e2e:coverage --forbid-only
-        env:
-          COPILOT_OPENAI_API_KEY: 'use_fake_openai_api_key'
 
       - name: Upload server test coverage results
         uses: codecov/codecov-action@v5
@@ -721,6 +717,11 @@ jobs:
 
       - name: Prepare Server Test Environment
         if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.apifilter.outputs.changed == 'true' }}
+        env:
+          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
+          COPILOT_GOOGLE_API_KEY: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
+          COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
+          COPILOT_PERPLEXITY_API_KEY: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
         uses: ./.github/actions/server-test-env
 
       - name: Run server tests
@@ -728,10 +729,6 @@ jobs:
         run: yarn affine @affine/server test:copilot:coverage --forbid-only
         env:
           CARGO_TARGET_DIR: '${{ github.workspace }}/target'
-          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
-          COPILOT_GOOGLE_API_KEY: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
-          COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
-          COPILOT_PERPLEXITY_API_KEY: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
 
       - name: Upload server test coverage results
         if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.apifilter.outputs.changed == 'true' }}
@@ -813,15 +810,20 @@ jobs:
           name: server-native.node
           path: ./packages/backend/server
 
+      - name: Prepare Server Test Environment
+        if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.e2efilter.outputs.changed == 'true' }}
+        env:
+          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
+          COPILOT_GOOGLE_API_KEY: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
+          COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
+          COPILOT_PERPLEXITY_API_KEY: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
+        uses: ./.github/actions/server-test-env
+
       - name: Run Copilot E2E Test ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.e2efilter.outputs.changed == 'true' }}
         uses: ./.github/actions/copilot-test
         with:
           script: yarn affine @affine-test/affine-cloud-copilot e2e --forbid-only --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-          openai-key: ${{ secrets.COPILOT_OPENAI_API_KEY }}
-          google-key: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
-          fal-key: ${{ secrets.COPILOT_FAL_API_KEY }}
-          perplexity-key: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
 
   cloud-e2e-test:
     name: ${{ matrix.tests.name }}
@@ -917,9 +919,6 @@ jobs:
           ${{ matrix.tests.script }}
         env:
           DEV_SERVER_URL: http://localhost:8080
-          COPILOT_OPENAI_API_KEY: 1
-          COPILOT_FAL_API_KEY: 1
-          COPILOT_PERPLEXITY_API_KEY: 1
 
       - name: Upload test results
         if: always()
