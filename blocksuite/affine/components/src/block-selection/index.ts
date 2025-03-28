@@ -29,7 +29,6 @@ export class BlockSelection extends SignalWatcher(LitElement) {
       width: 100%;
       height: 100%;
       pointer-events: none;
-      background-color: var(--affine-hover-color);
       border-color: transparent;
       border-style: solid;
     }
@@ -38,6 +37,8 @@ export class BlockSelection extends SignalWatcher(LitElement) {
   override connectedCallback(): void {
     super.connectedCallback();
 
+    this.style.backgroundColor = this.backgroundColor;
+    this.style.boxShadow = this.boxShadow;
     this.style.borderRadius = `${this.borderRadius}px`;
     if (this.borderWidth !== 0) {
       this.style.boxSizing = 'content-box';
@@ -54,6 +55,12 @@ export class BlockSelection extends SignalWatcher(LitElement) {
 
   @property({ attribute: false })
   accessor selected = false;
+
+  @property({ attribute: false })
+  accessor backgroundColor: string = 'var(--affine-hover-color)';
+
+  @property({ attribute: false })
+  accessor boxShadow: string = '';
 
   @property({ attribute: false })
   accessor borderRadius: number = 5;

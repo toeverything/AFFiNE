@@ -366,7 +366,7 @@ export class AffineToolbarWidget extends WidgetComponent {
 
           sideOptions$.value = null;
           flavour$.value = flavour;
-          placement$.value = flavour === 'affine:note' ? 'top' : 'top-start';
+          placement$.value = 'top-start';
           flags.refresh(Flag.Block);
         });
       })

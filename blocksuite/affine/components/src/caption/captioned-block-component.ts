@@ -1,3 +1,7 @@
+import {
+  AttachmentBlockModel,
+  ImageBlockModel,
+} from '@blocksuite/affine-model';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { BlockComponent, type BlockService } from '@blocksuite/block-std';
 import type { BlockModel } from '@blocksuite/store';
@@ -42,6 +46,9 @@ export class CaptionedBlockComponent<
     });
     const theme = this.std.get(ThemeProvider).theme;
     const isBorder = this.selectedStyle === SelectedStyle.Border;
+    const isAttachmentBlock =
+      this.model instanceof AttachmentBlockModel ||
+      this.model instanceof ImageBlockModel;
 
     return html`<div
       style=${style}
@@ -60,6 +67,10 @@ export class CaptionedBlockComponent<
       ${this.selectedStyle === SelectedStyle.Background
         ? html`<affine-block-selection
             .selected=${this.selected$.value}
+            .backgroundColor=${isAttachmentBlock ? 'transparent' : nothing}
+            .boxShadow=${isAttachmentBlock
+              ? '0px 0px 0px 1px var(--affine-brand-color)'
+              : nothing}
           ></affine-block-selection>`
         : null}
       ${this.useZeroWidth && !this.doc.readonly
