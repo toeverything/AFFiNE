@@ -11,7 +11,7 @@ import MarkdownView
 import UIKit
 
 public class IntelligentsEphemeralActionController: UIViewController {
-  let ation: EphemeralAction
+  let action: EphemeralAction
   let scrollView = UIScrollView()
   let stackView = UIStackView()
 
@@ -39,7 +39,7 @@ public class IntelligentsEphemeralActionController: UIViewController {
   }
 
   public init(action: EphemeralAction) {
-    ation = action
+    self.action = action
     super.init(nibName: nil, bundle: nil)
     title = action.title
   }
