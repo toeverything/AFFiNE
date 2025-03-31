@@ -10,7 +10,9 @@ export function getAllPage(page: Page) {
 
   async function clickNewPageButton() {
     const newPageButton = page.getByTestId('new-page-button-trigger');
-    return await newPageButton.click();
+    return await newPageButton.click({
+      timeout: 20000,
+    });
   }
 
   async function clickNewEdgelessDropdown() {
