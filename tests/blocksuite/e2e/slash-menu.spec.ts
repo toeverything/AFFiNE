@@ -40,7 +40,7 @@ function formatWithTimezone(date: Date, timeZone: string = 'Asia/Tokyo') {
   const tokyoDate = date.toLocaleString('en-US', { timeZone });
   const year = tokyoDate.split(',')[0].split('/')[2];
   const month = tokyoDate.split(',')[0].split('/')[0].padStart(2, '0');
-  const day = tokyoDate.split(',')[0].split('/')[1];
+  const day = tokyoDate.split(',')[0].split('/')[1].padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
