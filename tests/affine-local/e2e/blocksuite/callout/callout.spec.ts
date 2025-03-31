@@ -6,12 +6,17 @@ import {
   undoByKeyboard,
 } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
-import { type } from '@affine-test/kit/utils/page-logic';
+import {
+  clickNewPageButton,
+  type,
+  waitForEmptyEditor,
+} from '@affine-test/kit/utils/page-logic';
 import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await openHomePage(page);
-  await page.getByTestId('sidebar-new-page-button').click();
+  await clickNewPageButton(page);
+  await waitForEmptyEditor(page);
   await page.locator('affine-paragraph v-line div').click();
 });
 
