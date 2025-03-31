@@ -11,12 +11,6 @@ import { expect, test } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await openHomePage(page);
-  await page.getByTestId('settings-modal-trigger').click();
-  await page.getByText('Experimental features').click();
-  await page.getByText('I am aware of the risks, and').click();
-  await page.getByTestId('experimental-confirm-button').click();
-  await page.getByTestId('enable_callout').locator('span').click();
-  await page.getByTestId('modal-close-button').click();
   await page.getByTestId('sidebar-new-page-button').click();
   await page.locator('affine-paragraph v-line div').click();
 });

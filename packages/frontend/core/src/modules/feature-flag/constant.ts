@@ -103,7 +103,7 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-callout.description',
     configurable: isCanaryBuild,
-    defaultState: false,
+    defaultState: isCanaryBuild,
   },
   enable_embed_iframe_block: {
     category: 'blocksuite',
