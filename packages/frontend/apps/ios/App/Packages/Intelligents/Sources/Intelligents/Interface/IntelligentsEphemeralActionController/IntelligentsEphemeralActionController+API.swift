@@ -87,7 +87,8 @@ extension IntelligentsEphemeralActionController {
     Intelligents.qlClient.perform(
       mutation: CreateCopilotMessageMutation(options: .init(
         content: .init(stringLiteral: "\(documentContent)"),
-        params: .init(unicodeScalarLiteral: parmText),
+//        TODO: FIX THE BUG
+//        params: .init(stringLiteral: parmText), // JSON string for parameters
         sessionId: sessionID
       )),
       queue: .global()
