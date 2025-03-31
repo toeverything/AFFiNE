@@ -318,7 +318,7 @@ test('can show database backlink info', async ({ page }) => {
 
   // change status label
   await page.keyboard.press('Escape');
-  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Tab');
   await page.keyboard.press('Enter');
   await waitNextFrame(page);
   await waitNextFrame(page);

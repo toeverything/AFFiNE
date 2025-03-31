@@ -251,7 +251,6 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
       .attributeRenderer="${this.inlineManager?.getRenderer()}"
       .embedChecker="${this.inlineManager?.embedChecker}"
       .markdownMatches="${this.inlineManager?.markdownMatches}"
-      .readonly="${!this.isEditing$.value}"
       .enableClipboard="${false}"
       .verticalScrollContainerGetter="${() =>
         this.topContenteditableElement?.host
