@@ -7,23 +7,27 @@ public class GetAudioTranscriptionQuery: GraphQLQuery {
   public static let operationName: String = "getAudioTranscription"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getAudioTranscription($workspaceId: String!, $jobId: String!) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename audioTranscription(jobId: $jobId) { __typename id status transcription { __typename speaker start end transcription } summary } } } }"#
+      #"query getAudioTranscription($workspaceId: String!, $jobId: String, $blobId: String) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename audioTranscription(jobId: $jobId, blobId: $blobId) { __typename id status title summary transcription { __typename speaker start end transcription } } } } }"#
     ))
 
   public var workspaceId: String
-  public var jobId: String
+  public var jobId: GraphQLNullable<String>
+  public var blobId: GraphQLNullable<String>
 
   public init(
     workspaceId: String,
-    jobId: String
+    jobId: GraphQLNullable<String>,
+    blobId: GraphQLNullable<String>
   ) {
     self.workspaceId = workspaceId
     self.jobId = jobId
+    self.blobId = blobId
   }
 
   public var __variables: Variables? { [
     "workspaceId": workspaceId,
-    "jobId": jobId
+    "jobId": jobId,
+    "blobId": blobId
   ] }
 
   public struct Data: AffineGraphQL.SelectionSet {
@@ -63,10 +67,13 @@ public class GetAudioTranscriptionQuery: GraphQLQuery {
         public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Copilot }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
-          .field("audioTranscription", [AudioTranscription].self, arguments: ["jobId": .variable("jobId")]),
+          .field("audioTranscription", AudioTranscription?.self, arguments: [
+            "jobId": .variable("jobId"),
+            "blobId": .variable("blobId")
+          ]),
         ] }
 
-        public var audioTranscription: [AudioTranscription] { __data["audioTranscription"] }
+        public var audioTranscription: AudioTranscription? { __data["audioTranscription"] }
 
         /// CurrentUser.Copilot.AudioTranscription
         ///
@@ -80,14 +87,16 @@ public class GetAudioTranscriptionQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("id", AffineGraphQL.ID.self),
             .field("status", GraphQLEnum<AffineGraphQL.AiJobStatus>.self),
-            .field("transcription", [Transcription]?.self),
+            .field("title", String?.self),
             .field("summary", String?.self),
+            .field("transcription", [Transcription]?.self),
           ] }
 
           public var id: AffineGraphQL.ID { __data["id"] }
           public var status: GraphQLEnum<AffineGraphQL.AiJobStatus> { __data["status"] }
-          public var transcription: [Transcription]? { __data["transcription"] }
+          public var title: String? { __data["title"] }
           public var summary: String? { __data["summary"] }
+          public var transcription: [Transcription]? { __data["transcription"] }
 
           /// CurrentUser.Copilot.AudioTranscription.Transcription
           ///

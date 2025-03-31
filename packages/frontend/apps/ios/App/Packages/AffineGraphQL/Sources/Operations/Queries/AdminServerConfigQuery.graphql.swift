@@ -42,7 +42,7 @@ public class AdminServerConfigQuery: GraphQLQuery {
         .field("type", GraphQLEnum<AffineGraphQL.ServerDeploymentType>.self),
         .field("initialized", Bool.self),
         .field("credentialsRequirement", CredentialsRequirement.self),
-        .field("availableUpgrade", AvailableUpgrade.self),
+        .field("availableUpgrade", AvailableUpgrade?.self),
         .field("availableUserFeatures", [GraphQLEnum<AffineGraphQL.FeatureType>].self),
       ] }
 
@@ -61,7 +61,7 @@ public class AdminServerConfigQuery: GraphQLQuery {
       /// credentials requirement
       public var credentialsRequirement: CredentialsRequirement { __data["credentialsRequirement"] }
       /// fetch latest available upgradable release of server
-      public var availableUpgrade: AvailableUpgrade { __data["availableUpgrade"] }
+      public var availableUpgrade: AvailableUpgrade? { __data["availableUpgrade"] }
       /// Features for user that can be configured
       public var availableUserFeatures: [GraphQLEnum<AffineGraphQL.FeatureType>] { __data["availableUserFeatures"] }
 

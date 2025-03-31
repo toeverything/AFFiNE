@@ -3,11 +3,11 @@
 
 @_exported import ApolloAPI
 
-public class MatchWorkspaceContextQuery: GraphQLQuery {
-  public static let operationName: String = "matchWorkspaceContext"
+public class MatchWorkspaceDocsQuery: GraphQLQuery {
+  public static let operationName: String = "matchWorkspaceDocs"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query matchWorkspaceContext($contextId: String!, $content: String!, $limit: SafeInt) { currentUser { __typename copilot { __typename contexts(contextId: $contextId) { __typename matchWorkspaceContext(content: $content, limit: $limit) { __typename docId chunk content distance } } } } }"#
+      #"query matchWorkspaceDocs($contextId: String!, $content: String!, $limit: SafeInt) { currentUser { __typename copilot { __typename contexts(contextId: $contextId) { __typename matchWorkspaceDocs(content: $content, limit: $limit) { __typename docId chunk content distance } } } } }"#
     ))
 
   public var contextId: String
@@ -83,19 +83,19 @@ public class MatchWorkspaceContextQuery: GraphQLQuery {
           public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotContext }
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
-            .field("matchWorkspaceContext", MatchWorkspaceContext.self, arguments: [
+            .field("matchWorkspaceDocs", [MatchWorkspaceDoc].self, arguments: [
               "content": .variable("content"),
               "limit": .variable("limit")
             ]),
           ] }
 
-          /// match workspace doc content
-          public var matchWorkspaceContext: MatchWorkspaceContext { __data["matchWorkspaceContext"] }
+          /// match workspace docs
+          public var matchWorkspaceDocs: [MatchWorkspaceDoc] { __data["matchWorkspaceDocs"] }
 
-          /// CurrentUser.Copilot.Context.MatchWorkspaceContext
+          /// CurrentUser.Copilot.Context.MatchWorkspaceDoc
           ///
           /// Parent Type: `ContextMatchedDocChunk`
-          public struct MatchWorkspaceContext: AffineGraphQL.SelectionSet {
+          public struct MatchWorkspaceDoc: AffineGraphQL.SelectionSet {
             public let __data: DataDict
             public init(_dataDict: DataDict) { __data = _dataDict }
 

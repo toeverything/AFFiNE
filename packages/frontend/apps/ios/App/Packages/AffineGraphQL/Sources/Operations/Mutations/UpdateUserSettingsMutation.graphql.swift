@@ -7,12 +7,12 @@ public class UpdateUserSettingsMutation: GraphQLMutation {
   public static let operationName: String = "updateUserSettings"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation updateUserSettings($input: UpdateSettingsInput!) { updateSettings(input: $input) }"#
+      #"mutation updateUserSettings($input: UpdateUserSettingsInput!) { updateSettings(input: $input) }"#
     ))
 
-  public var input: UpdateSettingsInput
+  public var input: UpdateUserSettingsInput
 
-  public init(input: UpdateSettingsInput) {
+  public init(input: UpdateUserSettingsInput) {
     self.input = input
   }
 

@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let ServerServiceConfig = ApolloAPI.Object(
-    typename: "ServerServiceConfig",
+  static let UserSettingsType = ApolloAPI.Object(
+    typename: "UserSettingsType",
     implementedInterfaces: [],
     keyFields: nil
   )

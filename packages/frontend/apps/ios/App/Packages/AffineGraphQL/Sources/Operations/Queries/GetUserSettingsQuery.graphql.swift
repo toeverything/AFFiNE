@@ -42,12 +42,12 @@ public class GetUserSettingsQuery: GraphQLQuery {
 
       /// CurrentUser.Settings
       ///
-      /// Parent Type: `SettingsType`
+      /// Parent Type: `UserSettingsType`
       public struct Settings: AffineGraphQL.SelectionSet {
         public let __data: DataDict
         public init(_dataDict: DataDict) { __data = _dataDict }
 
-        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.SettingsType }
+        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.UserSettingsType }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("receiveInvitationEmail", Bool.self),

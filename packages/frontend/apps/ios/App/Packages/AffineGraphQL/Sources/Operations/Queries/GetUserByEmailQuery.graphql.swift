@@ -7,7 +7,7 @@ public class GetUserByEmailQuery: GraphQLQuery {
   public static let operationName: String = "getUserByEmail"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getUserByEmail($email: String!) { userByEmail(email: $email) { __typename id name email features hasPassword emailVerified avatarUrl quota { __typename humanReadable { __typename blobLimit historyPeriod memberLimit name storageQuota } } } }"#
+      #"query getUserByEmail($email: String!) { userByEmail(email: $email) { __typename id name email features hasPassword emailVerified avatarUrl disabled } }"#
     ))
 
   public var email: String
@@ -47,7 +47,7 @@ public class GetUserByEmailQuery: GraphQLQuery {
         .field("hasPassword", Bool?.self),
         .field("emailVerified", Bool.self),
         .field("avatarUrl", String?.self),
-        .field("quota", Quota.self),
+        .field("disabled", Bool.self),
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }
@@ -63,47 +63,8 @@ public class GetUserByEmailQuery: GraphQLQuery {
       public var emailVerified: Bool { __data["emailVerified"] }
       /// User avatar url
       public var avatarUrl: String? { __data["avatarUrl"] }
-      public var quota: Quota { __data["quota"] }
-
-      /// UserByEmail.Quota
-      ///
-      /// Parent Type: `UserQuotaType`
-      public struct Quota: AffineGraphQL.SelectionSet {
-        public let __data: DataDict
-        public init(_dataDict: DataDict) { __data = _dataDict }
-
-        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.UserQuotaType }
-        public static var __selections: [ApolloAPI.Selection] { [
-          .field("__typename", String.self),
-          .field("humanReadable", HumanReadable.self),
-        ] }
-
-        public var humanReadable: HumanReadable { __data["humanReadable"] }
-
-        /// UserByEmail.Quota.HumanReadable
-        ///
-        /// Parent Type: `UserQuotaHumanReadableType`
-        public struct HumanReadable: AffineGraphQL.SelectionSet {
-          public let __data: DataDict
-          public init(_dataDict: DataDict) { __data = _dataDict }
-
-          public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.UserQuotaHumanReadableType }
-          public static var __selections: [ApolloAPI.Selection] { [
-            .field("__typename", String.self),
-            .field("blobLimit", String.self),
-            .field("historyPeriod", String.self),
-            .field("memberLimit", String.self),
-            .field("name", String.self),
-            .field("storageQuota", String.self),
-          ] }
-
-          public var blobLimit: String { __data["blobLimit"] }
-          public var historyPeriod: String { __data["historyPeriod"] }
-          public var memberLimit: String { __data["memberLimit"] }
-          public var name: String { __data["name"] }
-          public var storageQuota: String { __data["storageQuota"] }
-        }
-      }
+      /// User is disabled
+      public var disabled: Bool { __data["disabled"] }
     }
   }
 }

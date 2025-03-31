@@ -65,9 +65,6 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "ReleaseVersionType": return AffineGraphQL.Objects.ReleaseVersionType
     case "RemoveAvatar": return AffineGraphQL.Objects.RemoveAvatar
     case "ServerConfigType": return AffineGraphQL.Objects.ServerConfigType
-    case "ServerRuntimeConfigType": return AffineGraphQL.Objects.ServerRuntimeConfigType
-    case "ServerServiceConfig": return AffineGraphQL.Objects.ServerServiceConfig
-    case "SettingsType": return AffineGraphQL.Objects.SettingsType
     case "SubscriptionPrice": return AffineGraphQL.Objects.SubscriptionPrice
     case "SubscriptionType": return AffineGraphQL.Objects.SubscriptionType
     case "TranscriptionItemType": return AffineGraphQL.Objects.TranscriptionItemType
@@ -76,6 +73,7 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "UserQuotaHumanReadableType": return AffineGraphQL.Objects.UserQuotaHumanReadableType
     case "UserQuotaType": return AffineGraphQL.Objects.UserQuotaType
     case "UserQuotaUsageType": return AffineGraphQL.Objects.UserQuotaUsageType
+    case "UserSettingsType": return AffineGraphQL.Objects.UserSettingsType
     case "UserType": return AffineGraphQL.Objects.UserType
     case "WorkspacePageMeta": return AffineGraphQL.Objects.WorkspacePageMeta
     case "WorkspacePermissions": return AffineGraphQL.Objects.WorkspacePermissions

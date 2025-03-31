@@ -5,8 +5,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apollographql/apollo-ios",
       "state" : {
-        "revision" : "9aa748d6f0526a744d49d59a2383dc7fdf9d645b",
-        "version" : "1.18.0"
+        "revision" : "4d0845f9f2901ed657d680c874ffc68d12704cd4",
+        "version" : "1.19.0"
+      }
+    },
+    {
+      "identity" : "chidorimenu",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/ChidoriMenu",
+      "state" : {
+        "revision" : "ccd37f01cd4dcf4fb0889f263573d90d5c16e59b",
+        "version" : "2.4.3"
       }
     },
     {
@@ -25,6 +34,15 @@
       "state" : {
         "revision" : "a95fc6df17d108bd99210db5e8a9bac90fe984b8",
         "version" : "0.15.3"
+      }
+    },
+    {
+      "identity" : "swift-cmark",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-cmark",
+      "state" : {
+        "revision" : "3ccff77b2dc5b96b77db3da0d68d28068593fa53",
+        "version" : "0.5.0"
       }
     },
     {
