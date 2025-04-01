@@ -40,12 +40,6 @@ public class IntelligentsChatController: UIViewController {
 
   public var metadata: [MetadataKey: String] = [:]
 
-  // TODO: Server Indexer Update
-  // currently we are attaching full document
-  // to the first message after this controller is presented
-  // later on for frontend app to update, we may migrate to indexer
-  var isDocumentAttachedToMessage = false
-
   var chatTask: EventSource?
 
   override public var title: String? {

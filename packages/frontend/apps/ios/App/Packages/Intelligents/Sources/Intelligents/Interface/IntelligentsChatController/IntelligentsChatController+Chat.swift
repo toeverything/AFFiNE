@@ -238,25 +238,17 @@ private extension IntelligentsChatController {
       self.tableView.scrollLastCellToTop()
     }
 
-    var textContent = text
-    if !isDocumentAttachedToMessage {
-      // TODO: Update Use Indexer
-      isDocumentAttachedToMessage = true
-      textContent = """
-      <system_content_begin>
-      \(metadata[.content] ?? "-")
-      <system_content_end>
-      <user_message_begin>
-      \(text)
-      <user_message_end>
-      """
-    }
-
     let sem = DispatchSemaphore(value: 0)
     let sessionID = sessionID
     Intelligents.qlClient.perform(
       mutation: CreateCopilotMessageMutation(options: .init(
-        content: .init(stringLiteral: textContent),
+        content: .init(stringLiteral: text),
+        params: .some(.dictionary([
+          "docs":[
+            "docId": metadata[.documentID] ?? "",
+            "docContent": metadata[.content] ?? "",
+          ]
+        ])),
         sessionId: sessionID
       )),
       queue: .global()
