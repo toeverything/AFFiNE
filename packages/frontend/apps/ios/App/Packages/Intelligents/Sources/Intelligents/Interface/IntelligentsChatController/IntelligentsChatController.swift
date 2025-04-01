@@ -30,9 +30,7 @@ public class IntelligentsChatController: UIViewController {
     didSet { updateContentToPublisher() }
   }
 
-  var sessionID: String = "" {
-    didSet { print("[*] new sessionID: \(sessionID)") }
-  }
+  var sessionID: String = ""
 
   public enum MetadataKey: String {
     case documentID
@@ -54,8 +52,7 @@ public class IntelligentsChatController: UIViewController {
     }
   }
 
-  // ForkChatSessionInput
-  public init(forkFromMessageWithIdentifier _: String? = nil) {
+  public init() {
     super.init(nibName: nil, bundle: nil)
     title = "Chat with AI".localized()
 
@@ -86,8 +83,13 @@ public class IntelligentsChatController: UIViewController {
     setupLayout()
 
     // TODO: IMPL
+    header.dropMenu.isHidden = true
+    header.moreMenu.isHidden = true
     inputBox.editor.controlBanner.cameraButton.isHidden = true
     inputBox.editor.controlBanner.photoButton.isHidden = true
+
+    updateContentToPublisher()
+    tableView.scrollToBottom()
 
     chat_onLoad()
   }

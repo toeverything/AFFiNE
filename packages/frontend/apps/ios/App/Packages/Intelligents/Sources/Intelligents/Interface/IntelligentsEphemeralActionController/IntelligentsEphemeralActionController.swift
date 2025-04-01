@@ -28,7 +28,13 @@ public class IntelligentsEphemeralActionController: UIViewController {
   public var documentID: String = ""
   public var workspaceID: String = ""
   public var documentContent: String = ""
-  var sessionID: String = ""
+  public internal(set) var sessionID: String = "" {
+    didSet { print(#fileID, #function, sessionID) }
+  }
+
+  public internal(set) var messageID: String = "" {
+    didSet { print(#fileID, #function, messageID) }
+  }
 
   var chatTask: EventSource?
   var copilotDocumentStorage: String = "" {
@@ -120,6 +126,10 @@ public class IntelligentsEphemeralActionController: UIViewController {
 
     actionBar.retryButton.action = { [weak self] in
       self?.beginAction()
+    }
+    actionBar.continueToChat.action = { [weak self] in
+      guard let self else { return }
+      continueToChat()
     }
   }
 
@@ -273,5 +283,15 @@ public class IntelligentsEphemeralActionController: UIViewController {
       usingSpringWithDamping: 1.0,
       initialSpringVelocity: 0.8
     ) { self.scrollView.setContentOffset(bottomOffset, animated: false) }
+  }
+}
+
+extension IntelligentsEphemeralActionController {
+  func continueToChat() {
+    let chatController = IntelligentsChatController()
+    chatController.metadata[.documentID] = documentID
+    chatController.metadata[.workspaceID] = workspaceID
+    chatController.metadata[.content] = documentContent
+    navigationController?.pushViewController(chatController, animated: true)
   }
 }

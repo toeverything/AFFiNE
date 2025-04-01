@@ -25,9 +25,7 @@ extension InputEditView: UIImagePickerControllerDelegate, UINavigationController
 
   private func processJPEGImageData(_ image: UIImage) throws -> Data? {
     guard let data = image.jpegData(compressionQuality: 0.75) else {
-      throw NSError(domain: "", code: -1, userInfo: [
-        NSLocalizedDescriptionKey: "Failed to compress image data",
-      ])
+      throw UnableTo.compressImage
     }
     return data
   }

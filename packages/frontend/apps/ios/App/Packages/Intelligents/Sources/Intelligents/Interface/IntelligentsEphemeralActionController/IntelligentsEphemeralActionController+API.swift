@@ -15,6 +15,8 @@ extension IntelligentsEphemeralActionController {
     chatTask?.stop()
     chatTask = nil
     copilotDocumentStorage = ""
+    sessionID = ""
+    messageID = ""
     chat_createSession(
       documentIdentifier: documentID,
       workspaceIdentifier: workspaceID
@@ -35,13 +37,7 @@ extension IntelligentsEphemeralActionController {
     onFailure: @escaping (Error) -> Void
   ) {
     if documentIdentifier.isEmpty || workspaceIdentifier.isEmpty {
-      onFailure(
-        NSError(
-          domain: "Intelligents",
-          code: 0,
-          userInfo: [NSLocalizedDescriptionKey: "Unable to identify the document or workspace"]
-        )
-      )
+      onFailure(UnableTo.identifyDocumentOrWorkspace)
     }
     Intelligents.qlClient.perform(
       mutation: CreateCopilotSessionMutation(options: .init(
@@ -57,13 +53,7 @@ extension IntelligentsEphemeralActionController {
           DispatchQueue.main.async { onSuccess(session) }
         } else {
           DispatchQueue.main.async {
-            onFailure(
-              NSError(
-                domain: "Intelligents",
-                code: 0,
-                userInfo: [NSLocalizedDescriptionKey: "No session created"]
-              )
-            )
+            onFailure(UnableTo.createSession)
           }
         }
       case let .failure(error):
@@ -91,12 +81,10 @@ extension IntelligentsEphemeralActionController {
       switch result {
       case let .success(value):
         if let messageID = value.data?.createCopilotMessage {
-          print("[*] messageID", messageID)
+          self.messageID = messageID
           self.chat_processWithMessageID(sessionID: self.sessionID, messageID: messageID)
         } else {
-          self.presentError(NSError(domain: "AFFiNE", code: -1, userInfo: [
-            NSLocalizedDescriptionKey: "Failed to create a message for the session. Please try again.",
-          ])) {
+          self.presentError(UnableTo.createMessage) {
             self.close()
           }
         }
@@ -120,11 +108,7 @@ extension IntelligentsEphemeralActionController {
 
     guard let url = comps?.url else {
       assertionFailure()
-      presentError(NSError(
-        domain: "Intelligents",
-        code: 0,
-        userInfo: [NSLocalizedDescriptionKey: "No message created"]
-      ))
+      presentError(UnableTo.createMessage)
       return
     }
 
