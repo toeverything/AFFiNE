@@ -82,15 +82,19 @@ public class IntelligentsChatController: UIViewController {
     view.addSubview(progressView)
     setupLayout()
 
+    header.moreMenu.showsMenuAsPrimaryAction = true
+    header.moreMenu.menu = .init(children: [
+      UIAction(title: "Clear History".localized(), image: UIImage(systemName: "eraser")) { [weak self] _ in
+        self?.chat_clearHistory()
+      },
+    ])
+
     // TODO: IMPL
     header.dropMenu.isHidden = true
-    header.moreMenu.isHidden = true
     inputBox.editor.controlBanner.cameraButton.isHidden = true
     inputBox.editor.controlBanner.photoButton.isHidden = true
 
     updateContentToPublisher()
-    tableView.scrollToBottom()
-
     chat_onLoad()
   }
 
@@ -129,6 +133,10 @@ public class IntelligentsChatController: UIViewController {
       action: #selector(chat_onSend),
       for: .touchUpInside
     )
+    inputBox.editor.submitAction = { [weak self] in
+      guard let self else { return }
+      chat_onSend()
+    }
 
     progressView.hidesWhenStopped = true
     progressView.stopAnimating()

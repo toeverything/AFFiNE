@@ -23,8 +23,9 @@ class MessageListView: UIView {
   let elementUpdateProcessLock = NSLock()
   var distributedPendingUpdateElements: Elements? = nil
   var isAutomaticScrollAnimating: Bool = false
+  var scrollToBottomOnNextUpdate = false
 
-  let footerView = UIView(frame: .init(x: 0, y: 0, width: 0, height: 500))
+  let footerView = UIView(frame: .init(x: 0, y: 0, width: 0, height: 200))
 
   init(dataPublisher: AnyPublisher<[Element], Never>) {
     super.init(frame: .zero)

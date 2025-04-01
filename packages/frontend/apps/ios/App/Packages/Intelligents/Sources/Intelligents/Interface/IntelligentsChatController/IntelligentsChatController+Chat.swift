@@ -17,7 +17,6 @@ extension IntelligentsChatController {
       self.sessionID = session ?? ""
       self.chat_retrieveHistories {
         self.dispatchToMain {
-          self.tableView.scrollToBottom()
           self.endProgress()
         }
       }
@@ -41,6 +40,24 @@ extension IntelligentsChatController {
     DispatchQueue.global().async {
       self.chat_onSendExecute(viewModel: viewModel)
       self.endProgress()
+    }
+  }
+
+  func chat_clearHistory() {
+    beginProgress()
+    Intelligents.qlClient.perform(mutation: CleanupCopilotSessionMutation(input: .init(
+      docId: metadata[.documentID] ?? "",
+      sessionIds: [sessionID],
+      workspaceId: metadata[.workspaceID] ?? ""
+    ))) { result in
+      self.dispatchToMain {
+        self.endProgress()
+        if case .success = result {
+          self.simpleChatContents.removeAll()
+          return
+        }
+        self.presentError(UnableTo.clearHistory)
+      }
     }
   }
 
@@ -68,6 +85,13 @@ extension IntelligentsChatController {
          let mostRecent = histories.last,
          let messages = mostRecent._data["messages"] as? [DataDict]
       {
+        tableView.scrollToBottomOnNextUpdate = true
+        tableView.alpha = 0
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+          UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 1.0, initialSpringVelocity: 0.8) {
+            self.tableView.alpha = 1
+          }
+        }
         for message in messages {
           guard let role = message._data["role"] as? String,
                 let content = message._data["content"] as? String
@@ -105,6 +129,7 @@ private extension IntelligentsChatController {
 
   func beginProgress() {
     dispatchToMain { [self] in
+      header.isUserInteractionEnabled = false
       inputBox.isUserInteractionEnabled = false
       progressView.isHidden = false
       progressView.alpha = 0
@@ -121,6 +146,7 @@ private extension IntelligentsChatController {
       UIView.animate(withDuration: 0.3) {
         self.inputBox.editor.alpha = 1
         self.progressView.alpha = 0
+        self.header.isUserInteractionEnabled = true
       } completion: { _ in
         self.inputBox.isUserInteractionEnabled = true
         self.progressView.stopAnimating()
