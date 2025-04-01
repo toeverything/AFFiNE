@@ -15,7 +15,7 @@ export class PaginationInput {
     transform: value => {
       return {
         ...value,
-        after: decode(value.after),
+        after: decode(value?.after),
         // before: decode(value.before),
       };
     },

@@ -1,0 +1,34 @@
+{
+  "mappings": {
+    "properties": {
+      "workspace_id": {
+        "type": "keyword"
+      },
+      "doc_id": {
+        "type": "keyword"
+      },
+      "title": {
+        "type": "text"
+      },
+      "summary": {
+        "type": "text",
+        "index": false
+      },
+      "journal": {
+        "type": "keyword"
+      },
+      "created_by_user_id": {
+        "type": "keyword"
+      },
+      "updated_by_user_id": {
+        "type": "keyword"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "updated_at": {
+        "type": "date"
+      }
+    }
+  }
+}

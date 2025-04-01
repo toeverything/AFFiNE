@@ -947,6 +947,33 @@ export class InvalidAppConfig extends UserFriendlyError {
     super('invalid_input', 'invalid_app_config', message);
   }
 }
+
+export class SearchProviderNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'search_provider_not_found', message);
+  }
+}
+@ObjectType()
+class InvalidSearchProviderRequestDataType {
+  @Field() reason!: string
+  @Field() type!: string
+}
+
+export class InvalidSearchProviderRequest extends UserFriendlyError {
+  constructor(args: InvalidSearchProviderRequestDataType, message?: string | ((args: InvalidSearchProviderRequestDataType) => string)) {
+    super('invalid_input', 'invalid_search_provider_request', message, args);
+  }
+}
+@ObjectType()
+class InvalidIndexerInputDataType {
+  @Field() reason!: string
+}
+
+export class InvalidIndexerInput extends UserFriendlyError {
+  constructor(args: InvalidIndexerInputDataType, message?: string | ((args: InvalidIndexerInputDataType) => string)) {
+    super('invalid_input', 'invalid_indexer_input', message, args);
+  }
+}
 export enum ErrorNames {
   INTERNAL_SERVER_ERROR,
   NETWORK_ERROR,
@@ -1069,7 +1096,10 @@ export enum ErrorNames {
   NOTIFICATION_NOT_FOUND,
   MENTION_USER_DOC_ACCESS_DENIED,
   MENTION_USER_ONESELF_DENIED,
-  INVALID_APP_CONFIG
+  INVALID_APP_CONFIG,
+  SEARCH_PROVIDER_NOT_FOUND,
+  INVALID_SEARCH_PROVIDER_REQUEST,
+  INVALID_INDEXER_INPUT
 }
 registerEnumType(ErrorNames, {
   name: 'ErrorNames'
@@ -1078,5 +1108,5 @@ registerEnumType(ErrorNames, {
 export const ErrorDataUnionType = createUnionType({
   name: 'ErrorDataUnion',
   types: () =>
-    [GraphqlBadRequestDataType, HttpRequestErrorDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseUpdateParamsDataType, WorkspaceMembersExceedLimitToDowngradeDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType] as const,
+    [GraphqlBadRequestDataType, HttpRequestErrorDataType, QueryTooLongDataType, ValidationErrorDataType, WrongSignInCredentialsDataType, UnknownOauthProviderDataType, InvalidOauthCallbackCodeDataType, MissingOauthQueryParameterDataType, InvalidEmailDataType, InvalidPasswordLengthDataType, WorkspacePermissionNotFoundDataType, SpaceNotFoundDataType, MemberNotFoundInSpaceDataType, NotInSpaceDataType, AlreadyInSpaceDataType, SpaceAccessDeniedDataType, SpaceOwnerNotFoundDataType, SpaceShouldHaveOnlyOneOwnerDataType, DocNotFoundDataType, DocActionDeniedDataType, DocUpdateBlockedDataType, VersionRejectedDataType, InvalidHistoryTimestampDataType, DocHistoryNotFoundDataType, BlobNotFoundDataType, ExpectToGrantDocUserRolesDataType, ExpectToRevokeDocUserRolesDataType, ExpectToUpdateDocUserRoleDataType, UnsupportedSubscriptionPlanDataType, SubscriptionAlreadyExistsDataType, SubscriptionNotExistsDataType, SameSubscriptionRecurringDataType, SubscriptionPlanNotFoundDataType, CopilotDocNotFoundDataType, CopilotMessageNotFoundDataType, CopilotPromptNotFoundDataType, CopilotProviderSideErrorDataType, CopilotInvalidContextDataType, CopilotContextFileNotSupportedDataType, CopilotFailedToModifyContextDataType, CopilotFailedToMatchContextDataType, RuntimeConfigNotFoundDataType, InvalidRuntimeConfigTypeDataType, InvalidLicenseUpdateParamsDataType, WorkspaceMembersExceedLimitToDowngradeDataType, UnsupportedClientVersionDataType, MentionUserDocAccessDeniedDataType, InvalidSearchProviderRequestDataType, InvalidIndexerInputDataType] as const,
 });

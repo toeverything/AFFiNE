@@ -19,6 +19,46 @@ input AddContextFileInput {
   contextId: String!
 }
 
+type AggregateBucketHitsObjectType {
+  nodes: [SearchNodeObjectType!]!
+}
+
+type AggregateBucketObjectType {
+  count: Int!
+
+  """The hits object"""
+  hits: AggregateBucketHitsObjectType!
+  key: String!
+}
+
+input AggregateHitsOptions {
+  fields: [String!]!
+  highlights: [SearchHighlight!]
+  pagination: AggregateHitsPagination
+}
+
+input AggregateHitsPagination {
+  limit: Int
+  skip: Int
+}
+
+input AggregateInput {
+  field: String!
+  options: AggregateOptions!
+  query: SearchQuery!
+  table: SearchTable!
+}
+
+input AggregateOptions {
+  hits: AggregateHitsOptions!
+  pagination: SearchPagination
+}
+
+type AggregateResultObjectType {
+  buckets: [AggregateBucketObjectType!]!
+  pagination: SearchResultPagination!
+}
+
 enum AiJobStatus {
   claimed
   failed
@@ -404,7 +444,7 @@ type EditorType {
   name: String!
 }
 
-union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CopilotContextFileNotSupportedDataType | CopilotDocNotFoundDataType | CopilotFailedToMatchContextDataType | CopilotFailedToModifyContextDataType | CopilotInvalidContextDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NotInSpaceDataType | QueryTooLongDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspaceMembersExceedLimitToDowngradeDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
+union ErrorDataUnion = AlreadyInSpaceDataType | BlobNotFoundDataType | CopilotContextFileNotSupportedDataType | CopilotDocNotFoundDataType | CopilotFailedToMatchContextDataType | CopilotFailedToModifyContextDataType | CopilotInvalidContextDataType | CopilotMessageNotFoundDataType | CopilotPromptNotFoundDataType | CopilotProviderSideErrorDataType | DocActionDeniedDataType | DocHistoryNotFoundDataType | DocNotFoundDataType | DocUpdateBlockedDataType | ExpectToGrantDocUserRolesDataType | ExpectToRevokeDocUserRolesDataType | ExpectToUpdateDocUserRoleDataType | GraphqlBadRequestDataType | HttpRequestErrorDataType | InvalidEmailDataType | InvalidHistoryTimestampDataType | InvalidIndexerInputDataType | InvalidLicenseUpdateParamsDataType | InvalidOauthCallbackCodeDataType | InvalidPasswordLengthDataType | InvalidRuntimeConfigTypeDataType | InvalidSearchProviderRequestDataType | MemberNotFoundInSpaceDataType | MentionUserDocAccessDeniedDataType | MissingOauthQueryParameterDataType | NotInSpaceDataType | QueryTooLongDataType | RuntimeConfigNotFoundDataType | SameSubscriptionRecurringDataType | SpaceAccessDeniedDataType | SpaceNotFoundDataType | SpaceOwnerNotFoundDataType | SpaceShouldHaveOnlyOneOwnerDataType | SubscriptionAlreadyExistsDataType | SubscriptionNotExistsDataType | SubscriptionPlanNotFoundDataType | UnknownOauthProviderDataType | UnsupportedClientVersionDataType | UnsupportedSubscriptionPlanDataType | ValidationErrorDataType | VersionRejectedDataType | WorkspaceMembersExceedLimitToDowngradeDataType | WorkspacePermissionNotFoundDataType | WrongSignInCredentialsDataType
 
 enum ErrorNames {
   ACCESS_DENIED
@@ -471,6 +511,7 @@ enum ErrorNames {
   INVALID_EMAIL
   INVALID_EMAIL_TOKEN
   INVALID_HISTORY_TIMESTAMP
+  INVALID_INDEXER_INPUT
   INVALID_LICENSE_SESSION_ID
   INVALID_LICENSE_TO_ACTIVATE
   INVALID_LICENSE_UPDATE_PARAMS
@@ -478,6 +519,7 @@ enum ErrorNames {
   INVALID_OAUTH_CALLBACK_STATE
   INVALID_PASSWORD_LENGTH
   INVALID_RUNTIME_CONFIG_TYPE
+  INVALID_SEARCH_PROVIDER_REQUEST
   INVALID_SUBSCRIPTION_PARAMETERS
   LICENSE_NOT_FOUND
   LICENSE_REVEALED
@@ -501,6 +543,7 @@ enum ErrorNames {
   RUNTIME_CONFIG_NOT_FOUND
   SAME_EMAIL_PROVIDED
   SAME_SUBSCRIPTION_RECURRING
+  SEARCH_PROVIDER_NOT_FOUND
   SIGN_UP_FORBIDDEN
   SPACE_ACCESS_DENIED
   SPACE_NOT_FOUND
@@ -607,6 +650,10 @@ type InvalidHistoryTimestampDataType {
   timestamp: String!
 }
 
+type InvalidIndexerInputDataType {
+  reason: String!
+}
+
 type InvalidLicenseUpdateParamsDataType {
   reason: String!
 }
@@ -625,6 +672,11 @@ type InvalidRuntimeConfigTypeDataType {
   get: String!
   key: String!
   want: String!
+}
+
+type InvalidSearchProviderRequestDataType {
+  reason: String!
+  type: String!
 }
 
 type InvitationAcceptedNotificationBodyType {
@@ -1289,6 +1341,81 @@ type SameSubscriptionRecurringDataType {
   recurring: String!
 }
 
+input SearchHighlight {
+  before: String!
+  end: String!
+  field: String!
+}
+
+input SearchInput {
+  options: SearchOptions!
+  query: SearchQuery!
+  table: SearchTable!
+}
+
+type SearchNodeObjectType {
+  """The search result fields, see UnionSearchItemObjectType"""
+  fields: JSONObject!
+
+  """The search result fields, see UnionSearchItemObjectType"""
+  highlights: JSONObject
+}
+
+input SearchOptions {
+  fields: [String!]!
+  highlights: [SearchHighlight!]
+  pagination: SearchPagination
+}
+
+input SearchPagination {
+  cursor: String
+  limit: Int
+  skip: Int
+}
+
+input SearchQuery {
+  boost: Float
+  field: String
+  match: String
+  occur: SearchQueryOccur
+  queries: [SearchQuery!]
+  query: SearchQuery
+  type: SearchQueryType!
+}
+
+"""Search query occur"""
+enum SearchQueryOccur {
+  must
+  must_not
+  should
+}
+
+"""Search query type"""
+enum SearchQueryType {
+  all
+  boolean
+  boost
+  exists
+  match
+}
+
+type SearchResultObjectType {
+  nodes: [SearchNodeObjectType!]!
+  pagination: SearchResultPagination!
+}
+
+type SearchResultPagination {
+  count: Int!
+  hasMore: Boolean!
+  nextCursor: String
+}
+
+"""Search table"""
+enum SearchTable {
+  block
+  doc
+}
+
 type ServerConfigType {
   """fetch latest available upgradable release of server"""
   availableUpgrade: ReleaseVersionType
@@ -1327,6 +1454,7 @@ enum ServerDeploymentType {
 enum ServerFeature {
   Captcha
   Copilot
+  Indexer
   OAuth
   Payment
 }
@@ -1691,6 +1819,9 @@ type WorkspaceRolePermissions {
 }
 
 type WorkspaceType {
+  """Search a specific table with aggregate"""
+  aggregate(input: AggregateInput!): AggregateResultObjectType!
+
   """List blobs of workspace"""
   blobs: [ListedBlob!]!
 
@@ -1757,6 +1888,9 @@ type WorkspaceType {
 
   """Role of current signed in user in workspace"""
   role: Permission!
+
+  """Search a specific table"""
+  search(input: SearchInput!): SearchResultObjectType!
 
   """The team subscription of the workspace, if exists."""
   subscription: SubscriptionType

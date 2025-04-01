@@ -837,4 +837,21 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: 'Invalid app config.',
   },
+
+  // indexer errors
+  search_provider_not_found: {
+    type: 'resource_not_found',
+    message: 'Search provider not found.',
+  },
+  invalid_search_provider_request: {
+    type: 'invalid_input',
+    args: { reason: 'string', type: 'string' },
+    message: ({ reason }) =>
+      `Invalid request argument to search provider: ${reason}`,
+  },
+  invalid_indexer_input: {
+    type: 'invalid_input',
+    args: { reason: 'string' },
+    message: ({ reason }) => `Invalid indexer input: ${reason}`,
+  },
 } satisfies Record<string, UserFriendlyErrorOptions>;

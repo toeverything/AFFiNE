@@ -569,7 +569,25 @@ jobs:
         ports:
           - 1025:1025
           - 8025:8025
+      manticoresearch:
+        image: manticoresearch/manticore:9.2.14
+        ports:
+          - 9308:9308
     steps:
+      # https://github.com/elastic/elastic-github-actions/blob/master/elasticsearch/README.md
+      - name: Configure sysctl limits for Elasticsearch
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+
+      - name: Runs Elasticsearch
+        uses: elastic/elastic-github-actions/elasticsearch@master
+        with:
+          stack-version: 8.18.0
+          security-enabled: false
+
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -631,6 +649,10 @@ jobs:
         image: redis
         ports:
           - 6379:6379
+      manticoresearch:
+        image: manticoresearch/manticore:9.2.14
+        ports:
+          - 9308:9308
     steps:
       - uses: actions/checkout@v4
 

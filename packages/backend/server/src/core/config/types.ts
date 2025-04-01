@@ -7,6 +7,7 @@ export enum ServerFeature {
   Copilot = 'copilot',
   Payment = 'payment',
   OAuth = 'oauth',
+  Indexer = 'indexer',
 }
 
 registerEnumType(ServerFeature, {

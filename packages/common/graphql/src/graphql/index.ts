@@ -1211,6 +1211,52 @@ export const listHistoryQuery = {
 }`,
 };
 
+export const indexerAggregateQuery = {
+  id: 'indexerAggregateQuery' as const,
+  op: 'indexerAggregate',
+  query: `query indexerAggregate($id: String!, $input: AggregateInput!) {
+  workspace(id: $id) {
+    aggregate(input: $input) {
+      buckets {
+        key
+        count
+        hits {
+          nodes {
+            fields
+            highlights
+          }
+        }
+      }
+      pagination {
+        count
+        hasMore
+        nextCursor
+      }
+    }
+  }
+}`,
+};
+
+export const indexerSearchQuery = {
+  id: 'indexerSearchQuery' as const,
+  op: 'indexerSearch',
+  query: `query indexerSearch($id: String!, $input: SearchInput!) {
+  workspace(id: $id) {
+    search(input: $input) {
+      nodes {
+        fields
+        highlights
+      }
+      pagination {
+        count
+        hasMore
+        nextCursor
+      }
+    }
+  }
+}`,
+};
+
 export const getInvoicesCountQuery = {
   id: 'getInvoicesCountQuery' as const,
   op: 'getInvoicesCount',

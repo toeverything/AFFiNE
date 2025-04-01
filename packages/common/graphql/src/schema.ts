@@ -54,6 +54,48 @@ export interface AddContextFileInput {
   contextId: Scalars['String']['input'];
 }
 
+export interface AggregateBucketHitsObjectType {
+  __typename?: 'AggregateBucketHitsObjectType';
+  nodes: Array<SearchNodeObjectType>;
+}
+
+export interface AggregateBucketObjectType {
+  __typename?: 'AggregateBucketObjectType';
+  count: Scalars['Int']['output'];
+  /** The hits object */
+  hits: AggregateBucketHitsObjectType;
+  key: Scalars['String']['output'];
+}
+
+export interface AggregateHitsOptions {
+  fields: Array<Scalars['String']['input']>;
+  highlights?: InputMaybe<Array<SearchHighlight>>;
+  pagination?: InputMaybe<AggregateHitsPagination>;
+}
+
+export interface AggregateHitsPagination {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface AggregateInput {
+  field: Scalars['String']['input'];
+  options: AggregateOptions;
+  query: SearchQuery;
+  table: SearchTable;
+}
+
+export interface AggregateOptions {
+  hits: AggregateHitsOptions;
+  pagination?: InputMaybe<SearchPagination>;
+}
+
+export interface AggregateResultObjectType {
+  __typename?: 'AggregateResultObjectType';
+  buckets: Array<AggregateBucketObjectType>;
+  pagination: SearchResultPagination;
+}
+
 export enum AiJobStatus {
   claimed = 'claimed',
   failed = 'failed',
@@ -524,10 +566,12 @@ export type ErrorDataUnion =
   | HttpRequestErrorDataType
   | InvalidEmailDataType
   | InvalidHistoryTimestampDataType
+  | InvalidIndexerInputDataType
   | InvalidLicenseUpdateParamsDataType
   | InvalidOauthCallbackCodeDataType
   | InvalidPasswordLengthDataType
   | InvalidRuntimeConfigTypeDataType
+  | InvalidSearchProviderRequestDataType
   | MemberNotFoundInSpaceDataType
   | MentionUserDocAccessDeniedDataType
   | MissingOauthQueryParameterDataType
@@ -616,6 +660,7 @@ export enum ErrorNames {
   INVALID_EMAIL = 'INVALID_EMAIL',
   INVALID_EMAIL_TOKEN = 'INVALID_EMAIL_TOKEN',
   INVALID_HISTORY_TIMESTAMP = 'INVALID_HISTORY_TIMESTAMP',
+  INVALID_INDEXER_INPUT = 'INVALID_INDEXER_INPUT',
   INVALID_LICENSE_SESSION_ID = 'INVALID_LICENSE_SESSION_ID',
   INVALID_LICENSE_TO_ACTIVATE = 'INVALID_LICENSE_TO_ACTIVATE',
   INVALID_LICENSE_UPDATE_PARAMS = 'INVALID_LICENSE_UPDATE_PARAMS',
@@ -623,6 +668,7 @@ export enum ErrorNames {
   INVALID_OAUTH_CALLBACK_STATE = 'INVALID_OAUTH_CALLBACK_STATE',
   INVALID_PASSWORD_LENGTH = 'INVALID_PASSWORD_LENGTH',
   INVALID_RUNTIME_CONFIG_TYPE = 'INVALID_RUNTIME_CONFIG_TYPE',
+  INVALID_SEARCH_PROVIDER_REQUEST = 'INVALID_SEARCH_PROVIDER_REQUEST',
   INVALID_SUBSCRIPTION_PARAMETERS = 'INVALID_SUBSCRIPTION_PARAMETERS',
   LICENSE_NOT_FOUND = 'LICENSE_NOT_FOUND',
   LICENSE_REVEALED = 'LICENSE_REVEALED',
@@ -646,6 +692,7 @@ export enum ErrorNames {
   RUNTIME_CONFIG_NOT_FOUND = 'RUNTIME_CONFIG_NOT_FOUND',
   SAME_EMAIL_PROVIDED = 'SAME_EMAIL_PROVIDED',
   SAME_SUBSCRIPTION_RECURRING = 'SAME_SUBSCRIPTION_RECURRING',
+  SEARCH_PROVIDER_NOT_FOUND = 'SEARCH_PROVIDER_NOT_FOUND',
   SIGN_UP_FORBIDDEN = 'SIGN_UP_FORBIDDEN',
   SPACE_ACCESS_DENIED = 'SPACE_ACCESS_DENIED',
   SPACE_NOT_FOUND = 'SPACE_NOT_FOUND',
@@ -758,6 +805,11 @@ export interface InvalidHistoryTimestampDataType {
   timestamp: Scalars['String']['output'];
 }
 
+export interface InvalidIndexerInputDataType {
+  __typename?: 'InvalidIndexerInputDataType';
+  reason: Scalars['String']['output'];
+}
+
 export interface InvalidLicenseUpdateParamsDataType {
   __typename?: 'InvalidLicenseUpdateParamsDataType';
   reason: Scalars['String']['output'];
@@ -780,6 +832,12 @@ export interface InvalidRuntimeConfigTypeDataType {
   get: Scalars['String']['output'];
   key: Scalars['String']['output'];
   want: Scalars['String']['output'];
+}
+
+export interface InvalidSearchProviderRequestDataType {
+  __typename?: 'InvalidSearchProviderRequestDataType';
+  reason: Scalars['String']['output'];
+  type: Scalars['String']['output'];
 }
 
 export interface InvitationAcceptedNotificationBodyType {
@@ -1790,6 +1848,83 @@ export interface SameSubscriptionRecurringDataType {
   recurring: Scalars['String']['output'];
 }
 
+export interface SearchHighlight {
+  before: Scalars['String']['input'];
+  end: Scalars['String']['input'];
+  field: Scalars['String']['input'];
+}
+
+export interface SearchInput {
+  options: SearchOptions;
+  query: SearchQuery;
+  table: SearchTable;
+}
+
+export interface SearchNodeObjectType {
+  __typename?: 'SearchNodeObjectType';
+  /** The search result fields, see UnionSearchItemObjectType */
+  fields: Scalars['JSONObject']['output'];
+  /** The search result fields, see UnionSearchItemObjectType */
+  highlights: Maybe<Scalars['JSONObject']['output']>;
+}
+
+export interface SearchOptions {
+  fields: Array<Scalars['String']['input']>;
+  highlights?: InputMaybe<Array<SearchHighlight>>;
+  pagination?: InputMaybe<SearchPagination>;
+}
+
+export interface SearchPagination {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+}
+
+export interface SearchQuery {
+  boost?: InputMaybe<Scalars['Float']['input']>;
+  field?: InputMaybe<Scalars['String']['input']>;
+  match?: InputMaybe<Scalars['String']['input']>;
+  occur?: InputMaybe<SearchQueryOccur>;
+  queries?: InputMaybe<Array<SearchQuery>>;
+  query?: InputMaybe<SearchQuery>;
+  type: SearchQueryType;
+}
+
+/** Search query occur */
+export enum SearchQueryOccur {
+  must = 'must',
+  must_not = 'must_not',
+  should = 'should',
+}
+
+/** Search query type */
+export enum SearchQueryType {
+  all = 'all',
+  boolean = 'boolean',
+  boost = 'boost',
+  exists = 'exists',
+  match = 'match',
+}
+
+export interface SearchResultObjectType {
+  __typename?: 'SearchResultObjectType';
+  nodes: Array<SearchNodeObjectType>;
+  pagination: SearchResultPagination;
+}
+
+export interface SearchResultPagination {
+  __typename?: 'SearchResultPagination';
+  count: Scalars['Int']['output'];
+  hasMore: Scalars['Boolean']['output'];
+  nextCursor: Maybe<Scalars['String']['output']>;
+}
+
+/** Search table */
+export enum SearchTable {
+  block = 'block',
+  doc = 'doc',
+}
+
 export interface ServerConfigType {
   __typename?: 'ServerConfigType';
   /** fetch latest available upgradable release of server */
@@ -1821,6 +1956,7 @@ export enum ServerDeploymentType {
 export enum ServerFeature {
   Captcha = 'Captcha',
   Copilot = 'Copilot',
+  Indexer = 'Indexer',
   OAuth = 'OAuth',
   Payment = 'Payment',
 }
@@ -2223,6 +2359,8 @@ export interface WorkspaceRolePermissions {
 
 export interface WorkspaceType {
   __typename?: 'WorkspaceType';
+  /** Search a specific table with aggregate */
+  aggregate: AggregateResultObjectType;
   /** List blobs of workspace */
   blobs: Array<ListedBlob>;
   /** Blobs size of workspace */
@@ -2273,10 +2411,16 @@ export interface WorkspaceType {
   quota: WorkspaceQuotaType;
   /** Role of current signed in user in workspace */
   role: Permission;
+  /** Search a specific table */
+  search: SearchResultObjectType;
   /** The team subscription of the workspace, if exists. */
   subscription: Maybe<SubscriptionType>;
   /** if workspace is team workspace */
   team: Scalars['Boolean']['output'];
+}
+
+export interface WorkspaceTypeAggregateArgs {
+  input: AggregateInput;
 }
 
 export interface WorkspaceTypeDocArgs {
@@ -2306,6 +2450,10 @@ export interface WorkspaceTypePageMetaArgs {
 
 export interface WorkspaceTypePublicPageArgs {
   pageId: Scalars['String']['input'];
+}
+
+export interface WorkspaceTypeSearchArgs {
+  input: SearchInput;
 }
 
 export interface WorkspaceUserType {
@@ -3699,6 +3847,66 @@ export type ListHistoryQuery = {
   };
 };
 
+export type IndexerAggregateQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+  input: AggregateInput;
+}>;
+
+export type IndexerAggregateQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    aggregate: {
+      __typename?: 'AggregateResultObjectType';
+      buckets: Array<{
+        __typename?: 'AggregateBucketObjectType';
+        key: string;
+        count: number;
+        hits: {
+          __typename?: 'AggregateBucketHitsObjectType';
+          nodes: Array<{
+            __typename?: 'SearchNodeObjectType';
+            fields: any;
+            highlights: any | null;
+          }>;
+        };
+      }>;
+      pagination: {
+        __typename?: 'SearchResultPagination';
+        count: number;
+        hasMore: boolean;
+        nextCursor: string | null;
+      };
+    };
+  };
+};
+
+export type IndexerSearchQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+  input: SearchInput;
+}>;
+
+export type IndexerSearchQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    search: {
+      __typename?: 'SearchResultObjectType';
+      nodes: Array<{
+        __typename?: 'SearchNodeObjectType';
+        fields: any;
+        highlights: any | null;
+      }>;
+      pagination: {
+        __typename?: 'SearchResultPagination';
+        count: number;
+        hasMore: boolean;
+        nextCursor: string | null;
+      };
+    };
+  };
+};
+
 export type GetInvoicesCountQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetInvoicesCountQuery = {
@@ -4549,6 +4757,16 @@ export type Queries =
       name: 'listHistoryQuery';
       variables: ListHistoryQueryVariables;
       response: ListHistoryQuery;
+    }
+  | {
+      name: 'indexerAggregateQuery';
+      variables: IndexerAggregateQueryVariables;
+      response: IndexerAggregateQuery;
+    }
+  | {
+      name: 'indexerSearchQuery';
+      variables: IndexerSearchQueryVariables;
+      response: IndexerSearchQuery;
     }
   | {
       name: 'getInvoicesCountQuery';

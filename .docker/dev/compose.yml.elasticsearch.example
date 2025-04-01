@@ -1,0 +1,65 @@
+name: affine_dev_services
+services:
+  postgres:
+    env_file:
+      - .env
+    image: pgvector/pgvector:pg${DB_VERSION:-16}
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_DATABASE_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - 1025:1025
+      - 8025:8025
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.18.0}${ELASTIC_VERSION_ARM64}
+    platform: ${ELASTIC_PLATFORM}
+    labels:
+      co.elastic.logs/module: elasticsearch
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - ${ES_PORT:-9200}:9200
+    environment:
+      - node.name=es01
+      - cluster.name=affine-dev
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - xpack.license.self_generated.type=basic
+    mem_limit: ${ES_MEM_LIMIT:-1073741824}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://localhost:9200 | grep -q 'affine-dev'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+
+networks:
+  dev:
+
+volumes:
+  postgres_data:
+  elasticsearch_data:

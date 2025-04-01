@@ -38,3 +38,5 @@ packages/frontend/apps/ios/App/**
 tests/blocksuite/snapshots
 blocksuite/docs/api/**
 packages/frontend/admin/src/config.json
+**/test-docs.json
+**/test-blocks.json

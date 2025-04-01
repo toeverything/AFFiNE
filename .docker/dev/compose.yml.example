@@ -24,8 +24,26 @@ services:
       - 1025:1025
       - 8025:8025
 
+  # https://manual.manticoresearch.com/Starting_the_server/Docker
+  manticoresearch:
+    image: manticoresearch/manticore:${MANTICORE_VERSION:-9.2.14}
+    restart: always
+    ports:
+      - 9308:9308
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - manticoresearch_data:/var/lib/manticore
+
 networks:
   dev:
 
 volumes:
   postgres_data:
+  manticoresearch_data:

@@ -8268,6 +8268,22 @@ export function useAFFiNEI18N(): {
       * `Invalid app config.`
       */
     ["error.INVALID_APP_CONFIG"](): string;
+    /**
+      * `Search provider not found.`
+      */
+    ["error.SEARCH_PROVIDER_NOT_FOUND"](): string;
+    /**
+      * `Invalid request argument to search provider: {{reason}}`
+      */
+    ["error.INVALID_SEARCH_PROVIDER_REQUEST"](options: {
+        readonly reason: string;
+    }): string;
+    /**
+      * `Invalid indexer input: {{reason}}`
+      */
+    ["error.INVALID_INDEXER_INPUT"](options: {
+        readonly reason: string;
+    }): string;
 } { const { t } = useTranslation(); return useMemo(() => createProxy((key) => t.bind(null, key)), [t]); }
 function createComponent(i18nKey: string) {
     return (props) => createElement(Trans, { i18nKey, shouldUnescape: true, ...props });

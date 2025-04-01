@@ -2041,5 +2041,8 @@
   "error.NOTIFICATION_NOT_FOUND": "Notification not found.",
   "error.MENTION_USER_DOC_ACCESS_DENIED": "Mentioned user can not access doc {{docId}}.",
   "error.MENTION_USER_ONESELF_DENIED": "You can not mention yourself.",
-  "error.INVALID_APP_CONFIG": "Invalid app config."
+  "error.INVALID_APP_CONFIG": "Invalid app config.",
+  "error.SEARCH_PROVIDER_NOT_FOUND": "Search provider not found.",
+  "error.INVALID_SEARCH_PROVIDER_REQUEST": "Invalid request argument to search provider: {{reason}}",
+  "error.INVALID_INDEXER_INPUT": "Invalid indexer input: {{reason}}"
 }

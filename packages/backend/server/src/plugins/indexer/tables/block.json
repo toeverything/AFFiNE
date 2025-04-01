@@ -1,0 +1,57 @@
+{
+  "mappings": {
+    "properties": {
+      "workspace_id": {
+        "type": "keyword"
+      },
+      "doc_id": {
+        "type": "keyword"
+      },
+      "block_id": {
+        "type": "keyword"
+      },
+      "content": {
+        "type": "text"
+      },
+      "flavour": {
+        "type": "keyword"
+      },
+      "blob": {
+        "type": "keyword"
+      },
+      "ref_doc_id": {
+        "type": "keyword"
+      },
+      "ref": {
+        "type": "text",
+        "index": false
+      },
+      "parent_flavour": {
+        "type": "keyword"
+      },
+      "parent_block_id": {
+        "type": "keyword"
+      },
+      "additional": {
+        "type": "text",
+        "index": false
+      },
+      "markdown_preview": {
+        "type": "text",
+        "index": false
+      },
+      "created_by_user_id": {
+        "type": "keyword"
+      },
+      "updated_by_user_id": {
+        "type": "keyword"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "updated_at": {
+        "type": "date"
+      }
+    }
+  }
+}
