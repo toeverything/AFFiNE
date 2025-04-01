@@ -54,7 +54,8 @@ public class IntelligentsChatController: UIViewController {
     }
   }
 
-  public init() {
+  // ForkChatSessionInput
+  public init(forkFromMessageWithIdentifier _: String? = nil) {
     super.init(nibName: nil, bundle: nil)
     title = "Chat with AI".localized()
 

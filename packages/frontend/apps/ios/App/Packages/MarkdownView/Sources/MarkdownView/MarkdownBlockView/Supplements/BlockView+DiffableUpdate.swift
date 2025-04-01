@@ -15,7 +15,7 @@ extension UIView {
     }
     var shouldRemovedIndices: [Int] = []
     defer {
-      shouldRemovedIndices.sorted(by: >).forEach { index in
+      for index in shouldRemovedIndices.sorted(by: >) {
         blockViews.remove(at: index)
       }
     }

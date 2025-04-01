@@ -1,13 +1,13 @@
 //
-//  File.swift
+//  AffineViewController+AIButton.swift
 //  App
 //
 //  Created by 秋星桥 on 2025/1/8.
 //
 
-import UIKit
-import Intelligents
 import ChidoriMenu
+import Intelligents
+import UIKit
 
 extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApertureViewDelegate {
   func onIntelligentsButtonTapped(_ button: IntelligentsButton) {
@@ -19,35 +19,35 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
     button.beginProgress()
 
     let group = DispatchGroup()
-    
+
     group.enter()
     webView.evaluateScript(.getCurrentServerBaseUrl) { result in
       self.baseUrl = result as? String
       print("[*] setting baseUrl: \(self.baseUrl ?? "")")
       group.leave()
     }
-    
+
     group.enter()
     webView.evaluateScript(.getCurrentDocId) { result in
       self.documentID = result as? String
       print("[*] setting documentID: \(self.documentID ?? "")")
       group.leave()
     }
-    
+
     group.enter()
     webView.evaluateScript(.getCurrentWorkspaceId) { result in
       self.workspaceID = result as? String
       print("[*] setting workspaceID: \(self.workspaceID ?? "")")
       group.leave()
     }
-    
+
     group.enter()
     webView.evaluateScript(.getCurrentDocContentInMarkdown) { input in
       self.documentContent = input as? String
       print("[*] setting documentContent: \(self.documentContent?.count ?? 0) chars")
       group.leave()
     }
-    
+
     DispatchQueue.global().asyncAfter(deadline: .now()) {
       group.wait()
       DispatchQueue.main.async {
@@ -102,7 +102,7 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
           presentIntoCurrentContext(withTargetController: controller)
         })
       }
-      view.present(menu: .init(children: actions)) { controller  in
+      view.present(menu: .init(children: actions)) { controller in
         controller.overrideUserInterfaceStyle = .dark
       } controllerDidPresent: { _ in }
     case .summary:

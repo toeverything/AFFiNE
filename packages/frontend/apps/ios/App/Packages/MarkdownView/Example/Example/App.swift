@@ -9,62 +9,62 @@ import SwiftUI
 
 @main
 struct TheApp: App {
-    var body: some Scene {
-        WindowGroup {
-            NavigationView {
-                Content()
-                    .navigationTitle("MarkdownView")
-                    .navigationBarTitleDisplayMode(.inline)
-            }
-            .navigationViewStyle(.stack)
-        }
+  var body: some Scene {
+    WindowGroup {
+      NavigationView {
+        Content()
+          .navigationTitle("MarkdownView")
+          .navigationBarTitleDisplayMode(.inline)
+      }
+      .navigationViewStyle(.stack)
     }
+  }
 }
 
 import MarkdownParser
 import MarkdownView
 
 class ContentController: UIViewController {
-    let document = MarkdownParser().feed(testDocument)
-    let scrollView = UIScrollView()
-    let markdownView = MarkdownView(theme: .default)
+  let document = MarkdownParser().feed(testDocument)
+  let scrollView = UIScrollView()
+  let markdownView = MarkdownView(theme: .default)
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        view.addSubview(scrollView)
-        scrollView.addSubview(markdownView)
-    }
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    view.addSubview(scrollView)
+    scrollView.addSubview(markdownView)
+  }
 
-    override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
-        scrollView.frame = view.bounds
-        let width = view.bounds.width - 32
-        let manifest = document.map {
-            let manifest = $0.manifest(theme: markdownView.theme)
-            manifest.setLayoutWidth(width)
-            manifest.layoutIfNeeded()
-            return manifest
-        }
-        markdownView.updateContentViews(manifest)
-        markdownView.frame = .init(
-            x: 16,
-            y: 16,
-            width: width,
-            height: markdownView.height
-        )
-        scrollView.contentSize = .init(
-            width: width,
-            height: markdownView.height + 100
-        )
+  override func viewWillLayoutSubviews() {
+    super.viewWillLayoutSubviews()
+    scrollView.frame = view.bounds
+    let width = view.bounds.width - 32
+    let manifest = document.map {
+      let manifest = $0.manifest(theme: markdownView.theme)
+      manifest.setLayoutWidth(width)
+      manifest.layoutIfNeeded()
+      return manifest
     }
+    markdownView.updateContentViews(manifest)
+    markdownView.frame = .init(
+      x: 16,
+      y: 16,
+      width: width,
+      height: markdownView.height
+    )
+    scrollView.contentSize = .init(
+      width: width,
+      height: markdownView.height + 100
+    )
+  }
 }
 
 struct Content: UIViewControllerRepresentable {
-    func makeUIViewController(context _: Context) -> ContentController {
-        ContentController()
-    }
+  func makeUIViewController(context _: Context) -> ContentController {
+    ContentController()
+  }
 
-    func updateUIViewController(_: ContentController, context _: Context) {}
+  func updateUIViewController(_: ContentController, context _: Context) {}
 }
 
 let testDocument = ###"""

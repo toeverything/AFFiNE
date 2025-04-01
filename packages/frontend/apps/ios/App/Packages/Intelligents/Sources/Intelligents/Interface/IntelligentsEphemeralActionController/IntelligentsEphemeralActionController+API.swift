@@ -73,22 +73,17 @@ extension IntelligentsEphemeralActionController {
   }
 
   func beginThisRound() {
-    let parms: [String: Any]
-    switch self.action {
-    case .translate(let lang):
-      parms = ["language": lang.rawValue]
+    let parms: [String: AnyHashable] = switch action {
+    case let .translate(lang):
+      ["language": lang.rawValue]
     case .summarize:
-      parms = [:]
+      [:]
     }
-    let parmText = String(
-      data: (try? JSONSerialization.data(withJSONObject: parms, options: [])) ?? .init(),
-      encoding: .utf8
-    ) ?? .init()
+    let json = try! CustomJSON(_jsonValue: parms)
     Intelligents.qlClient.perform(
       mutation: CreateCopilotMessageMutation(options: .init(
         content: .init(stringLiteral: "\(documentContent)"),
-//        TODO: FIX THE BUG
-//        params: .init(stringLiteral: parmText), // JSON string for parameters
+        params: .some(json),
         sessionId: sessionID
       )),
       queue: .global()
@@ -100,7 +95,7 @@ extension IntelligentsEphemeralActionController {
           self.chat_processWithMessageID(sessionID: self.sessionID, messageID: messageID)
         } else {
           self.presentError(NSError(domain: "AFFiNE", code: -1, userInfo: [
-            NSLocalizedDescriptionKey: "Failed to create a message for the session. Please try again."
+            NSLocalizedDescriptionKey: "Failed to create a message for the session. Please try again.",
           ])) {
             self.close()
           }
