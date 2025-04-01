@@ -52,7 +52,10 @@ extension IntelligentsChatController {
     ))) { result in
       self.dispatchToMain {
         self.endProgress()
-        if case .success = result {
+        if case .success(let value) = result,
+           let sessions = value.data?.cleanupCopilotSession,
+           sessions.contains(self.sessionID)
+        {
           self.simpleChatContents.removeAll()
           return
         }
@@ -83,8 +86,10 @@ extension IntelligentsChatController {
          let copilot = currentUser._data["copilot"] as? DataDict,
          let histories = copilot._data["histories"] as? [DataDict],
          let mostRecent = histories.last,
-         let messages = mostRecent._data["messages"] as? [DataDict]
+         let messages = mostRecent._data["messages"] as? [DataDict],
+         !messages.isEmpty
       {
+        print("[*] retrieved \(messages.count) messages")
         tableView.scrollToBottomOnNextUpdate = true
         tableView.alpha = 0
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
