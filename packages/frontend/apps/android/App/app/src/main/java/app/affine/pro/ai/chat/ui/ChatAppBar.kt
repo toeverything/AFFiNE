@@ -1,4 +1,4 @@
-package app.affine.pro.ai.chat
+package app.affine.pro.ai.chat.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row

@@ -7,9 +7,10 @@ import app.affine.pro.repo.SSERepo
 import app.affine.pro.repo.WebRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -25,25 +26,32 @@ class ChatViewModel @Inject constructor(
 
     private lateinit var sessionId: String
 
+    private val _uiState: MutableStateFlow<ChatUiState> =
+        MutableStateFlow(MessageUiState(emptyList()))
+
+    val uiState: StateFlow<ChatUiState> = _uiState
+
     init {
-//        viewModelScope.launch {
-//            graphQLRepo.getCopilotSession(
-//                workspaceId = webRepo.workspaceId(),
-//                docId = webRepo.docId(),
-//            ).onSuccess { id ->
-//                Timber.d("Get session: $id")
-//                sessionId = id
-//                graphQLRepo.getCopilotHistories(
-//                    workspaceId = webRepo.workspaceId(),
-//                    docId = webRepo.docId(),
-//                    sessionId = sessionId,
-//                ).onSuccess { messageList ->
-//                    Timber.d("Histories: $messageList")
-//                }
-//            }.onFailure {
-//                Timber.e(it, "Get session failed.")
-//            }
-//        }
+        viewModelScope.launch {
+            sessionId = graphQLRepo.createCopilotSession(
+                workspaceId = webRepo.workspaceId(),
+                docId = webRepo.docId(),
+            ).getOrElse {
+                Timber.d("Create session failed")
+                return@launch
+            }
+            Timber.d("Create session: $sessionId")
+            val historyMessages = graphQLRepo.getCopilotHistories(
+                workspaceId = webRepo.workspaceId(),
+                docId = webRepo.docId(),
+                sessionId = sessionId,
+            ).getOrDefault(emptyList()).map {
+                ChatMessage.from(it)
+            }.sortedByDescending {
+                it.createAt
+            }
+            _uiState.value = MessageUiState(historyMessages)
+        }
     }
 
     fun sendMessage(message: String) {
