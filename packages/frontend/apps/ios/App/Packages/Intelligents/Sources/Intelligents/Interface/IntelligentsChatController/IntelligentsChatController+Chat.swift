@@ -52,7 +52,7 @@ extension IntelligentsChatController {
     ))) { result in
       self.dispatchToMain {
         self.endProgress()
-        if case .success(let value) = result,
+        if case let .success(value) = result,
            let sessions = value.data?.cleanupCopilotSession,
            sessions.contains(self.sessionID)
         {
@@ -71,11 +71,11 @@ extension IntelligentsChatController {
       options: .some(.init(
         action: false,
         fork: false,
-        limit: .init(integerLiteral: 1),
+        limit: .init(nilLiteral: ()),
         messageOrder: .some(.case(.asc)),
         sessionId: .init(stringLiteral: sessionID),
         sessionOrder: .some(.case(.desc)),
-        skip: .init(integerLiteral: 0),
+        skip: .init(nilLiteral: ()),
         withPrompt: .init(booleanLiteral: false)
       ))
     )) { [weak self] result in
@@ -85,7 +85,7 @@ extension IntelligentsChatController {
          let currentUser = object.__data._data["currentUser"] as? DataDict,
          let copilot = currentUser._data["copilot"] as? DataDict,
          let histories = copilot._data["histories"] as? [DataDict],
-         let mostRecent = histories.last,
+         let mostRecent = histories.first,
          let messages = mostRecent._data["messages"] as? [DataDict],
          !messages.isEmpty
       {
@@ -236,11 +236,15 @@ private extension IntelligentsChatController {
     let text = viewModel.text
     //    let images = viewModel.attachments
 
+    let assistantContentID = UUID()
     dispatchToMain {
       let content = ChatContent.user(document: text)
-      let key = UUID()
-      self.simpleChatContents.updateValue(content, forKey: key)
-      self.tableView.scrollLastCellToTop()
+      self.simpleChatContents.updateValue(content, forKey: .init())
+      self.simpleChatContents.updateValue(
+        .assistant(document: "..."),
+        forKey: assistantContentID
+      )
+      self.tableView.scrollToBottomOnNextUpdate = true
     }
 
     let sem = DispatchSemaphore(value: 0)
@@ -249,10 +253,10 @@ private extension IntelligentsChatController {
       mutation: CreateCopilotMessageMutation(options: .init(
         content: .init(stringLiteral: text),
         params: .some(.dictionary([
-          "docs":[
+          "docs": [
             "docId": metadata[.documentID] ?? "",
             "docContent": metadata[.content] ?? "",
-          ]
+          ],
         ])),
         sessionId: sessionID
       )),
@@ -263,7 +267,11 @@ private extension IntelligentsChatController {
       case let .success(value):
         if let messageID = value.data?.createCopilotMessage {
           print("[*] messageID", messageID)
-          self.chat_processWithMessageID(sessionID: sessionID, messageID: messageID)
+          self.chat_processWithMessageID(
+            sessionID: sessionID,
+            messageID: messageID,
+            cellID: assistantContentID
+          )
         } else {
           self.chat_onError(UnableTo.createMessage)
         }
@@ -275,7 +283,7 @@ private extension IntelligentsChatController {
     sem.wait()
   }
 
-  func chat_processWithMessageID(sessionID: String, messageID: String) {
+  func chat_processWithMessageID(sessionID: String, messageID: String, cellID: UUID) {
     let url = Constant.affineUpstreamURL
       .appendingPathComponent("api")
       .appendingPathComponent("copilot")
@@ -291,11 +299,10 @@ private extension IntelligentsChatController {
       return
     }
 
-    let contentIdentifier = UUID()
     dispatchToMain {
       self.simpleChatContents.updateValue(
         .assistant(document: "..."),
-        forKey: contentIdentifier
+        forKey: cellID
       )
     }
 
@@ -319,7 +326,7 @@ private extension IntelligentsChatController {
       self.dispatchToMain {
         document += message.data
         let content = ChatContent.assistant(document: document)
-        self.simpleChatContents.updateValue(content, forKey: contentIdentifier)
+        self.simpleChatContents.updateValue(content, forKey: cellID)
       }
     }
     let eventSource = EventSource(config: .init(handler: eventHandler, url: url))

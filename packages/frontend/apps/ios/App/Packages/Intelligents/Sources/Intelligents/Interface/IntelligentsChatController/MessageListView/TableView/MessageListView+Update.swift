@@ -127,20 +127,20 @@ extension MessageListView {
     perform(#selector(finishAutomaticScroll), with: nil, afterDelay: 0.5)
   }
 
-  func scrollLastCellToTop(useTableViewAnimation: Bool = false) {
-    guard elements.count > 1 else { return }
-    guard tableView.contentSize.height > tableView.frame.height else { return }
-    UIView.animate(withDuration: 0.35, delay: 0, usingSpringWithDamping: 1.0, initialSpringVelocity: 0.8) {
-      self.tableView.scrollToRow(
-        at: IndexPath(row: self.elements.count - 1, section: 0),
-        at: .top,
-        animated: useTableViewAnimation
-      )
-    }
-    NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(finishAutomaticScroll), object: nil)
-    isAutomaticScrollAnimating = true
-    perform(#selector(finishAutomaticScroll), with: nil, afterDelay: 0.5)
-  }
+//  func scrollLastCellToTop(useTableViewAnimation: Bool = false) {
+//    guard elements.count > 1 else { return }
+//    guard tableView.contentSize.height > tableView.frame.height else { return }
+//    UIView.animate(withDuration: 0.35, delay: 0, usingSpringWithDamping: 1.0, initialSpringVelocity: 0.8) {
+//      self.tableView.scrollToRow(
+//        at: IndexPath(row: self.elements.count - 1, section: 0),
+//        at: .top,
+//        animated: useTableViewAnimation
+//      )
+//    }
+//    NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(finishAutomaticScroll), object: nil)
+//    isAutomaticScrollAnimating = true
+//    perform(#selector(finishAutomaticScroll), with: nil, afterDelay: 0.5)
+//  }
 
   @objc private func finishAutomaticScroll() {
     isAutomaticScrollAnimating = false
