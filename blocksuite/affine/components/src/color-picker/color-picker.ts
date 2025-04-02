@@ -29,6 +29,7 @@ import {
   eq,
   hsvaToHex8,
   hsvaToRgba,
+  keepColor,
   linearGradientAt,
   parseHexToHsva,
   renderCanvas,
@@ -503,7 +504,7 @@ export class EdgelessColorPicker extends SignalWatcher(
           ({ type, name, hsva }) => html`
             <div
               class="${classMap({ mode: true, [type]: true })}"
-              style=${styleMap({ '--c': hsvaToHex8(hsva) })}
+              style=${styleMap({ '--c': keepColor(hsvaToHex8(hsva)) })}
             >
               <button
                 ?active=${this.modeType$.value === type}
