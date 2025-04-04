@@ -29,7 +29,7 @@ You can thinks of it as a decorator version of `elementUpdated` slot of the surf
 
 ## Returns
 
-`Function`
+> (`_`, `context`): `ClassAccessorDecoratorResult`\<`GfxPrimitiveElementModel`\<`BaseElementProps`\>, `V`\>
 
 ### Parameters
 

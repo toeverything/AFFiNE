@@ -610,9 +610,9 @@ const extension = store.get(SomeExtension);
 
 ##### Returns
 
-`Function`
-
 The extension instance
+
+> \<`T`\>(`identifier`, `options`?): `T`
 
 ###### Type Parameters
 
@@ -653,9 +653,9 @@ const extension = store.getOptional(SomeExtension);
 
 ##### Returns
 
-`Function`
-
 The extension instance
+
+> \<`T`\>(`identifier`, `options`?): `null` \| `T`
 
 ###### Type Parameters
 
@@ -743,7 +743,7 @@ store.undo(); // undo op1, op2
 
 ##### Returns
 
-`Function`
+> (): `void`
 
 ###### Returns
 
@@ -775,7 +775,7 @@ Redo the last undone transaction.
 
 ##### Returns
 
-`Function`
+> (): `void`
 
 ###### Returns
 
@@ -793,7 +793,7 @@ Reset the history of the store.
 
 ##### Returns
 
-`Function`
+> (): `void`
 
 ###### Returns
 
@@ -820,7 +820,7 @@ store.transact(() => {
 
 ##### Returns
 
-`Function`
+> (`fn`, `shouldTransact`?): `void`
 
 ###### Parameters
 
@@ -848,7 +848,7 @@ Undo the last transaction.
 
 ##### Returns
 
-`Function`
+> (): `void`
 
 ###### Returns
 
@@ -875,7 +875,7 @@ store.withoutTransact(() => {
 
 ##### Returns
 
-`Function`
+> (`fn`): `void`
 
 ###### Parameters
 

@@ -32,7 +32,7 @@ Note:
 
 ## Returns
 
-`Function`
+> (`_`, `context`): `ClassAccessorDecoratorResult`\<`T`, `V`\>
 
 ### Parameters
 

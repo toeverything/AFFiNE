@@ -37,7 +37,7 @@ Note:
 
 ## Returns
 
-`Function`
+> (`_`, `context`): `ClassAccessorDecoratorResult`\<`GfxPrimitiveElementModel`\<`BaseElementProps`\>, `V`\>
 
 ### Parameters
 

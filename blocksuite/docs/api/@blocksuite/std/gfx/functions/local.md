@@ -25,7 +25,7 @@ Updating local property will also trigger the `elementUpdated` slot of the surfa
 
 ## Returns
 
-`Function`
+> (`_target`, `context`): `ClassAccessorDecoratorResult`\<`T`, `V`\>
 
 ### Parameters
 
