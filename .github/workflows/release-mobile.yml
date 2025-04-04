@@ -117,10 +117,31 @@ jobs:
           name: android
           path: packages/frontend/apps/android/dist
 
-  ios:
-    runs-on: ${{ github.ref_name == 'canary' && 'blaze/macos-14' || 'namespace-profile-macos' }}
+  determine-ios-runner:
+    runs-on: ubuntu-latest
     needs:
       - build-ios-web
+    outputs:
+      RUNNER: ${{ steps.runner.outputs.RUNNER }}
+    steps:
+      - name: Determine Runner
+        id: runner
+        # Randomly pick runner with 80% chance for blaze/macos-14 and 20% chance for namespace-profile-macos
+        # blaze/macos-14 is free but has limited concurrency
+        run: |
+          RANDOM_NUMBER=$(( $RANDOM % 100 + 1 ))
+          if [ $RANDOM_NUMBER -le 20 ]; then
+            echo "Selected namespace-profile-macos (20% probability)"
+            echo "RUNNER=namespace-profile-macos" >> $GITHUB_OUTPUT
+          else
+            echo "Selected blaze/macos-14 (80% probability)"
+            echo "RUNNER=blaze/macos-14" >> $GITHUB_OUTPUT
+          fi
+
+  ios:
+    runs-on: ${{ github.ref_name == 'canary' && 'macos-latest' || needs.determine-ios-runner.outputs.RUNNER }}
+    needs:
+      - determine-ios-runner
     steps:
       - uses: actions/checkout@v4
       - name: Download mobile artifact
