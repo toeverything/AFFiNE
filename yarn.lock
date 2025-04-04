@@ -225,7 +225,7 @@ __metadata:
     react-dom: "npm:^19.0.0"
     react-hook-form: "npm:^7.54.1"
     react-resizable-panels: "npm:^2.1.7"
-    react-router-dom: "npm:^6.28.0"
+    react-router-dom: "npm:^7.0.0"
     shadcn-ui: "npm:^0.9.4"
     sonner: "npm:^2.0.0"
     swr: "npm:^2.2.5"
@@ -264,7 +264,7 @@ __metadata:
     next-themes: "npm:^0.4.4"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
-    react-router-dom: "npm:^6.28.0"
+    react-router-dom: "npm:^7.0.0"
     typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft
@@ -352,7 +352,7 @@ __metadata:
     react: "npm:19.1.0"
     react-dom: "npm:19.1.0"
     react-paginate: "npm:^8.2.0"
-    react-router-dom: "npm:^6.28.0"
+    react-router-dom: "npm:^7.0.0"
     react-transition-state: "npm:^2.2.0"
     sonner: "npm:^2.0.0"
     storybook: "npm:^8.4.7"
@@ -454,7 +454,7 @@ __metadata:
     react: "npm:19.1.0"
     react-dom: "npm:19.1.0"
     react-error-boundary: "npm:^5.0.0"
-    react-router-dom: "npm:^6.28.0"
+    react-router-dom: "npm:^7.0.0"
     react-transition-state: "npm:^2.2.0"
     react-virtuoso: "npm:^4.12.3"
     rxjs: "npm:^7.8.1"
@@ -524,7 +524,7 @@ __metadata:
     next-themes: "npm:^0.4.4"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
-    react-router-dom: "npm:^6.28.0"
+    react-router-dom: "npm:^7.0.0"
     typescript: "npm:^5.7.2"
     uuid: "npm:^11.0.3"
     webm-muxer: "npm:^5.0.3"
@@ -680,7 +680,7 @@ __metadata:
     next-themes: "npm:^0.4.4"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
-    react-router-dom: "npm:^6.28.0"
+    react-router-dom: "npm:^7.0.0"
     typescript: "npm:^5.7.2"
     yjs: "npm:^13.6.21"
   languageName: unknown
@@ -738,7 +738,7 @@ __metadata:
     cross-env: "npm:^7.0.3"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
-    react-router-dom: "npm:^6.28.0"
+    react-router-dom: "npm:^7.0.0"
     typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft
@@ -1004,7 +1004,7 @@ __metadata:
     "@types/mixpanel-browser": "npm:^2.50.2"
     "@types/react": "npm:^19.0.1"
     mixpanel-browser: "npm:^2.56.0"
-    react-router-dom: "npm:6.30.0"
+    react-router-dom: "npm:7.5.0"
     vitest: "npm:3.1.1"
   languageName: unknown
   linkType: soft
@@ -1027,7 +1027,7 @@ __metadata:
     cross-env: "npm:^7.0.3"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
-    react-router-dom: "npm:^6.28.0"
+    react-router-dom: "npm:^7.0.0"
     typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft
@@ -11911,13 +11911,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@remix-run/router@npm:1.23.0":
-  version: 1.23.0
-  resolution: "@remix-run/router@npm:1.23.0"
-  checksum: 10/0a9f02c26c150d8210b05927c43d2f57ee8b7f812c81abb76df1721c7367ef692e54f4044981e756ce13d0619fb3c6a9b1514524d69aea9b32bfaf565299a8c7
-  languageName: node
-  linkType: hard
-
 "@repeaterjs/repeater@npm:^3.0.4, @repeaterjs/repeater@npm:^3.0.6":
   version: 3.0.6
   resolution: "@repeaterjs/repeater@npm:3.0.6"
@@ -18797,6 +18790,13 @@ __metadata:
   version: 0.7.2
   resolution: "cookie@npm:0.7.2"
   checksum: 10/24b286c556420d4ba4e9bc09120c9d3db7d28ace2bd0f8ccee82422ce42322f73c8312441271e5eefafbead725980e5996cc02766dbb89a90ac7f5636ede608f
+  languageName: node
+  linkType: hard
+
+"cookie@npm:^1.0.1":
+  version: 1.0.2
+  resolution: "cookie@npm:1.0.2"
+  checksum: 10/f5817cdc84d8977761b12549eba29435e675e65c7fef172bc31737788cd8adc83796bf8abe6d950554e7987325ad2d9ac2971c5bd8ff0c4f81c145f82e4ab1be
   languageName: node
   linkType: hard
 
@@ -29741,27 +29741,33 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:6.30.0, react-router-dom@npm:^6.28.0":
-  version: 6.30.0
-  resolution: "react-router-dom@npm:6.30.0"
+"react-router-dom@npm:7.5.0, react-router-dom@npm:^7.0.0":
+  version: 7.5.0
+  resolution: "react-router-dom@npm:7.5.0"
   dependencies:
-    "@remix-run/router": "npm:1.23.0"
-    react-router: "npm:6.30.0"
+    react-router: "npm:7.5.0"
   peerDependencies:
-    react: ">=16.8"
-    react-dom: ">=16.8"
-  checksum: 10/e161e39d56ee799553d0bc6c8f19c901ee8cdbae218094f41cbc18f3262cb4d5e9f8381bd47a7e59d30e55c0cdd0a6803aa98537f2f9122efbce5c66a3041a35
+    react: ">=18"
+    react-dom: ">=18"
+  checksum: 10/7ca3c27a223553e60a683cb6bc081d73f35aa8e059586c4c6a870ffdf5febaee5d127c29aa7f796b9c1784ef2005234e496b38386c8bf289bd9ea8032244d305
   languageName: node
   linkType: hard
 
-"react-router@npm:6.30.0":
-  version: 6.30.0
-  resolution: "react-router@npm:6.30.0"
+"react-router@npm:7.5.0":
+  version: 7.5.0
+  resolution: "react-router@npm:7.5.0"
   dependencies:
-    "@remix-run/router": "npm:1.23.0"
+    "@types/cookie": "npm:^0.6.0"
+    cookie: "npm:^1.0.1"
+    set-cookie-parser: "npm:^2.6.0"
+    turbo-stream: "npm:2.4.0"
   peerDependencies:
-    react: ">=16.8"
-  checksum: 10/2a449f2769b7b001f9ea16108b83cd014b50c621a378ef2a99bb823a418833bc1b213f5f1665c97ecbdfa9391f9593693ace09a292969aa7259a45070b5e066a
+    react: ">=18"
+    react-dom: ">=18"
+  peerDependenciesMeta:
+    react-dom:
+      optional: true
+  checksum: 10/ff1c889a1eb78dbff034bffa9efc29c72031c20b6358d557312ae7aaff58bb8c1596b8dcc8b8c259a30ed9f15806763e5534904a1b44fd33179ed12be9a9aebe
   languageName: node
   linkType: hard
 
@@ -30952,7 +30958,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"set-cookie-parser@npm:^2.7.1":
+"set-cookie-parser@npm:^2.6.0, set-cookie-parser@npm:^2.7.1":
   version: 2.7.1
   resolution: "set-cookie-parser@npm:2.7.1"
   checksum: 10/c92b1130032693342bca13ea1b1bc93967ab37deec4387fcd8c2a843c0ef2fd9a9f3df25aea5bb3976cd05a91c2cf4632dd6164d6e1814208fb7d7e14edd42b4
@@ -32864,6 +32870,13 @@ __metadata:
   bin:
     tsx: dist/cli.mjs
   checksum: 10/a7e7f41e5593b242772050abacf51908aa8a6d4d9ea6c29e80161eb557d664a0f4cc8d38d0c8c151fddb6c2e9e337af27ba0e269c9707ccd7eeff0e0ea7fcf98
+  languageName: node
+  linkType: hard
+
+"turbo-stream@npm:2.4.0":
+  version: 2.4.0
+  resolution: "turbo-stream@npm:2.4.0"
+  checksum: 10/7079bbc82b58340f783144cd669cc7e598288523103a8d68bb8a4c6bb28c64eccb71d389b33aab07788d3a9030638b795709e15cb8486f722b1cdac59cb58afc
   languageName: node
   linkType: hard
 

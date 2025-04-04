@@ -50,7 +50,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^2.1.7",
-    "react-router-dom": "^6.28.0",
+    "react-router-dom": "^7.0.0",
     "sonner": "^2.0.0",
     "swr": "^2.2.5",
     "vaul": "^1.1.1",
