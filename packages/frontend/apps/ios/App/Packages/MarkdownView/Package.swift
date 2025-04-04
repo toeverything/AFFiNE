@@ -14,7 +14,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/JohnSundell/Splash", from: "0.16.0"),
-    .package(url: "https://github.com/swiftlang/swift-cmark", from: "0.5.0"),
+    .package(url: "https://github.com/swiftlang/swift-cmark", from: "0.6.0"),
   ],
   targets: [
     .target(name: "MarkdownView", dependencies: [

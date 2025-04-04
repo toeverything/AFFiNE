@@ -33,7 +33,7 @@
     "build:debug": "napi build"
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.0.0-alpha.76",
+    "@napi-rs/cli": "3.0.0-alpha.77",
     "lib0": "^0.2.99",
     "tiktoken": "^1.0.17",
     "tinybench": "^4.0.0",
