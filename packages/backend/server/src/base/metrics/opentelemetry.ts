@@ -1,4 +1,5 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import {
   CompositePropagator,
   W3CBaggagePropagator,
@@ -14,7 +15,7 @@ import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core'
 import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.io';
 import { Resource } from '@opentelemetry/resources';
 import { MetricProducer, MetricReader } from '@opentelemetry/sdk-metrics';
-import { NodeSDK } from '@opentelemetry/sdk-node';
+import { NodeSDK, NodeSDKConfiguration } from '@opentelemetry/sdk-node';
 import {
   BatchSpanProcessor,
   SpanExporter,
@@ -34,7 +35,7 @@ import { PrismaMetricProducer } from './prisma';
 
 const { PrismaInstrumentation } = prismaInstrument;
 
-export abstract class BaseOpentelemetryFactory {
+export abstract class BaseOpentelemetryOptionsFactory {
   abstract getMetricReader(): MetricReader;
   abstract getSpanExporter(): SpanExporter;
 
@@ -61,9 +62,9 @@ export abstract class BaseOpentelemetryFactory {
     });
   }
 
-  create() {
+  create(): Partial<NodeSDKConfiguration> {
     const traceExporter = this.getSpanExporter();
-    return new NodeSDK({
+    return {
       resource: this.getResource(),
       sampler: new TraceIdRatioBasedSampler(0.1),
       traceExporter,
@@ -77,21 +78,32 @@ export abstract class BaseOpentelemetryFactory {
       }),
       instrumentations: this.getInstractions(),
       serviceName: 'affine-cloud',
-    });
+    };
   }
 }
 
 @Injectable()
-export class OpentelemetryFactory
-  extends BaseOpentelemetryFactory
-  implements OnModuleDestroy
-{
-  private readonly logger = new Logger(OpentelemetryFactory.name);
+export class OpentelemetryOptionsFactory extends BaseOpentelemetryOptionsFactory {
+  override getMetricReader(): MetricReader {
+    return new PrometheusExporter({
+      metricProducers: this.getMetricsProducers(),
+    });
+  }
+
+  override getSpanExporter(): SpanExporter {
+    return new ZipkinExporter();
+  }
+}
+
+@Injectable()
+export class OpentelemetryProvider {
+  readonly #logger = new Logger(OpentelemetryProvider.name);
   #sdk: NodeSDK | null = null;
 
-  constructor(private readonly config: Config) {
-    super();
-  }
+  constructor(
+    private readonly config: Config,
+    private readonly ref: ModuleRef
+  ) {}
 
   @OnEvent('config.init')
   async init(event: Events['config.init']) {
@@ -112,27 +124,21 @@ export class OpentelemetryFactory
     await this.#sdk?.shutdown();
   }
 
-  override getMetricReader(): MetricReader {
-    return new PrometheusExporter({
-      metricProducers: this.getMetricsProducers(),
-    });
-  }
-
-  override getSpanExporter(): SpanExporter {
-    return new ZipkinExporter();
-  }
-
   private async setup() {
     if (this.config.metrics.enabled) {
       if (!this.#sdk) {
-        this.#sdk = this.create();
+        const factory = this.ref.get(OpentelemetryOptionsFactory, {
+          strict: false,
+        });
+        this.#sdk = new NodeSDK(factory.create());
       }
+
       this.#sdk.start();
-      this.logger.log('OpenTelemetry SDK started');
+      this.#logger.log('OpenTelemetry SDK started');
     } else {
       await this.#sdk?.shutdown();
       this.#sdk = null;
-      this.logger.log('OpenTelemetry SDK stopped');
+      this.#logger.log('OpenTelemetry SDK stopped');
     }
   }
 }

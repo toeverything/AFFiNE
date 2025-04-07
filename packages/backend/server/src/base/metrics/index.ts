@@ -2,14 +2,18 @@ import './config';
 
 import { Global, Module } from '@nestjs/common';
 
-import { OpentelemetryFactory } from './opentelemetry';
+import {
+  OpentelemetryOptionsFactory,
+  OpentelemetryProvider,
+} from './opentelemetry';
 
 @Global()
 @Module({
-  providers: [OpentelemetryFactory],
+  providers: [OpentelemetryOptionsFactory, OpentelemetryProvider],
+  exports: [OpentelemetryOptionsFactory],
 })
 export class MetricsModule {}
 
 export * from './metrics';
 export * from './utils';
-export { OpentelemetryFactory };
+export { OpentelemetryOptionsFactory };

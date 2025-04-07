@@ -14,10 +14,10 @@ import {
   SEMRESATTRS_K8S_POD_NAME,
 } from '@opentelemetry/semantic-conventions';
 
-import { OpentelemetryFactory } from '../../base/metrics';
+import { OpentelemetryOptionsFactory } from '../../base/metrics';
 
 @Injectable()
-export class GCloudOpentelemetryFactory extends OpentelemetryFactory {
+export class GCloudOpentelemetryOptionsFactory extends OpentelemetryOptionsFactory {
   override getResource(): Resource {
     const env = getEnv();
     return super
@@ -48,8 +48,8 @@ export class GCloudOpentelemetryFactory extends OpentelemetryFactory {
 }
 
 const FactorProvider: Provider = {
-  provide: OpentelemetryFactory,
-  useClass: GCloudOpentelemetryFactory,
+  provide: OpentelemetryOptionsFactory,
+  useClass: GCloudOpentelemetryOptionsFactory,
 };
 
 @Global()
