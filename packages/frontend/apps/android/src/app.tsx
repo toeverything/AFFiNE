@@ -9,6 +9,7 @@ import {
   AuthService,
   DefaultServerService,
   ServersService,
+  ValidatorProvider,
 } from '@affine/core/modules/cloud';
 import { DocsService } from '@affine/core/modules/doc';
 import { GlobalContextService } from '@affine/core/modules/global-context';
@@ -40,16 +41,17 @@ import { EdgeToEdge } from '@capawesome/capacitor-android-edge-to-edge-support';
 import { InAppBrowser } from '@capgo/inappbrowser';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
+import { AsyncCall } from 'async-call-rpc';
 import { useTheme } from 'next-themes';
 import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { AffineTheme } from './plugins/affine-theme';
 import { AIButton } from './plugins/ai-button';
+import { HashCash } from './plugins/hashcash';
+import { NbStoreNativeDBApis } from './plugins/nbstore';
 
-const storeManagerClient = new StoreManagerClient(
-  new OpClient(new Worker(getWorkerUrl('nbstore')))
-);
+const storeManagerClient = createStoreManagerClient();
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
@@ -134,6 +136,13 @@ framework.impl(VirtualKeyboardProvider, {
     return () => {
       disposeRef.dispose();
     };
+  },
+});
+
+framework.impl(ValidatorProvider, {
+  async validate(_challenge, resource) {
+    const res = await HashCash.hash({ challenge: resource });
+    return res.value;
   },
 });
 
@@ -301,4 +310,36 @@ export function App() {
       </FrameworkRoot>
     </Suspense>
   );
+}
+
+function createStoreManagerClient() {
+  const worker = new Worker(getWorkerUrl('nbstore.worker.js'));
+  const { port1: nativeDBApiChannelServer, port2: nativeDBApiChannelClient } =
+    new MessageChannel();
+  AsyncCall<typeof NbStoreNativeDBApis>(NbStoreNativeDBApis, {
+    channel: {
+      on(listener) {
+        const f = (e: MessageEvent<any>) => {
+          listener(e.data);
+        };
+        nativeDBApiChannelServer.addEventListener('message', f);
+        return () => {
+          nativeDBApiChannelServer.removeEventListener('message', f);
+        };
+      },
+      send(data) {
+        nativeDBApiChannelServer.postMessage(data);
+      },
+    },
+    log: false,
+  });
+  nativeDBApiChannelServer.start();
+  worker.postMessage(
+    {
+      type: 'native-db-api-channel',
+      port: nativeDBApiChannelClient,
+    },
+    [nativeDBApiChannelClient]
+  );
+  return new StoreManagerClient(new OpClient(worker));
 }

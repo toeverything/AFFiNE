@@ -15,13 +15,17 @@ class AIButtonPlugin : Plugin() {
 
     @PluginMethod
     fun present(call: PluginCall) {
-        (activity as? Callback)?.present()
-        call.resolve()
+        launch {
+            (activity as? Callback)?.present()
+            call.resolve()
+        }
     }
 
     @PluginMethod
     fun dismiss(call: PluginCall) {
-        (activity as? Callback)?.dismiss()
-        call.resolve()
+        launch {
+            (activity as? Callback)?.dismiss()
+            call.resolve()
+        }
     }
 }

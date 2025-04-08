@@ -8,9 +8,11 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.updateMargins
 import androidx.lifecycle.lifecycleScope
 import app.affine.pro.ai.AIActivity
-import app.affine.pro.repo.WebRepo
 import app.affine.pro.plugin.AIButtonPlugin
 import app.affine.pro.plugin.AffineThemePlugin
+import app.affine.pro.plugin.HashCashPlugin
+import app.affine.pro.plugin.NbStorePlugin
+import app.affine.pro.repo.WebRepo
 import app.affine.pro.utils.dp
 import com.getcapacitor.BridgeActivity
 import com.getcapacitor.plugin.CapacitorCookies
@@ -35,6 +37,8 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AffineThemePlugi
                 AIButtonPlugin::class.java,
                 CapacitorHttp::class.java,
                 CapacitorCookies::class.java,
+                HashCashPlugin::class.java,
+                NbStorePlugin::class.java,
             )
         )
     }

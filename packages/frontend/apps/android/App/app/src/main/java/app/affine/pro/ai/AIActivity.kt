@@ -2,6 +2,7 @@ package app.affine.pro.ai
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -29,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.affine.pro.ai.chat.ChatViewModel
@@ -98,9 +100,12 @@ class AIActivity : AppCompatActivity() {
                                 }
                             }
                         }
+                        val context = LocalContext.current
                         UserInput(
                             onMessageSent = { content ->
-                                viewModel.sendMessage(content)
+                                Toast.makeText(context, "Not implemented.", Toast.LENGTH_SHORT)
+                                    .show()
+//                                viewModel.sendMessage(content)
                             },
                             resetScroll = {
                                 scope.launch {
