@@ -28,7 +28,7 @@ class NbStorePlugin : Plugin() {
                 val spaceType = call.getStringEnsure("spaceType")
                 val peer = call.getStringEnsure("peer")
                 val appStoragePath = activity?.filesDir ?: run {
-                    call.reject("Failed to connect storage，cannot access file system.")
+                    call.reject("Failed to connect storage, cannot access file system.")
                     return@launch
                 }
                 val peerDir = appStoragePath.resolve("workspaces")
