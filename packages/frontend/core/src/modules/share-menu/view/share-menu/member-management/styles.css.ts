@@ -34,6 +34,11 @@ export const memberContainerStyle = style({
   flex: 1,
   overflow: 'hidden',
 });
+export const memberNameStyle = style({
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+});
 export const descriptionStyle = style({
   textOverflow: 'ellipsis',
   overflow: 'hidden',
@@ -53,6 +58,7 @@ export const IconButtonStyle = style({
 export const OwnerStyle = style({
   color: cssVarV2('text/secondary'),
   fontSize: cssVar('fontSm'),
+  marginLeft: '8px',
 });
 
 export const avatarsContainerStyle = style({

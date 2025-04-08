@@ -21,6 +21,7 @@ export const tooltipContent = style({
   lineHeight: '22px',
   borderRadius: '4px',
   maxWidth: '280px',
+  wordBreak: 'break-word',
   transformOrigin: 'var(--radix-tooltip-content-transform-origin)',
   animation: `${tooltipScaleIn} 0.2s cubic-bezier(0.2, 1, 0.3, 1)`,
 });

@@ -49,6 +49,7 @@ import { useCallback, useState } from 'react';
 import { HeaderDropDownButton } from '../../../components/pure/header-drop-down-button';
 import { useFavorite } from '../favorite';
 import { HistoryTipsModal } from './history-tips-modal';
+import { shareMenu } from './style.css';
 
 type PageMenuProps = {
   rename?: () => void;
@@ -302,9 +303,12 @@ const PageHeaderMenuItem = ({
           subContentOptions={{
             sideOffset: 12,
             alignOffset: -8,
+
+            // to handle overflow when the width is not enough
+            collisionPadding: 20,
           }}
           items={
-            <div style={{ padding: 4 }}>
+            <div className={shareMenu}>
               <ShareMenuContent
                 workspaceMetadata={workspace.meta}
                 currentPage={page}

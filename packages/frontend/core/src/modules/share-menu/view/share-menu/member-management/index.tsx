@@ -129,7 +129,9 @@ export const MembersRow = ({ onClick }: { onClick: () => void }) => {
               name={docOwner.user.name}
               size={24}
             />
-            <span>{docOwner.user.name}</span>
+            <span title={docOwner.user.name} className={styles.memberNameStyle}>
+              {docOwner.user.name}
+            </span>
           </div>
           <div className={styles.OwnerStyle}>{t['Owner']()}</div>
         </>
