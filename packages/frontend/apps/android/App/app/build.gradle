@@ -111,6 +111,7 @@ dependencies {
     def okhttpBom = platform(libs.okhttp.bom)
     implementation okhttpBom
     implementation libs.okhttp
+    implementation libs.okhttp.coroutines
     implementation libs.okhttp.logging
     implementation libs.okhttp.sse
 

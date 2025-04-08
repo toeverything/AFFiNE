@@ -18,10 +18,10 @@ const config: CapacitorConfig = {
   },
   plugins: {
     CapacitorHttp: {
-      enabled: true,
+      enabled: false,
     },
     CapacitorCookies: {
-      enabled: true,
+      enabled: false,
     },
   },
 };

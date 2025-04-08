@@ -88,9 +88,7 @@ class NbStorePlugin : Plugin() {
                     docId = docId,
                     update = data
                 )
-                call.resolve(JSObject().apply {
-                    put("timestamp", timestamp)
-                })
+                call.resolve(JSObject().put("timestamp", timestamp))
             } catch (e: Exception) {
                 call.reject("Failed to push update, ${e.message}", null, e)
             }
@@ -105,11 +103,12 @@ class NbStorePlugin : Plugin() {
                 val docId = call.getStringEnsure("docId")
                 val record = docStoragePool.getDocSnapshot(universalId = id, docId = docId)
                 record?.let {
-                    call.resolve(JSObject().apply {
-                        put("docId", it.docId)
-                        put("bin", it.bin)
-                        put("timestamp", it.timestamp)
-                    })
+                    call.resolve(
+                        JSObject()
+                            .put("docId", it.docId)
+                            .put("bin", it.bin)
+                            .put("timestamp", it.timestamp)
+                    )
                 } ?: call.resolve()
             } catch (e: Exception) {
                 call.reject("Failed to get doc snapshot, ${e.message}", null, e)
@@ -129,9 +128,7 @@ class NbStorePlugin : Plugin() {
                     universalId = id,
                     snapshot = DocRecord(docId, bin, timestamp)
                 )
-                call.resolve(JSObject().apply {
-                    put("success", success)
-                })
+                call.resolve(JSObject().put("success", success))
             } catch (e: Exception) {
                 call.reject("Failed to set doc snapshot, ${e.message}", null, e)
             }
@@ -146,15 +143,12 @@ class NbStorePlugin : Plugin() {
                 val docId = call.getStringEnsure("docId")
                 val updates = docStoragePool.getDocUpdates(universalId = id, docId = docId)
                 val mapped = JSArray(updates.map {
-                    JSObject().apply {
-                        put("docId", it.docId)
-                        put("timestamp", it.timestamp)
-                        put("bin", it.bin)
-                    }
+                    JSObject()
+                        .put("docId", it.docId)
+                        .put("timestamp", it.timestamp)
+                        .put("bin", it.bin)
                 })
-                call.resolve(JSObject().apply {
-                    put("updates", mapped)
-                })
+                call.resolve(JSObject().put("updates", mapped))
             } catch (e: Exception) {
                 call.reject("Failed to get doc updates, ${e.message}", null, e)
             }
@@ -173,9 +167,7 @@ class NbStorePlugin : Plugin() {
                     docId = docId,
                     updates = times
                 )
-                call.resolve(JSObject().apply {
-                    put("count", count)
-                })
+                call.resolve(JSObject().put("count", count))
             } catch (e: Exception) {
                 call.reject("Failed to mark updates merged, ${e.message}", null, e)
             }
@@ -207,14 +199,11 @@ class NbStorePlugin : Plugin() {
                     after = after,
                 )
                 val mapped = JSArray(docClocks.map {
-                    JSObject().apply {
-                        put("docId", it.docId)
-                        put("timestamp", it.timestamp)
-                    }
+                    JSObject()
+                        .put("docId", it.docId)
+                        .put("timestamp", it.timestamp)
                 })
-                call.resolve(JSObject().apply {
-                    put("clocks", mapped)
-                })
+                call.resolve(JSObject().put("clocks", mapped))
             } catch (e: Exception) {
                 call.reject("Failed to get doc clocks: ${e.message}", null, e)
             }
@@ -230,10 +219,9 @@ class NbStorePlugin : Plugin() {
                 val docClock = docStoragePool.getDocClock(universalId = id, docId = docId)
                 docClock?.let {
                     call.resolve(
-                        JSObject().apply {
-                            put("docId", it.docId)
-                            put("timestamp", it.timestamp)
-                        }
+                        JSObject()
+                            .put("docId", it.docId)
+                            .put("timestamp", it.timestamp)
                     )
                 } ?: call.resolve()
             } catch (e: Exception) {
@@ -251,13 +239,12 @@ class NbStorePlugin : Plugin() {
                 val blob = docStoragePool.getBlob(universalId = id, key = key)
                 blob?.let {
                     call.resolve(
-                        JSObject().apply {
-                            put("key", it.key)
-                            put("data", it.data)
-                            put("mime", it.mime)
-                            put("size", it.size)
-                            put("createdAt", it.createdAt)
-                        }
+                        JSObject()
+                            .put("key", it.key)
+                            .put("data", it.data)
+                            .put("mime", it.mime)
+                            .put("size", it.size)
+                            .put("createdAt", it.createdAt)
                     )
                 } ?: call.resolve()
             } catch (e: Exception) {
@@ -317,16 +304,13 @@ class NbStorePlugin : Plugin() {
                 val id = call.getStringEnsure("id")
                 val blobs = docStoragePool.listBlobs(universalId = id)
                 val mapped = JSArray(blobs.map {
-                    JSObject().apply {
-                        put("key", it.key)
-                        put("size", it.size)
-                        put("mime", it.mime)
-                        put("createdAt", it.createdAt)
-                    }
+                    JSObject()
+                        .put("key", it.key)
+                        .put("size", it.size)
+                        .put("mime", it.mime)
+                        .put("createdAt", it.createdAt)
                 })
-                call.resolve(JSObject().apply {
-                    put("blobs", mapped)
-                })
+                call.resolve(JSObject().put("blobs", mapped))
             } catch (e: Exception) {
                 call.reject("Failed to list blobs: ${e.message}", null, e)
             }
@@ -344,14 +328,11 @@ class NbStorePlugin : Plugin() {
                     peer = peer,
                 )
                 val mapped = JSArray(clocks.map {
-                    JSObject().apply {
-                        put("docId", it.docId)
-                        put("timestamp", it.timestamp)
-                    }
+                    JSObject()
+                        .put("docId", it.docId)
+                        .put("timestamp", it.timestamp)
                 })
-                call.resolve(JSObject().apply {
-                    put("clocks", mapped)
-                })
+                call.resolve(JSObject().put("clocks", mapped))
             } catch (e: Exception) {
                 call.reject("Failed to get peer remote clocks: ${e.message}", null, e)
             }
@@ -371,10 +352,11 @@ class NbStorePlugin : Plugin() {
                     docId = docId,
                 )
                 clock?.let {
-                    call.resolve(JSObject().apply {
-                        put("docId", it.docId)
-                        put("timestamp", it.timestamp)
-                    })
+                    call.resolve(
+                        JSObject()
+                            .put("docId", it.docId)
+                            .put("timestamp", it.timestamp)
+                    )
                 } ?: call.resolve()
             } catch (e: Exception) {
                 call.reject("Failed to get peer remote clock: ${e.message}", null, e)
@@ -414,14 +396,11 @@ class NbStorePlugin : Plugin() {
                     peer = peer,
                 )
                 val mapped = JSArray(clocks.map {
-                    JSObject().apply {
-                        put("docId", it.docId)
-                        put("timestamp", it.timestamp)
-                    }
+                    JSObject()
+                        .put("docId", it.docId)
+                        .put("timestamp", it.timestamp)
                 })
-                call.resolve(JSObject().apply {
-                    put("clocks", mapped)
-                })
+                call.resolve(JSObject().put("clocks", mapped))
             } catch (e: Exception) {
                 call.reject("Failed to get peer pulled remote clocks: ${e.message}", null, e)
             }
@@ -441,10 +420,11 @@ class NbStorePlugin : Plugin() {
                     docId = docId,
                 )
                 clock?.let {
-                    call.resolve(JSObject().apply {
-                        put("docId", it.docId)
-                        put("timestamp", it.timestamp)
-                    })
+                    call.resolve(
+                        JSObject()
+                            .put("docId", it.docId)
+                            .put("timestamp", it.timestamp)
+                    )
                 } ?: call.resolve()
             } catch (e: Exception) {
                 call.reject("Failed to get peer pulled remote clock: ${e.message}", null, e)
@@ -484,14 +464,11 @@ class NbStorePlugin : Plugin() {
                     peer = peer,
                 )
                 val mapped = JSArray(clocks.map {
-                    JSObject().apply {
-                        put("docId", it.docId)
-                        put("timestamp", it.timestamp)
-                    }
+                    JSObject()
+                        .put("docId", it.docId)
+                        .put("timestamp", it.timestamp)
                 })
-                call.resolve(JSObject().apply {
-                    put("clocks", mapped)
-                })
+                call.resolve(JSObject().put("clocks", mapped))
             } catch (e: Exception) {
                 call.reject("Failed to get peer pushed clocks: ${e.message}", null, e)
             }
@@ -511,10 +488,11 @@ class NbStorePlugin : Plugin() {
                     docId = docId,
                 )
                 clock?.let {
-                    call.resolve(JSObject().apply {
-                        put("docId", it.docId)
-                        put("timestamp", it.timestamp)
-                    })
+                    call.resolve(
+                        JSObject()
+                            .put("docId", it.docId)
+                            .put("timestamp", it.timestamp)
+                    )
                 } ?: call.resolve()
             } catch (e: Exception) {
                 call.reject("Failed to get peer pushed clock: ${e.message}", null, e)
@@ -556,9 +534,7 @@ class NbStorePlugin : Plugin() {
                     blobId = blobId,
                 )
                 uploadedAt?.let {
-                    call.resolve(JSObject().apply {
-                        put("uploadedAt", it)
-                    })
+                    call.resolve(JSObject().put("uploadedAt", it))
                 } ?: call.resolve()
             } catch (e: Exception) {
                 call.reject("Failed to get blob uploaded: ${e.message}", null, e)
@@ -598,17 +574,5 @@ class NbStorePlugin : Plugin() {
                 call.reject("Failed to clear clocks: ${e.message}", null, e)
             }
         }
-    }
-
-    private fun PluginCall.getStringEnsure(key: String): String {
-        return getString(key) ?: throw IllegalArgumentException("Missing $key parameter")
-    }
-
-    private inline fun <reified T> PluginCall.getListEnsure(key: String): List<T> {
-        return getArray(key)?.toList() ?: throw IllegalArgumentException("Missing $key parameter")
-    }
-
-    private fun PluginCall.getLongEnsure(key: String): Long {
-        return getLong(key) ?: throw IllegalArgumentException("Missing $key parameter")
     }
 }

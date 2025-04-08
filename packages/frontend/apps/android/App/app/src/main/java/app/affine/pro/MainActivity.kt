@@ -10,13 +10,12 @@ import androidx.lifecycle.lifecycleScope
 import app.affine.pro.ai.AIActivity
 import app.affine.pro.plugin.AIButtonPlugin
 import app.affine.pro.plugin.AffineThemePlugin
+import app.affine.pro.plugin.AuthPlugin
 import app.affine.pro.plugin.HashCashPlugin
 import app.affine.pro.plugin.NbStorePlugin
 import app.affine.pro.repo.WebRepo
 import app.affine.pro.utils.dp
 import com.getcapacitor.BridgeActivity
-import com.getcapacitor.plugin.CapacitorCookies
-import com.getcapacitor.plugin.CapacitorHttp
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -35,8 +34,7 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AffineThemePlugi
             listOf(
                 AffineThemePlugin::class.java,
                 AIButtonPlugin::class.java,
-                CapacitorHttp::class.java,
-                CapacitorCookies::class.java,
+                AuthPlugin::class.java,
                 HashCashPlugin::class.java,
                 NbStorePlugin::class.java,
             )

@@ -6,8 +6,11 @@ import { router } from '@affine/core/mobile/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { AIButtonProvider } from '@affine/core/modules/ai-button';
 import {
+  AuthProvider,
   AuthService,
   DefaultServerService,
+  ServerScope,
+  ServerService,
   ServersService,
   ValidatorProvider,
 } from '@affine/core/modules/cloud';
@@ -48,8 +51,10 @@ import { RouterProvider } from 'react-router-dom';
 
 import { AffineTheme } from './plugins/affine-theme';
 import { AIButton } from './plugins/ai-button';
+import { Auth } from './plugins/auth';
 import { HashCash } from './plugins/hashcash';
 import { NbStoreNativeDBApis } from './plugins/nbstore';
+import { writeEndpointToken } from './proxy';
 
 const storeManagerClient = createStoreManagerClient();
 window.addEventListener('beforeunload', () => {
@@ -153,6 +158,44 @@ framework.impl(AIButtonProvider, {
   dismissAIButton: () => {
     return AIButton.dismiss();
   },
+});
+
+framework.scope(ServerScope).override(AuthProvider, resolver => {
+  const serverService = resolver.get(ServerService);
+  const endpoint = serverService.server.baseUrl;
+  return {
+    async signInMagicLink(email, linkToken, clientNonce) {
+      const { token } = await Auth.signInMagicLink({
+        endpoint,
+        email,
+        token: linkToken,
+        clientNonce,
+      });
+      await writeEndpointToken(endpoint, token);
+    },
+    async signInOauth(code, state, _provider, clientNonce) {
+      const { token } = await Auth.signInOauth({
+        endpoint,
+        code,
+        state,
+        clientNonce,
+      });
+      await writeEndpointToken(endpoint, token);
+      return {};
+    },
+    async signInPassword(credential) {
+      const { token } = await Auth.signInPassword({
+        endpoint,
+        ...credential,
+      });
+      await writeEndpointToken(endpoint, token);
+    },
+    async signOut() {
+      await Auth.signOut({
+        endpoint,
+      });
+    },
+  };
 });
 
 // ------ some apis for native ------
