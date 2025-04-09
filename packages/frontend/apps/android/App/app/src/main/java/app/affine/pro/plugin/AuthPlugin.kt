@@ -52,6 +52,7 @@ class AuthPlugin : Plugin() {
 
                 val request = Request.Builder()
                     .url("$endpoint/api/auth/magic-link")
+                    .header("x-affine-version", "0.21.0")
                     .post(body)
                     .build()
                 client.newCall(request).executeAsync().use { response ->
@@ -88,6 +89,7 @@ class AuthPlugin : Plugin() {
 
                 val request = Request.Builder()
                     .url("$endpoint/api/oauth/callback")
+                    .header("x-affine-version", "0.21.0")
                     .post(body)
                     .build()
                 client.newCall(request).executeAsync().use { response ->
@@ -126,6 +128,7 @@ class AuthPlugin : Plugin() {
 
                 val requestBuilder = Request.Builder()
                     .url("$endpoint/api/auth/sign-in")
+                    .header("x-affine-version", "0.21.0")
                     .post(body)
                 if (verifyToken != null) {
                     requestBuilder.addHeader("x-captcha-token", verifyToken)
@@ -155,6 +158,7 @@ class AuthPlugin : Plugin() {
                 val endpoint = call.getStringEnsure("endpoint")
                 val request = Request.Builder()
                     .url("$endpoint/api/auth/sign-out")
+                    .header("x-affine-version", "0.21.0")
                     .get()
                     .build()
                 client.newCall(request).executeAsync().use { response ->

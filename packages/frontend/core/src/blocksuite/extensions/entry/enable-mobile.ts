@@ -92,7 +92,7 @@ function KeyboardToolbarExtension(framework: FrameworkProvider): ExtensionType {
   }
 
   if ('show' in affineVirtualKeyboardProvider) {
-    return class BSVirtualKeyboardWithActionService
+    class BSVirtualKeyboardServiceWithShowAndHide
       extends BSVirtualKeyboardService
       implements VirtualKeyboardProviderWithAction
     {
@@ -102,7 +102,9 @@ function KeyboardToolbarExtension(framework: FrameworkProvider): ExtensionType {
       hide() {
         affineVirtualKeyboardProvider.hide();
       }
-    };
+    }
+
+    return BSVirtualKeyboardServiceWithShowAndHide;
   }
 
   return BSVirtualKeyboardService;

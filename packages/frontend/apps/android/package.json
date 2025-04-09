@@ -6,6 +6,7 @@
   "scripts": {
     "build": "affine bundle",
     "dev": "affine bundle --dev",
+    "sync": "cap sync",
     "studio": "cap open android"
   },
   "dependencies": {
