@@ -1,11 +1,21 @@
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
 import type { CapacitorConfig } from '@capacitor/cli';
 
-const config: CapacitorConfig = {
+const packageJson = JSON.parse(
+  readFileSync(resolve(__dirname, './package.json'), 'utf-8')
+);
+
+interface AppConfig {
+  affineVersion: string;
+}
+
+const config: CapacitorConfig & AppConfig = {
   appId: 'app.affine.pro',
   appName: 'AFFiNE',
   webDir: 'dist',
+  affineVersion: packageJson.version,
   android: {
     path: 'App',
     buildOptions: {
@@ -25,5 +35,13 @@ const config: CapacitorConfig = {
     },
   },
 };
+
+if (process.env.CAP_SERVER_URL) {
+  Object.assign(config, {
+    server: {
+      url: process.env.CAP_SERVER_URL,
+    },
+  });
+}
 
 export default config;
