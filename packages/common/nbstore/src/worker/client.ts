@@ -172,28 +172,14 @@ class WorkerDocConnection extends DummyConnection {
     super();
   }
 
-  override waitForConnected(signal?: AbortSignal): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const abortListener = () => {
-        reject(signal?.reason);
-        subscription.unsubscribe();
-      };
+  promise: Promise<void> | undefined;
 
-      signal?.addEventListener('abort', abortListener);
-
-      const subscription = this.client
-        .ob$('docStorage.waitForConnected')
-        .subscribe({
-          next() {
-            signal?.removeEventListener('abort', abortListener);
-            resolve();
-          },
-          error(err) {
-            signal?.removeEventListener('abort', abortListener);
-            reject(err);
-          },
-        });
-    });
+  override waitForConnected(): Promise<void> {
+    if (this.promise) {
+      return this.promise;
+    }
+    this.promise = this.client.call('docStorage.waitForConnected');
+    return this.promise;
   }
 }
 
@@ -226,7 +212,23 @@ class WorkerBlobStorage implements BlobStorage {
     return this.client.call('blobStorage.listBlobs');
   }
 
-  connection = new DummyConnection();
+  connection = new WorkerBlobConnection(this.client);
+}
+
+class WorkerBlobConnection extends DummyConnection {
+  constructor(private readonly client: OpClient<WorkerOps>) {
+    super();
+  }
+
+  promise: Promise<void> | undefined;
+
+  override waitForConnected(): Promise<void> {
+    if (this.promise) {
+      return this.promise;
+    }
+    this.promise = this.client.call('blobStorage.waitForConnected');
+    return this.promise;
+  }
 }
 
 class WorkerDocSync implements DocSync {
@@ -346,7 +348,7 @@ class WorkerIndexerStorage implements IndexerStorage {
   constructor(private readonly client: OpClient<WorkerOps>) {}
   readonly storageType = 'indexer';
   readonly isReadonly = true;
-  connection = new DummyConnection();
+  connection = new WorkerIndexerConnection(this.client);
 
   search<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
     table: T,
@@ -418,6 +420,22 @@ class WorkerIndexerStorage implements IndexerStorage {
   }
   refresh<T extends keyof IndexerSchema>(_table: T): Promise<void> {
     throw new Error('Method not implemented.');
+  }
+}
+
+class WorkerIndexerConnection extends DummyConnection {
+  constructor(private readonly client: OpClient<WorkerOps>) {
+    super();
+  }
+
+  promise: Promise<void> | undefined;
+
+  override waitForConnected(): Promise<void> {
+    if (this.promise) {
+      return this.promise;
+    }
+    this.promise = this.client.call('indexerStorage.waitForConnected');
+    return this.promise;
   }
 }
 

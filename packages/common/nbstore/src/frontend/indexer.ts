@@ -1,5 +1,14 @@
-import type { IndexerStorage } from '../storage';
+import { switchMap } from 'rxjs';
+
+import type {
+  AggregateOptions,
+  IndexerSchema,
+  IndexerStorage,
+  Query,
+  SearchOptions,
+} from '../storage';
 import type { IndexerSync } from '../sync/indexer';
+import { fromPromise } from '../utils/from-promise';
 
 export class IndexerFrontend {
   constructor(
@@ -15,15 +24,48 @@ export class IndexerFrontend {
     return this.sync.docState$(docId);
   }
 
-  search = this.storage.search.bind(this.storage);
-  aggregate = this.storage.aggregate.bind(this.storage);
-  // eslint-disable-next-line rxjs/finnish
-  search$ = this.storage.search$.bind(this.storage);
-  // eslint-disable-next-line rxjs/finnish
-  aggregate$ = this.storage.aggregate$.bind(this.storage);
+  async search<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O
+  ) {
+    await this.waitForConnected();
+    return this.storage.search(table, query, options);
+  }
+
+  async aggregate<
+    T extends keyof IndexerSchema,
+    const O extends AggregateOptions<T>,
+  >(table: T, query: Query<T>, field: keyof IndexerSchema[T], options?: O) {
+    await this.waitForConnected();
+    return this.storage.aggregate(table, query, field, options);
+  }
+
+  search$<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O
+  ) {
+    return fromPromise(signal => this.waitForConnected(signal)).pipe(
+      switchMap(() => this.storage.search$(table, query, options))
+    );
+  }
+
+  aggregate$<
+    T extends keyof IndexerSchema,
+    const O extends AggregateOptions<T>,
+  >(table: T, query: Query<T>, field: keyof IndexerSchema[T], options?: O) {
+    return fromPromise(signal => this.waitForConnected(signal)).pipe(
+      switchMap(() => this.storage.aggregate$(table, query, field, options))
+    );
+  }
 
   addPriority(docId: string, priority: number) {
     return this.sync.addPriority(docId, priority);
+  }
+
+  private waitForConnected(signal?: AbortSignal) {
+    return this.storage.connection.waitForConnected(signal);
   }
 
   waitForCompleted(signal?: AbortSignal) {

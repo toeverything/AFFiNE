@@ -16,6 +16,7 @@ export class BlobFrontend {
   }
 
   async get(blobId: string) {
+    await this.waitForConnected();
     await using lock = await this.lock.lock('blob', blobId);
     const local = await this.storage.get(blobId);
     if (local) {
@@ -30,6 +31,7 @@ export class BlobFrontend {
   }
 
   async set(blob: BlobRecord) {
+    await this.waitForConnected();
     if (blob.data.byteLength > this.maxBlobSize) {
       for (const cb of this.onReachedMaxBlobSizeCallbacks) {
         cb(blob.data.byteLength);
@@ -57,6 +59,7 @@ export class BlobFrontend {
    * @throws This method will throw an error if the blob is not found locally, if the upload is aborted, or if it fails due to storage limitations.
    */
   async upload(blobIdOrRecord: string | BlobRecord): Promise<boolean> {
+    await this.waitForConnected();
     const blob =
       typeof blobIdOrRecord === 'string'
         ? await this.storage.get(blobIdOrRecord)
@@ -83,5 +86,9 @@ export class BlobFrontend {
   onReachedMaxBlobSize(cb: (byteSize: number) => void): () => void {
     this.onReachedMaxBlobSizeCallbacks.add(cb);
     return () => this.onReachedMaxBlobSizeCallbacks.delete(cb);
+  }
+
+  private waitForConnected(signal?: AbortSignal) {
+    return this.storage.connection.waitForConnected(signal);
   }
 }

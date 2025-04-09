@@ -158,26 +158,16 @@ class StoreConsumer {
             subscriber.next({ update, origin });
           });
         }),
-      'docStorage.waitForConnected': () =>
-        new Observable(subscriber => {
-          const abortController = new AbortController();
-          this.docStorage.connection
-            .waitForConnected(abortController.signal)
-            .then(() => {
-              subscriber.next(true);
-              subscriber.complete();
-            })
-            .catch((error: any) => {
-              subscriber.error(error);
-            });
-          return () => abortController.abort(MANUALLY_STOP);
-        }),
+      'docStorage.waitForConnected': (_, ctx) =>
+        this.docStorage.connection.waitForConnected(ctx.signal),
       'blobStorage.getBlob': key => this.blobStorage.get(key),
       'blobStorage.setBlob': blob => this.blobStorage.set(blob),
       'blobStorage.deleteBlob': ({ key, permanently }) =>
         this.blobStorage.delete(key, permanently),
       'blobStorage.releaseBlobs': () => this.blobStorage.release(),
       'blobStorage.listBlobs': () => this.blobStorage.list(),
+      'blobStorage.waitForConnected': (_, ctx) =>
+        this.blobStorage.connection.waitForConnected(ctx.signal),
       'awarenessStorage.update': ({ awareness, origin }) =>
         this.awarenessStorage.update(awareness, origin),
       'awarenessStorage.subscribeUpdate': docId =>
@@ -205,6 +195,8 @@ class StoreConsumer {
         }),
       'awarenessStorage.collect': ({ collectId, awareness }) =>
         collectJobs.get(collectId)?.(awareness),
+      'awarenessStorage.waitForConnected': (_, ctx) =>
+        this.awarenessStorage.connection.waitForConnected(ctx.signal),
       'docSync.state': () => this.docSync.state$,
       'docSync.docState': docId =>
         new Observable(subscriber => {
@@ -278,6 +270,8 @@ class StoreConsumer {
         this.indexerStorage.search$(table, query, options),
       'indexerStorage.subscribeAggregate': ({ table, query, field, options }) =>
         this.indexerStorage.aggregate$(table, query, field, options),
+      'indexerStorage.waitForConnected': (_, ctx) =>
+        this.indexerStorage.connection.waitForConnected(ctx.signal),
       'indexerSync.state': () => this.indexerSync.state$,
       'indexerSync.docState': (docId: string) =>
         this.indexerSync.docState$(docId),
@@ -286,32 +280,10 @@ class StoreConsumer {
           const undo = this.indexerSync.addPriority(docId, priority);
           return () => undo();
         }),
-      'indexerSync.waitForCompleted': () =>
-        new Observable(subscriber => {
-          this.indexerSync
-            .waitForCompleted()
-            .then(() => {
-              subscriber.next();
-              subscriber.complete();
-            })
-            .catch(error => {
-              subscriber.error(error);
-            });
-        }),
-      'indexerSync.waitForDocCompleted': (docId: string) =>
-        new Observable(subscriber => {
-          const abortController = new AbortController();
-          this.indexerSync
-            .waitForDocCompleted(docId, abortController.signal)
-            .then(() => {
-              subscriber.next();
-              subscriber.complete();
-            })
-            .catch(error => {
-              subscriber.error(error);
-            });
-          return () => abortController.abort(MANUALLY_STOP);
-        }),
+      'indexerSync.waitForCompleted': (_, ctx) =>
+        this.indexerSync.waitForCompleted(ctx.signal),
+      'indexerSync.waitForDocCompleted': (docId: string, ctx) =>
+        this.indexerSync.waitForDocCompleted(docId, ctx.signal),
     });
   }
 }

@@ -1,5 +1,6 @@
 import { merge, Observable, of, Subject, throttleTime } from 'rxjs';
 
+import { share } from '../../../connection';
 import type {
   AggregateOptions,
   AggregateResult,
@@ -10,13 +11,14 @@ import type {
   SearchResult,
 } from '../../../storage';
 import { IndexerStorageBase } from '../../../storage';
+import { fromPromise } from '../../../utils/from-promise';
 import { IDBConnection, type IDBConnectionOptions } from '../db';
 import { DataStruct } from './data-struct';
-import { backoffRetry, exhaustMapWithTrailing, fromPromise } from './utils';
+import { backoffRetry, exhaustMapWithTrailing } from './utils';
 
 export class IndexedDBIndexerStorage extends IndexerStorageBase {
   static readonly identifier = 'IndexedDBIndexerStorage';
-  readonly connection = new IDBConnection(this.options);
+  readonly connection = share(new IDBConnection(this.options));
   override isReadonly = false;
   private readonly data = new DataStruct();
   private readonly tableUpdate$ = new Subject<string>();

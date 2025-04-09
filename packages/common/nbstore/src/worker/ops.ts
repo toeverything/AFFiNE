@@ -40,7 +40,7 @@ interface GroupedWorkerOps {
     getDocTimestamp: [string, DocClock | null];
     deleteDoc: [string, void];
     subscribeDocUpdate: [void, { update: DocRecord; origin?: string }];
-    waitForConnected: [void, boolean];
+    waitForConnected: [void, void];
   };
 
   blobStorage: {
@@ -49,6 +49,7 @@ interface GroupedWorkerOps {
     deleteBlob: [{ key: string; permanently: boolean }, void];
     releaseBlobs: [void, void];
     listBlobs: [void, ListedBlobRecord[]];
+    waitForConnected: [void, void];
   };
 
   awarenessStorage: {
@@ -65,6 +66,7 @@ interface GroupedWorkerOps {
       ),
     ];
     collect: [{ collectId: string; awareness: AwarenessRecord }, void];
+    waitForConnected: [void, void];
   };
 
   indexerStorage: {
@@ -94,6 +96,7 @@ interface GroupedWorkerOps {
       },
       AggregateResult<any, any>,
     ];
+    waitForConnected: [void, void];
   };
 
   docSync: {
