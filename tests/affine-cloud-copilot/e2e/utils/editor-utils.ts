@@ -241,8 +241,8 @@ export class EditorUtils {
   public static async clearAllCollections(page: Page) {
     while (true) {
       const collection = await page
-        .getByTestId('explorer-collections')
-        .locator('[data-testid^="explorer-collection-"]')
+        .getByTestId('navigation-panel-collections')
+        .locator('[data-testid^="navigation-panel-collection-"]')
         .first();
 
       if (!(await collection.isVisible())) {
@@ -252,7 +252,7 @@ export class EditorUtils {
       const collectionContent = await collection.locator('div').first();
       await collectionContent.hover();
       const more = await collectionContent.getByTestId(
-        'explorer-tree-node-operation-button'
+        'navigation-panel-tree-node-operation-button'
       );
       await more.click();
       await page.getByTestId('collection-delete-button').click();
@@ -263,8 +263,8 @@ export class EditorUtils {
   public static async clearAllTags(page: Page) {
     while (true) {
       const tag = await page
-        .getByTestId('explorer-tags')
-        .locator('[data-testid^="explorer-tag-"]')
+        .getByTestId('navigation-panel-tags')
+        .locator('[data-testid^="navigation-panel-tag-"]')
         .first();
 
       if (!(await tag.isVisible())) {
@@ -274,7 +274,7 @@ export class EditorUtils {
       const tagContent = await tag.locator('div').first();
       await tagContent.hover();
       const more = await tagContent.getByTestId(
-        'explorer-tree-node-operation-button'
+        'navigation-panel-tree-node-operation-button'
       );
       await more.click();
       await page.getByTestId('tag-delete-button').click();
@@ -288,7 +288,9 @@ export class EditorUtils {
     docContent: string
   ) {
     // Create collection
-    await page.getByTestId('explorer-bar-add-collection-button').click();
+    await page
+      .getByTestId('navigation-panel-bar-add-collection-button')
+      .click();
     const input = await page.getByTestId('prompt-modal-input');
     await input.focus();
     await input.pressSequentially(collectionName);
@@ -318,9 +320,9 @@ export class EditorUtils {
     docContent: string
   ) {
     // Create tag
-    const tags = await page.getByTestId('explorer-tags');
+    const tags = await page.getByTestId('navigation-panel-tags');
     await tags.hover();
-    await tags.getByTestId('explorer-bar-add-tag-button').click();
+    await tags.getByTestId('navigation-panel-bar-add-tag-button').click();
     const input = await page.getByTestId('rename-modal-input');
     await input.focus();
     await input.pressSequentially(tagName);

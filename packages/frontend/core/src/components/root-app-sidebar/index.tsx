@@ -12,14 +12,6 @@ import {
 import { ExternalMenuLinkItem } from '@affine/core/modules/app-sidebar/views/menu-item/external-menu-link-item';
 import { AuthService } from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
-import {
-  CollapsibleSection,
-  ExplorerCollections,
-  ExplorerFavorites,
-  ExplorerMigrationFavorites,
-  ExplorerOrganize,
-} from '@affine/core/modules/explorer';
-import { ExplorerTags } from '@affine/core/modules/explorer/views/sections/tags';
 import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/services/cmdk';
 import type { Workspace } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
@@ -35,6 +27,14 @@ import { useLiveData, useService, useServices } from '@toeverything/infra';
 import type { ReactElement } from 'react';
 import { memo, useCallback } from 'react';
 
+import {
+  CollapsibleSection,
+  NavigationPanelCollections,
+  NavigationPanelFavorites,
+  NavigationPanelMigrationFavorites,
+  NavigationPanelOrganize,
+  NavigationPanelTags,
+} from '../../desktop/components/navigation-panel';
 import { WorkbenchService } from '../../modules/workbench';
 import { WorkspaceNavigator } from '../workspace-selector';
 import {
@@ -180,11 +180,11 @@ export const RootAppSidebar = memo((): ReactElement => {
         </MenuItem>
       </SidebarContainer>
       <SidebarScrollableContainer>
-        <ExplorerFavorites />
-        <ExplorerOrganize />
-        <ExplorerMigrationFavorites />
-        <ExplorerCollections />
-        <ExplorerTags />
+        <NavigationPanelFavorites />
+        <NavigationPanelOrganize />
+        <NavigationPanelMigrationFavorites />
+        <NavigationPanelCollections />
+        <NavigationPanelTags />
         <CollapsibleSection
           name="others"
           title={t['com.affine.rootAppSidebar.others']()}

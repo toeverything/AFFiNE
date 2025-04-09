@@ -27,23 +27,27 @@ const dragToFavourites = async (
   id: string,
   type: 'doc' | 'collection' | 'tag' | 'folder' = 'doc'
 ) => {
-  const favourites = page.getByTestId('explorer-favorite-category-divider');
+  const favourites = page.getByTestId(
+    'navigation-panel-favorite-category-divider'
+  );
   await dragTo(page, dragItem, favourites);
   const item = page
-    .getByTestId(`explorer-favorites`)
-    .locator(`[data-testid="explorer-${type}-${id}"]`);
+    .getByTestId(`navigation-panel-favorites`)
+    .locator(`[data-testid="navigation-panel-${type}-${id}"]`);
   await expect(item).toBeVisible();
   return item;
 };
 
 const createCollection = async (page: Page, name: string) => {
-  await page.getByTestId('explorer-bar-add-collection-button').click();
+  await page.getByTestId('navigation-panel-bar-add-collection-button').click();
   const input = page.getByTestId('prompt-modal-input');
   await expect(input).toBeVisible();
   await input.fill(name);
   await page.getByTestId('prompt-modal-confirm').click();
   const newCollectionId = getCurrentCollectionIdFromUrl(page);
-  const collection = page.getByTestId(`explorer-collection-${newCollectionId}`);
+  const collection = page.getByTestId(
+    `navigation-panel-collection-${newCollectionId}`
+  );
   await expect(collection).toBeVisible();
   return collection;
 };
@@ -57,7 +61,9 @@ const dragToCollection = async (page: Page, dragItem: Locator) => {
   await clickSideBarAllPageButton(page);
   await dragTo(page, dragItem, collection);
   await page.waitForTimeout(500);
-  const collectionPage = collection.locator('[data-testid^="explorer-doc-"]');
+  const collectionPage = collection.locator(
+    '[data-testid^="navigation-panel-doc-"]'
+  );
   await expect(collectionPage).toBeVisible();
   return collectionPage;
 };
@@ -182,39 +188,45 @@ test('items in favourites can be reordered by dragging', async ({ page }) => {
 
   // assert the order of the items in favourites
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]')
+    page.getByTestId('navigation-panel-favorites').locator('[draggable]')
   ).toHaveCount(3);
 
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]').first()
+    page
+      .getByTestId('navigation-panel-favorites')
+      .locator('[draggable]')
+      .first()
   ).toHaveText('test collection');
 
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]').last()
+    page.getByTestId('navigation-panel-favorites').locator('[draggable]').last()
   ).toHaveText(title0);
 
   // drag the first item to the last
   const firstItem = page
-    .getByTestId('explorer-favorites')
+    .getByTestId('navigation-panel-favorites')
     .locator('[draggable]')
     .first();
   const lastItem = page
-    .getByTestId('explorer-favorites')
+    .getByTestId('navigation-panel-favorites')
     .locator('[draggable]')
     .last();
   await dragTo(page, firstItem, lastItem, 'bottom');
 
   // now check the order again
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]')
+    page.getByTestId('navigation-panel-favorites').locator('[draggable]')
   ).toHaveCount(3);
 
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]').first()
+    page
+      .getByTestId('navigation-panel-favorites')
+      .locator('[draggable]')
+      .first()
   ).toHaveText(title1);
 
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]').last()
+    page.getByTestId('navigation-panel-favorites').locator('[draggable]').last()
   ).toHaveText('test collection');
 });
 
@@ -304,8 +316,8 @@ test('drag a favourite page into note on page mode', async ({ page }) => {
   await page.getByTestId('pin-button').click();
   const pageId = getCurrentDocIdFromUrl(page);
   const item = page
-    .getByTestId(`explorer-favorites`)
-    .locator(`[data-testid="explorer-doc-${pageId}"]`);
+    .getByTestId(`navigation-panel-favorites`)
+    .locator(`[data-testid="navigation-panel-doc-${pageId}"]`);
   await expect(item).toBeVisible();
 
   // drag item into blocksuite editor
@@ -327,8 +339,8 @@ test('drag a favourite page into canvas on edgeless mode', async ({ page }) => {
   await page.getByTestId('pin-button').click();
   const pageId = getCurrentDocIdFromUrl(page);
   const item = page
-    .getByTestId(`explorer-favorites`)
-    .locator(`[data-testid="explorer-doc-${pageId}"]`);
+    .getByTestId(`navigation-panel-favorites`)
+    .locator(`[data-testid="navigation-panel-doc-${pageId}"]`);
   await expect(item).toBeVisible();
 
   await clickNewPageButton(page, 'edgeless page');
@@ -373,8 +385,8 @@ test('drag a favourite page into note on edgeless mode', async ({ page }) => {
   await page.getByTestId('pin-button').click();
   const pageId = getCurrentDocIdFromUrl(page);
   const item = page
-    .getByTestId(`explorer-favorites`)
-    .locator(`[data-testid="explorer-doc-${pageId}"]`);
+    .getByTestId(`navigation-panel-favorites`)
+    .locator(`[data-testid="navigation-panel-doc-${pageId}"]`);
   await expect(item).toBeVisible();
 
   await clickNewPageButton(page, 'edgeless page');

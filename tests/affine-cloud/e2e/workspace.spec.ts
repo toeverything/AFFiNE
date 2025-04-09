@@ -109,21 +109,24 @@ test('should transform local favorites data', async ({ page }) => {
     },
     page
   );
-  await page.getByTestId('explorer-bar-add-favorite-button').first().click();
+  await page
+    .getByTestId('navigation-panel-bar-add-favorite-button')
+    .first()
+    .click();
   await clickPageModeButton(page);
   await waitForEmptyEditor(page);
 
   await getBlockSuiteEditorTitle(page).fill('this is a new fav page');
   await expect(
     page
-      .getByTestId('explorer-favorites')
+      .getByTestId('navigation-panel-favorites')
       .locator('[draggable] >> text=this is a new fav page')
   ).toBeVisible();
 
   await enableCloudWorkspace(page);
   await expect(
     page
-      .getByTestId('explorer-favorites')
+      .getByTestId('navigation-panel-favorites')
       .locator('[draggable] >> text=this is a new fav page')
   ).toBeVisible();
 });
