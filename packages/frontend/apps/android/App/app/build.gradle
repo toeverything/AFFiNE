@@ -39,8 +39,12 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
+            debuggable true
         }
     }
     flavorDimensions = ['chanel']
@@ -104,7 +108,11 @@ dependencies {
     implementation libs.androidx.navigation.ui.ktx
 
     implementation libs.apollo.runtime
-    implementation "net.java.dev.jna:jna:5.17.0@aar"
+    implementation (libs.jna) {
+        artifact {
+            type = 'aar'
+        }
+    }
     implementation libs.kotlinx.coroutines.android
 
     def okhttpBom = platform(libs.okhttp.bom)

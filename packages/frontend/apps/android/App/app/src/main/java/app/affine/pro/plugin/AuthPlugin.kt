@@ -1,7 +1,8 @@
 package app.affine.pro.plugin
 
 import android.annotation.SuppressLint
-import android.webkit.CookieManager
+import app.affine.pro.service.CookieStore
+import app.affine.pro.service.OkHttp
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
@@ -10,28 +11,14 @@ import com.getcapacitor.annotation.CapacitorPlugin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.coroutines.executeAsync
-import okhttp3.logging.HttpLoggingInterceptor
 import org.json.JSONObject
-import timber.log.Timber
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @CapacitorPlugin(name = "Auth")
 class AuthPlugin : Plugin() {
-
-    private val client by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(HttpLoggingInterceptor { msg ->
-                Timber.tag("Affine-Network")
-                Timber.d(msg)
-            }.apply {
-                level = HttpLoggingInterceptor.Level.BASIC
-            })
-            .build()
-    }
 
     @PluginMethod
     fun signInMagicLink(call: PluginCall) {
@@ -55,12 +42,12 @@ class AuthPlugin : Plugin() {
                     .header("x-affine-version", "0.21.0")
                     .post(body)
                     .build()
-                client.newCall(request).executeAsync().use { response ->
+                OkHttp.client.newCall(request).executeAsync().use { response ->
                     if (response.code >= 400) {
                         call.reject(response.body.string())
                         return@launch
                     }
-                    getSession(endpoint)?.let {
+                    CookieStore.getCookie(endpoint, "affine_session")?.let {
                         call.resolve(JSObject().put("token", it))
                     } ?: call.reject("token not found")
                 }
@@ -92,12 +79,12 @@ class AuthPlugin : Plugin() {
                     .header("x-affine-version", "0.21.0")
                     .post(body)
                     .build()
-                client.newCall(request).executeAsync().use { response ->
+                OkHttp.client.newCall(request).executeAsync().use { response ->
                     if (response.code >= 400) {
                         call.reject(response.body.string())
                         return@launch
                     }
-                    getSession(endpoint)?.let {
+                    CookieStore.getCookie(endpoint, "affine_session")?.let {
                         call.resolve(JSObject().put("token", it))
                     } ?: call.reject("token not found")
                 }
@@ -136,12 +123,12 @@ class AuthPlugin : Plugin() {
                 if (challenge != null) {
                     requestBuilder.addHeader("x-captcha-challenge", challenge)
                 }
-                client.newCall(requestBuilder.build()).executeAsync().use { response ->
+                OkHttp.client.newCall(requestBuilder.build()).executeAsync().use { response ->
                     if (response.code >= 400) {
                         call.reject(response.body.string())
                         return@launch
                     }
-                    getSession(endpoint)?.let {
+                    CookieStore.getCookie(endpoint, "affine_session")?.let {
                         call.resolve(JSObject().put("token", it))
                     } ?: call.reject("token not found")
                 }
@@ -161,7 +148,7 @@ class AuthPlugin : Plugin() {
                     .header("x-affine-version", "0.21.0")
                     .get()
                     .build()
-                client.newCall(request).executeAsync().use { response ->
+                OkHttp.client.newCall(request).executeAsync().use { response ->
                     if (response.code >= 400) {
                         call.reject(response.body.string())
                         return@launch
@@ -173,19 +160,4 @@ class AuthPlugin : Plugin() {
             }
         }
     }
-
-    private fun getSession(endpoint: String) = CookieManager.getInstance()
-        .getCookie(endpoint)
-        .split(";")
-        .map { cookie ->
-            cookie.split("=").let {
-                it[0] to it[1]
-            }
-        }
-        .find { (key, _) ->
-            key == "affine_session"
-        }
-        ?.let { (_, value) ->
-            value
-        }
 }
