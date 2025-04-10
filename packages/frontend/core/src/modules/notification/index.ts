@@ -6,7 +6,12 @@ export { NotificationType } from './stores/notification';
 
 import type { Framework } from '@toeverything/infra';
 
-import { GraphQLService, ServerScope, ServerService } from '../cloud';
+import {
+  AuthService,
+  GraphQLService,
+  ServerScope,
+  ServerService,
+} from '../cloud';
 import { GlobalSessionState } from '../storage';
 import { NotificationCountService } from './services/count';
 import { NotificationListService } from './services/list';
@@ -17,7 +22,7 @@ export function configureNotificationModule(framework: Framework) {
   framework
     .scope(ServerScope)
     .service(NotificationService, [NotificationStore])
-    .service(NotificationCountService, [NotificationStore])
+    .service(NotificationCountService, [NotificationStore, AuthService])
     .service(NotificationListService, [
       NotificationStore,
       NotificationCountService,

@@ -12,16 +12,23 @@ import {
 } from '@toeverything/infra';
 import { EMPTY, mergeMap, switchMap, timer } from 'rxjs';
 
+import { AccountChanged, type AuthService } from '../../cloud';
 import { ServerStarted } from '../../cloud/events/server-started';
 import { ApplicationFocused } from '../../lifecycle';
 import type { NotificationStore } from '../stores/notification';
 
 @OnEvent(ApplicationFocused, s => s.handleApplicationFocused)
 @OnEvent(ServerStarted, s => s.handleServerStarted)
+@OnEvent(AccountChanged, s => s.handleAccountChanged)
 export class NotificationCountService extends Service {
-  constructor(private readonly store: NotificationStore) {
+  constructor(
+    private readonly store: NotificationStore,
+    private readonly authService: AuthService
+  ) {
     super();
   }
+
+  loggedIn$ = this.authService.session.status$.map(v => v === 'authenticated');
 
   readonly count$ = LiveData.from(this.store.watchNotificationCountCache(), 0);
   readonly isLoading$ = new LiveData(false);
@@ -32,9 +39,12 @@ export class NotificationCountService extends Service {
       return timer(0, 30000); // revalidate every 30 seconds
     }),
     exhaustMapWithTrailing(() => {
-      return fromPromise(signal =>
-        this.store.getNotificationCount(signal)
-      ).pipe(
+      return fromPromise(signal => {
+        if (!this.loggedIn$.value) {
+          return Promise.resolve(0);
+        }
+        return this.store.getNotificationCount(signal);
+      }).pipe(
         mergeMap(result => {
           this.setCount(result ?? 0);
           return EMPTY;
@@ -54,6 +64,10 @@ export class NotificationCountService extends Service {
   }
 
   handleServerStarted() {
+    this.revalidate();
+  }
+
+  handleAccountChanged() {
     this.revalidate();
   }
 
