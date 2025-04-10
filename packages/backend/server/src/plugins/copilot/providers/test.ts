@@ -19,6 +19,7 @@ const FIXED_RESULT: Record<string, string> = {
   'AFFiNE is a workspace with fully merged docs':
     'AFFiNE is a workspace with fully merged docs, ',
   'LLM(AI)': 'Large Language Model',
+  LLM: 'Large Language Model',
   Appel: 'Apple',
   Apple: 'Apple Apfel',
   Panda: `
@@ -76,18 +77,31 @@ export class TestCopilotProvider
     return 'generate text to text';
   }
 
+  private getResult(messages: PromptMessage[]) {
+    const [first, second] = messages;
+
+    if (first?.attachments?.length || second?.attachments?.length) {
+      return 'kitten';
+    }
+
+    const rawContent = first?.params?.content || second?.params?.content;
+    if (rawContent) {
+      return FIXED_RESULT[rawContent] || rawContent;
+    }
+    const content = first?.content || second?.content;
+    if (content) {
+      return FIXED_RESULT[content] || content;
+    }
+    return 'generate text to text';
+  }
+
   async *generateTextStream(
     messages: PromptMessage[],
     _model: string = 'gpt-4o-mini',
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
     console.log(messages);
-    const result = messages[1]?.attachments?.length
-      ? 'kitten'
-      : FIXED_RESULT[messages[0]?.params?.content] ||
-        FIXED_RESULT[messages[0]?.content] ||
-        messages[0]?.params?.content ||
-        messages[0]?.content;
+    const result = this.getResult(messages);
     for (const message of result) {
       yield message;
       if (options.signal?.aborted) {
@@ -110,20 +124,14 @@ export class TestCopilotProvider
 
   // ====== text to image ======
   async generateImages(
-    messages: PromptMessage[],
-    model: string = 'test',
+    _messages: PromptMessage[],
+    _model: string = 'test',
     _options: {
       signal?: AbortSignal;
       user?: string;
     } = {}
   ): Promise<Array<string>> {
-    const { content: prompt } = messages[0] || {};
-    if (!prompt) {
-      throw new Error('Prompt is required');
-    }
-
-    // just let test case can easily verify the final prompt
-    return [`https://example.com/${model}.jpg`, prompt];
+    return ['data:image/gif;base64,R0lGODlhAQABAAAAACw='];
   }
 
   async *generateImagesStream(
