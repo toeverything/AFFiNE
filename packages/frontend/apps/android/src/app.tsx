@@ -26,7 +26,7 @@ import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspac
 import { getWorkerUrl } from '@affine/env/worker';
 import { I18n } from '@affine/i18n';
 import { StoreManagerClient } from '@affine/nbstore/worker/client';
-import { MarkdownAdapterExtension } from '@blocksuite/affine/adapters';
+import { getMarkdownAdapterExtensions } from '@blocksuite/affine/adapters';
 import { Container } from '@blocksuite/affine/global/di';
 import {
   docLinkBaseURLMiddleware,
@@ -199,7 +199,7 @@ framework.impl(AIButtonProvider, {
     const snapshot = transformer.docToSnapshot(blockSuiteDoc);
 
     const container = new Container();
-    [...MarkdownAdapterExtension].forEach(ext => {
+    getMarkdownAdapterExtensions().forEach(ext => {
       ext.setup(container);
     });
     const provider = container.provider();

@@ -1,4 +1,4 @@
-import { MarkdownAdapterExtension } from '@blocksuite/affine/adapters';
+import { getMarkdownAdapterExtensions } from '@blocksuite/affine/adapters';
 import { Container } from '@blocksuite/affine/global/di';
 import { TestWorkspace } from '@blocksuite/affine/store/test';
 import { describe, expect, test } from 'vitest';
@@ -6,7 +6,7 @@ import { describe, expect, test } from 'vitest';
 import { markdownToMindmap } from '../mindmap-preview.js';
 
 const container = new Container();
-[...MarkdownAdapterExtension].forEach(ext => {
+getMarkdownAdapterExtensions().forEach(ext => {
   ext.setup(container);
 });
 const provider = container.provider();

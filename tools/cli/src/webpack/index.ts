@@ -67,7 +67,7 @@ export function createHTMLTargetConfig(
     //#region basic webpack config
     name: entry['index'],
     dependencies: deps,
-    context: pkg.path.value,
+    context: ProjectRoot.value,
     experiments: {
       topLevelAwait: true,
       outputModule: false,
@@ -335,7 +335,6 @@ export function createHTMLTargetConfig(
       minimizer: [
         new TerserPlugin({
           minify: TerserPlugin.swcMinify,
-          exclude: [/plugins\/.+\/.+\.js$/, /plugins\/.+\/.+\.mjs$/],
           parallel: true,
           extractComments: true,
           terserOptions: {
@@ -498,35 +497,6 @@ export function createWorkerTargetConfig(
                 inlineSourcesContent: true,
               },
             },
-            {
-              test: /\.tsx$/,
-              exclude: /node_modules/,
-              loader: 'swc-loader',
-              options: {
-                // https://swc.rs/docs/configuring-swc/
-                jsc: {
-                  preserveAllComments: true,
-                  parser: {
-                    syntax: 'typescript',
-                    dynamicImport: true,
-                    topLevelAwait: false,
-                    tsx: true,
-                    decorators: true,
-                  },
-                  target: 'es2022',
-                  externalHelpers: false,
-                  transform: {
-                    react: {
-                      runtime: 'automatic',
-                    },
-                    useDefineForClassFields: false,
-                    decoratorVersion: '2022-03',
-                  },
-                },
-                sourceMaps: true,
-                inlineSourcesContent: true,
-              },
-            },
           ],
         },
       ],
@@ -561,7 +531,6 @@ export function createWorkerTargetConfig(
       minimizer: [
         new TerserPlugin({
           minify: TerserPlugin.swcMinify,
-          exclude: [/plugins\/.+\/.+\.js$/, /plugins\/.+\/.+\.mjs$/],
           parallel: true,
           extractComments: true,
           terserOptions: {
@@ -582,6 +551,9 @@ export function createWorkerTargetConfig(
       removeAvailableModules: true,
       runtimeChunk: false,
       splitChunks: false,
+    },
+    performance: {
+      hints: false,
     },
   };
 }

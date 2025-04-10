@@ -24,36 +24,46 @@ import { defaultMarkdownPreprocessors } from './markdown/preprocessor';
 import { defaultBlockNotionHtmlAdapterMatchers } from './notion-html/block-matcher';
 import { defaultBlockPlainTextAdapterMatchers } from './plain-text/block-matcher';
 
-export const AdapterFactoryExtensions: ExtensionType[] = [
-  AttachmentAdapterFactoryExtension,
-  ImageAdapterFactoryExtension,
-  MarkdownAdapterFactoryExtension,
-  PlainTextAdapterFactoryExtension,
-  HtmlAdapterFactoryExtension,
-  NotionTextAdapterFactoryExtension,
-  NotionHtmlAdapterFactoryExtension,
-  MixTextAdapterFactoryExtension,
-];
+export function getAdapterFactoryExtensions(): ExtensionType[] {
+  return [
+    AttachmentAdapterFactoryExtension,
+    ImageAdapterFactoryExtension,
+    MarkdownAdapterFactoryExtension,
+    PlainTextAdapterFactoryExtension,
+    HtmlAdapterFactoryExtension,
+    NotionTextAdapterFactoryExtension,
+    NotionHtmlAdapterFactoryExtension,
+    MixTextAdapterFactoryExtension,
+  ];
+}
 
-export const HtmlAdapterExtension: ExtensionType[] = [
-  ...HtmlInlineToDeltaAdapterExtensions,
-  ...defaultBlockHtmlAdapterMatchers,
-  ...InlineDeltaToHtmlAdapterExtensions,
-];
+export function getHtmlAdapterExtensions(): ExtensionType[] {
+  return [
+    ...HtmlInlineToDeltaAdapterExtensions,
+    ...defaultBlockHtmlAdapterMatchers,
+    ...InlineDeltaToHtmlAdapterExtensions,
+  ];
+}
 
-export const MarkdownAdapterExtension: ExtensionType[] = [
-  ...MarkdownInlineToDeltaAdapterExtensions,
-  ...defaultBlockMarkdownAdapterMatchers,
-  ...InlineDeltaToMarkdownAdapterExtensions,
-  ...defaultMarkdownPreprocessors,
-];
+export function getMarkdownAdapterExtensions(): ExtensionType[] {
+  return [
+    ...MarkdownInlineToDeltaAdapterExtensions,
+    ...defaultBlockMarkdownAdapterMatchers,
+    ...InlineDeltaToMarkdownAdapterExtensions,
+    ...defaultMarkdownPreprocessors,
+  ];
+}
 
-export const NotionHtmlAdapterExtension: ExtensionType[] = [
-  ...NotionHtmlInlineToDeltaAdapterExtensions,
-  ...defaultBlockNotionHtmlAdapterMatchers,
-];
+export function getNotionHtmlAdapterExtensions(): ExtensionType[] {
+  return [
+    ...NotionHtmlInlineToDeltaAdapterExtensions,
+    ...defaultBlockNotionHtmlAdapterMatchers,
+  ];
+}
 
-export const PlainTextAdapterExtension: ExtensionType[] = [
-  ...defaultBlockPlainTextAdapterMatchers,
-  ...InlineDeltaToPlainTextAdapterExtensions,
-];
+export function getPlainTextAdapterExtensions(): ExtensionType[] {
+  return [
+    ...defaultBlockPlainTextAdapterMatchers,
+    ...InlineDeltaToPlainTextAdapterExtensions,
+  ];
+}

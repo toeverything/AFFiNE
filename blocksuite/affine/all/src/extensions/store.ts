@@ -51,11 +51,11 @@ import {
 import type { ExtensionType } from '@blocksuite/store';
 
 import {
-  AdapterFactoryExtensions,
-  HtmlAdapterExtension,
-  MarkdownAdapterExtension,
-  NotionHtmlAdapterExtension,
-  PlainTextAdapterExtension,
+  getAdapterFactoryExtensions,
+  getHtmlAdapterExtensions,
+  getMarkdownAdapterExtensions,
+  getNotionHtmlAdapterExtensions,
+  getPlainTextAdapterExtensions,
 } from '../adapters/extension.js';
 
 export const StoreExtensions: ExtensionType[] = [
@@ -96,11 +96,11 @@ export const StoreExtensions: ExtensionType[] = [
   DatabaseSelectionExtension,
   TableSelectionExtension,
 
-  HtmlAdapterExtension,
-  MarkdownAdapterExtension,
-  NotionHtmlAdapterExtension,
-  PlainTextAdapterExtension,
-  AdapterFactoryExtensions,
+  getHtmlAdapterExtensions(),
+  getMarkdownAdapterExtensions(),
+  getNotionHtmlAdapterExtensions(),
+  getPlainTextAdapterExtensions(),
+  getAdapterFactoryExtensions(),
 
   FeatureFlagService,
   LinkPreviewerService,

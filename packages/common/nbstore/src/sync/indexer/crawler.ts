@@ -1,4 +1,4 @@
-import { MarkdownAdapterExtension } from '@blocksuite/affine/adapters';
+import { getMarkdownAdapterExtensions } from '@blocksuite/affine/adapters';
 import { Container } from '@blocksuite/affine/global/di';
 import type {
   AttachmentBlockModel,
@@ -119,7 +119,7 @@ function generateMarkdownPreviewBuilder(
   };
 
   const container = new Container();
-  [...MarkdownAdapterExtension].forEach(ext => {
+  getMarkdownAdapterExtensions().forEach(ext => {
     ext.setup(container);
   });
 
