@@ -23,7 +23,7 @@ import { RouterProvider } from 'react-router-dom';
 
 let storeManagerClient: StoreManagerClient;
 
-const workerUrl = getWorkerUrl('nbstore.worker.js');
+const workerUrl = getWorkerUrl('nbstore');
 if (window.SharedWorker) {
   const worker = new SharedWorker(workerUrl, { name: 'affine-shared-worker' });
   storeManagerClient = new StoreManagerClient(new OpClient(worker.port));

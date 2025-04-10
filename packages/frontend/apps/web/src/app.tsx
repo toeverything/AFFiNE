@@ -24,13 +24,15 @@ const cache = createEmotionCache();
 
 let storeManagerClient: StoreManagerClient;
 
-const workerUrl = getWorkerUrl('nbstore.worker.js');
+const workerUrl = getWorkerUrl('nbstore');
 
 if (
   window.SharedWorker &&
   localStorage.getItem('disableSharedWorker') !== 'true'
 ) {
-  const worker = new SharedWorker(workerUrl);
+  const worker = new SharedWorker(workerUrl, {
+    name: 'affine-shared-worker',
+  });
   storeManagerClient = new StoreManagerClient(new OpClient(worker.port));
 } else {
   const worker = new Worker(workerUrl);

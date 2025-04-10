@@ -405,10 +405,7 @@ export function createWorkerTargetConfig(
   pkg: Package,
   entry: string
 ): Omit<webpack.Configuration, 'name'> & { name: string } {
-  const workerName = path.basename(entry).replace(/\.([^.]+)$/, '');
-  if (!workerName.endsWith('.worker')) {
-    throw new Error('Worker name must end with `.worker.[ext]`');
-  }
+  const workerName = path.basename(entry).replace(/\.worker\.ts$/, '');
   const buildConfig = getBuildConfigFromEnv(pkg);
 
   return {
@@ -423,7 +420,7 @@ export function createWorkerTargetConfig(
       [workerName]: entry,
     },
     output: {
-      filename: 'js/[name].js',
+      filename: `js/${workerName}-${buildConfig.appVersion}.worker.js`,
       path: pkg.distPath.value,
       clean: false,
       globalObject: 'globalThis',

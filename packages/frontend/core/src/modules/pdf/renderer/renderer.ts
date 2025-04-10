@@ -7,7 +7,7 @@ export class PDFRenderer extends OpClient<ClientOps> {
   private readonly worker: Worker;
 
   constructor() {
-    const worker = new Worker(getWorkerUrl('pdf.worker.js'));
+    const worker = new Worker(getWorkerUrl('pdf'));
     super(worker);
 
     this.worker = worker;

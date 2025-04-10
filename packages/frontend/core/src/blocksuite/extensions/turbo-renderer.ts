@@ -8,7 +8,7 @@ import {
 } from '@blocksuite/affine/gfx/turbo-renderer';
 
 function createPainterWorker() {
-  const worker = new Worker(getWorkerUrl('turbo-painter.worker.js'));
+  const worker = new Worker(getWorkerUrl('turbo-painter'));
   return worker;
 }
 

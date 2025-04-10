@@ -10,7 +10,7 @@ export function getWorkspaceProfileWorker() {
     return worker;
   }
 
-  const rawWorker = new Worker(getWorkerUrl('workspace-profile.worker.js'));
+  const rawWorker = new Worker(getWorkerUrl('workspace-profile'));
 
   worker = new OpClient<WorkerOps>(rawWorker);
   return worker;

@@ -48,7 +48,7 @@ import { AffineTheme } from './plugins/affine-theme';
 import { AIButton } from './plugins/ai-button';
 
 const storeManagerClient = new StoreManagerClient(
-  new OpClient(new Worker(getWorkerUrl('nbstore.worker.js')))
+  new OpClient(new Worker(getWorkerUrl('nbstore')))
 );
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
