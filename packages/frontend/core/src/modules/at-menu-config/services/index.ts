@@ -443,9 +443,9 @@ export class AtMenuConfigService extends Service {
             .catch(error => {
               const err = UserFriendlyError.fromAny(error);
 
-              track.doc.editor.atMenu.noAccessPrompted();
-
               if (err.is(ErrorNames.MENTION_USER_DOC_ACCESS_DENIED)) {
+                track.doc.editor.atMenu.noAccessPrompted();
+
                 const canUserManage = this.guardService.can$(
                   'Doc_Users_Manage',
                   docId
