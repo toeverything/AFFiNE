@@ -476,6 +476,19 @@ const actions = [
     },
     type: 'image' as const,
   },
+  {
+    promptName: ['debug:action:dalle3'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: 'Panda',
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, link: string) => {
+      t.truthy(checkUrl(link), 'should be a valid url');
+    },
+    type: 'image' as const,
+  },
 ];
 
 for (const { name, promptName, messages, verifier, type } of actions) {

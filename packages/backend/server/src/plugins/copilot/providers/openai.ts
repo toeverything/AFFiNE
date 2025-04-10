@@ -313,9 +313,9 @@ export class OpenAIProvider
         prompt,
       });
 
-      return result.images
-        .map(image => image.base64)
-        .filter((v): v is string => !!v);
+      return result.images.map(
+        image => `data:image/png;base64,${image.base64}`
+      );
     } catch (e: any) {
       metrics.ai.counter('generate_images_errors').add(1, { model });
       throw this.handleError(e, model, options);
