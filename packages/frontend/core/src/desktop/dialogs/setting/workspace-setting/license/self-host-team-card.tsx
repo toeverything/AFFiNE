@@ -276,7 +276,7 @@ const ActionModal = ({
                 ),
                 2: (
                   <a
-                    href="https://affine.pro/pricing"
+                    href="https://affine.pro/pricing/?type=selfhost#table"
                     target="_blank"
                     rel="noreferrer"
                     style={{ color: 'var(--affine-link-color)' }}
