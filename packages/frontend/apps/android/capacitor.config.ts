@@ -26,6 +26,9 @@ const config: CapacitorConfig & AppConfig = {
       releaseType: 'AAB',
     },
   },
+  server: {
+    cleartext: true,
+  },
   plugins: {
     CapacitorHttp: {
       enabled: false,

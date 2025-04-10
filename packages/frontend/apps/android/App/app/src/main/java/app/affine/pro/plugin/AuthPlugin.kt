@@ -33,7 +33,7 @@ class AuthPlugin : Plugin() {
                     .apply {
                         put("email", email)
                         put("token", token)
-                        put("clientNonce", clientNonce)
+                        put("client_nonce", clientNonce)
                     }
                     .toString()
                     .toRequestBody("application/json".toMediaTypeOrNull())
@@ -70,7 +70,7 @@ class AuthPlugin : Plugin() {
                     .apply {
                         put("code", code)
                         put("state", state)
-                        put("clientNonce", clientNonce)
+                        put("client_nonce", clientNonce)
                     }
                     .toString()
                     .toRequestBody("application/json".toMediaTypeOrNull())
