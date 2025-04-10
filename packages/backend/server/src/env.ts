@@ -80,7 +80,7 @@ export class Env implements AppEnv {
   );
   DEPLOYMENT_TYPE = readEnv(
     'DEPLOYMENT_TYPE',
-    DeploymentType.Selfhosted,
+    this.dev ? DeploymentType.Affine : DeploymentType.Selfhosted,
     Object.values(DeploymentType)
   );
   FLAVOR = readEnv('SERVER_FLAVOR', Flavor.AllInOne, Object.values(Flavor));
