@@ -1,12 +1,16 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-  "name": "Debian",
+  "name": "AFFiNE Dev Container",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "containerEnv": {
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
+  },
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "22"
+      "version": "lts",
+      "installYarnUsingApt": false
     },
     "ghcr.io/devcontainers/features/rust:1": {}
   },
@@ -16,7 +20,7 @@
       "extensions": [
         "ms-playwright.playwright",
         "esbenp.prettier-vscode",
-        "streetsidesoftware.code-spell-checker"
+        "dbaeumer.vscode-eslint"
       ]
     }
   },

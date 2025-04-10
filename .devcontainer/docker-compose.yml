@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: mcr.microsoft.com/devcontainers/base:bookworm
     volumes:
       - ../..:/workspaces:cached
     command: sleep infinity
@@ -24,8 +22,6 @@ services:
       POSTGRES_DB: affine
   redis:
     image: redis
-    ports:
-      - 6379:6379
 
 volumes:
   postgres-data:
