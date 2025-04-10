@@ -24,8 +24,9 @@ runs:
     - name: Import config
       shell: bash
       run: |
-        printf '{"copilot":{"enabled":true,"providers.fal":{"apiKey":"%s"},"providers.gemini":{"apiKey":"%s"},"providers.openai":{"apiKey":"%s"},"providers.perplexity":{"apiKey":"%s"}}}' \
+        printf '{"copilot":{"enabled":true,"providers.fal":{"apiKey":"%s"},"providers.gemini":{"apiKey":"%s"},"providers.openai":{"apiKey":"%s"},"providers.perplexity":{"apiKey":"%s"},"providers.test":{"enabled":%s}}}' \
         "$COPILOT_FAL_API_KEY" \
         "$COPILOT_GOOGLE_API_KEY" \
         "$COPILOT_OPENAI_API_KEY" \
-        "$COPILOT_PERPLEXITY_API_KEY" > ./packages/backend/server/config.json
+        "$COPILOT_PERPLEXITY_API_KEY" \
+        "$ENABLE_COPILOT_MOCK" > ./packages/backend/server/config.json

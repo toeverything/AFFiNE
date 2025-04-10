@@ -779,7 +779,6 @@ jobs:
   copilot-e2e-test:
     name: Frontend Copilot E2E Test
     runs-on: ubuntu-latest
-    if: ${{ github.event_name != 'pull_request' }}
     env:
       DISTRIBUTION: web
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -856,6 +855,7 @@ jobs:
           COPILOT_GOOGLE_API_KEY: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
           COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
           COPILOT_PERPLEXITY_API_KEY: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
+          ENABLE_COPILOT_MOCK: ${{ github.event_name == 'pull_request' }}
         uses: ./.github/actions/server-test-env
 
       - name: Run Copilot E2E Test ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
