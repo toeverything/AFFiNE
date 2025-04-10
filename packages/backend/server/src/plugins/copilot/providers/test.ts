@@ -13,6 +13,23 @@ import {
   PromptMessage,
 } from './types';
 
+const FIXED_RESULT: Record<string, string> = {
+  'I is a student': 'I am a student',
+  '```javascript\nconsloe.log("Hello,World!");\n```\n': 'console',
+  'AFFiNE is a workspace with fully merged docs':
+    'AFFiNE is a workspace with fully merged docs, ',
+  'LLM(AI)': 'Large Language Model',
+  Appel: 'Apple',
+  Apple: 'Apple Apfel',
+  Panda: `
+- Panda is a bear-like animal.
+  - It is native to China.
+    - It is known for its black and white fur.
+      - It is a herbivore and primarily eats bamboo.
+      - It is a symbol of conservation efforts.
+`,
+};
+
 export type TestCopilotProviderConfig = {
   enabled: boolean;
 };
@@ -60,11 +77,17 @@ export class TestCopilotProvider
   }
 
   async *generateTextStream(
-    _messages: PromptMessage[],
+    messages: PromptMessage[],
     _model: string = 'gpt-4o-mini',
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
-    const result = 'generate text to text stream';
+    console.log(messages);
+    const result = messages[1]?.attachments?.length
+      ? 'kitten'
+      : FIXED_RESULT[messages[0]?.params?.content] ||
+        FIXED_RESULT[messages[0]?.content] ||
+        messages[0]?.params?.content ||
+        messages[0]?.content;
     for (const message of result) {
       yield message;
       if (options.signal?.aborted) {
