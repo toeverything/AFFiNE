@@ -6,6 +6,7 @@ import type { GeminiProvider } from './gemini';
 import type { OpenAIProvider } from './openai';
 import type { PerplexityProvider } from './perplexity';
 import type { CopilotProvider } from './provider';
+import type { TestCopilotProvider } from './test';
 import {
   CapabilityToCopilotProvider,
   CopilotCapability,
@@ -17,6 +18,7 @@ type TypedProvider = {
   [CopilotProviderType.OpenAI]: OpenAIProvider;
   [CopilotProviderType.Perplexity]: PerplexityProvider;
   [CopilotProviderType.FAL]: FalProvider;
+  [CopilotProviderType.Test]: TestCopilotProvider;
 };
 
 @Injectable()

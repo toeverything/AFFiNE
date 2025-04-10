@@ -13,7 +13,7 @@ import {
 import { DocReader } from '../../../core/doc';
 import { Models } from '../../../models';
 import { CopilotStorage } from '../storage';
-import { OpenAIEmbeddingClient } from './embedding';
+import { createEmbeddingClient } from './embedding';
 import { EmbeddingClient } from './types';
 import { readStream } from './utils';
 
@@ -47,9 +47,7 @@ export class CopilotContextDocJob {
   private async setup() {
     this.supportEmbedding =
       await this.models.copilotContext.checkEmbeddingAvailable();
-    this.client = new OpenAIEmbeddingClient(
-      this.config.copilot.providers.openai
-    );
+    this.client = createEmbeddingClient(this.config);
   }
 
   // public this client to allow overriding in tests

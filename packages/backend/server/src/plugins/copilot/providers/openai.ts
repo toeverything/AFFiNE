@@ -78,7 +78,7 @@ export class OpenAIProvider
   #instance!: VercelOpenAIProvider;
 
   override configured(): boolean {
-    return !!this.config.apiKey;
+    return !this.useTestProvider && !!this.config.apiKey;
   }
 
   protected override setup() {

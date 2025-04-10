@@ -42,4 +42,8 @@ export abstract class CopilotProvider<C = any> {
       this.factory.unregister(this);
     }
   }
+
+  protected get useTestProvider() {
+    return !!this.AFFiNEConfig.copilot.providers.test.enabled;
+  }
 }

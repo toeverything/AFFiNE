@@ -4,6 +4,7 @@ import {
 } from '@ai-sdk/openai';
 import { embedMany } from 'ai';
 
+import { Config } from '../../../base';
 import { Embedding } from '../../../models';
 import { OpenAIConfig } from '../providers/openai';
 import { EmbeddingClient } from './types';
@@ -45,4 +46,16 @@ export class MockEmbeddingClient extends EmbeddingClient {
       embedding: Array.from({ length: 1024 }, () => Math.random()),
     }));
   }
+}
+
+export function createEmbeddingClient(
+  config: Config
+): EmbeddingClient | undefined {
+  const providers = config.copilot.providers;
+  if (providers.openai.apiKey) {
+    return new OpenAIEmbeddingClient(providers.openai);
+  } else if (providers.test.enabled) {
+    return new MockEmbeddingClient();
+  }
+  return undefined;
 }

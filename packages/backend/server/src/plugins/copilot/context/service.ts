@@ -15,7 +15,7 @@ import {
   ContextFile,
   Models,
 } from '../../../models';
-import { OpenAIEmbeddingClient } from './embedding';
+import { createEmbeddingClient } from './embedding';
 import { ContextSession } from './session';
 import { EmbeddingClient } from './types';
 
@@ -43,10 +43,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
   }
 
   private setup() {
-    const configure = this.config.copilot.providers.openai;
-    if (configure.apiKey) {
-      this.client = new OpenAIEmbeddingClient(configure);
-    }
+    this.client = createEmbeddingClient(this.config);
   }
 
   async onApplicationBootstrap() {

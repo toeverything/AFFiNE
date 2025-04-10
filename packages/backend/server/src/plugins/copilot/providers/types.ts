@@ -8,6 +8,7 @@ export enum CopilotProviderType {
   Gemini = 'gemini',
   OpenAI = 'openai',
   Perplexity = 'perplexity',
+  Test = 'test',
 }
 
 export enum CopilotCapability {
