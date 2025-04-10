@@ -263,5 +263,5 @@ jobs:
           packageName: app.affine.pro
           releaseFiles: packages/frontend/apps/android/App/app/build/outputs/bundle/${{ env.BUILD_TYPE }}Release/app-${{ env.BUILD_TYPE }}-release-signed.aab
           track: internal
-          status: draft
+          status: complete
           existingEditId: ${{ steps.bump.outputs.EDIT_ID }}
