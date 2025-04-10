@@ -640,6 +640,13 @@
             "apiKey": ""
           }
         },
+        "providers.test": {
+          "type": "object",
+          "description": "The config for the test provider.\n@default {\"enabled\":false}",
+          "default": {
+            "enabled": false
+          }
+        },
         "unsplash": {
           "type": "object",
           "description": "The config for the unsplash key.\n@default {\"key\":\"\"}",
