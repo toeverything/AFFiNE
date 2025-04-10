@@ -779,6 +779,7 @@ jobs:
   copilot-e2e-test:
     name: Frontend Copilot E2E Test
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' }}
     env:
       DISTRIBUTION: web
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
