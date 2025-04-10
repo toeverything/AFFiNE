@@ -29,6 +29,13 @@ const FIXED_RESULT: Record<string, string> = {
       - It is a herbivore and primarily eats bamboo.
       - It is a symbol of conservation efforts.
 `,
+  'Mind Map': `
+- Panda is a bear-like animal.
+  - It is native to China.
+    - It is known for its black and white fur.
+      - It is a herbivore and primarily eats bamboo.
+      - It is a symbol of conservation efforts.
+`,
 };
 
 export type TestCopilotProviderConfig = {
