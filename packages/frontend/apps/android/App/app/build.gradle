@@ -3,11 +3,13 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     alias libs.plugins.android.application
-    alias libs.plugins.kotlin.android
-    alias libs.plugins.rust.android
-    alias libs.plugins.ksp
-    alias libs.plugins.hilt
     alias libs.plugins.compose
+    alias libs.plugins.hilt
+    alias libs.plugins.kotlin.android
+    alias libs.plugins.kotlin.parcelize
+    alias libs.plugins.kotlin.serialization
+    alias libs.plugins.ksp
+    alias libs.plugins.rust.android
 }
 
 apply from: 'capacitor.build.gradle'
@@ -114,6 +116,7 @@ dependencies {
         }
     }
     implementation libs.kotlinx.coroutines.android
+    implementation libs.kotlinx.serialization.json
 
     def okhttpBom = platform(libs.okhttp.bom)
     implementation okhttpBom

@@ -1,5 +1,6 @@
 package app.affine.pro.service
 
+import androidx.core.net.toUri
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
@@ -44,7 +45,8 @@ object CookieStore {
 
     fun getCookies(host: String) = _cookies[host] ?: emptyList()
 
-    fun getCookie(host: String, name: String) = _cookies[host]
+    fun getCookie(url: String, name: String) = url.toUri().host
+        ?.let { _cookies[it] }
         ?.find { cookie -> cookie.name == name }
         ?.value
 
