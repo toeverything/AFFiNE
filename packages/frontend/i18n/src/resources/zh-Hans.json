@@ -1452,7 +1452,7 @@
   "com.affine.settings.workspace.license.buy-more-seat": "购买更多席位",
   "com.affine.settings.workspace.license.activate-modal.title": "激活许可证",
   "com.affine.settings.workspace.license.activate-modal.description": "输入许可证密钥以激活此自托管工作区。",
-  "com.affine.settings.workspace.license.activate-modal.tips": "如果您遇到任何问题，请联系我们的<1>客户支持</1>。",
+  "com.affine.settings.workspace.license.activate-modal.tips": "如果您遇到任何问题，请联系我们的<1>客户支持</1>。还没有许可证？<2>点击购买</2>。",
   "com.affine.settings.workspace.license.activate-success": "许可证激活成功。",
   "com.affine.settings.workspace.license.deactivate-modal.title": "停用许可证",
   "com.affine.settings.workspace.license.deactivate-modal.description": "您确定要停用此许可证吗？",

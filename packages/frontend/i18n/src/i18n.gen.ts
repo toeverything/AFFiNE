@@ -8569,10 +8569,11 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
-      * `If you encounter any issues, please contact our <1>customer support</1>.`
+      * `If you encounter any issues, please contact our <1>customer support</1>. No license yet? <2>Click to purchase</2>.`
       */
     ["com.affine.settings.workspace.license.activate-modal.tips"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
     }>>;
     /**
       * `The "<1>{{ name }}</1>" property will be removed. This action cannot be undone.`

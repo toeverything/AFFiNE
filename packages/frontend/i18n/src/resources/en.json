@@ -1462,7 +1462,7 @@
   "com.affine.settings.workspace.license.buy-more-seat": "Buy more seat",
   "com.affine.settings.workspace.license.activate-modal.title": "Activate License",
   "com.affine.settings.workspace.license.activate-modal.description": "Enter license key to activate this self host workspace.",
-  "com.affine.settings.workspace.license.activate-modal.tips": "If you encounter any issues, please contact our <1>customer support</1>.",
+  "com.affine.settings.workspace.license.activate-modal.tips": "If you encounter any issues, please contact our <1>customer support</1>. No license yet? <2>Click to purchase</2>.",
   "com.affine.settings.workspace.license.activate-success": "License activated successfully.",
   "com.affine.settings.workspace.license.deactivate-modal.title": "Deactivate License",
   "com.affine.settings.workspace.license.deactivate-modal.description": "Are you sure you want to deactivate this license?",

@@ -263,16 +263,29 @@ const ActionModal = ({
             placeholder="AAAA-AAAA-AAAA-AAAA-AAAA"
           />
           <span>
-            <Trans i18nKey="com.affine.settings.workspace.license.activate-modal.tips">
-              If you encounter any issues, please contact our
-              <a
-                href="mailto:support@toeverything.info"
-                style={{ color: 'var(--affine-link-color)' }}
-              >
-                customer support
-              </a>
-              .
-            </Trans>
+            <Trans
+              i18nKey="com.affine.settings.workspace.license.activate-modal.tips"
+              components={{
+                1: (
+                  <a
+                    href="mailto:support@toeverything.info"
+                    style={{ color: 'var(--affine-link-color)' }}
+                  >
+                    customer support
+                  </a>
+                ),
+                2: (
+                  <a
+                    href="https://affine.pro/pricing"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: 'var(--affine-link-color)' }}
+                  >
+                    click to purchase
+                  </a>
+                ),
+              }}
+            />
           </span>
         </>
       )}
