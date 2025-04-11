@@ -38,11 +38,11 @@ const styles = css`
     transition: 0.1s;
   }
 
-  label.subscribe {
+  label.on {
     background: var(--affine-primary-color);
   }
 
-  label.subscribe:after {
+  label.on:after {
     left: calc(100% - 1px);
     transform: translateX(-100%);
   }
@@ -64,7 +64,7 @@ export class ToggleSwitch extends LitElement {
 
   override render() {
     return html`
-      <label class=${this.on ? 'subscribe' : ''}>
+      <label class=${this.on ? 'on' : ''}>
         <input
           type="checkbox"
           class="switch"
