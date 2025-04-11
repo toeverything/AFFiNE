@@ -165,7 +165,7 @@ export class MockApiUtils {
           {
             id: null,
             role: 'user',
-            content: '',
+            content: action,
             attachments: null,
             createdAt: new Date().toISOString(),
           },
@@ -231,7 +231,10 @@ export class MockApiUtils {
           };
           session.messages.push(returnMessageId);
 
-          if (url.pathname.endsWith('/stream')) {
+          if (
+            url.pathname.endsWith('/stream') ||
+            url.pathname.endsWith('/workflow')
+          ) {
             await this.page.evaluate(
               data => {
                 const _window = window as any;
