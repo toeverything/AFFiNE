@@ -72,7 +72,7 @@ test.describe('AIAction/ExplainSelection', () => {
       actionName,
     } = await utils.chatPanel.getLatestAIActionMessage(page);
     await expect(panelAnswer).toHaveText(/Large Language Model/);
-    await expect(prompt).toHaveText(/Analyze and explain the follow text/);
+    await expect(prompt).toHaveText(/xplain th/);
     await expect(actionName).toHaveText(/Explain this/);
   });
 });

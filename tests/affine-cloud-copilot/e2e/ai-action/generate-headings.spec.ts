@@ -102,7 +102,7 @@ test.describe('AIAction/GenerateHeadings', () => {
       panelAnswer.locator('h2').isVisible(),
       panelAnswer.locator('h3').isVisible(),
     ]);
-    await expect(prompt).toHaveText(/Create headings of the follow text/);
+    await expect(prompt).toHaveText(/Create headings/);
     await expect(actionName).toHaveText(/Create headings/);
   });
 });

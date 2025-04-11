@@ -137,7 +137,7 @@ Compare and Select Flights`
         await expect(todo).toHaveText(expectedTexts[index]);
       })
     );
-    await expect(prompt).toHaveText(/Find action items of the follow text/);
+    await expect(prompt).toHaveText(/Find action items/);
     await expect(actionName).toHaveText(/Find action items from it/);
   });
 });

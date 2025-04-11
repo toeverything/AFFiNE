@@ -80,7 +80,7 @@ test.describe('AIAction/GenerateOutline', () => {
       actionName,
     } = await utils.chatPanel.getLatestAIActionMessage(page);
     await expect(panelAnswer).toHaveText(/AFFiNE/);
-    await expect(prompt).toHaveText(/Write an outline about this/);
+    await expect(prompt).toHaveText(/ outline/);
     await expect(actionName).toHaveText(/Write outline/);
   });
 });

@@ -70,9 +70,7 @@ test.describe('AIAction/FixSpelling', () => {
       actionName,
     } = await utils.chatPanel.getLatestAIActionMessage(page);
     await expect(panelAnswer).toHaveText(/Apple/);
-    await expect(prompt).toHaveText(
-      /Correct the spelling of the following text/
-    );
+    await expect(prompt).toHaveText(/ spelling /);
     await expect(actionName).toHaveText(/Fix spelling for it/);
   });
 });

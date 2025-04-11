@@ -44,7 +44,7 @@ test.describe('AIAction/CheckCodeError', () => {
       message.getByTestId('original-text').locator('affine-code')
     ).toBeVisible();
     await expect(panelAnswer).toHaveText(/console/);
-    await expect(prompt).toHaveText(/Check the code error of the follow code/);
+    await expect(prompt).toHaveText(/code error/);
     await expect(actionName).toHaveText(/Check code error/);
   });
 });

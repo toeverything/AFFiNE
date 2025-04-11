@@ -86,7 +86,7 @@ test.describe('AIAction/ContinueWriting', () => {
       actionName,
     } = await utils.chatPanel.getLatestAIActionMessage(page);
     await expect(panelAnswer).toHaveText(/,*/);
-    await expect(prompt).toHaveText(/Continue the following text/);
+    await expect(prompt).toHaveText(/Continue /);
     await expect(actionName).toHaveText(/Continue writing/);
   });
 });

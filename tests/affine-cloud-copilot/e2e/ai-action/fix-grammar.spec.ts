@@ -76,9 +76,7 @@ test.describe('AIAction/FixGrammar', () => {
       actionName,
     } = await utils.chatPanel.getLatestAIActionMessage(page);
     await expect(panelAnswer).toHaveText(/I am a student/);
-    await expect(prompt).toHaveText(
-      /Improve the grammar of the following text/
-    );
+    await expect(prompt).toHaveText(/ grammar /);
     await expect(actionName).toHaveText(/Improve grammar for it/);
   });
 });

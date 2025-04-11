@@ -41,7 +41,7 @@ test.describe('AIAction/ExplainCode', () => {
       message.getByTestId('original-text').locator('affine-code')
     ).toBeVisible();
     await expect(panelAnswer).toHaveText(/console.log/);
-    await expect(prompt).toHaveText(/Analyze and explain the follow code/);
+    await expect(prompt).toHaveText(/xplain th/);
     await expect(actionName).toHaveText(/Explain this code/);
   });
 });

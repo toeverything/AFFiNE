@@ -30,6 +30,17 @@ const FIXED_RESULT: Record<string, string> = {
         - It is a herbivore and primarily eats bamboo.
         - It is a symbol of conservation efforts.
   `,
+  'What is EEee?': 'EEee',
+  'What is EEee? What is FFff?':
+    'EEee[^1]\nFFff[^2]\n\n[^1]: {"type":"url","url":"http%3A%2F%2Fexample.org"}\n[^2]: {"type":"url","url":"http%3A%2F%2Fexample.org"}\n',
+};
+
+const ACTION_MAP: Record<string, string> = {
+  'Improve writing for it': 'Improve the follow text',
+  'Make it longer': 'Expand the following text',
+  'Make it shorter': 'Shorten the follow text',
+  'Make it real with text': 'Write a web page of follow text',
+  Summary: 'Summary the follow text',
 };
 
 const initScript = `
@@ -165,7 +176,7 @@ export class MockApiUtils {
           {
             id: null,
             role: 'user',
-            content: action,
+            content: ACTION_MAP[action] || action,
             attachments: null,
             createdAt: new Date().toISOString(),
           },
@@ -173,7 +184,7 @@ export class MockApiUtils {
             id: msgId,
             role: this.historiesMessages[msgId]?.role ?? 'user',
             content: this.historiesMessages[msgId]?.content || '',
-            attachments: null,
+            attachments: this.historiesMessages[msgId]?.attachments,
             createdAt: new Date().toISOString(),
           })),
         ],
@@ -194,11 +205,20 @@ export class MockApiUtils {
           this.sessions[id] = { action, messages: [] };
         } else if (json.data?.createCopilotMessage) {
           const id = json.data.createCopilotMessage;
-          const operations = this.getPostData(route.request())?.operations;
-          if (operations) {
-            const options = JSON.parse(operations)?.variables?.options;
-            const { content, params, sessionId } = options;
-            this.historiesMessages[id] = { role: 'user', content, params };
+          const data = this.getPostData(route.request());
+          if (data && data.operations) {
+            const options = JSON.parse(data.operations)?.variables?.options;
+            const attach = data['0'];
+            const { attachments, content, params, sessionId } = options;
+            this.historiesMessages[id] = {
+              role: 'user',
+              content,
+              attachments:
+                Array.isArray(attachments) && attach
+                  ? ['data:image/gif;base64,R0lGODlhAQABAAAAACw=']
+                  : undefined,
+              params,
+            };
             this.sessions[sessionId].messages.push(id);
           }
         } else if (json.data?.currentUser?.copilot?.histories) {
@@ -247,6 +267,26 @@ export class MockApiUtils {
                 type: 'message',
                 id: messageId,
                 data: result,
+              }
+            );
+
+            await route.fulfill({ status: 200 });
+          } else if (url.pathname.endsWith('/images')) {
+            await this.page.evaluate(
+              data => {
+                const _window = window as any;
+                _window.MockEventSourceInstance.triggerEvent(
+                  'attachment',
+                  data
+                );
+                setTimeout(() => {
+                  _window.MockEventSourceInstance.triggerEvent('error', {});
+                }, 500);
+              },
+              {
+                type: 'attachment',
+                id: messageId,
+                data: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=',
               }
             );
 
