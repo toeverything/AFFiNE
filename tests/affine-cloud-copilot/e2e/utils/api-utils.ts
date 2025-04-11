@@ -114,11 +114,14 @@ console.log('MockEventSource loaded');
 export class MockApiUtils {
   public static async init(context: BrowserContext, page: Page) {
     const apiUtils = new MockApiUtils(page);
-    await apiUtils.mockApis();
 
-    await context.addInitScript({
-      content: initScript,
-    });
+    if (process.env.ENABLE_COPILOT_MOCK) {
+      await apiUtils.mockApis();
+
+      await context.addInitScript({
+        content: initScript,
+      });
+    }
 
     return apiUtils;
   }
@@ -225,6 +228,10 @@ export class MockApiUtils {
   }
 
   async mockApis() {
+    if (!process.env.ENABLE_COPILOT_MOCK) {
+      return;
+    }
+
     await this.page.route('*/**/graphql', async route => {
       try {
         const response = await route.fetch();
@@ -337,6 +344,10 @@ export class MockApiUtils {
   }
 
   async unmockApis() {
+    if (!process.env.ENABLE_COPILOT_MOCK) {
+      return;
+    }
+
     await this.page.unrouteAll();
   }
 }
