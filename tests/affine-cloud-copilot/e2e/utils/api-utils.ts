@@ -30,6 +30,15 @@ const WORKFLOW_RESULT: Record<string, string> = {
 {"page":3,"type":"title","content":"Culinary Uses"}
 {"page":3,"type":"content","content":"cooking, recipes, cuisine"}
 {"page":3,"type":"content","content":"Apples are versatile in the kitchen, used in both sweet and savory dishes. They can be baked, stewed, or eaten raw, and are a staple in pies, salads, and sauces."}`,
+  'Make it real with text': `
+\`\`\` html
+<html>
+<body>
+<h1>hello world</h1>
+</body>
+</html>
+\`\`\`
+`,
 };
 
 const FIXED_RESULT: Record<string, string> = {
@@ -62,6 +71,8 @@ const FIXED_RESULT: Record<string, string> = {
     'EEee cat[^1]\n\n[^1]: {"type":"url","url":"http%3A%2F%2Fexample.org"}',
   'What is EEee? What is FFff?(Use English)':
     'EEee cat[^1]\nFFff dog[^2]\n\n[^1]: {"type":"url","url":"http%3A%2F%2Fexample.org"}\n[^2]: {"type":"url","url":"http%3A%2F%2Fexample.org"}\n',
+  'What is the weather like in Shanghai today?':
+    'footnote[^1]\n\n[^1]: {"type":"url","url":"http%3A%2F%2Fexample.org"}',
 };
 
 const ACTION_MAP: Record<string, string> = {
@@ -111,11 +122,13 @@ window.EventSource = MockEventSource;
 console.log('MockEventSource loaded');
 `;
 
+const shouldMock = process.env.ENABLE_COPILOT_MOCK;
+
 export class MockApiUtils {
   public static async init(context: BrowserContext, page: Page) {
     const apiUtils = new MockApiUtils(page);
 
-    if (process.env.ENABLE_COPILOT_MOCK) {
+    if (shouldMock) {
       await apiUtils.mockApis();
 
       await context.addInitScript({
@@ -197,6 +210,13 @@ export class MockApiUtils {
     return 'generate text to text';
   }
 
+  private getSessions() {
+    return Object.entries(this.sessions).map(([id, { action }]) => ({
+      id,
+      promptName: action,
+    }));
+  }
+
   private getHistory() {
     const histories = [];
     for (const sessionId in this.sessions) {
@@ -228,7 +248,7 @@ export class MockApiUtils {
   }
 
   async mockApis() {
-    if (!process.env.ENABLE_COPILOT_MOCK) {
+    if (!shouldMock) {
       return;
     }
 
@@ -262,6 +282,11 @@ export class MockApiUtils {
         } else if (json.data?.currentUser?.copilot?.histories) {
           const histories = this.getHistory();
           const json1 = { data: { currentUser: { copilot: { histories } } } };
+          await route.fulfill({ response, json: json1 });
+          return;
+        } else if (json.data?.currentUser?.copilot?.sessions) {
+          const sessions = this.getSessions();
+          const json1 = { data: { currentUser: { copilot: { sessions } } } };
           await route.fulfill({ response, json: json1 });
           return;
         }
@@ -298,7 +323,7 @@ export class MockApiUtils {
                 const _window = window as any;
                 _window.MockEventSourceInstance.triggerEvent('message', data);
                 setTimeout(() => {
-                  _window.MockEventSourceInstance.triggerEvent('error', {});
+                  _window.MockEventSourceInstance?.triggerEvent('error', {});
                 }, 500);
               },
               {
@@ -344,7 +369,7 @@ export class MockApiUtils {
   }
 
   async unmockApis() {
-    if (!process.env.ENABLE_COPILOT_MOCK) {
+    if (!shouldMock) {
       return;
     }
 
