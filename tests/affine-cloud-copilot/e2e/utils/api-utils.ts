@@ -7,6 +7,31 @@ type ChatMessage = {
   params?: Record<string, string>;
 };
 
+const WORKFLOW_RESULT: Record<string, string> = {
+  'workflow:presentation': `
+{"page":1,"type":"name","content":"Introduction"}
+{"page":1,"type":"title","content":"Apple"}
+{"page":1,"type":"content","content":"fruit, technology, brand"}
+{"page":1,"type":"content","content":"Explore the diverse world of Apple, from its origins as a fruit to its evolution into a leading technology brand."}
+{"page":2,"type":"name","content":"Fruit Origins"}
+{"page":2,"type":"title","content":"History of Apple"}
+{"page":2,"type":"content","content":"fruit, history, agriculture"}
+{"page":2,"type":"content","content":"Apples have been cultivated for thousands of years, originating in Central Asia. They are one of the most popular fruits worldwide, known for their sweet taste and nutritional benefits."}
+{"page":2,"type":"title","content":"Nutritional Benefits"}
+{"page":2,"type":"content","content":"nutrition, health, vitamins"}
+{"page":2,"type":"content","content":"Rich in fiber, vitamins, and antioxidants, apples contribute to a healthy diet. They are linked to numerous health benefits, including improved heart health and reduced risk of certain diseases."}
+{"page":3,"type":"name","content":"Cultural Significance"}
+{"page":3,"type":"title","content":"Symbolism"}
+{"page":3,"type":"content","content":"symbolism, culture, mythology"}
+{"page":3,"type":"content","content":"Apples hold significant cultural and symbolic meanings across various societies. They appear in myths, religious texts, and folklore, often representing knowledge, immortality, and temptation."}
+{"page":3,"type":"title","content":"Global Varieties"}
+{"page":3,"type":"content","content":"varieties, global, diversity"}
+{"page":3,"type":"content","content":"There are thousands of apple varieties grown worldwide, each with unique flavors, colors, and textures. Popular types include Fuji, Granny Smith, and Honeycrisp, each suited for different culinary uses."}
+{"page":3,"type":"title","content":"Culinary Uses"}
+{"page":3,"type":"content","content":"cooking, recipes, cuisine"}
+{"page":3,"type":"content","content":"Apples are versatile in the kitchen, used in both sweet and savory dishes. They can be baked, stewed, or eaten raw, and are a staple in pies, salads, and sauces."}`,
+};
+
 const FIXED_RESULT: Record<string, string> = {
   'I is a student': 'I am a student',
   '```javascript\nconsloe.log("Hello,World!");\n```\n': 'console',
@@ -33,6 +58,10 @@ const FIXED_RESULT: Record<string, string> = {
   'What is EEee?': 'EEee',
   'What is EEee? What is FFff?':
     'EEee[^1]\nFFff[^2]\n\n[^1]: {"type":"url","url":"http%3A%2F%2Fexample.org"}\n[^2]: {"type":"url","url":"http%3A%2F%2Fexample.org"}\n',
+  'What is EEee(Use English)':
+    'EEee cat[^1]\n\n[^1]: {"type":"url","url":"http%3A%2F%2Fexample.org"}',
+  'What is EEee? What is FFff?(Use English)':
+    'EEee cat[^1]\nFFff dog[^2]\n\n[^1]: {"type":"url","url":"http%3A%2F%2Fexample.org"}\n[^2]: {"type":"url","url":"http%3A%2F%2Fexample.org"}\n',
 };
 
 const ACTION_MAP: Record<string, string> = {
@@ -146,9 +175,11 @@ export class MockApiUtils {
     return null;
   }
 
-  private getResult(msg: ChatMessage) {
+  private getResult(msg: ChatMessage, action?: string) {
     if (msg.attachments?.length) {
       return 'kitten';
+    } else if (action && WORKFLOW_RESULT[action]) {
+      return WORKFLOW_RESULT[action];
     }
 
     const content = msg.content;
@@ -243,7 +274,7 @@ export class MockApiUtils {
         const message = this.historiesMessages[messageId!];
         if (session && message) {
           const returnMessageId = Math.random().toString().substr(2);
-          const result = this.getResult(message);
+          const result = this.getResult(message, session.action);
 
           this.historiesMessages[returnMessageId] = {
             role: 'assistant',
@@ -303,5 +334,9 @@ export class MockApiUtils {
         await route.abort();
       }
     });
+  }
+
+  async unmockApis() {
+    await this.page.unrouteAll();
   }
 }

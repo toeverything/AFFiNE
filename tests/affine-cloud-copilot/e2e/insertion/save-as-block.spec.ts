@@ -9,6 +9,7 @@ test.describe('AIInsertion/SaveAsBlock', () => {
     await loginUser(page, user);
     await utils.testUtils.setupTestEnvironment(page);
     await utils.chatPanel.openChatPanel(page);
+    await utils.api.unmockApis();
   });
 
   test('should save content as a chat block in page mode', async ({

@@ -102,6 +102,7 @@ test.describe('AIChatWith/Text', () => {
     const aiPanelContainer = await page.getByTestId('ai-panel-container');
 
     await page.route('**/graphql', route => route.continue());
+    await utils.api.mockApis();
     await aiPanelContainer.getByTestId('error-retry').click();
     const answer = await utils.editor.waitForAiAnswer(page);
     await expect(answer).toHaveText(/Apple/, { timeout: 10000 });
