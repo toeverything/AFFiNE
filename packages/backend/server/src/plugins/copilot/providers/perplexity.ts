@@ -62,7 +62,7 @@ export class PerplexityProvider
   #instance!: VercelPerplexityProvider;
 
   override configured(): boolean {
-    return !this.useTestProvider && !!this.config.apiKey;
+    return !!this.config.apiKey;
   }
 
   protected override setup() {

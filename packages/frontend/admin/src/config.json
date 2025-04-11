@@ -237,10 +237,6 @@
       "type": "Object",
       "desc": "The config for the perplexity provider."
     },
-    "providers.test": {
-      "type": "Object",
-      "desc": "The config for the test provider."
-    },
     "unsplash": {
       "type": "Object",
       "desc": "The config for the unsplash key."

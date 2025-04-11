@@ -54,8 +54,6 @@ export function createEmbeddingClient(
   const providers = config.copilot.providers;
   if (providers.openai.apiKey) {
     return new OpenAIEmbeddingClient(providers.openai);
-  } else if (providers.test.enabled) {
-    return new MockEmbeddingClient();
   }
   return undefined;
 }

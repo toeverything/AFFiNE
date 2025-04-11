@@ -21,9 +21,6 @@ declare global {
         fal: ConfigItem<FalConfig>;
         gemini: ConfigItem<GeminiConfig>;
         perplexity: ConfigItem<PerplexityConfig>;
-        test: ConfigItem<{
-          enabled: boolean;
-        }>;
       };
     };
   }
@@ -57,12 +54,6 @@ defineModuleConfig('copilot', {
     desc: 'The config for the perplexity provider.',
     default: {
       apiKey: '',
-    },
-  },
-  'providers.test': {
-    desc: 'The config for the test provider.',
-    default: {
-      enabled: false,
     },
   },
   unsplash: {

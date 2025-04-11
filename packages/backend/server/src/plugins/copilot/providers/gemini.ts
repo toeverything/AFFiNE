@@ -51,7 +51,7 @@ export class GeminiProvider
   #instance!: GoogleGenerativeAIProvider;
 
   override configured(): boolean {
-    return !this.useTestProvider && !!this.config.apiKey;
+    return !!this.config.apiKey;
   }
 
   protected override setup() {
