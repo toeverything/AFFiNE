@@ -92,15 +92,16 @@ function KeyboardToolbarExtension(framework: FrameworkProvider): ExtensionType {
   }
 
   if ('show' in affineVirtualKeyboardProvider) {
+    const providerWithAction = affineVirtualKeyboardProvider;
     class BSVirtualKeyboardServiceWithShowAndHide
       extends BSVirtualKeyboardService
       implements VirtualKeyboardProviderWithAction
     {
       show() {
-        affineVirtualKeyboardProvider.show();
+        providerWithAction.show();
       }
       hide() {
-        affineVirtualKeyboardProvider.hide();
+        providerWithAction.hide();
       }
     }
 
