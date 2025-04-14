@@ -217,7 +217,9 @@ jobs:
       - name: Setup Rust
         uses: ./.github/actions/build-rust
         with:
-          target: 'aarch64-linux-android'
+          target:
+            - 'aarch64-linux-android'
+            - 'x86_64-linux-android'
           package: 'affine_mobile_native'
           no-build: 'true'
       - name: Cap sync
