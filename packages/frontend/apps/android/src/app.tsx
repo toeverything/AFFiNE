@@ -356,7 +356,7 @@ export function App() {
 }
 
 function createStoreManagerClient() {
-  const worker = new Worker(getWorkerUrl('nbstore.worker.js'));
+  const worker = new Worker(getWorkerUrl('nbstore'));
   const { port1: nativeDBApiChannelServer, port2: nativeDBApiChannelClient } =
     new MessageChannel();
   AsyncCall<typeof NbStoreNativeDBApis>(NbStoreNativeDBApis, {
