@@ -40,6 +40,13 @@ export const getInlineRangeProvider: (
       return null;
     }
 
+    if (
+      textSelection.isInSameBlock() &&
+      textSelection.from.blockId !== element.blockId
+    ) {
+      return null;
+    }
+
     const elementRange = rangeManager.textSelectionToRange(
       selectionManager.create(TextSelection, {
         from: {
@@ -96,14 +103,6 @@ export const getInlineRangeProvider: (
       const range = rangeManager.value;
       if (!range || !textSelection) {
         inlineRange$.value = null;
-        return;
-      }
-
-      // Avoid DOM query when not operating on this block component
-      if (
-        textSelection.isInSameBlock() &&
-        textSelection.from.blockId !== element.blockId
-      ) {
         return;
       }
 
