@@ -98,6 +98,19 @@ export const getInlineRangeProvider: (
         inlineRange$.value = null;
         return;
       }
+
+      const isCollaspsedTextSelection =
+        selections.length === 1 &&
+        selections[0].type === 'text' &&
+        !(selections[0] as TextSelection).to;
+      // Avoid DOM query when not operating on the element
+      if (isCollaspsedTextSelection) {
+        const textSelection = selections[0] as TextSelection;
+        if (textSelection.from.blockId !== element.blockId) {
+          return;
+        }
+      }
+
       const inlineRange = calculateInlineRange(range, textSelection);
       inlineRange$.value = inlineRange;
     })
