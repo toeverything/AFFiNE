@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "690608236388",
+    "project_id": "affine-346417",
+    "storage_bucket": "affine-346417.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:690608236388:android:2728244303c052e8677c71",
+        "android_client_info": {
+          "package_name": "app.affine.pro"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "690608236388-0qc7fc5sk93hmktou6seacf2df7licao.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.affine.pro",
+            "certificate_hash": "d896c7709894083e99e57800204da73fb160b36c"
+          }
+        },
+        {
+          "client_id": "690608236388-k8tg5kmb75o295ati2g86n6v8hqbg2f5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBacdn_9KOesJBIyvrLl5RTTrOrdPqS5Zs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "690608236388-6oq1kre1j2a5np4vgajk802br5hjqktt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,6 +1,7 @@
 package app.affine.pro
 
 import android.content.res.ColorStateList
+import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
@@ -54,6 +55,11 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AffineThemePlugi
             val parent = bridge.webView.parent as CoordinatorLayout
             parent.addView(this)
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
     }
 
     override fun present() {

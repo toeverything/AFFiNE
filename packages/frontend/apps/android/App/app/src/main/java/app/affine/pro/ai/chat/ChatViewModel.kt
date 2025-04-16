@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
-import kotlin.coroutines.coroutineContext
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -37,10 +36,10 @@ class ChatViewModel @Inject constructor(
                 workspaceId = webRepo.workspaceId(),
                 docId = webRepo.docId(),
             ).getOrElse {
-                Timber.d("Create session failed")
+                Timber.w(it, "Create session failed")
                 return@launch
             }
-            Timber.d("Create session: $sessionId")
+            Timber.i("Create session success:[ sessionId = $sessionId].")
             val historyMessages = graphQLRepo.getCopilotHistories(
                 workspaceId = webRepo.workspaceId(),
                 docId = webRepo.docId(),
@@ -60,16 +59,12 @@ class ChatViewModel @Inject constructor(
                 sessionId = sessionId,
                 message = message,
             ).onSuccess { messageId ->
-                Timber.d("send message: $messageId")
+                Timber.i("send message: $messageId")
                 sseRepo.messageStream(sessionId, messageId)
                     .onEach {
-                        Timber.d("$coroutineContext")
-                        Timber.d("on message: ${it.getOrNull()}")
+                        Timber.d("On sse message: ${it.getOrNull()}")
                     }
                     .flowOn(Dispatchers.IO)
-                    .onEach {
-                        Timber.d("$coroutineContext")
-                    }
                     .collect()
             }
         }
@@ -80,7 +75,7 @@ class ChatViewModel @Inject constructor(
                     docId = webRepo.docId(),
                 ).onSuccess { id ->
                     sessionId = id
-                    Timber.d("Create session: $id")
+                    Timber.i("Create session: $id")
                     sendMessage()
                 }.onFailure {
                     Timber.e(it, "Create session failed.")

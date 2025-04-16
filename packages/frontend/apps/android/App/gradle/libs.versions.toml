@@ -1,5 +1,4 @@
 [versions]
-# @keep
 android-gradle-plugin = "8.9.1"
 androidx-activity-compose = "1.10.1"
 androidx-appcompat = "1.7.0"
@@ -8,6 +7,7 @@ androidx-compose-bom = "2025.04.00"
 androidx-coordinatorlayout = "1.3.0"
 androidx-core-ktx = "1.16.0"
 androidx-core-splashscreen = "1.0.1"
+androidx-datastore-preferences = "1.1.4"
 androidx-espresso-core = "3.6.1"
 androidx-junit = "1.2.1"
 androidx-lifecycle-compose = "2.8.7"
@@ -17,6 +17,8 @@ apollo = "4.1.1"
 apollo-kotlin-adapters = "0.0.4"
 # @keep
 compileSdk = "35"
+firebase-bom = "33.12.0"
+firebase-crashlytics = "3.0.3"
 google-services = "4.4.2"
 gradle-versions = "0.52.0"
 hilt = "2.56.1"
@@ -31,11 +33,11 @@ ksp = "2.1.20-2.0.0"
 # @keep
 minSdk = "22"
 mozilla-rust-android = "0.9.6"
-okhttp = "5.0.0-alpha.14"
+okhttp-bom = "5.0.0-alpha.14"
 # @keep
 targetSdk = "35"
 timber = "5.0.1"
-version-catalog-update = "0.8.5"
+version-catalog-update = "1.0.0"
 
 [libraries]
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle-plugin" }
@@ -56,6 +58,7 @@ androidx-compose-ui-viewbinding = { module = "androidx.compose.ui:ui-viewbinding
 androidx-coordinatorlayout = { module = "androidx.coordinatorlayout:coordinatorlayout", version.ref = "androidx-coordinatorlayout" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core-ktx" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-core-splashscreen" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore-preferences" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-espresso-core" }
 androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-junit" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle-compose" }
@@ -63,10 +66,13 @@ androidx-lifecycle-viewModelCompose = { module = "androidx.lifecycle:lifecycle-v
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "androidx-navigation" }
 androidx-navigation-fragment = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "androidx-navigation" }
 androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "androidx-navigation" }
-apollo-adapters-core = { module = "com.apollographql.adapters:apollo-adapters-core", version.ref = "apollo-kotlin-adapters"}
-apollo-adapters-kotlinx-datetime = { module = "com.apollographql.adapters:apollo-adapters-kotlinx-datetime", version.ref = "apollo-kotlin-adapters"}
+apollo-adapters-core = { module = "com.apollographql.adapters:apollo-adapters-core", version.ref = "apollo-kotlin-adapters" }
+apollo-adapters-kotlinx-datetime = { module = "com.apollographql.adapters:apollo-adapters-kotlinx-datetime", version.ref = "apollo-kotlin-adapters" }
 apollo-api = { module = "com.apollographql.apollo:apollo-api", version.ref = "apollo" }
 apollo-runtime = { module = "com.apollographql.apollo:apollo-runtime", version.ref = "apollo" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 google-services = { module = "com.google.gms:google-services", version.ref = "google-services" }
 hilt-android-core = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
@@ -79,8 +85,8 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
 okhttp = { module = "com.squareup.okhttp3:okhttp" }
+okhttp-bom = { module = "com.squareup.okhttp3:okhttp-bom", version.ref = "okhttp-bom" }
 okhttp-coroutines = { module = "com.squareup.okhttp3:okhttp-coroutines" }
-okhttp-bom = { module = "com.squareup.okhttp3:okhttp-bom", version.ref = "okhttp" }
 okhttp-logging = { module = "com.squareup.okhttp3:logging-interceptor" }
 okhttp-sse = { module = "com.squareup.okhttp3:okhttp-sse" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
@@ -90,6 +96,8 @@ android-application = { id = "com.android.application", version.ref = "android-g
 android-library = { id = "com.android.library", version.ref = "android-gradle-plugin" }
 apollo-android = { id = "com.apollographql.apollo", version.ref = "apollo" }
 compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics" }
+google-service = { id = "com.google.gms.google-services", version.ref = "google-services" }
 gradle-versions = { id = "com.github.ben-manes.versions", version.ref = "gradle-versions" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
