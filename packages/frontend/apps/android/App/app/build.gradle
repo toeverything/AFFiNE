@@ -3,13 +3,15 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     alias libs.plugins.android.application
-    alias libs.plugins.compose
-    alias libs.plugins.hilt
     alias libs.plugins.kotlin.android
     alias libs.plugins.kotlin.parcelize
     alias libs.plugins.kotlin.serialization
     alias libs.plugins.ksp
     alias libs.plugins.rust.android
+    alias libs.plugins.compose
+    alias libs.plugins.google.service
+    alias libs.plugins.firebase.crashlytics
+    alias libs.plugins.hilt
 }
 
 apply from: 'capacitor.build.gradle'
@@ -106,6 +108,7 @@ dependencies {
     implementation libs.androidx.coordinatorlayout
     implementation libs.androidx.core.ktx
     implementation libs.androidx.core.splashscreen
+    implementation libs.androidx.datastore.preferences
     implementation libs.androidx.navigation.fragment
     implementation libs.androidx.navigation.ui.ktx
 
@@ -118,8 +121,11 @@ dependencies {
     implementation libs.kotlinx.coroutines.android
     implementation libs.kotlinx.serialization.json
 
-    def okhttpBom = platform(libs.okhttp.bom)
-    implementation okhttpBom
+    implementation platform(libs.firebase.bom)
+    implementation libs.firebase.analytics
+    implementation libs.firebase.crashlytics
+
+    implementation platform(libs.okhttp.bom)
     implementation libs.okhttp
     implementation libs.okhttp.coroutines
     implementation libs.okhttp.logging
@@ -128,15 +134,6 @@ dependencies {
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
-}
-
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch (Exception ignored) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
 
 cargo {

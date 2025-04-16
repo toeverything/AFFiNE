@@ -68,3 +68,8 @@
 -keepclassmembers public class **$$serializer {
     private ** descriptor;
 }
+
+# Keep file names and line numbers.
+-keepattributes SourceFile,LineNumberTable
+# Keep custom exceptions.
+-keep public class * extends java.lang.Exception

@@ -4,6 +4,7 @@ import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
+import timber.log.Timber
 
 @CapacitorPlugin(name = "AffineTheme")
 class AffineThemePlugin : Plugin() {
@@ -14,7 +15,9 @@ class AffineThemePlugin : Plugin() {
 
     @PluginMethod
     fun onThemeChanged(call: PluginCall) {
-        (bridge.activity as? Callback)?.onThemeChanged(call.data.optBoolean("darkMode"))
+        val darkMode = call.data.optBoolean("darkMode")
+        Timber.i("onThemeChanged:[ darkMode = $darkMode ]")
+        (bridge.activity as? Callback)?.onThemeChanged(darkMode)
         call.resolve()
     }
 }

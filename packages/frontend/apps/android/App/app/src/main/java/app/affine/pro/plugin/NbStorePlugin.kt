@@ -28,7 +28,8 @@ class NbStorePlugin : Plugin() {
                 val spaceType = call.getStringEnsure("spaceType")
                 val peer = call.getStringEnsure("peer")
                 val appStoragePath = activity?.filesDir ?: run {
-                    call.reject("Failed to connect storage, cannot access file system.")
+                    Timber.w("Failed to connect storage, cannot access device file system.")
+                    call.reject("Failed to connect storage, cannot access device file system.")
                     return@launch
                 }
                 val peerDir = appStoragePath.resolve("workspaces")
@@ -38,13 +39,15 @@ class NbStorePlugin : Plugin() {
                             .replace(Regex("_+"), "_")
                             .replace(Regex("_+$"), "")
                     )
-                Timber.d("connecting nbstore... peerDir[$peerDir]")
+                Timber.i("NbStore connecting... peerDir[$peerDir].")
                 peerDir.mkdirs()
                 val db = peerDir.resolve("$spaceId.db")
                 docStoragePool.connect(id, db.path)
+                Timber.i("NbStore connected [ id = $id ].")
                 call.resolve()
             } catch (e: Exception) {
-                call.reject("Failed to connect storage", e)
+                Timber.e(e, "Failed to connect NbStore.")
+                call.reject("Failed to connect NbStore.", e)
             }
         }
     }
@@ -55,9 +58,11 @@ class NbStorePlugin : Plugin() {
             try {
                 val id = call.getStringEnsure("id")
                 docStoragePool.disconnect(universalId = id)
+                Timber.i("NbStore disconnected [ id = $id ].")
                 call.resolve()
             } catch (e: Exception) {
-                call.reject("Failed to disconnect, ${e.message}", null, e)
+                Timber.e(e, "Failed to disconnect NbStore")
+                call.reject("Failed to disconnect NbStore", null, e)
             }
         }
     }
@@ -69,8 +74,10 @@ class NbStorePlugin : Plugin() {
                 val id = call.getStringEnsure("id")
                 val spaceId = call.getStringEnsure("spaceId")
                 docStoragePool.setSpaceId(universalId = id, spaceId = spaceId)
+                Timber.i("Set space id: [ id = $id, spaceId = $spaceId ].")
                 call.resolve()
             } catch (e: Exception) {
+                Timber.e(e, "Failed to set space id.")
                 call.reject("Failed to set space id, ${e.message}", null, e)
             }
         }

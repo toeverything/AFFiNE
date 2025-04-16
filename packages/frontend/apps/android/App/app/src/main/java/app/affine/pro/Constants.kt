@@ -1,4 +1,4 @@
-package app.affine.pro.ai
+package app.affine.pro
 
 enum class Prompt(val value: String) {
     Summary("Summary"),
