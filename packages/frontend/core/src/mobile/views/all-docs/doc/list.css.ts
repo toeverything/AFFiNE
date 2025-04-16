@@ -30,3 +30,7 @@ export const groups = style({
   flexDirection: 'column',
   gap: 32,
 });
+export const emptySpaceY = style({
+  height: 0,
+  flexGrow: 1,
+});
