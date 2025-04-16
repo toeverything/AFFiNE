@@ -72,7 +72,7 @@ export type TagManagerOptions = {
 };
 
 class TagManager {
-  changeTag = (option: SelectTag) => {
+  changeTag = (option: Partial<SelectTag>) => {
     this.ops.onOptionsChange(
       this.ops.options.value.map(item => {
         if (item.id === option.id) {
@@ -207,7 +207,7 @@ export class MultiTagSelect extends SignalWatcher(
             initialValue: option.value,
             onChange: text => {
               this.tagManager.changeTag({
-                ...option,
+                id: option.id,
                 value: text,
               });
             },
@@ -237,7 +237,7 @@ export class MultiTagSelect extends SignalWatcher(
                 isSelected: option.color === item.color,
                 select: () => {
                   this.tagManager.changeTag({
-                    ...option,
+                    id: option.id,
                     color: item.color,
                   });
                 },
