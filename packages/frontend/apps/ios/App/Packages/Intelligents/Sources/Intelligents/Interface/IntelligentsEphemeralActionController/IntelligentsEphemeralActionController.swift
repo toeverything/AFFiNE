@@ -131,6 +131,10 @@ public class IntelligentsEphemeralActionController: UIViewController {
       guard let self else { return }
       continueToChat()
     }
+    actionBar.createNewDoc.action = { [weak self] in
+      guard let self else { return }
+      createNewDoc()
+    }
   }
 
   func setupContentViews() {
@@ -293,5 +297,11 @@ extension IntelligentsEphemeralActionController {
     chatController.metadata[.workspaceID] = workspaceID
     chatController.metadata[.content] = documentContent
     navigationController?.pushViewController(chatController, animated: true)
+  }
+  
+  func createNewDoc() {
+    let content = copilotDocumentStorage
+    Intelligents.Delegates.createNewDocument("New Document", content)
+    Intelligents.Delegates.dismissAll()
   }
 }

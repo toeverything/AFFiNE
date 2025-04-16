@@ -17,6 +17,27 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
     }
 
     button.beginProgress()
+    
+    // associate current view controller to callbacks
+    Intelligents.Delegates.createNewDocument = { title, content in
+      print("[*] creating new document \(title) \(content)")
+      webView.evaluateScript(
+        .createNewDocument,
+        arguments: [content, title]
+      ) { _ in }
+    }
+    Intelligents.Delegates.dismissAll = { [weak self] in
+      guard let self else { return }
+      if self.presentedViewController != nil {
+        self.dismiss(animated: true)
+      }
+      if let focusView = self.focusView {
+        focusView.executeAnimationDismiss() {
+          focusView.removeFromSuperview()
+        }
+      }
+      self.focusView = nil
+    }
 
     let group = DispatchGroup()
 
@@ -67,6 +88,7 @@ extension AFFiNEViewController: IntelligentsButtonDelegate, IntelligentsFocusApe
       webView?.scrollView.contentOffset = contentOffset
     }
     let focus = IntelligentsFocusApertureView()
+    self.focusView = focus
     focus.prepareAnimationWith(
       capturingTargetContentView: webView ?? .init(),
       coveringRootViewController: self

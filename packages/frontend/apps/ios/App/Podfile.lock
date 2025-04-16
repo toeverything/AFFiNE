@@ -40,12 +40,12 @@ EXTERNAL SOURCES:
     :path: "../../../../../node_modules/@capacitor/keyboard"
 
 SPEC CHECKSUMS:
-  Capacitor: 106e7a4205f4618d582b886a975657c61179138d
-  CapacitorApp: d63334c052278caf5d81585d80b21905c6f93f39
-  CapacitorBrowser: 081852cf532acf77b9d2953f3a88fe5b9711fb06
+  Capacitor: 03bc7cbdde6a629a8b910a9d7d78c3cc7ed09ea7
+  CapacitorApp: febecbb9582cb353aed037e18ec765141f880fe9
+  CapacitorBrowser: 6299776d496e968505464884d565992faa20444a
   CapacitorCordova: 5967b9ba03915ef1d585469d6e31f31dc49be96f
-  CapacitorHaptics: 70e47470fa1a6bd6338cd102552e3846b7f9a1b3
-  CapacitorKeyboard: 969647d0ca2e5c737d7300088e2517aa832434e2
+  CapacitorHaptics: 1f1e17041f435d8ead9ff2a34edd592c6aa6a8d6
+  CapacitorKeyboard: 09fd91dcde4f8a37313e7f11bde553ad1ed52036
   CryptoSwift: 967f37cea5a3294d9cce358f78861652155be483
 
 PODFILE CHECKSUM: bd61c17ff51f31ae55ec8dc579da83fda7bb51cb

@@ -11,7 +11,7 @@ console.log('[*] PackageRoot', PackageRoot);
 
 console.log('[*] graphql...');
 execSync(
-  `${PackageRoot}/App/Packages/AffineGraphQL/apollo-ios-cli generate --path ${PackageRoot}/apollo-codegen-config.json`,
+  `${PackageRoot}/App/Packages/AffineGraphQL/apollo-ios-cli generate --path ${PackageRoot}/apollo-codegen-config.json --ignore-version-mismatch`,
   { stdio: 'inherit' }
 );
 

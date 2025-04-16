@@ -2,6 +2,7 @@ import Capacitor
 import Intelligents
 import UIKit
 
+@objc(AFFiNEViewController)
 class AFFiNEViewController: CAPBridgeViewController {
   var baseUrl: String? {
     didSet { Intelligents.setUpstreamEndpoint(baseUrl ?? "") }
@@ -9,6 +10,7 @@ class AFFiNEViewController: CAPBridgeViewController {
   var documentID: String?
   var workspaceID: String?
   var documentContent: String?
+  var focusView: IntelligentsFocusApertureView?
 
   override func viewDidLoad() {
     super.viewDidLoad()
