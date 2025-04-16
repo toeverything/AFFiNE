@@ -49,6 +49,7 @@ type DocEvents =
   | 'openDocOptionsMenu'
   | 'openDocInfo'
   | 'copyBlockToLink'
+  | 'loadDoc'
   | 'bookmark'
   | 'editProperty'
   | 'editPropertyMeta'
@@ -409,6 +410,9 @@ const PageEvents = {
     },
   },
   doc: {
+    $: {
+      $: ['loadDoc'],
+    },
     editor: {
       slashMenu: ['linkDoc', 'createDoc', 'bookmark'],
       atMenu: [
@@ -714,6 +718,12 @@ export type EventArgs = {
     type: 'member' | 'invite' | 'more';
   };
   noAccessPrompted: {};
+  loadDoc: {
+    workspaceId: string;
+    docId: string;
+    time: number;
+    success: boolean;
+  };
 };
 
 // for type checking

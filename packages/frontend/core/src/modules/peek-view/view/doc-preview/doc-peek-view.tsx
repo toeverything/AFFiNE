@@ -1,5 +1,5 @@
 import { Scrollable } from '@affine/component';
-import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
+import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
 import { AIProvider } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
@@ -160,7 +160,7 @@ function DocPeekPreviewEditor({
         <Scrollable.Viewport
           className={clsx('affine-page-viewport', styles.affineDocViewport)}
         >
-          <Suspense fallback={<PageDetailSkeleton />}>
+          <Suspense fallback={<PageDetailLoading />}>
             <BlockSuiteEditor
               className={styles.editor}
               mode={mode}
@@ -224,7 +224,7 @@ export function DocPeekPreview({
   // if sync engine has been synced and the page is null, show 404 page.
   if (!doc || !editor || !canAccess) {
     return loading || canAccess === undefined ? (
-      <PageDetailSkeleton key="current-page-is-null" />
+      <PageDetailLoading key="current-page-is-null" />
     ) : (
       <PageNotFound noPermission />
     );

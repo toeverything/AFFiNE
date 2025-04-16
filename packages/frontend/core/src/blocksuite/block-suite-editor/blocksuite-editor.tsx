@@ -9,6 +9,7 @@ import {
   fontStyleOptions,
 } from '@affine/core/modules/editor-setting';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import track from '@affine/track';
 import {
   customImageProxyMiddleware,
   ImageProxyService,
@@ -31,7 +32,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { DefaultOpenProperty } from '../../components/doc-properties';
 import { BlocksuiteDocEditor, BlocksuiteEdgelessEditor } from './lit-adaper';
-import { NoPageRootError } from './no-page-error';
 import * as styles from './styles.css';
 
 export interface AffineEditorContainer extends HTMLElement {
@@ -289,7 +289,8 @@ const BlockSuiteEditorImpl = ({
 
 export const BlockSuiteEditor = (props: EditorProps) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [longerLoading, setLongerLoading] = useState(false);
+  const [loadStartTime] = useState(Date.now());
 
   const editorSetting = useService(EditorSettingService).editorSetting;
   const settings = useLiveData(
@@ -319,28 +320,41 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       return;
     }
     const timer = setTimeout(() => {
-      disposable.unsubscribe();
-      setError(new NoPageRootError(props.page));
+      setLongerLoading(true);
     }, 20 * 1000);
+    const reportErrorTimer = setTimeout(() => {
+      if (isLoading) {
+        track.doc.$.$.loadDoc({
+          workspaceId: props.page.workspace.id,
+          docId: props.page.id,
+          // time cost in ms
+          time: Date.now() - loadStartTime,
+          success: false,
+        });
+      }
+    }, 60 * 1000);
     const disposable = props.page.slots.rootAdded.subscribe(() => {
       disposable.unsubscribe();
+      track.doc.$.$.loadDoc({
+        workspaceId: props.page.workspace.id,
+        docId: props.page.id,
+        time: Date.now() - loadStartTime,
+        success: true,
+      });
       setIsLoading(false);
-      clearTimeout(timer);
+      setLongerLoading(false);
     });
     return () => {
       disposable.unsubscribe();
       clearTimeout(timer);
+      clearTimeout(reportErrorTimer);
     };
-  }, [props.page]);
-
-  if (error) {
-    throw error;
-  }
+  }, [isLoading, loadStartTime, props.page]);
 
   return (
     <Slot style={{ '--affine-font-family': fontFamily } as CSSProperties}>
       {isLoading ? (
-        <EditorLoading />
+        <EditorLoading longerLoading={longerLoading} />
       ) : (
         <BlockSuiteEditorImpl key={props.page.id} {...props} />
       )}

@@ -1,5 +1,5 @@
 import { useThemeColorV2 } from '@affine/component';
-import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
+import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { useGuard } from '@affine/core/components/guard';
@@ -223,7 +223,7 @@ const DetailPageImpl = () => {
 const getSkeleton = (back: boolean) => (
   <>
     <PageHeader back={back} className={styles.header} />
-    <PageDetailSkeleton />
+    <PageDetailLoading />
   </>
 );
 const getNotFound = (back: boolean) => (

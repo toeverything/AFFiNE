@@ -1,20 +1,34 @@
 import { Scrollable } from '@affine/component';
-import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
+import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
 import type { ChatPanel } from '@affine/core/blocksuite/ai';
 import { AIProvider } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
+import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
+import { GlobalPageHistoryModal } from '@affine/core/components/affine/page-history-modal';
 import { DocPropertySidebar } from '@affine/core/components/doc-properties/sidebar';
 import { useGuard } from '@affine/core/components/guard';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
+import { useRegisterBlocksuiteEditorCommands } from '@affine/core/components/hooks/affine/use-register-blocksuite-editor-commands';
+import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
+import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
+import { TrashPageFooter } from '@affine/core/components/pure/trash-page-footer';
+import { TopTip } from '@affine/core/components/top-tip';
 import { DocService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
-import { ViewService } from '@affine/core/modules/workbench';
+import {
+  useIsActiveView,
+  ViewBody,
+  ViewHeader,
+  ViewService,
+  ViewSidebarTab,
+  WorkbenchService,
+} from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { isNewTabTrigger } from '@affine/core/utils';
 import track from '@affine/track';
@@ -39,20 +53,6 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Subscription } from 'rxjs';
 
-import { AffineErrorBoundary } from '../../../../components/affine/affine-error-boundary';
-import { GlobalPageHistoryModal } from '../../../../components/affine/page-history-modal';
-import { useRegisterBlocksuiteEditorCommands } from '../../../../components/hooks/affine/use-register-blocksuite-editor-commands';
-import { useActiveBlocksuiteEditor } from '../../../../components/hooks/use-block-suite-editor';
-import { PageDetailEditor } from '../../../../components/page-detail-editor';
-import { TrashPageFooter } from '../../../../components/pure/trash-page-footer';
-import { TopTip } from '../../../../components/top-tip';
-import {
-  useIsActiveView,
-  ViewBody,
-  ViewHeader,
-  ViewSidebarTab,
-  WorkbenchService,
-} from '../../../../modules/workbench';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
@@ -386,7 +386,7 @@ export const Component = () => {
     <DetailPageWrapper
       pageId={pageId}
       canAccess={canAccess}
-      skeleton={<PageDetailSkeleton />}
+      skeleton={<PageDetailLoading />}
       notFound={<PageNotFound noPermission />}
     >
       <DetailPageImpl />

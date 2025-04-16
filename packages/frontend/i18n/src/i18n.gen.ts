@@ -1990,6 +1990,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.error.no-page-root.title"](): string;
     /**
+      * `It takes longer to load the doc content.`
+      */
+    ["com.affine.error.loading-timeout-error"](): string;
+    /**
       * `Refetch`
       */
     ["com.affine.error.refetch"](): string;
@@ -2596,9 +2600,13 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.lastYear"](): string;
     /**
-      * `Loading...`
+      * `Loading`
       */
     ["com.affine.loading"](): string;
+    /**
+      * `Loading document content, please wait a moment.`
+      */
+    ["com.affine.loading.description"](): string;
     /**
       * `Rename`
       */
@@ -8412,6 +8420,12 @@ export const TypedTrans: {
         readonly highlight: string;
     }, {
         ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `If you are still experiencing this issue, please <1>contact us through the community</1>.`
+      */
+    ["com.affine.error.contact-us"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `With the workspace creator's free account, every member can access up to <1>7 days<1> of version history.`
