@@ -12,7 +12,7 @@ import {
 import { getViewportElement } from '@blocksuite/affine-shared/utils';
 import { IS_MAC, IS_MOBILE } from '@blocksuite/global/env';
 import { noop } from '@blocksuite/global/utils';
-import type { BlockComponent } from '@blocksuite/std';
+import type { BlockComponent, UIEventStateContext } from '@blocksuite/std';
 import { BlockSelection, TextSelection } from '@blocksuite/std';
 import {
   getInlineRangeProvider,
@@ -139,6 +139,26 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
       this.highlightTokens$.value = [];
       // clear language if not found
       this.model.props.language$.value = null;
+    }
+  }
+
+  private _deleteBlock(ctx: UIEventStateContext): boolean | undefined | void {
+    const selectionManager = this.host.selection;
+    const event = ctx.get('defaultState').event;
+    const textSelection = selectionManager.find(TextSelection);
+    if (!textSelection) {
+      event.preventDefault();
+      return;
+    }
+
+    const from = textSelection.from;
+
+    if (from.index === 0 && from.length === 0) {
+      event.preventDefault();
+      selectionManager.setGroup('note', [
+        selectionManager.create(BlockSelection, { blockId: this.blockId }),
+      ]);
+      return true;
     }
   }
 
@@ -327,12 +347,12 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
 
         return;
       },
-      'Control-d': () => {
+      'Control-d': ctx => {
         if (!IS_MAC) return;
-        return true;
+        return this._deleteBlock(ctx);
       },
-      Delete: () => {
-        return true;
+      Delete: ctx => {
+        return this._deleteBlock(ctx);
       },
       Enter: () => {
         this.doc.captureSync();
