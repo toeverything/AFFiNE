@@ -177,7 +177,7 @@ class TagManager {
   }
 
   selectTag(id: string) {
-    if (this.isSelected(id)) {
+    if (!this.isSingleMode && this.isSelected(id)) {
       return;
     }
     const newValue = this.isSingleMode ? [id] : [...this.value$.value, id];
