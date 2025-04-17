@@ -23,8 +23,12 @@ import {
 import {
   EmbedLinkedDocBlockSchema,
   EmbedSyncedDocBlockSchema,
+  type TextAlign,
 } from '@blocksuite/affine-model';
-import { textConversionConfigs } from '@blocksuite/affine-rich-text';
+import {
+  textAlignConfigs,
+  textConversionConfigs,
+} from '@blocksuite/affine-rich-text';
 import {
   copySelectedModelsCommand,
   deleteSelectedModelsCommand,
@@ -46,6 +50,7 @@ import {
   ActionPlacement,
   blockCommentToolbarButton,
 } from '@blocksuite/affine-shared/services';
+import { getMostCommonValue } from '@blocksuite/affine-shared/utils';
 import { tableViewMeta } from '@blocksuite/data-view/view-presets';
 import {
   CopyIcon,
@@ -118,6 +123,77 @@ const conversionsActionGroup = {
                   aria-label=${name}
                   ?data-selected=${conversion.name === name}
                   @click=${() => update(flavour, type)}
+                >
+                  ${icon}<span class="label">${name}</span>
+                </editor-menu-action>
+              `
+            )}
+          </div>
+        </editor-menu-button>
+      `,
+    };
+  },
+} as const satisfies ToolbarActionGenerator;
+
+const alignActionGroup = {
+  id: 'b.align',
+  when: ({ chain }) => isFormatSupported(chain).run()[0],
+  generate({ chain }) {
+    const [ok, { selectedModels = [] }] = chain
+      .tryAll(chain => [
+        chain.pipe(getTextSelectionCommand),
+        chain.pipe(getBlockSelectionsCommand),
+      ])
+      .pipe(getSelectedModelsCommand, { types: ['text', 'block'] })
+      .run();
+    if (!ok) return null;
+
+    const alignment =
+      textAlignConfigs.find(
+        ({ textAlign }) =>
+          textAlign ===
+          getMostCommonValue(
+            selectedModels.map(
+              ({ props }) => props as { textAlign?: TextAlign }
+            ),
+            'textAlign'
+          )
+      ) ?? textAlignConfigs[0];
+    const update = (textAlign: TextAlign) => {
+      chain
+        .pipe(
+          (ctx, next) => {
+            ctx.selectedModels.forEach(model => {
+              ctx.std.host.doc.updateBlock(model, {
+                textAlign: ctx.textAlign,
+              });
+            });
+            return next();
+          },
+          { selectedModels, textAlign }
+        )
+        .run();
+    };
+
+    return {
+      content: html`
+        <editor-menu-button
+          .contentPadding="${'8px'}"
+          .button=${html`
+            <editor-icon-button aria-label="Align" .tooltip="${'Align'}">
+              ${alignment.icon} ${ArrowDownSmallIcon()}
+            </editor-icon-button>
+          `}
+        >
+          <div data-size="large" data-orientation="vertical">
+            ${repeat(
+              textAlignConfigs,
+              item => item.name,
+              ({ textAlign, name, icon }) => html`
+                <editor-menu-action
+                  aria-label=${name}
+                  ?data-selected=${alignment.textAlign === textAlign}
+                  @click=${() => update(textAlign)}
                 >
                   ${icon}<span class="label">${name}</span>
                 </editor-menu-action>
@@ -291,6 +367,7 @@ const turnIntoLinkedDoc = {
 export const builtinToolbarConfig = {
   actions: [
     conversionsActionGroup,
+    alignActionGroup,
     inlineTextActionGroup,
     highlightActionGroup,
     turnIntoDatabase,

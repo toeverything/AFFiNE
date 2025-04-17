@@ -4,9 +4,15 @@ import {
   textFormatConfigs,
 } from '@blocksuite/affine-inline-preset';
 import {
+  type TextAlignConfig,
+  textAlignConfigs,
   type TextConversionConfig,
   textConversionConfigs,
 } from '@blocksuite/affine-rich-text';
+import {
+  getSelectedModelsCommand,
+  getTextSelectionCommand,
+} from '@blocksuite/affine-shared/commands';
 import { isInsideBlockByFlavour } from '@blocksuite/affine-shared/utils';
 import {
   type SlashMenuActionItem,
@@ -60,6 +66,10 @@ const noteSlashMenuConfig: SlashMenuConfig = {
         createConversionItem(config, `1_List@${index++}`)
       ),
 
+    ...textAlignConfigs.map((config, index) =>
+      createAlignItem(config, `2_Align@${index++}`)
+    ),
+
     ...textFormatConfigs
       .filter(i => !['Code', 'Link'].includes(i.name))
       .map((config, index) =>
@@ -85,6 +95,31 @@ function createConversionItem(
         flavour,
         props: { type },
       });
+    },
+  };
+}
+
+function createAlignItem(
+  config: TextAlignConfig,
+  group?: SlashMenuItem['group']
+): SlashMenuActionItem {
+  const { textAlign, name, icon } = config;
+  return {
+    name,
+    group,
+    icon,
+    action: ({ std }) => {
+      std.command
+        .chain()
+        .pipe(getTextSelectionCommand)
+        .pipe(getSelectedModelsCommand, { types: ['text'] })
+        .pipe((ctx, next) => {
+          ctx.selectedModels.forEach(model => {
+            ctx.std.host.doc.updateBlock(model, { textAlign });
+          });
+          return next();
+        })
+        .run();
     },
   };
 }

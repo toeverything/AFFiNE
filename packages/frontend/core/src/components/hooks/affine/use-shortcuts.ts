@@ -38,6 +38,9 @@ type KeyboardShortcutsI18NKeys =
   | 'bodyText'
   | 'increaseIndent'
   | 'reduceIndent'
+  | 'alignLeft'
+  | 'alignCenter'
+  | 'alignRight'
   | 'groupDatabase'
   | 'moveUp'
   | 'moveDown'
@@ -185,6 +188,9 @@ export const useMacPageKeyboardShortcuts = (): ShortcutMap => {
       [tH('6')]: ['⌘', '⌥', '6'],
       [t('increaseIndent')]: ['Tab'],
       [t('reduceIndent')]: ['⇧', 'Tab'],
+      [t('alignLeft')]: ['⌘', '⇧', 'L'],
+      [t('alignCenter')]: ['⌘', '⇧', 'E'],
+      [t('alignRight')]: ['⌘', '⇧', 'R'],
       [t('groupDatabase')]: ['⌘', 'G'],
       [t('switch')]: ['⌥', 'S'],
       // not implement yet
@@ -242,6 +248,9 @@ export const useWinPageKeyboardShortcuts = (): ShortcutMap => {
       [tH('6')]: ['Ctrl', 'Shift', '6'],
       [t('increaseIndent')]: ['Tab'],
       [t('reduceIndent')]: ['Shift+Tab'],
+      [t('alignLeft')]: ['Ctrl', 'Shift', 'L'],
+      [t('alignCenter')]: ['Ctrl', 'Shift', 'E'],
+      [t('alignRight')]: ['Ctrl', 'Shift', 'R'],
       [t('groupDatabase')]: ['Ctrl + G'],
       ['Switch']: ['Alt + S'],
       // not implement yet
