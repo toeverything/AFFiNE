@@ -15,6 +15,7 @@ import track from '@affine/track';
 import { openFileOrFiles } from '@blocksuite/affine/shared/utils';
 import type { Workspace } from '@blocksuite/affine/store';
 import {
+  DocxTransformer,
   HtmlTransformer,
   MarkdownTransformer,
   NotionHtmlTransformer,
@@ -23,6 +24,7 @@ import {
 import {
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
+  FileIcon,
   HelpIcon,
   NotionIcon,
   PageIcon,
@@ -42,8 +44,14 @@ import * as style from './styles.css';
 
 const logger = new DebugLogger('import');
 
-type ImportType = 'markdown' | 'markdownZip' | 'notion' | 'snapshot' | 'html';
-type AcceptType = 'Markdown' | 'Zip' | 'Html';
+type ImportType =
+  | 'markdown'
+  | 'markdownZip'
+  | 'notion'
+  | 'snapshot'
+  | 'html'
+  | 'docx';
+type AcceptType = 'Markdown' | 'Zip' | 'Html' | 'Docx';
 type Status = 'idle' | 'importing' | 'success' | 'error';
 type ImportResult = {
   docIds: string[];
@@ -113,6 +121,17 @@ const importOptions = [
     suffixTooltip: 'com.affine.import.notion.tooltip',
     testId: 'editor-option-menu-import-notion',
     type: 'notion' as ImportType,
+  },
+  {
+    key: 'docx',
+    label: 'com.affine.import.docx',
+    prefixIcon: <FileIcon color={cssVar('black')} width={20} height={20} />,
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.docx.tooltip',
+    testId: 'editor-option-menu-import-docx',
+    type: 'docx' as ImportType,
   },
   {
     key: 'snapshot',
@@ -208,6 +227,24 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         docIds: pageIds,
         entryId,
         isWorkspaceFile,
+      };
+    },
+  },
+  docx: {
+    fileOptions: { acceptType: 'Docx', multiple: false },
+    importFunction: async (docCollection, file) => {
+      if (Array.isArray(file)) {
+        throw new Error('Expected a single .docx file for Docx import');
+      }
+      const docIds: string[] = [];
+      const docId = await DocxTransformer.importDocx({
+        collection: docCollection,
+        schema: getAFFiNEWorkspaceSchema(),
+        imported: file,
+      });
+      if (docId) docIds.push(docId);
+      return {
+        docIds,
       };
     },
   },
