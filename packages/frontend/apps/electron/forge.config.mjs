@@ -12,7 +12,7 @@ import {
   icnsPath,
   iconPngPath,
   iconUrl,
-  iconX64PngPath,
+  iconX512PngPath,
   icoPath,
   platform,
   productName,
@@ -85,8 +85,8 @@ const makers = [
     config: {
       icons: [
         {
-          file: iconX64PngPath,
-          size: 64,
+          file: iconX512PngPath,
+          size: 512,
         },
       ],
     },
@@ -98,8 +98,14 @@ const makers = [
       options: {
         name: productName,
         productName,
-        icon: iconX64PngPath,
+        icon: iconX512PngPath,
         mimeType: linuxMimeTypes,
+        scripts: {
+          // maker-deb does not have a way to include arbitrary files in package root
+          // instead, put files in extraResource, and then install with a script
+          postinst: './resources/deb/postinst',
+          prerm: './resources/deb/prerm',
+        },
       },
     },
   },
@@ -115,6 +121,12 @@ const makers = [
         id: fromBuildIdentifier(appIdMap),
         icon: iconPngPath, // not working yet
         branch: buildType,
+        files: [
+          [
+            './resources/affine.metainfo.xml',
+            '/usr/share/metainfo/affine.metainfo.xml',
+          ],
+        ],
         runtimeVersion: '20.08',
         finishArgs: [
           // Wayland/X11 Rendering
@@ -160,7 +172,10 @@ export default {
         }
       : undefined,
     // We need the following line for updater
-    extraResource: ['./resources/app-update.yml'],
+    extraResource: [
+      './resources/app-update.yml',
+      ...(platform === 'linux' ? ['./resources/affine.metainfo.xml'] : []),
+    ],
     protocols: [
       {
         name: productName,

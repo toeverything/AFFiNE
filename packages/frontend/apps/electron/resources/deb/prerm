@@ -1,0 +1,4 @@
+#!/bin/sh
+set -e
+
+rm /usr/share/metainfo/affine.metainfo.xml
