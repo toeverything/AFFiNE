@@ -35,7 +35,7 @@ okhttp = "5.0.0-alpha.14"
 # @keep
 targetSdk = "35"
 timber = "5.0.1"
-version-catalog-update = "0.8.5"
+version-catalog-update = "1.0.0"
 
 [libraries]
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle-plugin" }
