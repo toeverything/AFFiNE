@@ -161,17 +161,12 @@ const alignActionGroup = {
       ) ?? textAlignConfigs[0];
     const update = (textAlign: TextAlign) => {
       chain
-        .pipe(
-          (ctx, next) => {
-            ctx.selectedModels.forEach(model => {
-              ctx.std.host.doc.updateBlock(model, {
-                textAlign: ctx.textAlign,
-              });
-            });
-            return next();
-          },
-          { selectedModels, textAlign }
-        )
+        .pipe((ctx, next) => {
+          selectedModels.forEach(model => {
+            ctx.std.host.doc.updateBlock(model, { textAlign });
+          });
+          return next();
+        })
         .run();
     };
 
