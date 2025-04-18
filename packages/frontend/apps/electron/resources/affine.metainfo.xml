@@ -10,6 +10,9 @@
   <url type="help">https://docs.affine.pro/docs</url>
   <url type="vcs-browser">https://github.com/toeverything/AFFiNE</url>
   <url type="contribute">https://docs.affine.pro/docs/contributing</url>
+  <developer id="pro.affine.app">
+    <name>affine</name>
+  </developer>
   <content_rating type="oars-1.1"/>
   <categories>
     <category>Office</category>
@@ -49,12 +52,15 @@
   <screenshots>
     <screenshot type="default">
       <image>https://affine.pro/overview/Write.jpg</image>
+      <caption>Document writing interface with block-based editing</caption>
     </screenshot>
     <screenshot>
       <image>https://affine.pro/overview/Draw.jpg</image>
+      <caption>Whiteboard drawing and visualization capabilities</caption>
     </screenshot>
     <screenshot>
       <image>https://affine.pro/overview/Plan.jpg</image>
+      <caption>Project planning and task management view</caption>
     </screenshot>
   </screenshots>
   <releases>
