@@ -62,6 +62,7 @@
     "@toeverything/infra": "workspace:*",
     "@types/eslint": "^9.6.1",
     "@types/node": "^22.0.0",
+    "@types/xml2js": "^0",
     "@typescript-eslint/parser": "^8.18.0",
     "@vanilla-extract/vite-plugin": "^5.0.0",
     "@vitest/browser": "3.1.1",
@@ -90,7 +91,8 @@
     "typescript-eslint": "^8.18.0",
     "unplugin-swc": "^1.5.1",
     "vite": "^6.0.3",
-    "vitest": "3.1.1"
+    "vitest": "3.1.1",
+    "xml2js": "^0.6.2"
   },
   "packageManager": "yarn@4.9.1",
   "resolutions": {

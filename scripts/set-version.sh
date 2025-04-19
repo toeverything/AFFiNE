@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 for DIR_ITEM in $(yarn workspaces list --json | jq -r '.location'); do
   DIR=$(echo -n "$DIR_ITEM" | tr -d '\r\n')
@@ -41,3 +42,5 @@ new_version=$1
 update_app_version_in_helm_charts ".github/helm/affine/Chart.yaml" "$new_version"
 update_app_version_in_helm_charts ".github/helm/affine/charts/graphql/Chart.yaml" "$new_version"
 update_app_version_in_helm_charts ".github/helm/affine/charts/sync/Chart.yaml" "$new_version"
+
+node "scripts/update-appstream.mjs" "packages/frontend/apps/electron/resources/affine.metainfo.xml" "$new_version"

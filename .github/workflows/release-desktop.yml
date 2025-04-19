@@ -51,19 +51,6 @@ jobs:
         uses: ./.github/actions/setup-node
       - name: Setup @sentry/cli
         uses: ./.github/actions/setup-sentry
-
-      - name: Bump AppStream (Linux release metainfo)
-        if: ${{ github.event.inputs.build-type == 'stable' && !github.event.inputs.is-draft && !github.event.inputs.is-pre-release }}
-        uses: ./.github/actions/update-appstream
-        with:
-          version: ${{ steps.version.outputs.APP_VERSION }}
-          path: packages/frontend/apps/electron/resources/affine.metainfo.xml
-      - name: Commit new AppStream file
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'chore(client): Add v${{ steps.version.outputs.APP_VERSION }} release to affine.metainfo.xml'
-          file_pattern: packages/frontend/apps/electron/resources/affine.metainfo.xml
-
       - name: generate-assets
         run: yarn affine @affine/electron generate-assets
         env:
