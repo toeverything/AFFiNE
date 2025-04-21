@@ -98,11 +98,6 @@ export const styles = css`
     justify-content: center;
   }
 
-  .affine-attachment-banner svg {
-    width: 40px;
-    height: 40px;
-  }
-
   .affine-attachment-card.loading {
     background: var(--affine-background-secondary-color);
 

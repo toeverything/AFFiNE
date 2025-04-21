@@ -27,7 +27,7 @@
     "@affine/i18n": "workspace:*",
     "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.0.3",
-    "@blocksuite/icons": "^2.2.10",
+    "@blocksuite/icons": "^2.2.12",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@radix-ui/react-avatar": "^1.1.2",

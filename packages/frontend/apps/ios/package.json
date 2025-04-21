@@ -20,7 +20,7 @@
     "@affine/i18n": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@blocksuite/affine": "workspace:*",
-    "@blocksuite/icons": "^2.2.10",
+    "@blocksuite/icons": "^2.2.12",
     "@capacitor/app": "^7.0.0",
     "@capacitor/browser": "^7.0.0",
     "@capacitor/core": "^7.0.0",

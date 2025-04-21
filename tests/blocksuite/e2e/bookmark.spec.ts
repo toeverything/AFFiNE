@@ -6,6 +6,7 @@ import { expect } from '@playwright/test';
 
 import {
   activeNoteInEdgeless,
+  clickView,
   copyByKeyboard,
   dragBlockToPoint,
   enterPlaygroundRoom,
@@ -15,6 +16,7 @@ import {
   initEmptyEdgelessState,
   initEmptyParagraphState,
   pasteByKeyboard,
+  pasteContent,
   pressArrowDown,
   pressArrowRight,
   pressArrowUp,
@@ -357,6 +359,21 @@ test('bookmark can be dragged from note to surface top level block', async ({
   await assertParentBlockFlavour(page, '4', 'affine:surface');
 });
 
+test('bookmark card should show banner in edgeless mode', async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  const url = 'https://github.com/toeverything/AFFiNE/pull/11796';
+
+  await page.locator('edgeless-link-tool-button').click();
+  await page.locator('.embed-card-modal-input').fill(url);
+  await pressEnter(page);
+
+  const banner = page.locator('.affine-bookmark-banner');
+  await expect(banner).toBeVisible();
+});
+
 test.describe('embed youtube card', () => {
   test(scoped`create youtube card by slash menu`, async ({ page }) => {
     expectConsoleMessage(page, /Unrecognized feature/, 'warning');
@@ -462,5 +479,24 @@ test.describe('embed figma card', () => {
     await embedView2.click();
     const snapshot2 = (await getPageSnapshot(page)) as BlockSnapshot;
     expect(ignoreSnapshotId(snapshot2)).toMatchSnapshot('embed-figma.json');
+  });
+});
+
+test.describe('embed github card', () => {
+  test('github embed card should show banner in edgeless mode', async ({
+    page,
+  }) => {
+    await enterPlaygroundRoom(page);
+    await initEmptyEdgelessState(page);
+    await switchEditorMode(page);
+    await clickView(page, [0, 0]);
+    const url = 'https://github.com/toeverything/AFFiNE/pull/11796';
+
+    await pasteContent(page, {
+      'text/plain': url,
+    });
+
+    const banner = page.locator('.affine-embed-github-banner');
+    await expect(banner).toBeVisible();
   });
 });

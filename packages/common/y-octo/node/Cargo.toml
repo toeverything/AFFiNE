@@ -1,0 +1,20 @@
+[package]
+authors    = ["DarkSky <darksky2048@gmail.com>"]
+edition    = "2021"
+license    = "MIT"
+name       = "y-octo-node"
+repository = "https://github.com/toeverything/y-octo"
+version    = "0.0.1"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow      = { workspace = true }
+napi        = { workspace = true, features = ["anyhow", "napi4"] }
+napi-derive = { workspace = true }
+y-octo      = { workspace = true, features = ["large_refs"] }
+
+[build-dependencies]
+napi-build = { workspace = true }

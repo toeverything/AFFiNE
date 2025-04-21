@@ -1,4 +1,6 @@
 import { insertLinkByQuickSearchCommand } from '@blocksuite/affine-block-bookmark';
+import { insertEmbedCard } from '@blocksuite/affine-block-embed';
+import { toggleEmbedCardCreateModal } from '@blocksuite/affine-components/embed-card-modal';
 import { LinkIcon } from '@blocksuite/affine-components/icons';
 import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import { QuickToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
@@ -16,9 +18,30 @@ export class EdgelessLinkToolButton extends QuickToolMixin(LitElement) {
   override type = 'default' as const;
 
   private _onClick() {
-    const [_, { insertedLinkType }] = this.edgeless.std.command.exec(
+    const [success, { insertedLinkType }] = this.edgeless.std.command.exec(
       insertLinkByQuickSearchCommand
     );
+
+    if (!success) {
+      // fallback to create a bookmark block with input modal
+      toggleEmbedCardCreateModal(
+        this.edgeless.host,
+        'Links',
+        'The added link will be displayed as a card view.',
+        {
+          mode: 'edgeless',
+          onSave: url => {
+            insertEmbedCard(this.edgeless.std, {
+              flavour: 'affine:bookmark',
+              targetStyle: 'vertical',
+              props: { url },
+            });
+          },
+        }
+      ).catch(console.error);
+      return;
+    }
+
     insertedLinkType
       ?.then(type => {
         const flavour = type?.flavour;

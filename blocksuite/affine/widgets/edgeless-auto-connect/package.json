@@ -16,7 +16,7 @@
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/icons": "^2.2.10",
+    "@blocksuite/icons": "^2.2.12",
     "@blocksuite/std": "workspace:*",
     "@preact/signals-core": "^1.8.0",
     "@toeverything/theme": "^1.1.12",

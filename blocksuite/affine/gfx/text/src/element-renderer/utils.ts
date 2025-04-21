@@ -399,23 +399,27 @@ export function parseTokens(text: string): string[] {
 }
 
 export const charWidth = (() => {
-  const cachedCharWidth: Record<string, Array<number>> = {};
+  const cachedCharWidth = new Map<string, Array<number>>();
 
   const calculate = (char: string, font: string) => {
     const ascii = char.charCodeAt(0);
-    if (!cachedCharWidth[font]) {
-      cachedCharWidth[font] = [];
-    }
-    if (!cachedCharWidth[font][ascii]) {
-      const width = getLineWidth(char, font);
-      cachedCharWidth[font][ascii] = width;
+
+    let fontCache = cachedCharWidth.get(font);
+    if (!fontCache) {
+      fontCache = [];
+      cachedCharWidth.set(font, fontCache);
     }
 
-    return cachedCharWidth[font][ascii];
+    if (fontCache[ascii] === undefined) {
+      const width = getLineWidth(char, font);
+      fontCache[ascii] = width;
+    }
+
+    return fontCache[ascii];
   };
 
   const getCache = (font: string) => {
-    return cachedCharWidth[font];
+    return cachedCharWidth.get(font);
   };
   return {
     calculate,

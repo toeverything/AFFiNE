@@ -1,6 +1,6 @@
 package app.affine.pro.repo
 
-import app.affine.pro.ai.Prompt
+import app.affine.pro.Prompt
 import app.affine.pro.service.GraphQLClient
 import com.affine.pro.graphql.CreateCopilotMessageMutation
 import com.affine.pro.graphql.CreateCopilotSessionMutation

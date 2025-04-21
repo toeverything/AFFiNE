@@ -11,6 +11,7 @@ import { AppConfigModel } from './config';
 import { CopilotContextModel } from './copilot-context';
 import { CopilotJobModel } from './copilot-job';
 import { CopilotSessionModel } from './copilot-session';
+import { CopilotWorkspaceConfigModel } from './copilot-workspace';
 import { DocModel } from './doc';
 import { DocUserModel } from './doc-user';
 import { FeatureModel } from './feature';
@@ -44,6 +45,7 @@ const MODELS = {
   userSettings: UserSettingsModel,
   copilotSession: CopilotSessionModel,
   copilotContext: CopilotContextModel,
+  copilotWorkspace: CopilotWorkspaceConfigModel,
   copilotJob: CopilotJobModel,
   appConfig: AppConfigModel,
 };

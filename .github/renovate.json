@@ -21,15 +21,16 @@
       "groupName": "oxlint"
     },
     {
-      "groupName": "blocksuite",
-      "rangeStrategy": "replace",
-      "changelogUrl": "https://github.com/toeverything/blocksuite/blob/master/packages/blocks/CHANGELOG.md",
-      "matchPackageNames": ["/^@blocksuite/", "!@blocksuite/icons"]
-    },
-    {
-      "groupName": "all non-major dependencies",
+      "groupName": "all non-major rust dependencies",
       "groupSlug": "all-minor-patch",
       "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": ["cargo"]
+    },
+    {
+      "groupName": "all non-major npm dependencies",
+      "groupSlug": "all-minor-patch",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": ["npm"],
       "matchPackageNames": ["*", "!/^@blocksuite//", "!/oxlint/"]
     },
     {

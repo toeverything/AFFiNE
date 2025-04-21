@@ -177,12 +177,12 @@ export class CopilotContextModel extends BaseModel {
     const similarityChunks = await this.db.$queryRaw<
       Array<FileChunkSimilarity>
     >`
-    SELECT "file_id" as "fileId", "chunk", "content", "embedding" <=> ${embedding}::vector as "distance" 
-    FROM "ai_context_embeddings"
-    WHERE context_id = ${contextId}
-    ORDER BY "distance" ASC
-    LIMIT ${topK};
-  `;
+      SELECT "file_id" as "fileId", "chunk", "content", "embedding" <=> ${embedding}::vector as "distance" 
+      FROM "ai_context_embeddings"
+      WHERE context_id = ${contextId}
+      ORDER BY "distance" ASC
+      LIMIT ${topK};
+    `;
     return similarityChunks.filter(c => Number(c.distance) <= threshold);
   }
 
@@ -198,11 +198,11 @@ export class CopilotContextModel extends BaseModel {
       false
     );
     await this.db.$executeRaw`
-        INSERT INTO "ai_workspace_embeddings"
-        ("workspace_id", "doc_id", "chunk", "content", "embedding", "updated_at") VALUES ${values}
-        ON CONFLICT (workspace_id, doc_id, chunk) DO UPDATE SET
-        embedding = EXCLUDED.embedding, updated_at = excluded.updated_at;
-      `;
+      INSERT INTO "ai_workspace_embeddings"
+      ("workspace_id", "doc_id", "chunk", "content", "embedding", "updated_at") VALUES ${values}
+      ON CONFLICT (workspace_id, doc_id, chunk) DO UPDATE SET
+      embedding = EXCLUDED.embedding, updated_at = excluded.updated_at;
+    `;
   }
 
   async matchWorkspaceEmbedding(
@@ -212,12 +212,12 @@ export class CopilotContextModel extends BaseModel {
     threshold: number
   ): Promise<DocChunkSimilarity[]> {
     const similarityChunks = await this.db.$queryRaw<Array<DocChunkSimilarity>>`
-       SELECT "doc_id" as "docId", "chunk", "content", "embedding" <=> ${embedding}::vector as "distance"
-       FROM "ai_workspace_embeddings"
-       WHERE "workspace_id" = ${workspaceId}
-       ORDER BY "distance" ASC
-       LIMIT ${topK};
-     `;
+      SELECT "doc_id" as "docId", "chunk", "content", "embedding" <=> ${embedding}::vector as "distance"
+      FROM "ai_workspace_embeddings"
+      WHERE "workspace_id" = ${workspaceId}
+      ORDER BY "distance" ASC
+      LIMIT ${topK};
+    `;
     return similarityChunks.filter(c => Number(c.distance) <= threshold);
   }
 

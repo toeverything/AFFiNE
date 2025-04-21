@@ -1,6 +1,10 @@
 import { isFrameBlock } from '@blocksuite/affine-block-frame';
 import { getSurfaceBlock, isNoteBlock } from '@blocksuite/affine-block-surface';
-import type { FrameBlockModel, NoteBlockModel } from '@blocksuite/affine-model';
+import {
+  type FrameBlockModel,
+  type NoteBlockModel,
+  NoteDisplayMode,
+} from '@blocksuite/affine-model';
 import { replaceIdMiddleware } from '@blocksuite/affine-shared/adapters';
 import { DocModeProvider } from '@blocksuite/affine-shared/services';
 import { getBlockProps } from '@blocksuite/affine-shared/utils';
@@ -28,6 +32,7 @@ export function createLinkedDocFromNote(
     console.error('Failed to create linked doc from note');
     return;
   }
+  blockSnapshot.props.displayMode = NoteDisplayMode.DocAndEdgeless;
   const linkedDoc = _doc.getStore({ id: doc.id });
   linkedDoc.load(() => {
     const rootId = linkedDoc.addBlock('affine:page', {

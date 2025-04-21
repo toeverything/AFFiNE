@@ -232,7 +232,7 @@ export class ExportManager {
       },
       onclone: async (_documentClone: Document, element: HTMLElement) => {
         element.style.height = `${viewportHeight}px`;
-        this._replaceRichTextWithSvgElement(element);
+        // this._replaceRichTextWithSvgElement(element);
         await this.replaceImgSrcWithSvg(element);
       },
       backgroundColor: window.getComputedStyle(viewportElement).backgroundColor,

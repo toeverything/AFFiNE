@@ -661,6 +661,142 @@ jobs:
           name: affine
           fail_ci_if_error: false
 
+  miri:
+    name: miri code check
+    runs-on: ubuntu-latest
+    needs:
+      - optimize_ci
+    if: needs.optimize_ci.outputs.skip == 'false'
+    env:
+      RUST_BACKTRACE: full
+      CARGO_TERM_COLOR: always
+      MIRIFLAGS: -Zmiri-backtrace=full -Zmiri-tree-borrows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          components: miri
+      - name: Install latest nextest release
+        uses: taiki-e/install-action@nextest
+
+      - name: Miri Code Check
+        continue-on-error: true
+        run: |
+          cargo +nightly miri nextest run -p y-octo -j4
+
+  loom:
+    name: loom thread test
+    runs-on: ubuntu-latest
+    needs:
+      - optimize_ci
+    if: needs.optimize_ci.outputs.skip == 'false'
+    env:
+      RUSTFLAGS: --cfg loom
+      RUST_BACKTRACE: full
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Install latest nextest release
+        uses: taiki-e/install-action@nextest
+
+      - name: Loom Thread Test
+        run: |
+          cargo nextest run -p y-octo --lib
+
+  fuzzing:
+    name: fuzzing
+    runs-on: ubuntu-latest
+    needs:
+      - optimize_ci
+    if: needs.optimize_ci.outputs.skip == 'false'
+    env:
+      RUSTFLAGS: -D warnings
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+
+      - name: fuzzing
+        working-directory: ./packages/common/y-octo/utils
+        run: |
+          cargo install cargo-fuzz
+          cargo +nightly fuzz run apply_update -- -max_total_time=30
+          cargo +nightly fuzz run codec_doc_any_struct -- -max_total_time=30
+          cargo +nightly fuzz run codec_doc_any -- -max_total_time=30
+          cargo +nightly fuzz run decode_bytes -- -max_total_time=30
+          cargo +nightly fuzz run i32_decode -- -max_total_time=30
+          cargo +nightly fuzz run i32_encode -- -max_total_time=30
+          cargo +nightly fuzz run ins_del_text -- -max_total_time=30
+          cargo +nightly fuzz run sync_message -- -max_total_time=30
+          cargo +nightly fuzz run u64_decode -- -max_total_time=30
+          cargo +nightly fuzz run u64_encode -- -max_total_time=30
+          cargo +nightly fuzz run apply_update -- -max_total_time=30
+
+      - name: upload fuzz artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifact
+          path: packages/common/y-octo/utils/fuzz/artifacts/**/*
+
+  y-octo-binding-test:
+    name: y-octo binding test on ${{ matrix.settings.target }}
+    runs-on: ${{ matrix.settings.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - { target: 'x86_64-unknown-linux-gnu', os: 'ubuntu-latest' }
+          - { target: 'aarch64-unknown-linux-gnu', os: 'ubuntu-24.04-arm' }
+          - { target: 'x86_64-apple-darwin', os: 'macos-13' }
+          - { target: 'aarch64-apple-darwin', os: 'macos-latest' }
+          - { target: 'x86_64-pc-windows-msvc', os: 'windows-latest' }
+          - { target: 'aarch64-pc-windows-msvc', os: 'windows-11-arm' }
+    needs:
+      - optimize_ci
+    if: needs.optimize_ci.outputs.skip == 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          extra-flags: workspaces focus @affine-tools/cli @affine/monorepo @y-octo/node
+          electron-install: false
+      - name: Install rustup (Windows 11 ARM)
+        if: matrix.settings.os == 'windows-11-arm'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://static.rust-lang.org/rustup/dist/aarch64-pc-windows-msvc/rustup-init.exe" -OutFile rustup-init.exe
+          .\rustup-init.exe --default-toolchain none -y
+          "$env:USERPROFILE\.cargo\bin" | Out-File -Append -Encoding ascii $env:GITHUB_PATH
+          "CARGO_HOME=$env:USERPROFILE\.cargo" | Out-File -Append -Encoding ascii $env:GITHUB_ENV
+      - name: Install Rust (Windows 11 ARM)
+        if: matrix.settings.os == 'windows-11-arm'
+        shell: pwsh
+        run: |
+          rustup install stable
+          rustup target add ${{ matrix.settings.target }}
+          cargo --version
+      - name: Build Rust
+        uses: ./.github/actions/build-rust
+        with:
+          target: ${{ matrix.settings.target }}
+          package: '@y-octo/node'
+      - name: Run tests
+        run: yarn affine @y-octo/node test
+
   rust-test:
     name: Run native tests
     runs-on: ubuntu-latest
@@ -1185,6 +1321,10 @@ jobs:
       - build-server-native
       - build-electron-renderer
       - native-unit-test
+      - miri
+      - loom
+      - fuzzing
+      - y-octo-binding-test
       - server-test
       - server-e2e-test
       - rust-test

@@ -105,3 +105,17 @@ export type FileChunkSimilarity = ChunkSimilarity & {
 export type DocChunkSimilarity = ChunkSimilarity & {
   docId: string;
 };
+
+export const CopilotWorkspaceFileSchema = z.object({
+  fileName: z.string(),
+  mimeType: z.string(),
+  size: z.number(),
+});
+
+export type CopilotWorkspaceFile = z.infer<
+  typeof CopilotWorkspaceFileSchema
+> & {
+  workspaceId: string;
+  fileId: string;
+  createdAt: Date;
+};

@@ -426,3 +426,42 @@ test.describe('note block rendering', () => {
     ).toHaveCSS('overflow-y', 'visible');
   });
 });
+
+test('should convert note block to linked doc when clicking turn into linked doc button', async ({
+  page,
+}) => {
+  await createEdgelessNoteBlock(page, [100, 100]);
+  await page.keyboard.type('Is this the real life?');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('Is this just fantasy?');
+
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+
+  const note = page.locator('affine-edgeless-note', {
+    hasText: 'Is this just fantasy?',
+  });
+  await note.click();
+  const toolbar = locateToolbar(page);
+  const moreBtn = toolbar.getByRole('button', { name: 'More' });
+  await moreBtn.click();
+  const turnIntoLinkedDocBtn = toolbar.getByRole('button', {
+    name: 'Turn into linked doc',
+  });
+  await turnIntoLinkedDocBtn.click();
+  await page.keyboard.type('Bohemian Rhapsody');
+
+  const confirmBtn = page.getByTestId('confirm-modal-confirm');
+  await confirmBtn.click();
+
+  const syncedDoc = page.locator('affine-embed-edgeless-synced-doc-block');
+  await expect(syncedDoc).toBeVisible();
+
+  const noteInSyncedDoc = syncedDoc.locator('affine-note');
+  await expect(noteInSyncedDoc).toBeVisible();
+
+  const paragraphs = noteInSyncedDoc.locator('affine-paragraph');
+  await expect(paragraphs.first()).toContainText('Is this the real life?');
+  await expect(paragraphs.last()).toContainText('Is this just fantasy?');
+});

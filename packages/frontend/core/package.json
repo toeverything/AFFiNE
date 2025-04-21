@@ -19,7 +19,7 @@
     "@affine/templates": "workspace:*",
     "@affine/track": "workspace:*",
     "@blocksuite/affine": "workspace:*",
-    "@blocksuite/icons": "^2.2.10",
+    "@blocksuite/icons": "^2.2.12",
     "@dotlottie/player-component": "^2.7.12",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",

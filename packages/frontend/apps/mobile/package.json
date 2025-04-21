@@ -15,7 +15,7 @@
     "@affine/i18n": "workspace:*",
     "@affine/nbstore": "workspace:*",
     "@blocksuite/affine": "workspace:*",
-    "@blocksuite/icons": "^2.2.10",
+    "@blocksuite/icons": "^2.2.12",
     "@sentry/react": "^9.2.0",
     "@toeverything/infra": "workspace:*",
     "react": "^19.0.0",

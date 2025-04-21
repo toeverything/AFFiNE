@@ -28,6 +28,7 @@ export const styles = css`
     width: calc(100% - 204px);
     display: flex;
     flex-direction: column;
+    flex-grow: 1;
     align-self: stretch;
     gap: 4px;
     padding: 12px;
@@ -277,7 +278,7 @@ export const styles = css`
     .affine-bookmark-content {
       width: 100%;
     }
-    .affine-bookmark-banner {
+    .affine-bookmark-card:not(.edgeless) .affine-bookmark-banner {
       display: none;
     }
   }

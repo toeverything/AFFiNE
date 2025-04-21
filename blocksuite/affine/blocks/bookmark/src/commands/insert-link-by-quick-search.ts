@@ -16,7 +16,6 @@ export const insertLinkByQuickSearchCommand: Command<
   const { std } = ctx;
   const quickSearchService = std.getOptional(QuickSearchProvider);
   if (!quickSearchService) {
-    next();
     return;
   }
 

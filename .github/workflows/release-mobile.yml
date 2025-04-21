@@ -205,6 +205,10 @@ jobs:
         with:
           name: android
           path: packages/frontend/apps/android/dist
+      - name: Load Google Service file
+        env:
+          DATA: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICE_JSON }}
+        run: echo $DATA | base64 -di > packages/frontend/apps/android/App/app/google-services.json
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         timeout-minutes: 10

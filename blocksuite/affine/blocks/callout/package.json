@@ -11,13 +11,14 @@
   "license": "MIT",
   "dependencies": {
     "@blocksuite/affine-components": "workspace:*",
+    "@blocksuite/affine-ext-loader": "workspace:*",
     "@blocksuite/affine-inline-preset": "workspace:*",
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-rich-text": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/affine-widget-slash-menu": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/icons": "^2.2.10",
+    "@blocksuite/icons": "^2.2.12",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
     "@emoji-mart/data": "^1.2.1",
@@ -34,7 +35,9 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./effects": "./src/effects.ts"
+    "./effects": "./src/effects.ts",
+    "./view": "./src/view.ts",
+    "./store": "./src/store.ts"
   },
   "files": [
     "src",

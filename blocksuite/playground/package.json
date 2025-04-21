@@ -14,7 +14,7 @@
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/data-view": "workspace:*",
-    "@blocksuite/icons": "^2.2.10",
+    "@blocksuite/icons": "^2.2.12",
     "@blocksuite/integration-test": "workspace:*",
     "@preact/signals-core": "^1.8.0",
     "@shoelace-style/shoelace": "2.20.1",
