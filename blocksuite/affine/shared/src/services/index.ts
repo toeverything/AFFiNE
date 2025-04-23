@@ -8,7 +8,6 @@ export * from './editor-setting-service';
 export * from './embed-iframe';
 export * from './embed-option-service';
 export * from './feature-flag-service';
-export * from './file-size-limit-service';
 export * from './font-loader';
 export * from './generate-url-service';
 export * from './link-previewer-service';

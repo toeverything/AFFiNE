@@ -1,10 +1,7 @@
 import { SurfaceBlockModel } from '@blocksuite/affine-block-surface';
 import { FileDropConfigExtension } from '@blocksuite/affine-components/drop-indicator';
 import { ImageBlockSchema, MAX_IMAGE_WIDTH } from '@blocksuite/affine-model';
-import {
-  FileSizeLimitService,
-  TelemetryProvider,
-} from '@blocksuite/affine-shared/services';
+import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import {
   isInsideEdgelessEditor,
   matchModels,
@@ -19,16 +16,8 @@ export const ImageDropOption = FileDropConfigExtension({
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
     if (!imageFiles.length) return false;
 
-    const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
-
     if (targetModel && !matchModels(targetModel, [SurfaceBlockModel])) {
-      addSiblingImageBlock(
-        std.host,
-        imageFiles,
-        maxFileSize,
-        targetModel,
-        placement
-      );
+      addSiblingImageBlock(std, imageFiles, targetModel, placement);
       return true;
     }
 

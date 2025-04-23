@@ -36,7 +36,6 @@ export class BlobFrontend {
       for (const cb of this.onReachedMaxBlobSizeCallbacks) {
         cb(blob.data.byteLength);
       }
-      throw new Error('Blob size exceeds the maximum limit');
     }
     await using lock = await this.lock.lock('blob', blob.key);
     await this.storage.set(blob);
@@ -74,10 +73,11 @@ export class BlobFrontend {
     return this.sync.fullDownload(peerId, signal);
   }
 
-  private maxBlobSize = 1024 * 1024 * 100; // 100MB
   private readonly onReachedMaxBlobSizeCallbacks: Set<
     (byteSize: number) => void
   > = new Set();
+
+  maxBlobSize = 1024 * 1024 * 100; // 100MB
 
   setMaxBlobSize(max: number) {
     this.maxBlobSize = max;

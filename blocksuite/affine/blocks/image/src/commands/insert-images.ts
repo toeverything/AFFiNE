@@ -1,4 +1,3 @@
-import { FileSizeLimitService } from '@blocksuite/affine-shared/services';
 import { getImageFilesFromLocal } from '@blocksuite/affine-shared/utils';
 import type { Command } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
@@ -29,15 +28,7 @@ export const insertImagesCommand: Command<
           ? selectedModels[0]
           : selectedModels[selectedModels.length - 1];
 
-      const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
-
-      const result = addSiblingImageBlock(
-        std.host,
-        imageFiles,
-        maxFileSize,
-        targetModel,
-        place
-      );
+      const result = addSiblingImageBlock(std, imageFiles, targetModel, place);
       if (removeEmptyLine && targetModel.text?.length === 0) {
         std.store.deleteBlock(targetModel);
       }

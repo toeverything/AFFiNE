@@ -25,7 +25,6 @@ import { HighlightSelectionExtension } from '@blocksuite/affine-shared/selection
 import {
   BlockMetaService,
   FeatureFlagService,
-  FileSizeLimitService,
   LinkPreviewerService,
 } from '@blocksuite/affine-shared/services';
 import {

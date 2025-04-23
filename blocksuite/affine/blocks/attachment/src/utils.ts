@@ -8,10 +8,7 @@ import {
   EMBED_CARD_HEIGHT,
   EMBED_CARD_WIDTH,
 } from '@blocksuite/affine-shared/consts';
-import {
-  FileSizeLimitService,
-  TelemetryProvider,
-} from '@blocksuite/affine-shared/services';
+import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import { humanFileSize } from '@blocksuite/affine-shared/utils';
 import { Bound, type IVec, Vec } from '@blocksuite/global/gfx';
 import type { BlockStdScope } from '@blocksuite/std';
@@ -192,6 +189,21 @@ export async function getFileType(file: File) {
   return fileType ? fileType.mime : '';
 }
 
+function hasExceeded(
+  std: BlockStdScope,
+  files: File[],
+  maxFileSize = std.store.blobSync.maxFileSize
+) {
+  const exceeded = files.some(file => file.size > maxFileSize);
+
+  if (exceeded) {
+    const size = humanFileSize(maxFileSize, true, 0);
+    toast(std.host, `You can only upload files less than ${size}`);
+  }
+
+  return exceeded;
+}
+
 /**
  * Add a new attachment block before / after the specified block.
  */
@@ -202,23 +214,9 @@ export async function addSiblingAttachmentBlocks(
   place: 'before' | 'after' = 'after',
   isEmbed?: boolean
 ) {
-  if (!files.length) {
-    return;
-  }
+  if (!files.length) return;
 
-  const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
-  const isSizeExceeded = files.some(file => file.size > maxFileSize);
-  if (isSizeExceeded) {
-    toast(
-      std.host,
-      `You can only upload files less than ${humanFileSize(
-        maxFileSize,
-        true,
-        0
-      )}`
-    );
-    return;
-  }
+  if (hasExceeded(std, files)) return;
 
   const doc = targetModel.doc;
   const flavour = AttachmentBlockSchema.model.flavour;
@@ -263,21 +261,9 @@ export async function addAttachments(
 ): Promise<string[]> {
   if (!files.length) return [];
 
-  const gfx = std.get(GfxControllerIdentifier);
-  const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
-  const isSizeExceeded = files.some(file => file.size > maxFileSize);
-  if (isSizeExceeded) {
-    toast(
-      std.host,
-      `You can only upload files less than ${humanFileSize(
-        maxFileSize,
-        true,
-        0
-      )}`
-    );
-    return [];
-  }
+  if (hasExceeded(std, files)) return [];
 
+  const gfx = std.get(GfxControllerIdentifier);
   let { x, y } = gfx.viewport.center;
   if (point) {
     let transform = transformPoint ?? true;

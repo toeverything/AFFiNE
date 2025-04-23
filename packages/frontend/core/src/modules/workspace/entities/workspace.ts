@@ -23,6 +23,8 @@ export class Workspace extends Entity {
 
   get docCollection() {
     if (!this._docCollection) {
+      const getMaxFileSize = () => this.engine.blob.maxBlobSize;
+
       this._docCollection = new WorkspaceImpl({
         id: this.openOptions.metadata.id,
         blobSource: {
@@ -48,6 +50,9 @@ export class Workspace extends Entity {
           },
           name: 'blob',
           readonly: false,
+          get maxFileSize() {
+            return getMaxFileSize();
+          },
         },
         onLoadDoc: doc => this.engine.doc.connectDoc(doc),
         onLoadAwareness: awareness =>

@@ -5,10 +5,7 @@ import type {
   ImageBlockModel,
   ImageBlockProps,
 } from '@blocksuite/affine-model';
-import {
-  FileSizeLimitService,
-  NativeClipboardProvider,
-} from '@blocksuite/affine-shared/services';
+import { NativeClipboardProvider } from '@blocksuite/affine-shared/services';
 import {
   downloadBlob,
   getBlockProps,
@@ -312,6 +309,21 @@ export async function copyImageBlob(
   }
 }
 
+function hasExceeded(
+  std: BlockStdScope,
+  files: File[],
+  maxFileSize = std.store.blobSync.maxFileSize
+) {
+  const exceeded = files.some(file => file.size > maxFileSize);
+
+  if (exceeded) {
+    const size = humanFileSize(maxFileSize, true, 0);
+    toast(std.host, `You can only upload files less than ${size}`);
+  }
+
+  return exceeded;
+}
+
 export function shouldResizeImage(node: Node, target: EventTarget | null) {
   return !!(
     target &&
@@ -322,79 +334,51 @@ export function shouldResizeImage(node: Node, target: EventTarget | null) {
 }
 
 export function addSiblingImageBlock(
-  editorHost: EditorHost,
+  std: BlockStdScope,
   files: File[],
-  maxFileSize: number,
   targetModel: BlockModel,
   place: 'after' | 'before' = 'after'
 ) {
-  const imageFiles = files.filter(file => file.type.startsWith('image/'));
-  if (!imageFiles.length) {
-    return;
-  }
+  files = files.filter(file => file.type.startsWith('image/'));
+  if (!files.length) return;
 
-  const isSizeExceeded = imageFiles.some(file => file.size > maxFileSize);
-  if (isSizeExceeded) {
-    toast(
-      editorHost,
-      `You can only upload files less than ${humanFileSize(
-        maxFileSize,
-        true,
-        0
-      )}`
-    );
-    return;
-  }
+  if (hasExceeded(std, files)) return;
 
   const imageBlockProps: Partial<ImageBlockProps> &
     {
       flavour: 'affine:image';
-    }[] = imageFiles.map(file => ({
+    }[] = files.map(file => ({
     flavour: 'affine:image',
     size: file.size,
   }));
 
-  const doc = editorHost.doc;
-  const blockIds = doc.addSiblingBlocks(targetModel, imageBlockProps, place);
+  const blockIds = std.store.addSiblingBlocks(
+    targetModel,
+    imageBlockProps,
+    place
+  );
   blockIds.forEach(
-    (blockId, index) =>
-      void uploadBlobForImage(editorHost, blockId, imageFiles[index])
+    (blockId, index) => void uploadBlobForImage(std.host, blockId, files[index])
   );
   return blockIds;
 }
 
 export function addImageBlocks(
-  editorHost: EditorHost,
+  std: BlockStdScope,
   files: File[],
-  maxFileSize: number,
   parent?: BlockModel | string | null,
   parentIndex?: number
 ) {
-  const imageFiles = files.filter(file => file.type.startsWith('image/'));
-  if (!imageFiles.length) {
-    return;
-  }
+  files = files.filter(file => file.type.startsWith('image/'));
+  if (!files.length) return;
 
-  const isSizeExceeded = imageFiles.some(file => file.size > maxFileSize);
-  if (isSizeExceeded) {
-    toast(
-      editorHost,
-      `You can only upload files less than ${humanFileSize(
-        maxFileSize,
-        true,
-        0
-      )}`
-    );
-    return;
-  }
+  if (hasExceeded(std, files)) return;
 
-  const doc = editorHost.doc;
-  const blockIds = imageFiles.map(file =>
-    doc.addBlock('affine:image', { size: file.size }, parent, parentIndex)
+  const blockIds = files.map(file =>
+    std.store.addBlock('affine:image', { size: file.size }, parent, parentIndex)
   );
   blockIds.forEach(
-    (blockId, index) =>
-      void uploadBlobForImage(editorHost, blockId, imageFiles[index])
+    (blockId, index) => void uploadBlobForImage(std.host, blockId, files[index])
   );
   return blockIds;
 }
@@ -445,25 +429,12 @@ export async function addImages(
     transformPoint?: boolean; // determines whether we should use `toModelCoord` to convert the point
   }
 ): Promise<string[]> {
-  const imageFiles = [...files].filter(file => file.type.startsWith('image/'));
-  if (!imageFiles.length) return [];
+  files = [...files].filter(file => file.type.startsWith('image/'));
+  if (!files.length) return [];
+
+  if (hasExceeded(std, files)) return [];
 
   const gfx = std.get(GfxControllerIdentifier);
-
-  const maxFileSize = std.store.get(FileSizeLimitService).maxFileSize;
-  const isSizeExceeded = imageFiles.some(file => file.size > maxFileSize);
-  if (isSizeExceeded) {
-    toast(
-      std.host,
-      `You can only upload files less than ${humanFileSize(
-        maxFileSize,
-        true,
-        0
-      )}`
-    );
-    return [];
-  }
-
   const { point, maxWidth, transformPoint = true } = options;
   let { x, y } = gfx.viewport.center;
   if (point) {
@@ -476,11 +447,11 @@ export async function addImages(
 
   const dropInfos: { point: Point; blockId: string }[] = [];
   const IMAGE_STACK_GAP = 32;
-  const isMultipleFiles = imageFiles.length > 1;
+  const isMultipleFiles = files.length > 1;
   const inTopLeft = isMultipleFiles ? true : false;
 
   // create image cards without image data
-  imageFiles.forEach((file, index) => {
+  files.forEach((file, index) => {
     const point = new Point(
       x + index * IMAGE_STACK_GAP,
       y + index * IMAGE_STACK_GAP
@@ -500,7 +471,7 @@ export async function addImages(
   });
 
   // upload image data and update the image model
-  const uploadPromises = imageFiles.map(async (file, index) => {
+  const uploadPromises = files.map(async (file, index) => {
     const { point, blockId } = dropInfos[index];
     const block = std.store.getBlock(blockId);
     const imageSize = await readImageSize(file);

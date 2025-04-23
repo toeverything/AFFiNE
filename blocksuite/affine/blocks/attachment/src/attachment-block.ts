@@ -10,10 +10,7 @@ import {
   type AttachmentBlockModel,
   AttachmentBlockStyles,
 } from '@blocksuite/affine-model';
-import {
-  FileSizeLimitService,
-  ThemeProvider,
-} from '@blocksuite/affine-shared/services';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { humanFileSize } from '@blocksuite/affine-shared/utils';
 import { BlockSelection } from '@blocksuite/std';
 import { Slice } from '@blocksuite/store';
@@ -43,7 +40,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
   });
 
   private get _maxFileSize() {
-    return this.std.store.get(FileSizeLimitService).maxFileSize;
+    return this.std.store.blobSync.maxFileSize;
   }
 
   convertTo = () => {

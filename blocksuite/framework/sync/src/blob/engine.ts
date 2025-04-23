@@ -2,6 +2,9 @@ import { type Logger, sha } from '@blocksuite/global/utils';
 
 import type { BlobSource } from './source.js';
 
+// The default is 10MB locally.
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 export interface BlobStatus {
   isStorageOverCapacity: boolean;
 }
@@ -102,6 +105,10 @@ export class BlobEngine {
       });
 
     return key;
+  }
+
+  get maxFileSize() {
+    return this.main.maxFileSize ?? MAX_FILE_SIZE;
   }
 
   start() {
