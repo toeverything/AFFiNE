@@ -70,7 +70,12 @@ export class WorkspacesController {
 
     // metadata should always exists if body is not null
     if (metadata) {
-      res.setHeader('content-type', metadata.contentType);
+      res.setHeader(
+        'content-type',
+        metadata.contentType.startsWith('application/json') // application/json is reserved for redirect url
+          ? 'text/json'
+          : metadata.contentType
+      );
       res.setHeader('last-modified', metadata.lastModified.toUTCString());
       res.setHeader('content-length', metadata.contentLength);
     } else {

@@ -20,6 +20,8 @@ interface CloudBlobStorageOptions {
   id: string;
 }
 
+const SHOULD_MANUAL_REDIRECT = BUILD_CONFIG.isAndroid || BUILD_CONFIG.isIOS;
+
 export class CloudBlobStorage extends BlobStorageBase {
   static readonly identifier = 'CloudBlobStorage';
   override readonly isReadonly = false;
@@ -32,7 +34,11 @@ export class CloudBlobStorage extends BlobStorageBase {
 
   override async get(key: string, signal?: AbortSignal) {
     const res = await this.connection.fetch(
-      '/api/workspaces/' + this.options.id + '/blobs/' + key,
+      '/api/workspaces/' +
+        this.options.id +
+        '/blobs/' +
+        key +
+        (SHOULD_MANUAL_REDIRECT ? '?redirect=manual' : ''),
       {
         cache: 'default',
         headers: {
@@ -47,7 +53,31 @@ export class CloudBlobStorage extends BlobStorageBase {
     }
 
     try {
-      const blob = await res.blob();
+      const contentType = res.headers.get('content-type');
+
+      let blob;
+
+      if (
+        SHOULD_MANUAL_REDIRECT &&
+        contentType?.startsWith('application/json')
+      ) {
+        const json = await res.json();
+        if ('url' in json && typeof json.url === 'string') {
+          const res = await this.connection.fetch(json.url, {
+            cache: 'default',
+            headers: {
+              'x-affine-version': BUILD_CONFIG.appVersion,
+            },
+            signal,
+          });
+
+          blob = await res.blob();
+        } else {
+          throw new Error('Invalid blob response');
+        }
+      } else {
+        blob = await res.blob();
+      }
 
       return {
         key,
