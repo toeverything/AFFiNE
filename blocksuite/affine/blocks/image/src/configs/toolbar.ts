@@ -1,3 +1,4 @@
+import { updateBlockAlign } from '@blocksuite/affine-block-note';
 import { ImageBlockModel, TextAlign } from '@blocksuite/affine-model';
 import {
   ActionPlacement,
@@ -60,8 +61,9 @@ const builtinToolbarConfig = {
       run(ctx) {
         const block = ctx.getCurrentBlockByType(ImageBlockComponent);
         if (block) {
-          ctx.std.host.doc.updateBlock(block.model, {
+          ctx.chain.pipe(updateBlockAlign, {
             textAlign: TextAlign.Left,
+            selectedBlocks: [block],
           });
         }
       },
@@ -73,8 +75,9 @@ const builtinToolbarConfig = {
       run(ctx) {
         const block = ctx.getCurrentBlockByType(ImageBlockComponent);
         if (block) {
-          ctx.std.host.doc.updateBlock(block.model, {
+          ctx.chain.pipe(updateBlockAlign, {
             textAlign: TextAlign.Center,
+            selectedBlocks: [block],
           });
         }
       },
@@ -86,8 +89,9 @@ const builtinToolbarConfig = {
       run(ctx) {
         const block = ctx.getCurrentBlockByType(ImageBlockComponent);
         if (block) {
-          ctx.std.host.doc.updateBlock(block.model, {
+          ctx.chain.pipe(updateBlockAlign, {
             textAlign: TextAlign.Right,
+            selectedBlocks: [block],
           });
         }
       },

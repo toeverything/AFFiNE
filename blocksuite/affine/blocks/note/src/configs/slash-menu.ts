@@ -23,7 +23,7 @@ import {
 import { HeadingsIcon } from '@blocksuite/icons/lit';
 import { BlockSelection } from '@blocksuite/std';
 
-import { updateBlockType } from '../commands';
+import { updateBlockAlign, updateBlockType } from '../commands';
 import { tooltips } from './tooltips';
 
 let basicIndex = 0;
@@ -113,12 +113,7 @@ function createAlignItem(
         .chain()
         .pipe(getTextSelectionCommand)
         .pipe(getSelectedModelsCommand, { types: ['text'] })
-        .pipe((ctx, next) => {
-          ctx.selectedModels.forEach(model => {
-            ctx.std.host.doc.updateBlock(model, { textAlign });
-          });
-          return next();
-        })
+        .pipe(updateBlockAlign, { textAlign })
         .run();
     },
   };

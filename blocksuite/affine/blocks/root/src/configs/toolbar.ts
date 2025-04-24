@@ -8,7 +8,10 @@ import {
   notifyDocCreated,
   promptDocTitle,
 } from '@blocksuite/affine-block-embed';
-import { updateBlockType } from '@blocksuite/affine-block-note';
+import {
+  updateBlockAlign,
+  updateBlockType,
+} from '@blocksuite/affine-block-note';
 import type { HighlightType } from '@blocksuite/affine-components/highlight-dropdown-menu';
 import { toast } from '@blocksuite/affine-components/toast';
 import { EditorChevronDown } from '@blocksuite/affine-components/toolbar';
@@ -160,14 +163,7 @@ const alignActionGroup = {
           )
       ) ?? textAlignConfigs[0];
     const update = (textAlign: TextAlign) => {
-      chain
-        .pipe((ctx, next) => {
-          selectedModels.forEach(model => {
-            ctx.std.host.doc.updateBlock(model, { textAlign });
-          });
-          return next();
-        })
-        .run();
+      chain.pipe(updateBlockAlign, { textAlign }).run();
     };
 
     return {

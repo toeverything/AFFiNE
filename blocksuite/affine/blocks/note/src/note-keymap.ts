@@ -15,7 +15,6 @@ import {
   getBlockSelectionsCommand,
   getNextBlockCommand,
   getPrevBlockCommand,
-  getSelectedModelsCommand,
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
 import {
@@ -40,6 +39,7 @@ import {
   indentBlocks,
   selectBlock,
   selectBlocksBetween,
+  updateBlockAlign,
   updateBlockType,
 } from './commands';
 import { moveBlockConfigs } from './move-block';
@@ -172,19 +172,7 @@ class NoteKeymap {
                 ctx.get('defaultState').event.preventDefault();
                 const [result] = this._std.command
                   .chain()
-                  .tryAll(chain => [
-                    chain.pipe(getTextSelectionCommand),
-                    chain.pipe(getBlockSelectionsCommand),
-                  ])
-                  .pipe(getSelectedModelsCommand, { types: ['text', 'block'] })
-                  .pipe((ctx, next) => {
-                    ctx.selectedModels.forEach(model => {
-                      ctx.std.host.doc.updateBlock(model, {
-                        textAlign: item.textAlign,
-                      });
-                    });
-                    return next();
-                  })
+                  .pipe(updateBlockAlign, { textAlign: item.textAlign })
                   .run();
 
                 return result;
