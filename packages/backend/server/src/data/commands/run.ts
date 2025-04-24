@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { once } from 'lodash-es';
 import { Command, CommandRunner } from 'nest-commander';
 
-import * as migrations from '../migrations';
+import { migrations } from '../migrations';
 
 interface Migration {
   name: string;
@@ -14,7 +14,7 @@ interface Migration {
 }
 
 export const collectMigrations = once(() => {
-  return Object.values(migrations).map(migration => {
+  return migrations.map(migration => {
     return {
       name: migration.name,
       // @ts-expect-error optional
