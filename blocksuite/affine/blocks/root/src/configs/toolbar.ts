@@ -176,7 +176,7 @@ const alignActionGroup = {
           .contentPadding="${'8px'}"
           .button=${html`
             <editor-icon-button aria-label="Align" .tooltip="${'Align'}">
-              ${alignment.icon} ${ArrowDownSmallIcon()}
+              ${alignment.icon} ${EditorChevronDown}
             </editor-icon-button>
           `}
         >
