@@ -1,5 +1,6 @@
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
+import type { BaseSelection } from '@blocksuite/store';
 import { signal } from '@preact/signals-core';
 
 import { LifeCycleWatcher } from '../extension/index.js';
@@ -82,6 +83,8 @@ export class UIEventDispatcher extends LifeCycleWatcher {
   private static _activeDispatcher: UIEventDispatcher | null = null;
 
   static override readonly key = 'UIEventDispatcher';
+
+  private _prevSelection: BaseSelection[] | null = null;
 
   private readonly _active = signal(false);
 
@@ -210,11 +213,7 @@ export class UIEventDispatcher extends LifeCycleWatcher {
       this._setActive(true);
     });
     this.disposables.addFromEvent(this.host, 'pointerleave', () => {
-      if (
-        (document.activeElement &&
-          this.host.contains(document.activeElement)) ||
-        _dragging
-      ) {
+      if (_dragging) {
         return;
       }
 
@@ -312,13 +311,24 @@ export class UIEventDispatcher extends LifeCycleWatcher {
         }
         UIEventDispatcher._activeDispatcher = this;
       }
-      this._active.value = true;
-    } else {
-      if (UIEventDispatcher._activeDispatcher === this) {
-        UIEventDispatcher._activeDispatcher = null;
+      const prevSelection = this._prevSelection;
+      if (prevSelection) {
+        requestAnimationFrame(() => {
+          this.std.selection.set(prevSelection);
+          this._prevSelection = null;
+          this._active.value = true;
+        });
+        return;
       }
-      this._active.value = false;
+      this._active.value = true;
+      return;
     }
+
+    if (UIEventDispatcher._activeDispatcher === this) {
+      UIEventDispatcher._activeDispatcher = null;
+    }
+    this._prevSelection = this.std.selection.value;
+    this._active.value = false;
   }
 
   set active(active: boolean) {

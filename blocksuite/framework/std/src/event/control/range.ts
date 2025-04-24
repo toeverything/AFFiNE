@@ -49,7 +49,7 @@ export class RangeControl {
 
   private readonly _selectionChange = (event: Event) => {
     const selection = document.getSelection();
-    if (!selection) return;
+    if (!selection || !this._dispatcher.active) return;
 
     if (!selection.containsNode(this._dispatcher.host, true)) return;
     if (selection.containsNode(this._dispatcher.host)) return;
