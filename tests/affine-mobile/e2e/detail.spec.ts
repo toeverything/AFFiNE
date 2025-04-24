@@ -54,6 +54,6 @@ test('can add text property', async ({ page }) => {
   await page.getByTestId('mobile-menu-back-button').last().click();
 
   await expect(page.getByTestId('mobile-menu-back-button')).toContainText(
-    'How to use folder and Tags'
+    'Getting Started'
   );
 });
