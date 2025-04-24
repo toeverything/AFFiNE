@@ -187,7 +187,6 @@ const alignActionGroup = {
               ({ textAlign, name, icon }) => html`
                 <editor-menu-action
                   aria-label=${name}
-                  ?data-selected=${alignment.textAlign === textAlign}
                   @click=${() => update(textAlign)}
                 >
                   ${icon}<span class="label">${name}</span>
