@@ -103,13 +103,13 @@ Clear the text content.
 
 ### clone()
 
-> **clone**(): `Text`\<\{ `bold`: `null` \| `true`; `code`: `null` \| `true`; `italic`: `null` \| `true`; `link`: `null` \| `string`; `strike`: `null` \| `true`; `underline`: `null` \| `true`; \}\>
+> **clone**(): `Text`\<\{ `bold?`: `null` \| `true`; `code?`: `null` \| `true`; `italic?`: `null` \| `true`; `link?`: `null` \| `string`; `strike?`: `null` \| `true`; `underline?`: `null` \| `true`; \}\>
 
 Clone the text to a new Text instance.
 
 #### Returns
 
-`Text`\<\{ `bold`: `null` \| `true`; `code`: `null` \| `true`; `italic`: `null` \| `true`; `link`: `null` \| `string`; `strike`: `null` \| `true`; `underline`: `null` \| `true`; \}\>
+`Text`\<\{ `bold?`: `null` \| `true`; `code?`: `null` \| `true`; `italic?`: `null` \| `true`; `link?`: `null` \| `string`; `strike?`: `null` \| `true`; `underline?`: `null` \| `true`; \}\>
 
 A new Text instance.
 
