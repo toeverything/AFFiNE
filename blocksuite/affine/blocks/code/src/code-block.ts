@@ -332,7 +332,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
         return true;
       },
       Delete: () => {
-        return true;
+        return;
       },
       Enter: () => {
         this.doc.captureSync();
