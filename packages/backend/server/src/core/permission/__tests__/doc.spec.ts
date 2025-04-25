@@ -46,12 +46,9 @@ test('should get null role', async t => {
 
 test('should return null if workspace role is not accepted', async t => {
   const u2 = await models.user.create({ email: 'u2@affine.pro' });
-  await models.workspaceUser.set(
-    ws.id,
-    u2.id,
-    WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.UnderReview
-  );
+  await models.workspaceUser.set(ws.id, u2.id, WorkspaceRole.Collaborator, {
+    status: WorkspaceMemberStatus.UnderReview,
+  });
 
   const role = await ac.getRole({
     workspaceId: ws.id,
@@ -114,12 +111,9 @@ test('should return [External] if doc is public', async t => {
 test('should return null if doc role is [None]', async t => {
   await models.doc.setDefaultRole(ws.id, 'doc1', DocRole.None);
 
-  await models.workspaceUser.set(
-    ws.id,
-    user.id,
-    WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Accepted
-  );
+  await models.workspaceUser.set(ws.id, user.id, WorkspaceRole.Collaborator, {
+    status: WorkspaceMemberStatus.Accepted,
+  });
 
   const role = await ac.getRole({
     workspaceId: ws.id,
@@ -132,12 +126,9 @@ test('should return null if doc role is [None]', async t => {
 
 test('should return [External] if doc role is [None] but doc is public', async t => {
   await models.doc.setDefaultRole(ws.id, 'doc1', DocRole.None);
-  await models.workspaceUser.set(
-    ws.id,
-    user.id,
-    WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Accepted
-  );
+  await models.workspaceUser.set(ws.id, user.id, WorkspaceRole.Collaborator, {
+    status: WorkspaceMemberStatus.Accepted,
+  });
   await models.doc.publish(ws.id, 'doc1');
 
   const role = await ac.getRole({
@@ -180,12 +171,9 @@ test('should assert action', async t => {
     )
   );
 
-  await models.workspaceUser.set(
-    ws.id,
-    u2.id,
-    WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Accepted
-  );
+  await models.workspaceUser.set(ws.id, u2.id, WorkspaceRole.Collaborator, {
+    status: WorkspaceMemberStatus.Accepted,
+  });
 
   await models.docUser.set(ws.id, 'doc1', u2.id, DocRole.Manager);
 

@@ -374,6 +374,10 @@ export function useAFFiNEI18N(): {
       */
     ["Need-More-Seats"](): string;
     /**
+      * `Allocating Seat`
+      */
+    ["Allocating Seat"](): string;
+    /**
       * `Admin`
       */
     Admin(): string;
@@ -8050,6 +8054,20 @@ export function useAFFiNEI18N(): {
       * `Can not batch grant doc owner permissions.`
       */
     ["error.CAN_NOT_BATCH_GRANT_DOC_OWNER_PERMISSIONS"](): string;
+    /**
+      * `Can not set a non-active member as owner.`
+      */
+    ["error.NEW_OWNER_IS_NOT_ACTIVE_MEMBER"](): string;
+    /**
+      * `Invalid invitation provided.`
+      */
+    ["error.INVALID_INVITATION"](): string;
+    /**
+      * `No more seat available in the Space {{spaceId}}.`
+      */
+    ["error.NO_MORE_SEAT"](options: {
+        readonly spaceId: string;
+    }): string;
     /**
       * `Unsupported subscription plan: {{plan}}.`
       */

@@ -16,7 +16,7 @@ import { PgWorkspaceDocStorageAdapter } from '../../doc';
 import { AccessController } from '../../permission';
 import { DocID } from '../../utils/doc';
 import { WorkspaceType } from '../types';
-import { EditorType } from './workspace';
+import { EditorType } from './doc';
 
 @ObjectType()
 class DocHistoryType implements Partial<SnapshotHistory> {

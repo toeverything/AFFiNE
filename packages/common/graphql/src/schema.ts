@@ -530,6 +530,8 @@ export interface DocType {
   /** paginated doc granted users list */
   grantedUsersList: PaginatedGrantedDocUserType;
   id: Scalars['String']['output'];
+  /** Doc metadata */
+  meta: WorkspaceDocMeta;
   mode: PublicDocMode;
   permissions: DocPermissions;
   public: Scalars['Boolean']['output'];
@@ -582,6 +584,7 @@ export type ErrorDataUnion =
   | MemberNotFoundInSpaceDataType
   | MentionUserDocAccessDeniedDataType
   | MissingOauthQueryParameterDataType
+  | NoMoreSeatDataType
   | NotInSpaceDataType
   | QueryTooLongDataType
   | RuntimeConfigNotFoundDataType
@@ -668,6 +671,7 @@ export enum ErrorNames {
   INVALID_EMAIL = 'INVALID_EMAIL',
   INVALID_EMAIL_TOKEN = 'INVALID_EMAIL_TOKEN',
   INVALID_HISTORY_TIMESTAMP = 'INVALID_HISTORY_TIMESTAMP',
+  INVALID_INVITATION = 'INVALID_INVITATION',
   INVALID_LICENSE_SESSION_ID = 'INVALID_LICENSE_SESSION_ID',
   INVALID_LICENSE_TO_ACTIVATE = 'INVALID_LICENSE_TO_ACTIVATE',
   INVALID_LICENSE_UPDATE_PARAMS = 'INVALID_LICENSE_UPDATE_PARAMS',
@@ -686,10 +690,12 @@ export enum ErrorNames {
   MENTION_USER_ONESELF_DENIED = 'MENTION_USER_ONESELF_DENIED',
   MISSING_OAUTH_QUERY_PARAMETER = 'MISSING_OAUTH_QUERY_PARAMETER',
   NETWORK_ERROR = 'NETWORK_ERROR',
+  NEW_OWNER_IS_NOT_ACTIVE_MEMBER = 'NEW_OWNER_IS_NOT_ACTIVE_MEMBER',
   NOTIFICATION_NOT_FOUND = 'NOTIFICATION_NOT_FOUND',
   NOT_FOUND = 'NOT_FOUND',
   NOT_IN_SPACE = 'NOT_IN_SPACE',
   NO_COPILOT_PROVIDER_AVAILABLE = 'NO_COPILOT_PROVIDER_AVAILABLE',
+  NO_MORE_SEAT = 'NO_MORE_SEAT',
   OAUTH_ACCOUNT_ALREADY_CONNECTED = 'OAUTH_ACCOUNT_ALREADY_CONNECTED',
   OAUTH_STATE_EXPIRED = 'OAUTH_STATE_EXPIRED',
   OWNER_CAN_NOT_LEAVE_WORKSPACE = 'OWNER_CAN_NOT_LEAVE_WORKSPACE',
@@ -925,19 +931,19 @@ export interface InviteLink {
 export interface InviteResult {
   __typename?: 'InviteResult';
   email: Scalars['String']['output'];
+  /** Invite error */
+  error: Maybe<Scalars['JSONObject']['output']>;
   /** Invite id, null if invite record create failed */
   inviteId: Maybe<Scalars['String']['output']>;
-  /** Invite email sent success */
+  /**
+   * Invite email sent success
+   * @deprecated Notification will be sent asynchronously
+   */
   sentSuccess: Scalars['Boolean']['output'];
 }
 
 export interface InviteUserType {
   __typename?: 'InviteUserType';
-  /**
-   * User accepted
-   * @deprecated Use `status` instead
-   */
-  accepted: Scalars['Boolean']['output'];
   /** User avatar url */
   avatarUrl: Maybe<Scalars['String']['output']>;
   /**
@@ -1139,8 +1145,9 @@ export interface Mutation {
   grantMember: Scalars['Boolean']['output'];
   /** import users */
   importUsers: Array<UserImportResultType>;
-  invite: Scalars['String']['output'];
+  /** @deprecated use [inviteMembers] instead */
   inviteBatch: Array<InviteResult>;
+  inviteMembers: Array<InviteResult>;
   leaveWorkspace: Scalars['Boolean']['output'];
   /** mention user in a doc */
   mentionUser: Scalars['ID']['output'];
@@ -1166,9 +1173,11 @@ export interface Mutation {
   removeWorkspaceFeature: Scalars['Boolean']['output'];
   resumeSubscription: SubscriptionType;
   retryAudioTranscription: Maybe<TranscriptionResultType>;
+  /** @deprecated use [revokeMember] instead */
   revoke: Scalars['Boolean']['output'];
   revokeDocUserRoles: Scalars['Boolean']['output'];
   revokeInviteLink: Scalars['Boolean']['output'];
+  revokeMember: Scalars['Boolean']['output'];
   revokePublicDoc: DocType;
   /** @deprecated use revokePublicDoc instead */
   revokePublicPage: DocType;
@@ -1208,7 +1217,7 @@ export interface Mutation {
 export interface MutationAcceptInviteByIdArgs {
   inviteId: Scalars['String']['input'];
   sendAcceptMail?: InputMaybe<Scalars['Boolean']['input']>;
-  workspaceId: Scalars['String']['input'];
+  workspaceId?: InputMaybe<Scalars['String']['input']>;
 }
 
 export interface MutationActivateLicenseArgs {
@@ -1361,16 +1370,14 @@ export interface MutationImportUsersArgs {
   input: ImportUsersInput;
 }
 
-export interface MutationInviteArgs {
-  email: Scalars['String']['input'];
-  permission?: InputMaybe<Permission>;
+export interface MutationInviteBatchArgs {
+  emails: Array<Scalars['String']['input']>;
   sendInviteMail?: InputMaybe<Scalars['Boolean']['input']>;
   workspaceId: Scalars['String']['input'];
 }
 
-export interface MutationInviteBatchArgs {
+export interface MutationInviteMembersArgs {
   emails: Array<Scalars['String']['input']>;
-  sendInviteMail?: InputMaybe<Scalars['Boolean']['input']>;
   workspaceId: Scalars['String']['input'];
 }
 
@@ -1458,6 +1465,11 @@ export interface MutationRevokeDocUserRolesArgs {
 }
 
 export interface MutationRevokeInviteLinkArgs {
+  workspaceId: Scalars['String']['input'];
+}
+
+export interface MutationRevokeMemberArgs {
+  userId: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
 }
 
@@ -1574,6 +1586,11 @@ export interface MutationUploadAvatarArgs {
 
 export interface MutationVerifyEmailArgs {
   token: Scalars['String']['input'];
+}
+
+export interface NoMoreSeatDataType {
+  __typename?: 'NoMoreSeatDataType';
+  spaceId: Scalars['String']['output'];
 }
 
 export interface NotInSpaceDataType {
@@ -1723,7 +1740,7 @@ export interface Query {
   /** Get current user */
   currentUser: Maybe<UserType>;
   error: ErrorDataUnion;
-  /** send workspace invitation */
+  /** get workspace invitation info */
   getInviteInfo: InvitationType;
   /**
    * Get is admin of workspace
@@ -2220,6 +2237,14 @@ export interface WorkspaceBlobSizes {
   size: Scalars['SafeInt']['output'];
 }
 
+export interface WorkspaceDocMeta {
+  __typename?: 'WorkspaceDocMeta';
+  createdAt: Scalars['DateTime']['output'];
+  createdBy: Maybe<EditorType>;
+  updatedAt: Scalars['DateTime']['output'];
+  updatedBy: Maybe<EditorType>;
+}
+
 /** Workspace invite link expire time */
 export enum WorkspaceInviteLinkExpireTime {
   OneDay = 'OneDay',
@@ -2231,6 +2256,7 @@ export enum WorkspaceInviteLinkExpireTime {
 /** Member invite status in workspace */
 export enum WorkspaceMemberStatus {
   Accepted = 'Accepted',
+  AllocatingSeat = 'AllocatingSeat',
   NeedMoreSeat = 'NeedMoreSeat',
   NeedMoreSeatAndReview = 'NeedMoreSeatAndReview',
   Pending = 'Pending',
@@ -2240,14 +2266,6 @@ export enum WorkspaceMemberStatus {
 export interface WorkspaceMembersExceedLimitToDowngradeDataType {
   __typename?: 'WorkspaceMembersExceedLimitToDowngradeDataType';
   limit: Scalars['Int']['output'];
-}
-
-export interface WorkspacePageMeta {
-  __typename?: 'WorkspacePageMeta';
-  createdAt: Scalars['DateTime']['output'];
-  createdBy: Maybe<EditorType>;
-  updatedAt: Scalars['DateTime']['output'];
-  updatedBy: Maybe<EditorType>;
 }
 
 export interface WorkspacePermissionNotFoundDataType {
@@ -2344,8 +2362,11 @@ export interface WorkspaceType {
   members: Array<InviteUserType>;
   /** Owner of workspace */
   owner: UserType;
-  /** Cloud page metadata of workspace */
-  pageMeta: WorkspacePageMeta;
+  /**
+   * Cloud page metadata of workspace
+   * @deprecated use [WorkspaceType.doc.meta] instead
+   */
+  pageMeta: WorkspaceDocMeta;
   /** map of action permissions */
   permissions: WorkspacePermissions;
   /** is Public workspace */
@@ -3803,7 +3824,7 @@ export type GetWorkspacePageMetaByIdQuery = {
   workspace: {
     __typename?: 'WorkspaceType';
     pageMeta: {
-      __typename?: 'WorkspacePageMeta';
+      __typename?: 'WorkspaceDocMeta';
       createdAt: string;
       updatedAt: string;
       createdBy: {
@@ -4129,7 +4150,7 @@ export type RevokeMemberPermissionMutationVariables = Exact<{
 
 export type RevokeMemberPermissionMutation = {
   __typename?: 'Mutation';
-  revoke: boolean;
+  revokeMember: boolean;
 };
 
 export type RevokePublicPageMutationVariables = Exact<{
@@ -4375,23 +4396,14 @@ export type SetEnableUrlPreviewMutation = {
   updateWorkspace: { __typename?: 'WorkspaceType'; id: string };
 };
 
-export type InviteByEmailMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  email: Scalars['String']['input'];
-  sendInviteMail?: InputMaybe<Scalars['Boolean']['input']>;
-}>;
-
-export type InviteByEmailMutation = { __typename?: 'Mutation'; invite: string };
-
 export type InviteByEmailsMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   emails: Array<Scalars['String']['input']> | Scalars['String']['input'];
-  sendInviteMail?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 export type InviteByEmailsMutation = {
   __typename?: 'Mutation';
-  inviteBatch: Array<{
+  inviteMembers: Array<{
     __typename?: 'InviteResult';
     email: string;
     inviteId: string | null;
@@ -4402,28 +4414,11 @@ export type InviteByEmailsMutation = {
 export type AcceptInviteByInviteIdMutationVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   inviteId: Scalars['String']['input'];
-  sendAcceptMail?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 export type AcceptInviteByInviteIdMutation = {
   __typename?: 'Mutation';
   acceptInviteById: boolean;
-};
-
-export type InviteBatchMutationVariables = Exact<{
-  workspaceId: Scalars['String']['input'];
-  emails: Array<Scalars['String']['input']> | Scalars['String']['input'];
-  sendInviteMail?: InputMaybe<Scalars['Boolean']['input']>;
-}>;
-
-export type InviteBatchMutation = {
-  __typename?: 'Mutation';
-  inviteBatch: Array<{
-    __typename?: 'InviteResult';
-    email: string;
-    inviteId: string | null;
-    sentSuccess: boolean;
-  }>;
 };
 
 export type CreateInviteLinkMutationVariables = Exact<{
@@ -5217,11 +5212,6 @@ export type Mutations =
       response: SetEnableUrlPreviewMutation;
     }
   | {
-      name: 'inviteByEmailMutation';
-      variables: InviteByEmailMutationVariables;
-      response: InviteByEmailMutation;
-    }
-  | {
       name: 'inviteByEmailsMutation';
       variables: InviteByEmailsMutationVariables;
       response: InviteByEmailsMutation;
@@ -5230,11 +5220,6 @@ export type Mutations =
       name: 'acceptInviteByInviteIdMutation';
       variables: AcceptInviteByInviteIdMutationVariables;
       response: AcceptInviteByInviteIdMutation;
-    }
-  | {
-      name: 'inviteBatchMutation';
-      variables: InviteBatchMutationVariables;
-      response: InviteBatchMutation;
     }
   | {
       name: 'createInviteLinkMutation';

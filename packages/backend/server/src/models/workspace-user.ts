@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { WorkspaceMemberStatus } from '@prisma/client';
+import {
+  WorkspaceMemberSource,
+  WorkspaceMemberStatus,
+  WorkspaceUserRole,
+} from '@prisma/client';
 import { groupBy } from 'lodash-es';
 
-import { EventBus, PaginationInput } from '../base';
+import { EventBus, NewOwnerIsNotActiveMember, PaginationInput } from '../base';
 import { BaseModel } from './base';
 import { WorkspaceRole, workspaceUserSelect } from './common';
 
@@ -20,22 +24,6 @@ declare global {
       userId: string;
       workspaceId: string;
       role: WorkspaceRole;
-    };
-    // below are business events, should be declare somewhere else
-    'workspace.members.updated': {
-      workspaceId: string;
-      count: number;
-    };
-    'workspace.members.removed': {
-      userId: string;
-      workspaceId: string;
-    };
-    'workspace.members.leave': {
-      workspaceId: string;
-      user: {
-        id: string;
-        email: string;
-      };
     };
   }
 }
@@ -61,6 +49,20 @@ export class WorkspaceUserModel extends BaseModel {
 
     // If there is already an owner, we need to change the old owner to admin
     if (oldOwner) {
+      const newOwnerOldRole = await this.db.workspaceUserRole.findFirst({
+        where: {
+          workspaceId,
+          userId,
+        },
+      });
+
+      if (
+        !newOwnerOldRole ||
+        newOwnerOldRole.status !== WorkspaceMemberStatus.Accepted
+      ) {
+        throw new NewOwnerIsNotActiveMember();
+      }
+
       await this.db.workspaceUserRole.update({
         where: {
           id: oldOwner.id,
@@ -69,27 +71,14 @@ export class WorkspaceUserModel extends BaseModel {
           type: WorkspaceRole.Admin,
         },
       });
-    }
-
-    await this.db.workspaceUserRole.upsert({
-      where: {
-        workspaceId_userId: {
-          workspaceId,
-          userId,
+      await this.db.workspaceUserRole.update({
+        where: {
+          id: newOwnerOldRole.id,
         },
-      },
-      update: {
-        type: WorkspaceRole.Owner,
-      },
-      create: {
-        workspaceId,
-        userId,
-        type: WorkspaceRole.Owner,
-        status: WorkspaceMemberStatus.Accepted,
-      },
-    });
-
-    if (oldOwner) {
+        data: {
+          type: WorkspaceRole.Owner,
+        },
+      });
       this.event.emit('workspace.owner.changed', {
         workspaceId,
         from: oldOwner.userId,
@@ -99,6 +88,14 @@ export class WorkspaceUserModel extends BaseModel {
         `Transfer workspace owner of [${workspaceId}] from [${oldOwner.userId}] to [${userId}]`
       );
     } else {
+      await this.db.workspaceUserRole.create({
+        data: {
+          workspaceId,
+          userId,
+          type: WorkspaceRole.Owner,
+          status: WorkspaceMemberStatus.Accepted,
+        },
+      });
       this.logger.log(`Set workspace owner of [${workspaceId}] to [${userId}]`);
     }
   }
@@ -113,7 +110,11 @@ export class WorkspaceUserModel extends BaseModel {
     workspaceId: string,
     userId: string,
     role: WorkspaceRole,
-    defaultStatus: WorkspaceMemberStatus = WorkspaceMemberStatus.Pending
+    defaultData: {
+      status?: WorkspaceMemberStatus;
+      source?: WorkspaceMemberSource;
+      inviterId?: string;
+    } = {}
   ) {
     if (role === WorkspaceRole.Owner) {
       throw new Error('Cannot grant Owner role of a workspace to a user.');
@@ -141,12 +142,20 @@ export class WorkspaceUserModel extends BaseModel {
 
       return newRole;
     } else {
+      const {
+        status = WorkspaceMemberStatus.Pending,
+        source = WorkspaceMemberSource.Email,
+        inviterId,
+      } = defaultData;
+
       return await this.db.workspaceUserRole.create({
         data: {
           workspaceId,
           userId,
           type: role,
-          status: defaultStatus,
+          status,
+          source,
+          inviterId,
         },
       });
     }
@@ -155,8 +164,12 @@ export class WorkspaceUserModel extends BaseModel {
   async setStatus(
     workspaceId: string,
     userId: string,
-    status: WorkspaceMemberStatus
+    status: WorkspaceMemberStatus,
+    data: {
+      inviterId?: string;
+    } = {}
   ) {
+    const { inviterId } = data;
     return await this.db.workspaceUserRole.update({
       where: {
         workspaceId_userId: {
@@ -166,14 +179,8 @@ export class WorkspaceUserModel extends BaseModel {
       },
       data: {
         status,
+        inviterId,
       },
-    });
-  }
-
-  async accept(id: string) {
-    await this.db.workspaceUserRole.update({
-      where: { id },
-      data: { status: WorkspaceMemberStatus.Accepted },
     });
   }
 
@@ -268,6 +275,20 @@ export class WorkspaceUserModel extends BaseModel {
     });
   }
 
+  /**
+   * Get the number of users those in the status should be charged in billing system in a workspace.
+   */
+  async chargedCount(workspaceId: string) {
+    return this.db.workspaceUserRole.count({
+      where: {
+        workspaceId,
+        status: {
+          not: WorkspaceMemberStatus.UnderReview,
+        },
+      },
+    });
+  }
+
   async getUserActiveRoles(
     userId: string,
     filter: { role?: WorkspaceRole } = {}
@@ -341,51 +362,62 @@ export class WorkspaceUserModel extends BaseModel {
   }
 
   @Transactional()
-  async refresh(workspaceId: string, memberLimit: number) {
+  async allocateSeats(workspaceId: string, limit: number) {
     const usedCount = await this.db.workspaceUserRole.count({
-      where: { workspaceId, status: WorkspaceMemberStatus.Accepted },
+      where: {
+        workspaceId,
+        status: {
+          in: [WorkspaceMemberStatus.Accepted, WorkspaceMemberStatus.Pending],
+        },
+      },
     });
 
-    const availableCount = memberLimit - usedCount;
-
-    if (availableCount <= 0) {
-      return;
+    if (limit <= usedCount) {
+      return [];
     }
 
-    const members = await this.db.workspaceUserRole.findMany({
-      select: { id: true, status: true },
+    const membersToBeAllocated = await this.db.workspaceUserRole.findMany({
       where: {
         workspaceId,
         status: {
           in: [
+            WorkspaceMemberStatus.AllocatingSeat,
             WorkspaceMemberStatus.NeedMoreSeat,
-            WorkspaceMemberStatus.NeedMoreSeatAndReview,
           ],
         },
       },
       orderBy: { createdAt: 'asc' },
+      take: limit - usedCount,
     });
 
-    const needChange = members.slice(0, availableCount);
-    const { NeedMoreSeat, NeedMoreSeatAndReview } = groupBy(
-      needChange,
-      m => m.status
-    );
+    const groups = groupBy(
+      membersToBeAllocated,
+      member => member.source
+    ) as Record<WorkspaceMemberSource, WorkspaceUserRole[]>;
 
-    const toPendings = NeedMoreSeat ?? [];
-    if (toPendings.length > 0) {
+    if (groups.Email?.length > 0) {
       await this.db.workspaceUserRole.updateMany({
-        where: { id: { in: toPendings.map(m => m.id) } },
+        where: { id: { in: groups.Email.map(m => m.id) } },
         data: { status: WorkspaceMemberStatus.Pending },
       });
     }
 
-    const toUnderReviewUserIds = NeedMoreSeatAndReview ?? [];
-    if (toUnderReviewUserIds.length > 0) {
+    if (groups.Link?.length > 0) {
       await this.db.workspaceUserRole.updateMany({
-        where: { id: { in: toUnderReviewUserIds.map(m => m.id) } },
-        data: { status: WorkspaceMemberStatus.UnderReview },
+        where: { id: { in: groups.Link.map(m => m.id) } },
+        data: { status: WorkspaceMemberStatus.Accepted },
       });
     }
+
+    // after allocating, all rests should be `NeedMoreSeat`
+    await this.db.workspaceUserRole.updateMany({
+      where: {
+        workspaceId,
+        status: WorkspaceMemberStatus.AllocatingSeat,
+      },
+      data: { status: WorkspaceMemberStatus.NeedMoreSeat },
+    });
+
+    return groups.Email;
   }
 }

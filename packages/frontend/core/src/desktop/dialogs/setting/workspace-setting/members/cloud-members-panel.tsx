@@ -206,7 +206,7 @@ export const CloudWorkspaceMembersPanel = ({
         setIsMutating(false);
         return;
       }
-      const results = await membersService.inviteMembers(uniqueEmails, true);
+      const results = await membersService.inviteMembers(uniqueEmails);
       const unSuccessInvites = results.reduce<string[]>((acc, result) => {
         if (!result.sentSuccess) {
           acc.push(result.email);

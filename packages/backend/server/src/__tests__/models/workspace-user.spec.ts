@@ -1,10 +1,13 @@
+import { randomBytes } from 'node:crypto';
+
 import { PrismaClient } from '@prisma/client';
 import test from 'ava';
 import Sinon from 'sinon';
 
-import { EventBus } from '../../base';
+import { EventBus, NewOwnerIsNotActiveMember } from '../../base';
 import { Models, WorkspaceMemberStatus, WorkspaceRole } from '../../models';
-import { createTestingModule, TestingModule } from '../utils';
+import { createModule, TestingModule } from '../create-module';
+import { Mockers } from '../mocks';
 
 let db: PrismaClient;
 let models: Models;
@@ -12,7 +15,7 @@ let module: TestingModule;
 let event: Sinon.SinonStubbedInstance<EventBus>;
 
 test.before(async () => {
-  module = await createTestingModule({
+  module = await createModule({
     tapModule: m => {
       m.overrideProvider(EventBus).useValue(Sinon.createStubInstance(EventBus));
     },
@@ -23,7 +26,6 @@ test.before(async () => {
 });
 
 test.beforeEach(async () => {
-  await module.initTestingDB();
   Sinon.reset();
 });
 
@@ -31,15 +33,9 @@ test.after(async () => {
   await module.close();
 });
 
-async function create() {
-  return db.workspace.create({
-    data: { public: false },
-  });
-}
-
 test('should set workspace owner', async t => {
-  const workspace = await create();
-  const user = await models.user.create({ email: 'u1@affine.pro' });
+  const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
   await models.workspaceUser.setOwner(workspace.id, user.id);
   const owner = await models.workspaceUser.getOwner(workspace.id);
 
@@ -47,9 +43,15 @@ test('should set workspace owner', async t => {
 });
 
 test('should transfer workespace owner', async t => {
-  const user = await models.user.create({ email: 'u1@affine.pro' });
-  const user2 = await models.user.create({ email: 'u2@affine.pro' });
-  const workspace = await models.workspace.create(user.id);
+  const [user, user2] = await module.create(Mockers.User, 2);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: { id: user.id },
+  });
+
+  await module.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: user2.id,
+  });
 
   await models.workspaceUser.setOwner(workspace.id, user2.id);
 
@@ -65,9 +67,30 @@ test('should transfer workespace owner', async t => {
   t.is(owner2.id, user2.id);
 });
 
+test('should throw if transfer owner to non-active member', async t => {
+  const [user, user2] = await module.create(Mockers.User, 2);
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: { id: user.id },
+  });
+
+  await t.throwsAsync(models.workspaceUser.setOwner(workspace.id, user2.id), {
+    instanceOf: NewOwnerIsNotActiveMember,
+  });
+
+  await module.create(Mockers.WorkspaceUser, {
+    workspaceId: workspace.id,
+    userId: user2.id,
+    status: WorkspaceMemberStatus.AllocatingSeat,
+  });
+
+  await t.throwsAsync(models.workspaceUser.setOwner(workspace.id, user2.id), {
+    instanceOf: NewOwnerIsNotActiveMember,
+  });
+});
+
 test('should get user role', async t => {
-  const workspace = await create();
-  const user = await models.user.create({ email: 'u1@affine.pro' });
+  const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
   await models.workspaceUser.set(workspace.id, user.id, WorkspaceRole.Admin);
 
   const role = await models.workspaceUser.get(workspace.id, user.id);
@@ -76,14 +99,11 @@ test('should get user role', async t => {
 });
 
 test('should get active workspace role', async t => {
-  const workspace = await create();
-  const user = await models.user.create({ email: 'u1@affine.pro' });
-  await models.workspaceUser.set(
-    workspace.id,
-    user.id,
-    WorkspaceRole.Admin,
-    WorkspaceMemberStatus.Accepted
-  );
+  const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
+  await models.workspaceUser.set(workspace.id, user.id, WorkspaceRole.Admin, {
+    status: WorkspaceMemberStatus.Accepted,
+  });
 
   const role = await models.workspaceUser.getActive(workspace.id, user.id);
 
@@ -91,9 +111,8 @@ test('should get active workspace role', async t => {
 });
 
 test('should not get inactive workspace role', async t => {
-  const workspace = await create();
-
-  const u1 = await models.user.create({ email: 'u1@affine.pro' });
+  const workspace = await module.create(Mockers.Workspace);
+  const u1 = await module.create(Mockers.User);
 
   await models.workspaceUser.set(workspace.id, u1.id, WorkspaceRole.Admin);
 
@@ -111,14 +130,11 @@ test('should not get inactive workspace role', async t => {
 });
 
 test('should update user role', async t => {
-  const workspace = await create();
-  const user = await models.user.create({ email: 'u1@affine.pro' });
-  await models.workspaceUser.set(
-    workspace.id,
-    user.id,
-    WorkspaceRole.Admin,
-    WorkspaceMemberStatus.Accepted
-  );
+  const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
+  await models.workspaceUser.set(workspace.id, user.id, WorkspaceRole.Admin, {
+    status: WorkspaceMemberStatus.Accepted,
+  });
   const role = await models.workspaceUser.get(workspace.id, user.id);
 
   t.is(role!.type, WorkspaceRole.Admin);
@@ -143,8 +159,8 @@ test('should update user role', async t => {
 });
 
 test('should return workspace role if status is Accepted', async t => {
-  const workspace = await create();
-  const u1 = await models.user.create({ email: 'u1@affine.pro' });
+  const workspace = await module.create(Mockers.Workspace);
+  const u1 = await module.create(Mockers.User);
 
   await models.workspaceUser.set(workspace.id, u1.id, WorkspaceRole.Admin);
   await models.workspaceUser.setStatus(
@@ -158,8 +174,8 @@ test('should return workspace role if status is Accepted', async t => {
 });
 
 test('should delete workspace user role', async t => {
-  const workspace = await create();
-  const u1 = await models.user.create({ email: 'u1@affine.pro' });
+  const workspace = await module.create(Mockers.Workspace);
+  const u1 = await module.create(Mockers.User);
 
   await models.workspaceUser.set(workspace.id, u1.id, WorkspaceRole.Admin);
   await models.workspaceUser.setStatus(
@@ -178,9 +194,9 @@ test('should delete workspace user role', async t => {
 });
 
 test('should get user workspace roles with filter', async t => {
-  const ws1 = await create();
-  const ws2 = await create();
-  const user = await models.user.create({ email: 'u1@affine.pro' });
+  const ws1 = await module.create(Mockers.Workspace);
+  const ws2 = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
 
   await db.workspaceUserRole.createMany({
     data: [
@@ -210,19 +226,19 @@ test('should get user workspace roles with filter', async t => {
 });
 
 test('should paginate workspace user roles', async t => {
-  const workspace = await create();
-  await db.user.createMany({
+  const workspace = await module.create(Mockers.Workspace);
+
+  const users = await db.user.createManyAndReturn({
     data: Array.from({ length: 200 }, (_, i) => ({
-      id: String(i),
       name: `u${i}`,
-      email: `${i}@affine.pro`,
+      email: `${randomBytes(10).toString('hex')}@affine.pro`,
     })),
   });
 
   await db.workspaceUserRole.createMany({
-    data: Array.from({ length: 200 }, (_, i) => ({
+    data: users.map((user, i) => ({
       workspaceId: workspace.id,
-      userId: String(i),
+      userId: user.id,
       type: WorkspaceRole.Collaborator,
       status: Object.values(WorkspaceMemberStatus)[
         Math.floor(Math.random() * Object.values(WorkspaceMemberStatus).length)
@@ -252,4 +268,39 @@ test('should paginate workspace user roles', async t => {
       .toSorted((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
       .map(r => r.id)
   );
+});
+
+test('should allocate seats for AllocatingSeat and NeedMoreSeat members', async t => {
+  const users = await module.create(Mockers.User, 4);
+  const workspace = await module.create(Mockers.Workspace);
+
+  for (const user of users) {
+    await module.create(Mockers.WorkspaceUser, {
+      workspaceId: workspace.id,
+      userId: user.id,
+      status: WorkspaceMemberStatus.AllocatingSeat,
+    });
+  }
+
+  await models.workspaceUser.allocateSeats(workspace.id, 1);
+
+  let count = await db.workspaceUserRole.count({
+    where: {
+      workspaceId: workspace.id,
+      status: WorkspaceMemberStatus.Pending,
+    },
+  });
+
+  t.is(count, 1);
+
+  await models.workspaceUser.allocateSeats(workspace.id, 3);
+
+  count = await db.workspaceUserRole.count({
+    where: {
+      workspaceId: workspace.id,
+      status: WorkspaceMemberStatus.Pending,
+    },
+  });
+
+  t.is(count, 3);
 });

@@ -47,7 +47,10 @@ export class LicenseService {
             memberLimit: quantity,
           }
         );
-        await this.models.workspaceUser.refresh(workspaceId, quantity);
+        this.event.emit('workspace.members.allocateSeats', {
+          workspaceId,
+          quantity,
+        });
         break;
       default:
         break;
@@ -188,7 +191,7 @@ export class LicenseService {
 
   @OnEvent('workspace.members.updated')
   async updateTeamSeats(payload: Events['workspace.members.updated']) {
-    const { workspaceId, count } = payload;
+    const { workspaceId } = payload;
 
     const license = await this.db.installedLicense.findUnique({
       where: {
@@ -200,6 +203,7 @@ export class LicenseService {
       return;
     }
 
+    const count = await this.models.workspaceUser.chargedCount(workspaceId);
     await this.fetchAffinePro(`/api/team/licenses/${license.key}/seats`, {
       method: 'POST',
       body: JSON.stringify({

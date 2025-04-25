@@ -98,5 +98,9 @@ export class WorkspaceModel extends BaseModel {
     const workspace = await this.get(workspaceId);
     return workspace?.enableDocEmbedding ?? false;
   }
+
+  async isTeamWorkspace(workspaceId: string) {
+    return this.models.workspaceFeature.has(workspaceId, 'team_plan_v1');
+  }
   // #endregion
 }

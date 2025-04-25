@@ -551,6 +551,19 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     message: 'Can not batch grant doc owner permissions.',
   },
+  new_owner_is_not_active_member: {
+    type: 'bad_request',
+    message: 'Can not set a non-active member as owner.',
+  },
+  invalid_invitation: {
+    type: 'invalid_input',
+    message: 'Invalid invitation provided.',
+  },
+  no_more_seat: {
+    type: 'bad_request',
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) => `No more seat available in the Space ${spaceId}.`,
+  },
 
   // Subscription Errors
   unsupported_subscription_plan: {

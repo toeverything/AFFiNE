@@ -13,6 +13,7 @@ import {
   AFFiNELogger,
   CacheInterceptor,
   CloudThrottlerGuard,
+  EventBus,
   GlobalExceptionFilter,
   JobQueue,
   OneMB,
@@ -20,6 +21,7 @@ import {
 import { SocketIoAdapter } from '../../base/websocket';
 import { AuthGuard, AuthService } from '../../core/auth';
 import { Mailer } from '../../core/mail';
+import { Models } from '../../models';
 import {
   createFactory,
   MockedUser,
@@ -43,6 +45,8 @@ export class TestingApp extends NestApplication {
   create = createFactory(this.get(PrismaClient, { strict: false }));
   mails = this.get(Mailer, { strict: false }) as MockMailer;
   queue = this.get(JobQueue, { strict: false }) as MockJobQueue;
+  eventBus = this.get(EventBus, { strict: false });
+  models = this.get(Models, { strict: false });
 
   get url() {
     const server = this.getHttpServer();

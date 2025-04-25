@@ -17,6 +17,7 @@ import {
   Cache,
   DocActionDenied,
   DocDefaultRoleCanNotBeOwner,
+  DocNotFound,
   ExpectToGrantDocUserRoles,
   ExpectToPublishDoc,
   ExpectToRevokeDocUserRoles,
@@ -29,6 +30,7 @@ import {
 } from '../../../base';
 import { Models, PublicDocMode } from '../../../models';
 import { CurrentUser } from '../../auth';
+import { Editor } from '../../doc';
 import {
   AccessController,
   DOC_ACTIONS,
@@ -148,6 +150,29 @@ const DocPermissions = registerObjectType<
   { name: 'DocPermissions' }
 );
 
+@ObjectType()
+export class EditorType implements Partial<Editor> {
+  @Field()
+  name!: string;
+
+  @Field(() => String, { nullable: true })
+  avatarUrl!: string | null;
+}
+
+@ObjectType()
+class WorkspaceDocMeta {
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
+
+  @Field(() => EditorType, { nullable: true })
+  createdBy!: EditorType | null;
+
+  @Field(() => EditorType, { nullable: true })
+  updatedBy!: EditorType | null;
+}
 @Resolver(() => WorkspaceType)
 export class WorkspaceDocResolver {
   private readonly logger = new Logger(WorkspaceDocResolver.name);
@@ -161,6 +186,28 @@ export class WorkspaceDocResolver {
     private readonly models: Models,
     private readonly cache: Cache
   ) {}
+
+  @ResolveField(() => WorkspaceDocMeta, {
+    description: 'Cloud page metadata of workspace',
+    complexity: 2,
+    deprecationReason: 'use [WorkspaceType.doc.meta] instead',
+  })
+  async pageMeta(
+    @Parent() workspace: WorkspaceType,
+    @Args('pageId') pageId: string
+  ) {
+    const metadata = await this.models.doc.getAuthors(workspace.id, pageId);
+    if (!metadata) {
+      throw new DocNotFound({ spaceId: workspace.id, docId: pageId });
+    }
+
+    return {
+      createdAt: metadata.createdAt,
+      updatedAt: metadata.updatedAt,
+      createdBy: metadata.createdByUser || null,
+      updatedBy: metadata.updatedByUser || null,
+    };
+  }
 
   @ResolveField(() => [DocType], {
     complexity: 2,
@@ -364,6 +411,26 @@ export class DocResolver {
     private readonly models: Models
   ) {}
 
+  @ResolveField(() => WorkspaceDocMeta, {
+    description: 'Doc metadata',
+    complexity: 2,
+  })
+  async meta(@Parent() doc: DocType) {
+    const metadata = await this.models.doc.getAuthors(
+      doc.workspaceId,
+      doc.docId
+    );
+    if (!metadata) {
+      throw new DocNotFound({ spaceId: doc.workspaceId, docId: doc.docId });
+    }
+
+    return {
+      createdAt: metadata.createdAt,
+      updatedAt: metadata.updatedAt,
+      createdBy: metadata.createdByUser || null,
+      updatedBy: metadata.updatedByUser || null,
+    };
+  }
   @ResolveField(() => DocPermissions)
   async permissions(
     @CurrentUser() user: CurrentUser,

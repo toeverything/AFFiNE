@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import { OnEvent } from '../../base';
-import { WorkspaceService } from '../../core/workspaces/resolvers';
+import { EventBus, OnEvent } from '../../base';
+import { WorkspaceService } from '../../core/workspaces';
 import { Models } from '../../models';
 import { SubscriptionPlan } from './types';
 
@@ -9,7 +9,8 @@ import { SubscriptionPlan } from './types';
 export class QuotaOverride {
   constructor(
     private readonly workspace: WorkspaceService,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly event: EventBus
   ) {}
 
   @OnEvent('workspace.subscription.activated')
@@ -30,7 +31,10 @@ export class QuotaOverride {
             memberLimit: quantity,
           }
         );
-        await this.models.workspaceUser.refresh(workspaceId, quantity);
+        this.event.emit('workspace.members.allocateSeats', {
+          workspaceId,
+          quantity,
+        });
         if (!isTeam) {
           // this event will triggered when subscription is activated or changed
           // we only send emails when the team workspace is activated

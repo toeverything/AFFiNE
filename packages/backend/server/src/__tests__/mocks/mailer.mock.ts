@@ -1,3 +1,4 @@
+import { interval, map, take, takeUntil } from 'rxjs';
 import Sinon from 'sinon';
 
 import { Mailer } from '../../core/mail';
@@ -20,6 +21,35 @@ export class MockMailer {
     }
 
     return last as any;
+  }
+
+  waitFor<Mail extends MailName>(
+    name: Mail,
+    timeout: number = 1000
+  ): Promise<Extract<Jobs['notification.sendMail'], { name: Mail }>> {
+    const { promise, reject, resolve } = Promise.withResolvers<any>();
+
+    interval(10)
+      .pipe(
+        take(Math.floor(timeout / 10)),
+        takeUntil(promise),
+        map(() => {
+          const last = this.send.lastCall.args[0];
+          return last.name === name ? last : undefined;
+        })
+      )
+      .subscribe({
+        next: val => {
+          if (val) {
+            resolve(val);
+          }
+        },
+        complete: () => {
+          reject(new Error('Timeout wait for job coming'));
+        },
+      });
+
+    return promise;
   }
 
   count(name: MailName) {

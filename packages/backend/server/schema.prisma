@@ -27,7 +27,9 @@ model User {
 
   features                     UserFeature[]
   userStripeCustomer           UserStripeCustomer?
-  workspacePermissions         WorkspaceUserRole[]
+  workspaces                   WorkspaceUserRole[]
+  // Invite others to join the workspace
+  WorkspaceInvitations         WorkspaceUserRole[]            @relation("inviter")
   docPermissions               WorkspaceDocUserRole[]
   connectedAccounts            ConnectedAccount[]
   sessions                     UserSession[]
@@ -150,11 +152,25 @@ model WorkspaceDoc {
 }
 
 enum WorkspaceMemberStatus {
-  Pending // 1. old state accepted = false
-  NeedMoreSeat // 2.1 for team: workspace owner need to buy more seat
-  NeedMoreSeatAndReview // 2.2 for team: workspace owner need to buy more seat and member need review
-  UnderReview // 3. for team: member is under review
-  Accepted // 4. old state accepted = true
+  /// Wait for the invitee to accept the invitation
+  Pending
+  /// Wait for administrators to review and accept the link invitation
+  UnderReview
+  /// Temporary state for team workspace. There is some time gap between invitation and bill payed
+  AllocatingSeat
+  /// Insufficient seat for user becoming active workspace member
+  NeedMoreSeat
+  /// Activate workspace member
+  Accepted
+  /// @deprecated
+  NeedMoreSeatAndReview
+}
+
+enum WorkspaceMemberSource {
+  /// Invited by email
+  Email
+  /// Invited by link
+  Link
 }
 
 model WorkspaceUserRole {
@@ -163,16 +179,19 @@ model WorkspaceUserRole {
   userId      String                @map("user_id") @db.VarChar
   // Workspace Role, Owner/Admin/Collaborator/External
   type        Int                   @db.SmallInt
-  /// @deprecated Whether the permission invitation is accepted by the user
-  accepted    Boolean               @default(false)
-  /// Whether the invite status of the workspace member
+  /// the invite status of the workspace member
   status      WorkspaceMemberStatus @default(Pending)
+  source      WorkspaceMemberSource @default(Email)
+  inviterId   String?               @map("inviter_id") @db.VarChar
   createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  /// When the invite status changed
   updatedAt   DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  inviter   User?     @relation(name: "inviter", fields: [inviterId], references: [id], onDelete: SetNull)
+
+  /// @deprecated Whether the permission invitation is accepted by the user, use status instead
+  accepted Boolean @default(false)
 
   @@unique([workspaceId, userId])
   // optimize for querying user's workspace permissions

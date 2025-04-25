@@ -1221,6 +1221,7 @@ export const getWorkspacePageMetaByIdQuery = {
     }
   }
 }`,
+  deprecations: ["'pageMeta' is deprecated: use [WorkspaceType.doc.meta] instead"],
 };
 
 export const getWorkspacePublicByIdQuery = {
@@ -1511,7 +1512,7 @@ export const revokeMemberPermissionMutation = {
   id: 'revokeMemberPermissionMutation' as const,
   op: 'revokeMemberPermission',
   query: `mutation revokeMemberPermission($workspaceId: String!, $userId: String!) {
-  revoke(workspaceId: $workspaceId, userId: $userId)
+  revokeMember(workspaceId: $workspaceId, userId: $userId)
 }`,
 };
 
@@ -1740,59 +1741,24 @@ export const setEnableUrlPreviewMutation = {
 }`,
 };
 
-export const inviteByEmailMutation = {
-  id: 'inviteByEmailMutation' as const,
-  op: 'inviteByEmail',
-  query: `mutation inviteByEmail($workspaceId: String!, $email: String!, $sendInviteMail: Boolean) {
-  invite(
-    workspaceId: $workspaceId
-    email: $email
-    sendInviteMail: $sendInviteMail
-  )
-}`,
-};
-
 export const inviteByEmailsMutation = {
   id: 'inviteByEmailsMutation' as const,
   op: 'inviteByEmails',
-  query: `mutation inviteByEmails($workspaceId: String!, $emails: [String!]!, $sendInviteMail: Boolean) {
-  inviteBatch(
-    workspaceId: $workspaceId
-    emails: $emails
-    sendInviteMail: $sendInviteMail
-  ) {
+  query: `mutation inviteByEmails($workspaceId: String!, $emails: [String!]!) {
+  inviteMembers(workspaceId: $workspaceId, emails: $emails) {
     email
     inviteId
     sentSuccess
   }
 }`,
+  deprecations: ["'sentSuccess' is deprecated: Notification will be sent asynchronously"],
 };
 
 export const acceptInviteByInviteIdMutation = {
   id: 'acceptInviteByInviteIdMutation' as const,
   op: 'acceptInviteByInviteId',
-  query: `mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!, $sendAcceptMail: Boolean) {
-  acceptInviteById(
-    workspaceId: $workspaceId
-    inviteId: $inviteId
-    sendAcceptMail: $sendAcceptMail
-  )
-}`,
-};
-
-export const inviteBatchMutation = {
-  id: 'inviteBatchMutation' as const,
-  op: 'inviteBatch',
-  query: `mutation inviteBatch($workspaceId: String!, $emails: [String!]!, $sendInviteMail: Boolean) {
-  inviteBatch(
-    workspaceId: $workspaceId
-    emails: $emails
-    sendInviteMail: $sendInviteMail
-  ) {
-    email
-    inviteId
-    sentSuccess
-  }
+  query: `mutation acceptInviteByInviteId($workspaceId: String!, $inviteId: String!) {
+  acceptInviteById(workspaceId: $workspaceId, inviteId: $inviteId)
 }`,
 };
 

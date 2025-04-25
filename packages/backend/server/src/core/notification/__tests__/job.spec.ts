@@ -73,7 +73,9 @@ test('should create invitation notification', async t => {
     workspace.id,
     member.id,
     WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Pending
+    {
+      status: WorkspaceMemberStatus.Pending,
+    }
   );
   const spy = Sinon.spy(notificationService, 'createInvitation');
   await notificationJob.sendInvitation({
@@ -92,7 +94,9 @@ test('should create invitation accepted notification when user accepts the invit
     workspace.id,
     member.id,
     WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Accepted
+    {
+      status: WorkspaceMemberStatus.Accepted,
+    }
   );
   const spy = Sinon.spy(notificationService, 'createInvitationAccepted');
   await notificationJob.sendInvitationAccepted({
@@ -121,7 +125,9 @@ test('should create invitation review request notification', async t => {
     workspace.id,
     member.id,
     WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Pending
+    {
+      status: WorkspaceMemberStatus.Pending,
+    }
   );
   const spy = Sinon.spy(notificationService, 'createInvitationReviewRequest');
   await notificationJob.sendInvitationReviewRequest({
@@ -151,7 +157,9 @@ test('should create invitation review approved notification', async t => {
     workspace.id,
     member.id,
     WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Pending
+    {
+      status: WorkspaceMemberStatus.Pending,
+    }
   );
   const spy = Sinon.spy(notificationService, 'createInvitationReviewApproved');
   await notificationJob.sendInvitationReviewApproved({
@@ -181,7 +189,9 @@ test('should create invitation review declined notification', async t => {
     workspace.id,
     member.id,
     WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Pending
+    {
+      status: WorkspaceMemberStatus.Pending,
+    }
   );
   const spy = Sinon.spy(notificationService, 'createInvitationReviewDeclined');
   await notificationJob.sendInvitationReviewDeclined({

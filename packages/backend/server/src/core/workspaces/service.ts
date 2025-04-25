@@ -1,29 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { getStreamAsBuffer } from 'get-stream';
 
-import {
-  Cache,
-  JobQueue,
-  NotFound,
-  OnEvent,
-  URLHelper,
-  UserNotFound,
-} from '../../../base';
+import { Cache, JobQueue, NotFound, URLHelper } from '../../base';
 import {
   DEFAULT_WORKSPACE_AVATAR,
   DEFAULT_WORKSPACE_NAME,
   Models,
-} from '../../../models';
-import { DocReader } from '../../doc';
-import { Mailer } from '../../mail';
-import { WorkspaceRole } from '../../permission';
-import { WorkspaceBlobStorage } from '../../storage';
+} from '../../models';
+import { DocReader } from '../doc';
+import { Mailer } from '../mail';
+import { WorkspaceRole } from '../permission';
+import { WorkspaceBlobStorage } from '../storage';
 
 export type InviteInfo = {
   isLink: boolean;
   workspaceId: string;
-  inviterUserId?: string;
-  inviteeUserId?: string;
+  inviterUserId: string | null;
+  inviteeUserId: string | null;
 };
 
 @Injectable()
@@ -62,6 +55,7 @@ export class WorkspaceService {
       isLink: false,
       workspaceId: workspaceUser.workspaceId,
       inviteeUserId: workspaceUser.userId,
+      inviterUserId: workspaceUser.inviterId,
     };
   }
 
@@ -87,26 +81,15 @@ export class WorkspaceService {
     };
   }
 
-  async sendInvitationAcceptedNotification(inviteId: string) {
-    const { workspaceId, inviterUserId, inviteeUserId } =
-      await this.getInviteInfo(inviteId);
-    const inviter = inviterUserId
-      ? await this.models.user.getWorkspaceUser(inviterUserId)
-      : await this.models.workspaceUser.getOwner(workspaceId);
-
-    if (!inviter || !inviteeUserId) {
-      this.logger.warn(
-        `Inviter or invitee user not found for inviteId: ${inviteId}`
-      );
-      throw new UserNotFound();
-    }
-
+  async sendInvitationAcceptedNotification(
+    inviterId: string,
+    inviteId: string
+  ) {
     await this.queue.add('notification.sendInvitationAccepted', {
-      inviterId: inviter.id,
+      inviterId,
       inviteId,
     });
   }
-
   async sendInvitationNotification(inviterId: string, inviteId: string) {
     await this.queue.add('notification.sendInvitation', {
       inviterId,
@@ -116,7 +99,7 @@ export class WorkspaceService {
 
   // ================ Team ================
   async isTeamWorkspace(workspaceId: string) {
-    return this.models.workspaceFeature.has(workspaceId, 'team_plan_v1');
+    return this.models.workspace.isTeamWorkspace(workspaceId);
   }
 
   async sendTeamWorkspaceUpgradedEmail(workspaceId: string) {
@@ -269,27 +252,21 @@ export class WorkspaceService {
     });
   }
 
-  @OnEvent('workspace.members.removed')
-  async onMemberRemoved({
-    userId,
-    workspaceId,
-  }: Events['workspace.members.removed']) {
-    const user = await this.models.user.get(userId);
-    if (!user) {
-      this.logger.warn(
-        `User not found for seeding member removed email: ${userId}`
-      );
-      return;
+  async allocateSeats(workspaceId: string, quantity: number) {
+    const pendings = await this.models.workspaceUser.allocateSeats(
+      workspaceId,
+      quantity
+    );
+    const owner = await this.models.workspaceUser.getOwner(workspaceId);
+    for (const member of pendings) {
+      try {
+        await this.queue.add('notification.sendInvitation', {
+          inviterId: member.inviterId ?? owner.id,
+          inviteId: member.id,
+        });
+      } catch (e) {
+        this.logger.error('Failed to send invitation notification', e);
+      }
     }
-
-    await this.mailer.send({
-      name: 'MemberRemoved',
-      to: user.email,
-      props: {
-        workspace: {
-          $$workspaceId: workspaceId,
-        },
-      },
-    });
   }
 }
