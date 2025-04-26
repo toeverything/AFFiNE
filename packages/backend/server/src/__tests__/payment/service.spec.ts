@@ -23,6 +23,10 @@ import {
 } from '../../plugins/payment/types';
 import { createTestingApp, type TestingApp } from '../utils';
 
+const unixNow = () => {
+  return Math.floor(Date.now() / 1000);
+};
+
 const PRO_MONTHLY = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Monthly}`;
 const PRO_YEARLY = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Yearly}`;
 const PRO_LIFETIME = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Lifetime}`;
@@ -125,8 +129,8 @@ const sub: Stripe.Subscription = {
   object: 'subscription',
   cancel_at_period_end: false,
   canceled_at: null,
-  current_period_end: 1745654236,
-  current_period_start: 1714118236,
+  current_period_end: unixNow() + 60 * 60 * 24 * 30,
+  current_period_start: unixNow() - 60 * 60 * 24 * 1,
   // @ts-expect-error stub
   customer: {
     id: 'cus_1',
@@ -780,10 +784,12 @@ test('should be able to update subscription', async t => {
   const { event, service, db, u1 } = t.context;
   await service.saveStripeSubscription(sub);
 
+  const canceledAt = unixNow();
+
   await service.saveStripeSubscription({
     ...sub,
     cancel_at_period_end: true,
-    canceled_at: 1714118236,
+    canceled_at: canceledAt,
   });
 
   t.true(
@@ -799,7 +805,7 @@ test('should be able to update subscription', async t => {
   });
 
   t.is(subInDB?.status, SubscriptionStatus.Active);
-  t.is(subInDB?.canceledAt?.getTime(), 1714118236000);
+  t.is(subInDB?.canceledAt?.getTime(), canceledAt * 1000);
 });
 
 test('should be able to delete subscription', async t => {
@@ -844,7 +850,7 @@ test('should be able to cancel subscription', async t => {
   stripe.subscriptions.update.resolves({
     ...sub,
     cancel_at_period_end: true,
-    canceled_at: 1714118236,
+    canceled_at: unixNow(),
   } as any);
 
   const subInDB = await service.cancelSubscription({
@@ -907,8 +913,8 @@ const subscriptionSchedule: Stripe.SubscriptionSchedule = {
           quantity: 1,
         },
       ],
-      start_date: Math.floor(Date.now() / 1000),
-      end_date: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000),
+      start_date: unixNow(),
+      end_date: unixNow() + 30 * 24 * 60 * 60,
     },
     {
       items: [
@@ -918,7 +924,7 @@ const subscriptionSchedule: Stripe.SubscriptionSchedule = {
           quantity: 1,
         },
       ],
-      start_date: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000),
+      start_date: unixNow() + 30 * 24 * 60 * 60,
     },
   ],
 };
@@ -1069,7 +1075,7 @@ test('should be able to resume subscription with schedule', async t => {
 
   await service.saveStripeSubscription({
     ...sub,
-    canceled_at: 1714118236,
+    canceled_at: unixNow(),
     schedule: 'sub_sched_1',
   });
 
