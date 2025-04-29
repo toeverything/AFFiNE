@@ -132,4 +132,8 @@ export class Env implements AppEnv {
   }
 }
 
-globalThis.env = new Env();
+export const createGlobalEnv = () => {
+  if (!globalThis.env) {
+    globalThis.env = new Env();
+  }
+};
