@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import './dotenv';
 import './env';
 
 import { existsSync, readFileSync } from 'node:fs';
