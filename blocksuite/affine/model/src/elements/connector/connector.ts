@@ -106,6 +106,11 @@ export type ConnectorElementProps = BaseElementProps & {
 export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorElementProps> {
   updatingPath = false;
 
+  /**
+   * Connectors should always render, even during zoom.
+   */
+  forceFullRender = true;
+
   override get connectable() {
     return false as const;
   }

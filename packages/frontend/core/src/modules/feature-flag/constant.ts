@@ -232,7 +232,8 @@ export const AFFINE_FLAGS = {
     defaultState: false,
   },
   enable_turbo_renderer: {
-    category: 'affine',
+    category: 'blocksuite',
+    bsFlag: 'enable_turbo_renderer',
     displayName: 'Enable Turbo Renderer',
     description: 'Enable experimental edgeless turbo renderer',
     configurable: isCanaryBuild,

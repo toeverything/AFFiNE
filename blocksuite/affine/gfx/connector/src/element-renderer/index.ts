@@ -249,12 +249,19 @@ function renderLabel(
   const [, , w, h] = labelXYWH!;
   const cx = w / 2;
   const cy = h / 2;
+
+  ctx.setTransform(matrix);
+
+  if (renderer.usePlaceholder) {
+    ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+    ctx.fillRect(0, 0, w, h);
+    return; // Skip actual label rendering
+  }
+
   const deltas = wrapTextDeltas(text!, font, w);
   const lines = deltaInsertsToChunks(deltas);
   const lineHeight = getLineHeight(fontFamily, fontSize, fontWeight);
   const textHeight = (lines.length - 1) * lineHeight * 0.5;
-
-  ctx.setTransform(matrix);
 
   ctx.font = font;
   ctx.textAlign = textAlign;

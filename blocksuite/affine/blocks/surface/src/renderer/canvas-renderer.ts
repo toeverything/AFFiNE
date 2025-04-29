@@ -1,10 +1,12 @@
 import { type Color, ColorScheme } from '@blocksuite/affine-model';
+import { FeatureFlagService } from '@blocksuite/affine-shared/services';
 import { requestConnectedFrame } from '@blocksuite/affine-shared/utils';
 import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { IBound } from '@blocksuite/global/gfx';
 import { getBoundWithRotation, intersects } from '@blocksuite/global/gfx';
 import type { BlockStdScope } from '@blocksuite/std';
 import type {
+  GfxCompatibleInterface,
   GridManager,
   LayerManager,
   SurfaceBlockModel,
@@ -43,6 +45,8 @@ export class CanvasRenderer {
 
   private readonly _disposables = new DisposableGroup();
 
+  private readonly _turboEnabled: () => boolean;
+
   private readonly _overlays = new Set<Overlay>();
 
   private _refreshRafId: number | null = null;
@@ -67,6 +71,8 @@ export class CanvasRenderer {
     removed: HTMLCanvasElement[];
   }>();
 
+  usePlaceholder = false;
+
   viewport: Viewport;
 
   get stackingCanvas() {
@@ -83,6 +89,12 @@ export class CanvasRenderer {
     this.layerManager = options.layerManager;
     this.grid = options.gridManager;
     this.provider = options.provider ?? {};
+
+    this._turboEnabled = () => {
+      const featureFlagService = options.std.get(FeatureFlagService);
+      return featureFlagService.getFlag('enable_turbo_renderer');
+    };
+
     this._initViewport();
 
     options.enableStackingCanvas = options.enableStackingCanvas ?? false;
@@ -213,6 +225,19 @@ export class CanvasRenderer {
         }, this._container);
       })
     );
+
+    this._disposables.add(
+      this.viewport.zooming$.subscribe(isZooming => {
+        const shouldRenderPlaceholders = this._turboEnabled() && isZooming;
+
+        if (this.usePlaceholder !== shouldRenderPlaceholders) {
+          this.usePlaceholder = shouldRenderPlaceholders;
+          this.refresh();
+        }
+      })
+    );
+
+    this.usePlaceholder = false;
   }
 
   private _render() {
@@ -279,23 +304,30 @@ export class CanvasRenderer {
     for (const element of elements) {
       const display = (element.display ?? true) && !element.hidden;
       if (display && intersects(getBoundWithRotation(element), bound)) {
-        const renderFn = this.std.getOptional<ElementRenderer>(
-          ElementRendererIdentifier(element.type)
-        );
+        if (
+          this.usePlaceholder &&
+          !(element as GfxCompatibleInterface).forceFullRender
+        ) {
+          ctx.save();
+          ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+          const drawX = element.x - bound.x;
+          const drawY = element.y - bound.y;
+          ctx.fillRect(drawX, drawY, element.w, element.h);
+          ctx.restore();
+        } else {
+          ctx.save();
+          const renderFn = this.std.getOptional<ElementRenderer>(
+            ElementRendererIdentifier(element.type)
+          );
 
-        if (!renderFn) {
-          console.warn(`Cannot find renderer for ${element.type}`);
-          continue;
+          if (!renderFn) continue;
+
+          ctx.globalAlpha = element.opacity ?? 1;
+          const dx = element.x - bound.x;
+          const dy = element.y - bound.y;
+          renderFn(element, ctx, matrix.translate(dx, dy), this, rc, bound);
+          ctx.restore();
         }
-
-        ctx.save();
-
-        ctx.globalAlpha = element.opacity ?? 1;
-        const dx = element.x - bound.x;
-        const dy = element.y - bound.y;
-
-        renderFn(element, ctx, matrix.translate(dx, dy), this, rc, bound);
-        ctx.restore();
       }
     }
 

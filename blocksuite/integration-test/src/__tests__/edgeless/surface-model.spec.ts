@@ -1,6 +1,7 @@
 import type { SurfaceBlockModel } from '@blocksuite/affine/blocks/surface';
 import type {
   BrushElementModel,
+  ConnectorElementModel,
   GroupElementModel,
 } from '@blocksuite/affine/model';
 import { beforeEach, describe, expect, test } from 'vitest';
@@ -160,6 +161,7 @@ describe('connector', () => {
 
     expect(model.getConnectors(id).map(el => el.id)).toEqual([connector.id]);
     expect(model.getConnectors(id2).map(el => el.id)).toEqual([connector.id]);
+    expect((connector as ConnectorElementModel).forceFullRender).toBe(true);
   });
 
   test('multiple connectors are supported', () => {
@@ -194,6 +196,8 @@ describe('connector', () => {
 
     expect(model.getConnectors(id).map(c => c.id)).toEqual(connectors);
     expect(model.getConnectors(id2).map(c => c.id)).toEqual(connectors);
+    expect((connector as ConnectorElementModel).forceFullRender).toBe(true);
+    expect((connector2 as ConnectorElementModel).forceFullRender).toBe(true);
   });
 
   test('should return null if connector are updated', () => {
@@ -212,6 +216,11 @@ describe('connector', () => {
         id: id2,
       },
     });
+
+    const connectorBeforeUpdate = model.getElementById(connectorId)!;
+    expect(
+      (connectorBeforeUpdate as ConnectorElementModel).forceFullRender
+    ).toBe(true);
 
     model.updateElement(connectorId, {
       source: {
@@ -242,6 +251,11 @@ describe('connector', () => {
         id: id2,
       },
     });
+
+    const connectorBeforeDelete = model.getElementById(connectorId)!;
+    expect(
+      (connectorBeforeDelete as ConnectorElementModel).forceFullRender
+    ).toBe(true);
 
     model.deleteElement(connectorId);
 

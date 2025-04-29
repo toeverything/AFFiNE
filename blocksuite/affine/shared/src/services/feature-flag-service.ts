@@ -19,6 +19,7 @@ export interface BlockSuiteFlags {
   enable_callout: boolean;
   enable_edgeless_scribbled_style: boolean;
   enable_embed_doc_with_alias: boolean;
+  enable_turbo_renderer: boolean;
 }
 
 export class FeatureFlagService extends StoreExtension {
@@ -42,6 +43,7 @@ export class FeatureFlagService extends StoreExtension {
     enable_callout: false,
     enable_edgeless_scribbled_style: false,
     enable_embed_doc_with_alias: false,
+    enable_turbo_renderer: false,
   });
 
   setFlag(key: keyof BlockSuiteFlags, value: boolean) {

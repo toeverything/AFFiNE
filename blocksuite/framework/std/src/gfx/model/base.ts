@@ -84,6 +84,12 @@ export interface GfxCompatibleInterface extends IBound, GfxElementGeometry {
 
   lock(): void;
   unlock(): void;
+
+  /**
+   * Whether to disable fallback rendering for this element, e.g., during zooming.
+   * Defaults to false (fallback to placeholder rendering is enabled).
+   */
+  forceFullRender?: boolean;
 }
 
 /**
