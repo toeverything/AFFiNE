@@ -1,0 +1,307 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    io.kompose.service: affine-claim0
+  name: affine-claim0
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    io.kompose.service: affine-claim1
+  name: affine-claim1
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f ../affine-docker-compse.yaml convert
+    kompose.version: 1.35.0 (9532ceef3)
+  labels:
+    io.kompose.service: affine
+  name: affine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: affine
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose -f ../affine-docker-compse.yaml convert
+        kompose.version: 1.35.0 (9532ceef3)
+      labels:
+        io.kompose.service: affine
+    spec:
+      containers:
+        - env:
+            - name: AFFINE_REVISION
+              value: stable
+            - name: AFFINE_SERVER_EXTERNAL_URL
+              value: http://MY_URL_OR_IPADDRESS
+            - name: CONFIG_LOCATION
+              value: ~/.affine/self-host/config
+            - name: DATABASE_URL
+              value: postgresql://affine:PASSWORD4AFFiNE@postgres:5432/affine
+            - name: DB_DATABASE
+              value: affine
+            - name: DB_DATA_LOCATION
+              value: ~/.affine/self-host/postgres/pgdata
+            - name: DB_PASSWORD
+              value: PASSWORD4AFFiNE
+            - name: DB_USERNAME
+              value: affine
+            - name: PORT
+              value: "3010"
+            - name: REDIS_SERVER_HOST
+              value: redis.affine.svc.cluster.local
+            - name: UPLOAD_LOCATION
+              value: ~/.affine/self-host/storage
+          image: ghcr.io/toeverything/affine-graphql:stable
+          name: affine-server
+          ports:
+            - containerPort: 3010
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /root/.affine/storage
+              name: affine-claim0
+            - mountPath: /root/.affine/config
+              name: affine-claim1
+      restartPolicy: Always
+      volumes:
+        - name: affine-claim0
+          persistentVolumeClaim:
+            claimName: affine-claim0
+        - name: affine-claim1
+          persistentVolumeClaim:
+            claimName: affine-claim1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f ../affine-docker-compse.yaml convert
+    kompose.version: 1.35.0 (9532ceef3)
+  labels:
+    io.kompose.service: affine-migration
+  name: affine-migration
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: affine-migration
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose -f ../affine-docker-compse.yaml convert
+        kompose.version: 1.35.0 (9532ceef3)
+      labels:
+        io.kompose.service: affine-migration
+    spec:
+      containers:
+        - args:
+            - sh
+            - -c
+            - node ./scripts/self-host-predeploy.js
+          env:
+            - name: AFFINE_REVISION
+              value: stable
+            - name: AFFINE_SERVER_EXTERNAL_URL
+              value: http://MY_URL_OR_IPADDRESS
+            - name: DATABASE_URL
+              value: postgresql://affine:PASSWORD4AFFiNE@postgres:5432/affine
+            - name: DB_DATABASE
+              value: affine
+            - name: DB_DATA_LOCATION
+              value: ~/.affine/self-host/postgres/pgdata
+            - name: DB_PASSWORD
+              value: PASSWORD4AFFiNE
+            - name: DB_USERNAME
+              value: affine
+            - name: PORT
+              value: "3010"
+            - name: REDIS_SERVER_HOST
+              value: redis.affine.svc.cluster.local
+          image: ghcr.io/toeverything/affine-graphql:stable
+          name: affine-migration-job
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose -f ../affine-docker-compse.yaml convert
+    kompose.version: 1.35.0 (9532ceef3)
+  labels:
+    io.kompose.service: affine
+  name: affine
+spec:
+  ports:
+    - name: "3010"
+      port: 3010
+      targetPort: 3010
+  selector:
+    io.kompose.service: affine
+  type: LoadBalancer
+
+---
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose -f ../postgres-docker-compse.yaml convert
+    kompose.version: 1.35.0 (9532ceef3)
+  labels:
+    io.kompose.service: postgres
+  name: postgres
+spec:
+  ports:
+    - name: "5432"
+      port: 5432
+      targetPort: 5432
+  selector:
+    io.kompose.service: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose -f ../redis-docker-compse.yaml convert
+    kompose.version: 1.35.0 (9532ceef3)
+  labels:
+    io.kompose.service: redis
+  name: redis
+spec:
+  ports:
+    - name: "6379"
+      port: 6379
+      targetPort: 6379
+  selector:
+    io.kompose.service: redis
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    io.kompose.service: postgres-claim0
+  name: postgres-claim0
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f ../affine-docker-compse.yaml convert
+    kompose.version: 1.35.0 (9532ceef3)
+  labels:
+    io.kompose.service: postgres
+  name: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose -f ../affine-docker-compse.yaml convert
+        kompose.version: 1.35.0 (9532ceef3)
+      labels:
+        io.kompose.service: postgres
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_DB
+              value: affine
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: trust
+            - name: POSTGRES_INITDB_ARGS
+              value: --data-checksums
+            - name: POSTGRES_PASSWORD
+              value: PASSWORD4AFFiNE
+            - name: POSTGRES_USER
+              value: affine
+          image: postgres:16
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - affine
+                - -d
+                - affine
+            failureThreshold: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          name: postgres
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-claim0
+      restartPolicy: Always
+      volumes:
+        - name: postgres-claim0
+          persistentVolumeClaim:
+            claimName: postgres-claim0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose -f ../affine-docker-compse.yaml convert
+    kompose.version: 1.35.0 (9532ceef3)
+  labels:
+    io.kompose.service: redis
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: redis
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose -f ../affine-docker-compse.yaml convert
+        kompose.version: 1.35.0 (9532ceef3)
+      labels:
+        io.kompose.service: redis
+    spec:
+      containers:
+        - image: redis
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - --raw
+                - incr
+                - ping
+            failureThreshold: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          name: redis
+      restartPolicy: Always
