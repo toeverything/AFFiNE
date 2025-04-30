@@ -1,6 +1,5 @@
 package app.affine.pro.service
 
-import androidx.core.net.toUri
 import app.affine.pro.AffineApp
 import app.affine.pro.utils.dataStore
 import app.affine.pro.utils.set
@@ -53,11 +52,11 @@ object CookieStore {
         _cookies[host] = cookies
         MainScope().launch(Dispatchers.IO) {
             cookies.find { it.name == AFFINE_SESSION }?.let {
-                AffineApp.context().dataStore.set(AFFINE_SESSION, it.toString())
+                AffineApp.context().dataStore.set(host + AFFINE_SESSION, it.toString())
             }
             cookies.find { it.name == AFFINE_USER_ID }?.let {
                 Timber.d("Update user id [${it.value}]")
-                AffineApp.context().dataStore.set(AFFINE_USER_ID, it.toString())
+                AffineApp.context().dataStore.set(host + AFFINE_USER_ID, it.toString())
                 Firebase.crashlytics.setUserId(it.value)
             }
         }
@@ -65,8 +64,8 @@ object CookieStore {
 
     fun getCookies(host: String) = _cookies[host] ?: emptyList()
 
-    fun getCookie(url: String, name: String) = url.toUri().host
-        ?.let { _cookies[it] }
+    fun getCookie(url: HttpUrl, name: String) = url.host
+        .let { _cookies[it] }
         ?.find { cookie -> cookie.name == name }
         ?.value
 }

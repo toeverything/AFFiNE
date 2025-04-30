@@ -2,9 +2,9 @@ package app.affine.pro.ai.chat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.affine.pro.repo.GraphQLRepo
-import app.affine.pro.repo.SSERepo
-import app.affine.pro.repo.WebRepo
+import app.affine.pro.service.GraphQLService
+import app.affine.pro.service.SSEService
+import app.affine.pro.service.WebService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,9 +18,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val webRepo: WebRepo,
-    private val graphQLRepo: GraphQLRepo,
-    private val sseRepo: SSERepo,
+    private val webService: WebService,
+    private val graphQLService: GraphQLService,
+    private val sseService: SSEService,
 ) : ViewModel() {
 
     private lateinit var sessionId: String
@@ -32,17 +32,17 @@ class ChatViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            sessionId = graphQLRepo.createCopilotSession(
-                workspaceId = webRepo.workspaceId(),
-                docId = webRepo.docId(),
+            sessionId = graphQLService.createCopilotSession(
+                workspaceId = webService.workspaceId(),
+                docId = webService.docId(),
             ).getOrElse {
                 Timber.w(it, "Create session failed")
                 return@launch
             }
             Timber.i("Create session success:[ sessionId = $sessionId].")
-            val historyMessages = graphQLRepo.getCopilotHistories(
-                workspaceId = webRepo.workspaceId(),
-                docId = webRepo.docId(),
+            val historyMessages = graphQLService.getCopilotHistories(
+                workspaceId = webService.workspaceId(),
+                docId = webService.docId(),
                 sessionId = sessionId,
             ).getOrDefault(emptyList()).map {
                 ChatMessage.from(it)
@@ -55,12 +55,12 @@ class ChatViewModel @Inject constructor(
 
     fun sendMessage(message: String) {
         val sendMessage = suspend {
-            graphQLRepo.createCopilotMessage(
+            graphQLService.createCopilotMessage(
                 sessionId = sessionId,
                 message = message,
             ).onSuccess { messageId ->
                 Timber.i("send message: $messageId")
-                sseRepo.messageStream(sessionId, messageId)
+                sseService.messageStream(sessionId, messageId)
                     .onEach {
                         Timber.d("On sse message: ${it.getOrNull()}")
                     }
@@ -70,9 +70,9 @@ class ChatViewModel @Inject constructor(
         }
         viewModelScope.launch {
             if (!this@ChatViewModel::sessionId.isInitialized) {
-                graphQLRepo.getCopilotSession(
-                    workspaceId = webRepo.workspaceId(),
-                    docId = webRepo.docId(),
+                graphQLService.getCopilotSession(
+                    workspaceId = webService.workspaceId(),
+                    docId = webService.docId(),
                 ).onSuccess { id ->
                     sessionId = id
                     Timber.i("Create session: $id")

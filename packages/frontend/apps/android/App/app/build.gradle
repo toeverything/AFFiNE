@@ -53,14 +53,10 @@ android {
     }
     flavorDimensions = ['chanel']
     productFlavors {
-        stable {
-            buildConfigField 'String', 'BASE_URL', '"https://app.affine.pro"'
-            resValue 'string', 'host', '"app.affine.pro"'
-        }
-        canary {
-            buildConfigField 'String', 'BASE_URL', '"https://affine.fail"'
-            resValue 'string', 'host', '"affine.fail"'
-        }
+        stable
+        beta
+        internal
+        canary
     }
 
     compileOptions {

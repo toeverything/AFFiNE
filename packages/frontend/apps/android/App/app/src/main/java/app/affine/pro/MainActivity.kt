@@ -13,7 +13,9 @@ import app.affine.pro.plugin.AffineThemePlugin
 import app.affine.pro.plugin.AuthPlugin
 import app.affine.pro.plugin.HashCashPlugin
 import app.affine.pro.plugin.NbStorePlugin
-import app.affine.pro.repo.WebRepo
+import app.affine.pro.service.GraphQLService
+import app.affine.pro.service.SSEService
+import app.affine.pro.service.WebService
 import app.affine.pro.utils.dp
 import com.getcapacitor.BridgeActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -27,7 +29,13 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AffineThemePlugi
     View.OnClickListener {
 
     @Inject
-    lateinit var webRepo: WebRepo
+    lateinit var webService: WebService
+
+    @Inject
+    lateinit var sseService: SSEService
+
+    @Inject
+    lateinit var graphQLService: GraphQLService
 
     init {
         registerPlugins(
@@ -54,6 +62,11 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AffineThemePlugi
             val parent = bridge.webView.parent as CoordinatorLayout
             parent.addView(this)
         }
+    }
+
+    override fun load() {
+        super.load()
+        AuthInitializer.initialize(bridge)
     }
 
     override fun present() {
@@ -85,7 +98,9 @@ class MainActivity : BridgeActivity(), AIButtonPlugin.Callback, AffineThemePlugi
 
     override fun onClick(v: View) {
         lifecycleScope.launch {
-            webRepo.init(bridge)
+            webService.update(bridge)
+            sseService.updateServer(bridge)
+            graphQLService.updateServer(bridge)
             AIActivity.open(this@MainActivity)
         }
     }

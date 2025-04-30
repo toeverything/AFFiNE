@@ -11,6 +11,7 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -144,7 +145,7 @@ class AuthPlugin : Plugin() {
                         call.reject(response.body.string())
                         return@launch
                     }
-                    CookieStore.getCookie(endpoint, CookieStore.AFFINE_SESSION)?.let {
+                    CookieStore.getCookie(endpoint.toHttpUrl(), CookieStore.AFFINE_SESSION)?.let {
                         Timber.i("$method sign in success.")
                         Timber.d("Update session [$it]")
                         call.resolve(JSObject().put("token", it))

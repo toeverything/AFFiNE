@@ -1,7 +1,7 @@
-package app.affine.pro.repo
+package app.affine.pro.service
 
-import app.affine.pro.BuildConfig
-import app.affine.pro.service.OkHttp
+import app.affine.pro.utils.getCurrentServerBaseUrl
+import com.getcapacitor.Bridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
@@ -17,10 +17,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SSERepo @Inject constructor() {
+class SSEService @Inject constructor() {
+
+    private lateinit var _server: String
+
+    suspend fun updateServer(bridge: Bridge) {
+        _server = bridge.getCurrentServerBaseUrl()
+    }
 
     fun messageStream(sessionId: String, messageId: String) =
-        "${BuildConfig.BASE_URL}/api/copilot/chat/$sessionId/stream?messageId=$messageId".eventSource()
+        "$_server/api/copilot/chat/$sessionId/stream?messageId=$messageId".eventSource()
 
     data class Event(val id: String?, val type: String?, val data: String)
 
