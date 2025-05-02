@@ -49,6 +49,7 @@
     "ts-node": "^10.9.2",
     "typanion": "^3.14.0",
     "typescript": "^5.5.4",
+    "vite": "^6.3.3",
     "webpack": "^5.97.1",
     "webpack-dev-server": "^5.2.0",
     "webpack-merge": "^6.0.1"
