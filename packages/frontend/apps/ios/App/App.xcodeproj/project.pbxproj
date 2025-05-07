@@ -78,8 +78,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C45499AB2D140B5000E21978 /* NBStore */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = NBStore;
 			sourceTree = "<group>";
 		};
