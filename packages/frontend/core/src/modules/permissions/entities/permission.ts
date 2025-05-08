@@ -20,6 +20,9 @@ export class WorkspacePermission extends Entity {
   );
   isOwner$ = this.cache$.map(cache => cache?.isOwner ?? null);
   isAdmin$ = this.cache$.map(cache => cache?.isAdmin ?? null);
+  isOwnerOrAdmin$ = this.cache$.map(
+    cache => (cache?.isOwner ?? null) || (cache?.isAdmin ?? null)
+  );
   isTeam$ = this.cache$.map(cache => cache?.isTeam ?? null);
   isRevalidating$ = new LiveData(false);
 

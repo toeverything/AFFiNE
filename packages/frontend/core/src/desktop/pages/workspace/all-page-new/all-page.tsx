@@ -15,6 +15,7 @@ import {
 } from '../../../../modules/workbench';
 import { AllDocSidebarTabs } from '../layouts/all-doc-sidebar-tabs';
 import * as styles from './all-page.css';
+import { MigrationAllDocsDataNotification } from './migration-data';
 export const AllPage = () => {
   const t = useI18n();
 
@@ -57,6 +58,7 @@ export const AllPage = () => {
       <ViewHeader></ViewHeader>
       <ViewBody>
         <div className={styles.body}>
+          <MigrationAllDocsDataNotification />
           <div>
             <Filters
               filters={explorerPreference.filters ?? []}

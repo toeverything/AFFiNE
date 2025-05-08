@@ -7847,6 +7847,24 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.recording.stop"](): string;
     /**
+      * `All docs data needs to be migrated in order to fully utilize its features.`
+      */
+    ["com.affine.migration-all-docs-notification.title"](): string;
+    /**
+      * `We upgraded the data format, requiring local data migration to utilize features. Created by and Updated by info is now stored locally. Without the update, you will see the actual status. Perform the upgrade under better network conditions.`
+      */
+    ["com.affine.migration-all-docs-notification.content"](): string;
+    /**
+      * `Migration failed: {{errorMessage}}`
+      */
+    ["com.affine.migration-all-docs-notification.error"](options: {
+        readonly errorMessage: string;
+    }): string;
+    /**
+      * `Migrate data`
+      */
+    ["com.affine.migration-all-docs-notification.button"](): string;
+    /**
       * `An internal error occurred.`
       */
     ["error.INTERNAL_SERVER_ERROR"](): string;

@@ -981,6 +981,29 @@ export const getCurrentUserQuery = {
   deprecations: ["'token' is deprecated: use [/api/auth/sign-in?native=true] instead"],
 };
 
+export const getDocCreatedByUpdatedByListQuery = {
+  id: 'getDocCreatedByUpdatedByListQuery' as const,
+  op: 'getDocCreatedByUpdatedByList',
+  query: `query getDocCreatedByUpdatedByList($workspaceId: String!, $pagination: PaginationInput!) {
+  workspace(id: $workspaceId) {
+    docs(pagination: $pagination) {
+      totalCount
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+      edges {
+        node {
+          id
+          creatorId
+          lastUpdaterId
+        }
+      }
+    }
+  }
+}`,
+};
+
 export const getDocDefaultRoleQuery = {
   id: 'getDocDefaultRoleQuery' as const,
   op: 'getDocDefaultRole',

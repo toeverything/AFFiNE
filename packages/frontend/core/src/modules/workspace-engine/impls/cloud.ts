@@ -46,7 +46,13 @@ import {
 } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
 import { map, Observable, switchMap, tap } from 'rxjs';
-import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
+import {
+  applyUpdate,
+  type Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  type Map as YMap,
+} from 'yjs';
 
 import type { Server, ServersService } from '../../cloud';
 import {
@@ -208,6 +214,13 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           bin: encodeStateAsUpdate(subdocs),
         });
       }
+
+      const accountId = this.authService.session.account$.value?.id;
+      await this.writeInitialDocProperties(
+        workspaceId,
+        docStorage,
+        accountId ?? ''
+      );
 
       docStorage.connection.disconnect();
       blobStorage.connection.disconnect();
@@ -531,6 +544,45 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         },
       },
     };
+  }
+
+  async writeInitialDocProperties(
+    workspaceId: string,
+    docStorage: DocStorage,
+    creatorId: string
+  ) {
+    try {
+      const rootDocBuffer = await docStorage.getDoc(workspaceId);
+      const rootDoc = new YDoc({ guid: workspaceId });
+      if (rootDocBuffer) {
+        applyUpdate(rootDoc, rootDocBuffer.bin);
+      }
+
+      const docIds = (
+        rootDoc.getMap('meta').get('pages') as YArray<YMap<string>>
+      )
+        ?.map(page => page.get('id'))
+        .filter(Boolean) as string[];
+
+      const propertiesDBBuffer = await docStorage.getDoc('db$docProperties');
+      const propertiesDB = new YDoc({ guid: 'db$docProperties' });
+      if (propertiesDBBuffer) {
+        applyUpdate(propertiesDB, propertiesDBBuffer.bin);
+      }
+
+      for (const docId of docIds) {
+        const docProperties = propertiesDB.getMap(docId);
+        docProperties.set('id', docId);
+        docProperties.set('createdBy', creatorId);
+      }
+
+      await docStorage.pushDocUpdate({
+        docId: 'db$docProperties',
+        bin: encodeStateAsUpdate(propertiesDB),
+      });
+    } catch (error) {
+      logger.error('error to write initial doc properties', error);
+    }
   }
 
   private waitForLoaded() {

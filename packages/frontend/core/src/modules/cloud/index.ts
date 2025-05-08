@@ -10,6 +10,7 @@ export { ServerScope } from './scopes/server';
 export { AuthService } from './services/auth';
 export { CaptchaService } from './services/captcha';
 export { DefaultServerService } from './services/default-server';
+export { DocCreatedByUpdatedBySyncService } from './services/doc-created-by-updated-by-sync';
 export { EventSourceService } from './services/eventsource';
 export { FetchService } from './services/fetch';
 export { GraphQLService } from './services/graphql';
@@ -98,6 +99,10 @@ import { UserQuotaStore } from './stores/user-quota';
 import { UserSettingsStore } from './stores/user-settings';
 import { DocCreatedByService } from './services/doc-created-by';
 import { DocUpdatedByService } from './services/doc-updated-by';
+import { DocCreatedByUpdatedBySyncService } from './services/doc-created-by-updated-by-sync';
+import { WorkspacePermissionService } from '../permissions';
+import { DocsService } from '../doc';
+import { DocCreatedByUpdatedBySyncStore } from './stores/doc-created-by-updated-by-sync';
 
 export function configureCloudModule(framework: Framework) {
   configureDefaultAuthProvider(framework);
@@ -181,5 +186,15 @@ export function configureCloudModule(framework: Framework) {
     .entity(WorkspaceInvoices, [WorkspaceService, WorkspaceServerService])
     .service(SelfhostLicenseService, [SelfhostLicenseStore, WorkspaceService])
     .store(SelfhostLicenseStore, [WorkspaceServerService])
-    .service(BlocksuiteWriterInfoService, [WorkspaceServerService]);
+    .service(BlocksuiteWriterInfoService, [WorkspaceServerService])
+    .service(DocCreatedByUpdatedBySyncService, [
+      WorkspaceService,
+      DocsService,
+      WorkspacePermissionService,
+      DocCreatedByUpdatedBySyncStore,
+    ])
+    .store(DocCreatedByUpdatedBySyncStore, [
+      WorkspaceServerService,
+      WorkspaceService,
+    ]);
 }

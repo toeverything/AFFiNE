@@ -1,0 +1,18 @@
+query getDocCreatedByUpdatedByList($workspaceId: String!, $pagination: PaginationInput!) {
+  workspace(id: $workspaceId) {
+    docs(pagination: $pagination) {
+      totalCount
+      pageInfo {
+      endCursor
+        hasNextPage
+      }
+      edges {
+        node {
+          id
+          creatorId
+          lastUpdaterId
+        }
+      }
+    }
+  }
+}

@@ -3603,6 +3603,36 @@ export type GetCurrentUserQuery = {
   } | null;
 };
 
+export type GetDocCreatedByUpdatedByListQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  pagination: PaginationInput;
+}>;
+
+export type GetDocCreatedByUpdatedByListQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    docs: {
+      __typename?: 'PaginatedDocType';
+      totalCount: number;
+      pageInfo: {
+        __typename?: 'PageInfo';
+        endCursor: string | null;
+        hasNextPage: boolean;
+      };
+      edges: Array<{
+        __typename?: 'DocTypeEdge';
+        node: {
+          __typename?: 'DocType';
+          id: string;
+          creatorId: string | null;
+          lastUpdaterId: string | null;
+        };
+      }>;
+    };
+  };
+};
+
 export type GetDocDefaultRoleQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   docId: Scalars['String']['input'];
@@ -4735,6 +4765,11 @@ export type Queries =
       name: 'getCurrentUserQuery';
       variables: GetCurrentUserQueryVariables;
       response: GetCurrentUserQuery;
+    }
+  | {
+      name: 'getDocCreatedByUpdatedByListQuery';
+      variables: GetDocCreatedByUpdatedByListQueryVariables;
+      response: GetDocCreatedByUpdatedByListQuery;
     }
   | {
       name: 'getDocDefaultRoleQuery';
