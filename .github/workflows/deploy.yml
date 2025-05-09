@@ -92,32 +92,16 @@ jobs:
           APP_VERSION: ${{ steps.version.outputs.APP_VERSION }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           CANARY_DEPLOY_HOST: ${{ secrets.CANARY_DEPLOY_HOST }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          CAPTCHA_TURNSTILE_SECRET: ${{ secrets.CAPTCHA_TURNSTILE_SECRET }}
-          COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
-          COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
-          COPILOT_PERPLEXITY_API_KEY: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
-          COPILOT_UNSPLASH_API_KEY: ${{ secrets.COPILOT_UNSPLASH_API_KEY }}
-          METRICS_CUSTOMER_IO_TOKEN: ${{ secrets.METRICS_CUSTOMER_IO_TOKEN }}
-          MAILER_SENDER: ${{ secrets.OAUTH_EMAIL_SENDER }}
-          MAILER_USER: ${{ secrets.OAUTH_EMAIL_LOGIN }}
-          MAILER_PASSWORD: ${{ secrets.OAUTH_EMAIL_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AFFINE_GOOGLE_CLIENT_ID: ${{ secrets.AFFINE_GOOGLE_CLIENT_ID }}
-          AFFINE_GOOGLE_CLIENT_SECRET: ${{ secrets.AFFINE_GOOGLE_CLIENT_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
           DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
           DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
           GCLOUD_CONNECTION_NAME: ${{ secrets.GCLOUD_CONNECTION_NAME }}
-          GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT: ${{ secrets.GCLOUD_CLOUD_SQL_INTERNAL_ENDPOINT }}
-          REDIS_HOST: ${{ secrets.REDIS_HOST }}
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          REDIS_SERVER_HOST: ${{ secrets.REDIS_SERVER_HOST }}
+          REDIS_SERVER_PASSWORD: ${{ secrets.REDIS_SERVER_PASSWORD }}
           CLOUD_SQL_IAM_ACCOUNT: ${{ secrets.CLOUD_SQL_IAM_ACCOUNT }}
-          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
-          STRIPE_WEBHOOK_KEY: ${{ secrets.STRIPE_WEBHOOK_KEY }}
+          APP_IAM_ACCOUNT: ${{ secrets.APP_IAM_ACCOUNT }}
           STATIC_IP_NAME: ${{ secrets.STATIC_IP_NAME }}
 
   deploy-done:
@@ -172,7 +156,7 @@ jobs:
           BLOCKSUITE_REPO_PATH: ${{ github.workspace }}/blocksuite
       - name: Post Failed event to a Slack channel
         id: failed-slack
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v2.1.0
         if: ${{ always() && contains(needs.*.result, 'failure') }}
         with:
           method: chat.postMessage
@@ -187,7 +171,7 @@ jobs:
                   text: "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Backend deploy failed `${{ github.event.inputs.flavor }}`>"
       - name: Post Cancel event to a Slack channel
         id: cancel-slack
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@v2.1.0
         if: ${{ always() && contains(needs.*.result, 'cancelled') && !contains(needs.*.result, 'failure') }}
         with:
           token: ${{ secrets.SLACK_BOT_TOKEN }}

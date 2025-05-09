@@ -13,6 +13,8 @@ export const header = style({
   width: '100%',
   alignItems: 'center',
   gap: 12,
+  containerName: 'detail-page-header',
+  containerType: 'inline-size',
 });
 export const spacer = style({
   flexGrow: 1,
@@ -55,4 +57,22 @@ export const dragPreview = style({
   overflow: 'hidden',
   backgroundColor: cssVarV2('layer/background/primary'),
   borderRadius: '12px',
+});
+
+export const templateMark = style({
+  backgroundColor: cssVarV2.button.templateLabelBackground,
+  color: cssVarV2.button.primary,
+  borderRadius: 4,
+  padding: '2px 8px',
+  fontSize: 12,
+  fontWeight: 500,
+  lineHeight: '20px',
+});
+
+export const journalTemplateMark = style({
+  '@container': {
+    '(width <= 400px)': {
+      display: 'none',
+    },
+  },
 });

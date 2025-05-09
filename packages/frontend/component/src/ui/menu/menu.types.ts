@@ -6,7 +6,7 @@ import type {
   DropdownMenuSubContentProps,
   DropdownMenuSubProps,
 } from '@radix-ui/react-dropdown-menu';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export interface MenuProps {
   children: ReactNode;
@@ -15,6 +15,7 @@ export interface MenuProps {
   portalOptions?: Omit<DropdownMenuPortalProps, 'children'>;
   rootOptions?: Omit<DropdownMenuProps, 'children'>;
   contentOptions?: Omit<DropdownMenuContentProps, 'children'>;
+  contentWrapperStyle?: CSSProperties;
   noPortal?: boolean;
 }
 
@@ -25,6 +26,8 @@ export interface MenuItemProps
   suffix?: ReactNode;
   prefixIcon?: ReactNode;
   suffixIcon?: ReactNode;
+  prefixIconClassName?: string;
+  suffixIconClassName?: string;
   checked?: boolean;
   selected?: boolean;
   block?: boolean;

@@ -11,7 +11,6 @@ export const SelectTagSchema = Zod.object({
   id: Zod.string(),
   color: Zod.string(),
   value: Zod.string(),
-  parentId: Zod.string().optional(),
 });
 export const unknown = defineDataType('Unknown', zod.never(), zod.unknown());
 export const dt = {

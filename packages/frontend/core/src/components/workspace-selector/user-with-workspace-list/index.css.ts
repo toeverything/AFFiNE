@@ -1,9 +1,25 @@
 import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
-export const workspaceListWrapper = style({
+
+export const workspaceScrollArea = style({
   display: 'flex',
-  width: '100%',
   flexDirection: 'column',
+});
+export const workspaceScrollAreaViewport = style({
+  padding: '10px 8px 0px 8px',
+});
+export const workspaceFooter = style({
+  padding: '0px 8px 10px 8px',
+});
+export const scrollbar = style({
+  width: 9,
+  padding: '0px 2px',
+  ':hover': {
+    padding: 0,
+  },
+});
+export const scrollbarThumb = style({
+  width: 5,
 });
 export const signInWrapper = style({
   display: 'flex',

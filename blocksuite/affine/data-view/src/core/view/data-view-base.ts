@@ -1,5 +1,5 @@
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { property } from 'lit/decorators.js';
 
 import type { DataViewSelection } from '../types.js';

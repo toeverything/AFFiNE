@@ -1,18 +1,14 @@
-import type { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-
+import { WorkspaceRole } from '../../core/permission/types';
 import type { WorkspaceType } from '../../core/workspaces';
-import { gql } from './common';
-import { PermissionEnum } from './utils';
+import { TestingApp } from './testing-app';
 
-export async function createWorkspace(
-  app: INestApplication,
-  token: string
-): Promise<WorkspaceType> {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(token, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
+export async function createWorkspace(app: TestingApp): Promise<WorkspaceType> {
+  const res = await app
+    .POST('/graphql')
+    .set({
+      'x-request-id': 'test',
+      'x-operation-name': 'test',
+    })
     .field(
       'operations',
       JSON.stringify({
@@ -26,157 +22,156 @@ export async function createWorkspace(
       })
     )
     .field('map', JSON.stringify({ '0': ['variables.init'] }))
-    .attach('0', Buffer.from([0, 0]), 'init.data')
-    .expect(200);
+    .attach('0', Buffer.from([0, 0]), 'init.data');
+
   return res.body.data.createWorkspace;
 }
 
-export async function getWorkspacePublicPages(
-  app: INestApplication,
-  token: string,
+export async function getWorkspacePublicDocs(
+  app: TestingApp,
   workspaceId: string
 ) {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(token, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            query {
-              workspace(id: "${workspaceId}") {
-                publicPages {
-                  id
-                  mode
-                }
-              }
-            }
-          `,
-    })
-    .expect(200);
-  return res.body.data.workspace.publicPages;
+  const res = await app.gql(
+    `
+      query {
+        workspace(id: "${workspaceId}") {
+          publicDocs {
+            id
+            mode
+          }
+        }
+      }
+    `
+  );
+
+  return res.workspace.publicDocs;
 }
 
 export async function getWorkspace(
-  app: INestApplication,
-  token: string,
+  app: TestingApp,
   workspaceId: string,
   skip = 0,
   take = 8
 ): Promise<WorkspaceType> {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(token, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            query {
-              workspace(id: "${workspaceId}") {
-                id, members(skip: ${skip}, take: ${take}) { id, name, email, permission, inviteId, status }
-              }
-            }
-          `,
-    })
-    .expect(200);
-  return res.body.data.workspace;
+  const res = await app.gql(
+    `
+      query {
+        workspace(id: "${workspaceId}") {
+          id,
+          members(skip: ${skip}, take: ${take}) { id, name, email, permission, inviteId, status }
+        }
+      }
+    `
+  );
+
+  return res.workspace;
 }
 
 export async function updateWorkspace(
-  app: INestApplication,
-  token: string,
+  app: TestingApp,
   workspaceId: string,
   isPublic: boolean
 ): Promise<boolean> {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(token, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            mutation {
-              updateWorkspace(input: { id: "${workspaceId}", public: ${isPublic} }) {
-                public
-              }
-            }
-          `,
-    })
-    .expect(200);
-  return res.body.data.updateWorkspace.public;
+  const res = await app.gql(
+    `
+      mutation {
+        updateWorkspace(input: { id: "${workspaceId}", public: ${isPublic} }) {
+          public
+        }
+      }
+    `
+  );
+
+  return res.updateWorkspace.public;
 }
 
-export async function publishPage(
-  app: INestApplication,
-  token: string,
-  workspaceId: string,
-  pageId: string
-) {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(token, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            mutation {
-              publishPage(workspaceId: "${workspaceId}", pageId: "${pageId}") {
-                id
-                mode
-              }
-            }
-          `,
-    })
-    .expect(200);
-  return res.body.errors?.[0]?.message || res.body.data?.publishPage;
+export async function deleteWorkspace(
+  app: TestingApp,
+  workspaceId: string
+): Promise<boolean> {
+  const res = await app.gql(
+    `
+      mutation {
+        deleteWorkspace(id: "${workspaceId}")
+      }
+    `
+  );
+
+  return res.deleteWorkspace;
 }
 
-export async function revokePublicPage(
-  app: INestApplication,
-  token: string,
+export async function publishDoc(
+  app: TestingApp,
   workspaceId: string,
-  pageId: string
+  docId: string
 ) {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(token, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            mutation {
-              revokePublicPage(workspaceId: "${workspaceId}", pageId: "${pageId}") {
-                id
-                mode
-                public
-              }
-            }
-          `,
-    })
-    .expect(200);
-  return res.body.errors?.[0]?.message || res.body.data?.revokePublicPage;
+  const res = await app.gql(
+    `
+      mutation {
+        publishDoc(workspaceId: "${workspaceId}", docId: "${docId}") {
+          id
+          mode
+        }
+      }
+    `
+  );
+
+  return res.publishDoc;
+}
+
+export async function revokePublicDoc(
+  app: TestingApp,
+  workspaceId: string,
+  docId: string
+) {
+  const res = await app.gql(
+    `
+      mutation {
+        revokePublicDoc(workspaceId: "${workspaceId}", docId: "${docId}") {
+          id
+          mode
+          public
+        }
+      }
+    `
+  );
+
+  return res.revokePublicDoc;
 }
 
 export async function grantMember(
-  app: INestApplication,
-  token: string,
+  app: TestingApp,
   workspaceId: string,
   userId: string,
-  permission: PermissionEnum
+  permission: WorkspaceRole
 ) {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(token, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-          mutation {
-            grantMember(
-              workspaceId: "${workspaceId}"
-              userId: "${userId}"
-              permission: ${permission}
-            )
-          }
-          `,
-    })
-    .expect(200);
-  if (res.body.errors) {
-    throw new Error(res.body.errors[0].message);
-  }
-  return res.body.data?.grantMember;
+  const res = await app.gql(
+    `
+      mutation {
+        grantMember(
+          workspaceId: "${workspaceId}"
+          userId: "${userId}"
+          permission: ${WorkspaceRole[permission]}
+        )
+      }
+    `
+  );
+
+  return res.grantMember;
+}
+
+export async function revokeMember(
+  app: TestingApp,
+  workspaceId: string,
+  userId: string
+) {
+  const res = await app.gql(
+    `
+      mutation {
+        revoke(workspaceId: "${workspaceId}", userId: "${userId}")
+      }
+    `
+  );
+
+  return res.revoke;
 }

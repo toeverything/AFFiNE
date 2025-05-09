@@ -10,6 +10,7 @@ import {
   activateView,
   addTab,
   closeTab,
+  ensureTabLoaded,
   getMainWindow,
   getOnboardingWindow,
   getTabsStatus,
@@ -31,8 +32,6 @@ import { showTabContextMenu } from '../windows-manager/context-menu';
 import { getOrCreateCustomThemeWindow } from '../windows-manager/custom-theme-window';
 import { getChallengeResponse } from './challenge';
 import { uiSubjects } from './subject';
-
-export let isOnline = true;
 
 export const uiHandlers = {
   isMaximized: async () => {
@@ -71,8 +70,9 @@ export const uiHandlers = {
   handleCloseApp: async () => {
     app.quit();
   },
-  handleNetworkChange: async (_, _isOnline: boolean) => {
-    isOnline = _isOnline;
+  handleHideApp: async () => {
+    const window = await getMainWindow();
+    window?.hide();
   },
   getChallengeResponse: async (_, challenge: string) => {
     return getChallengeResponse(challenge);
@@ -188,9 +188,16 @@ export const uiHandlers = {
   showTab: async (_, ...args: Parameters<typeof showTab>) => {
     await showTab(...args);
   },
+  tabGoTo: async (_, tabId: string, to: string) => {
+    uiSubjects.tabGoToRequest$.next({ tabId, to });
+  },
+  ensureTabLoaded: async (_, ...args: Parameters<typeof ensureTabLoaded>) => {
+    await ensureTabLoaded(...args);
+  },
   closeTab: async (_, ...args: Parameters<typeof closeTab>) => {
     await closeTab(...args);
   },
+
   activateView: async (_, ...args: Parameters<typeof activateView>) => {
     await activateView(...args);
   },

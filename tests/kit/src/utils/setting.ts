@@ -29,6 +29,10 @@ export async function openAboutPanel(page: Page) {
   await page.getByTestId('about-panel-trigger').click();
 }
 
+export async function openEditorInfoPanel(page: Page) {
+  await page.getByTestId('header-info-button').click();
+}
+
 export async function openExperimentalFeaturesPanel(page: Page) {
   await page.getByTestId('experimental-features-trigger').click();
 }
@@ -38,15 +42,22 @@ export async function confirmExperimentalPrompt(page: Page) {
   await page.getByTestId('experimental-confirm-button').click();
 }
 
-export async function openWorkspaceSettingPanel(
-  page: Page,
-  workspaceName: string
-) {
-  await page.getByTestId('settings-sidebar').getByText(workspaceName).click();
+export async function openWorkspaceSettingPanel(page: Page) {
+  await page
+    .getByTestId('settings-sidebar')
+    .getByTestId('workspace-setting:preference')
+    .click();
 }
 
 export async function clickUserInfoCard(page: Page) {
   await page.getByTestId('user-info-card').click({
     delay: 50,
   });
+}
+
+export async function closeSettingModal(page: Page) {
+  await page
+    .getByTestId('setting-modal')
+    .getByTestId('modal-close-button')
+    .click();
 }

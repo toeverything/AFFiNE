@@ -1,6 +1,7 @@
 import { test } from '@affine-test/kit/playwright';
 
 import {
+  addColumn,
   addRows,
   initDatabaseByOneStep,
   pasteString,
@@ -14,6 +15,7 @@ test.describe('Database Clipboard Operations', () => {
   }) => {
     // Open the home page and wait for the editor to load
     await initDatabaseByOneStep(page);
+    await addColumn(page, 'multi-select');
     // Create a database block with two rows
     await addRows(page, 2);
 
@@ -36,6 +38,7 @@ test.describe('Database Clipboard Operations', () => {
   }) => {
     // Open the home page and wait for the editor to load
     await initDatabaseByOneStep(page);
+    await addColumn(page, 'multi-select');
     // Create a database block with two rows
     await addRows(page, 2);
 
@@ -51,6 +54,7 @@ test.describe('Database Clipboard Operations', () => {
   test('handle pasting data larger than selected area', async ({ page }) => {
     // Open the home page and wait for the editor to load
     await initDatabaseByOneStep(page);
+    await addColumn(page, 'multi-select');
     // Create a database block with one row
     await addRows(page, 1);
 

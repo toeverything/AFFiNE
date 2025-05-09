@@ -6,7 +6,7 @@ import type {
   ReactElement,
   SVGAttributes,
 } from 'react';
-import { cloneElement, forwardRef, useCallback } from 'react';
+import { cloneElement, forwardRef, useCallback, useMemo } from 'react';
 
 import { useAutoFocus } from '../../hooks';
 import { Loading } from '../loading';
@@ -78,16 +78,28 @@ const IconSlot = ({
   icon,
   loading,
   className,
+  variant,
   ...attrs
 }: {
   icon?: ReactElement<SVGAttributes<SVGElement>>;
   loading?: boolean;
+  variant?: ButtonType;
 } & HTMLAttributes<HTMLElement>) => {
   const showLoadingHere = loading !== undefined;
   const visible = icon || loading;
+
+  const loadingStrokeColor = useMemo(() => {
+    const usePureWhite =
+      variant &&
+      (['primary', 'error', 'success'] as ButtonType[]).includes(variant);
+    return usePureWhite ? '#fff' : undefined;
+  }, [variant]);
+
   return visible ? (
     <div className={clsx(styles.icon, className)} {...attrs}>
-      {showLoadingHere && loading ? <Loading size="100%" /> : null}
+      {showLoadingHere && loading ? (
+        <Loading size="100%" strokeColor={loadingStrokeColor} />
+      ) : null}
       {icon && !loading
         ? cloneElement(icon, {
             width: '100%',
@@ -174,6 +186,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             loading={loading}
             className={prefixClassName}
             style={prefixStyle}
+            variant={variant}
           />
           {children ? (
             <span

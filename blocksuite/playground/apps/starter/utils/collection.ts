@@ -1,18 +1,18 @@
-import { AffineSchemas, SpecProvider, TestUtils } from '@blocksuite/blocks';
-import type { BlockSuiteFlags } from '@blocksuite/global/types';
-import { nanoid, Schema, Transformer } from '@blocksuite/store';
+import type { StoreExtensionManager } from '@blocksuite/affine/ext-loader';
+import { AffineSchemas } from '@blocksuite/affine/schemas';
+import { nanoid, Schema, Transformer } from '@blocksuite/affine/store';
 import {
   createAutoIncrementIdGenerator,
   type DocCollectionOptions,
   TestWorkspace,
-} from '@blocksuite/store/test';
+} from '@blocksuite/affine/store/test';
 import {
   type BlobSource,
   BroadcastChannelAwarenessSource,
   BroadcastChannelDocSource,
   IndexedDBBlobSource,
   MemoryBlobSource,
-} from '@blocksuite/sync';
+} from '@blocksuite/affine/sync';
 import * as Y from 'yjs';
 
 import { MockServerBlobSource } from '../../_common/sync/blob/mock-server.js';
@@ -23,7 +23,9 @@ const room = params.get('room');
 const isE2E = room?.startsWith('playwright');
 const blobSourceArgs = (params.get('blobSource') ?? '').split(',');
 
-export function createStarterDocCollection() {
+export function createStarterDocCollection(
+  storeExtensionManager: StoreExtensionManager
+) {
   const collectionId = room ?? 'starter';
   const schema = new Schema();
   schema.register(AffineSchemas);
@@ -48,50 +50,30 @@ export function createStarterDocCollection() {
     blobSources.shadows.push(new IndexedDBBlobSource(collectionId));
   }
 
-  const flags: Partial<BlockSuiteFlags> = Object.fromEntries(
-    Array.from(params.entries())
-      .filter(([key]) => key.startsWith('enable_'))
-      .map(([k, v]) => [k, v === 'true'])
-  );
-
   const options: DocCollectionOptions = {
     id: collectionId,
-    schema,
     idGenerator,
-    defaultFlags: {
-      enable_synced_doc_block: true,
-      enable_pie_menu: true,
-      enable_lasso_tool: true,
-      enable_edgeless_text: true,
-      enable_color_picker: true,
-      enable_mind_map_import: true,
-      enable_advanced_block_visibility: true,
-      enable_shape_shadow_blur: false,
-      ...flags,
-    },
     awarenessSources: [new BroadcastChannelAwarenessSource(id)],
     docSources,
     blobSources,
   };
   const collection = new TestWorkspace(options);
-  collection.storeExtensions =
-    SpecProvider.getInstance().getSpec('store').value;
+  collection.storeExtensions = storeExtensionManager.get('store');
   collection.start();
 
   // debug info
   window.collection = collection;
   window.blockSchemas = AffineSchemas;
   window.job = new Transformer({
-    schema: collection.schema,
+    schema,
     blobCRUD: collection.blobSync,
     docCRUD: {
-      create: (id: string) => collection.createDoc({ id }),
-      get: (id: string) => collection.getDoc(id),
+      create: (id: string) => collection.createDoc(id).getStore({ id }),
+      get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
       delete: (id: string) => collection.removeDoc(id),
     },
   });
   window.Y = Y;
-  window.testUtils = new TestUtils();
 
   return collection;
 }
@@ -113,6 +95,5 @@ export async function initStarterDocCollection(collection: TestWorkspace) {
     if (!doc?.loaded) {
       doc?.load();
     }
-    doc?.resetHistory();
   }
 }

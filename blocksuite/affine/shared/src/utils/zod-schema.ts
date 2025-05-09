@@ -1,40 +1,46 @@
 import {
   ColorSchema,
   ConnectorMode,
-  DEFAULT_FRONT_END_POINT_STYLE,
-  DEFAULT_NOTE_BORDER_SIZE,
-  DEFAULT_NOTE_BORDER_STYLE,
-  DEFAULT_NOTE_CORNER,
-  DEFAULT_NOTE_SHADOW,
-  DEFAULT_REAR_END_POINT_STYLE,
+  DEFAULT_CONNECTOR_MODE,
+  DEFAULT_FRONT_ENDPOINT_STYLE,
+  DEFAULT_HIGHLIGHTER_LINE_WIDTH,
+  DEFAULT_REAR_ENDPOINT_STYLE,
   DEFAULT_ROUGHNESS,
   DefaultTheme,
+  EdgelessTextZodSchema,
   FontFamily,
+  FontFamilySchema,
   FontStyle,
+  FontStyleSchema,
   FontWeight,
+  FontWeightSchema,
+  FrameZodSchema,
+  HIGHLIGHTER_LINE_WIDTHS,
   LayoutType,
   LineWidth,
   MindmapStyle,
-  NoteDisplayMode,
-  NoteShadowsSchema,
+  NoteZodSchema,
   PointStyle,
   ShapeStyle,
   StrokeStyle,
+  StrokeStyleSchema,
   TextAlign,
+  TextAlignSchema,
   TextVerticalAlign,
 } from '@blocksuite/affine-model';
-import { z, ZodDefault, ZodObject, type ZodTypeAny, ZodUnion } from 'zod';
+import {
+  z,
+  ZodDefault,
+  ZodIntersection,
+  ZodObject,
+  type ZodTypeAny,
+  ZodUnion,
+} from 'zod';
 
 const ConnectorEndpointSchema = z.nativeEnum(PointStyle);
-const StrokeStyleSchema = z.nativeEnum(StrokeStyle);
 const LineWidthSchema = z.nativeEnum(LineWidth);
 const ShapeStyleSchema = z.nativeEnum(ShapeStyle);
-const FontFamilySchema = z.nativeEnum(FontFamily);
-const FontWeightSchema = z.nativeEnum(FontWeight);
-const FontStyleSchema = z.nativeEnum(FontStyle);
-const TextAlignSchema = z.nativeEnum(TextAlign);
 const TextVerticalAlignSchema = z.nativeEnum(TextVerticalAlign);
-const NoteDisplayModeSchema = z.nativeEnum(NoteDisplayMode);
 const ConnectorModeSchema = z.nativeEnum(ConnectorMode);
 const LayoutTypeSchema = z.nativeEnum(LayoutType);
 const MindmapStyleSchema = z.nativeEnum(MindmapStyle);
@@ -58,13 +64,13 @@ export const ConnectorSchema = z
     }),
   })
   .default({
-    frontEndpointStyle: DEFAULT_FRONT_END_POINT_STYLE,
-    rearEndpointStyle: DEFAULT_REAR_END_POINT_STYLE,
+    frontEndpointStyle: DEFAULT_FRONT_ENDPOINT_STYLE,
+    rearEndpointStyle: DEFAULT_REAR_ENDPOINT_STYLE,
     stroke: DefaultTheme.connectorColor,
     strokeStyle: StrokeStyle.Solid,
     strokeWidth: LineWidth.Two,
     rough: false,
-    mode: ConnectorMode.Curve,
+    mode: DEFAULT_CONNECTOR_MODE,
     labelStyle: {
       color: DefaultTheme.black,
       fontSize: 16,
@@ -83,6 +89,19 @@ export const BrushSchema = z
   .default({
     color: DefaultTheme.black,
     lineWidth: LineWidth.Four,
+  });
+
+export const HighlighterSchema = z
+  .object({
+    color: ColorSchema,
+    lineWidth: z
+      .number()
+      .int()
+      .refine(value => HIGHLIGHTER_LINE_WIDTHS.includes(value)),
+  })
+  .default({
+    color: DefaultTheme.hightlighterColor,
+    lineWidth: DEFAULT_HIGHLIGHTER_LINE_WIDTH,
   });
 
 const DEFAULT_SHAPE = {
@@ -145,48 +164,6 @@ export const TextSchema = z
     textAlign: TextAlign.Left,
   });
 
-export const EdgelessTextSchema = z
-  .object({
-    color: ColorSchema,
-    fontFamily: FontFamilySchema,
-    fontWeight: FontWeightSchema,
-    fontStyle: FontStyleSchema,
-    textAlign: TextAlignSchema,
-  })
-  .default({
-    color: DefaultTheme.textColor,
-    fontFamily: FontFamily.Inter,
-    fontWeight: FontWeight.Regular,
-    fontStyle: FontStyle.Normal,
-    textAlign: TextAlign.Left,
-  });
-
-export const NoteSchema = z
-  .object({
-    background: ColorSchema,
-    displayMode: NoteDisplayModeSchema,
-    edgeless: z.object({
-      style: z.object({
-        borderRadius: z.number(),
-        borderSize: z.number(),
-        borderStyle: StrokeStyleSchema,
-        shadowType: NoteShadowsSchema,
-      }),
-    }),
-  })
-  .default({
-    background: DefaultTheme.noteBackgrounColor,
-    displayMode: NoteDisplayMode.EdgelessOnly,
-    edgeless: {
-      style: {
-        borderRadius: DEFAULT_NOTE_CORNER,
-        borderSize: DEFAULT_NOTE_BORDER_SIZE,
-        borderStyle: DEFAULT_NOTE_BORDER_STYLE,
-        shadowType: DEFAULT_NOTE_SHADOW,
-      },
-    },
-  });
-
 export const MindmapSchema = z
   .object({
     layoutType: LayoutTypeSchema,
@@ -197,20 +174,15 @@ export const MindmapSchema = z
     style: MindmapStyle.ONE,
   });
 
-export const FrameSchema = z
-  .object({
-    background: ColorSchema.optional(),
-  })
-  .default({});
-
 export const NodePropsSchema = z.object({
   connector: ConnectorSchema,
   brush: BrushSchema,
+  highlighter: HighlighterSchema,
   text: TextSchema,
   mindmap: MindmapSchema,
-  'affine:edgeless-text': EdgelessTextSchema,
-  'affine:note': NoteSchema,
-  'affine:frame': FrameSchema,
+  'affine:edgeless-text': EdgelessTextZodSchema,
+  'affine:note': NoteZodSchema,
+  'affine:frame': FrameZodSchema,
   // shapes
   'shape:diamond': ShapeSchema,
   'shape:ellipse': ShapeSchema,
@@ -235,6 +207,11 @@ export function makeDeepOptional(schema: ZodTypeAny): ZodTypeAny {
     return z.object(deepOptionalShape).optional();
   } else if (schema instanceof ZodUnion) {
     return schema.or(z.undefined());
+  } else if (schema instanceof ZodIntersection) {
+    return z.intersection(
+      makeDeepOptional(schema._def.left),
+      makeDeepOptional(schema._def.right)
+    );
   } else {
     return schema.optional();
   }

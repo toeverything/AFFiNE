@@ -7,6 +7,7 @@ import { Store } from '@toeverything/infra';
 
 import type { GlobalState } from '../../storage';
 import type { AuthSessionInfo } from '../entities/session';
+import type { AuthProvider } from '../provider/auth';
 import type { FetchService } from '../services/fetch';
 import type { GraphQLService } from '../services/graphql';
 import type { ServerService } from '../services/server';
@@ -25,7 +26,8 @@ export class AuthStore extends Store {
     private readonly fetchService: FetchService,
     private readonly gqlService: GraphQLService,
     private readonly globalState: GlobalState,
-    private readonly serverService: ServerService
+    private readonly serverService: ServerService,
+    private readonly authProvider: AuthProvider
   ) {
     super();
   }
@@ -46,6 +48,14 @@ export class AuthStore extends Store {
     this.globalState.set(`${this.serverService.server.id}-auth`, session);
   }
 
+  getClientNonce() {
+    return this.globalState.get<string>('auth-client-nonce');
+  }
+
+  setClientNonce(nonce: string) {
+    this.globalState.set('auth-client-nonce', nonce);
+  }
+
   async fetchSession() {
     const url = `/api/auth/session`;
     const options: RequestInit = {
@@ -61,6 +71,36 @@ export class AuthStore extends Store {
     if (!res.ok)
       throw new Error('Get session fetch error: ' + JSON.stringify(data));
     return data; // Return null if data empty
+  }
+
+  async signInMagicLink(email: string, token: string) {
+    await this.authProvider.signInMagicLink(
+      email,
+      token,
+      this.getClientNonce()
+    );
+  }
+
+  async signInOauth(code: string, state: string, provider: string) {
+    return await this.authProvider.signInOauth(
+      code,
+      state,
+      provider,
+      this.getClientNonce()
+    );
+  }
+
+  async signInPassword(credential: {
+    email: string;
+    password: string;
+    verifyToken?: string;
+    challenge?: string;
+  }) {
+    await this.authProvider.signInPassword(credential);
+  }
+
+  async signOut() {
+    await this.authProvider.signOut();
   }
 
   async uploadAvatar(file: File) {

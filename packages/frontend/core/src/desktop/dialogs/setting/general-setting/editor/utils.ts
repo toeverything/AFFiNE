@@ -4,7 +4,7 @@ import {
   FontWeight,
   type Palette,
   resolveColor,
-} from '@blocksuite/affine/blocks';
+} from '@blocksuite/affine/model';
 import { isEqual } from 'lodash-es';
 import { useTheme } from 'next-themes';
 
@@ -17,13 +17,14 @@ export const useResolvedTheme = () => {
 
 export const usePalettes = (
   originalPalettes: Palette[],
-  defaultColor: Color
+  defaultColor: Color,
+  isShapeText = false
 ) => {
   const theme = useResolvedTheme();
   const isDark = theme === ColorScheme.Dark;
   const palettes = originalPalettes.map(({ key, value }) => {
     // Title needs to be inverted.
-    if (isDark) {
+    if (!isShapeText && isDark) {
       if (key === 'Black') {
         key = 'White';
       } else if (key === 'White') {

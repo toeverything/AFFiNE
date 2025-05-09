@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
 export const sidebarContainerInner = style({
@@ -12,11 +13,11 @@ export const sidebarContainerInner = style({
   selectors: {
     ['[data-client-border=true] &']: {
       borderRadius: 6,
-      border: `0.5px solid ${cssVar('borderColor')}`,
+      border: `0.5px solid ${cssVarV2.layer.insideBorder.border}`,
     },
     ['[data-client-border=true][data-is-floating="true"] &']: {
       boxShadow: cssVar('shadow3'),
-      border: `1px solid ${cssVar('borderColor')}`,
+      border: `1px solid ${cssVarV2.layer.insideBorder.border}`,
     },
   },
 });
@@ -31,7 +32,7 @@ export const sidebarBodyTarget = style({
 });
 
 export const borderTop = style({
-  borderTop: `0.5px solid ${cssVar('borderColor')}`,
+  borderTop: `0.5px solid ${cssVarV2.layer.insideBorder.border}`,
 });
 
 export const sidebarBodyNoSelection = style({

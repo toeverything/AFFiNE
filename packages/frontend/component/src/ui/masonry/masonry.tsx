@@ -1,5 +1,5 @@
-import { throttle } from '@blocksuite/affine/global/utils';
 import clsx from 'clsx';
+import throttle from 'lodash-es/throttle';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { observeResize } from '../../utils';

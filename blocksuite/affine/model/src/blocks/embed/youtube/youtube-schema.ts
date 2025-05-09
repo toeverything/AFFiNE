@@ -1,3 +1,5 @@
+import { BlockSchemaExtension } from '@blocksuite/store';
+
 import { createEmbedBlockSchema } from '../../../utils/index.js';
 import {
   type EmbedYoutubeBlockProps,
@@ -25,3 +27,7 @@ export const EmbedYoutubeBlockSchema = createEmbedBlockSchema({
   toModel: () => new EmbedYoutubeModel(),
   props: (): EmbedYoutubeBlockProps => defaultEmbedYoutubeProps,
 });
+
+export const EmbedYoutubeBlockSchemaExtension = BlockSchemaExtension(
+  EmbedYoutubeBlockSchema
+);

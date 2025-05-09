@@ -1,8 +1,7 @@
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import { Slot } from '@blocksuite/global/utils';
 import { computed, signal } from '@preact/signals-core';
+import { Subject } from 'rxjs';
 
-import type { Store } from '../../model';
 import { nanoid } from '../../utils/id-generator';
 import type { StackItem } from '../../yjs';
 import { StoreExtension } from '../store-extension';
@@ -43,13 +42,11 @@ export class StoreSelectionExtension extends StoreExtension {
   };
 
   slots = {
-    changed: new Slot<BaseSelection[]>(),
-    remoteChanged: new Slot<Map<number, BaseSelection[]>>(),
+    changed: new Subject<BaseSelection[]>(),
+    remoteChanged: new Subject<Map<number, BaseSelection[]>>(),
   };
 
-  constructor(store: Store) {
-    super(store);
-
+  override loaded() {
     this.store.provider.getAll(SelectionIdentifier).forEach(ctor => {
       [ctor].flat().forEach(ctor => {
         this._selectionConstructors[ctor.type] = ctor;
@@ -62,15 +59,6 @@ export class StoreSelectionExtension extends StoreExtension {
         const all = change.updated.concat(change.added).concat(change.removed);
         const localClientID = this.store.awarenessStore.awareness.clientID;
         const exceptLocal = all.filter(id => id !== localClientID);
-        const hasLocal = all.includes(localClientID);
-        if (hasLocal) {
-          const localSelectionJson =
-            this.store.awarenessStore.getLocalSelection(this._id);
-          const localSelection = localSelectionJson.map(json => {
-            return this._jsonToSelection(json);
-          });
-          this._selections.value = localSelection;
-        }
 
         // Only consider remote selections from other clients
         if (exceptLocal.length > 0) {
@@ -101,7 +89,7 @@ export class StoreSelectionExtension extends StoreExtension {
             map.set(id, selections);
           });
           this._remoteSelections.value = map;
-          this.slots.remoteChanged.emit(map);
+          this.slots.remoteChanged.next(map);
         }
       }
     );
@@ -165,12 +153,20 @@ export class StoreSelectionExtension extends StoreExtension {
       this._id,
       selections.map(s => s.toJSON())
     );
-    this.slots.changed.emit(selections);
+    this._selections.value = selections;
+    this.slots.changed.next(selections);
   }
 
   setGroup(group: string, selections: BaseSelection[]) {
     const current = this.value.filter(s => s.group !== group);
     this.set([...current, ...selections]);
+  }
+
+  // This method is used to clear **current editor's remote selections**
+  // When the editor is not active, the remote selections should be cleared
+  // So other editors won't see the remote selections from this editor
+  clearRemote() {
+    this.store.awarenessStore.setLocalSelection(this._id, []);
   }
 
   update(fn: (currentSelections: BaseSelection[]) => BaseSelection[]) {

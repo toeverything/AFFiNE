@@ -1,4 +1,3 @@
-import { assertExists } from '@blocksuite/global/utils';
 import type { DocSource } from '@blocksuite/sync';
 import { diffUpdate, encodeStateVectorFromUpdate, mergeUpdates } from 'yjs';
 
@@ -69,7 +68,9 @@ export class WebSocketDocSource implements DocSource {
     }
 
     const latest = this.docMap.get(docId);
-    assertExists(latest);
+    if (!latest) {
+      throw new Error('latest is not found');
+    }
     this.ws.send(
       JSON.stringify({
         channel: 'doc',

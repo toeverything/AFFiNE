@@ -9,7 +9,6 @@ import Foundation
 
 enum Prompt: String {
   #if DEBUG
-    case debug_chat_gpt4 = "debug:chat:gpt4"
     case debug_action_dalle3 = "debug:action:dalle3"
     case debug_action_fal_sd15 = "debug:action:fal-sd15"
     case debug_action_fal_upscaler = "debug:action:fal-upscaler"

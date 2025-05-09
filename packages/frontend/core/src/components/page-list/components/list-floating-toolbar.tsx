@@ -26,7 +26,7 @@ export const ListFloatingToolbar = ({
     <FloatingToolbar className={styles.floatingToolbar} open={open}>
       <FloatingToolbar.Item>{content}</FloatingToolbar.Item>
       <FloatingToolbar.Button onClick={onClose} icon={<CloseIcon />} />
-      <FloatingToolbar.Separator />
+      {(!!onRestore || !!onDelete) && <FloatingToolbar.Separator />}
       {!!onRestore && (
         <FloatingToolbar.Button
           onClick={onRestore}

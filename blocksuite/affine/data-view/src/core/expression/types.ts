@@ -1,5 +1,6 @@
+import type { UniComponent } from '@blocksuite/affine-shared/types';
+
 import type { TypeInstance } from '../logical/type.js';
-import type { UniComponent } from '../utils/index.js';
 
 export type VariableRef = {
   type: 'ref';

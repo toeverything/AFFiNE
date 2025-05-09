@@ -1,4 +1,3 @@
-import { TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 
@@ -6,7 +5,7 @@ import {
   TokenType,
   VerificationTokenModel,
 } from '../../models/verification-token';
-import { createTestingModule, initTestingDB } from '../utils';
+import { createTestingModule, type TestingModule } from '../utils';
 
 interface Context {
   module: TestingModule;
@@ -17,9 +16,7 @@ interface Context {
 const test = ava as TestFn<Context>;
 
 test.before(async t => {
-  const module = await createTestingModule({
-    providers: [VerificationTokenModel],
-  });
+  const module = await createTestingModule({});
 
   t.context.verificationToken = module.get(VerificationTokenModel);
   t.context.db = module.get(PrismaClient);
@@ -27,7 +24,7 @@ test.before(async t => {
 });
 
 test.beforeEach(async t => {
-  await initTestingDB(t.context.db);
+  await t.context.module.initTestingDB();
 });
 
 test.after(async t => {

@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let TokenType = ApolloAPI.Object(
     typename: "tokenType",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

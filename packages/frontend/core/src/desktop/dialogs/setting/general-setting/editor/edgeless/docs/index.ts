@@ -1,17 +1,18 @@
+import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace';
 import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace';
-import { AffineSchemas } from '@blocksuite/affine/blocks';
 import type { DocSnapshot, Store } from '@blocksuite/affine/store';
-import { Schema, Transformer } from '@blocksuite/affine/store';
-
+import { Transformer } from '@blocksuite/affine/store';
+import { Doc as YDoc } from 'yjs';
 const getCollection = (() => {
   let collection: WorkspaceImpl | null = null;
   return async function () {
     if (collection) {
       return collection;
     }
-    const schema = new Schema();
-    schema.register(AffineSchemas);
-    collection = new WorkspaceImpl({ schema });
+    collection = new WorkspaceImpl({
+      id: 'edgeless-settings',
+      rootDoc: new YDoc({ guid: 'edgeless-settings' }),
+    });
     collection.meta.initialize();
     return collection;
   };
@@ -24,7 +25,8 @@ export type DocName =
   | 'flow'
   | 'text'
   | 'connector'
-  | 'mindmap';
+  | 'mindmap'
+  | 'frame';
 
 const docMap = new Map<DocName, Promise<Store | undefined>>();
 
@@ -38,6 +40,10 @@ async function loadPen() {
 
 async function loadShape() {
   return (await import('./shape.json')).default;
+}
+
+async function loadFrame() {
+  return (await import('./frame.json')).default;
 }
 
 async function loadFlow() {
@@ -60,6 +66,7 @@ const loaders = {
   note: loadNote,
   pen: loadPen,
   shape: loadShape,
+  frame: loadFrame,
   flow: loadFlow,
   text: loadText,
   connector: loadConnector,
@@ -80,11 +87,11 @@ async function initDoc(name: DocName) {
   const snapshot = (await loaders[name]()) as DocSnapshot;
   const collection = await getCollection();
   const transformer = new Transformer({
-    schema: collection.schema,
+    schema: getAFFiNEWorkspaceSchema(),
     blobCRUD: collection.blobSync,
     docCRUD: {
-      create: (id: string) => collection.createDoc({ id }),
-      get: (id: string) => collection.getDoc(id),
+      create: (id: string) => collection.createDoc(id).getStore({ id }),
+      get: (id: string) => collection.getDoc(id)?.getStore({ id }) ?? null,
       delete: (id: string) => collection.removeDoc(id),
     },
     middlewares: [],

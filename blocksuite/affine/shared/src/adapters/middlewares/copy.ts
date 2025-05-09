@@ -1,9 +1,10 @@
+import type { RootBlockModel } from '@blocksuite/affine-model';
 import {
   type BlockStdScope,
   type EditorHost,
   type TextRangePoint,
   TextSelection,
-} from '@blocksuite/block-std';
+} from '@blocksuite/std';
 import type {
   BlockSnapshot,
   DraftModel,
@@ -11,7 +12,9 @@ import type {
   TransformerSlots,
 } from '@blocksuite/store';
 
-import { matchFlavours } from '../../utils';
+const isRootDraftModel = (
+  model: DraftModel
+): model is DraftModel<RootBlockModel> => model.flavour === 'affine:root';
 
 const handlePoint = (
   point: TextRangePoint,
@@ -19,10 +22,10 @@ const handlePoint = (
   model: DraftModel
 ) => {
   const { index, length } = point;
-  if (matchFlavours(model, ['affine:page'])) {
+  if (isRootDraftModel(model)) {
     if (length === 0) return;
     (snapshot.props.title as Record<string, unknown>).delta =
-      model.title.sliceToDelta(index, length + index);
+      model.props.title.sliceToDelta(index, length + index);
     return;
   }
 
@@ -34,7 +37,7 @@ const handlePoint = (
 };
 
 const sliceText = (slots: TransformerSlots, std: EditorHost['std']) => {
-  slots.afterExport.on(payload => {
+  slots.afterExport.subscribe(payload => {
     if (payload.type === 'block') {
       const snapshot = payload.snapshot;
 

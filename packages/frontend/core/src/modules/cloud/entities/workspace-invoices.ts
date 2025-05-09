@@ -1,6 +1,5 @@
 import type { InvoicesQuery } from '@affine/graphql';
 import {
-  backoffRetry,
   catchErrorInto,
   effect,
   Entity,
@@ -9,11 +8,11 @@ import {
   LiveData,
   onComplete,
   onStart,
+  smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, map, mergeMap } from 'rxjs';
+import { map, tap } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
-import { isBackendError, isNetworkError } from '../error';
 import type { WorkspaceServerService } from '../services/workspace-server';
 import { InvoicesStore } from '../stores/invoices';
 
@@ -56,18 +55,11 @@ export class WorkspaceInvoices extends Entity {
             signal
           );
         }).pipe(
-          mergeMap(data => {
+          tap(data => {
             this.invoiceCount$.setValue(data.invoiceCount);
             this.pageInvoices$.setValue(data.invoices);
-            return EMPTY;
           }),
-          backoffRetry({
-            when: isNetworkError,
-            count: Infinity,
-          }),
-          backoffRetry({
-            when: isBackendError,
-          }),
+          smartRetry(),
           catchErrorInto(this.error$),
           onStart(() => {
             this.pageInvoices$.setValue(undefined);

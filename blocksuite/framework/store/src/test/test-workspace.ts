@@ -1,5 +1,5 @@
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import { NoopLogger, Slot } from '@blocksuite/global/utils';
+import { NoopLogger } from '@blocksuite/global/utils';
 import {
   AwarenessEngine,
   type AwarenessSource,
@@ -10,25 +10,22 @@ import {
   MemoryBlobSource,
   NoopDocSource,
 } from '@blocksuite/sync';
+import { Subject } from 'rxjs';
 import { Awareness } from 'y-protocols/awareness.js';
 import * as Y from 'yjs';
 
-import type { ExtensionType } from '../extension/extension.js';
 import type {
-  CreateBlocksOptions,
-  GetBlocksOptions,
-  Store,
+  Doc,
+  ExtensionType,
   Workspace,
   WorkspaceMeta,
-} from '../model/index.js';
-import type { Schema } from '../schema/index.js';
+} from '../extension/index.js';
 import { type IdGenerator, nanoid } from '../utils/id-generator.js';
 import { AwarenessStore } from '../yjs/index.js';
 import { TestDoc } from './test-doc.js';
 import { TestMeta } from './test-meta.js';
 
 export type DocCollectionOptions = {
-  schema: Schema;
   id?: string;
   idGenerator?: IdGenerator;
   docSources?: {
@@ -43,12 +40,11 @@ export type DocCollectionOptions = {
 };
 
 /**
+ * @internal
  * Test only
  * Do not use this in production
  */
 export class TestWorkspace implements Workspace {
-  protected readonly _schema: Schema;
-
   storeExtensions: ExtensionType[] = [];
 
   readonly awarenessStore: AwarenessStore;
@@ -70,22 +66,15 @@ export class TestWorkspace implements Workspace {
   meta: WorkspaceMeta;
 
   slots = {
-    docListUpdated: new Slot(),
-    docRemoved: new Slot<string>(),
-    docCreated: new Slot<string>(),
+    docListUpdated: new Subject<void>(),
   };
 
   get docs() {
     return this.blockCollections;
   }
 
-  get schema() {
-    return this._schema;
-  }
-
   constructor({
     id,
-    schema,
     idGenerator,
     awarenessSources = [],
     docSources = {
@@ -94,9 +83,7 @@ export class TestWorkspace implements Workspace {
     blobSources = {
       main: new MemoryBlobSource(),
     },
-  }: DocCollectionOptions) {
-    this._schema = schema;
-
+  }: DocCollectionOptions = {}) {
     this.id = id || '';
     this.doc = new Y.Doc({ guid: id });
     this.awarenessStore = new AwarenessStore(new Awareness(this.doc));
@@ -126,7 +113,7 @@ export class TestWorkspace implements Workspace {
   }
 
   private _bindDocMetaEvents() {
-    this.meta.docMetaAdded.on(docId => {
+    this.meta.docMetaAdded.subscribe(docId => {
       const doc = new TestDoc({
         id: docId,
         collection: this,
@@ -136,14 +123,13 @@ export class TestWorkspace implements Workspace {
       this.blockCollections.set(doc.id, doc);
     });
 
-    this.meta.docMetaUpdated.on(() => this.slots.docListUpdated.emit());
+    this.meta.docMetaUpdated.subscribe(() => this.slots.docListUpdated.next());
 
-    this.meta.docMetaRemoved.on(id => {
+    this.meta.docMetaRemoved.subscribe(id => {
       const space = this.getBlockCollection(id);
       if (!space) return;
       this.blockCollections.delete(id);
       space.remove();
-      this.slots.docRemoved.emit(id);
     });
   }
 
@@ -164,9 +150,9 @@ export class TestWorkspace implements Workspace {
    * If the `init` parameter is passed, a `surface`, `note`, and `paragraph` block
    * will be created in the doc simultaneously.
    */
-  createDoc(options: CreateBlocksOptions = {}) {
-    const { id: docId = this.idGenerator(), query, readonly } = options;
-    if (this._hasDoc(docId)) {
+  createDoc(docId?: string): Doc {
+    const id = docId ?? this.idGenerator();
+    if (this._hasDoc(id)) {
       throw new BlockSuiteError(
         ErrorCode.DocCollectionError,
         'doc already exists'
@@ -174,13 +160,12 @@ export class TestWorkspace implements Workspace {
     }
 
     this.meta.addDocMeta({
-      id: docId,
+      id,
       title: '',
       createDate: Date.now(),
       tags: [],
     });
-    this.slots.docCreated.emit(docId);
-    return this.getDoc(docId, { query, readonly }) as Store;
+    return this.getDoc(id) as Doc;
   }
 
   dispose() {
@@ -202,9 +187,9 @@ export class TestWorkspace implements Workspace {
     return space ?? null;
   }
 
-  getDoc(docId: string, options?: GetBlocksOptions): Store | null {
+  getDoc(docId: string): Doc | null {
     const collection = this.getBlockCollection(docId);
-    return collection?.getStore(options) ?? null;
+    return collection;
   }
 
   removeDoc(docId: string) {

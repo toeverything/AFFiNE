@@ -15,7 +15,7 @@ export class SqliteDocStorage extends DocStorageBase<SqliteNativeDBOptions> {
     return this.connection.apis;
   }
 
-  override async pushDocUpdate(update: DocUpdate) {
+  override async pushDocUpdate(update: DocUpdate, origin?: string) {
     const timestamp = await this.db.pushUpdate(update.docId, update.bin);
 
     this.emit(

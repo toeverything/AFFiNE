@@ -1,5 +1,5 @@
 import { channelToScheme } from '@affine/core/utils';
-import type { ReferenceParams } from '@blocksuite/affine/blocks';
+import type { ReferenceParams } from '@blocksuite/affine/model';
 import { isNil, pick, pickBy } from 'lodash-es';
 import type { ParsedQuery, ParseOptions } from 'query-string';
 import queryString from 'query-string';
@@ -102,8 +102,8 @@ const isRouteModulePath = (
 ): path is (typeof routeModulePaths)[number] =>
   routeModulePaths.includes(path as any);
 
-export const resolveLinkToDoc = (href: string) => {
-  const meta = resolveRouteLinkMeta(href);
+export const resolveLinkToDoc = (href: string, baseUrl?: string) => {
+  const meta = resolveRouteLinkMeta(href, baseUrl);
   if (!meta || meta.moduleName !== 'doc') return null;
 
   const params = preprocessParams(
@@ -188,4 +188,13 @@ export function toURLSearchParams(
       .filter(([_, v]) => v.length)
       .map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v])
   );
+}
+
+// a type safe version of toURLSearchParams for doc search params
+export function toDocSearchParams(
+  params?: ReferenceParams & {
+    refreshKey?: string;
+  }
+) {
+  return toURLSearchParams(params);
 }

@@ -8,7 +8,7 @@
 import Combine
 import UIKit
 
-class InputEditView: UIView, UITextViewDelegate {
+class InputEditView: UIView {
   let mainStack = UIStackView()
   let attachmentsEditor = AttachmentBannerView()
   let textEditor = PlainTextEditView()
@@ -21,6 +21,8 @@ class InputEditView: UIView, UITextViewDelegate {
       placeholderLabel.text = placeholderText
     }
   }
+
+  var submitAction: (() -> Void) = {}
 
   init() {
     super.init(frame: .zero)
@@ -38,7 +40,6 @@ class InputEditView: UIView, UITextViewDelegate {
       mainStack.bottomAnchor.constraint(equalTo: bottomAnchor),
     ].forEach { $0.isActive = true }
 
-    textEditor.delegate = self
     textEditor.heightAnchor.constraint(greaterThanOrEqualToConstant: 64).isActive = true
 
     [
@@ -89,23 +90,20 @@ class InputEditView: UIView, UITextViewDelegate {
       .store(in: &viewModel.cancellables)
 
     updateValues()
+
+    textEditor.textDidChange = { [weak self] text in
+      self?.viewModel.text = text
+      self?.updatePlaceholderVisibility()
+    }
+
+    textEditor.textDidReturn = { [weak self] in
+      self?.submitAction()
+    }
   }
 
   @available(*, unavailable)
   required init?(coder _: NSCoder) {
     fatalError()
-  }
-
-  func textViewDidChange(_ textView: UITextView) {
-    viewModel.text = textView.text
-  }
-
-  func textViewDidBeginEditing(_: UITextView) {
-    updatePlaceholderVisibility()
-  }
-
-  func textViewDidEndEditing(_: UITextView) {
-    updatePlaceholderVisibility()
   }
 
   func updatePlaceholderVisibility() {

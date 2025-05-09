@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useLiveData, useService } from '@toeverything/infra';
-import anime, { type AnimeInstance, type AnimeParams } from 'animejs';
+import { eases, waapi, type WAAPIAnimation } from 'animejs';
 import clsx from 'clsx';
 import {
   createContext,
@@ -17,6 +17,8 @@ import {
 import { EditorSettingService } from '../../editor-setting';
 import type { PeekViewAnimation, PeekViewMode } from '../entities/peek-view';
 import * as styles from './modal-container.css';
+
+type WAAPIAnimationParams = Parameters<typeof waapi.animate>[1];
 
 const contentOptions: Dialog.DialogContentProps = {
   ['data-testid' as string]: 'peek-view-modal',
@@ -55,7 +57,7 @@ export type PeekViewModalContainerProps = PropsWithChildren<{
   target?: HTMLElement;
   controls?: React.ReactNode;
   onAnimationStart?: () => void;
-  onAnimateEnd?: () => void;
+  onAnimationEnd?: () => void;
   mode?: PeekViewMode;
   animation?: PeekViewAnimation;
   testId?: string;
@@ -76,22 +78,20 @@ export const PeekViewModalContainer = forwardRef<
     controls,
     children,
     onAnimationStart,
-    onAnimateEnd,
-    animation = 'zoom',
+    onAnimationEnd,
+    animation = 'fadeBottom',
     mode = 'fit',
     dialogFrame = true,
   },
   ref
 ) {
   const [vtOpen, setVtOpen] = useState(open);
-  const [animeState, setAnimeState] = useState<'idle' | 'ready' | 'animating'>(
-    'idle'
-  );
+  const [animeState, setAnimeState] = useState<'idle' | 'animating'>('idle');
   const contentClipRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
-  const prevAnimeMap = useRef<Record<string, AnimeInstance | undefined>>({});
+  const prevAnimeMap = useRef<Record<string, WAAPIAnimation | undefined>>({});
   const editorSettings = useService(EditorSettingService).editorSetting;
   const fullWidthLayout = useLiveData(
     editorSettings.settings$.selector(s => s.fullWidthLayout)
@@ -100,11 +100,10 @@ export const PeekViewModalContainer = forwardRef<
   const animateControls = useCallback((animateIn = false) => {
     const controls = controlsRef.current;
     if (!controls) return;
-    anime({
-      targets: controls,
+    waapi.animate(controls, {
       opacity: animateIn ? [0, 1] : [1, 0],
       translateX: animateIn ? [-32, 0] : [0, -32],
-      easing: 'easeOutQuad',
+      ease: eases.inOutSine,
       duration: 230,
     });
   }, []);
@@ -112,9 +111,9 @@ export const PeekViewModalContainer = forwardRef<
     async (
       zoomIn?: boolean,
       paramsMap?: {
-        overlay?: AnimeParams;
-        content?: AnimeParams;
-        contentWrapper?: AnimeParams;
+        overlay?: WAAPIAnimationParams;
+        content?: WAAPIAnimationParams;
+        contentWrapper?: WAAPIAnimationParams;
       }
     ) => {
       // if target has no bounding client rect,
@@ -143,6 +142,7 @@ export const PeekViewModalContainer = forwardRef<
         if (!contentClip || !content || !target || !overlay) {
           resolve();
           setAnimeState('idle');
+          onAnimationEnd?.();
           return;
         }
         const targets = contentClip;
@@ -169,33 +169,31 @@ export const PeekViewModalContainer = forwardRef<
         prevAnimeMap.current.content?.pause();
         prevAnimeMap.current.contentWrapper?.pause();
 
-        const overlayAnime = anime({
-          targets: overlay,
+        const overlayAnime = waapi.animate(overlay, {
           opacity: zoomIn ? [0, 1] : [1, 0],
-          easing: 'easeOutQuad',
+          ease: eases.inOutSine,
           duration: 230,
           ...paramsMap?.overlay,
         });
 
         const contentAnime =
           paramsMap?.content &&
-          anime({
-            targets: content,
+          waapi.animate(content, {
             ...paramsMap.content,
           });
 
-        const contentWrapperAnime = anime({
-          targets,
+        const contentWrapperAnime = waapi.animate(targets, {
           left: [fromRect.left, toRect.left],
           top: [fromRect.top, toRect.top],
           width: [fromRect.width, toRect.width],
           height: [fromRect.height, toRect.height],
-          easing: 'easeOutQuad',
+          ease: eases.inOutSine,
           duration: 230,
           ...paramsMap?.contentWrapper,
-          complete: (ins: AnimeInstance) => {
-            paramsMap?.contentWrapper?.complete?.(ins);
+          onComplete: (ins: WAAPIAnimation) => {
+            paramsMap?.contentWrapper?.onComplete?.(ins);
             setAnimeState('idle');
+            onAnimationEnd?.();
             overlay.style.pointerEvents = '';
             if (zoomIn) {
               Object.assign(targets.style, {
@@ -238,6 +236,7 @@ export const PeekViewModalContainer = forwardRef<
    */
   const animateZoomIn = useCallback(() => {
     setAnimeState('animating');
+    onAnimationStart?.();
     setVtOpen(true);
     setTimeout(() => {
       zoomAnimate(true, {
@@ -257,9 +256,10 @@ export const PeekViewModalContainer = forwardRef<
       // controls delay: to make sure the time interval for animations of dialog and controls is 150ms.
       400 - 230 + 150
     );
-  }, [animateControls, zoomAnimate]);
+  }, [animateControls, onAnimationStart, zoomAnimate]);
   const animateZoomOut = useCallback(() => {
     setAnimeState('animating');
+    onAnimationStart?.();
     animateControls(false);
     zoomAnimate(false, {
       contentWrapper: {
@@ -270,38 +270,79 @@ export const PeekViewModalContainer = forwardRef<
       content: {
         opacity: [1, 0],
         duration: 180,
-        easing: 'easeOutQuad',
+        easing: 'ease',
       },
     })
       .then(() => setVtOpen(false))
       .catch(console.error);
-  }, [animateControls, zoomAnimate]);
+  }, [animateControls, onAnimationStart, zoomAnimate]);
 
-  const animateFade = useCallback((animateIn: boolean) => {
-    setAnimeState('animating');
-    return new Promise<void>(resolve => {
-      if (animateIn) setVtOpen(true);
-      setTimeout(() => {
-        const overlay = overlayRef.current;
-        const contentClip = contentClipRef.current;
-        if (!overlay || !contentClip) {
-          resolve();
-          return;
-        }
-        anime({
-          targets: [overlay, contentClip],
-          opacity: animateIn ? [0, 1] : [1, 0],
-          easing: 'easeOutQuad',
-          duration: 230,
-          complete: () => {
-            if (!animateIn) setVtOpen(false);
-            setAnimeState('idle');
+  const animateFade = useCallback(
+    (animateIn: boolean) => {
+      setAnimeState('animating');
+      onAnimationStart?.();
+      return new Promise<void>(resolve => {
+        if (animateIn) setVtOpen(true);
+        setTimeout(() => {
+          const overlay = overlayRef.current;
+          const contentClip = contentClipRef.current;
+          if (!overlay || !contentClip) {
             resolve();
-          },
+            return;
+          }
+          waapi.animate([overlay, contentClip], {
+            opacity: animateIn ? [0, 1] : [1, 0],
+            ease: eases.inOutSine,
+            duration: 230,
+            onComplete: () => {
+              if (!animateIn) setVtOpen(false);
+              setAnimeState('idle');
+              onAnimationEnd?.();
+              resolve();
+            },
+          });
         });
       });
-    });
-  }, []);
+    },
+    [onAnimationEnd, onAnimationStart]
+  );
+
+  const animateFadeBottom = useCallback(
+    (animateIn: boolean) => {
+      setAnimeState('animating');
+      return new Promise<void>(resolve => {
+        if (animateIn) setVtOpen(true);
+        setTimeout(() => {
+          const overlay = overlayRef.current;
+          const contentClip = contentClipRef.current;
+          if (!overlay || !contentClip) {
+            resolve();
+            return;
+          }
+
+          waapi.animate([overlay], {
+            opacity: animateIn ? [0, 1] : [1, 0],
+            ease: eases.inOutSine,
+            duration: 230,
+          });
+          waapi.animate([contentClip], {
+            opacity: animateIn ? [0, 1] : [1, 0],
+            y: animateIn ? ['-2%', '0%'] : ['0%', '-2%'],
+            scale: animateIn ? [0.96, 1] : [1, 0.96],
+            ease: eases.cubicBezier(0.42, 0, 0.58, 1),
+            duration: 230,
+            onComplete: () => {
+              if (!animateIn) setVtOpen(false);
+              setAnimeState('idle');
+              onAnimationEnd?.();
+              resolve();
+            },
+          });
+        });
+      });
+    },
+    [onAnimationEnd]
+  );
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -318,12 +359,22 @@ export const PeekViewModalContainer = forwardRef<
   useLayoutEffect(() => {
     if (animation === 'zoom') {
       open ? animateZoomIn() : animateZoomOut();
+    } else if (animation === 'fadeBottom') {
+      animateFadeBottom(open).catch(console.error);
     } else if (animation === 'fade') {
       animateFade(open).catch(console.error);
     } else if (animation === 'none') {
       setVtOpen(open);
     }
-  }, [animateZoomOut, animation, open, target, animateZoomIn, animateFade]);
+  }, [
+    animateZoomOut,
+    animation,
+    open,
+    target,
+    animateZoomIn,
+    animateFade,
+    animateFadeBottom,
+  ]);
 
   return (
     <PeekViewContext.Provider value={emptyContext}>
@@ -332,8 +383,6 @@ export const PeekViewModalContainer = forwardRef<
           <PeekViewModalOverlay
             ref={overlayRef}
             className={styles.modalOverlay}
-            onAnimationStart={onAnimationStart}
-            onAnimationEnd={onAnimateEnd}
             data-anime-state={animeState}
           />
           <div
@@ -353,6 +402,8 @@ export const PeekViewModalContainer = forwardRef<
               <div className={styles.modalContentClip}>
                 <Dialog.Content
                   {...contentOptions}
+                  // mute the radix-ui warning
+                  aria-describedby={undefined}
                   className={clsx({
                     [styles.modalContent]: true,
                     [styles.dialog]: dialogFrame,

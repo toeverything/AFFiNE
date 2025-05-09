@@ -148,10 +148,11 @@ export function isUrlInClipboard(clipboardData: DataTransfer) {
   return isValidUrl(url);
 }
 
-export function getHostName(url: string) {
+export function getHostName(link: string) {
   try {
-    return new URL(url).hostname;
+    const url = new URL(link);
+    return url.hostname || url.pathname;
   } catch {
-    return url;
+    return link;
   }
 }

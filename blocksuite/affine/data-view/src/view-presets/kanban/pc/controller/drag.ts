@@ -1,5 +1,5 @@
 import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
-import { assertExists, Point, Rect } from '@blocksuite/global/utils';
+import { Point, Rect } from '@blocksuite/global/gfx';
 import { computed } from '@preact/signals-core';
 import type { ReactiveController } from 'lit';
 
@@ -136,7 +136,6 @@ export class KanbanDragController implements ReactiveController {
     const scrollContainer = this.host.querySelector(
       '.affine-data-view-kanban-groups'
     ) as HTMLElement;
-    assertExists(scrollContainer);
     return scrollContainer;
   }
 
@@ -154,7 +153,7 @@ export class KanbanDragController implements ReactiveController {
         const target = event.target;
         if (target instanceof Element) {
           const cell = target.closest('affine-data-view-kanban-cell');
-          if (cell?.editing) {
+          if (cell?.isEditing$.value) {
             return;
           }
           cell?.selectCurrentCell(false);
@@ -212,7 +211,10 @@ const createDropPreview = () => {
       card?: KanbanCard
     ) {
       const target = card ?? group.querySelector('.add-card');
-      assertExists(target);
+      if (!target) {
+        console.error('`target` is not found');
+        return;
+      }
       if (target.previousElementSibling === self || target === self) {
         div.remove();
         return;

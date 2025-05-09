@@ -7,13 +7,14 @@ import {
   DefaultServerService,
   ServersService,
 } from '@affine/core/modules/cloud';
+import type { DialogComponentProps } from '@affine/core/modules/dialogs';
 import type {
-  DialogComponentProps,
-  GLOBAL_DIALOG_SCHEMA,
-} from '@affine/core/modules/dialogs';
-import type { SettingTab } from '@affine/core/modules/dialogs/constant';
+  SettingTab,
+  WORKSPACE_DIALOG_SCHEMA,
+} from '@affine/core/modules/dialogs/constant';
 import { GlobalContextService } from '@affine/core/modules/global-context';
-import type { WorkspaceMetadata } from '@affine/core/modules/workspace';
+import { createIsland, type Island } from '@affine/core/utils/island';
+import { ServerDeploymentType } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { ContactWithUsIcon } from '@blocksuite/icons/rc';
 import { FrameworkScope, useLiveData, useService } from '@toeverything/infra';
@@ -21,10 +22,13 @@ import { debounce } from 'lodash-es';
 import {
   Suspense,
   useCallback,
+  useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
+import { flushSync } from 'react-dom';
 
 import { AccountSetting } from './account-setting';
 import { GeneralSetting } from './general-setting';
@@ -32,13 +36,18 @@ import { IssueFeedbackModal } from './issue-feedback-modal';
 import { SettingSidebar } from './setting-sidebar';
 import { StarAFFiNEModal } from './star-affine-modal';
 import * as style from './style.css';
+import {
+  SubPageContext,
+  type SubPageContextType,
+  SubPageTarget,
+} from './sub-page';
 import type { SettingState } from './types';
 import { WorkspaceSetting } from './workspace-setting';
 
 interface SettingProps extends ModalProps {
   activeTab?: SettingTab;
-  workspaceMetadata?: WorkspaceMetadata | null;
   onCloseSetting: () => void;
+  scrollAnchor?: string;
 }
 
 const isWorkspaceSetting = (key: string): boolean =>
@@ -54,20 +63,19 @@ const CenteredLoading = () => {
 
 const SettingModalInner = ({
   activeTab: initialActiveTab = 'appearance',
-  workspaceMetadata: initialWorkspaceMetadata = null,
   onCloseSetting,
+  scrollAnchor: initialScrollAnchor,
 }: SettingProps) => {
+  const [subPageIslands, setSubPageIslands] = useState<Island[]>([]);
   const [settingState, setSettingState] = useState<SettingState>({
     activeTab: initialActiveTab,
-    activeWorkspaceMetadata: initialWorkspaceMetadata,
-    scrollAnchor: undefined,
+    scrollAnchor: initialScrollAnchor,
   });
   const globalContextService = useService(GlobalContextService);
 
   const currentServerId = useLiveData(
     globalContextService.globalContext.serverId.$
   );
-  console.log(currentServerId);
   const serversService = useService(ServersService);
   const defaultServerService = useService(DefaultServerService);
   const currentServer =
@@ -76,6 +84,11 @@ const SettingModalInner = ({
     ) ?? defaultServerService.server;
   const loginStatus = useLiveData(
     currentServer.scope.get(AuthService).session.status$
+  );
+  const isSelfhosted = useLiveData(
+    currentServer.config$.selector(
+      c => c.type === ServerDeploymentType.Selfhosted
+    )
   );
 
   const modalContentRef = useRef<HTMLDivElement>(null);
@@ -122,8 +135,8 @@ const SettingModalInner = ({
   }, []);
 
   const onTabChange = useCallback(
-    (key: SettingTab, meta: WorkspaceMetadata | null) => {
-      setSettingState({ activeTab: key, activeWorkspaceMetadata: meta });
+    (key: SettingTab) => {
+      setSettingState({ activeTab: key });
     },
     [setSettingState]
   );
@@ -138,75 +151,115 @@ const SettingModalInner = ({
     setOpenStarAFFiNEModal(true);
   }, [setOpenStarAFFiNEModal]);
 
+  const addSubPageIsland = useCallback(() => {
+    const island = createIsland();
+    setSubPageIslands(prev => [...prev, island]);
+    const dispose = () => {
+      setSubPageIslands(prev => prev.filter(i => i !== island));
+    };
+    return { island, dispose };
+  }, []);
+
+  const contextValue = useMemo(
+    () =>
+      ({
+        islands: subPageIslands,
+        addIsland: addSubPageIsland,
+      }) satisfies SubPageContextType,
+    [subPageIslands, addSubPageIsland]
+  );
+
+  useEffect(() => {
+    if (
+      isSelfhosted &&
+      (settingState.activeTab === 'plans' ||
+        settingState.activeTab === 'workspace:billing')
+    ) {
+      setSettingState({ activeTab: 'workspace:license' });
+    }
+  }, [isSelfhosted, settingState.activeTab]);
+
+  useEffect(() => {
+    if (settingState.scrollAnchor) {
+      flushSync(() => {
+        const target = modalContentRef.current?.querySelector(
+          `#${settingState.scrollAnchor}`
+        );
+        if (target) {
+          target.scrollIntoView();
+        }
+      });
+    }
+  }, [settingState]);
   return (
     <FrameworkScope scope={currentServer.scope}>
       <SettingSidebar
         activeTab={settingState.activeTab}
         onTabChange={onTabChange}
-        selectedWorkspaceId={settingState.activeWorkspaceMetadata?.id ?? null}
       />
-      <Scrollable.Root>
-        <Scrollable.Viewport
-          data-testid="setting-modal-content"
-          className={style.wrapper}
-          ref={modalContentWrapperRef}
-        >
-          <div className={style.centerContainer}>
-            <div ref={modalContentRef} className={style.content}>
-              <Suspense fallback={<WorkspaceDetailSkeleton />}>
-                {}
-                {settingState.activeTab === 'account' &&
-                loginStatus === 'authenticated' ? (
-                  <AccountSetting onChangeSettingState={setSettingState} />
-                ) : isWorkspaceSetting(settingState.activeTab) &&
-                  settingState.activeWorkspaceMetadata ? (
-                  <WorkspaceSetting
-                    activeTab={settingState.activeTab}
-                    workspaceMetadata={settingState.activeWorkspaceMetadata}
-                    onCloseSetting={onCloseSetting}
-                    onChangeSettingState={setSettingState}
-                  />
-                ) : !isWorkspaceSetting(settingState.activeTab) ? (
-                  <GeneralSetting
-                    activeTab={settingState.activeTab}
-                    scrollAnchor={settingState.scrollAnchor}
-                    onChangeSettingState={setSettingState}
-                  />
-                ) : null}
-              </Suspense>
-            </div>
-            <div className={style.footer}>
-              <ContactWithUsIcon fontSize={16} />
-              <Trans
-                i18nKey={'com.affine.settings.suggestion-2'}
-                components={{
-                  1: (
-                    <span
-                      className={style.link}
-                      onClick={handleOpenStarAFFiNEModal}
+      <SubPageContext.Provider value={contextValue}>
+        <Scrollable.Root>
+          <Scrollable.Viewport
+            data-testid="setting-modal-content"
+            className={style.wrapper}
+            ref={modalContentWrapperRef}
+            data-setting-page
+            data-open
+          >
+            <div className={style.centerContainer}>
+              <div ref={modalContentRef} className={style.content}>
+                <Suspense fallback={<WorkspaceDetailSkeleton />}>
+                  {settingState.activeTab === 'account' &&
+                  loginStatus === 'authenticated' ? (
+                    <AccountSetting onChangeSettingState={setSettingState} />
+                  ) : isWorkspaceSetting(settingState.activeTab) ? (
+                    <WorkspaceSetting
+                      activeTab={settingState.activeTab}
+                      onCloseSetting={onCloseSetting}
+                      onChangeSettingState={setSettingState}
                     />
-                  ),
-                  2: (
-                    <span
-                      className={style.link}
-                      onClick={handleOpenIssueFeedbackModal}
+                  ) : !isWorkspaceSetting(settingState.activeTab) ? (
+                    <GeneralSetting
+                      activeTab={settingState.activeTab}
+                      onChangeSettingState={setSettingState}
                     />
-                  ),
-                }}
+                  ) : null}
+                </Suspense>
+              </div>
+              <div className={style.footer}>
+                <ContactWithUsIcon fontSize={16} />
+                <Trans
+                  i18nKey={'com.affine.settings.suggestion-2'}
+                  components={{
+                    1: (
+                      <span
+                        className={style.link}
+                        onClick={handleOpenStarAFFiNEModal}
+                      />
+                    ),
+                    2: (
+                      <span
+                        className={style.link}
+                        onClick={handleOpenIssueFeedbackModal}
+                      />
+                    ),
+                  }}
+                />
+              </div>
+              <StarAFFiNEModal
+                open={openStarAFFiNEModal}
+                setOpen={setOpenStarAFFiNEModal}
+              />
+              <IssueFeedbackModal
+                open={openIssueFeedbackModal}
+                setOpen={setOpenIssueFeedbackModal}
               />
             </div>
-            <StarAFFiNEModal
-              open={openStarAFFiNEModal}
-              setOpen={setOpenStarAFFiNEModal}
-            />
-            <IssueFeedbackModal
-              open={openIssueFeedbackModal}
-              setOpen={setOpenIssueFeedbackModal}
-            />
-          </div>
-          <Scrollable.Scrollbar />
-        </Scrollable.Viewport>
-      </Scrollable.Root>
+            <Scrollable.Scrollbar />
+          </Scrollable.Viewport>
+          <SubPageTarget />
+        </Scrollable.Root>
+      </SubPageContext.Provider>
     </FrameworkScope>
   );
 };
@@ -214,8 +267,8 @@ const SettingModalInner = ({
 export const SettingDialog = ({
   close,
   activeTab,
-  workspaceMetadata,
-}: DialogComponentProps<GLOBAL_DIALOG_SCHEMA['setting']>) => {
+  scrollAnchor,
+}: DialogComponentProps<WORKSPACE_DIALOG_SCHEMA['setting']>) => {
   return (
     <Modal
       width={1280}
@@ -232,12 +285,15 @@ export const SettingDialog = ({
       }}
       open
       onOpenChange={() => close()}
+      closeButtonOptions={{
+        style: { right: 14, top: 14 },
+      }}
     >
       <Suspense fallback={<CenteredLoading />}>
         <SettingModalInner
           activeTab={activeTab}
-          workspaceMetadata={workspaceMetadata}
           onCloseSetting={close}
+          scrollAnchor={scrollAnchor}
         />
       </Suspense>
     </Modal>

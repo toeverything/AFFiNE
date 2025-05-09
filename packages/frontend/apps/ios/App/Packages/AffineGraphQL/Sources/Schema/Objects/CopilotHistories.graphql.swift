@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let CopilotHistories = ApolloAPI.Object(
     typename: "CopilotHistories",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

@@ -1,4 +1,4 @@
-import { Point } from '@blocksuite/global/utils';
+import { Point } from '@blocksuite/global/gfx';
 import { describe, expect, it } from 'vitest';
 
 describe('Point', () => {

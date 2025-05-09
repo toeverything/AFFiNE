@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let InviteUserType = ApolloAPI.Object(
     typename: "InviteUserType",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

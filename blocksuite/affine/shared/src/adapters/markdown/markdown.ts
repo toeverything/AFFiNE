@@ -37,6 +37,8 @@ import {
   MarkdownDeltaConverter,
 } from './delta-converter';
 import { remarkGfm } from './gfm';
+import { MarkdownPreprocessorManager } from './preprocessor';
+import { remarkCallout } from './remark-plugins/remark-callout';
 import type { Markdown, MarkdownAST } from './type';
 
 type MarkdownToSliceSnapshotPayload = {
@@ -167,14 +169,12 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
   };
 
   deltaConverter: MarkdownDeltaConverter;
+  preprocessorManager: MarkdownPreprocessorManager;
 
   readonly blockMatchers: BlockMarkdownAdapterMatcher[];
 
-  constructor(
-    job: Transformer,
-    readonly provider: ServiceProvider
-  ) {
-    super(job);
+  constructor(job: Transformer, provider: ServiceProvider) {
+    super(job, provider);
     const blockMatchers = Array.from(
       provider.getAll(BlockMarkdownAdapterMatcherIdentifier).values()
     );
@@ -190,6 +190,7 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
       inlineDeltaToMarkdownAdapterMatchers,
       markdownInlineToDeltaMatchers
     );
+    this.preprocessorManager = new MarkdownPreprocessorManager(provider);
   }
 
   private _astToMarkdown(ast: Root) {
@@ -204,11 +205,13 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
   }
 
   private _markdownToAst(markdown: Markdown) {
-    return unified()
+    const processor = unified()
       .use(remarkParse)
       .use(remarkGfm)
       .use(remarkMath)
-      .parse(markdown);
+      .use(remarkCallout);
+    const ast = processor.parse(markdown);
+    return processor.runSync(ast);
   }
 
   async fromBlockSnapshot({
@@ -276,7 +279,11 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
   async toBlockSnapshot(
     payload: ToBlockSnapshotPayload<Markdown>
   ): Promise<BlockSnapshot> {
-    const markdownAst = this._markdownToAst(payload.file);
+    const markdownFile = this.preprocessorManager.process(
+      'block',
+      payload.file
+    );
+    const markdownAst = this._markdownToAst(markdownFile);
     const blockSnapshotRoot = {
       type: 'block',
       id: nanoid(),
@@ -300,7 +307,8 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
   async toDocSnapshot(
     payload: ToDocSnapshotPayload<Markdown>
   ): Promise<DocSnapshot> {
-    const markdownAst = this._markdownToAst(payload.file);
+    const markdownFile = this.preprocessorManager.process('doc', payload.file);
+    const markdownAst = this._markdownToAst(markdownFile);
     const blockSnapshotRoot = {
       type: 'block',
       id: nanoid(),
@@ -359,67 +367,11 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
   async toSliceSnapshot(
     payload: MarkdownToSliceSnapshotPayload
   ): Promise<SliceSnapshot | null> {
-    let codeFence = '';
-    payload.file = payload.file
-      .split('\n')
-      .map(line => {
-        if (line.trimStart().startsWith('-')) {
-          return line;
-        }
-        let trimmedLine = line.trimStart();
-        if (!codeFence && trimmedLine.startsWith('```')) {
-          codeFence = trimmedLine.substring(
-            0,
-            trimmedLine.lastIndexOf('```') + 3
-          );
-          if (codeFence.split('').every(c => c === '`')) {
-            return line;
-          }
-          codeFence = '';
-        }
-        if (!codeFence && trimmedLine.startsWith('~~~')) {
-          codeFence = trimmedLine.substring(
-            0,
-            trimmedLine.lastIndexOf('~~~') + 3
-          );
-          if (codeFence.split('').every(c => c === '~')) {
-            return line;
-          }
-          codeFence = '';
-        }
-        if (
-          !!codeFence &&
-          trimmedLine.startsWith(codeFence) &&
-          trimmedLine.lastIndexOf(codeFence) === 0
-        ) {
-          codeFence = '';
-        }
-        if (codeFence) {
-          return line;
-        }
-
-        trimmedLine = trimmedLine.trimEnd();
-        if (!trimmedLine.startsWith('<') && !trimmedLine.endsWith('>')) {
-          // check if it is a url link and wrap it with the angle brackets
-          // sometimes the url includes emphasis `_` that will break URL parsing
-          //
-          // eg. /MuawcBMT1Mzvoar09-_66?mode=page&blockIds=rL2_GXbtLU2SsJVfCSmh_
-          // https://www.markdownguide.org/basic-syntax/#urls-and-email-addresses
-          try {
-            const valid =
-              URL.canParse?.(trimmedLine) ?? Boolean(new URL(trimmedLine));
-            if (valid) {
-              return `<${trimmedLine}>`;
-            }
-          } catch (err) {
-            console.log(err);
-          }
-        }
-
-        return line.replace(/^ /, '&#x20;');
-      })
-      .join('\n');
-    const markdownAst = this._markdownToAst(payload.file);
+    const markdownFile = this.preprocessorManager.process(
+      'slice',
+      payload.file
+    );
+    const markdownAst = this._markdownToAst(markdownFile);
     const blockSnapshotRoot = {
       type: 'block',
       id: nanoid(),

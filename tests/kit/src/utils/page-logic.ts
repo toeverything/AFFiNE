@@ -1,6 +1,8 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
+import { openEditorInfoPanel } from './setting';
+
 export function getAllPage(page: Page) {
   const newPageButton = page.getByTestId('new-page-button-trigger');
   const newPageDropdown = newPageButton.locator('svg');
@@ -8,7 +10,9 @@ export function getAllPage(page: Page) {
 
   async function clickNewPageButton() {
     const newPageButton = page.getByTestId('new-page-button-trigger');
-    return await newPageButton.click();
+    return await newPageButton.click({
+      timeout: 20000,
+    });
   }
 
   async function clickNewEdgelessDropdown() {
@@ -33,16 +37,9 @@ export async function waitForAllPagesLoad(page: Page) {
 }
 
 export async function clickNewPageButton(page: Page, title?: string) {
-  // FiXME: when the page is in edgeless mode, clickNewPageButton will create a new edgeless page
-  const edgelessPage = page.locator('edgeless-editor');
-  if (await edgelessPage.isVisible()) {
-    await page.getByTestId('switch-page-mode-button').click({
-      delay: 100,
-    });
-  }
-  // fixme(himself65): if too fast, the page will crash
   await page.getByTestId('sidebar-new-page-button').click({
-    delay: 100,
+    // default timeout is 5000ms, but it's not enough for the CI first page load
+    timeout: 20000,
   });
   await waitForEmptyEditor(page);
   if (title) {
@@ -63,8 +60,7 @@ export async function type(page: Page, content: string, delay = 50) {
 }
 
 export const createLinkedPage = async (page: Page, pageName?: string) => {
-  // fixme: workaround for @ popover not showing up when editor is not ready
-  await page.waitForTimeout(500);
+  await waitForEditorLoad(page);
   await page.keyboard.type('@', { delay: 50 });
   const linkedPagePopover = page.locator('.linked-doc-popover');
   await expect(linkedPagePopover).toBeVisible();
@@ -73,6 +69,21 @@ export const createLinkedPage = async (page: Page, pageName?: string) => {
   await linkedPagePopover
     .locator(`icon-button`)
     .filter({ hasText: `New "${pageName}" page` })
+    .click();
+};
+
+export const createTodayPage = async (page: Page) => {
+  // fixme: workaround for @ popover not showing up when editor is not ready
+  await page.waitForTimeout(500);
+  await page.keyboard.type('@', { delay: 50 });
+  const linkedPagePopover = page.locator('.linked-doc-popover');
+  await expect(linkedPagePopover).toBeVisible();
+  await type(page, 'Today');
+
+  await linkedPagePopover
+    .locator(`icon-button`)
+    .filter({ hasText: 'Today' })
+    .nth(0)
     .click();
 };
 
@@ -184,6 +195,7 @@ export const dragTo = async (
 };
 
 // sometimes editor loses focus, this function is to focus the editor
+// FIXME: this function is not usable since the placeholder is not unstable
 export const focusInlineEditor = async (page: Page) => {
   await page
     .locator(
@@ -214,9 +226,26 @@ export const addDatabase = async (page: Page, title?: string) => {
   }
 };
 
+export const addCodeBlock = async (page: Page) => {
+  await page.keyboard.press('/');
+  await expect(page.locator('affine-slash-menu .slash-menu')).toBeVisible();
+  await page.keyboard.type('code');
+  await page.getByTestId('Code Block').click();
+};
+
 export const addDatabaseRow = async (page: Page, databaseTitle: string) => {
   const db = page.locator(`affine-database-table`, {
     has: page.locator(`affine-database-title:has-text("${databaseTitle}")`),
   });
   await db.locator('.data-view-table-group-add-row-button').click();
+};
+
+export const switchEdgelessTheme = async (
+  page: Page,
+  type: 'system' | 'light' | 'dark'
+) => {
+  await openEditorInfoPanel(page);
+  const panel = page.getByTestId('info-modal');
+  await panel.locator(`button[value="${type}"]`).click();
+  await page.keyboard.press('Escape');
 };

@@ -5,7 +5,6 @@ import type {
 } from '@radix-ui/react-tooltip';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { cssVar } from '@toeverything/theme';
-import { cssVarV2 } from '@toeverything/theme/v2';
 import clsx from 'clsx';
 import { type ReactElement, type ReactNode } from 'react';
 
@@ -110,20 +109,6 @@ export const Tooltip = ({
             ) : (
               content
             )}
-            <TooltipPrimitive.Arrow asChild>
-              <svg
-                width="10"
-                height="6"
-                viewBox="0 0 10 6"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M4.11111 5.55C4.55556 6.15 5.44445 6.15 5.88889 5.55L10 0H0L4.11111 5.55Z"
-                  fill={cssVarV2('tooltips/background')}
-                />
-              </svg>
-            </TooltipPrimitive.Arrow>
           </TooltipPrimitive.Content>
         </TooltipPrimitive.Portal>
       </TooltipPrimitive.Root>

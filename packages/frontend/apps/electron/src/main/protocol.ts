@@ -1,10 +1,11 @@
 import { join } from 'node:path';
 
-import { net, protocol, session } from 'electron';
+import { app, net, protocol, session } from 'electron';
 import cookieParser from 'set-cookie-parser';
 
+import { resourcesPath } from '../shared/utils';
+import { anotherHost, mainHost } from './constants';
 import { logger } from './logger';
-import { isOfflineModeEnabled } from './utils';
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -33,34 +34,58 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-const NETWORK_REQUESTS = ['/api', '/ws', '/socket.io', '/graphql'];
-const webStaticDir = join(__dirname, '../resources/web-static');
-
-function isNetworkResource(pathname: string) {
-  return NETWORK_REQUESTS.some(opt => pathname.startsWith(opt));
-}
+const webStaticDir = join(resourcesPath, 'web-static');
 
 async function handleFileRequest(request: Request) {
+  const urlObject = new URL(request.url);
+
+  if (urlObject.host === anotherHost) {
+    urlObject.host = mainHost;
+  }
+
+  const isAbsolutePath = urlObject.host !== '.';
+
+  // Redirect to webpack dev server if defined
+  if (process.env.DEV_SERVER_URL && !isAbsolutePath) {
+    const devServerUrl = new URL(
+      urlObject.pathname,
+      process.env.DEV_SERVER_URL
+    );
+    return net.fetch(devServerUrl.toString(), request);
+  }
   const clonedRequest = Object.assign(request.clone(), {
     bypassCustomProtocolHandlers: true,
   });
-  const urlObject = new URL(request.url);
   // this will be file types (in the web-static folder)
   let filepath = '';
-  // if is a file type, load the file in resources
-  if (urlObject.pathname.split('/').at(-1)?.includes('.')) {
-    // Sanitize pathname to prevent path traversal attacks
-    const decodedPath = decodeURIComponent(urlObject.pathname);
-    const normalizedPath = join(webStaticDir, decodedPath).normalize();
-    if (!normalizedPath.startsWith(webStaticDir)) {
-      // Attempted path traversal - reject by using empty path
-      filepath = join(webStaticDir, '');
+
+  // for relative path, load the file in resources
+  if (!isAbsolutePath) {
+    if (urlObject.pathname.split('/').at(-1)?.includes('.')) {
+      // Sanitize pathname to prevent path traversal attacks
+      const decodedPath = decodeURIComponent(urlObject.pathname);
+      const normalizedPath = join(webStaticDir, decodedPath).normalize();
+      if (!normalizedPath.startsWith(webStaticDir)) {
+        // Attempted path traversal - reject by using empty path
+        filepath = join(webStaticDir, '');
+      } else {
+        filepath = normalizedPath;
+      }
     } else {
-      filepath = normalizedPath;
+      // else, fallback to load the index.html instead
+      filepath = join(webStaticDir, 'index.html');
     }
   } else {
-    // else, fallback to load the index.html instead
-    filepath = join(webStaticDir, 'index.html');
+    filepath = decodeURIComponent(urlObject.pathname);
+    // security check if the filepath is within app.getPath('sessionData')
+    const sessionDataPath = app.getPath('sessionData');
+    const tempPath = app.getPath('temp');
+    if (
+      !filepath.startsWith(sessionDataPath) &&
+      !filepath.startsWith(tempPath)
+    ) {
+      throw new Error('Invalid filepath');
+    }
   }
   return net.fetch('file://' + filepath, clonedRequest);
 }
@@ -116,8 +141,8 @@ export function registerProtocol() {
 
           delete responseHeaders['access-control-allow-origin'];
           delete responseHeaders['access-control-allow-headers'];
-          responseHeaders['Access-Control-Allow-Origin'] = ['*'];
-          responseHeaders['Access-Control-Allow-Headers'] = ['*'];
+          delete responseHeaders['Access-Control-Allow-Origin'];
+          delete responseHeaders['Access-Control-Allow-Headers'];
         }
       })()
         .catch(err => {
@@ -131,37 +156,6 @@ export function registerProtocol() {
 
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
     const url = new URL(details.url);
-    const pathname = url.pathname;
-    const protocol = url.protocol;
-    const origin = url.origin;
-
-    // offline whitelist
-    // 1. do not block non-api request for http://localhost || file:// (local dev assets)
-    // 2. do not block devtools
-    // 3. block all other requests
-    const blocked = (() => {
-      if (!isOfflineModeEnabled()) {
-        return false;
-      }
-      if (
-        (protocol === 'file:' || origin.startsWith('http://localhost')) &&
-        !isNetworkResource(pathname)
-      ) {
-        return false;
-      }
-      if ('devtools:' === protocol) {
-        return false;
-      }
-      return true;
-    })();
-
-    if (blocked) {
-      logger.debug('blocked request', details.url);
-      callback({
-        cancel: true,
-      });
-      return;
-    }
 
     (async () => {
       // session cookies are set to file:// on production

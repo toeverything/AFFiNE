@@ -1,5 +1,0 @@
-query getWorkspaceFeatures($workspaceId: String!) {
-  workspace(id: $workspaceId) {
-    features
-  }
-}

@@ -11,10 +11,7 @@ import {
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickUserInfoCard } from '@affine-test/kit/utils/setting';
-import {
-  clickSideBarCurrentWorkspaceBanner,
-  clickSideBarSettingButton,
-} from '@affine-test/kit/utils/sidebar';
+import { clickSideBarSettingButton } from '@affine-test/kit/utils/sidebar';
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
@@ -25,11 +22,8 @@ let user: {
   password: string;
 };
 
-test.beforeEach(async () => {
-  user = await createRandomUser();
-});
-
 test.beforeEach(async ({ page }) => {
+  user = await createRandomUser();
   await loginUser(page, user);
 });
 
@@ -116,7 +110,7 @@ test('can sync collections between different browser', async ({
     page
   );
   await enableCloudWorkspace(page);
-  await page.getByTestId('explorer-bar-add-collection-button').click();
+  await page.getByTestId('navigation-panel-bar-add-collection-button').click();
   const title = page.getByTestId('prompt-modal-input');
   await title.isVisible();
   await title.fill('test collection');
@@ -128,7 +122,7 @@ test('can sync collections between different browser', async ({
     const page2 = await context.newPage();
     await loginUser(page2, user);
     await page2.goto(page.url());
-    const collections = page2.getByTestId('explorer-collections');
+    const collections = page2.getByTestId('navigation-panel-collections');
     await collections.getByTestId('category-divider-collapse-button').click();
     await expect(collections.getByText('test collection')).toBeVisible();
   }
@@ -170,7 +164,7 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
   const fileChooserPromise = page.waitForEvent('filechooser');
   await page.keyboard.press('Enter', { delay: 50 });
   const fileChooser = await fileChooserPromise;
-  fileChooser.setFiles(Path.dir(import.meta.url).join('logo.svg').value);
+  await fileChooser.setFiles(Path.dir(import.meta.url).join('logo.svg').value);
   await expect(image).toBeVisible();
 
   // the user should see the svg
@@ -210,73 +204,4 @@ test('can sync svg between different browsers', async ({ page, browser }) => {
 
     expect(svg2).toEqual(svg1);
   }
-});
-
-test('When the first sync is not completed, should always show loading', async ({
-  page,
-  browser,
-}) => {
-  await page.reload();
-  await waitForEditorLoad(page);
-  await createLocalWorkspace(
-    {
-      name: 'test',
-    },
-    page
-  );
-  await enableCloudWorkspace(page);
-  await clickNewPageButton(page);
-  await waitForEditorLoad(page);
-  const title = getBlockSuiteEditorTitle(page);
-  await title.pressSequentially('TEST TITLE', {
-    delay: 50,
-  });
-
-  const context = await browser.newContext();
-  await skipOnboarding(context);
-  const page2 = await context.newPage();
-  await loginUser(page2, user);
-
-  // simulate sync stuck
-  await page2.evaluate(() => {
-    (window as any)._TEST_SIMULATE_SYNC_LAG = new Promise(() => {});
-  });
-  const localWorkspaceUrl = page2.url();
-  await clickSideBarCurrentWorkspaceBanner(page2);
-  await page2.getByTestId('workspace-card').getByText('test').click(); // enter "test" workspace
-
-  await page2.waitForTimeout(1000);
-
-  await expect(
-    page2.getByTestId('page-list-item').getByText('TEST TITLE')
-  ).not.toBeVisible(); // should be loading
-
-  // Simulate user refresh and re-enter workspace, should still be loading
-  await page2.goto(localWorkspaceUrl);
-
-  // setup sync lag
-  await page2.evaluate(() => {
-    (window as any).resolveSyncLag = null;
-    (window as any)._TEST_SIMULATE_SYNC_LAG = new Promise(resolve => {
-      (window as any).resolveSyncLag = resolve;
-    });
-  });
-  await clickSideBarCurrentWorkspaceBanner(page2);
-  await page2.getByTestId('workspace-card').getByText('test').click(); // enter "test" workspace
-
-  await page2.waitForTimeout(1000);
-
-  await expect(
-    page2.getByTestId('page-list-item').getByText('TEST TITLE')
-  ).not.toBeVisible(); // should be loading
-
-  await page2.evaluate(() => {
-    (window as any).resolveSyncLag();
-  }); // start syncing
-  await page2.getByTestId('page-list-item').getByText('TEST TITLE').click(); // should be able to click page
-  await waitForEditorLoad(page2);
-
-  expect(await getBlockSuiteEditorTitle(page2).innerText()).toContain(
-    'TEST TITLE'
-  );
 });

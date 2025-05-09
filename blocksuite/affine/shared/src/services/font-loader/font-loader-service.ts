@@ -1,6 +1,6 @@
-import { LifeCycleWatcher } from '@blocksuite/block-std';
 import { createIdentifier } from '@blocksuite/global/di';
 import { IS_FIREFOX } from '@blocksuite/global/env';
+import { LifeCycleWatcher } from '@blocksuite/std';
 import type { ExtensionType } from '@blocksuite/store';
 
 import type { FontConfig } from './config.js';

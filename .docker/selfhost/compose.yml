@@ -44,7 +44,7 @@ services:
 
   redis:
     image: redis
-    container_name: redis
+    container_name: affine_redis
     healthcheck:
       test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
       interval: 10s
@@ -54,7 +54,7 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: postgres
+    container_name: affine_postgres
     volumes:
       - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
     environment:

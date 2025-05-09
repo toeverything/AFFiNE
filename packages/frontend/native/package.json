@@ -20,22 +20,16 @@
     "extensions": {
       "mts": "module"
     },
-    "nodeArguments": [
-      "--loader",
-      "ts-node/esm.mjs",
-      "--es-module-specifier-resolution=node"
-    ],
     "files": [
       "__tests__/*.spec.mts"
-    ],
-    "environmentVariables": {
-      "TS_NODE_PROJECT": "./tsconfig.json"
-    }
+    ]
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.0.0-alpha.65",
-    "@types/node": "^20.17.10",
+    "@napi-rs/cli": "3.0.0-alpha.78",
+    "@napi-rs/whisper": "^0.0.4",
+    "@types/node": "^22.0.0",
     "ava": "^6.2.0",
+    "rxjs": "^7.8.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   },
@@ -44,11 +38,11 @@
   },
   "scripts": {
     "artifacts": "napi artifacts",
-    "build": "napi build -p affine_native --platform --release --no-const-enum",
-    "build:debug": "napi build -p affine_native --platform",
+    "build": "napi build -p affine_native --platform --release --no-dts-cache",
+    "build:debug": "napi build -p affine_native --platform --no-dts-cache",
     "universal": "napi universal",
     "test": "ava",
     "version": "napi version"
   },
-  "version": "0.19.0"
+  "version": "0.21.0"
 }

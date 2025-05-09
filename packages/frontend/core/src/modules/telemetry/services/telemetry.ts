@@ -1,3 +1,5 @@
+import { shallowEqual } from '@affine/component';
+import { ServerDeploymentType } from '@affine/graphql';
 import { mixpanel } from '@affine/track';
 import { LiveData, OnEvent, Service } from '@toeverything/infra';
 
@@ -16,8 +18,21 @@ export class TelemetryService extends Service {
         : new LiveData<Server | undefined>(undefined)
     )
       .flat()
-      .selector(server => server?.account$)
-      .flat();
+      .selector(
+        server =>
+          [
+            server?.account$,
+            server?.config$.selector(
+              c => c.type === ServerDeploymentType.Selfhosted
+            ),
+          ] as const
+      )
+      .flat()
+      .map(([account, selfHosted]) => ({
+        account,
+        selfHosted,
+      }))
+      .distinctUntilChanged(shallowEqual);
 
   constructor(
     private readonly globalContextService: GlobalContextService,
@@ -28,20 +43,30 @@ export class TelemetryService extends Service {
     // TODO: support multiple servers
 
     let prevAccount: AuthAccountInfo | null = null;
-    const unsubscribe = this.currentAccount$.subscribe(account => {
-      if (prevAccount) {
-        mixpanel.reset();
+    let prevSelfHosted: boolean | undefined = undefined;
+    const unsubscribe = this.currentAccount$.subscribe(
+      ({ account, selfHosted }) => {
+        if (prevAccount) {
+          mixpanel.reset();
+        }
+        // the isSelfHosted property from environment is not reliable
+        if (selfHosted !== prevSelfHosted) {
+          mixpanel.register({
+            isSelfHosted: selfHosted,
+          });
+        }
+        prevSelfHosted = selfHosted;
+        prevAccount = account ?? null;
+        if (account) {
+          mixpanel.identify(account.id);
+          mixpanel.people.set({
+            $email: account.email,
+            $name: account.label,
+            $avatar: account.avatar,
+          });
+        }
       }
-      prevAccount = account ?? null;
-      if (account) {
-        mixpanel.identify(account.id);
-        mixpanel.people.set({
-          $email: account.email,
-          $name: account.label,
-          $avatar: account.avatar,
-        });
-      }
-    });
+    );
     this.disposableFns.push(() => {
       unsubscribe.unsubscribe();
     });

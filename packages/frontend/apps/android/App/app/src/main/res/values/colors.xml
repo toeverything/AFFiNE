@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="layer.background.primary">#FFFFFF</color>
+    <color name="layer.background.primary.dark">#141414</color>
+</resources>

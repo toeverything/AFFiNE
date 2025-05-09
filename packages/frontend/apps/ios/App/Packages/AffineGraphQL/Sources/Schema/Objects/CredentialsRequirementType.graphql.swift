@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let CredentialsRequirementType = ApolloAPI.Object(
     typename: "CredentialsRequirementType",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

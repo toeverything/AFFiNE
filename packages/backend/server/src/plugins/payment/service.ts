@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { User, UserStripeCustomer } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
@@ -7,12 +7,12 @@ import { z } from 'zod';
 import {
   ActionForbidden,
   CantUpdateOnetimePaymentSubscription,
-  Config,
   CustomerPortalCreateFailed,
   InternalServerError,
   InvalidCheckoutParameters,
+  InvalidLicenseSessionId,
   InvalidSubscriptionParameters,
-  Mutex,
+  LicenseRevealed,
   OnEvent,
   SameSubscriptionRecurring,
   SubscriptionExpired,
@@ -24,8 +24,8 @@ import {
   UserNotFound,
 } from '../../base';
 import { CurrentUser } from '../../core/auth';
-import { FeatureManagementService } from '../../core/features';
-import { UserService } from '../../core/user';
+import { FeatureService } from '../../core/features';
+import { Models } from '../../models';
 import {
   CheckoutParams,
   Invoice,
@@ -38,10 +38,14 @@ import {
   WorkspaceSubscriptionIdentity,
   WorkspaceSubscriptionManager,
 } from './manager';
-import { ScheduleManager } from './schedule';
 import {
-  decodeLookupKey,
-  DEFAULT_PRICES,
+  SelfhostTeamCheckoutArgs,
+  SelfhostTeamSubscriptionIdentity,
+  SelfhostTeamSubscriptionManager,
+} from './manager/selfhost';
+import { ScheduleManager } from './schedule';
+import { StripeFactory } from './stripe';
+import {
   KnownStripeInvoice,
   KnownStripePrice,
   KnownStripeSubscription,
@@ -50,39 +54,39 @@ import {
   SubscriptionPlan,
   SubscriptionRecurring,
   SubscriptionStatus,
-  SubscriptionVariant,
 } from './types';
 
 export const CheckoutExtraArgs = z.union([
   UserSubscriptionCheckoutArgs,
   WorkspaceSubscriptionCheckoutArgs,
+  SelfhostTeamCheckoutArgs,
 ]);
 
 export const SubscriptionIdentity = z.union([
   UserSubscriptionIdentity,
   WorkspaceSubscriptionIdentity,
+  SelfhostTeamSubscriptionIdentity,
 ]);
 
 export { CheckoutParams };
 
 @Injectable()
-export class SubscriptionService implements OnApplicationBootstrap {
+export class SubscriptionService {
   private readonly logger = new Logger(SubscriptionService.name);
-  private readonly scheduleManager = new ScheduleManager(this.stripe);
+  private readonly scheduleManager = new ScheduleManager(this.stripeProvider);
 
   constructor(
-    private readonly config: Config,
-    private readonly stripe: Stripe,
+    private readonly stripeProvider: StripeFactory,
     private readonly db: PrismaClient,
-    private readonly feature: FeatureManagementService,
-    private readonly user: UserService,
+    private readonly feature: FeatureService,
+    private readonly models: Models,
     private readonly userManager: UserSubscriptionManager,
     private readonly workspaceManager: WorkspaceSubscriptionManager,
-    private readonly mutex: Mutex
+    private readonly selfhostManager: SelfhostTeamSubscriptionManager
   ) {}
 
-  async onApplicationBootstrap() {
-    await this.initStripeProducts();
+  get stripe() {
+    return this.stripeProvider.stripe;
   }
 
   private select(plan: SubscriptionPlan): SubscriptionManager {
@@ -92,6 +96,8 @@ export class SubscriptionService implements OnApplicationBootstrap {
       case SubscriptionPlan.Pro:
       case SubscriptionPlan.AI:
         return this.userManager;
+      case SubscriptionPlan.SelfHostedTeam:
+        return this.selfhostManager;
       default:
         throw new UnsupportedSubscriptionPlan({ plan });
     }
@@ -120,8 +126,9 @@ export class SubscriptionService implements OnApplicationBootstrap {
     const { plan, recurring, variant } = params;
 
     if (
-      this.config.deploy &&
-      this.config.affine.canary &&
+      env.namespaces.canary &&
+      env.prod &&
+      args.user &&
       !this.feature.isStaff(args.user.email)
     ) {
       throw new ActionForbidden();
@@ -291,10 +298,133 @@ export class SubscriptionService implements OnApplicationBootstrap {
     return newSubscription;
   }
 
-  async createCustomerPortal(id: string) {
+  async updateSubscriptionQuantity(
+    identity: z.infer<typeof SubscriptionIdentity>,
+    count: number
+  ) {
+    this.assertSubscriptionIdentity(identity);
+
+    const subscription = await this.select(identity.plan).getSubscription(
+      identity
+    );
+
+    if (!subscription) {
+      throw new SubscriptionNotExists({ plan: identity.plan });
+    }
+
+    if (!subscription.stripeSubscriptionId) {
+      throw new CantUpdateOnetimePaymentSubscription();
+    }
+
+    const stripeSubscription = await this.stripe.subscriptions.retrieve(
+      subscription.stripeSubscriptionId
+    );
+
+    const lookupKey =
+      retriveLookupKeyFromStripeSubscription(stripeSubscription);
+
+    await this.stripe.subscriptions.update(stripeSubscription.id, {
+      items: [
+        {
+          id: stripeSubscription.items.data[0].id,
+          quantity: count,
+        },
+      ],
+      payment_behavior: 'pending_if_incomplete',
+      proration_behavior:
+        lookupKey?.recurring === SubscriptionRecurring.Yearly
+          ? 'always_invoice'
+          : 'none',
+    });
+
+    if (subscription.stripeScheduleId) {
+      const schedule = await this.scheduleManager.fromSchedule(
+        subscription.stripeScheduleId
+      );
+      await schedule.updateQuantity(count);
+    }
+  }
+
+  async generateLicenseKey(stripeCheckoutSessionId: string) {
+    if (!stripeCheckoutSessionId) {
+      throw new InvalidLicenseSessionId();
+    }
+
+    let session: Stripe.Checkout.Session;
+    try {
+      session = await this.stripe.checkout.sessions.retrieve(
+        stripeCheckoutSessionId
+      );
+    } catch {
+      throw new InvalidLicenseSessionId();
+    }
+
+    // session should be complete and have a subscription
+    if (session.status !== 'complete' || !session.subscription) {
+      throw new InvalidLicenseSessionId();
+    }
+
+    const subscription =
+      typeof session.subscription === 'string'
+        ? await this.stripe.subscriptions.retrieve(session.subscription)
+        : session.subscription;
+
+    const knownSubscription = await this.parseStripeSubscription(subscription);
+
+    // invalid subscription triple
+    if (
+      !knownSubscription ||
+      knownSubscription.lookupKey.plan !== SubscriptionPlan.SelfHostedTeam
+    ) {
+      throw new InvalidLicenseSessionId();
+    }
+
+    let subInDB = await this.db.subscription.findUnique({
+      where: {
+        stripeSubscriptionId: subscription.id,
+      },
+    });
+
+    // subscription not found in db
+    if (!subInDB) {
+      subInDB =
+        await this.selfhostManager.saveStripeSubscription(knownSubscription);
+    }
+
+    const license = await this.db.license.findUnique({
+      where: {
+        key: subInDB.targetId,
+      },
+    });
+
+    // subscription and license are created in a transaction
+    // there is no way a sub exist but the license is not created
+    if (!license) {
+      throw new Error(
+        'unaccessible path. if you see this error, there must be a bug in the codebase.'
+      );
+    }
+
+    if (!license.revealedAt) {
+      await this.db.license.update({
+        where: {
+          key: license.key,
+        },
+        data: {
+          revealedAt: new Date(),
+        },
+      });
+
+      return license.key;
+    }
+
+    throw new LicenseRevealed();
+  }
+
+  async createCustomerPortal(userId: string) {
     const user = await this.db.userStripeCustomer.findUnique({
       where: {
-        userId: id,
+        userId: userId,
       },
     });
 
@@ -331,13 +461,17 @@ export class SubscriptionService implements OnApplicationBootstrap {
       throw new InternalServerError('Failed to parse stripe subscription.');
     }
 
-    const isPlanActive =
+    const shouldSave =
       subscription.status === SubscriptionStatus.Active ||
-      subscription.status === SubscriptionStatus.Trialing;
+      subscription.status === SubscriptionStatus.Trialing ||
+      // PastDue is a temporary status, it will be cancelled after all recurring payments retries failed.
+      // Saved in db to let users be able to cancel further retries manually.
+      subscription.status === SubscriptionStatus.PastDue;
 
     const manager = this.select(knownSubscription.lookupKey.plan);
 
-    if (!isPlanActive) {
+    // TODO(@forehalo): trigger 'subscription.status.changed' event to let strategy handle them. after migrated to Model
+    if (!shouldSave) {
       await manager.deleteStripeSubscription(knownSubscription);
     } else {
       await manager.saveStripeSubscription(knownSubscription);
@@ -416,15 +550,18 @@ export class SubscriptionService implements OnApplicationBootstrap {
 
   private async retrieveUserFromCustomer(
     customer: string | Stripe.Customer | Stripe.DeletedCustomer
-  ) {
+  ): Promise<{ id?: string; email: string } | null> {
     const userStripeCustomer = await this.db.userStripeCustomer.findUnique({
       where: {
         stripeCustomerId: typeof customer === 'string' ? customer : customer.id,
       },
+      select: {
+        user: true,
+      },
     });
 
     if (userStripeCustomer) {
-      return userStripeCustomer.userId;
+      return userStripeCustomer.user;
     }
 
     if (typeof customer === 'string') {
@@ -435,20 +572,16 @@ export class SubscriptionService implements OnApplicationBootstrap {
       return null;
     }
 
-    const user = await this.user.findUserByEmail(customer.email);
+    const user = await this.models.user.getUserByEmail(customer.email);
 
     if (!user) {
-      return null;
+      return {
+        id: undefined,
+        email: customer.email,
+      };
     }
 
-    await this.db.userStripeCustomer.create({
-      data: {
-        userId: user.id,
-        stripeCustomerId: customer.id,
-      },
-    });
-
-    return user.id;
+    return user;
   }
 
   private async listStripePrices(): Promise<KnownStripePrice[]> {
@@ -485,16 +618,11 @@ export class SubscriptionService implements OnApplicationBootstrap {
       return null;
     }
 
-    const user = await this.user.findUserByEmail(invoice.customer_email);
-
-    // TODO(@forehalo): the email may actually not appear to be AFFiNE user
-    // There is coming feature that allow anonymous user with only email provided to buy selfhost licenses
-    if (!user) {
-      return null;
-    }
+    const user = await this.models.user.getUserByEmail(invoice.customer_email);
 
     return {
-      userId: user.id,
+      userId: user?.id,
+      userEmail: invoice.customer_email,
       stripeInvoice: invoice,
       lookupKey,
       metadata: invoice.subscription_details?.metadata ?? {},
@@ -510,14 +638,18 @@ export class SubscriptionService implements OnApplicationBootstrap {
       return null;
     }
 
-    const userId = await this.retrieveUserFromCustomer(subscription.customer);
+    const user = await this.retrieveUserFromCustomer(subscription.customer);
 
-    if (!userId) {
+    // stripe customer got deleted or customer email is null
+    // it's an invalid status
+    // maybe we need to check stripe dashboard
+    if (!user) {
       return null;
     }
 
     return {
-      userId,
+      userId: user.id,
+      userEmail: user.email,
       lookupKey,
       stripeSubscription: subscription,
       quantity: subscription.items.data[0]?.quantity ?? 1,
@@ -543,74 +675,6 @@ export class SubscriptionService implements OnApplicationBootstrap {
 
     if (!result.success) {
       throw new InvalidSubscriptionParameters();
-    }
-  }
-
-  private async initStripeProducts() {
-    // only init stripe products in dev mode or canary deployment
-    if (
-      (this.config.deploy && !this.config.affine.canary) ||
-      !this.config.node.dev
-    ) {
-      return;
-    }
-
-    await using lock = await this.mutex.acquire('init stripe prices');
-
-    if (!lock) {
-      return;
-    }
-
-    const keys = new Set<string>();
-    try {
-      await this.stripe.prices
-        .list({
-          active: true,
-          limit: 100,
-        })
-        .autoPagingEach(item => {
-          if (item.lookup_key) {
-            keys.add(item.lookup_key);
-          }
-        });
-    } catch {
-      this.logger.warn('Failed to list stripe prices, skip auto init.');
-      return;
-    }
-
-    for (const [key, setting] of DEFAULT_PRICES) {
-      if (keys.has(key)) {
-        continue;
-      }
-
-      const lookupKey = decodeLookupKey(key);
-
-      try {
-        await this.stripe.prices.create({
-          product_data: {
-            name: setting.product,
-          },
-          billing_scheme: 'per_unit',
-          unit_amount: setting.price,
-          currency: 'usd',
-          lookup_key: key,
-          tax_behavior: 'inclusive',
-          recurring:
-            lookupKey.recurring === SubscriptionRecurring.Lifetime ||
-            lookupKey.variant === SubscriptionVariant.Onetime
-              ? undefined
-              : {
-                  interval:
-                    lookupKey.recurring === SubscriptionRecurring.Monthly
-                      ? 'month'
-                      : 'year',
-                  interval_count: 1,
-                  usage_type: 'licensed',
-                },
-        });
-      } catch (e) {
-        this.logger.error('Failed to create stripe price.', e);
-      }
     }
   }
 }

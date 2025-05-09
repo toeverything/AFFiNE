@@ -3,22 +3,21 @@
   "description": "Models for BlockSuite in Affine.",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "test:unit": "nx vite:test --run --passWithNoTests",
-    "test:unit:coverage": "nx vite:test --run --coverage",
-    "test:e2e": "playwright test"
+    "build": "tsc"
   },
   "sideEffects": false,
   "keywords": [],
   "author": "toeverything",
   "license": "MIT",
   "dependencies": {
-    "@blocksuite/block-std": "workspace:*",
     "@blocksuite/global": "workspace:*",
-    "@blocksuite/inline": "workspace:*",
+    "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
-    "@toeverything/theme": "^1.1.3",
+    "@toeverything/theme": "^1.1.14",
+    "@types/lodash-es": "^4.17.12",
     "fractional-indexing": "^3.2.0",
+    "lodash-es": "^4.17.21",
+    "rxjs": "^7.8.1",
     "yjs": "^13.6.21",
     "zod": "^3.23.8"
   },
@@ -31,5 +30,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.19.0"
+  "version": "0.21.0"
 }

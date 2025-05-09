@@ -8,13 +8,15 @@
     "./utils": "./src/utils/index.ts",
     "./app-config-storage": "./src/app-config-storage.ts",
     "./op": "./src/op/index.ts",
+    "./atom": "./src/atom/index.ts",
     ".": "./src/index.ts"
   },
   "dependencies": {
     "@affine/debug": "workspace:*",
     "@affine/env": "workspace:*",
+    "@affine/error": "workspace:*",
     "@affine/templates": "workspace:*",
-    "@datastructures-js/binary-search-tree": "^5.3.2",
+    "@preact/signals-core": "^1.8.0",
     "eventemitter2": "^6.4.9",
     "foxact": "^0.2.43",
     "fractional-indexing": "^3.2.0",
@@ -22,27 +24,26 @@
     "graphemer": "^1.4.0",
     "idb": "^8.0.0",
     "jotai": "^2.10.3",
-    "jotai-effect": "^1.0.5",
+    "jotai-effect": "^2.0.0",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.0.9",
-    "react": "19.0.0",
+    "react": "19.1.0",
     "yjs": "^13.6.21",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@affine/templates": "workspace:*",
     "@emotion/react": "^11.14.0",
-    "@swc/core": "^1.10.1",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.1.0",
     "@types/react": "^19.0.1",
     "fake-indexeddb": "^6.0.0",
     "rxjs": "^7.8.1",
-    "vitest": "2.1.8"
+    "vitest": "3.1.3"
   },
   "peerDependencies": {
     "electron": "*",
     "react-dom": "^19.0.0"
   },
-  "version": "0.19.0"
+  "version": "0.21.0"
 }

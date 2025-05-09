@@ -1,20 +1,26 @@
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
-import { computed } from '@preact/signals-core';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import { computed, type ReadonlySignal } from '@preact/signals-core';
+import type { PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import type { Cell } from '../view-manager/cell.js';
 import type { CellRenderProps, DataViewCellLifeCycle } from './manager.js';
 
 export abstract class BaseCellRenderer<
-    Value,
+    RawValue = unknown,
+    JsonValue = unknown,
     Data extends Record<string, unknown> = Record<string, unknown>,
   >
   extends SignalWatcher(WithDisposable(ShadowlessElement))
-  implements DataViewCellLifeCycle, CellRenderProps<Data, Value>
+  implements DataViewCellLifeCycle, CellRenderProps<Data, RawValue, JsonValue>
 {
+  get expose() {
+    return this;
+  }
+
   @property({ attribute: false })
-  accessor cell!: Cell<Value, Data>;
+  accessor cell!: Cell<RawValue, JsonValue, Data>;
 
   readonly$ = computed(() => {
     return this.cell.property.readonly$.value;
@@ -52,29 +58,37 @@ export abstract class BaseCellRenderer<
     return true;
   }
 
+  type: string | undefined;
+
+  protected override shouldUpdate(_changedProperties: PropertyValues): boolean {
+    return this.cell.property.type$.value === this.type;
+  }
+
   override connectedCallback() {
     super.connectedCallback();
+    this.type = this.cell.property.type$.value;
+    this.dataset.testid = this.type;
     this.style.width = '100%';
     this._disposables.addFromEvent(this, 'click', e => {
-      if (this.isEditing) {
+      if (this.isEditing$.value) {
         e.stopPropagation();
       }
     });
 
     this._disposables.addFromEvent(this, 'copy', e => {
-      if (!this.isEditing) return;
+      if (!this.isEditing$.value) return;
       e.stopPropagation();
       this.onCopy(e);
     });
 
     this._disposables.addFromEvent(this, 'cut', e => {
-      if (!this.isEditing) return;
+      if (!this.isEditing$.value) return;
       e.stopPropagation();
       this.onCut(e);
     });
 
     this._disposables.addFromEvent(this, 'paste', e => {
-      if (!this.isEditing) return;
+      if (!this.isEditing$.value) return;
       e.stopPropagation();
       this.onPaste(e);
     });
@@ -88,26 +102,32 @@ export abstract class BaseCellRenderer<
     this.requestUpdate();
   }
 
-  onChange(value: Value | undefined): void {
+  valueSetImmediate(value: RawValue | undefined): void {
     this.cell.valueSet(value);
+  }
+
+  valueSetNextTick(value: RawValue | undefined) {
+    requestAnimationFrame(() => {
+      this.cell.valueSet(value);
+    });
   }
 
   onCopy(_e: ClipboardEvent) {}
 
   onCut(_e: ClipboardEvent) {}
 
-  onEnterEditMode(): void {
+  afterEnterEditingMode(): void {
     // do nothing
   }
 
-  onExitEditMode() {
+  beforeExitEditingMode() {
     // do nothing
   }
 
   onPaste(_e: ClipboardEvent) {}
 
   @property({ attribute: false })
-  accessor isEditing!: boolean;
+  accessor isEditing$!: ReadonlySignal<boolean>;
 
   @property({ attribute: false })
   accessor selectCurrentCell!: (editing: boolean) => void;

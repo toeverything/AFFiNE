@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.web.json",
+  "compilerOptions": {
+    "rootDir": "./e2e",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["e2e"],
+  "references": [
+    { "path": "../../blocksuite/affine/all" },
+    { "path": "../../blocksuite/integration-test" }
+  ]
+}

@@ -7,7 +7,7 @@
   },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
-    "@playwright/test": "=1.49.1"
+    "@playwright/test": "=1.52.0"
   },
-  "version": "0.19.0"
+  "version": "0.21.0"
 }

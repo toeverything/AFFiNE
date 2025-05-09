@@ -1,33 +1,35 @@
-import type { TypeInstance } from '../logical/type.js';
-import type { DVJSON } from '../property/types.js';
-import type { UniComponent } from '../utils/index.js';
+import type { UniComponent } from '@blocksuite/affine-shared/types';
 
+import type { TypeInstance } from '../logical/type.js';
 export interface GroupRenderProps<
   Data extends NonNullable<unknown> = NonNullable<unknown>,
-  Value = DVJSON,
+  JsonValue = unknown,
 > {
   data: Data;
   updateData?: (data: Data) => void;
-  value: Value;
-  updateValue?: (value: Value) => void;
+  value: JsonValue;
+  updateValue?: (value: JsonValue) => void;
   readonly: boolean;
 }
 
-export type GroupByConfig = {
+export type GroupByConfig<
+  JsonValue = unknown,
+  Data extends NonNullable<unknown> = NonNullable<unknown>,
+> = {
   name: string;
   groupName: (type: TypeInstance, value: unknown) => string;
   defaultKeys: (type: TypeInstance) => {
     key: string;
-    value: DVJSON;
+    value: JsonValue;
   }[];
   valuesGroup: (
     value: unknown,
     type: TypeInstance
   ) => {
     key: string;
-    value: DVJSON;
+    value: JsonValue;
   }[];
-  addToGroup?: (value: unknown, oldValue: unknown) => unknown;
-  removeFromGroup?: (value: unknown, oldValue: unknown) => unknown;
-  view: UniComponent<GroupRenderProps>;
+  addToGroup?: (value: JsonValue, oldValue: JsonValue) => JsonValue;
+  removeFromGroup?: (value: JsonValue, oldValue: JsonValue) => JsonValue;
+  view: UniComponent<GroupRenderProps<Data, JsonValue>>;
 };

@@ -1,4 +1,5 @@
-import type { Page } from '@playwright/test';
+import { type Page } from '@playwright/test';
+import { AsyncLock } from '@toeverything/infra/utils';
 
 const IS_MAC = process.platform === 'darwin';
 
@@ -25,9 +26,23 @@ export const withCtrlOrMeta = async (page: Page, fn: () => Promise<void>) => {
   await keyUpCtrlOrMeta(page);
 };
 
-export async function pressEnter(page: Page) {
+export async function pressEnter(page: Page, count = 1) {
   // avoid flaky test by simulate real user input
-  await page.keyboard.press('Enter', { delay: 50 });
+  for (let i = 0; i < count; i++) {
+    await page.keyboard.press('Enter', { delay: 50 });
+  }
+}
+
+export async function pressArrowUp(page: Page, count = 1) {
+  for (let i = 0; i < count; i++) {
+    await page.keyboard.press('ArrowUp', { delay: 50 });
+  }
+}
+
+export async function pressArrowDown(page: Page, count = 1) {
+  for (let i = 0; i < count; i++) {
+    await page.keyboard.press('ArrowDown', { delay: 20 });
+  }
 }
 
 export async function pressTab(page: Page) {
@@ -44,6 +59,18 @@ export async function pressShiftEnter(page: Page) {
   await page.keyboard.down('Shift');
   await page.keyboard.press('Enter', { delay: 50 });
   await page.keyboard.up('Shift');
+}
+
+export async function pressBackspace(page: Page, count = 1) {
+  for (let i = 0; i < count; i++) {
+    await page.keyboard.press('Backspace', { delay: 50 });
+  }
+}
+
+export async function pressEscape(page: Page, count = 1) {
+  for (let i = 0; i < count; i++) {
+    await page.keyboard.press('Escape', { delay: 50 });
+  }
 }
 
 export async function copyByKeyboard(page: Page) {
@@ -70,13 +97,24 @@ export async function selectAllByKeyboard(page: Page) {
   await keyUpCtrlOrMeta(page);
 }
 
-export async function writeTextToClipboard(page: Page, text: string) {
+export async function undoByKeyboard(page: Page) {
+  await keyDownCtrlOrMeta(page);
+  await page.keyboard.press('z', { delay: 50 });
+  await keyUpCtrlOrMeta(page);
+}
+
+const clipboardMutex = new AsyncLock();
+
+export async function writeTextToClipboard(
+  page: Page,
+  text: string,
+  paste = true
+) {
+  using _release = await clipboardMutex.acquire();
   // paste the url
   await page.evaluate(
     async ([text]) => {
-      const clipData = {
-        'text/plain': text,
-      };
+      navigator.clipboard.writeText('');
       const e = new ClipboardEvent('paste', {
         clipboardData: new DataTransfer(),
       });
@@ -84,11 +122,14 @@ export async function writeTextToClipboard(page: Page, text: string) {
         writable: false,
         value: document,
       });
-      Object.entries(clipData).forEach(([key, value]) => {
-        e.clipboardData?.setData(key, value);
-      });
+      e.clipboardData!.setData('text/plain', text);
       document.dispatchEvent(e);
     },
     [text]
   );
+  if (paste) {
+    await keyDownCtrlOrMeta(page);
+    await page.keyboard.press('v', { delay: 50 });
+    await keyUpCtrlOrMeta(page);
+  }
 }

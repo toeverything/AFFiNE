@@ -1,6 +1,6 @@
 import { NATIVE_UNIQ_IDENTIFIER, TEXT_UNIQ_IDENTIFIER } from '../consts';
+import { isPureObject } from '../reactive';
 import { Boxed } from '../reactive/boxed';
-import { isPureObject } from '../reactive/index';
 import { Text } from '../reactive/text';
 
 export function toJSON(value: unknown): unknown {

@@ -2,22 +2,21 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import type { CookieOptions, Request, Response } from 'express';
 import { assign, pick } from 'lodash-es';
 
-import { Config, MailService, SignUpForbidden } from '../../base';
+import { Config, SignUpForbidden } from '../../base';
 import { Models, type User, type UserSession } from '../../models';
-import { FeatureManagementService } from '../features/management';
-import { QuotaService } from '../quota/service';
-import { QuotaType } from '../quota/types';
-import { UserService } from '../user/service';
+import { FeatureService } from '../features';
+import { Mailer } from '../mail/mailer';
+import { createDevUsers } from './dev';
 import type { CurrentUser } from './session';
 
 export function sessionUser(
   user: Pick<
     User,
-    'id' | 'email' | 'avatarUrl' | 'name' | 'emailVerifiedAt'
+    'id' | 'email' | 'avatarUrl' | 'name' | 'emailVerifiedAt' | 'disabled'
   > & { password?: string | null }
 ): CurrentUser {
   // use pick to avoid unexpected fields
-  return assign(pick(user, 'id', 'email', 'avatarUrl', 'name'), {
+  return assign(pick(user, 'id', 'email', 'avatarUrl', 'name', 'disabled'), {
     hasPassword: user.password !== null,
     emailVerified: user.emailVerifiedAt !== null,
   });
@@ -45,49 +44,34 @@ export class AuthService implements OnApplicationBootstrap {
   constructor(
     private readonly config: Config,
     private readonly models: Models,
-    private readonly mailer: MailService,
-    private readonly feature: FeatureManagementService,
-    private readonly quota: QuotaService,
-    private readonly user: UserService
+    private readonly mailer: Mailer,
+    private readonly feature: FeatureService
   ) {}
 
   async onApplicationBootstrap() {
-    if (this.config.node.dev) {
-      try {
-        const [email, name, password] = ['dev@affine.pro', 'Dev User', 'dev'];
-        let devUser = await this.user.findUserByEmail(email);
-        if (!devUser) {
-          devUser = await this.user.createUser_without_verification({
-            email,
-            name,
-            password,
-          });
-        }
-        await this.quota.switchUserQuota(devUser.id, QuotaType.ProPlanV1);
-        await this.feature.addAdmin(devUser.id);
-        await this.feature.addCopilot(devUser.id);
-      } catch {
-        // ignore
-      }
+    if (env.dev) {
+      await createDevUsers(this.models);
     }
   }
 
-  canSignIn(email: string) {
-    return this.feature.canEarlyAccess(email);
+  async canSignIn(email: string) {
+    return await this.feature.canEarlyAccess(email);
   }
 
   /**
+   * @deprecated
+   *
    * This is a test only helper to quickly signup a user, do not use in production
    */
   async signUp(email: string, password: string): Promise<CurrentUser> {
-    if (!this.config.node.test) {
+    if (!env.testing) {
       throw new SignUpForbidden(
         'sign up helper is forbidden for non-test environment'
       );
     }
 
-    return this.user
-      .createUser_without_verification({
+    return this.models.user
+      .create({
         email,
         password,
       })
@@ -95,7 +79,7 @@ export class AuthService implements OnApplicationBootstrap {
   }
 
   async signIn(email: string, password: string): Promise<CurrentUser> {
-    return this.user.signIn(email, password).then(sessionUser);
+    return this.models.user.signIn(email, password).then(sessionUser);
   }
 
   async signOut(sessionId: string, userId?: string) {
@@ -103,7 +87,7 @@ export class AuthService implements OnApplicationBootstrap {
     if (!userId) {
       await this.models.session.deleteSession(sessionId);
     } else {
-      await this.models.session.deleteUserSession(userId, sessionId);
+      await this.models.session.deleteUserSessions(userId, sessionId);
     }
   }
 
@@ -131,7 +115,7 @@ export class AuthService implements OnApplicationBootstrap {
       userSession = sessions.at(-1)!;
     }
 
-    const user = await this.user.findUserById(userSession.userId);
+    const user = await this.models.user.get(userSession.userId);
 
     if (!user) {
       return null;
@@ -193,7 +177,7 @@ export class AuthService implements OnApplicationBootstrap {
   }
 
   async revokeUserSessions(userId: string) {
-    return await this.models.session.deleteUserSession(userId);
+    return await this.models.session.deleteUserSessions(userId);
   }
 
   getSessionOptionsFromRequest(req: Request) {
@@ -284,53 +268,93 @@ export class AuthService implements OnApplicationBootstrap {
     id: string,
     newPassword: string
   ): Promise<Omit<User, 'password'>> {
-    return this.user.updateUser(id, { password: newPassword });
+    return this.models.user.update(id, { password: newPassword });
   }
 
   async changeEmail(
     id: string,
     newEmail: string
   ): Promise<Omit<User, 'password'>> {
-    return this.user.updateUser(id, {
+    return this.models.user.update(id, {
       email: newEmail,
       emailVerifiedAt: new Date(),
     });
   }
 
   async setEmailVerified(id: string) {
-    return await this.user.updateUser(
-      id,
-      { emailVerifiedAt: new Date() },
-      { emailVerifiedAt: true }
-    );
+    return await this.models.user.update(id, {
+      emailVerifiedAt: new Date(),
+    });
   }
 
   async sendChangePasswordEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendChangePasswordEmail(email, callbackUrl);
+    return await this.mailer.send({
+      name: 'ChangePassword',
+      to: email,
+      props: {
+        url: callbackUrl,
+      },
+    });
   }
   async sendSetPasswordEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendSetPasswordEmail(email, callbackUrl);
+    return await this.mailer.send({
+      name: 'SetPassword',
+      to: email,
+      props: {
+        url: callbackUrl,
+      },
+    });
   }
   async sendChangeEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendChangeEmail(email, callbackUrl);
+    return await this.mailer.send({
+      name: 'ChangeEmail',
+      to: email,
+      props: {
+        url: callbackUrl,
+      },
+    });
   }
   async sendVerifyChangeEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendVerifyChangeEmail(email, callbackUrl);
+    return await this.mailer.send({
+      name: 'VerifyChangeEmail',
+      to: email,
+      props: {
+        url: callbackUrl,
+      },
+    });
   }
   async sendVerifyEmail(email: string, callbackUrl: string) {
-    return this.mailer.sendVerifyEmail(email, callbackUrl);
+    return await this.mailer.send({
+      name: 'VerifyEmail',
+      to: email,
+      props: {
+        url: callbackUrl,
+      },
+    });
   }
   async sendNotificationChangeEmail(email: string) {
-    return this.mailer.sendNotificationChangeEmail(email);
+    return await this.mailer.send({
+      name: 'EmailChanged',
+      to: email,
+      props: {
+        to: email,
+      },
+    });
   }
 
-  async sendSignInEmail(email: string, link: string, signUp: boolean) {
-    return signUp
-      ? await this.mailer.sendSignUpMail(link, {
-          to: email,
-        })
-      : await this.mailer.sendSignInMail(link, {
-          to: email,
-        });
+  async sendSignInEmail(
+    email: string,
+    link: string,
+    otp: string,
+    signUp: boolean
+  ) {
+    return await this.mailer.send({
+      name: signUp ? 'SignUp' : 'SignIn',
+      to: email,
+      props: {
+        url: link,
+        otp,
+      },
+    });
   }
 }

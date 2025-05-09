@@ -11,7 +11,7 @@ import { CloudPlanLayout, PlanLayout } from './layout';
 import { PlansSkeleton } from './skeleton';
 import * as styles from './style.css';
 
-const Settings = ({ scrollAnchor }: { scrollAnchor?: string }) => {
+const Settings = () => {
   const subscriptionService = useService(SubscriptionService);
   const prices = useLiveData(subscriptionService.prices.prices$);
 
@@ -24,23 +24,13 @@ const Settings = ({ scrollAnchor }: { scrollAnchor?: string }) => {
     return <PlansSkeleton />;
   }
 
-  return (
-    <PlanLayout
-      cloud={<CloudPlans />}
-      ai={<AIPlan />}
-      scrollAnchor={scrollAnchor}
-    />
-  );
+  return <PlanLayout cloud={<CloudPlans />} ai={<AIPlan />} />;
 };
 
-export const AFFiNEPricingPlans = ({
-  scrollAnchor,
-}: {
-  scrollAnchor?: string;
-}) => {
+export const AFFiNEPricingPlans = () => {
   return (
     <SWRErrorBoundary FallbackComponent={PlansErrorBoundary}>
-      <Settings scrollAnchor={scrollAnchor} />
+      <Settings />
     </SWRErrorBoundary>
   );
 };

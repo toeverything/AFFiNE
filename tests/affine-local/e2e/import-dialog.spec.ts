@@ -1,12 +1,14 @@
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
+  waitForEditorLoad,
   waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
 import test, { expect } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await openHomePage(page);
+  await waitForEditorLoad(page);
   await clickNewPageButton(page);
   await waitForEmptyEditor(page);
 });

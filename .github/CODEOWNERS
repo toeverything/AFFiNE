@@ -1,1 +1,2 @@
 /blocksuite/ @toeverything/blocksuite-core
+/packages/frontend/core/src/blocksuite @toeverything/blocksuite-core

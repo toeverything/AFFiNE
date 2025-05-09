@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let InvitationWorkspaceType = ApolloAPI.Object(
     typename: "InvitationWorkspaceType",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

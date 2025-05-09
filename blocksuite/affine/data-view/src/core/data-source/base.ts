@@ -1,3 +1,4 @@
+import type { ColumnDataType } from '@blocksuite/affine-model';
 import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 
@@ -26,7 +27,8 @@ export interface DataSource {
   rowDelete(ids: string[]): void;
   rowMove(rowId: string, position: InsertToPosition): void;
 
-  propertyMetas: PropertyMetaConfig[];
+  propertyMetas$: ReadonlySignal<PropertyMetaConfig[]>;
+  allPropertyMetas$: ReadonlySignal<PropertyMetaConfig[]>;
 
   propertyNameGet$(propertyId: string): ReadonlySignal<string | undefined>;
   propertyNameGet(propertyId: string): string;
@@ -35,6 +37,7 @@ export interface DataSource {
   propertyTypeGet(propertyId: string): string | undefined;
   propertyTypeGet$(propertyId: string): ReadonlySignal<string | undefined>;
   propertyTypeSet(propertyId: string, type: string): void;
+  propertyTypeCanSet(propertyId: string): boolean;
 
   propertyDataGet(propertyId: string): Record<string, unknown>;
   propertyDataGet$(
@@ -50,10 +53,17 @@ export interface DataSource {
   propertyReadonlyGet(propertyId: string): boolean;
   propertyReadonlyGet$(propertyId: string): ReadonlySignal<boolean>;
 
-  propertyMetaGet(type: string): PropertyMetaConfig;
-  propertyAdd(insertToPosition: InsertToPosition, type?: string): string;
-  propertyDuplicate(propertyId: string): string;
+  propertyMetaGet(type: string): PropertyMetaConfig | undefined;
+  propertyAdd(
+    insertToPosition: InsertToPosition,
+    type?: string
+  ): string | undefined;
+
+  propertyDuplicate(propertyId: string): string | undefined;
+  propertyCanDuplicate(propertyId: string): boolean;
+
   propertyDelete(id: string): void;
+  propertyCanDelete(propertyId: string): boolean;
 
   contextGet<T>(key: DataViewContextKey<T>): T;
 
@@ -77,18 +87,29 @@ export interface DataSource {
   viewMetaGet(type: string): ViewMeta;
   viewMetaGet$(type: string): ReadonlySignal<ViewMeta | undefined>;
 
-  viewMetaGetById(viewId: string): ViewMeta;
+  viewMetaGetById(viewId: string): ViewMeta | undefined;
   viewMetaGetById$(viewId: string): ReadonlySignal<ViewMeta | undefined>;
 }
 
 export abstract class DataSourceBase implements DataSource {
+  propertyTypeCanSet(propertyId: string): boolean {
+    return !this.isFixedProperty(propertyId);
+  }
+  propertyCanDuplicate(propertyId: string): boolean {
+    return !this.isFixedProperty(propertyId);
+  }
+  propertyCanDelete(propertyId: string): boolean {
+    return !this.isFixedProperty(propertyId);
+  }
   context = new Map<symbol, unknown>();
 
   abstract featureFlags$: ReadonlySignal<DatabaseFlags>;
 
   abstract properties$: ReadonlySignal<string[]>;
 
-  abstract propertyMetas: PropertyMetaConfig[];
+  abstract propertyMetas$: ReadonlySignal<PropertyMetaConfig[]>;
+
+  abstract allPropertyMetas$: ReadonlySignal<PropertyMetaConfig[]>;
 
   abstract readonly$: ReadonlySignal<boolean>;
 
@@ -134,7 +155,7 @@ export abstract class DataSourceBase implements DataSource {
   abstract propertyAdd(
     insertToPosition: InsertToPosition,
     type?: string
-  ): string;
+  ): string | undefined;
 
   abstract propertyDataGet(propertyId: string): Record<string, unknown>;
 
@@ -159,9 +180,9 @@ export abstract class DataSourceBase implements DataSource {
 
   abstract propertyDelete(id: string): void;
 
-  abstract propertyDuplicate(propertyId: string): string;
+  abstract propertyDuplicate(propertyId: string): string | undefined;
 
-  abstract propertyMetaGet(type: string): PropertyMetaConfig;
+  abstract propertyMetaGet(type: string): PropertyMetaConfig | undefined;
 
   abstract propertyNameGet(propertyId: string): string;
 
@@ -179,7 +200,7 @@ export abstract class DataSourceBase implements DataSource {
     return computed(() => this.propertyReadonlyGet(propertyId));
   }
 
-  abstract propertyTypeGet(propertyId: string): string;
+  abstract propertyTypeGet(propertyId: string): string | undefined;
 
   propertyTypeGet$(propertyId: string): ReadonlySignal<string | undefined> {
     return computed(() => this.propertyTypeGet(propertyId));
@@ -199,7 +220,7 @@ export abstract class DataSourceBase implements DataSource {
 
   abstract viewDataDuplicate(id: string): string;
 
-  abstract viewDataGet(viewId: string): DataViewDataType;
+  abstract viewDataGet(viewId: string): DataViewDataType | undefined;
 
   viewDataGet$(viewId: string): ReadonlySignal<DataViewDataType | undefined> {
     return computed(() => this.viewDataGet(viewId));
@@ -218,9 +239,36 @@ export abstract class DataSourceBase implements DataSource {
     return computed(() => this.viewMetaGet(type));
   }
 
-  abstract viewMetaGetById(viewId: string): ViewMeta;
+  abstract viewMetaGetById(viewId: string): ViewMeta | undefined;
 
   viewMetaGetById$(viewId: string): ReadonlySignal<ViewMeta | undefined> {
     return computed(() => this.viewMetaGetById(viewId));
+  }
+
+  fixedProperties$ = computed(() => {
+    return this.allPropertyMetas$.value
+      .filter(v => v.config.fixed)
+      .map(v => v.type);
+  });
+  fixedPropertySet = computed(() => {
+    return new Set(this.fixedProperties$.value);
+  });
+
+  protected abstract getNormalPropertyAndIndex(propertyId: string):
+    | {
+        column: ColumnDataType<Record<string, unknown>>;
+        index: number;
+      }
+    | undefined;
+
+  isFixedProperty(propertyId: string) {
+    if (this.fixedPropertySet.value.has(propertyId)) {
+      return true;
+    }
+    const result = this.getNormalPropertyAndIndex(propertyId);
+    if (result) {
+      return this.fixedPropertySet.value.has(result.column.type);
+    }
+    return false;
   }
 }

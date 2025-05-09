@@ -6,7 +6,7 @@ import {
 import { PageHeader } from '@affine/core/mobile/components';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
-import anime from 'animejs';
+import { animate } from 'animejs';
 import {
   createContext,
   type PropsWithChildren,
@@ -78,9 +78,8 @@ const getAnimeProxy = (
         if (key === 'deltaX') {
           target.deltaX = value;
           tick(overlay, dialog, prev, value, overlay.clientWidth);
-          return true;
         }
-        return false;
+        return true;
       },
     }
   );
@@ -91,25 +90,27 @@ const cancel = (
   dialog: HTMLDivElement,
   prev: HTMLElement | null,
   deltaX: number,
-  complete?: () => void
+  onComplete?: () => void
 ) => {
-  anime({
-    targets: getAnimeProxy(
+  animate(
+    getAnimeProxy(
       overlay,
       dialog,
       prev,
       Math.min(overlay.clientWidth, Math.max(0, deltaX))
     ),
-    deltaX: 0,
-    easing: 'cubicBezier(.25,.36,.24,.97)',
-    duration: 320,
-    complete: () => {
-      complete?.();
-      setTimeout(() => {
-        reset(overlay, dialog, prev);
-      }, 0);
-    },
-  });
+    {
+      deltaX: 0,
+      easing: 'cubicBezier(.25,.36,.24,.97)',
+      duration: 320,
+      onComplete: () => {
+        onComplete?.();
+        setTimeout(() => {
+          reset(overlay, dialog, prev);
+        }, 0);
+      },
+    }
+  );
 };
 
 const close = (
@@ -117,25 +118,27 @@ const close = (
   dialog: HTMLDivElement,
   prev: HTMLElement | null,
   deltaX: number,
-  complete?: () => void
+  onComplete?: () => void
 ) => {
-  anime({
-    targets: getAnimeProxy(
+  animate(
+    getAnimeProxy(
       overlay,
       dialog,
       prev,
       Math.min(overlay.clientWidth, Math.max(0, deltaX))
     ),
-    deltaX: overlay.clientWidth,
-    easing: 'cubicBezier(.25,.36,.24,.97)',
-    duration: 320,
-    complete: () => {
-      complete?.();
-      setTimeout(() => {
-        reset(overlay, dialog, prev);
-      }, 0);
-    },
-  });
+    {
+      deltaX: overlay.clientWidth,
+      easing: 'cubicBezier(.25,.36,.24,.97)',
+      duration: 320,
+      onComplete: () => {
+        onComplete?.();
+        setTimeout(() => {
+          reset(overlay, dialog, prev);
+        }, 0);
+      },
+    }
+  );
 };
 
 const SwipeDialogContext = createContext<{
@@ -148,7 +151,7 @@ export const SwipeDialog = ({
   title,
   children,
   open,
-  triggerSize = 10,
+  triggerSize = 25,
   onOpenChange,
 }: SwipeDialogProps) => {
   const insideModal = useContext(InsideModalContext);

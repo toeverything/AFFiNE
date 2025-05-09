@@ -1,6 +1,4 @@
-import type { BlockComponent, EditorHost } from '@blocksuite/block-std';
-
-import { isInsidePageEditor } from './checker.js';
+import type { EditorHost } from '@blocksuite/std';
 
 /**
  * Get editor viewport element.
@@ -13,22 +11,9 @@ import { isInsidePageEditor } from './checker.js';
  * });
  * ```
  */
-export function getViewportElement(editorHost: EditorHost): HTMLElement | null {
-  if (!isInsidePageEditor(editorHost)) return null;
-  const doc = editorHost.doc;
-  if (!doc.root) {
-    console.error('Failed to get root doc');
-    return null;
-  }
-  const rootComponent = editorHost.view.getBlock(doc.root.id);
-
-  if (
-    !rootComponent ||
-    rootComponent.closest('affine-page-root') !== rootComponent
-  ) {
-    console.error('Failed to get viewport element!');
-    return null;
-  }
-  return (rootComponent as BlockComponent & { viewportElement: HTMLElement })
-    .viewportElement;
+export function getViewportElement(editorHost: EditorHost) {
+  return (
+    editorHost.closest<HTMLElement>('.affine-page-viewport') ??
+    editorHost.closest<HTMLElement>('.affine-edgeless-viewport')
+  );
 }

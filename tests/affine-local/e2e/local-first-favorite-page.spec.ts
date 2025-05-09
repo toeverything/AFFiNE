@@ -22,7 +22,7 @@ test('New a page and open it, then favorite it', async ({
   const cell = page
     .getByTestId('page-list-item')
     .getByText('this is a new page to favorite');
-  expect(cell).not.toBeUndefined();
+  await expect(cell).toBeVisible();
 
   await cell.click();
   await clickPageMoreActions(page);
@@ -69,7 +69,7 @@ test('Cancel favorite', async ({ page, workspace }) => {
   await getBlockSuiteEditorTitle(page).fill('this is a new page to favorite');
   await page.getByTestId('all-pages').click();
   const cell = getPageByTitle(page, 'this is a new page to favorite');
-  expect(cell).not.toBeUndefined();
+  await expect(cell).toBeVisible();
 
   await cell.click();
   await clickPageMoreActions(page);
@@ -77,10 +77,12 @@ test('Cancel favorite', async ({ page, workspace }) => {
   const favoriteBtn = page.getByTestId('editor-option-menu-favorite');
   await favoriteBtn.click();
 
+  const favorites = page.getByTestId('navigation-panel-favorites');
+
   // expect it in favorite list
-  expect(
-    page.getByRole('cell', { name: 'this is a new page to favorite' })
-  ).not.toBeUndefined();
+  await expect(
+    favorites.getByText('this is a new page to favorite')
+  ).toBeVisible();
 
   // cancel favorite
 
@@ -96,11 +98,9 @@ test('Cancel favorite', async ({ page, workspace }) => {
   await page.getByTestId('favorited-icon').nth(0).click();
 
   // expect it not in favorite list
-  expect(
-    page.getByText(
-      'Tips: Click Add to Favorites/Trash and the page will appear here.'
-    )
-  ).not.toBeUndefined();
+  await expect(
+    favorites.getByTestId('slider-bar-favorites-empty-message')
+  ).toBeVisible();
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.meta.flavour).toContain('local');

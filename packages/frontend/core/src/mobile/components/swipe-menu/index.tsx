@@ -1,5 +1,5 @@
 import { LiveData, useLiveData, useService } from '@toeverything/infra';
-import anime from 'animejs';
+import { animate as anime, eases } from 'animejs';
 import clsx from 'clsx';
 import {
   type HTMLAttributes,
@@ -53,7 +53,7 @@ const animate: TickFunc<[number]> = (content, menu, options, to) => {
     { deltaX },
     {
       set(target, key, value) {
-        if (key !== 'deltaX') return false;
+        if (key !== 'deltaX') return true;
         target.deltaX = value;
         tick(content, menu, { ...options, deltaX: value });
         return true;
@@ -61,11 +61,10 @@ const animate: TickFunc<[number]> = (content, menu, options, to) => {
     }
   );
   if (deltaX === to) return;
-  anime({
-    targets: proxy,
+  anime(proxy, {
     deltaX: to,
     duration: 230,
-    easing: 'easeInOutSine',
+    ease: eases.inOutSine,
   });
 };
 

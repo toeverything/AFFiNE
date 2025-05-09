@@ -1,0 +1,3 @@
+mutation mentionUser($input: MentionInput!) {
+  mentionUser(input: $input)
+} 

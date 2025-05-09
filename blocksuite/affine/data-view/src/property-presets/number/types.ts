@@ -1,6 +1,9 @@
-import type { NumberFormat } from './utils/formatter.js';
+import zod from 'zod';
 
-export type NumberPropertyDataType = {
-  decimal?: number;
-  format?: NumberFormat;
-};
+import { NumberFormatSchema } from './utils/formatter.js';
+
+export const NumberPropertySchema = zod.object({
+  decimal: zod.number().optional(),
+  format: NumberFormatSchema,
+});
+export type NumberPropertyDataType = zod.infer<typeof NumberPropertySchema>;

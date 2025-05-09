@@ -1,18 +1,18 @@
 import '../../plugins/payment';
 
-import { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 import Stripe from 'stripe';
 
 import { AppModule } from '../../app.module';
-import { EventEmitter, Runtime } from '../../base';
-import { ConfigModule } from '../../base/config';
+import { EventBus } from '../../base';
+import { ConfigFactory, ConfigModule } from '../../base/config';
 import { CurrentUser } from '../../core/auth';
 import { AuthService } from '../../core/auth/service';
-import { EarlyAccessType, FeatureManagementService } from '../../core/features';
+import { EarlyAccessType, FeatureService } from '../../core/features';
 import { SubscriptionService } from '../../plugins/payment/service';
+import { StripeFactory } from '../../plugins/payment/stripe';
 import {
   CouponType,
   encodeLookupKey,
@@ -21,7 +21,11 @@ import {
   SubscriptionStatus,
   SubscriptionVariant,
 } from '../../plugins/payment/types';
-import { createTestingApp, initTestingDB } from '../utils';
+import { createTestingApp, type TestingApp } from '../utils';
+
+const unixNow = () => {
+  return Math.floor(Date.now() / 1000);
+};
 
 const PRO_MONTHLY = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Monthly}`;
 const PRO_YEARLY = `${SubscriptionPlan.Pro}_${SubscriptionRecurring.Yearly}`;
@@ -125,8 +129,8 @@ const sub: Stripe.Subscription = {
   object: 'subscription',
   cancel_at_period_end: false,
   canceled_at: null,
-  current_period_end: 1745654236,
-  current_period_start: 1714118236,
+  current_period_end: unixNow() + 60 * 60 * 24 * 30,
+  current_period_start: unixNow() - 60 * 60 * 24 * 1,
   // @ts-expect-error stub
   customer: {
     id: 'cus_1',
@@ -156,11 +160,10 @@ const sub: Stripe.Subscription = {
 const test = ava as TestFn<{
   u1: CurrentUser;
   db: PrismaClient;
-  app: INestApplication;
+  app: TestingApp;
   service: SubscriptionService;
-  event: Sinon.SinonStubbedInstance<EventEmitter>;
-  feature: Sinon.SinonStubbedInstance<FeatureManagementService>;
-  runtime: Sinon.SinonStubbedInstance<Runtime>;
+  event: Sinon.SinonStubbedInstance<EventBus>;
+  feature: Sinon.SinonStubbedInstance<FeatureService>;
   stripe: {
     customers: Sinon.SinonStubbedInstance<Stripe.CustomersResource>;
     prices: Sinon.SinonStubbedInstance<Stripe.PricesResource>;
@@ -183,41 +186,36 @@ function getLastCheckoutPrice(checkoutStub: Sinon.SinonStub) {
 }
 
 test.before(async t => {
-  const { app } = await createTestingApp({
+  const app = await createTestingApp({
     imports: [
-      ConfigModule.forRoot({
-        plugins: {
-          payment: {
-            stripe: {
-              keys: {
-                APIKey: '1',
-                webhookKey: '1',
-              },
-            },
-          },
+      ConfigModule.override({
+        payment: {
+          enabled: true,
+          showLifetimePrice: true,
+          apiKey: '1',
+          webhookKey: '1',
         },
       }),
       AppModule,
     ],
     tapModule: m => {
-      m.overrideProvider(FeatureManagementService).useValue(
-        Sinon.createStubInstance(FeatureManagementService)
+      m.overrideProvider(FeatureService).useValue(
+        Sinon.createStubInstance(FeatureService)
       );
-      m.overrideProvider(EventEmitter).useValue(
-        Sinon.createStubInstance(EventEmitter)
-      );
-      m.overrideProvider(Runtime).useValue(Sinon.createStubInstance(Runtime));
+      m.overrideProvider(EventBus).useValue(Sinon.createStubInstance(EventBus));
     },
   });
 
-  t.context.event = app.get(EventEmitter);
+  t.context.event = app.get(EventBus);
   t.context.service = app.get(SubscriptionService);
-  t.context.feature = app.get(FeatureManagementService);
-  t.context.runtime = app.get(Runtime);
+  t.context.feature = app.get(FeatureService);
   t.context.db = app.get(PrismaClient);
   t.context.app = app;
 
-  const stripe = app.get(Stripe);
+  const stripeFactory = app.get(StripeFactory);
+  await stripeFactory.onConfigInit();
+
+  const stripe = stripeFactory.stripe;
   const stripeStubs = {
     customers: Sinon.stub(stripe.customers),
     prices: Sinon.stub(stripe.prices),
@@ -234,12 +232,14 @@ test.before(async t => {
 
 test.beforeEach(async t => {
   const { db, app, stripe } = t.context;
-  Sinon.reset();
-  await initTestingDB(db);
-  t.context.runtime.fetch
-    .withArgs('plugins.payment/showLifetimePrice')
-    .resolves(true);
+  await t.context.app.initTestingDB();
   t.context.u1 = await app.get(AuthService).signUp('u1@affine.pro', '1');
+
+  app.get(ConfigFactory).override({
+    payment: {
+      showLifetimePrice: true,
+    },
+  });
 
   await db.workspace.create({
     data: {
@@ -254,7 +254,8 @@ test.beforeEach(async t => {
     },
   });
 
-  // default stubs
+  Sinon.reset();
+
   // @ts-expect-error stub
   stripe.prices.list.callsFake((params: Stripe.PriceListParams) => {
     if (params.lookup_keys) {
@@ -295,8 +296,13 @@ test('should list normal prices for authenticated user', async t => {
 });
 
 test('should not show lifetime price if not enabled', async t => {
-  const { service, runtime } = t.context;
-  runtime.fetch.withArgs('plugins.payment/showLifetimePrice').resolves(false);
+  const { service, app } = t.context;
+
+  app.get(ConfigFactory).override({
+    payment: {
+      showLifetimePrice: false,
+    },
+  });
 
   const prices = await service.listPrices(t.context.u1);
 
@@ -540,8 +546,11 @@ test('should get correct pro plan price for checking out', async t => {
   // any user, lifetime recurring
   {
     feature.isEarlyAccessUser.resolves(false);
-    const runtime = app.get(Runtime);
-    await runtime.set('plugins.payment/showLifetimePrice', true);
+    app.get(ConfigFactory).override({
+      payment: {
+        showLifetimePrice: true,
+      },
+    });
 
     await service.checkout(
       {
@@ -775,10 +784,12 @@ test('should be able to update subscription', async t => {
   const { event, service, db, u1 } = t.context;
   await service.saveStripeSubscription(sub);
 
+  const canceledAt = unixNow();
+
   await service.saveStripeSubscription({
     ...sub,
     cancel_at_period_end: true,
-    canceled_at: 1714118236,
+    canceled_at: canceledAt,
   });
 
   t.true(
@@ -794,7 +805,7 @@ test('should be able to update subscription', async t => {
   });
 
   t.is(subInDB?.status, SubscriptionStatus.Active);
-  t.is(subInDB?.canceledAt?.getTime(), 1714118236000);
+  t.is(subInDB?.canceledAt?.getTime(), canceledAt * 1000);
 });
 
 test('should be able to delete subscription', async t => {
@@ -839,7 +850,7 @@ test('should be able to cancel subscription', async t => {
   stripe.subscriptions.update.resolves({
     ...sub,
     cancel_at_period_end: true,
-    canceled_at: 1714118236,
+    canceled_at: unixNow(),
   } as any);
 
   const subInDB = await service.cancelSubscription({
@@ -902,8 +913,8 @@ const subscriptionSchedule: Stripe.SubscriptionSchedule = {
           quantity: 1,
         },
       ],
-      start_date: Math.floor(Date.now() / 1000),
-      end_date: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000),
+      start_date: unixNow(),
+      end_date: unixNow() + 30 * 24 * 60 * 60,
     },
     {
       items: [
@@ -913,7 +924,7 @@ const subscriptionSchedule: Stripe.SubscriptionSchedule = {
           quantity: 1,
         },
       ],
-      start_date: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000),
+      start_date: unixNow() + 30 * 24 * 60 * 60,
     },
   ],
 };
@@ -1064,7 +1075,7 @@ test('should be able to resume subscription with schedule', async t => {
 
   await service.saveStripeSubscription({
     ...sub,
-    canceled_at: 1714118236,
+    canceled_at: unixNow(),
     schedule: 'sub_sched_1',
   });
 
@@ -1182,8 +1193,12 @@ const onetimeYearlyInvoice: Stripe.Invoice = {
 };
 
 test('should not be able to checkout for lifetime recurring if not enabled', async t => {
-  const { service, u1, runtime } = t.context;
-  runtime.fetch.withArgs('plugins.payment/showLifetimePrice').resolves(false);
+  const { service, u1, app } = t.context;
+  app.get(ConfigFactory).override({
+    payment: {
+      showLifetimePrice: false,
+    },
+  });
 
   await t.throwsAsync(
     () =>
@@ -1203,7 +1218,13 @@ test('should not be able to checkout for lifetime recurring if not enabled', asy
 });
 
 test('should be able to checkout for lifetime recurring', async t => {
-  const { service, u1, stripe } = t.context;
+  const { service, u1, stripe, app } = t.context;
+
+  app.get(ConfigFactory).override({
+    payment: {
+      showLifetimePrice: true,
+    },
+  });
 
   await service.checkout(
     {
@@ -1535,7 +1556,7 @@ test('should be able to subscribe onetime payment subscription', async t => {
   );
 });
 
-test('should be able to recalculate onetime payment subscription period', async t => {
+test('should be able to accumulate onetime payment subscription period', async t => {
   const { service, db, u1 } = t.context;
 
   await service.saveStripeInvoice(onetimeMonthlyInvoice);
@@ -1547,15 +1568,6 @@ test('should be able to recalculate onetime payment subscription period', async 
   t.truthy(subInDB);
 
   let end = subInDB!.end!;
-  await service.saveStripeInvoice(onetimeMonthlyInvoice);
-  subInDB = await db.subscription.findFirst({
-    where: { targetId: u1.id },
-  });
-
-  // add 30 days
-  t.is(subInDB!.end!.getTime(), end.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-  end = subInDB!.end!;
   await service.saveStripeInvoice(onetimeYearlyInvoice);
   subInDB = await db.subscription.findFirst({
     where: { targetId: u1.id },
@@ -1563,6 +1575,16 @@ test('should be able to recalculate onetime payment subscription period', async 
 
   // add 365 days
   t.is(subInDB!.end!.getTime(), end.getTime() + 365 * 24 * 60 * 60 * 1000);
+});
+
+test('should be able to recalculate onetime payment subscription period after expiration', async t => {
+  const { service, db, u1 } = t.context;
+
+  await service.saveStripeInvoice(onetimeMonthlyInvoice);
+
+  let subInDB = await db.subscription.findFirst({
+    where: { targetId: u1.id },
+  });
 
   // make subscription expired
   await db.subscription.update({
@@ -1577,6 +1599,24 @@ test('should be able to recalculate onetime payment subscription period', async 
   });
 
   // add 365 days from now
+  t.is(
+    subInDB?.end?.toDateString(),
+    new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toDateString()
+  );
+});
+
+test('should not accumulate onetime payment subscription period for redeemed invoices', async t => {
+  const { service, db, u1 } = t.context;
+
+  // save invoices received more than once, should only redeem them once.
+  await service.saveStripeInvoice(onetimeYearlyInvoice);
+  await service.saveStripeInvoice(onetimeYearlyInvoice);
+  await service.saveStripeInvoice(onetimeYearlyInvoice);
+
+  const subInDB = await db.subscription.findFirst({
+    where: { targetId: u1.id },
+  });
+
   t.is(
     subInDB?.end?.toDateString(),
     new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toDateString()

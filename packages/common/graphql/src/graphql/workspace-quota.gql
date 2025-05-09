@@ -1,0 +1,23 @@
+query workspaceQuota($id: String!) {
+  workspace(id: $id) {
+    quota {
+      name
+      blobLimit
+      storageQuota
+      usedStorageQuota
+      historyPeriod
+      memberLimit
+      memberCount
+      overcapacityMemberCount
+      humanReadable {
+        name
+        blobLimit
+        storageQuota
+        historyPeriod
+        memberLimit
+        memberCount
+        overcapacityMemberCount
+      }
+    }
+  }
+}

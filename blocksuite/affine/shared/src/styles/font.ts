@@ -1,24 +1,30 @@
 import { baseTheme } from '@toeverything/theme';
-import { unsafeCSS } from 'lit';
+import { css, unsafeCSS } from 'lit';
 
-export const FONT_BASE = unsafeCSS(`
-  font-family: ${baseTheme.fontSansFamily};
-  font-feature-settings:
-    'clig' off,
-    'liga' off;
-  font-style: normal;
-`);
+export const fontBaseStyle = (container: string) => css`
+  ${unsafeCSS(container)} {
+    font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
+    font-feature-settings:
+      'clig' off,
+      'liga' off;
+    font-style: normal;
+  }
+`;
 
-export const FONT_SM = unsafeCSS(`
-  ${FONT_BASE};
-  font-size: var(--affine-font-sm);
-  font-weight: 500;
-  line-height: 22px;
-`);
+export const fontSMStyle = (container: string) => css`
+  ${fontBaseStyle(container)}
+  ${unsafeCSS(container)} {
+    font-size: var(--affine-font-sm);
+    font-weight: 500;
+    line-height: 22px;
+  }
+`;
 
-export const FONT_XS = unsafeCSS(`
-  ${FONT_BASE};
-  font-size: var(--affine-font-xs);
-  font-weight: 500;
-  line-height: 20px;
-`);
+export const fontXSStyle = (container: string) => css`
+  ${fontBaseStyle(container)}
+  ${unsafeCSS(container)} {
+    font-size: var(--affine-font-xs);
+    font-weight: 500;
+    line-height: 20px;
+  }
+`;

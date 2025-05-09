@@ -1,5 +1,7 @@
 import type { AvailableStorageImplementations } from '../impls';
 import type {
+  AggregateOptions,
+  AggregateResult,
   BlobRecord,
   DocClock,
   DocClocks,
@@ -7,11 +9,15 @@ import type {
   DocRecord,
   DocUpdate,
   ListedBlobRecord,
+  Query,
+  SearchOptions,
+  SearchResult,
   StorageType,
 } from '../storage';
 import type { AwarenessRecord } from '../storage/awareness';
-import type { BlobSyncState } from '../sync/blob';
+import type { BlobSyncBlobState, BlobSyncState } from '../sync/blob';
 import type { DocSyncDocState, DocSyncState } from '../sync/doc';
+import type { IndexerDocSyncState, IndexerSyncState } from '../sync/indexer';
 
 type StorageInitOptions = Values<{
   [key in keyof AvailableStorageImplementations]: {
@@ -20,17 +26,12 @@ type StorageInitOptions = Values<{
   };
 }>;
 
-export interface WorkerInitOptions {
+export interface StoreInitOptions {
   local: { [key in StorageType]?: StorageInitOptions };
   remotes: Record<string, { [key in StorageType]?: StorageInitOptions }>;
 }
 
 interface GroupedWorkerOps {
-  worker: {
-    init: [WorkerInitOptions, void];
-    destroy: [void, void];
-  };
-
   docStorage: {
     getDoc: [string, DocRecord | null];
     getDocDiff: [{ docId: string; state?: Uint8Array }, DocDiff | null];
@@ -39,7 +40,7 @@ interface GroupedWorkerOps {
     getDocTimestamp: [string, DocClock | null];
     deleteDoc: [string, void];
     subscribeDocUpdate: [void, { update: DocRecord; origin?: string }];
-    waitForConnected: [void, boolean];
+    waitForConnected: [void, void];
   };
 
   blobStorage: {
@@ -48,22 +49,7 @@ interface GroupedWorkerOps {
     deleteBlob: [{ key: string; permanently: boolean }, void];
     releaseBlobs: [void, void];
     listBlobs: [void, ListedBlobRecord[]];
-  };
-
-  syncStorage: {
-    getPeerPulledRemoteClocks: [{ peer: string }, DocClocks];
-    getPeerPulledRemoteClock: [
-      { peer: string; docId: string },
-      DocClock | null,
-    ];
-    setPeerPulledRemoteClock: [{ peer: string; clock: DocClock }, void];
-    getPeerRemoteClocks: [{ peer: string }, DocClocks];
-    getPeerRemoteClock: [{ peer: string; docId: string }, DocClock | null];
-    setPeerRemoteClock: [{ peer: string; clock: DocClock }, void];
-    getPeerPushedClocks: [{ peer: string }, DocClocks];
-    getPeerPushedClock: [{ peer: string; docId: string }, DocClock | null];
-    setPeerPushedClock: [{ peer: string; clock: DocClock }, void];
-    clearClocks: [void, void];
+    waitForConnected: [void, void];
   };
 
   awarenessStorage: {
@@ -80,21 +66,52 @@ interface GroupedWorkerOps {
       ),
     ];
     collect: [{ collectId: string; awareness: AwarenessRecord }, void];
+    waitForConnected: [void, void];
+  };
+
+  indexerStorage: {
+    search: [
+      { table: string; query: Query<any>; options?: SearchOptions<any> },
+      SearchResult<any, any>,
+    ];
+    aggregate: [
+      {
+        table: string;
+        query: Query<any>;
+        field: string;
+        options?: AggregateOptions<any>;
+      },
+      AggregateResult<any, any>,
+    ];
+    subscribeSearch: [
+      { table: string; query: Query<any>; options?: SearchOptions<any> },
+      SearchResult<any, any>,
+    ];
+    subscribeAggregate: [
+      {
+        table: string;
+        query: Query<any>;
+        field: string;
+        options?: AggregateOptions<any>;
+      },
+      AggregateResult<any, any>,
+    ];
+    waitForConnected: [void, void];
   };
 
   docSync: {
     state: [void, DocSyncState];
     docState: [string, DocSyncDocState];
     addPriority: [{ docId: string; priority: number }, boolean];
+    resetSync: [void, void];
   };
 
   blobSync: {
-    downloadBlob: [string, BlobRecord | null];
-    uploadBlob: [BlobRecord, void];
-    fullSync: [void, boolean];
-    setMaxBlobSize: [number, void];
-    onReachedMaxBlobSize: [void, number];
     state: [void, BlobSyncState];
+    blobState: [string, BlobSyncBlobState];
+    downloadBlob: [string, boolean];
+    uploadBlob: [{ blob: BlobRecord; force?: boolean }, true];
+    fullDownload: [string | null, void];
   };
 
   awarenessSync: {
@@ -111,6 +128,14 @@ interface GroupedWorkerOps {
       ),
     ];
     collect: [{ collectId: string; awareness: AwarenessRecord }, void];
+  };
+
+  indexerSync: {
+    state: [void, IndexerSyncState];
+    docState: [string, IndexerDocSyncState];
+    addPriority: [{ docId: string; priority: number }, boolean];
+    waitForCompleted: [void, void];
+    waitForDocCompleted: [string, void];
   };
 }
 
@@ -132,3 +157,16 @@ export type WorkerOps = UnionToIntersection<
     }>
   >
 >;
+
+export type WorkerManagerOps = {
+  open: [
+    {
+      port: MessagePort;
+      key: string;
+      closeKey: string;
+      options: StoreInitOptions;
+    },
+    string,
+  ];
+  close: [string, void];
+};

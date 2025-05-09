@@ -1,6 +1,5 @@
 import { notify } from '@affine/component';
-import { GraphQLError } from '@affine/graphql';
-import { assertExists } from '@blocksuite/affine/global/utils';
+import { UserFriendlyError } from '@affine/error';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { useCallback } from 'react';
 import type { SWRConfiguration } from 'swr';
@@ -12,25 +11,19 @@ const swrConfig: SWRConfiguration = {
     useSWRNext => (key, fetcher, config) => {
       const fetcherWrapper = useCallback(
         async (...args: any[]) => {
-          assertExists(fetcher);
+          if (!fetcher) {
+            throw new Error('fetcher is not found');
+          }
           const d = fetcher(...args);
           if (d instanceof Promise) {
             return d.catch(e => {
-              if (
-                e instanceof GraphQLError ||
-                (Array.isArray(e) && e[0] instanceof GraphQLError)
-              ) {
-                const graphQLError = e instanceof GraphQLError ? e : e[0];
-                notify.error({
-                  title: 'GraphQL Error',
-                  message: graphQLError.toString(),
-                });
-              } else {
-                notify.error({
-                  title: 'Error',
-                  message: e.toString(),
-                });
-              }
+              const error = UserFriendlyError.fromAny(e);
+
+              notify.error({
+                title: error.name,
+                message: error.message,
+              });
+
               throw e;
             });
           }

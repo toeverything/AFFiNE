@@ -10,7 +10,7 @@ import { mergeUpdate } from './merge-update';
 
 const TRIM_SIZE = 1;
 
-export class WorkspaceSQLiteDB {
+export class WorkspaceSQLiteDB implements AsyncDisposable {
   lock = new AsyncLock();
   update$ = new Subject<void>();
   adapter = new SQLiteAdapter(this.path);
@@ -32,17 +32,32 @@ export class WorkspaceSQLiteDB {
     this.update$.complete();
   }
 
+  [Symbol.asyncDispose] = async () => {
+    await this.destroy();
+  };
+
   private readonly toDBDocId = (docId: string) => {
     return this.workspaceId === docId ? undefined : docId;
   };
 
-  getWorkspaceName = async () => {
+  getWorkspaceMeta = async () => {
     const ydoc = new YDoc();
     const updates = await this.adapter.getUpdates();
     updates.forEach(update => {
       applyUpdate(ydoc, update.data);
     });
-    return ydoc.getMap('meta').get('name') as string;
+    logger.log(
+      `ydoc.getMap('meta').get('name')`,
+      ydoc.getMap('meta').get('name'),
+      this.path,
+      updates.length
+    );
+    return ydoc.getMap('meta').toJSON();
+  };
+
+  getWorkspaceName = async () => {
+    const meta = await this.getWorkspaceMeta();
+    return meta.name;
   };
 
   async init() {
@@ -66,6 +81,10 @@ export class WorkspaceSQLiteDB {
       return mergeUpdate(updates.map(row => row.data));
     }
   };
+
+  async getDocTimestamps() {
+    return this.adapter.getDocTimestamps();
+  }
 
   async addBlob(key: string, value: Uint8Array) {
     this.update$.next();

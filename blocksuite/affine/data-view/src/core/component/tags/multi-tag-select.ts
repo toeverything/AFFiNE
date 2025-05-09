@@ -7,21 +7,22 @@ import {
 } from '@blocksuite/affine-components/context-menu';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { rangeWrap } from '@blocksuite/affine-shared/utils';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { IS_MOBILE } from '@blocksuite/global/env';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import {
   CloseIcon,
   DeleteIcon,
   MoreHorizontalIcon,
 } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { nanoid } from '@blocksuite/store';
-import { flip, offset, shift } from '@floating-ui/dom';
+import { autoPlacement, offset, shift } from '@floating-ui/dom';
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { nothing } from 'lit';
-import { property, query, state } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
+import { createRef, ref } from 'lit/directives/ref.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
@@ -37,7 +38,22 @@ import {
 import { verticalListSortingStrategy } from '../../utils/wc-dnd/sort/strategies/index.js';
 import { arrayMove } from '../../utils/wc-dnd/utils/array-move.js';
 import { getTagColor, selectOptionColors } from './colors.js';
-import { styles } from './styles.js';
+import {
+  selectedStyle,
+  selectOptionContentStyle,
+  selectOptionDragHandlerStyle,
+  selectOptionIconStyle,
+  selectOptionNewIconStyle,
+  selectOptionsContainerStyle,
+  selectOptionsTipsStyle,
+  selectOptionStyle,
+  tagContainerStyle,
+  tagDeleteIconStyle,
+  tagSelectContainerStyle,
+  tagSelectInputContainerStyle,
+  tagSelectInputStyle,
+  tagTextStyle,
+} from './styles.css.js';
 
 type RenderOption = {
   value: string;
@@ -56,7 +72,7 @@ export type TagManagerOptions = {
 };
 
 class TagManager {
-  changeTag = (option: SelectTag) => {
+  changeTag = (option: Partial<SelectTag>) => {
     this.ops.onOptionsChange(
       this.ops.options.value.map(item => {
         if (item.id === option.id) {
@@ -70,23 +86,23 @@ class TagManager {
     );
   };
 
-  color = signal(getTagColor());
+  color$ = signal(getTagColor());
 
   createOption = () => {
-    const value = this.text.value.trim();
+    const value = this.text$.value.trim();
     if (value === '') return;
     const id = nanoid();
     this.ops.onOptionsChange([
       {
         id: id,
         value: value,
-        color: this.color.value,
+        color: this.color$.value,
       },
       ...this.ops.options.value,
     ]);
     this.selectTag(id);
-    this.text.value = '';
-    this.color.value = getTagColor();
+    this.text$.value = '';
+    this.color$.value = getTagColor();
     if (this.isSingleMode) {
       this.ops.onComplete?.();
     }
@@ -101,12 +117,12 @@ class TagManager {
   filteredOptions$ = computed(() => {
     let matched = false;
     const options: RenderOption[] = [];
-    for (const option of this.options.value) {
+    for (const option of this.options$.value) {
       if (
-        !this.text.value ||
+        !this.text$.value ||
         option.value
           .toLocaleLowerCase()
-          .includes(this.text.value.toLocaleLowerCase())
+          .includes(this.text$.value.toLocaleLowerCase())
       ) {
         options.push({
           ...option,
@@ -114,15 +130,15 @@ class TagManager {
           select: () => this.selectTag(option.id),
         });
       }
-      if (option.value === this.text.value) {
+      if (option.value === this.text$.value) {
         matched = true;
       }
     }
-    if (this.text.value && !matched) {
+    if (this.text$.value && !matched) {
       options.push({
         id: 'create',
-        color: this.color.value,
-        value: this.text.value,
+        color: this.color$.value,
+        value: this.text$.value,
         isCreate: true,
         select: this.createOption,
       });
@@ -136,37 +152,37 @@ class TagManager {
     );
   });
 
-  text = signal('');
+  text$ = signal('');
 
   get isSingleMode() {
     return this.ops.mode === 'single';
   }
 
-  get options() {
+  get options$() {
     return this.ops.options;
   }
 
-  get value() {
+  get value$() {
     return this.ops.value;
   }
 
   constructor(private readonly ops: TagManagerOptions) {}
 
   deleteTag(id: string) {
-    this.ops.onChange(this.value.value.filter(item => item !== id));
+    this.ops.onChange(this.value$.value.filter(item => item !== id));
   }
 
   isSelected(id: string) {
-    return this.value.value.includes(id);
+    return this.value$.value.includes(id);
   }
 
   selectTag(id: string) {
-    if (this.isSelected(id)) {
+    if (!this.isSingleMode && this.isSelected(id)) {
       return;
     }
-    const newValue = this.isSingleMode ? [id] : [...this.value.value, id];
+    const newValue = this.isSingleMode ? [id] : [...this.value$.value, id];
     this.ops.onChange(newValue);
-    this.text.value = '';
+    this.text$.value = '';
     if (this.isSingleMode) {
       requestAnimationFrame(() => {
         this.ops.onComplete?.();
@@ -178,8 +194,6 @@ class TagManager {
 export class MultiTagSelect extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
-  static override styles = styles;
-
   private readonly _clickItemOption = (e: MouseEvent, id: string) => {
     e.stopPropagation();
     const option = this.options.value.find(v => v.id === id);
@@ -193,7 +207,7 @@ export class MultiTagSelect extends SignalWatcher(
             initialValue: option.value,
             onChange: text => {
               this.tagManager.changeTag({
-                ...option,
+                id: option.id,
                 value: text,
               });
             },
@@ -223,7 +237,7 @@ export class MultiTagSelect extends SignalWatcher(
                 isSelected: option.color === item.color,
                 select: () => {
                   this.tagManager.changeTag({
-                    ...option,
+                    id: option.id,
                     color: item.color,
                   });
                 },
@@ -236,7 +250,7 @@ export class MultiTagSelect extends SignalWatcher(
   };
 
   private readonly _onInput = (event: KeyboardEvent) => {
-    this.tagManager.text.value = (event.target as HTMLInputElement).value;
+    this.tagManager.text$.value = (event.target as HTMLInputElement).value;
   };
 
   private readonly _onInputKeydown = (event: KeyboardEvent) => {
@@ -251,10 +265,10 @@ export class MultiTagSelect extends SignalWatcher(
       this.selectedTag$.value?.select();
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
-      this.setSelectedOption(this.selectedIndex - 1);
+      this.setSelectedOption(this.selectedIndex$.value - 1);
     } else if (event.key === 'ArrowDown') {
       event.preventDefault();
-      this.setSelectedOption(this.selectedIndex + 1);
+      this.setSelectedOption(this.selectedIndex$.value + 1);
     } else if (event.key === 'Escape') {
       this.onComplete();
     }
@@ -263,7 +277,7 @@ export class MultiTagSelect extends SignalWatcher(
   private readonly tagManager = new TagManager(this);
 
   private readonly selectedTag$ = computed(() => {
-    return this.tagManager.filteredOptions$.value[this.selectedIndex];
+    return this.tagManager.filteredOptions$.value[this.selectedIndex$.value];
   });
 
   sortContext = createSortContext({
@@ -301,12 +315,12 @@ export class MultiTagSelect extends SignalWatcher(
   });
 
   private get text() {
-    return this.tagManager.text;
+    return this.tagManager.text$;
   }
 
   private renderInput() {
     return html`
-      <div class="tag-select-input-container">
+      <div class="${tagSelectInputContainerStyle}">
         ${this.value.value.map(id => {
           const option = this.tagManager.optionsMap$.value.get(id);
           if (!option) {
@@ -317,7 +331,8 @@ export class MultiTagSelect extends SignalWatcher(
           );
         })}
         <input
-          class="tag-select-input"
+          class="${tagSelectInputStyle}"
+          ${ref(this._selectInput)}
           placeholder="Type here..."
           .value="${this.text.value}"
           @input="${this._onInput}"
@@ -332,10 +347,10 @@ export class MultiTagSelect extends SignalWatcher(
     const style = styleMap({
       backgroundColor: color,
     });
-    return html` <div class="tag-container" style=${style}>
-      <div class="tag-text">${name}</div>
+    return html` <div class="${tagContainerStyle}" style=${style}>
+      <div data-testid="tag-name" class="${tagTextStyle}">${name}</div>
       ${onDelete
-        ? html` <div class="tag-delete-icon" @click="${onDelete}">
+        ? html` <div class="${tagDeleteIconStyle}" @click="${onDelete}">
             ${CloseIcon()}
           </div>`
         : nothing}
@@ -349,19 +364,19 @@ export class MultiTagSelect extends SignalWatcher(
           'layer/insideBorder/border'
         )};margin: 4px 0;"
       ></div>
-      <div class="select-options-tips">Select tag or create one</div>
-      <div class="select-options-container">
+      <div class="${selectOptionsTipsStyle}">Select tag or create one</div>
+      <div data-testid="tag-option-list" class="${selectOptionsContainerStyle}">
         ${repeat(
           this.tagManager.filteredOptions$.value,
           select => select.id,
           (select, index) => {
-            const isSelected = index === this.selectedIndex;
+            const isSelected = index === this.selectedIndex$.value;
             const mouseenter = () => {
               this.setSelectedOption(index);
             };
             const classes = classMap({
-              'select-option': true,
-              selected: isSelected,
+              [selectOptionStyle]: true,
+              [selectedStyle]: isSelected,
             });
             const clickOption = (e: MouseEvent) => {
               e.stopPropagation();
@@ -374,21 +389,24 @@ export class MultiTagSelect extends SignalWatcher(
                 @mouseenter="${mouseenter}"
                 @click="${select.select}"
               >
-                <div class="select-option-content">
+                <div class="${selectOptionContentStyle}">
                   ${select.isCreate
-                    ? html` <div class="select-option-new-icon">Create</div>`
+                    ? html` <div class="${selectOptionNewIconStyle}">
+                        Create
+                      </div>`
                     : html`
                         <div
                           ${dragHandler(select.id)}
-                          class="select-option-drag-handler"
+                          class="${selectOptionDragHandlerStyle}"
                         ></div>
                       `}
                   ${this.renderTag(select.value, select.color)}
                 </div>
                 ${!select.isCreate
                   ? html` <div
-                      class="select-option-icon"
+                      class="${selectOptionIconStyle}"
                       @click="${clickOption}"
+                      data-testid="option-more"
                     >
                       ${MoreHorizontalIcon()}
                     </div>`
@@ -402,7 +420,7 @@ export class MultiTagSelect extends SignalWatcher(
   }
 
   private setSelectedOption(index: number) {
-    this.selectedIndex = rangeWrap(
+    this.selectedIndex$.value = rangeWrap(
       index,
       0,
       this.tagManager.filteredOptions$.value.length
@@ -410,28 +428,29 @@ export class MultiTagSelect extends SignalWatcher(
   }
 
   protected override firstUpdated() {
+    const disposables = this.disposables;
+    this.classList.add(tagSelectContainerStyle);
     requestAnimationFrame(() => {
-      this._selectInput.focus();
+      this._selectInput.value?.focus();
     });
-    this._disposables.addFromEvent(this, 'click', () => {
-      this._selectInput.focus();
+    disposables.addFromEvent(this, 'click', () => {
+      this._selectInput.value?.focus();
     });
 
-    this._disposables.addFromEvent(this._selectInput, 'copy', e => {
+    disposables.addFromEvent(this._selectInput.value, 'copy', e => {
       e.stopPropagation();
     });
-    this._disposables.addFromEvent(this._selectInput, 'cut', e => {
+    disposables.addFromEvent(this._selectInput.value, 'cut', e => {
       e.stopPropagation();
     });
   }
 
   override render() {
-    this.setSelectedOption(this.selectedIndex);
+    this.setSelectedOption(this.selectedIndex$.value);
     return html` ${this.renderInput()} ${this.renderTags()} `;
   }
 
-  @query('.tag-select-input')
-  private accessor _selectInput!: HTMLInputElement;
+  private readonly _selectInput = createRef<HTMLInputElement>();
 
   @property()
   accessor mode: 'multi' | 'single' = 'multi';
@@ -448,8 +467,7 @@ export class MultiTagSelect extends SignalWatcher(
   @property({ attribute: false })
   accessor options!: ReadonlySignal<SelectTag[]>;
 
-  @state()
-  private accessor selectedIndex = 0;
+  private readonly selectedIndex$ = signal(0);
 
   @property({ attribute: false })
   accessor value!: ReadonlySignal<string[]>;
@@ -464,7 +482,7 @@ declare global {
 const popMobileTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
   const tagManager = new TagManager(ops);
   const onInput = (e: InputEvent) => {
-    tagManager.text.value = (e.target as HTMLInputElement).value;
+    tagManager.text$.value = (e.target as HTMLInputElement).value;
   };
   return popMenu(target, {
     options: {
@@ -491,12 +509,12 @@ const popMobileTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
                   backgroundColor: option.color,
                   width: 'max-content',
                 });
-                return html` <div class="tag-container" style=${style}>
-                  <div class="tag-text">${option.value}</div>
+                return html` <div class="${tagContainerStyle}" style=${style}>
+                  <div class="${tagTextStyle}">${option.value}</div>
                 </div>`;
               })}
               <input
-                .value="${tagManager.text.value}"
+                .value="${tagManager.text$.value}"
                 @input="${onInput}"
                 placeholder="Type here..."
                 type="text"
@@ -522,8 +540,8 @@ const popMobileTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
                         ${option.isCreate
                           ? html` <div style="margin-right: 8px;">Create</div>`
                           : ''}
-                        <div class="tag-container" style=${style}>
-                          <div class="tag-text">${option.value}</div>
+                        <div class="${tagContainerStyle}" style=${style}>
+                          <div class="${tagTextStyle}">${option.value}</div>
                         </div>
                       </div>
                     `;
@@ -570,7 +588,18 @@ export const popTagSelect = (target: PopupTarget, ops: TagSelectOptions) => {
   };
   const remove = createPopup(target, component, {
     onClose: ops.onComplete,
-    middleware: [flip(), offset({ mainAxis: -28, crossAxis: 112 }), shift()],
+    middleware: [
+      autoPlacement({
+        allowedPlacements: [
+          'bottom-start',
+          'bottom-end',
+          'top-start',
+          'top-end',
+        ],
+      }),
+      offset({ mainAxis: -36 }),
+      shift(),
+    ],
     container: ops.container,
   });
   return remove;

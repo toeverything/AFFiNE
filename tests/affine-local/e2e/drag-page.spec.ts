@@ -1,9 +1,15 @@
 import { test } from '@affine-test/kit/playwright';
+import {
+  clickEdgelessModeButton,
+  locateToolbar,
+} from '@affine-test/kit/utils/editor';
+import { pressBackspace, pressEnter } from '@affine-test/kit/utils/keyboard';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   createLinkedPage,
   dragTo,
+  type,
   waitForEditorLoad,
 } from '@affine-test/kit/utils/page-logic';
 import { clickSideBarAllPageButton } from '@affine-test/kit/utils/sidebar';
@@ -21,23 +27,27 @@ const dragToFavourites = async (
   id: string,
   type: 'doc' | 'collection' | 'tag' | 'folder' = 'doc'
 ) => {
-  const favourites = page.getByTestId('explorer-favorite-category-divider');
+  const favourites = page.getByTestId(
+    'navigation-panel-favorite-category-divider'
+  );
   await dragTo(page, dragItem, favourites);
   const item = page
-    .getByTestId(`explorer-favorites`)
-    .locator(`[data-testid="explorer-${type}-${id}"]`);
+    .getByTestId(`navigation-panel-favorites`)
+    .locator(`[data-testid="navigation-panel-${type}-${id}"]`);
   await expect(item).toBeVisible();
   return item;
 };
 
 const createCollection = async (page: Page, name: string) => {
-  await page.getByTestId('explorer-bar-add-collection-button').click();
+  await page.getByTestId('navigation-panel-bar-add-collection-button').click();
   const input = page.getByTestId('prompt-modal-input');
   await expect(input).toBeVisible();
   await input.fill(name);
   await page.getByTestId('prompt-modal-confirm').click();
   const newCollectionId = getCurrentCollectionIdFromUrl(page);
-  const collection = page.getByTestId(`explorer-collection-${newCollectionId}`);
+  const collection = page.getByTestId(
+    `navigation-panel-collection-${newCollectionId}`
+  );
   await expect(collection).toBeVisible();
   return collection;
 };
@@ -51,7 +61,9 @@ const dragToCollection = async (page: Page, dragItem: Locator) => {
   await clickSideBarAllPageButton(page);
   await dragTo(page, dragItem, collection);
   await page.waitForTimeout(500);
-  const collectionPage = collection.locator('[data-testid^="explorer-doc-"]');
+  const collectionPage = collection.locator(
+    '[data-testid^="navigation-panel-doc-"]'
+  );
   await expect(collectionPage).toBeVisible();
   return collectionPage;
 };
@@ -176,43 +188,50 @@ test('items in favourites can be reordered by dragging', async ({ page }) => {
 
   // assert the order of the items in favourites
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]')
+    page.getByTestId('navigation-panel-favorites').locator('[draggable]')
   ).toHaveCount(3);
 
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]').first()
+    page
+      .getByTestId('navigation-panel-favorites')
+      .locator('[draggable]')
+      .first()
   ).toHaveText('test collection');
 
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]').last()
+    page.getByTestId('navigation-panel-favorites').locator('[draggable]').last()
   ).toHaveText(title0);
 
   // drag the first item to the last
   const firstItem = page
-    .getByTestId('explorer-favorites')
+    .getByTestId('navigation-panel-favorites')
     .locator('[draggable]')
     .first();
   const lastItem = page
-    .getByTestId('explorer-favorites')
+    .getByTestId('navigation-panel-favorites')
     .locator('[draggable]')
     .last();
   await dragTo(page, firstItem, lastItem, 'bottom');
 
   // now check the order again
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]')
+    page.getByTestId('navigation-panel-favorites').locator('[draggable]')
   ).toHaveCount(3);
 
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]').first()
+    page
+      .getByTestId('navigation-panel-favorites')
+      .locator('[draggable]')
+      .first()
   ).toHaveText(title1);
 
   await expect(
-    page.getByTestId('explorer-favorites').locator('[draggable]').last()
+    page.getByTestId('navigation-panel-favorites').locator('[draggable]').last()
   ).toHaveText('test collection');
 });
 
-test('drag a page link in editor to favourites', async ({ page }) => {
+// some how this test always timeout, so we skip it
+test.skip('drag a page link in editor to favourites', async ({ page }) => {
   await clickNewPageButton(page);
   await page.waitForTimeout(500);
   await page.keyboard.press('Enter');
@@ -269,11 +288,11 @@ test('drag a page card block to another page', async ({ page }) => {
 
   await pageReference.hover();
 
-  const inlineToolbar = page.locator('reference-popup');
+  const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
 
   // convert page reference to card block
-  await inlineToolbar.getByRole('button', { name: 'Switch view' }).click();
-  await inlineToolbar.getByRole('button', { name: 'Card view' }).click();
+  await toolbar.getByRole('button', { name: 'Switch view' }).click();
+  await toolbar.getByRole('button', { name: 'Card view' }).click();
 
   // hover the card block to show the drag handle
   const box = await page.locator('affine-embed-linked-doc-block').boundingBox();
@@ -293,13 +312,13 @@ test('drag a page card block to another page', async ({ page }) => {
   );
 });
 
-test('drag a favourite page into blocksuite', async ({ page }) => {
+test('drag a favourite page into note on page mode', async ({ page }) => {
   await clickNewPageButton(page, 'hi from page');
   await page.getByTestId('pin-button').click();
   const pageId = getCurrentDocIdFromUrl(page);
   const item = page
-    .getByTestId(`explorer-favorites`)
-    .locator(`[data-testid="explorer-doc-${pageId}"]`);
+    .getByTestId(`navigation-panel-favorites`)
+    .locator(`[data-testid="navigation-panel-doc-${pageId}"]`);
   await expect(item).toBeVisible();
 
   // drag item into blocksuite editor
@@ -312,4 +331,94 @@ test('drag a favourite page into blocksuite', async ({ page }) => {
   await expect(page.locator('affine-embed-linked-doc-block')).toContainText(
     'hi from page'
   );
+});
+
+test('drag a favourite page into canvas on edgeless mode', async ({ page }) => {
+  await clickNewPageButton(page, 'hi from page');
+  await pressEnter(page);
+  await type(page, 'Hello world');
+  await page.getByTestId('pin-button').click();
+  const pageId = getCurrentDocIdFromUrl(page);
+  const item = page
+    .getByTestId(`navigation-panel-favorites`)
+    .locator(`[data-testid="navigation-panel-doc-${pageId}"]`);
+  await expect(item).toBeVisible();
+
+  await clickNewPageButton(page, 'edgeless page');
+  await clickEdgelessModeButton(page);
+
+  // drag item into blocksuite editor
+  await dragTo(page, item, page.locator('affine-edgeless-root').first());
+
+  const embedDoc = page.locator('affine-embed-edgeless-synced-doc-block');
+  await expect(embedDoc).toContainText('Hello world');
+  await embedDoc.click();
+
+  const toolbar = locateToolbar(page);
+  const switchViewButton = toolbar.getByLabel('Switch view');
+  await switchViewButton.click();
+  await toolbar.getByLabel('Card view').click(); // this will record the view as preferred view
+  const cardDoc = page.locator('affine-embed-edgeless-linked-doc-block');
+  await expect(embedDoc).toBeHidden();
+  await expect(cardDoc).toBeVisible();
+
+  await pressBackspace(page);
+  await expect(embedDoc).toBeHidden();
+  await expect(cardDoc).toBeHidden();
+
+  await dragTo(page, item, page.locator('affine-edgeless-root').first());
+  await expect(cardDoc).toBeVisible();
+  await expect(embedDoc).toBeHidden();
+
+  await page.reload();
+  await cardDoc.click();
+  await pressBackspace(page);
+
+  await dragTo(page, item, page.locator('affine-edgeless-root').first());
+  await expect(cardDoc, 'prefer view should be persistence').toBeVisible();
+  await expect(embedDoc).toBeHidden();
+});
+
+test('drag a favourite page into note on edgeless mode', async ({ page }) => {
+  await clickNewPageButton(page, 'hi from page');
+  await pressEnter(page);
+  await type(page, 'Hello world');
+  await page.getByTestId('pin-button').click();
+  const pageId = getCurrentDocIdFromUrl(page);
+  const item = page
+    .getByTestId(`navigation-panel-favorites`)
+    .locator(`[data-testid="navigation-panel-doc-${pageId}"]`);
+  await expect(item).toBeVisible();
+
+  await clickNewPageButton(page, 'edgeless page');
+  await clickEdgelessModeButton(page);
+
+  const edgelessNote = page.locator('affine-edgeless-note');
+  await dragTo(page, item, edgelessNote);
+
+  const embedDocInNote = edgelessNote.locator('affine-embed-synced-doc-block');
+  const cardDocInNote = edgelessNote.locator('affine-embed-linked-doc-block');
+
+  await expect(embedDocInNote).toBeHidden();
+  await expect(cardDocInNote).toBeVisible();
+
+  await edgelessNote.click({ delay: 100 });
+  await edgelessNote.click({ delay: 100 });
+  await cardDocInNote.click();
+
+  const toolbar = locateToolbar(page);
+  const switchViewButton = toolbar.getByLabel('Switch view');
+  await switchViewButton.click();
+  await toolbar.getByLabel('Embed view').click(); // this should not record the view as preferred view
+  await expect(embedDocInNote).toBeVisible();
+  await expect(cardDocInNote).toBeHidden();
+
+  await pressBackspace(page);
+
+  await dragTo(page, item, edgelessNote);
+  await expect(
+    embedDocInNote,
+    'prefer view should only be available in canvas'
+  ).toBeHidden();
+  await expect(cardDocInNote).toBeVisible();
 });

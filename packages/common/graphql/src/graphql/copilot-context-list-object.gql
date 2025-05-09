@@ -1,0 +1,47 @@
+query listContextObject(
+  $workspaceId: String!
+  $sessionId: String!
+  $contextId: String!
+) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      contexts(sessionId: $sessionId, contextId: $contextId) {
+        docs {
+          id
+          status
+          error
+          createdAt
+        }
+        files {
+          id
+          name
+          blobId
+          chunkSize
+          error
+          status
+          createdAt
+        }
+        tags {
+          type
+          id
+          docs {
+            id
+            status
+            createdAt
+          }
+          createdAt
+        }
+        collections {
+          type
+          id
+          docs {
+            id
+            status
+            createdAt
+          }
+          createdAt
+        }
+      }
+    }
+  }
+}

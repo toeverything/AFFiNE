@@ -14,7 +14,7 @@ export const root = style({
   minHeight: '30px',
   userSelect: 'none',
   cursor: 'pointer',
-  padding: '0 12px',
+  padding: '0 2px 0 12px',
   fontSize: cssVar('fontSm'),
   marginTop: '4px',
   position: 'relative',
@@ -41,10 +41,10 @@ export const root = style({
       paddingRight: '4px',
     },
     '&[data-collapsible="false"]:is([data-active="true"], :hover)': {
-      width: 'calc(100% + 8px)',
+      width: 'calc(100% + 8px + 8px)',
       transform: 'translateX(-8px)',
       paddingLeft: '20px',
-      paddingRight: '12px',
+      paddingRight: '10px',
     },
     [`${linkItemRoot}:first-of-type &`]: {
       marginTop: '0px',
@@ -63,7 +63,7 @@ export const postfix = style({
   opacity: 0,
   pointerEvents: 'none',
   selectors: {
-    [`${root}:hover &`]: {
+    [`${root}:hover &, &[data-postfix-display="always"]`]: {
       justifySelf: 'flex-end',
       position: 'initial',
       opacity: 1,

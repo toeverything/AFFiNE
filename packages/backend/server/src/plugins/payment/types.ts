@@ -1,8 +1,6 @@
 import type { User, Workspace } from '@prisma/client';
 import Stripe from 'stripe';
 
-import type { Payload } from '../../base/event/def';
-
 export enum SubscriptionRecurring {
   Monthly = 'monthly',
   Yearly = 'yearly',
@@ -16,6 +14,7 @@ export enum SubscriptionPlan {
   Team = 'team',
   Enterprise = 'enterprise',
   SelfHosted = 'selfhosted',
+  SelfHostedTeam = 'selfhostedteam',
 }
 
 export enum SubscriptionVariant {
@@ -49,36 +48,44 @@ export enum CouponType {
   ProEarlyAccessAIOneYearFree = 'ai_pro_ea_one_year_free',
 }
 
-declare module '../../base/event/def' {
-  interface UserEvents {
-    subscription: {
-      activated: Payload<{
-        userId: User['id'];
-        plan: SubscriptionPlan;
-        recurring: SubscriptionRecurring;
-      }>;
-      canceled: Payload<{
-        userId: User['id'];
-        plan: SubscriptionPlan;
-        recurring: SubscriptionRecurring;
-      }>;
+declare global {
+  interface Events {
+    'user.subscription.activated': {
+      userId: User['id'];
+      plan: SubscriptionPlan;
+      recurring: SubscriptionRecurring;
     };
-  }
+    'user.subscription.canceled': {
+      userId: User['id'];
+      plan: SubscriptionPlan;
+      recurring: SubscriptionRecurring;
+    };
 
-  interface WorkspaceEvents {
-    subscription: {
-      activated: Payload<{
-        workspaceId: Workspace['id'];
-        plan: SubscriptionPlan;
-        recurring: SubscriptionRecurring;
-        quantity: number;
-      }>;
-      canceled: Payload<{
-        workspaceId: Workspace['id'];
-        plan: SubscriptionPlan;
-        recurring: SubscriptionRecurring;
-      }>;
+    'workspace.subscription.activated': {
+      workspaceId: Workspace['id'];
+      plan: SubscriptionPlan;
+      recurring: SubscriptionRecurring;
+      quantity: number;
     };
+    'workspace.subscription.canceled': {
+      workspaceId: Workspace['id'];
+      plan: SubscriptionPlan;
+      recurring: SubscriptionRecurring;
+    };
+    'workspace.subscription.notify': {
+      workspaceId: Workspace['id'];
+      expirationDate: Date;
+      deletionDate: Date;
+    };
+
+    'stripe.invoice.created': Stripe.InvoiceCreatedEvent;
+    'stripe.invoice.updated': Stripe.InvoiceUpdatedEvent;
+    'stripe.invoice.finalization_failed': Stripe.InvoiceFinalizationFailedEvent;
+    'stripe.invoice.payment_failed': Stripe.InvoicePaymentFailedEvent;
+    'stripe.invoice.paid': Stripe.InvoicePaidEvent;
+    'stripe.customer.subscription.created': Stripe.CustomerSubscriptionCreatedEvent;
+    'stripe.customer.subscription.updated': Stripe.CustomerSubscriptionUpdatedEvent;
+    'stripe.customer.subscription.deleted': Stripe.CustomerSubscriptionDeletedEvent;
   }
 }
 
@@ -92,7 +99,9 @@ export interface KnownStripeInvoice {
   /**
    * User in AFFiNE system.
    */
-  userId: string;
+  userId?: string;
+
+  userEmail: string;
 
   /**
    * The lookup key of the price that the invoice is for.
@@ -114,7 +123,9 @@ export interface KnownStripeSubscription {
   /**
    * User in AFFiNE system.
    */
-  userId: string;
+  userId?: string;
+
+  userEmail: string;
 
   /**
    * The lookup key of the price that the invoice is for.
@@ -204,11 +215,21 @@ export const DEFAULT_PRICES = new Map([
   // team
   [
     `${SubscriptionPlan.Team}_${SubscriptionRecurring.Monthly}`,
-    { product: 'AFFiNE Team(per seat)', price: 1500 },
+    { product: 'AFFiNE Team(per seat)', price: 1200 },
   ],
   [
     `${SubscriptionPlan.Team}_${SubscriptionRecurring.Yearly}`,
-    { product: 'AFFiNE Team(per seat)', price: 14400 },
+    { product: 'AFFiNE Team(per seat)', price: 12000 },
+  ],
+
+  // selfhost team
+  [
+    `${SubscriptionPlan.SelfHostedTeam}_${SubscriptionRecurring.Monthly}`,
+    { product: 'AFFiNE Self-hosted Team(per seat)', price: 1200 },
+  ],
+  [
+    `${SubscriptionPlan.SelfHostedTeam}_${SubscriptionRecurring.Yearly}`,
+    { product: 'AFFiNE Self-hosted Team(per seat)', price: 12000 },
   ],
 ]);
 

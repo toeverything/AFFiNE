@@ -1,4 +1,4 @@
-/* eslint-disable unicorn/prefer-dom-node-dataset */
+/* oxlint-disable unicorn/prefer-dom-node-dataset */
 import fs from 'node:fs';
 
 import { test } from '@affine-test/kit/playwright';
@@ -723,9 +723,8 @@ test('caption should be visible and different styles were applied if image zoome
   await page.keyboard.press('Enter');
   await importImage(page, 'large-image.png');
   await page.locator('affine-page-image').first().hover();
-  await page
-    .locator('.affine-image-toolbar-container .image-toolbar-button.caption')
-    .click();
+  const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+  await toolbar.getByLabel('Caption').click();
   await page.getByPlaceholder('Write a caption').fill(sampleCaption);
   await page.locator('affine-page-image').first().dblclick();
   const locator = page.getByTestId('image-preview-modal');

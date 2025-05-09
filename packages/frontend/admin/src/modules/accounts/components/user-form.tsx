@@ -4,11 +4,12 @@ import { Label } from '@affine/admin/components/ui/label';
 import { Separator } from '@affine/admin/components/ui/separator';
 import { Switch } from '@affine/admin/components/ui/switch';
 import type { FeatureType } from '@affine/graphql';
-import { CheckIcon, ChevronRightIcon, XIcon } from 'lucide-react';
+import { ChevronRightIcon } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useServerConfig } from '../../common';
+import { RightPanelHeader } from '../../header';
 import type { UserInput, UserType } from '../schema';
 import { useCreateUser, useUpdateUser } from './use-user-management';
 
@@ -92,36 +93,20 @@ function UserForm({
 
   return (
     <div className="flex flex-col h-full gap-1">
-      <div className=" flex justify-between items-center py-[10px] px-6">
-        <Button
-          type="button"
-          size="icon"
-          className="w-7 h-7"
-          variant="ghost"
-          onClick={handleClose}
-        >
-          <XIcon size={20} />
-        </Button>
-        <span className="text-base font-medium">{title}</span>
-        <Button
-          type="submit"
-          size="icon"
-          className="w-7 h-7"
-          variant="ghost"
-          onClick={handleConfirm}
-          disabled={!canSave}
-        >
-          <CheckIcon size={20} />
-        </Button>
-      </div>
-      <Separator />
-      <div className="p-4 flex-grow overflow-y-auto space-y-[10px]">
-        <div className="flex flex-col rounded-md border py-4 gap-4">
+      <RightPanelHeader
+        title={title}
+        handleClose={handleClose}
+        handleConfirm={handleConfirm}
+        canSave={canSave}
+      />
+      <div className="p-4 flex-grow overflow-y-auto space-y-[8px]">
+        <div className="flex flex-col rounded-md border">
           <InputItem
-            label="Name"
+            label="User name"
             field="name"
             value={changes.name}
             onChange={setField}
+            placeholder="Enter user name"
           />
           <Separator />
           <InputItem
@@ -129,6 +114,7 @@ function UserForm({
             field="email"
             value={changes.email}
             onChange={setField}
+            placeholder="Enter email address"
           />
         </div>
 
@@ -169,8 +155,10 @@ function ToggleItem({
   );
 
   return (
-    <Label className="flex items-center justify-between px-4 py-3">
-      <span>{name}</span>
+    <Label className="flex items-center justify-between p-3 text-[15px] gap-2 font-medium leading-6 overflow-hidden">
+      <span className="overflow-hidden text-ellipsis" title={name}>
+        {name}
+      </span>
       <Switch checked={checked} onCheckedChange={onToggle} />
     </Label>
   );
@@ -181,11 +169,13 @@ function InputItem({
   field,
   value,
   onChange,
+  placeholder,
 }: {
   label: string;
   field: keyof UserInput;
   value?: string;
   onChange: (field: keyof UserInput, value: string) => void;
+  placeholder?: string;
 }) {
   const onValueChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -195,13 +185,16 @@ function InputItem({
   );
 
   return (
-    <div className="px-5 space-y-3">
-      <Label className="text-sm font-medium">{label}</Label>
+    <div className="p-3">
+      <Label className="text-[15px] leading-6 font-medium mb-1.5">
+        {label}
+      </Label>
       <Input
         type="text"
-        className="py-2 px-3 text-base font-normal"
+        className="py-2 px-3 text-[15px] font-normal h-9"
         value={value}
         onChange={onValueChange}
+        placeholder={placeholder}
       />
     </div>
   );

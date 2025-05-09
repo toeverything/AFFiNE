@@ -39,7 +39,7 @@ function getBlockViewType(query: Query, block: Block): BlockViewType {
     (acc, key) => {
       return {
         ...acc,
-        [key]: block.model[key as keyof BlockModel],
+        [key]: block.model.props[key as keyof BlockModel['props']],
       };
     },
     {} as Record<string, unknown>
@@ -70,7 +70,7 @@ function getBlockViewType(query: Query, block: Block): BlockViewType {
 }
 
 function setAncestorsToDisplayIfHidden(mode: QueryMode, block: Block) {
-  const doc = block.model.doc;
+  const doc = block.model.store;
   let parent = doc.getParent(block.model);
   while (parent) {
     const parentBlock = doc.getBlock(parent.id);

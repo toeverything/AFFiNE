@@ -1,4 +1,11 @@
-import { BlockModel, defineBlockSchema, type Text } from '@blocksuite/store';
+import {
+  BlockModel,
+  BlockSchemaExtension,
+  defineBlockSchema,
+  type Text,
+} from '@blocksuite/store';
+
+import type { BlockMeta } from '../../utils/types';
 
 export type ParagraphType =
   | 'text'
@@ -14,7 +21,7 @@ export type ParagraphProps = {
   type: ParagraphType;
   text: Text;
   collapsed: boolean;
-};
+} & BlockMeta;
 
 export const ParagraphBlockSchema = defineBlockSchema({
   flavour: 'affine:paragraph',
@@ -22,6 +29,10 @@ export const ParagraphBlockSchema = defineBlockSchema({
     type: 'text',
     text: internal.Text(),
     collapsed: false,
+    'meta:createdAt': undefined,
+    'meta:createdBy': undefined,
+    'meta:updatedAt': undefined,
+    'meta:updatedBy': undefined,
   }),
   metadata: {
     version: 1,
@@ -32,25 +43,18 @@ export const ParagraphBlockSchema = defineBlockSchema({
       'affine:paragraph',
       'affine:list',
       'affine:edgeless-text',
+      'affine:callout',
+      'affine:transcription',
     ],
   },
   toModel: () => new ParagraphBlockModel(),
 });
 
+export const ParagraphBlockSchemaExtension =
+  BlockSchemaExtension(ParagraphBlockSchema);
+
 export class ParagraphBlockModel extends BlockModel<ParagraphProps> {
-  override flavour!: 'affine:paragraph';
-
-  override text!: Text;
-
   override isEmpty(): boolean {
-    return this.text$.value.length === 0 && this.children.length === 0;
-  }
-}
-
-declare global {
-  namespace BlockSuite {
-    interface BlockModels {
-      'affine:paragraph': ParagraphBlockModel;
-    }
+    return this.props.text$.value.length === 0 && this.children.length === 0;
   }
 }

@@ -7,14 +7,15 @@ import { IPCMode } from '@sentry/electron/main';
 import { app } from 'electron';
 
 import { createApplicationMenu } from './application-menu/create';
-import { buildType, overrideSession } from './config';
+import { buildType, isDev, overrideSession } from './config';
 import { persistentConfig } from './config-storage/persist';
 import { setupDeepLink } from './deep-link';
 import { registerEvents } from './events';
 import { registerHandlers } from './handlers';
 import { logger } from './logger';
 import { registerProtocol } from './protocol';
-import { isOnline } from './ui';
+import { setupRecordingFeature } from './recording/feature';
+import { setupTrayState } from './tray';
 import { registerUpdater } from './updater';
 import { launch } from './windows-manager/launcher';
 import { launchStage } from './windows-manager/stage';
@@ -22,6 +23,12 @@ import { launchStage } from './windows-manager/stage';
 app.enableSandbox();
 
 app.commandLine.appendSwitch('enable-features', 'CSSTextAutoSpace');
+if (isDev) {
+  // In electron the dev server will be resolved to 0.0.0.0, but it
+  // might be blocked by electron.
+  // See https://github.com/webpack/webpack-dev-server/pull/384
+  app.commandLine.appendSwitch('host-rules', 'MAP 0.0.0.0 127.0.0.1');
+}
 // https://github.com/electron/electron/issues/43556
 app.commandLine.appendSwitch('disable-features', 'PlzDedicatedWorker');
 
@@ -33,7 +40,7 @@ if (overrideSession) {
   app.setPath('sessionData', userDataPath);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// oxlint-disable-next-line @typescript-eslint/no-var-requires
 if (require('electron-squirrel-startup')) app.quit();
 
 if (process.env.SKIP_ONBOARDING) {
@@ -66,7 +73,9 @@ app.on('window-all-closed', () => {
  * @see https://www.electronjs.org/docs/latest/api/app#event-activate-macos Event: 'activate'
  */
 app.on('activate', () => {
-  launch().catch(e => console.error('Failed launch:', e));
+  if (app.isReady()) {
+    launch().catch(e => console.error('Failed launch:', e));
+  }
 });
 
 setupDeepLink(app);
@@ -82,6 +91,8 @@ app
   .then(launch)
   .then(createApplicationMenu)
   .then(registerUpdater)
+  .then(setupRecordingFeature)
+  .then(setupTrayState)
   .catch(e => console.error('Failed create window:', e));
 
 if (process.env.SENTRY_RELEASE) {
@@ -93,8 +104,10 @@ if (process.env.SENTRY_RELEASE) {
     transportOptions: {
       maxAgeDays: 30,
       maxQueueSize: 100,
-      shouldStore: () => !isOnline,
-      shouldSend: () => isOnline,
     },
+  });
+  Sentry.setTags({
+    distribution: 'electron',
+    appVersion: app.getVersion(),
   });
 }

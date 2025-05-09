@@ -2,9 +2,10 @@ import { Button } from '@affine/admin/components/ui/button';
 import { Input } from '@affine/admin/components/ui/input';
 import { useQuery } from '@affine/admin/use-query';
 import { getUserByEmailQuery } from '@affine/graphql';
-import { PlusIcon } from 'lucide-react';
-import type { SetStateAction } from 'react';
+import { ExportIcon, ImportIcon, PlusIcon } from '@blocksuite/icons/rc';
+import type { Table } from '@tanstack/react-table';
 import {
+  type SetStateAction,
   startTransition,
   useCallback,
   useEffect,
@@ -12,13 +13,18 @@ import {
   useState,
 } from 'react';
 
-import { useRightPanel } from '../../layout';
+import { useRightPanel } from '../../panel/context';
+import type { UserType } from '../schema';
 import { DiscardChanges } from './discard-changes';
+import { ExportUsersDialog } from './export-users-dialog';
+import { ImportUsersDialog } from './import-users-dialog';
 import { CreateUserForm } from './user-form';
 
 interface DataTableToolbarProps<TData> {
   data: TData[];
   setDataTable: (data: TData[]) => void;
+  selectedUsers: UserType[];
+  table?: Table<TData>;
 }
 
 const useSearch = () => {
@@ -54,24 +60,27 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 
 export function DataTableToolbar<TData>({
   data,
+  selectedUsers,
   setDataTable,
+  table,
 }: DataTableToolbarProps<TData>) {
   const [value, setValue] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const debouncedValue = useDebouncedValue(value, 1000);
-  const { setRightPanelContent, openPanel, closePanel, isOpen } =
-    useRightPanel();
+  const { setPanelContent, openPanel, closePanel, isOpen } = useRightPanel();
   const { result, query } = useSearch();
 
   const handleConfirm = useCallback(() => {
-    setRightPanelContent(<CreateUserForm onComplete={closePanel} />);
+    setPanelContent(<CreateUserForm onComplete={closePanel} />);
     if (dialogOpen) {
       setDialogOpen(false);
     }
     if (!isOpen) {
       openPanel();
     }
-  }, [setRightPanelContent, closePanel, dialogOpen, isOpen, openPanel]);
+  }, [setPanelContent, closePanel, dialogOpen, isOpen, openPanel]);
 
   useEffect(() => {
     query(debouncedValue);
@@ -107,22 +116,80 @@ export function DataTableToolbar<TData>({
     return handleConfirm();
   }, [handleConfirm, isOpen]);
 
+  const handleExportUsers = useCallback(() => {
+    if (!table) return;
+
+    const selectedRows = table.getFilteredSelectedRowModel().rows;
+
+    if (selectedRows.length === 0) {
+      alert('Please select at least one user to export');
+      return;
+    }
+
+    setExportDialogOpen(true);
+  }, [table]);
+
+  const handleImportUsers = useCallback(() => {
+    setImportDialogOpen(true);
+  }, []);
+
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex flex-1 items-center space-x-2">
-        <Input
-          placeholder="Search Email"
-          value={value}
-          onChange={onValueChange}
-          className="h-10 w-full mr-[10px]"
+    <div className="flex items-center justify-between gap-y-2 gap-x-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-2 lg:px-3"
+          onClick={handleImportUsers}
+        >
+          <ImportIcon fontSize={20} />
+          <span className="ml-2 hidden md:inline-block">Import</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-2 lg:px-3"
+          onClick={handleExportUsers}
+          disabled={
+            !table || table.getFilteredSelectedRowModel().rows.length === 0
+          }
+        >
+          <ExportIcon fontSize={20} />
+          <span className="ml-2 hidden md:inline-block">Export</span>
+        </Button>
+
+        {table && (
+          <ExportUsersDialog
+            users={selectedUsers}
+            open={exportDialogOpen}
+            onOpenChange={setExportDialogOpen}
+          />
+        )}
+
+        <ImportUsersDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
         />
       </div>
-      <Button
-        className="px-4 py-2 space-x-[10px] text-sm font-medium"
-        onClick={handleOpenConfirm}
-      >
-        <PlusIcon size={20} /> <span>Add User</span>
-      </Button>
+
+      <div className="flex items-center gap-y-2 flex-wrap justify-end gap-2">
+        <div className="flex">
+          <Input
+            placeholder="Search Email"
+            value={value}
+            onChange={onValueChange}
+            className="h-8 w-[150px] lg:w-[250px]"
+          />
+        </div>
+        <Button
+          className="h-8 px-2 lg:px-3 space-x-[6px] text-sm font-medium"
+          onClick={handleOpenConfirm}
+        >
+          <PlusIcon fontSize={20} /> <span>Add User</span>
+        </Button>
+      </div>
+
       <DiscardChanges
         open={dialogOpen}
         onOpenChange={setDialogOpen}

@@ -1,13 +1,16 @@
-export type NumberFormat =
-  | 'number'
-  | 'numberWithCommas'
-  | 'percent'
-  | 'currencyYen'
-  | 'currencyINR'
-  | 'currencyCNY'
-  | 'currencyUSD'
-  | 'currencyEUR'
-  | 'currencyGBP';
+import zod from 'zod';
+export const NumberFormatSchema = zod.enum([
+  'number',
+  'numberWithCommas',
+  'percent',
+  'currencyYen',
+  'currencyINR',
+  'currencyCNY',
+  'currencyUSD',
+  'currencyEUR',
+  'currencyGBP',
+]);
+export type NumberFormat = zod.infer<typeof NumberFormatSchema>;
 
 const currency = (currency: string): Intl.NumberFormatOptions => ({
   style: 'currency',

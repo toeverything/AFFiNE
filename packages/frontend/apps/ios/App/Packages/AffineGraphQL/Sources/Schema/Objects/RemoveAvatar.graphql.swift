@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let RemoveAvatar = ApolloAPI.Object(
     typename: "RemoveAvatar",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

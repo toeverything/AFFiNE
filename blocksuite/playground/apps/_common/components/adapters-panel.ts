@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
 import '@shoelace-style/shoelace/dist/components/tab-panel/tab-panel.js';
 
-import { ShadowlessElement } from '@blocksuite/block-std';
+import { WithDisposable } from '@blocksuite/affine/global/lit';
 import {
   defaultImageProxyMiddleware,
   docLinkBaseURLMiddlewareBuilder,
@@ -13,10 +13,10 @@ import {
   type PlainTextAdapter,
   PlainTextAdapterFactoryIdentifier,
   titleMiddleware,
-} from '@blocksuite/blocks';
-import { WithDisposable } from '@blocksuite/global/utils';
-import type { AffineEditorContainer } from '@blocksuite/presets';
-import { type DocSnapshot, Transformer } from '@blocksuite/store';
+} from '@blocksuite/affine/shared/adapters';
+import { ShadowlessElement } from '@blocksuite/affine/std';
+import type { DocSnapshot } from '@blocksuite/affine/store';
+import type { TestAffineEditorContainer } from '@blocksuite/integration-test';
 import { effect } from '@preact/signals-core';
 import type SlTabPanel from '@shoelace-style/shoelace/dist/components/tab-panel/tab-panel.js';
 import { css, html, type PropertyValues } from 'lit';
@@ -101,24 +101,15 @@ export class AdaptersPanel extends WithDisposable(ShadowlessElement) {
   }
 
   private _createJob() {
-    return new Transformer({
-      schema: this.doc.schema,
-      blobCRUD: this.doc.blobSync,
-      docCRUD: {
-        create: (id: string) => this.doc.workspace.createDoc({ id }),
-        get: (id: string) => this.doc.workspace.getDoc(id),
-        delete: (id: string) => this.doc.workspace.removeDoc(id),
-      },
-      middlewares: [
-        docLinkBaseURLMiddlewareBuilder(
-          'https://example.com',
-          this.doc.workspace.id
-        ).get(),
-        titleMiddleware(this.doc.workspace.meta.docMetas),
-        embedSyncedDocMiddleware('content'),
-        defaultImageProxyMiddleware,
-      ],
-    });
+    return this.doc.getTransformer([
+      docLinkBaseURLMiddlewareBuilder(
+        'https://example.com',
+        this.doc.workspace.id
+      ).get(),
+      titleMiddleware(this.doc.workspace.meta.docMetas),
+      embedSyncedDocMiddleware('content'),
+      defaultImageProxyMiddleware,
+    ]);
   }
 
   private _getDocSnapshot() {
@@ -284,7 +275,7 @@ export class AdaptersPanel extends WithDisposable(ShadowlessElement) {
   private accessor _plainTextContent = '';
 
   @property({ attribute: false })
-  accessor editor!: AffineEditorContainer;
+  accessor editor!: TestAffineEditorContainer;
 }
 
 declare global {

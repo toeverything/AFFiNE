@@ -1,5 +1,5 @@
-import type { BlockComponent, BlockStdScope } from '@blocksuite/block-std';
-import type { DisposableClass } from '@blocksuite/global/utils';
+import type { DisposableClass } from '@blocksuite/global/lit';
+import type { BlockComponent, BlockStdScope } from '@blocksuite/std';
 import type { LitElement, TemplateResult } from 'lit';
 
 export type PeekableClass = { std: BlockStdScope } & DisposableClass &

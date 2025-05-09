@@ -1,6 +1,6 @@
 import { setTimeout } from 'node:timers/promises';
 
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import fs from 'fs-extra';
 
 export async function waitForLogMessage(
@@ -24,11 +24,9 @@ export async function removeWithRetry(
   for (let i = 0; i < maxRetries; i++) {
     try {
       await fs.remove(filePath);
-      console.log(`File ${filePath} successfully deleted.`);
       return true;
     } catch (err: any) {
       if (err.code === 'EBUSY' || err.code === 'EPERM') {
-        console.log(`File ${filePath} is busy or locked, retrying...`);
         await setTimeout(delay);
       } else {
         console.error(`Failed to delete file ${filePath}:`, err);
@@ -37,4 +35,38 @@ export async function removeWithRetry(
   }
   // Add a return statement here to ensure that a value is always returned
   return false;
+}
+
+export async function isContainedInBoundingBox(
+  container: Locator,
+  element: Locator,
+  includeDescendant = false
+) {
+  const containerBox = await container.boundingBox();
+  if (!containerBox) {
+    throw new Error('Container bounding box not found');
+  }
+  const { x: cx, y: cy, width: cw, height: ch } = containerBox;
+
+  const inside = async (el: Locator): Promise<boolean> => {
+    const elBox = await el.boundingBox();
+    if (!elBox) {
+      throw new Error('Element bounding box not found');
+    }
+    const { x, y, width, height } = elBox;
+
+    return x >= cx && x + width <= cx + cw && y >= cy && y + height <= cy + ch;
+  };
+
+  let isInside = await inside(element);
+  if (!isInside) return false;
+
+  if (includeDescendant) {
+    const children = await element.locator('*:visible').all();
+    for (const child of children) {
+      isInside = await inside(child);
+      if (!isInside) return false;
+    }
+  }
+  return true;
 }

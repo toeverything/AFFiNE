@@ -1,5 +1,4 @@
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import { assertExists } from '@blocksuite/global/utils';
 import type { ReactiveController } from 'lit';
 
 import type {
@@ -9,7 +8,7 @@ import type {
   KanbanGroupSelection,
   KanbanViewSelection,
   KanbanViewSelectionWithType,
-} from '../../types.js';
+} from '../../selection';
 import { KanbanCard } from '../card.js';
 import { KanbanCell } from '../cell.js';
 import type { KanbanGroup } from '../group.js';
@@ -97,13 +96,11 @@ export class KanbanSelectionController implements ReactiveController {
     const cell = container?.cell;
 
     if (selection.isEditing) {
-      requestAnimationFrame(() => {
-        cell?.onExitEditMode();
-      });
+      cell?.beforeExitEditingMode();
       if (cell?.blurCell()) {
         container.blur();
       }
-      container.editing = false;
+      container.isEditing$.value = false;
     } else {
       container.blur();
     }
@@ -119,7 +116,7 @@ export class KanbanSelectionController implements ReactiveController {
       return;
     }
     if (selection.selectionType === 'card') {
-      this.host.props.view.rowDelete(selection.cards.map(v => v.cardId));
+      this.host.props.view.rowsDelete(selection.cards.map(v => v.cardId));
       this.selection = undefined;
     }
   }
@@ -143,11 +140,13 @@ export class KanbanSelectionController implements ReactiveController {
     container.isFocus = true;
     const cell = container?.cell;
     if (selection.isEditing) {
-      cell?.onEnterEditMode();
       if (cell?.focusCell()) {
         container.focus();
       }
-      container.editing = true;
+      container.isEditing$.value = true;
+      requestAnimationFrame(() => {
+        cell?.afterEnterEditingMode();
+      });
     } else {
       container.focus();
     }
@@ -156,12 +155,13 @@ export class KanbanSelectionController implements ReactiveController {
   focusFirstCell() {
     const group = this.host.groupManager?.groupsDataList$.value?.[0];
     const card = group?.rows[0];
-    const columnId = card && this.host.props.view.getHeaderTitle(card)?.id;
+    const columnId =
+      card && this.host.props.view.getHeaderTitle(card.rowId)?.id;
     if (group && card && columnId) {
       this.selection = {
         selectionType: 'cell',
         groupKey: group.key,
-        cardId: card,
+        cardId: card.rowId,
         columnId,
         isEditing: false,
       };
@@ -611,7 +611,7 @@ function getNextGroupFocusElement(
     selection.selectionType === 'cell'
       ? getFocusCell(viewElement, selection)
       : getSelectedCards(viewElement, selection)[0];
-  assertExists(element);
+  if (!element) return;
   const rect = element.getBoundingClientRect();
   const nextCards = Array.from(
     nextGroup.querySelectorAll('affine-data-view-kanban-card')

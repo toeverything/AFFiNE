@@ -8,6 +8,7 @@ import { GlobalStateService } from '../storage';
 import { AIButtonProvider } from './provider/ai-button';
 import { AIButtonService } from './services/ai-button';
 import { AINetworkSearchService } from './services/network-search';
+import { AIReasoningService } from './services/reasoning';
 
 export const configureAIButtonModule = (framework: Framework) => {
   framework.service(AIButtonService, container => {
@@ -20,4 +21,8 @@ export function configureAINetworkSearchModule(framework: Framework) {
     GlobalStateService,
     FeatureFlagService,
   ]);
+}
+
+export function configureAIReasoningModule(framework: Framework) {
+  framework.service(AIReasoningService, [GlobalStateService]);
 }

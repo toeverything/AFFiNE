@@ -30,7 +30,7 @@ test('doc', async () => {
 
   const frontend1 = new DocFrontend(docStorage, DocSyncImpl.dummy);
   frontend1.start();
-  frontend1.addDoc(doc1);
+  frontend1.connectDoc(doc1);
   await vitest.waitFor(async () => {
     const doc = await docStorage.getDoc('test-doc');
     expectYjsEqual(doc!.bin, {
@@ -45,7 +45,7 @@ test('doc', async () => {
   });
   const frontend2 = new DocFrontend(docStorage, DocSyncImpl.dummy);
   frontend2.start();
-  frontend2.addDoc(doc2);
+  frontend2.connectDoc(doc2);
 
   await vitest.waitFor(async () => {
     expectYjsEqual(doc2, {
@@ -94,8 +94,8 @@ test('awareness', async () => {
       },
     });
     const frontend = new AwarenessFrontend(sync);
-    frontend.connect(awarenessA);
-    frontend.connect(awarenessB);
+    frontend.connectAwareness(awarenessA);
+    frontend.connectAwareness(awarenessB);
   }
   {
     const sync = new AwarenessSyncImpl({
@@ -105,7 +105,7 @@ test('awareness', async () => {
       },
     });
     const frontend = new AwarenessFrontend(sync);
-    frontend.connect(awarenessC);
+    frontend.connectAwareness(awarenessC);
   }
 
   awarenessA.setLocalState({

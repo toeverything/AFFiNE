@@ -1,11 +1,24 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import type { CapacitorConfig } from '@capacitor/cli';
 import { KeyboardResize } from '@capacitor/keyboard';
 
-const config: CapacitorConfig = {
+const packageJson = JSON.parse(
+  readFileSync(resolve(__dirname, './package.json'), 'utf-8')
+);
+
+interface AppConfig {
+  affineVersion: string;
+}
+
+const config: CapacitorConfig & AppConfig = {
   appId: 'app.affine.pro',
   appName: 'AFFiNE',
   webDir: 'dist',
+  affineVersion: packageJson.version,
   ios: {
+    scheme: 'AFFiNE',
     path: '.',
     webContentsDebuggingEnabled: true,
   },
@@ -14,13 +27,13 @@ const config: CapacitorConfig = {
   },
   plugins: {
     CapacitorCookies: {
-      enabled: true,
+      enabled: false,
     },
     CapacitorHttp: {
-      enabled: true,
+      enabled: false,
     },
     Keyboard: {
-      resize: KeyboardResize.Native,
+      resize: KeyboardResize.None,
     },
   },
 };

@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let InviteLink = ApolloAPI.Object(
     typename: "InviteLink",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

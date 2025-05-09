@@ -3,12 +3,8 @@ import type {
   EventTraceFn,
 } from '@blocksuite/affine-shared/services';
 import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
-import type {
-  Clipboard,
-  EventName,
-  UIEventHandler,
-} from '@blocksuite/block-std';
-import type { Disposable } from '@blocksuite/global/utils';
+import type { Disposable } from '@blocksuite/global/disposable';
+import type { Clipboard, EventName, UIEventHandler } from '@blocksuite/std';
 import type { ReadonlySignal } from '@preact/signals-core';
 
 import type { DataSource } from '../common/index.js';

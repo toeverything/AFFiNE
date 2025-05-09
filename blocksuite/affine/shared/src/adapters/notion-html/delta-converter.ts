@@ -2,9 +2,8 @@ import {
   createIdentifier,
   type ServiceIdentifier,
 } from '@blocksuite/global/di';
-import { isEqual } from '@blocksuite/global/utils';
-import type { DeltaInsert } from '@blocksuite/inline';
-import type { ExtensionType } from '@blocksuite/store';
+import type { DeltaInsert, ExtensionType } from '@blocksuite/store';
+import isEqual from 'lodash-es/isEqual';
 
 import type { AffineTextAttributes } from '../../types/index.js';
 import {
@@ -12,7 +11,7 @@ import {
   DeltaASTConverter,
   type DeltaASTConverterOptions,
   type InlineDeltaMatcher,
-} from '../types/adapter.js';
+} from '../types/delta-converter.js';
 import type { HtmlAST, InlineHtmlAST } from '../types/hast.js';
 
 export type InlineDeltaToNotionHtmlAdapterMatcher =

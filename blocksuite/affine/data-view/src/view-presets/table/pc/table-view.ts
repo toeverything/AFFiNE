@@ -4,7 +4,8 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { AddCursorIcon } from '@blocksuite/icons/lit';
-import { css } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, unsafeCSS } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
@@ -14,8 +15,8 @@ import type { DataViewInstance } from '../../../core/index.js';
 import { renderUniLit } from '../../../core/utils/uni-component/uni-component.js';
 import { DataViewBase } from '../../../core/view/data-view-base.js';
 import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
+import type { TableViewSelectionWithType } from '../selection';
 import type { TableSingleView } from '../table-view-manager.js';
-import type { TableViewSelectionWithType } from '../types.js';
 import { TableClipboardController } from './controller/clipboard.js';
 import { TableDragController } from './controller/drag.js';
 import { TableHotkeysController } from './controller/hotkeys.js';
@@ -119,7 +120,7 @@ const styles = css`
   .cell-divider {
     width: 1px;
     height: 100%;
-    background-color: var(--affine-border-color);
+    background-color: ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
   }
 
   .data-view-table-left-bar {
@@ -236,12 +237,8 @@ export class DataViewTable extends DataViewBase<
       moveTo: (id, evt) => {
         const result = this.dragController.getInsertPosition(evt);
         if (result) {
-          this.props.view.rowMove(
-            id,
-            result.position,
-            undefined,
-            result.groupKey
-          );
+          const row = this.props.view.rowGetOrCreate(id);
+          row.move(result.position, undefined, result.groupKey);
         }
       },
       getSelection: () => {

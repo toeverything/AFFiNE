@@ -1,6 +1,18 @@
 import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { style } from '@vanilla-extract/css';
+import { keyframes, style } from '@vanilla-extract/css';
+
+const tooltipScaleIn = keyframes({
+  from: {
+    opacity: 0,
+    transform: 'scale(0.85)',
+  },
+  to: {
+    opacity: 1,
+    transform: 'scale(1)',
+  },
+});
+
 export const tooltipContent = style({
   backgroundColor: cssVarV2('tooltips/background'),
   color: cssVarV2('tooltips/foreground'),
@@ -9,6 +21,9 @@ export const tooltipContent = style({
   lineHeight: '22px',
   borderRadius: '4px',
   maxWidth: '280px',
+  wordBreak: 'break-word',
+  transformOrigin: 'var(--radix-tooltip-content-transform-origin)',
+  animation: `${tooltipScaleIn} 0.2s cubic-bezier(0.2, 1, 0.3, 1)`,
 });
 
 export const withShortcut = style({

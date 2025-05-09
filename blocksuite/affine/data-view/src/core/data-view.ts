@@ -2,10 +2,10 @@ import type {
   DatabaseAllEvents,
   EventTraceFn,
 } from '@blocksuite/affine-shared/services';
-import { ShadowlessElement } from '@blocksuite/block-std';
 import { IS_MOBILE } from '@blocksuite/global/env';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
-import { computed, type ReadonlySignal } from '@preact/signals-core';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 import { css, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -63,9 +63,7 @@ export class DataViewRenderer extends SignalWatcher(
     }
   `;
 
-  private readonly _view = createRef<{
-    expose: DataViewInstance;
-  }>();
+  private readonly _view = signal<DataViewInstance>();
 
   @property({ attribute: false })
   accessor config!: DataViewRendererConfig;
@@ -121,7 +119,7 @@ export class DataViewRenderer extends SignalWatcher(
   });
 
   focusFirstCell = () => {
-    this.view?.expose.focusFirstCell();
+    this.view?.focusFirstCell();
   };
 
   openDetailPanel = (ops: {
@@ -224,7 +222,7 @@ export class DataView {
   private readonly _ref = createRef<DataViewRenderer>();
 
   get expose() {
-    return this._ref.value?.view?.expose;
+    return this._ref.value?.view;
   }
 
   render(props: DataViewRendererConfig) {

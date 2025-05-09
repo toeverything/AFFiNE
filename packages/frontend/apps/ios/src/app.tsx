@@ -1,3 +1,4 @@
+import { getStoreManager } from '@affine/core/blocksuite/manager/migrating-store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
 import { configureMobileModules } from '@affine/core/mobile/modules';
@@ -8,53 +9,68 @@ import { router } from '@affine/core/mobile/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { AIButtonProvider } from '@affine/core/modules/ai-button';
 import {
+  AuthProvider,
   AuthService,
   DefaultServerService,
+  ServerScope,
+  ServerService,
   ServersService,
   ValidatorProvider,
-  WebSocketAuthProvider,
 } from '@affine/core/modules/cloud';
 import { DocsService } from '@affine/core/modules/doc';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
-import { configureLocalStorageStateStorageImpls } from '@affine/core/modules/storage';
+import {
+  configureLocalStorageStateStorageImpls,
+  NbstoreProvider,
+} from '@affine/core/modules/storage';
 import { PopupWindowProvider } from '@affine/core/modules/url';
 import { ClientSchemeProvider } from '@affine/core/modules/url/providers/client-schema';
-import { configureIndexedDBUserspaceStorageProvider } from '@affine/core/modules/userspace';
-import { configureBrowserWorkbenchModule } from '@affine/core/modules/workbench';
-import { WorkspacesService } from '@affine/core/modules/workspace';
 import {
-  configureBrowserWorkspaceFlavours,
-  configureIndexedDBWorkspaceEngineStorageProvider,
-} from '@affine/core/modules/workspace-engine';
+  configureBrowserWorkbenchModule,
+  WorkbenchService,
+} from '@affine/core/modules/workbench';
+import {
+  getAFFiNEWorkspaceSchema,
+  WorkspacesService,
+} from '@affine/core/modules/workspace';
+import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
+import { getWorkerUrl } from '@affine/env/worker';
 import { I18n } from '@affine/i18n';
-import {
-  defaultBlockMarkdownAdapterMatchers,
-  docLinkBaseURLMiddleware,
-  InlineDeltaToMarkdownAdapterExtensions,
-  MarkdownAdapter,
-  MarkdownInlineToDeltaAdapterExtensions,
-  titleMiddleware,
-} from '@blocksuite/affine/blocks';
+import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { Container } from '@blocksuite/affine/global/di';
-import { Transformer } from '@blocksuite/affine/store';
+import {
+  docLinkBaseURLMiddleware,
+  MarkdownAdapter,
+  titleMiddleware,
+} from '@blocksuite/affine/shared/adapters';
+import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Haptics } from '@capacitor/haptics';
 import { Keyboard, KeyboardStyle } from '@capacitor/keyboard';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
+import { OpClient } from '@toeverything/infra/op';
+import { AsyncCall } from 'async-call-rpc';
+import { AppTrackingTransparency } from 'capacitor-plugin-app-tracking-transparency';
 import { useTheme } from 'next-themes';
 import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 import { BlocksuiteMenuConfigProvider } from './bs-menu-config';
-import { configureFetchProvider } from './fetch';
 import { ModalConfigProvider } from './modal-config';
-import { Cookie } from './plugins/cookie';
+import { Auth } from './plugins/auth';
 import { Hashcash } from './plugins/hashcash';
 import { Intelligents } from './plugins/intelligents';
+import { NbStoreNativeDBApis } from './plugins/nbstore';
+import { writeEndpointToken } from './proxy';
 import { enableNavigationGesture$ } from './web-navigation-control';
+
+const storeManagerClient = createStoreManagerClient();
+window.addEventListener('beforeunload', () => {
+  storeManagerClient.dispose();
+});
 
 const future = {
   v7_startTransition: true,
@@ -65,9 +81,18 @@ configureCommonModules(framework);
 configureBrowserWorkbenchModule(framework);
 configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
-configureIndexedDBWorkspaceEngineStorageProvider(framework);
-configureIndexedDBUserspaceStorageProvider(framework);
 configureMobileModules(framework);
+framework.impl(NbstoreProvider, {
+  openStore(key, options) {
+    const { store, dispose } = storeManagerClient.open(key, options);
+    return {
+      store,
+      dispose: () => {
+        dispose();
+      },
+    };
+  },
+});
 framework.impl(PopupWindowProvider, {
   open: (url: string) => {
     Browser.open({
@@ -81,18 +106,6 @@ framework.impl(ClientSchemeProvider, {
     return 'affine';
   },
 });
-configureFetchProvider(framework);
-framework.impl(WebSocketAuthProvider, {
-  getAuthToken: async url => {
-    const cookies = await Cookie.getCookies({
-      url,
-    });
-    return {
-      userId: cookies['affine_user_id'],
-      token: cookies['affine_session'],
-    };
-  },
-});
 framework.impl(ValidatorProvider, {
   async validate(_challenge, resource) {
     const res = await Hashcash.hash({ challenge: resource });
@@ -100,15 +113,40 @@ framework.impl(ValidatorProvider, {
   },
 });
 framework.impl(VirtualKeyboardProvider, {
-  addEventListener: (event, callback) => {
-    Keyboard.addListener(event as any, callback as any).catch(e => {
-      console.error(e);
-    });
-  },
-  removeAllListeners: () => {
-    Keyboard.removeAllListeners().catch(e => {
-      console.error(e);
-    });
+  // We dose not provide show and hide because:
+  // - Keyboard.show() is not implemented
+  // - Keyboard.hide() will blur the current editor
+  onChange: callback => {
+    let disposeRef = {
+      dispose: () => {},
+    };
+
+    Promise.all([
+      Keyboard.addListener('keyboardDidShow', info => {
+        callback({
+          visible: true,
+          height: info.keyboardHeight,
+        });
+      }),
+      Keyboard.addListener('keyboardWillHide', () => {
+        callback({
+          visible: false,
+          height: 0,
+        });
+      }),
+    ])
+      .then(handlers => {
+        disposeRef.dispose = () => {
+          Promise.all(handlers.map(handler => handler.remove())).catch(
+            console.error
+          );
+        };
+      })
+      .catch(console.error);
+
+    return () => {
+      disposeRef.dispose();
+    };
   },
 });
 framework.impl(NavigationGestureProvider, {
@@ -131,6 +169,43 @@ framework.impl(AIButtonProvider, {
   dismissAIButton: () => {
     return Intelligents.dismissIntelligentsButton();
   },
+});
+framework.scope(ServerScope).override(AuthProvider, resolver => {
+  const serverService = resolver.get(ServerService);
+  const endpoint = serverService.server.baseUrl;
+  return {
+    async signInMagicLink(email, linkToken, clientNonce) {
+      const { token } = await Auth.signInMagicLink({
+        endpoint,
+        email,
+        token: linkToken,
+        clientNonce,
+      });
+      await writeEndpointToken(endpoint, token);
+    },
+    async signInOauth(code, state, _provider, clientNonce) {
+      const { token } = await Auth.signInOauth({
+        endpoint,
+        code,
+        state,
+        clientNonce,
+      });
+      await writeEndpointToken(endpoint, token);
+      return {};
+    },
+    async signInPassword(credential) {
+      const { token } = await Auth.signInPassword({
+        endpoint,
+        ...credential,
+      });
+      await writeEndpointToken(endpoint, token);
+    },
+    async signOut() {
+      await Auth.signOut({
+        endpoint,
+      });
+    },
+  };
 });
 
 const frameworkProvider = framework.provider();
@@ -181,29 +256,18 @@ const frameworkProvider = framework.provider();
   try {
     const blockSuiteDoc = doc.blockSuiteDoc;
 
-    const transformer = new Transformer({
-      schema: blockSuiteDoc.workspace.schema,
-      blobCRUD: blockSuiteDoc.workspace.blobSync,
-      docCRUD: {
-        create: (id: string) => blockSuiteDoc.workspace.createDoc({ id }),
-        get: (id: string) => blockSuiteDoc.workspace.getDoc(id),
-        delete: (id: string) => blockSuiteDoc.workspace.removeDoc(id),
-      },
-      middlewares: [
-        docLinkBaseURLMiddleware(blockSuiteDoc.workspace.id),
-        titleMiddleware(blockSuiteDoc.workspace.meta.docMetas),
-      ],
-    });
+    const transformer = blockSuiteDoc.getTransformer([
+      docLinkBaseURLMiddleware(blockSuiteDoc.workspace.id),
+      titleMiddleware(blockSuiteDoc.workspace.meta.docMetas),
+    ]);
     const snapshot = transformer.docToSnapshot(blockSuiteDoc);
 
     const container = new Container();
-    [
-      ...MarkdownInlineToDeltaAdapterExtensions,
-      ...defaultBlockMarkdownAdapterMatchers,
-      ...InlineDeltaToMarkdownAdapterExtensions,
-    ].forEach(ext => {
-      ext.setup(container);
-    });
+    getStoreManager()
+      .get('store')
+      .forEach(ext => {
+        ext.setup(container);
+      });
     const provider = container.provider();
 
     const adapter = new MarkdownAdapter(transformer, provider);
@@ -219,6 +283,46 @@ const frameworkProvider = framework.provider();
   } finally {
     disposeDoc();
     disposeWorkspace();
+  }
+};
+(window as any).createNewDocByMarkdownInCurrentWorkspace = async (
+  markdown: string,
+  title: string
+) => {
+  const globalContextService = frameworkProvider.get(GlobalContextService);
+  const currentWorkspaceId =
+    globalContextService.globalContext.workspaceId.get();
+  const workspacesService = frameworkProvider.get(WorkspacesService);
+  const workspaceRef = currentWorkspaceId
+    ? workspacesService.openByWorkspaceId(currentWorkspaceId)
+    : null;
+
+  try {
+    const workspace = workspaceRef?.workspace;
+    if (!workspace) {
+      return;
+    }
+
+    const workbench = workspace.scope.get(WorkbenchService).workbench;
+    await workspace.engine.doc.waitForDocReady(workspace.id); // wait for root doc ready
+    const docId = await MarkdownTransformer.importMarkdownToDoc({
+      collection: workspace.docCollection,
+      schema: getAFFiNEWorkspaceSchema(),
+      markdown,
+      extensions: getStoreManager().get('store'),
+    });
+    const docsService = workspace.scope.get(DocsService);
+    if (docId) {
+      // only support page mode for now
+      await docsService.changeDocTitle(docId, title);
+      docsService.list.setPrimaryMode(docId, 'page');
+      workbench.openDoc(docId);
+      return docId;
+    } else {
+      throw new Error('Failed to import doc');
+    }
+  } finally {
+    workspaceRef?.dispose();
   }
 };
 
@@ -237,6 +341,7 @@ CapacitorApp.addListener('appUrlOpen', ({ url }) => {
   if (urlObj.hostname === 'authentication') {
     const method = urlObj.searchParams.get('method');
     const payload = JSON.parse(urlObj.searchParams.get('payload') ?? 'false');
+    const serverBaseUrl = urlObj.searchParams.get('server');
 
     if (
       !method ||
@@ -247,9 +352,18 @@ CapacitorApp.addListener('appUrlOpen', ({ url }) => {
       return;
     }
 
-    const authService = frameworkProvider
+    let authService = frameworkProvider
       .get(DefaultServerService)
       .server.scope.get(AuthService);
+
+    if (serverBaseUrl) {
+      const serversService = frameworkProvider.get(ServersService);
+      const server = serversService.getServerByBaseUrl(serverBaseUrl);
+      if (server) {
+        authService = server.scope.get(AuthService);
+      }
+    }
+
     if (method === 'oauth') {
       authService
         .signInOauth(payload.code, payload.state, payload.provider)
@@ -262,6 +376,10 @@ CapacitorApp.addListener('appUrlOpen', ({ url }) => {
   }
 }).catch(e => {
   console.error(e);
+});
+
+AppTrackingTransparency.requestPermission().catch(e => {
+  console.error('Failed to request app tracking transparency permission', e);
 });
 
 const KeyboardThemeProvider = () => {
@@ -304,4 +422,36 @@ export function App() {
       </FrameworkRoot>
     </Suspense>
   );
+}
+
+function createStoreManagerClient() {
+  const worker = new Worker(getWorkerUrl('nbstore'));
+  const { port1: nativeDBApiChannelServer, port2: nativeDBApiChannelClient } =
+    new MessageChannel();
+  AsyncCall<typeof NbStoreNativeDBApis>(NbStoreNativeDBApis, {
+    channel: {
+      on(listener) {
+        const f = (e: MessageEvent<any>) => {
+          listener(e.data);
+        };
+        nativeDBApiChannelServer.addEventListener('message', f);
+        return () => {
+          nativeDBApiChannelServer.removeEventListener('message', f);
+        };
+      },
+      send(data) {
+        nativeDBApiChannelServer.postMessage(data);
+      },
+    },
+    log: false,
+  });
+  nativeDBApiChannelServer.start();
+  worker.postMessage(
+    {
+      type: 'native-db-api-channel',
+      port: nativeDBApiChannelClient,
+    },
+    [nativeDBApiChannelClient]
+  );
+  return new StoreManagerClient(new OpClient(worker));
 }

@@ -16,6 +16,7 @@ import {
   ViewIcon,
   ViewTitle,
 } from '../../../../modules/workbench';
+import { AllDocSidebarTabs } from '../layouts/all-doc-sidebar-tabs';
 import { EmptyTagList } from '../page-list-empty';
 import * as styles from './all-tag.css';
 import { AllTagHeader } from './header';
@@ -72,6 +73,7 @@ export const AllTag = () => {
           )}
         </div>
       </ViewBody>
+      <AllDocSidebarTabs />
     </>
   );
 };

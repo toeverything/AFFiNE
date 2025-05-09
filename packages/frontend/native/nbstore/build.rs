@@ -1,6 +1,7 @@
+use std::fs;
+
 use affine_schema::get_migrator;
 use sqlx::sqlite::SqliteConnectOptions;
-use std::fs;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {

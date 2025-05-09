@@ -1,43 +1,21 @@
 import React, { useContext, useMemo } from 'react';
 
 import type { FrameworkProvider, Scope, Service } from '../core';
-import { ComponentNotFoundError, Framework } from '../core';
-import { parseIdentifier } from '../core/identifier';
+import { Framework, FrameworkStackProvider } from '../core';
 import type { GeneralIdentifier, IdentifierType, Type } from '../core/types';
 
-export const FrameworkStackContext = React.createContext<FrameworkProvider[]>([
-  Framework.EMPTY.provider(),
-]);
+export const FrameworkProviderContext = React.createContext<FrameworkProvider>(
+  Framework.EMPTY.provider()
+);
 
 export function useFramework(): FrameworkProvider {
-  const stack = useContext(FrameworkStackContext);
-
-  return stack[stack.length - 1]; // never null, because the default value
+  return useContext(FrameworkProviderContext); // never null, because the default value
 }
 
 export function useService<T extends Service>(
   identifier: GeneralIdentifier<T>
 ): T {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const stack = useContext(FrameworkStackContext);
-
-  let service: T | undefined = undefined;
-
-  for (let i = stack.length - 1; i >= 0; i--) {
-    service = stack[i].getOptional(identifier, {
-      sameScope: true,
-    });
-
-    if (service) {
-      break;
-    }
-  }
-
-  if (!service) {
-    throw new ComponentNotFoundError(parseIdentifier(identifier));
-  }
-
-  return service;
+  return useContext(FrameworkProviderContext).get(identifier);
 }
 
 /**
@@ -57,27 +35,12 @@ export function useServices<
 ): keyof T extends string
   ? { [key in Uncapitalize<keyof T>]: IdentifierType<T[Capitalize<key>]> }
   : never {
-  const stack = useContext(FrameworkStackContext);
+  const provider = useContext(FrameworkProviderContext);
 
   const services: any = {};
 
   for (const [key, value] of Object.entries(identifiers)) {
-    let service;
-    for (let i = stack.length - 1; i >= 0; i--) {
-      service = stack[i].getOptional(value, {
-        sameScope: true,
-      });
-
-      if (service) {
-        break;
-      }
-    }
-
-    if (!service) {
-      throw new ComponentNotFoundError(parseIdentifier(value));
-    }
-
-    services[key.charAt(0).toLowerCase() + key.slice(1)] = service;
+    services[key.charAt(0).toLowerCase() + key.slice(1)] = provider.get(value);
   }
 
   return services;
@@ -86,22 +49,7 @@ export function useServices<
 export function useServiceOptional<T extends Service>(
   identifier: Type<T>
 ): T | undefined {
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const stack = useContext(FrameworkStackContext);
-
-  let service: T | undefined = undefined;
-
-  for (let i = stack.length - 1; i >= 0; i--) {
-    service = stack[i].getOptional(identifier, {
-      sameScope: true,
-    });
-
-    if (service) {
-      break;
-    }
-  }
-
-  return service;
+  return useContext(FrameworkProviderContext).getOptional(identifier);
 }
 
 export const FrameworkRoot = ({
@@ -109,9 +57,9 @@ export const FrameworkRoot = ({
   children,
 }: React.PropsWithChildren<{ framework: FrameworkProvider }>) => {
   return (
-    <FrameworkStackContext.Provider value={[framework]}>
+    <FrameworkProviderContext.Provider value={framework}>
       {children}
-    </FrameworkStackContext.Provider>
+    </FrameworkProviderContext.Provider>
   );
 };
 
@@ -119,16 +67,17 @@ export const FrameworkScope = ({
   scope,
   children,
 }: React.PropsWithChildren<{ scope?: Scope }>) => {
-  const stack = useContext(FrameworkStackContext);
+  const provider = useContext(FrameworkProviderContext);
 
   const nextStack = useMemo(() => {
-    if (!scope) return stack;
-    return [...stack, scope.framework];
-  }, [stack, scope]);
+    if (!scope) return provider;
+    // make sure the stack order is inside to outside
+    return new FrameworkStackProvider([scope.framework, provider]);
+  }, [scope, provider]);
 
   return (
-    <FrameworkStackContext.Provider value={nextStack}>
+    <FrameworkProviderContext.Provider value={nextStack}>
       {children}
-    </FrameworkStackContext.Provider>
+    </FrameworkProviderContext.Provider>
   );
 };

@@ -1,14 +1,10 @@
-import './config';
+import { Global, Module } from '@nestjs/common';
 
-import { Global } from '@nestjs/common';
-
-import { Plugin } from '../registry';
 import { GCloudLogging } from './logging';
 import { GCloudMetrics } from './metrics';
 
 @Global()
-@Plugin({
-  name: 'gcloud',
+@Module({
   imports: [GCloudMetrics, GCloudLogging],
 })
 export class GCloudModule {}

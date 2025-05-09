@@ -17,7 +17,6 @@ affine_nbstore = { workspace = true, features = ["use-as-lib"] }
 anyhow         = { workspace = true }
 base64-simd    = { workspace = true }
 chrono         = { workspace = true }
-dashmap        = { workspace = true }
 sqlx           = { workspace = true }
 thiserror      = { workspace = true }
 uniffi         = { workspace = true, features = ["cli", "tokio"] }

@@ -1,4 +1,4 @@
-import type { AttachmentBlockModel } from '@blocksuite/affine/blocks';
+import type { AttachmentBlockModel } from '@blocksuite/affine/model';
 import { ObjectPool, Service } from '@toeverything/infra';
 
 import { PDF } from '../entities/pdf';

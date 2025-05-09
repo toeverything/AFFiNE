@@ -115,7 +115,7 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
     ref
   ) => {
     const firstCharOfName = useMemo(() => {
-      return name?.slice(0, 1) || 'A';
+      return name?.slice(0, 1);
     }, [name]);
     const [containerDom, setContainerDom] = useState<HTMLDivElement | null>(
       null
@@ -174,19 +174,33 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
               />
             )}
 
-            {!image /* no fallback on canvas mode */ && (
-              <AvatarFallback
-                className={clsx(style.avatarFallback, fallbackClassName)}
-                delayMs={url ? 600 : undefined}
-                {...fallbackProps}
-              >
-                {colorfulFallback ? (
-                  <ColorfulFallback char={firstCharOfName} />
-                ) : (
-                  firstCharOfName.toUpperCase()
-                )}
-              </AvatarFallback>
-            )}
+            {!image /* no fallback on canvas mode */ &&
+              (firstCharOfName ? (
+                /* if name is not empty, use first char of name as fallback */
+                <AvatarFallback
+                  className={clsx(style.avatarFallback, fallbackClassName)}
+                  delayMs={url ? 600 : undefined}
+                  {...fallbackProps}
+                >
+                  {colorfulFallback ? (
+                    <ColorfulFallback char={firstCharOfName} />
+                  ) : (
+                    firstCharOfName.toUpperCase()
+                  )}
+                </AvatarFallback>
+              ) : (
+                /* if name is empty, use default fallback */
+                <AvatarFallback
+                  className={clsx(
+                    style.avatarDefaultFallback,
+                    fallbackClassName
+                  )}
+                  delayMs={url ? 600 : undefined}
+                  {...fallbackProps}
+                >
+                  <DefaultFallbackSvg />
+                </AvatarFallback>
+              ))}
             {hoverIcon ? (
               <div
                 className={clsx(style.hoverWrapper, hoverWrapperClassName)}
@@ -220,3 +234,26 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(
 );
 
 Avatar.displayName = 'Avatar';
+
+const DefaultFallbackSvg = () => {
+  return (
+    <svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 22 22"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M11 12.1C13.2912 12.1 15.1486 10.2285 15.1486 7.92C15.1486 5.61145 13.2912 3.74 11 3.74C8.70881 3.74 6.85143 5.61145 6.85143 7.92C6.85143 10.2285 8.70881 12.1 11 12.1Z"
+        fill="black"
+        fillOpacity="0.22"
+      />
+      <path
+        d="M1.68 24.64C1.48118 24.64 1.31933 24.4782 1.32649 24.2795C1.51473 19.0599 5.77368 14.8867 11 14.8867C16.2263 14.8867 20.4853 19.0599 20.6735 24.2795C20.6807 24.4782 20.5188 24.64 20.32 24.64H1.68Z"
+        fill="black"
+        fillOpacity="0.22"
+      />
+    </svg>
+  );
+};

@@ -1,4 +1,5 @@
-import { WithDisposable } from '@blocksuite/global/utils';
+import { clamp } from '@blocksuite/global/gfx';
+import { WithDisposable } from '@blocksuite/global/lit';
 import { isSameDay, isSameMonth, isToday } from 'date-fns';
 import {
   html,
@@ -13,7 +14,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { arrowLeftIcon } from './icons.js';
 import { datePickerStyle } from './style.js';
-import { clamp, getMonthMatrix, toDate } from './utils.js';
+import { getMonthMatrix, toDate } from './utils.js';
 
 const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const months = [
@@ -522,7 +523,7 @@ export class DatePicker extends WithDisposable(LitElement) {
   }
 
   openYearSelector() {
-    this._yearCursor = clamp(this._minYear, this._maxYear, this.year);
+    this._yearCursor = clamp(this.year, this._minYear, this._maxYear);
     this._mode = 'year';
     this._getYearMatrix();
   }

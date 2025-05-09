@@ -27,7 +27,6 @@ const GLOBAL_DIALOGS = {
   'create-workspace': CreateWorkspaceDialog,
   'import-workspace': ImportWorkspaceDialog,
   'import-template': ImportTemplateDialog,
-  setting: SettingDialog,
   'sign-in': SignInDialog,
   'change-password': ChangePasswordDialog,
   'verify-email': VerifyEmailDialog,
@@ -45,6 +44,7 @@ const WORKSPACE_DIALOGS = {
   'doc-selector': DocSelectorDialog,
   'collection-selector': CollectionSelectorDialog,
   'date-selector': DateSelectorDialog,
+  setting: SettingDialog,
   import: ImportDialog,
 } satisfies {
   [key in keyof WORKSPACE_DIALOG_SCHEMA]?: React.FC<

@@ -7,5 +7,5 @@ export { createEvent, type FrameworkEvent, OnEvent } from './event';
 export { Framework } from './framework';
 export { createIdentifier } from './identifier';
 export type { ResolveOptions } from './provider';
-export { FrameworkProvider } from './provider';
+export { FrameworkProvider, FrameworkStackProvider } from './provider';
 export type { GeneralIdentifier, Identifier } from './types';

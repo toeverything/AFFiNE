@@ -1,5 +1,5 @@
-import { OnModuleDestroy } from '@nestjs/common';
-import { metrics } from '@opentelemetry/api';
+import { Injectable, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import {
   CompositePropagator,
   W3CBaggagePropagator,
@@ -7,7 +7,6 @@ import {
 } from '@opentelemetry/core';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { ZipkinExporter } from '@opentelemetry/exporter-zipkin';
-import { HostMetrics } from '@opentelemetry/host-metrics';
 import { Instrumentation } from '@opentelemetry/instrumentation';
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
@@ -15,26 +14,26 @@ import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { NestInstrumentation } from '@opentelemetry/instrumentation-nestjs-core';
 import { SocketIoInstrumentation } from '@opentelemetry/instrumentation-socket.io';
 import { Resource } from '@opentelemetry/resources';
-import type { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { MetricProducer, MetricReader } from '@opentelemetry/sdk-metrics';
-import { NodeSDK } from '@opentelemetry/sdk-node';
+import { NodeSDK, NodeSDKConfiguration } from '@opentelemetry/sdk-node';
 import {
   BatchSpanProcessor,
   SpanExporter,
   TraceIdRatioBasedSampler,
 } from '@opentelemetry/sdk-trace-node';
 import {
-  SEMRESATTRS_K8S_NAMESPACE_NAME,
-  SEMRESATTRS_SERVICE_NAME,
-  SEMRESATTRS_SERVICE_VERSION,
-} from '@opentelemetry/semantic-conventions';
-import prismaInstrument from '@prisma/instrumentation';
+  ATTR_K8S_NAMESPACE_NAME,
+  ATTR_SERVICE_NAME,
+  ATTR_SERVICE_VERSION,
+} from '@opentelemetry/semantic-conventions/incubating';
+import { PrismaInstrumentation } from '@prisma/instrumentation';
 
+import { Config } from '../config';
+import { OnEvent } from '../event/def';
+import { registerCustomMetrics } from './metrics';
 import { PrismaMetricProducer } from './prisma';
 
-const { PrismaInstrumentation } = prismaInstrument;
-
-export abstract class OpentelemetryFactory {
+export abstract class BaseOpentelemetryOptionsFactory {
   abstract getMetricReader(): MetricReader;
   abstract getSpanExporter(): SpanExporter;
 
@@ -55,15 +54,15 @@ export abstract class OpentelemetryFactory {
 
   getResource() {
     return new Resource({
-      [SEMRESATTRS_K8S_NAMESPACE_NAME]: AFFiNE.AFFINE_ENV,
-      [SEMRESATTRS_SERVICE_NAME]: AFFiNE.flavor.type,
-      [SEMRESATTRS_SERVICE_VERSION]: AFFiNE.version,
+      [ATTR_K8S_NAMESPACE_NAME]: env.NAMESPACE,
+      [ATTR_SERVICE_NAME]: env.FLAVOR,
+      [ATTR_SERVICE_VERSION]: env.version,
     });
   }
 
-  create() {
+  create(): Partial<NodeSDKConfiguration> {
     const traceExporter = this.getSpanExporter();
-    return new NodeSDK({
+    return {
       resource: this.getResource(),
       sampler: new TraceIdRatioBasedSampler(0.1),
       traceExporter,
@@ -77,24 +76,16 @@ export abstract class OpentelemetryFactory {
       }),
       instrumentations: this.getInstractions(),
       serviceName: 'affine-cloud',
-    });
+    };
   }
 }
 
-export class LocalOpentelemetryFactory
-  extends OpentelemetryFactory
-  implements OnModuleDestroy
-{
-  private readonly metricsExporter = new PrometheusExporter({
-    metricProducers: this.getMetricsProducers(),
-  });
-
-  async onModuleDestroy() {
-    await this.metricsExporter.shutdown();
-  }
-
+@Injectable()
+export class OpentelemetryOptionsFactory extends BaseOpentelemetryOptionsFactory {
   override getMetricReader(): MetricReader {
-    return this.metricsExporter;
+    return new PrometheusExporter({
+      metricProducers: this.getMetricsProducers(),
+    });
   }
 
   override getSpanExporter(): SpanExporter {
@@ -102,18 +93,50 @@ export class LocalOpentelemetryFactory
   }
 }
 
-function getMeterProvider() {
-  return metrics.getMeterProvider();
-}
+@Injectable()
+export class OpentelemetryProvider {
+  readonly #logger = new Logger(OpentelemetryProvider.name);
+  #sdk: NodeSDK | null = null;
 
-export function registerCustomMetrics() {
-  const hostMetricsMonitoring = new HostMetrics({
-    name: 'instance-host-metrics',
-    meterProvider: getMeterProvider() as MeterProvider,
-  });
-  hostMetricsMonitoring.start();
-}
+  constructor(
+    private readonly config: Config,
+    private readonly ref: ModuleRef
+  ) {}
 
-export function getMeter(name = 'business') {
-  return getMeterProvider().getMeter(name);
+  @OnEvent('config.init')
+  async init(event: Events['config.init']) {
+    if (event.config.metrics.enabled) {
+      await this.setup();
+      registerCustomMetrics();
+    }
+  }
+
+  @OnEvent('config.changed')
+  async onConfigChanged(event: Events['config.changed']) {
+    if ('metrics' in event.updates) {
+      await this.setup();
+    }
+  }
+
+  async onModuleDestroy() {
+    await this.#sdk?.shutdown();
+  }
+
+  private async setup() {
+    if (this.config.metrics.enabled) {
+      if (!this.#sdk) {
+        const factory = this.ref.get(OpentelemetryOptionsFactory, {
+          strict: false,
+        });
+        this.#sdk = new NodeSDK(factory.create());
+      }
+
+      this.#sdk.start();
+      this.#logger.log('OpenTelemetry SDK started');
+    } else {
+      await this.#sdk?.shutdown();
+      this.#sdk = null;
+      this.#logger.log('OpenTelemetry SDK stopped');
+    }
+  }
 }

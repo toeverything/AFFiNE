@@ -78,10 +78,11 @@ import type {
 export function createIdentifier<T>(
   name: string,
   variant: ServiceVariant = DEFAULT_SERVICE_VARIANT
-): ServiceIdentifier<T> & ((variant: ServiceVariant) => ServiceIdentifier<T>) {
+): ServiceIdentifier<T> &
+  (<U extends T = T>(variant: ServiceVariant) => ServiceIdentifier<U>) {
   return Object.assign(
-    (variant: ServiceVariant) => {
-      return createIdentifier<T>(name, variant);
+    <U extends T = T>(variant: ServiceVariant) => {
+      return createIdentifier<U>(name, variant);
     },
     {
       identifierName: name,

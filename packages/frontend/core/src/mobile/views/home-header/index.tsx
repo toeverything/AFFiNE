@@ -3,7 +3,7 @@ import {
   SafeArea,
   startScopedViewTransition,
 } from '@affine/component';
-import { GlobalDialogService } from '@affine/core/modules/dialogs';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import { SettingsIcon } from '@blocksuite/icons/rc';
@@ -23,7 +23,7 @@ import * as styles from './styles.css';
  *   - hide Search
  */
 export const HomeHeader = () => {
-  const globalDialogService = useService(GlobalDialogService);
+  const workspaceDialogService = useService(WorkspaceDialogService);
 
   const workspaceCardRef = useRef<HTMLDivElement>(null);
   const floatWorkspaceCardRef = useRef<HTMLDivElement>(null);
@@ -50,10 +50,10 @@ export const HomeHeader = () => {
   );
 
   const openSetting = useCallback(() => {
-    globalDialogService.open('setting', {
+    workspaceDialogService.open('setting', {
       activeTab: 'appearance',
     });
-  }, [globalDialogService]);
+  }, [workspaceDialogService]);
 
   return (
     <>

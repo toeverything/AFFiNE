@@ -1,7 +1,7 @@
 import { popupTargetFromElement } from '@blocksuite/affine-components/context-menu';
 import type { ReactiveController } from 'lit';
 
-import { TableAreaSelection, TableRowSelection } from '../../types.js';
+import { TableViewAreaSelection, TableViewRowSelection } from '../../selection';
 import { popRowMenu } from '../menu.js';
 import type { DataViewTable } from '../table-view.js';
 
@@ -22,10 +22,10 @@ export class TableHotkeysController implements ReactiveController {
           if (!selection) {
             return;
           }
-          if (TableRowSelection.is(selection)) {
-            const rows = TableRowSelection.rowsIds(selection);
+          if (TableViewRowSelection.is(selection)) {
+            const rows = TableViewRowSelection.rowsIds(selection);
             this.selectionController.selection = undefined;
-            this.host.props.view.rowDelete(rows);
+            this.host.props.view.rowsDelete(rows);
             return;
           }
           const {
@@ -73,23 +73,24 @@ export class TableHotkeysController implements ReactiveController {
           if (!selection) {
             return false;
           }
-          if (TableRowSelection.is(selection)) {
+          if (TableViewRowSelection.is(selection)) {
             const result = this.selectionController.rowsToArea(
               selection.rows.map(v => v.id)
             );
             if (result) {
-              this.selectionController.selection = TableAreaSelection.create({
-                groupKey: result.groupKey,
-                focus: {
-                  rowIndex: result.start,
-                  columnIndex: 0,
-                },
-                rowsSelection: {
-                  start: result.start,
-                  end: result.end,
-                },
-                isEditing: false,
-              });
+              this.selectionController.selection =
+                TableViewAreaSelection.create({
+                  groupKey: result.groupKey,
+                  focus: {
+                    rowIndex: result.start,
+                    columnIndex: 0,
+                  },
+                  rowsSelection: {
+                    start: result.start,
+                    end: result.end,
+                  },
+                  isEditing: false,
+                });
             } else {
               this.selectionController.selection = undefined;
             }
@@ -112,23 +113,24 @@ export class TableHotkeysController implements ReactiveController {
           if (!selection) {
             return false;
           }
-          if (TableRowSelection.is(selection)) {
+          if (TableViewRowSelection.is(selection)) {
             const result = this.selectionController.rowsToArea(
               selection.rows.map(v => v.id)
             );
             if (result) {
-              this.selectionController.selection = TableAreaSelection.create({
-                groupKey: result.groupKey,
-                focus: {
-                  rowIndex: result.start,
-                  columnIndex: 0,
-                },
-                rowsSelection: {
-                  start: result.start,
-                  end: result.end,
-                },
-                isEditing: false,
-              });
+              this.selectionController.selection =
+                TableViewAreaSelection.create({
+                  groupKey: result.groupKey,
+                  focus: {
+                    rowIndex: result.start,
+                    columnIndex: 0,
+                  },
+                  rowsSelection: {
+                    start: result.start,
+                    end: result.end,
+                  },
+                  isEditing: false,
+                });
             }
           } else if (selection.isEditing) {
             return false;
@@ -145,7 +147,7 @@ export class TableHotkeysController implements ReactiveController {
           const selection = this.selectionController.selection;
           if (
             !selection ||
-            TableRowSelection.is(selection) ||
+            TableViewRowSelection.is(selection) ||
             selection.isEditing
           ) {
             return false;
@@ -167,7 +169,7 @@ export class TableHotkeysController implements ReactiveController {
           const selection = this.selectionController.selection;
           if (
             !selection ||
-            TableRowSelection.is(selection) ||
+            TableViewRowSelection.is(selection) ||
             selection.isEditing
           ) {
             return false;
@@ -180,7 +182,7 @@ export class TableHotkeysController implements ReactiveController {
           const selection = this.selectionController.selection;
           if (
             !selection ||
-            TableRowSelection.is(selection) ||
+            TableViewRowSelection.is(selection) ||
             selection.isEditing
           ) {
             return false;
@@ -193,7 +195,7 @@ export class TableHotkeysController implements ReactiveController {
           const selection = this.selectionController.selection;
           if (
             !selection ||
-            TableRowSelection.is(selection) ||
+            TableViewRowSelection.is(selection) ||
             selection.isEditing
           ) {
             return false;
@@ -206,7 +208,7 @@ export class TableHotkeysController implements ReactiveController {
           const selection = this.selectionController.selection;
           if (
             !selection ||
-            TableRowSelection.is(selection) ||
+            TableViewRowSelection.is(selection) ||
             selection.isEditing
           ) {
             return false;
@@ -221,7 +223,7 @@ export class TableHotkeysController implements ReactiveController {
             return false;
           }
 
-          if (TableRowSelection.is(selection)) {
+          if (TableViewRowSelection.is(selection)) {
             this.selectionController.navigateRowSelection('up', false);
           } else if (selection.isEditing) {
             return false;
@@ -238,7 +240,7 @@ export class TableHotkeysController implements ReactiveController {
             return false;
           }
 
-          if (TableRowSelection.is(selection)) {
+          if (TableViewRowSelection.is(selection)) {
             this.selectionController.navigateRowSelection('down', false);
           } else if (selection.isEditing) {
             return false;
@@ -256,7 +258,7 @@ export class TableHotkeysController implements ReactiveController {
             return false;
           }
 
-          if (TableRowSelection.is(selection)) {
+          if (TableViewRowSelection.is(selection)) {
             this.selectionController.navigateRowSelection('up', true);
           } else if (selection.isEditing) {
             return false;
@@ -274,7 +276,7 @@ export class TableHotkeysController implements ReactiveController {
             return false;
           }
 
-          if (TableRowSelection.is(selection)) {
+          if (TableViewRowSelection.is(selection)) {
             this.selectionController.navigateRowSelection('down', true);
           } else if (selection.isEditing) {
             return false;
@@ -290,7 +292,7 @@ export class TableHotkeysController implements ReactiveController {
           const selection = this.selectionController.selection;
           if (
             !selection ||
-            TableRowSelection.is(selection) ||
+            TableViewRowSelection.is(selection) ||
             selection.isEditing ||
             this.selectionController.isRowSelection()
           ) {
@@ -307,7 +309,7 @@ export class TableHotkeysController implements ReactiveController {
           const selection = this.selectionController.selection;
           if (
             !selection ||
-            TableRowSelection.is(selection) ||
+            TableViewRowSelection.is(selection) ||
             selection.isEditing ||
             this.selectionController.isRowSelection()
           ) {
@@ -322,7 +324,7 @@ export class TableHotkeysController implements ReactiveController {
 
         'Mod-a': context => {
           const selection = this.selectionController.selection;
-          if (TableRowSelection.is(selection)) {
+          if (TableViewRowSelection.is(selection)) {
             return false;
           }
           if (selection?.isEditing) {
@@ -330,15 +332,18 @@ export class TableHotkeysController implements ReactiveController {
           }
           if (selection) {
             context.get('keyboardState').raw.preventDefault();
-            this.selectionController.selection = TableRowSelection.create({
+            this.selectionController.selection = TableViewRowSelection.create({
               rows:
                 this.host.props.view.groupTrait.groupsDataList$.value?.flatMap(
                   group =>
-                    group?.rows.map(id => ({ groupKey: group.key, id })) ?? []
+                    group?.rows.map(row => ({
+                      groupKey: group.key,
+                      id: row.rowId,
+                    })) ?? []
                 ) ??
-                this.host.props.view.rows$.value.map(id => ({
+                this.host.props.view.rows$.value.map(row => ({
                   groupKey: undefined,
-                  id,
+                  id: row.rowId,
                 })),
             });
             return true;
@@ -350,7 +355,7 @@ export class TableHotkeysController implements ReactiveController {
           if (!selection) {
             return;
           }
-          if (TableRowSelection.is(selection)) {
+          if (TableViewRowSelection.is(selection)) {
             // open multi-rows context-menu
             return;
           }
@@ -368,7 +373,7 @@ export class TableHotkeysController implements ReactiveController {
               id: cell.rowId,
               groupKey: selection.groupKey,
             };
-            this.selectionController.selection = TableRowSelection.create({
+            this.selectionController.selection = TableViewRowSelection.create({
               rows: [row],
             });
             popRowMenu(

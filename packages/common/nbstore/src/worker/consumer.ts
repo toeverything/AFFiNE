@@ -1,4 +1,4 @@
-import type { OpConsumer } from '@toeverything/infra/op';
+import { OpConsumer } from '@toeverything/infra/op';
 import { Observable } from 'rxjs';
 
 import { type StorageConstructor } from '../impls';
@@ -6,13 +6,14 @@ import { SpaceStorage } from '../storage';
 import type { AwarenessRecord } from '../storage/awareness';
 import { Sync } from '../sync';
 import type { PeerStorageOptions } from '../sync/types';
-import type { WorkerInitOptions, WorkerOps } from './ops';
+import { MANUALLY_STOP } from '../utils/throw-if-aborted';
+import type { StoreInitOptions, WorkerManagerOps, WorkerOps } from './ops';
 
-export type { WorkerOps };
+export type { WorkerManagerOps };
 
-export class WorkerConsumer {
-  private storages: PeerStorageOptions<SpaceStorage> | null = null;
-  private sync: Sync | null = null;
+class StoreConsumer {
+  private readonly storages: PeerStorageOptions<SpaceStorage>;
+  private readonly sync: Sync;
 
   get ensureLocal() {
     if (!this.storages) {
@@ -44,8 +45,8 @@ export class WorkerConsumer {
     return this.ensureSync.blob;
   }
 
-  get syncStorage() {
-    return this.ensureLocal.get('sync');
+  get docSyncStorage() {
+    return this.ensureLocal.get('docSync');
   }
 
   get awarenessStorage() {
@@ -56,19 +57,25 @@ export class WorkerConsumer {
     return this.ensureSync.awareness;
   }
 
-  constructor(
-    private readonly consumer: OpConsumer<WorkerOps>,
-    private readonly availableStorageImplementations: StorageConstructor[]
-  ) {
-    this.registerHandlers();
-    this.consumer.listen();
+  get indexerStorage() {
+    return this.ensureLocal.get('indexer');
   }
 
-  init(init: WorkerInitOptions) {
+  get indexerSync() {
+    return this.ensureSync.indexer;
+  }
+
+  constructor(
+    private readonly availableStorageImplementations: StorageConstructor[],
+    init: StoreInitOptions
+  ) {
     this.storages = {
       local: new SpaceStorage(
         Object.fromEntries(
           Object.entries(init.local).map(([type, opt]) => {
+            if (opt === undefined) {
+              return [type, undefined];
+            }
             const Storage = this.availableStorageImplementations.find(
               impl => impl.identifier === opt.name
             );
@@ -86,6 +93,9 @@ export class WorkerConsumer {
             new SpaceStorage(
               Object.fromEntries(
                 Object.entries(opts).map(([type, opt]) => {
+                  if (opt === undefined) {
+                    return [type, undefined];
+                  }
                   const Storage = this.availableStorageImplementations.find(
                     impl => impl.identifier === opt.name
                   );
@@ -110,6 +120,10 @@ export class WorkerConsumer {
     this.sync.start();
   }
 
+  bindConsumer(consumer: OpConsumer<WorkerOps>) {
+    this.registerHandlers(consumer);
+  }
+
   async destroy() {
     this.sync?.stop();
     this.storages?.local.disconnect();
@@ -120,15 +134,13 @@ export class WorkerConsumer {
     }
   }
 
-  private registerHandlers() {
+  private registerHandlers(consumer: OpConsumer<WorkerOps>) {
     const collectJobs = new Map<
       string,
       (awareness: AwarenessRecord | null) => void
     >();
     let collectId = 0;
-    this.consumer.registerAll({
-      'worker.init': this.init.bind(this),
-      'worker.destroy': this.destroy.bind(this),
+    consumer.registerAll({
       'docStorage.getDoc': (docId: string) => this.docStorage.getDoc(docId),
       'docStorage.getDocDiff': ({ docId, state }) =>
         this.docStorage.getDocDiff(docId, state),
@@ -146,45 +158,16 @@ export class WorkerConsumer {
             subscriber.next({ update, origin });
           });
         }),
-      'docStorage.waitForConnected': () =>
-        new Observable(subscriber => {
-          const abortController = new AbortController();
-          this.docStorage.connection
-            .waitForConnected(abortController.signal)
-            .then(() => {
-              subscriber.next(true);
-              subscriber.complete();
-            })
-            .catch((error: any) => {
-              subscriber.error(error);
-            });
-          return () => abortController.abort();
-        }),
+      'docStorage.waitForConnected': (_, ctx) =>
+        this.docStorage.connection.waitForConnected(ctx.signal),
       'blobStorage.getBlob': key => this.blobStorage.get(key),
       'blobStorage.setBlob': blob => this.blobStorage.set(blob),
       'blobStorage.deleteBlob': ({ key, permanently }) =>
         this.blobStorage.delete(key, permanently),
       'blobStorage.releaseBlobs': () => this.blobStorage.release(),
       'blobStorage.listBlobs': () => this.blobStorage.list(),
-      'syncStorage.clearClocks': () => this.syncStorage.clearClocks(),
-      'syncStorage.getPeerPulledRemoteClock': ({ peer, docId }) =>
-        this.syncStorage.getPeerPulledRemoteClock(peer, docId),
-      'syncStorage.getPeerPulledRemoteClocks': ({ peer }) =>
-        this.syncStorage.getPeerPulledRemoteClocks(peer),
-      'syncStorage.setPeerPulledRemoteClock': ({ peer, clock }) =>
-        this.syncStorage.setPeerPulledRemoteClock(peer, clock),
-      'syncStorage.getPeerRemoteClock': ({ peer, docId }) =>
-        this.syncStorage.getPeerRemoteClock(peer, docId),
-      'syncStorage.getPeerRemoteClocks': ({ peer }) =>
-        this.syncStorage.getPeerRemoteClocks(peer),
-      'syncStorage.setPeerRemoteClock': ({ peer, clock }) =>
-        this.syncStorage.setPeerRemoteClock(peer, clock),
-      'syncStorage.getPeerPushedClock': ({ peer, docId }) =>
-        this.syncStorage.getPeerPushedClock(peer, docId),
-      'syncStorage.getPeerPushedClocks': ({ peer }) =>
-        this.syncStorage.getPeerPushedClocks(peer),
-      'syncStorage.setPeerPushedClock': ({ peer, clock }) =>
-        this.syncStorage.setPeerPushedClock(peer, clock),
+      'blobStorage.waitForConnected': (_, ctx) =>
+        this.blobStorage.connection.waitForConnected(ctx.signal),
       'awarenessStorage.update': ({ awareness, origin }) =>
         this.awarenessStorage.update(awareness, origin),
       'awarenessStorage.subscribeUpdate': docId =>
@@ -212,13 +195,9 @@ export class WorkerConsumer {
         }),
       'awarenessStorage.collect': ({ collectId, awareness }) =>
         collectJobs.get(collectId)?.(awareness),
-      'docSync.state': () =>
-        new Observable(subscriber => {
-          const subscription = this.docSync.state$.subscribe(state => {
-            subscriber.next(state);
-          });
-          return () => subscription.unsubscribe();
-        }),
+      'awarenessStorage.waitForConnected': (_, ctx) =>
+        this.awarenessStorage.connection.waitForConnected(ctx.signal),
+      'docSync.state': () => this.docSync.state$,
       'docSync.docState': docId =>
         new Observable(subscriber => {
           const subscription = this.docSync
@@ -233,36 +212,31 @@ export class WorkerConsumer {
           const undo = this.docSync.addPriority(docId, priority);
           return () => undo();
         }),
+      'docSync.resetSync': () => this.docSync.resetSync(),
+      'blobSync.state': () => this.blobSync.state$,
+      'blobSync.blobState': blobId => this.blobSync.blobState$(blobId),
       'blobSync.downloadBlob': key => this.blobSync.downloadBlob(key),
-      'blobSync.uploadBlob': blob => this.blobSync.uploadBlob(blob),
-      'blobSync.fullSync': () =>
+      'blobSync.uploadBlob': ({ blob, force }) =>
+        this.blobSync.uploadBlob(blob, force),
+      'blobSync.fullDownload': peerId =>
         new Observable(subscriber => {
           const abortController = new AbortController();
           this.blobSync
-            .fullSync(abortController.signal)
+            .fullDownload(peerId ?? undefined, abortController.signal)
             .then(() => {
-              subscriber.next(true);
+              subscriber.next();
               subscriber.complete();
             })
             .catch(error => {
               subscriber.error(error);
             });
-          return () => abortController.abort();
-        }),
-      'blobSync.state': () => this.blobSync.state$,
-      'blobSync.setMaxBlobSize': size => this.blobSync.setMaxBlobSize(size),
-      'blobSync.onReachedMaxBlobSize': () =>
-        new Observable(subscriber => {
-          const undo = this.blobSync.onReachedMaxBlobSize(byteSize => {
-            subscriber.next(byteSize);
-          });
-          return () => undo();
+          return () => abortController.abort(MANUALLY_STOP);
         }),
       'awarenessSync.update': ({ awareness, origin }) =>
         this.awarenessSync.update(awareness, origin),
       'awarenessSync.subscribeUpdate': docId =>
         new Observable(subscriber => {
-          return this.awarenessStorage.subscribeUpdate(
+          return this.awarenessSync.subscribeUpdate(
             docId,
             (update, origin) => {
               subscriber.next({
@@ -279,12 +253,96 @@ export class WorkerConsumer {
                   collectJobs.delete(currentCollectId.toString());
                 });
               });
+              subscriber.next({
+                type: 'awareness-collect',
+                collectId: currentCollectId.toString(),
+              });
               return promise;
             }
           );
         }),
       'awarenessSync.collect': ({ collectId, awareness }) =>
         collectJobs.get(collectId)?.(awareness),
+      'indexerStorage.aggregate': ({ table, query, field, options }) =>
+        this.indexerStorage.aggregate(table, query, field, options),
+      'indexerStorage.search': ({ table, query, options }) =>
+        this.indexerStorage.search(table, query, options),
+      'indexerStorage.subscribeSearch': ({ table, query, options }) =>
+        this.indexerStorage.search$(table, query, options),
+      'indexerStorage.subscribeAggregate': ({ table, query, field, options }) =>
+        this.indexerStorage.aggregate$(table, query, field, options),
+      'indexerStorage.waitForConnected': (_, ctx) =>
+        this.indexerStorage.connection.waitForConnected(ctx.signal),
+      'indexerSync.state': () => this.indexerSync.state$,
+      'indexerSync.docState': (docId: string) =>
+        this.indexerSync.docState$(docId),
+      'indexerSync.addPriority': ({ docId, priority }) =>
+        new Observable(() => {
+          const undo = this.indexerSync.addPriority(docId, priority);
+          return () => undo();
+        }),
+      'indexerSync.waitForCompleted': (_, ctx) =>
+        this.indexerSync.waitForCompleted(ctx.signal),
+      'indexerSync.waitForDocCompleted': (docId: string, ctx) =>
+        this.indexerSync.waitForDocCompleted(docId, ctx.signal),
+    });
+  }
+}
+
+export class StoreManagerConsumer {
+  private readonly storeDisposers = new Map<string, () => void>();
+  private readonly storePool = new Map<
+    string,
+    { store: StoreConsumer; refCount: number }
+  >();
+
+  constructor(
+    private readonly availableStorageImplementations: StorageConstructor[]
+  ) {}
+
+  bindConsumer(consumer: OpConsumer<WorkerManagerOps>) {
+    this.registerHandlers(consumer);
+  }
+
+  private registerHandlers(consumer: OpConsumer<WorkerManagerOps>) {
+    consumer.registerAll({
+      open: ({ port, key, closeKey, options }) => {
+        console.debug('open store', key, closeKey);
+        let storeRef = this.storePool.get(key);
+
+        if (!storeRef) {
+          const store = new StoreConsumer(
+            this.availableStorageImplementations,
+            options
+          );
+          storeRef = { store, refCount: 0 };
+        }
+        storeRef.refCount++;
+
+        const workerConsumer = new OpConsumer<WorkerOps>(port);
+        storeRef.store.bindConsumer(workerConsumer);
+
+        this.storeDisposers.set(closeKey, () => {
+          storeRef.refCount--;
+          if (storeRef.refCount === 0) {
+            storeRef.store.destroy().catch(error => {
+              console.error(error);
+            });
+            this.storePool.delete(key);
+          }
+        });
+        this.storePool.set(key, storeRef);
+        return closeKey;
+      },
+      close: key => {
+        console.debug('close store', key);
+        const workerDisposer = this.storeDisposers.get(key);
+        if (!workerDisposer) {
+          throw new Error('Worker not found');
+        }
+        workerDisposer();
+        this.storeDisposers.delete(key);
+      },
     });
   }
 }

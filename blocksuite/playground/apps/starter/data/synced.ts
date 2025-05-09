@@ -1,5 +1,6 @@
-import { MarkdownTransformer } from '@blocksuite/blocks';
-import { Text, type Workspace } from '@blocksuite/store';
+import { Text, type Workspace } from '@blocksuite/affine/store';
+import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
+import { getTestStoreManager } from '@blocksuite/integration-test/store';
 
 import type { InitFn } from './utils';
 
@@ -12,17 +13,21 @@ This article has also been published [in PDF format](https://www.inkandswitch.co
 We welcome your feedback: [@inkandswitch](https://twitter.com/inkandswitch) or hello@inkandswitch.com.`;
 
 export const synced: InitFn = (collection: Workspace, id: string) => {
-  const docMain = collection.getDoc(id) ?? collection.createDoc({ id });
+  const docMain =
+    collection.getDoc(id)?.getStore({ id }) ??
+    collection.createDoc(id).getStore({ id });
 
   const docSyncedPageId = 'doc:synced-page';
-  const docSyncedPage = collection.createDoc({ id: docSyncedPageId });
+  const docSyncedPage = collection.createDoc(docSyncedPageId).getStore();
 
   const docSyncedEdgelessId = 'doc:synced-edgeless';
-  const docSyncedEdgeless = collection.createDoc({ id: docSyncedEdgelessId });
+  const docSyncedEdgeless = collection
+    .createDoc(docSyncedEdgelessId)
+    .getStore();
 
-  docMain.clear();
-  docSyncedPage.clear();
-  docSyncedEdgeless.clear();
+  docMain.doc.clear();
+  docSyncedPage.doc.clear();
+  docSyncedEdgeless.doc.clear();
 
   docSyncedPage.load(() => {
     // Add root block and surface block at root level
@@ -40,6 +45,7 @@ export const synced: InitFn = (collection: Workspace, id: string) => {
       doc: docSyncedPage,
       blockId: noteId,
       markdown: syncedDocMarkdown,
+      extensions: getTestStoreManager().get('store'),
     }).catch(console.error);
   });
 
@@ -59,6 +65,7 @@ export const synced: InitFn = (collection: Workspace, id: string) => {
       doc: docSyncedEdgeless,
       blockId: noteId,
       markdown: syncedDocMarkdown,
+      extensions: getTestStoreManager().get('store'),
     }).catch(console.error);
   });
 
@@ -76,6 +83,7 @@ export const synced: InitFn = (collection: Workspace, id: string) => {
       doc: docMain,
       blockId: noteId,
       markdown: syncedDocMarkdown,
+      extensions: getTestStoreManager().get('store'),
     })
       .then(() => {
         // Add synced block - self

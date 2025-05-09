@@ -1,27 +1,34 @@
-/// <reference types="../global.d.ts" />
+import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
 
-import { TestingModule } from '@nestjs/testing';
+import { ProjectRoot } from '@affine-tools/utils/path';
+import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
 
+import { EventBus, JobQueue } from '../base';
 import { ConfigModule } from '../base/config';
 import { AuthService } from '../core/auth';
 import { QuotaModule } from '../core/quota';
+import { ContextCategories, WorkspaceModel } from '../models';
 import { CopilotModule } from '../plugins/copilot';
+import {
+  CopilotContextDocJob,
+  CopilotContextService,
+} from '../plugins/copilot/context';
+import { MockEmbeddingClient } from '../plugins/copilot/context/embedding';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
 import {
-  CopilotProviderService,
-  OpenAIProvider,
-  registerCopilotProvider,
-  unregisterCopilotProvider,
-} from '../plugins/copilot/providers';
-import { CitationParser } from '../plugins/copilot/providers/perplexity';
-import { ChatSessionService } from '../plugins/copilot/session';
-import {
   CopilotCapability,
+  CopilotProviderFactory,
   CopilotProviderType,
-} from '../plugins/copilot/types';
+  OpenAIProvider,
+} from '../plugins/copilot/providers';
+import { CitationParser } from '../plugins/copilot/providers/utils';
+import { ChatSessionService } from '../plugins/copilot/session';
+import { CopilotStorage } from '../plugins/copilot/storage';
+import { CopilotTranscriptionService } from '../plugins/copilot/transcript';
 import {
   CopilotChatTextExecutor,
   CopilotWorkflowService,
@@ -41,15 +48,25 @@ import {
 } from '../plugins/copilot/workflow/executor';
 import { AutoRegisteredWorkflowExecutor } from '../plugins/copilot/workflow/executor/utils';
 import { WorkflowGraphList } from '../plugins/copilot/workflow/graph';
-import { createTestingModule } from './utils';
-import { MockCopilotTestProvider, WorkflowTestCases } from './utils/copilot';
+import { CopilotWorkspaceService } from '../plugins/copilot/workspace';
+import { MockCopilotProvider } from './mocks';
+import { createTestingModule, TestingModule } from './utils';
+import { WorkflowTestCases } from './utils/copilot';
 
 const test = ava as TestFn<{
   auth: AuthService;
   module: TestingModule;
+  db: PrismaClient;
+  event: EventBus;
+  workspace: WorkspaceModel;
+  context: CopilotContextService;
   prompt: PromptService;
-  provider: CopilotProviderService;
+  transcript: CopilotTranscriptionService;
+  workspaceEmbedding: CopilotWorkspaceService;
+  factory: CopilotProviderFactory;
   session: ChatSessionService;
+  jobs: CopilotContextDocJob;
+  storage: CopilotStorage;
   workflow: CopilotWorkflowService;
   executors: {
     image: CopilotChatImageExecutor;
@@ -58,13 +75,14 @@ const test = ava as TestFn<{
     json: CopilotCheckJsonExecutor;
   };
 }>;
+let userId: string;
 
-test.beforeEach(async t => {
+test.before(async t => {
   const module = await createTestingModule({
     imports: [
-      ConfigModule.forRoot({
-        plugins: {
-          copilot: {
+      ConfigModule.override({
+        copilot: {
+          providers: {
             openai: {
               apiKey: process.env.COPILOT_OPENAI_API_KEY ?? '1',
             },
@@ -74,26 +92,56 @@ test.beforeEach(async t => {
             perplexity: {
               apiKey: process.env.COPILOT_PERPLEXITY_API_KEY ?? '1',
             },
+            anthropic: {
+              apiKey: process.env.COPILOT_ANTHROPIC_API_KEY ?? '1',
+            },
+          },
+          exa: {
+            key: process.env.COPILOT_EXA_API_KEY ?? '1',
           },
         },
       }),
       QuotaModule,
       CopilotModule,
     ],
+    tapModule: builder => {
+      // use real JobQueue for testing
+      builder.overrideProvider(JobQueue).useClass(JobQueue);
+      builder.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
+    },
   });
 
   const auth = module.get(AuthService);
+  const db = module.get(PrismaClient);
+  const event = module.get(EventBus);
+  const workspace = module.get(WorkspaceModel);
   const prompt = module.get(PromptService);
-  const provider = module.get(CopilotProviderService);
+  const factory = module.get(CopilotProviderFactory);
+
   const session = module.get(ChatSessionService);
   const workflow = module.get(CopilotWorkflowService);
+  const storage = module.get(CopilotStorage);
+
+  const context = module.get(CopilotContextService);
+  const jobs = module.get(CopilotContextDocJob);
+  const transcript = module.get(CopilotTranscriptionService);
+  const workspaceEmbedding = module.get(CopilotWorkspaceService);
 
   t.context.module = module;
   t.context.auth = auth;
+  t.context.db = db;
+  t.context.event = event;
+  t.context.workspace = workspace;
   t.context.prompt = prompt;
-  t.context.provider = provider;
+  t.context.factory = factory;
   t.context.session = session;
   t.context.workflow = workflow;
+  t.context.storage = storage;
+  t.context.context = context;
+  t.context.jobs = jobs;
+  t.context.transcript = transcript;
+  t.context.workspaceEmbedding = workspaceEmbedding;
+
   t.context.executors = {
     image: module.get(CopilotChatImageExecutor),
     text: module.get(CopilotChatTextExecutor),
@@ -102,15 +150,17 @@ test.beforeEach(async t => {
   };
 });
 
-test.afterEach.always(async t => {
-  await t.context.module.close();
-});
-
-let userId: string;
 test.beforeEach(async t => {
-  const { auth } = t.context;
+  Sinon.restore();
+  const { module, auth, prompt } = t.context;
+  await module.initTestingDB();
+  await prompt.onApplicationBootstrap();
   const user = await auth.signUp('test@affine.pro', '123456');
   userId = user.id;
+});
+
+test.after.always(async t => {
+  await t.context.module.close();
 });
 
 // ==================== prompt ====================
@@ -235,35 +285,31 @@ test('should be able to manage chat session', async t => {
   t.is(s.config.promptName, 'prompt', 'should have prompt name');
   t.is(s.model, 'model', 'should have model');
 
+  const cleanObject = (obj: any[]) =>
+    JSON.parse(
+      JSON.stringify(obj, (k, v) =>
+        ['id', 'attachments', 'createdAt'].includes(k) ||
+        v === null ||
+        (typeof v === 'object' && !Object.keys(v).length)
+          ? undefined
+          : v
+      )
+    );
+
   s.push({ role: 'user', content: 'hello', createdAt: new Date() });
-  // @ts-expect-error
-  const finalMessages = s.finish(params).map(({ createdAt: _, ...m }) => m);
-  t.deepEqual(
-    finalMessages,
-    [
-      { content: 'hello world', params, role: 'system' },
-      { content: 'hello', role: 'user' },
-    ],
-    'should generate the final message'
-  );
+
+  const finalMessages = cleanObject(s.finish(params));
+  t.snapshot(finalMessages, 'should generate the final message');
   await s.save();
 
   const s1 = (await session.get(sessionId))!;
   t.deepEqual(
-    s1
-      .finish(params)
-      // @ts-expect-error
-      .map(({ id: _, attachments: __, createdAt: ___, ...m }) => m),
+    cleanObject(s1.finish(params)),
     finalMessages,
     'should same as before message'
   );
-  t.deepEqual(
-    // @ts-expect-error
-    s1.finish({}).map(({ id: _, attachments: __, createdAt: ___, ...m }) => m),
-    [
-      { content: 'hello ', params: {}, role: 'system' },
-      { content: 'hello', role: 'user' },
-    ],
+  t.snapshot(
+    cleanObject(s1.finish(params)),
     'should generate different message with another params'
   );
 
@@ -360,22 +406,19 @@ test('should be able to fork chat session', async t => {
     'should fork new session with same params'
   );
 
+  const cleanObject = (obj: any[]) =>
+    JSON.parse(
+      JSON.stringify(obj, (k, v) =>
+        ['id', 'createdAt'].includes(k) || v === null ? undefined : v
+      )
+    );
+
   // check forked session messages
   {
     const s2 = (await session.get(forkedSessionId1))!;
 
-    const finalMessages = s2
-      .finish(params) // @ts-expect-error
-      .map(({ id: _, attachments: __, createdAt: ___, ...m }) => m);
-    t.deepEqual(
-      finalMessages,
-      [
-        { role: 'system', content: 'hello world', params },
-        { role: 'user', content: 'hello' },
-        { role: 'assistant', content: 'world' },
-      ],
-      'should generate the final message'
-    );
+    const finalMessages = s2.finish(params);
+    t.snapshot(cleanObject(finalMessages), 'should generate the final message');
   }
 
   // check second times forked session
@@ -385,38 +428,16 @@ test('should be able to fork chat session', async t => {
     // should overwrite user id
     t.is(s2.config.userId, newUser.id, 'should have same user id');
 
-    const finalMessages = s2
-      .finish(params) // @ts-expect-error
-      .map(({ id: _, attachments: __, createdAt: ___, ...m }) => m);
-    t.deepEqual(
-      finalMessages,
-      [
-        { role: 'system', content: 'hello world', params },
-        { role: 'user', content: 'hello' },
-        { role: 'assistant', content: 'world' },
-      ],
-      'should generate the final message'
-    );
+    const finalMessages = s2.finish(params);
+    t.snapshot(cleanObject(finalMessages), 'should generate the final message');
   }
 
   // check original session messages
   {
     const s3 = (await session.get(sessionId))!;
 
-    const finalMessages = s3
-      .finish(params) // @ts-expect-error
-      .map(({ id: _, attachments: __, createdAt: ___, ...m }) => m);
-    t.deepEqual(
-      finalMessages,
-      [
-        { role: 'system', content: 'hello world', params },
-        { role: 'user', content: 'hello' },
-        { role: 'assistant', content: 'world' },
-        { role: 'user', content: 'aaa' },
-        { role: 'assistant', content: 'bbb' },
-      ],
-      'should generate the final message'
-    );
+    const finalMessages = s3.finish(params);
+    t.snapshot(cleanObject(finalMessages), 'should generate the final message');
   }
 
   // should get main session after fork if re-create a chat session for same docId and workspaceId
@@ -445,13 +466,13 @@ test('should be able to process message id', async t => {
   });
   const s = (await session.get(sessionId))!;
 
-  const textMessage = (await session.createMessage({
+  const textMessage = await session.createMessage({
     sessionId,
     content: 'hello',
-  }))!;
-  const anotherSessionMessage = (await session.createMessage({
+  });
+  const anotherSessionMessage = await session.createMessage({
     sessionId: 'another-session-id',
-  }))!;
+  });
 
   await t.notThrowsAsync(
     s.pushByMessageId(textMessage),
@@ -488,10 +509,10 @@ test('should be able to generate with message id', async t => {
     });
     const s = (await session.get(sessionId))!;
 
-    const message = (await session.createMessage({
+    const message = await session.createMessage({
       sessionId,
       content: 'hello',
-    }))!;
+    });
 
     await s.pushByMessageId(message);
     const finalMessages = s
@@ -510,10 +531,10 @@ test('should be able to generate with message id', async t => {
     });
     const s = (await session.get(sessionId))!;
 
-    const message = (await session.createMessage({
+    const message = await session.createMessage({
       sessionId,
       attachments: ['https://affine.pro/example.jpg'],
-    }))!;
+    });
 
     await s.pushByMessageId(message);
     const finalMessages = s
@@ -537,9 +558,9 @@ test('should be able to generate with message id', async t => {
     });
     const s = (await session.get(sessionId))!;
 
-    const message = (await session.createMessage({
+    const message = await session.createMessage({
       sessionId,
-    }))!;
+    });
 
     await s.pushByMessageId(message);
     const finalMessages = s
@@ -565,10 +586,10 @@ test('should save message correctly', async t => {
   });
   const s = (await session.get(sessionId))!;
 
-  const message = (await session.createMessage({
+  const message = await session.createMessage({
     sessionId,
     content: 'hello',
-  }))!;
+  });
 
   await s.pushByMessageId(message);
   t.is(s.stashMessages.length, 1, 'should get stash messages');
@@ -594,48 +615,148 @@ test('should revert message correctly', async t => {
     });
     const s = (await session.get(sessionId))!;
 
-    const message = (await session.createMessage({
+    const message = await session.createMessage({
       sessionId,
-      content: 'hello',
-    }))!;
+      content: '1',
+    });
 
     await s.pushByMessageId(message);
     await s.save();
   }
 
+  const cleanObject = (obj: any[]) =>
+    JSON.parse(
+      JSON.stringify(obj, (k, v) =>
+        ['id', 'createdAt'].includes(k) ||
+        v === null ||
+        (typeof v === 'object' && !Object.keys(v).length)
+          ? undefined
+          : v
+      )
+    );
+
   // check ChatSession behavior
   {
     const s = (await session.get(sessionId))!;
-    s.push({ role: 'assistant', content: 'hi', createdAt: new Date() });
+    s.push({ role: 'assistant', content: '2', createdAt: new Date() });
+    s.push({ role: 'user', content: '3', createdAt: new Date() });
+    s.push({ role: 'assistant', content: '4', createdAt: new Date() });
     await s.save();
     const beforeRevert = s.finish({ word: 'world' });
-    t.is(beforeRevert.length, 3, 'should have three messages before revert');
+    t.snapshot(
+      cleanObject(beforeRevert),
+      'should have three messages before revert'
+    );
 
-    s.revertLatestMessage();
-    const afterRevert = s.finish({ word: 'world' });
-    t.is(afterRevert.length, 2, 'should remove assistant message after revert');
+    {
+      s.revertLatestMessage(false);
+      const afterRevert = s.finish({ word: 'world' });
+      t.snapshot(
+        cleanObject(afterRevert),
+        'should remove assistant message after revert'
+      );
+    }
+
+    {
+      s.revertLatestMessage(true);
+      const afterRevert = s.finish({ word: 'world' });
+      t.snapshot(
+        cleanObject(afterRevert),
+        'should remove assistant message after revert'
+      );
+    }
   }
 
   // check database behavior
   {
     let s = (await session.get(sessionId))!;
-    const beforeRevert = s.finish({ word: 'world' });
-    t.is(beforeRevert.length, 3, 'should have three messages before revert');
 
-    await session.revertLatestMessage(sessionId);
-    s = (await session.get(sessionId))!;
-    const afterRevert = s.finish({ word: 'world' });
-    t.is(afterRevert.length, 2, 'should remove assistant message after revert');
+    const beforeRevert = s.finish({ word: 'world' });
+    t.snapshot(
+      cleanObject(beforeRevert),
+      'should have three messages before revert'
+    );
+
+    {
+      await session.revertLatestMessage(sessionId, false);
+      s = (await session.get(sessionId))!;
+      const afterRevert = s.finish({ word: 'world' });
+      t.snapshot(
+        cleanObject(afterRevert),
+        'should remove assistant message after revert'
+      );
+    }
+
+    {
+      await session.revertLatestMessage(sessionId, true);
+      s = (await session.get(sessionId))!;
+      const afterRevert = s.finish({ word: 'world' });
+      t.snapshot(
+        cleanObject(afterRevert),
+        'should remove assistant message after revert'
+      );
+    }
+  }
+});
+
+test('should handle params correctly in chat session', async t => {
+  const { prompt, session } = t.context;
+
+  await prompt.set('prompt', 'model', [
+    { role: 'system', content: 'hello {{word}}' },
+  ]);
+
+  const sessionId = await session.create({
+    docId: 'test',
+    workspaceId: 'test',
+    userId,
+    promptName: 'prompt',
+  });
+
+  const s = (await session.get(sessionId))!;
+
+  // Case 1: When params is provided directly
+  {
+    const directParams = { word: 'direct' };
+    const messages = s.finish(directParams);
+    t.is(messages[0].content, 'hello direct', 'should use provided params');
+  }
+
+  // Case 2: When no params provided but last message has params
+  {
+    s.push({
+      role: 'user',
+      content: 'test message',
+      params: { word: 'fromMessage' },
+      createdAt: new Date(),
+    });
+    const messages = s.finish({});
+    t.is(
+      messages[0].content,
+      'hello fromMessage',
+      'should use params from last message'
+    );
+  }
+
+  // Case 3: When neither params provided nor last message has params
+  {
+    s.push({
+      role: 'user',
+      content: 'test message without params',
+      createdAt: new Date(),
+    });
+    const messages = s.finish({});
+    t.is(messages[0].content, 'hello ', 'should use empty params');
   }
 });
 
 // ==================== provider ====================
 
 test('should be able to get provider', async t => {
-  const { provider } = t.context;
+  const { factory } = t.context;
 
   {
-    const p = await provider.getProviderByCapability(
+    const p = await factory.getProviderByCapability(
       CopilotCapability.TextToText
     );
     t.is(
@@ -646,106 +767,38 @@ test('should be able to get provider', async t => {
   }
 
   {
-    const p = await provider.getProviderByCapability(
-      CopilotCapability.TextToEmbedding
+    const p = await factory.getProviderByCapability(
+      CopilotCapability.ImageToImage,
+      { model: 'lora/image-to-image' }
     );
     t.is(
       p?.type.toString(),
-      'openai',
+      'fal',
       'should get provider support text-to-embedding'
     );
   }
 
   {
-    const p = await provider.getProviderByCapability(
-      CopilotCapability.TextToImage
-    );
-    t.is(
-      p?.type.toString(),
-      'fal',
-      'should get provider support text-to-image'
-    );
-  }
-
-  {
-    const p = await provider.getProviderByCapability(
-      CopilotCapability.ImageToImage
-    );
-    t.is(
-      p?.type.toString(),
-      'fal',
-      'should get provider support image-to-image'
-    );
-  }
-
-  {
-    const p = await provider.getProviderByCapability(
-      CopilotCapability.ImageToText
-    );
-    t.is(
-      p?.type.toString(),
-      'fal',
-      'should get provider support image-to-text'
-    );
-  }
-
-  // text-to-image use fal by default, but this case can use
-  // model dall-e-3 to select openai provider
-  {
-    const p = await provider.getProviderByCapability(
-      CopilotCapability.TextToImage,
-      'dall-e-3'
-    );
-    t.is(
-      p?.type.toString(),
-      'openai',
-      'should get provider support text-to-image and model'
-    );
-  }
-
-  // gpt4o is not defined now, but it already published by openai
-  // we should check from online api if it is available
-  {
-    const p = await provider.getProviderByCapability(
+    const p = await factory.getProviderByCapability(
       CopilotCapability.ImageToText,
-      'gpt-4o-2024-08-06'
+      { prefer: CopilotProviderType.FAL }
     );
     t.is(
       p?.type.toString(),
-      'openai',
-      'should get provider support text-to-image and model'
+      'fal',
+      'should get provider support text-to-embedding'
     );
   }
 
   // if a model is not defined and not available in online api
   // it should return null
   {
-    const p = await provider.getProviderByCapability(
+    const p = await factory.getProviderByCapability(
       CopilotCapability.ImageToText,
-      'gpt-4-not-exist'
+      { model: 'gpt-4-not-exist' }
     );
     t.falsy(p, 'should not get provider');
   }
-});
-
-test('should be able to register test provider', async t => {
-  const { provider } = t.context;
-  registerCopilotProvider(MockCopilotTestProvider);
-
-  const assertProvider = async (cap: CopilotCapability) => {
-    const p = await provider.getProviderByCapability(cap, 'test');
-    t.is(
-      p?.type,
-      CopilotProviderType.Test,
-      `should get test provider with ${cap}`
-    );
-  };
-
-  await assertProvider(CopilotCapability.TextToText);
-  await assertProvider(CopilotCapability.TextToEmbedding);
-  await assertProvider(CopilotCapability.TextToImage);
-  await assertProvider(CopilotCapability.ImageToImage);
-  await assertProvider(CopilotCapability.ImageToText);
 });
 
 // ==================== workflow ====================
@@ -756,7 +809,6 @@ test.skip('should be able to preview workflow', async t => {
   const { prompt, workflow, executors } = t.context;
 
   executors.text.register();
-  registerCopilotProvider(OpenAIProvider);
 
   for (const p of prompts) {
     await prompt.set(p.name, p.model, p.messages, p.config);
@@ -780,8 +832,6 @@ test.skip('should be able to preview workflow', async t => {
   }
   console.log('final stream result:', result);
   t.truthy(result, 'should return result');
-
-  unregisterCopilotProvider(OpenAIProvider.type);
 });
 
 const runWorkflow = async function* runWorkflow(
@@ -802,8 +852,6 @@ test('should be able to run pre defined workflow', async t => {
   executors.text.register();
   executors.html.register();
   executors.json.register();
-  unregisterCopilotProvider(OpenAIProvider.type);
-  registerCopilotProvider(MockCopilotTestProvider);
 
   const executor = Sinon.spy(executors.text, 'next');
 
@@ -843,17 +891,12 @@ test('should be able to run pre defined workflow', async t => {
       }
     }
   }
-
-  unregisterCopilotProvider(MockCopilotTestProvider.type);
-  registerCopilotProvider(OpenAIProvider);
 });
 
 test('should be able to run workflow', async t => {
   const { workflow, executors } = t.context;
 
   executors.text.register();
-  unregisterCopilotProvider(OpenAIProvider.type);
-  registerCopilotProvider(MockCopilotTestProvider);
 
   const executor = Sinon.spy(executors.text, 'next');
 
@@ -900,9 +943,6 @@ test('should be able to run workflow', async t => {
       'graph params should correct'
     );
   }
-
-  unregisterCopilotProvider(MockCopilotTestProvider.type);
-  registerCopilotProvider(OpenAIProvider);
 });
 
 // ==================== workflow executor ====================
@@ -939,18 +979,16 @@ test('should be able to run executor', async t => {
 });
 
 test('should be able to run text executor', async t => {
-  const { executors, provider, prompt } = t.context;
+  const { executors, factory, prompt } = t.context;
 
   executors.text.register();
   const executor = getWorkflowExecutor(executors.text.type);
-  unregisterCopilotProvider(OpenAIProvider.type);
-  registerCopilotProvider(MockCopilotTestProvider);
   await prompt.set('test', 'test', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
   // mock provider
   const testProvider =
-    (await provider.getProviderByModel<CopilotCapability.TextToText>('test'))!;
+    (await factory.getProviderByModel<CopilotCapability.TextToText>('test'))!;
   const text = Sinon.spy(testProvider, 'generateText');
   const textStream = Sinon.spy(testProvider, 'generateTextStream');
 
@@ -1005,23 +1043,19 @@ test('should be able to run text executor', async t => {
   }
 
   Sinon.restore();
-  unregisterCopilotProvider(MockCopilotTestProvider.type);
-  registerCopilotProvider(OpenAIProvider);
 });
 
 test('should be able to run image executor', async t => {
-  const { executors, provider, prompt } = t.context;
+  const { executors, factory, prompt } = t.context;
 
   executors.image.register();
   const executor = getWorkflowExecutor(executors.image.type);
-  unregisterCopilotProvider(OpenAIProvider.type);
-  registerCopilotProvider(MockCopilotTestProvider);
   await prompt.set('test', 'test', [
     { role: 'user', content: 'tag1, tag2, tag3, {{#tags}}{{.}}, {{/tags}}' },
   ]);
   // mock provider
   const testProvider =
-    (await provider.getProviderByModel<CopilotCapability.TextToImage>('test'))!;
+    (await factory.getProviderByModel<CopilotCapability.TextToImage>('test'))!;
   const image = Sinon.spy(testProvider, 'generateImages');
   const imageStream = Sinon.spy(testProvider, 'generateImagesStream');
 
@@ -1086,8 +1120,6 @@ test('should be able to run image executor', async t => {
   }
 
   Sinon.restore();
-  unregisterCopilotProvider(MockCopilotTestProvider.type);
-  registerCopilotProvider(OpenAIProvider);
 });
 
 test('CitationParser should replace citation placeholders with URLs', t => {
@@ -1096,10 +1128,18 @@ test('CitationParser should replace citation placeholders with URLs', t => {
   const citations = ['https://example1.com', 'https://example2.com'];
 
   const parser = new CitationParser();
-  const result = parser.parse(content, citations);
+  for (const citation of citations) {
+    parser.push(citation);
+  }
 
-  const expected =
-    'This is [a] test sentence with [citations [[1](https://example1.com)]] and [[2](https://example2.com)] and [3].';
+  const result = parser.parse(content) + parser.end();
+
+  const expected = [
+    'This is [a] test sentence with [citations [^1]] and [^2] and [3].',
+    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
+    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
+  ].join('\n');
+
   t.is(result, expected);
 });
 
@@ -1127,13 +1167,25 @@ test('CitationParser should replace chunks of citation placeholders with URLs', 
   ];
 
   const parser = new CitationParser();
-  let result = contents.reduce((acc, current) => {
-    return acc + parser.parse(current, citations);
-  }, '');
-  result += parser.flush();
+  for (const citation of citations) {
+    parser.push(citation);
+  }
 
-  const expected =
-    '[[]]This is [a] test sentence with citations [[1](https://example1.com)] and [[2](https://example2.com)] and [[3](https://example3.com)] and [[4](https://example4.com)] and [[5](https://example5.com)] and [[6](https://example6.com)] and [7';
+  let result = contents.reduce((acc, current) => {
+    return acc + parser.parse(current);
+  }, '');
+  result += parser.end();
+
+  const expected = [
+    '[[]]This is [a] test sentence with citations [^1] and [^2] and [^3] and [^4] and [^5] and [^6] and [7',
+    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
+    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
+    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
+    `[^4]: {"type":"url","url":"${encodeURIComponent(citations[3])}"}`,
+    `[^5]: {"type":"url","url":"${encodeURIComponent(citations[4])}"}`,
+    `[^6]: {"type":"url","url":"${encodeURIComponent(citations[5])}"}`,
+    `[^7]: {"type":"url","url":"${encodeURIComponent(citations[6])}"}`,
+  ].join('\n');
   t.is(result, expected);
 });
 
@@ -1147,9 +1199,18 @@ test('CitationParser should not replace citation already with URLs', t => {
   ];
 
   const parser = new CitationParser();
-  const result = parser.parse(content, citations);
+  for (const citation of citations) {
+    parser.push(citation);
+  }
 
-  const expected = content;
+  const result = parser.parse(content) + parser.end();
+
+  const expected = [
+    content,
+    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
+    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
+    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
+  ].join('\n');
   t.is(result, expected);
 });
 
@@ -1166,11 +1227,285 @@ test('CitationParser should not replace chunks of citation already with URLs', t
   ];
 
   const parser = new CitationParser();
-  let result = contents.reduce((acc, current) => {
-    return acc + parser.parse(current, citations);
-  }, '');
-  result += parser.flush();
+  for (const citation of citations) {
+    parser.push(citation);
+  }
 
-  const expected = contents.join('');
+  let result = contents.reduce((acc, current) => {
+    return acc + parser.parse(current);
+  }, '');
+  result += parser.end();
+
+  const expected = [
+    contents.join(''),
+    `[^1]: {"type":"url","url":"${encodeURIComponent(citations[0])}"}`,
+    `[^2]: {"type":"url","url":"${encodeURIComponent(citations[1])}"}`,
+    `[^3]: {"type":"url","url":"${encodeURIComponent(citations[2])}"}`,
+  ].join('\n');
   t.is(result, expected);
+});
+
+test('CitationParser should replace openai style reference chunks', t => {
+  const contents = [
+    'This is [a] test sentence with citations ',
+    '([example1.com](https://example1.com))',
+  ];
+
+  const parser = new CitationParser();
+
+  let result = contents.reduce((acc, current) => {
+    return acc + parser.parse(current);
+  }, '');
+  result += parser.end();
+
+  const expected = [
+    contents[0] + '[^1]',
+    `[^1]: {"type":"url","url":"${encodeURIComponent('https://example1.com')}"}`,
+  ].join('\n');
+  t.is(result, expected);
+});
+
+// ==================== context ====================
+test('should be able to manage context', async t => {
+  const { context, prompt, session, event, jobs, storage } = t.context;
+
+  await prompt.set('prompt', 'model', [
+    { role: 'system', content: 'hello {{word}}' },
+  ]);
+  const chatSession = await session.create({
+    docId: 'test',
+    workspaceId: 'test',
+    userId,
+    promptName: 'prompt',
+  });
+
+  // use mocked embedding client
+  Sinon.stub(context, 'embeddingClient').get(() => new MockEmbeddingClient());
+  Sinon.stub(jobs, 'embeddingClient').get(() => new MockEmbeddingClient());
+
+  {
+    await t.throwsAsync(
+      context.create(randomUUID()),
+      { instanceOf: Error },
+      'should throw error if create context with invalid session id'
+    );
+
+    const session = context.create(chatSession);
+    await t.notThrowsAsync(session, 'should create context with chat session');
+
+    await t.notThrowsAsync(
+      context.get((await session).id),
+      'should get context after create'
+    );
+
+    await t.throwsAsync(
+      context.get(randomUUID()),
+      { instanceOf: Error },
+      'should throw error if get context with invalid id'
+    );
+  }
+
+  const fs = await import('node:fs');
+  const buffer = fs.readFileSync(
+    ProjectRoot.join('packages/common/native/fixtures/sample.pdf').toFileUrl()
+  );
+
+  {
+    const session = await context.create(chatSession);
+
+    // file record
+    {
+      await storage.put(userId, session.workspaceId, 'blob', buffer);
+      const file = await session.addFile('blob', 'sample.pdf');
+
+      const handler = Sinon.spy(event, 'emit');
+
+      await jobs.embedPendingFile({
+        userId,
+        workspaceId: session.workspaceId,
+        contextId: session.id,
+        blobId: file.blobId,
+        fileId: file.id,
+        fileName: file.name,
+      });
+
+      t.deepEqual(handler.lastCall.args, [
+        'workspace.file.embed.finished',
+        {
+          contextId: session.id,
+          fileId: file.id,
+          chunkSize: 1,
+        },
+      ]);
+
+      const list = session.files;
+      t.deepEqual(
+        list.map(f => f.id),
+        [file.id],
+        'should list file id'
+      );
+
+      const result = await session.matchFileChunks('test', 1, undefined, 1);
+      t.is(result.length, 1, 'should match context');
+      t.is(result[0].fileId, file.id, 'should match file id');
+    }
+
+    // doc record
+
+    const addDoc = async () => {
+      const docId = randomUUID();
+      await t.context.db.snapshot.create({
+        data: {
+          workspaceId: session.workspaceId,
+          id: docId,
+          blob: Buffer.from([1, 1]),
+          state: Buffer.from([1, 1]),
+          updatedAt: new Date(),
+          createdAt: new Date(),
+        },
+      });
+      return docId;
+    };
+
+    {
+      const docId = await addDoc();
+      await session.addDocRecord(docId);
+      const docs = session.docs.map(d => d.id);
+      t.deepEqual(docs, [docId], 'should list doc id');
+
+      await session.removeDocRecord(docId);
+      t.deepEqual(session.docs, [], 'should remove doc id');
+    }
+
+    // tag record
+    {
+      const tagId = randomUUID();
+
+      const docId1 = await addDoc();
+      const docId2 = await addDoc();
+
+      {
+        await session.addCategoryRecord(ContextCategories.Tag, tagId, [docId1]);
+        const tags = session.tags.map(t => t.id);
+        t.deepEqual(tags, [tagId], 'should list tag id');
+
+        const docs = session.tags.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1], 'should list doc ids');
+      }
+
+      {
+        await session.addCategoryRecord(ContextCategories.Tag, tagId, [docId2]);
+
+        const docs = session.tags.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1, docId2], 'should list doc ids');
+      }
+
+      await session.removeCategoryRecord(ContextCategories.Tag, tagId);
+      t.deepEqual(session.tags, [], 'should remove tag id');
+    }
+
+    // collection record
+    {
+      const collectionId = randomUUID();
+
+      const docId1 = await addDoc();
+      const docId2 = await addDoc();
+      {
+        await session.addCategoryRecord(
+          ContextCategories.Collection,
+          collectionId,
+          [docId1]
+        );
+        const collection = session.collections.map(l => l.id);
+        t.deepEqual(collection, [collectionId], 'should list collection id');
+
+        const docs = session.collections.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1], 'should list doc ids');
+      }
+
+      {
+        await session.addCategoryRecord(
+          ContextCategories.Collection,
+          collectionId,
+          [docId2]
+        );
+
+        const docs = session.collections.flatMap(l => l.docs.map(d => d.id));
+        t.deepEqual(docs, [docId1, docId2], 'should list doc ids');
+      }
+
+      await session.removeCategoryRecord(
+        ContextCategories.Collection,
+        collectionId
+      );
+      t.deepEqual(session.collections, [], 'should remove collection id');
+    }
+  }
+});
+
+// ==================== workspace embedding ====================
+test('should be able to manage workspace embedding', async t => {
+  const { db, jobs, workspace, workspaceEmbedding, context, prompt, session } =
+    t.context;
+
+  // use mocked embedding client
+  Sinon.stub(context, 'embeddingClient').get(() => new MockEmbeddingClient());
+  Sinon.stub(jobs, 'embeddingClient').get(() => new MockEmbeddingClient());
+
+  const ws = await workspace.create(userId);
+
+  // should create workspace embedding
+  {
+    const { blobId, file } = await workspaceEmbedding.addFile(userId, ws.id, {
+      filename: 'test.txt',
+      mimetype: 'text/plain',
+      encoding: 'utf-8',
+      createReadStream: () => {
+        return new Readable({
+          read() {
+            this.push(Buffer.from('content'));
+            this.push(null);
+          },
+        });
+      },
+    });
+    await workspaceEmbedding.queueFileEmbedding({
+      userId,
+      workspaceId: ws.id,
+      blobId,
+      fileId: file.fileId,
+      fileName: file.fileName,
+    });
+
+    let ret = 0;
+    while (!ret) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      ret = await db.aiWorkspaceFileEmbedding.count({
+        where: { workspaceId: ws.id, fileId: file.fileId },
+      });
+    }
+  }
+
+  // should create workspace embedding with file
+  {
+    await prompt.set('prompt', 'model', [
+      { role: 'system', content: 'hello {{word}}' },
+    ]);
+    const sessionId = await session.create({
+      docId: 'test',
+      workspaceId: ws.id,
+      userId,
+      promptName: 'prompt',
+    });
+    const contextSession = await context.create(sessionId);
+
+    const ret = await contextSession.matchFileChunks('test', 1, undefined, 1);
+    t.is(ret.length, 1, 'should match workspace context');
+    t.is(ret[0].content, 'content', 'should match content');
+
+    await workspace.update(ws.id, { enableDocEmbedding: false });
+
+    const ret2 = await contextSession.matchFileChunks('test', 1, undefined, 1);
+    t.is(ret2.length, 0, 'should not match workspace context');
+  }
 });

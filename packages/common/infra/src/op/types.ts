@@ -26,6 +26,11 @@ export type OpInput<
       : never
   : never;
 
+export type OpInputWithSignal<Ops extends OpSchema, Type extends OpNames<Ops>> =
+  OpInput<Ops, Type> extends [infer In]
+    ? [In, AbortSignal | undefined] | [In]
+    : [AbortSignal | undefined] | [];
+
 export type OpOutput<
   Ops extends OpSchema,
   Type extends OpNames<Ops>,

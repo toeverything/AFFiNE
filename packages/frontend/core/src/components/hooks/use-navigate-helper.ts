@@ -1,6 +1,8 @@
-import { toURLSearchParams } from '@affine/core/modules/navigation';
+import type { SettingTab } from '@affine/core/modules/dialogs/constant';
+import { toDocSearchParams } from '@affine/core/modules/navigation';
 import { getOpenUrlInDesktopAppLink } from '@affine/core/modules/open-in-app';
-import type { DocMode } from '@blocksuite/affine/blocks';
+import type { DocMode } from '@blocksuite/affine/model';
+import { nanoid } from 'nanoid';
 import { createContext, useCallback, useContext, useMemo } from 'react';
 import type { NavigateFunction, NavigateOptions } from 'react-router-dom';
 
@@ -47,7 +49,12 @@ export function useNavigateHelper() {
       elementIds?: string[],
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      const search = toURLSearchParams({ mode, blockIds, elementIds });
+      const search = toDocSearchParams({
+        mode,
+        blockIds,
+        elementIds,
+        refreshKey: nanoid(),
+      });
       const query = search?.size ? `?${search.toString()}` : '';
       return navigate(`/workspace/${workspaceId}/${pageId}${query}`, {
         replace: logic === RouteLogic.REPLACE,
@@ -183,6 +190,25 @@ export function useNavigateHelper() {
     [navigate]
   );
 
+  const jumpToWorkspaceSettings = useCallback(
+    (
+      workspaceId: string,
+      tab?: SettingTab,
+      logic: RouteLogic = RouteLogic.PUSH
+    ) => {
+      const searchParams = new URLSearchParams();
+      if (tab) {
+        searchParams.set('tab', tab);
+      }
+      return navigate(
+        `/workspace/${workspaceId}/settings?${searchParams.toString()}`,
+        {
+          replace: logic === RouteLogic.REPLACE,
+        }
+      );
+    },
+    [navigate]
+  );
   return useMemo(
     () => ({
       jumpToPage,
@@ -198,6 +224,7 @@ export function useNavigateHelper() {
       jumpToTag,
       jumpToOpenInApp,
       jumpToImportTemplate,
+      jumpToWorkspaceSettings,
     }),
     [
       jumpToPage,
@@ -213,6 +240,7 @@ export function useNavigateHelper() {
       jumpToTag,
       jumpToOpenInApp,
       jumpToImportTemplate,
+      jumpToWorkspaceSettings,
     ]
   );
 }

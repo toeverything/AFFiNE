@@ -1,14 +1,14 @@
-import type { UIEventStateContext } from '@blocksuite/block-std';
+import type { UIEventStateContext } from '@blocksuite/std';
 import type { ReactiveController } from 'lit';
 
 import type { Cell } from '../../../../core/view-manager/cell.js';
 import type { Row } from '../../../../core/view-manager/row.js';
 import {
-  TableAreaSelection,
-  TableRowSelection,
+  TableViewAreaSelection,
+  TableViewRowSelection,
   type TableViewSelection,
   type TableViewSelectionWithType,
-} from '../../types.js';
+} from '../../selection';
 import type { DataViewTable } from '../table-view.js';
 
 const BLOCKSUITE_DATABASE_TABLE = 'blocksuite/database/table';
@@ -30,7 +30,7 @@ export class TableClipboardController implements ReactiveController {
       .map(row => row.cells.map(cell => cell.stringValue$.value).join('\t'))
       .join('\n');
     const jsonResult: JsonAreaData = area.map(row =>
-      row.cells.map(cell => cell.stringValue$.value)
+      row.cells.map(cell => cell.stringValue$.value ?? '')
     );
     if (isCut) {
       const deleteRows: string[] = [];
@@ -44,7 +44,7 @@ export class TableClipboardController implements ReactiveController {
         }
       }
       if (deleteRows.length) {
-        this.props.view.rowDelete(deleteRows);
+        this.props.view.rowsDelete(deleteRows);
       }
     }
     this.clipboard
@@ -85,7 +85,7 @@ export class TableClipboardController implements ReactiveController {
     if (!clipboardData) return;
 
     const tableSelection = this.host.selectionController.selection;
-    if (TableRowSelection.is(tableSelection)) {
+    if (TableViewRowSelection.is(tableSelection)) {
       return;
     }
     if (tableSelection) {
@@ -196,8 +196,8 @@ function getSelectedArea(
   table: DataViewTable
 ): SelectedArea | undefined {
   const view = table.props.view;
-  if (TableRowSelection.is(selection)) {
-    const rows = TableRowSelection.rows(selection)
+  if (TableViewRowSelection.is(selection)) {
+    const rows = TableViewRowSelection.rows(selection)
       .map(row => {
         const y =
           table.selectionController
@@ -211,7 +211,7 @@ function getSelectedArea(
       .sort((a, b) => a.y - b.y)
       .map(v => v.row);
     return rows.map(r => {
-      const row = view.rowGet(r.id);
+      const row = view.rowGetOrCreate(r.id);
       return {
         row,
         cells: row.cells$.value,
@@ -228,11 +228,11 @@ function getSelectedArea(
     return;
   }
   for (let i = rowsSelection.start; i <= rowsSelection.end; i++) {
-    const row: SelectedArea[number] = {
+    const rowArea: SelectedArea[number] = {
       cells: [],
     };
-    const rowId = rows[i];
-    if (rowId == null) {
+    const row = rows[i];
+    if (row == null) {
       continue;
     }
     for (let j = columnsSelection.start; j <= columnsSelection.end; j++) {
@@ -240,10 +240,10 @@ function getSelectedArea(
       if (columnId == null) {
         continue;
       }
-      const cell = view.cellGet(rowId, columnId);
-      row.cells.push(cell);
+      const cell = view.cellGetOrCreate(row.rowId, columnId);
+      rowArea.cells.push(cell);
     }
-    data.push(row);
+    data.push(rowArea);
   }
 
   return data;
@@ -255,11 +255,11 @@ type SelectedArea = {
 }[];
 
 function getTargetRangeFromSelection(
-  selection: TableAreaSelection,
+  selection: TableViewAreaSelection,
   data: JsonAreaData
 ) {
   const { rowsSelection, columnsSelection, focus } = selection;
-  return TableAreaSelection.isFocus(selection)
+  return TableViewAreaSelection.isFocus(selection)
     ? {
         row: {
           start: focus.rowIndex,
@@ -285,7 +285,7 @@ function getTargetRangeFromSelection(
 function pasteToCells(
   table: DataViewTable,
   rows: JsonAreaData,
-  selection: TableAreaSelection
+  selection: TableViewAreaSelection
 ) {
   const srcRowLength = rows.length;
   const srcColumnLength = rows[0]?.length ?? 0;

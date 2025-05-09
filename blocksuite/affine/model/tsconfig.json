@@ -7,9 +7,8 @@
   },
   "include": ["./src"],
   "references": [
-    { "path": "../../framework/block-std" },
     { "path": "../../framework/global" },
-    { "path": "../../framework/inline" },
+    { "path": "../../framework/std" },
     { "path": "../../framework/store" }
   ]
 }

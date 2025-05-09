@@ -70,7 +70,7 @@ test('Expand Sidebar', async ({ page }) => {
 });
 
 test('tab title will change when navigating', async ({ page }) => {
-  await expectTabTitle(page, 0, 'Write, Draw, Plan all at Once');
+  await expectTabTitle(page, 0, 'Getting Started');
 
   // create new page
   await clickNewPageButton(page);

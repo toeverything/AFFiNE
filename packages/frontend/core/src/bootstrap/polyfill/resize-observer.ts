@@ -1,5 +1,7 @@
 import { ResizeObserver } from '@juggle/resize-observer';
 
-export function polyfillResizeObserver() {
-  window.ResizeObserver = ResizeObserver;
-}
+(function polyfillResizeObserver() {
+  if (typeof window !== 'undefined') {
+    window.ResizeObserver = ResizeObserver;
+  }
+})();

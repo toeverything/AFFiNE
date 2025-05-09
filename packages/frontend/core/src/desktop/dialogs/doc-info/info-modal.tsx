@@ -5,17 +5,18 @@ import {
   PropertyCollapsibleContent,
   PropertyCollapsibleSection,
 } from '@affine/component';
-import { BacklinkGroups } from '@affine/core/components/blocksuite/block-suite-editor/bi-directional-link-panel';
-import { CreatePropertyMenuItems } from '@affine/core/components/doc-properties/menu/create-doc-property';
-import { DocPropertyRow } from '@affine/core/components/doc-properties/table';
+import { BacklinkGroups } from '@affine/core/blocksuite/block-suite-editor/bi-directional-link-panel';
+import { CreatePropertyMenuItems } from '@affine/core/components/properties/menu/create-doc-property';
+import { WorkspacePropertyRow } from '@affine/core/components/properties/table';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
-import { DocsService } from '@affine/core/modules/doc';
 import { DocDatabaseBacklinkInfo } from '@affine/core/modules/doc-info';
 import type {
   DatabaseRow,
   DatabaseValueCell,
 } from '@affine/core/modules/doc-info/types';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
+import { GuardService } from '@affine/core/modules/permissions';
+import { WorkspacePropertyService } from '@affine/core/modules/workspace-property';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import { PlusIcon } from '@blocksuite/icons/rc';
@@ -33,12 +34,18 @@ export const InfoTable = ({
   onClose: () => void;
 }) => {
   const t = useI18n();
-  const { docsSearchService, docsService } = useServices({
-    DocsSearchService,
-    DocsService,
-  });
+  const { docsSearchService, workspacePropertyService, guardService } =
+    useServices({
+      DocsSearchService,
+      WorkspacePropertyService,
+      GuardService,
+    });
+  const canEditPropertyInfo = useLiveData(
+    guardService.can$('Workspace_Properties_Update')
+  );
+  const canEditProperty = useLiveData(guardService.can$('Doc_Update', docId));
   const [newPropertyId, setNewPropertyId] = useState<string | null>(null);
-  const properties = useLiveData(docsService.propertyList.sortedProperties$);
+  const properties = useLiveData(workspacePropertyService.sortedProperties$);
   const links = useLiveData(
     useMemo(
       () => LiveData.from(docsSearchService.watchRefsFrom(docId), null),
@@ -130,9 +137,11 @@ export const InfoTable = ({
           }
         >
           {properties.map(property => (
-            <DocPropertyRow
+            <WorkspacePropertyRow
               key={property.id}
               propertyInfo={property}
+              readonly={!canEditProperty}
+              propertyInfoReadonly={!canEditPropertyInfo}
               defaultOpenEditMenu={newPropertyId === property.id}
               onChange={value => onPropertyChange(property, value)}
               onPropertyInfoChange={(...args) =>
@@ -140,22 +149,33 @@ export const InfoTable = ({
               }
             />
           ))}
-          <Menu
-            items={<CreatePropertyMenuItems onCreated={onPropertyAdded} />}
-            contentOptions={{
-              onClick(e) {
-                e.stopPropagation();
-              },
-            }}
-          >
+          {!canEditPropertyInfo ? (
             <Button
+              disabled
               variant="plain"
               prefix={<PlusIcon />}
               className={styles.addPropertyButton}
             >
               {t['com.affine.page-properties.add-property']()}
             </Button>
-          </Menu>
+          ) : (
+            <Menu
+              items={<CreatePropertyMenuItems onCreated={onPropertyAdded} />}
+              contentOptions={{
+                onClick(e) {
+                  e.stopPropagation();
+                },
+              }}
+            >
+              <Button
+                variant="plain"
+                prefix={<PlusIcon />}
+                className={styles.addPropertyButton}
+              >
+                {t['com.affine.page-properties.add-property']()}
+              </Button>
+            </Menu>
+          )}
         </PropertyCollapsibleContent>
       </PropertyCollapsibleSection>
       <Divider size="thinner" />

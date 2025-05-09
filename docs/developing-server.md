@@ -22,6 +22,10 @@ cp ./.docker/dev/.env.example ./.docker/dev/.env
 docker compose -f ./.docker/dev/compose.yml up
 ```
 
+#### Notify
+
+> Starting from AFFiNE 0.20, compose.yml includes a breaking change: the default database image has switched from `postgres:16` to `pgvector/pgvector:pg16`. If you were previously using another major version of Postgres, please change the number after `pgvector/pgvector:pg` to the major version you are using.
+
 ## Build native packages (you need to setup rust toolchain first)
 
 Server also requires native packages to be built, you can build them by running the following command:
@@ -36,8 +40,9 @@ yarn affine @affine/server-native build
 ```sh
 # uncomment all env variables here
 cp packages/backend/server/.env.example packages/backend/server/.env
-yarn affine server prisma db push
-yarn affine server data-migration run
+
+# everytime there are new migrations, init command should runned again
+yarn affine server init
 ```
 
 ## Start server
@@ -47,11 +52,31 @@ yarn affine server data-migration run
 yarn affine server dev
 ```
 
-when server started, it will created a default user for testing:
+when server started, it will created a default user and a pro user for testing:
+
+### default user
+
+Workspace members up to 3
 
 - email: dev@affine.pro
 - name: Dev User
 - password: dev
+
+### pro user
+
+Workspace members up to 10
+
+- email: pro@affine.pro
+- name: Pro User
+- password: pro
+
+### team user
+
+Include a default `Team Workspace` and the members up to 10
+
+- email: team@affine.pro
+- name: Team User
+- password: team
 
 ## Start frontend
 
@@ -73,4 +98,10 @@ Now you should be able to start developing affine with server enabled.
 ```sh
 # available at http://localhost:5555
 yarn affine server prisma studio
+```
+
+### Seed the db
+
+```
+yarn affine server seed -h
 ```

@@ -1,37 +1,29 @@
-import { DynamicModule, FactoryProvider } from '@nestjs/common';
-import { merge } from 'lodash-es';
+import { DynamicModule, Global, Module, Provider } from '@nestjs/common';
 
-import { AFFiNEConfig } from './def';
-import { Config } from './provider';
+import { Config } from './config';
+import { ConfigFactory, OVERRIDE_CONFIG_TOKEN } from './factory';
+import { ConfigProvider } from './provider';
 
-export * from './def';
-export * from './default';
-export { applyEnvToConfig, parseEnvValue } from './env';
-export * from './provider';
-export { defineRuntimeConfig, defineStartupConfig } from './register';
-export type { AppConfig, ConfigItem, ModuleConfig } from './types';
-
-function createConfigProvider(
-  override?: DeepPartial<Config>
-): FactoryProvider<Config> {
-  return {
-    provide: Config,
-    useFactory: () => {
-      return Object.freeze(merge({}, globalThis.AFFiNE, override));
-    },
-    inject: [],
-  };
-}
-
+@Global()
+@Module({
+  providers: [ConfigProvider, ConfigFactory],
+  exports: [ConfigProvider, ConfigFactory],
+})
 export class ConfigModule {
-  static forRoot = (override?: DeepPartial<AFFiNEConfig>): DynamicModule => {
-    const provider = createConfigProvider(override);
+  static override(overrides: DeepPartial<AppConfigSchema> = {}): DynamicModule {
+    const provider: Provider = {
+      provide: OVERRIDE_CONFIG_TOKEN,
+      useValue: overrides,
+    };
 
     return {
       global: true,
-      module: ConfigModule,
+      module: class ConfigOverrideModule {},
       providers: [provider],
       exports: [provider],
     };
-  };
+  }
 }
+
+export { Config, ConfigFactory };
+export { defineModuleConfig, type JSONSchema } from './register';

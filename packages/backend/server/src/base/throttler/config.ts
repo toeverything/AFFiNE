@@ -1,27 +1,38 @@
-import { defineStartupConfig, ModuleConfig } from '../config';
+import { defineModuleConfig } from '../config';
 
 export type ThrottlerType = 'default' | 'strict';
 
-type ThrottlerStartupConfigurations = {
-  [key in ThrottlerType]: {
-    ttl: number;
-    limit: number;
-  };
-};
-
-declare module '../config' {
-  interface AppConfig {
-    throttler: ModuleConfig<ThrottlerStartupConfigurations>;
+declare global {
+  interface AppConfigSchema {
+    throttle: {
+      enabled: boolean;
+      throttlers: {
+        [key in ThrottlerType]: ConfigItem<{
+          ttl: number;
+          limit: number;
+        }>;
+      };
+    };
   }
 }
 
-defineStartupConfig('throttler', {
-  default: {
-    ttl: 60,
-    limit: 120,
+defineModuleConfig('throttle', {
+  enabled: {
+    desc: 'Whether the throttler is enabled.',
+    default: true,
   },
-  strict: {
-    ttl: 60,
-    limit: 20,
+  'throttlers.default': {
+    desc: 'The config for the default throttler.',
+    default: {
+      ttl: 60,
+      limit: 120,
+    },
+  },
+  'throttlers.strict': {
+    desc: 'The config for the strict throttler.',
+    default: {
+      ttl: 60,
+      limit: 20,
+    },
   },
 });

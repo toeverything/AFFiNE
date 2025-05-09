@@ -1,11 +1,15 @@
 import { Button } from '@affine/component/ui/button';
-import { ServerService } from '@affine/core/modules/cloud';
+import { notify } from '@affine/component/ui/notification';
+import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
+import { AuthService, ServerService } from '@affine/core/modules/cloud';
 import { UrlService } from '@affine/core/modules/url';
+import { type UserFriendlyError } from '@affine/error';
 import { OAuthProviderType } from '@affine/graphql';
+import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import { GithubIcon, GoogleDuotoneIcon } from '@blocksuite/icons/rc';
+import { GithubIcon, GoogleIcon, LockIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { type ReactElement, type SVGAttributes, useCallback } from 'react';
+import { type ReactElement, type SVGAttributes } from 'react';
 
 const OAuthProviderMap: Record<
   OAuthProviderType,
@@ -14,7 +18,7 @@ const OAuthProviderMap: Record<
   }
 > = {
   [OAuthProviderType.Google]: {
-    icon: <GoogleDuotoneIcon />,
+    icon: <GoogleIcon />,
   },
 
   [OAuthProviderType.GitHub]: {
@@ -22,8 +26,7 @@ const OAuthProviderMap: Record<
   },
 
   [OAuthProviderType.OIDC]: {
-    // TODO(@catsjuice): Add OIDC icon
-    icon: <GoogleDuotoneIcon />,
+    icon: <LockIcon />,
   },
 };
 
@@ -65,9 +68,27 @@ function OAuthProvider({
   popupWindow: (url: string) => void;
 }) {
   const serverService = useService(ServerService);
+  const auth = useService(AuthService);
   const { icon } = OAuthProviderMap[provider];
+  const t = useI18n();
 
-  const onClick = useCallback(() => {
+  const onClick = useAsyncCallback(async () => {
+    if (scheme && BUILD_CONFIG.isNative) {
+      let oauthUrl = '';
+      try {
+        oauthUrl = await auth.oauthPreflight(provider, scheme);
+      } catch (e) {
+        console.error(e);
+        const err = e as UserFriendlyError;
+        notify.error({
+          title: t[`error.${err.name}`](err.data),
+        });
+        return;
+      }
+      popupWindow(oauthUrl);
+      return;
+    }
+
     const params = new URLSearchParams();
 
     params.set('provider', provider);
@@ -89,7 +110,7 @@ function OAuthProvider({
     track.$.$.auth.signIn({ method: 'oauth', provider });
 
     popupWindow(oauthUrl);
-  }, [popupWindow, provider, redirectUrl, scheme, serverService]);
+  }, [popupWindow, provider, redirectUrl, scheme, serverService, auth, t]);
 
   return (
     <Button
@@ -97,7 +118,7 @@ function OAuthProvider({
       variant="primary"
       block
       size="extraLarge"
-      style={{ marginTop: 30, width: '100%' }}
+      style={{ width: '100%' }}
       prefix={icon}
       onClick={onClick}
     >

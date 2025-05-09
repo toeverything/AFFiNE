@@ -1,5 +1,5 @@
 import { PAGE_HEADER_HEIGHT } from '@blocksuite/affine-shared/consts';
-import { WithDisposable } from '@blocksuite/global/utils';
+import { WithDisposable } from '@blocksuite/global/lit';
 import { DoneIcon, SearchIcon } from '@blocksuite/icons/lit';
 import { autoPlacement, offset, type Placement, size } from '@floating-ui/dom';
 import { html, LitElement, nothing } from 'lit';
@@ -204,7 +204,7 @@ export function showPopFilterableList({
   createLitPortal({
     closeOnClickAway: true,
     template: ({ positionSlot }) => {
-      positionSlot.on(({ placement }) => {
+      positionSlot.subscribe(({ placement }) => {
         list.placement = placement;
       });
 

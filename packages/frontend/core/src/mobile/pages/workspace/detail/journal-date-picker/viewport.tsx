@@ -1,6 +1,6 @@
 import { useGlobalEvent } from '@affine/core/mobile/hooks/use-global-events';
 import { SwipeHelper } from '@affine/core/mobile/utils';
-import anime from 'animejs';
+import { animate, eases } from 'animejs';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import {
@@ -59,7 +59,7 @@ export const ResizeViewport = ({
         { value: draggedDistance },
         {
           set(target, key, value) {
-            if (key !== 'value') return false;
+            if (key !== 'value') return true;
             setDragOffset(value);
             target.value = value;
             return true;
@@ -68,12 +68,11 @@ export const ResizeViewport = ({
       );
 
       setIsAnimating(true);
-      anime({
-        targets: dragOffsetProxy,
+      animate(dragOffsetProxy, {
         value: targetDragOffset,
         duration: 300,
-        easing: 'easeOutCubic',
-        complete: () => {
+        ease: eases.outCubic,
+        onComplete: () => {
           setMode(targetMode);
           setDragOffset(0);
           setIsDragging(false);

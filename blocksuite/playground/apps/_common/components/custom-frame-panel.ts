@@ -1,6 +1,6 @@
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { WithDisposable } from '@blocksuite/global/utils';
-import type { AffineEditorContainer } from '@blocksuite/presets';
+import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { ShadowlessElement } from '@blocksuite/affine/std';
+import type { TestAffineEditorContainer } from '@blocksuite/integration-test';
 import { effect } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
@@ -59,7 +59,7 @@ export class CustomFramePanel extends WithDisposable(ShadowlessElement) {
   private accessor _show = false;
 
   @property({ attribute: false })
-  accessor editor!: AffineEditorContainer;
+  accessor editor!: TestAffineEditorContainer;
 }
 
 declare global {

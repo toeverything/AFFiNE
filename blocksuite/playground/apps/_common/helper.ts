@@ -1,24 +1,22 @@
-import { AffineSchemas, SpecProvider } from '@blocksuite/blocks';
-import { Schema } from '@blocksuite/store';
-import { TestWorkspace } from '@blocksuite/store/test';
+import { TestWorkspace } from '@blocksuite/affine/store/test';
+import { getTestStoreManager } from '@blocksuite/integration-test/store';
 
 export function createEmptyDoc() {
-  const schema = new Schema().register(AffineSchemas);
-  const collection = new TestWorkspace({ schema });
-  collection.storeExtensions =
-    SpecProvider.getInstance().getSpec('store').value;
+  const collection = new TestWorkspace();
+  collection.storeExtensions = getTestStoreManager().get('store');
   collection.meta.initialize();
   const doc = collection.createDoc();
+  const store = doc.getStore();
 
   return {
     doc,
     init() {
       doc.load();
-      const rootId = doc.addBlock('affine:page', {});
-      doc.addBlock('affine:surface', {}, rootId);
-      const noteId = doc.addBlock('affine:note', {}, rootId);
-      doc.addBlock('affine:paragraph', {}, noteId);
-      return doc;
+      const rootId = store.addBlock('affine:page', {});
+      store.addBlock('affine:surface', {}, rootId);
+      const noteId = store.addBlock('affine:note', {}, rootId);
+      store.addBlock('affine:paragraph', {}, noteId);
+      return store;
     },
   };
 }

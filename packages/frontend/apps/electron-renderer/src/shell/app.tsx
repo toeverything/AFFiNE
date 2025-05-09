@@ -11,7 +11,7 @@ import { configureDesktopApiModule } from '@affine/core/modules/desktop-api';
 import { configureI18nModule, I18nProvider } from '@affine/core/modules/i18n';
 import {
   configureElectronStateStorageImpls,
-  configureGlobalStorageModule,
+  configureStorageModule,
 } from '@affine/core/modules/storage';
 import { configureAppThemeModule } from '@affine/core/modules/theme';
 import { Framework, FrameworkRoot } from '@toeverything/infra';
@@ -19,7 +19,7 @@ import { Framework, FrameworkRoot } from '@toeverything/infra';
 import * as styles from './app.css';
 
 const framework = new Framework();
-configureGlobalStorageModule(framework);
+configureStorageModule(framework);
 configureElectronStateStorageImpls(framework);
 configureAppTabsHeaderModule(framework);
 configureAppSidebarModule(framework);

@@ -104,6 +104,10 @@ export class BlobEngine {
     return key;
   }
 
+  blobState$(key: string) {
+    return this.main.blobState$?.(key) ?? null;
+  }
+
   start() {
     if (this._abort) {
       return;

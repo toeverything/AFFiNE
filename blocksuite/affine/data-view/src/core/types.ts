@@ -1,17 +1,11 @@
-import type { KanbanViewSelectionWithType } from '../view-presets/kanban/types.js';
-import type { TableViewSelectionWithType } from '../view-presets/table/types.js';
+import type {
+  KanbanViewSelectionWithType,
+  TableViewSelectionWithType,
+} from '../view-presets';
 
 export type DataViewSelection =
   | TableViewSelectionWithType
   | KanbanViewSelectionWithType;
-export type GetDataViewSelection<
-  K extends DataViewSelection['type'],
-  T = DataViewSelection,
-> = T extends {
-  type: K;
-}
-  ? T
-  : never;
 export type DataViewSelectionState = DataViewSelection | undefined;
 export type PropertyDataUpdater<
   Data extends Record<string, unknown> = Record<string, unknown>,
@@ -19,8 +13,5 @@ export type PropertyDataUpdater<
 
 export interface DatabaseFlags {
   enable_number_formatting: boolean;
+  enable_table_virtual_scroll: boolean;
 }
-
-export const defaultDatabaseFlags: Readonly<DatabaseFlags> = {
-  enable_number_formatting: false,
-};

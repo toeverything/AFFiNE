@@ -15,9 +15,10 @@ def capacitor_pods
   pod 'CapacitorBrowser', :path => '../../../../../node_modules/@capacitor/browser'
   pod 'CapacitorHaptics', :path => '../../../../../node_modules/@capacitor/haptics'
   pod 'CapacitorKeyboard', :path => '../../../../../node_modules/@capacitor/keyboard'
+  pod 'CapacitorPluginAppTrackingTransparency', :path => '../../../../../node_modules/capacitor-plugin-app-tracking-transparency'
 end
 
-target 'App' do
+target 'AFFiNE' do
   capacitor_pods
   # Add your Pods here
   pod 'CryptoSwift', '~> 1.8.3'

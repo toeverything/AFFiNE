@@ -18,7 +18,7 @@ export const AppTabs = ({
   fixed?: boolean;
 }) => {
   const virtualKeyboardService = useService(VirtualKeyboardService);
-  const virtualKeyboardVisible = useLiveData(virtualKeyboardService.show$);
+  const virtualKeyboardVisible = useLiveData(virtualKeyboardService.visible$);
 
   const tab = (
     <SafeArea

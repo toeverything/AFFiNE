@@ -3,16 +3,17 @@ import { Module } from '@nestjs/common';
 import { PermissionModule } from '../permission';
 import { StorageModule } from '../storage';
 import { UserAvatarController } from './controller';
-import { UserManagementResolver, UserResolver } from './resolver';
-import { UserService } from './service';
+import {
+  UserManagementResolver,
+  UserResolver,
+  UserSettingsResolver,
+} from './resolver';
 
 @Module({
   imports: [StorageModule, PermissionModule],
-  providers: [UserResolver, UserService, UserManagementResolver],
+  providers: [UserResolver, UserManagementResolver, UserSettingsResolver],
   controllers: [UserAvatarController],
-  exports: [UserService],
 })
 export class UserModule {}
 
-export { UserService } from './service';
-export { UserType } from './types';
+export { PublicUserType, UserType, WorkspaceUserType } from './types';

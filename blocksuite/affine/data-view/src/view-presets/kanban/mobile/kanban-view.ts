@@ -14,7 +14,7 @@ import { type DataViewInstance, renderUniLit } from '../../../core/index.js';
 import { sortable } from '../../../core/utils/wc-dnd/sort/sort-context.js';
 import { DataViewBase } from '../../../core/view/data-view-base.js';
 import type { KanbanSingleView } from '../kanban-view-manager.js';
-import type { KanbanViewSelectionWithType } from '../types.js';
+import type { KanbanViewSelectionWithType } from '../selection';
 
 const styles = css`
   mobile-data-view-kanban {

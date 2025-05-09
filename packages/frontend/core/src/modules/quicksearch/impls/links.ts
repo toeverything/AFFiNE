@@ -1,4 +1,4 @@
-import type { ReferenceParams } from '@blocksuite/affine/blocks';
+import type { ReferenceParams } from '@blocksuite/affine/model';
 import { BlockLinkIcon, EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
 import { Entity, LiveData } from '@toeverything/infra';
 import { omit, truncate } from 'lodash-es';

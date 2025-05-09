@@ -37,7 +37,7 @@ export const popMobileRowMenu = (
           class: { 'delete-item': true },
           prefix: DeleteIcon(),
           select: () => {
-            view.rowDelete([rowId]);
+            view.rowsDelete([rowId]);
           },
         }),
       ],

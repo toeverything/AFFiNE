@@ -3,8 +3,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@blocksuite/affine": "workspace:*",
-    "vitest": "2.1.8"
+    "vitest": "3.1.3"
   },
   "exports": {
     "./automation": "./src/automation.ts",
@@ -13,13 +12,15 @@
     "./workspace": "./src/workspace.ts",
     "./workspace/legacy-cloud": "./src/workspace/legacy-cloud/index.ts",
     "./filter": "./src/filter.ts",
-    "./blocksuite": "./src/blocksuite/index.ts"
+    "./blocksuite": "./src/blocksuite/index.ts",
+    "./worker": "./src/worker.ts"
   },
   "peerDependencies": {
-    "@affine/templates": "workspace:*"
+    "@affine/templates": "workspace:*",
+    "@blocksuite/affine": "workspace:*"
   },
   "dependencies": {
     "zod": "^3.24.1"
   },
-  "version": "0.19.0"
+  "version": "0.21.0"
 }

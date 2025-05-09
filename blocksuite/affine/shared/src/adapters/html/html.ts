@@ -174,11 +174,8 @@ export class HtmlAdapter extends BaseAdapter<Html> {
 
   readonly blockMatchers: BlockHtmlAdapterMatcher[];
 
-  constructor(
-    job: Transformer,
-    readonly provider: ServiceProvider
-  ) {
-    super(job);
+  constructor(job: Transformer, provider: ServiceProvider) {
+    super(job, provider);
     const blockMatchers = Array.from(
       provider.getAll(BlockHtmlAdapterMatcherIdentifier).values()
     );

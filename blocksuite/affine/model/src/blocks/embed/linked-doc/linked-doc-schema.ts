@@ -1,3 +1,5 @@
+import { BlockSchemaExtension } from '@blocksuite/store';
+
 import { createEmbedBlockSchema } from '../../../utils/index.js';
 import {
   type EmbedLinkedDocBlockProps,
@@ -12,6 +14,8 @@ const defaultEmbedLinkedDocBlockProps: EmbedLinkedDocBlockProps = {
   // title & description aliases
   title: undefined,
   description: undefined,
+
+  footnoteIdentifier: null,
 };
 
 export const EmbedLinkedDocBlockSchema = createEmbedBlockSchema({
@@ -20,3 +24,7 @@ export const EmbedLinkedDocBlockSchema = createEmbedBlockSchema({
   toModel: () => new EmbedLinkedDocModel(),
   props: (): EmbedLinkedDocBlockProps => defaultEmbedLinkedDocBlockProps,
 });
+
+export const EmbedLinkedDocBlockSchemaExtension = BlockSchemaExtension(
+  EmbedLinkedDocBlockSchema
+);

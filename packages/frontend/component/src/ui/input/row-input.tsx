@@ -19,7 +19,7 @@ export type RowInputProps = {
   autoSelect?: boolean;
   type?: HTMLInputElement['type'];
   style?: CSSProperties;
-  onEnter?: () => void;
+  onEnter?: (value: string) => void;
   [key: `data-${string}`]: string;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size' | 'onBlur'>;
 
@@ -84,7 +84,7 @@ export const RowInput = forwardRef<HTMLInputElement, RowInputProps>(
         if (e.key !== 'Enter' || composing) {
           return;
         }
-        onEnter?.();
+        onEnter?.(e.currentTarget.value);
       },
       [onKeyDown, composing, onEnter]
     );

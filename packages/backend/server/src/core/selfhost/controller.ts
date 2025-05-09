@@ -3,26 +3,29 @@ import type { Request, Response } from 'express';
 
 import {
   ActionForbidden,
-  EventEmitter,
+  Config,
   InternalServerError,
   Mutex,
   PasswordRequired,
+  UseNamedGuard,
 } from '../../base';
+import { Models } from '../../models';
 import { AuthService, Public } from '../auth';
 import { ServerService } from '../config';
-import { UserService } from '../user/service';
+import { validators } from '../utils/validators';
 
 interface CreateUserInput {
   email: string;
   password: string;
 }
 
+@UseNamedGuard('selfhost')
 @Controller('/api/setup')
 export class CustomSetupController {
   constructor(
-    private readonly user: UserService,
+    private readonly config: Config,
+    private readonly models: Models,
     private readonly auth: AuthService,
-    private readonly event: EventEmitter,
     private readonly mutex: Mutex,
     private readonly server: ServerService
   ) {}
@@ -34,32 +37,43 @@ export class CustomSetupController {
     @Res() res: Response,
     @Body() input: CreateUserInput
   ) {
+    if (await this.server.initialized()) {
+      throw new ActionForbidden('First user already created');
+    }
+
+    validators.assertValidEmail(input.email);
+
     if (!input.password) {
       throw new PasswordRequired();
     }
+
+    validators.assertValidPassword(
+      input.password,
+      this.config.auth.passwordRequirements
+    );
 
     await using lock = await this.mutex.acquire('createFirstAdmin');
 
     if (!lock) {
       throw new InternalServerError();
     }
-
-    if (await this.server.initialized()) {
-      throw new ActionForbidden('First user already created');
-    }
-
-    const user = await this.user.createUser({
+    const user = await this.models.user.create({
       email: input.email,
       password: input.password,
       registered: true,
     });
 
     try {
-      await this.event.emitAsync('user.admin.created', user);
+      await this.models.userFeature.add(
+        user.id,
+        'administrator',
+        'selfhost setup'
+      );
+
       await this.auth.setCookies(req, res, user.id);
       res.send({ id: user.id, email: user.email, name: user.name });
     } catch (e) {
-      await this.user.deleteUser(user.id);
+      await this.models.user.delete(user.id);
       throw e;
     }
   }

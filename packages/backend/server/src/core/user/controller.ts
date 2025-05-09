@@ -12,7 +12,7 @@ export class UserAvatarController {
 
   @Get('/:id')
   async getAvatar(@Res() res: Response, @Param('id') id: string) {
-    if (this.storage.provider.type !== 'fs') {
+    if (this.storage.config.storage.provider !== 'fs') {
       throw new ActionForbidden(
         'Only available when avatar storage provider set to fs.'
       );

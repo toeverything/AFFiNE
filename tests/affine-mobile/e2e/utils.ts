@@ -1,8 +1,8 @@
-/* eslint-disable unicorn/prefer-dom-node-dataset */
 import { expect, type Locator, type Page } from '@playwright/test';
 
 export async function expandCollapsibleSection(page: Page, name: string) {
   const divider = page.locator(`[data-collapsible]:has-text("${name}")`);
+  // oxlint-disable-next-line prefer-dom-node-dataset
   if ((await divider.getAttribute('data-collapsed')) === 'true') {
     await divider.click();
   }
@@ -32,10 +32,10 @@ export async function getAttrOfActiveElement(
 }
 
 /**
- * Open the context menu of an explorer node
+ * Open the context menu of an navigation panel node
  * @returns Menu Locator
  */
-export async function openExplorerNodeMenu(page: Page, node: Locator) {
+export async function openNavigationPanelNodeMenu(page: Page, node: Locator) {
   await node.getByTestId('menu-trigger').tap();
   const menu = page.getByRole('dialog');
   await expect(menu).toBeVisible();
@@ -49,7 +49,8 @@ export async function openTab(
   const tab = page.locator('#app-tabs').getByRole('tab', { name });
   await expect(tab).toBeVisible();
   await tab.click();
-  // eslint-disable-next-line unicorn/prefer-dom-node-dataset
+
+  // oxlint-disable-next-line prefer-dom-node-dataset
   const isActive = await tab.getAttribute('data-active');
   expect(isActive).toBe('true');
 }

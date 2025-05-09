@@ -30,4 +30,5 @@ export const mainRPC = AsyncCall<MainToHelper>(helperToMainServer, {
       process.parentPort.postMessage(data);
     },
   },
+  log: false,
 });

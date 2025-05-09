@@ -1,10 +1,15 @@
 import {
   type DBSchemaBuilder,
   f,
+  type FieldSchemaBuilder,
   type ORMEntity,
   t,
 } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
+
+import type { WorkspacePropertyType } from '../../workspace-property';
+
+const integrationType = f.enum('readwise', 'zotero');
 
 export const AFFiNE_WORKSPACE_DB_SCHEMA = {
   folders: {
@@ -22,11 +27,14 @@ export const AFFiNE_WORKSPACE_DB_SCHEMA = {
     journal: f.string().optional(),
     pageWidth: f.string().optional(),
     isTemplate: f.boolean().optional(),
+    integrationType: integrationType.optional(),
+    createdBy: f.string().optional(),
+    updatedBy: f.string().optional(),
   }),
   docCustomPropertyInfo: {
     id: f.string().primaryKey().optional().default(nanoid),
     name: f.string().optional(),
-    type: f.string(),
+    type: f.string() as FieldSchemaBuilder<WorkspacePropertyType, false, false>,
     show: f.enum('always-show', 'always-hide', 'hide-when-empty').optional(),
     index: f.string().optional(),
     icon: f.string().optional(),
@@ -38,7 +46,6 @@ export const AFFiNE_WORKSPACE_DB_SCHEMA = {
 export type AFFiNEWorkspaceDbSchema = typeof AFFiNE_WORKSPACE_DB_SCHEMA;
 
 export type DocProperties = ORMEntity<AFFiNEWorkspaceDbSchema['docProperties']>;
-
 export type DocCustomPropertyInfo = ORMEntity<
   AFFiNEWorkspaceDbSchema['docCustomPropertyInfo']
 >;
@@ -52,6 +59,20 @@ export const AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA = {
     key: f.string().primaryKey(),
     value: f.json(),
   },
+  docIntegrationRef: {
+    // docId as primary key
+    id: f.string().primaryKey(),
+    type: integrationType,
+    /**
+     * Identify **affine user** and **integration type** and **integration account**
+     * Used to quickly find user's all integrations
+     */
+    integrationId: f.string(),
+    refMeta: f.json(),
+  },
 } as const satisfies DBSchemaBuilder;
 export type AFFiNEWorkspaceUserdataDbSchema =
   typeof AFFiNE_WORKSPACE_USERDATA_DB_SCHEMA;
+export type DocIntegrationRef = ORMEntity<
+  AFFiNEWorkspaceUserdataDbSchema['docIntegrationRef']
+>;

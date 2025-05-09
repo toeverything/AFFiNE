@@ -1,13 +1,13 @@
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { assertEquals } from '@blocksuite/global/utils';
+import { ShadowlessElement } from '@blocksuite/std';
 import { type Text } from '@blocksuite/store';
 import { css, html } from 'lit';
 import { state } from 'lit/decorators.js';
 import { createRef, ref } from 'lit/directives/ref.js';
+import isEqual from 'lodash-es/isEqual';
 import * as Y from 'yjs';
 
 import { t } from '../../../../core/index.js';
-import type { TableAreaSelection } from '../../types.js';
+import type { TableViewAreaSelection } from '../../selection';
 import type { DataViewTable } from '../table-view.js';
 
 export class DragToFillElement extends ShadowlessElement {
@@ -50,7 +50,7 @@ export class DragToFillElement extends ShadowlessElement {
 
 export function fillSelectionWithFocusCellData(
   host: DataViewTable,
-  selection: TableAreaSelection
+  selection: TableViewAreaSelection
 ) {
   const { groupKey, rowsSelection, columnsSelection, focus } = selection;
 
@@ -63,11 +63,10 @@ export function fillSelectionWithFocusCellData(
   if (!focusCell) return;
 
   if (rowsSelection && columnsSelection) {
-    assertEquals(
-      columnsSelection.start,
-      columnsSelection.end,
-      'expected selections on a single column'
-    );
+    if (!isEqual(columnsSelection.start, columnsSelection.end)) {
+      console.error('expected selections on a single column');
+      return;
+    }
 
     const curCol = focusCell.column; // we are sure that we are always in the same column while iterating through rows
     const cell = focusCell.cell$.value;
@@ -89,7 +88,9 @@ export function fillSelectionWithFocusCellData(
 
       const curCell = cellContainer.cell$.value;
 
-      if (t.richText.is(curCol.dataType$.value)) {
+      const dataType = curCol.dataType$.value;
+
+      if (dataType && t.richText.is(dataType)) {
         const focusCellText = focusData as Text | undefined;
 
         const delta = focusCellText?.toDelta() ?? [{ insert: '' }];

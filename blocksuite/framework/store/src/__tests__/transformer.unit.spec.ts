@@ -2,10 +2,10 @@ import { expect, test } from 'vitest';
 import * as Y from 'yjs';
 
 import { MemoryBlobCRUD } from '../adapter/index.js';
-import type { BlockModel } from '../model/block/block-model.js';
-import { defineBlockSchema, type SchemaToModel } from '../model/block/zod.js';
+import { BlockSchemaExtension } from '../extension/schema.js';
+import { BlockModel } from '../model/block/block-model.js';
+import { defineBlockSchema } from '../model/block/zod.js';
 import { Text } from '../reactive/index.js';
-import { Schema } from '../schema/index.js';
 import { createAutoIncrementIdGenerator } from '../test/index.js';
 import { TestWorkspace } from '../test/test-workspace.js';
 import { AssetsManager, BaseBlockTransformer } from '../transformer/index.js';
@@ -39,16 +39,19 @@ const docSchema = defineBlockSchema({
   },
 });
 
-type RootBlockModel = SchemaToModel<typeof docSchema>;
+const docSchemaExtension = BlockSchemaExtension(docSchema);
+class RootBlockModel extends BlockModel<
+  ReturnType<(typeof docSchema)['model']['props']>
+> {}
+
+const extensions = [docSchemaExtension];
 
 function createTestOptions() {
   const idGenerator = createAutoIncrementIdGenerator();
-  const schema = new Schema();
-  schema.register([docSchema]);
-  return { id: 'test-collection', idGenerator, schema };
+  return { id: 'test-collection', idGenerator };
 }
 
-const transformer = new BaseBlockTransformer();
+const transformer = new BaseBlockTransformer(new Map());
 const blobCRUD = new MemoryBlobCRUD();
 const assets = new AssetsManager({ blob: blobCRUD });
 
@@ -56,10 +59,11 @@ test('model to snapshot', () => {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc = collection.createDoc({ id: 'home' });
+  const doc = collection.createDoc('home');
+  const store = doc.getStore({ extensions });
   doc.load();
-  doc.addBlock('page');
-  const rootModel = doc.root as RootBlockModel;
+  store.addBlock('page');
+  const rootModel = store.root as RootBlockModel;
 
   expect(rootModel).not.toBeNull();
   const snapshot = transformer.toSnapshot({
@@ -73,10 +77,11 @@ test('snapshot to model', async () => {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc = collection.createDoc({ id: 'home' });
+  const doc = collection.createDoc('home');
+  const store = doc.getStore({ extensions });
   doc.load();
-  doc.addBlock('page');
-  const rootModel = doc.root as RootBlockModel;
+  store.addBlock('page');
+  const rootModel = store.root as RootBlockModel;
 
   const tempDoc = new Y.Doc();
   const map = tempDoc.getMap('temp');
@@ -131,11 +136,3 @@ test('snapshot to model', async () => {
     expect(item.content.toString()).toBe(`item ${index + 1}`);
   });
 });
-
-declare global {
-  namespace BlockSuite {
-    interface BlockModels {
-      page: BlockModel;
-    }
-  }
-}

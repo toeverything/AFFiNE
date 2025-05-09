@@ -79,7 +79,12 @@ export const AllDocList = ({
   // }, [finalPageMetas, groupDefs]);
 
   if (!finalPageMetas.length) {
-    return <EmptyDocs absoluteCenter tagId={tag?.id} />;
+    return (
+      <>
+        <EmptyDocs absoluteCenter tagId={tag?.id} />
+        <div className={styles.emptySpaceY} />
+      </>
+    );
   }
 
   // return (

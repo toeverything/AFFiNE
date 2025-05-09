@@ -11,9 +11,8 @@ import {
   useServiceOptional,
 } from '@toeverything/infra';
 import clsx from 'clsx';
-import { debounce } from 'lodash-es';
 import type { PropsWithChildren, ReactElement } from 'react';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo } from 'react';
 
 import { WorkbenchService } from '../../workbench';
 import { allowedSplitViewEntityTypes } from '../../workbench/view/split-view/types';
@@ -21,7 +20,6 @@ import { WorkspaceService } from '../../workspace';
 import { AppSidebarService } from '../services/app-sidebar';
 import * as styles from './fallback.css';
 import {
-  floatingMaxWidth,
   hoverNavWrapperStyle,
   navBodyStyle,
   navHeaderStyle,
@@ -54,21 +52,6 @@ export function AppSidebar({ children }: PropsWithChildren) {
   const smallScreenMode = useLiveData(appSidebarService.smallScreenMode$);
   const hovering = useLiveData(appSidebarService.hovering$) && open !== true;
   const resizing = useLiveData(appSidebarService.resizing$);
-  const [initialized, setInitialized] = useState(false);
-
-  useEffect(() => {
-    if (BUILD_CONFIG.isElectron) {
-      setInitialized(true);
-      return;
-    }
-    const shouldFloating = window.matchMedia(
-      `(max-width: ${floatingMaxWidth}px)`
-    ).matches;
-
-    appSidebarService.setSmallScreenMode(shouldFloating);
-    setInitialized(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const sidebarState = smallScreenMode
     ? open
@@ -79,27 +62,6 @@ export function AppSidebar({ children }: PropsWithChildren) {
       : hovering
         ? 'floating'
         : 'close';
-
-  useEffect(() => {
-    // do not float app sidebar on desktop
-    if (BUILD_CONFIG.isElectron) {
-      return;
-    }
-
-    function onResize() {
-      const isFloatingMaxWidth = window.matchMedia(
-        `(max-width: ${floatingMaxWidth}px)`
-      ).matches;
-      const isFloating = isFloatingMaxWidth;
-      appSidebarService.setSmallScreenMode(isFloating);
-    }
-
-    const dOnResize = debounce(onResize, 50);
-    window.addEventListener('resize', dOnResize);
-    return () => {
-      window.removeEventListener('resize', dOnResize);
-    };
-  }, [appSidebarService]);
 
   const hasRightBorder = !BUILD_CONFIG.isElectron && !clientBorder;
 
@@ -175,10 +137,6 @@ export function AppSidebar({ children }: PropsWithChildren) {
       },
     });
   }, [workbenchService.views$.value]);
-
-  if (!initialized) {
-    return null;
-  }
 
   return (
     <>
@@ -265,11 +223,7 @@ export function FallbackHeaderWithWorkspaceNavigator() {
   return (
     <div className={styles.fallbackHeader}>
       {currentWorkspace && navigate ? (
-        <WorkspaceNavigator
-          showSettingsButton
-          showSyncStatus
-          showEnableCloudButton
-        />
+        <WorkspaceNavigator showSyncStatus showEnableCloudButton />
       ) : (
         <FallbackHeaderSkeleton />
       )}

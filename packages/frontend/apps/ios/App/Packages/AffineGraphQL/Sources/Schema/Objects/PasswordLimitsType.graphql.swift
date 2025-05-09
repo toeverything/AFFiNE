@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let PasswordLimitsType = ApolloAPI.Object(
     typename: "PasswordLimitsType",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

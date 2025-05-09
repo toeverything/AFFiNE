@@ -1,0 +1,10 @@
+query getAllWorkspaceEmbeddingIgnoredDocs($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    embedding {
+      allIgnoredDocs {
+        docId
+        createdAt
+      }
+    }
+  }
+}

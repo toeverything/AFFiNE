@@ -1,0 +1,29 @@
+{
+  "name": "@blocksuite/affine-gfx-turbo-renderer",
+  "description": "Turbo renderer for viewport in BlockSuite.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "sideEffects": false,
+  "keywords": [],
+  "author": "toeverything",
+  "license": "MIT",
+  "dependencies": {
+    "@blocksuite/global": "workspace:*",
+    "@blocksuite/std": "workspace:*",
+    "@blocksuite/store": "workspace:*",
+    "rxjs": "^7.8.1"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./painter": "./src/painter/painter.worker.ts"
+  },
+  "files": [
+    "src",
+    "dist",
+    "!src/__tests__",
+    "!dist/__tests__"
+  ],
+  "version": "0.21.0"
+}

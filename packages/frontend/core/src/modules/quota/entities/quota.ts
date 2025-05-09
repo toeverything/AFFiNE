@@ -1,21 +1,20 @@
 import { DebugLogger } from '@affine/debug';
 import type { WorkspaceQuotaQuery } from '@affine/graphql';
 import {
-  backoffRetry,
   catchErrorInto,
   effect,
   Entity,
-  exhaustMapSwitchUntilChanged,
+  exhaustMapWithTrailing,
   fromPromise,
   LiveData,
   onComplete,
   onStart,
+  smartRetry,
 } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import bytes from 'bytes';
-import { EMPTY, map, mergeMap } from 'rxjs';
+import { tap } from 'rxjs';
 
-import { isBackendError, isNetworkError } from '../../cloud';
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceQuotaStore } from '../stores/quota';
 
@@ -68,49 +67,32 @@ export class WorkspaceQuota extends Entity {
   }
 
   revalidate = effect(
-    map(() => ({
-      workspaceId: this.workspaceService.workspace.id,
-    })),
-    exhaustMapSwitchUntilChanged(
-      (a, b) => a.workspaceId === b.workspaceId,
-      ({ workspaceId }) => {
-        return fromPromise(async signal => {
-          if (!workspaceId) {
-            return; // no quota if no workspace
-          }
-          const data = await this.store.fetchWorkspaceQuota(
-            this.workspaceService.workspace.id,
-            signal
-          );
-          return { quota: data, used: data.usedSize };
-        }).pipe(
-          backoffRetry({
-            when: isNetworkError,
-            count: Infinity,
-          }),
-          backoffRetry({
-            when: isBackendError,
-            count: 3,
-          }),
-          mergeMap(data => {
-            if (data) {
-              const { quota, used } = data;
-              this.quota$.next(quota);
-              this.used$.next(used);
-            } else {
-              this.quota$.next(null);
-              this.used$.next(null);
-            }
-            return EMPTY;
-          }),
-          catchErrorInto(this.error$, error => {
-            logger.error('Failed to fetch workspace quota', error);
-          }),
-          onStart(() => this.isRevalidating$.setValue(true)),
-          onComplete(() => this.isRevalidating$.setValue(false))
+    exhaustMapWithTrailing(() => {
+      return fromPromise(async signal => {
+        const data = await this.store.fetchWorkspaceQuota(
+          this.workspaceService.workspace.id,
+          signal
         );
-      }
-    )
+        return { quota: data, used: data.usedStorageQuota };
+      }).pipe(
+        smartRetry(),
+        tap(data => {
+          if (data) {
+            const { quota, used } = data;
+            this.quota$.next(quota);
+            this.used$.next(used);
+          } else {
+            this.quota$.next(null);
+            this.used$.next(null);
+          }
+        }),
+        catchErrorInto(this.error$, error => {
+          logger.error('Failed to fetch workspace quota', error);
+        }),
+        onStart(() => this.isRevalidating$.setValue(true)),
+        onComplete(() => this.isRevalidating$.setValue(false))
+      );
+    })
   );
 
   waitForRevalidation(signal?: AbortSignal) {

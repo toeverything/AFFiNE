@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let ServerConfigType = ApolloAPI.Object(
     typename: "ServerConfigType",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

@@ -1,0 +1,6 @@
+mutation activateLicense($workspaceId: String!, $license: String!) {
+  activateLicense(workspaceId: $workspaceId, license: $license) {
+   installedAt
+   validatedAt
+  }
+}

@@ -1,21 +1,14 @@
 import {
-  ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from '@affine/admin/components/ui/resizable';
 import { Separator } from '@affine/admin/components/ui/separator';
 import { TooltipProvider } from '@affine/admin/components/ui/tooltip';
 import { cn } from '@affine/admin/utils';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { AlignJustifyIcon } from 'lucide-react';
 import type { PropsWithChildren, ReactNode, RefObject } from 'react';
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
 
 import { Button } from '../components/ui/button';
@@ -28,97 +21,112 @@ import {
   SheetTrigger,
 } from '../components/ui/sheet';
 import { Logo } from './accounts/components/logo';
+import { useMediaQuery } from './common';
 import { NavContext } from './nav/context';
 import { Nav } from './nav/nav';
-
-interface RightPanelContextType {
-  isOpen: boolean;
-  rightPanelContent: ReactNode;
-  setRightPanelContent: (content: ReactNode) => void;
-  togglePanel: () => void;
-  openPanel: () => void;
-  closePanel: () => void;
-}
-
-const RightPanelContext = createContext<RightPanelContextType | undefined>(
-  undefined
-);
-
-export const useRightPanel = () => {
-  const context = useContext(RightPanelContext);
-
-  if (!context) {
-    throw new Error('useRightPanel must be used within a RightPanelProvider');
-  }
-
-  return context;
-};
-
-export function useMediaQuery(query: string) {
-  const [value, setValue] = useState(false);
-
-  useEffect(() => {
-    function onChange(event: MediaQueryListEvent) {
-      setValue(event.matches);
-    }
-
-    const result = matchMedia(query);
-    result.addEventListener('change', onChange);
-    setValue(result.matches);
-
-    return () => result.removeEventListener('change', onChange);
-  }, [query]);
-
-  return value;
-}
+import {
+  PanelContext,
+  type ResizablePanelProps,
+  useRightPanel,
+} from './panel/context';
 
 export function Layout({ children }: PropsWithChildren) {
   const [rightPanelContent, setRightPanelContent] = useState<ReactNode>(null);
-  const [open, setOpen] = useState(false);
+  const [leftPanelContent, setLeftPanelContent] = useState<ReactNode>(null);
+  const [leftOpen, setLeftOpen] = useState(false);
+  const [rightOpen, setRightOpen] = useState(false);
   const rightPanelRef = useRef<ImperativePanelHandle>(null);
+  const leftPanelRef = useRef<ImperativePanelHandle>(null);
 
   const [activeTab, setActiveTab] = useState('');
-  const [activeSubTab, setActiveSubTab] = useState('auth');
-  const [currentModule, setCurrentModule] = useState('auth');
+  const [activeSubTab, setActiveSubTab] = useState('server');
+  const [currentModule, setCurrentModule] = useState('server');
 
-  const handleExpand = useCallback(() => {
+  const handleLeftExpand = useCallback(() => {
+    if (leftPanelRef.current?.getSize() === 0) {
+      leftPanelRef.current?.resize(30);
+    }
+    setLeftOpen(true);
+  }, [leftPanelRef]);
+
+  const handleLeftCollapse = useCallback(() => {
+    if (leftPanelRef.current?.getSize() !== 0) {
+      leftPanelRef.current?.resize(0);
+    }
+    setLeftOpen(false);
+  }, [leftPanelRef]);
+
+  const openLeftPanel = useCallback(() => {
+    handleLeftExpand();
+    leftPanelRef.current?.expand();
+    setLeftOpen(true);
+  }, [handleLeftExpand]);
+
+  const closeLeftPanel = useCallback(() => {
+    handleLeftCollapse();
+    leftPanelRef.current?.collapse();
+    setLeftOpen(false);
+  }, [handleLeftCollapse]);
+
+  const toggleLeftPanel = useCallback(
+    () =>
+      leftPanelRef.current?.isCollapsed() ? openLeftPanel() : closeLeftPanel(),
+    [openLeftPanel, closeLeftPanel]
+  );
+
+  const handleRightExpand = useCallback(() => {
     if (rightPanelRef.current?.getSize() === 0) {
       rightPanelRef.current?.resize(30);
     }
-    setOpen(true);
+    setRightOpen(true);
   }, [rightPanelRef]);
 
-  const handleCollapse = useCallback(() => {
+  const handleRightCollapse = useCallback(() => {
     if (rightPanelRef.current?.getSize() !== 0) {
       rightPanelRef.current?.resize(0);
     }
-    setOpen(false);
+    setRightOpen(false);
   }, [rightPanelRef]);
 
-  const openPanel = useCallback(() => {
-    handleExpand();
+  const openRightPanel = useCallback(() => {
+    handleRightExpand();
     rightPanelRef.current?.expand();
-  }, [handleExpand]);
+    setRightOpen(true);
+  }, [handleRightExpand]);
 
-  const closePanel = useCallback(() => {
-    handleCollapse();
+  const closeRightPanel = useCallback(() => {
+    handleRightCollapse();
     rightPanelRef.current?.collapse();
-  }, [handleCollapse]);
+    setRightOpen(false);
+  }, [handleRightCollapse]);
 
-  const togglePanel = useCallback(
-    () => (rightPanelRef.current?.isCollapsed() ? openPanel() : closePanel()),
-    [closePanel, openPanel]
+  const toggleRightPanel = useCallback(
+    () =>
+      rightPanelRef.current?.isCollapsed()
+        ? openRightPanel()
+        : closeRightPanel(),
+    [closeRightPanel, openRightPanel]
   );
 
   return (
-    <RightPanelContext.Provider
+    <PanelContext.Provider
       value={{
-        isOpen: open,
-        rightPanelContent,
-        setRightPanelContent,
-        togglePanel,
-        openPanel,
-        closePanel,
+        leftPanel: {
+          isOpen: leftOpen,
+          panelContent: leftPanelContent,
+          setPanelContent: setLeftPanelContent,
+          togglePanel: toggleLeftPanel,
+          openPanel: openLeftPanel,
+          closePanel: closeLeftPanel,
+        },
+        rightPanel: {
+          isOpen: rightOpen,
+          panelContent: rightPanelContent,
+          setPanelContent: setRightPanelContent,
+          togglePanel: toggleRightPanel,
+          openPanel: openRightPanel,
+          closePanel: closeRightPanel,
+        },
       }}
     >
       <NavContext.Provider
@@ -133,34 +141,41 @@ export function Layout({ children }: PropsWithChildren) {
       >
         <TooltipProvider delayDuration={0}>
           <div className="flex">
-            <LeftPanel />
             <ResizablePanelGroup direction="horizontal">
-              <ResizablePanel id="0" order={0} minSize={50}>
+              <LeftPanel
+                panelRef={leftPanelRef as RefObject<ImperativePanelHandle>}
+                onExpand={handleLeftExpand}
+                onCollapse={handleLeftCollapse}
+              />
+              <ResizablePanel id="1" order={1} minSize={50} defaultSize={50}>
                 {children}
               </ResizablePanel>
               <RightPanel
-                rightPanelRef={
-                  rightPanelRef as RefObject<ImperativePanelHandle>
-                }
-                onExpand={handleExpand}
-                onCollapse={handleCollapse}
+                panelRef={rightPanelRef as RefObject<ImperativePanelHandle>}
+                onExpand={handleRightExpand}
+                onCollapse={handleRightCollapse}
               />
             </ResizablePanelGroup>
           </div>
         </TooltipProvider>
       </NavContext.Provider>
-    </RightPanelContext.Provider>
+    </PanelContext.Provider>
   );
 }
 
-export const LeftPanel = () => {
+export const LeftPanel = ({
+  panelRef,
+  onExpand,
+  onCollapse,
+}: ResizablePanelProps) => {
   const isSmallScreen = useMediaQuery('(max-width: 768px)');
+  const isCollapsed = panelRef.current?.isCollapsed();
 
   if (isSmallScreen) {
     return (
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="ghost" className="fixed  top-4 left-6 p-0 h-5 w-5">
+          <Button variant="ghost" className="fixed  top-5 left-6 p-0 h-5 w-5">
             <AlignJustifyIcon size={20} />
           </Button>
         </SheetTrigger>
@@ -189,31 +204,59 @@ export const LeftPanel = () => {
   }
 
   return (
-    <div className="flex flex-col min-w-52 max-w-sm border-r">
+    <ResizablePanel
+      id="0"
+      order={0}
+      ref={panelRef}
+      defaultSize={15}
+      maxSize={15}
+      minSize={15}
+      collapsible={true}
+      collapsedSize={2}
+      onExpand={onExpand}
+      onCollapse={onCollapse}
+      className={cn(
+        isCollapsed ? 'min-w-[57px] max-w-[57px]' : 'min-w-56 max-w-56',
+        'border-r  h-dvh'
+      )}
+      style={{ overflow: 'visible' }}
+    >
       <div
-        className={cn(
-          'flex h-[52px] items-center gap-2 px-4 text-base font-medium'
-        )}
+        className="flex flex-col max-w-56 h-full "
+        style={{
+          backgroundColor: cssVarV2(
+            'selfhost/layer/background/sidebarBg/sidebarBg'
+          ),
+        }}
       >
-        <Logo />
-        AFFiNE
+        <div
+          className={cn(
+            'flex h-[56px] items-center px-4 text-base font-medium',
+            isCollapsed && 'justify-center px-2'
+          )}
+        >
+          <span
+            className={cn(
+              'flex items-center p-0.5 mr-2',
+              isCollapsed && 'justify-center px-2 mr-0'
+            )}
+          >
+            <Logo />
+          </span>
+          {!isCollapsed && 'AFFiNE'}
+        </div>
+        <Nav isCollapsed={isCollapsed} />
       </div>
-      <Separator />
-      <Nav />
-    </div>
+    </ResizablePanel>
   );
 };
 export const RightPanel = ({
-  rightPanelRef,
+  panelRef,
   onExpand,
   onCollapse,
-}: {
-  rightPanelRef: RefObject<ImperativePanelHandle>;
-  onExpand: () => void;
-  onCollapse: () => void;
-}) => {
+}: ResizablePanelProps) => {
   const isSmallScreen = useMediaQuery('(max-width: 768px)');
-  const { rightPanelContent, isOpen } = useRightPanel();
+  const { panelContent, isOpen } = useRightPanel();
   const onOpenChange = useCallback(
     (open: boolean) => {
       if (open) {
@@ -235,28 +278,26 @@ export const RightPanel = ({
           </SheetDescription>
         </SheetHeader>
         <SheetContent side="right" className="p-0" withoutCloseButton>
-          {rightPanelContent}
+          {panelContent}
         </SheetContent>
       </Sheet>
     );
   }
 
   return (
-    <>
-      <ResizableHandle />
-      <ResizablePanel
-        id="1"
-        order={1}
-        ref={rightPanelRef}
-        defaultSize={0}
-        maxSize={30}
-        collapsible={true}
-        collapsedSize={0}
-        onExpand={onExpand}
-        onCollapse={onCollapse}
-      >
-        {rightPanelContent}
-      </ResizablePanel>
-    </>
+    <ResizablePanel
+      id="2"
+      order={2}
+      ref={panelRef}
+      defaultSize={0}
+      maxSize={20}
+      collapsible={true}
+      collapsedSize={0}
+      onExpand={onExpand}
+      onCollapse={onCollapse}
+      className="border-l max-w-96"
+    >
+      {panelContent}
+    </ResizablePanel>
   );
 };

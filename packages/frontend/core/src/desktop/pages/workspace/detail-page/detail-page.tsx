@@ -1,27 +1,39 @@
 import { Scrollable } from '@affine/component';
-import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
-import type { ChatPanel } from '@affine/core/blocksuite/presets/ai';
-import { AIProvider } from '@affine/core/blocksuite/presets/ai';
+import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
+import type { ChatPanel } from '@affine/core/blocksuite/ai';
+import { AIProvider } from '@affine/core/blocksuite/ai';
+import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
+import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
+import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
-import { EditorOutlineViewer } from '@affine/core/components/blocksuite/outline-viewer';
-import { DocPropertySidebar } from '@affine/core/components/doc-properties/sidebar';
+import { GlobalPageHistoryModal } from '@affine/core/components/affine/page-history-modal';
+import { useGuard } from '@affine/core/components/guard';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
-import { useDocMetaHelper } from '@affine/core/components/hooks/use-block-suite-page-meta';
+import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
+import { useRegisterBlocksuiteEditorCommands } from '@affine/core/components/hooks/affine/use-register-blocksuite-editor-commands';
+import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
+import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
+import { WorkspacePropertySidebar } from '@affine/core/components/properties/sidebar';
+import { TrashPageFooter } from '@affine/core/components/pure/trash-page-footer';
+import { TopTip } from '@affine/core/components/top-tip';
 import { DocService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
-import { ViewService } from '@affine/core/modules/workbench';
+import {
+  useIsActiveView,
+  ViewBody,
+  ViewHeader,
+  ViewService,
+  ViewSidebarTab,
+  WorkbenchService,
+} from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { isNewTabTrigger } from '@affine/core/utils';
-import { RefNodeSlotsProvider } from '@blocksuite/affine/blocks';
-import {
-  type Disposable,
-  DisposableGroup,
-} from '@blocksuite/affine/global/utils';
-import { type AffineEditorContainer } from '@blocksuite/affine/presets';
+import track from '@affine/track';
+import { DisposableGroup } from '@blocksuite/affine/global/disposable';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   AiIcon,
   FrameIcon,
@@ -36,24 +48,11 @@ import {
   useServices,
 } from '@toeverything/infra';
 import clsx from 'clsx';
+import { nanoid } from 'nanoid';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import type { Subscription } from 'rxjs';
 
-import { AffineErrorBoundary } from '../../../../components/affine/affine-error-boundary';
-import { GlobalPageHistoryModal } from '../../../../components/affine/page-history-modal';
-import { useRegisterBlocksuiteEditorCommands } from '../../../../components/hooks/affine/use-register-blocksuite-editor-commands';
-import { useActiveBlocksuiteEditor } from '../../../../components/hooks/use-block-suite-editor';
-import { usePageDocumentTitle } from '../../../../components/hooks/use-global-state';
-import { PageDetailEditor } from '../../../../components/page-detail-editor';
-import { TrashPageFooter } from '../../../../components/pure/trash-page-footer';
-import { TopTip } from '../../../../components/top-tip';
-import {
-  useIsActiveView,
-  ViewBody,
-  ViewHeader,
-  ViewSidebarTab,
-  WorkbenchService,
-} from '../../../../modules/workbench';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
@@ -71,7 +70,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     docService,
     workspaceService,
     globalContextService,
-    featureFlagService,
   } = useServices({
     WorkbenchService,
     ViewService,
@@ -79,7 +77,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     DocService,
     WorkspaceService,
     GlobalContextService,
-    FeatureFlagService,
   });
   const workbench = workbenchService.workbench;
   const editor = editorService.editor;
@@ -97,7 +94,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const isSideBarOpen = useLiveData(workbench.sidebarOpen$);
   const { appSettings } = useAppSettingHelper();
   const chatPanelRef = useRef<ChatPanel | null>(null);
-  const { setDocReadonly } = useDocMetaHelper();
 
   const peekView = useService(PeekViewService).peekView;
 
@@ -105,7 +101,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   // TODO(@eyhn): remove jotai here
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();
 
-  const enableAI = featureFlagService.flags.enable_ai.value;
+  const enableAI = useEnableAI();
 
   useEffect(() => {
     if (isActiveView) {
@@ -114,14 +110,18 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   }, [editorContainer, isActiveView, setActiveBlockSuiteEditor]);
 
   useEffect(() => {
-    const disposables: Disposable[] = [];
+    const disposables: Subscription[] = [];
     const openHandler = () => {
       workbench.openSidebar();
       view.activeSidebarTab('chat');
     };
-    disposables.push(AIProvider.slots.requestOpenWithChat.on(openHandler));
-    disposables.push(AIProvider.slots.requestSendWithChat.on(openHandler));
-    return () => disposables.forEach(d => d.dispose());
+    disposables.push(
+      AIProvider.slots.requestOpenWithChat.subscribe(openHandler)
+    );
+    disposables.push(
+      AIProvider.slots.requestSendWithChat.subscribe(openHandler)
+    );
+    return () => disposables.forEach(d => d.unsubscribe());
   }, [activeSidebarTab, view, workbench]);
 
   useEffect(() => {
@@ -149,12 +149,6 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   }, [doc, globalContext, isActiveView, mode]);
 
   useEffect(() => {
-    if ('isMobile' in environment && environment.isMobile) {
-      setDocReadonly(doc.id, true);
-    }
-  }, [doc.id, setDocReadonly]);
-
-  useEffect(() => {
     if (isActiveView) {
       globalContext.isTrashDoc.set(!!isInTrash);
 
@@ -165,28 +159,35 @@ const DetailPageImpl = memo(function DetailPageImpl() {
     return;
   }, [globalContext, isActiveView, isInTrash]);
 
-  useRegisterBlocksuiteEditorCommands(editor);
-  const title = useLiveData(doc.title$);
-  usePageDocumentTitle(title);
+  useRegisterBlocksuiteEditorCommands(editor, isActiveView);
 
   const onLoad = useCallback(
     (editorContainer: AffineEditorContainer) => {
-      // blocksuite editor host
-      const editorHost = editorContainer.host;
-
-      const std = editorHost?.std;
+      const std = editorContainer.std;
       const disposable = new DisposableGroup();
       if (std) {
         const refNodeSlots = std.getOptional(RefNodeSlotsProvider);
         if (refNodeSlots) {
           disposable.add(
             // the event should not be emitted by AffineReference
-            refNodeSlots.docLinkClicked.on(
-              ({ pageId, params, openMode, event }) => {
+            refNodeSlots.docLinkClicked.subscribe(
+              ({ pageId, params, openMode, event, host }) => {
+                if (host !== editorContainer.host) {
+                  return;
+                }
                 openMode ??=
                   event && isNewTabTrigger(event)
                     ? 'open-in-new-tab'
                     : 'open-in-active-view';
+
+                if (openMode === 'open-in-new-view') {
+                  track.doc.editor.toolbar.openInSplitView();
+                } else if (openMode === 'open-in-center-peek') {
+                  track.doc.editor.toolbar.openInPeekView();
+                } else if (openMode === 'open-in-new-tab') {
+                  track.doc.editor.toolbar.openInNewTab();
+                }
+
                 if (openMode !== 'open-in-center-peek') {
                   const at = (() => {
                     if (openMode === 'open-in-active-view') {
@@ -204,8 +205,10 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                   workbench.openDoc(
                     {
                       docId: pageId,
+                      mode: params?.mode,
                       blockIds: params?.blockIds,
                       elementIds: params?.elementIds,
+                      refreshKey: nanoid(),
                     },
                     {
                       at: at,
@@ -260,6 +263,10 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   const [dragging, setDragging] = useState(false);
 
+  const canEdit = useGuard('Doc_Update', doc.id);
+
+  const readonly = !canEdit || isInTrash;
+
   return (
     <FrameworkScope scope={editor.scope}>
       <ViewHeader>
@@ -289,7 +296,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
                   styles.editorContainer
                 )}
               >
-                <PageDetailEditor onLoad={onLoad} />
+                <PageDetailEditor onLoad={onLoad} readonly={readonly} />
               </Scrollable.Viewport>
               <Scrollable.Scrollbar
                 className={clsx({
@@ -298,7 +305,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
               />
             </Scrollable.Root>
             <EditorOutlineViewer
-              editor={editorContainer}
+              editor={editorContainer?.host ?? null}
               show={mode === 'page' && !isSideBarOpen}
               openOutlinePanel={openOutlinePanel}
             />
@@ -320,7 +327,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       <ViewSidebarTab tabId="properties" icon={<PropertyIcon />}>
         <Scrollable.Root className={styles.sidebarScrollArea}>
           <Scrollable.Viewport>
-            <DocPropertySidebar />
+            <WorkspacePropertySidebar />
           </Scrollable.Viewport>
           <Scrollable.Scrollbar />
         </Scrollable.Root>
@@ -338,7 +345,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       <ViewSidebarTab tabId="outline" icon={<TocIcon />}>
         <Scrollable.Root className={styles.sidebarScrollArea}>
           <Scrollable.Viewport>
-            <EditorOutlinePanel editor={editorContainer} />
+            <EditorOutlinePanel editor={editorContainer?.host ?? null} />
           </Scrollable.Viewport>
           <Scrollable.Scrollbar />
         </Scrollable.Root>
@@ -347,7 +354,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       <ViewSidebarTab tabId="frame" icon={<FrameIcon />}>
         <Scrollable.Root className={styles.sidebarScrollArea}>
           <Scrollable.Viewport>
-            <EditorFramePanel editor={editorContainer} />
+            <EditorFramePanel editor={editorContainer?.host ?? null} />
           </Scrollable.Viewport>
           <Scrollable.Scrollbar />
         </Scrollable.Root>
@@ -373,11 +380,13 @@ export const Component = () => {
   }, [params, recentPages]);
 
   const pageId = params.pageId;
+  const canAccess = useGuard('Doc_Read', pageId ?? '');
 
   return pageId ? (
     <DetailPageWrapper
       pageId={pageId}
-      skeleton={<PageDetailSkeleton />}
+      canAccess={canAccess}
+      skeleton={<PageDetailLoading />}
       notFound={<PageNotFound noPermission />}
     >
       <DetailPageImpl />

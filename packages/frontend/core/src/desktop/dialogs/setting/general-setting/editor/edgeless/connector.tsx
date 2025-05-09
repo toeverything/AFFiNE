@@ -8,6 +8,7 @@ import {
 import { SettingRow } from '@affine/component/setting-components';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { useI18n } from '@affine/i18n';
+import { getSurfaceBlock } from '@blocksuite/affine/blocks/surface';
 import {
   ConnectorMode,
   DefaultTheme,
@@ -18,7 +19,7 @@ import {
   PointStyle,
   StrokeStyle,
   TextAlign,
-} from '@blocksuite/affine/blocks';
+} from '@blocksuite/affine/model';
 import type { Store } from '@blocksuite/affine/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
@@ -29,7 +30,6 @@ import { menuTrigger, settingWrapper } from '../style.css';
 import { sortedFontWeightEntries, usePalettes } from '../utils';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
-import { getSurfaceBlock } from './utils';
 
 enum ConnecterStyle {
   General = 'general',
@@ -51,14 +51,14 @@ export const ConnectorSettings = () => {
   const { editorSetting } = framework.get(EditorSettingService);
   const settings = useLiveData(editorSetting.settings$);
   const {
-    palettes: strokeColorPalettes,
+    palettes: StrokeColorShortPalettes,
     getCurrentColor: getCurrentStrokeColor,
   } = usePalettes(
-    DefaultTheme.StrokeColorPalettes,
+    DefaultTheme.StrokeColorShortPalettes,
     DefaultTheme.connectorColor
   );
   const { palettes: textColorPalettes, getCurrentColor: getCurrentTextColor } =
-    usePalettes(DefaultTheme.StrokeColorPalettes, DefaultTheme.black);
+    usePalettes(DefaultTheme.StrokeColorShortPalettes, DefaultTheme.black);
 
   const connecterStyleItems = useMemo<RadioItem[]>(
     () => [
@@ -165,7 +165,7 @@ export const ConnectorSettings = () => {
 
   const colorItems = useMemo(() => {
     const { stroke } = settings.connector;
-    return strokeColorPalettes.map(({ key, value, resolvedValue }) => {
+    return StrokeColorShortPalettes.map(({ key, value, resolvedValue }) => {
       const handler = () => {
         editorSetting.set('connector', { stroke: value });
       };
@@ -181,7 +181,7 @@ export const ConnectorSettings = () => {
         </MenuItem>
       );
     });
-  }, [editorSetting, settings, strokeColorPalettes]);
+  }, [editorSetting, settings, StrokeColorShortPalettes]);
 
   const startEndPointItems = useMemo(() => {
     const { frontEndpointStyle } = settings.connector;

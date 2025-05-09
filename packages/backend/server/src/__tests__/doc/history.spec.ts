@@ -1,4 +1,3 @@
-import { TestingModule } from '@nestjs/testing';
 import type { Snapshot } from '@prisma/client';
 import { PrismaClient } from '@prisma/client';
 import test from 'ava';
@@ -7,7 +6,7 @@ import * as Sinon from 'sinon';
 import { DocStorageModule, PgWorkspaceDocStorageAdapter } from '../../core/doc';
 import { DocStorageOptions } from '../../core/doc/options';
 import { DocRecord } from '../../core/doc/storage';
-import { createTestingModule, initTestingDB } from '../utils';
+import { createTestingModule, type TestingModule } from '../utils';
 
 let m: TestingModule;
 let adapter: PgWorkspaceDocStorageAdapter;
@@ -24,7 +23,7 @@ test.before(async () => {
 });
 
 test.beforeEach(async () => {
-  await initTestingDB(db);
+  await m.initTestingDB();
   const options = m.get(DocStorageOptions);
   Sinon.stub(options, 'historyMaxAge').resolves(1000);
 });
@@ -40,8 +39,8 @@ test.after.always(async () => {
 const snapshot: Snapshot = {
   workspaceId: '1',
   id: 'doc1',
-  blob: Buffer.from([1, 0]),
-  state: Buffer.from([0]),
+  blob: Uint8Array.from([1, 0]),
+  state: Uint8Array.from([0]),
   seq: 0,
   updatedAt: new Date(),
   createdAt: new Date(),
@@ -244,7 +243,7 @@ test('should be able to get last history record', async t => {
   );
 
   t.truthy(history);
-  t.is(history?.timestamp.getTime(), timestamp + 9);
+  t.is(history?.timestamp, timestamp + 9);
 });
 
 test('should be able to recover from history', async t => {
@@ -277,5 +276,5 @@ test('should be able to recover from history', async t => {
   t.is(history2.timestamp.getTime(), snapshot.updatedAt.getTime());
 
   // new history data force created with snapshot state before recovered
-  t.deepEqual(history2.blob, Buffer.from([1, 1]));
+  t.deepEqual(history2.blob, Uint8Array.from([1, 1]));
 });

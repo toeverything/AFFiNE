@@ -1,9 +1,7 @@
 import { shallowEqual } from '@affine/component';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
-import type { Tag } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
-import { assertExists } from '@blocksuite/affine/global/utils';
-import type { DocMeta, Workspace } from '@blocksuite/affine/store';
+import type { DocMeta } from '@blocksuite/affine/store';
 import { ToggleRightIcon, ViewLayersIcon } from '@blocksuite/icons/rc';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -272,15 +270,6 @@ export const TagListItemRenderer = memo(function TagListItemRenderer(
   );
 });
 
-function tagIdToTagOption(
-  tagId: string,
-  docCollection: Workspace
-): Tag | undefined {
-  return docCollection.meta.properties.tags?.options.find(
-    opt => opt.id === tagId
-  );
-}
-
 const PageTitle = ({ id }: { id: string }) => {
   const i18n = useI18n();
   const docDisplayMetaService = useService(DocDisplayMetaService);
@@ -301,7 +290,9 @@ function pageMetaToListItemProp(
 ): PageListItemProps {
   const toggleSelection = props.onSelectedIdsChange
     ? () => {
-        assertExists(props.selectedIds);
+        if (!props.selectedIds) {
+          throw new Error('selectedIds is not found');
+        }
         const prevSelected = props.selectedIds.includes(item.id);
         const shouldAdd = !prevSelected;
         const shouldRemove = prevSelected;
@@ -325,10 +316,6 @@ function pageMetaToListItemProp(
     to: props.rowAsLink && !props.selectable ? `/${item.id}` : undefined,
     onClick: toggleSelection,
     icon: <UnifiedPageIcon id={item.id} />,
-    tags:
-      item.tags
-        ?.map(id => tagIdToTagOption(id, props.docCollection))
-        .filter((v): v is Tag => v != null) ?? [],
     operations: props.operationsRenderer?.(item),
     selectable: props.selectable,
     selected: props.selectedIds?.includes(item.id),
@@ -345,7 +332,9 @@ function collectionMetaToListItemProp(
 ): CollectionListItemProps {
   const toggleSelection = props.onSelectedIdsChange
     ? () => {
-        assertExists(props.selectedIds);
+        if (!props.selectedIds) {
+          throw new Error('selectedIds is not found');
+        }
         const prevSelected = props.selectedIds.includes(item.id);
         const shouldAdd = !prevSelected;
         const shouldRemove = prevSelected;
@@ -382,7 +371,9 @@ function tagMetaToListItemProp(
 ): TagListItemProps {
   const toggleSelection = props.onSelectedIdsChange
     ? () => {
-        assertExists(props.selectedIds);
+        if (!props.selectedIds) {
+          throw new Error('selectedIds is not found');
+        }
         const prevSelected = props.selectedIds.includes(item.id);
         const shouldAdd = !prevSelected;
         const shouldRemove = prevSelected;
@@ -398,11 +389,10 @@ function tagMetaToListItemProp(
     : undefined;
   const itemProps: TagListItemProps = {
     tagId: item.id,
-    title: item.title,
+    title: item.name,
     to: props.rowAsLink && !props.selectable ? `/tag/${item.id}` : undefined,
     onClick: toggleSelection,
     color: item.color,
-    pageCount: item.pageCount,
     operations: props.operationsRenderer?.(item),
     selectable: props.selectable,
     selected: props.selectedIds?.includes(item.id),

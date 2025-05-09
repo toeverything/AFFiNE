@@ -42,7 +42,17 @@ export const variableDefineMap = {
     icon: <FavoriteIcon />,
   },
   Tags: {
-    type: meta => tArray(tTag.create({ tags: meta.tags?.options ?? [] })),
+    type: meta =>
+      tArray(
+        tTag.create({
+          tags:
+            meta.tags?.options.map(t => ({
+              id: t.id,
+              name: t.value,
+              color: t.color,
+            })) ?? [],
+        })
+      ),
     icon: <TagsIcon />,
   },
   'Is Public': {

@@ -55,8 +55,7 @@ const ConflictItem = ({ docRecord }: { docRecord: DocRecord }) => {
   const docId = docRecord.id;
   const i18n = useI18n();
   const docDisplayMetaService = useService(DocDisplayMetaService);
-  const titleMeta = useLiveData(docDisplayMetaService.title$(docId));
-  const title = i18n.t(titleMeta);
+  const title = useLiveData(docDisplayMetaService.title$(docId));
 
   return (
     <WorkbenchLink className={styles.docItem} to={`/${docId}`}>

@@ -1,3 +1,5 @@
+import { BlockSchemaExtension } from '@blocksuite/store';
+
 import { createEmbedBlockSchema } from '../../../utils/index.js';
 import {
   type EmbedLoomBlockProps,
@@ -22,3 +24,6 @@ export const EmbedLoomBlockSchema = createEmbedBlockSchema({
   toModel: () => new EmbedLoomModel(),
   props: (): EmbedLoomBlockProps => defaultEmbedLoomProps,
 });
+
+export const EmbedLoomBlockSchemaExtension =
+  BlockSchemaExtension(EmbedLoomBlockSchema);

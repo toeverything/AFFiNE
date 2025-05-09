@@ -1,10 +1,24 @@
-import type { Tag, Tag as TagSchema } from '@affine/env/filter';
 import type { DocsPropertiesMeta } from '@blocksuite/affine/store';
-import { LiveData, Store } from '@toeverything/infra';
+import {
+  LiveData,
+  Store,
+  yjsGetPath,
+  yjsObservePath,
+} from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-import { Observable } from 'rxjs';
+import { map, Observable, switchMap } from 'rxjs';
+import { Array as YArray } from 'yjs';
 
 import type { WorkspaceService } from '../../workspace';
+
+export type Tag = {
+  value: string;
+  id: string;
+  color: string;
+  createDate?: number | Date | undefined;
+  updateDate?: number | Date | undefined;
+  parentId?: string | undefined;
+};
 
 export class TagStore extends Store {
   get properties() {
@@ -23,8 +37,10 @@ export class TagStore extends Store {
 
   subscribe(cb: () => void) {
     const disposable =
-      this.workspaceService.workspace.docCollection.slots.docListUpdated.on(cb);
-    return disposable.dispose;
+      this.workspaceService.workspace.docCollection.slots.docListUpdated.subscribe(
+        cb
+      );
+    return disposable.unsubscribe.bind(disposable);
   }
 
   constructor(private readonly workspaceService: WorkspaceService) {
@@ -97,13 +113,13 @@ export class TagStore extends Store {
 
   watchTagInfo(id: string) {
     return this.tagOptions$.map(
-      tags => tags.find(tag => tag.id === id) as TagSchema | undefined
+      tags => tags.find(tag => tag.id === id) as Tag | undefined
     );
   }
 
-  updateTagInfo(id: string, tagInfo: Partial<TagSchema>) {
+  updateTagInfo(id: string, tagInfo: Partial<Tag>) {
     const tag = this.tagOptions$.value.find(tag => tag.id === id) as
-      | TagSchema
+      | Tag
       | undefined;
     if (!tag) {
       return;
@@ -116,5 +132,35 @@ export class TagStore extends Store {
       updateDate: Date.now(),
       ...tagInfo,
     });
+  }
+
+  watchTagPageIds(id: string) {
+    return yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(pages => {
+        return yjsObservePath(pages, '*.tags');
+      }),
+      map(meta => {
+        if (meta instanceof YArray) {
+          return meta
+            .map(v => {
+              const tags = v.get('tags') as YArray<string> | undefined;
+              if (tags instanceof YArray) {
+                for (const tagId of tags.toArray()) {
+                  if (tagId === id) {
+                    return v.get('id') as string;
+                  }
+                }
+              }
+              return null;
+            })
+            .filter(Boolean) as string[];
+        } else {
+          return [];
+        }
+      })
+    );
   }
 }

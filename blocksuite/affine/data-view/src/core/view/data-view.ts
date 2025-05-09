@@ -1,4 +1,5 @@
-import type { UniComponent } from '../utils/uni-component/index.js';
+import type { UniComponent } from '@blocksuite/affine-shared/types';
+
 import type { SingleView } from '../view-manager/single-view.js';
 import type { ViewManager } from '../view-manager/view-manager.js';
 import type { DataViewInstance, DataViewProps } from './types.js';
@@ -43,9 +44,7 @@ type DataViewComponent = UniComponent<
   {
     props: DataViewProps;
   },
-  {
-    expose: DataViewInstance;
-  }
+  DataViewInstance
 >;
 
 export interface DataViewRendererConfig {

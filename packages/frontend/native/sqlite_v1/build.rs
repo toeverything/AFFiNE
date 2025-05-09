@@ -1,5 +1,6 @@
-use sqlx::sqlite::SqliteConnectOptions;
 use std::fs;
+
+use sqlx::sqlite::SqliteConnectOptions;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {

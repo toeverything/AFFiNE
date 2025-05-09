@@ -1,14 +1,12 @@
 import { ColorSchema } from '@blocksuite/affine-model';
-import { type BlockStdScope, LifeCycleWatcher } from '@blocksuite/block-std';
+import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import {
-  type DeepPartial,
-  DisposableGroup,
-  Slot,
-} from '@blocksuite/global/utils';
+import type { DeepPartial } from '@blocksuite/global/utils';
+import { type BlockStdScope, LifeCycleWatcher } from '@blocksuite/std';
 import { computed, type Signal, signal } from '@preact/signals-core';
-import clonedeep from 'lodash.clonedeep';
-import mergeWith from 'lodash.mergewith';
+import clonedeep from 'lodash-es/cloneDeep';
+import mergeWith from 'lodash-es/mergeWith';
+import { Subject } from 'rxjs';
 import * as Y from 'yjs';
 import { z } from 'zod';
 
@@ -21,6 +19,12 @@ export type LastProps = z.infer<typeof NodePropsSchema>;
 export type LastPropsKey = keyof LastProps;
 
 const SessionPropsSchema = z.object({
+  templateCache: z.string(),
+  remoteColor: z.string(),
+  showBidirectional: z.boolean(),
+});
+
+const LocalPropsSchema = z.object({
   viewport: z.union([
     z.object({
       centerX: z.number(),
@@ -34,12 +38,6 @@ const SessionPropsSchema = z.object({
         .optional(),
     }),
   ]),
-  templateCache: z.string(),
-  remoteColor: z.string(),
-  showBidirectional: z.boolean(),
-});
-
-const LocalPropsSchema = z.object({
   presentBlackBackground: z.boolean(),
   presentFillScreen: z.boolean(),
   presentHideToolbar: z.boolean(),
@@ -82,7 +80,7 @@ export class EditPropsStore extends LifeCycleWatcher {
   lastProps$: Signal<LastProps>;
 
   slots = {
-    storageUpdated: new Slot<{
+    storageUpdated: new Subject<{
       key: StoragePropsKey;
       value: StorageProps[StoragePropsKey];
     }>(),
@@ -100,7 +98,9 @@ export class EditPropsStore extends LifeCycleWatcher {
     );
 
     this.lastProps$ = computed(() => {
-      const editorSetting$ = this.std.getOptional(EditorSettingProvider);
+      const editorSetting$ = this.std.getOptional(
+        EditorSettingProvider
+      )?.setting$;
       const nextProps = mergeWith(
         clonedeep(initProps),
         editorSetting$?.value,
@@ -139,7 +139,10 @@ export class EditPropsStore extends LifeCycleWatcher {
     }
   }
 
-  applyLastProps(key: LastPropsKey, props: Record<string, unknown>) {
+  applyLastProps<K extends LastPropsKey>(
+    key: K,
+    props: Record<string, unknown>
+  ) {
     if (['__proto__', 'constructor', 'prototype'].includes(key)) {
       throw new BlockSuiteError(
         ErrorCode.DefaultRuntimeError,
@@ -198,7 +201,7 @@ export class EditPropsStore extends LifeCycleWatcher {
       JSON.stringify(value)
     );
     if (oldValue === value) return;
-    this.slots.storageUpdated.emit({ key, value });
+    this.slots.storageUpdated.next({ key, value });
   }
 
   override unmounted() {

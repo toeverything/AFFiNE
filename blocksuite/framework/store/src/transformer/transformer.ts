@@ -1,19 +1,22 @@
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import { nextTick, Slot } from '@blocksuite/global/utils';
+import { nextTick } from '@blocksuite/global/utils';
+import { Subject } from 'rxjs';
 
-import type {
+import {
   BlockModel,
-  BlockSchemaType,
-  DraftModel,
-  Store,
+  type BlockSchemaType,
+  type DraftModel,
+  type Store,
+  toDraftModel,
 } from '../model/index.js';
 import type { Schema } from '../schema/index.js';
 import { AssetsManager } from './assets.js';
 import { BaseBlockTransformer } from './base.js';
 import type {
+  AfterExportPayload,
+  AfterImportPayload,
   BeforeExportPayload,
   BeforeImportPayload,
-  FinalPayload,
   TransformerMiddleware,
   TransformerSlots,
 } from './middleware.js';
@@ -56,6 +59,8 @@ const BATCH_SIZE = 100;
 export class Transformer {
   private readonly _adapterConfigs = new Map<string, string>();
 
+  private readonly _transformerConfigs = new Map<string, unknown>();
+
   private readonly _assetsManager: AssetsManager;
 
   private readonly _schema: Schema;
@@ -63,15 +68,25 @@ export class Transformer {
   private readonly _docCRUD: DocCRUD;
 
   private readonly _slots: TransformerSlots = {
-    beforeImport: new Slot<BeforeImportPayload>(),
-    afterImport: new Slot<FinalPayload>(),
-    beforeExport: new Slot<BeforeExportPayload>(),
-    afterExport: new Slot<FinalPayload>(),
+    beforeImport: new Subject<BeforeImportPayload>(),
+    afterImport: new Subject<AfterImportPayload>(),
+    beforeExport: new Subject<BeforeExportPayload>(),
+    afterExport: new Subject<AfterExportPayload>(),
   };
 
-  blockToSnapshot = (model: DraftModel): BlockSnapshot | undefined => {
+  blockToSnapshot = (
+    model: DraftModel | BlockModel
+  ): BlockSnapshot | undefined => {
     try {
-      const snapshot = this._blockToSnapshot(model);
+      const draftModel =
+        model instanceof BlockModel ? toDraftModel(model) : model;
+
+      const snapshot = this._blockToSnapshot(draftModel);
+
+      if (!snapshot) {
+        return;
+      }
+
       BlockSnapshotSchema.parse(snapshot);
 
       return snapshot;
@@ -84,7 +99,7 @@ export class Transformer {
 
   docToSnapshot = (doc: Store): DocSnapshot | undefined => {
     try {
-      this._slots.beforeExport.emit({
+      this._slots.beforeExport.next({
         type: 'page',
         page: doc,
       });
@@ -96,7 +111,7 @@ export class Transformer {
           'Root block not found in doc'
         );
       }
-      const blocks = this.blockToSnapshot(rootModel);
+      const blocks = this.blockToSnapshot(toDraftModel(rootModel));
       if (!blocks) {
         return;
       }
@@ -105,7 +120,7 @@ export class Transformer {
         meta,
         blocks,
       };
-      this._slots.afterExport.emit({
+      this._slots.afterExport.next({
         type: 'page',
         page: doc,
         snapshot: docSnapshot,
@@ -122,7 +137,7 @@ export class Transformer {
 
   sliceToSnapshot = (slice: Slice): SliceSnapshot | undefined => {
     try {
-      this._slots.beforeExport.emit({
+      this._slots.beforeExport.next({
         type: 'slice',
         slice,
       });
@@ -141,7 +156,7 @@ export class Transformer {
         pageId,
         content: contentSnapshot,
       };
-      this._slots.afterExport.emit({
+      this._slots.afterExport.next({
         type: 'slice',
         slice,
         snapshot,
@@ -176,7 +191,7 @@ export class Transformer {
 
   snapshotToDoc = async (snapshot: DocSnapshot): Promise<Store | undefined> => {
     try {
-      this._slots.beforeImport.emit({
+      this._slots.beforeImport.next({
         type: 'page',
         snapshot,
       });
@@ -185,7 +200,7 @@ export class Transformer {
       const doc = this.docCRUD.create(meta.id);
       doc.load();
       await this.snapshotToBlock(blocks, doc);
-      this._slots.afterImport.emit({
+      this._slots.afterImport.next({
         type: 'page',
         snapshot,
         page: doc,
@@ -232,7 +247,7 @@ export class Transformer {
   ): Promise<Slice | undefined> => {
     SliceSnapshotSchema.parse(snapshot);
     try {
-      this._slots.beforeImport.emit({
+      this._slots.beforeImport.next({
         type: 'slice',
         snapshot,
       });
@@ -255,13 +270,13 @@ export class Transformer {
       this._flattenSnapshot(tmpRootSnapshot, flatSnapshots, parent, index);
 
       const blockTree = await this._convertFlatSnapshots(flatSnapshots);
-
       const first = content[0];
+
       // check if the slice is already in the doc
       if (first && doc.hasBlock(first.id)) {
         // if the slice is already in the doc, we need to move the blocks instead of adding them
-        const models = flatSnapshots
-          .map(flat => doc.getBlock(flat.snapshot.id)?.model)
+        const models = content
+          .map(block => doc.getBlock(block.id)?.model)
           .filter(Boolean) as BlockModel[];
         const parentModel = parent ? doc.getBlock(parent)?.model : undefined;
         if (!parentModel) {
@@ -278,8 +293,9 @@ export class Transformer {
       }
 
       const contentBlocks = blockTree.children
-        .map(tree => doc.getBlockById(tree.draft.id))
-        .filter(Boolean) as DraftModel[];
+        .map(tree => doc.getModelById(tree.draft.id))
+        .filter((x): x is BlockModel => x !== null)
+        .map(model => toDraftModel(model));
 
       const slice = new Slice({
         content: contentBlocks,
@@ -287,7 +303,7 @@ export class Transformer {
         pageId,
       });
 
-      this._slots.afterImport.emit({
+      this._slots.afterImport.next({
         type: 'slice',
         snapshot,
         slice,
@@ -354,30 +370,34 @@ export class Transformer {
         docCRUD: this._docCRUD,
         assetsManager: this._assetsManager,
         adapterConfigs: this._adapterConfigs,
+        transformerConfigs: this._transformerConfigs,
       });
     });
   }
 
-  private _blockToSnapshot(model: DraftModel): BlockSnapshot {
-    this._slots.beforeExport.emit({
+  private _blockToSnapshot(model: DraftModel): BlockSnapshot | null {
+    this._slots.beforeExport.next({
       type: 'block',
       model,
     });
+
     const schema = this._getSchema(model.flavour);
     const transformer = this._getTransformer(schema);
     const snapshotLeaf = transformer.toSnapshot({
       model,
       assets: this._assetsManager,
     });
-    const children = model.children.map(child => {
-      return this._blockToSnapshot(child);
-    });
+    const children = model.children
+      .map(child => {
+        return this._blockToSnapshot(child);
+      })
+      .filter(Boolean) as BlockSnapshot[];
     const snapshot: BlockSnapshot = {
       type: 'block',
       ...snapshotLeaf,
       children,
     };
-    this._slots.afterExport.emit({
+    this._slots.afterExport.next({
       type: 'block',
       model,
       snapshot,
@@ -437,8 +457,8 @@ export class Transformer {
         id: flat.snapshot.id,
         flavour: flat.snapshot.flavour,
         children: [],
-        ...props,
-      } as DraftModel;
+        props,
+      } as unknown as DraftModel;
     } catch (error) {
       console.error(`Error when transforming snapshot to model data:`);
       console.error(error);
@@ -489,7 +509,10 @@ export class Transformer {
   }
 
   private _getTransformer(schema: BlockSchemaType) {
-    return schema.transformer?.() ?? new BaseBlockTransformer();
+    return (
+      schema.transformer?.(this._transformerConfigs) ??
+      new BaseBlockTransformer(this._transformerConfigs)
+    );
   }
 
   private async _insertBlockTree(
@@ -506,12 +529,7 @@ export class Transformer {
 
       const actualIndex =
         startIndex !== undefined ? startIndex + index : undefined;
-      doc.addBlock(
-        flavour as BlockSuite.Flavour,
-        draft as object,
-        parentId,
-        actualIndex
-      );
+      doc.addBlock(flavour, { id, ...draft.props }, parentId, actualIndex);
 
       const model = doc.getBlock(id)?.model;
       if (!model) {
@@ -521,7 +539,7 @@ export class Transformer {
         );
       }
 
-      this._slots.afterImport.emit({
+      this._slots.afterImport.next({
         type: 'block',
         model,
         snapshot: node.snapshot,
@@ -609,7 +627,7 @@ export class Transformer {
       parent?: string,
       index?: number
     ) => {
-      this._slots.beforeImport.emit({
+      this._slots.beforeImport.next({
         type: 'block',
         snapshot: node,
         parent: parent,

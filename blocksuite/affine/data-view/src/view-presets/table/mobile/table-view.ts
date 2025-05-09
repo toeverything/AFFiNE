@@ -6,7 +6,8 @@ import {
 import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { AddCursorIcon } from '@blocksuite/icons/lit';
-import { css } from 'lit';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, unsafeCSS } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
@@ -16,8 +17,8 @@ import type { DataViewInstance } from '../../../core/index.js';
 import { renderUniLit } from '../../../core/utils/uni-component/uni-component.js';
 import { DataViewBase } from '../../../core/view/data-view-base.js';
 import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
+import type { TableViewSelectionWithType } from '../selection';
 import type { TableSingleView } from '../table-view-manager.js';
-import type { TableViewSelectionWithType } from '../types.js';
 
 export class MobileDataViewTable extends DataViewBase<
   TableSingleView,
@@ -41,7 +42,7 @@ export class MobileDataViewTable extends DataViewBase<
     .cell-divider {
       width: 1px;
       height: 100%;
-      background-color: var(--affine-border-color);
+      background-color: ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
     }
   `;
 

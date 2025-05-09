@@ -73,11 +73,11 @@ jobs:
       fail-fast: false
       matrix:
         spec:
-          - runner: macos-14
+          - runner: macos-latest
             platform: darwin
             arch: x64
             target: x86_64-apple-darwin
-          - runner: macos-14
+          - runner: macos-latest
             platform: darwin
             arch: arm64
             target: aarch64-apple-darwin
@@ -127,7 +127,7 @@ jobs:
 
       - name: Signing By Apple Developer ID
         if: ${{ matrix.spec.platform == 'darwin' }}
-        uses: apple-actions/import-codesign-certs@v3
+        uses: apple-actions/import-codesign-certs@v5
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
           p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
@@ -142,11 +142,19 @@ jobs:
           # some flatpak deps need git protocol.file.allow
           git config --global protocol.file.allow always
 
+      - name: Remove nbstore node_modules
+        shell: bash
+        # node_modules of nbstore is not needed for building, and it will make the build process out of memory
+        run: |
+          rm -rf packages/frontend/apps/electron/node_modules/@affine/nbstore/node_modules/@blocksuite
+          rm -rf packages/frontend/apps/electron/node_modules/@affine/native/node_modules
+
       - name: make
         run: yarn affine @affine/electron make --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
         env:
           SKIP_WEB_BUILD: 1
           HOIST_NODE_MODULES: 1
+          NODE_OPTIONS: --max-old-space-size=14384
 
       - name: signing DMG
         if: ${{ matrix.spec.platform == 'darwin' }}
@@ -240,11 +248,20 @@ jobs:
       - name: Build Desktop Layers
         run: yarn affine @affine/electron build
 
+      - name: Remove nbstore node_modules
+        shell: bash
+        # node_modules of nbstore is not needed for building, and it will make the build process out of memory
+        run: |
+          rm -rf packages/frontend/apps/electron/node_modules/@affine/nbstore/node_modules/@blocksuite
+          rm -rf packages/frontend/apps/electron/node_modules/@affine/native/node_modules
+
       - name: package
-        run: yarn affine @affine/electron package --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
+        run: |
+          yarn affine @affine/electron package --platform=${{ matrix.spec.platform }} --arch=${{ matrix.spec.arch }}
         env:
           SKIP_WEB_BUILD: 1
           HOIST_NODE_MODULES: 1
+          NODE_OPTIONS: --max-old-space-size=14384
 
       - name: get all files to be signed
         id: get_files_to_be_signed
@@ -443,6 +460,7 @@ jobs:
         run: |
           cp ./.docker/selfhost/compose.yml ./release/docker-compose.yml
           cp ./.docker/selfhost/.env.example ./release/.env.example
+          cp ./.docker/selfhost/schema.json ./release/config.schema.json
       - name: Generate Release yml
         run: |
           node ./scripts/generate-release-yml.mjs

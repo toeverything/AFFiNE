@@ -11,11 +11,11 @@ export function useAllBlockSuiteDocMeta(docCollection: Workspace): DocMeta[] {
     weakMap.set(docCollection, baseAtom);
     baseAtom.onMount = set => {
       set([...docCollection.meta.docMetas]);
-      const dispose = docCollection.slots.docListUpdated.on(() => {
+      const dispose = docCollection.slots.docListUpdated.subscribe(() => {
         set([...docCollection.meta.docMetas]);
       });
       return () => {
-        dispose.dispose();
+        dispose.unsubscribe();
       };
     };
   }

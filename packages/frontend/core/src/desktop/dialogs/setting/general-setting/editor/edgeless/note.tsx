@@ -14,7 +14,7 @@ import {
   NoteShadow,
   NoteShadowMap,
   StrokeStyle,
-} from '@blocksuite/affine/blocks';
+} from '@blocksuite/affine/model';
 import type { Store } from '@blocksuite/affine/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';

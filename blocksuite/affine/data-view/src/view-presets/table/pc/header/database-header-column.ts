@@ -4,8 +4,7 @@ import {
   popMenu,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import {
   DeleteIcon,
   DuplicateIcon,
@@ -17,6 +16,7 @@ import {
   SortIcon,
   ViewIcon,
 } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { css } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -39,11 +39,13 @@ import {
   droppable,
 } from '../../../../core/utils/wc-dnd/dnd-context.js';
 import type { Property } from '../../../../core/view-manager/property.js';
-import type { NumberPropertyDataType } from '../../../../property-presets/index.js';
 import { numberFormats } from '../../../../property-presets/number/utils/formats.js';
 import { ShowQuickSettingBarContextKey } from '../../../../widget-presets/quick-setting-bar/context.js';
 import { DEFAULT_COLUMN_TITLE_HEIGHT } from '../../consts.js';
-import type { TableColumn, TableSingleView } from '../../table-view-manager.js';
+import type {
+  TableProperty,
+  TableSingleView,
+} from '../../table-view-manager.js';
 import {
   getTableGroupRect,
   getVerticalIndicator,
@@ -80,13 +82,11 @@ export class DatabaseHeaderColumn extends SignalWatcher(
     event.stopPropagation();
     popMenu(popupTargetFromElement(this), {
       options: {
-        items: this.tableViewManager.propertyMetas.map(config => {
+        items: this.tableViewManager.propertyMetas$.value.map(config => {
           return menu.action({
             name: config.config.name,
             isSelected: config.type === this.column.type$.value,
-            prefix: renderUniLit(
-              this.tableViewManager.propertyIconGet(config.type)
-            ),
+            prefix: renderUniLit(config.renderer.icon),
             select: () => {
               this.column.typeSet?.(config.type);
             },
@@ -170,8 +170,7 @@ export class DatabaseHeaderColumn extends SignalWatcher(
 
     const sortUtils = createSortUtils(
       sortTrait,
-      this.closest('affine-data-view-renderer')?.view?.expose.eventTrace ??
-        (() => {})
+      this.closest('affine-data-view-renderer')?.view?.eventTrace ?? (() => {})
     );
     const sortList = sortUtils.sortList$.value;
     const existingIndex = sortList.findIndex(
@@ -222,12 +221,7 @@ export class DatabaseHeaderColumn extends SignalWatcher(
                     items: [
                       numberFormatConfig(this.column),
                       ...numberFormats.map(format => {
-                        const data = (
-                          this.column as Property<
-                            number,
-                            NumberPropertyDataType
-                          >
-                        ).data$.value;
+                        const data = this.column.data$.value;
                         return menu.action({
                           isSelected: data.format === format.type,
                           prefix: html`<span
@@ -254,9 +248,7 @@ export class DatabaseHeaderColumn extends SignalWatcher(
               menu.action({
                 name: 'Hide In View',
                 prefix: ViewIcon(),
-                hide: () =>
-                  this.column.hide$.value ||
-                  this.column.type$.value === 'title',
+                hide: () => !this.column.hideCanSet,
                 select: () => {
                   this.column.hideSet(true);
                 },
@@ -332,16 +324,14 @@ export class DatabaseHeaderColumn extends SignalWatcher(
               menu.action({
                 name: 'Move Left',
                 prefix: MoveLeftIcon(),
-                hide: () => this.column.isFirst,
+                hide: () => this.column.isFirst$.value,
                 select: () => {
-                  const preId = this.tableViewManager.propertyPreGet(
-                    this.column.id
-                  )?.id;
-                  if (!preId) {
+                  const prev = this.column.prev$.value;
+                  if (!prev) {
                     return;
                   }
-                  this.tableViewManager.propertyMove(this.column.id, {
-                    id: preId,
+                  this.column.move({
+                    id: prev.id,
                     before: true,
                   });
                 },
@@ -349,16 +339,14 @@ export class DatabaseHeaderColumn extends SignalWatcher(
               menu.action({
                 name: 'Move Right',
                 prefix: MoveRightIcon(),
-                hide: () => this.column.isLast,
+                hide: () => this.column.isLast$.value,
                 select: () => {
-                  const nextId = this.tableViewManager.propertyNextGet(
-                    this.column.id
-                  )?.id;
-                  if (!nextId) {
+                  const next = this.column.next$.value;
+                  if (!next) {
                     return;
                   }
-                  this.tableViewManager.propertyMove(this.column.id, {
-                    id: nextId,
+                  this.column.move({
+                    id: next.id,
                     before: false,
                   });
                 },
@@ -370,8 +358,7 @@ export class DatabaseHeaderColumn extends SignalWatcher(
               menu.action({
                 name: 'Duplicate',
                 prefix: DuplicateIcon(),
-                hide: () =>
-                  !this.column.duplicate || this.column.type$.value === 'title',
+                hide: () => !this.column.canDuplicate,
                 select: () => {
                   this.column.duplicate?.();
                 },
@@ -379,8 +366,7 @@ export class DatabaseHeaderColumn extends SignalWatcher(
               menu.action({
                 name: 'Delete',
                 prefix: DeleteIcon(),
-                hide: () =>
-                  !this.column.delete || this.column.type$.value === 'title',
+                hide: () => !this.column.canDelete,
                 select: () => {
                   this.column.delete?.();
                 },
@@ -483,7 +469,7 @@ export class DatabaseHeaderColumn extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor column!: TableColumn;
+  accessor column!: TableProperty;
 
   @property({ attribute: false })
   accessor grabStatus: 'grabStart' | 'grabEnd' | 'grabbing' = 'grabEnd';

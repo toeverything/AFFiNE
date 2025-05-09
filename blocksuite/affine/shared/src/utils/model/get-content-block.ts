@@ -1,8 +1,9 @@
-import type { EditorHost } from '@blocksuite/block-std';
+import { FrameBlockModel } from '@blocksuite/affine-model';
+import type { EditorHost } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 
 import { DocModeProvider } from '../../services/doc-mode-service.js';
-import { matchFlavours } from './checker.js';
+import { matchModels } from './checker.js';
 
 /**
  *
@@ -25,7 +26,7 @@ export function getPrevContentBlock(
   model: BlockModel
 ): BlockModel | null {
   const getPrev = (model: BlockModel) => {
-    const parent = model.doc.getParent(model);
+    const parent = model.store.getParent(model);
     if (!parent) return null;
 
     const index = parent.children.indexOf(model);
@@ -73,7 +74,7 @@ export function getPrevContentBlock(
 
     const prev = getPrev(model);
     if (prev) {
-      if (prev.role === 'content' && !matchFlavours(prev, ['affine:frame'])) {
+      if (prev.role === 'content' && !matchModels(prev, [FrameBlockModel])) {
         return prev;
       }
 
@@ -112,7 +113,7 @@ export function getNextContentBlock(
   }
   map[model.id] = true;
 
-  const doc = model.doc;
+  const doc = model.store;
   if (model.children.length) {
     return model.children[0];
   }

@@ -8,7 +8,7 @@ import {
   onComplete,
   onStart,
 } from '@toeverything/infra';
-import { EMPTY, exhaustMap, map, mergeMap } from 'rxjs';
+import { exhaustMap, map, tap } from 'rxjs';
 
 import { ServerScope } from '../scopes/server';
 import { AuthService } from '../services/auth';
@@ -77,7 +77,7 @@ export class Server extends Entity<{
         backoffRetry({
           count: Infinity,
         }),
-        mergeMap(config => {
+        tap(config => {
           this.serverListStore.updateServerConfig(this.serverMetadata.id, {
             credentialsRequirement: config.credentialsRequirement,
             features: config.features,
@@ -87,7 +87,6 @@ export class Server extends Entity<{
             version: config.version,
             initialized: config.initialized,
           });
-          return EMPTY;
         }),
         onStart(() => {
           this.isConfigRevalidating$.next(true);

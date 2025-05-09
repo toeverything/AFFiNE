@@ -20,6 +20,8 @@ export class UrlService extends Service {
    * open a popup window, provide different implementations in different environments.
    * e.g. in electron, use system default browser to open a popup window.
    *
+   * !IMPORTANT: browser will block popup windows in async callbacks, so you should use openExternal instead.
+   *
    * @param url only full url with http/https protocol is supported
    */
   openPopupWindow(url: string) {
@@ -27,5 +29,20 @@ export class UrlService extends Service {
       throw new Error('only full url with http/https protocol is supported');
     }
     this.popupWindowProvider?.open(url);
+  }
+
+  /**
+   * Opens an external URL with different implementations based on the environment.
+   * Unlike openPopupWindow, openExternal opens the URL in the current browser tab,
+   * making it more suitable for cases where popup windows might be blocked by browsers.
+   *
+   * @param url only full url with http/https protocol is supported
+   */
+  openExternal(url: string) {
+    if (BUILD_CONFIG.isWeb || BUILD_CONFIG.isMobileWeb) {
+      location.href = url;
+    } else {
+      this.popupWindowProvider?.open(url);
+    }
   }
 }

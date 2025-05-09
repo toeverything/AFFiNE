@@ -1,22 +1,23 @@
-import type { BlockComponent, EditorHost } from '@blocksuite/affine/block-std';
+import type { SurfaceRefBlockComponent } from '@blocksuite/affine/blocks/surface-ref';
+import { AffineReference } from '@blocksuite/affine/inlines/reference';
 import type {
   AttachmentBlockModel,
   DocMode,
   EmbedLinkedDocModel,
   EmbedSyncedDocModel,
   ImageBlockModel,
-  SurfaceRefBlockComponent,
   SurfaceRefBlockModel,
-} from '@blocksuite/affine/blocks';
-import { AffineReference } from '@blocksuite/affine/blocks';
+} from '@blocksuite/affine/model';
+import type { BlockComponent, EditorHost } from '@blocksuite/affine/std';
 import type { Block, BlockModel } from '@blocksuite/affine/store';
 import { Entity, LiveData } from '@toeverything/infra';
 import type { TemplateResult } from 'lit';
 import { firstValueFrom, map, race } from 'rxjs';
 
-import type { AIChatBlockModel } from '../../../blocksuite/blocks';
+import type { AIChatBlockModel } from '../../../blocksuite/ai/blocks';
 import { resolveLinkToDoc } from '../../navigation';
 import type { WorkbenchService } from '../../workbench';
+import type { ImagePreviewData } from '../view/image-preview';
 
 export type DocReferenceInfo = {
   docId: string;
@@ -49,6 +50,11 @@ export interface DocPeekViewInfo {
   docRef: DocReferenceInfo;
 }
 
+export type ImageListPeekViewInfo = {
+  type: 'image-list';
+  data: ImagePreviewData;
+};
+
 export type ImagePeekViewInfo = {
   type: 'image';
   docRef: DocReferenceInfo;
@@ -78,7 +84,8 @@ export type ActivePeekView = {
     | ImagePeekViewInfo
     | AttachmentPeekViewInfo
     | CustomTemplatePeekViewInfo
-    | AIChatBlockPeekViewInfo;
+    | AIChatBlockPeekViewInfo
+    | ImageListPeekViewInfo;
 };
 
 const isEmbedLinkedDocModel = (
@@ -147,7 +154,7 @@ function resolvePeekInfoFromPeekTarget(
         isEmbedLinkedDocModel(blockModel) ||
         isEmbedSyncedDocModel(blockModel)
       ) {
-        const { pageId: docId, params } = blockModel;
+        const { pageId: docId, params } = blockModel.props;
         const info: DocPeekViewInfo = {
           type: 'doc',
           docRef: { docId, ...params },
@@ -158,7 +165,7 @@ function resolvePeekInfoFromPeekTarget(
         // refModel can be null if the reference is invalid
         if (refModel) {
           const docId =
-            'doc' in refModel ? refModel.doc.id : refModel.surface.doc.id;
+            'store' in refModel ? refModel.store.id : refModel.surface.store.id;
           return {
             type: 'doc',
             docRef: {
@@ -172,16 +179,16 @@ function resolvePeekInfoFromPeekTarget(
         return {
           type: 'attachment',
           docRef: {
-            docId: blockModel.doc.id,
+            docId: blockModel.store.id,
             blockIds: [blockModel.id],
-            filetype: blockModel.type,
+            filetype: blockModel.props.type,
           },
         };
       } else if (isImageBlockModel(blockModel)) {
         return {
           type: 'image',
           docRef: {
-            docId: blockModel.doc.id,
+            docId: blockModel.store.id,
             blockIds: [blockModel.id],
           },
         };
@@ -189,7 +196,7 @@ function resolvePeekInfoFromPeekTarget(
         return {
           type: 'ai-chat-block',
           docRef: {
-            docId: blockModel.doc.id,
+            docId: blockModel.store.id,
             blockIds: [blockModel.id],
           },
           model: blockModel,
@@ -217,7 +224,7 @@ function resolvePeekInfoFromPeekTarget(
   return;
 }
 
-export type PeekViewAnimation = 'fade' | 'zoom' | 'none';
+export type PeekViewAnimation = 'fade' | 'fadeBottom' | 'zoom' | 'none';
 export type PeekViewMode = 'full' | 'fit' | 'max';
 
 export class PeekViewEntity extends Entity {
@@ -241,11 +248,21 @@ export class PeekViewEntity extends Entity {
 
   // return true if the peek view will be handled
   open = async (
-    target: ActivePeekView['target'],
+    targetOrInfo: ActivePeekView['target'] | ActivePeekView['info'],
     template?: TemplateResult,
     abortSignal?: AbortSignal
   ) => {
-    const resolvedInfo = resolvePeekInfoFromPeekTarget(target, template);
+    let target: ActivePeekView['target'];
+    let resolvedInfo: ActivePeekView['info'] | undefined;
+
+    if ('type' in targetOrInfo) {
+      resolvedInfo = targetOrInfo;
+      target = {};
+    } else {
+      target = targetOrInfo;
+      resolvedInfo = resolvePeekInfoFromPeekTarget(target, template);
+    }
+
     if (!resolvedInfo) {
       return;
     }

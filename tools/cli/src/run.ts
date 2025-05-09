@@ -19,6 +19,7 @@ const ignoreLoaderScripts = [
   'prisma',
   'cap',
   'tsc',
+  'typedoc',
   /^r$/,
   /electron(?!-)/,
 ];

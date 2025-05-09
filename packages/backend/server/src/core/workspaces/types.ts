@@ -8,15 +8,26 @@ import {
   PickType,
   registerEnumType,
 } from '@nestjs/graphql';
-import { Workspace, WorkspaceMemberStatus } from '@prisma/client';
-import { SafeIntResolver } from 'graphql-scalars';
+import { WorkspaceMemberStatus } from '@prisma/client';
+import { GraphQLJSONObject, SafeIntResolver } from 'graphql-scalars';
 
-import { Permission } from '../permission';
-import { UserType } from '../user/types';
+import { DocRole, WorkspaceRole } from '../permission';
+import { UserType, WorkspaceUserType } from '../user/types';
 
-registerEnumType(Permission, {
+registerEnumType(WorkspaceRole, {
+  name: 'WorkspaceRole',
+  description: 'User role in workspace',
+});
+
+// @deprecated
+registerEnumType(WorkspaceRole, {
   name: 'Permission',
   description: 'User permission in workspace',
+});
+
+registerEnumType(DocRole, {
+  name: 'DocRole',
+  description: 'User permission in doc',
 });
 
 registerEnumType(WorkspaceMemberStatus, {
@@ -33,17 +44,17 @@ export class InviteUserType extends OmitType(
   @Field(() => ID)
   id!: string;
 
-  @Field(() => Permission, { description: 'User permission in workspace' })
-  permission!: Permission;
+  @Field(() => WorkspaceRole, {
+    deprecationReason: 'Use role instead',
+    description: 'User permission in workspace',
+  })
+  permission!: WorkspaceRole;
+
+  @Field(() => WorkspaceRole, { description: 'User role in workspace' })
+  role!: WorkspaceRole;
 
   @Field({ description: 'Invite id' })
   inviteId!: string;
-
-  @Field({
-    description: 'User accepted',
-    deprecationReason: 'Use `status` instead',
-  })
-  accepted!: boolean;
 
   @Field(() => WorkspaceMemberStatus, {
     description: 'Member invite status in workspace',
@@ -52,21 +63,27 @@ export class InviteUserType extends OmitType(
 }
 
 @ObjectType()
-export class WorkspaceType implements Partial<Workspace> {
+export class WorkspaceFeatureType {
   @Field(() => ID)
   id!: string;
 
   @Field({ description: 'is Public workspace' })
   public!: boolean;
 
+  @Field({ description: 'Workspace created date' })
+  createdAt!: Date;
+}
+
+@ObjectType()
+export class WorkspaceType extends WorkspaceFeatureType {
   @Field({ description: 'Enable AI' })
   enableAi!: boolean;
 
   @Field({ description: 'Enable url previous when sharing' })
   enableUrlPreview!: boolean;
 
-  @Field({ description: 'Workspace created date' })
-  createdAt!: Date;
+  @Field({ description: 'Enable doc embedding' })
+  enableDocEmbedding!: boolean;
 
   @Field(() => [InviteUserType], {
     description: 'Members of workspace',
@@ -100,15 +117,20 @@ export class InvitationType {
   @Field({ description: 'Workspace information' })
   workspace!: InvitationWorkspaceType;
   @Field({ description: 'User information' })
-  user!: UserType;
+  user!: WorkspaceUserType;
   @Field({ description: 'Invitee information' })
-  invitee!: UserType;
+  invitee!: WorkspaceUserType;
+  @Field(() => WorkspaceMemberStatus, {
+    description: 'Invitation status in workspace',
+    nullable: true,
+  })
+  status?: WorkspaceMemberStatus;
 }
 
 @InputType()
 export class UpdateWorkspaceInput extends PickType(
   PartialType(WorkspaceType),
-  ['public', 'enableAi', 'enableUrlPreview'],
+  ['public', 'enableAi', 'enableUrlPreview', 'enableDocEmbedding'],
   InputType
 ) {
   @Field(() => ID)
@@ -133,10 +155,23 @@ export class InviteResult {
     nullable: true,
     description: 'Invite id, null if invite record create failed',
   })
-  inviteId!: string | null;
+  inviteId?: string;
 
-  @Field(() => Boolean, { description: 'Invite email sent success' })
-  sentSuccess!: boolean;
+  /**
+   * @deprecated
+   */
+  @Field(() => Boolean, {
+    description: 'Invite email sent success',
+    deprecationReason: 'Notification will be sent asynchronously',
+    defaultValue: true,
+  })
+  sentSuccess?: boolean;
+
+  @Field(() => GraphQLJSONObject, {
+    nullable: true,
+    description: 'Invite error',
+  })
+  error?: object;
 }
 
 const Day = 24 * 60 * 60 * 1000;

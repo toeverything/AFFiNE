@@ -137,6 +137,7 @@ export const PropertyCollapsibleContent = forwardRef<
       defaultCollapsed,
       onCollapseChange,
       collapseButtonText,
+      className,
       ...props
     },
     ref
@@ -179,6 +180,7 @@ export const PropertyCollapsibleContent = forwardRef<
         ref={ref}
         data-property-collapsible={finalCollapsible}
         data-property-collapsed={!finalShowAllHide}
+        className={clsx(styles.propertyTableContent, className)}
         {...props}
       >
         <PropertyTableContext.Provider value={contextValue}>
@@ -290,7 +292,7 @@ export const PropertyName = ({
   name?: ReactNode;
   menuItems?: ReactNode;
   defaultOpenMenu?: boolean;
-} & HTMLProps<HTMLDivElement>) => {
+} & Omit<HTMLProps<HTMLDivElement>, 'name'>) => {
   const [menuOpen, setMenuOpen] = useState(defaultOpenMenu);
   const hasMenu = !!menuItems;
 

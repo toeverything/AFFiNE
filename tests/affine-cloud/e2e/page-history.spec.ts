@@ -154,3 +154,32 @@ test('can restore page to a history version', async ({ page }) => {
   // title should be restored to 'TEST TITLE'
   await expect(title).toContainText('TEST TITLE');
 });
+
+test('empty history doc should not show starter bar', async ({ page }) => {
+  await page.reload();
+  await waitForEditorLoad(page);
+  await createLocalWorkspace({ name: 'test' }, page);
+  await enableCloudWorkspace(page);
+
+  await pushCurrentPageUpdates(page);
+
+  const title = getBlockSuiteEditorTitle(page);
+  await title.focus();
+  await title.pressSequentially('TEST TITLE', {
+    delay: 50,
+  });
+  // write something and push to history
+  await pushCurrentPageUpdates(page);
+
+  // click the history button
+  await page.getByTestId('header-dropDownButton').click();
+  await page.getByTestId('editor-option-menu-history').click();
+
+  const modal = page.getByTestId('page-history-modal');
+
+  // expect history modal shown up
+  await expect(modal).toBeVisible();
+
+  const aiBadge = modal.getByTestId('start-with-ai-badge');
+  await expect(aiBadge).not.toBeVisible();
+});

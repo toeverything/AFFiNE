@@ -1,13 +1,18 @@
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
-import { css } from 'lit';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
 
 import type { GroupData } from '../../../../core/group-by/trait.js';
-import type { TableColumn, TableSingleView } from '../../table-view-manager.js';
+import type { Row } from '../../../../core/index.js';
+import type {
+  TableProperty,
+  TableSingleView,
+} from '../../table-view-manager.js';
 
 export class DataViewColumnPreview extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -25,11 +30,13 @@ export class DataViewColumnPreview extends SignalWatcher(
     return this.column.view as TableSingleView;
   }
 
-  private renderGroup(rows: string[]) {
-    const columnIndex = this.tableViewManager.propertyIndexGet(this.column.id);
+  private renderGroup(rows: Row[]) {
+    const columnIndex = this.column.index$.value;
     return html`
       <div
-        style="background-color: var(--affine-background-primary-color);border-top: 1px solid var(--affine-border-color);box-shadow: var(--affine-shadow-2);"
+        style="background-color: var(--affine-background-primary-color);border-top: 1px solid ${unsafeCSS(
+          cssVarV2.layer.insideBorder.border
+        )};box-shadow: var(--affine-shadow-2);"
       >
         <affine-database-header-column
           .tableViewManager="${this.tableViewManager}"
@@ -43,7 +50,9 @@ export class DataViewColumnPreview extends SignalWatcher(
             height: height + 'px',
           });
           return html`<div
-            style="border-top: 1px solid var(--affine-border-color)"
+            style="border-top: 1px solid ${unsafeCSS(
+              cssVarV2.layer.insideBorder.border
+            )}"
           >
             <div style="${style}">
               <affine-database-cell-container
@@ -69,7 +78,7 @@ export class DataViewColumnPreview extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor column!: TableColumn;
+  accessor column!: TableProperty;
 
   @property({ attribute: false })
   accessor container!: HTMLElement;

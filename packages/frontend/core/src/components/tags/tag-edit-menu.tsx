@@ -39,7 +39,7 @@ const DesktopTagEditMenu = ({
       if (name.trim() === '') {
         return;
       }
-      onTagChange('value', name);
+      onTagChange('name', name);
     };
 
     return {
@@ -51,7 +51,7 @@ const DesktopTagEditMenu = ({
       items: (
         <>
           <Input
-            defaultValue={tag.value}
+            defaultValue={tag.name}
             onBlur={e => {
               updateTagName(e.currentTarget.value);
             }}
@@ -131,8 +131,10 @@ const MobileTagEditMenu = ({
   const [localTag, setLocalTag] = useState({ ...tag });
 
   useEffect(() => {
-    setLocalTag({ ...tag });
-  }, [tag]);
+    if (localTag.name !== tag.name) {
+      setLocalTag({ ...tag });
+    }
+  }, [tag, localTag.name]);
 
   const handleTriggerClick: MouseEventHandler<HTMLDivElement> = useCallback(
     e => {
@@ -143,8 +145,8 @@ const MobileTagEditMenu = ({
   );
   const handleOnDone = () => {
     setOpen(false);
-    if (localTag.value.trim() !== tag.value) {
-      onTagChange('value', localTag.value);
+    if (localTag.name.trim() !== tag.name) {
+      onTagChange('name', localTag.name);
     }
     if (localTag.color !== tag.color) {
       onTagChange('color', localTag.color);
@@ -165,9 +167,9 @@ const MobileTagEditMenu = ({
           }}
           autoSelect={false}
           className={styles.mobileTagEditInput}
-          value={localTag.value}
+          value={localTag.name}
           onChange={e => {
-            setLocalTag({ ...localTag, value: e });
+            setLocalTag({ ...localTag, name: e });
           }}
           placeholder={t['Untitled']()}
         />
@@ -210,7 +212,9 @@ const MobileTagEditMenu = ({
           </ConfigModal.Row>
         </ConfigModal.RowGroup>
       </ConfigModal>
-      <div onClick={handleTriggerClick}>{children}</div>
+      <div onClick={handleTriggerClick} className={styles.mobileTagEditTrigger}>
+        {children}
+      </div>
     </>
   );
 };

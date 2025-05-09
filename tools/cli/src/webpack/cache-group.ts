@@ -5,6 +5,19 @@ function testPackageName(regexp: RegExp): (module: any) => boolean {
 
 // https://hackernoon.com/the-100-correct-way-to-split-your-chunks-with-webpack-f8a9df5b7758
 export const productionCacheGroups = {
+  i18n: {
+    test: /frontend[\\/]i18n[\\/]/,
+    name: (module: any) => {
+      const name = module.resource.match(/[\\/]([^\\/]+)\.json$/)?.[1];
+      if (name && name !== 'en') {
+        return `i18n-langs.${name}`;
+      }
+
+      return 'i18n';
+    },
+    priority: 200,
+    enforce: true,
+  },
   asyncVendor: {
     test: /[\\/]node_modules[\\/]/,
     name(module: any) {

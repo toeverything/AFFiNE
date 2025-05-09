@@ -2,16 +2,11 @@ import {
   BlockSuiteError,
   ErrorCode,
 } from '@blocksuite/affine/global/exceptions';
-import { NoopLogger, Slot } from '@blocksuite/affine/global/utils';
+import { NoopLogger } from '@blocksuite/affine/global/utils';
 import {
-  AwarenessStore,
-  type CreateBlocksOptions,
   type Doc,
-  type GetBlocksOptions,
   type IdGenerator,
   nanoid,
-  type Schema,
-  type Store,
   type Workspace,
   type WorkspaceMeta,
 } from '@blocksuite/affine/store';
@@ -20,28 +15,28 @@ import {
   type BlobSource,
   MemoryBlobSource,
 } from '@blocksuite/affine/sync';
-import { Awareness } from 'y-protocols/awareness.js';
-import * as Y from 'yjs';
+import { Subject } from 'rxjs';
+import type { Awareness } from 'y-protocols/awareness.js';
+import type { Doc as YDoc } from 'yjs';
 
 import { DocImpl } from './doc';
 import { WorkspaceMetaImpl } from './meta';
 
 type WorkspaceOptions = {
   id?: string;
-  schema: Schema;
+  rootDoc: YDoc;
   blobSource?: BlobSource;
+  onLoadDoc?: (doc: YDoc) => void;
+  onLoadAwareness?: (awareness: Awareness) => void;
+  onCreateDoc?: (docId?: string) => string;
 };
 
 export class WorkspaceImpl implements Workspace {
-  protected readonly _schema: Schema;
-
-  readonly awarenessStore: AwarenessStore;
-
   readonly blobSync: BlobEngine;
 
   readonly blockCollections = new Map<string, Doc>();
 
-  readonly doc: Y.Doc;
+  readonly doc: YDoc;
 
   readonly id: string;
 
@@ -50,25 +45,33 @@ export class WorkspaceImpl implements Workspace {
   meta: WorkspaceMeta;
 
   slots = {
-    docListUpdated: new Slot(),
-    docRemoved: new Slot<string>(),
-    docCreated: new Slot<string>(),
+    /* eslint-disable rxjs/finnish */
+    docListUpdated: new Subject<void>(),
+    /* eslint-enable rxjs/finnish */
   };
 
   get docs() {
     return this.blockCollections;
   }
 
-  get schema() {
-    return this._schema;
-  }
+  readonly onLoadDoc?: (doc: YDoc) => void;
+  readonly onLoadAwareness?: (awareness: Awareness) => void;
+  readonly onCreateDoc?: (docId?: string) => string;
 
-  constructor({ id, schema, blobSource }: WorkspaceOptions) {
-    this._schema = schema;
-
+  constructor({
+    id,
+    rootDoc,
+    blobSource,
+    onLoadDoc,
+    onLoadAwareness,
+    onCreateDoc,
+  }: WorkspaceOptions) {
     this.id = id || '';
-    this.doc = new Y.Doc({ guid: id });
-    this.awarenessStore = new AwarenessStore(new Awareness(this.doc));
+    this.doc = rootDoc;
+    this.onLoadDoc = onLoadDoc;
+    this.onLoadDoc?.(this.doc);
+    this.onLoadAwareness = onLoadAwareness;
+    this.onCreateDoc = onCreateDoc;
 
     blobSource = blobSource ?? new MemoryBlobSource();
     const logger = new NoopLogger();
@@ -82,24 +85,22 @@ export class WorkspaceImpl implements Workspace {
   }
 
   private _bindDocMetaEvents() {
-    this.meta.docMetaAdded.on(docId => {
+    this.meta.docMetaAdded.subscribe(docId => {
       const doc = new DocImpl({
         id: docId,
         collection: this,
         doc: this.doc,
-        awarenessStore: this.awarenessStore,
       });
       this.blockCollections.set(doc.id, doc);
     });
 
-    this.meta.docMetaUpdated.on(() => this.slots.docListUpdated.emit());
+    this.meta.docMetaUpdated.subscribe(() => this.slots.docListUpdated.next());
 
-    this.meta.docMetaRemoved.on(id => {
+    this.meta.docMetaRemoved.subscribe(id => {
       const doc = this._getDoc(id);
       if (!doc) return;
       this.blockCollections.delete(id);
       doc.remove();
-      this.slots.docRemoved.emit(id);
     });
   }
 
@@ -112,9 +113,20 @@ export class WorkspaceImpl implements Workspace {
    * If the `init` parameter is passed, a `surface`, `note`, and `paragraph` block
    * will be created in the doc simultaneously.
    */
-  createDoc(options: CreateBlocksOptions = {}) {
-    const { id: docId = this.idGenerator(), query, readonly } = options;
-    if (this._hasDoc(docId)) {
+  createDoc(docId?: string): Doc {
+    if (this.onCreateDoc) {
+      const id = this.onCreateDoc(docId);
+      const doc = this.getDoc(id);
+      if (!doc) {
+        throw new BlockSuiteError(
+          ErrorCode.DocCollectionError,
+          'create doc failed'
+        );
+      }
+      return doc;
+    }
+    const id = docId ?? this.idGenerator();
+    if (this._hasDoc(id)) {
       throw new BlockSuiteError(
         ErrorCode.DocCollectionError,
         'doc already exists'
@@ -122,17 +134,12 @@ export class WorkspaceImpl implements Workspace {
     }
 
     this.meta.addDocMeta({
-      id: docId,
+      id,
       title: '',
       createDate: Date.now(),
       tags: [],
     });
-    this.slots.docCreated.emit(docId);
-    return this.getDoc(docId, { query, readonly }) as Store;
-  }
-
-  dispose() {
-    this.awarenessStore.destroy();
+    return this.getDoc(id) as Doc;
   }
 
   private _getDoc(docId: string): Doc | null {
@@ -140,9 +147,9 @@ export class WorkspaceImpl implements Workspace {
     return space ?? null;
   }
 
-  getDoc(docId: string, options?: GetBlocksOptions): Store | null {
-    const collection = this._getDoc(docId);
-    return collection?.getStore(options) ?? null;
+  getDoc(docId: string): Doc | null {
+    const doc = this._getDoc(docId);
+    return doc;
   }
 
   removeDoc(docId: string) {
@@ -160,5 +167,9 @@ export class WorkspaceImpl implements Workspace {
     blockCollection.dispose();
     this.meta.removeDocMeta(docId);
     this.blockCollections.delete(docId);
+  }
+
+  dispose() {
+    this.blockCollections.forEach(doc => doc.dispose());
   }
 }

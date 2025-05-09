@@ -9,12 +9,17 @@ import { getSpaceDBPath } from '../workspace/meta';
 
 const POOL = new DocStoragePool();
 
+export function getDocStoragePool() {
+  return POOL;
+}
+
 export const nbstoreHandlers: NativeDBApis = {
   connect: async (universalId: string) => {
     const { peer, type, id } = parseUniversalId(universalId);
     const dbPath = await getSpaceDBPath(peer, type, id);
     await fs.ensureDir(path.dirname(dbPath));
     await POOL.connect(universalId, dbPath);
+    await POOL.setSpaceId(universalId, id);
   },
   disconnect: POOL.disconnect.bind(POOL),
   pushUpdate: POOL.pushUpdate.bind(POOL),
@@ -40,4 +45,6 @@ export const nbstoreHandlers: NativeDBApis = {
   getPeerPushedClock: POOL.getPeerPushedClock.bind(POOL),
   setPeerPushedClock: POOL.setPeerPushedClock.bind(POOL),
   clearClocks: POOL.clearClocks.bind(POOL),
+  setBlobUploadedAt: POOL.setBlobUploadedAt.bind(POOL),
+  getBlobUploadedAt: POOL.getBlobUploadedAt.bind(POOL),
 };

@@ -1,7 +1,6 @@
 import { ConfirmModal } from '@affine/component/ui/modal';
 import { openQuotaModalAtom } from '@affine/core/components/atoms';
-import { UserQuotaService } from '@affine/core/modules/cloud';
-import { GlobalDialogService } from '@affine/core/modules/dialogs';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { WorkspaceService } from '@affine/core/modules/workspace';
@@ -30,49 +29,38 @@ export const CloudQuotaModal = () => {
     permissionService.permission.revalidate();
   }, [permissionService]);
 
-  const quotaService = useService(UserQuotaService);
-  const userQuota = useLiveData(
-    quotaService.quota.quota$.map(q =>
-      q
-        ? {
-            name: q.humanReadable.name,
-            blobLimit: q.humanReadable.blobLimit,
-          }
-        : null
-    )
-  );
-
-  const globalDialogService = useService(GlobalDialogService);
+  const workspaceDialogService = useService(WorkspaceDialogService);
   const handleUpgradeConfirm = useCallback(() => {
-    globalDialogService.open('setting', {
+    workspaceDialogService.open('setting', {
       activeTab: 'plans',
       scrollAnchor: 'cloudPricingPlan',
     });
 
     track.$.paywall.storage.viewPlans();
     setOpen(false);
-  }, [globalDialogService, setOpen]);
+  }, [workspaceDialogService, setOpen]);
 
   const description = useMemo(() => {
-    if (userQuota && isOwner) {
-      return <OwnerDescription quota={userQuota.blobLimit} />;
-    }
-    if (workspaceQuota) {
-      return t['com.affine.payment.blob-limit.description.member']({
-        quota: workspaceQuota.humanReadable.blobLimit,
-      });
-    } else {
-      // loading
+    if (!workspaceQuota) {
       return null;
     }
-  }, [userQuota, isOwner, workspaceQuota, t]);
+    if (isOwner) {
+      return (
+        <OwnerDescription quota={workspaceQuota.humanReadable.blobLimit} />
+      );
+    }
+
+    return t['com.affine.payment.blob-limit.description.member']({
+      quota: workspaceQuota.humanReadable.blobLimit,
+    });
+  }, [isOwner, workspaceQuota, t]);
 
   const onAbortLargeBlob = useAsyncCallback(
-    async (blob: Blob) => {
+    async (byteSize: number) => {
       // wait for quota revalidation
       await workspaceQuotaService.quota.waitForRevalidation();
       if (
-        blob.size > (workspaceQuotaService.quota.quota$.value?.blobLimit ?? 0)
+        byteSize > (workspaceQuotaService.quota.quota$.value?.blobLimit ?? 0)
       ) {
         setOpen(true);
       }
@@ -85,10 +73,10 @@ export const CloudQuotaModal = () => {
       return;
     }
 
-    currentWorkspace.engine.blob.singleBlobSizeLimit = workspaceQuota.blobLimit;
+    currentWorkspace.engine.blob.setMaxBlobSize(workspaceQuota.blobLimit);
 
     const disposable =
-      currentWorkspace.engine.blob.onAbortLargeBlob(onAbortLargeBlob);
+      currentWorkspace.engine.blob.onReachedMaxBlobSize(onAbortLargeBlob);
     return () => {
       disposable();
     };

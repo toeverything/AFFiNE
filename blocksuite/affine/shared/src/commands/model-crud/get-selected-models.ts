@@ -1,11 +1,19 @@
-import type { Command } from '@blocksuite/block-std';
+import type { Command } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
+
+import { getSelectedBlocksCommand } from '../block-crud/get-selected-blocks';
+import {
+  getBlockSelectionsCommand,
+  getImageSelectionsCommand,
+  getSurfaceSelectionCommand,
+  getTextSelectionCommand,
+} from '../selection';
 
 /**
  * Retrieves the selected models based on the provided selection types and mode.
  *
  * @param ctx - The command context, which includes the types of selections to be retrieved and the mode of the selection.
- * @param ctx.types - The selection types to be retrieved. Can be an array of 'block', 'text', or 'image'.
+ * @param ctx.types - The selection types to be retrieved. Can be an array of 'block', 'text', 'image', or 'surface'.
  * @param ctx.mode - The mode of the selection. Can be 'all', 'flat', or 'highest'.
  * @example
  * // Assuming `commandContext` is an instance of the command context
@@ -29,28 +37,27 @@ import type { BlockModel } from '@blocksuite/store';
  * @returns An object containing the selected models as an array of BlockModel instances.
  */
 export const getSelectedModelsCommand: Command<
-  never,
-  'selectedModels',
   {
-    types?: Array<'image' | 'text' | 'block'>;
+    types?: Array<'image' | 'text' | 'block' | 'surface'>;
     mode?: 'all' | 'flat' | 'highest';
+  },
+  {
+    selectedModels: BlockModel[];
   }
 > = (ctx, next) => {
-  const types = ctx.types ?? ['block', 'text', 'image'];
+  const types = ctx.types ?? ['block', 'text', 'image', 'surface'];
   const mode = ctx.mode ?? 'flat';
   const selectedModels: BlockModel[] = [];
   ctx.std.command
     .chain()
     .tryAll(chain => [
-      chain.getTextSelection(),
-      chain.getBlockSelections(),
-      chain.getImageSelections(),
+      chain.pipe(getTextSelectionCommand),
+      chain.pipe(getBlockSelectionsCommand),
+      chain.pipe(getImageSelectionsCommand),
+      chain.pipe(getSurfaceSelectionCommand),
     ])
-    .getSelectedBlocks({
-      types,
-      mode,
-    })
-    .inline(ctx => {
+    .pipe(getSelectedBlocksCommand, { types, mode })
+    .pipe(ctx => {
       const { selectedBlocks = [] } = ctx;
       selectedModels.push(...selectedBlocks.map(el => el.model));
     })
@@ -58,15 +65,3 @@ export const getSelectedModelsCommand: Command<
 
   next({ selectedModels });
 };
-
-declare global {
-  namespace BlockSuite {
-    interface CommandContext {
-      selectedModels?: BlockModel[];
-    }
-
-    interface Commands {
-      getSelectedModels: typeof getSelectedModelsCommand;
-    }
-  }
-}

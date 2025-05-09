@@ -7,5 +7,5 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["./src"],
-  "references": [{ "path": "../../../blocksuite/affine/all" }]
+  "references": []
 }

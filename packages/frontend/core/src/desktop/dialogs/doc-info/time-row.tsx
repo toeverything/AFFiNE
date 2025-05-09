@@ -1,8 +1,7 @@
 import { PropertyName, PropertyRoot, PropertyValue } from '@affine/component';
 import { DocsService } from '@affine/core/modules/doc';
-import { WorkspaceService } from '@affine/core/modules/workspace';
 import { i18nTime, useI18n } from '@affine/i18n';
-import { DateTimeIcon, HistoryIcon } from '@blocksuite/icons/rc';
+import { DateTimeIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import type { ConfigType } from 'dayjs';
@@ -19,11 +18,7 @@ export const TimeRow = ({
   className?: string;
 }) => {
   const t = useI18n();
-  const workspaceService = useService(WorkspaceService);
   const docsService = useService(DocsService);
-  const { syncing, retrying, serverClock } = useLiveData(
-    workspaceService.workspace.engine.doc.docState$(docId)
-  );
   const docRecord = useLiveData(docsService.list.doc$(docId));
   const docMeta = useLiveData(docRecord?.meta$);
 
@@ -43,38 +38,14 @@ export const TimeRow = ({
       : null;
 
     return (
-      <>
-        <PropertyRoot>
-          <PropertyName name={t['Created']()} icon={<DateTimeIcon />} />
-          <PropertyValue>
-            {docMeta ? formatI18nTime(docMeta.createDate) : localizedCreateTime}
-          </PropertyValue>
-        </PropertyRoot>
-        {serverClock ? (
-          <PropertyRoot>
-            <PropertyName
-              name={t[
-                !syncing && !retrying ? 'Updated' : 'com.affine.syncing'
-              ]()}
-              icon={<HistoryIcon />}
-            />
-            <PropertyValue>
-              {!syncing && !retrying
-                ? formatI18nTime(serverClock)
-                : docMeta?.updatedDate
-                  ? formatI18nTime(docMeta.updatedDate)
-                  : null}
-            </PropertyValue>
-          </PropertyRoot>
-        ) : docMeta?.updatedDate ? (
-          <PropertyRoot>
-            <PropertyName name={t['Updated']()} icon={<HistoryIcon />} />
-            <PropertyValue>{formatI18nTime(docMeta.updatedDate)}</PropertyValue>
-          </PropertyRoot>
-        ) : null}
-      </>
+      <PropertyRoot>
+        <PropertyName name={t['Created']()} icon={<DateTimeIcon />} />
+        <PropertyValue>
+          {docMeta ? formatI18nTime(docMeta.createDate) : localizedCreateTime}
+        </PropertyValue>
+      </PropertyRoot>
     );
-  }, [docMeta, retrying, serverClock, syncing, t]);
+  }, [docMeta, t]);
 
   const dTimestampElement = useDebouncedValue(timestampElement, 500);
 

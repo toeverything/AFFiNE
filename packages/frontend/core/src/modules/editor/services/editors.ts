@@ -1,9 +1,12 @@
 import { Service } from '@toeverything/infra';
 
 import { Editor } from '../entities/editor';
+import { EditorInitialized } from '../events';
 
 export class EditorsService extends Service {
   createEditor() {
-    return this.framework.createEntity(Editor);
+    const editor = this.framework.createEntity(Editor);
+    editor.scope.emitEvent(EditorInitialized, editor);
+    return editor;
   }
 }

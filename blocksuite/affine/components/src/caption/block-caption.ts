@@ -1,20 +1,20 @@
 import type { DocMode } from '@blocksuite/affine-model';
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
-import type { BlockStdScope } from '@blocksuite/block-std';
+import { WithDisposable } from '@blocksuite/global/lit';
+import type { BlockStdScope } from '@blocksuite/std';
 import {
-  docContext,
   modelContext,
   ShadowlessElement,
   stdContext,
-} from '@blocksuite/block-std';
-import { WithDisposable } from '@blocksuite/global/utils';
+  storeContext,
+  TextSelection,
+} from '@blocksuite/std';
+import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import type { BlockModel, Store } from '@blocksuite/store';
 import { Text } from '@blocksuite/store';
 import { consume } from '@lit/context';
 import { css, html, nothing } from 'lit';
 import { query, state } from 'lit/decorators.js';
-
-import { focusTextModel } from '../rich-text/index.js';
 
 export interface BlockCaptionProps {
   caption: string | null | undefined;
@@ -92,7 +92,13 @@ export class BlockCaptionEditor<
         index + 1
       );
 
-      focusTextModel(this.std, id);
+      const std = this.std;
+      std.selection.setGroup('note', [
+        std.selection.create(TextSelection, {
+          from: { blockId: id, index: 0, length: 0 },
+          to: null,
+        }),
+      ]);
     }
   }
 
@@ -116,12 +122,14 @@ export class BlockCaptionEditor<
   override connectedCallback(): void {
     super.connectedCallback();
 
-    this.caption = this.model.caption;
+    this.setAttribute(RANGE_SYNC_EXCLUDE_ATTR, 'true');
+
+    this.caption = this.model.props.caption;
 
     this.disposables.add(
-      this.model.propsUpdated.on(({ key }) => {
+      this.model.propsUpdated.subscribe(({ key }) => {
         if (key === 'caption') {
-          this.caption = this.model.caption;
+          this.caption = this.model.props.caption;
           if (!this._focus) {
             this.display = !!this.caption?.length;
           }
@@ -160,7 +168,7 @@ export class BlockCaptionEditor<
   @state()
   accessor display = false;
 
-  @consume({ context: docContext })
+  @consume({ context: storeContext })
   accessor doc!: Store;
 
   @query('.block-caption-editor')

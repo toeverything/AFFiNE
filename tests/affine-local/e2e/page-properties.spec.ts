@@ -1,3 +1,4 @@
+import { waitNextFrame } from '@affine-test/kit/bs/misc';
 import { test } from '@affine-test/kit/playwright';
 import {
   openHomePage,
@@ -27,6 +28,8 @@ import {
   togglePropertyListVisibility,
 } from '@affine-test/kit/utils/properties';
 import { expect } from '@playwright/test';
+
+import { addColumn } from './blocksuite/database/utils';
 
 test.beforeEach(async ({ page }) => {
   await openHomePage(page);
@@ -298,6 +301,7 @@ test('can show database backlink info', async ({ page }) => {
 
   const databaseTitle = 'some database title';
   await addDatabase(page, databaseTitle);
+  await addColumn(page, 'select', 2);
 
   await expect(page.locator('affine-database-title')).toContainText(
     databaseTitle
@@ -316,10 +320,11 @@ test('can show database backlink info', async ({ page }) => {
   await page.keyboard.press('Escape');
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('Enter');
+  await waitNextFrame(page);
+  await waitNextFrame(page);
   await page.keyboard.type('Done');
-  await page
-    .locator('affine-multi-tag-select .select-option:has-text("Done")')
-    .click();
+  await waitNextFrame(page);
+  await page.keyboard.press('Enter');
 
   // go back to title cell
   await page.keyboard.press('ArrowLeft');

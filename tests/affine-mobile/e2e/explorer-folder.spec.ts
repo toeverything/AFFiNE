@@ -4,11 +4,13 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import {
   expandCollapsibleSection,
   getAttrOfActiveElement,
-  openExplorerNodeMenu,
+  openNavigationPanelNodeMenu,
 } from './utils';
 
 const locateFolder = async (scope: Page | Locator, name: string) => {
-  return scope.locator(`[data-role="explorer-folder"][aria-label="${name}"]`);
+  return scope.locator(
+    `[data-role="navigation-panel-folder"][aria-label="${name}"]`
+  );
 };
 
 /**
@@ -21,7 +23,7 @@ const isRenameInputFocused = async (page: Page) => {
 
 const createRootFolder = async (page: Page, name: string) => {
   const section = await expandCollapsibleSection(page, 'organize');
-  await section.getByTestId('explorer-bar-add-organize-button').tap();
+  await section.getByTestId('navigation-panel-bar-add-organize-button').tap();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   await isRenameInputFocused(page);
@@ -33,7 +35,7 @@ const createRootFolder = async (page: Page, name: string) => {
 };
 
 const createSubFolder = async (page: Page, parent: Locator, name: string) => {
-  const menu = await openExplorerNodeMenu(page, parent);
+  const menu = await openNavigationPanelNodeMenu(page, parent);
   await menu.getByTestId('create-subfolder').tap();
 
   const dialog = page.getByRole('dialog');
@@ -64,7 +66,7 @@ test('create a folder and rename it', async ({ page }) => {
   const appendedName = ' Renamed';
 
   const folder = await createRootFolder(page, originalName);
-  const menu = await openExplorerNodeMenu(page, folder);
+  const menu = await openNavigationPanelNodeMenu(page, folder);
   await menu.getByTestId('rename-folder').tap();
   await isRenameInputFocused(page);
   await page.keyboard.type(appendedName);

@@ -1,8 +1,6 @@
 import { type Framework } from '@toeverything/infra';
 
-import { RawFetchProvider } from '../cloud';
 import { WorkspacesService } from '../workspace';
-import { ImportTemplateDialog } from './entities/dialog';
 import { TemplateDownloader } from './entities/downloader';
 import { TemplateDownloaderService } from './services/downloader';
 import { ImportTemplateService } from './services/import';
@@ -13,9 +11,8 @@ export { ImportTemplateService } from './services/import';
 
 export function configureImportTemplateModule(framework: Framework) {
   framework
-    .entity(ImportTemplateDialog)
     .service(TemplateDownloaderService)
     .entity(TemplateDownloader, [TemplateDownloaderStore])
-    .store(TemplateDownloaderStore, [RawFetchProvider])
+    .store(TemplateDownloaderStore)
     .service(ImportTemplateService, [WorkspacesService]);
 }

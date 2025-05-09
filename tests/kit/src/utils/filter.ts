@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 import { clickNewPageButton, getBlockSuiteEditorTitle } from './page-logic';
@@ -49,7 +49,7 @@ export const getPagesCount = async (page: Page) => {
   }
 
   // locator is not a HTMLElement, so we can't use dataset
-  // eslint-disable-next-line unicorn/prefer-dom-node-dataset
+  // oxlint-disable-next-line unicorn/prefer-dom-node-dataset
   const count = await locator.getAttribute('data-total-count');
   return count ? parseInt(count) : 0;
 };
@@ -67,7 +67,7 @@ export const clickDatePicker = async (page: Page) => {
   await page.locator('[data-testid="filter-arg"]').locator('input').click();
 };
 
-const clickMonthPicker = async (page: Page) => {
+const clickMonthPicker = async (page: Page | Locator) => {
   await page.locator('[data-testid="month-picker-button"]').click();
 };
 
@@ -78,7 +78,10 @@ export const fillDatePicker = async (page: Page, date: Date) => {
     .fill(dateFormat(date));
 };
 
-export const selectMonthFromMonthPicker = async (page: Page, date: Date) => {
+export const selectMonthFromMonthPicker = async (
+  page: Page | Locator,
+  date: Date
+) => {
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();
   // Open the month picker popup
@@ -103,7 +106,10 @@ export const selectMonthFromMonthPicker = async (page: Page, date: Date) => {
   await selectMonth();
 };
 
-export const checkDatePickerMonth = async (page: Page, date: Date) => {
+export const checkDatePickerMonth = async (
+  page: Page | Locator,
+  date: Date
+) => {
   expect(
     await page.getByTestId('month-picker-button').evaluate(e => e.dataset.month)
   ).toBe(date.getMonth().toString());

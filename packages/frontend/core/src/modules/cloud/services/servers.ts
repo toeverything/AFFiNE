@@ -4,7 +4,6 @@ import { nanoid } from 'nanoid';
 import { Observable, switchMap } from 'rxjs';
 
 import { Server } from '../entities/server';
-import { ServerInitialized } from '../events/server-initialized';
 import { ServerStarted } from '../events/server-started';
 import type { ServerConfigStore } from '../stores/server-config';
 import type { ServerListStore } from '../stores/server-list';
@@ -30,7 +29,6 @@ export class ServersService extends Service {
             serverMetadata: metadata,
           });
           server.revalidateConfig();
-          this.eventBus.emit(ServerInitialized, server);
           server.scope.eventBus.emit(ServerStarted, server);
           const ref = this.serverPool.put(metadata.id, server);
           return ref;

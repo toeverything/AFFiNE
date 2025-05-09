@@ -4,7 +4,7 @@ import { FavoriteTag } from '@affine/core/components/page-list/components/favori
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { ShareDocsListService } from '@affine/core/modules/share-doc';
 import { WorkspaceService } from '@affine/core/modules/workspace';
-import { PublicPageMode } from '@affine/graphql';
+import { PublicDocMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import type { DocMeta, Workspace } from '@blocksuite/affine/store';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -68,9 +68,9 @@ export const useAllPageListConfig = () => {
       allPages: pageMetas,
       getPublicMode(id) {
         const mode = shareDocs?.find(shareDoc => shareDoc.id === id)?.mode;
-        if (mode === PublicPageMode.Edgeless) {
+        if (mode === PublicDocMode.Edgeless) {
           return 'edgeless';
-        } else if (mode === PublicPageMode.Page) {
+        } else if (mode === PublicDocMode.Page) {
           return 'page';
         } else {
           return undefined;

@@ -9,6 +9,7 @@ import {
 } from '../doc';
 
 export class DummyDocStorage implements DocStorage {
+  spaceId = '';
   readonly storageType = 'doc';
   readonly isReadonly = true;
   getDoc(_docId: string): Promise<DocRecord | null> {

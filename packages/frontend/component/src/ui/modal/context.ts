@@ -7,6 +7,10 @@ export interface ModalConfig {
    * return a function to handle close/unmount callback
    */
   onOpen?: () => OnClose;
+  /**
+   * For mobile
+   */
+  dynamicKeyboardHeight?: string | number;
 }
 export const ModalConfigContext = createContext<ModalConfig>({});
 

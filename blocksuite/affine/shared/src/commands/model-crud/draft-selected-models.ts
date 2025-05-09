@@ -1,4 +1,4 @@
-import type { Command } from '@blocksuite/block-std';
+import type { Command } from '@blocksuite/std';
 import {
   type BlockModel,
   type DraftModel,
@@ -6,8 +6,12 @@ import {
 } from '@blocksuite/store';
 
 export const draftSelectedModelsCommand: Command<
-  'selectedModels',
-  'draftedModels'
+  {
+    selectedModels?: BlockModel[];
+  },
+  {
+    draftedModels: Promise<DraftModel<BlockModel<object>>[]>;
+  }
 > = (ctx, next) => {
   const models = ctx.selectedModels;
   if (!models) {
@@ -44,15 +48,3 @@ export const draftSelectedModelsCommand: Command<
 
   return next({ draftedModels: draftedModelsPromise });
 };
-
-declare global {
-  namespace BlockSuite {
-    interface CommandContext {
-      draftedModels?: Promise<DraftModel<BlockModel<object>>[]>;
-    }
-
-    interface Commands {
-      draftSelectedModels: typeof draftSelectedModelsCommand;
-    }
-  }
-}

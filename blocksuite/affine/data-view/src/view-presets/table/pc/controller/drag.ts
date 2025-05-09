@@ -4,20 +4,20 @@ import type { InsertToPosition } from '@blocksuite/affine-shared/utils';
 import type { ReactiveController } from 'lit';
 
 import { startDrag } from '../../../../core/utils/drag.js';
-import { TableRow } from '../row/row.js';
+import { TableRowView } from '../row/row.js';
 import type { DataViewTable } from '../table-view.js';
 
 export class TableDragController implements ReactiveController {
-  dragStart = (row: TableRow, evt: PointerEvent) => {
-    const eleRect = row.getBoundingClientRect();
+  dragStart = (rowView: TableRowView, evt: PointerEvent) => {
+    const eleRect = rowView.getBoundingClientRect();
     const offsetLeft = evt.x - eleRect.left;
     const offsetTop = evt.y - eleRect.top;
     const preview = createDragPreview(
-      row,
+      rowView,
       evt.x - offsetLeft,
       evt.y - offsetTop
     );
-    const fromGroup = row.groupKey;
+    const fromGroup = rowView.groupKey;
 
     startDrag<
       | undefined
@@ -38,7 +38,7 @@ export class TableDragController implements ReactiveController {
             this.dropPreview.remove();
             return {
               type: 'out',
-              callback: callback(evt, row.rowId),
+              callback: callback(evt, rowView.rowId),
             };
           }
           return;
@@ -66,12 +66,8 @@ export class TableDragController implements ReactiveController {
           return;
         }
         if (result.type === 'self') {
-          this.host.props.view.rowMove(
-            row.rowId,
-            result.position,
-            fromGroup,
-            result.groupKey
-          );
+          const row = this.host.props.view.rowGetOrCreate(rowView.rowId);
+          row.move(result.position, fromGroup, result.groupKey);
         }
       },
     });
@@ -159,9 +155,9 @@ export class TableDragController implements ReactiveController {
   }
 }
 
-const createDragPreview = (row: TableRow, x: number, y: number) => {
+const createDragPreview = (row: TableRowView, x: number, y: number) => {
   const div = document.createElement('div');
-  const cloneRow = new TableRow();
+  const cloneRow = new TableRowView();
   cloneRow.view = row.view;
   cloneRow.rowIndex = row.rowIndex;
   cloneRow.rowId = row.rowId;

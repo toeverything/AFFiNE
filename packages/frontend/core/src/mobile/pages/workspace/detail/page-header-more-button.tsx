@@ -5,7 +5,8 @@ import {
   MobileMenu,
   MobileMenuItem,
 } from '@affine/component/ui/menu';
-import { useFavorite } from '@affine/core/components/blocksuite/block-suite-header/favorite';
+import { useFavorite } from '@affine/core/blocksuite/block-suite-header/favorite';
+import { useGuard } from '@affine/core/components/guard';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { DocInfoSheet } from '@affine/core/mobile/components';
 import { MobileTocMenu } from '@affine/core/mobile/components/toc-menu';
@@ -34,6 +35,7 @@ export const PageHeaderMenuButton = () => {
   const t = useI18n();
 
   const docId = useService(DocService).doc.id;
+  const canEdit = useGuard('Doc_Update', docId);
 
   const editorService = useService(EditorService);
   const editorContainer = useLiveData(editorService.editor.editorContainer$);
@@ -94,6 +96,7 @@ export const PageHeaderMenuButton = () => {
         prefixIcon={primaryMode === 'page' ? <EdgelessIcon /> : <PageIcon />}
         data-testid="editor-option-menu-mode-switch"
         onSelect={handleSwitchMode}
+        disabled={!canEdit}
       >
         {primaryMode === 'page'
           ? t['com.affine.editorDefaultMode.edgeless']()
@@ -123,7 +126,7 @@ export const PageHeaderMenuButton = () => {
         title={t['com.affine.header.menu.toc']()}
         items={
           <div className={styles.outlinePanel}>
-            <MobileTocMenu editor={editorContainer} />
+            <MobileTocMenu editor={editorContainer?.host ?? null} />
           </div>
         }
       >

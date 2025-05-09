@@ -10,12 +10,12 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { join, parse, resolve } from 'node:path';
+import { homedir } from 'node:os';
+import { join, parse } from 'node:path';
 import { Readable } from 'node:stream';
 
 import { Logger } from '@nestjs/common';
 
-import { FsStorageConfig } from '../config';
 import {
   BlobInputType,
   GetObjectMetadata,
@@ -30,6 +30,10 @@ function escapeKey(key: string): string {
   return key.replace(/\.?\.[/\\]/g, '%');
 }
 
+export interface FsStorageConfig {
+  path: string;
+}
+
 export class FsStorageProvider implements StorageProvider {
   private readonly path: string;
   private readonly logger: Logger;
@@ -40,7 +44,9 @@ export class FsStorageProvider implements StorageProvider {
     config: FsStorageConfig,
     public readonly bucket: string
   ) {
-    this.path = resolve(config.path, bucket);
+    this.path = config.path.startsWith('~/')
+      ? join(homedir(), config.path.slice(2), bucket)
+      : join(config.path, bucket);
     this.ensureAvailability();
 
     this.logger = new Logger(`${FsStorageProvider.name}:${bucket}`);

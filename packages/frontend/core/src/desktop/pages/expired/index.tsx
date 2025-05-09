@@ -1,6 +1,4 @@
-import { AuthPageContainer } from '@affine/component/auth-components';
-import { Button } from '@affine/component/ui/button';
-import { useI18n } from '@affine/i18n';
+import { ExpiredPage } from '@affine/component/member-components';
 import { useCallback } from 'react';
 
 import {
@@ -14,20 +12,10 @@ import {
  * only on web
  */
 export const Component = () => {
-  const t = useI18n();
   const { jumpToIndex } = useNavigateHelper();
   const onOpenAffine = useCallback(() => {
     jumpToIndex(RouteLogic.REPLACE);
   }, [jumpToIndex]);
 
-  return (
-    <AuthPageContainer
-      title={t['com.affine.expired.page.title']()}
-      subtitle={t['com.affine.expired.page.new-subtitle']()}
-    >
-      <Button variant="primary" size="large" onClick={onOpenAffine}>
-        {t['com.affine.auth.open.affine']()}
-      </Button>
-    </AuthPageContainer>
-  );
+  return <ExpiredPage onOpenAffine={onOpenAffine} />;
 };

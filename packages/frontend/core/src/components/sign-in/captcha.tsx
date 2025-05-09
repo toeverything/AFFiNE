@@ -36,7 +36,7 @@ export const Captcha = () => {
   return (
     <Turnstile
       className={style.captchaWrapper}
-      siteKey={process.env.CAPTCHA_SITE_KEY || '1x00000000000000000000AA'}
+      siteKey={BUILD_CONFIG.CAPTCHA_SITE_KEY || '1x00000000000000000000AA'}
       onSuccess={handleTurnstileSuccess}
     />
   );

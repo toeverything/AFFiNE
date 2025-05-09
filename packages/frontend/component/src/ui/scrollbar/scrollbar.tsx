@@ -12,6 +12,7 @@ export type ScrollableContainerProps = {
   viewPortClassName?: string;
   styles?: React.CSSProperties;
   scrollBarClassName?: string;
+  scrollThumbClassName?: string;
 };
 
 export const ScrollableContainer = ({
@@ -22,6 +23,7 @@ export const ScrollableContainer = ({
   styles: _styles,
   viewPortClassName,
   scrollBarClassName,
+  scrollThumbClassName,
 }: PropsWithChildren<ScrollableContainerProps>) => {
   const [setContainer, hasScrollTop] = useHasScrollTop();
   return (
@@ -45,7 +47,9 @@ export const ScrollableContainer = ({
           [styles.TableScrollbar]: inTableView,
         })}
       >
-        <ScrollArea.Thumb className={styles.scrollbarThumb} />
+        <ScrollArea.Thumb
+          className={clsx(styles.scrollbarThumb, scrollThumbClassName)}
+        />
       </ScrollArea.Scrollbar>
     </ScrollArea.Root>
   );

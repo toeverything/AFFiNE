@@ -1,23 +1,28 @@
 import { createIdentifier } from '@toeverything/infra';
 
-export type VirtualKeyboardEvent =
-  | 'keyboardWillShow'
-  | 'keyboardDidShow'
-  | 'keyboardWillHide'
-  | 'keyboardDidHide';
-
-export interface VirtualKeyboardEventInfo {
-  keyboardHeight: number;
+interface VirtualKeyboardInfo {
+  visible: boolean;
+  height: number;
 }
-type VirtualKeyboardEventListener = (info: VirtualKeyboardEventInfo) => void;
 
-export interface VirtualKeyboardProvider {
-  addEventListener: (
-    event: VirtualKeyboardEvent,
-    callback: VirtualKeyboardEventListener
-  ) => void;
-  removeAllListeners: () => void;
-}
+type VirtualKeyboardAction = {
+  /**
+   * Open the virtual keyboard, the focused element should not be changed
+   */
+  show: () => void;
+  /**
+   * Hide the virtual keyboard, the focused element should not be changed
+   */
+  hide: () => void;
+};
+
+type VirtualKeyboardEvent = {
+  onChange: (callback: (info: VirtualKeyboardInfo) => void) => () => void;
+};
+
+export type VirtualKeyboardProvider =
+  | (VirtualKeyboardEvent & VirtualKeyboardAction)
+  | VirtualKeyboardEvent;
 
 export const VirtualKeyboardProvider =
   createIdentifier<VirtualKeyboardProvider>('VirtualKeyboardProvider');

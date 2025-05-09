@@ -15,12 +15,7 @@ export class BroadcastChannelConnection extends AutoReconnectConnection<Broadcas
     return new BroadcastChannel(this.channelName);
   }
 
-  override doDisconnect() {
-    this.close();
-  }
-
-  private close(error?: Error) {
-    this.maybeConnection?.close();
-    this.setStatus('closed', error);
+  override doDisconnect(channel: BroadcastChannel) {
+    channel.close();
   }
 }

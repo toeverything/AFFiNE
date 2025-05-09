@@ -1,3 +1,0 @@
-mutation addWorkspaceFeature($workspaceId: String!, $feature: FeatureType!) {
-  addWorkspaceFeature(workspaceId: $workspaceId, feature: $feature)
-}

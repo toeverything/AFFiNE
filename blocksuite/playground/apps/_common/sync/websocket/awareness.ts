@@ -1,4 +1,3 @@
-import { assertExists } from '@blocksuite/global/utils';
 import type { AwarenessSource } from '@blocksuite/sync';
 import type { Awareness } from 'y-protocols/awareness';
 import {
@@ -21,7 +20,9 @@ export class WebSocketAwarenessSource implements AwarenessSource {
       res.concat(cur)
     );
 
-    assertExists(this.awareness);
+    if (!this.awareness) {
+      throw new Error('awareness is not found');
+    }
     const update = encodeAwarenessUpdate(this.awareness, changedClients);
     this.ws.send(
       JSON.stringify({
@@ -42,12 +43,16 @@ export class WebSocketAwarenessSource implements AwarenessSource {
 
     if (type === 'update') {
       const update = data.payload.update;
-      assertExists(this.awareness);
+      if (!this.awareness) {
+        throw new Error('awareness is not found');
+      }
       applyAwarenessUpdate(this.awareness, new Uint8Array(update), 'remote');
     }
 
     if (type === 'connect') {
-      assertExists(this.awareness);
+      if (!this.awareness) {
+        throw new Error('awareness is not found');
+      }
       this.ws.send(
         JSON.stringify({
           channel: 'awareness',

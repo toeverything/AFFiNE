@@ -8,10 +8,9 @@ import type { BlockModel } from './block-model.js';
 const FlavourSchema = z.string();
 const ParentSchema = z.array(z.string()).optional();
 const ContentSchema = z.array(z.string()).optional();
-const role = ['root', 'hub', 'content'] as const;
-const RoleSchema = z.enum(role);
+const RoleSchema = z.string();
 
-export type RoleType = (typeof role)[number];
+export type RoleType = 'root' | 'content' | string;
 
 export interface InternalPrimitives {
   Text: (input?: Y.Text | string) => Text;
@@ -30,6 +29,7 @@ export const BlockSchema = z.object({
     flavour: FlavourSchema,
     parent: ParentSchema,
     children: ContentSchema,
+    isFlatData: z.boolean().optional(),
     props: z
       .function()
       .args(z.custom<InternalPrimitives>())
@@ -39,7 +39,7 @@ export const BlockSchema = z.object({
   }),
   transformer: z
     .function()
-    .args()
+    .args(z.custom<Map<string, unknown>>())
     .returns(z.custom<BaseBlockTransformer>())
     .optional(),
 });
@@ -50,18 +50,6 @@ export type PropsGetter<Props> = (
   internalPrimitives: InternalPrimitives
 ) => Props;
 
-export type SchemaToModel<
-  Schema extends {
-    model: {
-      props: PropsGetter<object>;
-      flavour: string;
-    };
-  },
-> = BlockModel<ReturnType<Schema['model']['props']>> &
-  ReturnType<Schema['model']['props']> & {
-    flavour: Schema['model']['flavour'];
-  };
-
 export function defineBlockSchema<
   Flavour extends string,
   Role extends RoleType,
@@ -71,6 +59,7 @@ export function defineBlockSchema<
     role: Role;
     parent?: string[];
     children?: string[];
+    isFlatData?: boolean;
   }>,
   Model extends BlockModel<Props>,
   Transformer extends BaseBlockTransformer<Props>,
@@ -79,14 +68,14 @@ export function defineBlockSchema<
   metadata: Metadata;
   props?: (internalPrimitives: InternalPrimitives) => Props;
   toModel?: () => Model;
-  transformer?: () => Transformer;
+  transformer?: (transformerConfig: Map<string, unknown>) => Transformer;
 }): {
   version: number;
   model: {
     props: PropsGetter<Props>;
     flavour: Flavour;
   } & Metadata;
-  transformer?: () => Transformer;
+  transformer?: (transformerConfig: Map<string, unknown>) => Transformer;
 };
 
 export function defineBlockSchema({
@@ -102,10 +91,13 @@ export function defineBlockSchema({
     role: RoleType;
     parent?: string[];
     children?: string[];
+    isFlatData?: boolean;
   };
   props?: (internalPrimitives: InternalPrimitives) => Record<string, unknown>;
   toModel?: () => BlockModel;
-  transformer?: () => BaseBlockTransformer;
+  transformer?: (
+    transformerConfig: Map<string, unknown>
+  ) => BaseBlockTransformer;
 }): BlockSchemaType {
   const schema = {
     version: metadata.version,
@@ -116,6 +108,7 @@ export function defineBlockSchema({
       flavour,
       props,
       toModel,
+      isFlatData: metadata.isFlatData,
     },
     transformer,
   } satisfies z.infer<typeof BlockSchema>;

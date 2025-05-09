@@ -35,22 +35,22 @@ public class QuotaQuery: GraphQLQuery {
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
         .field("id", AffineGraphQL.ID.self),
-        .field("quota", Quota?.self),
+        .field("quota", Quota.self),
         .field("quotaUsage", QuotaUsage.self),
       ] }
 
       public var id: AffineGraphQL.ID { __data["id"] }
-      public var quota: Quota? { __data["quota"] }
+      public var quota: Quota { __data["quota"] }
       public var quotaUsage: QuotaUsage { __data["quotaUsage"] }
 
       /// CurrentUser.Quota
       ///
-      /// Parent Type: `UserQuota`
+      /// Parent Type: `UserQuotaType`
       public struct Quota: AffineGraphQL.SelectionSet {
         public let __data: DataDict
         public init(_dataDict: DataDict) { __data = _dataDict }
 
-        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.UserQuota }
+        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.UserQuotaType }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("name", String.self),
@@ -70,12 +70,12 @@ public class QuotaQuery: GraphQLQuery {
 
         /// CurrentUser.Quota.HumanReadable
         ///
-        /// Parent Type: `UserQuotaHumanReadable`
+        /// Parent Type: `UserQuotaHumanReadableType`
         public struct HumanReadable: AffineGraphQL.SelectionSet {
           public let __data: DataDict
           public init(_dataDict: DataDict) { __data = _dataDict }
 
-          public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.UserQuotaHumanReadable }
+          public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.UserQuotaHumanReadableType }
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
             .field("name", String.self),
@@ -95,17 +95,18 @@ public class QuotaQuery: GraphQLQuery {
 
       /// CurrentUser.QuotaUsage
       ///
-      /// Parent Type: `UserQuotaUsage`
+      /// Parent Type: `UserQuotaUsageType`
       public struct QuotaUsage: AffineGraphQL.SelectionSet {
         public let __data: DataDict
         public init(_dataDict: DataDict) { __data = _dataDict }
 
-        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.UserQuotaUsage }
+        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.UserQuotaUsageType }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("storageQuota", AffineGraphQL.SafeInt.self),
         ] }
 
+        @available(*, deprecated, message: "use `UserQuotaType[\'usedStorageQuota\']` instead")
         public var storageQuota: AffineGraphQL.SafeInt { __data["storageQuota"] }
       }
     }

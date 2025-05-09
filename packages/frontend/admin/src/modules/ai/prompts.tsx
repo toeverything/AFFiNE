@@ -3,7 +3,7 @@ import { Separator } from '@affine/admin/components/ui/separator';
 import type { CopilotPromptMessageRole } from '@affine/graphql';
 import { useCallback, useState } from 'react';
 
-import { useRightPanel } from '../layout';
+import { useRightPanel } from '../panel/context';
 import { DiscardChanges } from './discard-changes';
 import { EditPrompt } from './edit-prompt';
 import { usePrompt } from './use-prompt';
@@ -52,7 +52,7 @@ export function Prompts() {
 }
 
 export const PromptRow = ({ item, index }: { item: Prompt; index: number }) => {
-  const { setRightPanelContent, openPanel, isOpen } = useRightPanel();
+  const { setPanelContent, openPanel, isOpen } = useRightPanel();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [canSave, setCanSave] = useState(false);
 
@@ -63,7 +63,7 @@ export const PromptRow = ({ item, index }: { item: Prompt; index: number }) => {
 
   const handleConfirm = useCallback(
     (item: Prompt) => {
-      setRightPanelContent(<EditPrompt item={item} setCanSave={setCanSave} />);
+      setPanelContent(<EditPrompt item={item} setCanSave={setCanSave} />);
       if (dialogOpen) {
         handleDiscardChangesCancel();
       }
@@ -72,13 +72,7 @@ export const PromptRow = ({ item, index }: { item: Prompt; index: number }) => {
         openPanel();
       }
     },
-    [
-      dialogOpen,
-      handleDiscardChangesCancel,
-      isOpen,
-      openPanel,
-      setRightPanelContent,
-    ]
+    [dialogOpen, handleDiscardChangesCancel, isOpen, openPanel, setPanelContent]
   );
 
   const handleEdit = useCallback(

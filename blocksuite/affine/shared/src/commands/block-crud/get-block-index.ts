@@ -1,44 +1,33 @@
-import type { BlockComponent, Command } from '@blocksuite/block-std';
-import { assertExists } from '@blocksuite/global/utils';
+import type { BlockComponent, Command } from '@blocksuite/std';
 
 export const getBlockIndexCommand: Command<
-  'currentSelectionPath',
-  'blockIndex' | 'parentBlock',
   {
+    currentSelectionPath?: string;
     path?: string;
+  },
+  {
+    blockIndex?: number;
+    parentBlock?: BlockComponent;
   }
 > = (ctx, next) => {
   const path = ctx.path ?? ctx.currentSelectionPath;
-  assertExists(
-    path,
-    '`path` is required, you need to pass it in args or ctx before adding this command to the pipeline.'
-  );
+  if (!path) {
+    console.error(
+      '`path` is required, you need to pass it in args or ctx before adding this command to the pipeline.'
+    );
+    return;
+  }
 
   const parentModel = ctx.std.store.getParent(path);
   if (!parentModel) return;
 
-  const parent = ctx.std.view.getBlock(parentModel.id);
-  if (!parent) return;
+  const parentBlock = ctx.std.view.getBlock(parentModel.id);
+  if (!parentBlock) return;
 
-  const index = parent.childBlocks.findIndex(x => {
-    return x.blockId === path;
-  });
+  const blockIndex = parentBlock.childBlocks.findIndex(x => x.blockId === path);
 
   next({
-    blockIndex: index,
-    parentBlock: parent as BlockComponent,
+    blockIndex,
+    parentBlock,
   });
 };
-
-declare global {
-  namespace BlockSuite {
-    interface CommandContext {
-      blockIndex?: number;
-      parentBlock?: BlockComponent;
-    }
-
-    interface Commands {
-      getBlockIndex: typeof getBlockIndexCommand;
-    }
-  }
-}

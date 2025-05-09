@@ -1,5 +1,11 @@
 import { Button, notify } from '@affine/component';
-import { AuthInput, ModalHeader } from '@affine/component/auth-components';
+import {
+  AuthContainer,
+  AuthContent,
+  AuthFooter,
+  AuthHeader,
+  AuthInput,
+} from '@affine/component/auth-components';
 import { OAuth } from '@affine/core/components/affine/auth/oauth';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AuthService, ServerService } from '@affine/core/modules/cloud';
@@ -7,7 +13,11 @@ import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/sess
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { ServerDeploymentType } from '@affine/graphql';
 import { Trans, useI18n } from '@affine/i18n';
-import { ArrowRightBigIcon, PublishIcon } from '@blocksuite/icons/rc';
+import {
+  ArrowRightBigIcon,
+  LocalWorkspaceIcon,
+  PublishIcon,
+} from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import {
@@ -19,6 +29,7 @@ import {
 } from 'react';
 
 import type { SignInState } from '.';
+import { Back } from './back';
 import * as style from './style.css';
 
 const emailRegex =
@@ -82,50 +93,30 @@ export const SignInStep = ({
     setIsMutating(true);
 
     try {
-      const { hasPassword, registered, magicLink } =
-        await authService.checkUserByEmail(email);
+      const { hasPassword } = await authService.checkUserByEmail(email);
 
-      if (registered) {
-        // provider password sign-in if user has by default
-        //  If with payment, onl support email sign in to avoid redirect to affine app
-        if (hasPassword) {
-          changeState(prev => ({
-            ...prev,
-            email,
-            step: 'signInWithPassword',
-          }));
-        } else {
-          if (magicLink) {
-            changeState(prev => ({
-              ...prev,
-              email,
-              step: 'signInWithEmail',
-            }));
-          } else {
-            notify.error({
-              title: 'Failed to send email. Please contact the administrator.',
-            });
-          }
-        }
+      if (hasPassword) {
+        changeState(prev => ({
+          ...prev,
+          email,
+          step: 'signInWithPassword',
+          hasPassword: true,
+        }));
       } else {
-        if (magicLink) {
-          changeState(prev => ({
-            ...prev,
-            email,
-            step: 'signInWithEmail',
-          }));
-        } else {
-          notify.error({
-            title: 'Failed to send email. Please contact the administrator.',
-          });
-        }
+        changeState(prev => ({
+          ...prev,
+          email,
+          step: 'signInWithEmail',
+          hasPassword: false,
+        }));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
 
       // TODO(@eyhn): better error handling
       notify.error({
-        title: 'Failed to send email. Please try again.',
+        title: 'Failed to sign in',
+        message: err.message,
       });
     }
 
@@ -140,16 +131,17 @@ export const SignInStep = ({
   }, [changeState]);
 
   return (
-    <>
-      <ModalHeader
+    <AuthContainer>
+      <AuthHeader
         title={t['com.affine.auth.sign.in']()}
         subTitle={serverName}
       />
 
-      <OAuth redirectUrl={state.redirectUrl} />
+      <AuthContent>
+        <OAuth redirectUrl={state.redirectUrl} />
 
-      <div className={style.authModalContent}>
         <AuthInput
+          className={style.authInput}
           label={t['com.affine.settings.email']()}
           placeholder={t['com.affine.auth.sign.email.placeholder']()}
           onChange={setEmail}
@@ -161,6 +153,7 @@ export const SignInStep = ({
         />
 
         <Button
+          className={style.signInButton}
           style={{ width: '100%' }}
           size="extraLarge"
           data-testid="continue-login-button"
@@ -174,48 +167,53 @@ export const SignInStep = ({
         </Button>
 
         {!isSelfhosted && (
-          <div className={style.authMessage}>
-            {/*prettier-ignore*/}
-            <Trans i18nKey="com.affine.auth.sign.message">
+          <>
+            <div className={style.authMessage}>
+              {/*prettier-ignore*/}
+              <Trans i18nKey="com.affine.auth.sign.message">
                 By clicking &quot;Continue with Google/Email&quot; above, you acknowledge that
                 you agree to AFFiNE&apos;s <a href="https://affine.pro/terms" target="_blank" rel="noreferrer">Terms of Conditions</a> and <a href="https://affine.pro/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>.
             </Trans>
-          </div>
-        )}
-
-        <div className={style.skipDivider}>
-          <div className={style.skipDividerLine} />
-          <span className={style.skipDividerText}>or</span>
-          <div className={style.skipDividerLine} />
-        </div>
-        <div className={style.skipSection}>
-          {!isSelfhosted &&
-            BUILD_CONFIG.isElectron &&
-            enableMultipleCloudServers && (
+            </div>
+            <div className={style.skipDivider}>
+              <div className={style.skipDividerLine} />
+              <span className={style.skipDividerText}>or</span>
+              <div className={style.skipDividerLine} />
+            </div>
+            <div className={style.skipSection}>
+              {BUILD_CONFIG.isElectron && enableMultipleCloudServers ? (
+                <Button
+                  variant="plain"
+                  className={style.addSelfhostedButton}
+                  prefix={
+                    <PublishIcon className={style.addSelfhostedButtonPrefix} />
+                  }
+                  onClick={onAddSelfhosted}
+                >
+                  {t['com.affine.auth.sign.add-selfhosted']()}
+                </Button>
+              ) : (
+                <div className={style.skipText}>
+                  {t['com.affine.mobile.sign-in.skip.hint']()}
+                </div>
+              )}
               <Button
                 variant="plain"
-                className={style.addSelfhostedButton}
-                prefix={
-                  <PublishIcon className={style.addSelfhostedButtonPrefix} />
-                }
-                onClick={onAddSelfhosted}
+                onClick={onSkip}
+                className={style.skipLink}
+                prefix={<LocalWorkspaceIcon className={style.skipLinkIcon} />}
               >
-                {t['com.affine.auth.sign.add-selfhosted']()}
+                {t['com.affine.mobile.sign-in.skip.link']()}
               </Button>
-            )}
-          <div className={style.skipText}>
-            {t['com.affine.mobile.sign-in.skip.hint']()}
-          </div>
-          <Button
-            variant="plain"
-            onClick={onSkip}
-            className={style.skipLink}
-            suffix={<ArrowRightBigIcon className={style.skipLinkIcon} />}
-          >
-            {t['com.affine.mobile.sign-in.skip.link']()}
-          </Button>
-        </div>
-      </div>
-    </>
+            </div>
+          </>
+        )}
+      </AuthContent>
+      {isSelfhosted && (
+        <AuthFooter>
+          <Back changeState={changeState} />
+        </AuthFooter>
+      )}
+    </AuthContainer>
   );
 };

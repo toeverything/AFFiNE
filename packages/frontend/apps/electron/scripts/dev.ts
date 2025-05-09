@@ -40,7 +40,7 @@ function spawnOrReloadElectron() {
     process.env.NODE_OPTIONS = NODE_OPTIONS.replace(/--import=[^\s]*/, '');
   }
 
-  spawnProcess = spawn(exe, ['.'], {
+  spawnProcess = spawn(exe, ['.', '--inspect'], {
     cwd: electronDir,
     env: process.env,
     shell: true,

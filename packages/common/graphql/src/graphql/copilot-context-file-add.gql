@@ -1,0 +1,11 @@
+mutation addContextFile($content: Upload!, $options: AddContextFileInput!) {
+  addContextFile(content: $content, options: $options) {
+    id
+    createdAt
+    name
+    chunkSize
+    error
+    status
+    blobId
+  }
+}

@@ -1,3 +1,4 @@
+import { Bound } from '@blocksuite/global/gfx';
 import type {
   GfxBlockElementModel,
   GfxCompatibleProps,
@@ -5,7 +6,7 @@ import type {
   GfxGroupCompatibleInterface,
   GfxModel,
   PointTestOptions,
-} from '@blocksuite/block-std/gfx';
+} from '@blocksuite/std/gfx';
 import {
   canSafeAddToContainer,
   descendantElementsImpl,
@@ -13,11 +14,16 @@ import {
   GfxCompatible,
   gfxGroupCompatibleSymbol,
   hasDescendantElementImpl,
-} from '@blocksuite/block-std/gfx';
-import { Bound } from '@blocksuite/global/utils';
-import { BlockModel, defineBlockSchema, type Text } from '@blocksuite/store';
+} from '@blocksuite/std/gfx';
+import {
+  BlockModel,
+  BlockSchemaExtension,
+  defineBlockSchema,
+  type Text,
+} from '@blocksuite/store';
+import { z } from 'zod';
 
-import type { Color } from '../../themes/index.js';
+import { type Color, ColorSchema, DefaultTheme } from '../../themes/index.js';
 
 export type FrameBlockProps = {
   title: Text;
@@ -25,6 +31,14 @@ export type FrameBlockProps = {
   childElementIds?: Record<string, boolean>;
   presentationIndex?: string;
 } & GfxCompatibleProps;
+
+export const FrameZodSchema = z
+  .object({
+    background: ColorSchema,
+  })
+  .default({
+    background: DefaultTheme.transparent,
+  });
 
 export const FrameBlockSchema = defineBlockSchema({
   flavour: 'affine:frame',
@@ -48,6 +62,8 @@ export const FrameBlockSchema = defineBlockSchema({
   },
 });
 
+export const FrameBlockSchemaExtension = BlockSchemaExtension(FrameBlockSchema);
+
 export class FrameBlockModel
   extends GfxCompatible<FrameBlockProps>(BlockModel)
   implements GfxElementGeometry, GfxGroupCompatibleInterface
@@ -62,7 +78,7 @@ export class FrameBlockModel
     for (const key of this.childIds) {
       const element =
         this.surface.getElementById(key) ||
-        (this.surface.doc.getBlockById(key) as GfxBlockElementModel);
+        (this.surface.store.getModelById(key) as GfxBlockElementModel);
 
       element && elements.push(element);
     }
@@ -71,7 +87,9 @@ export class FrameBlockModel
   }
 
   get childIds() {
-    return this.childElementIds ? Object.keys(this.childElementIds) : [];
+    return this.props.childElementIds
+      ? Object.keys(this.props.childElementIds)
+      : [];
   }
 
   get descendantElements(): GfxModel[] {
@@ -81,8 +99,11 @@ export class FrameBlockModel
   addChild(element: GfxModel) {
     if (!canSafeAddToContainer(this, element)) return;
 
-    this.doc.transact(() => {
-      this.childElementIds = { ...this.childElementIds, [element.id]: true };
+    this.store.transact(() => {
+      this.props.childElementIds = {
+        ...this.props.childElementIds,
+        [element.id]: true,
+      };
     });
   }
 
@@ -97,9 +118,9 @@ export class FrameBlockModel
       newChildren[id] = true;
     }
 
-    this.doc.transact(() => {
-      this.childElementIds = {
-        ...this.childElementIds,
+    this.store.transact(() => {
+      this.props.childElementIds = {
+        ...this.props.childElementIds,
         ...newChildren,
       };
     });
@@ -110,7 +131,9 @@ export class FrameBlockModel
   }
 
   hasChild(element: GfxModel): boolean {
-    return this.childElementIds ? element.id in this.childElementIds : false;
+    return this.props.childElementIds
+      ? element.id in this.props.childElementIds
+      : false;
   }
 
   hasDescendant(element: GfxModel): boolean {
@@ -130,19 +153,9 @@ export class FrameBlockModel
   }
 
   removeChild(element: GfxModel): void {
-    this.doc.transact(() => {
-      this.childElementIds && delete this.childElementIds[element.id];
+    this.store.transact(() => {
+      this.props.childElementIds &&
+        delete this.props.childElementIds[element.id];
     });
-  }
-}
-
-declare global {
-  namespace BlockSuite {
-    interface EdgelessBlockModelMap {
-      'affine:frame': FrameBlockModel;
-    }
-    interface BlockModels {
-      'affine:frame': FrameBlockModel;
-    }
   }
 }

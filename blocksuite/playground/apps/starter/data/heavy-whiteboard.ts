@@ -1,12 +1,12 @@
-import { DEFAULT_ROUGHNESS } from '@blocksuite/affine-model';
-import type { SerializedXYWH } from '@blocksuite/global/utils';
+import type { SerializedXYWH } from '@blocksuite/affine/global/gfx';
 import {
   Boxed,
   nanoid,
   native2Y,
   Text,
   type Workspace,
-} from '@blocksuite/store';
+} from '@blocksuite/affine/store';
+import { DEFAULT_ROUGHNESS } from '@blocksuite/affine-model';
 import type * as Y from 'yjs';
 
 import type { InitFn } from './utils.js';
@@ -50,16 +50,17 @@ export const heavyWhiteboard: InitFn = (collection: Workspace, id: string) => {
   const count = Number(params.get('count')) || SHAPES_COUNT;
   const enableShapes = !!params.get('shapes');
 
-  const doc = collection.createDoc({ id });
+  const doc = collection.createDoc(id);
+  const store = doc.getStore();
   doc.load(() => {
     // Add root block and surface block at root level
-    const rootId = doc.addBlock('affine:page', {
+    const rootId = store.addBlock('affine:page', {
       title: new Text(),
     });
 
     const surfaceBlocks = enableShapes ? createShapes(count) : {};
 
-    doc.addBlock(
+    store.addBlock(
       'affine:surface',
       {
         elements: new Boxed(native2Y(surfaceBlocks, { deep: false })) as Boxed<
@@ -74,7 +75,7 @@ export const heavyWhiteboard: InitFn = (collection: Workspace, id: string) => {
     for (i = 0; i < count; i++) {
       const x = Math.random() * RANGE - RANGE / 2;
       const y = Math.random() * RANGE - RANGE / 2;
-      const noteId = doc.addBlock(
+      const noteId = store.addBlock(
         'affine:note',
         {
           xywh: `[${x}, ${y}, 100, 50]` as SerializedXYWH,
@@ -82,7 +83,7 @@ export const heavyWhiteboard: InitFn = (collection: Workspace, id: string) => {
         rootId
       );
       // Add paragraph block inside note block
-      doc.addBlock(
+      store.addBlock(
         'affine:paragraph',
         {
           text: new Text('Note #' + i),

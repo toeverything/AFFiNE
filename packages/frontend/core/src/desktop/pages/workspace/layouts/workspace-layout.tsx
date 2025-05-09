@@ -1,13 +1,16 @@
+import { uniReactRoot } from '@affine/component';
 import { WorkspaceAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { AiLoginRequiredModal } from '@affine/core/components/affine/auth/ai-login-required';
 import {
   CloudQuotaModal,
   LocalQuotaModal,
 } from '@affine/core/components/affine/quota-reached-modal';
+import { useResponsiveSidebar } from '@affine/core/components/hooks/use-responsive-siedebar';
 import { SWRConfigProvider } from '@affine/core/components/providers/swr-config-provider';
 import { WorkspaceSideEffects } from '@affine/core/components/providers/workspace-side-effects';
 import { AIIsland } from '@affine/core/desktop/components/ai-island';
 import { AppContainer } from '@affine/core/desktop/components/app-container';
+import { DocumentTitle } from '@affine/core/desktop/components/document-title';
 import { WorkspaceDialogs } from '@affine/core/desktop/dialogs';
 import { PeekViewManagerModal } from '@affine/core/modules/peek-view';
 import { QuotaCheck } from '@affine/core/modules/quota';
@@ -25,22 +28,24 @@ export const WorkspaceLayout = function WorkspaceLayout({
       <WorkspaceDialogs />
 
       {/* ---- some side-effect components ---- */}
-      {currentWorkspace?.flavour === 'local' ? (
-        <LocalQuotaModal />
-      ) : (
+      {currentWorkspace?.flavour !== 'local' ? (
         <>
           <CloudQuotaModal />
           <QuotaCheck workspaceMeta={currentWorkspace.meta} />
         </>
+      ) : (
+        <LocalQuotaModal />
       )}
       <AiLoginRequiredModal />
       <WorkspaceSideEffects />
       <PeekViewManagerModal />
+      <DocumentTitle />
 
       <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
       {/* should show after workspace loaded */}
       <WorkspaceAIOnboarding />
       <AIIsland />
+      <uniReactRoot.Root />
     </SWRConfigProvider>
   );
 };
@@ -55,6 +60,7 @@ const WorkspaceLayoutUIContainer = ({ children }: PropsWithChildren) => {
       return get(workbench.basename$) + get(workbench.location$).pathname;
     })
   );
+  useResponsiveSidebar();
 
   return (
     <AppContainer data-current-path={currentPath}>{children}</AppContainer>

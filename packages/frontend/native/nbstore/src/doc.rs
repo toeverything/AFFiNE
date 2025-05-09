@@ -84,7 +84,7 @@ impl SqliteDocStorage {
           }
 
           // Increment timestamp by 1ms and retry
-          timestamp = timestamp + chrono::Duration::milliseconds(1);
+          timestamp += chrono::Duration::milliseconds(1);
           tried += 1;
         }
       }
@@ -102,7 +102,7 @@ impl SqliteDocStorage {
     let mut tx = self.pool.begin().await?;
 
     sqlx::query(r#"INSERT INTO updates (doc_id, data, created_at) VALUES ($1, $2, $3);"#)
-      .bind(&doc_id)
+      .bind(doc_id)
       .bind(update.as_ref())
       .bind(timestamp)
       .execute(&mut *tx)
@@ -114,7 +114,7 @@ impl SqliteDocStorage {
     ON CONFLICT(doc_id)
     DO UPDATE SET timestamp=$2;"#,
     )
-    .bind(&doc_id)
+    .bind(doc_id)
     .bind(timestamp)
     .execute(&mut *tx)
     .await?;
@@ -293,7 +293,7 @@ mod tests {
     storage
       .set_doc_snapshot(DocRecord {
         doc_id: "test".to_string(),
-        bin: vec![0, 0].into(),
+        bin: vec![0, 0],
         timestamp: Utc::now().naive_utc(),
       })
       .await
@@ -324,6 +324,7 @@ mod tests {
     let clocks = storage
       .get_peer_pulled_remote_clock("remote".to_string(), "new_id".to_string())
       .await
+      .unwrap()
       .unwrap();
 
     assert_eq!(clocks.doc_id, "new_id");
@@ -372,7 +373,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0].into(),
+      bin: vec![0, 0],
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -390,7 +391,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 0].into(),
+      bin: vec![0, 0],
       timestamp: Utc::now().naive_utc(),
     };
 
@@ -403,7 +404,7 @@ mod tests {
 
     let snapshot = DocRecord {
       doc_id: "test".to_string(),
-      bin: vec![0, 1].into(),
+      bin: vec![0, 1],
       timestamp: DateTime::from_timestamp_millis(Utc::now().timestamp_millis() - 1000)
         .unwrap()
         .naive_utc(),

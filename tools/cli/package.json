@@ -1,13 +1,15 @@
 {
   "name": "@affine-tools/cli",
-  "version": "0.19.0",
+  "version": "0.21.0",
   "type": "module",
   "private": true,
   "bin": {
+    "affine": "./bin/cli.js",
     "r": "./bin/runner.js"
   },
   "exports": {
-    "./loader": "./loader.js"
+    "./loader": "./loader.js",
+    "./bundle": "./src/bundle.ts"
   },
   "scripts": {
     "affine": "r ./src/affine.ts"
@@ -16,30 +18,33 @@
     "@affine-tools/utils": "workspace:*",
     "@aws-sdk/client-s3": "^3.709.0",
     "@clack/core": "^0.4.0",
-    "@clack/prompts": "^0.9.0",
+    "@clack/prompts": "^0.10.0",
     "@napi-rs/simple-git": "^0.1.19",
     "@perfsee/webpack": "^1.13.0",
-    "@sentry/webpack-plugin": "^2.22.7",
+    "@sentry/webpack-plugin": "^3.0.0",
+    "@swc/core": "^1.10.1",
+    "@tailwindcss/postcss": "^4.0.0",
     "@vanilla-extract/webpack-plugin": "^2.3.15",
     "autoprefixer": "^10.4.20",
     "clipanion": "^3.2.1",
-    "copy-webpack-plugin": "^12.0.2",
+    "copy-webpack-plugin": "^13.0.0",
     "css-loader": "^7.1.2",
     "cssnano": "^7.0.6",
     "html-webpack-plugin": "^5.6.3",
     "inquirer": "^12.3.0",
     "jsonc-parser": "^3.3.1",
     "lodash-es": "^4.17.21",
-    "mime-types": "^2.1.35",
+    "mime-types": "^3.0.0",
     "mini-css-extract-plugin": "^2.9.2",
+    "node-loader": "^2.1.0",
     "postcss": "^8.4.49",
     "postcss-loader": "^8.1.1",
     "prettier": "^3.4.2",
-    "react-refresh": "^0.16.0",
+    "react-refresh": "^0.17.0",
     "source-map-loader": "^5.0.0",
     "style-loader": "^4.0.0",
     "swc-loader": "^0.2.6",
-    "tailwindcss": "^3.4.16",
+    "tailwindcss": "^4.0.0",
     "terser-webpack-plugin": "^5.3.10",
     "ts-node": "^10.9.2",
     "typanion": "^3.14.0",
@@ -51,7 +56,7 @@
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
     "@types/mime-types": "^2.1.4",
-    "@types/node": "^20.17.10",
+    "@types/node": "^22.0.0",
     "@types/webpack-env": "^1.18.5"
   }
 }

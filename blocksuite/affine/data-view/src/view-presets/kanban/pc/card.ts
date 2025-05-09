@@ -1,8 +1,9 @@
 import { popupTargetFromElement } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { CenterPeekIcon, MoreHorizontalIcon } from '@blocksuite/icons/lit';
-import { css } from 'lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, unsafeCSS } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -17,7 +18,7 @@ const styles = css`
     display: flex;
     position: relative;
     flex-direction: column;
-    border: 1px solid var(--affine-border-color);
+    border: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
     box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.05);
     border-radius: 8px;
     transition: background-color 100ms ease-in-out;
@@ -40,7 +41,7 @@ const styles = css`
   }
 
   .card-header.has-divider {
-    border-bottom: 0.5px solid var(--affine-border-color);
+    border-bottom: 0.5px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
   }
 
   affine-data-view-kanban-card .card-header-title {
@@ -229,7 +230,7 @@ export class KanbanCard extends SignalWatcher(
       return;
     }
     return html` <div class="card-header-icon">
-      ${icon.cellGet(this.cardId).value$.value}
+      ${icon.cellGetOrCreate(this.cardId).value$.value}
     </div>`;
   }
 

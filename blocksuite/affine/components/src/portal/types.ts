@@ -1,4 +1,3 @@
-import type { Slot } from '@blocksuite/global/utils';
 import type {
   AutoUpdateOptions,
   ComputePositionConfig,
@@ -6,6 +5,7 @@ import type {
   ReferenceElement,
 } from '@floating-ui/dom';
 import type { RenderOptions, TemplateResult } from 'lit';
+import type { Subject } from 'rxjs';
 
 /**
  * See https://lit.dev/docs/templates/expressions/#child-expressions
@@ -64,7 +64,7 @@ export type AdvancedPortalOptions = Omit<
   template:
     | Renderable
     | ((context: {
-        positionSlot: Slot<ComputePositionReturn>;
+        positionSlot: Subject<ComputePositionReturn>;
         updatePortal: () => void;
       }) => Renderable);
   positionStrategy?: 'absolute' | 'fixed';

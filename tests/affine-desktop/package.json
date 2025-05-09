@@ -3,15 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "e2e": "DEBUG=pw:browser yarn playwright test"
+    "e2e": "yarn playwright test --reporter=list"
   },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
     "@affine/electron-api": "workspace:*",
-    "@playwright/test": "=1.49.1",
+    "@playwright/test": "=1.52.0",
     "@types/fs-extra": "^11.0.4",
     "fs-extra": "^11.2.0",
-    "playwright": "=1.49.1"
+    "playwright": "=1.52.0"
   },
-  "version": "0.19.0"
+  "version": "0.21.0"
 }

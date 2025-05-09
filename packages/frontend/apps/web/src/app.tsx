@@ -4,22 +4,43 @@ import { router } from '@affine/core/desktop/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
-import { OpenInAppGuard } from '@affine/core/modules/open-in-app';
-import { configureLocalStorageStateStorageImpls } from '@affine/core/modules/storage';
-import { PopupWindowProvider } from '@affine/core/modules/url';
-import { configureIndexedDBUserspaceStorageProvider } from '@affine/core/modules/userspace';
-import { configureBrowserWorkbenchModule } from '@affine/core/modules/workbench';
 import {
-  configureBrowserWorkspaceFlavours,
-  configureIndexedDBWorkspaceEngineStorageProvider,
-} from '@affine/core/modules/workspace-engine';
+  configureLocalStorageStateStorageImpls,
+  NbstoreProvider,
+} from '@affine/core/modules/storage';
+import { PopupWindowProvider } from '@affine/core/modules/url';
+import { configureBrowserWorkbenchModule } from '@affine/core/modules/workbench';
+import { configureBrowserWorkspaceFlavours } from '@affine/core/modules/workspace-engine';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
+import { getWorkerUrl } from '@affine/env/worker';
+import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { CacheProvider } from '@emotion/react';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
+import { OpClient } from '@toeverything/infra/op';
 import { Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 
 const cache = createEmotionCache();
+
+let storeManagerClient: StoreManagerClient;
+
+const workerUrl = getWorkerUrl('nbstore');
+
+if (
+  window.SharedWorker &&
+  localStorage.getItem('disableSharedWorker') !== 'true'
+) {
+  const worker = new SharedWorker(workerUrl, {
+    name: 'affine-shared-worker',
+  });
+  storeManagerClient = new StoreManagerClient(new OpClient(worker.port));
+} else {
+  const worker = new Worker(workerUrl);
+  storeManagerClient = new StoreManagerClient(new OpClient(worker));
+}
+window.addEventListener('beforeunload', () => {
+  storeManagerClient.dispose();
+});
 
 const future = {
   v7_startTransition: true,
@@ -30,8 +51,11 @@ configureCommonModules(framework);
 configureBrowserWorkbenchModule(framework);
 configureLocalStorageStateStorageImpls(framework);
 configureBrowserWorkspaceFlavours(framework);
-configureIndexedDBWorkspaceEngineStorageProvider(framework);
-configureIndexedDBUserspaceStorageProvider(framework);
+framework.impl(NbstoreProvider, {
+  openStore(key, options) {
+    return storeManagerClient.open(key, options);
+  },
+});
 framework.impl(PopupWindowProvider, {
   open: (target: string) => {
     const targetUrl = new URL(target);
@@ -48,7 +72,7 @@ framework.impl(PopupWindowProvider, {
 
       url = `${redirectProxy}?${search.toString()}`;
     }
-    window.open(url, '_blank', 'noreferrer noopener');
+    window.open(url, '_blank', 'popup noreferrer noopener');
   },
 });
 const frameworkProvider = framework.provider();
@@ -66,13 +90,11 @@ export function App() {
         <CacheProvider value={cache}>
           <I18nProvider>
             <AffineContext store={getCurrentStore()}>
-              <OpenInAppGuard>
-                <RouterProvider
-                  fallbackElement={<AppContainer fallback />}
-                  router={router}
-                  future={future}
-                />
-              </OpenInAppGuard>
+              <RouterProvider
+                fallbackElement={<AppContainer fallback />}
+                router={router}
+                future={future}
+              />
             </AffineContext>
           </I18nProvider>
         </CacheProvider>

@@ -15,11 +15,7 @@ export const AppSidebarJournalButton = () => {
   const maybeDocId = location.pathname.split('/')[1];
   const isJournal = !!useLiveData(journalService.journalDate$(maybeDocId));
 
-  const JournalIcon = useLiveData(
-    docDisplayMetaService.icon$(maybeDocId, {
-      compareDate: new Date(),
-    })
-  );
+  const JournalIcon = useLiveData(docDisplayMetaService.icon$(maybeDocId));
   const Icon = isJournal ? JournalIcon : TodayIcon;
 
   return (

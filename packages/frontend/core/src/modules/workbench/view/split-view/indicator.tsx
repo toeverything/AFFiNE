@@ -1,5 +1,6 @@
 import type { MenuProps } from '@affine/component';
-import { Menu } from '@affine/component';
+import { Menu, Tooltip } from '@affine/component';
+import { useI18n } from '@affine/i18n';
 import clsx from 'clsx';
 import type { HTMLAttributes, MouseEventHandler } from 'react';
 import { forwardRef, memo, useCallback, useMemo, useState } from 'react';
@@ -18,12 +19,16 @@ export interface SplitViewDragHandleProps
 export const SplitViewDragHandle = memo(
   forwardRef<HTMLDivElement, SplitViewDragHandleProps>(
     function SplitViewDragHandle(
-      { className, active, open, onOpenMenu, dragging, ...attrs },
+      { className, active, open, onOpenMenu, dragging, onClick, ...attrs },
       ref
     ) {
-      const onClick: MouseEventHandler = useCallback(() => {
-        !open && onOpenMenu?.();
-      }, [onOpenMenu, open]);
+      const handleOnClick: MouseEventHandler<HTMLDivElement> = useCallback(
+        e => {
+          !open && onOpenMenu?.();
+          onClick?.(e);
+        },
+        [onOpenMenu, open, onClick]
+      );
 
       return (
         <div
@@ -32,13 +37,15 @@ export const SplitViewDragHandle = memo(
           data-dragging={dragging}
           data-testid="split-view-indicator"
           className={clsx(className, styles.indicator)}
-          onClick={onClick}
+          onClick={handleOnClick}
           {...attrs}
         >
           <div className={styles.indicatorGradient} />
-          <div data-idx={0} className={styles.indicatorDot} />
-          <div data-idx={1} className={styles.indicatorDot} />
-          <div data-idx={2} className={styles.indicatorDot} />
+          <div className={styles.indicatorInnerWrapper}>
+            <div data-idx={0} className={styles.indicatorDot} />
+            <div data-idx={1} className={styles.indicatorDot} />
+            <div data-idx={2} className={styles.indicatorDot} />
+          </div>
         </div>
       );
     }
@@ -87,6 +94,7 @@ export const SplitViewIndicator = memo(
         []
       );
 
+      const t = useI18n();
       return (
         <div
           ref={ref}
@@ -100,13 +108,18 @@ export const SplitViewIndicator = memo(
           >
             <div className={styles.menuTrigger} />
           </Menu>
-          <SplitViewDragHandle
-            ref={dragHandleRef}
-            open={menuOpen}
-            onOpenMenu={openMenu}
-            active={isActive}
-            dragging={isDragging}
-          />
+          <Tooltip
+            content={t['com.affine.split-view-drag-handle.tooltip']()}
+            side="bottom"
+          >
+            <SplitViewDragHandle
+              ref={dragHandleRef}
+              open={menuOpen}
+              onOpenMenu={openMenu}
+              active={isActive}
+              dragging={isDragging}
+            />
+          </Tooltip>
         </div>
       );
     }

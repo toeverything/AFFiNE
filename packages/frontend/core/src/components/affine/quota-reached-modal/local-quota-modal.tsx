@@ -16,7 +16,7 @@ export const LocalQuotaModal = () => {
   }, [setOpen]);
 
   useEffect(() => {
-    const disposable = currentWorkspace.engine.blob.onAbortLargeBlob(() => {
+    const disposable = currentWorkspace.engine.blob.onReachedMaxBlobSize(() => {
       setOpen(true);
     });
     return () => {

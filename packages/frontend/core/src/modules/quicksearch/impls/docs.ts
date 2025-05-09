@@ -6,7 +6,7 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { truncate } from 'lodash-es';
-import { EMPTY, map, mergeMap, of, switchMap } from 'rxjs';
+import { map, of, switchMap, tap, throttleTime } from 'rxjs';
 
 import type { DocRecord, DocsService } from '../../doc';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
@@ -33,10 +33,11 @@ export class DocsQuickSearchSession
     super();
   }
 
-  private readonly isIndexerLoading$ =
-    this.docsSearchService.indexer.status$.map(({ remaining }) => {
-      return remaining === undefined || remaining > 0;
-    });
+  private readonly isIndexerLoading$ = this.docsSearchService.indexerState$.map(
+    ({ completed }) => {
+      return !completed;
+    }
+  );
 
   private readonly isQueryLoading$ = new LiveData(false);
 
@@ -49,6 +50,10 @@ export class DocsQuickSearchSession
   items$ = new LiveData<QuickSearchItem<'docs', DocsPayload>[]>([]);
 
   query = effect(
+    throttleTime<string>(1000, undefined, {
+      leading: false,
+      trailing: true,
+    }),
     switchMap((query: string) => {
       let out;
       if (!query) {
@@ -66,10 +71,7 @@ export class DocsQuickSearchSession
               )
               .map(([doc, docRecord]) => {
                 const { title, icon, updatedDate } =
-                  this.docDisplayMetaService.getDocDisplayMeta(
-                    docRecord,
-                    'title' in doc ? doc.title : undefined
-                  );
+                  this.docDisplayMetaService.getDocDisplayMeta(docRecord);
                 return {
                   id: 'doc:' + docRecord.id,
                   source: 'docs',
@@ -95,10 +97,9 @@ export class DocsQuickSearchSession
         );
       }
       return out.pipe(
-        mergeMap((items: QuickSearchItem<'docs', DocsPayload>[]) => {
+        tap((items: QuickSearchItem<'docs', DocsPayload>[]) => {
           this.items$.next(items);
           this.isQueryLoading$.next(false);
-          return EMPTY;
         }),
         onStart(() => {
           this.items$.next([]);
@@ -113,5 +114,9 @@ export class DocsQuickSearchSession
 
   setQuery(query: string) {
     this.query$.next(query);
+  }
+
+  override dispose(): void {
+    this.query.unsubscribe();
   }
 }

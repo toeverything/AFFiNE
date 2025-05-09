@@ -332,7 +332,7 @@ const NewDocDefaultModeSettings = () => {
         },
         {
           value: 'ask',
-          label: 'Ask every time',
+          label: t['com.affine.settings.editorSettings.ask-me-every-time'](),
           testId: 'ask-every-time-trigger',
         },
       ] as const,
@@ -361,13 +361,17 @@ const NewDocDefaultModeSettings = () => {
               key={item.value}
               selected={item.value === settings.newDocDefaultMode}
               onSelect={() => updateNewDocDefaultMode(item.value)}
+              data-testid={item.testId}
             >
               {item.label}
             </MenuItem>
           );
         })}
       >
-        <MenuTrigger className={styles.menuTrigger}>
+        <MenuTrigger
+          className={styles.menuTrigger}
+          data-testid="new-doc-default-mode-trigger"
+        >
           {items.find(item => item.value === settings.newDocDefaultMode)?.label}
         </MenuTrigger>
       </Menu>
@@ -483,6 +487,33 @@ const SpellCheckSettings = () => {
   );
 };
 
+const MiddleClickPasteSettings = () => {
+  const t = useI18n();
+  const editorSettingService = useService(EditorSettingService);
+  const settings = useLiveData(editorSettingService.editorSetting.settings$);
+  const onToggleMiddleClickPaste = useCallback(
+    (checked: boolean) => {
+      editorSettingService.editorSetting.set('enableMiddleClickPaste', checked);
+    },
+    [editorSettingService.editorSetting]
+  );
+  return (
+    <SettingRow
+      name={t[
+        'com.affine.settings.editorSettings.general.middle-click-paste.title'
+      ]()}
+      desc={t[
+        'com.affine.settings.editorSettings.general.middle-click-paste.description'
+      ]()}
+    >
+      <Switch
+        checked={settings.enableMiddleClickPaste}
+        onChange={onToggleMiddleClickPaste}
+      />
+    </SettingRow>
+  );
+};
+
 export const General = () => {
   const t = useI18n();
 
@@ -493,6 +524,7 @@ export const General = () => {
       <CustomFontFamilySettings />
       <NewDocDefaultModeSettings />
       {BUILD_CONFIG.isElectron && <SpellCheckSettings />}
+      {environment.isLinux && <MiddleClickPasteSettings />}
       {/* // TODO(@akumatus): implement these settings
         <DeFaultCodeBlockSettings />
        */}

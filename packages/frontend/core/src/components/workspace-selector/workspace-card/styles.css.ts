@@ -19,6 +19,7 @@ export const container = style({
   width: '100%',
   maxWidth: 500,
   color: cssVarV2('text/primary'),
+  overflow: 'hidden',
   ':hover': {
     cursor: 'pointer',
     background: cssVar('hoverColor'),
@@ -34,6 +35,7 @@ export const infoContainer = style({
 });
 export const activeContainer = style({
   flexShrink: 0,
+  lineHeight: 0,
 });
 
 export const disable = style({
@@ -187,10 +189,24 @@ export const showOnCardHover = style({
     [`.${container}:hover &`]: {
       position: 'relative',
     },
+    '&:empty': {
+      display: 'none',
+    },
   },
 });
 
 export const activeIcon = style({
   fontSize: 14,
   color: cssVarV2('icon/activated'),
+});
+
+export const suffixIcons = style({
+  display: 'flex',
+  gap: 8,
+  alignItems: 'center',
+  selectors: {
+    '&:empty': {
+      display: 'none',
+    },
+  },
 });

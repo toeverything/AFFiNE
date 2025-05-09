@@ -1,3 +1,0 @@
-compatibility_date = "2023-07-11"
-main               = "./src/index.ts"
-name               = "workers"

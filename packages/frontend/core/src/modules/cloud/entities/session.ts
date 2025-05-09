@@ -1,3 +1,4 @@
+import { UserFriendlyError } from '@affine/error';
 import {
   backoffRetry,
   effect,
@@ -9,7 +10,7 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
-import { EMPTY, mergeMap } from 'rxjs';
+import { tap } from 'rxjs';
 
 import { validateAndReduceImage } from '../../../utils/reduce-image';
 import type { AccountProfile, AuthStore } from '../stores/auth';
@@ -77,11 +78,10 @@ export class AuthSession extends Entity {
         backoffRetry({
           count: Infinity,
         }),
-        mergeMap(sessionInfo => {
+        tap(sessionInfo => {
           if (!isEqual(this.store.getCachedAuthSession(), sessionInfo)) {
             this.store.setCachedAuthSession(sessionInfo);
           }
-          return EMPTY;
         }),
         onStart(() => {
           this.isRevalidating$.next(true);
@@ -94,22 +94,29 @@ export class AuthSession extends Entity {
   );
 
   private async getSession(): Promise<AuthSessionInfo | null> {
-    const session = await this.store.fetchSession();
+    try {
+      const session = await this.store.fetchSession();
 
-    if (session?.user) {
-      const account = {
-        id: session.user.id,
-        email: session.user.email,
-        label: session.user.name,
-        avatar: session.user.avatarUrl,
-        info: session.user,
-      };
-      const result = {
-        account,
-      };
-      return result;
-    } else {
-      return null;
+      if (session?.user) {
+        const account = {
+          id: session.user.id,
+          email: session.user.email,
+          label: session.user.name,
+          avatar: session.user.avatarUrl,
+          info: session.user,
+        };
+        const result = {
+          account,
+        };
+        return result;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      if (UserFriendlyError.fromAny(e).is('UNSUPPORTED_CLIENT_VERSION')) {
+        return null;
+      }
+      throw e;
     }
   }
 

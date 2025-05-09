@@ -3,29 +3,24 @@ import './config';
 import { Global, Module, Provider } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
-import { Config } from '../config';
-import { PrismaService } from './service';
+import { PrismaFactory } from './factory';
 
 // only `PrismaClient` can be injected
 const clientProvider: Provider = {
   provide: PrismaClient,
-  useFactory: (config: Config) => {
-    if (PrismaService.INSTANCE) {
-      return PrismaService.INSTANCE;
-    }
-
-    return new PrismaService(config.prisma);
+  useFactory: (factory: PrismaFactory) => {
+    return factory.get();
   },
-  inject: [Config],
+  inject: [PrismaFactory],
 };
 
 @Global()
 @Module({
-  providers: [clientProvider],
+  providers: [PrismaFactory, clientProvider],
   exports: [clientProvider],
 })
 export class PrismaModule {}
-export { PrismaService } from './service';
+export { PrismaFactory };
 
 export type PrismaTransaction = Parameters<
   Parameters<PrismaClient['$transaction']>[0]

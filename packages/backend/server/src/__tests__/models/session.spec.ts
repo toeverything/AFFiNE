@@ -1,11 +1,10 @@
-import { TestingModule } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 
 import { Config } from '../../base/config';
 import { SessionModel } from '../../models/session';
 import { UserModel } from '../../models/user';
-import { createTestingModule, initTestingDB } from '../utils';
+import { createTestingModule, type TestingModule } from '../utils';
 
 interface Context {
   config: Config;
@@ -18,9 +17,7 @@ interface Context {
 const test = ava as TestFn<Context>;
 
 test.before(async t => {
-  const module = await createTestingModule({
-    providers: [SessionModel],
-  });
+  const module = await createTestingModule({});
 
   t.context.session = module.get(SessionModel);
   t.context.user = module.get(UserModel);
@@ -30,7 +27,7 @@ test.before(async t => {
 });
 
 test.beforeEach(async t => {
-  await initTestingDB(t.context.db);
+  await t.context.module.initTestingDB();
 });
 
 test.after(async t => {
@@ -217,9 +214,9 @@ test('should delete userSession success by userId', async t => {
     data: {},
   });
   await t.context.session.createOrRefreshUserSession(user.id, session.id);
-  let count = await t.context.session.deleteUserSession(user.id);
+  let count = await t.context.session.deleteUserSessions(user.id);
   t.is(count, 1);
-  count = await t.context.session.deleteUserSession(user.id);
+  count = await t.context.session.deleteUserSessions(user.id);
   t.is(count, 0);
 });
 
@@ -231,7 +228,7 @@ test('should delete userSession success by userId and sessionId', async t => {
     data: {},
   });
   await t.context.session.createOrRefreshUserSession(user.id, session.id);
-  const count = await t.context.session.deleteUserSession(user.id, session.id);
+  const count = await t.context.session.deleteUserSessions(user.id, session.id);
   t.is(count, 1);
 });
 
@@ -243,7 +240,7 @@ test('should delete userSession fail when sessionId not match', async t => {
     data: {},
   });
   await t.context.session.createOrRefreshUserSession(user.id, session.id);
-  const count = await t.context.session.deleteUserSession(
+  const count = await t.context.session.deleteUserSessions(
     user.id,
     'not-exists-session-id'
   );

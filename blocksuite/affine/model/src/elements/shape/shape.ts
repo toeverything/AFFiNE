@@ -1,21 +1,18 @@
 import type {
-  BaseElementProps,
-  PointTestOptions,
-} from '@blocksuite/block-std/gfx';
+  Bound,
+  IBound,
+  IVec,
+  PointLocation,
+  SerializedXYWH,
+} from '@blocksuite/global/gfx';
+import type { BaseElementProps, PointTestOptions } from '@blocksuite/std/gfx';
 import {
   field,
   GfxLocalElementModel,
   GfxPrimitiveElementModel,
   local,
   prop,
-} from '@blocksuite/block-std/gfx';
-import type {
-  Bound,
-  IBound,
-  IVec,
-  PointLocation,
-  SerializedXYWH,
-} from '@blocksuite/global/utils';
+} from '@blocksuite/std/gfx';
 import * as Y from 'yjs';
 
 import {
@@ -67,8 +64,8 @@ export class ShapeElementModel extends GfxPrimitiveElementModel<ShapeProps> {
     return 'shape';
   }
 
-  static override propsToY(props: ShapeProps) {
-    if (props.text && !(props.text instanceof Y.Text)) {
+  static propsToY(props: ShapeProps) {
+    if (typeof props.text === 'string') {
       props.text = new Y.Text(props.text);
     }
 
@@ -260,16 +257,4 @@ export class LocalShapeElementModel extends GfxLocalElementModel {
 
   @prop()
   accessor textVerticalAlign: TextVerticalAlign = TextVerticalAlign.Center;
-}
-
-declare global {
-  namespace BlockSuite {
-    interface SurfaceElementModelMap {
-      shape: ShapeElementModel;
-    }
-
-    interface EdgelessTextModelMap {
-      shape: ShapeElementModel;
-    }
-  }
 }

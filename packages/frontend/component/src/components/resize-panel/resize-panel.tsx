@@ -19,6 +19,7 @@ export interface ResizeHandleProps
   onOpen: (open: boolean) => void;
   onResizing: (resizing: boolean) => void;
   onWidthChange: (width: number) => void;
+  onWidthChanged?: (width: number) => void;
   tooltip?: TooltipProps['content'];
   tooltipShortcut?: TooltipProps['shortcut'];
   tooltipOptions?: Partial<Omit<TooltipProps, 'content' | 'shortcut'>>;
@@ -49,6 +50,7 @@ export interface ResizePanelProps
   onOpen: (open: boolean) => void;
   onResizing: (resizing: boolean) => void;
   onWidthChange: (width: number) => void;
+  onWidthChanged?: (width: number) => void;
 }
 
 const ResizeHandle = ({
@@ -64,6 +66,7 @@ const ResizeHandle = ({
   onOpen,
   onResizing,
   onWidthChange,
+  onWidthChanged,
   tooltip,
   tooltipShortcut,
   tooltipOptions,
@@ -84,6 +87,7 @@ const ResizeHandle = ({
       const { left: anchorLeft, right: anchorRight } =
         panelContainer.getBoundingClientRect();
 
+      let lastWidth: number;
       function onMouseMove(e: MouseEvent) {
         e.preventDefault();
         if (!panelContainer) return;
@@ -96,6 +100,7 @@ const ResizeHandle = ({
             minWidth
           )
         );
+        lastWidth = newWidth;
         onWidthChange(newWidth);
         onResizing(true);
         resized = true;
@@ -110,13 +115,22 @@ const ResizeHandle = ({
             onOpen(false);
           }
           onResizing(false);
+          lastWidth && onWidthChanged?.(lastWidth);
           document.removeEventListener('mousemove', onMouseMove);
           document.body.style.cursor = '';
         },
         { once: true }
       );
     },
-    [maxWidth, resizeHandlePos, minWidth, onWidthChange, onResizing, onOpen]
+    [
+      maxWidth,
+      resizeHandlePos,
+      minWidth,
+      onWidthChange,
+      onResizing,
+      onWidthChanged,
+      onOpen,
+    ]
   );
 
   const { dropTargetRef } = useDropTarget(dropTargetOptions, [
@@ -173,6 +187,7 @@ export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
       onOpen,
       onResizing,
       onWidthChange,
+      onWidthChanged,
       resizeHandlePos,
       resizeHandleOffset,
       resizeHandleVerticalPadding,
@@ -223,6 +238,7 @@ export const ResizePanel = forwardRef<HTMLDivElement, ResizePanelProps>(
           onOpen={onOpen}
           onResizing={onResizing}
           onWidthChange={onWidthChange}
+          onWidthChanged={onWidthChanged}
           open={open}
           resizing={resizing}
           dropTargetOptions={resizeHandleDropTargetOptions}

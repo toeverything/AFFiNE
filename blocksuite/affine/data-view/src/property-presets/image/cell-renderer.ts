@@ -5,7 +5,7 @@ import { createFromBaseCellRenderer } from '../../core/property/renderer.js';
 import { createIcon } from '../../core/utils/uni-icon.js';
 import { imagePropertyModelConfig } from './define.js';
 
-export class TextCell extends BaseCellRenderer<string> {
+export class ImageCell extends BaseCellRenderer<string, string> {
   static override styles = css`
     affine-database-image-cell {
       width: 100%;
@@ -27,6 +27,6 @@ export class TextCell extends BaseCellRenderer<string> {
 export const imagePropertyConfig = imagePropertyModelConfig.createPropertyMeta({
   icon: createIcon('ImageIcon'),
   cellRenderer: {
-    view: createFromBaseCellRenderer(TextCell),
+    view: createFromBaseCellRenderer(ImageCell),
   },
 });

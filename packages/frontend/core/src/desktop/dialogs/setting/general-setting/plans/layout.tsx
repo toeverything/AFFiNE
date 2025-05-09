@@ -8,11 +8,9 @@ import {
   type HtmlHTMLAttributes,
   type ReactNode,
   useCallback,
-  useLayoutEffect,
   useRef,
   useState,
 } from 'react';
-import { flushSync } from 'react-dom';
 
 import * as styles from './layout.css';
 
@@ -69,23 +67,11 @@ export const PricingCollapsible = ({
 export interface PlanLayoutProps {
   cloud?: ReactNode;
   ai?: ReactNode;
-  scrollAnchor?: string;
 }
 
-export const PlanLayout = ({ cloud, ai, scrollAnchor }: PlanLayoutProps) => {
+export const PlanLayout = ({ cloud, ai }: PlanLayoutProps) => {
   const t = useI18n();
   const plansRootRef = useRef<HTMLDivElement>(null);
-
-  // TODO(@catsjuice): Need a better solution to handle this situation
-  useLayoutEffect(() => {
-    if (!scrollAnchor) return;
-    flushSync(() => {
-      const target = plansRootRef.current?.querySelector(`#${scrollAnchor}`);
-      if (target) {
-        target.scrollIntoView();
-      }
-    });
-  }, [scrollAnchor]);
 
   return (
     <div className={styles.plansLayoutRoot} ref={plansRootRef}>

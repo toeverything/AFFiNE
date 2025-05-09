@@ -1,15 +1,13 @@
-import {
-  DatabaseBlockDataSource,
-  type DatabaseBlockModel,
-} from '@blocksuite/affine/blocks';
-import { Service } from '@toeverything/infra';
+import { DatabaseBlockDataSource } from '@blocksuite/affine/blocks/database';
+import type { DatabaseBlockModel } from '@blocksuite/affine/model';
+import { LiveData, Service } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
 import { combineLatest, distinctUntilChanged, map, Observable } from 'rxjs';
 
 import type { DocsService } from '../../doc';
 import type { DocsSearchService } from '../../docs-search';
 import type { DatabaseRow, DatabaseValueCell } from '../types';
-import { signalToLiveData, signalToObservable } from '../utils';
+import { signalToObservable } from '../utils';
 
 const equalComparator = <T>(a: T, b: T) => {
   return isEqual(a, b);
@@ -28,8 +26,9 @@ export class DocDatabaseBacklinksService extends Service {
     if (!docRef.doc.blockSuiteDoc.ready) {
       docRef.doc.blockSuiteDoc.load();
     }
-    docRef.doc.setPriorityLoad(10);
+    const disposePriorityLoad = docRef.doc.addPriorityLoad(10);
     await docRef.doc.waitForSyncReady();
+    disposePriorityLoad();
     return docRef;
   }
 
@@ -49,14 +48,14 @@ export class DocDatabaseBacklinksService extends Service {
           .map<DatabaseValueCell>(id => {
             return {
               id,
-              value$: signalToLiveData(
+              value$: LiveData.fromSignal(
                 dataSource.cellValueGet$(rowId, id)
               ).distinctUntilChanged(equalComparator),
               property: {
                 id,
-                type$: signalToLiveData(dataSource.propertyTypeGet$(id)),
-                name$: signalToLiveData(dataSource.propertyNameGet$(id)),
-                data$: signalToLiveData(dataSource.propertyDataGet$(id)),
+                type$: LiveData.fromSignal(dataSource.propertyTypeGet$(id)),
+                name$: LiveData.fromSignal(dataSource.propertyNameGet$(id)),
+                data$: LiveData.fromSignal(dataSource.propertyDataGet$(id)),
               },
             };
           })
@@ -99,7 +98,7 @@ export class DocDatabaseBacklinksService extends Service {
                 doc: docRef.doc,
                 docId: backlink.docId,
                 databaseId: dbModel.id,
-                databaseName: dbModel.title.yText.toString(),
+                databaseName: dbModel.props.title.yText.toString(),
                 dataSource: dataSource,
               });
             } else {

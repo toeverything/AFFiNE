@@ -1,5 +1,6 @@
-import type { BlockComponent } from '@blocksuite/block-std';
-import { type Point, Rect } from '@blocksuite/global/utils';
+import { DatabaseBlockModel, ListBlockModel } from '@blocksuite/affine-model';
+import { type Point, Rect } from '@blocksuite/global/gfx';
+import type { BlockComponent } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 
 import { BLOCK_CHILDREN_CONTAINER_PADDING_LEFT } from '../../consts/index.js';
@@ -7,7 +8,7 @@ import {
   getClosestBlockComponentByElement,
   getRectByBlockComponent,
 } from '../dom/index.js';
-import { matchFlavours } from '../model/index.js';
+import { matchModels } from '../model/index.js';
 import { getDropRectByPoint } from './get-drop-rect-by-point.js';
 import { DropFlags, type DropPlacement, type DropTarget } from './types.js';
 
@@ -44,7 +45,7 @@ export function calcDropTarget(
    */
   allowSublist: boolean = true
 ): DropTarget | null {
-  const schema = model.doc.getSchemaByFlavour('affine:database');
+  const schema = model.store.schema.get('affine:database');
   const children = schema?.model.children ?? [];
 
   let shouldAppendToDatabase = true;
@@ -55,7 +56,7 @@ export function calcDropTarget(
       .every(m => children.includes(m.flavour));
   }
 
-  if (!shouldAppendToDatabase && !matchFlavours(model, ['affine:database'])) {
+  if (!shouldAppendToDatabase && !matchModels(model, [DatabaseBlockModel])) {
     const databaseBlockComponent =
       element.closest<BlockComponent>('affine-database');
     if (databaseBlockComponent) {
@@ -149,7 +150,7 @@ export function calcDropTarget(
     const hasChild = (element as BlockComponent).childBlocks.length;
     if (
       allowSublist &&
-      matchFlavours(model, ['affine:list']) &&
+      matchModels(model, [ListBlockModel]) &&
       !hasChild &&
       point.x > domRect.x + BLOCK_CHILDREN_CONTAINER_PADDING_LEFT
     ) {

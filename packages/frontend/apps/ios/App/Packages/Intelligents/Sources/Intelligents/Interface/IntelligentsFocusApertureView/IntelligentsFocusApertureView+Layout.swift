@@ -38,10 +38,10 @@ extension IntelligentsFocusApertureView {
     }
 
     contentBeginConstraints = [
-      snapshotView.leftAnchor.constraint(equalTo: targetView.leftAnchor),
-      snapshotView.rightAnchor.constraint(equalTo: targetView.rightAnchor),
-      snapshotView.topAnchor.constraint(equalTo: targetView.topAnchor),
-      snapshotView.bottomAnchor.constraint(equalTo: targetView.bottomAnchor),
+      snapshotImageView.leftAnchor.constraint(equalTo: targetView.leftAnchor),
+      snapshotImageView.rightAnchor.constraint(equalTo: targetView.rightAnchor),
+      snapshotImageView.topAnchor.constraint(equalTo: targetView.topAnchor),
+      snapshotImageView.bottomAnchor.constraint(equalTo: targetView.bottomAnchor),
 
       controlButtonsPanel.leftAnchor.constraint(equalTo: leftAnchor),
       controlButtonsPanel.rightAnchor.constraint(equalTo: rightAnchor),
@@ -50,10 +50,10 @@ extension IntelligentsFocusApertureView {
 
     let sharedInset: CGFloat = 32
     contentFinalConstraints = [
-      snapshotView.leftAnchor.constraint(equalTo: leftAnchor, constant: sharedInset),
-      snapshotView.rightAnchor.constraint(equalTo: rightAnchor, constant: -sharedInset),
-      snapshotView.topAnchor.constraint(equalTo: topAnchor),
-      snapshotView.bottomAnchor.constraint(equalTo: controlButtonsPanel.topAnchor, constant: -sharedInset / 2),
+      snapshotImageView.leftAnchor.constraint(equalTo: leftAnchor, constant: sharedInset),
+      snapshotImageView.rightAnchor.constraint(equalTo: rightAnchor, constant: -sharedInset),
+      snapshotImageView.topAnchor.constraint(equalTo: topAnchor),
+      snapshotImageView.bottomAnchor.constraint(equalTo: controlButtonsPanel.topAnchor, constant: -sharedInset / 2),
 
       controlButtonsPanel.leftAnchor.constraint(equalTo: leftAnchor, constant: sharedInset),
       controlButtonsPanel.rightAnchor.constraint(equalTo: rightAnchor, constant: -sharedInset),
@@ -73,12 +73,12 @@ extension IntelligentsFocusApertureView {
       NSLayoutConstraint.deactivate(contentFinalConstraints)
       NSLayoutConstraint.activate(contentBeginConstraints)
 
-      snapshotView.layer.cornerRadius = 0
+      snapshotImageView.layer.cornerRadius = 0
     case .complete:
       NSLayoutConstraint.deactivate(contentBeginConstraints)
       NSLayoutConstraint.activate(contentFinalConstraints)
 
-      snapshotView.layer.cornerRadius = 32
+      snapshotImageView.layer.cornerRadius = 32
     }
     let effectiveView = superview ?? self
     effectiveView.setNeedsUpdateConstraints()

@@ -3,6 +3,9 @@ import {
   AbstractType as YAbstractType,
   Array as YArray,
   Map as YMap,
+  YArrayEvent,
+  type YEvent,
+  YMapEvent,
 } from 'yjs';
 
 /**
@@ -13,7 +16,11 @@ function parsePath(path: string): (string | number)[] {
   const parts = path.split('.');
   return parts.map(part => {
     if (part.startsWith('[') && part.endsWith(']')) {
-      const index = parseInt(part.slice(1, -1), 10);
+      const token = part.slice(1, -1);
+      if (token === '*') {
+        return '*';
+      }
+      const index = parseInt(token, 10);
       if (isNaN(index)) {
         throw new Error(`index: ${part} is not a number`);
       }
@@ -65,11 +72,11 @@ function _yjsDeepWatch(
  * this function is optimized for deep watch performance.
  *
  * @example
- * yjsObserveByPath(yjs, 'pages.[0].id') -> only emit when pages[0].id changed
- * yjsObserveByPath(yjs, 'pages.[0]').switchMap(yjsObserve) -> emit when any of pages[0] or its children changed
- * yjsObserveByPath(yjs, 'pages.[0]').switchMap(yjsObserveDeep) -> emit when pages[0] or any of its deep children changed
+ * yjsGetPath(yjs, 'pages.[0].id') -> get pages[0].id and emit when changed
+ * yjsGetPath(yjs, 'pages.[0]').switchMap(yjsObserve) -> get pages[0] and emit when any of pages[0] or its children changed
+ * yjsGetPath(yjs, 'pages.[0]').switchMap(yjsObserveDeep) -> get pages[0] and emit when pages[0] or any of its deep children changed
  */
-export function yjsObserveByPath(yjs: YAbstractType<any>, path: string) {
+export function yjsGetPath(yjs: YAbstractType<any>, path: string) {
   const parsedPath = parsePath(path);
   return _yjsDeepWatch(yjs, parsedPath);
 }
@@ -85,6 +92,79 @@ export function yjsObserveDeep(yjs?: any) {
   return new Observable(subscriber => {
     const refresh = () => {
       subscriber.next(yjs);
+    };
+    refresh();
+    if (yjs instanceof YAbstractType) {
+      yjs.observeDeep(refresh);
+      return () => {
+        yjs.unobserveDeep(refresh);
+      };
+    }
+    return;
+  });
+}
+
+/**
+ * convert yjs type to observable.
+ * observable will automatically update when data changed on the path.
+ *
+ * @example
+ * yjsObservePath(yjs, 'pages.[0].id') -> only emit when pages[0].id changed
+ * yjsObservePath(yjs, 'pages.*.tags') -> only emit when tags of any page changed
+ */
+export function yjsObservePath(yjs?: any, path?: string) {
+  const parsedPath = path ? parsePath(path) : [];
+
+  return new Observable(subscriber => {
+    const refresh = (event?: YEvent<any>[]) => {
+      if (!event) {
+        subscriber.next(yjs);
+        return;
+      }
+
+      const changedPaths: (string | number)[][] = [];
+      event.forEach(e => {
+        if (e instanceof YArrayEvent) {
+          changedPaths.push(e.path);
+        } else if (e instanceof YMapEvent) {
+          for (const key of e.keysChanged) {
+            changedPaths.push([...e.path, key]);
+          }
+        }
+      });
+
+      for (const changedPath of changedPaths) {
+        let changed = true;
+        for (let i = 0; i < parsedPath.length; i++) {
+          const changedKey = changedPath[i];
+          const parsedKey = parsedPath[i];
+          if (changedKey === undefined) {
+            changed = true;
+            break;
+          }
+
+          if (parsedKey === undefined) {
+            changed = true;
+            break;
+          }
+
+          if (changedKey === parsedKey) {
+            continue;
+          }
+
+          if (parsedKey === '*') {
+            continue;
+          }
+
+          changed = false;
+          break;
+        }
+
+        if (changed) {
+          subscriber.next(yjs);
+          return;
+        }
+      }
     };
     refresh();
     if (yjs instanceof YAbstractType) {

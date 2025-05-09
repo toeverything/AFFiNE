@@ -1,0 +1,3 @@
+mutation removeContextFile($options: RemoveContextFileInput!) {
+  removeContextFile(options: $options)
+}

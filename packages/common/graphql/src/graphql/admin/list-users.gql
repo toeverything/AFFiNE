@@ -1,0 +1,12 @@
+query listUsers($filter: ListUserInput!) {
+  users(filter: $filter) {
+    id
+    name
+    email
+    disabled
+    features
+    hasPassword
+    emailVerified
+    avatarUrl
+  }
+}

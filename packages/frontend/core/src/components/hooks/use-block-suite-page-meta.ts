@@ -1,5 +1,4 @@
 import { DocsService } from '@affine/core/modules/doc';
-import { WorkspaceService } from '@affine/core/modules/workspace';
 import type { DocMeta, Workspace } from '@blocksuite/affine/store';
 import { useService } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
@@ -26,7 +25,6 @@ export function useBlockSuiteDocMeta(docCollection: Workspace) {
 }
 
 export function useDocMetaHelper() {
-  const workspaceService = useService(WorkspaceService);
   const docsService = useService(DocsService);
 
   const setDocTitle = useAsyncCallback(
@@ -53,23 +51,13 @@ export function useDocMetaHelper() {
     },
     [docsService]
   );
-  const setDocReadonly = useCallback(
-    (docId: string, readonly: boolean) => {
-      const doc = workspaceService.workspace.docCollection.getDoc(docId);
-      if (doc) {
-        doc.readonly = readonly;
-      }
-    },
-    [workspaceService]
-  );
 
   return useMemo(
     () => ({
       setDocTitle,
       setDocMeta,
       getDocMeta,
-      setDocReadonly,
     }),
-    [getDocMeta, setDocMeta, setDocReadonly, setDocTitle]
+    [getDocMeta, setDocMeta, setDocTitle]
   );
 }

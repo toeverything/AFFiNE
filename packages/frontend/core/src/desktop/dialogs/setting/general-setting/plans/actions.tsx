@@ -1,7 +1,9 @@
+import { notify } from '@affine/component';
 import { useDowngradeNotify } from '@affine/core/components/affine/subscription-landing/notify';
 import { getDowngradeQuestionnaireLink } from '@affine/core/components/hooks/affine/use-subscription-notify';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { SubscriptionPlan } from '@affine/graphql';
+import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { useLiveData, useService } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
@@ -231,6 +233,7 @@ export const TeamResumeAction = ({
   const [idempotencyKey, setIdempotencyKey] = useState(nanoid());
   const [isMutating, setIsMutating] = useState(false);
   const subscription = useService(WorkspaceSubscriptionService).subscription;
+  const t = useI18n();
 
   const resume = useAsyncCallback(async () => {
     try {
@@ -243,10 +246,14 @@ export const TeamResumeAction = ({
       // refresh idempotency key
       setIdempotencyKey(nanoid());
       onOpenChange(false);
+      notify.success({
+        title: t['com.affine.payment.resume.success.title'](),
+        message: t['com.affine.payment.resume.success.team.message'](),
+      });
     } finally {
       setIsMutating(false);
     }
-  }, [subscription, idempotencyKey, onOpenChange]);
+  }, [subscription, idempotencyKey, onOpenChange, t]);
 
   return (
     <>

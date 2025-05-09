@@ -4,66 +4,23 @@ import {
 } from '@blocksuite/affine-components/context-menu';
 import { DatePicker } from '@blocksuite/affine-components/date-picker';
 import { createLitPortal } from '@blocksuite/affine-components/portal';
-import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import { flip, offset } from '@floating-ui/dom';
-import { signal } from '@preact/signals-core';
-import { baseTheme } from '@toeverything/theme';
+import { computed, signal } from '@preact/signals-core';
 import { format } from 'date-fns/format';
-import { css, html, unsafeCSS } from 'lit';
+import { html } from 'lit';
 
 import { BaseCellRenderer } from '../../core/property/index.js';
 import { createFromBaseCellRenderer } from '../../core/property/renderer.js';
 import { createIcon } from '../../core/utils/uni-icon.js';
+import {
+  dateCellStyle,
+  datePickerContainerStyle,
+  dateValueContainerStyle,
+} from './cell-renderer.css.js';
 import { datePropertyModelConfig } from './define.js';
 
-export class DateCell extends BaseCellRenderer<number> {
-  static override styles = css`
-    affine-database-date-cell {
-      width: 100%;
-    }
-
-    .affine-database-date {
-      display: flex;
-      align-items: center;
-      width: 100%;
-      padding: 0;
-      border: none;
-      font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
-      color: var(--affine-text-primary-color);
-      font-weight: 400;
-      background-color: transparent;
-      font-size: var(--data-view-cell-text-size);
-      line-height: var(--data-view-cell-text-line-height);
-      height: var(--data-view-cell-text-line-height);
-    }
-
-    input.affine-database-date[type='date']::-webkit-calendar-picker-indicator {
-      display: none;
-    }
-  `;
-
-  override render() {
-    const value = this.value ? format(this.value, 'yyyy/MM/dd') : '';
-    if (!value) {
-      return '';
-    }
-    return html` <div class="affine-database-date date">${value}</div>`;
-  }
-}
-
-export class DateCellEditing extends BaseCellRenderer<number> {
-  static override styles = css`
-    affine-database-date-cell-editing {
-      width: 100%;
-      cursor: text;
-    }
-
-    .affine-database-date:focus {
-      outline: none;
-    }
-  `;
-
+export class DateCell extends BaseCellRenderer<number, number> {
   private _prevPortalAbortController: AbortController | null = null;
 
   private readonly openDatePicker = () => {
@@ -96,18 +53,8 @@ export class DateCellEditing extends BaseCellRenderer<number> {
           },
           items: [
             () =>
-              html`<div
-                style="
-padding: 12px;
-background-color: ${unsafeCSSVarV2('layer/background/primary')};
-border-radius: 12px;
-color: ${unsafeCSSVarV2('text/secondary')};
-font-size: 17px;
-line-height: 22px;
-height: 46px;
-"
-              >
-                ${this.dateString}
+              html` <div class="${dateValueContainerStyle}">
+                ${this.formattedTempValue$.value}
               </div>`,
             () => {
               const datePicker = new DatePicker();
@@ -123,11 +70,7 @@ height: 46px;
                 abortController.abort();
               };
               requestAnimationFrame(() => datePicker.focusDateCell());
-              return html`<div
-                style="padding: 12px;background-color: ${unsafeCSSVarV2(
-                  'layer/background/primary'
-                )};border-radius: 12px"
-              >
+              return html` <div class="${datePickerContainerStyle}">
                 ${datePicker}
               </div>`;
             },
@@ -179,36 +122,39 @@ height: 46px;
       return;
     }
 
-    this.onChange(tempValue?.getTime());
+    const time = tempValue?.getTime();
+    this.valueSetNextTick(time);
     this.tempValue$.value = undefined;
   };
 
-  tempValue$ = signal<Date>();
+  tempValue$ = signal<Date | undefined>();
 
-  get dateString() {
-    const value = this.tempValue;
+  format(value?: Date) {
     return value ? format(value, 'yyyy/MM/dd') : '';
   }
 
-  get tempValue() {
-    return this.tempValue$.value;
-  }
+  formattedTempValue$ = computed(() => {
+    return this.format(this.tempValue$.value);
+  });
+  formattedValue$ = computed(() => {
+    return (
+      this.formattedTempValue$.value ||
+      this.format(this.value ? new Date(this.value) : undefined)
+    );
+  });
 
-  override firstUpdated() {
+  override afterEnterEditingMode() {
     this.openDatePicker();
   }
 
-  override onExitEditMode() {
+  override beforeExitEditingMode() {
     this.updateValue();
     this._prevPortalAbortController?.abort();
   }
 
   override render() {
-    return html` <div
-      class="affine-database-date date"
-      @click="${this.openDatePicker}"
-    >
-      ${this.dateString}
+    return html` <div class="${dateCellStyle} date">
+      ${this.formattedValue$.value}
     </div>`;
   }
 }
@@ -217,6 +163,5 @@ export const datePropertyConfig = datePropertyModelConfig.createPropertyMeta({
   icon: createIcon('DateTimeIcon'),
   cellRenderer: {
     view: createFromBaseCellRenderer(DateCell),
-    edit: createFromBaseCellRenderer(DateCellEditing),
   },
 });

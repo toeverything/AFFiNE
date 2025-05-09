@@ -1,12 +1,13 @@
-import { MarkdownTransformer } from '@blocksuite/blocks';
-import { Text, type Workspace } from '@blocksuite/store';
+import { Text, type Workspace } from '@blocksuite/affine/store';
+import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
+import { getTestStoreManager } from '@blocksuite/integration-test/store';
 
 import type { InitFn } from './utils.js';
 
 const presetMarkdown = `Click the 🔁 button to switch between editors dynamically - they are fully compatible!`;
 
 export const preset: InitFn = async (collection: Workspace, id: string) => {
-  const doc = collection.createDoc({ id });
+  const doc = collection.createDoc(id).getStore({ id });
   doc.load();
   // Add root block and surface block at root level
   const rootId = doc.addBlock('affine:page', {
@@ -26,6 +27,7 @@ export const preset: InitFn = async (collection: Workspace, id: string) => {
     doc,
     blockId: noteId,
     markdown: presetMarkdown,
+    extensions: getTestStoreManager().get('store'),
   });
 
   doc.resetHistory();

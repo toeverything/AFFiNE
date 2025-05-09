@@ -1,9 +1,7 @@
 import { DebugLogger } from '@affine/debug';
-import { UserFriendlyError } from '@affine/graphql';
+import { UserFriendlyError } from '@affine/error';
 import { fromPromise, Service } from '@toeverything/infra';
 
-import { BackendError, NetworkError } from '../error';
-import type { RawFetchProvider } from '../provider/fetch';
 import type { ServerService } from './server';
 
 const logger = new DebugLogger('affine:fetch');
@@ -11,10 +9,7 @@ const logger = new DebugLogger('affine:fetch');
 export type FetchInit = RequestInit & { timeout?: number };
 
 export class FetchService extends Service {
-  constructor(
-    private readonly fetchProvider: RawFetchProvider,
-    private readonly serverService: ServerService
-  ) {
+  constructor(private readonly serverService: ServerService) {
     super();
   }
   rxFetch = (
@@ -50,43 +45,54 @@ export class FetchService extends Service {
       abortController.abort('timeout');
     }, timeout);
 
-    const res = await this.fetchProvider
-      .fetch(new URL(input, this.serverService.server.serverMetadata.baseUrl), {
-        ...init,
-        signal: abortController.signal,
-        headers: {
-          ...init?.headers,
-          'x-affine-version': BUILD_CONFIG.appVersion,
-        },
-      })
-      .catch(err => {
-        logger.debug('network error', err);
-        throw new NetworkError(err);
-      });
-    clearTimeout(timeoutId);
-    if (res.status === 504) {
-      const error = new Error('Gateway Timeout');
-      logger.debug('network error', error);
-      throw new NetworkError(error, res.status);
-    }
-    if (!res.ok) {
-      logger.warn(
-        'backend error',
-        new Error(`${res.status} ${res.statusText}`)
+    let res: Response;
+
+    try {
+      res = await globalThis.fetch(
+        new URL(input, this.serverService.server.serverMetadata.baseUrl),
+        {
+          ...init,
+          signal: abortController.signal,
+          headers: {
+            ...init?.headers,
+            'x-affine-version': BUILD_CONFIG.appVersion,
+          },
+        }
       );
-      let reason: string | any = '';
-      if (res.headers.get('Content-Type')?.includes('application/json')) {
-        try {
-          reason = await res.json();
-        } catch {
-          // ignore
+    } catch (err: any) {
+      throw new UserFriendlyError({
+        status: 504,
+        code: 'NETWORK_ERROR',
+        type: 'NETWORK_ERROR',
+        name: 'NETWORK_ERROR',
+        message: `Network error: ${err.message}`,
+        stacktrace: err.stack,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (!res.ok) {
+      if (res.status === 504) {
+        const error = new Error('Gateway Timeout');
+        logger.debug('network error', error);
+        throw new UserFriendlyError({
+          status: 504,
+          code: 'NETWORK_ERROR',
+          type: 'NETWORK_ERROR',
+          name: 'NETWORK_ERROR',
+          message: 'Gateway Timeout',
+          stacktrace: error.stack,
+        });
+      } else {
+        if (res.headers.get('Content-Type')?.startsWith('application/json')) {
+          throw UserFriendlyError.fromAny(await res.json());
+        } else {
+          throw UserFriendlyError.fromAny(await res.text());
         }
       }
-      throw new BackendError(
-        UserFriendlyError.fromAnyError(reason),
-        res.status
-      );
     }
+
     return res;
   };
 }

@@ -43,6 +43,7 @@ public class IntelligentsButton: UIView {
       image.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -imageInsetValue),
     ].forEach { $0.isActive = true }
 
+    activityIndicator.translatesAutoresizingMaskIntoConstraints = false
     addSubview(activityIndicator)
     [
       activityIndicator.centerXAnchor.constraint(equalTo: centerXAnchor),
@@ -74,17 +75,25 @@ public class IntelligentsButton: UIView {
     layer.cornerRadius = bounds.width / 2
   }
 
+  private var allowedTap = true
+
   @objc func tapped() {
+    guard allowedTap else { return }
     delegate?.onIntelligentsButtonTapped(self)
   }
 
   public func beginProgress() {
+    allowedTap = false
     activityIndicator.startAnimating()
     activityIndicator.isHidden = false
+    image.isHidden = true
+    bringSubviewToFront(activityIndicator)
   }
 
   public func stopProgress() {
+    allowedTap = true
     activityIndicator.stopAnimating()
     activityIndicator.isHidden = true
+    image.isHidden = false
   }
 }

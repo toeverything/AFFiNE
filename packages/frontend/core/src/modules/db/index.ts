@@ -1,6 +1,6 @@
 import type { Framework } from '@toeverything/infra';
 
-import { WorkspaceServerService } from '../cloud';
+import { WorkspaceServerService } from '../cloud/services/workspace-server';
 import { WorkspaceScope, WorkspaceService } from '../workspace';
 import { WorkspaceDB } from './entities/db';
 import { WorkspaceDBTable } from './entities/table';

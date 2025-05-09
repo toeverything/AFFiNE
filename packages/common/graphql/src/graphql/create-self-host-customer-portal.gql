@@ -1,0 +1,3 @@
+mutation createSelfhostCustomerPortal ($workspaceId: String!) {
+  createSelfhostWorkspaceCustomerPortal(workspaceId: $workspaceId)
+}

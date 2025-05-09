@@ -1,15 +1,15 @@
 import { createIdentifier } from '@blocksuite/global/di';
-import { Slot } from '@blocksuite/global/utils';
 import type { ExtensionType } from '@blocksuite/store';
+import { Subject } from 'rxjs';
 
 import type { Viewport } from '../types';
 
-export const PageViewportService = createIdentifier<Slot<Viewport>>(
+export const PageViewportService = createIdentifier<Subject<Viewport>>(
   'PageViewportService'
 );
 
 export const PageViewportServiceExtension: ExtensionType = {
   setup: di => {
-    di.addImpl(PageViewportService, () => new Slot<Viewport>());
+    di.addImpl(PageViewportService, () => new Subject<Viewport>());
   },
 };

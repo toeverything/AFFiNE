@@ -1,4 +1,4 @@
-import { assertExists, Slot } from '@blocksuite/global/utils';
+import { BlockSuiteError } from '@blocksuite/global/exceptions';
 import {
   autoUpdate,
   computePosition,
@@ -6,6 +6,7 @@ import {
 } from '@floating-ui/dom';
 import { cssVar } from '@toeverything/theme';
 import { render } from 'lit';
+import { Subject } from 'rxjs';
 
 import type { AdvancedPortalOptions, PortalOptions } from './types.js';
 
@@ -39,7 +40,12 @@ export function createSimplePortal({
   });
 
   const root = shadowDom ? portalRoot.shadowRoot : portalRoot;
-  assertExists(root);
+  if (!root) {
+    throw new BlockSuiteError(
+      BlockSuiteError.ErrorCode.ValueNotExists,
+      'Failed to create portal root'
+    );
+  }
 
   let updateId = 0;
   const updatePortal: (id: number) => void = id => {
@@ -55,7 +61,6 @@ export function createSimplePortal({
       template instanceof Function
         ? template({ updatePortal: () => updatePortal(curId) })
         : template;
-    assertExists(templateResult);
     render(templateResult, root, renderOptions);
   };
 
@@ -122,13 +127,13 @@ export function createLitPortal({
   positionStrategy = 'absolute',
   ...portalOptions
 }: AdvancedPortalOptions) {
-  let positionSlot = new Slot<ComputePositionReturn>();
+  let positionSlot = new Subject<ComputePositionReturn>();
   const template = portalOptions.template;
   const templateWithPosition =
     template instanceof Function
       ? ({ updatePortal }: { updatePortal: () => void }) => {
           // We need to create a new slot for each template, otherwise the slot may be used in the old template
-          positionSlot = new Slot<ComputePositionReturn>();
+          positionSlot = new Subject<ComputePositionReturn>();
           return template({ updatePortal, positionSlot });
         }
       : template;
@@ -173,7 +178,6 @@ export function createLitPortal({
       ? positionConfigOrFn(portalRoot)
       : positionConfigOrFn;
   const { referenceElement, ...options } = computePositionOptions;
-  assertExists(referenceElement, 'referenceElement is required');
   const update = () => {
     if (
       computePositionOptions.abortWhenRefRemoved !== false &&
@@ -195,7 +199,7 @@ export function createLitPortal({
         if (portalRoot.style.visibility === 'hidden') {
           portalRoot.style.visibility = visibility;
         }
-        positionSlot.emit(positionReturn);
+        positionSlot.next(positionReturn);
       })
       .catch(console.error);
   };

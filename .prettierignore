@@ -1,7 +1,7 @@
 # we will make this file shared by prettier|eslint|oxlint
 **/node_modules
 .yarn
-.github
+.github/helm
 .vscode
 .yarnrc.yml
 .docker
@@ -28,9 +28,13 @@ test-results
 # per files
 tools/cli/src/webpack/error-handler.js
 packages/backend/native/index.d.ts
+packages/backend/server/src/__tests__/__snapshots__
+packages/common/native/fixtures/**
+packages/common/graphql/src/graphql/index.ts
 packages/frontend/native/index.d.ts
 packages/frontend/native/index.js
-packages/frontend/graphql/src/graphql/index.ts
-packages/frontend/graphql/src/schema.ts
-packages/frontend/apps/android/App/app/build/**
-blocksuite/tests-legacy/snapshots
+packages/frontend/apps/android/App/**
+packages/frontend/apps/ios/App/**
+tests/blocksuite/snapshots
+blocksuite/docs/api/**
+packages/frontend/admin/src/config.json

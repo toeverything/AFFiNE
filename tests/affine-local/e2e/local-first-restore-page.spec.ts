@@ -20,16 +20,16 @@ test('New a page , then delete it in all pages, restore it', async ({
   await getBlockSuiteEditorTitle(page).fill('this is a new page to restore');
   const newPageId = getCurrentDocIdFromUrl(page);
   await page.getByTestId('all-pages').click();
-  const cell = page.getByRole('cell', {
-    name: 'this is a new page to restore',
-  });
-  expect(cell).not.toBeUndefined();
+  const cell = page
+    .getByTestId('virtualized-page-list')
+    .getByText('this is a new page to restore');
+  await expect(cell).toBeVisible();
 
   await getPageOperationButton(page, newPageId).click();
   const deleteBtn = page.getByTestId('move-to-trash');
   await deleteBtn.click();
-  const confirmTip = page.getByText('Delete page?');
-  expect(confirmTip).not.toBeUndefined();
+  const confirmTip = page.getByRole('dialog', { name: 'Delete doc?' });
+  await expect(confirmTip).toBeVisible();
 
   await page.getByRole('button', { name: 'Delete' }).click();
 
@@ -42,10 +42,9 @@ test('New a page , then delete it in all pages, restore it', async ({
   // stay in trash page
   expect(page.url()).toBe(trashPage);
   await page.getByTestId('all-pages').click();
-  const restoreCell = page.getByRole('cell', {
-    name: 'this is a new page to restore',
-  });
-  expect(restoreCell).not.toBeUndefined();
+  const allPages = page.getByTestId('virtualized-page-list');
+  const restoreCell = allPages.getByText('this is a new page to restore');
+  await expect(restoreCell).toBeVisible();
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.meta.flavour).toContain('local');

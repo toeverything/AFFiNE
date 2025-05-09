@@ -1,142 +1,118 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@affine/admin/components/ui/accordion';
 import { buttonVariants } from '@affine/admin/components/ui/button';
 import { cn } from '@affine/admin/utils';
-import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
-import { ClipboardListIcon, SettingsIcon, UsersIcon } from 'lucide-react';
+import { AccountIcon, AiOutlineIcon, SelfhostIcon } from '@blocksuite/icons/rc';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { NavLink } from 'react-router-dom';
 
-import { useGetServerRuntimeConfig } from '../settings/use-get-server-runtime-config';
-import { CollapsibleItem } from './collapsible-item';
-import { useNav } from './context';
+import { ServerVersion } from './server-version';
+import { SettingsItem } from './settings-item';
 import { UserDropdown } from './user-dropdown';
 
-export function Nav() {
-  const { moduleList } = useGetServerRuntimeConfig();
-  const { setCurrentModule } = useNav();
+interface NavItemProps {
+  icon: React.ReactNode;
+  label: string;
+  to: string;
+  isActive?: boolean;
+  isCollapsed?: boolean;
+}
+
+const NavItem = ({ icon, label, to, isCollapsed }: NavItemProps) => {
+  if (isCollapsed) {
+    return (
+      <NavLink
+        to={to}
+        className={cn(
+          buttonVariants({
+            variant: 'ghost',
+            className: 'w-10 h-10',
+            size: 'icon',
+          })
+        )}
+        style={({ isActive }) => ({
+          backgroundColor: isActive
+            ? cssVarV2('selfhost/button/sidebarButton/bg/select')
+            : undefined,
+          '&:hover': {
+            backgroundColor: cssVarV2('selfhost/button/sidebarButton/bg/hover'),
+          },
+        })}
+      >
+        {icon}
+      </NavLink>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-4 py-2 justify-between flex-grow overflow-hidden">
-      <nav className="flex flex-col gap-1 px-2 flex-grow overflow-hidden">
-        <NavLink
-          to={'/admin/accounts'}
-          className={({ isActive }) =>
-            cn(
-              buttonVariants({
-                variant: isActive ? 'default' : 'ghost',
-                size: 'sm',
-              }),
-              isActive &&
-                'dark:bg-muted dark:text-white dark:hover:bg-muted dark:hover:text-white',
-              'justify-start',
-              'flex-none'
-            )
-          }
-        >
-          <UsersIcon className="mr-2 h-4 w-4" />
-          Accounts
-        </NavLink>
-        {/* <Link
-          to={'/admin/ai'}
-          className={cn(
-            buttonVariants({
-              variant: activeTab === 'AI' ? 'default' : 'ghost',
-              size: 'sm',
-            }),
-            activeTab === 'AI' &&
-              'dark:bg-muted dark:text-white dark:hover:bg-muted dark:hover:text-white',
-            'justify-start',
-            'flex-none'
-          )}
-        >
-          <CpuIcon className="mr-2 h-4 w-4" />
-          AI
-        </Link> */}
-        <NavLink
-          to={'/admin/config'}
-          className={({ isActive }) =>
-            cn(
-              buttonVariants({
-                variant: isActive ? 'default' : 'ghost',
-                size: 'sm',
-              }),
-              isActive &&
-                'dark:bg-muted dark:text-white dark:hover:bg-muted dark:hover:text-white',
-              'justify-start',
-              'flex-none'
-            )
-          }
-        >
-          <ClipboardListIcon className="mr-2 h-4 w-4" />
-          Config
-        </NavLink>
+    <NavLink
+      to={to}
+      className={cn(
+        buttonVariants({
+          variant: 'ghost',
+        }),
+        'justify-start flex-none text-sm font-medium px-2'
+      )}
+      style={({ isActive }) => ({
+        backgroundColor: isActive
+          ? cssVarV2('selfhost/button/sidebarButton/bg/select')
+          : undefined,
+        '&:hover': {
+          backgroundColor: cssVarV2('selfhost/button/sidebarButton/bg/hover'),
+        },
+      })}
+    >
+      <span className="flex items-center p-0.5 mr-2">{icon}</span>
+      {label}
+    </NavLink>
+  );
+};
 
-        <Accordion type="multiple" className="w-full h-full  overflow-hidden">
-          <AccordionItem
-            value="item-1"
-            className="border-b-0 h-full flex flex-col gap-1 w-full"
-          >
-            <NavLink
-              to={'/admin/settings'}
-              className={({ isActive }) =>
-                cn(
-                  buttonVariants({
-                    variant: isActive ? 'default' : 'ghost',
-                    size: 'sm',
-                  }),
-                  isActive &&
-                    'dark:bg-muted dark:text-white dark:hover:bg-muted dark:hover:text-white',
-                  'justify-start',
-                  'flex-none',
-                  'w-full'
-                )
-              }
-            >
-              <AccordionTrigger
-                className={'flex items-center justify-between w-full'}
-              >
-                <div className="flex items-center">
-                  <SettingsIcon className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </div>
-              </AccordionTrigger>
-            </NavLink>
+interface NavProps {
+  isCollapsed?: boolean;
+}
 
-            <AccordionContent className="h-full overflow-hidden w-full">
-              <ScrollAreaPrimitive.Root
-                className={cn('relative overflow-hidden w-full h-full')}
-              >
-                <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit] [&>div]:!block">
-                  {moduleList.map(module => (
-                    <CollapsibleItem
-                      key={module.moduleName}
-                      items={module.keys}
-                      title={module.moduleName}
-                      changeModule={setCurrentModule}
-                    />
-                  ))}
-                </ScrollAreaPrimitive.Viewport>
-                <ScrollAreaPrimitive.ScrollAreaScrollbar
-                  className={cn(
-                    'flex touch-none select-none transition-colors',
-
-                    'h-full w-2.5 border-l border-l-transparent p-[1px]'
-                  )}
-                >
-                  <ScrollAreaPrimitive.ScrollAreaThumb className="relative flex-1 rounded-full bg-border" />
-                </ScrollAreaPrimitive.ScrollAreaScrollbar>
-                <ScrollAreaPrimitive.Corner />
-              </ScrollAreaPrimitive.Root>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+export function Nav({ isCollapsed = false }: NavProps) {
+  return (
+    <div
+      className={cn(
+        'flex flex-col gap-4 py-2 justify-between flex-grow h-full overflow-hidden',
+        isCollapsed && 'overflow-visible'
+      )}
+    >
+      <nav
+        className={cn(
+          'flex flex-1 flex-col gap-1 px-2 flex-grow overflow-hidden',
+          isCollapsed && 'items-center px-0 gap-1 overflow-visible'
+        )}
+      >
+        <NavItem
+          to="/admin/accounts"
+          icon={<AccountIcon fontSize={20} />}
+          label="Accounts"
+          isCollapsed={isCollapsed}
+        />
+        <NavItem
+          to="/admin/ai"
+          icon={<AiOutlineIcon fontSize={20} />}
+          label="AI"
+          isCollapsed={isCollapsed}
+        />
+        <SettingsItem isCollapsed={isCollapsed} />
+        <NavItem
+          to="/admin/about"
+          icon={<SelfhostIcon fontSize={20} />}
+          label="About"
+          isCollapsed={isCollapsed}
+        />
       </nav>
-
-      <UserDropdown />
+      <div
+        className={cn(
+          'flex gap-2 px-2 flex-col overflow-hidden',
+          isCollapsed && 'items-center px-0 gap-1'
+        )}
+      >
+        <UserDropdown isCollapsed={isCollapsed} />
+        {isCollapsed ? null : <ServerVersion />}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { WithDisposable } from '@blocksuite/global/utils';
+import { WithDisposable } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -8,7 +8,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { startDrag } from '../../../../core/utils/drag.js';
 import { getResultInRange } from '../../../../core/utils/utils.js';
-import type { TableColumn } from '../../table-view-manager.js';
+import type { TableProperty } from '../../table-view-manager.js';
 
 export class TableVerticalIndicator extends WithDisposable(ShadowlessElement) {
   static override styles = css`
@@ -95,7 +95,7 @@ export const startDragWidthAdjustmentBar = (
   evt: PointerEvent,
   ele: HTMLElement,
   width: number,
-  column: TableColumn
+  column: TableProperty
 ) => {
   const scale = width / column.width$.value;
   const left = ele.getBoundingClientRect().left;

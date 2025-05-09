@@ -1,47 +1,40 @@
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-
 import { Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { PrismaClient } from '@prisma/client';
+import { once } from 'lodash-es';
 import { Command, CommandRunner } from 'nest-commander';
 
+import * as migrationImports from '../migrations';
+
 interface Migration {
-  file: string;
   name: string;
+  always?: boolean;
   up: (db: PrismaClient, injector: ModuleRef) => Promise<void>;
   down: (db: PrismaClient, injector: ModuleRef) => Promise<void>;
+  order: number;
 }
 
-export async function collectMigrations(): Promise<Migration[]> {
-  const folder = join(fileURLToPath(import.meta.url), '../../migrations');
+export const collectMigrations = once(() => {
+  const migrations = Object.values(migrationImports).map(migration => {
+    const order = Number(migration.name.match(/([\d]+)$/)?.[1]);
 
-  const migrationFiles = readdirSync(folder)
-    .filter(desc =>
-      desc.endsWith(import.meta.url.endsWith('.ts') ? '.ts' : '.js')
-    )
-    .map(desc => join(folder, desc));
+    if (Number.isNaN(order)) {
+      throw new Error(`Invalid migration name: ${migration.name}`);
+    }
 
-  migrationFiles.sort((a, b) => a.localeCompare(b));
+    return {
+      name: migration.name,
+      // @ts-expect-error optional
+      always: migration.always,
+      up: migration.up,
+      down: migration.down,
+      order,
+    };
+  }) as Migration[];
 
-  const migrations: Migration[] = await Promise.all(
-    migrationFiles.map(async file => {
-      return import(pathToFileURL(file).href).then(mod => {
-        const migration = mod[Object.keys(mod)[0]];
+  return migrations.sort((a, b) => a.order - b.order);
+});
 
-        return {
-          file,
-          name: migration.name,
-          up: migration.up,
-          down: migration.down,
-        };
-      });
-    })
-  );
-
-  return migrations;
-}
 @Command({
   name: 'run',
   description: 'Run all pending data migrations',
@@ -56,7 +49,7 @@ export class RunCommand extends CommandRunner {
   }
 
   override async run(): Promise<void> {
-    const migrations = await collectMigrations();
+    const migrations = collectMigrations();
     const done: Migration[] = [];
     for (const migration of migrations) {
       const exists = await this.db.dataMigration.count({
@@ -65,7 +58,7 @@ export class RunCommand extends CommandRunner {
         },
       });
 
-      if (exists) {
+      if (exists && !migration.always) {
         continue;
       }
 
@@ -81,7 +74,7 @@ export class RunCommand extends CommandRunner {
   }
 
   async runOne(name: string) {
-    const migrations = await collectMigrations();
+    const migrations = collectMigrations();
     const migration = migrations.find(m => m.name === name);
 
     if (!migration) {
@@ -100,8 +93,14 @@ export class RunCommand extends CommandRunner {
 
   private async runMigration(migration: Migration) {
     this.logger.log(`Running ${migration.name}...`);
-    const record = await this.db.dataMigration.create({
-      data: {
+    const record = await this.db.dataMigration.upsert({
+      where: {
+        name: migration.name,
+      },
+      update: {
+        startedAt: new Date(),
+      },
+      create: {
         name: migration.name,
         startedAt: new Date(),
       },
@@ -152,7 +151,7 @@ export class RevertCommand extends CommandRunner {
       throw new Error('A migration name is required');
     }
 
-    const migrations = await collectMigrations();
+    const migrations = collectMigrations();
 
     const migration = migrations.find(m => m.name === name);
 

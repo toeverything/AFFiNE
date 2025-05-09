@@ -1,24 +1,30 @@
+import zod from 'zod';
+
 import { t } from '../../core/logical/type-presets.js';
 import { propertyType } from '../../core/property/property-config.js';
-import type { NumberPropertyDataType } from './types.js';
-
+import { NumberPropertySchema } from './types.js';
 export const numberPropertyType = propertyType('number');
 
-export const numberPropertyModelConfig = numberPropertyType.modelConfig<
-  number,
-  NumberPropertyDataType
->({
+export const numberPropertyModelConfig = numberPropertyType.modelConfig({
   name: 'Number',
-  type: () => t.number.instance(),
-  defaultData: () => ({ decimal: 0, format: 'number' }),
-  cellToString: ({ value }) => value?.toString() ?? '',
-  cellFromString: ({ value }) => {
-    const num = value ? Number(value) : NaN;
-    return {
-      value: isNaN(num) ? null : num,
-    };
+  propertyData: {
+    schema: NumberPropertySchema,
+    default: () => ({ decimal: 0, format: 'number' }) as const,
   },
-  cellToJson: ({ value }) => value ?? null,
-  cellFromJson: ({ value }) => (typeof value !== 'number' ? undefined : value),
-  isEmpty: ({ value }) => value == null,
+  jsonValue: {
+    schema: zod.number().nullable(),
+    isEmpty: ({ value }) => value == null,
+    type: () => t.number.instance(),
+  },
+  rawValue: {
+    schema: zod.number().nullable(),
+    default: () => null,
+    toString: ({ value }) => value?.toString() ?? '',
+    fromString: ({ value }) => {
+      const num = value ? Number(value) : NaN;
+      return { value: isNaN(num) ? null : num };
+    },
+    toJson: ({ value }) => value ?? null,
+    fromJson: ({ value }) => (typeof value !== 'number' ? null : value),
+  },
 });

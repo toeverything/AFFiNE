@@ -1,7 +1,7 @@
 import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
 import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
 import { GcpDetectorSync } from '@google-cloud/opentelemetry-resource-util';
-import { Global, Provider } from '@nestjs/common';
+import { Global, Injectable, Module, Provider } from '@nestjs/common';
 import { getEnv } from '@opentelemetry/core';
 import { Resource } from '@opentelemetry/resources';
 import {
@@ -14,10 +14,10 @@ import {
   SEMRESATTRS_K8S_POD_NAME,
 } from '@opentelemetry/semantic-conventions';
 
-import { OptionalModule } from '../../base';
-import { OpentelemetryFactory } from '../../base/metrics';
+import { OpentelemetryOptionsFactory } from '../../base/metrics';
 
-export class GCloudOpentelemetryFactory extends OpentelemetryFactory {
+@Injectable()
+export class GCloudOpentelemetryOptionsFactory extends OpentelemetryOptionsFactory {
   override getResource(): Resource {
     const env = getEnv();
     return super
@@ -47,14 +47,14 @@ export class GCloudOpentelemetryFactory extends OpentelemetryFactory {
   }
 }
 
-const factorProvider: Provider = {
-  provide: OpentelemetryFactory,
-  useFactory: () => new GCloudOpentelemetryFactory(),
+const FactorProvider: Provider = {
+  provide: OpentelemetryOptionsFactory,
+  useClass: GCloudOpentelemetryOptionsFactory,
 };
 
 @Global()
-@OptionalModule({
-  if: config => config.metrics.enabled,
-  overrides: [factorProvider],
+@Module({
+  providers: [FactorProvider],
+  exports: [FactorProvider],
 })
 export class GCloudMetrics {}

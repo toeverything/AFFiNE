@@ -8,70 +8,91 @@ import {
 } from '@nestjs/graphql';
 import { difference } from 'lodash-es';
 
-import { Config } from '../../base';
+import {
+  Feature,
+  Models,
+  type UserFeatureName,
+  type WorkspaceFeatureName,
+} from '../../models';
 import { Admin } from '../common';
 import { UserType } from '../user/types';
-import { EarlyAccessType, FeatureManagementService } from './management';
-import { FeatureService } from './service';
-import { FeatureType } from './types';
+import { AvailableUserFeatureConfig } from './types';
 
-registerEnumType(EarlyAccessType, {
-  name: 'EarlyAccessType',
+registerEnumType(Feature, {
+  name: 'FeatureType',
 });
 
 @Resolver(() => UserType)
-export class FeatureManagementResolver {
-  constructor(private readonly feature: FeatureManagementService) {}
+export class UserFeatureResolver extends AvailableUserFeatureConfig {
+  constructor(private readonly models: Models) {
+    super();
+  }
 
-  @ResolveField(() => [FeatureType], {
+  @ResolveField(() => [Feature], {
     name: 'features',
     description: 'Enabled features of a user',
   })
   async userFeatures(@Parent() user: UserType) {
-    return this.feature.getActivatedUserFeatures(user.id);
-  }
-}
-
-export class AvailableUserFeatureConfig {
-  constructor(private readonly config: Config) {}
-
-  async availableUserFeatures() {
-    return this.config.isSelfhosted
-      ? [FeatureType.Admin, FeatureType.UnlimitedCopilot]
-      : [FeatureType.EarlyAccess, FeatureType.AIEarlyAccess, FeatureType.Admin];
+    const features = await this.models.userFeature.list(user.id);
+    const availableUserFeatures = this.availableUserFeatures();
+    return features.filter(feature => availableUserFeatures.has(feature));
   }
 }
 
 @Admin()
 @Resolver(() => Boolean)
 export class AdminFeatureManagementResolver extends AvailableUserFeatureConfig {
-  constructor(
-    config: Config,
-    private readonly feature: FeatureService
-  ) {
-    super(config);
+  constructor(private readonly models: Models) {
+    super();
   }
 
-  @Mutation(() => [FeatureType], {
+  @Mutation(() => [Feature], {
     description: 'update user enabled feature',
   })
   async updateUserFeatures(
     @Args('id') id: string,
-    @Args({ name: 'features', type: () => [FeatureType] })
-    features: FeatureType[]
+    @Args({ name: 'features', type: () => [Feature] })
+    features: UserFeatureName[]
   ) {
-    const configurableFeatures = await this.availableUserFeatures();
+    const configurableUserFeatures = this.configurableUserFeatures();
+    const removed = difference(Array.from(configurableUserFeatures), features);
 
-    const removed = difference(configurableFeatures, features);
     await Promise.all(
-      features.map(feature =>
-        this.feature.addUserFeature(id, feature, 'admin panel')
-      )
+      features.map(async feature => {
+        if (configurableUserFeatures.has(feature)) {
+          return this.models.userFeature.add(id, feature, 'admin panel');
+        } else {
+          return;
+        }
+      })
     );
+
     await Promise.all(
-      removed.map(feature => this.feature.removeUserFeature(id, feature))
+      removed.map(feature => this.models.userFeature.remove(id, feature))
     );
 
     return features;
+  }
+
+  @Mutation(() => Boolean)
+  async addWorkspaceFeature(
+    @Args('workspaceId') workspaceId: string,
+    @Args('feature', { type: () => Feature }) feature: WorkspaceFeatureName
+  ) {
+    await this.models.workspaceFeature.add(
+      workspaceId,
+      feature,
+      'by administrator'
+    );
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  async removeWorkspaceFeature(
+    @Args('workspaceId') workspaceId: string,
+    @Args('feature', { type: () => Feature }) feature: WorkspaceFeatureName
+  ) {
+    await this.models.workspaceFeature.remove(workspaceId, feature);
+    return true;
   }
 }

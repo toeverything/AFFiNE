@@ -1,0 +1,12 @@
+mutation addContextCategory($options: AddContextCategoryInput!) {
+  addContextCategory(options: $options) {
+    id
+    createdAt
+    type
+    docs {
+      id
+      createdAt
+      status
+    }
+  }
+}

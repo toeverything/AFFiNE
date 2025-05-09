@@ -11,7 +11,7 @@ export async function toBuffer(input: BlobInputType): Promise<Buffer> {
     ? await getStreamAsBuffer(input)
     : input instanceof Buffer
       ? input
-      : Buffer.from(input);
+      : Buffer.from(input as string);
 }
 
 export function autoMetadata(
@@ -42,3 +42,5 @@ export function autoMetadata(
 
   return metadata;
 }
+
+export const SIGNED_URL_EXPIRED = 60 * 60; // 1 hour

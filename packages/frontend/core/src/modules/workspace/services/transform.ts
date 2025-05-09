@@ -1,4 +1,3 @@
-import { assertEquals } from '@blocksuite/affine/global/utils';
 import { Service } from '@toeverything/infra';
 import { applyUpdate } from 'yjs';
 
@@ -26,25 +25,35 @@ export class WorkspaceTransformService extends Service {
     accountId: string,
     flavour: string
   ): Promise<WorkspaceMetadata> => {
-    assertEquals(local.flavour, 'local');
+    if (local.flavour !== 'local') {
+      throw new Error(
+        'Only local workspace can be transformed to cloud workspace'
+      );
+    }
 
-    const localDocStorage = local.engine.doc.storage.behavior;
+    const localDocStorage = local.engine.doc.storage;
+    const localDocList = Array.from(local.docCollection.docs.keys());
 
     const newMetadata = await this.factory.create(
       flavour,
       async (docCollection, blobStorage, docStorage) => {
-        const rootDocBinary = await localDocStorage.doc.get(
-          local.docCollection.doc.guid
-        );
+        const rootDocBinary = (
+          await localDocStorage.getDoc(local.docCollection.doc.guid)
+        )?.bin;
 
         if (rootDocBinary) {
           applyUpdate(docCollection.doc, rootDocBinary);
         }
 
-        for (const subdoc of docCollection.doc.getSubdocs()) {
-          const subdocBinary = await localDocStorage.doc.get(subdoc.guid);
+        for (const subdocId of localDocList) {
+          const subdocBinary = (await localDocStorage.getDoc(subdocId))?.bin;
           if (subdocBinary) {
-            applyUpdate(subdoc, subdocBinary);
+            const doc = docCollection.getDoc(subdocId);
+            if (doc) {
+              const spaceDoc = doc.spaceDoc;
+              doc.load();
+              applyUpdate(spaceDoc, subdocBinary);
+            }
           }
         }
 
@@ -57,12 +66,12 @@ export class WorkspaceTransformService extends Service {
           accountId
         );
 
-        const blobList = await local.engine.blob.list();
+        const blobList = await local.engine.blob.storage.list();
 
-        for (const blobKey of blobList) {
-          const blob = await local.engine.blob.get(blobKey);
+        for (const { key } of blobList) {
+          const blob = await local.engine.blob.storage.get(key);
           if (blob) {
-            await blobStorage.set(blobKey, blob);
+            await blobStorage.set(blob);
           }
         }
       }

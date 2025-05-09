@@ -69,16 +69,16 @@ export function useBlockSuitePagePreview(page: Store | null): Atom<string> {
     const baseAtom = atom<string>('');
     baseAtom.onMount = set => {
       const disposables = [
-        page.slots.ready.on(() => {
+        page.slots.ready.subscribe(() => {
           set(getPagePreviewText(page));
         }),
-        page.slots.blockUpdated.on(() => {
+        page.slots.blockUpdated.subscribe(() => {
           set(getPagePreviewText(page));
         }),
       ];
       set(getPagePreviewText(page));
       return () => {
-        disposables.forEach(disposable => disposable.dispose());
+        disposables.forEach(disposable => disposable.unsubscribe());
       };
     };
     weakMap.set(page, baseAtom);

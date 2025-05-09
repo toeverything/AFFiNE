@@ -1,4 +1,3 @@
-import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -6,12 +5,10 @@ import type { Request } from 'express';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 
-import {
-  CaptchaVerificationFailed,
-  Config,
-  verifyChallengeResponse,
-} from '../../base';
+import { CaptchaVerificationFailed, Config, OnEvent } from '../../base';
+import { ServerFeature, ServerService } from '../../core';
 import { Models, TokenType } from '../../models';
+import { verifyChallengeResponse } from '../../native';
 import { CaptchaConfig } from './types';
 
 const validator = z
@@ -26,10 +23,22 @@ export class CaptchaService {
 
   constructor(
     private readonly config: Config,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly server: ServerService
   ) {
-    assert(config.plugins.captcha);
-    this.captcha = config.plugins.captcha;
+    this.captcha = config.captcha.config;
+  }
+
+  @OnEvent('config.init')
+  onConfigInit() {
+    this.setup();
+  }
+
+  @OnEvent('config.changed')
+  onConfigChanged(event: Events['config.changed']) {
+    if ('captcha' in event.updates) {
+      this.setup();
+    }
   }
 
   private async verifyCaptchaToken(token: any, ip: string) {
@@ -52,7 +61,7 @@ export class CaptchaService {
     return (
       !!outcome.success &&
       // skip hostname check in dev mode
-      (this.config.node.dev || outcome.hostname === this.config.server.host)
+      (env.dev || outcome.hostname === this.config.server.host)
     );
   }
 
@@ -117,6 +126,14 @@ export class CaptchaService {
       if (!isTokenVerified) {
         throw new CaptchaVerificationFailed('Invalid Captcha Response');
       }
+    }
+  }
+
+  private setup() {
+    if (this.config.captcha.enabled) {
+      this.server.enableFeature(ServerFeature.Captcha);
+    } else {
+      this.server.disableFeature(ServerFeature.Captcha);
     }
   }
 }

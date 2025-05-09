@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let WorkspacePageMeta = ApolloAPI.Object(
     typename: "WorkspacePageMeta",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

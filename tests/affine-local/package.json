@@ -7,7 +7,10 @@
   },
   "devDependencies": {
     "@affine-test/kit": "workspace:*",
-    "@playwright/test": "=1.49.1"
+    "@affine-tools/cli": "workspace:*",
+    "@affine-tools/utils": "workspace:*",
+    "@playwright/test": "=1.52.0",
+    "webpack": "^5.98.0"
   },
-  "version": "0.19.0"
+  "version": "0.21.0"
 }

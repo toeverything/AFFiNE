@@ -1,9 +1,11 @@
 import { style } from '@vanilla-extract/css';
 
+import { globalVars } from '../../styles/variables.css';
+
 export const root = style({
   padding: '40px',
   justifyContent: 'flex-end',
-  minHeight: '100dvh',
+  minHeight: `calc(100dvh - ${globalVars.appKeyboardHeight})`,
   display: 'flex',
   flexDirection: 'column',
   position: 'relative',

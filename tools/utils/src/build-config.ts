@@ -33,6 +33,10 @@ export function getBuildConfig(
         isMobileWeb: distribution === 'mobile',
         isIOS: distribution === 'ios',
         isAndroid: distribution === 'android',
+        isNative:
+          distribution === 'desktop' ||
+          distribution === 'ios' ||
+          distribution === 'android',
         isAdmin: distribution === 'admin',
 
         appBuildType: 'stable' as const,
@@ -42,8 +46,14 @@ export function getBuildConfig(
         githubUrl: 'https://github.com/toeverything/AFFiNE',
         changelogUrl: 'https://affine.pro/what-is-new',
         downloadUrl: 'https://affine.pro/download',
+        pricingUrl: 'https://affine.pro/pricing',
+        discordUrl: 'https://affine.pro/redirect/discord',
         imageProxyUrl: '/api/worker/image-proxy',
         linkPreviewUrl: '/api/worker/link-preview',
+        CAPTCHA_SITE_KEY: process.env.CAPTCHA_SITE_KEY ?? '',
+        SENTRY_DSN: process.env.SENTRY_DSN ?? '',
+        MIXPANEL_TOKEN: process.env.MIXPANEL_TOKEN ?? '',
+        DEBUG_JOTAI: process.env.DEBUG_JOTAI ?? '',
       };
     },
     get beta() {

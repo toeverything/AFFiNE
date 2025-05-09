@@ -13,67 +13,75 @@ export interface SqliteNativeDBOptions {
   readonly id: string;
 }
 
-export type NativeDBApis = {
-  connect(id: string): Promise<void>;
-  disconnect(id: string): Promise<void>;
-  pushUpdate(id: string, docId: string, update: Uint8Array): Promise<Date>;
-  getDocSnapshot(id: string, docId: string): Promise<DocRecord | null>;
-  setDocSnapshot(id: string, snapshot: DocRecord): Promise<boolean>;
-  getDocUpdates(id: string, docId: string): Promise<DocRecord[]>;
-  markUpdatesMerged(
+export interface NativeDBApis {
+  connect: (id: string) => Promise<void>;
+  disconnect: (id: string) => Promise<void>;
+  pushUpdate: (id: string, docId: string, update: Uint8Array) => Promise<Date>;
+  getDocSnapshot: (id: string, docId: string) => Promise<DocRecord | null>;
+  setDocSnapshot: (id: string, snapshot: DocRecord) => Promise<boolean>;
+  getDocUpdates: (id: string, docId: string) => Promise<DocRecord[]>;
+  markUpdatesMerged: (
     id: string,
     docId: string,
     updates: Date[]
-  ): Promise<number>;
-  deleteDoc(id: string, docId: string): Promise<void>;
-  getDocClocks(
-    id: string,
-    after?: Date | undefined | null
-  ): Promise<DocClock[]>;
-  getDocClock(id: string, docId: string): Promise<DocClock | null>;
-  getBlob(id: string, key: string): Promise<BlobRecord | null>;
-  setBlob(id: string, blob: BlobRecord): Promise<void>;
-  deleteBlob(id: string, key: string, permanently: boolean): Promise<void>;
-  releaseBlobs(id: string): Promise<void>;
-  listBlobs(id: string): Promise<ListedBlobRecord[]>;
-  getPeerRemoteClocks(id: string, peer: string): Promise<DocClock[]>;
-  getPeerRemoteClock(
+  ) => Promise<number>;
+  deleteDoc: (id: string, docId: string) => Promise<void>;
+  getDocClocks: (id: string, after?: Date | null) => Promise<DocClock[]>;
+  getDocClock: (id: string, docId: string) => Promise<DocClock | null>;
+  getBlob: (id: string, key: string) => Promise<BlobRecord | null>;
+  setBlob: (id: string, blob: BlobRecord) => Promise<void>;
+  deleteBlob: (id: string, key: string, permanently: boolean) => Promise<void>;
+  releaseBlobs: (id: string) => Promise<void>;
+  listBlobs: (id: string) => Promise<ListedBlobRecord[]>;
+  getPeerRemoteClocks: (id: string, peer: string) => Promise<DocClock[]>;
+  getPeerRemoteClock: (
     id: string,
     peer: string,
     docId: string
-  ): Promise<DocClock>;
-  setPeerRemoteClock(
+  ) => Promise<DocClock | null>;
+  setPeerRemoteClock: (
     id: string,
     peer: string,
     docId: string,
     clock: Date
-  ): Promise<void>;
-  getPeerPulledRemoteClocks(id: string, peer: string): Promise<DocClock[]>;
-  getPeerPulledRemoteClock(
+  ) => Promise<void>;
+  getPeerPulledRemoteClocks: (id: string, peer: string) => Promise<DocClock[]>;
+  getPeerPulledRemoteClock: (
     id: string,
     peer: string,
     docId: string
-  ): Promise<DocClock>;
-  setPeerPulledRemoteClock(
+  ) => Promise<DocClock | null>;
+  setPeerPulledRemoteClock: (
     id: string,
     peer: string,
     docId: string,
     clock: Date
-  ): Promise<void>;
-  getPeerPushedClocks(id: string, peer: string): Promise<DocClock[]>;
-  getPeerPushedClock(
+  ) => Promise<void>;
+  getPeerPushedClocks: (id: string, peer: string) => Promise<DocClock[]>;
+  getPeerPushedClock: (
     id: string,
     peer: string,
     docId: string
-  ): Promise<DocClock>;
-  setPeerPushedClock(
+  ) => Promise<DocClock | null>;
+  setPeerPushedClock: (
     id: string,
     peer: string,
     docId: string,
     clock: Date
-  ): Promise<void>;
-  clearClocks(id: string): Promise<void>;
-};
+  ) => Promise<void>;
+  clearClocks: (id: string) => Promise<void>;
+  setBlobUploadedAt: (
+    id: string,
+    peer: string,
+    blobId: string,
+    uploadedAt: Date | null
+  ) => Promise<void>;
+  getBlobUploadedAt: (
+    id: string,
+    peer: string,
+    blobId: string
+  ) => Promise<Date | null>;
+}
 
 type NativeDBApisWrapper = NativeDBApis extends infer APIs
   ? {

@@ -1,13 +1,13 @@
-import type { BaseElementProps } from '@blocksuite/block-std/gfx';
-import { field, GfxPrimitiveElementModel } from '@blocksuite/block-std/gfx';
-import type { IVec, SerializedXYWH } from '@blocksuite/global/utils';
+import type { IVec, SerializedXYWH } from '@blocksuite/global/gfx';
 import {
   Bound,
   getPointsFromBoundWithRotation,
   linePolygonIntersects,
   pointInPolygon,
   polygonNearestPoint,
-} from '@blocksuite/global/utils';
+} from '@blocksuite/global/gfx';
+import type { BaseElementProps } from '@blocksuite/std/gfx';
+import { field, GfxPrimitiveElementModel } from '@blocksuite/std/gfx';
 import * as Y from 'yjs';
 
 import {
@@ -30,9 +30,9 @@ export class TextElementModel extends GfxPrimitiveElementModel<TextElementProps>
     return 'text';
   }
 
-  static override propsToY(props: Record<string, unknown>) {
-    if (props.text && !(props.text instanceof Y.Text)) {
-      props.text = new Y.Text(props.text as string);
+  static propsToY(props: Record<string, unknown>) {
+    if (typeof props.text === 'string') {
+      props.text = new Y.Text(props.text);
     }
 
     return props;
@@ -89,16 +89,4 @@ export class TextElementModel extends GfxPrimitiveElementModel<TextElementProps>
 
   @field()
   accessor xywh: SerializedXYWH = '[0,0,16,16]';
-}
-
-declare global {
-  namespace BlockSuite {
-    interface SurfaceElementModelMap {
-      text: TextElementModel;
-    }
-
-    interface EdgelessTextModelMap {
-      text: TextElementModel;
-    }
-  }
 }

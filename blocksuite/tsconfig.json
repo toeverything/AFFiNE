@@ -2,6 +2,6 @@
   // exists for easier extending in blocksuite packages
   "extends": "../tsconfig.web.json",
   "compilerOptions": {
-    "types": []
+    "types": ["node"]
   }
 }

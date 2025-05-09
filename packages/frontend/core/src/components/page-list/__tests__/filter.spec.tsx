@@ -11,7 +11,6 @@ import type {
   VariableMap,
 } from '@affine/env/filter';
 import { getOrCreateI18n, I18nextProvider } from '@affine/i18n';
-import { assertExists } from '@blocksuite/affine/global/utils';
 import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { useState } from 'react';
@@ -77,7 +76,9 @@ describe('match filter', () => {
 describe('eval filter', () => {
   test('before', async () => {
     const before = filterMatcher.findData(v => v.name === 'before');
-    assertExists(before);
+    if (!before) {
+      throw new Error('before is not found');
+    }
     const filter1 = filter(before, ref('Created'), [
       new Date(2023, 5, 28).getTime(),
     ]);
@@ -96,7 +97,9 @@ describe('eval filter', () => {
   });
   test('after', async () => {
     const after = filterMatcher.findData(v => v.name === 'after');
-    assertExists(after);
+    if (!after) {
+      throw new Error('after is not found');
+    }
     const filter1 = filter(after, ref('Created'), [
       new Date(2023, 5, 28).getTime(),
     ]);
@@ -115,7 +118,9 @@ describe('eval filter', () => {
   });
   test('is', async () => {
     const is = filterMatcher.findData(v => v.name === 'is');
-    assertExists(is);
+    if (!is) {
+      throw new Error('is is not found');
+    }
     const filter1 = filter(is, ref('Is Favourited'), [false]);
     const filter2 = filter(is, ref('Is Favourited'), [true]);
     const varMap = mockVariableMap({
@@ -130,7 +135,9 @@ describe('render filter', () => {
   test('boolean condition value change', async () => {
     const is = filterMatcher.match(tBoolean.create());
     const i18n = getOrCreateI18n();
-    assertExists(is);
+    if (!is) {
+      throw new Error('is is not found');
+    }
     const Wrapper = () => {
       const [value, onChange] = useState(
         filter(is, ref('Is Favourited'), [true])
@@ -169,7 +176,9 @@ describe('render filter', () => {
 
   test('date condition function change', async () => {
     const dateFunction = filterMatcher.match(tDate.create());
-    assertExists(dateFunction);
+    if (!dateFunction) {
+      throw new Error('dateFunction is not found');
+    }
     const Wrapper = WrapperCreator(dateFunction);
     const result = render(<Wrapper />);
     const dom = await result.findByTestId('filter-name');
@@ -179,7 +188,9 @@ describe('render filter', () => {
   });
   test('date condition variable change', async () => {
     const dateFunction = filterMatcher.match(tDate.create());
-    assertExists(dateFunction);
+    if (!dateFunction) {
+      throw new Error('dateFunction is not found');
+    }
     const Wrapper = WrapperCreator(dateFunction);
     const result = render(<Wrapper />);
     const dom = await result.findByTestId('variable-name');

@@ -10,5 +10,9 @@
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
-  "references": [{ "path": "../../common/debug" }]
+  "references": [
+    { "path": "../../common/debug" },
+    { "path": "../../../tools/cli" },
+    { "path": "../../../tools/utils" }
+  ]
 }

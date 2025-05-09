@@ -11,15 +11,12 @@
     { "path": "../../common/debug" },
     { "path": "../electron-api" },
     { "path": "../../common/env" },
-    { "path": "../graphql" },
+    { "path": "../../common/error" },
+    { "path": "../../common/graphql" },
     { "path": "../i18n" },
+    { "path": "../../common/nbstore" },
     { "path": "../track" },
     { "path": "../../../blocksuite/affine/all" },
-    { "path": "../../../blocksuite/affine/components" },
-    { "path": "../../../blocksuite/affine/shared" },
-    { "path": "../../../blocksuite/framework/block-std" },
-    { "path": "../../../blocksuite/framework/global" },
-    { "path": "../../../blocksuite/framework/store" },
     { "path": "../../common/infra" }
   ]
 }

@@ -1,4 +1,5 @@
-import type { UniComponent } from '../utils/uni-component/index.js';
+import type { UniComponent } from '@blocksuite/affine-shared/types';
+
 import type { DataViewInstance } from '../view/types.js';
 
 export type DataViewWidgetProps = {

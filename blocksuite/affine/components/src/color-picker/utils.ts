@@ -1,6 +1,7 @@
 // https://www.w3.org/TR/css-color-4/
 
 import type { Color, ColorScheme } from '@blocksuite/affine-model';
+import clamp from 'lodash-es/clamp';
 
 import { COLORS, FIRST_COLOR } from './consts.js';
 import type {
@@ -52,11 +53,8 @@ export function linearGradientAt(t: number): Rgb {
 
 const lerp = (a: number, b: number, t: number) => a + t * (b - a);
 
-export const clamp = (min: number, val: number, max: number) =>
-  Math.min(Math.max(min, val), max);
-
 export const bound01 = (n: number, max: number) => {
-  n = clamp(0, n, max);
+  n = clamp(n, 0, max);
 
   // Handle floating point rounding errors
   if (Math.abs(n - max) < 0.000001) {
@@ -96,7 +94,7 @@ export const rgbToHsv = ({ r, g, b }: Rgb): Hsv => {
 export const hsvToRgb = ({ h, s, v }: Hsv): Rgb => {
   if (h < 0) h = (h + 1) % 1; // wrap
   h *= 6;
-  s = clamp(0, s, 1);
+  s = clamp(s, 0, 1);
 
   const i = Math.floor(h),
     f = h - i,
@@ -285,7 +283,7 @@ export const packColor = (key: string, color: Color) => {
  * @param oldColor - The old color
  * @returns A color array
  */
-export const packColorsWithColorScheme = (
+export const packColorsWith = (
   colorScheme: ColorScheme,
   value: string,
   oldColor: Color
@@ -309,4 +307,62 @@ export const packColorsWithColorScheme = (
   }
 
   return { type, colors };
+};
+
+export const calcCustomButtonStyle = (
+  color: string,
+  isCustomColor: boolean,
+  ele: Element
+) => {
+  let b = 'transparent';
+  let c = 'transparent';
+
+  if (!isCustomColor) {
+    return { '--b': b, '--c': c };
+  }
+
+  if (color.startsWith('--')) {
+    if (!color.endsWith('transparent')) {
+      b = 'var(--affine-background-overlay-panel-color)';
+      c = keepColor(
+        rgbaToHex8(
+          preprocessColor(window.getComputedStyle(ele))({
+            type: 'normal',
+            value: color,
+          }).rgba
+        )
+      );
+    }
+  } else {
+    b = 'var(--affine-background-overlay-panel-color)';
+    c = keepColor(color);
+  }
+
+  return { '--b': b, '--c': c };
+};
+
+export const adjustColorAlpha = (color: Color, a: number): Color => {
+  let newColor;
+  if (typeof color === 'object') {
+    if ('normal' in color) {
+      const rgba = parseStringToRgba(color.normal);
+      rgba.a = a;
+      newColor = { normal: rgbaToHex8(rgba) };
+    } else {
+      const newDarkRgba = parseStringToRgba(color.dark);
+      newDarkRgba.a = a;
+      const newLightRgba = parseStringToRgba(color.light);
+      newLightRgba.a = a;
+      newColor = {
+        dark: rgbaToHex8(newDarkRgba),
+        light: rgbaToHex8(newLightRgba),
+      };
+    }
+  } else {
+    const rgba = parseStringToRgba(color);
+    rgba.a = a;
+    newColor = rgbaToHex8(rgba);
+  }
+
+  return newColor;
 };

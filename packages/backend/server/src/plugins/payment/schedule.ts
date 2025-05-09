@@ -1,15 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import Stripe from 'stripe';
 
+import { StripeFactory } from './stripe';
+
 @Injectable()
 export class ScheduleManager {
   private _schedule: Stripe.SubscriptionSchedule | null = null;
   private readonly logger = new Logger(ScheduleManager.name);
 
-  constructor(private readonly stripe: Stripe) {}
+  constructor(private readonly stripeProvider: StripeFactory) {}
 
-  static create(stripe: Stripe, schedule?: Stripe.SubscriptionSchedule) {
-    const manager = new ScheduleManager(stripe);
+  get stripe() {
+    return this.stripeProvider.stripe;
+  }
+
+  static create(
+    stripeProvider: StripeFactory,
+    schedule?: Stripe.SubscriptionSchedule
+  ) {
+    const manager = new ScheduleManager(stripeProvider);
     if (schedule) {
       manager._schedule = schedule;
     }
@@ -56,9 +65,9 @@ export class ScheduleManager {
           return undefined;
         });
 
-      return ScheduleManager.create(this.stripe, s);
+      return ScheduleManager.create(this.stripeProvider, s);
     } else {
-      return ScheduleManager.create(this.stripe, schedule);
+      return ScheduleManager.create(this.stripeProvider, schedule);
     }
   }
 

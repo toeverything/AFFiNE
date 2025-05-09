@@ -4,7 +4,6 @@ export { WorkspaceEngineBeforeStart, WorkspaceInitialized } from './events';
 export { getAFFiNEWorkspaceSchema } from './global-schema';
 export type { WorkspaceMetadata } from './metadata';
 export type { WorkspaceOpenOptions } from './open-options';
-export type { WorkspaceEngineProvider } from './providers/flavour';
 export type { WorkspaceFlavourProvider } from './providers/flavour';
 export { WorkspaceFlavoursProvider } from './providers/flavour';
 export { WorkspaceLocalCache, WorkspaceLocalState } from './providers/storage';
@@ -14,7 +13,7 @@ export { WorkspacesService } from './services/workspaces';
 
 import type { Framework } from '@toeverything/infra';
 
-import { GlobalCache, GlobalState } from '../storage';
+import { GlobalCache, GlobalState, NbstoreService } from '../storage';
 import { WorkspaceEngine } from './entities/engine';
 import { WorkspaceList } from './entities/list';
 import { WorkspaceProfile } from './entities/profile';
@@ -73,7 +72,7 @@ export function configureWorkspaceModule(framework: Framework) {
     .service(WorkspaceService)
     .entity(Workspace, [WorkspaceScope])
     .service(WorkspaceEngineService, [WorkspaceScope])
-    .entity(WorkspaceEngine, [WorkspaceService])
+    .entity(WorkspaceEngine, [WorkspaceService, NbstoreService])
     .impl(WorkspaceLocalState, WorkspaceLocalStateImpl, [
       WorkspaceService,
       GlobalState,

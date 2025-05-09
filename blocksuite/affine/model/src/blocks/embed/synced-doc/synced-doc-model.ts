@@ -1,3 +1,4 @@
+import type { GfxCompatibleProps } from '@blocksuite/std/gfx';
 import { BlockModel } from '@blocksuite/store';
 
 import type { ReferenceInfo } from '../../../consts/doc.js';
@@ -10,19 +11,14 @@ export type EmbedSyncedDocBlockProps = {
   style: EmbedCardStyle;
   caption?: string | null;
   scale?: number;
-} & ReferenceInfo;
+  preFoldHeight?: number;
+} & ReferenceInfo &
+  GfxCompatibleProps;
 
 export class EmbedSyncedDocModel extends defineEmbedModel<EmbedSyncedDocBlockProps>(
   BlockModel
-) {}
-
-declare global {
-  namespace BlockSuite {
-    interface EdgelessBlockModelMap {
-      'affine:embed-synced-doc': EmbedSyncedDocModel;
-    }
-    interface BlockModels {
-      'affine:embed-synced-doc': EmbedSyncedDocModel;
-    }
+) {
+  get isFolded() {
+    return !!this.props.preFoldHeight$.value;
   }
 }

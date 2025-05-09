@@ -38,6 +38,8 @@ proguard/
 # Android Studio captures folder
 captures/
 
+.kotlin/
+
 # IntelliJ
 *.iml
 .idea/workspace.xml
@@ -88,9 +90,6 @@ lint/tmp/
 
 # Android Profiling
 *.hprof
-
-# Cordova plugins for Capacitor
-capacitor-cordova-android-plugins
 
 # Copied web assets
 app/src/main/assets/public

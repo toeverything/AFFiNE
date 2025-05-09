@@ -1,0 +1,36 @@
+diff --git a/testing-module.d.ts b/testing-module.d.ts
+index 0b08dfe24534c605f58f2104255eb2a20c3fb566..8fad3ab267decccca2d4d9a8e208ace2cd811e92 100644
+--- a/testing-module.d.ts
++++ b/testing-module.d.ts
+@@ -13,6 +13,7 @@ export declare class TestingModule extends NestApplicationContext {
+     protected readonly graphInspector: GraphInspector;
+     constructor(container: NestContainer, graphInspector: GraphInspector, contextModule: Module, applicationConfig: ApplicationConfig, scope?: Type<any>[]);
+     private isHttpServer;
++    useCustomApplicationConstructor(Ctor: Type<INestApplication>): void;
+     createNestApplication<T extends INestApplication = INestApplication>(httpAdapter: HttpServer | AbstractHttpAdapter, options?: NestApplicationOptions): T;
+     createNestApplication<T extends INestApplication = INestApplication>(options?: NestApplicationOptions): T;
+     createNestMicroservice<T extends object>(options: NestMicroserviceOptions & T): INestMicroservice;
+diff --git a/testing-module.js b/testing-module.js
+index 17957b409b224bc43c7e40a1071cf08061366063..6bc4e8a694fdec02df91e512131ffd70259d8859 100644
+--- a/testing-module.js
++++ b/testing-module.js
+@@ -15,6 +15,9 @@ class TestingModule extends core_1.NestApplicationContext {
+         this.applicationConfig = applicationConfig;
+         this.graphInspector = graphInspector;
+     }
++    useCustomApplicationConstructor(Ctor) {
++        this.applicationConstructor = Ctor;
++    }
+     isHttpServer(serverOrOptions) {
+         return !!(serverOrOptions && serverOrOptions.patch);
+     }
+@@ -24,7 +27,8 @@ class TestingModule extends core_1.NestApplicationContext {
+             : [this.createHttpAdapter(), serverOrOptions];
+         this.applyLogger(appOptions);
+         this.container.setHttpAdapter(httpAdapter);
+-        const instance = new core_1.NestApplication(this.container, httpAdapter, this.applicationConfig, this.graphInspector, appOptions);
++        const Ctor = this.applicationConstructor || core_1.NestApplication;
++        const instance = new Ctor(this.container, httpAdapter, this.applicationConfig, this.graphInspector, appOptions);
+         return this.createAdapterProxy(instance, httpAdapter);
+     }
+     createNestMicroservice(options) {

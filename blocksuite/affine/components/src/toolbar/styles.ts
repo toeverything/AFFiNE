@@ -21,10 +21,18 @@ const toolbarColorKeys: Array<keyof AffineCssVariables> = [
   '--affine-hover-color-filled',
 ];
 
-export const lightToolbarStyles = toolbarColorKeys.map(
-  key => `${key}: ${unsafeCSS(combinedLightCssVariables[key])};`
-);
+export const lightToolbarStyles = (selector: string) => `
+  ${selector}[data-app-theme='light'] {
+    ${toolbarColorKeys
+      .map(key => `${key}: ${unsafeCSS(combinedLightCssVariables[key])};`)
+      .join('\n')}
+  }
+`;
 
-export const darkToolbarStyles = toolbarColorKeys.map(
-  key => `${key}: ${unsafeCSS(combinedDarkCssVariables[key])};`
-);
+export const darkToolbarStyles = (selector: string) => `
+  ${selector}[data-app-theme='dark'] {
+    ${toolbarColorKeys
+      .map(key => `${key}: ${unsafeCSS(combinedDarkCssVariables[key])};`)
+      .join('\n')}
+  }
+`;

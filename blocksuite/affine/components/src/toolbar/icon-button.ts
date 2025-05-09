@@ -25,12 +25,17 @@ export class EditorIconButton extends LitElement {
       white-space: nowrap;
       box-sizing: border-box;
       width: var(--icon-container-width, unset);
+      height: var(--icon-container-height, unset);
       justify-content: var(--justify, unset);
       user-select: none;
     }
 
     :host([active]) .icon-container.active-mode-color {
       color: var(--affine-primary-color);
+    }
+
+    :host([active]) .icon-container.active-mode-border {
+      border: 1px solid var(--affine-brand-color);
     }
 
     :host([active]) .icon-container.active-mode-background {
@@ -44,8 +49,7 @@ export class EditorIconButton extends LitElement {
 
     ::slotted(svg) {
       flex-shrink: 0;
-      width: var(--icon-size, unset);
-      height: var(--icon-size, unset);
+      font-size: var(--icon-size, 20px);
     }
 
     ::slotted(.label) {
@@ -53,7 +57,7 @@ export class EditorIconButton extends LitElement {
       padding: 0 4px;
       overflow: hidden;
       white-space: nowrap;
-      line-height: var(--label-height, inherit);
+      line-height: var(--label-height, var(--icon-size, 20px));
     }
     ::slotted(.label.padding0) {
       padding: 0;
@@ -116,6 +120,7 @@ export class EditorIconButton extends LitElement {
     const padding = this.iconContainerPadding;
     const iconContainerStyles = styleMap({
       '--icon-container-width': this.iconContainerWidth,
+      '--icon-container-height': this.iconContainerHeight,
       '--icon-container-padding': Array.isArray(padding)
         ? padding.map(v => `${v}px`).join(' ')
         : `${padding}px`,
@@ -156,7 +161,7 @@ export class EditorIconButton extends LitElement {
   accessor active = false;
 
   @property({ attribute: false })
-  accessor activeMode: 'color' | 'background' = 'color';
+  accessor activeMode: 'color' | 'border' | 'background' = 'color';
 
   @property({ attribute: false })
   accessor arrow = true;
@@ -178,6 +183,9 @@ export class EditorIconButton extends LitElement {
 
   @property({ attribute: false })
   accessor iconContainerWidth: string | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor iconContainerHeight: string | undefined = undefined;
 
   @property({ attribute: false })
   accessor iconSize: string | undefined = undefined;

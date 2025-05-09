@@ -7,7 +7,7 @@ public class WorkspaceQuotaQuery: GraphQLQuery {
   public static let operationName: String = "workspaceQuota"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query workspaceQuota($id: String!) { workspace(id: $id) { __typename quota { __typename name blobLimit storageQuota historyPeriod memberLimit memberCount humanReadable { __typename name blobLimit storageQuota historyPeriod memberLimit } usedSize } } }"#
+      #"query workspaceQuota($id: String!) { workspace(id: $id) { __typename quota { __typename name blobLimit storageQuota usedStorageQuota historyPeriod memberLimit memberCount humanReadable { __typename name blobLimit storageQuota historyPeriod memberLimit } } } }"#
     ))
 
   public var id: String
@@ -48,41 +48,41 @@ public class WorkspaceQuotaQuery: GraphQLQuery {
 
       /// Workspace.Quota
       ///
-      /// Parent Type: `QuotaQueryType`
+      /// Parent Type: `WorkspaceQuotaType`
       public struct Quota: AffineGraphQL.SelectionSet {
         public let __data: DataDict
         public init(_dataDict: DataDict) { __data = _dataDict }
 
-        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.QuotaQueryType }
+        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.WorkspaceQuotaType }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("name", String.self),
           .field("blobLimit", AffineGraphQL.SafeInt.self),
           .field("storageQuota", AffineGraphQL.SafeInt.self),
+          .field("usedStorageQuota", AffineGraphQL.SafeInt.self),
           .field("historyPeriod", AffineGraphQL.SafeInt.self),
-          .field("memberLimit", AffineGraphQL.SafeInt.self),
-          .field("memberCount", AffineGraphQL.SafeInt.self),
+          .field("memberLimit", Int.self),
+          .field("memberCount", Int.self),
           .field("humanReadable", HumanReadable.self),
-          .field("usedSize", AffineGraphQL.SafeInt.self),
         ] }
 
         public var name: String { __data["name"] }
         public var blobLimit: AffineGraphQL.SafeInt { __data["blobLimit"] }
         public var storageQuota: AffineGraphQL.SafeInt { __data["storageQuota"] }
+        public var usedStorageQuota: AffineGraphQL.SafeInt { __data["usedStorageQuota"] }
         public var historyPeriod: AffineGraphQL.SafeInt { __data["historyPeriod"] }
-        public var memberLimit: AffineGraphQL.SafeInt { __data["memberLimit"] }
-        public var memberCount: AffineGraphQL.SafeInt { __data["memberCount"] }
+        public var memberLimit: Int { __data["memberLimit"] }
+        public var memberCount: Int { __data["memberCount"] }
         public var humanReadable: HumanReadable { __data["humanReadable"] }
-        public var usedSize: AffineGraphQL.SafeInt { __data["usedSize"] }
 
         /// Workspace.Quota.HumanReadable
         ///
-        /// Parent Type: `HumanReadableQuotaType`
+        /// Parent Type: `WorkspaceQuotaHumanReadableType`
         public struct HumanReadable: AffineGraphQL.SelectionSet {
           public let __data: DataDict
           public init(_dataDict: DataDict) { __data = _dataDict }
 
-          public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.HumanReadableQuotaType }
+          public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.WorkspaceQuotaHumanReadableType }
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
             .field("name", String.self),

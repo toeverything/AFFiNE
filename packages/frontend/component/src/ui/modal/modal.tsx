@@ -131,7 +131,8 @@ function createContainer() {
 
 export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
   (props, ref) => {
-    const { onOpen: modalConfigOnOpen } = useContext(ModalConfigContext);
+    const { onOpen: modalConfigOnOpen, dynamicKeyboardHeight } =
+      useContext(ModalConfigContext);
     const {
       modal,
       portalOptions,
@@ -243,7 +244,7 @@ export const ModalInner = forwardRef<HTMLDivElement, ModalProps>(
           >
             <SafeArea
               bottom={BUILD_CONFIG.isMobileEdition}
-              bottomOffset={12}
+              bottomOffset={dynamicKeyboardHeight ?? 12}
               data-full-screen={fullScreen}
               data-modal={modal}
               className={clsx(

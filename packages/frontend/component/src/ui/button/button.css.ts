@@ -39,7 +39,6 @@ export const button = style({
   outline: 0,
   borderRadius: 8,
   transition: 'all .3s',
-  cursor: 'pointer',
   ['WebkitAppRegion' as string]: 'no-drag',
 
   // hover layer
@@ -167,6 +166,10 @@ export const button = style({
     // disabled
     '&[data-disabled]': {
       opacity: 0.5,
+    },
+
+    '&:not([data-disabled])': {
+      cursor: 'pointer',
     },
 
     // default keyboard focus style

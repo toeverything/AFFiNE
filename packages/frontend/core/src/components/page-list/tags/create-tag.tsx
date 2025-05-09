@@ -34,7 +34,7 @@ export const CreateOrEditTag = ({
   const t = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const [tagName, setTagName] = useState(tagMeta?.title || '');
+  const [tagName, setTagName] = useState(tagMeta?.name || '');
   const handleChangeName = useCallback((value: string) => {
     setTagName(value);
   }, []);
@@ -89,7 +89,7 @@ export const CreateOrEditTag = ({
     if (!tagName?.trim()) return;
     if (
       tagOptions.some(
-        tag => tag.title === tagName.trim() && tag.id !== tagMeta?.id
+        tag => tag.name === tagName.trim() && tag.id !== tagMeta?.id
       )
     ) {
       return toast(t['com.affine.tags.create-tag.toast.exist']());
@@ -131,9 +131,9 @@ export const CreateOrEditTag = ({
   }, [open, onOpenChange, menuOpen, onClose]);
 
   useEffect(() => {
-    setTagName(tagMeta?.title || '');
+    setTagName(tagMeta?.name || '');
     setTagIcon(tagMeta?.color || tagService.randomTagColor());
-  }, [tagMeta?.color, tagMeta?.title, tagService]);
+  }, [tagMeta?.color, tagMeta?.name, tagService]);
 
   if (!open) {
     return null;

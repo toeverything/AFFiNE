@@ -1,8 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
 import { ChatPrompt, PromptService } from '../../prompt';
-import { CopilotProviderService } from '../../providers';
-import { CopilotChatOptions, CopilotTextProvider } from '../../types';
+import {
+  CopilotChatOptions,
+  CopilotProviderFactory,
+  CopilotTextProvider,
+} from '../../providers';
 import { WorkflowNodeData, WorkflowNodeType } from '../types';
 import { NodeExecuteResult, NodeExecuteState, NodeExecutorType } from './types';
 import { AutoRegisteredWorkflowExecutor } from './utils';
@@ -11,7 +14,7 @@ import { AutoRegisteredWorkflowExecutor } from './utils';
 export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
   constructor(
     private readonly promptService: PromptService,
-    private readonly providerService: CopilotProviderService
+    private readonly providerFactory: CopilotProviderFactory
   ) {
     super();
   }
@@ -42,7 +45,7 @@ export class CopilotChatTextExecutor extends AutoRegisteredWorkflowExecutor {
         `Prompt ${data.promptName} not found when running workflow node ${data.name}`
       );
     }
-    const provider = await this.providerService.getProviderByModel(
+    const provider = await this.providerFactory.getProviderByModel(
       prompt.model
     );
     if (provider && 'generateText' in provider) {

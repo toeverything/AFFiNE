@@ -16,7 +16,7 @@ export interface ConfirmModalProps extends ModalProps {
   confirmButtonOptions?: Omit<ButtonProps, 'children'>;
   childrenContentClassName?: string;
   onConfirm?: (() => void) | (() => Promise<void>);
-  onCancel?: () => void;
+  onCancel?: (() => void) | false;
   confirmText?: React.ReactNode;
   cancelText?: React.ReactNode;
   cancelButtonOptions?: Omit<ButtonProps, 'children'>;
@@ -52,6 +52,12 @@ export const ConfirmModal = ({
       console.error(err);
     });
   }, [onConfirm]);
+  const handleCancel = useCallback(() => {
+    if (onCancel === false) {
+      return;
+    }
+    onCancel?.();
+  }, [onCancel]);
   return (
     <Modal
       contentOptions={{
@@ -59,12 +65,12 @@ export const ConfirmModal = ({
         className: clsx(styles.container, contentOptions?.className),
         onPointerDownOutside: e => {
           e.stopPropagation();
-          onCancel?.();
+          handleCancel();
         },
       }}
       width={width}
       closeButtonOptions={{
-        onClick: onCancel,
+        onClick: handleCancel,
       }}
       headerClassName={clsx(styles.header, headerClassName)}
       descriptionClassName={clsx(styles.description, descriptionClassName)}
@@ -81,21 +87,23 @@ export const ConfirmModal = ({
           reverse: reverseFooter,
         })}
       >
-        <DialogTrigger asChild>
-          <Button
-            className={styles.action}
-            onClick={onCancel}
-            data-testid="confirm-modal-cancel"
-            {...cancelButtonOptions}
-            variant={
-              cancelButtonOptions?.variant
-                ? cancelButtonOptions.variant
-                : 'secondary'
-            }
-          >
-            {cancelText}
-          </Button>
-        </DialogTrigger>
+        {onCancel !== false ? (
+          <DialogTrigger asChild>
+            <Button
+              className={styles.action}
+              onClick={handleCancel}
+              data-testid="confirm-modal-cancel"
+              {...cancelButtonOptions}
+              variant={
+                cancelButtonOptions?.variant
+                  ? cancelButtonOptions.variant
+                  : 'secondary'
+              }
+            >
+              {cancelText}
+            </Button>
+          </DialogTrigger>
+        ) : null}
         {CustomConfirmButton ? (
           <CustomConfirmButton data-testid="confirm-modal-confirm" />
         ) : (

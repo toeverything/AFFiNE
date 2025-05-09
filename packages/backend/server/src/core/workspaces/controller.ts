@@ -1,19 +1,18 @@
-import { Controller, Get, Logger, Param, Res } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Controller, Get, Logger, Param, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 
 import {
-  AccessDenied,
-  ActionForbidden,
   BlobNotFound,
   CallMetric,
   DocHistoryNotFound,
   DocNotFound,
   InvalidHistoryTimestamp,
 } from '../../base';
+import { DocMode, Models, PublicDocMode } from '../../models';
 import { CurrentUser, Public } from '../auth';
 import { PgWorkspaceDocStorageAdapter } from '../doc';
-import { Permission, PermissionService, PublicPageMode } from '../permission';
+import { DocReader } from '../doc/reader';
+import { AccessController } from '../permission';
 import { WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
 
@@ -22,9 +21,10 @@ export class WorkspacesController {
   logger = new Logger(WorkspacesController.name);
   constructor(
     private readonly storage: WorkspaceBlobStorage,
-    private readonly permission: PermissionService,
+    private readonly ac: AccessController,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
-    private readonly prisma: PrismaClient
+    private readonly docReader: DocReader,
+    private readonly models: Models
   ) {}
 
   // get workspace blob
@@ -37,21 +37,29 @@ export class WorkspacesController {
     @CurrentUser() user: CurrentUser | undefined,
     @Param('id') workspaceId: string,
     @Param('name') name: string,
+    @Query('redirect') redirect: string | undefined,
     @Res() res: Response
   ) {
-    // if workspace is public or have any public page, then allow to access
-    // otherwise, check permission
-    if (
-      !(await this.permission.isPublicAccessible(
-        workspaceId,
-        workspaceId,
-        user?.id
-      ))
-    ) {
-      throw new ActionForbidden();
-    }
+    await this.ac
+      .user(user?.id ?? 'anonymous')
+      .workspace(workspaceId)
+      .assert('Workspace.Read');
+    const { body, metadata, redirectUrl } = await this.storage.get(
+      workspaceId,
+      name,
+      true
+    );
 
-    const { body, metadata } = await this.storage.get(workspaceId, name);
+    if (redirectUrl) {
+      // redirect to signed url
+      if (redirect === 'manual') {
+        return res.send({
+          url: redirectUrl,
+        });
+      } else {
+        return res.redirect(redirectUrl);
+      }
+    }
 
     if (!body) {
       throw new BlobNotFound({
@@ -62,7 +70,12 @@ export class WorkspacesController {
 
     // metadata should always exists if body is not null
     if (metadata) {
-      res.setHeader('content-type', metadata.contentType);
+      res.setHeader(
+        'content-type',
+        metadata.contentType.startsWith('application/json') // application/json is reserved for redirect url
+          ? 'text/json'
+          : metadata.contentType
+      );
       res.setHeader('last-modified', metadata.lastModified.toUTCString());
       res.setHeader('content-length', metadata.contentLength);
     } else {
@@ -84,18 +97,18 @@ export class WorkspacesController {
     @Res() res: Response
   ) {
     const docId = new DocID(guid, ws);
-    if (
-      // if a user has the permission
-      !(await this.permission.isPublicAccessible(
-        docId.workspace,
-        docId.guid,
-        user?.id
-      ))
-    ) {
-      throw new AccessDenied();
+    if (docId.isWorkspace) {
+      await this.ac
+        .user(user?.id ?? 'anonymous')
+        .workspace(ws)
+        .assert('Workspace.Read');
+    } else {
+      await this.ac
+        .user(user?.id ?? 'anonymous')
+        .doc(ws, guid)
+        .assert('Doc.Read');
     }
-
-    const binResponse = await this.workspace.getDoc(
+    const binResponse = await this.docReader.getDoc(
       docId.workspace,
       docId.guid
     );
@@ -109,16 +122,19 @@ export class WorkspacesController {
 
     if (!docId.isWorkspace) {
       // fetch the publish page mode for publish page
-      const publishPage = await this.prisma.workspacePage.findUnique({
-        where: {
-          workspaceId_pageId: {
-            workspaceId: docId.workspace,
-            pageId: docId.guid,
+      const docMeta = await this.models.doc.getMeta(
+        docId.workspace,
+        docId.guid,
+        {
+          select: {
+            mode: true,
           },
-        },
-      });
+        }
+      );
       const publishPageMode =
-        publishPage?.mode === PublicPageMode.Edgeless ? 'edgeless' : 'page';
+        docMeta?.mode === PublicDocMode.Edgeless
+          ? DocMode.edgeless
+          : DocMode.page;
 
       res.setHeader('publish-mode', publishPageMode);
     }
@@ -144,12 +160,7 @@ export class WorkspacesController {
       throw new InvalidHistoryTimestamp({ timestamp });
     }
 
-    await this.permission.checkPagePermission(
-      docId.workspace,
-      docId.guid,
-      user.id,
-      Permission.Write
-    );
+    await this.ac.user(user.id).doc(ws, guid).assert('Doc.Read');
 
     const history = await this.workspace.getDocHistory(
       docId.workspace,

@@ -7,6 +7,7 @@ log.initialize({
 });
 
 log.transports.file.level = 'info';
+log.transports.console.level = 'info';
 
 export function getLogFilePath() {
   return log.transports.file.getFile().path;

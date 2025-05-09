@@ -5,9 +5,12 @@ import { clipboardHandlers } from './clipboard';
 import { configStorageHandlers } from './config-storage';
 import { findInPageHandlers } from './find-in-page';
 import { getLogFilePath, logger, revealLogFile } from './logger';
+import { recordingHandlers } from './recording';
 import { sharedStorageHandlers } from './shared-storage';
 import { uiHandlers } from './ui/handlers';
 import { updaterHandlers } from './updater';
+import { popupHandlers } from './windows-manager/popup';
+import { workerHandlers } from './worker/handlers';
 
 export const debugHandlers = {
   revealLogFile: async () => {
@@ -27,6 +30,9 @@ export const allHandlers = {
   configStorage: configStorageHandlers,
   findInPage: findInPageHandlers,
   sharedStorage: sharedStorageHandlers,
+  worker: workerHandlers,
+  recording: recordingHandlers,
+  popup: popupHandlers,
 };
 
 export const registerHandlers = () => {

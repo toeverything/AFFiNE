@@ -1,15 +1,4 @@
-import type {
-  BaseElementProps,
-  PointTestOptions,
-  SerializedElement,
-} from '@blocksuite/block-std/gfx';
-import {
-  derive,
-  field,
-  GfxPrimitiveElementModel,
-  local,
-} from '@blocksuite/block-std/gfx';
-import type { IVec, SerializedXYWH, XYWH } from '@blocksuite/global/utils';
+import type { IVec, SerializedXYWH, XYWH } from '@blocksuite/global/gfx';
 import {
   Bound,
   curveIntersects,
@@ -22,13 +11,25 @@ import {
   Polyline,
   polyLineNearestPoint,
   Vec,
-} from '@blocksuite/global/utils';
+} from '@blocksuite/global/gfx';
+import type {
+  BaseElementProps,
+  PointTestOptions,
+  SerializedElement,
+} from '@blocksuite/std/gfx';
+import {
+  derive,
+  field,
+  GfxPrimitiveElementModel,
+  local,
+} from '@blocksuite/std/gfx';
 import * as Y from 'yjs';
 
 import {
   CONNECTOR_LABEL_MAX_WIDTH,
   ConnectorLabelOffsetAnchor,
   ConnectorMode,
+  DEFAULT_CONNECTOR_MODE,
   DEFAULT_ROUGHNESS,
   FontFamily,
   FontStyle,
@@ -105,6 +106,11 @@ export type ConnectorElementProps = BaseElementProps & {
 export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorElementProps> {
   updatingPath = false;
 
+  /**
+   * Connectors should always render, even during zoom.
+   */
+  forceFullRender = true;
+
   override get connectable() {
     return false as const;
   }
@@ -125,8 +131,8 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
     return 'connector';
   }
 
-  static override propsToY(props: ConnectorElementProps) {
-    if (props.text && !(props.text instanceof Y.Text)) {
+  static propsToY(props: ConnectorElementProps) {
+    if (typeof props.text === 'string') {
       props.text = new Y.Text(props.text);
     }
 
@@ -293,6 +299,10 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
         ? getBezierNearestPoint(getBezierParameters(path), currentPoint)
         : polyLineNearestPoint(path, currentPoint);
 
+    if (!point) {
+      return false;
+    }
+
     return (
       Vec.dist(point, currentPoint) <
       (options?.hitThreshold ? strokeWidth / 2 : 0) + 8
@@ -456,7 +466,7 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
   accessor lableEditing: boolean = false;
 
   @field()
-  accessor mode: ConnectorMode = ConnectorMode.Orthogonal;
+  accessor mode: ConnectorMode = DEFAULT_CONNECTOR_MODE;
 
   @derive((path: PointLocation[], instance) => {
     const { x, y } = instance;
@@ -507,15 +517,4 @@ export class ConnectorElementModel extends GfxPrimitiveElementModel<ConnectorEle
 
   @local()
   accessor xywh: SerializedXYWH = '[0,0,0,0]';
-}
-
-declare global {
-  namespace BlockSuite {
-    interface SurfaceElementModelMap {
-      connector: ConnectorElementModel;
-    }
-    interface EdgelessTextModelMap {
-      connector: ConnectorElementModel;
-    }
-  }
 }

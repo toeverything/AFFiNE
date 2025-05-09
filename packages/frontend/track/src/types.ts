@@ -11,7 +11,6 @@ export type CallableEventsChain = {
   [Page in keyof Events]: {
     [Segment in keyof Events[Page]]: {
       [Module in keyof Events[Page][Segment]]: {
-        // @ts-expect-error ignore `symbol | number` as key
         [Event in Events[Page][Segment][Module][number]]: Event extends keyof EventArgs
           ? (
               // we make all args partial to simply satisfies nullish type checking
@@ -29,7 +28,6 @@ export type EventsUnion = {
       [Module in keyof Events[Page][Segment]]: {
         // @ts-expect-error ignore `symbol | number` as key
         [Event in Events[Page][Segment][Module][number]]: `${Page}.${Segment}.${Module}.${Event}`;
-        // @ts-expect-error ignore `symbol | number` as key
       }[Events[Page][Segment][Module][number]];
     }[keyof Events[Page][Segment]];
   }[keyof Events[Page]];

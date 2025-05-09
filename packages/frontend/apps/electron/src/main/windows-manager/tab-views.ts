@@ -24,8 +24,7 @@ import {
 } from 'rxjs';
 
 import { isMacOS } from '../../shared/utils';
-import { beforeAppQuit } from '../cleanup';
-import { isDev } from '../config';
+import { beforeAppQuit, onTabClose } from '../cleanup';
 import { mainWindowOrigin, shellViewUrl } from '../constants';
 import { ensureHelperProcess } from '../helper-process';
 import { logger } from '../logger';
@@ -396,9 +395,13 @@ export class WebContentViewsManager {
 
       if (this.mainWindow && view) {
         this.mainWindow.contentView.removeChildView(view);
-        view?.webContents.close();
+        view?.webContents.close({
+          waitForBeforeUnload: true,
+        });
       }
     }, 500); // delay a bit to get rid of the flicker
+
+    onTabClose(id);
   };
 
   undoCloseTab = async () => {
@@ -742,7 +745,8 @@ export class WebContentViewsManager {
     const focusActiveView = () => {
       if (
         !this.activeWorkbenchView ||
-        this.activeWorkbenchView.webContents.isFocused()
+        this.activeWorkbenchView.webContents.isFocused() ||
+        this.activeWorkbenchView.webContents.isDevToolsFocused()
       ) {
         return;
       }
@@ -752,7 +756,7 @@ export class WebContentViewsManager {
       }, 100);
     };
 
-    app.on('browser-window-focus', () => {
+    this.mainWindow?.on('focus', () => {
       focusActiveView();
     });
 
@@ -871,9 +875,6 @@ export class WebContentViewsManager {
       });
 
       view.webContents.loadURL(shellViewUrl).catch(err => logger.error(err));
-      if (isDev) {
-        view.webContents.openDevTools();
-      }
     }
 
     view.webContents.on('destroyed', () => {
@@ -894,6 +895,9 @@ export class WebContentViewsManager {
 
     view.webContents.on('did-finish-load', () => {
       this.resizeView(view);
+      if (process.env.SKIP_ONBOARDING) {
+        this.skipOnboarding(view).catch(err => logger.error(err));
+      }
     });
 
     // reorder will add to main window when loaded
@@ -902,6 +906,15 @@ export class WebContentViewsManager {
     logger.info(`view ${viewId} created in ${performance.now() - start}ms`);
     return view;
   };
+
+  private async skipOnboarding(view: WebContentsView) {
+    await view.webContents.executeJavaScript(`
+    window.localStorage.setItem('app_config', '{"onBoarding":false}');
+    window.localStorage.setItem('dismissAiOnboarding', 'true');
+    window.localStorage.setItem('dismissAiOnboardingEdgeless', 'true');
+    window.localStorage.setItem('dismissAiOnboardingLocal', 'true');
+    `);
+  }
 }
 
 // there is no proper way to listen to webContents resize event
@@ -1041,6 +1054,13 @@ export const addTabWithUrl = (url: string) => {
 export const loadUrlInActiveTab = async (_url: string) => {
   // todo: implement
   throw new Error('loadUrlInActiveTab not implemented');
+};
+export const ensureTabLoaded = async (tabId: string) => {
+  const tab = WebContentViewsManager.instance.tabViewsMap.get(tabId);
+  if (tab) {
+    return tab;
+  }
+  return WebContentViewsManager.instance.loadTab(tabId);
 };
 export const showTab = WebContentViewsManager.instance.showTab;
 export const closeTab = WebContentViewsManager.instance.closeTab;

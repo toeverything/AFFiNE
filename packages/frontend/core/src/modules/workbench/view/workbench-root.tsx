@@ -1,6 +1,5 @@
 import { ResizePanel } from '@affine/component/resize-panel';
 import { AffineErrorComponent } from '@affine/core/components/affine/affine-error-boundary/affine-error-fallback';
-import { rightSidebarWidthAtom } from '@affine/core/components/atoms';
 import { workbenchRoutes } from '@affine/core/desktop/workbench-router';
 import {
   appSettingAtom,
@@ -8,7 +7,7 @@ import {
   useLiveData,
   useService,
 } from '@toeverything/infra';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { type RouteObject, useLocation } from 'react-router-dom';
 
@@ -115,15 +114,23 @@ const MAX_SIDEBAR_WIDTH = 800;
 const WorkbenchSidebar = () => {
   const { clientBorder } = useAtomValue(appSettingAtom);
 
-  const [width, setWidth] = useAtom(rightSidebarWidthAtom);
   const [resizing, setResizing] = useState(false);
 
   const workbench = useService(WorkbenchService).workbench;
+  const [width, setWidth] = useState(workbench.sidebarWidth$.value ?? 0);
 
   const views = useLiveData(workbench.views$);
   const activeView = useLiveData(workbench.activeView$);
   const sidebarOpen = useLiveData(workbench.sidebarOpen$);
   const [floating, setFloating] = useState(false);
+
+  const onWidthChanged = useCallback(
+    (width: number) => {
+      workbench.setSidebarWidth(width);
+      setWidth(width);
+    },
+    [workbench]
+  );
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -155,9 +162,10 @@ const WorkbenchSidebar = () => {
       onResizing={setResizing}
       className={styles.workbenchSidebar}
       data-client-border={clientBorder && sidebarOpen}
-      open={sidebarOpen}
+      open={sidebarOpen ?? false}
       onOpen={handleOpenChange}
       onWidthChange={setWidth}
+      onWidthChanged={onWidthChanged}
       minWidth={MIN_SIDEBAR_WIDTH}
       maxWidth={MAX_SIDEBAR_WIDTH}
       unmountOnExit={false}

@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 import {
@@ -6,17 +6,18 @@ import {
   PromptConfigSchema,
   PromptMessage,
   PromptMessageSchema,
-} from '../types';
+} from '../providers';
 import { ChatPrompt } from './chat-prompt';
 import { refreshPrompts } from './prompts';
 
 @Injectable()
-export class PromptService implements OnModuleInit {
+export class PromptService implements OnApplicationBootstrap {
   private readonly cache = new Map<string, ChatPrompt>();
 
   constructor(private readonly db: PrismaClient) {}
 
-  async onModuleInit() {
+  async onApplicationBootstrap() {
+    this.cache.clear();
     await refreshPrompts(this.db);
   }
 

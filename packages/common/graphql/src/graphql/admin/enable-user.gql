@@ -1,0 +1,6 @@
+mutation enableUser($id: String!) {
+  enableUser(id: $id) {
+    email
+    disabled
+  }
+}

@@ -19,6 +19,7 @@ export interface SignInState {
   server?: Server;
   initialServerBaseUrl?: string;
   email?: string;
+  hasPassword?: boolean;
   redirectUrl?: string;
 }
 

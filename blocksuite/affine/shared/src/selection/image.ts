@@ -30,12 +30,4 @@ export class ImageSelection extends BaseSelection {
   }
 }
 
-declare global {
-  namespace BlockSuite {
-    interface Selection {
-      image: typeof ImageSelection;
-    }
-  }
-}
-
 export const ImageSelectionExtension = SelectionExtension(ImageSelection);

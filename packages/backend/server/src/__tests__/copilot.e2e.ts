@@ -1,45 +1,59 @@
-/// <reference types="../global.d.ts" />
-
 import { randomUUID } from 'node:crypto';
 
-import { INestApplication } from '@nestjs/common';
+import { ProjectRoot } from '@affine-tools/utils/path';
+import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 import Sinon from 'sinon';
 
+import { AppModule } from '../app.module';
+import { JobQueue } from '../base';
 import { ConfigModule } from '../base/config';
 import { AuthService } from '../core/auth';
-import { WorkspaceModule } from '../core/workspaces';
-import { CopilotModule } from '../plugins/copilot';
+import { DocReader } from '../core/doc';
+import {
+  CopilotContextDocJob,
+  CopilotContextService,
+} from '../plugins/copilot/context';
+import { MockEmbeddingClient } from '../plugins/copilot/context/embedding';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
 import {
-  CopilotProviderService,
-  FalProvider,
+  CopilotProviderFactory,
+  GeminiProvider,
   OpenAIProvider,
-  PerplexityProvider,
-  registerCopilotProvider,
-  unregisterCopilotProvider,
 } from '../plugins/copilot/providers';
 import { CopilotStorage } from '../plugins/copilot/storage';
+import { MockCopilotProvider } from './mocks';
 import {
   acceptInviteById,
   createTestingApp,
   createWorkspace,
   inviteUser,
-  signUp,
+  TestingApp,
+  TestUser,
 } from './utils';
 import {
+  addContextDoc,
+  addContextFile,
   array2sse,
+  audioTranscription,
   chatWithImages,
   chatWithText,
   chatWithTextStream,
   chatWithWorkflow,
+  claimAudioTranscription,
+  cleanObject,
+  createCopilotContext,
   createCopilotMessage,
   createCopilotSession,
   forkCopilotSession,
   getHistories,
-  MockCopilotTestProvider,
+  listContext,
+  listContextDocAndFiles,
+  matchFiles,
+  matchWorkspaceDocs,
   sse2array,
+  submitAudioTranscription,
   textToEventStream,
   unsplashSearch,
   updateCopilotSession,
@@ -47,71 +61,86 @@ import {
 
 const test = ava as TestFn<{
   auth: AuthService;
-  app: INestApplication;
+  app: TestingApp;
+  db: PrismaClient;
+  context: CopilotContextService;
+  jobs: CopilotContextDocJob;
   prompt: PromptService;
-  provider: CopilotProviderService;
+  factory: CopilotProviderFactory;
   storage: CopilotStorage;
+  u1: TestUser;
 }>;
 
-test.beforeEach(async t => {
-  const { app } = await createTestingApp({
+test.before(async t => {
+  const app = await createTestingApp({
     imports: [
-      ConfigModule.forRoot({
-        plugins: {
-          copilot: {
-            openai: {
-              apiKey: '1',
-            },
-            fal: {
-              apiKey: '1',
-            },
-            perplexity: {
-              apiKey: '1',
-            },
-            unsplashKey: process.env.UNSPLASH_ACCESS_KEY || '1',
+      ConfigModule.override({
+        copilot: {
+          providers: {
+            openai: { apiKey: '1' },
+            fal: {},
+            perplexity: {},
+          },
+          unsplash: {
+            key: process.env.UNSPLASH_ACCESS_KEY || '1',
           },
         },
       }),
-      WorkspaceModule,
-      CopilotModule,
+      AppModule,
     ],
+    tapModule: m => {
+      // use real JobQueue for testing
+      m.overrideProvider(JobQueue).useClass(JobQueue);
+      m.overrideProvider(DocReader).useValue({
+        getFullDocContent() {
+          return {
+            title: '1',
+            summary: '1',
+          };
+        },
+      });
+      m.overrideProvider(OpenAIProvider).useClass(MockCopilotProvider);
+      m.overrideProvider(GeminiProvider).useClass(MockCopilotProvider);
+    },
   });
 
   const auth = app.get(AuthService);
+  const db = app.get(PrismaClient);
+  const context = app.get(CopilotContextService);
   const prompt = app.get(PromptService);
   const storage = app.get(CopilotStorage);
+  const jobs = app.get(CopilotContextDocJob);
 
   t.context.app = app;
+  t.context.db = db;
   t.context.auth = auth;
+  t.context.context = context;
   t.context.prompt = prompt;
   t.context.storage = storage;
+  t.context.jobs = jobs;
 });
 
-let token: string;
-const promptName = 'prompt';
+const textPromptName = 'prompt';
 test.beforeEach(async t => {
+  Sinon.restore();
   const { app, prompt } = t.context;
-  const user = await signUp(app, 'test', 'darksky@affine.pro', '123456');
-  token = user.token.token;
+  await app.initTestingDB();
+  await prompt.onApplicationBootstrap();
+  t.context.u1 = await app.signupV1('u1@affine.pro');
 
-  unregisterCopilotProvider(OpenAIProvider.type);
-  unregisterCopilotProvider(FalProvider.type);
-  unregisterCopilotProvider(PerplexityProvider.type);
-  registerCopilotProvider(MockCopilotTestProvider);
-
-  await prompt.set(promptName, 'test', [
+  await prompt.set(textPromptName, 'test', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
 });
 
-test.afterEach.always(async t => {
+test.after.always(async t => {
   await t.context.app.close();
 });
 
 // ==================== session ====================
 
 test('should create session correctly', async t => {
-  const { app } = t.context;
+  const { app, u1 } = t.context;
 
   const assertCreateSession = async (
     workspaceId: string,
@@ -121,12 +150,12 @@ test('should create session correctly', async t => {
     }
   ) => {
     await asserter(
-      createCopilotSession(app, token, workspaceId, randomUUID(), promptName)
+      createCopilotSession(app, workspaceId, randomUUID(), textPromptName)
     );
   };
 
   {
-    const { id } = await createWorkspace(app, token);
+    const { id } = await createWorkspace(app);
     await assertCreateSession(
       id,
       'should be able to create session with cloud workspace that user can access'
@@ -141,10 +170,9 @@ test('should create session correctly', async t => {
   }
 
   {
-    const {
-      token: { token },
-    } = await signUp(app, 'test', 'test@affine.pro', '123456');
-    const { id } = await createWorkspace(app, token);
+    const u2 = await app.createUser('u2@affine.pro');
+    const { id } = await createWorkspace(app);
+    await app.login(u2);
     await assertCreateSession(id, '', async x => {
       await t.throwsAsync(
         x,
@@ -153,7 +181,9 @@ test('should create session correctly', async t => {
       );
     });
 
-    const inviteId = await inviteUser(app, token, id, 'darksky@affine.pro');
+    await app.switchUser(u1);
+    const inviteId = await inviteUser(app, id, u2.email);
+    await app.login(u2);
     await acceptInviteById(app, id, inviteId, false);
     await assertCreateSession(
       id,
@@ -172,18 +202,17 @@ test('should update session correctly', async t => {
       t.truthy(await x, error);
     }
   ) => {
-    await asserter(updateCopilotSession(app, token, sessionId, promptName));
+    await asserter(updateCopilotSession(app, sessionId, textPromptName));
   };
 
   {
-    const { id: workspaceId } = await createWorkspace(app, token);
+    const { id: workspaceId } = await createWorkspace(app);
     const docId = randomUUID();
     const sessionId = await createCopilotSession(
       app,
-      token,
       workspaceId,
       docId,
-      promptName
+      textPromptName
     );
     await assertUpdateSession(
       sessionId,
@@ -194,10 +223,9 @@ test('should update session correctly', async t => {
   {
     const sessionId = await createCopilotSession(
       app,
-      token,
       randomUUID(),
       randomUUID(),
-      promptName
+      textPromptName
     );
     await assertUpdateSession(
       sessionId,
@@ -206,22 +234,17 @@ test('should update session correctly', async t => {
   }
 
   {
-    const aToken = (await signUp(app, 'test', 'test@affine.pro', '123456'))
-      .token.token;
-    const { id: workspaceId } = await createWorkspace(app, aToken);
-    const inviteId = await inviteUser(
-      app,
-      aToken,
-      workspaceId,
-      'darksky@affine.pro'
-    );
+    await app.signupV1('test@affine.pro');
+    const u2 = await app.createUser('u2@affine.pro');
+    const { id: workspaceId } = await createWorkspace(app);
+    const inviteId = await inviteUser(app, workspaceId, u2.email);
+    await app.login(u2);
     await acceptInviteById(app, workspaceId, inviteId, false);
     const sessionId = await createCopilotSession(
       app,
-      token,
       workspaceId,
       randomUUID(),
-      promptName
+      textPromptName
     );
     await assertUpdateSession(
       sessionId,
@@ -242,10 +265,9 @@ test('should update session correctly', async t => {
 });
 
 test('should fork session correctly', async t => {
-  const { app } = t.context;
+  const { app, u1 } = t.context;
 
   const assertForkSession = async (
-    token: string,
     workspaceId: string,
     sessionId: string,
     lastMessageId: string,
@@ -259,7 +281,6 @@ test('should fork session correctly', async t => {
     await asserter(
       forkCopilotSession(
         app,
-        token,
         workspaceId,
         randomUUID(),
         sessionId,
@@ -268,23 +289,22 @@ test('should fork session correctly', async t => {
     );
 
   // prepare session
-  const { id } = await createWorkspace(app, token);
+  const { id } = await createWorkspace(app);
   const sessionId = await createCopilotSession(
     app,
-    token,
     id,
     randomUUID(),
-    promptName
+    textPromptName
   );
 
   let forkedSessionId: string;
   // should be able to fork session
   {
     for (let i = 0; i < 3; i++) {
-      const messageId = await createCopilotMessage(app, token, sessionId);
-      await chatWithText(app, token, sessionId, messageId);
+      const messageId = await createCopilotMessage(app, sessionId);
+      await chatWithText(app, sessionId, messageId);
     }
-    const histories = await getHistories(app, token, { workspaceId: id });
+    const histories = await getHistories(app, { workspaceId: id });
     const latestMessageId = histories[0].messages.findLast(
       m => m.role === 'assistant'
     )?.id;
@@ -292,7 +312,6 @@ test('should fork session correctly', async t => {
 
     // should be able to fork session
     forkedSessionId = await assertForkSession(
-      token,
       id,
       sessionId,
       latestMessageId!,
@@ -301,49 +320,36 @@ test('should fork session correctly', async t => {
   }
 
   {
-    const {
-      token: { token: newToken },
-    } = await signUp(app, 'test', 'test@affine.pro', '123456');
-    await assertForkSession(
-      newToken,
-      id,
-      sessionId,
-      randomUUID(),
-      '',
-      async x => {
-        await t.throwsAsync(
-          x,
-          { instanceOf: Error },
-          'should not able to fork session with cloud workspace that user cannot access'
-        );
-      }
-    );
+    const u2 = await app.signupV1('u2@affine.pro');
+    await assertForkSession(id, sessionId, randomUUID(), '', async x => {
+      await t.throwsAsync(
+        x,
+        { instanceOf: Error },
+        'should not able to fork session with cloud workspace that user cannot access'
+      );
+    });
 
-    const inviteId = await inviteUser(app, token, id, 'test@affine.pro');
+    await app.switchUser(u1);
+    const inviteId = await inviteUser(app, id, u2.email);
+    await app.switchUser(u2);
     await acceptInviteById(app, id, inviteId, false);
-    await assertForkSession(
-      newToken,
-      id,
-      sessionId,
-      randomUUID(),
-      '',
-      async x => {
-        await t.throwsAsync(
-          x,
-          { instanceOf: Error },
-          'should not able to fork a root session from other user'
-        );
-      }
-    );
+    await assertForkSession(id, sessionId, randomUUID(), '', async x => {
+      await t.throwsAsync(
+        x,
+        { instanceOf: Error },
+        'should not able to fork a root session from other user'
+      );
+    });
 
-    const histories = await getHistories(app, token, { workspaceId: id });
+    await app.switchUser(u1);
+    const histories = await getHistories(app, { workspaceId: id });
     const latestMessageId = histories
       .find(h => h.sessionId === forkedSessionId)
       ?.messages.findLast(m => m.role === 'assistant')?.id;
     t.truthy(latestMessageId, 'should find latest message id');
 
+    await app.switchUser(u2);
     await assertForkSession(
-      newToken,
       id,
       forkedSessionId,
       latestMessageId!,
@@ -355,9 +361,9 @@ test('should fork session correctly', async t => {
 test('should be able to use test provider', async t => {
   const { app } = t.context;
 
-  const { id } = await createWorkspace(app, token);
+  const { id } = await createWorkspace(app);
   t.truthy(
-    await createCopilotSession(app, token, id, randomUUID(), promptName),
+    await createCopilotSession(app, id, randomUUID(), textPromptName),
     'failed to create session'
   );
 });
@@ -368,21 +374,59 @@ test('should create message correctly', async t => {
   const { app } = t.context;
 
   {
-    const { id } = await createWorkspace(app, token);
+    const { id } = await createWorkspace(app);
     const sessionId = await createCopilotSession(
       app,
-      token,
       id,
       randomUUID(),
-      promptName
+      textPromptName
     );
-    const messageId = await createCopilotMessage(app, token, sessionId);
+    const messageId = await createCopilotMessage(app, sessionId);
     t.truthy(messageId, 'should be able to create message with valid session');
   }
 
   {
+    // with attachment url
+    {
+      const { id } = await createWorkspace(app);
+      const sessionId = await createCopilotSession(
+        app,
+        id,
+        randomUUID(),
+        textPromptName
+      );
+      const messageId = await createCopilotMessage(app, sessionId, undefined, [
+        'http://example.com/cat.jpg',
+      ]);
+      t.truthy(messageId, 'should be able to create message with url link');
+    }
+
+    // with attachment
+    {
+      const { id } = await createWorkspace(app);
+      const sessionId = await createCopilotSession(
+        app,
+        id,
+        randomUUID(),
+        textPromptName
+      );
+      const smallestPng =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII';
+      const pngData = await fetch(smallestPng).then(res => res.arrayBuffer());
+      const messageId = await createCopilotMessage(
+        app,
+        sessionId,
+        undefined,
+        undefined,
+        [new File([new Uint8Array(pngData)], '1.png', { type: 'image/png' })]
+      );
+      t.truthy(messageId, 'should be able to create message with blobs');
+    }
+  }
+
+  {
     await t.throwsAsync(
-      createCopilotMessage(app, token, randomUUID()),
+      createCopilotMessage(app, randomUUID()),
       { instanceOf: Error },
       'should not able to create message with invalid session'
     );
@@ -396,26 +440,25 @@ test('should be able to chat with api', async t => {
 
   Sinon.stub(storage, 'handleRemoteLink').resolvesArg(2);
 
-  const { id } = await createWorkspace(app, token);
+  const { id } = await createWorkspace(app);
   const sessionId = await createCopilotSession(
     app,
-    token,
     id,
     randomUUID(),
-    promptName
+    textPromptName
   );
-  const messageId = await createCopilotMessage(app, token, sessionId);
-  const ret = await chatWithText(app, token, sessionId, messageId);
+  const messageId = await createCopilotMessage(app, sessionId);
+  const ret = await chatWithText(app, sessionId, messageId);
   t.is(ret, 'generate text to text', 'should be able to chat with text');
 
-  const ret2 = await chatWithTextStream(app, token, sessionId, messageId);
+  const ret2 = await chatWithTextStream(app, sessionId, messageId);
   t.is(
     ret2,
     textToEventStream('generate text to text stream', messageId),
     'should be able to chat with text stream'
   );
 
-  const ret3 = await chatWithImages(app, token, sessionId, messageId);
+  const ret3 = await chatWithImages(app, sessionId, messageId);
   t.is(
     array2sse(sse2array(ret3).filter(e => e.event !== 'event')),
     textToEventStream(
@@ -432,21 +475,15 @@ test('should be able to chat with api', async t => {
 test('should be able to chat with api by workflow', async t => {
   const { app } = t.context;
 
-  const { id } = await createWorkspace(app, token);
+  const { id } = await createWorkspace(app);
   const sessionId = await createCopilotSession(
     app,
-    token,
     id,
     randomUUID(),
     'workflow:presentation'
   );
-  const messageId = await createCopilotMessage(
-    app,
-    token,
-    sessionId,
-    'apple company'
-  );
-  const ret = await chatWithWorkflow(app, token, sessionId, messageId);
+  const messageId = await createCopilotMessage(app, sessionId, 'apple company');
+  const ret = await chatWithWorkflow(app, sessionId, messageId);
   t.is(
     array2sse(sse2array(ret).filter(e => e.event !== 'event')),
     textToEventStream(['generate text to text stream'], messageId),
@@ -459,25 +496,20 @@ test('should be able to chat with special image model', async t => {
 
   Sinon.stub(storage, 'handleRemoteLink').resolvesArg(2);
 
-  const { id } = await createWorkspace(app, token);
+  const { id } = await createWorkspace(app);
 
   const testWithModel = async (promptName: string, finalPrompt: string) => {
     const model = prompts.find(p => p.name === promptName)?.model;
     const sessionId = await createCopilotSession(
       app,
-      token,
       id,
       randomUUID(),
       promptName
     );
-    const messageId = await createCopilotMessage(
-      app,
-      token,
-      sessionId,
-      'some-tag',
-      [`https://example.com/${promptName}.jpg`]
-    );
-    const ret3 = await chatWithImages(app, token, sessionId, messageId);
+    const messageId = await createCopilotMessage(app, sessionId, 'some-tag', [
+      `https://example.com/${promptName}.jpg`,
+    ]);
+    const ret3 = await chatWithImages(app, sessionId, messageId);
     t.is(
       ret3,
       textToEventStream(
@@ -506,20 +538,19 @@ test('should be able to retry with api', async t => {
 
   // normal chat
   {
-    const { id } = await createWorkspace(app, token);
+    const { id } = await createWorkspace(app);
     const sessionId = await createCopilotSession(
       app,
-      token,
       id,
       randomUUID(),
-      promptName
+      textPromptName
     );
-    const messageId = await createCopilotMessage(app, token, sessionId);
+    const messageId = await createCopilotMessage(app, sessionId);
     // chat 2 times
-    await chatWithText(app, token, sessionId, messageId);
-    await chatWithText(app, token, sessionId, messageId);
+    await chatWithText(app, sessionId, messageId);
+    await chatWithText(app, sessionId, messageId);
 
-    const histories = await getHistories(app, token, { workspaceId: id });
+    const histories = await getHistories(app, { workspaceId: id });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
       [['generate text to text', 'generate text to text']],
@@ -529,25 +560,46 @@ test('should be able to retry with api', async t => {
 
   // retry chat
   {
-    const { id } = await createWorkspace(app, token);
+    const { id } = await createWorkspace(app);
     const sessionId = await createCopilotSession(
       app,
-      token,
       id,
       randomUUID(),
-      promptName
+      textPromptName
     );
-    const messageId = await createCopilotMessage(app, token, sessionId);
-    await chatWithText(app, token, sessionId, messageId);
+    const messageId = await createCopilotMessage(app, sessionId);
+    await chatWithText(app, sessionId, messageId);
     // retry without message id
-    await chatWithText(app, token, sessionId);
+    await chatWithText(app, sessionId);
 
     // should only have 1 message
-    const histories = await getHistories(app, token, { workspaceId: id });
-    t.deepEqual(
-      histories.map(h => h.messages.map(m => m.content)),
-      [['generate text to text']],
-      'should be able to list history'
+    const histories = await getHistories(app, { workspaceId: id });
+    t.snapshot(
+      cleanObject(histories),
+      'should be able to list history after retry'
+    );
+  }
+
+  // retry chat with new message id
+  {
+    const { id } = await createWorkspace(app);
+    const sessionId = await createCopilotSession(
+      app,
+      id,
+      randomUUID(),
+      textPromptName
+    );
+    const messageId = await createCopilotMessage(app, sessionId);
+    await chatWithText(app, sessionId, messageId);
+    // retry with new message id
+    const newMessageId = await createCopilotMessage(app, sessionId);
+    await chatWithText(app, sessionId, newMessageId, '', true);
+
+    // should only have 1 message
+    const histories = await getHistories(app, { workspaceId: id });
+    t.snapshot(
+      cleanObject(histories),
+      'should be able to list history after retry'
     );
   }
 
@@ -557,50 +609,44 @@ test('should be able to retry with api', async t => {
 test('should reject message from different session', async t => {
   const { app } = t.context;
 
-  const { id } = await createWorkspace(app, token);
+  const { id } = await createWorkspace(app);
   const sessionId = await createCopilotSession(
     app,
-    token,
     id,
     randomUUID(),
-    promptName
+    textPromptName
   );
   const anotherSessionId = await createCopilotSession(
     app,
-    token,
     id,
     randomUUID(),
-    promptName
+    textPromptName
   );
-  const anotherMessageId = await createCopilotMessage(
-    app,
-    token,
-    anotherSessionId
-  );
+  const anotherMessageId = await createCopilotMessage(app, anotherSessionId);
   await t.throwsAsync(
-    chatWithText(app, token, sessionId, anotherMessageId),
+    chatWithText(app, sessionId, anotherMessageId),
     { instanceOf: Error },
     'should reject message from different session'
   );
 });
 
 test('should reject request from different user', async t => {
-  const { app } = t.context;
+  const { app, u1 } = t.context;
 
-  const { id } = await createWorkspace(app, token);
+  const u2 = await app.createUser('u2@affine.pro');
+  const { id } = await createWorkspace(app);
   const sessionId = await createCopilotSession(
     app,
-    token,
     id,
     randomUUID(),
-    promptName
+    textPromptName
   );
 
   // should reject message from different user
   {
-    const { token } = await signUp(app, 'a1', 'a1@affine.pro', '123456');
+    await app.login(u2);
     await t.throwsAsync(
-      createCopilotMessage(app, token.token, sessionId),
+      createCopilotMessage(app, sessionId),
       { instanceOf: Error },
       'should reject message from different user'
     );
@@ -608,11 +654,12 @@ test('should reject request from different user', async t => {
 
   // should reject chat from different user
   {
-    const messageId = await createCopilotMessage(app, token, sessionId);
+    await app.switchUser(u1);
+    const messageId = await createCopilotMessage(app, sessionId);
     {
-      const { token } = await signUp(app, 'a2', 'a2@affine.pro', '123456');
+      await app.switchUser(u2);
       await t.throwsAsync(
-        chatWithText(app, token.token, sessionId, messageId),
+        chatWithText(app, sessionId, messageId),
         { instanceOf: Error },
         'should reject chat from different user'
       );
@@ -625,20 +672,19 @@ test('should reject request from different user', async t => {
 test('should be able to list history', async t => {
   const { app } = t.context;
 
-  const { id: workspaceId } = await createWorkspace(app, token);
+  const { id: workspaceId } = await createWorkspace(app);
   const sessionId = await createCopilotSession(
     app,
-    token,
     workspaceId,
     randomUUID(),
-    promptName
+    textPromptName
   );
 
-  const messageId = await createCopilotMessage(app, token, sessionId, 'hello');
-  await chatWithText(app, token, sessionId, messageId);
+  const messageId = await createCopilotMessage(app, sessionId, 'hello');
+  await chatWithText(app, sessionId, messageId);
 
   {
-    const histories = await getHistories(app, token, { workspaceId });
+    const histories = await getHistories(app, { workspaceId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
       [['hello', 'generate text to text']],
@@ -647,7 +693,7 @@ test('should be able to list history', async t => {
   }
 
   {
-    const histories = await getHistories(app, token, {
+    const histories = await getHistories(app, {
       workspaceId,
       options: { messageOrder: 'desc' },
     });
@@ -660,17 +706,16 @@ test('should be able to list history', async t => {
 });
 
 test('should reject request that user have not permission', async t => {
-  const { app } = t.context;
+  const { app, u1 } = t.context;
 
-  const {
-    token: { token: anotherToken },
-  } = await signUp(app, 'a1', 'a1@affine.pro', '123456');
-  const { id: workspaceId } = await createWorkspace(app, anotherToken);
+  const u2 = await app.createUser('u2@affine.pro');
+  const { id: workspaceId } = await createWorkspace(app);
 
   // should reject request that user have not permission
   {
+    await app.login(u2);
     await t.throwsAsync(
-      getHistories(app, token, { workspaceId }),
+      getHistories(app, { workspaceId }),
       { instanceOf: Error },
       'should reject request that user have not permission'
     );
@@ -678,16 +723,13 @@ test('should reject request that user have not permission', async t => {
 
   // should able to list history after user have permission
   {
-    const inviteId = await inviteUser(
-      app,
-      anotherToken,
-      workspaceId,
-      'darksky@affine.pro'
-    );
+    await app.switchUser(u1);
+    const inviteId = await inviteUser(app, workspaceId, u2.email);
+    await app.switchUser(u2);
     await acceptInviteById(app, workspaceId, inviteId, false);
 
     t.deepEqual(
-      await getHistories(app, token, { workspaceId }),
+      await getHistories(app, { workspaceId }),
       [],
       'should able to list history after user have permission'
     );
@@ -696,24 +738,24 @@ test('should reject request that user have not permission', async t => {
   {
     const sessionId = await createCopilotSession(
       app,
-      anotherToken,
       workspaceId,
       randomUUID(),
-      promptName
+      textPromptName
     );
 
-    const messageId = await createCopilotMessage(app, anotherToken, sessionId);
-    await chatWithText(app, anotherToken, sessionId, messageId);
+    const messageId = await createCopilotMessage(app, sessionId);
+    await chatWithText(app, sessionId, messageId);
 
-    const histories = await getHistories(app, anotherToken, { workspaceId });
+    const histories = await getHistories(app, { workspaceId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
       [['generate text to text']],
       'should able to list history'
     );
 
+    await app.switchUser(u1);
     t.deepEqual(
-      await getHistories(app, token, { workspaceId }),
+      await getHistories(app, { workspaceId }),
       [],
       'should not list history created by another user'
     );
@@ -723,6 +765,224 @@ test('should reject request that user have not permission', async t => {
 test('should be able to search image from unsplash', async t => {
   const { app } = t.context;
 
-  const resp = await unsplashSearch(app, token);
+  const resp = await unsplashSearch(app);
   t.not(resp.status, 404, 'route should be exists');
+});
+
+test('should be able to manage context', async t => {
+  const { app, context, jobs } = t.context;
+
+  const { id: workspaceId } = await createWorkspace(app);
+  const sessionId = await createCopilotSession(
+    app,
+    workspaceId,
+    randomUUID(),
+    textPromptName
+  );
+
+  // use mocked embedding client
+  Sinon.stub(context, 'embeddingClient').get(() => new MockEmbeddingClient());
+  Sinon.stub(jobs, 'embeddingClient').get(() => new MockEmbeddingClient());
+
+  {
+    await t.throwsAsync(
+      createCopilotContext(app, workspaceId, randomUUID()),
+      { instanceOf: Error },
+      'should throw error if create context with invalid session id'
+    );
+
+    const context = await createCopilotContext(app, workspaceId, sessionId);
+
+    const list = await listContext(app, workspaceId, sessionId);
+    t.deepEqual(
+      list.map(f => ({ id: f.id })),
+      [{ id: context }],
+      'should list context'
+    );
+  }
+
+  const fs = await import('node:fs');
+  const buffer = fs.readFileSync(
+    ProjectRoot.join('packages/common/native/fixtures/sample.pdf').toFileUrl()
+  );
+
+  // match files
+  {
+    const contextId = await createCopilotContext(app, workspaceId, sessionId);
+
+    const { id: fileId } = await addContextFile(
+      app,
+      contextId,
+      'fileId1',
+      'sample.pdf',
+      buffer
+    );
+
+    const { files } =
+      (await listContextDocAndFiles(app, workspaceId, sessionId, contextId)) ||
+      {};
+    t.snapshot(
+      cleanObject(files, ['id', 'error', 'createdAt']),
+      'should list context files'
+    );
+
+    // wait for processing
+    {
+      let { files } =
+        (await listContextDocAndFiles(
+          app,
+          workspaceId,
+          sessionId,
+          contextId
+        )) || {};
+
+      while (files?.[0].status !== 'finished') {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        ({ files } =
+          (await listContextDocAndFiles(
+            app,
+            workspaceId,
+            sessionId,
+            contextId
+          )) || {});
+      }
+    }
+
+    const result = (await matchFiles(app, contextId, 'test', 1))!;
+    t.is(result.length, 1, 'should match context');
+    t.is(result[0].fileId, fileId, 'should match file id');
+  }
+
+  // match docs
+  {
+    const sessionId = await createCopilotSession(
+      app,
+      workspaceId,
+      randomUUID(),
+      textPromptName
+    );
+    const contextId = await createCopilotContext(app, workspaceId, sessionId);
+
+    const docId = 'docId1';
+    await t.context.db.snapshot.create({
+      data: {
+        workspaceId: workspaceId,
+        id: docId,
+        blob: Buffer.from([1, 1]),
+        state: Buffer.from([1, 1]),
+        updatedAt: new Date(),
+        createdAt: new Date(),
+      },
+    });
+
+    await addContextDoc(app, contextId, docId);
+
+    const { docs } =
+      (await listContextDocAndFiles(app, workspaceId, sessionId, contextId)) ||
+      {};
+    t.snapshot(
+      cleanObject(docs, ['error', 'createdAt']),
+      'should list context docs'
+    );
+
+    // wait for processing
+    {
+      let { docs } =
+        (await listContextDocAndFiles(
+          app,
+          workspaceId,
+          sessionId,
+          contextId
+        )) || {};
+
+      while (docs?.[0].status !== 'finished') {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        ({ docs } =
+          (await listContextDocAndFiles(
+            app,
+            workspaceId,
+            sessionId,
+            contextId
+          )) || {});
+      }
+    }
+
+    const result = (await matchWorkspaceDocs(app, contextId, 'test', 1))!;
+    t.is(result.length, 1, 'should match context');
+    t.is(result[0].docId, docId, 'should match doc id');
+  }
+});
+
+test('should be able to transcript', async t => {
+  const { app } = t.context;
+
+  const { id: workspaceId } = await createWorkspace(app);
+
+  Sinon.stub(app.get(GeminiProvider), 'generateText').resolves(
+    '[{"a":"A","s":30,"e":45,"t":"Hello, everyone."},{"a":"B","s":46,"e":70,"t":"Hi, thank you for joining the meeting today."}]'
+  );
+
+  {
+    const job = await submitAudioTranscription(app, workspaceId, '1', '1.mp3', [
+      Buffer.from([1, 1]),
+    ]);
+    t.snapshot(
+      cleanObject([job], ['id']),
+      'should submit audio transcription job'
+    );
+    t.truthy(job.id, 'should have job id');
+
+    // wait for processing
+    {
+      let { status } =
+        (await audioTranscription(app, workspaceId, job.id)) || {};
+
+      while (status !== 'finished') {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        ({ status } =
+          (await audioTranscription(app, workspaceId, job.id)) || {});
+      }
+    }
+
+    {
+      const result = await claimAudioTranscription(app, job.id);
+      t.snapshot(
+        cleanObject([result], ['id']),
+        'should claim audio transcription job'
+      );
+    }
+  }
+
+  {
+    // sliced audio
+    const job = await submitAudioTranscription(app, workspaceId, '2', '2.mp3', [
+      Buffer.from([1, 1]),
+      Buffer.from([1, 2]),
+    ]);
+    t.snapshot(
+      cleanObject([job], ['id']),
+      'should submit audio transcription job'
+    );
+    t.truthy(job.id, 'should have job id');
+
+    // wait for processing
+    {
+      let { status } =
+        (await audioTranscription(app, workspaceId, job.id)) || {};
+
+      while (status !== 'finished') {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        ({ status } =
+          (await audioTranscription(app, workspaceId, job.id)) || {});
+      }
+    }
+
+    {
+      const result = await claimAudioTranscription(app, job.id);
+      t.snapshot(
+        cleanObject([result], ['id']),
+        'should claim audio transcription job'
+      );
+    }
+  }
 });

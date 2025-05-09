@@ -47,17 +47,24 @@ export const generateSubscriptionCallbackLink = (
   account: AuthAccountInfo | null,
   plan: SubscriptionPlan,
   recurring: SubscriptionRecurring,
-  workspaceId?: string
+  workspaceId?: string,
+  clientScheme?: string
 ) => {
-  if (account === null) {
-    throw new Error('Account is required');
-  }
   const baseUrl =
     plan === SubscriptionPlan.AI
       ? '/ai-upgrade-success'
       : plan === SubscriptionPlan.Team
         ? '/upgrade-success/team'
-        : '/upgrade-success';
+        : plan === SubscriptionPlan.SelfHostedTeam
+          ? '/upgrade-success/self-hosted-team'
+          : '/upgrade-success';
+
+  if (plan === SubscriptionPlan.SelfHostedTeam) {
+    return baseUrl;
+  }
+  if (account === null) {
+    throw new Error('Account is required');
+  }
 
   let name = account?.info?.name ?? '';
   if (name.includes(separator)) {
@@ -73,7 +80,7 @@ export const generateSubscriptionCallbackLink = (
     workspaceId ?? '',
   ].join(separator);
 
-  return `${baseUrl}?info=${encodeURIComponent(query)}`;
+  return `${baseUrl}?info=${encodeURIComponent(query)}${clientScheme ? `&client=${clientScheme}` : ''}`;
 };
 
 export const getSubscriptionInfo = (searchParams: URLSearchParams) => {

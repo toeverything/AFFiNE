@@ -12,7 +12,7 @@ function createStorageEvent(key: string, newValue: string) {
 
 const setItem = function (key: string, value: string) {
   const oldValue = localStorage.getItem(key);
-  localStorage.setItem.call(localStorage, key, value);
+  localStorage.setItem(key, value);
   if (oldValue !== value) createStorageEvent(key, value);
 };
 

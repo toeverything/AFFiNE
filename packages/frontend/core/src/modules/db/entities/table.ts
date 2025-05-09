@@ -2,7 +2,8 @@ import type {
   Table as OrmTable,
   TableSchemaBuilder,
 } from '@toeverything/infra';
-import { Entity } from '@toeverything/infra';
+import { Entity, LiveData } from '@toeverything/infra';
+import { map } from 'rxjs';
 
 import type { WorkspaceService } from '../../workspace';
 
@@ -18,13 +19,19 @@ export class WorkspaceDBTable<
     super();
   }
 
-  isSyncing$ = this.workspaceService.workspace.engine.doc
-    .docState$(this.props.storageDocId)
-    .map(docState => docState.syncing);
+  isSyncing$ = LiveData.from(
+    this.workspaceService.workspace.engine.doc
+      .docState$(this.props.storageDocId)
+      .pipe(map(docState => docState.syncing)),
+    false
+  );
 
-  isLoading$ = this.workspaceService.workspace.engine.doc
-    .docState$(this.props.storageDocId)
-    .map(docState => docState.loading);
+  isLoading$ = LiveData.from(
+    this.workspaceService.workspace.engine.doc
+      .docState$(this.props.storageDocId)
+      .pipe(map(docState => !docState.loaded)),
+    false
+  );
 
   create = this.table.create.bind(this.table) as typeof this.table.create;
   update = this.table.update.bind(this.table) as typeof this.table.update;
@@ -34,6 +41,9 @@ export class WorkspaceDBTable<
   find = this.table.find.bind(this.table) as typeof this.table.find;
   // eslint-disable-next-line rxjs/finnish
   find$ = this.table.find$.bind(this.table) as typeof this.table.find$;
+  select = this.table.select.bind(this.table) as typeof this.table.select;
+  // eslint-disable-next-line rxjs/finnish
+  select$ = this.table.select$.bind(this.table) as typeof this.table.select$;
   keys = this.table.keys.bind(this.table) as typeof this.table.keys;
   delete = this.table.delete.bind(this.table) as typeof this.table.delete;
 }

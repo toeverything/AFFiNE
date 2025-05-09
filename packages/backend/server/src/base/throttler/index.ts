@@ -24,14 +24,19 @@ export class ThrottlerStorage extends ThrottlerStorageService {}
 
 @Injectable()
 class CustomOptionsFactory implements ThrottlerOptionsFactory {
-  constructor(private readonly storage: ThrottlerStorage) {}
+  constructor(
+    private readonly config: Config,
+    private readonly storage: ThrottlerStorage
+  ) {}
 
   createThrottlerOptions() {
     const options: ThrottlerModuleOptions = {
-      throttlers: Object.entries(AFFiNE.throttler).map(([name, config]) => ({
-        name,
-        ...config,
-      })),
+      throttlers: Object.entries(this.config.throttle.throttlers).map(
+        ([name, config]) => ({
+          name,
+          ...config,
+        })
+      ),
       storage: this.storage,
     };
 
@@ -84,6 +89,7 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
       ttl,
       blockDuration,
     } = request;
+
     let limit = request.limit;
 
     // give it 'default' if no throttler is specified,
@@ -110,13 +116,9 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
 
     let tracker = await this.getTracker(req);
 
-    if (this.config.node.dev) {
-      limit = Number.MAX_SAFE_INTEGER;
-    } else {
-      // custom limit or ttl APIs will be treated standalone
-      if (limit !== throttlerOptions.limit || ttl !== throttlerOptions.ttl) {
-        tracker += ';custom';
-      }
+    // custom limit or ttl APIs will be treated standalone
+    if (limit !== throttlerOptions.limit || ttl !== throttlerOptions.ttl) {
+      tracker += ';custom';
     }
 
     const key = this.generateKey(
@@ -151,6 +153,10 @@ export class CloudThrottlerGuard extends ThrottlerGuard {
   }
 
   override async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (!this.config.throttle.enabled) {
+      return true;
+    }
+
     const { req } = this.getRequestResponse(context);
 
     const throttler = this.getSpecifiedThrottler(context);

@@ -1,6 +1,6 @@
 import type { FlagInfo } from './types';
 
-const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
+// const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
 const isDesktopEnvironment = BUILD_CONFIG.isElectron;
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
 const isMobile = BUILD_CONFIG.isMobileEdition;
@@ -22,43 +22,7 @@ export const AFFINE_FLAGS = {
       'com.affine.settings.workspace.experimental-features.enable-ai-network-search.name',
     description:
       'com.affine.settings.workspace.experimental-features.enable-ai-network-search.description',
-    configurable: true,
-    defaultState: false,
-  },
-  enable_database_full_width: {
-    category: 'blocksuite',
-    bsFlag: 'enable_database_full_width',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-database-full-width.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-database-full-width.description',
-    configurable: isCanaryBuild,
-  },
-  enable_database_attachment_note: {
-    category: 'blocksuite',
-    bsFlag: 'enable_database_attachment_note',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-database-attachment-note.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-database-attachment-note.description',
-    configurable: isNotStableBuild,
-  },
-  enable_block_query: {
-    category: 'blocksuite',
-    bsFlag: 'enable_block_query',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-block-query.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-block-query.description',
-    configurable: isCanaryBuild,
-  },
-  enable_synced_doc_block: {
-    category: 'blocksuite',
-    bsFlag: 'enable_synced_doc_block',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-synced-doc-block.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-synced-doc-block.description',
+    hide: true,
     configurable: false,
     defaultState: true,
   },
@@ -112,6 +76,37 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: true,
   },
+  enable_block_meta: {
+    category: 'blocksuite',
+    bsFlag: 'enable_block_meta',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-block-meta.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-block-meta.description',
+    configurable: isCanaryBuild,
+    defaultState: true,
+  },
+  enable_callout: {
+    category: 'blocksuite',
+    bsFlag: 'enable_callout',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-callout.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-callout.description',
+    configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
+  },
+  enable_citation: {
+    category: 'blocksuite',
+    bsFlag: 'enable_citation',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-citation.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-citation.description',
+    configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
+  },
+
   enable_emoji_folder_icon: {
     category: 'affine',
     displayName:
@@ -145,15 +140,6 @@ export const AFFINE_FLAGS = {
       'com.affine.settings.workspace.experimental-features.enable-editor-settings.description',
     configurable: false,
     defaultState: true,
-  },
-  enable_offline_mode: {
-    category: 'affine',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-offline-mode.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-offline-mode.description',
-    configurable: isDesktopEnvironment,
-    defaultState: false,
   },
   enable_theme_editor: {
     category: 'affine',
@@ -210,7 +196,7 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.description',
     configurable: false,
-    defaultState: isDesktopEnvironment,
+    defaultState: isDesktopEnvironment || BUILD_CONFIG.isIOS,
   },
   enable_mobile_edgeless_editing: {
     category: 'affine',
@@ -230,13 +216,71 @@ export const AFFINE_FLAGS = {
     configurable: !isMobile,
     defaultState: false,
   },
-  // TODO(@CatsJuice): remove this flag when ready
-  enable_template_doc: {
+  enable_editor_rtl: {
     category: 'affine',
-    displayName: 'Enable template doc',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-editor-rtl.name',
     description:
-      'Allow users to mark a doc as a template, and create new docs from it',
-    configurable: !isMobile,
+      'com.affine.settings.workspace.experimental-features.enable-editor-rtl.description',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_mobile_ai_button: {
+    category: 'affine',
+    displayName: 'Enable AI Button',
+    description: 'Enable AI Button on mobile',
+    configurable: BUILD_CONFIG.isMobileEdition,
+    defaultState: false,
+  },
+  enable_turbo_renderer: {
+    category: 'blocksuite',
+    bsFlag: 'enable_turbo_renderer',
+    displayName: 'Enable Turbo Renderer',
+    description: 'Enable experimental edgeless turbo renderer',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_edgeless_scribbled_style: {
+    category: 'blocksuite',
+    bsFlag: 'enable_edgeless_scribbled_style',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-edgeless-scribbled-style.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-edgeless-scribbled-style.description',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_table_virtual_scroll: {
+    category: 'blocksuite',
+    bsFlag: 'enable_table_virtual_scroll',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.description',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  // TODO(@L-Sun): remove this flag after the feature is released
+  enable_embed_doc_with_alias: {
+    category: 'blocksuite',
+    bsFlag: 'enable_embed_doc_with_alias',
+    displayName: 'Embed doc with alias',
+    description: 'Embed doc with alias',
+    configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
+  },
+  enable_setting_subpage_animation: {
+    category: 'affine',
+    displayName: 'Enable Setting Subpage Animation',
+    description: 'Apply animation for setting subpage open/close',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_calendar_integration: {
+    category: 'affine',
+    displayName: 'Enable Calendar Integration',
+    description: 'Enable calendar integration',
+    configurable: false,
     defaultState: isCanaryBuild,
   },
 } satisfies { [key in string]: FlagInfo };

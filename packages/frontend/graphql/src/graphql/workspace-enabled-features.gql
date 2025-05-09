@@ -1,5 +1,0 @@
-query enabledFeatures($id: String!) {
-  workspace(id: $id) {
-    features
-  }
-}

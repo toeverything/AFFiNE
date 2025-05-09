@@ -1,4 +1,7 @@
 replicaCount: 3
+enabled: false
+database: 
+  connectionName: ""
 
 image:
   # the tag is defined as chart appVersion.

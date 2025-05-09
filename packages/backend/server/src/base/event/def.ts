@@ -1,61 +1,48 @@
-import type { Snapshot, User, Workspace } from '@prisma/client';
+import { OnOptions } from 'eventemitter2';
 
-import { Flatten, Payload } from './types';
+import { PushMetadata, sliceMetadata } from '../nestjs/decorator';
 
-export interface WorkspaceEvents {
-  members: {
-    reviewRequested: Payload<{ inviteId: string }>;
-    requestDeclined: Payload<{
-      userId: User['id'];
-      workspaceId: Workspace['id'];
-    }>;
-    requestApproved: Payload<{ inviteId: string }>;
-    roleChanged: Payload<{
-      userId: User['id'];
-      workspaceId: Workspace['id'];
-      permission: number;
-    }>;
-    ownerTransferred: Payload<{ email: string; workspaceId: Workspace['id'] }>;
-    updated: Payload<{ workspaceId: Workspace['id']; count: number }>;
-  };
-  deleted: Payload<Workspace['id']>;
-  blob: {
-    deleted: Payload<{
-      workspaceId: Workspace['id'];
-      key: string;
-    }>;
-    sync: Payload<{
-      workspaceId: Workspace['id'];
-      key: string;
-    }>;
-  };
+declare global {
+  /**
+   * Event definitions can be extended by
+   *
+   * @example
+   *
+   * declare global {
+   *   interface Events {
+   *     'user.subscription.created': {
+   *       userId: User['id'];
+   *     }
+   *   }
+   * }
+   */
+  interface Events {}
 }
 
-export interface DocEvents {
-  deleted: Payload<Pick<Snapshot, 'id' | 'workspaceId'>>;
-  updated: Payload<Pick<Snapshot, 'id' | 'workspaceId'>>;
+export type EventName = keyof Events;
+export const EVENT_LISTENER_METADATA = Symbol('event_listener');
+
+interface EventHandlerMetadata {
+  namespace: string;
+  event: EventName;
+  opts?: OnOptions;
 }
 
-/**
- * Event definitions can be extended by
- *
- * @example
- *
- * declare module './event/def' {
- *   interface UserEvents {
- *     created: Payload<User>;
- *   }
- * }
- *
- * assert<Event, 'user.created'>()
- */
-export interface EventDefinitions {
-  workspace: WorkspaceEvents;
-  snapshot: DocEvents;
+export interface EventOptions extends OnOptions {
+  prepend?: boolean;
+  name?: string;
+  suppressError?: boolean;
 }
 
-export type EventKV = Flatten<EventDefinitions>;
+export const OnEvent = (event: EventName, opts?: EventOptions) => {
+  const namespace = event.split('.')[0];
+  return PushMetadata<EventHandlerMetadata>(EVENT_LISTENER_METADATA, {
+    namespace,
+    event,
+    opts,
+  });
+};
 
-export type Event = keyof EventKV;
-export type EventPayload<E extends Event> = EventKV[E];
-export type { Payload };
+export function getEventHandlerMetadata(target: any): EventHandlerMetadata[] {
+  return sliceMetadata<EventHandlerMetadata>(EVENT_LISTENER_METADATA, target);
+}

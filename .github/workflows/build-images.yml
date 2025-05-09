@@ -13,30 +13,6 @@ permissions:
   packages: 'write'
 
 jobs:
-  build-server:
-    name: Build Server
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Version
-        id: version
-        uses: ./.github/actions/setup-version
-      - name: Setup Node.js
-        uses: ./.github/actions/setup-node
-        with:
-          electron-install: false
-          extra-flags: workspaces focus @affine/server
-      - name: Build Server
-        run: |
-          rm -rf packages/backend/server/src/__tests__
-          yarn workspace @affine/server build
-      - name: Upload server dist
-        uses: actions/upload-artifact@v4
-        with:
-          name: server-dist
-          path: ./packages/backend/server/dist
-          if-no-files-found: error
-
   build-web:
     name: Build @affine/web
     runs-on: ubuntu-latest
@@ -142,7 +118,7 @@ jobs:
       matrix:
         targets:
           - name: x86_64-unknown-linux-gnu
-            file: server-native.node
+            file: server-native.x64.node
           - name: aarch64-unknown-linux-gnu
             file: server-native.arm64.node
           - name: armv7-unknown-linux-gnueabihf
@@ -163,11 +139,46 @@ jobs:
         with:
           target: ${{ matrix.targets.name }}
           package: '@affine/server-native'
+      - name: Rename ${{ matrix.targets.file }}
+        run: |
+          mv ./packages/backend/native/server-native.node ./packages/backend/native/${{ matrix.targets.file }}
       - name: Upload ${{ matrix.targets.file }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.targets.file }}
-          path: ./packages/backend/native/server-native.node
+          name: server-native-${{ matrix.targets.file }}
+          path: ./packages/backend/native/${{ matrix.targets.file }}
+          if-no-files-found: error
+
+  build-server:
+    name: Build Server
+    runs-on: ubuntu-latest
+    needs:
+      - build-server-native
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
+      - name: Setup Node.js
+        uses: ./.github/actions/setup-node
+        with:
+          electron-install: false
+          extra-flags: workspaces focus @affine/server @types/affine__env
+      - name: Download server-native
+        uses: actions/download-artifact@v4
+        with:
+          pattern: server-native-*
+          merge-multiple: true
+          path: ./packages/backend/native
+      - name: List server-native files
+        run: ls -alh ./packages/backend/native
+      - name: Build Server
+        run: yarn workspace @affine/server build
+      - name: Upload server dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-dist
+          path: ./packages/backend/server/dist
           if-no-files-found: error
 
   build-images:
@@ -178,7 +189,6 @@ jobs:
       - build-web
       - build-mobile
       - build-admin
-      - build-server-native
     steps:
       - uses: actions/checkout@v4
       - name: Download server dist
@@ -186,25 +196,6 @@ jobs:
         with:
           name: server-dist
           path: ./packages/backend/server/dist
-      - name: Download server-native.node
-        uses: actions/download-artifact@v4
-        with:
-          name: server-native.node
-          path: ./packages/backend/server
-      - name: Download server-native.node arm64
-        uses: actions/download-artifact@v4
-        with:
-          name: server-native.arm64.node
-          path: ./packages/backend/native
-      - name: Download server-native.node arm64
-        uses: actions/download-artifact@v4
-        with:
-          name: server-native.armv7.node
-          path: .
-      - name: move server-native files
-        run: |
-          mv ./packages/backend/native/server-native.node ./packages/backend/server/server-native.arm64.node
-          mv server-native.node ./packages/backend/server/server-native.armv7.node
       - name: Setup env
         run: |
           echo "GIT_SHORT_HASH=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
@@ -261,6 +252,9 @@ jobs:
 
       - name: Generate Prisma client
         run: yarn workspace @affine/server prisma generate
+
+      - name: Mv node_modules
+        run: mv ./node_modules ./packages/backend/server
 
       - name: Setup Version
         id: version

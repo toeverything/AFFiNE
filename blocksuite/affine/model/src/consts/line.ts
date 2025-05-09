@@ -13,7 +13,7 @@ export enum LineWidth {
   Twelve = 12,
 }
 
-export const LINE_WIDTHS = [
+export const BRUSH_LINE_WIDTHS = [
   LineWidth.Two,
   LineWidth.Four,
   LineWidth.Six,
@@ -22,8 +22,12 @@ export const LINE_WIDTHS = [
   LineWidth.Twelve,
 ];
 
+export const HIGHLIGHTER_LINE_WIDTHS = [10, 14, 18, 22, 26, 30];
+
+export const DEFAULT_HIGHLIGHTER_LINE_WIDTH = 22;
+
 /**
- * Use `DefaultTheme.StrokeColorMap` instead.
+ * Use `DefaultTheme.StrokeColorShortMap` instead.
  *
  * @deprecated
  */
@@ -44,7 +48,7 @@ export enum LineColor {
 export const LineColorMap = createEnumMap(LineColor);
 
 /**
- * Use `DefaultTheme.StrokeColorPalettes` instead.
+ * Use `DefaultTheme.StrokeColorShortPalettes` instead.
  *
  * @deprecated
  */

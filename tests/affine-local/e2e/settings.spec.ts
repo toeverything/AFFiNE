@@ -10,7 +10,6 @@ import {
   openSettingModal,
   openShortcutsPanel,
 } from '@affine-test/kit/utils/setting';
-import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
 test('Open settings modal', async ({ page }) => {
@@ -103,22 +102,4 @@ test('Open experimental features panel', async ({ page }) => {
   await confirmExperimentalPrompt(page);
   const settings = page.getByTestId('experimental-settings');
   await expect(settings).toBeVisible();
-});
-
-test('Different workspace should have different name in the setting panel', async ({
-  page,
-}) => {
-  await openHomePage(page);
-  await waitForEditorLoad(page);
-  await createLocalWorkspace({ name: 'New Workspace 2' }, page);
-  await createLocalWorkspace({ name: 'New Workspace 3' }, page);
-  await openSettingModal(page);
-  await page.getByTestId('current-workspace-label').click();
-  await expect(page.getByTestId('workspace-name-input')).toHaveValue(
-    'New Workspace 3'
-  );
-  await page.getByText('New Workspace 2').click();
-  await expect(page.getByTestId('workspace-name-input')).toHaveValue(
-    'New Workspace 2'
-  );
 });

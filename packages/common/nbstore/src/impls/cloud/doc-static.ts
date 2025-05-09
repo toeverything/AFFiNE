@@ -45,23 +45,28 @@ export class StaticCloudDocStorage extends DocStorageBase<CloudDocStorageOptions
   protected override async getDocSnapshot(
     docId: string
   ): Promise<DocRecord | null> {
-    const arrayBuffer = await this.connection.fetchArrayBuffer(
-      `/api/workspaces/${this.spaceId}/docs/${docId}`,
-      {
-        priority: 'high',
-        headers: {
-          Accept: 'application/octet-stream', // this is necessary for ios native fetch to return arraybuffer
-        },
+    try {
+      const arrayBuffer = await this.connection.fetchArrayBuffer(
+        `/api/workspaces/${this.spaceId}/docs/${docId}`,
+        {
+          priority: 'high',
+          headers: {
+            Accept: 'application/octet-stream', // this is necessary for ios native fetch to return arraybuffer
+          },
+        }
+      );
+      if (!arrayBuffer) {
+        return null;
       }
-    );
-    if (!arrayBuffer) {
+      return {
+        docId: docId,
+        bin: new Uint8Array(arrayBuffer),
+        timestamp: new Date(),
+      };
+    } catch (error) {
+      console.error(error);
       return null;
     }
-    return {
-      docId: docId,
-      bin: new Uint8Array(arrayBuffer),
-      timestamp: new Date(),
-    };
   }
   protected override setDocSnapshot(
     _snapshot: DocRecord,

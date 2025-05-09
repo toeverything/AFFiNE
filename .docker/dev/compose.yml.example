@@ -3,7 +3,7 @@ services:
   postgres:
     env_file:
       - .env
-    image: postgres:16
+    image: pgvector/pgvector:pg${DB_VERSION:-16}
     ports:
       - 5432:5432
     environment:

@@ -28,6 +28,6 @@ test('import from template should work', async ({ page }) => {
   const btn = page.getByTestId('import-template-to-workspace-btn');
 
   await btn.isVisible();
-  btn.click();
+  await btn.click();
   await waitForEditorLoad(page);
 });

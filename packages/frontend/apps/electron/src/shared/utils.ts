@@ -1,3 +1,5 @@
+import { join } from 'node:path';
+
 import type { EventBasedChannel } from 'async-call-rpc';
 
 export function getTime() {
@@ -41,4 +43,41 @@ export class MessageEventChannel implements EventBasedChannel {
   send(data: unknown) {
     this.worker.postMessage(data);
   }
+}
+
+export const resourcesPath = join(__dirname, `../resources`);
+
+// credit: https://github.com/facebook/fbjs/blob/main/packages/fbjs/src/core/shallowEqual.js
+export function shallowEqual<T>(objA: T, objB: T) {
+  if (Object.is(objA, objB)) {
+    return true;
+  }
+
+  if (
+    typeof objA !== 'object' ||
+    objA === null ||
+    typeof objB !== 'object' ||
+    objB === null
+  ) {
+    return false;
+  }
+
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
+
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+
+  // Test for A's keys different from B.
+  for (const key of keysA) {
+    if (
+      !Object.prototype.hasOwnProperty.call(objB, key) ||
+      !Object.is(objA[key as keyof T], objB[key as keyof T])
+    ) {
+      return false;
+    }
+  }
+
+  return true;
 }

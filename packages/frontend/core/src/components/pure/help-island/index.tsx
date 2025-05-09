@@ -1,5 +1,5 @@
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { GlobalDialogService } from '@affine/core/modules/dialogs';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { SettingTab } from '@affine/core/modules/dialogs/constant';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { UrlService } from '@affine/core/modules/url';
@@ -36,18 +36,18 @@ export const HelpIsland = () => {
   });
   const docId = useLiveData(globalContextService.globalContext.docId.$);
   const docMode = useLiveData(globalContextService.globalContext.docMode.$);
-  const globalDialogService = useService(GlobalDialogService);
+  const workspaceDialogService = useService(WorkspaceDialogService);
   const [spread, setShowSpread] = useState(false);
   const t = useI18n();
   const openSettingModal = useCallback(
     (tab: SettingTab) => {
       setShowSpread(false);
 
-      globalDialogService.open('setting', {
+      workspaceDialogService.open('setting', {
         activeTab: tab,
       });
     },
-    [globalDialogService]
+    [workspaceDialogService]
   );
   const openAbout = useCallback(
     () => openSettingModal('about'),

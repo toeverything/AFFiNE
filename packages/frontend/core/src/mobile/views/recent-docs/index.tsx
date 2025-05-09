@@ -4,7 +4,7 @@ import { useService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
 import { DocCard } from '../../components/doc-card';
-import { CollapsibleSection } from '../../components/explorer';
+import { CollapsibleSection } from '../../components/navigation';
 import * as styles from './styles.css';
 
 export const RecentDocs = ({ max = 5 }: { max?: number }) => {

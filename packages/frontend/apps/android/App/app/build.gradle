@@ -1,12 +1,23 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
+plugins {
+    alias libs.plugins.android.application
+    alias libs.plugins.kotlin.android
+    alias libs.plugins.kotlin.parcelize
+    alias libs.plugins.kotlin.serialization
+    alias libs.plugins.ksp
+    alias libs.plugins.rust.android
+    alias libs.plugins.compose
+    alias libs.plugins.google.service
+    alias libs.plugins.firebase.crashlytics
+    alias libs.plugins.hilt
+}
+
 apply from: 'capacitor.build.gradle'
 
 android {
-  namespace "app.affine.pro"
+    namespace "app.affine.pro"
     compileSdk rootProject.ext.compileSdkVersion
     ndkVersion = new File(sdkDirectory, "ndk").listFiles().sort().last().name
     defaultConfig {
@@ -14,26 +25,43 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName System.getenv('VERSION_NAME') ?: 'v1.0.0-local'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
-             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
-             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+            // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
         ndk {
-            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+            abiFilters 'arm64-v8a'
         }
+    }
+    buildFeatures {
+        compose true
+        buildConfig true
+        viewBinding true
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+        debug {
+            minifyEnabled false
+            debuggable true
+        }
     }
+    flavorDimensions = ['chanel']
+    productFlavors {
+        stable
+        beta
+        internal
+        canary
+    }
+
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
 }
 
@@ -42,49 +70,86 @@ repositories {
         dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
     }
 }
-
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
-    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
-    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
-    testImplementation "junit:junit:$junitVersion"
-    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
-    implementation "net.java.dev.jna:jna:5.16.0@aar"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1"
-    implementation 'androidx.core:core-ktx:1.15.0'
-}
+    implementation project(':service')
 
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.browser
+    implementation libs.timber
+
+    implementation libs.hilt.android.core
+    ksp libs.hilt.compiler
+
+    def composeBom = platform(libs.androidx.compose.bom)
+    implementation composeBom
+    implementation libs.androidx.activity.compose
+    implementation libs.androidx.compose.foundation.layout
+    implementation libs.androidx.compose.material3
+    implementation libs.androidx.compose.material.icons.extended
+    implementation libs.androidx.compose.runtime.livedata
+    implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.compose.ui.util
+    implementation libs.androidx.compose.ui.viewbinding
+    implementation libs.androidx.compose.ui.googlefonts
+    implementation libs.androidx.lifecycle.viewModelCompose
+    implementation libs.androidx.lifecycle.runtime.compose
+    implementation libs.androidx.navigation.compose
+    debugImplementation composeBom
+    debugImplementation libs.androidx.compose.ui.test.manifest
+    debugImplementation libs.androidx.compose.ui.tooling
+
+    implementation libs.androidx.coordinatorlayout
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.core.splashscreen
+    implementation libs.androidx.datastore.preferences
+    implementation libs.androidx.navigation.fragment
+    implementation libs.androidx.navigation.ui.ktx
+
+    implementation libs.apollo.runtime
+    implementation (libs.jna) {
+        artifact {
+            type = 'aar'
+        }
     }
-} catch(Exception ignored) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
-}
+    implementation libs.kotlinx.coroutines.android
+    implementation libs.kotlinx.serialization.json
 
-apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
+    implementation platform(libs.firebase.bom)
+    implementation libs.firebase.analytics
+    implementation libs.firebase.crashlytics
+    implementation libs.firebase.storage
+
+    implementation platform(libs.okhttp.bom)
+    implementation libs.okhttp
+    implementation libs.okhttp.coroutines
+    implementation libs.okhttp.logging
+    implementation libs.okhttp.sse
+
+    testImplementation libs.junit
+    androidTestImplementation libs.androidx.junit
+    androidTestImplementation libs.androidx.espresso.core
+}
 
 cargo {
-  module  = "../../../../mobile-native"
-  libname = "affine_mobile_native"
-  targets = ["arm64"]
-  pythonCommand = "python3.12"
-  targetDirectory = "../../../../../../target"
-  apiLevel = 28
-  targetIncludes = ["libaffine_mobile_native.so"]
-  profile = "release"
+    module = "../../../../mobile-native"
+    libname = "affine_mobile_native"
+    targets = ["arm64"]
+    pythonCommand = "python3"
+    targetDirectory = "../../../../../../target"
+    apiLevel = 28
+    targetIncludes = ["libaffine_mobile_native.so"]
+    profile = "release"
 }
 
 kotlin {
-  compilerOptions {
-    apiVersion = KotlinVersion.KOTLIN_2_0
-    jvmTarget = JvmTarget.JVM_17
-  }
+    compilerOptions {
+        apiVersion = KotlinVersion.KOTLIN_2_1
+        languageVersion = KotlinVersion.KOTLIN_2_1
+        jvmTarget = JvmTarget.JVM_21
+    }
 }
 
 afterEvaluate {

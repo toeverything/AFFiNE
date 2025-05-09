@@ -12,6 +12,7 @@ import { faker } from '@faker-js/faker';
 import { hash } from '@node-rs/argon2';
 import type { BrowserContext, Cookie, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import { type PrismaClient } from '@prisma/client';
 import type { Assertions } from 'ava';
 import { z } from 'zod';
 
@@ -34,7 +35,7 @@ export async function getTokenFromLatestMailMessage<A extends Assertions>(
   const emailContent = await getLatestMailMessage();
   const tokenMatch = emailContent.Content.Body.match(tokenRegex);
   const token = tokenMatch
-    ? decodeURIComponent(tokenMatch[1].replace(/=\r\n/, ''))
+    ? decodeURIComponent(tokenMatch[1].replaceAll('=\r\n', ''))
     : null;
   test?.truthy(token);
   return token;
@@ -57,12 +58,7 @@ const server = new Package('@affine/server');
 const require = createRequire(server.srcPath.join('index.ts').toFileUrl());
 
 export const runPrisma = async <T>(
-  cb: (
-    prisma: InstanceType<
-      // oxlint-disable-next-line @typescript-eslint/consistent-type-imports
-      typeof import('../../../../packages/backend/server/node_modules/@prisma/client').PrismaClient
-    >
-  ) => Promise<T>
+  cb: (prisma: PrismaClient) => Promise<T>
 ): Promise<T> => {
   const { PrismaClient } = require('@prisma/client');
   const client = new PrismaClient({
@@ -92,7 +88,7 @@ export async function addUserToWorkspace(
     if (workspace == null) {
       throw new Error(`workspace ${workspaceId} not found`);
     }
-    await client.workspaceUserPermission.create({
+    await client.workspaceUserRole.create({
       data: {
         workspaceId: workspace.id,
         userId,
@@ -119,9 +115,8 @@ export async function createRandomUser(): Promise<{
   const result = await runPrisma(async client => {
     const featureId = await client.feature
       .findFirst({
-        where: { feature: 'free_plan_v1' },
+        where: { name: 'free_plan_v1' },
         select: { id: true },
-        orderBy: { version: 'desc' },
       })
       .then(f => f!.id);
 
@@ -135,6 +130,8 @@ export async function createRandomUser(): Promise<{
             reason: 'created by test case',
             activated: true,
             featureId,
+            name: 'free_plan_v1',
+            type: 1,
           },
         },
       },
@@ -169,16 +166,14 @@ export async function createRandomAIUser(): Promise<{
   const result = await runPrisma(async client => {
     const freeFeatureId = await client.feature
       .findFirst({
-        where: { feature: 'free_plan_v1' },
+        where: { name: 'free_plan_v1' },
         select: { id: true },
-        orderBy: { version: 'desc' },
       })
       .then(f => f!.id);
     const aiFeatureId = await client.feature
       .findFirst({
-        where: { feature: 'unlimited_copilot' },
+        where: { name: 'unlimited_copilot' },
         select: { id: true },
-        orderBy: { version: 'desc' },
       })
       .then(f => f!.id);
 
@@ -193,11 +188,15 @@ export async function createRandomAIUser(): Promise<{
               reason: 'created by test case',
               activated: true,
               featureId: freeFeatureId,
+              name: 'free_plan_v1',
+              type: 1,
             },
             {
               reason: 'created by test case',
               activated: true,
               featureId: aiFeatureId,
+              name: 'unlimited_copilot',
+              type: 0,
             },
           ],
         },
@@ -282,7 +281,7 @@ export async function loginUserDirectly(
 
 export async function enableCloudWorkspace(page: Page) {
   await clickSideBarSettingButton(page);
-  await page.getByTestId('current-workspace-label').click();
+  await page.getByTestId('workspace-setting:preference').click();
   await page.getByTestId('publish-enable-affine-cloud-button').click();
   await page.getByTestId('confirm-enable-affine-cloud-button').click();
   // wait for upload and delete local workspace

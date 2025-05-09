@@ -1,28 +1,20 @@
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher } from '@blocksuite/global/utils';
+import type {
+  UniComponent,
+  UniComponentReturn,
+} from '@blocksuite/affine-shared/types';
+import { SignalWatcher } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import type { Signal } from '@preact/signals-core';
 import type { LitElement, PropertyValues, TemplateResult } from 'lit';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
-import type { Ref } from 'lit/directives/ref.js';
 import { type StyleInfo, styleMap } from 'lit/directives/style-map.js';
 
-export type UniComponentReturn<
-  Props = NonNullable<unknown>,
-  Expose extends NonNullable<unknown> = NonNullable<unknown>,
-> = {
-  update: (props: Props) => void;
-  unmount: () => void;
-  expose: Expose;
-};
-export type UniComponent<
-  Props = NonNullable<unknown>,
-  Expose extends NonNullable<unknown> = NonNullable<unknown>,
-> = (ele: HTMLElement, props: Props) => UniComponentReturn<Props, Expose>;
 export const renderUniLit = <Props, Expose extends NonNullable<unknown>>(
   uni: UniComponent<Props, Expose> | undefined,
   props?: Props,
   options?: {
-    ref?: Ref<Expose>;
+    ref?: Signal<Expose | undefined>;
     style?: Readonly<StyleInfo>;
     class?: string;
   }
@@ -45,18 +37,21 @@ export class UniLit<
     }
   `;
 
-  uniReturn?: UniComponentReturn<Props, Expose>;
+  uniReturn?: UniComponentReturn<Props>;
+
+  private _expose?: Expose;
 
   get expose(): Expose | undefined {
-    return this.uniReturn?.expose;
+    return this._expose;
   }
 
   private mount() {
-    this.uniReturn = this.uni?.(this, this.props);
-    if (this.ref) {
-      // @ts-expect-error FIXME: ts error
-      this.ref.value = this.uniReturn?.expose;
-    }
+    this.uniReturn = this.uni?.(this, this.props, value => {
+      if (this.ref) {
+        this.ref.value = value;
+        this._expose = value;
+      }
+    });
   }
 
   private unmount() {
@@ -91,7 +86,7 @@ export class UniLit<
   accessor props!: Props;
 
   @property({ attribute: false })
-  accessor ref: Ref<Expose> | undefined = undefined;
+  accessor ref: Signal<Expose | undefined> | undefined = undefined;
 
   @property({ attribute: false })
   accessor uni: UniComponent<Props, Expose> | undefined = undefined;
@@ -103,10 +98,12 @@ export const createUniComponentFromWebComponent = <
 >(
   component: typeof LitElement
 ): UniComponent<T, Expose> => {
-  return (ele, props) => {
+  return (ele, props, expose) => {
     const ins = new component();
     Object.assign(ins, props);
     ele.append(ins);
+    // @ts-expect-error ins.expose may not exist in all component instances
+    expose(ins.expose);
     return {
       update: props => {
         Object.assign(ins, props);
@@ -115,7 +112,6 @@ export const createUniComponentFromWebComponent = <
       unmount: () => {
         ins.remove();
       },
-      expose: ins as never as Expose,
     };
   };
 };
@@ -140,12 +136,13 @@ export class UniAnyRender<
 export const defineUniComponent = <T, Expose extends NonNullable<unknown>>(
   renderTemplate: (props: T, expose: Expose) => TemplateResult
 ): UniComponent<T, Expose> => {
-  return (ele, props) => {
+  return (ele, props, expose) => {
     const ins = new UniAnyRender<T, Expose>();
     ins.props = props;
     ins.expose = {} as Expose;
     ins.renderTemplate = renderTemplate;
     ele.append(ins);
+    expose(ins.expose);
     return {
       update: props => {
         ins.props = props;
@@ -154,7 +151,6 @@ export const defineUniComponent = <T, Expose extends NonNullable<unknown>>(
       unmount: () => {
         ins.remove();
       },
-      expose: ins.expose,
     };
   };
 };

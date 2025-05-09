@@ -28,6 +28,22 @@ extension IntelligentsChatController {
       fatalError()
     }
 
+    override var isUserInteractionEnabled: Bool {
+      didSet { updateAvailabilityStyles() }
+    }
+
+    func updateAvailabilityStyles() {
+      if isUserInteractionEnabled {
+        backButton.isEnabled = true
+        dropMenu.isEnabled = true
+        moreMenu.isEnabled = true
+      } else {
+        backButton.isEnabled = false
+        dropMenu.isEnabled = false
+        moreMenu.isEnabled = false
+      }
+    }
+
     @objc func navigateActionBack() {
       parentViewController?.dismissInContext()
     }

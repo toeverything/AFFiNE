@@ -1,21 +1,23 @@
 import './config';
 
-import { ServerFeature } from '../../core/config';
+import { Module } from '@nestjs/common';
+
+import { ServerConfigModule } from '../../core';
+import { DocStorageModule } from '../../core/doc';
 import { FeatureModule } from '../../core/features';
 import { PermissionModule } from '../../core/permission';
 import { QuotaModule } from '../../core/quota';
-import { Plugin } from '../registry';
+import { WorkspaceModule } from '../../core/workspaces';
+import {
+  CopilotContextDocJob,
+  CopilotContextResolver,
+  CopilotContextRootResolver,
+  CopilotContextService,
+} from './context';
 import { CopilotController } from './controller';
 import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
-import {
-  assertProvidersConfigs,
-  CopilotProviderService,
-  FalProvider,
-  OpenAIProvider,
-  PerplexityProvider,
-  registerCopilotProvider,
-} from './providers';
+import { CopilotProviderFactory, CopilotProviders } from './providers';
 import {
   CopilotResolver,
   PromptsManagementResolver,
@@ -23,34 +25,55 @@ import {
 } from './resolver';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
+import {
+  CopilotTranscriptionResolver,
+  CopilotTranscriptionService,
+} from './transcript';
 import { CopilotWorkflowExecutors, CopilotWorkflowService } from './workflow';
+import {
+  CopilotWorkspaceEmbeddingConfigResolver,
+  CopilotWorkspaceEmbeddingResolver,
+  CopilotWorkspaceService,
+} from './workspace';
 
-registerCopilotProvider(FalProvider);
-registerCopilotProvider(OpenAIProvider);
-registerCopilotProvider(PerplexityProvider);
-
-@Plugin({
-  name: 'copilot',
-  imports: [FeatureModule, QuotaModule, PermissionModule],
+@Module({
+  imports: [
+    DocStorageModule,
+    FeatureModule,
+    QuotaModule,
+    PermissionModule,
+    ServerConfigModule,
+    WorkspaceModule,
+  ],
   providers: [
+    // providers
+    ...CopilotProviders,
+    CopilotProviderFactory,
+    // services
     ChatSessionService,
     CopilotResolver,
     ChatMessageCache,
-    UserCopilotResolver,
     PromptService,
-    CopilotProviderService,
     CopilotStorage,
-    PromptsManagementResolver,
+    // workflow
     CopilotWorkflowService,
     ...CopilotWorkflowExecutors,
+    // context
+    CopilotContextResolver,
+    CopilotContextService,
+    CopilotContextDocJob,
+    // transcription
+    CopilotTranscriptionService,
+    CopilotTranscriptionResolver,
+    // workspace embeddings
+    CopilotWorkspaceService,
+    CopilotWorkspaceEmbeddingResolver,
+    CopilotWorkspaceEmbeddingConfigResolver,
+    // gql resolvers
+    UserCopilotResolver,
+    PromptsManagementResolver,
+    CopilotContextRootResolver,
   ],
   controllers: [CopilotController],
-  contributesTo: ServerFeature.Copilot,
-  if: config => {
-    if (config.flavor.graphql) {
-      return assertProvidersConfigs(config);
-    }
-    return false;
-  },
 })
 export class CopilotModule {}

@@ -1,9 +1,8 @@
-import type { BlockComponent, Command } from '@blocksuite/block-std';
-import { assertExists } from '@blocksuite/global/utils';
+import type { BlockComponent, BlockStdScope, Command } from '@blocksuite/std';
 
 import { getPrevContentBlock } from '../../utils/index.js';
 
-function getPrevBlock(std: BlockSuite.Std, path: string) {
+function getPrevBlock(std: BlockStdScope, path: string) {
   const view = std.view;
 
   const model = std.store.getBlock(path)?.model;
@@ -14,17 +13,21 @@ function getPrevBlock(std: BlockSuite.Std, path: string) {
 }
 
 export const getPrevBlockCommand: Command<
-  'currentSelectionPath',
-  'prevBlock',
   {
+    currentSelectionPath?: string;
     path?: string;
+  },
+  {
+    prevBlock?: BlockComponent;
   }
 > = (ctx, next) => {
   const path = ctx.path ?? ctx.currentSelectionPath;
-  assertExists(
-    path,
-    '`path` is required, you need to pass it in args or ctx before adding this command to the pipeline.'
-  );
+  if (!path) {
+    console.error(
+      '`path` is required, you need to pass it in args or ctx before adding this command to the pipeline.'
+    );
+    return;
+  }
 
   const prevBlock = getPrevBlock(ctx.std, path);
 
@@ -32,15 +35,3 @@ export const getPrevBlockCommand: Command<
     next({ prevBlock });
   }
 };
-
-declare global {
-  namespace BlockSuite {
-    interface CommandContext {
-      prevBlock?: BlockComponent;
-    }
-
-    interface Commands {
-      getPrevBlock: typeof getPrevBlockCommand;
-    }
-  }
-}

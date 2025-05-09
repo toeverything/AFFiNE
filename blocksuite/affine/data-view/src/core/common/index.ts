@@ -5,5 +5,4 @@ export * from '../group-by/matcher.js';
 export type { GroupByConfig } from '../group-by/types.js';
 export type { GroupRenderProps } from '../group-by/types.js';
 export * from './css-variable.js';
-export * from './selection-schema.js';
 export * from './types.js';

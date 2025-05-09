@@ -15,6 +15,7 @@ export interface MenuItemProps extends React.HTMLAttributes<HTMLDivElement> {
   // if onCollapsedChange is given, but collapsed is undefined, then we will render the collapse button as disabled
   onCollapsedChange?: (collapsed: boolean) => void;
   postfix?: React.ReactElement;
+  postfixDisplay?: 'always' | 'hover';
 }
 
 export interface MenuLinkItemProps extends MenuItemProps {
@@ -37,6 +38,7 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
       collapsed,
       onCollapsedChange,
       postfix,
+      postfixDisplay = 'hover',
       ...props
     },
     ref
@@ -80,7 +82,11 @@ export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
 
         <div className={styles.content}>{children}</div>
         {postfix ? (
-          <div className={styles.postfix} onClick={stopPropagation}>
+          <div
+            className={styles.postfix}
+            data-postfix-display={postfixDisplay}
+            onClick={stopPropagation}
+          >
             {postfix}
           </div>
         ) : null}

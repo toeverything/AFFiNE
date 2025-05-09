@@ -10,57 +10,12 @@ fullnameOverride: ''
 # map to NODE_ENV environment variable
 env: 'production'
 app:
-  experimental:
-    enableJwstCodec: true
   # AFFINE_SERVER_SUB_PATH
   path: ''
   # AFFINE_SERVER_HOST
   host: '0.0.0.0'
   https: true
-  doc:
-    mergeInterval: "3000"
-  captcha:
-    enabled: false
-    secretName: captcha
-    turnstile:
-      secret: ''
-  copilot:
-    enabled: false
-    secretName: copilot
-    openai:
-      key: ''
-  oauth:
-    google:
-      enabled: false
-      secretName: oauth-google
-      clientId: ''
-      clientSecret: ''
-    github:
-      enabled: false
-      secretName: oauth-github
-      clientId: ''
-      clientSecret: ''
-  mailer:
-    secretName: 'mailer'
-    host: 'smtp.gmail.com'
-    port: '465'
-    user: ''
-    password: ''
-    sender: 'noreply@toeverything.info'
-  metrics:
-    enabled: false
-    secretName: 'metrics'
-    customerIo:
-      token: ''
-  payment:
-    stripe:
-      secretName: 'stripe'
-      apiKey: ''
-      webhookKey: ''
-  features:
-    earlyAccessPreview: false
-    syncClientVersionCheck: false
-
+  
 serviceAccount:
   create: true
   annotations: {}
@@ -73,8 +28,8 @@ podSecurityContext:
 
 resources:
   requests:
-    cpu: '4'
-    memory: 4Gi
+    cpu: '2'
+    memory: 2Gi
 
 probe:
   initialDelaySeconds: 20

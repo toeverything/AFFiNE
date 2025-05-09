@@ -16,7 +16,7 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/gonzalezreal/swift-markdown-ui", from: "2.4.1"),
     .package(url: "https://github.com/Lakr233/SpringInterpolation", from: "1.3.0"),
-    .package(url: "https://github.com/Lakr233/MSDisplayLink", from: "1.1.1"),
+    .package(url: "https://github.com/Lakr233/MSDisplayLink", from: "2.0.8"),
   ],
   targets: [
     .target(name: "Intelligents", dependencies: [

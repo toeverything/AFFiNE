@@ -1,3 +1,1 @@
-import { polyfillResizeObserver } from './resize-observer';
-
-polyfillResizeObserver();
+import './resize-observer';

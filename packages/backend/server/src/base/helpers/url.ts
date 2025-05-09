@@ -4,16 +4,23 @@ import { Injectable } from '@nestjs/common';
 import type { Response } from 'express';
 
 import { Config } from '../config';
+import { OnEvent } from '../event';
 
 @Injectable()
 export class URLHelper {
-  private readonly redirectAllowHosts: string[];
+  redirectAllowHosts!: string[];
 
-  readonly origin: string;
-  readonly baseUrl: string;
-  readonly home: string;
+  origin!: string;
+  baseUrl!: string;
+  home!: string;
 
   constructor(private readonly config: Config) {
+    this.init();
+  }
+
+  @OnEvent('config.changed')
+  @OnEvent('config.init')
+  init() {
     if (this.config.server.externalUrl) {
       if (!this.verify(this.config.server.externalUrl)) {
         throw new Error(
@@ -44,6 +51,24 @@ export class URLHelper {
 
   stringify(query: Record<string, any>) {
     return new URLSearchParams(query).toString();
+  }
+
+  addSimpleQuery(
+    url: string,
+    key: string,
+    value: string | number | boolean,
+    escape = true
+  ) {
+    const urlObj = new URL(url);
+    if (escape) {
+      urlObj.searchParams.set(key, encodeURIComponent(value));
+      return urlObj.toString();
+    } else {
+      const query =
+        (urlObj.search ? urlObj.search + '&' : '?') + `${key}=${value}`;
+
+      return urlObj.origin + urlObj.pathname + query;
+    }
   }
 
   url(path: string, query: Record<string, any> = {}) {

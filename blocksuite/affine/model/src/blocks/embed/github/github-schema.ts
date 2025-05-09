@@ -1,3 +1,5 @@
+import { BlockSchemaExtension } from '@blocksuite/store';
+
 import { createEmbedBlockSchema } from '../../../utils/index.js';
 import {
   type EmbedGithubBlockProps,
@@ -29,3 +31,7 @@ export const EmbedGithubBlockSchema = createEmbedBlockSchema({
   toModel: () => new EmbedGithubModel(),
   props: (): EmbedGithubBlockProps => defaultEmbedGithubProps,
 });
+
+export const EmbedGithubBlockSchemaExtension = BlockSchemaExtension(
+  EmbedGithubBlockSchema
+);

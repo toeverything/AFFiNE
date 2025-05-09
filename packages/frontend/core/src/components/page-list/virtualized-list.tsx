@@ -72,6 +72,7 @@ export const VirtualizedList = forwardRef<
   return (
     // push pageListProps to the atom so that downstream components can consume it
     // this makes sure pageListPropsAtom is always populated
+    // @ts-expect-error jotai-scope is not well typed, AnyWritableAtom is should be any rather than unknown
     <ListProvider initialValues={[[listPropsAtom, props]]}>
       <ListInnerWrapper {...props} handleRef={ref}>
         <ListInner {...props} />
@@ -151,7 +152,7 @@ const Scroller = forwardRef<
       <Scrollable.Viewport {...props} ref={ref}>
         {children}
       </Scrollable.Viewport>
-      <Scrollable.Scrollbar />
+      <Scrollable.Scrollbar style={{ zIndex: 1 }} />
     </Scrollable.Root>
   );
 });

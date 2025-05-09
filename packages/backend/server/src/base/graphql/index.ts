@@ -1,18 +1,15 @@
 import './config';
 
-import { STATUS_CODES } from 'node:http';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import type { ApolloDriverConfig } from '@nestjs/apollo';
 import { ApolloDriver } from '@nestjs/apollo';
-import { Global, HttpStatus, Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
-import { Request, Response } from 'express';
-import { GraphQLError } from 'graphql';
+import type { Request, Response } from 'express';
 
 import { Config } from '../config';
-import { UserFriendlyError } from '../error';
+import { mapAnyError } from '../nestjs/exception';
 import { GQLLoggerPlugin } from './logger-plugin';
 
 export type GraphqlContext = {
@@ -28,18 +25,23 @@ export type GraphqlContext = {
       driver: ApolloDriver,
       useFactory: (config: Config) => {
         return {
-          ...config.graphql,
-          path: `${config.server.path}/graphql`,
+          ...config.graphql.apolloDriverConfig,
+          buildSchemaOptions: {
+            numberScalarMode: 'integer',
+          },
+          useGlobalPrefix: true,
+          playground: true,
+          sortSchema: true,
+          autoSchemaFile: join(
+            env.projectRoot,
+            env.testing
+              ? './node_modules/.cache/schema.gql'
+              : './src/schema.gql'
+          ),
+          path: '/graphql',
           csrfPrevention: {
             requestHeaders: ['content-type'],
           },
-          autoSchemaFile: join(
-            fileURLToPath(import.meta.url),
-            config.node.dev
-              ? '../../../schema.gql'
-              : '../../../../node_modules/.cache/schema.gql'
-          ),
-          sortSchema: true,
           context: ({
             req,
             res,
@@ -51,30 +53,15 @@ export type GraphqlContext = {
             res,
             isAdminQuery: false,
           }),
-          includeStacktraceInErrorResponses: !config.node.prod,
           plugins: [new GQLLoggerPlugin()],
           formatError: (formattedError, error) => {
+            let ufe = mapAnyError(error);
+
             // @ts-expect-error allow assign
-            formattedError.extensions ??= {};
-
-            if (
-              error instanceof GraphQLError &&
-              error.originalError instanceof UserFriendlyError
-            ) {
-              // @ts-expect-error allow assign
-              formattedError.extensions = error.originalError.toJSON();
-              formattedError.extensions.stacktrace = error.originalError.stack;
-              return formattedError;
-            } else {
-              // @ts-expect-error allow assign
-              formattedError.message = 'Internal Server Error';
-
-              formattedError.extensions['status'] =
-                HttpStatus.INTERNAL_SERVER_ERROR;
-              formattedError.extensions['code'] =
-                STATUS_CODES[HttpStatus.INTERNAL_SERVER_ERROR];
+            formattedError.extensions = ufe.toJSON();
+            if (env.namespaces.canary) {
+              formattedError.extensions.stacktrace = ufe.stacktrace;
             }
-
             return formattedError;
           },
         };
@@ -84,3 +71,6 @@ export type GraphqlContext = {
   ],
 })
 export class GqlModule {}
+
+export * from './pagination';
+export { registerObjectType } from './register';

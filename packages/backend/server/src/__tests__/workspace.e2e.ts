@@ -1,191 +1,132 @@
-import type { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
-import request from 'supertest';
 
-import { AppModule } from '../app.module';
 import {
   acceptInviteById,
   createTestingApp,
   createWorkspace,
-  getWorkspacePublicPages,
+  getWorkspacePublicDocs,
   inviteUser,
-  publishPage,
-  revokePublicPage,
-  signUp,
+  publishDoc,
+  revokePublicDoc,
+  TestingApp,
   updateWorkspace,
 } from './utils';
 
 const test = ava as TestFn<{
-  app: INestApplication;
+  app: TestingApp;
   client: PrismaClient;
 }>;
 
-test.beforeEach(async t => {
-  const { app } = await createTestingApp({
-    imports: [AppModule],
-  });
+test.before(async t => {
+  const app = await createTestingApp();
 
   t.context.client = app.get(PrismaClient);
   t.context.app = app;
 });
 
-test.afterEach.always(async t => {
-  await t.context.app.close();
+test.beforeEach(async t => {
+  await t.context.app.initTestingDB();
 });
 
-test('should register a user', async t => {
-  const user = await signUp(t.context.app, 'u1', 'u1@affine.pro', '123456');
-  t.is(typeof user.id, 'string', 'user.id is not a string');
-  t.is(user.name, 'u1', 'user.name is not valid');
-  t.is(user.email, 'u1@affine.pro', 'user.email is not valid');
+test.after.always(async t => {
+  await t.context.app.close();
 });
 
 test('should create a workspace', async t => {
   const { app } = t.context;
-  const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
 
-  const workspace = await createWorkspace(app, user.token.token);
+  await app.signupV1('u1@affine.pro');
+  const workspace = await createWorkspace(app);
+
   t.is(typeof workspace.id, 'string', 'workspace.id is not a string');
 });
 
-test('should can publish workspace', async t => {
+test('should be able to publish workspace', async t => {
   const { app } = t.context;
-  const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
-  const workspace = await createWorkspace(app, user.token.token);
+  await app.signupV1('u1@affine.pro');
+  const workspace = await createWorkspace(app);
+  const isPublic = await updateWorkspace(app, workspace.id, true);
 
-  const isPublic = await updateWorkspace(
-    app,
-    user.token.token,
-    workspace.id,
-    true
-  );
   t.true(isPublic, 'failed to publish workspace');
 
-  const isPrivate = await updateWorkspace(
-    app,
-    user.token.token,
-    workspace.id,
-    false
-  );
+  const isPrivate = await updateWorkspace(app, workspace.id, false);
+
   t.false(isPrivate, 'failed to unpublish workspace');
 });
 
-test('should share a page', async t => {
+test('should visit public page', async t => {
   const { app } = t.context;
-  const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
-  const u2 = await signUp(app, 'u2', 'u2@affine.pro', '1');
+  await app.signupV1('u1@affine.pro');
 
-  const workspace = await createWorkspace(app, u1.token.token);
+  const workspace = await createWorkspace(app);
+  const share = await publishDoc(app, workspace.id, 'doc1');
 
-  const share = await publishPage(app, u1.token.token, workspace.id, 'page1');
-  t.is(share.id, 'page1', 'failed to share page');
-  const pages = await getWorkspacePublicPages(
-    app,
-    u1.token.token,
-    workspace.id
-  );
-  t.is(pages.length, 1, 'failed to get shared pages');
+  t.is(share.id, 'doc1', 'failed to share doc');
+
+  const docs = await getWorkspacePublicDocs(app, workspace.id);
+  t.is(docs.length, 1, 'failed to get shared docs');
   t.deepEqual(
-    pages[0],
-    { id: 'page1', mode: 'Page' },
-    'failed to get shared page: page1'
+    docs[0],
+    { id: 'doc1', mode: 'Page' },
+    'failed to get shared doc: doc1'
   );
 
-  const resp1 = await request(app.getHttpServer())
-    .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
-    .auth(u1.token.token, { type: 'bearer' });
+  const resp1 = await app.GET(
+    `/api/workspaces/${workspace.id}/docs/${workspace.id}`
+  );
   t.is(resp1.statusCode, 200, 'failed to get root doc with u1 token');
-  const resp2 = await request(app.getHttpServer()).get(
+  const resp2 = await app.GET(
     `/api/workspaces/${workspace.id}/docs/${workspace.id}`
   );
   t.is(resp2.statusCode, 200, 'failed to get root doc with public pages');
 
-  const resp3 = await request(app.getHttpServer())
-    .get(`/api/workspaces/${workspace.id}/docs/page1`)
-    .auth(u1.token.token, { type: 'bearer' });
+  const resp3 = await app.GET(`/api/workspaces/${workspace.id}/docs/doc1`);
   // 404 because we don't put the page doc to server
   t.is(resp3.statusCode, 404, 'failed to get shared doc with u1 token');
-  const resp4 = await request(app.getHttpServer()).get(
-    `/api/workspaces/${workspace.id}/docs/page1`
-  );
+  const resp4 = await app.GET(`/api/workspaces/${workspace.id}/docs/doc1`);
   // 404 because we don't put the page doc to server
   t.is(resp4.statusCode, 404, 'should not get shared doc without token');
 
-  const msg1 = await publishPage(app, u2.token.token, 'not_exists_ws', 'page2');
-  t.is(
-    msg1,
-    'You do not have permission to access Space not_exists_ws.',
-    'unauthorized user can share page'
-  );
-  const msg2 = await revokePublicPage(
-    app,
-    u2.token.token,
-    'not_exists_ws',
-    'page2'
-  );
-  t.is(
-    msg2,
-    'You do not have permission to access Space not_exists_ws.',
-    'unauthorized user can share page'
-  );
+  const revoke = await revokePublicDoc(app, workspace.id, 'doc1');
+  t.false(revoke.public, 'failed to revoke doc');
+  const docs2 = await getWorkspacePublicDocs(app, workspace.id);
+  t.is(docs2.length, 0, 'failed to get shared docs');
+  await t.throwsAsync(revokePublicDoc(app, workspace.id, 'doc3'), {
+    message: 'Doc is not public.',
+  });
 
-  await acceptInviteById(
-    app,
-    workspace.id,
-    await inviteUser(app, u1.token.token, workspace.id, u2.email)
-  );
-  const invited = await publishPage(app, u2.token.token, workspace.id, 'page2');
-  t.is(invited.id, 'page2', 'failed to share page');
-
-  const revoke = await revokePublicPage(
-    app,
-    u1.token.token,
-    workspace.id,
-    'page1'
-  );
-  t.false(revoke.public, 'failed to revoke page');
-  const pages2 = await getWorkspacePublicPages(
-    app,
-    u1.token.token,
-    workspace.id
-  );
-  t.is(pages2.length, 1, 'failed to get shared pages');
-  t.is(pages2[0].id, 'page2', 'failed to get shared page: page2');
-
-  const msg3 = await revokePublicPage(
-    app,
-    u1.token.token,
-    workspace.id,
-    'page3'
-  );
-  t.is(msg3, 'Page is not public');
-
-  const msg4 = await revokePublicPage(
-    app,
-    u1.token.token,
-    workspace.id,
-    'page2'
-  );
-  t.false(msg4.public, 'failed to revoke page');
-  const page3 = await getWorkspacePublicPages(
-    app,
-    u1.token.token,
-    workspace.id
-  );
-  t.is(page3.length, 0, 'failed to get shared pages');
+  const docs3 = await getWorkspacePublicDocs(app, workspace.id);
+  t.is(docs3.length, 0, 'failed to get shared docs');
 });
 
-test('should can get workspace doc', async t => {
+test('should not be able to public not permitted doc', async t => {
   const { app } = t.context;
-  const u1 = await signUp(app, 'u1', 'u1@affine.pro', '1');
-  const u2 = await signUp(app, 'u2', 'u2@affine.pro', '2');
-  const workspace = await createWorkspace(app, u1.token.token);
 
-  const res1 = await request(app.getHttpServer())
-    .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
-    .auth(u1.token.token, { type: 'bearer' })
+  await app.signupV1('u2@affine.pro');
+
+  await t.throwsAsync(publishDoc(app, 'not_exists_ws', 'doc2'), {
+    message:
+      'You do not have permission to perform Doc.Publish action on doc doc2.',
+  });
+
+  await t.throwsAsync(revokePublicDoc(app, 'not_exists_ws', 'doc2'), {
+    message:
+      'You do not have permission to perform Doc.Publish action on doc doc2.',
+  });
+});
+
+test('should be able to get workspace doc', async t => {
+  const { app } = t.context;
+  const u1 = await app.signupV1('u1@affine.pro');
+  const u2 = await app.signupV1('u2@affine.pro');
+
+  await app.switchUser(u1.id);
+  const workspace = await createWorkspace(app);
+
+  const res1 = await app
+    .GET(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
     .expect(200)
     .type('application/octet-stream');
 
@@ -195,28 +136,25 @@ test('should can get workspace doc', async t => {
     'failed to get doc with u1 token'
   );
 
-  await request(app.getHttpServer())
-    .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+  await app.switchUser(u2.id);
+  await app
+    .GET(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
     .expect(403);
-  await request(app.getHttpServer())
-    .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
-    .auth(u2.token.token, { type: 'bearer' })
-    .expect(403);
-
-  await request(app.getHttpServer())
-    .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
-    .auth(u2.token.token, { type: 'bearer' })
+  await app
+    .GET(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
     .expect(403);
 
-  await acceptInviteById(
-    app,
-    workspace.id,
-    await inviteUser(app, u1.token.token, workspace.id, u2.email)
-  );
+  await app
+    .GET(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+    .expect(403);
 
-  const res2 = await request(app.getHttpServer())
-    .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
-    .auth(u2.token.token, { type: 'bearer' })
+  await app.switchUser(u1.id);
+  const invite = await inviteUser(app, workspace.id, u2.email);
+  await app.switchUser(u2.id);
+  await acceptInviteById(app, workspace.id, invite);
+
+  const res2 = await app
+    .GET(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
     .expect(200)
     .type('application/octet-stream');
 
@@ -229,20 +167,15 @@ test('should can get workspace doc', async t => {
 
 test('should be able to get public workspace doc', async t => {
   const { app } = t.context;
-  const user = await signUp(app, 'u1', 'u1@affine.pro', '1');
-  const workspace = await createWorkspace(app, user.token.token);
+  await app.signupV1('u1@affine.pro');
 
-  const isPublic = await updateWorkspace(
-    app,
-    user.token.token,
-    workspace.id,
-    true
-  );
+  const workspace = await createWorkspace(app);
+  const isPublic = await updateWorkspace(app, workspace.id, true);
 
   t.true(isPublic, 'failed to publish workspace');
 
-  const res = await request(app.getHttpServer())
-    .get(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
+  const res = await app
+    .GET(`/api/workspaces/${workspace.id}/docs/${workspace.id}`)
     .expect(200)
     .type('application/octet-stream');
 

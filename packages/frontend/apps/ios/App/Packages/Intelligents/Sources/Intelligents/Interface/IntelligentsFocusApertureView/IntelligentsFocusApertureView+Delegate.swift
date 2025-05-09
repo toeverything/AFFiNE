@@ -15,5 +15,8 @@ public enum IntelligentsFocusApertureViewActionType: String {
 }
 
 public protocol IntelligentsFocusApertureViewDelegate: AnyObject {
-  func focusApertureRequestAction(actionType: IntelligentsFocusApertureViewActionType)
+  func focusApertureRequestAction(
+    from: IntelligentsFocusApertureView,
+    actionType: IntelligentsFocusApertureViewActionType
+  )
 }

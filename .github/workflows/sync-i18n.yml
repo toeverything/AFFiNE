@@ -53,7 +53,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: l10n_crowdin_translations
-    
+
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         with:

@@ -6,9 +6,10 @@ import {
   type AffineTheme,
   cssVar,
 } from '@toeverything/theme';
+export { cssVar } from '@toeverything/theme';
 import { type AffineThemeKeyV2, cssVarV2 } from '@toeverything/theme/v2';
 import { unsafeCSS } from 'lit';
-
+export { cssVarV2 } from '@toeverything/theme/v2';
 export const ColorVariables = [
   '--affine-brand-color',
   '--affine-primary-color',

@@ -41,7 +41,7 @@ export const TagItem = ({ tag, ...props }: TagItemProps) => {
       mode={props.mode === 'inline' ? 'inline-tag' : 'list-tag'}
       tag={{
         id: tag?.id,
-        value: value,
+        name: value,
         color: color,
       }}
     />

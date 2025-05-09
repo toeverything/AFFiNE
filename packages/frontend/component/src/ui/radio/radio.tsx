@@ -83,6 +83,7 @@ export const RadioGroup = memo(function RadioGroup({
   indicatorStyle,
   iconMode,
   onChange,
+  disabled,
 }: RadioProps) {
   const animationTImerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finalItems = useMemo(() => {
@@ -158,6 +159,7 @@ export const RadioGroup = memo(function RadioGroup({
       className={clsx(styles.radioButtonGroup, className)}
       style={finalStyle}
       data-icon-mode={iconMode}
+      disabled={disabled}
     >
       {finalItems.map(({ customRender, ...item }, index) => {
         const testId = item.testId ? { 'data-testid': item.testId } : {};
@@ -179,6 +181,7 @@ export const RadioGroup = memo(function RadioGroup({
             style={style}
             {...testId}
             {...item.attrs}
+            disabled={disabled}
           >
             <RadixRadioGroup.Indicator
               forceMount

@@ -7,7 +7,11 @@
       "request": "launch",
       "runtimeExecutable": "yarn",
       "cwd": "${workspaceFolder}",
-      "runtimeArgs": ["affine", "@affine/server", "dev"]
+      "runtimeArgs": [
+        "affine",
+        "@affine/server",
+        "dev"
+      ]
     },
     {
       "name": "Lanuch AFFiNE Web",
@@ -15,7 +19,17 @@
       "request": "launch",
       "runtimeExecutable": "yarn",
       "cwd": "${workspaceFolder}",
-      "runtimeArgs": ["affine", "@affine/web", "dev"]
+      "runtimeArgs": [
+        "affine",
+        "@affine/web",
+        "dev"
+      ]
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Debug AFFiNE Web",
+      "url": "http://localhost:8080"
     }
   ]
 }

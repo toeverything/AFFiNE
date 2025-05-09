@@ -1,16 +1,16 @@
-import type { EmbedCardStyle, ReferenceInfo } from '@blocksuite/affine-model';
-import type { BlockComponent } from '@blocksuite/block-std';
+import type {
+  EmbedCardStyle,
+  FootNote,
+  ReferenceInfo,
+} from '@blocksuite/affine-model';
+import type { BlockComponent } from '@blocksuite/std';
+import type { InlineEditor } from '@blocksuite/std/inline';
 import type { BlockModel } from '@blocksuite/store';
-
+export * from './uni-component';
 export interface EditingState {
   element: BlockComponent;
   model: BlockModel;
   rect: DOMRect;
-}
-
-export enum LassoMode {
-  FreeHand,
-  Polygonal,
 }
 
 export type NoteChildrenFlavour =
@@ -48,10 +48,7 @@ export type EmbedOptions = {
 export type IndentContext = {
   blockId: string;
   inlineIndex: number;
-  flavour: Extract<
-    keyof BlockSuite.BlockModels,
-    'affine:paragraph' | 'affine:list'
-  >;
+  flavour: string;
   type: 'indent' | 'dedent';
 };
 
@@ -70,4 +67,11 @@ export interface AffineTextAttributes {
   background?: string | null;
   color?: string | null;
   latex?: string | null;
+  footnote?: FootNote | null;
+  mention?: {
+    member: string;
+    notification?: string;
+  } | null;
 }
+
+export type AffineInlineEditor = InlineEditor<AffineTextAttributes>;

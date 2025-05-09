@@ -8,7 +8,12 @@ import {
   createChangePasswordUrlMutation,
   createUserMutation,
   deleteUserMutation,
+  disableUserMutation,
+  enableUserMutation,
   getUsersCountQuery,
+  type ImportUsersInput,
+  type ImportUsersMutation,
+  importUsersMutation,
   listUsersQuery,
   updateAccountFeaturesMutation,
   updateAccountMutation,
@@ -16,7 +21,15 @@ import {
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import type { UserInput } from '../schema';
+import type { UserInput, UserType } from '../schema';
+
+export interface ExportField {
+  id: string;
+  label: string;
+  checked: boolean;
+}
+
+export type UserImportReturnType = ImportUsersMutation['importUsers'];
 
 export const useCreateUser = () => {
   const {
@@ -162,6 +175,55 @@ export const useDeleteUser = () => {
   return deleteById;
 };
 
+export const useEnableUser = () => {
+  const { trigger: enableUserById } = useMutation({
+    mutation: enableUserMutation,
+  });
+
+  const revalidate = useMutateQueryResource();
+
+  const enableById = useAsyncCallback(
+    async (id: string, callback?: () => void) => {
+      await enableUserById({ id })
+        .then(async ({ enableUser }) => {
+          await revalidate(listUsersQuery);
+          toast(`User ${enableUser.email} enabled successfully`);
+          callback?.();
+        })
+        .catch(e => {
+          toast.error('Failed to enable user: ' + e.message);
+        });
+    },
+    [enableUserById, revalidate]
+  );
+
+  return enableById;
+};
+export const useDisableUser = () => {
+  const { trigger: disableUserById } = useMutation({
+    mutation: disableUserMutation,
+  });
+
+  const revalidate = useMutateQueryResource();
+
+  const disableById = useAsyncCallback(
+    async (id: string, callback?: () => void) => {
+      await disableUserById({ id })
+        .then(async ({ banUser }) => {
+          await revalidate(listUsersQuery);
+          toast(`User ${banUser.email} disabled successfully`);
+          callback?.();
+        })
+        .catch(e => {
+          toast.error('Failed to disable user: ' + e.message);
+        });
+    },
+    [disableUserById, revalidate]
+  );
+
+  return disableById;
+};
+
 export const useUserCount = () => {
   const {
     data: { usersCount },
@@ -169,4 +231,116 @@ export const useUserCount = () => {
     query: getUsersCountQuery,
   });
   return usersCount;
+};
+
+export const useImportUsers = () => {
+  const { trigger: importUsers } = useMutation({
+    mutation: importUsersMutation,
+  });
+  const revalidate = useMutateQueryResource();
+
+  const handleImportUsers = useCallback(
+    async (
+      input: ImportUsersInput,
+      callback?: (importUsers: UserImportReturnType) => void
+    ) => {
+      await importUsers({ input })
+        .then(async ({ importUsers }) => {
+          await revalidate(listUsersQuery);
+          callback?.(importUsers);
+        })
+        .catch(e => {
+          toast.error('Failed to import users: ' + e.message);
+        });
+    },
+    [importUsers, revalidate]
+  );
+
+  return handleImportUsers;
+};
+
+export const useExportUsers = () => {
+  const exportCSV = useCallback(
+    async (users: UserType[], fields: ExportField[], callback?: () => void) => {
+      const selectedFields = fields
+        .filter(field => field.checked)
+        .map(field => field.id);
+
+      if (selectedFields.length === 0) {
+        alert('Please select at least one field to export');
+        return;
+      }
+
+      const headers = selectedFields.map(
+        fieldId => fields.find(field => field.id === fieldId)?.label || fieldId
+      );
+
+      const csvRows = [headers.join(',')];
+
+      users.forEach(user => {
+        const row = selectedFields.map(fieldId => {
+          const value = user[fieldId as keyof UserType];
+
+          return typeof value === 'string'
+            ? `"${value.replace(/"/g, '""')}"`
+            : String(value);
+        });
+        csvRows.push(row.join(','));
+      });
+
+      const csvContent = csvRows.join('\n');
+
+      // Add BOM (Byte Order Mark) to force Excel to interpret the file as UTF-8
+      const BOM = '\uFEFF';
+      const csvContentWithBOM = BOM + csvContent;
+
+      const blob = new Blob([csvContentWithBOM], {
+        type: 'text/csv;charset=utf-8;',
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'exported_users.csv');
+      link.style.visibility = 'hidden';
+      document.body.append(link);
+      link.click();
+
+      setTimeout(() => {
+        link.remove();
+        URL.revokeObjectURL(url);
+      }, 100);
+
+      callback?.();
+    },
+    []
+  );
+
+  const copyToClipboard = useCallback(
+    async (users: UserType[], fields: ExportField[], callback?: () => void) => {
+      const selectedFields = fields
+        .filter(field => field.checked)
+        .map(field => field.id);
+
+      const dataToCopy: {
+        [key: string]: string;
+      }[] = [];
+      users.forEach(user => {
+        const row: { [key: string]: string } = {};
+        selectedFields.forEach(fieldId => {
+          const value = user[fieldId as keyof UserType];
+          row[fieldId] = typeof value === 'string' ? value : String(value);
+        });
+        dataToCopy.push(row);
+      });
+      navigator.clipboard.writeText(JSON.stringify(dataToCopy, null, 2));
+      callback?.();
+    },
+    []
+  );
+
+  return {
+    exportCSV,
+    copyToClipboard,
+  };
 };

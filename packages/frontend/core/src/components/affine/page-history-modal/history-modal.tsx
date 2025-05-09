@@ -1,8 +1,8 @@
-import { Loading, Scrollable } from '@affine/component';
+import { Avatar, Loading, Scrollable } from '@affine/component';
 import { EditorLoading } from '@affine/component/page-detail-skeleton';
 import { Button, IconButton } from '@affine/component/ui/button';
 import { Modal, useConfirmModal } from '@affine/component/ui/modal';
-import { GlobalDialogService } from '@affine/core/modules/dialogs';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { EditorService } from '@affine/core/modules/editor';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
@@ -10,7 +10,7 @@ import { WorkspaceQuotaService } from '@affine/core/modules/quota';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { i18nTime, Trans, useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import type { DocMode } from '@blocksuite/affine/blocks';
+import type { DocMode } from '@blocksuite/affine/model';
 import type { Store, Workspace } from '@blocksuite/affine/store';
 import { CloseIcon, ToggleRightIcon } from '@blocksuite/icons/rc';
 import * as Collapsible from '@radix-ui/react-collapsible';
@@ -29,9 +29,10 @@ import {
 } from 'react';
 import { encodeStateAsUpdate } from 'yjs';
 
+import { BlockSuiteEditor } from '../../../blocksuite/block-suite-editor';
+import { PureEditorModeSwitch } from '../../../blocksuite/block-suite-mode-switch';
 import { pageHistoryModalAtom } from '../../atoms/page-history';
-import { BlockSuiteEditor } from '../../blocksuite/block-suite-editor';
-import { PureEditorModeSwitch } from '../../blocksuite/block-suite-mode-switch';
+import { useGuard } from '../../guard';
 import { AffineErrorBoundary } from '../affine-error-boundary';
 import {
   historyListGroupByDay,
@@ -132,6 +133,7 @@ const HistoryEditorPreview = ({
                   className={styles.editor}
                   mode={mode}
                   page={snapshotPage}
+                  readonly={true}
                 />
               </Scrollable.Viewport>
               <Scrollable.Scrollbar />
@@ -187,18 +189,18 @@ const PlanPrompt = () => {
   }, [permissionService]);
 
   const [planPromptClosed, setPlanPromptClosed] = useAtom(planPromptClosedAtom);
-  const globalDialogService = useService(GlobalDialogService);
+  const workspaceDialogService = useService(WorkspaceDialogService);
   const closeFreePlanPrompt = useCallback(() => {
     setPlanPromptClosed(true);
   }, [setPlanPromptClosed]);
 
   const onClickUpgrade = useCallback(() => {
-    globalDialogService.open('setting', {
+    workspaceDialogService.open('setting', {
       activeTab: 'plans',
       scrollAnchor: 'cloudPricingPlan',
     });
     track.$.docHistory.$.viewPlans();
-  }, [globalDialogService]);
+  }, [workspaceDialogService]);
 
   const t = useI18n();
 
@@ -302,6 +304,7 @@ const PageHistoryList = ({
           <PlanPrompt />
           {historyListByDay.map(([day, list], i) => {
             const collapsed = collapsedMap[i];
+            const isLastGroup = i === historyListByDay.length - 1;
             return (
               <Collapsible.Root
                 open={!collapsed}
@@ -326,8 +329,9 @@ const PageHistoryList = ({
                   </div>
                   {day}
                 </Collapsible.Trigger>
-                <Collapsible.Content>
+                <Collapsible.Content className={styles.historyItemGroupContent}>
                   {list.map((history, idx) => {
+                    const isLastItem = idx === list.length - 1;
                     return (
                       <Fragment key={history.timestamp}>
                         <div
@@ -339,14 +343,43 @@ const PageHistoryList = ({
                           }}
                           data-active={activeVersion === history.timestamp}
                         >
-                          <button>
+                          <span className={styles.historyItemTimestamp}>
                             {i18nTime(history.timestamp, {
                               absolute: { noDate: true, accuracy: 'minute' },
                             })}
-                          </button>
+                            {activeVersion === history.timestamp ? (
+                              <>
+                                <span>·</span>
+                                <div className={styles.historyItemCurrent}>
+                                  {t['current']()}
+                                </div>
+                              </>
+                            ) : null}
+                          </span>
+                          <div className={styles.historyItemNameWrapper}>
+                            <Avatar
+                              className={styles.historyItemAvatar}
+                              url={history.editor?.avatarUrl ?? ''}
+                              name={history.editor?.name ?? ''}
+                              size={22}
+                            />
+                            <span className={styles.historyItemName}>
+                              {history.editor?.name ?? t['unnamed']()}
+                            </span>
+                          </div>
                         </div>
-                        {idx > list.length - 1 ? (
-                          <div className={styles.historyItemGap} />
+                        {isLastGroup && isLastItem && onLoadMore ? (
+                          <Button
+                            variant="plain"
+                            loading={loadingMore}
+                            disabled={loadingMore}
+                            className={styles.historyItemLoadMore}
+                            onClick={onLoadMore}
+                          >
+                            {t[
+                              'com.affine.history.confirm-restore-modal.load-more'
+                            ]()}
+                          </Button>
                         ) : null}
                       </Fragment>
                     );
@@ -355,17 +388,6 @@ const PageHistoryList = ({
               </Collapsible.Root>
             );
           })}
-          {onLoadMore ? (
-            <Button
-              variant="plain"
-              loading={loadingMore}
-              disabled={loadingMore}
-              className={styles.historyItemLoadMore}
-              onClick={onLoadMore}
-            >
-              {t['com.affine.history.confirm-restore-modal.load-more']()}
-            </Button>
-          ) : null}
         </Scrollable.Viewport>
         <Scrollable.Scrollbar />
       </Scrollable.Root>
@@ -435,6 +457,7 @@ const PageHistoryManager = ({
   const i18n = useI18n();
 
   const title = useLiveData(docDisplayMetaService.title$(pageId));
+  const canEdit = useGuard('Doc_Update', pageDocId);
 
   const onConfirmRestore = useCallback(() => {
     openConfirmModal({
@@ -494,7 +517,7 @@ const PageHistoryManager = ({
         <Button
           variant="primary"
           onClick={onConfirmRestore}
-          disabled={isMutating || !activeVersion}
+          disabled={isMutating || !activeVersion || !canEdit}
         >
           {t['com.affine.history.restore-current-version']()}
         </Button>

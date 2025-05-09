@@ -1,32 +1,30 @@
-import { DebugLogger } from '@affine/debug';
-import type {
-  Permission,
-  WorkspaceInviteLinkExpireTime,
-} from '@affine/graphql';
 import {
   backoffRetry,
-  catchErrorInto,
   effect,
   Entity,
+  exhaustMapWithTrailing,
   fromPromise,
   LiveData,
   onComplete,
   onStart,
 } from '@toeverything/infra';
-import { EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import { tap } from 'rxjs';
 
-import { isBackendError, isNetworkError } from '../../cloud';
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspacePermissionStore } from '../stores/permission';
 
-const logger = new DebugLogger('affine:workspace-permission');
-
 export class WorkspacePermission extends Entity {
-  isOwner$ = new LiveData<boolean | null>(null);
-  isAdmin$ = new LiveData<boolean | null>(null);
-  isTeam$ = new LiveData<boolean | null>(null);
-  isLoading$ = new LiveData(false);
-  error$ = new LiveData<any>(null);
+  private readonly cache$ = LiveData.from(
+    this.store.watchWorkspacePermissionCache(),
+    undefined
+  );
+  isOwner$ = this.cache$.map(cache => cache?.isOwner ?? null);
+  isAdmin$ = this.cache$.map(cache => cache?.isAdmin ?? null);
+  isOwnerOrAdmin$ = this.cache$.map(
+    cache => (cache?.isOwner ?? null) || (cache?.isAdmin ?? null)
+  );
+  isTeam$ = this.cache$.map(cache => cache?.isTeam ?? null);
+  isRevalidating$ = new LiveData(false);
 
   constructor(
     private readonly workspaceService: WorkspaceService,
@@ -36,7 +34,7 @@ export class WorkspacePermission extends Entity {
   }
 
   revalidate = effect(
-    exhaustMap(() => {
+    exhaustMapWithTrailing(() => {
       return fromPromise(async signal => {
         if (this.workspaceService.workspace.flavour !== 'local') {
           const info = await this.store.fetchWorkspaceInfo(
@@ -54,83 +52,26 @@ export class WorkspacePermission extends Entity {
         }
       }).pipe(
         backoffRetry({
-          when: isNetworkError,
           count: Infinity,
         }),
-        backoffRetry({
-          when: isBackendError,
+        tap(({ isOwner, isAdmin, isTeam }) => {
+          this.store.setWorkspacePermissionCache({
+            isOwner,
+            isAdmin,
+            isTeam,
+          });
         }),
-        mergeMap(({ isOwner, isAdmin, isTeam }) => {
-          this.isAdmin$.next(isAdmin);
-          this.isOwner$.next(isOwner);
-          this.isTeam$.next(isTeam);
-          return EMPTY;
-        }),
-        catchErrorInto(this.error$, error => {
-          logger.error('Failed to fetch isOwner', error);
-        }),
-        onStart(() => this.isLoading$.setValue(true)),
-        onComplete(() => this.isLoading$.setValue(false))
+        onStart(() => this.isRevalidating$.setValue(true)),
+        onComplete(() => this.isRevalidating$.setValue(false))
       );
     })
   );
 
-  async inviteMember(email: string, sendInviteMail?: boolean) {
-    return await this.store.inviteMember(
-      this.workspaceService.workspace.id,
-      email,
-      sendInviteMail
-    );
-  }
-
-  async inviteMembers(emails: string[], sendInviteMail?: boolean) {
-    return await this.store.inviteBatch(
-      this.workspaceService.workspace.id,
-      emails,
-      sendInviteMail
-    );
-  }
-
-  async generateInviteLink(expireTime: WorkspaceInviteLinkExpireTime) {
-    return await this.store.generateInviteLink(
-      this.workspaceService.workspace.id,
-      expireTime
-    );
-  }
-
-  async revokeInviteLink() {
-    return await this.store.revokeInviteLink(
-      this.workspaceService.workspace.id
-    );
-  }
-
-  async revokeMember(userId: string) {
-    return await this.store.revokeMemberPermission(
-      this.workspaceService.workspace.id,
-      userId
-    );
-  }
-
-  async acceptInvite(inviteId: string, sendAcceptMail?: boolean) {
-    return await this.store.acceptInvite(
-      this.workspaceService.workspace.id,
-      inviteId,
-      sendAcceptMail
-    );
-  }
-
-  async approveMember(userId: string) {
-    return await this.store.approveMember(
-      this.workspaceService.workspace.id,
-      userId
-    );
-  }
-
-  async adjustMemberPermission(userId: string, permission: Permission) {
-    return await this.store.adjustMemberPermission(
-      this.workspaceService.workspace.id,
-      userId,
-      permission
+  async waitForRevalidation(signal?: AbortSignal) {
+    this.revalidate();
+    await this.isRevalidating$.waitFor(
+      isRevalidating => !isRevalidating,
+      signal
     );
   }
 

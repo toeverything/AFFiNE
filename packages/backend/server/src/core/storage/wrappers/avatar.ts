@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 
 import type {
   BlobInputType,
-  EventPayload,
   PutObjectMetadata,
   StorageProvider,
 } from '../../../base';
@@ -15,21 +14,33 @@ import {
 
 @Injectable()
 export class AvatarStorage {
-  public readonly provider: StorageProvider;
-  private readonly storageConfig: Config['storages']['avatar'];
+  private provider!: StorageProvider;
+
+  get config() {
+    return this.AFFiNEConfig.storages.avatar;
+  }
 
   constructor(
-    private readonly config: Config,
+    private readonly AFFiNEConfig: Config,
     private readonly url: URLHelper,
     private readonly storageFactory: StorageProviderFactory
-  ) {
-    this.storageConfig = this.config.storages.avatar;
-    this.provider = this.storageFactory.create(this.storageConfig);
+  ) {}
+
+  @OnEvent('config.init')
+  async onConfigInit() {
+    this.provider = this.storageFactory.create(this.config.storage);
+  }
+
+  @OnEvent('config.changed')
+  async onConfigChanged(event: Events['config.changed']) {
+    if (event.updates.storages?.avatar?.storage) {
+      this.provider = this.storageFactory.create(this.config.storage);
+    }
   }
 
   async put(key: string, blob: BlobInputType, metadata?: PutObjectMetadata) {
     await this.provider.put(key, blob, metadata);
-    let link = this.storageConfig.publicLinkFactory(key);
+    let link = this.config.publicPath + key;
 
     if (link.startsWith('/')) {
       link = this.url.link(link);
@@ -43,11 +54,11 @@ export class AvatarStorage {
   }
 
   delete(link: string) {
-    return this.provider.delete(this.storageConfig.keyInPublicLink(link));
+    return this.provider.delete(link.split('/').pop() as string);
   }
 
   @OnEvent('user.deleted')
-  async onUserDeleted(user: EventPayload<'user.deleted'>) {
+  async onUserDeleted(user: Events['user.deleted']) {
     if (user.avatarUrl) {
       await this.delete(user.avatarUrl);
     }

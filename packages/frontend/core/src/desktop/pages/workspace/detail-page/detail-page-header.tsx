@@ -5,20 +5,22 @@ import {
   observeResize,
   useDraggable,
 } from '@affine/component';
-import { SharePageButton } from '@affine/core/components/affine/share-page-modal';
-import { FavoriteButton } from '@affine/core/components/blocksuite/block-suite-header/favorite';
-import { InfoButton } from '@affine/core/components/blocksuite/block-suite-header/info';
-import { JournalWeekDatePicker } from '@affine/core/components/blocksuite/block-suite-header/journal/date-picker';
-import { JournalTodayButton } from '@affine/core/components/blocksuite/block-suite-header/journal/today-button';
-import { PageHeaderMenuButton } from '@affine/core/components/blocksuite/block-suite-header/menu';
-import { DetailPageHeaderPresentButton } from '@affine/core/components/blocksuite/block-suite-header/present/detail-header-present-button';
-import { BlocksuiteHeaderTitle } from '@affine/core/components/blocksuite/block-suite-header/title';
-import { EditorModeSwitch } from '@affine/core/components/blocksuite/block-suite-mode-switch';
+import { FavoriteButton } from '@affine/core/blocksuite/block-suite-header/favorite';
+import { InfoButton } from '@affine/core/blocksuite/block-suite-header/info';
+import { JournalWeekDatePicker } from '@affine/core/blocksuite/block-suite-header/journal/date-picker';
+import { JournalTodayButton } from '@affine/core/blocksuite/block-suite-header/journal/today-button';
+import { PageHeaderMenuButton } from '@affine/core/blocksuite/block-suite-header/menu';
+import { DetailPageHeaderPresentButton } from '@affine/core/blocksuite/block-suite-header/present/detail-header-present-button';
+import { BlocksuiteHeaderTitle } from '@affine/core/blocksuite/block-suite-header/title';
+import { EditorModeSwitch } from '@affine/core/blocksuite/block-suite-mode-switch';
 import { useRegisterCopyLinkCommands } from '@affine/core/components/hooks/affine/use-register-copy-link-commands';
 import { HeaderDivider } from '@affine/core/components/pure/header';
+import { DocService } from '@affine/core/modules/doc';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
 import { EditorService } from '@affine/core/modules/editor';
 import { JournalService } from '@affine/core/modules/journal';
+import { SharePageButton } from '@affine/core/modules/share-menu';
+import { TemplateDocService } from '@affine/core/modules/template-doc';
 import { ViewIcon, ViewTitle } from '@affine/core/modules/workbench';
 import type { Workspace } from '@affine/core/modules/workspace';
 import type { AffineDNDData } from '@affine/core/types/dnd';
@@ -26,7 +28,16 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { Store } from '@blocksuite/affine/store';
 import { useLiveData, useService } from '@toeverything/infra';
-import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import clsx from 'clsx';
+import {
+  forwardRef,
+  type HTMLAttributes,
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import * as styles from './detail-page-header.css';
 import { useDetailPageHeaderResponsive } from './use-header-responsive';
@@ -47,6 +58,24 @@ const Header = forwardRef<
 });
 
 Header.displayName = 'forwardRef(Header)';
+
+const TemplateMark = memo(function TemplateMark({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  const t = useI18n();
+  const doc = useService(DocService).doc;
+  const templateDocService = useService(TemplateDocService);
+  const isTemplate = useLiveData(templateDocService.list.isTemplate$(doc.id));
+
+  if (!isTemplate) return null;
+
+  return (
+    <div className={clsx(styles.templateMark, className)} {...props}>
+      {t['Template']()}
+    </div>
+  );
+});
 
 interface PageHeaderProps {
   page: Store;
@@ -79,6 +108,7 @@ export function JournalPageHeader({ page, workspace }: PageHeaderProps) {
       <div className={styles.journalWeekPicker}>
         <JournalWeekDatePicker page={page} />
       </div>
+      <TemplateMark className={styles.journalTemplateMark} />
       {hideToday ? null : <JournalTodayButton />}
       <HeaderDivider />
       <PageHeaderMenuButton
@@ -128,10 +158,8 @@ export function NormalPageHeader({ page, workspace }: PageHeaderProps) {
       <ViewTitle title={title} />
       <ViewIcon icon={currentMode ?? 'page'} />
       <EditorModeSwitch />
-      <BlocksuiteHeaderTitle
-        docId={page.id}
-        inputHandleRef={titleInputHandleRef}
-      />
+      <BlocksuiteHeaderTitle inputHandleRef={titleInputHandleRef} />
+      <TemplateMark />
       <div className={styles.iconButtonContainer}>
         {hideCollect ? null : (
           <>

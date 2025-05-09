@@ -134,7 +134,7 @@ summary {
 }
 
 a,
-button {
+button:not([disabled]) {
   cursor: pointer;
 }
 
@@ -292,4 +292,9 @@ affine-lit-template-wrapper {
 button,
 input {
   color: inherit;
+}
+
+/* Avoid default outline on focus for contenteditable */
+[contenteditable]:focus-visible {
+  outline: none;
 }

@@ -1,5 +1,7 @@
 export {
   getBlockIndexCommand,
+  getFirstBlockCommand,
+  getLastBlockCommand,
   getNextBlockCommand,
   getPrevBlockCommand,
   getSelectedBlocksCommand,
@@ -11,23 +13,17 @@ export {
   draftSelectedModelsCommand,
   duplicateSelectedModelsCommand,
   getSelectedModelsCommand,
+  replaceSelectedTextWithBlocksCommand,
   retainFirstModelCommand,
 } from './model-crud/index.js';
 export {
+  focusBlockEnd,
+  focusBlockStart,
   getBlockSelectionsCommand,
   getImageSelectionsCommand,
   getRangeRects,
   getSelectionRectsCommand,
   getTextSelectionCommand,
+  isNothingSelectedCommand,
   type SelectionRect,
 } from './selection/index.js';
-
-declare global {
-  namespace BlockSuite {
-    // if we use `with` or `inline` to add command data either then use a command we
-    // need to update this interface
-    interface CommandContext {
-      currentSelectionPath?: string;
-    }
-  }
-}

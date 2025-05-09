@@ -22,15 +22,23 @@ export const windowFrameStyleOptions: AppSetting['windowFrameStyle'][] = [
   'NativeTitleBar',
 ];
 
-const appSettingBaseAtom = atomWithStorage<AppSetting>('affine-settings', {
-  clientBorder: BUILD_CONFIG.isElectron && !environment.isWindows,
-  windowFrameStyle: 'frameless',
-  enableBlurBackground: true,
-  enableNoisyBackground: true,
-  autoCheckUpdate: true,
-  autoDownloadUpdate: true,
-  enableTelemetry: true,
-});
+export const APP_SETTINGS_STORAGE_KEY = 'affine-settings';
+const appSettingBaseAtom = atomWithStorage<AppSetting>(
+  APP_SETTINGS_STORAGE_KEY,
+  {
+    clientBorder: BUILD_CONFIG.isElectron && !environment.isWindows,
+    windowFrameStyle: 'frameless',
+    enableBlurBackground: true,
+    enableNoisyBackground: true,
+    autoCheckUpdate: true,
+    autoDownloadUpdate: true,
+    enableTelemetry: true,
+  },
+  undefined,
+  {
+    getOnInit: true,
+  }
+);
 
 type SetStateAction<Value> = Value | ((prev: Value) => Value);
 

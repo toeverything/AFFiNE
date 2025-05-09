@@ -1,11 +1,12 @@
-import { toURLSearchParams } from '@affine/core/modules/navigation/utils';
+import { toDocSearchParams } from '@affine/core/modules/navigation/utils';
 import { Unreachable } from '@affine/env/constant';
-import type { ReferenceParams } from '@blocksuite/affine/blocks';
+import type { ReferenceParams } from '@blocksuite/affine/model';
 import { Entity, LiveData } from '@toeverything/infra';
 import { type To } from 'history';
 import { omit } from 'lodash-es';
 import { nanoid } from 'nanoid';
 
+import type { GlobalState } from '../../storage';
 import type { WorkbenchNewTabHandler } from '../services/workbench-new-tab-handler';
 import type { WorkbenchDefaultState } from '../services/workbench-view-state';
 import { View } from './view';
@@ -18,10 +19,14 @@ export type WorkbenchOpenOptions = {
   show?: boolean; // only for new tab
 };
 
+const sidebarOpenKey = 'workbenchSidebarOpen';
+const sidebarWidthKey = 'workbenchSidebarWidth';
+
 export class Workbench extends Entity {
   constructor(
     private readonly defaultState: WorkbenchDefaultState,
-    private readonly newTabHandler: WorkbenchNewTabHandler
+    private readonly newTabHandler: WorkbenchNewTabHandler,
+    private readonly globalState: GlobalState
   ) {
     super();
   }
@@ -50,7 +55,20 @@ export class Workbench extends Entity {
   location$ = LiveData.computed(get => {
     return get(get(this.activeView$).location$);
   });
-  sidebarOpen$ = new LiveData(false);
+  sidebarOpen$ = LiveData.from(
+    this.globalState.watch<boolean>(sidebarOpenKey),
+    false
+  );
+  setSidebarOpen(open: boolean) {
+    this.globalState.set(sidebarOpenKey, open);
+  }
+  sidebarWidth$ = LiveData.from(
+    this.globalState.watch<number>(sidebarWidthKey),
+    320
+  );
+  setSidebarWidth(width: number) {
+    this.globalState.set(sidebarWidthKey, width);
+  }
 
   active(index: number | View) {
     if (typeof index === 'number') {
@@ -85,15 +103,15 @@ export class Workbench extends Entity {
   }
 
   openSidebar() {
-    this.sidebarOpen$.next(true);
+    this.setSidebarOpen(true);
   }
 
   closeSidebar() {
-    this.sidebarOpen$.next(false);
+    this.setSidebarOpen(false);
   }
 
   toggleSidebar() {
-    this.sidebarOpen$.next(!this.sidebarOpen$.value);
+    this.setSidebarOpen(!this.sidebarOpen$.value);
   }
 
   open(to: To, option: WorkbenchOpenOptions = {}) {
@@ -138,10 +156,11 @@ export class Workbench extends Entity {
   openDoc(
     id:
       | string
-      | ({ docId: string } & (
-          | ReferenceParams
-          | Record<string, string | undefined>
-        )),
+      | ({
+          docId: string;
+          refreshKey?: string;
+          fromTab?: string;
+        } & ReferenceParams),
     options?: WorkbenchOpenOptions
   ) {
     const isString = typeof id === 'string';
@@ -149,7 +168,7 @@ export class Workbench extends Entity {
 
     let query = '';
     if (!isString) {
-      const search = toURLSearchParams(omit(id, ['docId']));
+      const search = toDocSearchParams(omit(id, ['docId']));
       if (search?.size) {
         query = `?${search.toString()}`;
       }

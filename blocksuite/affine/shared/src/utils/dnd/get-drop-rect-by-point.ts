@@ -1,9 +1,10 @@
-import { BLOCK_ID_ATTR } from '@blocksuite/block-std';
-import type { Point } from '@blocksuite/global/utils';
+import { DatabaseBlockModel } from '@blocksuite/affine-model';
+import type { Point } from '@blocksuite/global/gfx';
+import { BLOCK_ID_ATTR } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 
 import { getRectByBlockComponent } from '../dom/index.js';
-import { matchFlavours } from '../model/index.js';
+import { matchModels } from '../model/index.js';
 import { DropFlags } from './types.js';
 
 const ATTR_SELECTOR = `[${BLOCK_ID_ATTR}]`;
@@ -24,7 +25,7 @@ export function getDropRectByPoint(
     flag: DropFlags.Normal,
   };
 
-  const isDatabase = matchFlavours(model, ['affine:database']);
+  const isDatabase = matchModels(model, [DatabaseBlockModel]);
 
   if (isDatabase) {
     const table = getDatabaseBlockTableElement(element);

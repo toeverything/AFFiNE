@@ -1,5 +1,5 @@
 export class OverCapacityError extends Error {
   constructor(public originError?: any) {
-    super('Storage over capacity. Origin error: ' + originError);
+    super('Storage over capacity.');
   }
 }

@@ -7,7 +7,12 @@ import {
 } from '@nestjs/graphql';
 import type { User } from '@prisma/client';
 
-import type { Payload } from '../../base/event/def';
+import {
+  PublicUser,
+  UserSettings,
+  UserSettingsInput,
+  WorkspaceUser,
+} from '../../models';
 import { type CurrentUser } from '../auth/session';
 
 @ObjectType()
@@ -41,6 +46,38 @@ export class UserType implements CurrentUser {
     nullable: true,
   })
   createdAt?: Date | null;
+
+  @Field(() => Boolean, {
+    description: 'User is disabled',
+  })
+  disabled!: boolean;
+}
+
+@ObjectType()
+export class PublicUserType implements PublicUser {
+  @Field()
+  id!: string;
+
+  @Field()
+  name!: string;
+
+  @Field(() => String, { nullable: true })
+  avatarUrl!: string | null;
+}
+
+@ObjectType()
+export class WorkspaceUserType implements WorkspaceUser {
+  @Field()
+  id!: string;
+
+  @Field()
+  name!: string;
+
+  @Field()
+  email!: string;
+
+  @Field(() => String, { nullable: true })
+  avatarUrl!: string | null;
 }
 
 @ObjectType()
@@ -77,6 +114,15 @@ export class RemoveAvatar {
   success!: boolean;
 }
 
+@ObjectType()
+export class UserSettingsType implements UserSettings {
+  @Field({ description: 'Receive invitation email' })
+  receiveInvitationEmail!: boolean;
+
+  @Field({ description: 'Receive mention email' })
+  receiveMentionEmail!: boolean;
+}
+
 @InputType()
 export class UpdateUserInput implements Partial<User> {
   @Field({ description: 'User name', nullable: true })
@@ -92,10 +138,11 @@ export class ManageUserInput {
   name?: string;
 }
 
-declare module '../../base/event/def' {
-  interface UserEvents {
-    admin: {
-      created: Payload<{ id: string }>;
-    };
-  }
+@InputType()
+export class UpdateUserSettingsInput implements UserSettingsInput {
+  @Field({ description: 'Receive invitation email', nullable: true })
+  receiveInvitationEmail?: boolean;
+
+  @Field({ description: 'Receive mention email', nullable: true })
+  receiveMentionEmail?: boolean;
 }

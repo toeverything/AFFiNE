@@ -1,25 +1,22 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import '@shoelace-style/shoelace';
 
-import { ShadowlessElement } from '@blocksuite/block-std';
+import { ShadowlessElement } from '@blocksuite/affine/std';
+import { effects } from '@blocksuite/affine/std/effects';
 import {
   type AttributeRenderer,
+  InlineEditor,
+  ZERO_WIDTH_FOR_EMBED_NODE,
+} from '@blocksuite/affine/std/inline';
+import {
   type BaseTextAttributes,
   baseTextAttributes,
-  createInlineKeyDownHandler,
-  InlineEditor,
-  KEYBOARD_ALLOW_DEFAULT,
-  ZERO_WIDTH_NON_JOINER,
-} from '@blocksuite/inline';
-import { effects } from '@blocksuite/inline/effects';
+} from '@blocksuite/affine/store';
 import { effect } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import * as Y from 'yjs';
 import { z } from 'zod';
-
-import { markdownMatches } from './markdown.js';
 
 effects();
 
@@ -65,7 +62,7 @@ const attributeRenderer: AttributeRenderer = ({ delta, selected }) => {
         border: selected ? '1px solid #eb763a' : '',
         background: 'rgba(135,131,120,0.15)',
       })}
-      >@flrande<v-text .str=${ZERO_WIDTH_NON_JOINER}></v-text
+      >@flrande<v-text .str=${ZERO_WIDTH_FOR_EMBED_NODE}></v-text
     ></span>`;
   }
 
@@ -133,31 +130,7 @@ export class TestRichText extends ShadowlessElement {
     this.style.outline = 'none';
     this.inlineEditor.mount(this._container, this);
 
-    const keydownHandler = createInlineKeyDownHandler(this.inlineEditor, {
-      inputRule: {
-        key: ' ',
-        handler: context => {
-          const { inlineEditor, prefixText, inlineRange } = context;
-          for (const match of markdownMatches) {
-            const matchedText = prefixText.match(match.pattern);
-            if (matchedText) {
-              return match.action({
-                inlineEditor,
-                prefixText,
-                inlineRange,
-                pattern: match.pattern,
-                undoManager: this.undoManager,
-              });
-            }
-          }
-
-          return KEYBOARD_ALLOW_DEFAULT;
-        },
-      },
-    });
-    this.addEventListener('keydown', keydownHandler);
-
-    this.inlineEditor.slots.textChange.on(() => {
+    this.inlineEditor.slots.textChange.subscribe(() => {
       const el = this.querySelector('.y-text');
       if (el) {
         const text = this.inlineEditor.yText.toDelta();
@@ -191,8 +164,9 @@ export class TestRichText extends ShadowlessElement {
         }
 
         code {
-          font-family: 'SFMono-Regular', Menlo, Consolas, 'PT Mono',
-            'Liberation Mono', Courier, monospace;
+          font-family:
+            'SFMono-Regular', Menlo, Consolas, 'PT Mono', 'Liberation Mono',
+            Courier, monospace;
           line-height: normal;
           background: rgba(135, 131, 120, 0.15);
           color: #eb5757;
@@ -203,8 +177,9 @@ export class TestRichText extends ShadowlessElement {
 
         .v-range,
         .y-text {
-          font-family: 'SFMono-Regular', Menlo, Consolas, 'PT Mono',
-            'Liberation Mono', Courier, monospace;
+          font-family:
+            'SFMono-Regular', Menlo, Consolas, 'PT Mono', 'Liberation Mono',
+            Courier, monospace;
           line-height: normal;
           background: rgba(135, 131, 120, 0.15);
         }
@@ -251,6 +226,13 @@ export class CustomToolbar extends ShadowlessElement {
       grid-template-rows: repeat(2, minmax(0, 1fr));
     }
   `;
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.addEventListener('pointerdown', e => {
+      e.preventDefault();
+    });
+  }
 
   override firstUpdated() {
     const boldButton = this.querySelector('.bold');

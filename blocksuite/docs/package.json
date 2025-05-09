@@ -1,0 +1,21 @@
+{
+  "name": "@blocksuite/bs-docs",
+  "description": "BlockSuite documentation",
+  "private": true,
+  "keywords": [],
+  "author": "toeverything",
+  "repository": "toeverything/blocksuite",
+  "license": "MPL-2.0",
+  "type": "module",
+  "devDependencies": {
+    "typedoc": "^0.28.0",
+    "typedoc-plugin-markdown": "^4.5.0"
+  },
+  "scripts": {
+    "build": "typedoc"
+  },
+  "dependencies": {
+    "@blocksuite/affine": "workspace:*"
+  },
+  "version": "0.21.0"
+}

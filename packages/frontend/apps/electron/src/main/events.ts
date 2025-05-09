@@ -4,15 +4,19 @@ import { AFFINE_EVENT_CHANNEL_NAME } from '../shared/type';
 import { applicationMenuEvents } from './application-menu';
 import { beforeAppQuit } from './cleanup';
 import { logger } from './logger';
+import { recordingEvents } from './recording';
 import { sharedStorageEvents } from './shared-storage';
 import { uiEvents } from './ui/events';
 import { updaterEvents } from './updater/event';
+import { popupEvents } from './windows-manager/popup';
 
 export const allEvents = {
   applicationMenu: applicationMenuEvents,
   updater: updaterEvents,
   ui: uiEvents,
   sharedStorage: sharedStorageEvents,
+  recording: recordingEvents,
+  popup: popupEvents,
 };
 
 function getActiveWindows() {

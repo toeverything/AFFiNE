@@ -1,172 +1,232 @@
-import EventEmitter2 from 'eventemitter2';
-import { difference } from 'lodash-es';
-import { BehaviorSubject, type Observable } from 'rxjs';
+import {
+  combineLatest,
+  map,
+  type Observable,
+  ReplaySubject,
+  share,
+  throttleTime,
+} from 'rxjs';
 
-import type { BlobRecord, BlobStorage } from '../../storage';
-import { OverCapacityError } from '../../storage';
-import { MANUALLY_STOP, throwIfAborted } from '../../utils/throw-if-aborted';
+import type { BlobRecord, BlobStorage, BlobSyncStorage } from '../../storage';
 import type { PeerStorageOptions } from '../types';
+import { BlobSyncPeer } from './peer';
 
 export interface BlobSyncState {
-  isStorageOverCapacity: boolean;
+  uploading: number;
+  downloading: number;
+  error: number;
+  overCapacity: boolean;
+}
+
+export interface BlobSyncBlobState {
+  uploading: boolean;
+  downloading: boolean;
+  errorMessage?: string | null;
+  overSize: boolean;
 }
 
 export interface BlobSync {
   readonly state$: Observable<BlobSyncState>;
-  downloadBlob(
-    blobId: string,
-    signal?: AbortSignal
-  ): Promise<BlobRecord | null>;
-  uploadBlob(blob: BlobRecord, signal?: AbortSignal): Promise<void>;
-  fullSync(signal?: AbortSignal): Promise<void>;
-  setMaxBlobSize(size: number): void;
-  onReachedMaxBlobSize(cb: (byteSize: number) => void): () => void;
+  blobState$(blobId: string): Observable<BlobSyncBlobState>;
+  /**
+   * Downloads a blob from all peers
+   * @param blobId - The blob ID to download
+   * @returns A promise that resolves to true when the download is complete from any peer, false if no peer has the blob
+   *
+   * @throws This method will throw an error if the download is aborted or fails due to network issues.
+   */
+  downloadBlob(blobId: string): Promise<boolean>;
+  /**
+   * Upload a blob to all peers
+   * @param blob - The blob to upload
+   * @param force - Whether to force upload the blob, even if it has already been uploaded
+   * @returns A promise that resolves when the upload is complete, should always resolve to true
+   *
+   * @throws This method will throw an error if the upload is aborted or fails due to storage limitations.
+   */
+  uploadBlob(blob: BlobRecord, force?: boolean): Promise<true>;
+  /**
+   * Download all blobs from a peer
+   * @param peerId - The peer id to download from, if not provided, all peers will be downloaded
+   * @param signal - The abort signal
+   * @returns A promise that resolves when the download is complete
+   *
+   * @throws This method will never throw an error, but the promise will reject if the signal is aborted.
+   */
+  fullDownload(peerId?: string, signal?: AbortSignal): Promise<void>;
 }
 
 export class BlobSyncImpl implements BlobSync {
-  readonly state$ = new BehaviorSubject<BlobSyncState>({
-    isStorageOverCapacity: false,
-  });
-  private abort: AbortController | null = null;
-  private maxBlobSize: number = 1024 * 1024 * 100; // 100MB
-  readonly event = new EventEmitter2();
+  // abort all pending jobs when the sync is destroyed
+  private abortController = new AbortController();
+  private started = false;
+  private readonly peers: BlobSyncPeer[] = Object.entries(
+    this.storages.remotes
+  ).map(
+    ([peerId, remote]) =>
+      new BlobSyncPeer(peerId, this.storages.local, remote, this.blobSync)
+  );
 
-  constructor(readonly storages: PeerStorageOptions<BlobStorage>) {}
-
-  async downloadBlob(blobId: string, signal?: AbortSignal) {
-    const localBlob = await this.storages.local.get(blobId, signal);
-    if (localBlob) {
-      return localBlob;
-    }
-
-    for (const storage of Object.values(this.storages.remotes)) {
-      const data = await storage.get(blobId, signal);
-      if (data) {
-        await this.storages.local.set(data, signal);
-        return data;
-      }
-    }
-    return null;
-  }
-
-  async uploadBlob(blob: BlobRecord, signal?: AbortSignal) {
-    if (blob.data.length > this.maxBlobSize) {
-      this.event.emit('abort-large-blob', blob.data.length);
-      console.error('blob over limit, abort set');
-    }
-
-    await this.storages.local.set(blob);
-    await Promise.allSettled(
-      Object.values(this.storages.remotes).map(async remote => {
-        try {
-          return await remote.set(blob, signal);
-        } catch (err) {
-          if (err instanceof OverCapacityError) {
-            this.state$.next({ isStorageOverCapacity: true });
+  readonly state$ = combineLatest(this.peers.map(peer => peer.peerState$)).pipe(
+    // throttle the state to 1 second to avoid spamming the UI
+    throttleTime(1000),
+    map(allPeers =>
+      allPeers.length === 0
+        ? {
+            uploading: 0,
+            downloading: 0,
+            error: 0,
+            overCapacity: false,
           }
-          throw err;
-        }
+        : {
+            uploading: allPeers.reduce((acc, peer) => acc + peer.uploading, 0),
+            downloading: allPeers.reduce(
+              (acc, peer) => acc + peer.downloading,
+              0
+            ),
+            error: allPeers.reduce((acc, peer) => acc + peer.error, 0),
+            overCapacity: allPeers.some(p => p.overCapacity),
+          }
+    ),
+    share({
+      connector: () => new ReplaySubject(1),
+    })
+  ) as Observable<BlobSyncState>;
+
+  blobState$(blobId: string) {
+    return combineLatest(
+      this.peers.map(peer => peer.blobPeerState$(blobId))
+    ).pipe(
+      throttleTime(1000, undefined, { leading: true, trailing: true }),
+      map(
+        peers =>
+          ({
+            uploading: peers.some(p => p.uploading),
+            downloading: peers.some(p => p.downloading),
+            errorMessage: peers.find(p => p.errorMessage)?.errorMessage,
+            overSize: peers.some(p => p.overSize),
+          }) satisfies BlobSyncBlobState
+      ),
+      share({
+        connector: () => new ReplaySubject(1),
       })
     );
   }
 
-  async fullSync(signal?: AbortSignal) {
-    throwIfAborted(signal);
+  constructor(
+    readonly storages: PeerStorageOptions<BlobStorage>,
+    readonly blobSync: BlobSyncStorage
+  ) {}
 
-    for (const [remotePeer, remote] of Object.entries(this.storages.remotes)) {
-      let localList: string[] = [];
-      let remoteList: string[] = [];
+  downloadBlob(blobId: string): Promise<boolean> {
+    const signal = this.abortController.signal;
 
-      try {
-        localList = (await this.storages.local.list(signal)).map(b => b.key);
-        throwIfAborted(signal);
-        remoteList = (await remote.list(signal)).map(b => b.key);
-        throwIfAborted(signal);
-      } catch (err) {
-        if (err === MANUALLY_STOP) {
-          throw err;
-        }
-        console.error(`error when sync`, err);
-        continue;
-      }
+    return new Promise<boolean>((resolve, reject) => {
+      let completed = 0;
+      const totalPeers = this.peers.length;
 
-      const needUpload = difference(localList, remoteList);
-      for (const key of needUpload) {
-        try {
-          const data = await this.storages.local.get(key, signal);
-          throwIfAborted(signal);
-          if (data) {
-            await remote.set(data, signal);
-            throwIfAborted(signal);
-          }
-        } catch (err) {
-          if (err === MANUALLY_STOP) {
-            throw err;
-          }
-          console.error(
-            `error when sync ${key} from [local] to [${remotePeer}]`,
-            err
-          );
-        }
-      }
-
-      const needDownload = difference(remoteList, localList);
-
-      for (const key of needDownload) {
-        try {
-          const data = await remote.get(key, signal);
-          throwIfAborted(signal);
-          if (data) {
-            await this.storages.local.set(data, signal);
-            throwIfAborted(signal);
-          }
-        } catch (err) {
-          if (err === MANUALLY_STOP) {
-            throw err;
-          }
-          console.error(
-            `error when sync ${key} from [${remotePeer}] to [local]`,
-            err
-          );
-        }
-      }
-    }
-  }
-
-  start() {
-    if (this.abort) {
-      this.abort.abort(MANUALLY_STOP);
-    }
-
-    const abort = new AbortController();
-    this.abort = abort;
-
-    this.fullSync(abort.signal).catch(error => {
-      if (error === MANUALLY_STOP) {
+      if (totalPeers === 0) {
+        resolve(false);
         return;
       }
-      console.error('sync blob error', error);
+
+      // download from all peers concurrently
+      // resolve if any peer has success
+      this.peers.forEach(peer => {
+        peer
+          .downloadBlob(blobId, signal)
+          .then(result => {
+            if (result === true) {
+              // resolve if the peer has success
+              resolve(true);
+            }
+          })
+          .catch(err => {
+            reject(err);
+          })
+          .finally(() => {
+            completed++;
+            if (completed === totalPeers) {
+              // resolve if all peers finish
+              resolve(false);
+            }
+          });
+      });
     });
   }
 
+  uploadBlob(blob: BlobRecord, force = false): Promise<true> {
+    return Promise.all(
+      this.peers.map(p =>
+        p.uploadBlob(blob, force, this.abortController.signal)
+      )
+    ).then(() => true as const);
+  }
+
+  // start the upload loop
+  start() {
+    if (this.started) {
+      return;
+    }
+    this.started = true;
+
+    const signal = this.abortController.signal;
+    Promise.allSettled(this.peers.map(p => p.fullUploadLoop(signal))).catch(
+      err => {
+        // should never reach here
+        console.error(err);
+      }
+    );
+  }
+
+  // download all blobs from a peer
+  async fullDownload(
+    peerId?: string,
+    outerSignal?: AbortSignal
+  ): Promise<void> {
+    return Promise.race([
+      Promise.all(
+        peerId
+          ? [this.fullDownloadPeer(peerId)]
+          : this.peers.map(p => this.fullDownloadPeer(p.peerId))
+      ),
+      new Promise<void>((_, reject) => {
+        // Reject the promise if the outer signal is aborted
+        // The outer signal only controls the API promise, not the actual download process
+        if (outerSignal?.aborted) {
+          reject(outerSignal.reason);
+        }
+        outerSignal?.addEventListener('abort', reason => {
+          reject(reason);
+        });
+      }),
+    ]) as Promise<void>;
+  }
+
+  // cache the download promise for each peer
+  // this is used to avoid downloading the same peer multiple times
+  private readonly fullDownloadPromise = new Map<string, Promise<void>>();
+  private fullDownloadPeer(peerId: string) {
+    const peer = this.peers.find(p => p.peerId === peerId);
+    if (!peer) {
+      return;
+    }
+    const existing = this.fullDownloadPromise.get(peerId);
+    if (existing) {
+      return existing;
+    }
+    const promise = peer
+      .fullDownload(this.abortController.signal)
+      .finally(() => {
+        this.fullDownloadPromise.delete(peerId);
+      });
+    this.fullDownloadPromise.set(peerId, promise);
+    return promise;
+  }
+
   stop() {
-    this.abort?.abort();
-    this.abort = null;
-  }
-
-  addPriority(_id: string, _priority: number): () => void {
-    // TODO: implement
-    return () => {};
-  }
-
-  setMaxBlobSize(size: number): void {
-    this.maxBlobSize = size;
-  }
-
-  onReachedMaxBlobSize(cb: (byteSize: number) => void): () => void {
-    this.event.on('abort-large-blob', cb);
-    return () => {
-      this.event.off('abort-large-blob', cb);
-    };
+    this.abortController.abort();
+    this.abortController = new AbortController();
+    this.started = false;
   }
 }

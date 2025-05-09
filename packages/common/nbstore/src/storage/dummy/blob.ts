@@ -6,6 +6,7 @@ import {
 } from '../blob';
 
 export class DummyBlobStorage extends BlobStorageBase {
+  override readonly isReadonly = true;
   override get(
     _key: string,
     _signal?: AbortSignal

@@ -1,25 +1,45 @@
 import {
-  Attributes,
-  Counter,
+  Gauge,
   Histogram,
   Meter,
+  MeterProvider,
   MetricOptions,
+  metrics as otelMetrics,
+  UpDownCounter,
 } from '@opentelemetry/api';
+import { HostMetrics } from '@opentelemetry/host-metrics';
 
-import { getMeter } from './opentelemetry';
+function getMeterProvider() {
+  return otelMetrics.getMeterProvider();
+}
+
+export function registerCustomMetrics() {
+  const hostMetricsMonitoring = new HostMetrics({
+    name: 'instance-host-metrics',
+    meterProvider: getMeterProvider() as MeterProvider,
+  });
+  hostMetricsMonitoring.start();
+}
+
+export function getMeter(name = 'business') {
+  return getMeterProvider().getMeter(name);
+}
 
 type MetricType = 'counter' | 'gauge' | 'histogram';
 type Metric<T extends MetricType> = T extends 'counter'
-  ? Counter
+  ? UpDownCounter
   : T extends 'gauge'
-    ? Histogram
+    ? Gauge
     : T extends 'histogram'
       ? Histogram
       : never;
 
 export type ScopedMetrics = {
-  [T in MetricType]: (name: string, opts?: MetricOptions) => Metric<T>;
+  counter: (name: string, opts?: MetricOptions) => UpDownCounter;
+  gauge: (name: string, opts?: MetricOptions) => Gauge;
+  histogram: (name: string, opts?: MetricOptions) => Histogram;
 };
+
 type MetricCreators = {
   [T in MetricType]: (
     meter: Meter,
@@ -37,27 +57,16 @@ export type KnownMetricScopes =
   | 'doc'
   | 'sse'
   | 'mail'
-  | 'ai';
+  | 'ai'
+  | 'event'
+  | 'queue';
 
 const metricCreators: MetricCreators = {
   counter(meter: Meter, name: string, opts?: MetricOptions) {
     return meter.createCounter(name, opts);
   },
   gauge(meter: Meter, name: string, opts?: MetricOptions) {
-    let value: any;
-    let attrs: Attributes | undefined;
-    const ob$ = meter.createObservableGauge(name, opts);
-
-    ob$.addCallback(result => {
-      result.observe(value, attrs);
-    });
-
-    return {
-      record: (newValue, newAttrs) => {
-        value = newValue;
-        attrs = newAttrs;
-      },
-    } satisfies Histogram;
+    return meter.createGauge(name, opts);
   },
   histogram(meter: Meter, name: string, opts?: MetricOptions) {
     return meter.createHistogram(name, opts);
@@ -130,5 +139,3 @@ export const metrics = new Proxy<Record<KnownMetricScopes, ScopedMetrics>>(
     },
   }
 );
-
-export function stopMetrics() {}

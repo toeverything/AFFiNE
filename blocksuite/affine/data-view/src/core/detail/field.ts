@@ -3,19 +3,18 @@ import {
   popMenu,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import {
   DeleteIcon,
   DuplicateIcon,
   MoveLeftIcon,
   MoveRightIcon,
 } from '@blocksuite/icons/lit';
-import { computed } from '@preact/signals-core';
+import { ShadowlessElement } from '@blocksuite/std';
+import { computed, signal } from '@preact/signals-core';
 import { css } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
-import { createRef } from 'lit/directives/ref.js';
 import { html } from 'lit/static-html.js';
 
 import { inputConfig, typeConfig } from '../common/property-menu.js';
@@ -109,7 +108,7 @@ export class RecordField extends SignalWatcher(
     }
   `;
 
-  private readonly _cell = createRef<DataViewCellLifeCycle>();
+  private readonly _cell = signal<DataViewCellLifeCycle>();
 
   _click = (e: MouseEvent) => {
     e.stopPropagation();
@@ -141,15 +140,16 @@ export class RecordField extends SignalWatcher(
                   ${MoveLeftIcon()}
                 </div>`,
                 hide: () =>
-                  properties.findIndex(v => v === this.column.id) === 0,
+                  properties.findIndex(
+                    property => property.id === this.column.id
+                  ) === 0,
                 select: () => {
-                  const index = properties.findIndex(v => v === this.column.id);
-                  const targetId = properties[index - 1];
-                  if (!targetId) {
+                  const prev = this.column.prev$.value;
+                  if (!prev) {
                     return;
                   }
-                  this.view.propertyMove(this.column.id, {
-                    id: targetId,
+                  this.column.move({
+                    id: prev.id,
                     before: true,
                   });
                 },
@@ -162,16 +162,17 @@ export class RecordField extends SignalWatcher(
                   ${MoveRightIcon()}
                 </div>`,
                 hide: () =>
-                  properties.findIndex(v => v === this.column.id) ===
+                  properties.findIndex(
+                    property => property.id === this.column.id
+                  ) ===
                   properties.length - 1,
                 select: () => {
-                  const index = properties.findIndex(v => v === this.column.id);
-                  const targetId = properties[index + 1];
-                  if (!targetId) {
+                  const next = this.column.next$.value;
+                  if (!next) {
                     return;
                   }
-                  this.view.propertyMove(this.column.id, {
-                    id: targetId,
+                  this.column.move({
+                    id: next.id,
                     before: false,
                   });
                 },
@@ -184,8 +185,7 @@ export class RecordField extends SignalWatcher(
               menu.action({
                 name: 'Duplicate',
                 prefix: DuplicateIcon(),
-                hide: () =>
-                  !this.column.duplicate || this.column.type$.value === 'title',
+                hide: () => !this.column.canDuplicate,
                 select: () => {
                   this.column.duplicate?.();
                 },
@@ -193,8 +193,7 @@ export class RecordField extends SignalWatcher(
               menu.action({
                 name: 'Delete',
                 prefix: DeleteIcon(),
-                hide: () =>
-                  !this.column.delete || this.column.type$.value === 'title',
+                hide: () => !this.column.canDelete,
                 select: () => {
                   this.column.delete?.();
                 },
@@ -214,7 +213,7 @@ export class RecordField extends SignalWatcher(
   accessor rowId!: string;
 
   cell$ = computed(() => {
-    return this.column.cellGet(this.rowId);
+    return this.column.cellGetOrCreate(this.rowId);
   });
 
   changeEditing = (editing: boolean) => {
@@ -240,19 +239,19 @@ export class RecordField extends SignalWatcher(
 
     const props: CellRenderProps = {
       cell: this.cell$.value,
-      isEditing: this.editing,
+      isEditing$: this.isEditing$,
       selectCurrentCell: this.changeEditing,
     };
     const renderer = this.column.renderer$.value;
     if (!renderer) {
       return;
     }
-    const { view, edit } = renderer;
+    const { view } = renderer;
     const contentClass = classMap({
       'field-content': true,
-      empty: !this.editing && this.cell$.value.isEmpty$.value,
-      'is-editing': this.editing,
-      'is-focus': this.isFocus,
+      empty: !this.isEditing$.value && this.cell$.value.isEmpty$.value,
+      'is-editing': this.isEditing$.value,
+      'is-focus': this.isFocus$.value,
     });
     return html`
       <div>
@@ -264,7 +263,7 @@ export class RecordField extends SignalWatcher(
         </div>
       </div>
       <div @click="${this._click}" class="${contentClass}">
-        ${renderUniLit(this.editing && edit ? edit : view, props, {
+        ${renderUniLit(view, props, {
           ref: this._cell,
           class: 'kanban-cell',
         })}
@@ -272,11 +271,9 @@ export class RecordField extends SignalWatcher(
     `;
   }
 
-  @state()
-  accessor editing = false;
+  isEditing$ = signal(false);
 
-  @state()
-  accessor isFocus = false;
+  isFocus$ = signal(false);
 
   @property({ attribute: false })
   accessor view!: SingleView;

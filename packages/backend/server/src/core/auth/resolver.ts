@@ -23,7 +23,6 @@ import {
 } from '../../base';
 import { Models, TokenType } from '../../models';
 import { Admin } from '../common';
-import { UserService } from '../user';
 import { UserType } from '../user/types';
 import { validators } from '../utils/validators';
 import { Public } from './guard';
@@ -48,7 +47,6 @@ export class AuthResolver {
   constructor(
     private readonly url: URLHelper,
     private readonly auth: AuthService,
-    private readonly user: UserService,
     private readonly models: Models
   ) {}
 
@@ -163,9 +161,7 @@ export class AuthResolver {
 
     const url = this.url.link(callbackUrl, { userId: user.id, token });
 
-    const res = await this.auth.sendChangePasswordEmail(user.email, url);
-
-    return !res.rejected.length;
+    return await this.auth.sendChangePasswordEmail(user.email, url);
   }
 
   @Mutation(() => Boolean)
@@ -206,8 +202,7 @@ export class AuthResolver {
 
     const url = this.url.link(callbackUrl, { token });
 
-    const res = await this.auth.sendChangeEmail(user.email, url);
-    return !res.rejected.length;
+    return await this.auth.sendChangeEmail(user.email, url);
   }
 
   @Mutation(() => Boolean)
@@ -234,7 +229,7 @@ export class AuthResolver {
       throw new InvalidEmailToken();
     }
 
-    const hasRegistered = await this.user.findUserByEmail(email);
+    const hasRegistered = await this.models.user.getUserByEmail(email);
 
     if (hasRegistered) {
       if (hasRegistered.id !== user.id) {
@@ -250,9 +245,7 @@ export class AuthResolver {
     );
 
     const url = this.url.link(callbackUrl, { token: verifyEmailToken, email });
-    const res = await this.auth.sendVerifyChangeEmail(email, url);
-
-    return !res.rejected.length;
+    return await this.auth.sendVerifyChangeEmail(email, url);
   }
 
   @Mutation(() => Boolean)
@@ -267,8 +260,7 @@ export class AuthResolver {
 
     const url = this.url.link(callbackUrl, { token });
 
-    const res = await this.auth.sendVerifyEmail(user.email, url);
-    return !res.rejected.length;
+    return await this.auth.sendVerifyEmail(user.email, url);
   }
 
   @Mutation(() => Boolean)

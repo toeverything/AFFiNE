@@ -1,10 +1,7 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { createVar, globalStyle } from '@vanilla-extract/css';
+import { globalStyle } from '@vanilla-extract/css';
 
-export const globalVars = {
-  appTabHeight: createVar('appTabHeight'),
-  appTabSafeArea: createVar('appTabSafeArea'),
-};
+import { globalVars } from './variables.css';
 
 globalStyle(':root', {
   vars: {
@@ -20,18 +17,19 @@ globalStyle('body', {
   minHeight: '100dvh',
   overflowY: 'unset',
 });
-globalStyle('body:has(> #app-tabs)', {
+globalStyle('body:has(>#app-tabs):not(:has(affine-keyboard-toolbar))', {
   paddingBottom: globalVars.appTabSafeArea,
 });
-globalStyle('body:has(#app-tabs) affine-keyboard-toolbar[data-shrink="true"]', {
-  paddingBottom: globalVars.appTabSafeArea,
+globalStyle('body:has(affine-keyboard-toolbar)', {
+  paddingBottom: `calc(${globalVars.appKeyboardStaticHeight} + 46px)`,
 });
-globalStyle('body:has(#app-tabs) affine-keyboard-tool-panel', {
-  paddingBottom: `calc(${globalVars.appTabHeight} + env(safe-area-inset-bottom) + 8px)`,
+globalStyle('body:has(>#app-tabs) affine-keyboard-tool-panel', {
+  paddingBottom: `calc(${globalVars.appTabSafeArea} + 8px)`,
 });
-globalStyle('body:has(#app-tabs) edgeless-toolbar-widget', {
+globalStyle('body:has(>#app-tabs) edgeless-toolbar-widget', {
   bottom: globalVars.appTabSafeArea,
 });
+
 globalStyle('html', {
   height: '100dvh',
   overflowY: 'auto',

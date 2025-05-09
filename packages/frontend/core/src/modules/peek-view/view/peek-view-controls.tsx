@@ -1,11 +1,13 @@
-import { IconButton } from '@affine/component';
+import { IconButton, notify } from '@affine/component';
+import { copyTextToClipboard } from '@affine/core/utils/clipboard';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import type { DocMode } from '@blocksuite/affine/blocks';
+import type { DocMode } from '@blocksuite/affine/model';
 import {
   CloseIcon,
   ExpandFullIcon,
   InformationIcon,
+  LinkIcon,
   OpenInNewIcon,
   SplitViewIcon,
 } from '@blocksuite/icons/rc';
@@ -21,7 +23,10 @@ import {
   useMemo,
 } from 'react';
 
+import { ServerService } from '../../cloud';
 import { WorkspaceDialogService } from '../../dialogs';
+import { DocsService } from '../../doc/services/docs';
+import { toDocSearchParams } from '../../navigation';
 import { WorkbenchService } from '../../workbench';
 import type {
   AttachmentPeekViewInfo,
@@ -35,7 +40,10 @@ type ControlButtonProps = {
   icon: ReactElement<SVGAttributes<SVGElement>>;
   name: string;
   onClick: () => void;
+  enabled: boolean;
 };
+
+const filterByEnabled = (props: ControlButtonProps) => props.enabled;
 
 export const ControlButton = ({
   icon,
@@ -80,12 +88,13 @@ export const DefaultPeekViewControls = ({
   const controls = useMemo(() => {
     return [
       {
-        icon: <CloseIcon />,
         nameKey: 'close',
         name: t['com.affine.peek-view-controls.close'](),
+        icon: <CloseIcon />,
         onClick: () => peekView.close(),
+        enabled: true,
       },
-    ].filter((opt): opt is ControlButtonProps => Boolean(opt));
+    ].filter(filterByEnabled);
   }, [peekView, t]);
   return (
     <div {...rest} className={clsx(styles.root, className)}>
@@ -105,51 +114,88 @@ export const DocPeekViewControls = ({
   const workbench = useService(WorkbenchService).workbench;
   const t = useI18n();
   const workspaceDialogService = useService(WorkspaceDialogService);
+  const serverService = useService(ServerService);
+  const docsService = useService(DocsService);
   const controls = useMemo(() => {
     return [
       {
-        icon: <CloseIcon />,
         nameKey: 'close',
         name: t['com.affine.peek-view-controls.close'](),
+        icon: <CloseIcon />,
         onClick: () => peekView.close(),
+        enabled: true,
       },
       {
-        icon: <ExpandFullIcon />,
-        name: t['com.affine.peek-view-controls.open-doc'](),
         nameKey: 'open',
+        name: t['com.affine.peek-view-controls.open-doc'](),
+        icon: <ExpandFullIcon />,
         onClick: () => {
           workbench.openDoc(docRef);
           peekView.close(false);
         },
+        enabled: true,
       },
       {
-        icon: <OpenInNewIcon />,
         nameKey: 'new-tab',
         name: t['com.affine.peek-view-controls.open-doc-in-new-tab'](),
+        icon: <OpenInNewIcon />,
         onClick: () => {
           workbench.openDoc(docRef, { at: 'new-tab' });
           peekView.close(false);
         },
+        enabled: true,
       },
-      BUILD_CONFIG.isElectron && {
-        icon: <SplitViewIcon />,
+      {
         nameKey: 'split-view',
         name: t['com.affine.peek-view-controls.open-doc-in-split-view'](),
+        icon: <SplitViewIcon />,
         onClick: () => {
           workbench.openDoc(docRef, { at: 'beside' });
           peekView.close(false);
         },
+        enabled: BUILD_CONFIG.isElectron,
       },
       {
-        icon: <InformationIcon />,
+        nameKey: 'copy-link',
+        name: t['com.affine.peek-view-controls.copy-link'](),
+        icon: <LinkIcon />,
+        onClick: async () => {
+          const preferredMode = docsService.list.getPrimaryMode(docRef.docId);
+          const search = toDocSearchParams({
+            mode: docRef.mode || preferredMode,
+            blockIds: docRef.blockIds,
+            elementIds: docRef.elementIds,
+            xywh: docRef.xywh,
+          });
+          const url = new URL(
+            workbench.basename$.value + '/' + docRef.docId,
+            serverService.server.baseUrl
+          );
+          if (search?.size) url.search = search.toString();
+          await copyTextToClipboard(url.toString());
+          notify.success({ title: t['Copied link to clipboard']() });
+        },
+        enabled: true,
+      },
+      {
         nameKey: 'info',
         name: t['com.affine.peek-view-controls.open-info'](),
+        icon: <InformationIcon />,
         onClick: () => {
           workspaceDialogService.open('doc-info', { docId: docRef.docId });
         },
+        enabled: true,
       },
-    ].filter((opt): opt is ControlButtonProps => Boolean(opt));
-  }, [t, peekView, workbench, docRef, workspaceDialogService]);
+    ].filter(filterByEnabled);
+  }, [
+    t,
+    peekView,
+    workbench,
+    docRef,
+    docsService.list,
+    serverService.server.baseUrl,
+    workspaceDialogService,
+  ]);
   return (
     <div {...rest} className={clsx(styles.root, className)}>
       {controls.map(option => (
@@ -177,10 +223,11 @@ export const AttachmentPeekViewControls = ({
   const controls = useMemo(() => {
     const controls = [
       {
-        icon: <CloseIcon />,
         nameKey: 'close',
         name: t['com.affine.peek-view-controls.close'](),
+        icon: <CloseIcon />,
         onClick: () => peekView.close(),
+        enabled: true,
       },
     ];
     if (!type) return controls;
@@ -188,42 +235,45 @@ export const AttachmentPeekViewControls = ({
     return [
       ...controls,
       // TODO(@fundon): needs to be implemented on mobile
-      BUILD_CONFIG.isDesktopEdition && {
-        icon: <ExpandFullIcon />,
-        name: t['com.affine.peek-view-controls.open-attachment'](),
+      {
         nameKey: 'open',
+        name: t['com.affine.peek-view-controls.open-attachment'](),
+        icon: <ExpandFullIcon />,
         onClick: () => {
           workbench.openAttachment(docId, blockId);
           peekView.close(false);
 
           track.$.attachment.$.openAttachmentInFullscreen({ type });
         },
+        enabled: BUILD_CONFIG.isDesktopEdition,
       },
       {
-        icon: <OpenInNewIcon />,
         nameKey: 'new-tab',
         name: t['com.affine.peek-view-controls.open-attachment-in-new-tab'](),
+        icon: <OpenInNewIcon />,
         onClick: () => {
           workbench.openAttachment(docId, blockId, { at: 'new-tab' });
           peekView.close(false);
 
           track.$.attachment.$.openAttachmentInNewTab({ type });
         },
+        enabled: true,
       },
-      BUILD_CONFIG.isElectron && {
-        icon: <SplitViewIcon />,
+      {
         nameKey: 'split-view',
         name: t[
           'com.affine.peek-view-controls.open-attachment-in-split-view'
         ](),
+        icon: <SplitViewIcon />,
         onClick: () => {
           workbench.openAttachment(docId, blockId, { at: 'beside' });
           peekView.close(false);
 
           track.$.attachment.$.openAttachmentInSplitView({ type });
         },
+        enabled: BUILD_CONFIG.isElectron,
       },
-    ].filter((opt): opt is ControlButtonProps => Boolean(opt));
+    ].filter(filterByEnabled);
   }, [t, peekView, workbench, docId, blockId, type]);
 
   useEffect(() => {

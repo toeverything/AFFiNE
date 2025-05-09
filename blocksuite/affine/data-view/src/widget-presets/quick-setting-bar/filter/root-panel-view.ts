@@ -6,8 +6,7 @@ import {
   popupTargetFromElement,
   subMenuMiddleware,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher } from '@blocksuite/global/utils';
+import { SignalWatcher } from '@blocksuite/global/lit';
 import {
   ArrowDownSmallIcon,
   ConvertIcon,
@@ -17,6 +16,7 @@ import {
   MoreHorizontalIcon,
   PlusIcon,
 } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { property, state } from 'lit/decorators.js';

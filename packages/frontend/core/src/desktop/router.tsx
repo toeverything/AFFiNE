@@ -1,10 +1,9 @@
-import { wrapCreateBrowserRouter } from '@sentry/react';
+import { wrapCreateBrowserRouterV6 } from '@sentry/react';
 import { useEffect, useState } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import {
   createBrowserRouter as reactRouterCreateBrowserRouter,
   redirect,
-  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
   useNavigate,
 } from 'react-router-dom';
 
@@ -69,6 +68,10 @@ export const topLevelRoutes = [
         lazy: () => import('./pages/upgrade-success/team'),
       },
       {
+        path: '/upgrade-success/self-hosted-team',
+        lazy: () => import('./pages/upgrade-success/self-host-team'),
+      },
+      {
         path: '/ai-upgrade-success',
         lazy: () => import('./pages/ai-upgrade-success'),
       },
@@ -99,6 +102,10 @@ export const topLevelRoutes = [
       {
         path: '/theme-editor',
         lazy: () => import('./pages/theme-editor'),
+      },
+      {
+        path: '/clipper/import',
+        lazy: () => import('./pages/import-clipper'),
       },
       {
         path: '/template/import',
@@ -175,12 +182,13 @@ export const topLevelRoutes = [
   },
 ] satisfies [RouteObject, ...RouteObject[]];
 
-const createBrowserRouter = wrapCreateBrowserRouter(
+const createBrowserRouter = wrapCreateBrowserRouterV6(
   reactRouterCreateBrowserRouter
 );
 export const router = (
   window.SENTRY_RELEASE ? createBrowserRouter : reactRouterCreateBrowserRouter
 )(topLevelRoutes, {
+  basename: environment.subPath,
   future: {
     v7_normalizeFormMethod: true,
   },

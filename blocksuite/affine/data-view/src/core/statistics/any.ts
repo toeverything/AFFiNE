@@ -19,16 +19,14 @@ export const anyTypeStatsFunctions: StatisticsConfig[] = [
     displayName: 'Values',
     type: 'count-values',
     dataType: t.unknown.instance(),
-    impl: (data, { meta, dataSource }) => {
-      const values = data
-        .flatMap(v => {
-          if (meta.config.values) {
-            return meta.config.values({ value: v, dataSource });
-          }
-          return v;
-        })
-        .filter(v => v != null);
-      return values.length.toString();
+    impl: data => {
+      const values = data.reduce((acc: number, v) => {
+        if (Array.isArray(v)) {
+          return acc + v.length;
+        }
+        return acc + (v == null ? 0 : 1);
+      }, 0);
+      return values.toString();
     },
   }),
   createStatisticConfig({
@@ -37,13 +35,13 @@ export const anyTypeStatsFunctions: StatisticsConfig[] = [
     displayName: 'Unique Values',
     type: 'count-unique-values',
     dataType: t.unknown.instance(),
-    impl: (data, { meta, dataSource }) => {
+    impl: data => {
       const values = data
         .flatMap(v => {
-          if (meta.config.values) {
-            return meta.config.values({ value: v, dataSource });
+          if (Array.isArray(v)) {
+            return v;
           }
-          return v;
+          return [v];
         })
         .filter(v => v != null);
       return new Set(values).size.toString();
@@ -57,7 +55,7 @@ export const anyTypeStatsFunctions: StatisticsConfig[] = [
     dataType: t.unknown.instance(),
     impl: (data, { meta, dataSource }) => {
       const emptyList = data.filter(value =>
-        meta.config.isEmpty({ value, dataSource })
+        meta.config.jsonValue.isEmpty({ value, dataSource })
       );
       return emptyList.length.toString();
     },
@@ -70,7 +68,7 @@ export const anyTypeStatsFunctions: StatisticsConfig[] = [
     dataType: t.unknown.instance(),
     impl: (data, { meta, dataSource }) => {
       const notEmptyList = data.filter(
-        value => !meta.config.isEmpty({ value, dataSource })
+        value => !meta.config.jsonValue.isEmpty({ value, dataSource })
       );
       return notEmptyList.length.toString();
     },
@@ -84,7 +82,7 @@ export const anyTypeStatsFunctions: StatisticsConfig[] = [
     impl: (data, { meta, dataSource }) => {
       if (data.length === 0) return '';
       const emptyList = data.filter(value =>
-        meta.config.isEmpty({ value, dataSource })
+        meta.config.jsonValue.isEmpty({ value, dataSource })
       );
       return ((emptyList.length / data.length) * 100).toFixed(2) + '%';
     },
@@ -98,7 +96,7 @@ export const anyTypeStatsFunctions: StatisticsConfig[] = [
     impl: (data, { meta, dataSource }) => {
       if (data.length === 0) return '';
       const notEmptyList = data.filter(
-        value => !meta.config.isEmpty({ value, dataSource })
+        value => !meta.config.jsonValue.isEmpty({ value, dataSource })
       );
       return ((notEmptyList.length / data.length) * 100).toFixed(2) + '%';
     },

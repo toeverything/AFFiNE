@@ -75,7 +75,7 @@ export class CheckboxCell extends BaseCellRenderer<boolean> {
   override beforeEnterEditMode() {
     const checked = !this.value;
 
-    this.onChange(checked);
+    this.valueSetImmediate(checked);
     if (checked) {
       playCheckAnimation(this._checkbox, { left: 2 }).catch(console.error);
     }

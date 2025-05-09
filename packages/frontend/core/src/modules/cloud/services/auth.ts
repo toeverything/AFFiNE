@@ -1,29 +1,19 @@
-import { AIProvider } from '@affine/core/blocksuite/presets/ai';
+import { UserFriendlyError } from '@affine/error';
 import type { OAuthProviderType } from '@affine/graphql';
 import { track } from '@affine/track';
 import { OnEvent, Service } from '@toeverything/infra';
+import { nanoid } from 'nanoid';
 import { distinctUntilChanged, map, skip } from 'rxjs';
 
 import { ApplicationFocused } from '../../lifecycle';
 import type { UrlService } from '../../url';
-import { type AuthAccountInfo, AuthSession } from '../entities/session';
-import { BackendError } from '../error';
+import { AuthSession } from '../entities/session';
 import { AccountChanged } from '../events/account-changed';
 import { AccountLoggedIn } from '../events/account-logged-in';
 import { AccountLoggedOut } from '../events/account-logged-out';
 import { ServerStarted } from '../events/server-started';
 import type { AuthStore } from '../stores/auth';
 import type { FetchService } from './fetch';
-
-function toAIUserInfo(account: AuthAccountInfo | null) {
-  if (!account) return null;
-  return {
-    avatarUrl: account.avatar ?? '',
-    email: account.email ?? '',
-    id: account.id,
-    name: account.label,
-  };
-}
 
 @OnEvent(ApplicationFocused, e => e.onApplicationFocused)
 @OnEvent(ServerStarted, e => e.onServerStarted)
@@ -37,11 +27,6 @@ export class AuthService extends Service {
   ) {
     super();
 
-    // TODO(@forehalo): make AIProvider a standalone service passed to AI elements by props
-    AIProvider.provide('userInfo', () => {
-      return toAIUserInfo(this.session.account$.value);
-    });
-
     this.session.account$
       .pipe(
         map(a => ({
@@ -52,8 +37,6 @@ export class AuthService extends Service {
         skip(1) // skip the initial value
       )
       .subscribe(({ account }) => {
-        AIProvider.slots.userInfo.emit(toAIUserInfo(account));
-
         if (account === null) {
           this.eventBus.emit(AccountLoggedOut, account);
         } else {
@@ -78,6 +61,7 @@ export class AuthService extends Service {
     redirectUrl?: string // url to redirect to after signed-in
   ) {
     track.$.$.auth.signIn({ method: 'magic-link' });
+    this.setClientNonce();
     try {
       const scheme = this.urlService.getClientScheme();
       const magicLinkUrlParams = new URLSearchParams();
@@ -94,6 +78,7 @@ export class AuthService extends Service {
           // we call it [callbackUrl] instead of [redirect_uri]
           // to make it clear the url is used to finish the sign-in process instead of redirect after signed-in
           callbackUrl: `/magic-link?${magicLinkUrlParams.toString()}`,
+          client_nonce: this.store.getClientNonce(),
         }),
         headers: {
           'content-type': 'application/json',
@@ -103,28 +88,23 @@ export class AuthService extends Service {
     } catch (e) {
       track.$.$.auth.signInFail({
         method: 'magic-link',
-        reason: e instanceof BackendError ? e.originError.name : 'unknown',
+        reason: UserFriendlyError.fromAny(e).name,
       });
       throw e;
     }
   }
 
-  async signInMagicLink(email: string, token: string) {
+  async signInMagicLink(email: string, token: string, byLink = true) {
+    const method = byLink ? 'magic-link' : 'otp';
     try {
-      await this.fetchService.fetch('/api/auth/magic-link', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, token }),
-      });
+      await this.store.signInMagicLink(email, token);
 
       this.session.revalidate();
-      track.$.$.auth.signedIn({ method: 'magic-link' });
+      track.$.$.auth.signedIn({ method });
     } catch (e) {
       track.$.$.auth.signInFail({
-        method: 'magic-link',
-        reason: e instanceof BackendError ? e.originError.name : 'unknown',
+        method,
+        reason: UserFriendlyError.fromAny(e).name,
       });
       throw e;
     }
@@ -135,10 +115,16 @@ export class AuthService extends Service {
     client: string,
     /** @deprecated*/ redirectUrl?: string
   ) {
+    this.setClientNonce();
     try {
       const res = await this.fetchService.fetch('/api/oauth/preflight', {
         method: 'POST',
-        body: JSON.stringify({ provider, redirect_uri: redirectUrl }),
+        body: JSON.stringify({
+          provider,
+          client,
+          redirect_uri: redirectUrl,
+          client_nonce: this.store.getClientNonce(),
+        }),
         headers: {
           'content-type': 'application/json',
         },
@@ -146,25 +132,12 @@ export class AuthService extends Service {
 
       let { url } = await res.json();
 
-      // change `state=xxx` to `state={state:xxx,native:true}`
-      // so we could know the callback should be redirect to native app
-      const oauthUrl = new URL(url);
-      oauthUrl.searchParams.set(
-        'state',
-        JSON.stringify({
-          state: oauthUrl.searchParams.get('state'),
-          client,
-          provider,
-        })
-      );
-      url = oauthUrl.toString();
-
-      return url;
+      return url as string;
     } catch (e) {
       track.$.$.auth.signInFail({
         method: 'oauth',
         provider,
-        reason: e instanceof BackendError ? e.originError.name : 'unknown',
+        reason: UserFriendlyError.fromAny(e).name,
       });
       throw e;
     }
@@ -172,23 +145,21 @@ export class AuthService extends Service {
 
   async signInOauth(code: string, state: string, provider: string) {
     try {
-      const res = await this.fetchService.fetch('/api/oauth/callback', {
-        method: 'POST',
-        body: JSON.stringify({ code, state }),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
+      const { redirectUri } = await this.store.signInOauth(
+        code,
+        state,
+        provider
+      );
 
       this.session.revalidate();
 
       track.$.$.auth.signedIn({ method: 'oauth', provider });
-      return await res.json();
+      return { redirectUri };
     } catch (e) {
       track.$.$.auth.signInFail({
         method: 'oauth',
         provider,
-        reason: e instanceof BackendError ? e.originError.name : 'unknown',
+        reason: UserFriendlyError.fromAny(e).name,
       });
       throw e;
     }
@@ -202,29 +173,20 @@ export class AuthService extends Service {
   }) {
     track.$.$.auth.signIn({ method: 'password' });
     try {
-      await this.fetchService.fetch('/api/auth/sign-in', {
-        method: 'POST',
-        body: JSON.stringify(credential),
-        headers: {
-          'content-type': 'application/json',
-          ...(credential.verifyToken
-            ? this.captchaHeaders(credential.verifyToken, credential.challenge)
-            : {}),
-        },
-      });
+      await this.store.signInPassword(credential);
       this.session.revalidate();
       track.$.$.auth.signedIn({ method: 'password' });
     } catch (e) {
       track.$.$.auth.signInFail({
         method: 'password',
-        reason: e instanceof BackendError ? e.originError.name : 'unknown',
+        reason: UserFriendlyError.fromAny(e).name,
       });
       throw e;
     }
   }
 
   async signOut() {
-    await this.fetchService.fetch('/api/auth/sign-out');
+    await this.store.signOut();
     this.store.setCachedAuthSession(null);
     this.session.revalidate();
   }
@@ -243,5 +205,12 @@ export class AuthService extends Service {
     }
 
     return headers;
+  }
+
+  private setClientNonce() {
+    if (BUILD_CONFIG.isNative) {
+      // send random client nonce on native app
+      this.store.setClientNonce(nanoid());
+    }
   }
 }

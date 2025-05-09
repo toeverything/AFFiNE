@@ -20,7 +20,7 @@ import {
 import { horizontalListSortingStrategy } from '../../../core/utils/wc-dnd/sort/strategies/index.js';
 import { DataViewBase } from '../../../core/view/data-view-base.js';
 import type { KanbanSingleView } from '../kanban-view-manager.js';
-import type { KanbanViewSelectionWithType } from '../types.js';
+import type { KanbanViewSelectionWithType } from '../selection';
 import { KanbanClipboardController } from './controller/clipboard.js';
 import { KanbanDragController } from './controller/drag.js';
 import { KanbanHotkeysController } from './controller/hotkeys.js';

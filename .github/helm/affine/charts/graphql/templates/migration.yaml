@@ -23,37 +23,27 @@ spec:
           - name: AFFINE_ENV
             value: "{{ .Release.Namespace }}"
           - name: DEPLOYMENT_TYPE
-            value: "affine"
+            value: "{{ .Values.global.deployment.type }}"
+          - name: DEPLOYMENT_PLATFORM
+            value: "{{ .Values.global.deployment.platform }}"
           - name: DATABASE_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: pg-postgresql
                 key: postgres-password
-          {{ if not .Values.global.database.gcloud.enabled }}
           - name: DATABASE_URL
-            value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.url }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
-          {{ end }}
-          {{ if .Values.global.database.gcloud.enabled }}
-          - name: DATABASE_URL
-            value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.gcloud.cloudSqlInternal }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
-          {{ end }}
-          {{ if .Values.global.objectStorage.r2.enabled }}
-          - name: R2_OBJECT_STORAGE_ACCOUNT_ID
+            value: postgres://{{ .Values.global.database.user }}:$(DATABASE_PASSWORD)@{{ .Values.global.database.host }}:{{ .Values.global.database.port }}/{{ .Values.global.database.name }}
+          - name: REDIS_SERVER_HOST
+            value: "{{ .Values.global.redis.host }}"
+          - name: REDIS_SERVER_PORT
+            value: "{{ .Values.global.redis.port }}"
+          - name: REDIS_SERVER_USER
+            value: "{{ .Values.global.redis.username }}"
+          - name: REDIS_SERVER_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: "{{ .Values.global.objectStorage.r2.secretName }}"
-                key: accountId
-          - name: R2_OBJECT_STORAGE_ACCESS_KEY_ID
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.global.objectStorage.r2.secretName }}"
-                key: accessKeyId
-          - name: R2_OBJECT_STORAGE_SECRET_ACCESS_KEY
-            valueFrom:
-              secretKeyRef:
-                name: "{{ .Values.global.objectStorage.r2.secretName }}"
-                key: secretAccessKey
-          {{ end }}
+                name: redis
+                key: redis-password
         resources:
           requests:
             cpu: '100m'

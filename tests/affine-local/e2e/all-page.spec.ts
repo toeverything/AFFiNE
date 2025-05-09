@@ -1,4 +1,4 @@
-/* eslint-disable unicorn/prefer-dom-node-dataset */
+/* oxlint-disable unicorn/prefer-dom-node-dataset */
 import { test } from '@affine-test/kit/playwright';
 import {
   changeFilter,
@@ -80,13 +80,16 @@ test('use monthpicker to modify the month of datepicker', async ({ page }) => {
   await clickDatePicker(page);
   const lastMonth = new Date();
   lastMonth.setMonth(lastMonth.getMonth() - 1);
-  await selectMonthFromMonthPicker(page, lastMonth);
-  await checkDatePickerMonth(page, lastMonth);
+  const datePicker = page.locator(
+    '[role="dialog"] [data-testid="date-picker-calendar"]'
+  );
+  await selectMonthFromMonthPicker(datePicker, lastMonth);
+  await checkDatePickerMonth(datePicker, lastMonth);
   // change month
   const nextMonth = new Date();
   nextMonth.setMonth(nextMonth.getMonth() + 1);
-  await selectMonthFromMonthPicker(page, nextMonth);
-  await checkDatePickerMonth(page, nextMonth);
+  await selectMonthFromMonthPicker(datePicker, nextMonth);
+  await checkDatePickerMonth(datePicker, nextMonth);
 });
 
 test('allow creation of filters by tags', async ({ page }) => {
@@ -326,11 +329,11 @@ test('click display button to group pages', async ({ page }) => {
 
   // the group header should appear
   await expect(
-    page.locator('[data-testid="group-label-favourited-1"]')
+    page.locator('[data-testid="group-label-favourited"]')
   ).toBeVisible();
 
   await expect(
-    page.locator('[data-testid="group-label-notFavourited-1"]')
+    page.locator('[data-testid="group-label-notFavourited"]')
   ).toBeVisible();
 });
 

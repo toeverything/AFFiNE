@@ -11,34 +11,23 @@ global:
     privateKey: ''
   database:
     user: 'postgres'
-    url: 'pg-postgresql'
+    host: 'pg-postgresql'
     port: '5432'
     name: 'affine'
     password: ''
-    gcloud:
-      enabled: false
-      # use for migration
-      cloudSqlInternal: ''
-      connectionName: ''
-      serviceAccount: ''
-      cloudProxyReplicas: 3
-      proxyPort: '5432'
   redis:
-    enabled: true
     host: 'redis-master'
     port: '6379'
     username: ''
     password: ''
     database: 0
-  objectStorage:
-    r2:
-      enabled: false
-      secretName: r2
-      accountId: ''
-      accessKeyId: ''
-      secretAccessKey: ''
-  gke:
-    enabled: true
+  docService:
+    name: 'affine-doc'
+    port: 3020
+  deployment:
+    # change to 'selfhosted' and 'unknown' if this chart is ready to be used for selfhosted deployment
+    type: 'affine'
+    platform: 'gcp'
 
 graphql:
   service:
@@ -58,6 +47,12 @@ renderer:
   service:
     type: ClusterIP
     port: 3000
+    annotations:
+      cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
+
+doc:
+  service:
+    type: ClusterIP
     annotations:
       cloud.google.com/backend-config: '{"default": "affine-api-backendconfig"}'
 

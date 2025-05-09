@@ -1,0 +1,27 @@
+{
+  "entryPoints": ["../framework/store", "../framework/std"],
+  "packageOptions": {
+    "readme": "none",
+    "categorizeByGroup": false,
+    "includeVersion": false,
+    "excludeNotDocumented": true,
+    "excludeInternal": true,
+    "excludePrivate": true,
+    "excludeProtected": true,
+    "excludeExternals": true,
+    "externalPattern": ["node_modules/**/*"],
+    "disableSources": true,
+    "categoryOrder": ["*", "Other"]
+  },
+  "readme": "none",
+  "plugin": ["typedoc-plugin-markdown"],
+  "out": "./api",
+  "entryPointStrategy": "packages",
+  "includeVersion": false,
+  "logLevel": "Error",
+  "name": "BlockSuite API Documentation",
+  "navigation": {
+    "includeCategories": true
+  },
+  "sort": ["source-order"]
+}

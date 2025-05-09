@@ -1,8 +1,13 @@
-import { type DocMode, ZipTransformer } from '@blocksuite/affine/blocks';
+import type { DocMode } from '@blocksuite/affine/model';
+import { ZipTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
 
 import { DocsService } from '../../doc';
-import type { WorkspaceMetadata, WorkspacesService } from '../../workspace';
+import {
+  getAFFiNEWorkspaceSchema,
+  type WorkspaceMetadata,
+  type WorkspacesService,
+} from '../../workspace';
 
 export class ImportTemplateService extends Service {
   constructor(private readonly workspacesService: WorkspacesService) {
@@ -18,9 +23,10 @@ export class ImportTemplateService extends Service {
       this.workspacesService.open({
         metadata: workspaceMetadata,
       });
-    await workspace.engine.waitForRootDocReady();
+    await workspace.engine.doc.waitForDocReady(workspace.id); // wait for root doc ready
     const [importedDoc] = await ZipTransformer.importDocs(
       workspace.docCollection,
+      getAFFiNEWorkspaceSchema(),
       new Blob([docBinary], {
         type: 'application/zip',
       })
@@ -42,16 +48,19 @@ export class ImportTemplateService extends Service {
     docBinary: Uint8Array
     // todo: support doc mode on init
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
     let docId: string = null!;
     const { id: workspaceId } = await this.workspacesService.create(
       flavour,
       async (docCollection, _, docStorage) => {
         docCollection.meta.initialize();
-        docCollection.meta.setName(workspaceName);
+        docCollection.doc.getMap('meta').set('name', workspaceName);
         const doc = docCollection.createDoc();
         docId = doc.id;
-        await docStorage.doc.set(doc.spaceDoc.guid, docBinary);
+        await docStorage.pushDocUpdate({
+          docId: doc.spaceDoc.guid,
+          bin: docBinary,
+        });
       }
     );
     return { workspaceId, docId };

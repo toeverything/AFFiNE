@@ -50,13 +50,5 @@ export class HighlightSelection extends BaseSelection {
   }
 }
 
-declare global {
-  namespace BlockSuite {
-    interface Selection {
-      highlight: typeof HighlightSelection;
-    }
-  }
-}
-
 export const HighlightSelectionExtension =
   SelectionExtension(HighlightSelection);

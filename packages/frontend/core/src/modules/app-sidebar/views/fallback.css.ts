@@ -1,7 +1,7 @@
 import { style } from '@vanilla-extract/css';
 
 export const fallback = style({
-  padding: '4px 20px',
+  padding: '4px 16px',
   height: '100%',
   overflow: 'clip',
 });

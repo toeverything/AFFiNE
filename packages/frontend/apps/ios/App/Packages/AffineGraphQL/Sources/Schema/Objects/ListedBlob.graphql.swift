@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let ListedBlob = ApolloAPI.Object(
     typename: "ListedBlob",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

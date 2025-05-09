@@ -1,29 +1,26 @@
 import { Readable } from 'node:stream';
 
-import { HttpStatus, INestApplication } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
-import request from 'supertest';
 
-import { AppModule } from '../../app.module';
-import { CurrentUser } from '../../core/auth';
-import { AuthService } from '../../core/auth/service';
 import { PgWorkspaceDocStorageAdapter } from '../../core/doc';
 import { WorkspaceBlobStorage } from '../../core/storage';
-import { createTestingApp, internalSignIn } from '../utils';
+import { Models, PublicDocMode, WorkspaceRole } from '../../models';
+import { createTestingApp, TestingApp, TestUser } from '../utils';
 
 const test = ava as TestFn<{
-  u1: CurrentUser;
   db: PrismaClient;
-  app: INestApplication;
+  app: TestingApp;
+  u1: TestUser;
   storage: Sinon.SinonStubbedInstance<WorkspaceBlobStorage>;
   workspace: Sinon.SinonStubbedInstance<PgWorkspaceDocStorageAdapter>;
+  models: Models;
 }>;
 
 test.before(async t => {
-  const { app } = await createTestingApp({
-    imports: [AppModule],
+  const app = await createTestingApp({
     tapModule: m => {
       m.overrideProvider(WorkspaceBlobStorage)
         .useValue(Sinon.createStubInstance(WorkspaceBlobStorage))
@@ -32,16 +29,16 @@ test.before(async t => {
     },
   });
 
-  const auth = app.get(AuthService);
-  t.context.u1 = await auth.signUp('u1@affine.pro', '1');
   const db = app.get(PrismaClient);
 
+  t.context.u1 = await app.signupV1('u1@affine.pro');
   t.context.db = db;
   t.context.app = app;
   t.context.storage = app.get(WorkspaceBlobStorage);
   t.context.workspace = app.get(PgWorkspaceDocStorageAdapter);
+  t.context.models = app.get(Models);
 
-  await db.workspacePage.create({
+  await db.workspaceDoc.create({
     data: {
       workspace: {
         create: {
@@ -49,12 +46,12 @@ test.before(async t => {
           public: true,
         },
       },
-      pageId: 'private',
+      docId: 'private',
       public: false,
     },
   });
 
-  await db.workspacePage.create({
+  await db.workspaceDoc.create({
     data: {
       workspace: {
         create: {
@@ -62,12 +59,12 @@ test.before(async t => {
           public: false,
         },
       },
-      pageId: 'public',
+      docId: 'public',
       public: true,
     },
   });
 
-  await db.workspacePage.create({
+  await db.workspaceDoc.create({
     data: {
       workspace: {
         create: {
@@ -75,7 +72,7 @@ test.before(async t => {
           public: false,
         },
       },
-      pageId: 'private',
+      docId: 'private',
       public: false,
     },
   });
@@ -109,23 +106,19 @@ function blob() {
 
 // blob
 test('should be able to get blob from public workspace', async t => {
-  const { app, u1, storage } = t.context;
+  const { app, storage } = t.context;
 
   // no authenticated user
   storage.get.resolves(blob());
-  let res = await request(t.context.app.getHttpServer()).get(
-    '/api/workspaces/public/blobs/test'
-  );
+  let res = await app.GET('/api/workspaces/public/blobs/test');
 
   t.is(res.status, HttpStatus.OK);
   t.is(res.get('content-type'), 'text/plain');
   t.is(res.text, 'blob');
 
   // authenticated user
-  const cookie = await internalSignIn(app, u1.id);
-  res = await request(t.context.app.getHttpServer())
-    .get('/api/workspaces/public/blobs/test')
-    .set('Cookie', cookie);
+  await app.login(t.context.u1);
+  res = await app.GET('/api/workspaces/public/blobs/test');
 
   t.is(res.status, HttpStatus.OK);
   t.is(res.get('content-type'), 'text/plain');
@@ -133,23 +126,19 @@ test('should be able to get blob from public workspace', async t => {
 });
 
 test('should be able to get private workspace with public pages', async t => {
-  const { app, u1, storage } = t.context;
+  const { app, storage } = t.context;
 
   // no authenticated user
   storage.get.resolves(blob());
-  let res = await request(app.getHttpServer()).get(
-    '/api/workspaces/private/blobs/test'
-  );
+  let res = await app.GET('/api/workspaces/private/blobs/test');
 
   t.is(res.status, HttpStatus.OK);
   t.is(res.get('content-type'), 'text/plain');
   t.is(res.text, 'blob');
 
   // authenticated user
-  const cookie = await internalSignIn(app, u1.id);
-  res = await request(app.getHttpServer())
-    .get('/api/workspaces/private/blobs/test')
-    .set('cookie', cookie);
+  await app.login(t.context.u1);
+  res = await app.GET('/api/workspaces/private/blobs/test');
 
   t.is(res.status, HttpStatus.OK);
   t.is(res.get('content-type'), 'text/plain');
@@ -157,39 +146,30 @@ test('should be able to get private workspace with public pages', async t => {
 });
 
 test('should not be able to get private workspace with no public pages', async t => {
-  const { app, u1 } = t.context;
+  const { app } = t.context;
 
-  let res = await request(app.getHttpServer()).get(
-    '/api/workspaces/totally-private/blobs/test'
-  );
+  let res = await app.GET('/api/workspaces/totally-private/blobs/test');
 
   t.is(res.status, HttpStatus.FORBIDDEN);
 
-  res = await request(app.getHttpServer())
-    .get('/api/workspaces/totally-private/blobs/test')
-    .set('cookie', await internalSignIn(app, u1.id));
+  res = await app.GET('/api/workspaces/totally-private/blobs/test');
 
   t.is(res.status, HttpStatus.FORBIDDEN);
 });
 
 test('should be able to get permission granted workspace', async t => {
-  const { app, u1, db, storage } = t.context;
+  const { app, storage } = t.context;
 
-  const cookie = await internalSignIn(app, u1.id);
-  await db.workspaceUserPermission.create({
-    data: {
-      workspaceId: 'totally-private',
-      userId: u1.id,
-      type: 1,
-      accepted: true,
-      status: WorkspaceMemberStatus.Accepted,
-    },
-  });
+  await t.context.models.workspaceUser.set(
+    'totally-private',
+    t.context.u1.id,
+    WorkspaceRole.Collaborator,
+    { status: WorkspaceMemberStatus.Accepted }
+  );
 
   storage.get.resolves(blob());
-  const res = await request(app.getHttpServer())
-    .get('/api/workspaces/totally-private/blobs/test')
-    .set('Cookie', cookie);
+  await app.login(t.context.u1);
+  const res = await app.GET('/api/workspaces/totally-private/blobs/test');
 
   t.is(res.status, HttpStatus.OK);
   t.is(res.text, 'blob');
@@ -200,9 +180,7 @@ test('should return 404 if blob not found', async t => {
 
   // @ts-expect-error mock
   storage.get.resolves({ body: null });
-  const res = await request(app.getHttpServer()).get(
-    '/api/workspaces/public/blobs/test'
-  );
+  const res = await app.GET('/api/workspaces/public/blobs/test');
 
   t.is(res.status, HttpStatus.NOT_FOUND);
 });
@@ -210,17 +188,14 @@ test('should return 404 if blob not found', async t => {
 // doc
 // NOTE: permission checking of doc api is the same with blob api, skip except one
 test('should not be able to get private workspace with private page', async t => {
-  const { app, u1 } = t.context;
+  const { app } = t.context;
 
-  let res = await request(app.getHttpServer()).get(
-    '/api/workspaces/private/docs/private-page'
-  );
+  let res = await app.GET('/api/workspaces/private/docs/private-page');
 
   t.is(res.status, HttpStatus.FORBIDDEN);
 
-  res = await request(app.getHttpServer())
-    .get('/api/workspaces/private/docs/private-page')
-    .set('cookie', await internalSignIn(app, u1.id));
+  await app.login(t.context.u1);
+  res = await app.GET('/api/workspaces/private/docs/private-page');
 
   t.is(res.status, HttpStatus.FORBIDDEN);
 });
@@ -235,9 +210,7 @@ test('should be able to get doc', async t => {
     timestamp: Date.now(),
   });
 
-  const res = await request(app.getHttpServer()).get(
-    '/api/workspaces/private/docs/public'
-  );
+  const res = await app.GET('/api/workspaces/private/docs/public');
 
   t.is(res.status, HttpStatus.OK);
   t.is(res.get('content-type'), 'application/octet-stream');
@@ -245,7 +218,7 @@ test('should be able to get doc', async t => {
 });
 
 test('should be able to change page publish mode', async t => {
-  const { app, workspace: doc, db } = t.context;
+  const { app, workspace: doc, models } = t.context;
 
   doc.getDoc.resolves({
     spaceId: '',
@@ -254,21 +227,16 @@ test('should be able to change page publish mode', async t => {
     timestamp: Date.now(),
   });
 
-  let res = await request(app.getHttpServer()).get(
-    '/api/workspaces/private/docs/public'
-  );
+  let res = await app.GET('/api/workspaces/private/docs/public');
 
   t.is(res.status, HttpStatus.OK);
   t.is(res.get('publish-mode'), 'page');
 
-  await db.workspacePage.update({
-    where: { workspaceId_pageId: { workspaceId: 'private', pageId: 'public' } },
-    data: { mode: 1 },
+  await models.doc.upsertMeta('private', 'public', {
+    mode: PublicDocMode.Edgeless,
   });
 
-  res = await request(app.getHttpServer()).get(
-    '/api/workspaces/private/docs/public'
-  );
+  res = await app.GET('/api/workspaces/private/docs/public');
 
   t.is(res.status, HttpStatus.OK);
   t.is(res.get('publish-mode'), 'edgeless');

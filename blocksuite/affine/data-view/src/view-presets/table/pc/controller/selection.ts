@@ -1,5 +1,5 @@
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { WithDisposable } from '@blocksuite/global/utils';
+import { WithDisposable } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { computed, effect } from '@preact/signals-core';
 import type { ReactiveController } from 'lit';
 import { css, html } from 'lit';
@@ -13,13 +13,14 @@ import {
   type CellFocus,
   type MultiSelection,
   RowWithGroup,
-  TableAreaSelection,
-  TableRowSelection,
+  TableViewAreaSelection,
+  TableViewRowSelection,
   type TableViewSelection,
   type TableViewSelectionWithType,
-} from '../../types.js';
+} from '../../selection';
 import type { DatabaseCellContainer } from '../cell.js';
-import type { TableRow } from '../row/row.js';
+import type { TableGroup } from '../group.js';
+import type { TableRowView } from '../row/row.js';
 import type { DataViewTable } from '../table-view.js';
 import {
   DragToFillElement,
@@ -191,11 +192,9 @@ export class TableSelectionController implements ReactiveController {
           if (container) {
             const cell = container.cell;
             if (old.isEditing) {
-              requestAnimationFrame(() => {
-                cell?.onExitEditMode();
-              });
+              cell?.beforeExitEditingMode();
               cell?.blurCell();
-              container.isEditing = false;
+              container.isEditing$.value = false;
             }
           }
         }
@@ -210,9 +209,11 @@ export class TableSelectionController implements ReactiveController {
           if (container) {
             const cell = container.cell;
             if (newSelection.isEditing) {
-              cell?.onEnterEditMode();
-              container.isEditing = true;
-              cell?.focusCell();
+              container.isEditing$.value = true;
+              requestAnimationFrame(() => {
+                cell?.afterEnterEditingMode();
+                cell?.focusCell();
+              });
             }
           }
         }
@@ -240,10 +241,10 @@ export class TableSelectionController implements ReactiveController {
       const index = this.host.props.view.properties$.value.findIndex(
         v => v.type$.value === 'title'
       );
-      this.selection = TableAreaSelection.create({
+      this.selection = TableViewAreaSelection.create({
         groupKey: groupKey,
         focus: {
-          rowIndex: rows?.findIndex(v => v === id) ?? 0,
+          rowIndex: rows?.findIndex(v => v.rowId === id) ?? 0,
           columnIndex: index,
         },
         isEditing: true,
@@ -279,7 +280,7 @@ export class TableSelectionController implements ReactiveController {
     });
   }
 
-  areaToRows(selection: TableAreaSelection) {
+  areaToRows(selection: TableViewAreaSelection) {
     const rows = this.rows(selection.groupKey) ?? [];
     const ids = Array.from({
       length: selection.rowsSelection.end - selection.rowsSelection.start + 1,
@@ -345,12 +346,12 @@ export class TableSelectionController implements ReactiveController {
   }
 
   deleteRow(rowId: string) {
-    this.view.rowDelete([rowId]);
+    this.view.rowsDelete([rowId]);
     this.focusToCell('up');
   }
 
   focusFirstCell() {
-    this.selection = TableAreaSelection.create({
+    this.selection = TableViewAreaSelection.create({
       focus: {
         rowIndex: 0,
         columnIndex: 0,
@@ -359,7 +360,7 @@ export class TableSelectionController implements ReactiveController {
     });
   }
 
-  focusToArea(selection: TableAreaSelection) {
+  focusToArea(selection: TableViewAreaSelection) {
     return {
       ...selection,
       rowsSelection: selection.rowsSelection ?? {
@@ -371,7 +372,7 @@ export class TableSelectionController implements ReactiveController {
         end: selection.focus.columnIndex,
       },
       isEditing: false,
-    } satisfies TableAreaSelection;
+    } satisfies TableViewAreaSelection;
   }
 
   focusToCell(position: 'left' | 'right' | 'up' | 'down') {
@@ -544,7 +545,7 @@ export class TableSelectionController implements ReactiveController {
   }
 
   navigateRowSelection(direction: 'up' | 'down', append = false) {
-    if (!TableRowSelection.is(this.selection)) return;
+    if (!TableViewRowSelection.is(this.selection)) return;
     const rows = this.selection.rows;
     const lastRow = rows[rows.length - 1];
     if (!lastRow) return;
@@ -552,7 +553,7 @@ export class TableSelectionController implements ReactiveController {
       (
         this.getGroup(lastRow?.groupKey)?.querySelector(
           `data-view-table-row[data-row-id='${lastRow?.id}']`
-        ) as TableRow | null
+        ) as TableRowView | null
       )?.rowIndex ?? 0;
     const getRowByIndex = (index: number) => {
       const tableRow = this.rows(lastRow?.groupKey)?.item(index);
@@ -593,7 +594,7 @@ export class TableSelectionController implements ReactiveController {
     } else {
       const target = direction === 'up' ? prevRow : nextRow;
       if (target != null) {
-        this.selection = TableRowSelection.create({
+        this.selection = TableViewRowSelection.create({
           rows: [target],
         });
       }
@@ -619,7 +620,7 @@ export class TableSelectionController implements ReactiveController {
   }) {
     const key = (r: RowWithGroup) => `${r.id}.${r.groupKey ? r.groupKey : ''}`;
     const rows = new Set(
-      TableRowSelection.rows(this.selection).map(r => key(r))
+      TableViewRowSelection.rows(this.selection).map(r => key(r))
     );
     remove.forEach(row => rows.delete(key(row)));
     add.forEach(row => rows.add(key(row)));
@@ -634,7 +635,7 @@ export class TableSelectionController implements ReactiveController {
           },
         ];
       });
-    this.selection = TableRowSelection.create({
+    this.selection = TableViewRowSelection.create({
       rows: result,
     });
   }
@@ -812,7 +813,8 @@ export class TableSelectionController implements ReactiveController {
     cell: DatabaseCellContainer,
     fillValues?: boolean
   ) {
-    const groupKey = cell.closest('affine-data-view-table-group')?.group?.key;
+    const groupKey = cell.closest<TableGroup>('affine-data-view-table-group')
+      ?.group?.key;
     const table = this.tableContainer;
     const scrollContainer = table?.parentElement;
     if (!table || !scrollContainer) {
@@ -826,7 +828,7 @@ export class TableSelectionController implements ReactiveController {
       row: MultiSelection;
       column: MultiSelection;
     }) => {
-      this.selection = TableAreaSelection.create({
+      this.selection = TableViewAreaSelection.create({
         groupKey: groupKey,
         rowsSelection: selection.row,
         columnsSelection: selection.column,
@@ -881,7 +883,7 @@ export class TableSelectionController implements ReactiveController {
           this.__dragToFillElement.dragging = false;
           fillSelectionWithFocusCellData(
             this.host,
-            TableAreaSelection.create({
+            TableViewAreaSelection.create({
               groupKey: groupKey,
               rowsSelection: selection.row,
               columnsSelection: selection.column,
@@ -921,7 +923,7 @@ export class TableSelectionController implements ReactiveController {
       id: rowId,
       groupKey,
     };
-    const isSelected = TableRowSelection.includes(this.selection, row);
+    const isSelected = TableViewRowSelection.includes(this.selection, row);
     this.rowSelectionChange({
       add: isSelected ? [] : [row],
       remove: isSelected ? [row] : [],

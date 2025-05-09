@@ -1,9 +1,10 @@
 import type { DocMode } from '@blocksuite/affine-model';
 import type { Container } from '@blocksuite/global/di';
 import { createIdentifier } from '@blocksuite/global/di';
-import { type Disposable, noop, Slot } from '@blocksuite/global/utils';
+import { noop } from '@blocksuite/global/utils';
 import type { ExtensionType } from '@blocksuite/store';
 import { Extension } from '@blocksuite/store';
+import { Subject, type Subscription } from 'rxjs';
 
 const DEFAULT_MODE: DocMode = 'page';
 
@@ -41,7 +42,7 @@ export interface DocModeProvider {
   onPrimaryModeChange: (
     handler: (mode: DocMode) => void,
     docId: string
-  ) => Disposable;
+  ) => Subscription;
   /**
    * Set the editor mode. Normally, it would be used to set the mode of the current editor.
    * When patch or override the doc mode service, can pass a callback to set the editor mode.
@@ -60,7 +61,7 @@ export const DocModeProvider = createIdentifier<DocModeProvider>(
 );
 
 const modeMap = new Map<string, DocMode>();
-const slotMap = new Map<string, Slot<DocMode>>();
+const slotMap = new Map<string, Subject<DocMode>>();
 
 export class DocModeService extends Extension implements DocModeProvider {
   static override setup(di: Container) {
@@ -77,9 +78,9 @@ export class DocModeService extends Extension implements DocModeProvider {
 
   onPrimaryModeChange(handler: (mode: DocMode) => void, id: string) {
     if (!slotMap.get(id)) {
-      slotMap.set(id, new Slot());
+      slotMap.set(id, new Subject());
     }
-    return slotMap.get(id)!.on(handler);
+    return slotMap.get(id)!.subscribe(handler);
   }
 
   setEditorMode(mode: DocMode) {
@@ -88,7 +89,7 @@ export class DocModeService extends Extension implements DocModeProvider {
 
   setPrimaryMode(mode: DocMode, id: string) {
     modeMap.set(id, mode);
-    slotMap.get(id)?.emit(mode);
+    slotMap.get(id)?.next(mode);
   }
 
   togglePrimaryMode(id: string) {

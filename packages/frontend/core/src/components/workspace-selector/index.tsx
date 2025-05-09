@@ -25,7 +25,6 @@ interface WorkspaceSelectorProps {
     metadata: WorkspaceMetadata;
     defaultDocId?: string;
   }) => void;
-  showSettingsButton?: boolean;
   showEnableCloudButton?: boolean;
   showArrowDownIcon?: boolean;
   showSyncStatus?: boolean;
@@ -38,7 +37,6 @@ export const WorkspaceSelector = ({
   workspaceMetadata: outerWorkspaceMetadata,
   onSelectWorkspace,
   onCreatedWorkspace,
-  showSettingsButton,
   showArrowDownIcon,
   disable,
   open: outerOpen,
@@ -89,7 +87,6 @@ export const WorkspaceSelector = ({
           onClickWorkspace={onSelectWorkspace}
           onCreatedWorkspace={onCreatedWorkspace}
           showEnableCloudButton={showEnableCloudButton}
-          showSettingsButton={showSettingsButton}
         />
       }
       contentOptions={{
@@ -100,6 +97,8 @@ export const WorkspaceSelector = ({
         ...menuContentOptions,
         style: {
           width: '300px',
+          maxHeight: 'min(800px, calc(100vh - 200px))',
+          padding: 0,
           ...menuContentOptions?.style,
         },
       }}

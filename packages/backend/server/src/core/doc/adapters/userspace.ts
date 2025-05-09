@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 
 import { Mutex } from '../../../base';
+import { Models } from '../../../models';
 import { DocStorageOptions } from '../options';
 import { DocRecord, DocStorageAdapter } from '../storage';
 
 @Injectable()
 export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
   constructor(
-    private readonly db: PrismaClient,
     private readonly mutex: Mutex,
+    private readonly models: Models,
     options: DocStorageOptions
   ) {
     super(options);
@@ -42,7 +42,7 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
   }
 
   override async getDoc(spaceId: string, docId: string) {
-    return this.getDocSnapshot(spaceId, docId);
+    return await this.getDocSnapshot(spaceId, docId);
   }
 
   async pushDocUpdates(
@@ -79,103 +79,46 @@ export class PgUserspaceDocStorageAdapter extends DocStorageAdapter {
   }
 
   async deleteDoc(userId: string, docId: string) {
-    await this.db.userSnapshot.deleteMany({
-      where: {
-        userId,
-        id: docId,
-      },
-    });
+    await this.models.userDoc.delete(userId, docId);
   }
 
   async deleteSpace(userId: string) {
-    await this.db.userSnapshot.deleteMany({
-      where: {
-        userId,
-      },
-    });
+    await this.models.userDoc.deleteAllByUserId(userId);
   }
 
   async getSpaceDocTimestamps(userId: string, after?: number) {
-    const snapshots = await this.db.userSnapshot.findMany({
-      select: {
-        id: true,
-        updatedAt: true,
-      },
-      where: {
-        userId,
-        ...(after
-          ? {
-              updatedAt: {
-                gt: new Date(after),
-              },
-            }
-          : {}),
-      },
-    });
-
-    const result: Record<string, number> = {};
-
-    snapshots.forEach(s => {
-      result[s.id] = s.updatedAt.getTime();
-    });
-
-    return result;
+    return await this.models.userDoc.findTimestampsByUserId(userId, after);
   }
 
   protected async getDocSnapshot(userId: string, docId: string) {
-    const snapshot = await this.db.userSnapshot.findUnique({
-      where: {
-        userId_id: {
-          userId,
-          id: docId,
-        },
-      },
-    });
+    const snapshot = await this.models.userDoc.get(userId, docId);
 
     if (!snapshot) {
       return null;
     }
 
     return {
-      spaceId: userId,
-      docId,
+      spaceId: snapshot.spaceId,
+      docId: snapshot.docId,
       bin: snapshot.blob,
-      timestamp: snapshot.updatedAt.getTime(),
-      editor: snapshot.userId,
+      timestamp: snapshot.timestamp,
+      editor: snapshot.editorId,
     };
   }
 
   protected async setDocSnapshot(snapshot: DocRecord) {
     // we always get lock before writing to user snapshot table,
     // so a simple upsert without testing on updatedAt is safe
-    await this.db.userSnapshot.upsert({
-      where: {
-        userId_id: {
-          userId: snapshot.spaceId,
-          id: snapshot.docId,
-        },
-      },
-      update: {
-        blob: Buffer.from(snapshot.bin),
-        updatedAt: new Date(snapshot.timestamp),
-      },
-      create: {
-        userId: snapshot.spaceId,
-        id: snapshot.docId,
-        blob: Buffer.from(snapshot.bin),
-        createdAt: new Date(snapshot.timestamp),
-        updatedAt: new Date(snapshot.timestamp),
-      },
+    await this.models.userDoc.upsert({
+      ...snapshot,
+      blob: Buffer.from(snapshot.bin),
     });
 
     return true;
   }
 
-  protected override async lockDocForUpdate(
-    workspaceId: string,
-    docId: string
-  ) {
-    const lock = await this.mutex.acquire(`userspace:${workspaceId}:${docId}`);
+  protected override async lockDocForUpdate(spaceId: string, docId: string) {
+    const lock = await this.mutex.acquire(`userspace:${spaceId}:${docId}`);
 
     if (!lock) {
       throw new Error('Too many concurrent writings');

@@ -18,8 +18,11 @@ export class AwarenessSyncImpl implements AwarenessSync {
 
   async update(record: AwarenessRecord, origin?: string) {
     await Promise.all(
-      [this.storages.local, ...Object.values(this.storages.remotes)].map(peer =>
-        peer.update(record, origin)
+      [this.storages.local, ...Object.values(this.storages.remotes)].map(
+        peer =>
+          peer.connection.status === 'connected'
+            ? peer.update(record, origin)
+            : Promise.resolve()
       )
     );
   }

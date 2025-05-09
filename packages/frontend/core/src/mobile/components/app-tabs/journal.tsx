@@ -16,9 +16,7 @@ export const AppTabJournal = ({ tab }: AppTabCustomFCProps) => {
 
   const maybeDocId = location.pathname.split('/')[1];
   const journalDate = useLiveData(journalService.journalDate$(maybeDocId));
-  const JournalIcon = useLiveData(
-    docDisplayMetaService.icon$(maybeDocId, { compareDate: new Date() })
-  );
+  const JournalIcon = useLiveData(docDisplayMetaService.icon$(maybeDocId));
 
   const handleOpenToday = useCallback(() => {
     const docId = journalService.ensureJournalByDate(new Date()).id;

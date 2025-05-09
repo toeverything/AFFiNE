@@ -1,5 +1,4 @@
 import { createIdentifier, type ServiceProvider } from '@blocksuite/global/di';
-import type { BaseTextAttributes, DeltaInsert } from '@blocksuite/inline';
 import {
   type AssetsManager,
   type ASTWalker,
@@ -11,20 +10,13 @@ import {
   type Transformer,
 } from '@blocksuite/store';
 
-import type { AffineTextAttributes } from '../../types/index.js';
+import type { DeltaASTConverter } from './delta-converter.js';
 
 export const isBlockSnapshotNode = (node: unknown): node is BlockSnapshot =>
   BlockSnapshotSchema.safeParse(node).success;
 
 export type TextBuffer = {
   content: string;
-};
-
-export type DeltaASTConverterOptions = {
-  trim?: boolean;
-  pre?: boolean;
-  pageMap?: Map<string, string>;
-  removeLastBr?: boolean;
 };
 
 export type AdapterContext<
@@ -121,56 +113,6 @@ export type BlockAdapterMatcher<
       context: AdapterContext<BlockSnapshot, TNode, TConverter>
     ) => void | Promise<void>;
   };
-};
-
-export abstract class DeltaASTConverter<
-  TextAttributes extends BaseTextAttributes = BaseTextAttributes,
-  AST = unknown,
-> {
-  /**
-   * Convert AST format to delta format
-   */
-  abstract astToDelta(
-    ast: AST,
-    options?: unknown
-  ): DeltaInsert<TextAttributes>[];
-
-  /**
-   * Convert delta format to AST format
-   */
-  abstract deltaToAST(
-    deltas: DeltaInsert<TextAttributes>[],
-    options?: unknown
-  ): AST[];
-}
-
-export type InlineDeltaMatcher<TNode extends object = never> = {
-  name: keyof AffineTextAttributes | string;
-  match: (delta: DeltaInsert<AffineTextAttributes>) => boolean;
-  toAST: (
-    delta: DeltaInsert<AffineTextAttributes>,
-    context: {
-      configs: Map<string, string>;
-      current: TNode;
-    },
-    provider?: ServiceProvider
-  ) => TNode;
-};
-
-export type ASTToDeltaMatcher<AST> = {
-  name: string;
-  match: (ast: AST) => boolean;
-  toDelta: (
-    ast: AST,
-    context: {
-      configs: Map<string, string>;
-      options: DeltaASTConverterOptions;
-      toDelta: (
-        ast: AST,
-        options?: DeltaASTConverterOptions
-      ) => DeltaInsert<AffineTextAttributes>[];
-    }
-  ) => DeltaInsert<AffineTextAttributes>[];
 };
 
 export type AdapterFactory = {

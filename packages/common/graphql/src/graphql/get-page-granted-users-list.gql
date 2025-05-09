@@ -1,0 +1,24 @@
+query getPageGrantedUsersList($pagination: PaginationInput!, $docId: String!, $workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    doc(docId: $docId) {
+      grantedUsersList(pagination: $pagination) {
+        totalCount
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
+        edges {
+          node {
+            role
+            user {
+              id
+              name
+              email
+              avatarUrl
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,9 +1,5 @@
-import type {
-  GetWorkspacePublicPageByIdQuery,
-  PublicPageMode,
-} from '@affine/graphql';
+import type { GetWorkspacePageByIdQuery, PublicDocMode } from '@affine/graphql';
 import {
-  backoffRetry,
   catchErrorInto,
   effect,
   Entity,
@@ -12,22 +8,19 @@ import {
   mapInto,
   onComplete,
   onStart,
+  smartRetry,
 } from '@toeverything/infra';
 import { switchMap } from 'rxjs';
 
-import { isBackendError, isNetworkError } from '../../cloud';
 import type { DocService } from '../../doc';
 import type { WorkspaceService } from '../../workspace';
 import type { ShareStore } from '../stores/share';
 
-type ShareInfoType = GetWorkspacePublicPageByIdQuery['workspace']['publicPage'];
+type ShareInfoType = GetWorkspacePageByIdQuery['workspace']['doc'];
 
 export class ShareInfo extends Entity {
   info$ = new LiveData<ShareInfoType | undefined | null>(null);
-  isShared$ = this.info$.map(info =>
-    // null means not loaded yet, undefined means not shared
-    info !== null ? info !== undefined : null
-  );
+  isShared$ = this.info$.map(info => info?.public);
   sharedMode$ = this.info$.map(info => (info !== null ? info?.mode : null));
 
   error$ = new LiveData<any>(null);
@@ -50,13 +43,7 @@ export class ShareInfo extends Entity {
           signal
         )
       ).pipe(
-        backoffRetry({
-          when: isNetworkError,
-          count: Infinity,
-        }),
-        backoffRetry({
-          when: isBackendError,
-        }),
+        smartRetry(),
         mapInto(this.info$),
         catchErrorInto(this.error$),
         onStart(() => this.isRevalidating$.next(true)),
@@ -70,7 +57,7 @@ export class ShareInfo extends Entity {
     return this.isRevalidating$.waitFor(v => v === false, signal);
   }
 
-  async enableShare(mode: PublicPageMode) {
+  async enableShare(mode: PublicDocMode) {
     await this.store.enableSharePage(
       this.workspaceService.workspace.id,
       this.docService.doc.id,
@@ -79,7 +66,7 @@ export class ShareInfo extends Entity {
     await this.waitForRevalidation();
   }
 
-  async changeShare(mode: PublicPageMode) {
+  async changeShare(mode: PublicDocMode) {
     await this.enableShare(mode);
   }
 

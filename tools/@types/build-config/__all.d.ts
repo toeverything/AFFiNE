@@ -12,6 +12,10 @@ declare interface BUILD_CONFIG_TYPE {
 
   isElectron: boolean;
   isWeb: boolean;
+  /**
+   * 'desktop' | 'ios' | 'android'
+   */
+  isNative: boolean;
   isMobileWeb: boolean;
   isIOS: boolean;
   isAndroid: boolean;
@@ -23,10 +27,17 @@ declare interface BUILD_CONFIG_TYPE {
 
   githubUrl: string;
   changelogUrl: string;
+  pricingUrl: string;
   downloadUrl: string;
+  discordUrl: string;
   // see: tools/workers
   imageProxyUrl: string;
   linkPreviewUrl: string;
+
+  CAPTCHA_SITE_KEY: string;
+  SENTRY_DSN: string;
+  MIXPANEL_TOKEN: string;
+  DEBUG_JOTAI: string;
 }
 
 declare var BUILD_CONFIG: BUILD_CONFIG_TYPE;

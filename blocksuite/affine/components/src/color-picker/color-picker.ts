@@ -1,6 +1,6 @@
 import type { Color } from '@blocksuite/affine-model';
 import { on, once, stopPropagation } from '@blocksuite/affine-shared/utils';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { batch, computed, signal } from '@preact/signals-core';
 import { html, LitElement } from 'lit';
 import { property, query } from 'lit/decorators.js';
@@ -8,8 +8,10 @@ import { classMap } from 'lit/directives/class-map.js';
 import { live } from 'lit/directives/live.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import clamp from 'lodash-es/clamp';
 
 import { AREA_CIRCLE_R, MATCHERS, SLIDER_CIRCLE_R } from './consts.js';
+import { TransparentIcon } from './icons.js';
 import { COLOR_PICKER_STYLE } from './styles.js';
 import type {
   Hsva,
@@ -24,7 +26,6 @@ import type {
 } from './types.js';
 import {
   bound01,
-  clamp,
   defaultHsva,
   eq,
   hsvaToHex8,
@@ -55,7 +56,7 @@ export class EdgelessColorPicker extends SignalWatcher(
     const orignalValue = target.value;
     let value = orignalValue.trim().replace(/[^0-9]/, '');
 
-    const alpha = clamp(0, Number(value), 100);
+    const alpha = clamp(Number(value), 0, 100);
     const a = bound01(alpha, 100);
     const hsva = this.hsva$.peek();
 
@@ -133,7 +134,7 @@ export class EdgelessColorPicker extends SignalWatcher(
 
   #setAlphaPos(clientX: number) {
     const { left, width } = this.#alphaRect;
-    const x = clamp(0, clientX - left, width);
+    const x = clamp(clientX - left, 0, width);
 
     this.alphaPosX$.value = x;
   }
@@ -141,7 +142,7 @@ export class EdgelessColorPicker extends SignalWatcher(
   #setAlphaPosWithWheel(y: number) {
     const { width } = this.#alphaRect;
     const px = this.alphaPosX$.peek();
-    const ax = clamp(0, px + (y * width) / 100, width);
+    const ax = clamp(px + (y * width) / 100, 0, width);
 
     this.alphaPosX$.value = ax;
   }
@@ -161,7 +162,7 @@ export class EdgelessColorPicker extends SignalWatcher(
 
   #setHuePos(clientX: number) {
     const { left, width } = this.#hueRect;
-    const x = clamp(0, clientX - left, width);
+    const x = clamp(clientX - left, 0, width);
 
     this.huePosX$.value = x;
   }
@@ -169,15 +170,15 @@ export class EdgelessColorPicker extends SignalWatcher(
   #setHuePosWithWheel(y: number) {
     const { width } = this.#hueRect;
     const px = this.huePosX$.peek();
-    const ax = clamp(0, px + (y * width) / 100, width);
+    const ax = clamp(px + (y * width) / 100, 0, width);
 
     this.huePosX$.value = ax;
   }
 
   #setPalettePos(clientX: number, clientY: number) {
     const { left, top, width, height } = this.#paletteRect;
-    const x = clamp(0, clientX - left, width);
-    const y = clamp(0, clientY - top, height);
+    const x = clamp(clientX - left, 0, width);
+    const y = clamp(clientY - top, 0, height);
 
     this.palettePos$.value = { x, y };
   }
@@ -185,8 +186,8 @@ export class EdgelessColorPicker extends SignalWatcher(
   #setPalettePosWithWheel(x: number, y: number) {
     const { width, height } = this.#paletteRect;
     const pos = this.palettePos$.peek();
-    const px = clamp(0, pos.x + (x * width) / 100, width);
-    const py = clamp(0, pos.y + (y * height) / 100, height);
+    const px = clamp(pos.x + (x * width) / 100, 0, width);
+    const py = clamp(pos.y + (y * height) / 100, 0, height);
 
     this.palettePos$.value = { x: px, y: py };
   }
@@ -509,7 +510,10 @@ export class EdgelessColorPicker extends SignalWatcher(
                 ?active=${this.modeType$.value === type}
                 @click=${() => this.#switchModeTab(type)}
               >
-                <div class="color"></div>
+                <div class="color-wrapper">
+                  ${TransparentIcon()}
+                  <div class="color"></div>
+                </div>
                 <div>${name}</div>
               </button>
             </div>
@@ -670,10 +674,4 @@ export class EdgelessColorPicker extends SignalWatcher(
   accessor pick!: (event: PickColorEvent) => void;
 
   accessor rgba$ = computed(() => hsvaToRgba(this.hsva$.value));
-}
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'edgeless-color-picker': EdgelessColorPicker;
-  }
 }

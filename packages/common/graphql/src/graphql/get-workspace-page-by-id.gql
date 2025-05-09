@@ -1,0 +1,10 @@
+query getWorkspacePageById($workspaceId: String!, $pageId: String!) {
+  workspace(id: $workspaceId) {
+    doc(docId: $pageId) {
+      id
+      mode
+      defaultRole
+      public
+    }
+  }
+}

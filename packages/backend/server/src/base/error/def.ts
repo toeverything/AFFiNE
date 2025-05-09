@@ -1,9 +1,11 @@
 import { STATUS_CODES } from 'node:http';
+import { escape } from 'node:querystring';
 
 import { HttpStatus, Logger } from '@nestjs/common';
-import { capitalize } from 'lodash-es';
+import { ClsServiceManager } from 'nestjs-cls';
 
 export type UserFriendlyErrorBaseType =
+  | 'network_error'
   | 'bad_request'
   | 'too_many_requests'
   | 'resource_not_found'
@@ -16,7 +18,7 @@ export type UserFriendlyErrorBaseType =
   | 'internal_server_error';
 
 type ErrorArgType = 'string' | 'number' | 'boolean';
-type ErrorArgs = Record<string, ErrorArgType | Record<string, ErrorArgType>>;
+type ErrorArgs = Record<string, ErrorArgType>;
 
 export type UserFriendlyErrorOptions = {
   type: UserFriendlyErrorBaseType;
@@ -25,6 +27,7 @@ export type UserFriendlyErrorOptions = {
 };
 
 const BaseTypeToHttpStatusMap: Record<UserFriendlyErrorBaseType, HttpStatus> = {
+  network_error: HttpStatus.GATEWAY_TIMEOUT,
   too_many_requests: HttpStatus.TOO_MANY_REQUESTS,
   bad_request: HttpStatus.BAD_REQUEST,
   resource_not_found: HttpStatus.NOT_FOUND,
@@ -52,6 +55,7 @@ const IncludedEvents = new Set([
   'missing_oauth_query_parameter',
   'unknown_oauth_provider',
   'invalid_oauth_callback_state',
+  'invalid_oauth_state',
   'oauth_state_expired',
   'oauth_account_already_connected',
 ]);
@@ -71,6 +75,11 @@ export class UserFriendlyError extends Error {
    * Additional data that could be used for error handling or formatting
    */
   data: any;
+
+  /**
+   * Request id for tracing
+   */
+  requestId?: string;
 
   constructor(
     type: UserFriendlyErrorBaseType,
@@ -93,6 +102,22 @@ export class UserFriendlyError extends Error {
     this.type = type;
     this.name = name;
     this.data = args;
+    this.requestId = ClsServiceManager.getClsService()?.getId();
+  }
+
+  static fromUserFriendlyErrorJSON(body: UserFriendlyError) {
+    return new UserFriendlyError(
+      body.type.toLowerCase() as UserFriendlyErrorBaseType,
+      body.name.toLowerCase() as keyof typeof USER_FRIENDLY_ERRORS,
+      body.message,
+      body.data
+    );
+  }
+
+  get stacktrace() {
+    return this.name === 'internal_server_error'
+      ? ((this.cause as Error)?.stack ?? this.stack)
+      : this.stack;
   }
 
   toJSON() {
@@ -103,6 +128,8 @@ export class UserFriendlyError extends Error {
       name: this.name.toUpperCase(),
       message: this.message,
       data: this.data,
+      // only include requestId for server error
+      requestId: this.status >= 500 ? this.requestId : undefined,
     };
   }
 
@@ -114,10 +141,11 @@ export class UserFriendlyError extends Error {
       `Name: ${json.name}`,
       `Message: ${json.message}`,
       `Data: ${JSON.stringify(json.data)}`,
+      `RequestId: ${json.requestId}`,
     ].join('\n');
   }
 
-  log(context: string) {
+  log(context: string, debugInfo?: object) {
     // ignore all user behavior error log
     if (
       this.type !== 'internal_server_error' &&
@@ -126,10 +154,14 @@ export class UserFriendlyError extends Error {
       return;
     }
 
-    new Logger(context).error(
-      'Internal server error',
-      this.cause ? ((this.cause as any).stack ?? this.cause) : this.stack
-    );
+    const logger = new Logger(context);
+    const fn = this.status >= 500 ? logger.error : logger.log;
+
+    let message = this.name;
+    if (debugInfo) {
+      message += ` (${JSON.stringify(debugInfo)})`;
+    }
+    fn.call(logger, message, this);
   }
 }
 
@@ -138,25 +170,14 @@ export class UserFriendlyError extends Error {
  * @ObjectType()
  * export class XXXDataType {
  *   @Field()
- *
+ *   [name]: [type];
  * }
  */
 function generateErrorArgs(name: string, args: ErrorArgs) {
   const typeName = `${name}DataType`;
   const lines = [`@ObjectType()`, `class ${typeName} {`];
   Object.entries(args).forEach(([arg, fieldArgs]) => {
-    if (typeof fieldArgs === 'object') {
-      const subResult = generateErrorArgs(
-        name + 'Field' + capitalize(arg),
-        fieldArgs
-      );
-      lines.unshift(subResult.def);
-      lines.push(
-        `  @Field(() => ${subResult.name}) ${arg}!: ${subResult.name};`
-      );
-    } else {
-      lines.push(`  @Field() ${arg}!: ${fieldArgs}`);
-    }
+    lines.push(`  @Field() ${arg}!: ${fieldArgs}`);
   });
 
   lines.push('}');
@@ -227,6 +248,10 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'internal_server_error',
     message: 'An internal error occurred.',
   },
+  network_error: {
+    type: 'network_error',
+    message: 'Network error.',
+  },
   too_many_request: {
     type: 'too_many_requests',
     message: 'Too many requests.',
@@ -234,6 +259,38 @@ export const USER_FRIENDLY_ERRORS = {
   not_found: {
     type: 'resource_not_found',
     message: 'Resource not found.',
+  },
+  bad_request: {
+    type: 'bad_request',
+    message: 'Bad request.',
+  },
+  graphql_bad_request: {
+    type: 'bad_request',
+    args: { code: 'string', message: 'string' },
+    message: ({ code, message }) =>
+      `GraphQL bad request, code: ${code}, ${message}`,
+  },
+  http_request_error: {
+    type: 'bad_request',
+    args: { message: 'string' },
+    message: ({ message }) => `HTTP request error, message: ${message}`,
+  },
+  email_service_not_configured: {
+    type: 'internal_server_error',
+    message: 'Email service is not configured.',
+  },
+
+  // Input errors
+  query_too_long: {
+    type: 'invalid_input',
+    args: { max: 'number' },
+    message: ({ max }) => `Query is too long, max length is ${max}.`,
+  },
+
+  validation_error: {
+    type: 'invalid_input',
+    args: { errors: 'string' },
+    message: ({ errors }) => `Validation error, errors: ${errors}`,
   },
 
   // User Errors
@@ -271,6 +328,17 @@ export const USER_FRIENDLY_ERRORS = {
   invalid_oauth_callback_state: {
     type: 'bad_request',
     message: 'Invalid callback state parameter.',
+  },
+  invalid_oauth_callback_code: {
+    type: 'bad_request',
+    args: { status: 'number', body: 'string' },
+    message: ({ status, body }) =>
+      `Invalid callback code parameter, provider response status: ${status} and body: ${body}.`,
+  },
+  invalid_auth_state: {
+    type: 'bad_request',
+    message:
+      'Invalid auth state. You might start the auth progress from another device.',
   },
   missing_oauth_query_parameter: {
     type: 'bad_request',
@@ -342,6 +410,11 @@ export const USER_FRIENDLY_ERRORS = {
   },
 
   // Workspace & Userspace & Doc & Sync errors
+  workspace_permission_not_found: {
+    type: 'resource_not_found',
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) => `Space ${spaceId} permission not found.`,
+  },
   space_not_found: {
     type: 'resource_not_found',
     args: { spaceId: 'string' },
@@ -374,17 +447,36 @@ export const USER_FRIENDLY_ERRORS = {
     args: { spaceId: 'string' },
     message: ({ spaceId }) => `Owner of Space ${spaceId} not found.`,
   },
+  space_should_have_only_one_owner: {
+    type: 'invalid_input',
+    args: { spaceId: 'string' },
+    message: 'Space should have only one owner.',
+  },
+  owner_can_not_leave_workspace: {
+    type: 'action_forbidden',
+    message: 'Owner can not leave the workspace.',
+  },
+  can_not_revoke_yourself: {
+    type: 'action_forbidden',
+    message: 'You can not revoke your own permission.',
+  },
   doc_not_found: {
     type: 'resource_not_found',
     args: { spaceId: 'string', docId: 'string' },
     message: ({ spaceId, docId }) =>
       `Doc ${docId} under Space ${spaceId} not found.`,
   },
-  doc_access_denied: {
+  doc_action_denied: {
     type: 'no_permission',
+    args: { spaceId: 'string', docId: 'string', action: 'string' },
+    message: ({ docId, action }) =>
+      `You do not have permission to perform ${action} action on doc ${docId}.`,
+  },
+  doc_update_blocked: {
+    type: 'action_forbidden',
     args: { spaceId: 'string', docId: 'string' },
     message: ({ spaceId, docId }) =>
-      `You do not have permission to access doc ${docId} under Space ${spaceId}.`,
+      `Doc ${docId} under Space ${spaceId} is blocked from updating.`,
   },
   version_rejected: {
     type: 'action_forbidden',
@@ -409,17 +501,35 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ spaceId, blobId }) =>
       `Blob ${blobId} not found in Space ${spaceId}.`,
   },
-  expect_to_publish_page: {
+  expect_to_publish_doc: {
     type: 'invalid_input',
-    message: 'Expected to publish a page, not a Space.',
+    message: 'Expected to publish a doc, not a Space.',
   },
-  expect_to_revoke_public_page: {
+  expect_to_revoke_public_doc: {
     type: 'invalid_input',
-    message: 'Expected to revoke a public page, not a Space.',
+    message: 'Expected to revoke a public doc, not a Space.',
   },
-  page_is_not_public: {
+  expect_to_grant_doc_user_roles: {
+    type: 'invalid_input',
+    args: { spaceId: 'string', docId: 'string' },
+    message: ({ spaceId, docId }) =>
+      `Expect grant roles on doc ${docId} under Space ${spaceId}, not a Space.`,
+  },
+  expect_to_revoke_doc_user_roles: {
+    type: 'invalid_input',
+    args: { spaceId: 'string', docId: 'string' },
+    message: ({ spaceId, docId }) =>
+      `Expect revoke roles on doc ${docId} under Space ${spaceId}, not a Space.`,
+  },
+  expect_to_update_doc_user_role: {
+    type: 'invalid_input',
+    args: { spaceId: 'string', docId: 'string' },
+    message: ({ spaceId, docId }) =>
+      `Expect update roles on doc ${docId} under Space ${spaceId}, not a Space.`,
+  },
+  doc_is_not_public: {
     type: 'bad_request',
-    message: 'Page is not public.',
+    message: 'Doc is not public.',
   },
   failed_to_save_updates: {
     type: 'internal_server_error',
@@ -428,6 +538,31 @@ export const USER_FRIENDLY_ERRORS = {
   failed_to_upsert_snapshot: {
     type: 'internal_server_error',
     message: 'Failed to store doc snapshot.',
+  },
+  action_forbidden_on_non_team_workspace: {
+    type: 'action_forbidden',
+    message: 'A Team workspace is required to perform this action.',
+  },
+  doc_default_role_can_not_be_owner: {
+    type: 'invalid_input',
+    message: 'Doc default role can not be owner.',
+  },
+  can_not_batch_grant_doc_owner_permissions: {
+    type: 'invalid_input',
+    message: 'Can not batch grant doc owner permissions.',
+  },
+  new_owner_is_not_active_member: {
+    type: 'bad_request',
+    message: 'Can not set a non-active member as owner.',
+  },
+  invalid_invitation: {
+    type: 'invalid_input',
+    message: 'Invalid invitation provided.',
+  },
+  no_more_seat: {
+    type: 'bad_request',
+    args: { spaceId: 'string' },
+    message: ({ spaceId }) => `No more seat available in the Space ${spaceId}.`,
   },
 
   // Subscription Errors
@@ -527,6 +662,15 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'action_forbidden',
     message: `Action has been taken, no more messages allowed.`,
   },
+  copilot_doc_not_found: {
+    type: 'resource_not_found',
+    args: { docId: 'string' },
+    message: ({ docId }) => `Doc ${docId} not found.`,
+  },
+  copilot_docs_not_found: {
+    type: 'resource_not_found',
+    message: () => `Some docs not found.`,
+  },
   copilot_message_not_found: {
     type: 'resource_not_found',
     args: { messageId: 'string' },
@@ -547,11 +691,64 @@ export const USER_FRIENDLY_ERRORS = {
     message: ({ provider, kind, message }) =>
       `Provider ${provider} failed with ${kind} error: ${message || 'unknown'}`,
   },
+  copilot_invalid_context: {
+    type: 'invalid_input',
+    args: { contextId: 'string' },
+    message: ({ contextId }) => `Invalid copilot context ${contextId}.`,
+  },
+  copilot_context_file_not_supported: {
+    type: 'bad_request',
+    args: { fileName: 'string', message: 'string' },
+    message: ({ fileName, message }) =>
+      `File ${fileName} is not supported to use as context: ${message}`,
+  },
+  copilot_failed_to_modify_context: {
+    type: 'internal_server_error',
+    args: { contextId: 'string', message: 'string' },
+    message: ({ contextId, message }) =>
+      `Failed to modify context ${contextId}: ${message}`,
+  },
+  copilot_failed_to_match_context: {
+    type: 'internal_server_error',
+    args: { contextId: 'string', content: 'string', message: 'string' },
+    message: ({ contextId, content, message }) =>
+      `Failed to match context ${contextId} with "${escape(content)}": ${message}`,
+  },
+  copilot_embedding_disabled: {
+    type: 'action_forbidden',
+    message: `Embedding feature is disabled, please contact the administrator to enable it in the workspace settings.`,
+  },
+  copilot_embedding_unavailable: {
+    type: 'action_forbidden',
+    message: `Embedding feature not available, you may need to install pgvector extension to your database`,
+  },
+  copilot_transcription_job_exists: {
+    type: 'bad_request',
+    message: 'Transcription job already exists',
+  },
+  copilot_transcription_job_not_found: {
+    type: 'bad_request',
+    message: `Transcription job not found.`,
+  },
+  copilot_transcription_audio_not_provided: {
+    type: 'bad_request',
+    message: `Audio not provided.`,
+  },
+  copilot_failed_to_add_workspace_file_embedding: {
+    type: 'internal_server_error',
+    args: { message: 'string' },
+    message: ({ message }) =>
+      `Failed to add workspace file embedding: ${message}`,
+  },
 
   // Quota & Limit errors
   blob_quota_exceeded: {
     type: 'quota_exceeded',
-    message: 'You have exceeded your blob storage quota.',
+    message: 'You have exceeded your blob size quota.',
+  },
+  storage_quota_exceeded: {
+    type: 'quota_exceeded',
+    message: 'You have exceeded your storage quota.',
   },
   member_quota_exceeded: {
     type: 'quota_exceeded',
@@ -592,5 +789,71 @@ export const USER_FRIENDLY_ERRORS = {
   captcha_verification_failed: {
     type: 'bad_request',
     message: 'Captcha verification failed.',
+  },
+
+  // license errors
+  invalid_license_session_id: {
+    type: 'invalid_input',
+    message: 'Invalid session id to generate license key.',
+  },
+  license_revealed: {
+    type: 'action_forbidden',
+    message:
+      'License key has been revealed. Please check your mail box of the one provided during checkout.',
+  },
+  workspace_license_already_exists: {
+    type: 'action_forbidden',
+    message: 'Workspace already has a license applied.',
+  },
+  license_not_found: {
+    type: 'resource_not_found',
+    message: 'License not found.',
+  },
+  invalid_license_to_activate: {
+    type: 'bad_request',
+    message: 'Invalid license to activate.',
+  },
+  invalid_license_update_params: {
+    type: 'invalid_input',
+    args: { reason: 'string' },
+    message: ({ reason }) => `Invalid license update params. ${reason}`,
+  },
+  workspace_members_exceed_limit_to_downgrade: {
+    type: 'bad_request',
+    args: { limit: 'number' },
+    message: ({ limit }) =>
+      `You cannot downgrade the workspace from team workspace because there are more than ${limit} members that are currently active.`,
+  },
+
+  // version errors
+  unsupported_client_version: {
+    type: 'action_forbidden',
+    args: {
+      clientVersion: 'string',
+      requiredVersion: 'string',
+    },
+    message: ({ clientVersion, requiredVersion }) =>
+      `Unsupported client with version [${clientVersion}], required version is [${requiredVersion}].`,
+  },
+
+  // Notification Errors
+  notification_not_found: {
+    type: 'resource_not_found',
+    message: 'Notification not found.',
+  },
+  mention_user_doc_access_denied: {
+    type: 'no_permission',
+    args: { docId: 'string' },
+    message: ({ docId }) => `Mentioned user can not access doc ${docId}.`,
+  },
+  mention_user_oneself_denied: {
+    type: 'action_forbidden',
+    message: 'You can not mention yourself.',
+  },
+
+  // app config
+  invalid_app_config: {
+    type: 'invalid_input',
+    message: 'Invalid app config.',
   },
 } satisfies Record<string, UserFriendlyErrorOptions>;

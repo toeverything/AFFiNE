@@ -3,13 +3,14 @@ import {
   popMenu,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import type { UniComponent } from '@blocksuite/affine-shared/types';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import {
   ArrowDownBigIcon,
   ArrowUpBigIcon,
   PlusIcon,
 } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { computed } from '@preact/signals-core';
 import { css, nothing, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
@@ -19,10 +20,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { html } from 'lit/static-html.js';
 
 import { dataViewCommonStyle } from '../common/css-variable.js';
-import {
-  renderUniLit,
-  type UniComponent,
-} from '../utils/uni-component/uni-component.js';
+import { renderUniLit } from '../utils/uni-component/uni-component.js';
 import type { SingleView } from '../view-manager/single-view.js';
 import { DetailSelection } from './selection.js';
 
@@ -119,10 +117,10 @@ export class RecordDetail extends SignalWatcher(
         },
         items: [
           menu.group({
-            items: this.view.propertyMetas.map(meta => {
+            items: this.view.propertyMetas$.value.map(meta => {
               return menu.action({
                 name: meta.config.name,
-                prefix: renderUniLit(this.view.propertyIconGet(meta.type)),
+                prefix: renderUniLit(meta.renderer.icon),
                 select: () => {
                   this.view.propertyAdd('end', meta.type);
                 },
@@ -138,9 +136,7 @@ export class RecordDetail extends SignalWatcher(
   accessor view!: SingleView;
 
   properties$ = computed(() => {
-    return this.view.detailProperties$.value.map(id =>
-      this.view.propertyGet(id)
-    );
+    return this.view.detailProperties$.value;
   });
 
   selection = new DetailSelection(this);
@@ -186,16 +182,20 @@ export class RecordDetail extends SignalWatcher(
     this.dataset.widgetId = 'affine-detail-widget';
   }
 
+  row$ = computed(() => {
+    return this.view.rowGetOrCreate(this.rowId);
+  });
+
   hasNext() {
-    return this.view.rowNextGet(this.rowId) != null;
+    return this.row$.value.next$.value != null;
   }
 
   hasPrev() {
-    return this.view.rowPrevGet(this.rowId) != null;
+    return this.row$.value.prev$.value != null;
   }
 
   nextRow() {
-    const rowId = this.view.rowNextGet(this.rowId);
+    const rowId = this.row$.value.next$.value?.rowId;
     if (rowId == null) {
       return;
     }
@@ -204,7 +204,7 @@ export class RecordDetail extends SignalWatcher(
   }
 
   prevRow() {
-    const rowId = this.view.rowPrevGet(this.rowId);
+    const rowId = this.row$.value.prev$.value?.rowId;
     if (rowId == null) {
       return;
     }
@@ -233,33 +233,38 @@ export class RecordDetail extends SignalWatcher(
           ${ArrowDownBigIcon()}
         </div>
       </div>
-      <div
-        style="width: 100%;max-width: var(--affine-editor-width);display: flex;flex-direction: column;margin: 0 auto;box-sizing: border-box;"
-      >
-        ${keyed(this.rowId, this.renderHeader())}
-        ${repeat(
-          properties,
-          v => v.id,
-          property => {
-            return keyed(
-              this.rowId,
-              html` <affine-data-view-record-field
-                .view="${this.view}"
-                .column="${property}"
-                .rowId="${this.rowId}"
-                data-column-id="${property.id}"
-              ></affine-data-view-record-field>`
-            );
-          }
-        )}
-        ${!this.readonly
-          ? html` <div class="add-property" @click="${this._clickAddProperty}">
-              <div class="icon">${PlusIcon()}</div>
-              Add Property
-            </div>`
-          : nothing}
+      <div style="flex:1;overflow-y: auto;overflow-x: hidden">
+        <div
+          style="width: 100%;max-width: var(--affine-editor-width);display: flex;flex-direction: column;margin: 0 auto;box-sizing: border-box;"
+        >
+          ${keyed(this.rowId, this.renderHeader())}
+          ${repeat(
+            properties,
+            v => v.id,
+            property => {
+              return keyed(
+                this.rowId,
+                html` <affine-data-view-record-field
+                  .view="${this.view}"
+                  .column="${property}"
+                  .rowId="${this.rowId}"
+                  data-column-id="${property.id}"
+                ></affine-data-view-record-field>`
+              );
+            }
+          )}
+          ${!this.readonly
+            ? html` <div
+                class="add-property"
+                @click="${this._clickAddProperty}"
+              >
+                <div class="icon">${PlusIcon()}</div>
+                Add Property
+              </div>`
+            : nothing}
+        </div>
+        ${keyed(this.rowId, this.renderNote())}
       </div>
-      ${keyed(this.rowId, this.renderNote())}
     `;
   }
 

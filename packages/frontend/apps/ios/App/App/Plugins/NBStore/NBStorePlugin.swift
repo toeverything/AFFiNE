@@ -30,9 +30,12 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     CAPPluginMethod(name: "getPeerPulledRemoteClocks", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getPeerPulledRemoteClock", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "setPeerPulledRemoteClock", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "getPeerPushedClock", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "getPeerPushedClocks", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "setPeerPushedClock", returnType: CAPPluginReturnPromise),
     CAPPluginMethod(name: "clearClocks", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "getBlobUploadedAt", returnType: CAPPluginReturnPromise),
+    CAPPluginMethod(name: "setBlobUploadedAt", returnType: CAPPluginReturnPromise),
   ]
   
   @objc func connect(_ call: CAPPluginCall) {
@@ -234,13 +237,13 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
         let id = try call.getStringEnsure("id")
         let key = try call.getStringEnsure("key")
         if let blob = try await docStoragePool.getBlob(universalId: id, key: key) {
-          call.resolve(["blob":[
+          call.resolve([
             "key": blob.key,
             "data": blob.data,
             "mime": blob.mime,
             "size": blob.size,
             "createdAt": blob.createdAt
-          ]])
+          ])
         } else {
           call.resolve()
         }
@@ -334,11 +337,14 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
         let peer = try call.getStringEnsure("peer")
         let docId = try call.getStringEnsure("docId")
         
-        let clock = try await docStoragePool.getPeerRemoteClock(universalId: id, peer: peer, docId: docId)
-        call.resolve([
-          "docId": clock.docId,
-          "timestamp": clock.timestamp,
-        ])
+        if let clock = try await docStoragePool.getPeerRemoteClock(universalId: id, peer: peer, docId: docId) {
+          call.resolve([
+            "docId": clock.docId,
+            "timestamp": clock.timestamp,
+          ])
+        } else {
+          call.resolve()
+        }
         
       } catch {
         call.reject("Failed to get peer remote clock, \(error)", nil, error)
@@ -391,11 +397,14 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
         let peer = try call.getStringEnsure("peer")
         let docId = try call.getStringEnsure("docId")
         
-        let clock = try await docStoragePool.getPeerPulledRemoteClock(universalId: id, peer: peer, docId: docId)
-        call.resolve([
-          "docId": clock.docId,
-          "timestamp": clock.timestamp,
-        ])
+        if let clock = try await docStoragePool.getPeerPulledRemoteClock(universalId: id, peer: peer, docId: docId) {
+          call.resolve([
+            "docId": clock.docId,
+            "timestamp": clock.timestamp,
+          ])
+        } else {
+          call.resolve()
+        }
         
       } catch {
         call.reject("Failed to get peer pulled remote clock, \(error)", nil, error)
@@ -420,6 +429,26 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve()
       } catch {
         call.reject("Failed to set peer pulled remote clock, \(error)", nil, error)
+      }
+    }
+  }
+  
+  @objc func getPeerPushedClock(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let peer = try call.getStringEnsure("peer")
+        let docId = try call.getStringEnsure("docId")
+        if let clock = try await docStoragePool.getPeerPushedClock(universalId: id, peer: peer, docId: docId) {
+          call.resolve([
+            "docId": clock.docId,
+            "timestamp": clock.timestamp,
+          ])
+        } else {
+          call.resolve()
+        }
+      } catch {
+        call.reject("Failed to get peer pushed clock, \(error)", nil, error)
       }
     }
   }
@@ -463,6 +492,49 @@ public class NbStorePlugin: CAPPlugin, CAPBridgedPlugin {
     }
   }
   
+  @objc func getBlobUploadedAt(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let peer = try call.getStringEnsure("peer")
+        let blobId = try call.getStringEnsure("blobId")
+        
+        let uploadedAt = try await docStoragePool.getBlobUploadedAt(
+          universalId: id,
+          peer: peer,
+          blobId: blobId
+        )
+        
+        call.resolve([
+          "uploadedAt": uploadedAt as Any
+        ])
+      } catch {
+        call.reject("Failed to get blob uploaded, \(error)", nil, error)
+      }
+    }
+  }
+  
+  @objc func setBlobUploadedAt(_ call: CAPPluginCall) {
+    Task {
+      do {
+        let id = try call.getStringEnsure("id")
+        let peer = try call.getStringEnsure("peer")
+        let blobId = try call.getStringEnsure("blobId")
+        let uploadedAt = call.getInt("uploadedAt")
+        
+        try await docStoragePool.setBlobUploadedAt(
+          universalId: id,
+          peer: peer,
+          blobId: blobId,
+          uploadedAt: uploadedAt == nil ? nil : Int64(uploadedAt!)
+        )
+        call.resolve()
+      } catch {
+        call.reject("Failed to set blob uploaded, \(error)", nil, error)
+      }
+    }
+  }
+
   @objc func clearClocks(_ call: CAPPluginCall) {
     Task {
       do {

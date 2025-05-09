@@ -1,4 +1,4 @@
-{{- if .Values.global.database.gcloud.enabled -}}
+{{- if .Values.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:

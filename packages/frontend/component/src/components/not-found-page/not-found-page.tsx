@@ -11,6 +11,7 @@ import illustrationLight from '../affine-other-page-layout/assets/other-page.lig
 import type { User } from '../auth-components';
 import {
   illustration,
+  info,
   largeButtonEffect,
   notFoundPageContainer,
   wrapper,
@@ -35,6 +36,30 @@ export const NoPermissionOrNotFound = ({
       <div className={notFoundPageContainer} data-testid="not-found">
         {user ? (
           <>
+            <div className={info}>
+              <p className={wrapper}>{t['404.hint']()}</p>
+              <div className={wrapper}>
+                <Button
+                  variant="primary"
+                  size="extraLarge"
+                  onClick={onBack}
+                  className={largeButtonEffect}
+                >
+                  {t['404.back']()}
+                </Button>
+              </div>
+              <div className={wrapper}>
+                <Avatar url={user.avatar ?? user.image} name={user.label} />
+                <span style={{ margin: '0 12px' }}>{user.email}</span>
+                <IconButton
+                  onClick={onSignOut}
+                  size="20"
+                  tooltip={t['404.signOut']()}
+                >
+                  <SignOutIcon />
+                </IconButton>
+              </div>
+            </div>
             <div className={wrapper}>
               <ThemedImg
                 draggable={false}
@@ -42,28 +67,6 @@ export const NoPermissionOrNotFound = ({
                 lightSrc={illustrationLight}
                 darkSrc={illustrationDark}
               />
-            </div>
-            <p className={wrapper}>{t['404.hint']()}</p>
-            <div className={wrapper}>
-              <Button
-                variant="primary"
-                size="extraLarge"
-                onClick={onBack}
-                className={largeButtonEffect}
-              >
-                {t['404.back']()}
-              </Button>
-            </div>
-            <div className={wrapper}>
-              <Avatar url={user.avatar ?? user.image} name={user.label} />
-              <span style={{ margin: '0 12px' }}>{user.email}</span>
-              <IconButton
-                onClick={onSignOut}
-                size="20"
-                tooltip={t['404.signOut']()}
-              >
-                <SignOutIcon />
-              </IconButton>
             </div>
           </>
         ) : (
@@ -84,6 +87,32 @@ export const NotFoundPage = ({
   return (
     <AffineOtherPageLayout>
       <div className={notFoundPageContainer} data-testid="not-found">
+        <div className={info}>
+          <p className={wrapper}>{t['404.hint']()}</p>
+          <div className={wrapper}>
+            <Button
+              variant="primary"
+              size="extraLarge"
+              onClick={onBack}
+              className={largeButtonEffect}
+            >
+              {t['404.back']()}
+            </Button>
+          </div>
+          {user ? (
+            <div className={wrapper}>
+              <Avatar url={user.avatar ?? user.image} name={user.label} />
+              <span style={{ margin: '0 12px' }}>{user.email}</span>
+              <IconButton
+                onClick={onSignOut}
+                size="20"
+                tooltip={t['404.signOut']()}
+              >
+                <SignOutIcon />
+              </IconButton>
+            </div>
+          ) : null}
+        </div>
         <div className={wrapper}>
           <ThemedImg
             draggable={false}
@@ -92,31 +121,6 @@ export const NotFoundPage = ({
             darkSrc={illustrationDark}
           />
         </div>
-        <p className={wrapper}>{t['404.hint']()}</p>
-        <div className={wrapper}>
-          <Button
-            variant="primary"
-            size="extraLarge"
-            onClick={onBack}
-            className={largeButtonEffect}
-          >
-            {t['404.back']()}
-          </Button>
-        </div>
-
-        {user ? (
-          <div className={wrapper}>
-            <Avatar url={user.avatar ?? user.image} name={user.label} />
-            <span style={{ margin: '0 12px' }}>{user.email}</span>
-            <IconButton
-              onClick={onSignOut}
-              size="20"
-              tooltip={t['404.signOut']()}
-            >
-              <SignOutIcon />
-            </IconButton>
-          </div>
-        ) : null}
       </div>
     </AffineOtherPageLayout>
   );

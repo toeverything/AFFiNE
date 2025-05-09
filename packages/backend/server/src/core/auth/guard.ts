@@ -10,8 +10,10 @@ import type { Request, Response } from 'express';
 import { Socket } from 'socket.io';
 
 import {
+  AccessDenied,
   AuthenticationRequired,
   Config,
+  CryptoHelper,
   getRequestResponseFromContext,
   parseCookies,
 } from '../../base';
@@ -20,12 +22,14 @@ import { AuthService } from './service';
 import { Session } from './session';
 
 const PUBLIC_ENTRYPOINT_SYMBOL = Symbol('public');
+const INTERNAL_ENTRYPOINT_SYMBOL = Symbol('internal');
 
 @Injectable()
 export class AuthGuard implements CanActivate, OnModuleInit {
   private auth!: AuthService;
 
   constructor(
+    private readonly crypto: CryptoHelper,
     private readonly ref: ModuleRef,
     private readonly reflector: Reflector
   ) {}
@@ -36,6 +40,21 @@ export class AuthGuard implements CanActivate, OnModuleInit {
 
   async canActivate(context: ExecutionContext) {
     const { req, res } = getRequestResponseFromContext(context);
+    const clazz = context.getClass();
+    const handler = context.getHandler();
+    // rpc request is internal
+    const isInternal = this.reflector.getAllAndOverride<boolean>(
+      INTERNAL_ENTRYPOINT_SYMBOL,
+      [clazz, handler]
+    );
+    if (isInternal) {
+      // check access token: data,signature
+      const accessToken = req.get('x-access-token');
+      if (accessToken && this.crypto.verify(accessToken)) {
+        return true;
+      }
+      throw new AccessDenied('Invalid internal request');
+    }
 
     const userSession = await this.signIn(req, res);
     if (res && userSession && userSession.expiresAt) {
@@ -45,7 +64,7 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     // api is public
     const isPublic = this.reflector.getAllAndOverride<boolean>(
       PUBLIC_ENTRYPOINT_SYMBOL,
-      [context.getClass(), context.getHandler()]
+      [clazz, handler]
     );
 
     if (isPublic) {
@@ -84,6 +103,11 @@ export class AuthGuard implements CanActivate, OnModuleInit {
  * Mark api to be public accessible
  */
 export const Public = () => SetMetadata(PUBLIC_ENTRYPOINT_SYMBOL, true);
+
+/**
+ * Mark rpc api to be internal accessible
+ */
+export const Internal = () => SetMetadata(INTERNAL_ENTRYPOINT_SYMBOL, true);
 
 export const AuthWebsocketOptionsProvider: FactoryProvider = {
   provide: WEBSOCKET_OPTIONS,

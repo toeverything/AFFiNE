@@ -1,10 +1,9 @@
 import type { Workspace as WorkspaceInterface } from '@blocksuite/affine/store';
-import { Entity, LiveData } from '@toeverything/infra';
-import { Observable } from 'rxjs';
-import type { Awareness } from 'y-protocols/awareness.js';
+import { Entity, LiveData, yjsGetPath } from '@toeverything/infra';
+import type { Observable } from 'rxjs';
+import { Doc as YDoc, transact } from 'yjs';
 
-import { WorkspaceDBService } from '../../db';
-import { getAFFiNEWorkspaceSchema } from '../global-schema';
+import { DocsService } from '../../doc';
 import { WorkspaceImpl } from '../impls/workspace';
 import type { WorkspaceScope } from '../scopes/workspace';
 import { WorkspaceEngineService } from '../services/engine';
@@ -22,32 +21,53 @@ export class Workspace extends Entity {
 
   readonly flavour = this.meta.flavour;
 
+  readonly rootYDoc = new YDoc({ guid: this.openOptions.metadata.id });
+
   _docCollection: WorkspaceInterface | null = null;
 
   get docCollection() {
     if (!this._docCollection) {
       this._docCollection = new WorkspaceImpl({
         id: this.openOptions.metadata.id,
-        blobSource: this.engine.blob,
-        schema: getAFFiNEWorkspaceSchema(),
-      });
-      this._docCollection.slots.docCreated.on(id => {
-        this.engine.doc.markAsReady(id);
+        rootDoc: this.rootYDoc,
+        blobSource: {
+          get: async key => {
+            const record = await this.engine.blob.get(key);
+            return record
+              ? new Blob([record.data], { type: record.mime })
+              : null;
+          },
+          delete: async () => {
+            return;
+          },
+          list: async () => {
+            return [];
+          },
+          set: async (id, blob) => {
+            await this.engine.blob.set({
+              key: id,
+              data: new Uint8Array(await blob.arrayBuffer()),
+              mime: blob.type,
+            });
+            return id;
+          },
+          /* eslint-disable rxjs/finnish */
+          blobState$: key => this.engine.blob.blobState$(key),
+          name: 'blob',
+          readonly: false,
+        },
+        onLoadDoc: doc => this.engine.doc.connectDoc(doc),
+        onLoadAwareness: awareness =>
+          this.engine.awareness.connectAwareness(awareness),
+        onCreateDoc: docId =>
+          this.docs.createDoc({ id: docId, skipInit: true }).id,
       });
     }
     return this._docCollection;
   }
 
-  get db() {
-    return this.framework.get(WorkspaceDBService).db;
-  }
-
-  get awareness() {
-    return this.docCollection.awarenessStore.awareness as Awareness;
-  }
-
-  get rootYDoc() {
-    return this.docCollection.doc;
+  get docs() {
+    return this.scope.get(DocsService);
   }
 
   get canGracefulStop() {
@@ -60,24 +80,38 @@ export class Workspace extends Entity {
   }
 
   name$ = LiveData.from<string | undefined>(
-    new Observable(subscriber => {
-      subscriber.next(this.docCollection.meta.name);
-      return this.docCollection.meta.commonFieldsUpdated.on(() => {
-        subscriber.next(this.docCollection.meta.name);
-      }).dispose;
-    }),
+    yjsGetPath(this.rootYDoc.getMap('meta'), 'name') as Observable<
+      string | undefined
+    >,
     undefined
   );
 
-  avatar$ = LiveData.from<string | undefined>(
-    new Observable(subscriber => {
-      subscriber.next(this.docCollection.meta.avatar);
-      return this.docCollection.meta.commonFieldsUpdated.on(() => {
-        subscriber.next(this.docCollection.meta.avatar);
-      }).dispose;
-    }),
+  avatar$ = LiveData.from(
+    yjsGetPath(this.rootYDoc.getMap('meta'), 'avatar') as Observable<
+      string | undefined
+    >,
     undefined
   );
+
+  setAvatar(avatar: string) {
+    transact(
+      this.rootYDoc,
+      () => {
+        this.rootYDoc.getMap('meta').set('avatar', avatar);
+      },
+      { force: true }
+    );
+  }
+
+  setName(name: string) {
+    transact(
+      this.rootYDoc,
+      () => {
+        this.rootYDoc.getMap('meta').set('name', name);
+      },
+      { force: true }
+    );
+  }
 
   override dispose(): void {
     this.docCollection.dispose();

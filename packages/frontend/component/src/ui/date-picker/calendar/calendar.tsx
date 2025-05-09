@@ -49,7 +49,11 @@ export const DatePicker = (props: DatePickerProps) => {
   }, []);
 
   return (
-    <div className={styles.calendarRoot} style={variables}>
+    <div
+      className={styles.calendarRoot}
+      style={variables}
+      data-testid="date-picker-calendar"
+    >
       <Component
         cursor={cursor}
         {...finalProps}

@@ -1,8 +1,0 @@
-query getWorkspacePublicPageById($workspaceId: String!, $pageId: String!) {
-  workspace(id: $workspaceId) {
-    publicPage(pageId: $pageId) {
-      id
-      mode
-    }
-  }
-}

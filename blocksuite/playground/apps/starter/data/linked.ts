@@ -1,19 +1,21 @@
-import { Text, type Workspace } from '@blocksuite/store';
+import { Text, type Workspace } from '@blocksuite/affine/store';
 
 import type { InitFn } from './utils.js';
 
 export const linked: InitFn = (collection: Workspace, id: string) => {
-  const docA = collection.getDoc(id) ?? collection.createDoc({ id });
+  const docA =
+    collection.getDoc(id)?.getStore({ id }) ??
+    collection.createDoc(id).getStore({ id });
 
   const docBId = 'doc:linked-page';
-  const docB = collection.createDoc({ id: docBId });
+  const docB = collection.createDoc(docBId).getStore();
 
   const docCId = 'doc:linked-edgeless';
-  const docC = collection.createDoc({ id: docCId });
+  const docC = collection.createDoc(docCId).getStore();
 
-  docA.clear();
-  docB.clear();
-  docC.clear();
+  docA.doc.clear();
+  docB.doc.clear();
+  docC.doc.clear();
 
   docB.load(() => {
     const rootId = docB.addBlock('affine:page', {

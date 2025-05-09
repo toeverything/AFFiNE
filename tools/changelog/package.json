@@ -1,6 +1,6 @@
 {
   "name": "@affine/changelog",
-  "version": "0.19.0",
+  "version": "0.21.0",
   "type": "module",
   "main": "index.js",
   "private": true,
@@ -8,11 +8,11 @@
   "dependencies": {
     "@napi-rs/simple-git": "^0.1.19",
     "@slack/web-api": "^7.8.0",
-    "changelogithub": "^0.13.11",
+    "changelogithub": "^13.0.0",
     "jsx-slack": "^6.1.2",
     "marked": "^15.0.3"
   },
   "devDependencies": {
-    "@types/node": "^20.17.10"
+    "@types/node": "^22.0.0"
   }
 }

@@ -1,6 +1,5 @@
 import type { PricesQuery } from '@affine/graphql';
 import {
-  backoffRetry,
   catchErrorInto,
   effect,
   Entity,
@@ -9,10 +8,10 @@ import {
   mapInto,
   onComplete,
   onStart,
+  smartRetry,
 } from '@toeverything/infra';
 import { exhaustMap } from 'rxjs';
 
-import { isBackendError, isNetworkError } from '../error';
 import type { ServerService } from '../services/server';
 import type { SubscriptionStore } from '../stores/subscription';
 
@@ -55,13 +54,7 @@ export class SubscriptionPrices extends Entity {
         }
         return this.store.fetchSubscriptionPrices(signal);
       }).pipe(
-        backoffRetry({
-          when: isNetworkError,
-          count: Infinity,
-        }),
-        backoffRetry({
-          when: isBackendError,
-        }),
+        smartRetry(),
         mapInto(this.prices$),
         catchErrorInto(this.error$),
         onStart(() => this.isRevalidating$.next(true)),

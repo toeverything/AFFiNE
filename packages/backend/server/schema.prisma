@@ -1,12 +1,14 @@
 generator client {
   provider        = "prisma-client-js"
+  output          = "../../../node_modules/.prisma/client"
   binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
-  previewFeatures = ["metrics", "tracing", "relationJoins", "nativeDistinct"]
+  previewFeatures = ["metrics", "relationJoins", "nativeDistinct", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
 }
 
 model User {
@@ -21,20 +23,29 @@ model User {
   /// Indicate whether the user finished the signup progress.
   /// for example, the value will be false if user never registered and invited into a workspace by others.
   registered      Boolean   @default(true)
+  disabled        Boolean   @default(false)
 
-  features              UserFeature[]
-  userStripeCustomer    UserStripeCustomer?
-  workspacePermissions  WorkspaceUserPermission[]
-  pagePermissions       WorkspacePageUserPermission[]
-  connectedAccounts     ConnectedAccount[]
-  sessions              UserSession[]
-  aiSessions            AiSession[]
-  updatedRuntimeConfigs RuntimeConfig[]
-  userSnapshots         UserSnapshot[]
-  createdSnapshot       Snapshot[]                    @relation("createdSnapshot")
-  updatedSnapshot       Snapshot[]                    @relation("updatedSnapshot")
-  createdUpdate         Update[]                      @relation("createdUpdate")
-  createdHistory        SnapshotHistory[]             @relation("createdHistory")
+  features                     UserFeature[]
+  userStripeCustomer           UserStripeCustomer?
+  workspaces                   WorkspaceUserRole[]
+  // Invite others to join the workspace
+  WorkspaceInvitations         WorkspaceUserRole[]            @relation("inviter")
+  docPermissions               WorkspaceDocUserRole[]
+  connectedAccounts            ConnectedAccount[]
+  sessions                     UserSession[]
+  aiSessions                   AiSession[]
+  /// @deprecated
+  deprecatedAppRuntimeSettings DeprecatedAppRuntimeSettings[]
+  appConfigs                   AppConfig[]
+  userSnapshots                UserSnapshot[]
+  createdSnapshot              Snapshot[]                     @relation("createdSnapshot")
+  updatedSnapshot              Snapshot[]                     @relation("updatedSnapshot")
+  createdUpdate                Update[]                       @relation("createdUpdate")
+  createdHistory               SnapshotHistory[]              @relation("createdHistory")
+  createdAiJobs                AiJobs[]                       @relation("createdAiJobs")
+  // receive notifications
+  notifications                Notification[]                 @relation("user_notifications")
+  settings                     UserSettings?
 
   @@index([email])
   @@map("users")
@@ -95,18 +106,23 @@ model VerificationToken {
 }
 
 model Workspace {
-  id               String   @id @default(uuid()) @db.VarChar
-  public           Boolean
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id                 String   @id @default(uuid()) @db.VarChar
+  public             Boolean
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   // workspace level feature flags
-  enableAi         Boolean  @default(true) @map("enable_ai")
-  enableUrlPreview Boolean  @default(false) @map("enable_url_preview")
+  enableAi           Boolean  @default(true) @map("enable_ai")
+  enableUrlPreview   Boolean  @default(false) @map("enable_url_preview")
+  enableDocEmbedding Boolean  @default(true) @map("enable_doc_embedding")
+  name               String?  @db.VarChar
+  avatarKey          String?  @map("avatar_key") @db.VarChar
 
-  pages           WorkspacePage[]
-  permissions     WorkspaceUserPermission[]
-  pagePermissions WorkspacePageUserPermission[]
-  features        WorkspaceFeature[]
-  blobs           Blob[]
+  features       WorkspaceFeature[]
+  docs           WorkspaceDoc[]
+  permissions    WorkspaceUserRole[]
+  docPermissions WorkspaceDocUserRole[]
+  blobs          Blob[]
+  ignoredDocs    AiWorkspaceIgnoredDocs[]
+  embedFiles     AiWorkspaceFiles[]
 
   @@map("workspaces")
 }
@@ -115,44 +131,67 @@ model Workspace {
 // NOTE:
 //   We won't make sure every page has a corresponding record in this table.
 //   Only the ones that have ever changed will have records here,
-//   and for others we will make sure it's has a default value return in our bussiness logic.
-model WorkspacePage {
+//   and for others we will make sure it's has a default value return in our business logic.
+model WorkspaceDoc {
   workspaceId String  @map("workspace_id") @db.VarChar
-  pageId      String  @map("page_id") @db.VarChar
+  docId       String  @map("page_id") @db.VarChar
   public      Boolean @default(false)
+  // Workspace user's default role in this page, default is `Manager`
+  defaultRole Int     @default(30) @db.SmallInt
   // Page/Edgeless
   mode        Int     @default(0) @db.SmallInt
+  // Whether the doc is blocked
+  blocked     Boolean @default(false)
+  title       String? @db.VarChar
+  summary     String? @db.VarChar
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@id([workspaceId, pageId])
+  @@id([workspaceId, docId])
   @@map("workspace_pages")
 }
 
 enum WorkspaceMemberStatus {
-  Pending // 1. old state accepted = false
-  NeedMoreSeat // 2.1 for team: workspace owner need to buy more seat
-  NeedMoreSeatAndReview // 2.2 for team: workspace owner need to buy more seat and member need review
-  UnderReview // 3. for team: member is under review
-  Accepted // 4. old state accepted = true
+  /// Wait for the invitee to accept the invitation
+  Pending
+  /// Wait for administrators to review and accept the link invitation
+  UnderReview
+  /// Temporary state for team workspace. There is some time gap between invitation and bill payed
+  AllocatingSeat
+  /// Insufficient seat for user becoming active workspace member
+  NeedMoreSeat
+  /// Activate workspace member
+  Accepted
+  /// @deprecated
+  NeedMoreSeatAndReview
 }
 
-model WorkspaceUserPermission {
+enum WorkspaceMemberSource {
+  /// Invited by email
+  Email
+  /// Invited by link
+  Link
+}
+
+model WorkspaceUserRole {
   id          String                @id @default(uuid()) @db.VarChar
   workspaceId String                @map("workspace_id") @db.VarChar
   userId      String                @map("user_id") @db.VarChar
-  // Read/Write
+  // Workspace Role, Owner/Admin/Collaborator/External
   type        Int                   @db.SmallInt
-  /// @deprecated Whether the permission invitation is accepted by the user
-  accepted    Boolean               @default(false)
-  /// Whether the invite status of the workspace member
+  /// the invite status of the workspace member
   status      WorkspaceMemberStatus @default(Pending)
+  source      WorkspaceMemberSource @default(Email)
+  inviterId   String?               @map("inviter_id") @db.VarChar
   createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
-  /// When the invite status changed
   updatedAt   DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  inviter   User?     @relation(name: "inviter", fields: [inviterId], references: [id], onDelete: SetNull)
+
+  /// @deprecated Whether the permission invitation is accepted by the user, use status instead
+  accepted Boolean @default(false)
 
   @@unique([workspaceId, userId])
   // optimize for querying user's workspace permissions
@@ -160,98 +199,89 @@ model WorkspaceUserPermission {
   @@map("workspace_user_permissions")
 }
 
-model WorkspacePageUserPermission {
-  id          String   @id @default(uuid()) @db.VarChar
+model WorkspaceDocUserRole {
   workspaceId String   @map("workspace_id") @db.VarChar
-  pageId      String   @map("page_id") @db.VarChar
+  docId       String   @map("page_id") @db.VarChar
   userId      String   @map("user_id") @db.VarChar
-  // Read/Write
+  // External/Reader/Editor/Manager/Owner
   type        Int      @db.SmallInt
-  /// Whether the permission invitation is accepted by the user
-  accepted    Boolean  @default(false)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@unique([workspaceId, pageId, userId])
+  @@id([workspaceId, docId, userId])
   @@map("workspace_page_user_permissions")
 }
 
-// feature gates is a way to enable/disable features for a user
-// for example:
-// - early access is a feature that allow some users to access the insider version
-// - pro plan is a quota that allow some users access to more resources after they pay
-model UserFeature {
-  id        Int    @id @default(autoincrement())
-  userId    String @map("user_id") @db.VarChar
-  featureId Int    @map("feature_id") @db.Integer
+model Feature {
+  id                Int      @id @default(autoincrement())
+  name              String   @map("feature") @db.VarChar
+  configs           Json     @default("{}") @db.Json
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  /// TODO(@forehalo): remove in the coming version
+  /// @deprecated
+  /// we don't need to record all the historical version of features
+  deprecatedVersion Int      @default(0) @map("version") @db.Integer
+  /// @deprecated
+  /// we don't need to record type of features any more, there are always static,
+  /// but set it in `WorkspaceFeature` and `UserFeature` for fast query with just a little redundant.
+  deprecatedType    Int      @default(0) @map("type") @db.Integer
 
-  // we will record the reason why the feature is enabled/disabled
-  // for example:
-  // - pro_plan_v1: "user buy the pro plan"
+  userFeatures      UserFeature[]
+  workspaceFeatures WorkspaceFeature[]
+
+  @@unique([name, deprecatedVersion])
+  @@map("features")
+}
+
+model UserFeature {
+  id        Int       @id @default(autoincrement())
+  userId    String    @map("user_id") @db.VarChar
+  featureId Int       @map("feature_id") @db.Integer
+  // it should be typed as `optional` in the codebase, but we would keep all values exists during data migration.
+  // so it's safe to assert it a non-null value.
+  name      String    @default("") @map("name") @db.VarChar
+  // a little redundant, but fast the queries
+  type      Int       @default(0) @map("type") @db.Integer
   reason    String    @db.VarChar
-  // record the quota enabled time
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  // record the quota expired time, pay plan is a subscription, so it will expired
   expiredAt DateTime? @map("expired_at") @db.Timestamptz(3)
-  // whether the feature is activated
-  // for example:
-  // - if we switch the user to another plan, we will set the old plan to deactivated, but dont delete it
   activated Boolean   @default(false)
 
   feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([name])
+  @@index([featureId])
   @@map("user_features")
 }
 
-// feature gates is a way to enable/disable features for a workspace
-// for example:
-// - copilet is a feature that allow some users in a workspace to access the copilet feature
 model WorkspaceFeature {
-  id          Int    @id @default(autoincrement())
-  workspaceId String @map("workspace_id") @db.VarChar
-  featureId   Int    @map("feature_id") @db.Integer
-
-  // override quota's configs
-  configs   Json      @default("{}") @db.Json
-  // we will record the reason why the feature is enabled/disabled
-  // for example:
-  // - copilet_v1: "owner buy the copilet feature package"
-  reason    String    @db.VarChar
-  // record the feature enabled time
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  // record the quota expired time, pay plan is a subscription, so it will expired
-  expiredAt DateTime? @map("expired_at") @db.Timestamptz(3)
-  // whether the feature is activated
-  // for example:
-  // - if owner unsubscribe a feature package, we will set the feature to deactivated, but dont delete it
-  activated Boolean   @default(false)
+  id          Int       @id @default(autoincrement())
+  workspaceId String    @map("workspace_id") @db.VarChar
+  featureId   Int       @map("feature_id") @db.Integer
+  // it should be typed as `optional` in the codebase, but we would keep all values exists during data migration.
+  // so it's safe to assert it a non-null value.
+  name        String    @default("") @map("name") @db.VarChar
+  // a little redundant, but fast the queries
+  type        Int       @default(0) @map("type") @db.Integer
+  /// overrides for the default feature configs
+  configs     Json      @default("{}") @db.Json
+  reason      String    @db.VarChar
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  activated   Boolean   @default(false)
+  expiredAt   DateTime? @map("expired_at") @db.Timestamptz(3)
 
   feature   Feature   @relation(fields: [featureId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
+  @@index([name])
+  @@index([featureId])
   @@map("workspace_features")
-}
-
-model Feature {
-  id        Int      @id @default(autoincrement())
-  feature   String   @db.VarChar
-  version   Int      @default(0) @db.Integer
-  // 0: feature, 1: quota
-  type      Int      @db.Integer
-  // configs, define by feature controller
-  configs   Json     @db.Json
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-
-  UserFeatureGates  UserFeature[]
-  WorkspaceFeatures WorkspaceFeature[]
-
-  @@unique([feature, version])
-  @@map("features")
 }
 
 // the latest snapshot of each doc that we've seen
@@ -279,6 +309,8 @@ model Snapshot {
   // we need to clear all hanging updates and snapshots before enable the foreign key on workspaceId
   // workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  embedding AiWorkspaceEmbedding?
+
   @@id([workspaceId, id])
   @@index([workspaceId, updatedAt])
   @@map("snapshots")
@@ -286,7 +318,7 @@ model Snapshot {
 
 // user snapshots are special snapshots for user storage like personal app settings, distinguished from workspace snapshots
 // basically they share the same structure with workspace snapshots
-// but for convenience, we don't fork the updates queue and hisotry for user snapshots, until we have to
+// but for convenience, we don't fork the updates queue and history for user snapshots, until we have to
 // which means all operation on user snapshot will happen in-pace
 model UserSnapshot {
   userId    String   @map("user_id") @db.VarChar
@@ -308,7 +340,7 @@ model Update {
   createdAt   DateTime @map("created_at") @db.Timestamptz(3)
   createdBy   String?  @map("created_by") @db.VarChar
 
-  // will delete createor record if createor's account is deleted
+  // will delete creator record if creator's account is deleted
   createdByUser User? @relation(name: "createdUpdate", fields: [createdBy], references: [id], onDelete: SetNull)
 
   // @deprecated use createdAt only
@@ -327,7 +359,7 @@ model SnapshotHistory {
   expiredAt   DateTime @map("expired_at") @db.Timestamptz(3)
   createdBy   String?  @map("created_by") @db.VarChar
 
-  // will delete createor record if creator's account is deleted
+  // will delete creator record if creator's account is deleted
   createdByUser User? @relation(name: "createdHistory", fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@id([workspaceId, id, timestamp])
@@ -409,15 +441,150 @@ model AiSession {
   user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   prompt   AiPrompt           @relation(fields: [promptName], references: [name], onDelete: Cascade)
   messages AiSessionMessage[]
+  context  AiContext[]
 
   @@index([userId])
   @@index([userId, workspaceId])
   @@map("ai_sessions_metadata")
 }
 
+model AiContext {
+  id        String @id @default(uuid()) @db.VarChar
+  sessionId String @map("session_id") @db.VarChar
+  config    Json   @db.Json
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  embeddings AiContextEmbedding[]
+  session    AiSession            @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("ai_contexts")
+}
+
+model AiContextEmbedding {
+  id        String                      @id @default(uuid()) @db.VarChar
+  contextId String                      @map("context_id") @db.VarChar
+  fileId    String                      @map("file_id") @db.VarChar
+  // a file can be divided into multiple chunks and embedded separately.
+  chunk     Int                         @db.Integer
+  content   String                      @db.VarChar
+  embedding Unsupported("vector(1024)")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  context AiContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+
+  @@unique([contextId, fileId, chunk])
+  @@index([embedding], map: "ai_context_embeddings_idx")
+  @@map("ai_context_embeddings")
+}
+
+model AiWorkspaceEmbedding {
+  workspaceId String                      @map("workspace_id") @db.VarChar
+  docId       String                      @map("doc_id") @db.VarChar
+  // a doc can be divided into multiple chunks and embedded separately.
+  chunk       Int                         @db.Integer
+  content     String                      @db.VarChar
+  embedding   Unsupported("vector(1024)")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  // workspace level search not available for non-cloud workspaces
+  // so we can match this record with the snapshot one by one
+  snapshot Snapshot @relation(fields: [workspaceId, docId], references: [workspaceId, id], onDelete: Cascade)
+
+  @@id([workspaceId, docId])
+  @@unique([workspaceId, docId, chunk])
+  @@index([embedding], map: "ai_workspace_embeddings_idx")
+  @@map("ai_workspace_embeddings")
+}
+
+model AiWorkspaceIgnoredDocs {
+  workspaceId String @map("workspace_id") @db.VarChar
+  docId       String @map("doc_id") @db.VarChar
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, docId])
+  @@map("ai_workspace_ignored_docs")
+}
+
+model AiWorkspaceFiles {
+  workspaceId String @map("workspace_id") @db.VarChar
+  fileId      String @map("file_id") @db.VarChar
+  fileName    String @map("file_name") @db.VarChar
+  mimeType    String @map("mime_type") @db.VarChar
+  size        Int    @db.Integer
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  embeddings AiWorkspaceFileEmbedding[]
+
+  @@id([workspaceId, fileId])
+  @@map("ai_workspace_files")
+}
+
+model AiWorkspaceFileEmbedding {
+  workspaceId String                      @map("workspace_id") @db.VarChar
+  fileId      String                      @map("file_id") @db.VarChar
+  // a file can be divided into multiple chunks and embedded separately.
+  chunk       Int                         @db.Integer
+  content     String                      @db.VarChar
+  embedding   Unsupported("vector(1024)")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  file AiWorkspaceFiles @relation(fields: [workspaceId, fileId], references: [workspaceId, fileId], onDelete: Cascade)
+
+  @@id([workspaceId, fileId])
+  @@unique([workspaceId, fileId, chunk])
+  @@index([embedding], map: "ai_workspace_file_embeddings_idx")
+  @@map("ai_workspace_file_embeddings")
+}
+
+enum AiJobStatus {
+  pending
+  running
+  finished
+  claimed
+  failed
+}
+
+enum AiJobType {
+  transcription
+}
+
+model AiJobs {
+  id          String      @id @default(uuid()) @db.VarChar
+  workspaceId String      @map("workspace_id") @db.VarChar
+  blobId      String      @map("blob_id") @db.VarChar
+  createdBy   String?     @map("created_by") @db.VarChar
+  // job type, like "transcription"
+  type        AiJobType
+  status      AiJobStatus @default(pending)
+  // job result
+  payload     Json        @db.Json
+
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(3)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(3)
+
+  // will delete creator record if creator's account is deleted
+  createdByUser User? @relation(name: "createdAiJobs", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@unique([createdBy, workspaceId, blobId])
+  @@map("ai_jobs")
+}
+
 model DataMigration {
   id         String    @id @default(uuid()) @db.VarChar
-  name       String    @db.VarChar
+  name       String    @unique @db.VarChar
   startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(3)
   finishedAt DateTime? @map("finished_at") @db.Timestamptz(3)
 
@@ -432,7 +599,8 @@ enum RuntimeConfigType {
   Array
 }
 
-model RuntimeConfig {
+/// @deprecated use AppConfig instead
+model DeprecatedAppRuntimeSettings {
   id            String            @id @db.VarChar
   type          RuntimeConfigType
   module        String            @db.VarChar
@@ -447,6 +615,18 @@ model RuntimeConfig {
 
   @@unique([module, key])
   @@map("app_runtime_settings")
+}
+
+model AppConfig {
+  id            String   @id @db.VarChar
+  value         Json     @db.JsonB
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  lastUpdatedBy String?  @map("last_updated_by") @db.VarChar
+
+  lastUpdatedByUser User? @relation(fields: [lastUpdatedBy], references: [id], onDelete: SetNull)
+
+  @@map("app_configs")
 }
 
 model DeprecatedUserSubscription {
@@ -552,36 +732,112 @@ model Subscription {
 }
 
 model Invoice {
-  stripeInvoiceId  String   @id @map("stripe_invoice_id")
-  targetId         String   @map("target_id") @db.VarChar
-  currency         String   @db.VarChar(3)
+  stripeInvoiceId             String   @id @map("stripe_invoice_id")
+  targetId                    String   @map("target_id") @db.VarChar
+  currency                    String   @db.VarChar(3)
   // CNY 12.50 stored as 1250
-  amount           Int      @db.Integer
-  status           String   @db.VarChar(20)
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  amount                      Int      @db.Integer
+  status                      String   @db.VarChar(20)
+  createdAt                   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   // billing reason
-  reason           String?  @db.VarChar
-  lastPaymentError String?  @map("last_payment_error") @db.Text
+  reason                      String?  @db.VarChar
+  lastPaymentError            String?  @map("last_payment_error") @db.Text
   // stripe hosted invoice link
-  link             String?  @db.Text
+  link                        String?  @db.Text
+  // whether the onetime subscription has been redeemed
+  onetimeSubscriptionRedeemed Boolean  @default(false) @map("onetime_subscription_redeemed")
 
   @@index([targetId])
   @@map("invoices")
 }
+
+model License {
+  key         String    @id @map("key") @db.VarChar
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  revealedAt  DateTime? @map("revealed_at") @db.Timestamptz(3)
+  installedAt DateTime? @map("installed_at") @db.Timestamptz(3)
+  validateKey String?   @map("validate_key") @db.VarChar
+
+  @@map("licenses")
+}
+
+model InstalledLicense {
+  key         String    @id @map("key") @db.VarChar
+  workspaceId String    @unique @map("workspace_id") @db.VarChar
+  quantity    Int       @default(1) @db.Integer
+  recurring   String    @db.VarChar
+  installedAt DateTime  @default(now()) @map("installed_at") @db.Timestamptz(3)
+  validateKey String    @map("validate_key") @db.VarChar
+  validatedAt DateTime  @map("validated_at") @db.Timestamptz(3)
+  expiredAt   DateTime? @map("expired_at") @db.Timestamptz(3)
+
+  @@map("installed_licenses")
+}
+
 // Blob table only exists for fast non-data queries.
 // like, total size of blobs in a workspace, or blob list for sync service.
 // it should only be a map of metadata of blobs stored anywhere else
 model Blob {
-  workspaceId String   @map("workspace_id") @db.VarChar
-  key         String   @db.VarChar
-  size        Int      @db.Integer
-  mime        String   @db.VarChar
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspaceId String    @map("workspace_id") @db.VarChar
+  key         String    @db.VarChar
+  size        Int       @db.Integer
+  mime        String    @db.VarChar
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@id([workspaceId, key])
   @@map("blobs")
+}
+
+enum NotificationType {
+  Mention
+  Invitation
+  InvitationAccepted
+  InvitationBlocked
+  InvitationRejected
+  InvitationReviewRequest
+  InvitationReviewApproved
+  InvitationReviewDeclined
+}
+
+enum NotificationLevel {
+  // Makes a sound and appears as a heads-up notification
+  High
+  // Makes a sound
+  Default
+  // Makes no sound
+  Low
+  Min
+  None
+}
+
+model Notification {
+  id        String            @id @default(uuid()) @db.VarChar
+  userId    String            @map("user_id") @db.VarChar
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  level     NotificationLevel
+  read      Boolean           @default(false)
+  type      NotificationType
+  body      Json              @db.JsonB
+
+  user User @relation(name: "user_notifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  // for user notifications list, including read and unread, ordered by createdAt
+  @@index([userId, createdAt, read])
+  @@map("notifications")
+}
+
+model UserSettings {
+  userId    String   @id @map("user_id") @db.VarChar
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  payload   Json     @db.JsonB
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
 }

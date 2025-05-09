@@ -1,7 +1,7 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { createVar, style } from '@vanilla-extract/css';
 
-import { globalVars } from '../../styles/mobile.css';
+import { globalVars } from '../../styles/variables.css';
 
 export const appTabsBackground = createVar('appTabsBackground');
 

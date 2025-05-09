@@ -28,8 +28,8 @@ export const DiscardChanges = ({
             Changes to this prompt will not be saved.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
-          <div className="flex justify-end items-center w-full space-x-4">
+        <DialogFooter className="mt-6">
+          <div className="flex justify-end gap-2 items-center w-full">
             <Button type="button" onClick={onClose} variant="outline">
               <span>Cancel</span>
             </Button>

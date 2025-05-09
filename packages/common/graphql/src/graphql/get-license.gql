@@ -1,0 +1,11 @@
+query getLicense($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    license {
+      expiredAt
+      installedAt
+      quantity
+      recurring
+      validatedAt
+    }
+  }
+}

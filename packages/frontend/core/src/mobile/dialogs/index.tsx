@@ -18,7 +18,6 @@ const GLOBAL_DIALOGS = {
   //   'create-workspace': CreateWorkspaceDialog,
   //   'import-workspace': ImportWorkspaceDialog,
   //   'import-template': ImportTemplateDialog,
-  setting: SettingDialog,
   //   import: ImportDialog,
   'sign-in': SignInDialog,
 } satisfies {
@@ -34,6 +33,7 @@ const WORKSPACE_DIALOGS = {
   'doc-selector': DocSelectorDialog,
   'collection-selector': CollectionSelectorDialog,
   'date-selector': DateSelectorDialog,
+  setting: SettingDialog,
 } satisfies {
   [key in keyof WORKSPACE_DIALOG_SCHEMA]?: React.FC<
     DialogComponentProps<WORKSPACE_DIALOG_SCHEMA[key]>

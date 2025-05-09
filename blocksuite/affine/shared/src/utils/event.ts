@@ -180,7 +180,7 @@ export function requestConnectedFrame(
  * A wrapper around `requestConnectedFrame` that only calls at most once in one frame
  */
 export function requestThrottledConnectedFrame<
-  T extends (...args: unknown[]) => void,
+  T extends (...args: any[]) => void,
 >(func: T, element?: HTMLElement): T {
   let raqId: number | undefined = undefined;
   let latestArgs: unknown[] = [];
@@ -359,18 +359,4 @@ export const createKeydownObserver = ({
   target.addEventListener('compositionend', () => onInput?.(true), { signal });
 };
 
-export class ColorEvent extends Event {
-  detail: Palette;
-
-  constructor(
-    type: string,
-    {
-      detail,
-      composed,
-      bubbles,
-    }: { detail: Palette; composed: boolean; bubbles: boolean }
-  ) {
-    super(type, { bubbles, composed });
-    this.detail = detail;
-  }
-}
+export class ColorEvent extends CustomEvent<Palette> {}

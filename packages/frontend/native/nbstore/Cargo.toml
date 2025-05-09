@@ -13,11 +13,10 @@ use-as-lib = ["napi-derive/noop", "napi/noop"]
 affine_schema = { path = "../schema" }
 anyhow        = { workspace = true }
 chrono        = { workspace = true }
-dashmap       = { workspace = true }
 napi          = { workspace = true }
 napi-derive   = { workspace = true }
-thiserror     = { workspace = true }
 sqlx          = { workspace = true, default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
+thiserror     = { workspace = true }
 tokio         = { workspace = true, features = ["full"] }
 
 [target.'cfg(any(target_os = "ios", target_os = "android"))'.dependencies]

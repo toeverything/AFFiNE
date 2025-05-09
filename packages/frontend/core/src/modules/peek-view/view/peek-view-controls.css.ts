@@ -1,3 +1,4 @@
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
 export const root = style({
@@ -17,6 +18,7 @@ export const button = style({
   borderRadius: 8,
   width: 32,
   height: 32,
+  background: cssVarV2('centerPeek/buttonBackground'),
   '@media': {
     'screen and (width <= 640px)': {
       selectors: {

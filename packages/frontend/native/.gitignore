@@ -1,2 +1,3 @@
 *.fixture
 lib
+*.bin

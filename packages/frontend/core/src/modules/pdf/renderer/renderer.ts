@@ -1,3 +1,4 @@
+import { getWorkerUrl } from '@affine/env/worker';
 import { OpClient } from '@toeverything/infra/op';
 
 import type { ClientOps } from './ops';
@@ -6,12 +7,7 @@ export class PDFRenderer extends OpClient<ClientOps> {
   private readonly worker: Worker;
 
   constructor() {
-    const worker = new Worker(
-      /* webpackChunkName: "pdf.worker" */ new URL(
-        './worker.ts',
-        import.meta.url
-      )
-    );
+    const worker = new Worker(getWorkerUrl('pdf'));
     super(worker);
 
     this.worker = worker;

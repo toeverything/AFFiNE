@@ -1,13 +1,14 @@
 import { cssVar } from '@toeverything/theme';
 import { style } from '@vanilla-extract/css';
 export const statusWrapper = style({
-  marginLeft: 8,
-  marginRight: 10,
+  position: 'absolute',
+  right: 10,
 });
 export const tag = style({
   padding: '2px 15px',
   height: 20,
-  lineHeight: '20px',
+  display: 'inline-flex',
+  alignItems: 'center',
   borderRadius: 10,
   fontSize: cssVar('fontXs'),
   selectors: {

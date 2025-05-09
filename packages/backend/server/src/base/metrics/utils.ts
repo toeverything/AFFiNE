@@ -1,5 +1,6 @@
 import type { Attributes } from '@opentelemetry/api';
 
+import { makeMethodDecorator } from '../nestjs/decorator';
 import { type KnownMetricScopes, metrics } from './metrics';
 
 /**
@@ -9,57 +10,41 @@ import { type KnownMetricScopes, metrics } from './metrics';
  * @param attrs attributes
  * @returns
  */
-export const CallMetric = (
+export const CallMetric = makeMethodDecorator(
+  (scope: KnownMetricScopes, name: string, attrs?: Attributes) => {
+    return (_target, _key, fn) => {
+      return wrapCallMetric(fn, scope, name, attrs);
+    };
+  }
+);
+
+export function wrapCallMetric<Fn extends (...args: any[]) => any>(
+  fn: Fn,
   scope: KnownMetricScopes,
   name: string,
-  record?: { timer?: boolean; count?: boolean; error?: boolean },
   attrs?: Attributes
-): MethodDecorator => {
-  // @ts-expect-error allow
-  return (
-    _target,
-    _key,
-    desc: TypedPropertyDescriptor<(...args: any[]) => any>
-  ) => {
-    const originalMethod = desc.value;
-    if (!originalMethod) {
-      return desc;
+) {
+  return async function (this: any, ...args: any[]) {
+    const start = Date.now();
+    let error = false;
+
+    try {
+      return await fn.call(this, ...args);
+    } catch (err) {
+      error = true;
+      throw err;
+    } finally {
+      const count = metrics[scope].counter('function_calls', {
+        description: 'function call counter',
+      });
+
+      const timer = metrics[scope].histogram('function_timer', {
+        description: 'function call time costs',
+        unit: 'ms',
+      });
+
+      count.add(1, { ...attrs, name, error });
+      timer.record(Date.now() - start, { ...attrs, name, error });
     }
-
-    const timer = metrics[scope].histogram('function_timer', {
-      description: 'function call time costs',
-      unit: 'ms',
-    });
-    const count = metrics[scope].counter('function_calls', {
-      description: 'function call counter',
-    });
-
-    desc.value = async function (...args: any[]) {
-      const start = Date.now();
-      let error = false;
-
-      const end = () => {
-        timer?.record(Date.now() - start, { ...attrs, name, error });
-      };
-
-      try {
-        if (!record || !!record.count) {
-          count.add(1, attrs);
-        }
-        return await originalMethod.apply(this, args);
-      } catch (err) {
-        if (!record || !!record.error) {
-          error = true;
-        }
-        throw err;
-      } finally {
-        count.add(1, { ...attrs, name, error });
-        if (!record || !!record.timer) {
-          end();
-        }
-      }
-    };
-
-    return desc;
   };
-};
+}

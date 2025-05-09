@@ -162,7 +162,7 @@ export const WeekDatePicker = memo(function WeekDatePicker({
 
   return (
     <div className={clsx(styles.weekDatePicker, className)} {...attrs}>
-      <IconButton onClick={onPrev}>
+      <IconButton onClick={onPrev} data-testid="week-picker-prev">
         <ArrowLeftSmallIcon />
       </IconButton>
 
@@ -179,7 +179,7 @@ export const WeekDatePicker = memo(function WeekDatePicker({
         ))}
       </div>
 
-      <IconButton onClick={onNext}>
+      <IconButton onClick={onNext} data-testid="week-picker-next">
         <ArrowRightSmallIcon />
       </IconButton>
     </div>
@@ -204,6 +204,7 @@ const Cell = ({ day, dense, value, cursor, onClick }: CellProps) => {
   return (
     <button
       tabIndex={cursor.isSame(day, 'day') ? 0 : -1}
+      data-testid="week-picker-day"
       aria-label={day.format(format)}
       data-active={isActive}
       data-curr-month={isCurrentMonth}

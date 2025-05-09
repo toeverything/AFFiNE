@@ -1,4 +1,4 @@
-import { defineStartupConfig, ModuleConfig } from '../../base/config';
+import { defineModuleConfig, JSONSchema } from '../../base';
 
 export interface OAuthProviderConfig {
   clientId: string;
@@ -23,23 +23,53 @@ export enum OAuthProviderName {
   GitHub = 'github',
   OIDC = 'oidc',
 }
-
-type OAuthProviderConfigMapping = {
-  [OAuthProviderName.Google]: OAuthProviderConfig;
-  [OAuthProviderName.GitHub]: OAuthProviderConfig;
-  [OAuthProviderName.OIDC]: OAuthOIDCProviderConfig;
-};
-
-export interface OAuthConfig {
-  providers: Partial<OAuthProviderConfigMapping>;
-}
-
-declare module '../config' {
-  interface PluginsConfig {
-    oauth: ModuleConfig<OAuthConfig>;
+declare global {
+  interface AppConfigSchema {
+    oauth: {
+      providers: {
+        [OAuthProviderName.Google]: ConfigItem<OAuthProviderConfig>;
+        [OAuthProviderName.GitHub]: ConfigItem<OAuthProviderConfig>;
+        [OAuthProviderName.OIDC]: ConfigItem<OAuthOIDCProviderConfig>;
+      };
+    };
   }
 }
 
-defineStartupConfig('plugins.oauth', {
-  providers: {},
+const schema: JSONSchema = {
+  type: 'object',
+  properties: {
+    clientId: { type: 'string' },
+    clientSecret: { type: 'string' },
+    args: { type: 'object' },
+  },
+};
+
+defineModuleConfig('oauth', {
+  'providers.google': {
+    desc: 'Google OAuth provider config',
+    default: {
+      clientId: '',
+      clientSecret: '',
+    },
+    schema,
+    link: 'https://developers.google.com/identity/protocols/oauth2/web-server',
+  },
+  'providers.github': {
+    desc: 'GitHub OAuth provider config',
+    default: {
+      clientId: '',
+      clientSecret: '',
+    },
+    schema,
+    link: 'https://docs.github.com/en/apps/oauth-apps',
+  },
+  'providers.oidc': {
+    desc: 'OIDC OAuth provider config',
+    default: {
+      clientId: '',
+      clientSecret: '',
+      issuer: '',
+      args: {},
+    },
+  },
 });

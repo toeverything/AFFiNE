@@ -106,7 +106,7 @@ export const popCardMenu = (
           },
           prefix: DeleteIcon(),
           select: () => {
-            view.rowDelete([cardId]);
+            view.rowsDelete([cardId]);
           },
         }),
       ],

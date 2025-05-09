@@ -1,9 +1,10 @@
-import type { Disposable } from '@blocksuite/global/utils';
+import type { Disposable } from '@blocksuite/global/disposable';
 import {
   autoPlacement,
   autoUpdate,
   computePosition,
   offset,
+  type Placement,
   type Rect,
   shift,
   size,
@@ -32,6 +33,17 @@ export function listenClickAway(
 type Display = 'show' | 'hidden';
 
 const ATTR_SHOW = 'data-show';
+
+export type ButtonPopperOptions = {
+  reference: HTMLElement;
+  popperElement: HTMLElement;
+  stateUpdated?: (state: { display: Display }) => void;
+  mainAxis?: number;
+  crossAxis?: number;
+  allowedPlacements?: Placement[];
+  rootBoundary?: Rect | (() => Rect | undefined);
+  offsetHeight?: number;
+};
 /**
  * Using attribute 'data-show' to control popper visibility.
  *
@@ -44,26 +56,19 @@ const ATTR_SHOW = 'data-show';
  * }
  * ```
  */
-export function createButtonPopper(
-  reference: HTMLElement,
-  popperElement: HTMLElement,
-  stateUpdated: (state: { display: Display }) => void = () => {
-    /** DEFAULT EMPTY FUNCTION */
-  },
-  {
-    mainAxis,
-    crossAxis,
-    rootBoundary,
-    ignoreShift,
-  }: {
-    mainAxis?: number;
-    crossAxis?: number;
-    rootBoundary?: Rect | (() => Rect | undefined);
-    ignoreShift?: boolean;
-  } = {}
-) {
+export function createButtonPopper(options: ButtonPopperOptions) {
   let display: Display = 'hidden';
   let cleanup: (() => void) | void;
+  const {
+    reference,
+    popperElement,
+    stateUpdated = () => {},
+    mainAxis,
+    crossAxis,
+    allowedPlacements = ['top', 'bottom'],
+    rootBoundary,
+    offsetHeight,
+  } = options;
 
   const originMaxHeight = window.getComputedStyle(popperElement).maxHeight;
 
@@ -80,25 +85,22 @@ export function createButtonPopper(
           crossAxis: crossAxis ?? 0,
         }),
         autoPlacement({
-          allowedPlacements: ['top', 'bottom'],
+          allowedPlacements,
           ...overflowOptions,
         }),
         shift(overflowOptions),
         size({
           ...overflowOptions,
           apply({ availableHeight }) {
-            popperElement.style.maxHeight = originMaxHeight
-              ? `min(${originMaxHeight}, ${availableHeight}px)`
-              : `${availableHeight}px`;
+            popperElement.style.maxHeight =
+              originMaxHeight && originMaxHeight !== 'none'
+                ? `min(${originMaxHeight}, ${availableHeight}px)`
+                : `${availableHeight - (offsetHeight ?? 0)}px`;
           },
         }),
       ],
     })
-      .then(({ x, y, middlewareData: data }) => {
-        if (!ignoreShift) {
-          x += data.shift?.x ?? 0;
-          y += data.shift?.y ?? 0;
-        }
+      .then(({ x, y }) => {
         Object.assign(popperElement.style, {
           position: 'absolute',
           zIndex: 1,

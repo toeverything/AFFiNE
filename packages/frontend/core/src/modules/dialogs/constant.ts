@@ -1,20 +1,23 @@
-import type { DocMode } from '@blocksuite/affine/blocks';
+import type { DocMode } from '@blocksuite/affine/model';
 
 import type { WorkspaceMetadata } from '../workspace';
 
 export type SettingTab =
   | 'shortcuts'
+  | 'notifications'
   | 'appearance'
   | 'about'
   | 'plans'
   | 'billing'
+  | 'backup' // electron only
   | 'experimental-features'
   | 'editor'
   | 'account'
-  | `workspace:${'preference' | 'properties' | 'billing' | 'license'}`;
+  | 'meetings'
+  | `workspace:${'preference' | 'properties' | 'members' | 'storage' | 'billing' | 'license' | 'integrations'}`;
 
 export type GLOBAL_DIALOG_SCHEMA = {
-  'create-workspace': (props: { serverId?: string; forcedCloud?: boolean }) => {
+  'create-workspace': (props: { serverId?: string }) => {
     metadata: WorkspaceMetadata;
     defaultDocId?: string;
   };
@@ -25,11 +28,6 @@ export type GLOBAL_DIALOG_SCHEMA = {
     templateName: string;
     templateMode: DocMode;
     snapshotUrl: string;
-  }) => void;
-  setting: (props: {
-    activeTab?: SettingTab;
-    workspaceMetadata?: WorkspaceMetadata | null;
-    scrollAnchor?: string;
   }) => void;
   'sign-in': (props: { server?: string; step?: string }) => void;
   'change-password': (props: { server?: string }) => void;
@@ -42,6 +40,7 @@ export type GLOBAL_DIALOG_SCHEMA = {
 };
 
 export type WORKSPACE_DIALOG_SCHEMA = {
+  setting: (props: { activeTab?: SettingTab; scrollAnchor?: string }) => void;
   'doc-info': (props: { docId: string }) => void;
   'doc-selector': (props: {
     init: string[];

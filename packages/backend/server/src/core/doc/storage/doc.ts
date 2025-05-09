@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   applyUpdate,
   diffUpdate,
@@ -49,6 +50,7 @@ export interface DocStorageOptions {
 
 export abstract class DocStorageAdapter extends Connection {
   private readonly locker = new SingletonLocker();
+  protected readonly logger = new Logger(DocStorageAdapter.name);
 
   constructor(
     protected readonly options: DocStorageOptions = {
@@ -76,6 +78,9 @@ export abstract class DocStorageAdapter extends Connection {
     const updates = await this.getDocUpdates(spaceId, docId);
 
     if (updates.length) {
+      this.logger.log(
+        `Squashing updates, spaceId: ${spaceId}, docId: ${docId}, updates: ${updates.length}`
+      );
       const { timestamp, bin, editor } = await this.squash(
         snapshot ? [snapshot, ...updates] : updates
       );
@@ -96,7 +101,12 @@ export abstract class DocStorageAdapter extends Connection {
       }
 
       // always mark updates as merged unless throws
-      await this.markUpdatesMerged(spaceId, docId, updates);
+      const count = await this.markUpdatesMerged(spaceId, docId, updates);
+      if (count > 0) {
+        this.logger.log(
+          `Marked ${count} updates as merged, spaceId: ${spaceId}, docId: ${docId}`
+        );
+      }
 
       return newSnapshot;
     }

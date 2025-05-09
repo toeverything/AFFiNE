@@ -1,33 +1,16 @@
-import { defineStartupConfig, ModuleConfig } from '../config';
+import { defineModuleConfig } from '../config';
 
-declare module '../config' {
-  interface AppConfig {
-    metrics: ModuleConfig<{
-      /**
-       * Enable metric and tracing collection
-       */
+declare global {
+  interface AppConfigSchema {
+    metrics: {
       enabled: boolean;
-      /**
-       * Enable telemetry
-       */
-      telemetry: {
-        enabled: boolean;
-        token: string;
-      };
-      customerIo: {
-        token: string;
-      };
-    }>;
+    };
   }
 }
 
-defineStartupConfig('metrics', {
-  enabled: false,
-  telemetry: {
-    enabled: false,
-    token: '',
-  },
-  customerIo: {
-    token: '',
+defineModuleConfig('metrics', {
+  enabled: {
+    desc: 'Enable metric and tracing collection',
+    default: false,
   },
 });

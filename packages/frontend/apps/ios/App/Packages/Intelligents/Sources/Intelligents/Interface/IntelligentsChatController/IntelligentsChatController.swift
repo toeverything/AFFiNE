@@ -5,21 +5,40 @@
 //  Created by 秋星桥 on 2024/11/18.
 //
 
+import Combine
 import LDSwiftEventSource
+import OrderedCollections
 import UIKit
 
 public class IntelligentsChatController: UIViewController {
   let header = Header()
-  let inputBoxKeyboardAdapter = UIView()
   let inputBox = InputBox()
   let progressView = UIActivityIndicatorView()
-  let tableView = ChatTableView()
+
+  let publisher = PassthroughSubject<MessageListView.ElementPublisher.Output, Never>()
+  lazy var tableView = MessageListView(dataPublisher: publisher.eraseToAnyPublisher())
 
   var inputBoxKeyboardAdapterHeightConstraint = NSLayoutConstraint()
 
-  var sessionID: String = "" {
-    didSet { print("[*] new sessionID: \(sessionID)") }
+  enum ChatContent {
+    case user(document: String)
+    case assistant(document: String)
+    case error(text: String)
   }
+
+  var simpleChatContents: OrderedDictionary<UUID, ChatContent> = [:] {
+    didSet { updateContentToPublisher() }
+  }
+
+  var sessionID: String = ""
+
+  public enum MetadataKey: String {
+    case documentID
+    case workspaceID
+    case content
+  }
+
+  public var metadata: [MetadataKey: String] = [:]
 
   var chatTask: EventSource?
 
@@ -38,19 +57,6 @@ public class IntelligentsChatController: UIViewController {
     title = "Chat with AI".localized()
 
     overrideUserInterfaceStyle = .dark
-
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(keyboardWillDisappear),
-      name: UIResponder.keyboardWillHideNotification,
-      object: nil
-    )
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(keyboardWillAppear),
-      name: UIResponder.keyboardWillShowNotification,
-      object: nil
-    )
   }
 
   @available(*, unavailable)
@@ -59,7 +65,6 @@ public class IntelligentsChatController: UIViewController {
   }
 
   deinit {
-    NotificationCenter.default.removeObserver(self)
     chatTask?.stop()
     chatTask = nil
   }
@@ -73,11 +78,23 @@ public class IntelligentsChatController: UIViewController {
 
     view.addSubview(header)
     view.addSubview(tableView)
-    view.addSubview(inputBoxKeyboardAdapter)
     view.addSubview(inputBox)
     view.addSubview(progressView)
     setupLayout()
 
+    header.moreMenu.showsMenuAsPrimaryAction = true
+    header.moreMenu.menu = .init(children: [
+      UIAction(title: "Clear History".localized(), image: UIImage(systemName: "eraser")) { [weak self] _ in
+        self?.chat_clearHistory()
+      },
+    ])
+
+    // TODO: IMPL
+    header.dropMenu.isHidden = true
+    inputBox.editor.controlBanner.cameraButton.isHidden = true
+    inputBox.editor.controlBanner.photoButton.isHidden = true
+
+    updateContentToPublisher()
     chat_onLoad()
   }
 
@@ -96,21 +113,11 @@ public class IntelligentsChatController: UIViewController {
       header.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 44),
     ].forEach { $0.isActive = true }
 
-    inputBoxKeyboardAdapter.translatesAutoresizingMaskIntoConstraints = false
-    [
-      inputBoxKeyboardAdapter.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-      inputBoxKeyboardAdapter.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      inputBoxKeyboardAdapter.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-    ].forEach { $0.isActive = true }
-    inputBoxKeyboardAdapterHeightConstraint = inputBoxKeyboardAdapter.heightAnchor.constraint(equalToConstant: 0)
-    inputBoxKeyboardAdapterHeightConstraint.isActive = true
-    inputBoxKeyboardAdapter.backgroundColor = inputBox.backgroundView.backgroundColor
-
     inputBox.translatesAutoresizingMaskIntoConstraints = false
     [
       inputBox.leadingAnchor.constraint(equalTo: view.leadingAnchor),
       inputBox.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      inputBox.bottomAnchor.constraint(equalTo: inputBoxKeyboardAdapter.topAnchor),
+      inputBox.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
     ].forEach { $0.isActive = true }
 
     tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -118,7 +125,7 @@ public class IntelligentsChatController: UIViewController {
       tableView.topAnchor.constraint(equalTo: header.bottomAnchor),
       tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
       tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      tableView.bottomAnchor.constraint(equalTo: inputBox.topAnchor, constant: 16),
+      tableView.bottomAnchor.constraint(equalTo: inputBox.topAnchor),
     ].forEach { $0.isActive = true }
 
     inputBox.editor.controlBanner.sendButton.addTarget(
@@ -126,6 +133,10 @@ public class IntelligentsChatController: UIViewController {
       action: #selector(chat_onSend),
       for: .touchUpInside
     )
+    inputBox.editor.submitAction = { [weak self] in
+      guard let self else { return }
+      chat_onSend()
+    }
 
     progressView.hidesWhenStopped = true
     progressView.stopAnimating()
@@ -135,11 +146,5 @@ public class IntelligentsChatController: UIViewController {
       progressView.centerYAnchor.constraint(equalTo: inputBox.centerYAnchor),
     ].forEach { $0.isActive = true }
     progressView.style = .large
-  }
-
-  override public func viewDidAppear(_ animated: Bool) {
-    super.viewDidAppear(animated)
-    tableView.scrollToBottomEnabled = true
-    tableView.scrollToBottomAllowed = true
   }
 }

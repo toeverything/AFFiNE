@@ -4,11 +4,14 @@ import { type Framework } from '@toeverything/infra';
 import {
   configureAIButtonModule,
   configureAINetworkSearchModule,
+  configureAIReasoningModule,
 } from './ai-button';
 import { configureAppSidebarModule } from './app-sidebar';
 import { configAtMenuConfigModule } from './at-menu-config';
+import { configureBlobManagementModule } from './blob-management';
 import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
+import { configureCollectionRulesModule } from './collection-rules';
 import { configureWorkspaceDBModule } from './db';
 import { configureDialogModule } from './dialogs';
 import { configureDndModule } from './dnd';
@@ -19,26 +22,31 @@ import { configureDocLinksModule } from './doc-link';
 import { configureDocsSearchModule } from './docs-search';
 import { configureEditorModule } from './editor';
 import { configureEditorSettingModule } from './editor-setting';
-import { configureExplorerModule } from './explorer';
 import { configureFavoriteModule } from './favorite';
 import { configureFeatureFlagModule } from './feature-flag';
 import { configureGlobalContextModule } from './global-context';
 import { configureI18nModule } from './i18n';
+import { configureImportClipperModule } from './import-clipper';
 import { configureImportTemplateModule } from './import-template';
+import { configureIntegrationModule } from './integration';
 import { configureJournalModule } from './journal';
 import { configureLifecycleModule } from './lifecycle';
+import { configureMediaModule } from './media';
 import { configureNavigationModule } from './navigation';
+import { configureNavigationPanelModule } from './navigation-panel';
+import { configureNotificationModule } from './notification';
 import { configureOpenInApp } from './open-in-app';
 import { configureOrganizeModule } from './organize';
 import { configurePDFModule } from './pdf';
 import { configurePeekViewModule } from './peek-view';
 import { configurePermissionsModule } from './permissions';
 import { configureQuickSearchModule } from './quicksearch';
+import { configSearchMenuModule } from './search-menu';
 import { configureShareDocsModule } from './share-doc';
 import { configureShareSettingModule } from './share-setting';
 import {
   configureCommonGlobalStorageImpls,
-  configureGlobalStorageModule,
+  configureStorageModule,
 } from './storage';
 import { configureSystemFontFamilyModule } from './system-font-family';
 import { configureTagModule } from './tag';
@@ -49,13 +57,14 @@ import { configureThemeEditorModule } from './theme-editor';
 import { configureUrlModule } from './url';
 import { configureUserspaceModule } from './userspace';
 import { configureWorkspaceModule } from './workspace';
+import { configureWorkspacePropertyModule } from './workspace-property';
 
 export function configureCommonModules(framework: Framework) {
   configureI18nModule(framework);
   configureWorkspaceModule(framework);
   configureDocModule(framework);
   configureWorkspaceDBModule(framework);
-  configureGlobalStorageModule(framework);
+  configureStorageModule(framework);
   configureGlobalContextModule(framework);
   configureLifecycleModule(framework);
   configureFeatureFlagModule(framework);
@@ -76,7 +85,7 @@ export function configureCommonModules(framework: Framework) {
   configureDocLinksModule(framework);
   configureOrganizeModule(framework);
   configureFavoriteModule(framework);
-  configureExplorerModule(framework);
+  configureNavigationPanelModule(framework);
   configureThemeEditorModule(framework);
   configureEditorModule(framework);
   configureSystemFontFamilyModule(framework);
@@ -91,9 +100,18 @@ export function configureCommonModules(framework: Framework) {
   configureDocInfoModule(framework);
   configureOpenInApp(framework);
   configAtMenuConfigModule(framework);
+  configSearchMenuModule(framework);
   configureDndModule(framework);
   configureCommonGlobalStorageImpls(framework);
   configureAINetworkSearchModule(framework);
+  configureAIReasoningModule(framework);
   configureAIButtonModule(framework);
   configureTemplateDocModule(framework);
+  configureBlobManagementModule(framework);
+  configureMediaModule(framework);
+  configureImportClipperModule(framework);
+  configureNotificationModule(framework);
+  configureIntegrationModule(framework);
+  configureWorkspacePropertyModule(framework);
+  configureCollectionRulesModule(framework);
 }

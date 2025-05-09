@@ -1,39 +1,28 @@
 import '../../style.css';
 
-import {
-  WidgetViewMapExtension,
-  WidgetViewMapIdentifier,
-} from '@blocksuite/block-std';
-import * as blocks from '@blocksuite/blocks';
-import {
-  CommunityCanvasTextFonts,
-  DocModeProvider,
-  FontConfigExtension,
-  ParseDocUrlProvider,
-  QuickSearchProvider,
-  RefNodeSlotsProvider,
-} from '@blocksuite/blocks';
-import { effects as blocksEffects } from '@blocksuite/blocks/effects';
-import * as globalUtils from '@blocksuite/global/utils';
-import * as editor from '@blocksuite/presets';
-import { effects as presetsEffects } from '@blocksuite/presets/effects';
-import type { ExtensionType } from '@blocksuite/store';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import * as store from '@blocksuite/store';
+import * as databaseBlocks from '@blocksuite/affine/blocks/database';
+import * as noteBlocks from '@blocksuite/affine/blocks/note';
+import * as globalUtils from '@blocksuite/affine/global/utils';
+import * as services from '@blocksuite/affine/shared/services';
+import * as blockStd from '@blocksuite/affine/std';
+import * as store from '@blocksuite/affine/store';
+import * as affineModel from '@blocksuite/affine-model';
+import * as editor from '@blocksuite/integration-test';
+import { effects as itEffects } from '@blocksuite/integration-test/effects';
+import { getTestStoreManager } from '@blocksuite/integration-test/store';
 
-import {
-  mockDocModeService,
-  mockEditorSetting,
-} from '../_common/mock-services.js';
 import { setupEdgelessTemplate } from '../_common/setup.js';
+import { effects as commentEffects } from '../comment/effects.js';
 import {
   createStarterDocCollection,
   initStarterDocCollection,
 } from './utils/collection.js';
-import { mountDefaultDocEditor } from './utils/editor.js';
+import { mountDefaultDocEditor } from './utils/setup-playground';
+import { prepareTestApp } from './utils/test';
 
-blocksEffects();
-presetsEffects();
+itEffects();
+const storeManager = getTestStoreManager();
+commentEffects();
 
 async function main() {
   if (window.collection) return;
@@ -43,43 +32,24 @@ async function main() {
   const params = new URLSearchParams(location.search);
   const room = params.get('room') ?? Math.random().toString(16).slice(2, 8);
   const isE2E = room.startsWith('playwright');
-  const collection = createStarterDocCollection();
+  const collection = createStarterDocCollection(storeManager);
 
   if (isE2E) {
     Object.defineProperty(window, '$blocksuite', {
       value: Object.freeze({
         store,
-        blocks,
+        blocks: {
+          database: databaseBlocks,
+          note: noteBlocks,
+        },
         global: { utils: globalUtils },
+        services,
         editor,
-        identifiers: {
-          WidgetViewMapIdentifier,
-          QuickSearchProvider,
-          DocModeProvider,
-          RefNodeSlotsProvider,
-          ParseDocUrlService: ParseDocUrlProvider,
-        },
-        defaultExtensions: (): ExtensionType[] => [
-          FontConfigExtension(CommunityCanvasTextFonts),
-          blocks.EditorSettingExtension(mockEditorSetting()),
-        ],
-        extensions: {
-          FontConfigExtension: FontConfigExtension(CommunityCanvasTextFonts),
-          WidgetViewMapExtension,
-        },
-        mockServices: {
-          mockDocModeService,
-        },
+        blockStd: blockStd,
+        affineModel: affineModel,
       }),
     });
-
-    // test if blocksuite can run in a web worker, SEE: tests/worker.spec.ts
-    // window.testWorker = new Worker(
-    //   new URL('./utils/test-worker.ts', import.meta.url),
-    //   {
-    //     type: 'module',
-    //   }
-    // );
+    await prepareTestApp(collection);
 
     return;
   }

@@ -2,7 +2,8 @@ import { MenuItem, MenuTrigger, Slider } from '@affine/component';
 import { SettingRow } from '@affine/component/setting-components';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { useI18n } from '@affine/i18n';
-import { DefaultTheme } from '@blocksuite/affine/blocks';
+import { getSurfaceBlock } from '@blocksuite/affine/blocks/surface';
+import { DefaultTheme } from '@blocksuite/affine/model';
 import type { Store } from '@blocksuite/affine/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
@@ -13,7 +14,6 @@ import { menuTrigger } from '../style.css';
 import { usePalettes } from '../utils';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
-import { getSurfaceBlock } from './utils';
 
 export const PenSettings = () => {
   const t = useI18n();
@@ -21,7 +21,7 @@ export const PenSettings = () => {
   const { editorSetting } = framework.get(EditorSettingService);
   const settings = useLiveData(editorSetting.settings$);
   const { palettes, getCurrentColor } = usePalettes(
-    DefaultTheme.StrokeColorPalettes,
+    DefaultTheme.StrokeColorShortPalettes,
     DefaultTheme.black
   );
 

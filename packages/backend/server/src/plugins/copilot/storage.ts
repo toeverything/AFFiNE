@@ -8,25 +8,35 @@ import {
   CallMetric,
   Config,
   type FileUpload,
+  OnEvent,
+  readBuffer,
   type StorageProvider,
   StorageProviderFactory,
   URLHelper,
 } from '../../base';
-import { QuotaManagementService } from '../../core/quota';
+import { QuotaService } from '../../core/quota';
 
 @Injectable()
 export class CopilotStorage {
-  public readonly provider: StorageProvider;
+  public provider!: StorageProvider;
 
   constructor(
     private readonly config: Config,
     private readonly url: URLHelper,
     private readonly storageFactory: StorageProviderFactory,
-    private readonly quota: QuotaManagementService
-  ) {
-    this.provider = this.storageFactory.create(
-      this.config.plugins.copilot.storage
-    );
+    private readonly quota: QuotaService
+  ) {}
+
+  @OnEvent('config.init')
+  async onConfigInit() {
+    this.provider = this.storageFactory.create(this.config.copilot.storage);
+  }
+
+  @OnEvent('config.changed')
+  async onConfigChanged(event: Events['config.changed']) {
+    if (event.updates?.copilot?.storage) {
+      this.provider = this.storageFactory.create(this.config.copilot.storage);
+    }
   }
 
   @CallMetric('ai', 'blob_put')
@@ -38,7 +48,7 @@ export class CopilotStorage {
   ) {
     const name = `${userId}/${workspaceId}/${key}`;
     await this.provider.put(name, blob);
-    if (this.config.node.dev || this.config.node.test) {
+    if (!env.prod) {
       // return image base64url for dev environment
       return `data:image/png;base64,${blob.toString('base64')}`;
     }
@@ -46,8 +56,13 @@ export class CopilotStorage {
   }
 
   @CallMetric('ai', 'blob_get')
-  async get(userId: string, workspaceId: string, key: string) {
-    return this.provider.get(`${userId}/${workspaceId}/${key}`);
+  async get(
+    userId: string,
+    workspaceId: string,
+    key: string,
+    signedUrl?: boolean
+  ) {
+    return this.provider.get(`${userId}/${workspaceId}/${key}`, signedUrl);
   }
 
   @CallMetric('ai', 'blob_delete')
@@ -57,35 +72,13 @@ export class CopilotStorage {
 
   @CallMetric('ai', 'blob_upload')
   async handleUpload(userId: string, blob: FileUpload) {
-    const checkExceeded = await this.quota.getQuotaCalculator(userId);
+    const checkExceeded = await this.quota.getUserQuotaCalculator(userId);
 
     if (checkExceeded(0)) {
       throw new BlobQuotaExceeded();
     }
 
-    const buffer = await new Promise<Buffer>((resolve, reject) => {
-      const stream = blob.createReadStream();
-      const chunks: Uint8Array[] = [];
-      stream.on('data', chunk => {
-        chunks.push(chunk);
-
-        // check size after receive each chunk to avoid unnecessary memory usage
-        const bufferSize = chunks.reduce((acc, cur) => acc + cur.length, 0);
-        if (checkExceeded(bufferSize)) {
-          reject(new BlobQuotaExceeded());
-        }
-      });
-      stream.on('error', reject);
-      stream.on('end', () => {
-        const buffer = Buffer.concat(chunks);
-
-        if (checkExceeded(buffer.length)) {
-          reject(new BlobQuotaExceeded());
-        } else {
-          resolve(buffer);
-        }
-      });
-    });
+    const buffer = await readBuffer(blob.createReadStream(), checkExceeded);
 
     return {
       buffer,

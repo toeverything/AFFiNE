@@ -5,7 +5,7 @@ import {
 } from '@affine/component';
 import { EditorService } from '@affine/core/modules/editor';
 import track from '@affine/track';
-import type { DocMode } from '@blocksuite/affine/blocks';
+import type { DocMode } from '@blocksuite/affine/model';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 

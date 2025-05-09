@@ -11,18 +11,22 @@ export const useMenuItem = <T extends MenuItemProps>({
   className: propsClassName,
   prefix,
   prefixIcon,
+  prefixIconClassName,
   suffix,
   suffixIcon,
+  suffixIconClassName,
   checked,
   selected,
   block,
+  disabled,
   ...otherProps
 }: T) => {
   const className = clsx(
     styles.menuItem,
     {
-      danger: type === 'danger',
-      warning: type === 'warning',
+      danger: disabled ? false : type === 'danger',
+      warning: disabled ? false : type === 'warning',
+      disabled,
       checked,
       selected,
       block,
@@ -36,13 +40,17 @@ export const useMenuItem = <T extends MenuItemProps>({
       {prefix}
 
       {prefixIcon ? (
-        <div className={styles.menuItemIcon}>{prefixIcon}</div>
+        <div className={clsx(styles.menuItemIcon, prefixIconClassName)}>
+          {prefixIcon}
+        </div>
       ) : null}
 
       <span className={styles.menuSpan}>{propsChildren}</span>
 
       {suffixIcon ? (
-        <div className={styles.menuItemIcon}>{suffixIcon}</div>
+        <div className={clsx(styles.menuItemIcon, suffixIconClassName)}>
+          {suffixIcon}
+        </div>
       ) : null}
 
       {suffix}

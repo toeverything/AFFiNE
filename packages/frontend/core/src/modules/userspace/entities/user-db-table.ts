@@ -1,8 +1,9 @@
+import type { DocFrontendDocState } from '@affine/nbstore';
 import type {
   Table as OrmTable,
   TableSchemaBuilder,
 } from '@toeverything/infra';
-import { Entity } from '@toeverything/infra';
+import { Entity, LiveData } from '@toeverything/infra';
 
 import type { UserDBEngine } from './user-db-engine';
 
@@ -12,15 +13,16 @@ export class UserDBTable<Schema extends TableSchemaBuilder> extends Entity<{
   engine: UserDBEngine;
 }> {
   readonly table = this.props.table;
-  readonly docEngine = this.props.engine.docEngine;
+  readonly docFrontend = this.props.engine.client.docFrontend;
 
-  isSyncing$ = this.docEngine
-    .docState$(this.props.storageDocId)
-    .map(docState => docState.syncing);
+  docSyncState$ = LiveData.from<DocFrontendDocState>(
+    this.docFrontend.docState$(this.props.storageDocId),
+    null as any
+  );
 
-  isLoading$ = this.docEngine
-    .docState$(this.props.storageDocId)
-    .map(docState => docState.loading);
+  isSyncing$ = this.docSyncState$.map(docState => docState.syncing);
+
+  isLoaded$ = this.docSyncState$.map(docState => docState.loaded);
 
   create: typeof this.table.create = this.table.create.bind(this.table);
   update: typeof this.table.update = this.table.update.bind(this.table);

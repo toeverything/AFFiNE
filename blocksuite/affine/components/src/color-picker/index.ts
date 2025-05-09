@@ -1,11 +1,17 @@
-import { EdgelessColorPickerButton } from './button.js';
-import { EdgelessColorPicker } from './color-picker.js';
-import { EdgelessColorCustomButton } from './custom-button.js';
+import { EdgelessColorPickerButton } from './button';
+import {
+  EdgelessColorButton,
+  EdgelessColorPanel,
+  EdgelessTextColorIcon,
+} from './color-panel';
+import { EdgelessColorPicker } from './color-picker';
+import { EdgelessColorCustomButton } from './custom-button';
 
-export * from './button.js';
-export * from './color-picker.js';
-export * from './types.js';
-export * from './utils.js';
+export * from './button';
+export * from './color-panel';
+export * from './color-picker';
+export * from './types';
+export * from './utils';
 
 export function effects() {
   customElements.define('edgeless-color-picker', EdgelessColorPicker);
@@ -17,4 +23,19 @@ export function effects() {
     'edgeless-color-custom-button',
     EdgelessColorCustomButton
   );
+  customElements.define('edgeless-color-button', EdgelessColorButton);
+  customElements.define('edgeless-color-panel', EdgelessColorPanel);
+  customElements.define('edgeless-text-color-icon', EdgelessTextColorIcon);
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'edgeless-color-picker-button': EdgelessColorPickerButton;
+    'edgeless-color-picker': EdgelessColorPicker;
+    'edgeless-color-custom-button': EdgelessColorCustomButton;
+
+    'edgeless-color-panel': EdgelessColorPanel;
+    'edgeless-color-button': EdgelessColorButton;
+    'edgeless-text-color-icon': EdgelessTextColorIcon;
+  }
 }

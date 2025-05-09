@@ -1,14 +1,16 @@
 PODS:
-  - Capacitor (6.2.0):
+  - Capacitor (7.2.0):
     - CapacitorCordova
-  - CapacitorApp (6.0.2):
+  - CapacitorApp (7.0.1):
     - Capacitor
-  - CapacitorBrowser (6.0.4):
+  - CapacitorBrowser (7.0.1):
     - Capacitor
-  - CapacitorCordova (6.2.0)
-  - CapacitorHaptics (6.0.2):
+  - CapacitorCordova (7.2.0)
+  - CapacitorHaptics (7.0.1):
     - Capacitor
-  - CapacitorKeyboard (6.0.3):
+  - CapacitorKeyboard (7.0.1):
+    - Capacitor
+  - CapacitorPluginAppTrackingTransparency (2.0.5):
     - Capacitor
   - CryptoSwift (1.8.3)
 
@@ -19,6 +21,7 @@ DEPENDENCIES:
   - "CapacitorCordova (from `../../../../../node_modules/@capacitor/ios`)"
   - "CapacitorHaptics (from `../../../../../node_modules/@capacitor/haptics`)"
   - "CapacitorKeyboard (from `../../../../../node_modules/@capacitor/keyboard`)"
+  - CapacitorPluginAppTrackingTransparency (from `../../../../../node_modules/capacitor-plugin-app-tracking-transparency`)
   - CryptoSwift (~> 1.8.3)
 
 SPEC REPOS:
@@ -38,16 +41,19 @@ EXTERNAL SOURCES:
     :path: "../../../../../node_modules/@capacitor/haptics"
   CapacitorKeyboard:
     :path: "../../../../../node_modules/@capacitor/keyboard"
+  CapacitorPluginAppTrackingTransparency:
+    :path: "../../../../../node_modules/capacitor-plugin-app-tracking-transparency"
 
 SPEC CHECKSUMS:
-  Capacitor: 1f3c7b9802d958cd8c4eb63895fff85dff2e1eea
-  CapacitorApp: 2a8c3a0b0814322e5e6e15fe595f02c3808f0f8b
-  CapacitorBrowser: ef0529d16cd8839281050c350e7bbee4f5c6d65f
-  CapacitorCordova: b33e7f4aa4ed105dd43283acdd940964374a87d9
-  CapacitorHaptics: b53409aaca1203f79c6d0eb3ed5de40556339518
-  CapacitorKeyboard: 460c6f9ec5e52c84f2742d5ce2e67bbc7ab0ebb0
+  Capacitor: 106e7a4205f4618d582b886a975657c61179138d
+  CapacitorApp: d63334c052278caf5d81585d80b21905c6f93f39
+  CapacitorBrowser: 081852cf532acf77b9d2953f3a88fe5b9711fb06
+  CapacitorCordova: 5967b9ba03915ef1d585469d6e31f31dc49be96f
+  CapacitorHaptics: 70e47470fa1a6bd6338cd102552e3846b7f9a1b3
+  CapacitorKeyboard: 969647d0ca2e5c737d7300088e2517aa832434e2
+  CapacitorPluginAppTrackingTransparency: 2a2792623a5a72795f2e8f9ab3f1147573732fd8
   CryptoSwift: 967f37cea5a3294d9cce358f78861652155be483
 
-PODFILE CHECKSUM: e0c0ccf027ea6d51e476f0baf9d44d97b9a90a4b
+PODFILE CHECKSUM: 2c1e4be82121f2d9724ecf7e31dd14e165aeb082
 
 COCOAPODS: 1.16.2

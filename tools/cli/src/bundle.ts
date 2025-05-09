@@ -1,25 +1,148 @@
-import webpack, { type Compiler, type Configuration } from 'webpack';
-import WebpackDevServer from 'webpack-dev-server';
-import { merge } from 'webpack-merge';
+import { rmSync } from 'node:fs';
+import { cpus } from 'node:os';
+
+import { Logger } from '@affine-tools/utils/logger';
+import { Package } from '@affine-tools/utils/workspace';
+import { merge } from 'lodash-es';
+import webpack from 'webpack';
+import WebpackDevServer, {
+  type Configuration as DevServerConfiguration,
+} from 'webpack-dev-server';
 
 import { Option, PackageCommand } from './command';
-import { createWebpackConfig } from './webpack';
+import {
+  createHTMLTargetConfig,
+  createNodeTargetConfig,
+  createWorkerTargetConfig,
+} from './webpack';
 
-function getChannel() {
-  const channel = process.env.BUILD_TYPE ?? 'canary';
-  switch (channel) {
-    case 'canary':
-    case 'beta':
-    case 'stable':
-    case 'internal':
-      return channel;
-    default: {
-      throw new Error(
-        `BUILD_TYPE must be one of canary, beta, stable, internal, received [${channel}]`
+function getBaseWorkerConfigs(pkg: Package) {
+  const core = new Package('@affine/core');
+
+  return [
+    createWorkerTargetConfig(
+      pkg,
+      core.srcPath.join(
+        'modules/workspace-engine/impls/workspace-profile.worker.ts'
+      ).value
+    ),
+    createWorkerTargetConfig(
+      pkg,
+      core.srcPath.join('modules/pdf/renderer/pdf.worker.ts').value
+    ),
+    createWorkerTargetConfig(
+      pkg,
+      core.srcPath.join('blocksuite/extensions/turbo-painter.worker.ts').value
+    ),
+  ];
+}
+
+function getBundleConfigs(pkg: Package) {
+  switch (pkg.name) {
+    case '@affine/admin': {
+      return [createHTMLTargetConfig(pkg, pkg.srcPath.join('index.tsx').value)];
+    }
+    case '@affine/web':
+    case '@affine/mobile':
+    case '@affine/ios':
+    case '@affine/android': {
+      const workerConfigs = getBaseWorkerConfigs(pkg);
+      workerConfigs.push(
+        createWorkerTargetConfig(
+          pkg,
+          pkg.srcPath.join('nbstore.worker.ts').value
+        )
       );
+
+      return [
+        createHTMLTargetConfig(
+          pkg,
+          pkg.srcPath.join('index.tsx').value,
+          {},
+          workerConfigs.map(config => config.name)
+        ),
+        ...workerConfigs,
+      ];
+    }
+    case '@affine/electron-renderer': {
+      const workerConfigs = getBaseWorkerConfigs(pkg);
+
+      return [
+        createHTMLTargetConfig(
+          pkg,
+          {
+            index: pkg.srcPath.join('app/index.tsx').value,
+            shell: pkg.srcPath.join('shell/index.tsx').value,
+            popup: pkg.srcPath.join('popup/index.tsx').value,
+            backgroundWorker: pkg.srcPath.join('background-worker/index.ts')
+              .value,
+          },
+          {
+            additionalEntryForSelfhost: false,
+            injectGlobalErrorHandler: false,
+            emitAssetsManifest: false,
+          },
+          workerConfigs.map(config => config.name)
+        ),
+        ...workerConfigs,
+      ];
+    }
+    case '@affine/server': {
+      return [createNodeTargetConfig(pkg, pkg.srcPath.join('index.ts').value)];
     }
   }
+
+  throw new Error(`Unsupported package: ${pkg.name}`);
 }
+
+const IN_CI = !!process.env.CI;
+const httpProxyMiddlewareLogLevel = IN_CI ? 'silent' : 'error';
+
+const defaultDevServerConfig: DevServerConfiguration = {
+  host: '0.0.0.0',
+  allowedHosts: 'all',
+  hot: false,
+  liveReload: true,
+  compress: !process.env.CI,
+  client: {
+    overlay: process.env.DISABLE_DEV_OVERLAY === 'true' ? false : undefined,
+    logging: process.env.CI ? 'none' : 'error',
+  },
+  historyApiFallback: {
+    rewrites: [
+      {
+        from: /.*/,
+        to: () => {
+          return process.env.SELF_HOSTED === 'true'
+            ? '/selfhost.html'
+            : '/index.html';
+        },
+      },
+    ],
+  },
+  headers: {
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+  },
+  proxy: [
+    {
+      context: '/api',
+      target: 'http://localhost:3010',
+      logLevel: httpProxyMiddlewareLogLevel,
+    },
+    {
+      context: '/socket.io',
+      target: 'http://localhost:3010',
+      ws: true,
+      logLevel: httpProxyMiddlewareLogLevel,
+    },
+    {
+      context: '/graphql',
+      target: 'http://localhost:3010',
+      logLevel: httpProxyMiddlewareLogLevel,
+    },
+  ],
+};
 
 export class BundleCommand extends PackageCommand {
   static override paths = [['bundle'], ['webpack'], ['pack'], ['bun']];
@@ -33,49 +156,28 @@ export class BundleCommand extends PackageCommand {
   });
 
   async execute() {
-    this.logger.info(`Packing package ${this.package}...`);
+    const pkg = this.workspace.getPackage(this.package);
 
-    const config = await this.getConfig();
+    if (this.dev) {
+      await BundleCommand.dev(pkg);
+    } else {
+      await BundleCommand.build(pkg);
+    }
+  }
+
+  static async build(pkg: Package) {
+    process.env.NODE_ENV = 'production';
+    const logger = new Logger('bundle');
+    logger.info(`Packing package ${pkg.name}...`);
+    logger.info('Cleaning old output...');
+    rmSync(pkg.distPath.value, { recursive: true, force: true });
+
+    const config = getBundleConfigs(pkg);
+    // @ts-expect-error allow
+    config.parallelism = cpus().length;
 
     const compiler = webpack(config);
 
-    if (this.dev) {
-      await this.start(compiler, config.devServer);
-    } else {
-      await this.build(compiler);
-    }
-  }
-
-  async getConfig() {
-    let config = createWebpackConfig(this.workspace.getPackage(this.package), {
-      mode: this.dev ? 'development' : 'production',
-      channel: getChannel(),
-    });
-
-    let configOverride: Configuration | undefined;
-    const overrideConfigPath = this.workspace
-      .getPackage(this.package)
-      .join('webpack.config.ts');
-
-    if (overrideConfigPath.isFile()) {
-      const override = await import(overrideConfigPath.toFileUrl().toString());
-      configOverride = override.config ?? override.default;
-    }
-
-    if (configOverride) {
-      config = merge(config, configOverride);
-    }
-
-    return config;
-  }
-
-  async start(compiler: Compiler, config: Configuration['devServer']) {
-    const devServer = new WebpackDevServer(config, compiler);
-
-    await devServer.start();
-  }
-
-  async build(compiler: Compiler) {
     compiler.run((error, stats) => {
       if (error) {
         console.error(error);
@@ -90,5 +192,24 @@ export class BundleCommand extends PackageCommand {
         }
       }
     });
+  }
+
+  static async dev(pkg: Package, devServerConfig?: DevServerConfiguration) {
+    process.env.NODE_ENV = 'development';
+    const logger = new Logger('bundle');
+    logger.info(`Starting dev server for ${pkg.name}...`);
+
+    const config = getBundleConfigs(pkg);
+    // @ts-expect-error allow
+    config.parallelism = cpus().length;
+
+    const compiler = webpack(config);
+
+    const devServer = new WebpackDevServer(
+      merge({}, defaultDevServerConfig, devServerConfig),
+      compiler
+    );
+
+    await devServer.start();
   }
 }

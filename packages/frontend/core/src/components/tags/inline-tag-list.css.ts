@@ -5,4 +5,5 @@ export const inlineTagsContainer = style({
   gap: '6px',
   flexWrap: 'wrap',
   width: '100%',
+  alignItems: 'center',
 });

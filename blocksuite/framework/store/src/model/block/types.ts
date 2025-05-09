@@ -10,7 +10,7 @@ export type YBlock = Y.Map<unknown> & {
 };
 
 export type BlockOptions = {
-  onChange?: (block: Block, key: string, value: unknown) => void;
+  onChange?: (block: Block, key: string, isLocal: boolean) => void;
 };
 
 export type BlockSysProps = {

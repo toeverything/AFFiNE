@@ -1,23 +1,16 @@
-import { Slot } from '@blocksuite/global/utils';
+import { Subject } from 'rxjs';
 import type * as Y from 'yjs';
 
 import type {
   DocMeta,
   DocsPropertiesMeta,
-  Workspace,
   WorkspaceMeta,
-} from '../model/index.js';
+} from '../extension/index.js';
 import { createYProxy } from '../reactive/proxy.js';
-
-const COLLECTION_VERSION = 2;
-const PAGE_VERSION = 2;
 
 type DocCollectionMetaState = {
   pages?: unknown[];
   properties?: DocsPropertiesMeta;
-  workspaceVersion?: number;
-  pageVersion?: number;
-  blockVersions?: Record<string, number>;
   name?: string;
   avatar?: string;
 };
@@ -37,10 +30,6 @@ export class TestMeta implements WorkspaceMeta {
       ) {
         this._handleDocMetaEvent();
       }
-
-      if (hasKey('name') || hasKey('avatar')) {
-        this._handleCommonFieldsEvent();
-      }
     });
   };
 
@@ -52,25 +41,15 @@ export class TestMeta implements WorkspaceMeta {
     DocCollectionMetaState[keyof DocCollectionMetaState]
   >;
 
-  commonFieldsUpdated = new Slot();
-
   readonly doc: Y.Doc;
 
-  docMetaAdded = new Slot<string>();
+  docMetaAdded = new Subject<string>();
 
-  docMetaRemoved = new Slot<string>();
+  docMetaRemoved = new Subject<string>();
 
-  docMetaUpdated = new Slot();
+  docMetaUpdated = new Subject<void>();
 
   readonly id: string = 'meta';
-
-  get avatar() {
-    return this._proxy.avatar;
-  }
-
-  get blockVersions() {
-    return this._proxy.blockVersions;
-  }
 
   get docMetas() {
     if (!this._proxy.pages) {
@@ -83,21 +62,6 @@ export class TestMeta implements WorkspaceMeta {
     return this._proxy.pages;
   }
 
-  get hasVersion() {
-    if (!this.blockVersions || !this.pageVersion || !this.workspaceVersion) {
-      return false;
-    }
-    return Object.keys(this.blockVersions).length > 0;
-  }
-
-  get name() {
-    return this._proxy.name;
-  }
-
-  get pageVersion() {
-    return this._proxy.pageVersion;
-  }
-
   get properties(): DocsPropertiesMeta {
     const meta = this._proxy.properties;
     if (!meta) {
@@ -108,10 +72,6 @@ export class TestMeta implements WorkspaceMeta {
       };
     }
     return meta;
-  }
-
-  get workspaceVersion() {
-    return this._proxy.workspaceVersion;
   }
 
   get yDocs() {
@@ -128,10 +88,6 @@ export class TestMeta implements WorkspaceMeta {
     this._yMap.observeDeep(this._handleDocCollectionMetaEvents);
   }
 
-  private _handleCommonFieldsEvent() {
-    this.commonFieldsUpdated.emit();
-  }
-
   private _handleDocMetaEvent() {
     const { docMetas, _prevDocs } = this;
 
@@ -139,7 +95,7 @@ export class TestMeta implements WorkspaceMeta {
 
     docMetas.forEach(docMeta => {
       if (!_prevDocs.has(docMeta.id)) {
-        this.docMetaAdded.emit(docMeta.id);
+        this.docMetaAdded.next(docMeta.id);
       }
       newDocs.add(docMeta.id);
     });
@@ -147,13 +103,13 @@ export class TestMeta implements WorkspaceMeta {
     _prevDocs.forEach(prevDocId => {
       const isRemoved = newDocs.has(prevDocId) === false;
       if (isRemoved) {
-        this.docMetaRemoved.emit(prevDocId);
+        this.docMetaRemoved.next(prevDocId);
       }
     });
 
     this._prevDocs = newDocs;
 
-    this.docMetaUpdated.emit();
+    this.docMetaUpdated.next();
   }
 
   addDocMeta(doc: DocMeta, index?: number) {
@@ -199,12 +155,6 @@ export class TestMeta implements WorkspaceMeta {
     }, this.doc.clientID);
   }
 
-  setAvatar(avatar: string) {
-    this.doc.transact(() => {
-      this._proxy.avatar = avatar;
-    }, this.doc.clientID);
-  }
-
   setDocMeta(id: string, props: Partial<DocMeta>) {
     const docs = (this.docs as DocMeta[]) ?? [];
     const index = docs.findIndex((doc: DocMeta) => id === doc.id);
@@ -222,43 +172,8 @@ export class TestMeta implements WorkspaceMeta {
     }, this.doc.clientID);
   }
 
-  setName(name: string) {
-    this.doc.transact(() => {
-      this._proxy.name = name;
-    }, this.doc.clientID);
-  }
-
   setProperties(meta: DocsPropertiesMeta) {
     this._proxy.properties = meta;
-    this.docMetaUpdated.emit();
-  }
-
-  /**
-   * @internal Only for doc initialization
-   */
-  writeVersion(collection: Workspace) {
-    const { blockVersions, pageVersion, workspaceVersion } = this._proxy;
-
-    if (!workspaceVersion) {
-      this._proxy.workspaceVersion = COLLECTION_VERSION;
-    } else {
-      console.error('Workspace version is already set');
-    }
-
-    if (!pageVersion) {
-      this._proxy.pageVersion = PAGE_VERSION;
-    } else {
-      console.error('Doc version is already set');
-    }
-
-    if (!blockVersions) {
-      const _versions: Record<string, number> = {};
-      collection.schema.flavourSchemaMap.forEach((schema, flavour) => {
-        _versions[flavour] = schema.version;
-      });
-      this._proxy.blockVersions = _versions;
-    } else {
-      console.error('Block versions is already set');
-    }
+    this.docMetaUpdated.next();
   }
 }

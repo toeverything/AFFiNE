@@ -7,14 +7,15 @@ version = "0.0.0"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-affine_common    = { workspace = true }
-affine_nbstore   = { path = "./nbstore" }
-affine_sqlite_v1 = { path = "./sqlite_v1" }
-napi             = { workspace = true }
-napi-derive      = { workspace = true }
-once_cell        = { workspace = true }
-sqlx             = { workspace = true, default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
-tokio            = { workspace = true, features = ["full"] }
+affine_common        = { workspace = true }
+affine_media_capture = { path = "./media_capture" }
+affine_nbstore       = { path = "./nbstore" }
+affine_sqlite_v1     = { path = "./sqlite_v1" }
+napi                 = { workspace = true }
+napi-derive          = { workspace = true }
+once_cell            = { workspace = true }
+sqlx                 = { workspace = true, default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
+tokio                = { workspace = true, features = ["full"] }
 
 [build-dependencies]
 napi-build = { workspace = true }

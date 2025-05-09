@@ -8,12 +8,11 @@ import {
 import { SettingRow } from '@affine/component/setting-components';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { useI18n } from '@affine/i18n';
-import type { EditorHost } from '@blocksuite/affine/block-std';
-import type {
-  EdgelessRootService,
-  ShapeElementModel,
-  ShapeName,
-} from '@blocksuite/affine/blocks';
+import {
+  EdgelessCRUDIdentifier,
+  getSurfaceBlock,
+} from '@blocksuite/affine/blocks/surface';
+import type { ShapeElementModel, ShapeName } from '@blocksuite/affine/model';
 import {
   DefaultTheme,
   FontFamily,
@@ -25,7 +24,8 @@ import {
   ShapeType,
   StrokeStyle,
   TextAlign,
-} from '@blocksuite/affine/blocks';
+} from '@blocksuite/affine/model';
+import type { EditorHost } from '@blocksuite/affine/std';
 import type { Store } from '@blocksuite/affine/store';
 import { useFramework, useLiveData } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
@@ -42,7 +42,6 @@ import { sortedFontWeightEntries, usePalettes } from '../utils';
 import type { DocName } from './docs';
 import { Point } from './point';
 import { EdgelessSnapshot } from './snapshot';
-import { getSurfaceBlock } from './utils';
 
 enum ShapeTextFontSize {
   '16px' = '16',
@@ -62,11 +61,20 @@ export const ShapeSettings = () => {
     palettes: strokeColorPalettes,
     getCurrentColor: getCurrentStrokeColor,
   } = usePalettes(
-    DefaultTheme.StrokeColorPalettes,
+    DefaultTheme.StrokeColorShortPalettes,
     DefaultTheme.shapeStrokeColor
   );
   const { palettes: fillColorPalettes, getCurrentColor: getCurrentFillColor } =
-    usePalettes(DefaultTheme.FillColorPalettes, DefaultTheme.shapeFillColor);
+    usePalettes(
+      DefaultTheme.FillColorShortPalettes,
+      DefaultTheme.shapeFillColor
+    );
+  const { palettes: textColorPalettes, getCurrentColor: getCurrentTextColor } =
+    usePalettes(
+      DefaultTheme.ShapeTextColorShortPalettes,
+      DefaultTheme.shapeTextColor,
+      true
+    );
 
   const [currentShape, setCurrentShape] = useState<ShapeName>(ShapeType.Rect);
 
@@ -320,7 +328,7 @@ export const ShapeSettings = () => {
 
   const textColorItems = useMemo(() => {
     const { color } = settings[`shape:${currentShape}`];
-    return strokeColorPalettes.map(({ key, value, resolvedValue }) => {
+    return textColorPalettes.map(({ key, value, resolvedValue }) => {
       const handler = () => {
         editorSetting.set(`shape:${currentShape}`, { color: value });
       };
@@ -336,7 +344,7 @@ export const ShapeSettings = () => {
         </MenuItem>
       );
     });
-  }, [editorSetting, settings, currentShape, strokeColorPalettes]);
+  }, [editorSetting, settings, currentShape, textColorPalettes]);
 
   const getElements = useCallback(
     (doc: Store) => {
@@ -354,18 +362,16 @@ export const ShapeSettings = () => {
 
   const firstUpdate = useCallback(
     (doc: Store, editorHost: EditorHost) => {
-      const edgelessService = editorHost.std.getService(
-        'affine:page'
-      ) as EdgelessRootService;
       const surface = getSurfaceBlock(doc);
       if (!surface) return;
+      const crud = editorHost.std.get(EdgelessCRUDIdentifier);
       doc.readonly = false;
       surface.getElementsByType('shape').forEach(node => {
         const shape = node as ShapeElementModel;
         const { shapeType, radius } = shape;
         const shapeName = getShapeName(shapeType, radius);
         const props = editorSetting.get(`shape:${shapeName}`);
-        edgelessService.crud.updateElement(shape.id, props);
+        crud.updateElement(shape.id, props);
       });
       doc.readonly = true;
     },
@@ -384,8 +390,8 @@ export const ShapeSettings = () => {
 
   const textColor = useMemo(() => {
     const color = settings[`shape:${currentShape}`].color;
-    return getCurrentStrokeColor(color);
-  }, [currentShape, getCurrentStrokeColor, settings]);
+    return getCurrentTextColor(color);
+  }, [currentShape, getCurrentTextColor, settings]);
 
   const height = currentDoc === 'flow' ? 456 : 180;
   return (

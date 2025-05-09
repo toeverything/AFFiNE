@@ -17,6 +17,7 @@ export interface ListedBlobRecord {
 
 export interface BlobStorage extends Storage {
   readonly storageType: 'blob';
+  readonly isReadonly: boolean;
   get(key: string, signal?: AbortSignal): Promise<BlobRecord | null>;
   set(blob: BlobRecord, signal?: AbortSignal): Promise<void>;
   delete(
@@ -31,7 +32,7 @@ export interface BlobStorage extends Storage {
 export abstract class BlobStorageBase implements BlobStorage {
   readonly storageType = 'blob';
   abstract readonly connection: Connection;
-
+  abstract readonly isReadonly: boolean;
   abstract get(key: string, signal?: AbortSignal): Promise<BlobRecord | null>;
   abstract set(blob: BlobRecord, signal?: AbortSignal): Promise<void>;
   abstract delete(

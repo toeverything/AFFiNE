@@ -1,7 +1,8 @@
 name: Feature Request
 description: Suggest a feature or improvement
-title: "\u200b"
+title: '[Feature Request]: '
 labels: ['feat', 'story']
+assignees: ['hwangdev97']
 body:
   - type: markdown
     attributes:

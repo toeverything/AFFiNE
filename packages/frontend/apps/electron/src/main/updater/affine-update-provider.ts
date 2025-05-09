@@ -1,13 +1,13 @@
 // credits: migrated from https://github.com/electron-userland/electron-builder/blob/master/packages/electron-updater/src/providers/GitHubProvider.ts
 
-import type { CustomPublishOptions } from 'builder-util-runtime';
-import { newError } from 'builder-util-runtime';
-import type {
-  AppUpdater,
-  ResolvedUpdateFileInfo,
-  UpdateInfo,
-} from 'electron-updater';
-import { CancellationToken, Provider } from 'electron-updater';
+import {
+  CancellationToken,
+  type CustomPublishOptions,
+  newError,
+  type UpdateInfo,
+} from 'builder-util-runtime';
+import type { AppUpdater, ResolvedUpdateFileInfo } from 'electron-updater';
+import { Provider } from 'electron-updater';
 import type { ProviderRuntimeOptions } from 'electron-updater/out/providers/Provider';
 import {
   getFileList,

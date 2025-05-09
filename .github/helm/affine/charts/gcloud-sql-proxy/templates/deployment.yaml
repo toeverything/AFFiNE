@@ -1,4 +1,4 @@
-{{- if .Values.global.database.gcloud.enabled -}}
+{{- if .Values.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -42,7 +42,7 @@ spec:
             - "0.0.0.0"
             - "--structured-logs"
             - "--auto-iam-authn"
-            - "{{ .Values.global.database.gcloud.connectionName }}"
+            - "{{ .Values.database.connectionName }}"
           env:
             # Enable HTTP healthchecks on port 9801. This enables /liveness,
             # /readiness and /startup health check endpoints. Allow connections
@@ -56,7 +56,7 @@ spec:
               value: 0.0.0.0
           ports:
             - name: cloud-sql-proxy
-              containerPort: {{ .Values.global.database.gcloud.proxyPort }}
+              containerPort: {{ .Values.service.port }}
               protocol: TCP
             - containerPort: 9801
               protocol: TCP

@@ -118,3 +118,14 @@ export const dialogFooter = style({
 export const upgradeButtonInDialog = style({
   width: 'unset',
 });
+
+export const userContainer = style({
+  display: 'flex',
+  alignItems: 'center',
+  marginTop: '28px',
+});
+
+export const email = style({
+  marginLeft: '4px',
+  marginRight: '8px',
+});

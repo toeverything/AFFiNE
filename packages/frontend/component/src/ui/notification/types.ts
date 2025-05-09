@@ -1,3 +1,4 @@
+import type { UserFriendlyError } from '@affine/error';
 import type { HTMLAttributes, ReactNode } from 'react';
 
 import type { ButtonProps } from '../button';
@@ -13,7 +14,8 @@ export interface Notification {
   background?: string;
   foreground?: string;
   alignMessage?: 'title' | 'icon';
-  action?: {
+  actions?: {
+    key: string;
     label: ReactNode;
     onClick: (() => void) | (() => Promise<void>);
     buttonProps?: ButtonProps;
@@ -21,7 +23,7 @@ export interface Notification {
      * @default true
      */
     autoClose?: boolean;
-  };
+  }[];
 
   rootAttrs?: HTMLAttributes<HTMLDivElement>;
 
@@ -29,9 +31,9 @@ export interface Notification {
   thumb?: ReactNode;
   title?: ReactNode;
   message?: ReactNode;
+  error?: UserFriendlyError;
   icon?: ReactNode;
   iconColor?: string;
-  footer?: ReactNode;
 
   // events
   onDismiss?: () => void;
@@ -47,4 +49,9 @@ export interface NotificationCustomRendererProps {
 
 export interface NotificationCardProps extends HTMLAttributes<HTMLDivElement> {
   notification: Notification;
+}
+
+export interface NotificationActionProps {
+  action: NonNullable<Notification['actions']>[number];
+  onDismiss: Notification['onDismiss'];
 }

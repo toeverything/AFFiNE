@@ -3,7 +3,7 @@
   "compilerOptions": {
     "allowJs": true
   },
-  "include": ["."],
+  "include": [".", ".github/actions/*/*.mjs"],
   "exclude": [
     "**/target",
     "**/node_modules",

@@ -30,8 +30,9 @@ test('click btn bew page and find it in all pages', async ({
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page');
   await page.getByTestId('all-pages').click();
-  const cell = page.getByRole('cell', { name: 'this is a new page' });
-  expect(cell).not.toBeUndefined();
+  const allPages = page.getByTestId('virtualized-page-list');
+  const cell = allPages.getByText('this is a new page');
+  await expect(cell).toBeVisible();
   const currentWorkspace = await workspace.current();
 
   expect(currentWorkspace.meta.flavour).toContain('local');

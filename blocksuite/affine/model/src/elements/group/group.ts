@@ -1,17 +1,17 @@
+import type { IVec, PointLocation } from '@blocksuite/global/gfx';
+import { Bound, linePolygonIntersects } from '@blocksuite/global/gfx';
 import type {
   BaseElementProps,
   GfxModel,
   SerializedElement,
-} from '@blocksuite/block-std/gfx';
+} from '@blocksuite/std/gfx';
 import {
   canSafeAddToContainer,
   field,
   GfxGroupLikeElementModel,
   local,
   observe,
-} from '@blocksuite/block-std/gfx';
-import type { IVec, PointLocation } from '@blocksuite/global/utils';
-import { Bound, keys, linePolygonIntersects } from '@blocksuite/global/utils';
+} from '@blocksuite/std/gfx';
 import * as Y from 'yjs';
 
 type GroupElementProps = BaseElementProps & {
@@ -35,15 +35,15 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
     return 'group';
   }
 
-  static override propsToY(props: Record<string, unknown>) {
-    if ('title' in props && !(props.title instanceof Y.Text)) {
+  static propsToY(props: Record<string, unknown>) {
+    if (typeof props.title === 'string') {
       props.title = new Y.Text(props.title as string);
     }
 
     if (props.children && !(props.children instanceof Y.Map)) {
       const children = new Y.Map() as Y.Map<boolean>;
 
-      keys(props.children).forEach(key => {
+      Object.keys(props.children).forEach(key => {
         children.set(key as string, true);
       });
 
@@ -58,7 +58,7 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
       return;
     }
 
-    this.surface.doc.transact(() => {
+    this.surface.store.transact(() => {
       this.children.set(element.id, true);
     });
   }
@@ -79,7 +79,7 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
     if (!this.children) {
       return;
     }
-    this.surface.doc.transact(() => {
+    this.surface.store.transact(() => {
       this.children.delete(element.id);
     });
   }
@@ -118,16 +118,4 @@ export class GroupElementModel extends GfxGroupLikeElementModel<GroupElementProp
 
   @field()
   accessor title: Y.Text = new Y.Text();
-}
-
-declare global {
-  namespace BlockSuite {
-    interface SurfaceGroupLikeModelMap {
-      group: GroupElementModel;
-    }
-
-    interface SurfaceElementModelMap {
-      group: GroupElementModel;
-    }
-  }
 }

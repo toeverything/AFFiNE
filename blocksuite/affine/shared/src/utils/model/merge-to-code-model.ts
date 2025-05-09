@@ -5,7 +5,7 @@ export function mergeToCodeModel(models: BlockModel[]) {
   if (models.length === 0) {
     return null;
   }
-  const doc = models[0].doc;
+  const doc = models[0].store;
 
   const parent = doc.getParent(models[0]);
   if (!parent) {

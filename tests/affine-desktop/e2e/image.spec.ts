@@ -35,12 +35,13 @@ test('should paste it as PNG after copying SVG', async ({ page }) => {
   await svg.hover();
 
   await page.waitForTimeout(500);
-  const imageToolbar = page.locator('affine-image-toolbar');
-  await expect(imageToolbar).toBeVisible();
-  await imageToolbar.getByRole('button', { name: 'More' }).click();
+  const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+  await expect(toolbar).toBeVisible();
 
-  const moveMenu = page.locator('.image-more-popup-menu');
-  await moveMenu.getByRole('button', { name: /^Copy$/ }).click();
+  const moreMenu = toolbar.getByLabel('More menu');
+  await moreMenu.click();
+
+  await moreMenu.getByRole('button', { name: /^Copy$/ }).click();
 
   await svg.click();
 

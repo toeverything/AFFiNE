@@ -1,74 +1,15 @@
-import { baseTheme } from '@toeverything/theme';
-import { css, html, unsafeCSS } from 'lit';
+import { html } from 'lit';
 import { query } from 'lit/decorators.js';
 
 import { BaseCellRenderer } from '../../core/property/index.js';
 import { createFromBaseCellRenderer } from '../../core/property/renderer.js';
 import { createIcon } from '../../core/utils/uni-icon.js';
+import { textInputStyle, textStyle } from './cell-renderer.css.js';
 import { textPropertyModelConfig } from './define.js';
 
-export class TextCell extends BaseCellRenderer<string> {
-  static override styles = css`
-    affine-database-text-cell {
-      display: block;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .affine-database-text {
-      display: flex;
-      align-items: center;
-      height: 100%;
-      width: 100%;
-      padding: 0;
-      border: none;
-      font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
-      font-size: var(--affine-font-base);
-      line-height: var(--affine-line-height);
-      color: var(--affine-text-primary-color);
-      font-weight: 400;
-      background-color: transparent;
-    }
-  `;
-
-  override render() {
-    return html` <div class="affine-database-text">${this.value ?? ''}</div>`;
-  }
-}
-export class TextCellEditing extends BaseCellRenderer<string> {
-  static override styles = css`
-    affine-database-text-cell-editing {
-      display: block;
-      width: 100%;
-      height: 100%;
-      cursor: text;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .affine-database-text {
-      display: flex;
-      align-items: center;
-      height: 100%;
-      width: 100%;
-      padding: 0;
-      border: none;
-      font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
-      font-size: var(--affine-font-base);
-      line-height: var(--affine-line-height);
-      color: var(--affine-text-primary-color);
-      font-weight: 400;
-      background-color: transparent;
-    }
-
-    .affine-database-text:focus {
-      outline: none;
-    }
-  `;
+export class TextCell extends BaseCellRenderer<string, string> {
+  @query('input')
+  private accessor _inputEle!: HTMLInputElement;
 
   private readonly _keydown = (e: KeyboardEvent) => {
     if (e.key === 'Enter' && !e.isComposing) {
@@ -79,35 +20,40 @@ export class TextCellEditing extends BaseCellRenderer<string> {
     }
   };
 
-  private readonly _setValue = (str: string = this._inputEle.value) => {
-    this._inputEle.value = `${this.value ?? ''}`;
-    this.onChange(str);
+  private readonly _setValue = (str: string = this._inputEle?.value) => {
+    if (this._inputEle) {
+      this._inputEle.value = `${this.value ?? ''}`;
+    }
+    this.valueSetNextTick(str);
   };
 
   focusEnd = () => {
+    if (!this._inputEle) return;
+
     const end = this._inputEle.value.length;
     this._inputEle.focus();
     this._inputEle.setSelectionRange(end, end);
   };
 
-  override firstUpdated() {
+  override afterEnterEditingMode() {
     this.focusEnd();
   }
 
-  override onExitEditMode() {
+  override beforeExitEditingMode() {
     this._setValue();
   }
 
   override render() {
-    return html`<input
-      .value="${this.value ?? ''}"
-      @keydown="${this._keydown}"
-      class="affine-database-text"
-    />`;
+    if (this.isEditing$.value) {
+      return html`<input
+        .value="${this.value ?? ''}"
+        @keydown="${this._keydown}"
+        class="${textInputStyle}"
+      />`;
+    } else {
+      return html`<div class="${textStyle}">${this.value ?? ''}</div>`;
+    }
   }
-
-  @query('input')
-  private accessor _inputEle!: HTMLInputElement;
 }
 
 export const textPropertyConfig = textPropertyModelConfig.createPropertyMeta({
@@ -115,6 +61,5 @@ export const textPropertyConfig = textPropertyModelConfig.createPropertyMeta({
 
   cellRenderer: {
     view: createFromBaseCellRenderer(TextCell),
-    edit: createFromBaseCellRenderer(TextCellEditing),
   },
 });

@@ -1,6 +1,7 @@
 {
   "extends": "../../../tsconfig.node.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
@@ -11,9 +12,9 @@
   },
   "include": ["./src"],
   "references": [
-    { "path": "../../../tests/kit" },
+    { "path": "../native" },
     { "path": "../../../tools/cli" },
     { "path": "../../../tools/utils" },
-    { "path": "../native" }
+    { "path": "../../common/graphql" }
   ]
 }

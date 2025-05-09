@@ -1,3 +1,5 @@
+import { BlockSchemaExtension } from '@blocksuite/store';
+
 import { createEmbedBlockSchema } from '../../../utils/index.js';
 import {
   type EmbedFigmaBlockProps,
@@ -20,3 +22,7 @@ export const EmbedFigmaBlockSchema = createEmbedBlockSchema({
   toModel: () => new EmbedFigmaModel(),
   props: (): EmbedFigmaBlockProps => defaultEmbedFigmaProps,
 });
+
+export const EmbedFigmaBlockSchemaExtension = BlockSchemaExtension(
+  EmbedFigmaBlockSchema
+);

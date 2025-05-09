@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
   await expect(docsTab).toBeVisible();
   await docsTab.click();
   await page.getByTestId('doc-card').first().click();
-  await expect(page.locator('.affine-edgeless-viewport')).toBeVisible();
+  await expect(page.locator('.affine-page-viewport')).toBeVisible();
 });
 
 test('can open page view more menu', async ({ page }) => {
@@ -22,12 +22,14 @@ test('can open page view more menu', async ({ page }) => {
   await expect(page.getByRole('dialog')).toBeVisible();
 });
 
-test('switch to page mode', async ({ page }) => {
+test('switch to edgeless mode', async ({ page }) => {
   await page.click('[data-testid="detail-page-header-more-button"]');
   await expect(page.getByRole('dialog')).toBeVisible();
 
-  await page.getByRole('menuitem', { name: 'Default to Page mode' }).click();
-  await expect(page.locator('.doc-title-container')).toBeVisible();
+  await page
+    .getByRole('menuitem', { name: 'Default to Edgeless mode' })
+    .click();
+  await expect(page.locator('.affine-edgeless-viewport')).toBeVisible();
 });
 
 test('can show doc info', async ({ page }) => {
@@ -52,6 +54,6 @@ test('can add text property', async ({ page }) => {
   await page.getByTestId('mobile-menu-back-button').last().click();
 
   await expect(page.getByTestId('mobile-menu-back-button')).toContainText(
-    'Write, Draw, Plan all at Once'
+    'Getting Started'
   );
 });

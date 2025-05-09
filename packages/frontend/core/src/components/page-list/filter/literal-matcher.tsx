@@ -1,7 +1,8 @@
 import { Input, Menu, MenuItem } from '@affine/component';
-import type { LiteralValue, Tag } from '@affine/env/filter';
+import type { LiteralValue } from '@affine/env/filter';
 import type { ReactNode } from 'react';
 
+import type { TagMeta } from '../types';
 import { DateSelect } from './date-select';
 import { FilterTag } from './filter-tag-translation';
 import { inputStyle } from './index.css';
@@ -70,7 +71,7 @@ literalMatcher.register(tDate.create(), {
     <DateSelect value={value as number} onChange={onChange} />
   ),
 });
-const getTagsOfArrayTag = (type: TType): Tag[] => {
+const getTagsOfArrayTag = (type: TType): TagMeta[] => {
   if (type.type === 'array') {
     if (tTag.is(type.ele)) {
       return type.ele.data?.tags ?? [];
@@ -86,8 +87,8 @@ literalMatcher.register(tArray(tTag.create()), {
       <MultiSelect
         value={(value ?? []) as string[]}
         onChange={value => onChange(value)}
-        options={getTagsOfArrayTag(type).map(v => ({
-          label: v.value,
+        options={getTagsOfArrayTag(type).map((v: any) => ({
+          label: v.name,
           value: v.id,
         }))}
       ></MultiSelect>

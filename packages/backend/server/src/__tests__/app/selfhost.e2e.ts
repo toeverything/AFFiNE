@@ -1,19 +1,19 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-import type { INestApplication } from '@nestjs/common';
+import { Controller, Post, RawBody } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 import request from 'supertest';
 
 import { buildAppModule } from '../../app.module';
-import { Config } from '../../base';
+import { Public } from '../../core/auth';
 import { ServerService } from '../../core/config';
-import { createTestingApp, initTestingDB } from '../utils';
+import { createTestingApp, type TestingApp } from '../utils';
 
 const test = ava as TestFn<{
-  app: INestApplication;
+  app: TestingApp;
   db: PrismaClient;
 }>;
 
@@ -37,24 +37,32 @@ function initTestStaticFiles(staticPath: string) {
   }
 }
 
+@Controller('/')
+export class TestResolver {
+  @Public()
+  @Post('/upload')
+  async upload(@RawBody() buffer: Buffer | undefined): Promise<number> {
+    return buffer?.length || 0;
+  }
+}
+
 test.before('init selfhost server', async t => {
   // @ts-expect-error override
-  AFFiNE.isSelfhosted = true;
-  AFFiNE.flavor.renderer = true;
-  const { app } = await createTestingApp({
-    imports: [buildAppModule()],
+  globalThis.env.DEPLOYMENT_TYPE = 'selfhosted';
+  const app = await createTestingApp({
+    imports: [buildAppModule(globalThis.env)],
+    controllers: [TestResolver],
   });
 
   t.context.app = app;
   t.context.db = t.context.app.get(PrismaClient);
-  const config = app.get(Config);
 
-  const staticPath = path.join(config.projectRoot, 'static');
+  const staticPath = path.join(env.projectRoot, 'static');
   initTestStaticFiles(staticPath);
 });
 
 test.beforeEach(async t => {
-  await initTestingDB(t.context.db);
+  await t.context.app.initTestingDB();
   const server = t.context.app.get(ServerService);
   // @ts-expect-error disable cache
   server._initialized = false;
@@ -188,7 +196,8 @@ test('should redirect to admin if initialized', async t => {
   t.is(res.header.location, '/admin');
 });
 
-test('should return mobile assets if visited by mobile', async t => {
+// TODO(@forehalo): return mobile when it's ready
+test.skip('should return web assets if visited by mobile', async t => {
   await t.context.db.user.create({
     data: {
       name: 'test',
@@ -202,4 +211,17 @@ test('should return mobile assets if visited by mobile', async t => {
     .expect(200);
 
   t.true(res.text.includes('AFFiNE mobile'));
+});
+
+test('should can send maximum size of body', async t => {
+  const { app } = t.context;
+
+  const body = 'a'.repeat(1 * 1024 * 1024);
+  const res = await app
+    .POST('/upload')
+    .set('Content-Type', 'application/octet-stream')
+    .send(body)
+    .expect(201);
+
+  t.is(Number(res.text), body.length);
 });

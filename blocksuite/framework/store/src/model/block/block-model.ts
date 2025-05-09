@@ -1,49 +1,28 @@
-import { type Disposable, Slot } from '@blocksuite/global/utils';
+import type { Disposable } from '@blocksuite/global/disposable';
 import { computed, type Signal, signal } from '@preact/signals-core';
+import { Subject } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 import type { Text } from '../../reactive/index.js';
 import type { Store } from '../store/store.js';
 import type { YBlock } from './types.js';
-import type { RoleType } from './zod.js';
+import type { BlockSchemaType } from './zod.js';
 
 type SignaledProps<Props> = Props & {
   [P in keyof Props & string as `${P}$`]: Signal<Props[P]>;
 };
-/**
- * The MagicProps function is used to append the props to the class.
- * For example:
- *
- * ```ts
- * class MyBlock extends MagicProps()<{ foo: string }> {}
- * const myBlock = new MyBlock();
- * // You'll get type checking for the foo prop
- * myBlock.foo = 'bar';
- * ```
- */
-function MagicProps(): {
-  new <Props>(): Props;
-} {
-  return class {} as never;
-}
 
 const modelLabel = Symbol('model_label');
 
-// @ts-expect-error allow magic props
-export class BlockModel<
-  Props extends object = object,
-  PropsSignal extends object = SignaledProps<Props>,
-> extends MagicProps()<PropsSignal> {
+export class BlockModel<Props extends object = object> {
   private readonly _children = signal<string[]>([]);
 
-  /**
-   * @deprecated use doc instead
-   */
-  page!: Store;
+  private _store!: Store;
 
   private readonly _childModels = computed(() => {
     const value: BlockModel[] = [];
     this._children.value.forEach(id => {
-      const block = this.page.getBlock$(id);
+      const block = this._store.getBlock$(id);
       if (block) {
         value.push(block.model);
       }
@@ -62,13 +41,13 @@ export class BlockModel<
     }, new Map<string, number>())
   );
 
-  created = new Slot();
+  created = new Subject<void>();
 
-  deleted = new Slot();
-
-  flavour!: string;
+  deleted = new Subject<void>();
 
   id!: string;
+
+  schema!: BlockSchemaType;
 
   isEmpty() {
     return this.children.length === 0;
@@ -81,57 +60,84 @@ export class BlockModel<
 
   pop!: (prop: keyof Props & string) => void;
 
-  propsUpdated = new Slot<{ key: string }>();
-
-  role!: RoleType;
+  propsUpdated = new Subject<{ key: string }>();
 
   stash!: (prop: keyof Props & string) => void;
 
-  // text is optional
-  text?: Text;
+  get text(): Text | undefined {
+    return (this.props as { text?: Text }).text;
+  }
 
-  version!: number;
+  set text(text: Text) {
+    if (this.keys.includes('text')) {
+      (this.props as { text?: Text }).text = text;
+    }
+  }
 
   yBlock!: YBlock;
+
+  _props!: SignaledProps<Props>;
+
+  get props() {
+    if (!this._props) {
+      throw new Error('props is only supported in flat data model');
+    }
+    return this._props;
+  }
+
+  get flavour(): string {
+    return this.schema.model.flavour;
+  }
+
+  get version() {
+    return this.schema.version;
+  }
 
   get children() {
     return this._childModels.value;
   }
 
-  get doc() {
-    return this.page;
+  get store() {
+    return this._store;
   }
 
-  set doc(doc: Store) {
-    this.page = doc;
+  set store(doc: Store) {
+    this._store = doc;
   }
 
   get parent() {
-    return this.doc.getParent(this);
+    return this.store.getParent(this);
+  }
+
+  get role() {
+    return this.schema.model.role;
   }
 
   constructor() {
-    super();
-    this._onCreated = this.created.once(() => {
-      this._children.value = this.yBlock.get('sys:children').toArray();
-      this.yBlock.get('sys:children').observe(event => {
-        this._children.value = event.target.toArray();
-      });
-      this.yBlock.observe(event => {
-        if (event.keysChanged.has('sys:children')) {
-          this._children.value = this.yBlock.get('sys:children').toArray();
-        }
-      });
-    });
-    this._onDeleted = this.deleted.once(() => {
-      this._onCreated.dispose();
-    });
+    this._onCreated = {
+      dispose: this.created.pipe(take(1)).subscribe(() => {
+        this._children.value = this.yBlock.get('sys:children').toArray();
+        this.yBlock.get('sys:children').observe(event => {
+          this._children.value = event.target.toArray();
+        });
+        this.yBlock.observe(event => {
+          if (event.keysChanged.has('sys:children')) {
+            this._children.value = this.yBlock.get('sys:children').toArray();
+          }
+        });
+      }).unsubscribe,
+    };
+    this._onDeleted = {
+      dispose: this.deleted.pipe(take(1)).subscribe(() => {
+        this._onCreated.dispose();
+      }).unsubscribe,
+    };
   }
 
   dispose() {
-    this.created.dispose();
-    this.deleted.dispose();
-    this.propsUpdated.dispose();
+    this.created.complete();
+    this.deleted.complete();
+    this.propsUpdated.complete();
   }
 
   firstChild(): BlockModel | null {

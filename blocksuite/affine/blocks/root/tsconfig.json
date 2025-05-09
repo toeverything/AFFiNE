@@ -1,0 +1,41 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["./src"],
+  "references": [
+    { "path": "../attachment" },
+    { "path": "../bookmark" },
+    { "path": "../database" },
+    { "path": "../edgeless-text" },
+    { "path": "../embed" },
+    { "path": "../embed-doc" },
+    { "path": "../frame" },
+    { "path": "../image" },
+    { "path": "../note" },
+    { "path": "../paragraph" },
+    { "path": "../surface" },
+    { "path": "../../components" },
+    { "path": "../../ext-loader" },
+    { "path": "../../gfx/brush" },
+    { "path": "../../gfx/connector" },
+    { "path": "../../gfx/group" },
+    { "path": "../../gfx/mindmap" },
+    { "path": "../../gfx/note" },
+    { "path": "../../gfx/pointer" },
+    { "path": "../../gfx/shape" },
+    { "path": "../../gfx/text" },
+    { "path": "../../inlines/preset" },
+    { "path": "../../model" },
+    { "path": "../../rich-text" },
+    { "path": "../../shared" },
+    { "path": "../../widgets/edgeless-toolbar" },
+    { "path": "../../data-view" },
+    { "path": "../../../framework/global" },
+    { "path": "../../../framework/std" },
+    { "path": "../../../framework/store" }
+  ]
+}

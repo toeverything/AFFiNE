@@ -9,21 +9,33 @@ import { NodePropsSchema } from '../utils/index.js';
 export const GeneralSettingSchema = z
   .object({
     edgelessScrollZoom: z.boolean().default(false),
+    edgelessDisableScheduleUpdate: z.boolean().default(false),
+    docCanvasPreferView: z
+      .enum(['affine:embed-linked-doc', 'affine:embed-synced-doc'])
+      .default('affine:embed-synced-doc'),
   })
   .merge(NodePropsSchema);
 
 export type EditorSetting = z.infer<typeof GeneralSettingSchema>;
 
-export const EditorSettingProvider = createIdentifier<
-  Signal<DeepPartial<EditorSetting>>
->('AffineEditorSettingProvider');
+export interface EditorSettingService {
+  setting$: Signal<DeepPartial<EditorSetting>>;
+  set?: (
+    key: keyof EditorSetting,
+    value: EditorSetting[keyof EditorSetting]
+  ) => void;
+}
+
+export const EditorSettingProvider = createIdentifier<EditorSettingService>(
+  'AffineEditorSettingProvider'
+);
 
 export function EditorSettingExtension(
-  signal: Signal<DeepPartial<EditorSetting>>
+  service: EditorSettingService
 ): ExtensionType {
   return {
     setup: di => {
-      di.addImpl(EditorSettingProvider, () => signal);
+      di.override(EditorSettingProvider, () => service);
     },
   };
 }

@@ -1,0 +1,3 @@
+mutation generateLicenseKey($sessionId: String!) {
+  generateLicenseKey(sessionId: $sessionId)
+}

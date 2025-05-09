@@ -1,4 +1,4 @@
-import { DisposableGroup } from '@blocksuite/global/utils';
+import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { ReactiveController, ReactiveElement } from 'lit';
 
 import {

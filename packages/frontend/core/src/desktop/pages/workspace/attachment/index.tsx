@@ -1,11 +1,11 @@
 import { Skeleton } from '@affine/component';
+import { AttachmentViewer } from '@affine/core/blocksuite/attachment-viewer';
 import { type Doc, DocsService } from '@affine/core/modules/doc';
-import { type AttachmentBlockModel } from '@blocksuite/affine/blocks';
+import { type AttachmentBlockModel } from '@blocksuite/affine/model';
 import { FrameworkScope, useLiveData, useService } from '@toeverything/infra';
 import { type ReactElement, useLayoutEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { AttachmentViewerView } from '../../../../components/attachment-viewer';
 import { ViewIcon, ViewTitle } from '../../../../modules/workbench';
 import { PageNotFound } from '../../404';
 import * as styles from './index.css';
@@ -33,7 +33,7 @@ const useLoadAttachment = (pageId: string, attachmentId: string) => {
     if (!doc.blockSuiteDoc.ready) {
       doc.blockSuiteDoc.load();
     }
-    doc.setPriorityLoad(10);
+    const dispose = doc.addPriorityLoad(10);
 
     doc
       .waitForSyncReady()
@@ -47,6 +47,7 @@ const useLoadAttachment = (pageId: string, attachmentId: string) => {
 
     return () => {
       release();
+      dispose();
     };
   }, [docRecord, docsService, pageId, attachmentId]);
 
@@ -66,9 +67,11 @@ export const AttachmentPage = ({
   if (doc && model) {
     return (
       <FrameworkScope scope={doc.scope}>
-        <ViewTitle title={model.name} />
-        <ViewIcon icon={model.type.endsWith('pdf') ? 'pdf' : 'attachment'} />
-        <AttachmentViewerView model={model} />
+        <ViewTitle title={model.props.name} />
+        <ViewIcon
+          icon={model.props.type.endsWith('pdf') ? 'pdf' : 'attachment'}
+        />
+        <AttachmentViewer model={model} />
       </FrameworkScope>
     );
   }

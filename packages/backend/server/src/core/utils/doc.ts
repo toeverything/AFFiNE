@@ -1,5 +1,7 @@
 import { registerEnumType } from '@nestjs/graphql';
 
+import { DocMode } from '../../models';
+
 export enum DocVariant {
   Workspace = 'workspace',
   Page = 'page',
@@ -33,7 +35,7 @@ export class DocID {
     return this.variant === DocVariant.Workspace
       ? this.workspace
       : // sub is always truthy when variant is not workspace
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        // oxlint-disable-next-line @typescript-eslint/no-non-null-assertion
         this.sub!;
   }
 
@@ -118,4 +120,30 @@ export class DocID {
       this.workspace = workspaceId;
     }
   }
+}
+
+type DocPathParams = {
+  workspaceId: string;
+  docId: string;
+  mode: DocMode;
+  blockId?: string;
+  elementId?: string;
+};
+
+/**
+ * To generate a doc url path like
+ *
+ * /workspace/{workspaceId}/{docId}?mode={DocMode}&elementIds={elementId}&blockIds={blockId}
+ */
+export function generateDocPath(params: DocPathParams) {
+  const search = new URLSearchParams({
+    mode: params.mode,
+  });
+  if (params.elementId) {
+    search.set('elementIds', params.elementId);
+  }
+  if (params.blockId) {
+    search.set('blockIds', params.blockId);
+  }
+  return `/workspace/${params.workspaceId}/${params.docId}?${search.toString()}`;
 }

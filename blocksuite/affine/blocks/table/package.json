@@ -1,0 +1,47 @@
+{
+  "name": "@blocksuite/affine-block-table",
+  "description": "Table block for BlockSuite.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "sideEffects": false,
+  "keywords": [],
+  "author": "toeverything",
+  "license": "MIT",
+  "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
+    "@blocksuite/affine-components": "workspace:*",
+    "@blocksuite/affine-ext-loader": "workspace:*",
+    "@blocksuite/affine-inline-preset": "workspace:*",
+    "@blocksuite/affine-model": "workspace:*",
+    "@blocksuite/affine-rich-text": "workspace:*",
+    "@blocksuite/affine-shared": "workspace:*",
+    "@blocksuite/affine-widget-slash-menu": "workspace:*",
+    "@blocksuite/data-view": "workspace:*",
+    "@blocksuite/global": "workspace:*",
+    "@blocksuite/icons": "^2.2.12",
+    "@blocksuite/std": "workspace:*",
+    "@blocksuite/store": "workspace:*",
+    "@floating-ui/dom": "^1.6.13",
+    "@preact/signals-core": "^1.8.0",
+    "@vanilla-extract/css": "^1.17.0",
+    "lit": "^3.2.0",
+    "rxjs": "^7.8.1",
+    "yjs": "^13.6.21",
+    "zod": "^3.24.1"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./effects": "./src/effects.ts",
+    "./view": "./src/view.ts",
+    "./store": "./src/store.ts"
+  },
+  "files": [
+    "src",
+    "dist",
+    "!src/__tests__",
+    "!dist/__tests__"
+  ],
+  "version": "0.21.0"
+}

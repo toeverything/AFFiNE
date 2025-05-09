@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let LimitedUserType = ApolloAPI.Object(
     typename: "LimitedUserType",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

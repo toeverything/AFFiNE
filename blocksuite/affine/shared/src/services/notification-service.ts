@@ -1,5 +1,6 @@
-import { createIdentifier } from '@blocksuite/global/di';
-import type { ExtensionType } from '@blocksuite/store';
+import { createIdentifier, type ServiceProvider } from '@blocksuite/global/di';
+import { EditorLifeCycleExtension } from '@blocksuite/std';
+import { type ExtensionType, StoreIdentifier } from '@blocksuite/store';
 import type { TemplateResult } from 'lit';
 
 export interface NotificationService {
@@ -32,12 +33,21 @@ export interface NotificationService {
     accent?: 'info' | 'success' | 'warning' | 'error';
     duration?: number; // unit ms, give 0 to disable auto dismiss
     abort?: AbortSignal;
-    action?: {
+    actions?: {
+      key: string;
       label: string | TemplateResult;
       onClick: () => void;
-    };
-    onClose: () => void;
+    }[];
+    onClose?: () => void;
   }): void;
+
+  /**
+   * Notify with undo action, it is a helper function to notify with undo action.
+   * And the notification card will be closed when undo action is triggered by shortcut key or other ways.
+   */
+  notifyWithUndoAction: (
+    options: Parameters<NotificationService['notify']>[0]
+  ) => void;
 }
 
 export const NotificationProvider = createIdentifier<NotificationService>(
@@ -45,11 +55,69 @@ export const NotificationProvider = createIdentifier<NotificationService>(
 );
 
 export function NotificationExtension(
-  notificationService: NotificationService
+  notificationService: Omit<NotificationService, 'notifyWithUndoAction'>
 ): ExtensionType {
   return {
     setup: di => {
-      di.addImpl(NotificationProvider, notificationService);
+      di.addImpl(NotificationProvider, provider => {
+        return {
+          ...notificationService,
+          notifyWithUndoAction: options => {
+            notifyWithUndoActionImpl(
+              provider,
+              notificationService.notify,
+              options
+            );
+          },
+        };
+      });
     },
   };
+}
+
+function notifyWithUndoActionImpl(
+  provider: ServiceProvider,
+  notify: NotificationService['notify'],
+  options: Parameters<NotificationService['notifyWithUndoAction']>[0]
+) {
+  const store = provider.get(StoreIdentifier);
+
+  const abortController = new AbortController();
+  const abort = () => {
+    abortController.abort();
+  };
+  options.abort?.addEventListener('abort', abort);
+
+  const clearOnClose = () => {
+    store.history.off('stack-item-added', addHandler);
+    store.history.off('stack-item-popped', popHandler);
+    disposable.unsubscribe();
+    options.abort?.removeEventListener('abort', abort);
+  };
+
+  const addHandler = store.history.on('stack-item-added', abort);
+  const popHandler = store.history.on('stack-item-popped', abort);
+  const disposable = provider
+    .get(EditorLifeCycleExtension)
+    .slots.unmounted.subscribe(() => abort());
+
+  notify({
+    ...options,
+    actions: [
+      {
+        key: 'notification-card-undo',
+        label: 'Undo',
+        onClick: () => {
+          store.undo();
+          abortController.abort();
+        },
+      },
+      ...(options.actions ?? []),
+    ],
+    abort: abortController.signal,
+    onClose: () => {
+      options.onClose?.();
+      clearOnClose();
+    },
+  });
 }

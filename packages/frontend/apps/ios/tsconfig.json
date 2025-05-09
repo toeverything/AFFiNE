@@ -9,11 +9,13 @@
   "references": [
     { "path": "../../component" },
     { "path": "../../core" },
+    { "path": "../../../common/env" },
     { "path": "../../i18n" },
     { "path": "../../../common/nbstore" },
     { "path": "../../../../blocksuite/affine/all" },
-    { "path": "../../../../blocksuite/affine/components" },
     { "path": "../../../common/infra" },
+    { "path": "../../../../tools/cli" },
+    { "path": "../../../../tools/utils" },
     { "path": "../../native" }
   ]
 }

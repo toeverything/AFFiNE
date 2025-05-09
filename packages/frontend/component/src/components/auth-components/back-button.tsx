@@ -1,6 +1,5 @@
 import { useI18n } from '@affine/i18n';
 import { ArrowLeftSmallIcon } from '@blocksuite/icons/rc';
-import { cssVar } from '@toeverything/theme';
 import type { FC } from 'react';
 
 import type { ButtonProps } from '../../ui/button';
@@ -12,11 +11,7 @@ export const BackButton: FC<ButtonProps> = props => {
     <Button
       variant="plain"
       style={{
-        marginTop: 12,
-        marginLeft: -5,
-        paddingLeft: 0,
-        paddingRight: 5,
-        color: cssVar('textSecondaryColor'),
+        padding: '2px 8px 2px 0',
       }}
       prefix={<ArrowLeftSmallIcon />}
       {...props}

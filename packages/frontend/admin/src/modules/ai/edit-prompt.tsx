@@ -1,11 +1,10 @@
-import { Button } from '@affine/admin/components/ui/button';
 import { ScrollArea } from '@affine/admin/components/ui/scroll-area';
 import { Separator } from '@affine/admin/components/ui/separator';
 import { Textarea } from '@affine/admin/components/ui/textarea';
-import { CheckIcon, XIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useRightPanel } from '../layout';
+import { RightPanelHeader } from '../header';
+import { useRightPanel } from '../panel/context';
 import type { Prompt } from './prompts';
 import { usePrompt } from './use-prompt';
 
@@ -56,29 +55,12 @@ export function EditPrompt({
 
   return (
     <div className="flex flex-col h-full gap-1">
-      <div className="flex justify-between items-center py-[10px] px-6 ">
-        <Button
-          type="button"
-          size="icon"
-          className="w-7 h-7"
-          variant="ghost"
-          onClick={handleClose}
-        >
-          <XIcon size={20} />
-        </Button>
-        <span className="text-base font-medium">Edit Prompt</span>
-        <Button
-          type="submit"
-          size="icon"
-          className="w-7 h-7"
-          variant="ghost"
-          onClick={onConfirm}
-          disabled={disableSave}
-        >
-          <CheckIcon size={20} />
-        </Button>
-      </div>
-      <Separator />
+      <RightPanelHeader
+        title="Edit Prompt"
+        handleClose={handleClose}
+        handleConfirm={onConfirm}
+        canSave={!disableSave}
+      />
       <ScrollArea>
         <div className="grid">
           <div className="px-5 py-4 overflow-y-auto space-y-[10px] flex flex-col gap-5">

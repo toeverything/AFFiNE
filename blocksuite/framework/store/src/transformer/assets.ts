@@ -89,11 +89,6 @@ export class AssetsManager {
       );
     }
 
-    const exists = (await this._blob.get(blobId)) !== null;
-    if (exists) {
-      return;
-    }
-
     await this._blob.set(blobId, blob);
   }
 }

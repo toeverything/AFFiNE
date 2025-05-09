@@ -6,6 +6,7 @@ import {
   SettingWrapper,
 } from '@affine/component/setting-components';
 import { LanguageMenu } from '@affine/core/components/affine/language-menu';
+import { TraySettingService } from '@affine/core/modules/editor-setting/services/tray-settings';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -55,6 +56,28 @@ export const ThemeSettings = () => {
         [setTheme]
       )}
     />
+  );
+};
+
+const MenubarSetting = () => {
+  const t = useI18n();
+  const traySettingService = useService(TraySettingService);
+  const { enabled } = useLiveData(traySettingService.setting$);
+  return (
+    <SettingWrapper
+      id="menubar"
+      title={t['com.affine.appearanceSettings.menubar.title']()}
+    >
+      <SettingRow
+        name={t['com.affine.appearanceSettings.menubar.toggle']()}
+        desc={t['com.affine.appearanceSettings.menubar.description']()}
+      >
+        <Switch
+          checked={enabled}
+          onChange={checked => traySettingService.setEnabled(checked)}
+        />
+      </SettingRow>
+    </SettingWrapper>
   );
 };
 
@@ -150,6 +173,8 @@ export const AppearanceSettings = () => {
           )}
         </SettingWrapper>
       ) : null}
+
+      {BUILD_CONFIG.isElectron ? <MenubarSetting /> : null}
     </>
   );
 };

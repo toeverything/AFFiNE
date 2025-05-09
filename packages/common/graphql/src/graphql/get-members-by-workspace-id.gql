@@ -1,0 +1,15 @@
+query getMembersByWorkspaceId($workspaceId: String!, $skip: Int, $take: Int, $query: String) {
+  workspace(id: $workspaceId) {
+    memberCount
+    members(skip: $skip, take: $take, query: $query) {
+      id
+      name
+      email
+      avatarUrl
+      permission
+      inviteId
+      emailVerified
+      status
+    }
+  }
+}

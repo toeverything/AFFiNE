@@ -36,6 +36,16 @@ Table(PeerClocks)
 | peer | docId |   clock   |  pushed   |
 |------|-------|-----------|-----------|
 | str  |  str  |   Date    |   Date    |
+
+Table(IndexerSync)
+| docId | indexedClock | indexerVersion |
+|-------|--------------|----------------|
+| str   |   Date       |    number      |
+
+Table(BlobSync)
+| peer | key | uploadedAt |
+|------|-----|------------|
+| str  | str |   Date     |
  */
 export interface DocStorageSchema extends DBSchema {
   snapshots: {
@@ -81,6 +91,17 @@ export interface DocStorageSchema extends DBSchema {
       deletedAt: Date | null;
     };
   };
+  blobSync: {
+    key: [string, string];
+    value: {
+      peer: string;
+      key: string;
+      uploadedAt: Date | null;
+    };
+    indexes: {
+      peer: string;
+    };
+  };
   blobData: {
     key: string;
     value: {
@@ -107,6 +128,44 @@ export interface DocStorageSchema extends DBSchema {
       key: string;
       lock: Date;
     };
+  };
+  indexerSync: {
+    key: string;
+    value: {
+      docId: string;
+      indexedClock: Date;
+      indexerVersion?: number;
+    };
+  };
+  indexerMetadata: {
+    key: string;
+    value: {
+      key: string;
+      value: any;
+    };
+  };
+  indexerRecords: {
+    key: number;
+    value: {
+      table: string;
+      id: string;
+      data: Map<string, string[]>;
+    };
+    indexes: { table: string; id: [string, string] };
+  };
+  invertedIndex: {
+    key: number;
+    value: {
+      table: string;
+      nid: number;
+      pos?: {
+        i: number /* index */;
+        l: number /* length */;
+        rs: [number, number][] /* ranges: [start, end] */;
+      };
+      key: ArrayBuffer;
+    };
+    indexes: { key: [string, ArrayBuffer]; nid: number };
   };
 }
 
@@ -175,11 +234,44 @@ const init: Migrate = db => {
     autoIncrement: false,
   });
 };
+const initBlobSync: Migrate = db => {
+  const blobSync = db.createObjectStore('blobSync', {
+    keyPath: ['peer', 'key'],
+    autoIncrement: false,
+  });
+
+  blobSync.createIndex('peer', 'peer', { unique: false });
+};
+const initIndexer: Migrate = db => {
+  db.createObjectStore('indexerMetadata', {
+    keyPath: 'key',
+  });
+  const indexRecordsStore = db.createObjectStore('indexerRecords', {
+    autoIncrement: true,
+  });
+  indexRecordsStore.createIndex('table', 'table', {
+    unique: false,
+  });
+  indexRecordsStore.createIndex('id', ['table', 'id'], {
+    unique: true,
+  });
+  const invertedIndexStore = db.createObjectStore('invertedIndex', {
+    autoIncrement: true,
+  });
+  invertedIndexStore.createIndex('key', ['table', 'key'], {
+    unique: false,
+  });
+  invertedIndexStore.createIndex('nid', 'nid', { unique: false });
+  db.createObjectStore('indexerSync', {
+    keyPath: 'docId',
+    autoIncrement: false,
+  });
+};
 // END REGION
 
 // 1. all schema changed should be put in migrations
 // 2. order matters
-const migrations: Migrate[] = [init];
+const migrations: Migrate[] = [init, initBlobSync, initIndexer];
 
 export const migrator = {
   version: migrations.length,

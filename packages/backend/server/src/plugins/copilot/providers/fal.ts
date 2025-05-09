@@ -1,9 +1,8 @@
-import assert from 'node:assert';
-
 import {
   config as falConfig,
   stream as falStream,
 } from '@fal-ai/serverless-client';
+import { Injectable } from '@nestjs/common';
 import { z, ZodType } from 'zod';
 
 import {
@@ -12,6 +11,7 @@ import {
   metrics,
   UserFriendlyError,
 } from '../../../base';
+import { CopilotProvider } from './provider';
 import {
   CopilotCapability,
   CopilotChatOptions,
@@ -20,7 +20,7 @@ import {
   CopilotProviderType,
   CopilotTextToImageProvider,
   PromptMessage,
-} from '../types';
+} from './types';
 
 export type FalConfig = {
   apiKey: string;
@@ -71,17 +71,19 @@ type FalPrompt = {
   }[];
 };
 
+@Injectable()
 export class FalProvider
+  extends CopilotProvider<FalConfig>
   implements CopilotTextToImageProvider, CopilotImageToImageProvider
 {
-  static readonly type = CopilotProviderType.FAL;
-  static readonly capabilities = [
+  override type = CopilotProviderType.FAL;
+  override readonly capabilities = [
     CopilotCapability.TextToImage,
     CopilotCapability.ImageToImage,
     CopilotCapability.ImageToText,
   ];
 
-  readonly availableModels = [
+  override readonly models = [
     // text to image
     'fast-turbo-diffusion',
     // image to image
@@ -96,25 +98,13 @@ export class FalProvider
     'llava-next',
   ];
 
-  constructor(private readonly config: FalConfig) {
-    assert(FalProvider.assetsConfig(config));
+  override configured(): boolean {
+    return !!this.config.apiKey;
+  }
+
+  protected override setup() {
+    super.setup();
     falConfig({ credentials: this.config.apiKey });
-  }
-
-  static assetsConfig(config: FalConfig) {
-    return !!config.apiKey;
-  }
-
-  get type(): CopilotProviderType {
-    return FalProvider.type;
-  }
-
-  getCapabilities(): CopilotCapability[] {
-    return FalProvider.capabilities;
-  }
-
-  async isModelAvailable(model: string): Promise<boolean> {
-    return this.availableModels.includes(model);
   }
 
   private extractArray<T>(value: T | T[] | undefined): T[] {
@@ -148,7 +138,15 @@ export class FalProvider
     );
     return {
       model_name: options.modelName || undefined,
-      image_url: attachments?.[0],
+      image_url: attachments
+        ?.map(v =>
+          typeof v === 'string'
+            ? v
+            : v.mimeType.startsWith('image/')
+              ? v.attachment
+              : undefined
+        )
+        .filter(v => !!v)[0],
       prompt: content.trim(),
       loras: lora.length ? lora : undefined,
       controlnets: controlnets.length ? controlnets : undefined,
@@ -211,7 +209,7 @@ export class FalProvider
     model: string = 'llava-next',
     options: CopilotChatOptions = {}
   ): Promise<string> {
-    if (!this.availableModels.includes(model)) {
+    if (!(await this.isModelAvailable(model))) {
       throw new CopilotPromptInvalid(`Invalid model: ${model}`);
     }
 
@@ -269,7 +267,7 @@ export class FalProvider
 
   private async buildResponse(
     messages: PromptMessage[],
-    model: string = this.availableModels[0],
+    model: string = this.models[0],
     options: CopilotImageOptions = {}
   ) {
     // by default, image prompt assumes there is only one message
@@ -300,10 +298,10 @@ export class FalProvider
   // ====== image to image ======
   async generateImages(
     messages: PromptMessage[],
-    model: string = this.availableModels[0],
+    model: string = this.models[0],
     options: CopilotImageOptions = {}
   ): Promise<Array<string>> {
-    if (!this.availableModels.includes(model)) {
+    if (!(await this.isModelAvailable(model))) {
       throw new CopilotPromptInvalid(`Invalid model: ${model}`);
     }
 
@@ -333,7 +331,7 @@ export class FalProvider
 
   async *generateImagesStream(
     messages: PromptMessage[],
-    model: string = this.availableModels[0],
+    model: string = this.models[0],
     options: CopilotImageOptions = {}
   ): AsyncIterable<string> {
     try {

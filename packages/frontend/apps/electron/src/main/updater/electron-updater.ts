@@ -3,7 +3,6 @@ import { autoUpdater as defaultAutoUpdater } from 'electron-updater';
 
 import { buildType } from '../config';
 import { logger } from '../logger';
-import { isOfflineModeEnabled } from '../utils';
 import { AFFiNEUpdateProvider } from './affine-update-provider';
 import { updaterSubjects } from './event';
 import { WindowsUpdater } from './windows-updater';
@@ -55,7 +54,7 @@ export const setConfig = (newConfig: Partial<UpdaterConfig> = {}): void => {
 };
 
 export const checkForUpdates = async () => {
-  if (disabled || checkingUpdate || isOfflineModeEnabled()) {
+  if (disabled || checkingUpdate) {
     return;
   }
   checkingUpdate = true;

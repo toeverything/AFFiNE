@@ -35,7 +35,11 @@ const isMuslFromFilesystem = () => {
 }
 
 const isMuslFromReport = () => {
-  const report = typeof process.report.getReport === 'function' ? process.report.getReport() : null
+  let report = null
+  if (typeof process.report?.getReport === 'function') {
+    process.report.excludeNetwork = true
+    report = process.report.getReport()
+  }
   if (!report) {
     return null
   }
@@ -60,7 +64,13 @@ const isMuslFromChildProcess = () => {
 }
 
 function requireNative() {
-  if (process.platform === 'android') {
+  if (process.env.NAPI_RS_NATIVE_LIBRARY_PATH) {
+    try {
+      nativeBinding = require(process.env.NAPI_RS_NATIVE_LIBRARY_PATH);
+    } catch (err) {
+      loadErrors.push(err);
+    }
+  } else if (process.platform === 'android') {
     if (process.arch === 'arm64') {
       try {
         return require('./affine.android-arm64.node')
@@ -364,8 +374,18 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
+module.exports.Application = nativeBinding.Application
+module.exports.ApplicationListChangedSubscriber = nativeBinding.ApplicationListChangedSubscriber
+module.exports.ApplicationStateChangedSubscriber = nativeBinding.ApplicationStateChangedSubscriber
+module.exports.AudioCaptureSession = nativeBinding.AudioCaptureSession
+module.exports.DocStorage = nativeBinding.DocStorage
 module.exports.DocStoragePool = nativeBinding.DocStoragePool
+module.exports.RecordingPermissions = nativeBinding.RecordingPermissions
+module.exports.ShareableContent = nativeBinding.ShareableContent
 module.exports.SqliteConnection = nativeBinding.SqliteConnection
+module.exports.TappableApplication = nativeBinding.TappableApplication
+module.exports.decodeAudio = nativeBinding.decodeAudio
+module.exports.decodeAudioSync = nativeBinding.decodeAudioSync
 module.exports.mintChallengeResponse = nativeBinding.mintChallengeResponse
 module.exports.ValidationResult = nativeBinding.ValidationResult
 module.exports.verifyChallengeResponse = nativeBinding.verifyChallengeResponse

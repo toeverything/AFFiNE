@@ -1,10 +1,10 @@
 import { DefaultTheme } from '@blocksuite/affine-model';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import type { DeltaInsert } from '@blocksuite/inline';
 import {
   type AssetsManager,
   BaseAdapter,
   type BlockSnapshot,
+  type DeltaInsert,
   type DocSnapshot,
   type ExtensionType,
   type FromBlockSnapshotResult,
@@ -163,8 +163,8 @@ export const NotionTextAdapterFactoryIdentifier =
 
 export const NotionTextAdapterFactoryExtension: ExtensionType = {
   setup: di => {
-    di.addImpl(NotionTextAdapterFactoryIdentifier, () => ({
-      get: (job: Transformer) => new NotionTextAdapter(job),
+    di.addImpl(NotionTextAdapterFactoryIdentifier, provider => ({
+      get: (job: Transformer) => new NotionTextAdapter(job, provider),
     }));
   },
 };

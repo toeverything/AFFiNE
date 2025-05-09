@@ -1,8 +1,9 @@
 import { Button } from '@affine/component';
 import { AuthPageContainer } from '@affine/component/auth-components';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
-import { BackendError, GraphQLService } from '@affine/core/modules/cloud';
-import { changeEmailMutation, ErrorNames } from '@affine/graphql';
+import { GraphQLService } from '@affine/core/modules/cloud';
+import { UserFriendlyError } from '@affine/error';
+import { changeEmailMutation } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import { type FC, useEffect, useState } from 'react';
@@ -33,13 +34,13 @@ export const ConfirmChangeEmail: FC<{
           },
         })
         .catch(err => {
-          if (err instanceof BackendError) {
-            const userFriendlyError = err.originError;
-            if (userFriendlyError.name === ErrorNames.INVALID_EMAIL_TOKEN) {
-              return navigateHelper.jumpToExpired();
-            }
+          if (UserFriendlyError.fromAny(err).is('INVALID_EMAIL_TOKEN')) {
+            return navigateHelper.jumpToExpired();
           }
           throw err;
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
     })().catch(err => {
       // TODO(@eyhn): Add error handling

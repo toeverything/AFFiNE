@@ -102,14 +102,7 @@ export const cursorStyle = style({
   padding: '1px 2px',
   fontSize: '14px',
 });
-export const dividerStyle = style({
-  width: '0.5px',
-  height: '100%',
-  background: cssVar('borderColor'),
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-});
+
 export const scaleIndicatorButtonStyle = style({
   height: '24px',
   padding: '1px 2px',

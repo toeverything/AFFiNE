@@ -1,23 +1,52 @@
+import { toolbarButtons } from '@affine-test/kit/bs/linked-toolbar';
+import { waitNextFrame } from '@affine-test/kit/bs/misc';
 import { test } from '@affine-test/kit/playwright';
-import { locateModeSwitchButton } from '@affine-test/kit/utils/editor';
+import { clickEdgelessModeButton } from '@affine-test/kit/utils/editor';
 import {
   pasteByKeyboard,
+  selectAllByKeyboard,
   writeTextToClipboard,
 } from '@affine-test/kit/utils/keyboard';
 import { coreUrl, openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
   createLinkedPage,
+  createTodayPage,
   getBlockSuiteEditorTitle,
   waitForEmptyEditor,
 } from '@affine-test/kit/utils/page-logic';
-import { expect, type Locator } from '@playwright/test';
+import {
+  confirmExperimentalPrompt,
+  openEditorSetting,
+  openExperimentalFeaturesPanel,
+} from '@affine-test/kit/utils/setting';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 test.beforeEach(async ({ page }) => {
   await openHomePage(page);
   await clickNewPageButton(page);
   await waitForEmptyEditor(page);
 });
+
+async function enableEmojiDocIcon(page: Page) {
+  // Opens settings panel
+  await openEditorSetting(page);
+  await openExperimentalFeaturesPanel(page);
+  await confirmExperimentalPrompt(page);
+
+  const settingModal = page.locator('[data-testid=setting-modal-content]');
+  const item = settingModal.locator('div').getByText('Emoji Doc Icon');
+  await item.waitFor({ state: 'attached' });
+  await expect(item).toBeVisible();
+  const button = item.locator('label');
+  const isChecked = await button.locator('input').isChecked();
+  if (!isChecked) {
+    await button.click();
+  }
+
+  // Closes settings panel
+  await page.keyboard.press('Escape');
+}
 
 async function notClickable(locator: Locator) {
   await expect(locator).toHaveAttribute('disabled', '');
@@ -35,25 +64,37 @@ test('not allowed to switch to embed view when linking to the same document', as
   const url0 = new URL(page.url());
 
   await writeTextToClipboard(page, url0.toString());
-  await pasteByKeyboard(page);
+
+  const { toolbar, switchViewBtn, inlineViewBtn, cardViewBtn, embedViewBtn } =
+    toolbarButtons(page);
 
   // Inline
   const inlineLink = page.locator('affine-reference');
-  const inlineToolbar = page.locator('reference-popup');
 
   await inlineLink.hover();
-  await inlineToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
 
-  await notClickable(inlineToolbar.getByLabel('Inline view'));
-  await clickable(inlineToolbar.getByLabel('Card view'));
-  await notClickable(inlineToolbar.getByLabel('Embed view'));
+  await notClickable(inlineViewBtn);
+  await clickable(cardViewBtn);
+  await notClickable(embedViewBtn);
 
   // Switches to card view
-  await inlineToolbar.getByLabel('Card view').click();
+  await cardViewBtn.click();
 
   // Card
   const cardLink = page.locator('affine-embed-linked-doc-block');
-  const cardToolbar = page.locator('affine-embed-card-toolbar');
+  await expect(cardLink).toBeVisible();
+
+  await cardLink.click();
+  // In the test environment, a text selection update is triggered, which is very unstable.
+  await cardLink.click();
+
+  await expect(toolbar).toBeVisible();
+  await switchViewBtn.click();
+
+  await clickable(inlineViewBtn);
+  await notClickable(cardViewBtn);
+  await notClickable(embedViewBtn);
 
   await cardLink.dblclick();
 
@@ -63,13 +104,6 @@ test('not allowed to switch to embed view when linking to the same document', as
   await page.keyboard.press('Escape');
   await expect(peekViewModel).not.toBeVisible();
   await page.click('body');
-
-  await cardLink.click();
-  await cardToolbar.getByLabel('Switch view').click();
-
-  await clickable(cardToolbar.getByLabel('Inline view'));
-  await notClickable(cardToolbar.getByLabel('Card view'));
-  await notClickable(cardToolbar.getByLabel('Embed view'));
 });
 
 test('not allowed to switch to embed view when linking to block', async ({
@@ -78,23 +112,24 @@ test('not allowed to switch to embed view when linking to block', async ({
   await page.keyboard.press('Enter');
   await createLinkedPage(page, 'Test Page');
 
+  const { toolbar, switchViewBtn, inlineViewBtn, cardViewBtn, embedViewBtn } =
+    toolbarButtons(page);
+
   // Inline
   const inlineLink = page.locator('affine-reference');
-  const inlineToolbar = page.locator('reference-popup');
 
   await inlineLink.hover();
-  await inlineToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
 
-  await notClickable(inlineToolbar.getByLabel('Inline view'));
-  await clickable(inlineToolbar.getByLabel('Card view'));
-  await clickable(inlineToolbar.getByLabel('Embed view'));
+  await notClickable(inlineViewBtn);
+  await clickable(cardViewBtn);
+  await clickable(embedViewBtn);
 
   // Switches to card view
-  await inlineToolbar.getByLabel('Card view').click();
+  await cardViewBtn.click();
 
   // Card
   const cardLink = page.locator('affine-embed-linked-doc-block');
-  const cardToolbar = page.locator('affine-embed-card-toolbar');
 
   await cardLink.dblclick();
 
@@ -104,26 +139,26 @@ test('not allowed to switch to embed view when linking to block', async ({
   await page.keyboard.press('Escape');
   await expect(peekViewModel).not.toBeVisible();
 
-  await page.click('body');
   await cardLink.click();
 
-  await cardToolbar.getByLabel('More').click();
-  await cardToolbar.getByLabel('Copy link to block').click();
+  await toolbar.getByLabel('More menu').click();
+  await toolbar.getByLabel('Copy link to block').click();
 
   await page.keyboard.press('Enter');
   await pasteByKeyboard(page);
 
+  await expect(inlineLink).toBeVisible();
   const href0 = await inlineLink.locator('a').getAttribute('href');
 
   await inlineLink.hover();
-  await inlineToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
 
-  await notClickable(inlineToolbar.getByLabel('Inline view'));
-  await clickable(inlineToolbar.getByLabel('Card view'));
-  await notClickable(inlineToolbar.getByLabel('Embed view'));
+  await notClickable(inlineViewBtn);
+  await clickable(cardViewBtn);
+  await notClickable(embedViewBtn);
 
   // Switches to card view
-  await inlineToolbar.getByLabel('Card view').click();
+  await cardViewBtn.click();
 
   const otherCardLink = page.locator('affine-embed-linked-doc-block').nth(1);
   await otherCardLink.dblclick();
@@ -135,14 +170,14 @@ test('not allowed to switch to embed view when linking to block', async ({
 
   await page.click('body');
   await otherCardLink.click();
-  await cardToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
 
-  await clickable(cardToolbar.getByLabel('Inline view'));
-  await notClickable(cardToolbar.getByLabel('Card view'));
-  await notClickable(cardToolbar.getByLabel('Embed view'));
+  await clickable(inlineViewBtn);
+  await notClickable(cardViewBtn);
+  await notClickable(embedViewBtn);
 
   // Switches to inline view
-  await cardToolbar.getByLabel('Inline view').click();
+  await inlineViewBtn.click();
 
   const href1 = await inlineLink.locator('a').getAttribute('href');
 
@@ -163,88 +198,79 @@ test('allow switching to embed view when linking to the other document without m
   await page.keyboard.press('Enter');
   await createLinkedPage(page, 'Test Page');
 
+  const { switchViewBtn, inlineViewBtn, cardViewBtn, embedViewBtn } =
+    toolbarButtons(page);
+
   // Inline
   const inlineLink = page.locator('affine-reference');
-  const inlineToolbar = page.locator('reference-popup');
 
   await inlineLink.hover();
-  await inlineToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
 
-  await notClickable(inlineToolbar.getByLabel('Inline view'));
-  await clickable(inlineToolbar.getByLabel('Card view'));
-  await clickable(inlineToolbar.getByLabel('Embed view'));
+  await notClickable(inlineViewBtn);
+  await clickable(cardViewBtn);
+  await clickable(embedViewBtn);
 
   // Switches to card view
-  await inlineToolbar.getByLabel('Card view').click();
+  await cardViewBtn.click();
 
   // Card
   const cardLink = page.locator('affine-embed-linked-doc-block');
-  const cardToolbar = page.locator('affine-embed-card-toolbar');
+  await expect(cardLink).toBeVisible();
 
   await cardLink.click();
-  await cardToolbar.getByLabel('Switch view').click();
+  await cardLink.click();
 
-  await clickable(cardToolbar.getByLabel('Inline view'));
-  await notClickable(cardToolbar.getByLabel('Card view'));
-  await clickable(cardToolbar.getByLabel('Embed view'));
+  await switchViewBtn.click();
+
+  await clickable(inlineViewBtn);
+  await notClickable(cardViewBtn);
+  await clickable(embedViewBtn);
 
   // Switches to embed view
-  await cardToolbar.getByLabel('Embed view').click();
+  await embedViewBtn.click();
 
   // Embed
   const embedLink = page.locator('affine-embed-synced-doc-block');
-  const embedToolbar = page.locator('affine-embed-card-toolbar');
-
   await expect(embedLink).toBeVisible();
+
+  await embedLink.click();
   await embedLink.click();
 
-  // refocus
-  await embedLink.click();
-  await expect(embedToolbar).toBeVisible();
-  await embedToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
 
-  await clickable(embedToolbar.getByLabel('Inline view'));
-  await clickable(embedToolbar.getByLabel('Card view'));
-  await notClickable(embedToolbar.getByLabel('Embed view'));
+  await clickable(inlineViewBtn);
+  await clickable(cardViewBtn);
+  await notClickable(embedViewBtn);
 
   // Closes
-  await embedToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
   await expect(
     page.locator('.affine-embed-synced-doc-container.page')
   ).toBeVisible();
 
-  // Opens in peek view
-  await embedLink.dblclick();
-
-  const peekViewModel = page.getByTestId('peek-view-modal');
-  await expect(peekViewModel).toBeVisible();
-  await expect(peekViewModel.locator('page-editor')).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(peekViewModel).not.toBeVisible();
-  await page.waitForTimeout(300);
-
   await embedLink.click();
-  await embedToolbar.getByLabel('Switch view').click();
+  await embedLink.click();
 
-  await clickable(embedToolbar.getByLabel('Inline view'));
-  await clickable(embedToolbar.getByLabel('Card view'));
-  await notClickable(embedToolbar.getByLabel('Embed view'));
+  await switchViewBtn.click();
+
+  await clickable(inlineViewBtn);
+  await clickable(cardViewBtn);
+  await notClickable(embedViewBtn);
 
   // Switches to card view
-  await embedToolbar.getByLabel('Card view').click();
+  await cardViewBtn.click();
 
   await cardLink.click();
-
-  // refocus
   await cardLink.click();
-  await cardToolbar.getByLabel('Switch view').click();
 
-  await clickable(cardToolbar.getByLabel('Inline view'));
-  await notClickable(cardToolbar.getByLabel('Card view'));
-  await clickable(cardToolbar.getByLabel('Embed view'));
+  await switchViewBtn.click();
+  await clickable(inlineViewBtn);
+  await notClickable(cardViewBtn);
+  await clickable(embedViewBtn);
 
   // Switches to inline view
-  await cardToolbar.getByLabel('Inline view').click();
+  await inlineViewBtn.click();
 
   await expect(inlineLink).toBeVisible();
 });
@@ -258,8 +284,10 @@ test('allow switching to embed view when linking to the other document with mode
   const url = new URL(page.url());
   url.searchParams.append('mode', 'edgeless');
 
+  const { switchViewBtn, inlineViewBtn, cardViewBtn, embedViewBtn } =
+    toolbarButtons(page);
+
   const inlineLink = page.locator('affine-reference');
-  const inlineToolbar = page.locator('reference-popup');
 
   await inlineLink.click();
 
@@ -267,89 +295,72 @@ test('allow switching to embed view when linking to the other document with mode
   await page.keyboard.press('Enter');
 
   await writeTextToClipboard(page, url.toString());
-  await pasteByKeyboard(page);
 
   // Inline
   await inlineLink.hover();
-  await inlineToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
 
-  await notClickable(inlineToolbar.getByLabel('Inline view'));
-  await clickable(inlineToolbar.getByLabel('Card view'));
-  await clickable(inlineToolbar.getByLabel('Embed view'));
+  await notClickable(inlineViewBtn);
+  await clickable(cardViewBtn);
+  await clickable(embedViewBtn);
 
   // Switches to card view
-  await inlineToolbar.getByLabel('Card view').click();
-  await page.waitForTimeout(300);
+  await cardViewBtn.click();
 
   // Card
   const cardLink = page.locator('affine-embed-linked-doc-block');
-  const cardToolbar = page.locator('affine-embed-card-toolbar');
-
   await expect(cardLink).toBeVisible();
-  await cardLink.click();
 
   // refocus
   await cardLink.click();
-  await cardToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
 
-  await clickable(cardToolbar.getByLabel('Inline view'));
-  await notClickable(cardToolbar.getByLabel('Card view'));
-  await clickable(cardToolbar.getByLabel('Embed view'));
+  await clickable(inlineViewBtn);
+  await notClickable(cardViewBtn);
+  await clickable(embedViewBtn);
 
   // Switches to embed view
-  await cardToolbar.getByLabel('Embed view').click();
+  await embedViewBtn.click();
 
   // Embed
   const embedLink = page.locator('affine-embed-synced-doc-block');
-  const embedToolbar = page.locator('affine-embed-card-toolbar');
-
   await expect(embedLink).toBeVisible();
-  await embedLink.click();
 
   // refocus
   await embedLink.click();
-  await expect(embedToolbar).toBeVisible();
-  await embedToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
 
-  await clickable(embedToolbar.getByLabel('Inline view'));
-  await clickable(embedToolbar.getByLabel('Card view'));
-  await notClickable(embedToolbar.getByLabel('Embed view'));
+  await clickable(inlineViewBtn);
+  await clickable(cardViewBtn);
+  await notClickable(embedViewBtn);
 
   // Closes
-  await embedToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
   await expect(
     page.locator('.affine-embed-synced-doc-container.edgeless')
   ).toBeVisible();
 
-  // Opens in peek view
-  await embedLink.dblclick();
-
-  const peekViewModel = page.getByTestId('peek-view-modal');
-  await expect(peekViewModel).toBeVisible();
-  await expect(peekViewModel.locator('edgeless-editor')).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(peekViewModel).not.toBeVisible();
-  await page.waitForTimeout(300);
-
+  // refocus
   await embedLink.click();
-  await embedToolbar.getByLabel('Switch view').click();
 
-  await clickable(embedToolbar.getByLabel('Inline view'));
-  await clickable(embedToolbar.getByLabel('Card view'));
-  await notClickable(embedToolbar.getByLabel('Embed view'));
+  await switchViewBtn.click();
+
+  await clickable(inlineViewBtn);
+  await clickable(cardViewBtn);
+  await notClickable(embedViewBtn);
 
   // Switches to card view
-  await embedToolbar.getByLabel('Card view').click();
+  await cardViewBtn.click();
 
   await cardLink.click();
-  await cardToolbar.getByLabel('Switch view').click();
+  await switchViewBtn.click();
 
-  await clickable(cardToolbar.getByLabel('Inline view'));
-  await notClickable(cardToolbar.getByLabel('Card view'));
-  await clickable(cardToolbar.getByLabel('Embed view'));
+  await clickable(inlineViewBtn);
+  await notClickable(cardViewBtn);
+  await clickable(embedViewBtn);
 
   // Switches to inline view
-  await cardToolbar.getByLabel('Inline view').click();
+  await inlineViewBtn.click();
 
   await inlineLink.click();
 
@@ -446,6 +457,21 @@ test('@ popover with click "select a specific date" should show a date picker', 
   ).toBeVisible();
 });
 
+test('@ popover can auto focus on the "New Doc" item when query returns no items', async ({
+  page,
+}) => {
+  await page.keyboard.press('Enter');
+  await waitForEmptyEditor(page);
+  await page.keyboard.press('@');
+  await page.keyboard.type('nawowenni');
+  await expect(page.locator('.linked-doc-popover')).toBeVisible();
+  const newDocMenuItem = page
+    .locator('.linked-doc-popover')
+    .locator('[data-id="create:page"]');
+  await expect(newDocMenuItem).toBeVisible();
+  await expect(newDocMenuItem).toHaveAttribute('hover', 'true');
+});
+
 test('linked doc should show markdown preview in the backlink section', async ({
   page,
 }) => {
@@ -479,7 +505,7 @@ test('the viewport should be fit when the linked document is with edgeless mode'
 }) => {
   await page.keyboard.press('Enter');
 
-  await locateModeSwitchButton(page, 'edgeless').click();
+  await clickEdgelessModeButton(page);
 
   const note = page.locator('affine-edgeless-note');
   const noteBoundingBox = await note.boundingBox();
@@ -488,18 +514,19 @@ test('the viewport should be fit when the linked document is with edgeless mode'
 
   // move viewport
   const { x, y } = noteBoundingBox;
-  await page.mouse.click(x, y);
+  await page.mouse.click(x - 10, y + 100);
   await page.keyboard.down('Space');
-  await page.waitForTimeout(50);
   await page.mouse.down();
   await page.mouse.move(x + 1000, y);
   await page.mouse.up();
   await page.keyboard.up('Space');
 
+  await expect(note).toBeHidden();
+
   // create edgeless text
   await page.keyboard.press('t');
   await page.mouse.click(x, y);
-  await page.locator('affine-edgeless-text').waitFor({ state: 'visible' });
+  await page.waitForSelector('affine-edgeless-text');
   await page.keyboard.type('Edgeless Text');
 
   const url = new URL(page.url());
@@ -508,7 +535,6 @@ test('the viewport should be fit when the linked document is with edgeless mode'
   await page.keyboard.press('Enter');
 
   await writeTextToClipboard(page, url.toString());
-  await pasteByKeyboard(page);
 
   // Inline
   await page.locator('affine-reference').hover();
@@ -543,7 +569,7 @@ test('should show edgeless content when switching card view of linked mode doc i
 }) => {
   await page.keyboard.press('Enter');
 
-  await locateModeSwitchButton(page, 'edgeless').click();
+  await clickEdgelessModeButton(page);
 
   const note = page.locator('affine-edgeless-note');
   const noteBoundingBox = await note.boundingBox();
@@ -552,34 +578,37 @@ test('should show edgeless content when switching card view of linked mode doc i
 
   // move viewport
   const { x, y } = noteBoundingBox;
-  await page.mouse.click(x, y);
+  await page.mouse.click(x - 100, y + 100);
   await page.keyboard.down('Space');
-  await page.waitForTimeout(50);
+  await waitNextFrame(page);
   await page.mouse.down();
-  await page.mouse.move(x + 1000, y);
+  await page.mouse.move(x + 1000, y, {
+    steps: 20,
+  });
   await page.mouse.up();
   await page.keyboard.up('Space');
 
   // create edgeless text
   await page.keyboard.press('t');
-  await page.mouse.click(x, y);
+  await page.mouse.click(x, y + 100);
   await page.locator('affine-edgeless-text').waitFor({ state: 'visible' });
   await page.keyboard.type('Edgeless Text');
 
   const url = new URL(page.url());
 
   await clickNewPageButton(page);
-  await locateModeSwitchButton(page, 'edgeless').click();
+  const closeAdButton = page.locator(
+    '[data-testid="local-demo-tips-close-button"]'
+  );
+  await closeAdButton.click();
+  await clickEdgelessModeButton(page);
 
   await page.mouse.move(x, y);
-  await writeTextToClipboard(page, url.toString());
-  await pasteByKeyboard(page);
+  await writeTextToClipboard(page, url.toString(), false);
 
   // Inline
-  await page
-    .locator('affine-embed-edgeless-linked-doc-block')
-    .waitFor({ state: 'visible' });
-  await page.mouse.click(x - 50, y - 50);
+  const embed = page.locator('affine-embed-edgeless-linked-doc-block');
+  await expect(embed).toBeVisible();
   await page.getByLabel('Switch view').click();
   await page.getByTestId('link-to-embed').click();
 
@@ -613,14 +642,18 @@ test.describe('Customize linked doc title and description', () => {
     await page.keyboard.press('Enter');
     await createLinkedPage(page, 'Test Page');
 
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+
     const link = page.locator('affine-reference');
     const title = link.locator('.affine-reference-title');
-    await link.hover();
 
-    const toolbar = page.locator('reference-popup');
+    await link.hover();
+    await expect(toolbar).toBeVisible();
 
     // Copies link
     await toolbar.getByRole('button', { name: 'Copy link' }).click();
+    await expect(toolbar).toBeHidden();
+
     const url0 = await link.locator('a').getAttribute('href');
     const url1 = await (
       await page.evaluateHandle(() => navigator.clipboard.readText())
@@ -628,7 +661,10 @@ test.describe('Customize linked doc title and description', () => {
     expect(url0).not.toBeNull();
     expect(new URL(url0!, coreUrl).pathname).toBe(new URL(url1).pathname);
 
+    await page.waitForTimeout(200);
+
     // Edits title
+    await link.hover();
     await toolbar.getByRole('button', { name: 'Edit' }).click();
 
     // Title alias
@@ -636,6 +672,8 @@ test.describe('Customize linked doc title and description', () => {
     await page.keyboard.press('Enter');
 
     await expect(title).toHaveText('Test Page Alias');
+
+    await page.waitForTimeout(200);
 
     // Original title
     await link.hover();
@@ -645,7 +683,7 @@ test.describe('Customize linked doc title and description', () => {
     // Edits title
     await toolbar.getByRole('button', { name: 'Edit' }).click();
 
-    const aliasPopup = page.locator('reference-alias-popup');
+    const aliasPopup = page.locator('reference-popup');
 
     // Input
     await expect(aliasPopup.locator('input')).toHaveValue('Test Page Alias');
@@ -666,29 +704,36 @@ test.describe('Customize linked doc title and description', () => {
     await page.keyboard.press('Enter');
     await createLinkedPage(page, 'Test Page');
 
-    const inlineLink = page.locator('affine-reference');
-    const inlineToolbar = page.locator('reference-popup');
+    const { toolbar, switchViewBtn, inlineViewBtn, cardViewBtn } =
+      toolbarButtons(page);
 
+    const inlineLink = page.locator('affine-reference');
     await inlineLink.hover();
 
     // Copies link
-    await inlineToolbar.getByRole('button', { name: 'Copy link' }).click();
+    await toolbar.getByRole('button', { name: 'Copy link' }).click();
     const url0 = await (
       await page.evaluateHandle(() => navigator.clipboard.readText())
     ).jsonValue();
 
+    await page.waitForTimeout(200);
+
+    await inlineLink.hover();
+
     // Edits title
-    await inlineToolbar.getByRole('button', { name: 'Edit' }).click();
+    await toolbar.getByRole('button', { name: 'Edit' }).click();
 
     // Title alias
     await page.keyboard.type('Test Page Alias');
     await page.keyboard.press('Enter');
 
+    await page.waitForTimeout(200);
+
     await inlineLink.hover();
 
     // Switches to card view
-    await inlineToolbar.getByRole('button', { name: 'Switch view' }).click();
-    await inlineToolbar.getByRole('button', { name: 'Card view' }).click();
+    await switchViewBtn.click();
+    await cardViewBtn.click();
 
     const cardLink = page.locator('affine-embed-linked-doc-block');
     const cardTitle = cardLink.locator(
@@ -697,12 +742,12 @@ test.describe('Customize linked doc title and description', () => {
     const cardDescription = cardLink.locator(
       '.affine-embed-linked-doc-content-note.alias'
     );
-    const cardToolbar = page.locator('affine-embed-card-toolbar');
 
+    await cardLink.click();
     await cardLink.click();
 
     // Copies link
-    await cardToolbar.getByRole('button', { name: 'Copy link' }).click();
+    await toolbar.getByRole('button', { name: 'Copy link' }).click();
     const url1 = await (
       await page.evaluateHandle(() => navigator.clipboard.readText())
     ).jsonValue();
@@ -711,12 +756,12 @@ test.describe('Customize linked doc title and description', () => {
     expect(url1).not.toBeNull();
     expect(url0).toBe(url1);
 
-    const docTitle = cardToolbar.getByRole('button', { name: 'Doc title' });
+    const docTitle = toolbar.getByRole('button', { name: 'Doc title' });
     await expect(docTitle).toHaveText('Test Page', { useInnerText: true });
     await expect(cardTitle).toHaveText('Test Page Alias');
 
     // Edits title & description
-    await cardToolbar.getByRole('button', { name: 'Edit' }).click();
+    await toolbar.getByRole('button', { name: 'Edit' }).click();
 
     const cardEditPopup = page.locator('embed-card-edit-modal');
 
@@ -730,13 +775,15 @@ test.describe('Customize linked doc title and description', () => {
     await cardEditPopup.getByRole('button', { name: 'Save' }).click();
     await expect(cardTitle).toHaveText('Test Page Alias Again');
     await expect(cardDescription).toHaveText('This is a new description');
+    await expect(cardEditPopup).not.toBeVisible();
 
+    await cardLink.click();
     await cardLink.click();
 
     // Switches to inline view
     {
-      await cardToolbar.getByRole('button', { name: 'Switch view' }).click();
-      await cardToolbar.getByRole('button', { name: 'Inline view' }).click();
+      await switchViewBtn.click();
+      await inlineViewBtn.click();
 
       // Focuses inline editor
       const bounds = (await inlineLink.boundingBox())!;
@@ -751,13 +798,14 @@ test.describe('Customize linked doc title and description', () => {
       await expect(title).toHaveText('Test Page Alias Again');
 
       // Switches to card view
-      await inlineToolbar.getByRole('button', { name: 'Switch view' }).click();
-      await inlineToolbar.getByRole('button', { name: 'Card view' }).click();
+      await switchViewBtn.click();
+      await cardViewBtn.click();
     }
 
     await cardLink.click();
+    await cardLink.click();
 
-    await cardToolbar.getByRole('button', { name: 'Edit' }).click();
+    await toolbar.getByRole('button', { name: 'Edit' }).click();
 
     // Resets
     await cardEditPopup.getByRole('button', { name: 'Reset' }).click();
@@ -773,20 +821,25 @@ test.describe('Customize linked doc title and description', () => {
     await page.keyboard.press('Enter');
     await createLinkedPage(page, 'Test Page');
 
-    const inlineLink = page.locator('affine-reference');
-    const inlineToolbar = page.locator('reference-popup');
+    const { toolbar, switchViewBtn, inlineViewBtn, cardViewBtn, embedViewBtn } =
+      toolbarButtons(page);
 
+    const inlineLink = page.locator('affine-reference');
     await inlineLink.hover();
 
     // Copies link
-    await inlineToolbar.getByRole('button', { name: 'Copy link' }).click();
+    await toolbar.getByRole('button', { name: 'Copy link' }).click();
     const url0 = await (
       await page.evaluateHandle(() => navigator.clipboard.readText())
     ).jsonValue();
 
+    await page.waitForTimeout(200);
+
+    await inlineLink.hover();
+
     // Switches to card view
-    await inlineToolbar.getByRole('button', { name: 'Switch view' }).click();
-    await inlineToolbar.getByRole('button', { name: 'Card view' }).click();
+    await switchViewBtn.click();
+    await cardViewBtn.click();
 
     const cardLink = page.locator('affine-embed-linked-doc-block');
     const cardTitle = cardLink.locator(
@@ -795,31 +848,29 @@ test.describe('Customize linked doc title and description', () => {
     const cardDescription = cardLink.locator(
       '.affine-embed-linked-doc-content-note.alias'
     );
-    const cardToolbar = page.locator('affine-embed-card-toolbar');
 
+    await cardLink.click();
     await cardLink.click();
 
     // Copies link
-    await cardToolbar.getByRole('button', { name: 'Copy link' }).click();
+    await toolbar.getByRole('button', { name: 'Copy link' }).click();
     const url1 = await (
       await page.evaluateHandle(() => navigator.clipboard.readText())
     ).jsonValue();
 
     // Switches to embed view
-    await cardToolbar.getByRole('button', { name: 'Switch view' }).click();
-    await cardToolbar.getByRole('button', { name: 'Embed view' }).click();
+    await switchViewBtn.click();
+    await embedViewBtn.click();
 
     const embedLink = page.locator('affine-embed-synced-doc-block');
     const embedTitle = embedLink.locator('.affine-embed-synced-doc-title');
-    const embedToolbar = page.locator('affine-embed-card-toolbar');
 
     // refocus the page
     await embedLink.click();
-
     await embedLink.click();
 
     // Copies link
-    await embedToolbar.getByRole('button', { name: 'Copy link' }).click();
+    await toolbar.getByRole('button', { name: 'Copy link' }).click();
     const url2 = await (
       await page.evaluateHandle(() => navigator.clipboard.readText())
     ).jsonValue();
@@ -831,7 +882,7 @@ test.describe('Customize linked doc title and description', () => {
     expect(url1).toBe(url2);
 
     // Edits title & description
-    await embedToolbar.getByRole('button', { name: 'Edit' }).click();
+    await toolbar.getByRole('button', { name: 'Edit' }).click();
 
     const embedEditPopup = page.locator('embed-card-edit-modal');
 
@@ -848,7 +899,7 @@ test.describe('Customize linked doc title and description', () => {
     await embedLink.click();
 
     // Edits title & description
-    await embedToolbar.getByRole('button', { name: 'Edit' }).click();
+    await toolbar.getByRole('button', { name: 'Edit' }).click();
 
     // Title alias
     await page.keyboard.type('Test Page Alias');
@@ -867,22 +918,23 @@ test.describe('Customize linked doc title and description', () => {
 
     await cardLink.click();
 
-    const docTitle = cardToolbar.getByRole('button', { name: 'Doc title' });
+    const docTitle = toolbar.getByRole('button', { name: 'Doc title' });
     await expect(docTitle).toHaveText('Test Page', { useInnerText: true });
     await expect(cardTitle).toHaveText('Test Page Alias');
 
     // Switches to embed view
-    await cardToolbar.getByRole('button', { name: 'Switch view' }).click();
-    await cardToolbar.getByRole('button', { name: 'Embed view' }).click();
+    await switchViewBtn.click();
+    await embedViewBtn.click();
 
     await expect(embedTitle).toHaveText('Test Page');
 
     await embedLink.click();
+    await embedLink.click();
 
     // Switches to inline view
     {
-      await embedToolbar.getByRole('button', { name: 'Switch view' }).click();
-      await embedToolbar.getByRole('button', { name: 'Inline view' }).click();
+      await switchViewBtn.click();
+      await inlineViewBtn.click();
 
       // Focuses inline editor
       const bounds = (await inlineLink.boundingBox())!;
@@ -897,15 +949,325 @@ test.describe('Customize linked doc title and description', () => {
       await expect(title).toHaveText('Test Page');
 
       // Switches to embed view
-      await inlineToolbar.getByRole('button', { name: 'Switch view' }).click();
-      await inlineToolbar.getByRole('button', { name: 'Embed view' }).click();
+      await switchViewBtn.click();
+      await embedViewBtn.click();
     }
 
     await embedLink.click();
 
     await expect(embedTitle).toHaveText('Test Page');
     await expect(
-      embedToolbar.getByRole('button', { name: 'Doc title' })
+      toolbar.getByRole('button', { name: 'Doc title' })
     ).toBeHidden();
   });
+
+  test('should show emoji doc icon in normal document', async ({ page }) => {
+    await enableEmojiDocIcon(page);
+
+    await clickNewPageButton(page);
+    const title = getBlockSuiteEditorTitle(page);
+    await title.click();
+
+    await page.keyboard.press('Enter');
+    await createLinkedPage(page, 'Test Page');
+
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+
+    const inlineLink = page.locator('affine-reference');
+    await inlineLink.hover();
+
+    // Edits title
+    await toolbar.getByRole('button', { name: 'Edit' }).click();
+
+    // Title alias
+    await page.keyboard.type('🦀hello');
+    await page.keyboard.press('Enter');
+
+    const a = inlineLink.locator('a');
+
+    await expect(a).toHaveText('🦀hello');
+    await expect(a.locator('svg')).toBeHidden();
+    await expect(a.locator('.affine-reference-title')).toHaveText('hello');
+  });
+
+  test('should show emoji doc icon in journal document', async ({ page }) => {
+    await enableEmojiDocIcon(page);
+
+    await clickNewPageButton(page);
+    const title = getBlockSuiteEditorTitle(page);
+    await title.click();
+
+    await page.keyboard.press('Enter');
+    await createTodayPage(page);
+
+    const toolbar = page.locator('affine-toolbar-widget editor-toolbar');
+
+    const inlineLink = page.locator('affine-reference');
+    await inlineLink.hover();
+
+    // Edits title
+    await toolbar.getByRole('button', { name: 'Edit' }).click();
+
+    // Title alias
+    await page.keyboard.type('🦀');
+    await page.keyboard.press('Enter');
+
+    const a = inlineLink.locator('a');
+
+    const year = String(new Date().getFullYear());
+    await expect(a).toContainText('🦀');
+    await expect(a.locator('svg')).toBeHidden();
+    await expect(a.locator('.affine-reference-title')).toContainText(year);
+  });
+});
+
+test('should save open doc mode of internal links', async ({ page }) => {
+  await enableEmojiDocIcon(page);
+
+  await clickNewPageButton(page);
+  const title = getBlockSuiteEditorTitle(page);
+  await title.click();
+
+  await page.keyboard.press('Enter');
+  await createLinkedPage(page, 'Test Page');
+
+  const { toolbar, switchViewBtn, inlineViewBtn, cardViewBtn, embedViewBtn } =
+    toolbarButtons(page);
+
+  const inlineLink = page.locator('affine-reference');
+  await inlineLink.hover();
+
+  const recentOpenModeBtn = toolbar.locator(
+    'editor-icon-button:has-text("Open")'
+  );
+  await expect(recentOpenModeBtn).toHaveAttribute(
+    'aria-label',
+    'Open this doc'
+  );
+  await expect(
+    recentOpenModeBtn.locator('span.label:has-text("Open")')
+  ).toBeVisible();
+
+  const openDocBtn = toolbar.getByLabel(/^Open doc with$/);
+  await openDocBtn.click();
+
+  const openDocMenu = toolbar.getByLabel('Open doc menu');
+
+  const openThisDocBtn = openDocMenu.getByLabel('Open this doc');
+  // In Desktop
+  const openInSplitViewBtn = openDocMenu.getByLabel('Open in split view');
+  const openInNewTabBtn = openDocMenu.getByLabel('Open in new tab');
+  const openInCenterPeekBtn = openDocMenu.getByLabel('Open in center peek');
+
+  await expect(openThisDocBtn).toBeVisible();
+  await expect(openInSplitViewBtn).toBeHidden();
+  await expect(openInNewTabBtn).toBeVisible();
+  await expect(openInCenterPeekBtn).toBeVisible();
+
+  await openInCenterPeekBtn.click();
+
+  await page.keyboard.press('Escape');
+
+  await inlineLink.hover();
+
+  await expect(toolbar).toBeVisible();
+  await expect(recentOpenModeBtn).toHaveAttribute(
+    'aria-label',
+    'Open in center peek'
+  );
+
+  await switchViewBtn.click();
+  await cardViewBtn.click();
+
+  await expect(toolbar).toBeVisible();
+  await expect(recentOpenModeBtn).toHaveAttribute(
+    'aria-label',
+    'Open in center peek'
+  );
+
+  await switchViewBtn.click();
+  await embedViewBtn.click();
+
+  await expect(toolbar).toBeVisible();
+  await expect(recentOpenModeBtn).toHaveAttribute(
+    'aria-label',
+    'Open in center peek'
+  );
+
+  await switchViewBtn.click();
+  await inlineViewBtn.click();
+
+  await inlineLink.hover();
+
+  await page.waitForTimeout(250);
+
+  await expect(toolbar).toBeVisible();
+  await expect(recentOpenModeBtn).toHaveAttribute(
+    'aria-label',
+    'Open in center peek'
+  );
+});
+
+test('should show full email address', async ({ page }) => {
+  await page.keyboard.press('Enter');
+
+  await writeTextToClipboard(page, 'dev@affine.pro');
+
+  const inlineLink = page.locator('affine-link');
+
+  await expect(inlineLink).toHaveText('dev@affine.pro');
+
+  await inlineLink.hover();
+
+  const { toolbar, switchViewBtn } = toolbarButtons(page);
+
+  await expect(toolbar).toBeVisible();
+  await expect(switchViewBtn).toBeHidden();
+
+  await expect(toolbar.locator('affine-link-preview')).toHaveText(
+    'dev@affine.pro'
+  );
+});
+
+test('should not show view toggle button when protocol of link is not http(s)', async ({
+  page,
+}) => {
+  await page.keyboard.press('Enter');
+
+  await writeTextToClipboard(page, 'ftp://affine.pro/blocksuite.pdf');
+
+  const inlineLink = page.locator('affine-link');
+
+  await expect(inlineLink).toHaveText('ftp://affine.pro/blocksuite.pdf');
+
+  await inlineLink.hover();
+
+  const { toolbar, switchViewBtn } = toolbarButtons(page);
+
+  await expect(toolbar).toBeVisible();
+  await expect(switchViewBtn).toBeHidden();
+
+  await expect(toolbar.locator('affine-link-preview')).toHaveText('affine.pro');
+});
+
+test('should reach target block when clicking affine-link multiple times', async ({
+  page,
+}) => {
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('a');
+
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('b');
+
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('c');
+
+  await selectAllByKeyboard(page);
+
+  const { toolbar } = toolbarButtons(page);
+
+  await toolbar.getByLabel('More menu').click();
+  await toolbar.getByLabel('Copy link to block').click();
+
+  const paragraph = page.locator('affine-paragraph').nth(0);
+  await paragraph.click();
+
+  await selectAllByKeyboard(page);
+
+  await toolbar.getByLabel(/^Link$/).click();
+
+  await page.waitForSelector('.affine-link-popover');
+
+  await pasteByKeyboard(page);
+
+  await page.locator('.affine-confirm-button').click();
+
+  const scrollAnchoringWidget = page.locator('affine-scroll-anchoring-widget');
+  const highlight = scrollAnchoringWidget.locator('.highlight');
+
+  const inlineLink = page.locator('affine-link');
+
+  await inlineLink.click();
+  await expect(highlight).toBeVisible();
+  const url0 = new URL(page.url());
+  const refreshKey0 = url0.searchParams.get('refreshKey');
+  expect(refreshKey0).not.toBeNull();
+
+  await paragraph.click();
+  await expect(highlight).toBeHidden();
+
+  await inlineLink.click();
+  await expect(highlight).toBeVisible();
+  const url1 = new URL(page.url());
+  const refreshKey1 = url1.searchParams.get('refreshKey');
+  expect(refreshKey1).not.toBeNull();
+
+  await paragraph.click();
+  await expect(highlight).toBeHidden();
+
+  expect(refreshKey0).not.toEqual(refreshKey1);
+});
+
+test('should display date as the original title of journal', async ({
+  page,
+}) => {
+  await page.keyboard.press('Enter');
+  await createTodayPage(page);
+
+  const { toolbar, switchViewBtn, cardViewBtn } = toolbarButtons(page);
+
+  const linkedDocTitle = toolbar.locator('affine-linked-doc-title .label');
+
+  const inlineLink = page.locator('affine-reference');
+  await inlineLink.hover();
+
+  await expect(toolbar).toBeVisible();
+  await expect(linkedDocTitle).toBeHidden();
+
+  // Edits title & description
+  await toolbar.getByRole('button', { name: 'Edit' }).click();
+
+  await expect(toolbar).toBeHidden();
+
+  const popover = page.locator('reference-popup');
+
+  // Title alias
+  await page.keyboard.type('Test Page Alias Again');
+  await page.keyboard.press('Tab');
+  // Description alias
+  await page.keyboard.type('This is a new description');
+
+  await popover.getByLabel('Save').click();
+
+  await inlineLink.hover();
+  await expect(toolbar).toBeVisible();
+  await expect(linkedDocTitle).toBeVisible();
+  const inlineTitleText = (await linkedDocTitle.textContent())?.trim() ?? '';
+
+  const year = String(new Date().getFullYear());
+  expect(inlineTitleText).toContain(year);
+
+  await switchViewBtn.click();
+  await cardViewBtn.click();
+
+  const cardLink = page.locator('affine-embed-linked-doc-block');
+  await expect(cardLink).toBeVisible();
+
+  await expect(toolbar).toBeVisible();
+  await expect(linkedDocTitle).toBeVisible();
+  const cardViewTitleText = (await linkedDocTitle.textContent())?.trim() ?? '';
+
+  expect(cardViewTitleText).toBe(inlineTitleText);
+
+  // Edits title & description
+  await toolbar.getByRole('button', { name: 'Edit' }).click();
+
+  await expect(toolbar).toBeHidden();
+
+  const cardEditPopup = page.locator('embed-card-edit-modal');
+  // Resets
+  await cardEditPopup.getByRole('button', { name: 'Reset' }).click();
+
+  await expect(toolbar).toBeVisible();
+  await expect(linkedDocTitle).toBeHidden();
 });

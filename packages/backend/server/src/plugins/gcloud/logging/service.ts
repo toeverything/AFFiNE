@@ -1,26 +1,22 @@
-import { LoggingWinston } from '@google-cloud/logging-winston';
-import { LoggerService, Provider, Scope } from '@nestjs/common';
-import { createLogger, transports } from 'winston';
+import { LoggerService, Provider } from '@nestjs/common';
+import { createLogger, format, transports } from 'winston';
 
 import { AFFiNELogger as LoggerProvide } from '../../../base/logger';
 import { AFFiNELogger } from './logger';
 
-export const loggerProvider: Provider<LoggerService> = {
+const moreMetadata = format(info => {
+  info.requestId = LoggerProvide.getRequestId();
+  return info;
+});
+
+export const LoggerProvider: Provider<LoggerService> = {
   provide: LoggerProvide,
   useFactory: () => {
-    const loggingWinston = new LoggingWinston();
-    // Create a Winston logger that streams to Cloud Logging
     const instance = createLogger({
-      level: 'log',
-      transports: [
-        new transports.Console(),
-        // Add Cloud Logging
-        loggingWinston,
-      ],
+      level: 'info',
+      transports: [new transports.Console()],
+      format: format.combine(moreMetadata(), format.json()),
     });
     return new AFFiNELogger(instance);
   },
-  // use transient to make sure the logger is created for each di context
-  // to make the `setContext` method works as expected
-  scope: Scope.TRANSIENT,
 };

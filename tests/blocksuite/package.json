@@ -1,0 +1,17 @@
+{
+  "name": "@affine-test/blocksuite",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "yarn playwright test"
+  },
+  "dependencies": {
+    "@blocksuite/affine": "workspace:*",
+    "@blocksuite/integration-test": "workspace:*",
+    "@playwright/test": "=1.52.0",
+    "@toeverything/theme": "^1.1.14",
+    "json-stable-stringify": "^1.2.1",
+    "rxjs": "^7.8.1"
+  },
+  "version": "0.21.0"
+}

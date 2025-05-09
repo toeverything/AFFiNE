@@ -1,10 +1,10 @@
 // related component
 
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import { signal } from '@preact/signals-core';
 import { css } from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { createRef } from 'lit/directives/ref.js';
 import { html } from 'lit/static-html.js';
 
 import type {
@@ -14,7 +14,7 @@ import type {
 import { renderUniLit } from '../../../core/utils/uni-component/uni-component.js';
 import type { Property } from '../../../core/view-manager/property.js';
 import type { KanbanSingleView } from '../kanban-view-manager.js';
-import type { KanbanViewSelection } from '../types.js';
+import type { KanbanViewSelection } from '../selection';
 
 const styles = css`
   affine-data-view-kanban-cell {
@@ -59,7 +59,7 @@ export class KanbanCell extends SignalWatcher(
 ) {
   static override styles = styles;
 
-  private readonly _cell = createRef<DataViewCellLifeCycle>();
+  private readonly _cell = signal<DataViewCellLifeCycle>();
 
   selectCurrentCell = (editing: boolean) => {
     const selectionView = this.closest(
@@ -109,7 +109,7 @@ export class KanbanCell extends SignalWatcher(
       if (!selectionElement) return;
       if (e.shiftKey) return;
 
-      if (!this.editing) {
+      if (!this.isEditing$.value) {
         this.selectCurrentCell(!this.column.readonly$.value);
       }
     });
@@ -129,23 +129,23 @@ export class KanbanCell extends SignalWatcher(
 
   override render() {
     const props: CellRenderProps = {
-      cell: this.column.cellGet(this.cardId),
-      isEditing: this.editing,
+      cell: this.column.cellGetOrCreate(this.cardId),
+      isEditing$: this.isEditing$,
       selectCurrentCell: this.selectCurrentCell,
     };
     const renderer = this.column.renderer$.value;
     if (!renderer) return;
-    const { view, edit } = renderer;
-    this.view.lockRows(this.editing);
-    this.dataset['editing'] = `${this.editing}`;
+    const { view } = renderer;
+    this.view.lockRows(this.isEditing$.value);
+    this.dataset['editing'] = `${this.isEditing$.value}`;
     this.style.border = this.isFocus
       ? '1px solid var(--affine-primary-color)'
       : '';
-    this.style.boxShadow = this.editing
+    this.style.boxShadow = this.isEditing$.value
       ? '0px 0px 0px 2px rgba(30, 150, 235, 0.30)'
       : '';
     return html` ${this.renderIcon()}
-    ${renderUniLit(this.editing && edit ? edit : view, props, {
+    ${renderUniLit(view, props, {
       ref: this._cell,
       class: 'kanban-cell',
       style: { display: 'block', flex: '1', overflow: 'hidden' },
@@ -168,8 +168,7 @@ export class KanbanCell extends SignalWatcher(
   @property({ attribute: false })
   accessor contentOnly = false;
 
-  @state()
-  accessor editing = false;
+  isEditing$ = signal(false);
 
   @property({ attribute: false })
   accessor groupKey!: string;

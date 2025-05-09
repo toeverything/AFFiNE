@@ -1,71 +1,40 @@
-import type { INestApplication } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+
 import type { TestFn } from 'ava';
 import ava from 'ava';
-import request from 'supertest';
 
-import { AppModule } from '../../app.module';
-import { AuthService, CurrentUser } from '../../core/auth';
-import { createTestingApp, gql, internalSignIn } from '../utils';
+import {
+  createTestingApp,
+  getPublicUserById,
+  TestingApp,
+  updateAvatar,
+} from '../utils';
 
 const test = ava as TestFn<{
-  app: INestApplication;
-  u1: CurrentUser;
+  app: TestingApp;
 }>;
 
-test.beforeEach(async t => {
-  const { app } = await createTestingApp({
-    imports: [AppModule],
-  });
-
-  t.context.u1 = await app.get(AuthService).signUp('u1@affine.pro', '1');
+test.before(async t => {
+  const app = await createTestingApp();
   t.context.app = app;
 });
 
-test.afterEach.always(async t => {
+test.after.always(async t => {
   await t.context.app.close();
 });
-
-async function fakeUploadAvatar(
-  app: INestApplication,
-  userId: string,
-  avatar: Buffer
-) {
-  const cookie = await internalSignIn(app, userId);
-
-  return gql(app)
-    .set('Cookie', cookie)
-    .field(
-      'operations',
-      JSON.stringify({
-        name: 'uploadAvatar',
-        query: `mutation uploadAvatar($avatar: Upload!) {
-        uploadAvatar(avatar: $avatar) {
-          avatarUrl
-        }
-      }`,
-        variables: { avatar: null },
-      })
-    )
-    .field('map', JSON.stringify({ '0': ['variables.avatar'] }))
-    .attach('0', avatar, {
-      filename: 'test.png',
-      contentType: 'image/png',
-    });
-}
 
 test('should be able to upload user avatar', async t => {
   const { app } = t.context;
 
+  await app.signup();
   const avatar = Buffer.from('test');
-  const res = await fakeUploadAvatar(app, t.context.u1.id, avatar);
+  const res = await updateAvatar(app, avatar);
 
   t.is(res.status, 200);
   const avatarUrl = res.body.data.uploadAvatar.avatarUrl;
   t.truthy(avatarUrl);
 
-  const avatarRes = await request(app.getHttpServer())
-    .get(new URL(avatarUrl).pathname)
-    .expect(200);
+  const avatarRes = await app.GET(new URL(avatarUrl).pathname);
 
   t.deepEqual(avatarRes.body, Buffer.from('test'));
 });
@@ -73,24 +42,61 @@ test('should be able to upload user avatar', async t => {
 test('should be able to update user avatar, and invalidate old avatar url', async t => {
   const { app } = t.context;
 
+  await app.signup();
   const avatar = Buffer.from('test');
-  let res = await fakeUploadAvatar(app, t.context.u1.id, avatar);
+  let res = await updateAvatar(app, avatar);
 
   const oldAvatarUrl = res.body.data.uploadAvatar.avatarUrl;
 
   const newAvatar = Buffer.from('new');
-  res = await fakeUploadAvatar(app, t.context.u1.id, newAvatar);
+  res = await updateAvatar(app, newAvatar);
   const newAvatarUrl = res.body.data.uploadAvatar.avatarUrl;
 
   t.not(oldAvatarUrl, newAvatarUrl);
 
-  await request(app.getHttpServer())
-    .get(new URL(oldAvatarUrl).pathname)
-    .expect(404);
+  const avatarRes = await app.GET(new URL(oldAvatarUrl).pathname);
+  t.is(avatarRes.status, 404);
 
-  const avatarRes = await request(app.getHttpServer())
-    .get(new URL(newAvatarUrl).pathname)
-    .expect(200);
+  const newAvatarRes = await app.GET(new URL(newAvatarUrl).pathname);
+  t.deepEqual(newAvatarRes.body, Buffer.from('new'));
+});
 
-  t.deepEqual(avatarRes.body, Buffer.from('new'));
+test('should be able to get public user by id', async t => {
+  const { app } = t.context;
+
+  const u1 = await app.signup();
+  const avatar = Buffer.from('test');
+  await updateAvatar(app, avatar);
+  const u2 = await app.signup();
+
+  // login user can access
+  let user1 = await getPublicUserById(app, u1.id);
+  t.truthy(user1);
+  t.is(user1!.id, u1.id);
+  t.is(user1!.name, u1.name);
+  t.truthy(user1!.avatarUrl);
+  let user2 = await getPublicUserById(app, u2.id);
+  t.deepEqual(user2, {
+    id: u2.id,
+    name: u2.name,
+    avatarUrl: null,
+  });
+  let user3 = await getPublicUserById(app, randomUUID());
+  t.is(user3, null);
+
+  // anonymous user can access
+  await app.logout();
+  user1 = await getPublicUserById(app, u1.id);
+  t.truthy(user1);
+  t.is(user1!.id, u1.id);
+  t.is(user1!.name, u1.name);
+  t.truthy(user1!.avatarUrl);
+  user2 = await getPublicUserById(app, u2.id);
+  t.deepEqual(user2, {
+    id: u2.id,
+    name: u2.name,
+    avatarUrl: null,
+  });
+  user3 = await getPublicUserById(app, randomUUID());
+  t.is(user3, null);
 });

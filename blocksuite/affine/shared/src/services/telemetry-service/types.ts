@@ -51,6 +51,10 @@ export interface ElementLockEvent extends TelemetryEvent {
   control: 'lock' | 'unlock' | 'group-lock';
 }
 
+export interface BlockCreationEvent extends TelemetryEvent {
+  blockType: string;
+}
+
 export interface MindMapCollapseEvent extends TelemetryEvent {
   page: 'whiteboard editor';
   segment: 'mind map';
@@ -64,4 +68,25 @@ export interface AttachmentUploadedEvent extends TelemetryEvent {
   control: 'uploader';
   type: string; // file type
   category: 'success' | 'failure';
+}
+
+export interface EdgelessToolPickedEvent extends TelemetryEvent {
+  page: 'whiteboard editor';
+  segment: 'global toolbar';
+  module: 'global toolbar';
+  control: 'drawing';
+  type: 'brush' | 'highlighter';
+}
+
+export interface ElementUpdatedEvent extends TelemetryEvent {
+  page: 'whiteboard editor';
+  segment: 'toolbar';
+  module: 'toolbar';
+  category: string;
+  control: string;
+  type?: string;
+}
+
+export interface LinkEvent extends TelemetryEvent {
+  result?: 'success' | 'failure';
 }

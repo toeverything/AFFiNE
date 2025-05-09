@@ -8,6 +8,7 @@ export * from './awareness';
 export * from './blob';
 export * from './doc';
 export * from './doc-static';
+export * from './socket';
 
 export const cloudStorages = [
   CloudDocStorage,

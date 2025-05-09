@@ -1,11 +1,18 @@
 import { Module } from '@nestjs/common';
 
-import { AppModule as BusinessAppModule } from '../app.module';
+import { FunctionalityModules } from '../app.module';
 import { CreateCommand, NameQuestion } from './commands/create';
+import { ImportConfigCommand } from './commands/import';
 import { RevertCommand, RunCommand } from './commands/run';
 
 @Module({
-  imports: [BusinessAppModule],
-  providers: [NameQuestion, CreateCommand, RunCommand, RevertCommand],
+  imports: FunctionalityModules,
+  providers: [
+    NameQuestion,
+    CreateCommand,
+    RunCommand,
+    RevertCommand,
+    ImportConfigCommand,
+  ],
 })
 export class CliAppModule {}

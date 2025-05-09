@@ -18,4 +18,6 @@ export declare function mergeUpdatesInApplyWay(updates: Array<Buffer>): Buffer
 
 export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
 
+export declare function parseDoc(filePath: string, doc: Buffer): Promise<{ name: string, chunks: Array<{index: number, content: string}> }>
+
 export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>

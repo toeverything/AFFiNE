@@ -1,5 +1,9 @@
 import type { Text } from '@blocksuite/store';
-import { BlockModel, defineBlockSchema } from '@blocksuite/store';
+import {
+  BlockModel,
+  BlockSchemaExtension,
+  defineBlockSchema,
+} from '@blocksuite/store';
 
 export type RootBlockProps = {
   title: Text;
@@ -8,14 +12,20 @@ export type RootBlockProps = {
 export class RootBlockModel extends BlockModel<RootBlockProps> {
   constructor() {
     super();
-    this.created.once(() => {
-      this.doc.slots.rootAdded.on(id => {
-        const model = this.doc.getBlockById(id);
+    const createdSubscription = this.created.subscribe(() => {
+      createdSubscription.unsubscribe();
+      this.store.slots.rootAdded.subscribe(id => {
+        const model = this.store.getModelById(id);
         if (model instanceof RootBlockModel) {
-          const newDocMeta = this.doc.workspace.meta.getDocMeta(model.doc.id);
-          if (!newDocMeta || newDocMeta.title !== model.title.toString()) {
-            this.doc.workspace.meta.setDocMeta(model.doc.id, {
-              title: model.title.toString(),
+          const newDocMeta = this.store.workspace.meta.getDocMeta(
+            model.store.id
+          );
+          if (
+            !newDocMeta ||
+            newDocMeta.title !== model.props.title.toString()
+          ) {
+            this.store.workspace.meta.setDocMeta(model.store.id, {
+              title: model.props.title.toString(),
             });
           }
         }
@@ -52,10 +62,4 @@ export const RootBlockSchema = defineBlockSchema({
   toModel: () => new RootBlockModel(),
 });
 
-declare global {
-  namespace BlockSuite {
-    interface BlockModels {
-      'affine:page': RootBlockModel;
-    }
-  }
-}
+export const RootBlockSchemaExtension = BlockSchemaExtension(RootBlockSchema);

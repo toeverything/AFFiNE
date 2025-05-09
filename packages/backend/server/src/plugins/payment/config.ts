@@ -1,10 +1,6 @@
 import type { Stripe } from 'stripe';
 
-import {
-  defineRuntimeConfig,
-  defineStartupConfig,
-  ModuleConfig,
-} from '../../base/config';
+import { defineModuleConfig } from '../../base';
 
 export interface PaymentStartupConfig {
   stripe?: {
@@ -19,16 +15,40 @@ export interface PaymentRuntimeConfig {
   showLifetimePrice: boolean;
 }
 
-declare module '../config' {
-  interface PluginsConfig {
-    payment: ModuleConfig<PaymentStartupConfig, PaymentRuntimeConfig>;
+declare global {
+  interface AppConfigSchema {
+    payment: {
+      enabled: boolean;
+      showLifetimePrice: boolean;
+      apiKey: string;
+      webhookKey: string;
+      stripe: ConfigItem<{} & Stripe.StripeConfig>;
+    };
   }
 }
 
-defineStartupConfig('plugins.payment', {});
-defineRuntimeConfig('plugins.payment', {
+defineModuleConfig('payment', {
+  enabled: {
+    desc: 'Whether enable payment plugin',
+    default: false,
+  },
   showLifetimePrice: {
     desc: 'Whether enable lifetime price and allow user to pay for it.',
     default: true,
+  },
+  apiKey: {
+    desc: 'Stripe API key to enable payment service.',
+    default: '',
+    env: 'STRIPE_API_KEY',
+  },
+  webhookKey: {
+    desc: 'Stripe webhook key to enable payment service.',
+    default: '',
+    env: 'STRIPE_WEBHOOK_KEY',
+  },
+  stripe: {
+    desc: 'Stripe sdk options',
+    default: {},
+    link: 'https://docs.stripe.com/api',
   },
 });

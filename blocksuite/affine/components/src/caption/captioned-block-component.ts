@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
-import { BlockComponent, type BlockService } from '@blocksuite/block-std';
+import { BlockComponent, type BlockService } from '@blocksuite/std';
 import type { BlockModel } from '@blocksuite/store';
 import { html, nothing } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
@@ -58,9 +58,11 @@ export class CaptionedBlockComponent<
           ></block-caption-editor>`
         : nothing}
       ${this.selectedStyle === SelectedStyle.Background
-        ? html`<affine-block-selection .block=${this}></affine-block-selection>`
+        ? html`<affine-block-selection
+            .selected=${this.selected$.value}
+          ></affine-block-selection>`
         : null}
-      ${this.useZeroWidth && !this.doc.readonly
+      ${this.useZeroWidth && !this.store.readonly
         ? html`<block-zero-width .block=${this}></block-zero-width>`
         : nothing}
     </div>`;

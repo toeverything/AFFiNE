@@ -39,7 +39,7 @@ let u1!: CurrentUser;
 let sessionId = '';
 
 test.before(async t => {
-  const { app } = await createTestingApp({
+  const app = await createTestingApp({
     imports: [AuthModule],
     controllers: [TestController],
   });

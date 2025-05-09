@@ -1,12 +1,11 @@
 // related component
 
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
-import { computed, effect } from '@preact/signals-core';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import { computed, effect, signal } from '@preact/signals-core';
 import { css } from 'lit';
-import { property, state } from 'lit/decorators.js';
-import { createRef } from 'lit/directives/ref.js';
+import { property } from 'lit/decorators.js';
 import { html } from 'lit/static-html.js';
 
 import type {
@@ -51,9 +50,9 @@ export class MobileKanbanCell extends SignalWatcher(
 ) {
   static override styles = styles;
 
-  private readonly _cell = createRef<DataViewCellLifeCycle>();
+  private readonly _cell = signal<DataViewCellLifeCycle>();
 
-  isEditing$ = computed(() => {
+  isSelectionEditing$ = computed(() => {
     const selection = this.kanban?.props.selection$.value;
     if (selection?.selectionType !== 'cell') {
       return false;
@@ -109,19 +108,21 @@ export class MobileKanbanCell extends SignalWatcher(
     if (this.column.readonly$.value) return;
     this.disposables.add(
       effect(() => {
-        const isEditing = this.isEditing$.value;
+        const isEditing = this.isSelectionEditing$.value;
         if (isEditing) {
-          this.isEditing = true;
-          this._cell.value?.onEnterEditMode();
+          this.isEditing$.value = true;
+          requestAnimationFrame(() => {
+            this._cell.value?.afterEnterEditingMode();
+          });
         } else {
-          this._cell.value?.onExitEditMode();
-          this.isEditing = false;
+          this._cell.value?.beforeExitEditingMode();
+          this.isEditing$.value = false;
         }
       })
     );
     this._disposables.addFromEvent(this, 'click', e => {
       e.stopPropagation();
-      if (!this.isEditing) {
+      if (!this.isEditing$.value) {
         this.selectCurrentCell(!this.column.readonly$.value);
       }
     });
@@ -129,17 +130,17 @@ export class MobileKanbanCell extends SignalWatcher(
 
   override render() {
     const props: CellRenderProps = {
-      cell: this.column.cellGet(this.cardId),
-      isEditing: this.isEditing,
+      cell: this.column.cellGetOrCreate(this.cardId),
+      isEditing$: this.isEditing$,
       selectCurrentCell: this.selectCurrentCell,
     };
     const renderer = this.column.renderer$.value;
     if (!renderer) return;
-    const { view, edit } = renderer;
-    this.view.lockRows(this.isEditing);
-    this.dataset['editing'] = `${this.isEditing}`;
+    const { view } = renderer;
+    this.view.lockRows(this.isEditing$.value);
+    this.dataset['editing'] = `${this.isEditing$.value}`;
     return html` ${this.renderIcon()}
-    ${renderUniLit(this.isEditing && edit ? edit : view, props, {
+    ${renderUniLit(view, props, {
       ref: this._cell,
       class: 'mobile-kanban-cell',
       style: { display: 'block', flex: '1', overflow: 'hidden' },
@@ -168,8 +169,7 @@ export class MobileKanbanCell extends SignalWatcher(
   @property({ attribute: false })
   accessor groupKey!: string;
 
-  @state()
-  accessor isEditing = false;
+  isEditing$ = signal(false);
 
   @property({ attribute: false })
   accessor view!: KanbanSingleView;

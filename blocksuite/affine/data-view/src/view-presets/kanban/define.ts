@@ -71,7 +71,6 @@ export const kanbanViewModel = kanbanViewType.createModel<KanbanViewData>({
     return {
       columns: columns.map(id => ({
         id: id,
-        hide: false,
       })),
       filter: {
         type: 'group',

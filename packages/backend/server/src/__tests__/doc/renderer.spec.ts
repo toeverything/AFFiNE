@@ -3,17 +3,14 @@ import path from 'node:path';
 
 import { Package } from '@affine-tools/utils/workspace';
 import type { INestApplication } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 import type { TestFn } from 'ava';
 import ava from 'ava';
 import request from 'supertest';
 
-import { DocRendererModule } from '../../core/doc-renderer';
 import { createTestingApp } from '../utils';
 
 const test = ava as TestFn<{
   app: INestApplication;
-  db: PrismaClient;
 }>;
 
 const mobileUAString =
@@ -47,16 +44,13 @@ function initTestStaticFiles(staticPath: string) {
   }
 }
 
-test.before('init selfhost server', async t => {
+test.before(async t => {
   const staticPath = new Package('@affine/server').join('static').value;
   initTestStaticFiles(staticPath);
 
-  const { app } = await createTestingApp({
-    imports: [DocRendererModule],
-  });
+  const app = await createTestingApp();
 
   t.context.app = app;
-  t.context.db = t.context.app.get(PrismaClient);
 });
 
 test.after.always(async t => {
@@ -70,12 +64,13 @@ test('should render correct html', async t => {
 
   t.true(
     res.text.includes(
-      `<script src="https://app.affine.pro/main.a.js"></script>`
+      `<script src="https://app.affine.pro/main.a.js" crossorigin></script>`
     )
   );
 });
 
-test('should render correct mobile html', async t => {
+// TODO(@forehalo): enable it when mobile version is ready
+test.skip('should render correct mobile html', async t => {
   const res = await request(t.context.app.getHttpServer())
     .get('/workspace/xxxx/xxx')
     .set('user-agent', mobileUAString)
@@ -83,7 +78,7 @@ test('should render correct mobile html', async t => {
 
   t.true(
     res.text.includes(
-      `<script src="https://app.affine.pro/main.c.js"></script>`
+      `<script src="https://app.affine.pro/main.c.js" crossorigin></script>`
     )
   );
 });

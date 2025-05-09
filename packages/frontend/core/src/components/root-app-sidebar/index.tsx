@@ -1,8 +1,8 @@
+// Import is already correct, no changes needed
 import {
   AddPageButton,
   AppDownloadButton,
   AppSidebar,
-  CategoryDivider,
   MenuItem,
   MenuLinkItem,
   QuickSearchInput,
@@ -10,17 +10,8 @@ import {
   SidebarScrollableContainer,
 } from '@affine/core/modules/app-sidebar/views';
 import { ExternalMenuLinkItem } from '@affine/core/modules/app-sidebar/views/menu-item/external-menu-link-item';
-import {
-  GlobalDialogService,
-  WorkspaceDialogService,
-} from '@affine/core/modules/dialogs';
-import {
-  ExplorerCollections,
-  ExplorerFavorites,
-  ExplorerMigrationFavorites,
-  ExplorerOrganize,
-} from '@affine/core/modules/explorer';
-import { ExplorerTags } from '@affine/core/modules/explorer/views/sections/tags';
+import { AuthService } from '@affine/core/modules/cloud';
+import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { CMDKQuickSearchService } from '@affine/core/modules/quicksearch/services/cmdk';
 import type { Workspace } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
@@ -28,7 +19,6 @@ import { track } from '@affine/track';
 import type { Store } from '@blocksuite/affine/store';
 import {
   AllDocsIcon,
-  GithubIcon,
   ImportIcon,
   JournalIcon,
   SettingsIcon,
@@ -37,15 +27,26 @@ import { useLiveData, useService, useServices } from '@toeverything/infra';
 import type { ReactElement } from 'react';
 import { memo, useCallback } from 'react';
 
+import {
+  CollapsibleSection,
+  NavigationPanelCollections,
+  NavigationPanelFavorites,
+  NavigationPanelMigrationFavorites,
+  NavigationPanelOrganize,
+  NavigationPanelTags,
+} from '../../desktop/components/navigation-panel';
 import { WorkbenchService } from '../../modules/workbench';
 import { WorkspaceNavigator } from '../workspace-selector';
 import {
+  bottomContainer,
   quickSearch,
   quickSearchAndNewPage,
   workspaceAndUserWrapper,
   workspaceWrapper,
 } from './index.css';
 import { AppSidebarJournalButton } from './journal-button';
+import { NotificationButton } from './notification-button';
+import { SidebarAudioPlayer } from './sidebar-audio-player';
 import { TemplateDocEntrance } from './template-doc-entrance';
 import { TrashButton } from './trash-button';
 import { UpdaterButton } from './updater-button';
@@ -90,12 +91,16 @@ const AllDocsButton = () => {
  *
  */
 export const RootAppSidebar = memo((): ReactElement => {
-  const { workbenchService, cMDKQuickSearchService } = useServices({
-    WorkbenchService,
-    CMDKQuickSearchService,
-  });
+  const { workbenchService, cMDKQuickSearchService, authService } = useServices(
+    {
+      WorkbenchService,
+      CMDKQuickSearchService,
+      AuthService,
+    }
+  );
+
+  const sessionStatus = useLiveData(authService.session.status$);
   const t = useI18n();
-  const globalDialogService = useService(GlobalDialogService);
   const workspaceDialogService = useService(WorkspaceDialogService);
   const workbench = workbenchService.workbench;
   const onOpenQuickSearchModal = useCallback(() => {
@@ -103,11 +108,11 @@ export const RootAppSidebar = memo((): ReactElement => {
   }, [cMDKQuickSearchService]);
 
   const onOpenSettingModal = useCallback(() => {
-    globalDialogService.open('setting', {
+    workspaceDialogService.open('setting', {
       activeTab: 'appearance',
     });
     track.$.navigationPanel.$.openSettings();
-  }, [globalDialogService]);
+  }, [workspaceDialogService]);
 
   const handleOpenDocs = useCallback(
     (result: {
@@ -148,11 +153,7 @@ export const RootAppSidebar = memo((): ReactElement => {
       <SidebarContainer>
         <div className={workspaceAndUserWrapper}>
           <div className={workspaceWrapper}>
-            <WorkspaceNavigator
-              showEnableCloudButton
-              showSettingsButton
-              showSyncStatus
-            />
+            <WorkspaceNavigator showEnableCloudButton showSyncStatus />
           </div>
           <UserInfo />
         </div>
@@ -167,6 +168,7 @@ export const RootAppSidebar = memo((): ReactElement => {
         </div>
         <AllDocsButton />
         <AppSidebarJournalButton />
+        {sessionStatus === 'authenticated' && <NotificationButton />}
         <MenuItem
           data-testid="slider-bar-workspace-setting-button"
           icon={<SettingsIcon />}
@@ -178,13 +180,16 @@ export const RootAppSidebar = memo((): ReactElement => {
         </MenuItem>
       </SidebarContainer>
       <SidebarScrollableContainer>
-        <ExplorerFavorites />
-        <ExplorerOrganize />
-        <ExplorerMigrationFavorites />
-        <ExplorerCollections />
-        <ExplorerTags />
-        <CategoryDivider label={t['com.affine.rootAppSidebar.others']()} />
-        <div style={{ padding: '0 8px' }}>
+        <NavigationPanelFavorites />
+        <NavigationPanelOrganize />
+        <NavigationPanelMigrationFavorites />
+        <NavigationPanelCollections />
+        <NavigationPanelTags />
+        <CollapsibleSection
+          name="others"
+          title={t['com.affine.rootAppSidebar.others']()}
+          contentStyle={{ padding: '6px 8px 0 8px' }}
+        >
           <TrashButton />
           <MenuItem
             data-testid="slider-bar-import-button"
@@ -199,14 +204,10 @@ export const RootAppSidebar = memo((): ReactElement => {
             icon={<JournalIcon />}
             label={t['com.affine.app-sidebar.learn-more']()}
           />
-          <ExternalMenuLinkItem
-            href="https://github.com/toeverything/affine"
-            icon={<GithubIcon />}
-            label={t['com.affine.app-sidebar.star-us']()}
-          />
-        </div>
+        </CollapsibleSection>
       </SidebarScrollableContainer>
-      <SidebarContainer>
+      <SidebarContainer className={bottomContainer}>
+        <SidebarAudioPlayer />
         {BUILD_CONFIG.isElectron ? <UpdaterButton /> : <AppDownloadButton />}
       </SidebarContainer>
     </AppSidebar>

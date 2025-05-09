@@ -60,6 +60,20 @@ CREATE INDEX peer_clocks_doc_id ON peer_clocks (doc_id);
  "#,
     None,
   ),
+  // add blob_sync table
+  (
+    "add_blob_sync",
+    r#"
+CREATE TABLE "peer_blob_sync" (
+  peer VARCHAR NOT NULL,
+  blob_id VARCHAR NOT NULL,
+  uploaded_at TIMESTAMP,
+  PRIMARY KEY (peer, blob_id)
+);
+CREATE INDEX peer_blob_sync_peer ON peer_blob_sync (peer);
+ "#,
+    None,
+  ),
 ];
 
 pub fn get_migrator() -> Migrator {

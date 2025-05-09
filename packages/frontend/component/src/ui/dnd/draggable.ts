@@ -87,9 +87,15 @@ export const useDraggable = <D extends DNDData = DNDData>(
   }, [...deps, context.toExternalData]);
 
   useEffect(() => {
-    if (!dragRef.current) {
+    if (
+      !dragRef.current ||
+      (typeof options.canDrag === 'boolean' && !options.canDrag)
+    ) {
       return;
     }
+
+    const element = dragRef.current;
+    const dragHandle = dragHandleRef.current;
 
     const windowEvent = {
       dragleave: () => {
@@ -104,11 +110,11 @@ export const useDraggable = <D extends DNDData = DNDData>(
       },
     };
 
-    dragRef.current.dataset.affineDraggable = 'true';
+    element.dataset.affineDraggable = 'true';
 
     const cleanupDraggable = draggable({
-      element: dragRef.current,
-      dragHandle: dragHandleRef.current ?? undefined,
+      element,
+      dragHandle: dragHandle ?? undefined,
       canDrag: draggableGet(options.canDrag),
       getInitialData: draggableGet(options.data),
       getInitialDataForExternal: draggableGet(options.toExternalData),
@@ -130,8 +136,8 @@ export const useDraggable = <D extends DNDData = DNDData>(
         if (enableDropTarget.current) {
           setDropTarget([]);
         }
-        if (dragRef.current) {
-          dragRef.current.dataset['dragging'] = 'true';
+        if (element) {
+          element.dataset['dragging'] = 'true';
         }
         options.onDragStart?.(args);
       },
@@ -153,8 +159,8 @@ export const useDraggable = <D extends DNDData = DNDData>(
         if (enableDropTarget.current) {
           setDropTarget([]);
         }
-        if (dragRef.current) {
-          delete dragRef.current.dataset['dragging'];
+        if (element) {
+          delete element.dataset['dragging'];
         }
         options.onDrop?.(args);
       },

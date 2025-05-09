@@ -1,31 +1,26 @@
-import { Slot } from '@blocksuite/affine/global/utils';
 import {
   createYProxy,
   type DocMeta,
   type DocsPropertiesMeta,
-  type Workspace,
   type WorkspaceMeta,
 } from '@blocksuite/affine/store';
+import { Subject } from 'rxjs';
 import type * as Y from 'yjs';
-
-const COLLECTION_VERSION = 2;
-const PAGE_VERSION = 2;
 
 type MetaState = {
   pages?: unknown[];
   properties?: DocsPropertiesMeta;
-  workspaceVersion?: number;
-  pageVersion?: number;
-  blockVersions?: Record<string, number>;
   name?: string;
   avatar?: string;
 };
 
 export class WorkspaceMetaImpl implements WorkspaceMeta {
-  commonFieldsUpdated = new Slot();
-  docMetaAdded = new Slot<string>();
-  docMetaRemoved = new Slot<string>();
-  docMetaUpdated = new Slot();
+  /* eslint-disable rxjs/finnish */
+  commonFieldsUpdated = new Subject<void>();
+  docMetaAdded = new Subject<string>();
+  docMetaRemoved = new Subject<string>();
+  docMetaUpdated = new Subject<void>();
+  /* eslint-enable rxjs/finnish */
 
   private readonly _handleDocCollectionMetaEvents = (
     events: Y.YEvent<Y.Array<unknown> | Y.Text | Y.Map<unknown>>[]
@@ -88,7 +83,7 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
 
   setProperties(meta: DocsPropertiesMeta) {
     this._proxy.properties = meta;
-    this.docMetaUpdated.emit();
+    this.docMetaUpdated.next();
   }
 
   get docMetas() {
@@ -100,25 +95,6 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
 
   get docs() {
     return this._proxy.pages;
-  }
-
-  get hasVersion() {
-    if (!this._blockVersions || !this._pageVersion || !this._workspaceVersion) {
-      return false;
-    }
-    return Object.keys(this._blockVersions).length > 0;
-  }
-
-  private get _blockVersions() {
-    return this._proxy.blockVersions;
-  }
-
-  private get _pageVersion() {
-    return this._proxy.pageVersion;
-  }
-
-  private get _workspaceVersion() {
-    return this._proxy.workspaceVersion;
   }
 
   get yDocs() {
@@ -134,7 +110,7 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
   }
 
   private _handleCommonFieldsEvent() {
-    this.commonFieldsUpdated.emit();
+    this.commonFieldsUpdated.next();
   }
 
   private _handleDocMetaEvent() {
@@ -144,7 +120,7 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
 
     docMetas.forEach(docMeta => {
       if (!_prevDocs.has(docMeta.id)) {
-        this.docMetaAdded.emit(docMeta.id);
+        this.docMetaAdded.next(docMeta.id);
       }
       newDocs.add(docMeta.id);
     });
@@ -152,13 +128,13 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
     _prevDocs.forEach(prevDocId => {
       const isRemoved = newDocs.has(prevDocId) === false;
       if (isRemoved) {
-        this.docMetaRemoved.emit(prevDocId);
+        this.docMetaRemoved.next(prevDocId);
       }
     });
 
     this._prevDocs = newDocs;
 
-    this.docMetaUpdated.emit();
+    this.docMetaUpdated.next();
   }
 
   addDocMeta(doc: DocMeta, index?: number) {
@@ -219,34 +195,5 @@ export class WorkspaceMetaImpl implements WorkspaceMeta {
         doc[key] = value;
       });
     }, this._doc.clientID);
-  }
-
-  /**
-   * @internal Only for doc initialization
-   */
-  writeVersion(collection: Workspace) {
-    const { blockVersions, pageVersion, workspaceVersion } = this._proxy;
-
-    if (!workspaceVersion) {
-      this._proxy.workspaceVersion = COLLECTION_VERSION;
-    } else {
-      console.error('Workspace version is already set');
-    }
-
-    if (!pageVersion) {
-      this._proxy.pageVersion = PAGE_VERSION;
-    } else {
-      console.error('Doc version is already set');
-    }
-
-    if (!blockVersions) {
-      const _versions: Record<string, number> = {};
-      collection.schema.flavourSchemaMap.forEach((schema, flavour) => {
-        _versions[flavour] = schema.version;
-      });
-      this._proxy.blockVersions = _versions;
-    } else {
-      console.error('Block versions is already set');
-    }
   }
 }

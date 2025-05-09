@@ -1,17 +1,10 @@
 import { execSync } from 'node:child_process';
 import { generateKeyPairSync } from 'node:crypto';
 import fs from 'node:fs';
+import { homedir } from 'node:os';
 import path from 'node:path';
 
-const SELF_HOST_CONFIG_DIR = '/root/.affine/config';
-
-function generateConfigFile() {
-  const content = fs.readFileSync('./dist/config/affine.js', 'utf-8');
-  return content.replace(
-    /(^\/\/#.*$)|(^\/\/\s+TODO.*$)|("use\sstrict";?)|(^.*eslint-disable.*$)/gm,
-    ''
-  );
-}
+const SELF_HOST_CONFIG_DIR = `${homedir()}/.affine/config`;
 
 function generatePrivateKey() {
   const key = generateKeyPairSync('ec', {
@@ -31,15 +24,12 @@ function generatePrivateKey() {
 /**
  * @type {Array<{ to: string; generator: () => string }>}
  */
-const configFiles = [
-  { to: 'affine.js', generator: generateConfigFile },
-  { to: 'private.key', generator: generatePrivateKey },
-];
+const files = [{ to: 'private.key', generator: generatePrivateKey }];
 
 function prepare() {
   fs.mkdirSync(SELF_HOST_CONFIG_DIR, { recursive: true });
 
-  for (const { to, generator } of configFiles) {
+  for (const { to, generator } of files) {
     const targetFilePath = path.join(SELF_HOST_CONFIG_DIR, to);
     if (!fs.existsSync(targetFilePath)) {
       console.log(`creating config file [${targetFilePath}].`);

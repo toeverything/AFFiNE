@@ -12,7 +12,7 @@ export const dedupe = (keepWhenFloatingNotReady = true): HoverMiddleware => {
   let hoverState = false;
   return ({ event, floatingElement }) => {
     const curState = hoverState;
-    if (event.type === 'mouseover') {
+    if (event.type === 'mouseenter') {
       // hover in
       hoverState = true;
       if (curState !== hoverState)
@@ -55,7 +55,7 @@ export const delayShow = (delay: number): HoverMiddleware => {
     abortController.abort();
     const newAbortController = new AbortController();
     abortController = newAbortController;
-    if (event.type !== 'mouseover') return true;
+    if (event.type !== 'mouseenter') return true;
     if (delay <= 0) return true;
     await sleep(delay, newAbortController.signal);
     return !newAbortController.signal.aborted;

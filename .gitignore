@@ -84,3 +84,7 @@ packages/frontend/core/public/static/templates
 # script
 af
 af.cmd
+*.resolved
+
+# playwright
+storageState.json

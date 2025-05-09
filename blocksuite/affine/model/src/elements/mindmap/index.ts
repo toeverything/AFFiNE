@@ -1,2 +1,3 @@
-export * from './mindmap.js';
-export * from './style.js';
+export * from './mindmap';
+export * from './snapshot';
+export * from './style';

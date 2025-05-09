@@ -1,0 +1,3 @@
+{
+  "entryPoints": ["src/index.ts", "src/gfx/index.ts", "src/effects.ts"]
+}

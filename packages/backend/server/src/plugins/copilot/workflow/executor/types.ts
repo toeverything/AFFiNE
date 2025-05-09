@@ -1,4 +1,4 @@
-import { CopilotChatOptions } from '../../types';
+import { CopilotChatOptions } from '../../providers';
 import type { WorkflowNode } from '../node';
 import { WorkflowNodeData, WorkflowParams } from '../types';
 

@@ -21,9 +21,26 @@
 <br/>
 <br/>
 
+<div align="left" valign="middle">
+<a href="https://runblaze.dev">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://www.runblaze.dev/logo_dark.png">
+   <img align="right" src="https://www.runblaze.dev/logo_light.png" height="102px"/>
+ </picture>
+</a>
+
+<br style="display: none;"/>
+
+_Special thanks to [Blaze](https://runblaze.dev) for their support of this project. They provide high-performance Apple Silicon macOS and Linux (AMD64 & ARM64) runners for GitHub Actions, greatly reducing our automated build times._
+
+</div>
+
+<br/>
+<br/>
+
 <div align="center">
     <a href="https://affine.pro">Home Page</a> |
-    <a href="https://discord.gg/whd5mjYqVw">Discord</a> |
+    <a href="https://affine.pro/redirect/discord">Discord</a> |
     <a href="https://app.affine.pro">Live Demo</a> |
     <a href="https://affine.pro/blog/">Blog</a> |
     <a href="https://docs.affine.pro/docs/">Documentation</a>
@@ -179,7 +196,7 @@ Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiN
 
 ## Hiring
 
-Some amazing companies, including AFFiNE, are looking for developers! Are you interested in joining AFFiNE or its partners? Check out our Discord channel for some of the latest jobs available.
+Some amazing companies, including AFFiNE, are looking for developers! Are you interested in joining AFFiNE or its partners? Check out our [Discord channel](https://affine.pro/redirect/discord) for some of the latest jobs available.
 
 ## Feature Request
 

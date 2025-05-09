@@ -7,6 +7,9 @@ export const tagsInlineEditor = style({
     '&[data-empty=true]': {
       color: cssVar('placeholderColor'),
     },
+    '&[data-readonly="true"]': {
+      pointerEvents: 'none',
+    },
   },
 });
 
@@ -14,7 +17,7 @@ export const tagsEditorRoot = style({
   display: 'flex',
   flexDirection: 'column',
   width: '100%',
-  gap: '12px',
+  gap: '4px',
 });
 
 export const tagsEditorRootMobile = style([
@@ -24,13 +27,6 @@ export const tagsEditorRootMobile = style([
   },
 ]);
 
-export const inlineTagsContainer = style({
-  display: 'flex',
-  gap: '6px',
-  flexWrap: 'wrap',
-  width: '100%',
-});
-
 export const tagsMenu = style({
   padding: 0,
   position: 'relative',
@@ -38,27 +34,30 @@ export const tagsMenu = style({
   left: '-3.5px',
   width: 'calc(var(--radix-popper-anchor-width) + 16px)',
   overflow: 'hidden',
+  minWidth: 400,
 });
 
 export const tagsEditorSelectedTags = style({
   display: 'flex',
-  gap: '4px',
   flexWrap: 'wrap',
-  padding: '10px 12px',
-  backgroundColor: cssVarV2('input/background'),
+  padding: '10px 12px 0px',
   minHeight: 42,
   selectors: {
     [`${tagsEditorRootMobile} &`]: {
       borderRadius: 12,
+      paddingBottom: '10px',
       backgroundColor: cssVarV2('layer/background/primary'),
     },
   },
 });
 
+export const tagDivider = style({
+  borderBottomColor: cssVarV2('tab/divider/divider'),
+});
+
 export const searchInput = style({
   flexGrow: 1,
-  padding: '10px 0',
-  margin: '-10px 0',
+  height: '30px',
   border: 'none',
   outline: 'none',
   fontSize: '14px',

@@ -1,6 +1,6 @@
 import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 
-import { DeploymentType } from '../../base';
+import { DeploymentType } from '../../env';
 
 export enum ServerFeature {
   Captcha = 'captcha',
@@ -34,15 +34,6 @@ export class ServerConfigType {
   @Field(() => DeploymentType, { description: 'server type' })
   type!: DeploymentType;
 
-  /**
-   * @deprecated
-   */
-  @Field({ description: 'server flavor', deprecationReason: 'use `features`' })
-  flavor!: string;
-
   @Field(() => [ServerFeature], { description: 'enabled server features' })
   features!: ServerFeature[];
-
-  @Field({ description: 'enable telemetry' })
-  enableTelemetry!: boolean;
 }

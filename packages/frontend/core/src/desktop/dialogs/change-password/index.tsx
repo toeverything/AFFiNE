@@ -1,8 +1,8 @@
-import { Button, Modal, notify, Wrapper } from '@affine/component';
+import { Button, Modal, notify } from '@affine/component';
 import {
   AuthContent,
+  AuthHeader,
   AuthInput,
-  ModalHeader,
 } from '@affine/component/auth-components';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import {
@@ -21,7 +21,7 @@ import {
 } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export const ChangePasswordDialog = ({
   close,
@@ -52,10 +52,12 @@ export const ChangePasswordDialog = ({
   );
   const serverName = useLiveData(server.config$.selector(c => c.serverName));
 
-  if (!email) {
-    // should not happen
-    throw new Unreachable();
-  }
+  useEffect(() => {
+    if (!account) {
+      // we are logged out, close the dialog
+      close();
+    }
+  }, [account, close]);
 
   const onSendEmail = useAsyncCallback(async () => {
     setLoading(true);
@@ -108,7 +110,7 @@ export const ChangePasswordDialog = ({
         style: { padding: '44px 40px 20px' },
       }}
     >
-      <ModalHeader
+      <AuthHeader
         title={serverName}
         subTitle={
           hasPassword
@@ -117,42 +119,34 @@ export const ChangePasswordDialog = ({
         }
       />
       <AuthContent>
-        {hasPassword
-          ? t['com.affine.auth.reset.password.message']()
-          : t['com.affine.auth.set.password.message']({
-              min: String(passwordLimits.minLength),
-              max: String(passwordLimits.maxLength),
-            })}
-      </AuthContent>
-
-      <Wrapper
-        marginTop={30}
-        marginBottom={50}
-        style={{
-          position: 'relative',
-        }}
-      >
+        <p>
+          {hasPassword
+            ? t['com.affine.auth.reset.password.message']()
+            : t['com.affine.auth.set.password.message']({
+                min: String(passwordLimits.minLength),
+                max: String(passwordLimits.maxLength),
+              })}
+        </p>
         <AuthInput
           label={t['com.affine.settings.email']()}
           disabled={true}
           value={email}
         />
-      </Wrapper>
-
-      <Button
-        variant="primary"
-        size="extraLarge"
-        style={{ width: '100%' }}
-        disabled={hasSentEmail}
-        loading={loading}
-        onClick={onSendEmail}
-      >
-        {hasSentEmail
-          ? t['com.affine.auth.sent']()
-          : hasPassword
-            ? t['com.affine.auth.send.reset.password.link']()
-            : t['com.affine.auth.send.set.password.link']()}
-      </Button>
+        <Button
+          variant="primary"
+          size="extraLarge"
+          style={{ width: '100%' }}
+          disabled={hasSentEmail}
+          loading={loading}
+          onClick={onSendEmail}
+        >
+          {hasSentEmail
+            ? t['com.affine.auth.sent']()
+            : hasPassword
+              ? t['com.affine.auth.send.reset.password.link']()
+              : t['com.affine.auth.send.set.password.link']()}
+        </Button>
+      </AuthContent>
     </Modal>
   );
 };

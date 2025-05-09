@@ -1,5 +1,5 @@
-import type { BlockModel } from '../model/block/block-model';
-import type { DraftModel } from '../model/block/draft';
+import { BlockModel } from '../model/block/block-model';
+import { type DraftModel, toDraftModel } from '../model/block/draft';
 import {
   type InternalPrimitives,
   internalPrimitives,
@@ -20,7 +20,7 @@ export type FromSnapshotPayload = {
 };
 
 export type ToSnapshotPayload<Props extends object> = {
-  model: DraftModel<BlockModel<Props>>;
+  model: DraftModel<BlockModel<Props>> | BlockModel<Props>;
   assets: AssetsManager;
 };
 
@@ -42,14 +42,22 @@ export class BaseBlockTransformer<Props extends object = object> {
     ) as Props;
   }
 
-  protected _propsToSnapshot(model: DraftModel) {
+  protected _propsToSnapshot(model: DraftModel | BlockModel) {
+    let draftModel: DraftModel;
+    if (model instanceof BlockModel) {
+      draftModel = toDraftModel(model);
+    } else {
+      draftModel = model;
+    }
     return Object.fromEntries(
-      model.keys.map(key => {
-        const value = model[key as keyof typeof model];
+      draftModel.keys.map(key => {
+        const value = draftModel.props[key as keyof typeof draftModel.props];
         return [key, toJSON(value)];
       })
     );
   }
+
+  constructor(public readonly transformerConfigs: Map<string, unknown>) {}
 
   fromSnapshot({
     json,

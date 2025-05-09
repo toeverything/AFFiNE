@@ -1,30 +1,22 @@
-import type {
-  PeekOptions,
-  PeekViewService,
-} from '@blocksuite/affine-components/peek';
-import { PeekViewExtension } from '@blocksuite/affine-components/peek';
-import type { EditorSetting } from '@blocksuite/affine-shared/services';
-import { BlockComponent } from '@blocksuite/block-std';
+import { toast } from '@blocksuite/affine/components/toast';
 import {
   ColorScheme,
   type DocMode,
+  type ReferenceParams,
+} from '@blocksuite/affine/model';
+import {
   type DocModeProvider,
+  type EditorSetting,
   GeneralSettingSchema,
   type GenerateDocUrlService,
-  matchFlavours,
   type NotificationService,
   type ParseDocUrlService,
-  type ReferenceParams,
   type ThemeExtension,
-  toast,
-} from '@blocksuite/blocks';
-import { Slot } from '@blocksuite/global/utils';
-import type { AffineEditorContainer } from '@blocksuite/presets';
-import { type Workspace } from '@blocksuite/store';
+} from '@blocksuite/affine/shared/services';
+import { type Workspace } from '@blocksuite/affine/store';
+import type { TestAffineEditorContainer } from '@blocksuite/integration-test';
 import { Signal, signal } from '@preact/signals-core';
-import type { TemplateResult } from 'lit';
-
-import type { AttachmentViewerPanel } from './components/attachment-viewer-panel.js';
+import { Subject } from 'rxjs';
 
 function getModeFromStorage() {
   const mapJson = localStorage.getItem('playground:docMode');
@@ -45,12 +37,12 @@ export function removeModeFromStorage(docId: string) {
 }
 
 const DEFAULT_MODE: DocMode = 'page';
-const slotMap = new Map<string, Slot<DocMode>>();
+const slotMap = new Map<string, Subject<DocMode>>();
 
-export function mockDocModeService(
-  getEditorModeCallback: () => DocMode,
-  setEditorModeCallback: (mode: DocMode) => void
-) {
+export function mockDocModeService(editor: TestAffineEditorContainer) {
+  const getEditorModeCallback: () => DocMode = () => editor.mode;
+  const setEditorModeCallback: (mode: DocMode) => void = mode =>
+    editor.switchEditor(mode);
   const docModeService: DocModeProvider = {
     getPrimaryMode: (docId: string) => {
       try {
@@ -62,9 +54,9 @@ export function mockDocModeService(
     },
     onPrimaryModeChange: (handler: (mode: DocMode) => void, docId: string) => {
       if (!slotMap.get(docId)) {
-        slotMap.set(docId, new Slot());
+        slotMap.set(docId, new Subject());
       }
-      return slotMap.get(docId)!.on(handler);
+      return slotMap.get(docId)!.subscribe(handler);
     },
     getEditorMode: () => {
       return getEditorModeCallback();
@@ -76,7 +68,7 @@ export function mockDocModeService(
       const modeMap = getModeFromStorage();
       modeMap.set(docId, mode);
       saveModeToStorage(modeMap);
-      slotMap.get(docId)?.emit(mode);
+      slotMap.get(docId)?.next(mode);
     },
     togglePrimaryMode: (docId: string) => {
       const mode =
@@ -88,7 +80,7 @@ export function mockDocModeService(
   return docModeService;
 }
 
-export function mockNotificationService(editor: AffineEditorContainer) {
+export function mockNotificationService(editor: TestAffineEditorContainer) {
   const notificationService: NotificationService = {
     toast: (message, options) => {
       toast(editor.host!, message, options?.duration);
@@ -102,6 +94,10 @@ export function mockNotificationService(editor: AffineEditorContainer) {
       );
     },
     notify: notification => {
+      // todo: implement in playground
+      console.log(notification);
+    },
+    notifyWithUndoAction: notification => {
       // todo: implement in playground
       console.log(notification);
     },
@@ -153,37 +149,6 @@ export const themeExtension: ThemeExtension = {
     return mockEdgelessTheme.theme$;
   },
 };
-
-export function mockPeekViewExtension(
-  attachmentViewerPanel: AttachmentViewerPanel
-) {
-  return PeekViewExtension({
-    peek(
-      element: {
-        target: HTMLElement;
-        docId: string;
-        blockIds?: string[];
-        template?: TemplateResult;
-      },
-      options?: PeekOptions
-    ) {
-      const { target } = element;
-
-      if (
-        target instanceof BlockComponent &&
-        matchFlavours(target.model, ['affine:attachment'])
-      ) {
-        attachmentViewerPanel.open(target.model);
-        return Promise.resolve();
-      }
-
-      alert('Peek view not implemented in playground');
-      console.log('peek', element, options);
-
-      return Promise.resolve();
-    },
-  } satisfies PeekViewService);
-}
 
 export function mockGenerateDocUrlService(collection: Workspace) {
   const generateDocUrlService: GenerateDocUrlService = {

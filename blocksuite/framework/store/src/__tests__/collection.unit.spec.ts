@@ -1,32 +1,20 @@
-// checkout https://vitest.dev/guide/debugging.html for debugging tests
-
-import type { Slot } from '@blocksuite/global/utils';
+import type { Subject } from 'rxjs';
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyUpdate, type Doc, encodeStateAsUpdate } from 'yjs';
 
-import type { BlockModel, BlockSchemaType, DocMeta, Store } from '../index.js';
-import { Schema } from '../index.js';
-import { Text } from '../reactive/text.js';
+import type { BlockModel, DocMeta, Store } from '../index.js';
+import { Text } from '../reactive/text/index.js';
 import { createAutoIncrementIdGenerator } from '../test/index.js';
 import { TestWorkspace } from '../test/test-workspace.js';
 import {
-  NoteBlockSchema,
-  ParagraphBlockSchema,
-  RootBlockSchema,
+  NoteBlockSchemaExtension,
+  ParagraphBlockSchemaExtension,
+  RootBlockSchemaExtension,
 } from './test-schema.js';
-import { assertExists } from './test-utils-dom.js';
-
-export const BlockSchemas = [
-  ParagraphBlockSchema,
-  RootBlockSchema,
-  NoteBlockSchema,
-] as BlockSchemaType[];
 
 function createTestOptions() {
   const idGenerator = createAutoIncrementIdGenerator();
-  const schema = new Schema();
-  schema.register(BlockSchemas);
-  return { id: 'test-collection', idGenerator, schema };
+  return { id: 'test-collection', idGenerator };
 }
 
 const defaultDocId = 'doc:home';
@@ -48,8 +36,13 @@ function serializCollection(doc: Doc): Record<string, any> {
   };
 }
 
-function waitOnce<T>(slot: Slot<T>) {
-  return new Promise<T>(resolve => slot.once(val => resolve(val)));
+function waitOnce<T>(slot: Subject<T>) {
+  return new Promise<T>(resolve => {
+    const subscription = slot.subscribe(val => {
+      subscription.unsubscribe();
+      resolve(val);
+    });
+  });
 }
 
 function createRoot(doc: Store) {
@@ -58,13 +51,22 @@ function createRoot(doc: Store) {
   return doc.root;
 }
 
+const extensions = [
+  NoteBlockSchemaExtension,
+  ParagraphBlockSchemaExtension,
+  RootBlockSchemaExtension,
+];
+
 function createTestDoc(docId = defaultDocId) {
   const options = createTestOptions();
   const collection = new TestWorkspace(options);
   collection.meta.initialize();
-  const doc = collection.createDoc({ id: docId });
+  const doc = collection.createDoc(docId);
+  const store = doc.getStore({
+    extensions,
+  });
   doc.load();
-  return doc;
+  return store;
 }
 
 function requestIdleCallbackPolyfill(
@@ -95,7 +97,7 @@ describe('basic', () => {
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
 
-    const doc = collection.createDoc({ id: 'doc:home' });
+    const doc = collection.createDoc('doc:home');
     doc.load();
     const actual = serializCollection(collection.doc);
     const actualDoc = actual[spaceMetaId].pages[0] as DocMeta;
@@ -113,13 +115,6 @@ describe('basic', () => {
             tags: [],
           },
         ],
-        workspaceVersion: 2,
-        pageVersion: 2,
-        blockVersions: {
-          'affine:note': 1,
-          'affine:page': 2,
-          'affine:paragraph': 1,
-        },
       },
       spaces: {
         [spaceId]: {
@@ -153,22 +148,23 @@ describe('basic', () => {
     const options = createTestOptions();
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
-    const doc = collection.createDoc({
-      id: 'space:0',
+    const doc = collection.createDoc('space:0');
+    const store = doc.getStore({
+      extensions,
     });
 
     const readyCallback = vi.fn();
     const rootAddedCallback = vi.fn();
-    doc.slots.ready.on(readyCallback);
-    doc.slots.rootAdded.on(rootAddedCallback);
+    store.slots.ready.subscribe(readyCallback);
+    store.slots.rootAdded.subscribe(rootAddedCallback);
 
-    doc.load(() => {
-      const rootId = doc.addBlock('affine:page', {
+    store.load(() => {
+      const rootId = store.addBlock('affine:page', {
         title: new Text(),
       });
       expect(rootAddedCallback).toBeCalledTimes(1);
 
-      doc.addBlock('affine:note', {}, rootId);
+      store.addBlock('affine:note', {}, rootId);
     });
 
     expect(readyCallback).toBeCalledTimes(1);
@@ -179,11 +175,12 @@ describe('basic', () => {
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
     const collection2 = new TestWorkspace(options);
-    const doc = collection.createDoc({
-      id: 'space:0',
+    const doc = collection.createDoc('space:0');
+    const store = doc.getStore({
+      extensions,
     });
     doc.load(() => {
-      doc.addBlock('affine:page', {
+      store.addBlock('affine:page', {
         title: new Text(),
       });
     });
@@ -210,7 +207,9 @@ describe('basic', () => {
       const update = encodeStateAsUpdate(doc.spaceDoc);
       expect(collection2.docs.size).toBe(1);
       const doc2 = collection2.getDoc('space:0');
-      assertExists(doc2);
+      if (!doc2) {
+        throw new Error('doc2 is not found');
+      }
       applyUpdate(doc2.spaceDoc, update);
       expect(serializCollection(collection2.doc)['spaces']).toEqual({
         'space:0': {
@@ -346,7 +345,7 @@ describe('addBlock', () => {
       })
     );
     const blockId = await waitOnce(doc.slots.rootAdded);
-    const block = doc.getBlockById(blockId) as BlockModel;
+    const block = doc.getModelById(blockId) as BlockModel;
     assert.equal(block.flavour, 'affine:page');
   });
 
@@ -381,12 +380,15 @@ describe('addBlock', () => {
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
 
-    const doc0 = collection.createDoc({ id: 'doc:home' });
-    const doc1 = collection.createDoc({ id: 'space:doc1' });
+    const doc0 = collection.createDoc('doc:home');
+    const doc1 = collection.createDoc('space:doc1');
     await Promise.all([doc0.load(), doc1.load()]);
     assert.equal(collection.docs.size, 2);
+    const store0 = doc0.getStore({
+      extensions,
+    });
 
-    doc0.addBlock('affine:page', {
+    store0.addBlock('affine:page', {
       title: new Text(),
     });
     collection.removeDoc(doc0.id);
@@ -406,8 +408,7 @@ describe('addBlock', () => {
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
 
-    const doc0 = collection.createDoc({ id: 'doc:home' });
-
+    const doc0 = collection.createDoc('doc:home');
     collection.removeDoc(doc0.id);
     assert.equal(collection.docs.size, 0);
   });
@@ -416,7 +417,7 @@ describe('addBlock', () => {
     const options = createTestOptions();
     const collection = new TestWorkspace(options);
     collection.meta.initialize();
-    collection.createDoc({ id: 'doc:home' });
+    collection.createDoc('doc:home');
 
     assert.deepEqual(
       collection.meta.docMetas.map(({ id, title }) => ({
@@ -432,7 +433,7 @@ describe('addBlock', () => {
     );
 
     let called = false;
-    collection.slots.docListUpdated.on(() => {
+    collection.slots.docListUpdated.subscribe(() => {
       called = true;
     });
 
@@ -452,19 +453,6 @@ describe('addBlock', () => {
       ]
     );
     assert.ok(called);
-  });
-
-  it('can set collection common meta fields', async () => {
-    const options = createTestOptions();
-    const collection = new TestWorkspace(options);
-
-    queueMicrotask(() => collection.meta.setName('hello'));
-    await waitOnce(collection.meta.commonFieldsUpdated);
-    assert.deepEqual(collection.meta.name, 'hello');
-
-    queueMicrotask(() => collection.meta.setAvatar('gengar.jpg'));
-    await waitOnce(collection.meta.commonFieldsUpdated);
-    assert.deepEqual(collection.meta.avatar, 'gengar.jpg');
   });
 });
 
@@ -511,7 +499,7 @@ describe('deleteBlock', () => {
       },
     });
 
-    const deletedModel = doc.getBlockById('1') as BlockModel;
+    const deletedModel = doc.getModelById('1') as BlockModel;
     doc.deleteBlock(deletedModel);
 
     assert.deepEqual(serializCollection(doc.rootDoc).spaces[spaceId].blocks, {
@@ -580,8 +568,8 @@ describe('deleteBlock', () => {
       },
     });
 
-    const deletedModel = doc.getBlockById('2') as BlockModel;
-    const deletedModelParent = doc.getBlockById('1') as BlockModel;
+    const deletedModel = doc.getModelById('2') as BlockModel;
+    const deletedModelParent = doc.getModelById('1') as BlockModel;
     doc.deleteBlock(deletedModel, {
       bringChildrenTo: deletedModelParent,
     });
@@ -692,8 +680,8 @@ describe('deleteBlock', () => {
       },
     });
 
-    const deletedModel = doc.getBlockById('2') as BlockModel;
-    const moveToModel = doc.getBlockById('3') as BlockModel;
+    const deletedModel = doc.getModelById('2') as BlockModel;
+    const moveToModel = doc.getModelById('3') as BlockModel;
     doc.deleteBlock(deletedModel, {
       bringChildrenTo: moveToModel,
     });
@@ -819,11 +807,11 @@ describe('getBlock', () => {
     doc.addBlock('affine:paragraph', {}, noteId);
     doc.addBlock('affine:paragraph', {}, noteId);
 
-    const text = doc.getBlockById('3') as BlockModel;
+    const text = doc.getModelById('3') as BlockModel;
     assert.equal(text.flavour, 'affine:paragraph');
     assert.equal(rootModel.children[0].children.indexOf(text), 1);
 
-    const invalid = doc.getBlockById('😅');
+    const invalid = doc.getModelById('😅');
     assert.equal(invalid, null);
   });
 
@@ -859,13 +847,3 @@ describe('getBlock', () => {
     assert.equal(invalid, null);
   });
 });
-
-declare global {
-  namespace BlockSuite {
-    interface BlockModels {
-      'affine:page': BlockModel;
-      'affine:paragraph': BlockModel;
-      'affine:note': BlockModel;
-    }
-  }
-}

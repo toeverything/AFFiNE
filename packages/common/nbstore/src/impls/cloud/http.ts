@@ -1,3 +1,4 @@
+import { UserFriendlyError } from '@affine/error';
 import { gqlFetcherFactory } from '@affine/graphql';
 
 import { DummyConnection } from '../../connection';
@@ -15,7 +16,7 @@ export class HttpConnection extends DummyConnection {
 
     const timeout = 15000;
     const timeoutId = setTimeout(() => {
-      abortController.abort('timeout');
+      abortController.abort(new Error('request timeout'));
     }, timeout);
 
     const res = await globalThis
@@ -23,24 +24,38 @@ export class HttpConnection extends DummyConnection {
         ...init,
         signal: abortController.signal,
         headers: {
+          ...this.requestHeaders,
           ...init?.headers,
           'x-affine-version': BUILD_CONFIG.appVersion,
         },
       })
       .catch(err => {
-        throw new Error('fetch error: ' + err);
+        throw new UserFriendlyError({
+          status: 504,
+          code: 'NETWORK_ERROR',
+          type: 'NETWORK_ERROR',
+          name: 'NETWORK_ERROR',
+          message: `Network error: ${err.message}`,
+          stacktrace: err.stack,
+        });
       });
     clearTimeout(timeoutId);
     if (!res.ok && res.status !== 404) {
-      let reason: string | any = '';
-      if (res.headers.get('Content-Type')?.includes('application/json')) {
-        try {
-          reason = await res.json();
-        } catch {
-          // ignore
-        }
+      if (res.status === 413) {
+        throw new UserFriendlyError({
+          status: 413,
+          code: 'CONTENT_TOO_LARGE',
+          type: 'CONTENT_TOO_LARGE',
+          name: 'CONTENT_TOO_LARGE',
+          message: 'Content too large',
+        });
+      } else if (
+        res.headers.get('Content-Type')?.startsWith('application/json')
+      ) {
+        throw UserFriendlyError.fromAny(await res.json());
+      } else {
+        throw UserFriendlyError.fromAny(await res.text());
       }
-      throw new Error('fetch error status: ' + res.status + ' ' + reason);
     }
     return res;
   };
@@ -63,7 +78,10 @@ export class HttpConnection extends DummyConnection {
     this.fetch
   );
 
-  constructor(private readonly serverBaseUrl: string) {
+  constructor(
+    private readonly serverBaseUrl: string,
+    private readonly requestHeaders?: Record<string, string>
+  ) {
     super();
   }
 }

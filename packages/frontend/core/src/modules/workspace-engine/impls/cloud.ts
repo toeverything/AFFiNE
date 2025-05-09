@@ -4,11 +4,37 @@ import {
   deleteWorkspaceMutation,
   getWorkspaceInfoQuery,
   getWorkspacesQuery,
+  ServerDeploymentType,
 } from '@affine/graphql';
+import type {
+  BlobStorage,
+  DocStorage,
+  ListedBlobRecord,
+} from '@affine/nbstore';
+import { CloudBlobStorage, StaticCloudDocStorage } from '@affine/nbstore/cloud';
 import {
-  type BlobStorage,
+  IndexedDBBlobStorage,
+  IndexedDBBlobSyncStorage,
+  IndexedDBDocStorage,
+  IndexedDBDocSyncStorage,
+} from '@affine/nbstore/idb';
+import {
+  IndexedDBV1BlobStorage,
+  IndexedDBV1DocStorage,
+} from '@affine/nbstore/idb/v1';
+import {
+  SqliteBlobStorage,
+  SqliteBlobSyncStorage,
+  SqliteDocStorage,
+  SqliteDocSyncStorage,
+} from '@affine/nbstore/sqlite';
+import {
+  SqliteV1BlobStorage,
+  SqliteV1DocStorage,
+} from '@affine/nbstore/sqlite/v1';
+import type { WorkerInitOptions } from '@affine/nbstore/worker/client';
+import {
   catchErrorInto,
-  type DocStorage,
   effect,
   exhaustMapSwitchUntilChanged,
   fromPromise,
@@ -19,36 +45,31 @@ import {
   Service,
 } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
-import { EMPTY, map, mergeMap, Observable, switchMap } from 'rxjs';
-import { encodeStateAsUpdate } from 'yjs';
+import { map, Observable, switchMap, tap } from 'rxjs';
+import {
+  applyUpdate,
+  type Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  type Map as YMap,
+} from 'yjs';
 
 import type { Server, ServersService } from '../../cloud';
 import {
   AccountChanged,
   AuthService,
-  FetchService,
   GraphQLService,
-  WebSocketService,
   WorkspaceServerService,
 } from '../../cloud';
 import type { GlobalState } from '../../storage';
-import {
-  getAFFiNEWorkspaceSchema,
-  type Workspace,
-  type WorkspaceEngineProvider,
-  type WorkspaceFlavourProvider,
-  type WorkspaceFlavoursProvider,
-  type WorkspaceMetadata,
-  type WorkspaceProfileInfo,
+import type {
+  Workspace,
+  WorkspaceFlavourProvider,
+  WorkspaceFlavoursProvider,
+  WorkspaceMetadata,
+  WorkspaceProfileInfo,
 } from '../../workspace';
 import { WorkspaceImpl } from '../../workspace/impls/workspace';
-import type { WorkspaceEngineStorageProvider } from '../providers/engine';
-import { BroadcastChannelAwarenessConnection } from './engine/awareness-broadcast-channel';
-import { CloudAwarenessConnection } from './engine/awareness-cloud';
-import { CloudBlobStorage } from './engine/blob-cloud';
-import { StaticBlobStorage } from './engine/blob-static';
-import { CloudDocEngineServer } from './engine/doc-cloud';
-import { CloudStaticDocStorage } from './engine/doc-cloud-static';
 import { getWorkspaceProfileWorker } from './out-worker';
 
 const getCloudWorkspaceCacheKey = (serverId: string) => {
@@ -62,20 +83,14 @@ const logger = new DebugLogger('affine:cloud-workspace-flavour-provider');
 
 class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   private readonly authService: AuthService;
-  private readonly webSocketService: WebSocketService;
-  private readonly fetchService: FetchService;
   private readonly graphqlService: GraphQLService;
-
   private readonly unsubscribeAccountChanged: () => void;
 
   constructor(
     private readonly globalState: GlobalState,
-    private readonly storageProvider: WorkspaceEngineStorageProvider,
     private readonly server: Server
   ) {
     this.authService = server.scope.get(AuthService);
-    this.webSocketService = server.scope.get(WebSocketService);
-    this.fetchService = server.scope.get(FetchService);
     this.graphqlService = server.scope.get(GraphQLService);
     this.unsubscribeAccountChanged = this.server.scope.eventBus.on(
       AccountChanged,
@@ -85,7 +100,34 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     );
   }
 
-  flavour = this.server.id;
+  readonly flavour = this.server.id;
+
+  DocStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
+      ? SqliteDocStorage
+      : IndexedDBDocStorage;
+  DocStorageV1Type = BUILD_CONFIG.isElectron
+    ? SqliteV1DocStorage
+    : BUILD_CONFIG.isWeb || BUILD_CONFIG.isMobileWeb
+      ? IndexedDBV1DocStorage
+      : undefined;
+  BlobStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
+      ? SqliteBlobStorage
+      : IndexedDBBlobStorage;
+  BlobStorageV1Type = BUILD_CONFIG.isElectron
+    ? SqliteV1BlobStorage
+    : BUILD_CONFIG.isWeb || BUILD_CONFIG.isMobileWeb
+      ? IndexedDBV1BlobStorage
+      : undefined;
+  DocSyncStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
+      ? SqliteDocSyncStorage
+      : IndexedDBDocSyncStorage;
+  BlobSyncStorageType =
+    BUILD_CONFIG.isElectron || BUILD_CONFIG.isIOS || BUILD_CONFIG.isAndroid
+      ? SqliteBlobSyncStorage
+      : IndexedDBBlobSyncStorage;
 
   async deleteWorkspace(id: string): Promise<void> {
     await this.graphqlService.gql({
@@ -94,6 +136,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         id: id,
       },
     });
+    // TODO(@forehalo): when deleting cloud workspace, should we delete the workspace folder in local?
     this.revalidate();
     await this.waitForLoaded();
   }
@@ -113,13 +156,51 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     });
 
     // save the initial state to local storage, then sync to cloud
-    const blobStorage = this.storageProvider.getBlobStorage(workspaceId);
-    const docStorage = this.storageProvider.getDocStorage(workspaceId);
+    const blobStorage = new this.BlobStorageType({
+      id: workspaceId,
+      flavour: this.flavour,
+      type: 'workspace',
+    });
+    blobStorage.connection.connect();
+    await blobStorage.connection.waitForConnected();
+    const docStorage = new this.DocStorageType({
+      id: workspaceId,
+      flavour: this.flavour,
+      type: 'workspace',
+    });
+    docStorage.connection.connect();
+    await docStorage.connection.waitForConnected();
+
+    const docList = new Set<YDoc>();
 
     const docCollection = new WorkspaceImpl({
       id: workspaceId,
-      schema: getAFFiNEWorkspaceSchema(),
-      blobSource: blobStorage,
+      rootDoc: new YDoc({ guid: workspaceId }),
+      blobSource: {
+        get: async key => {
+          const record = await blobStorage.get(key);
+          return record ? new Blob([record.data], { type: record.mime }) : null;
+        },
+        delete: async () => {
+          return;
+        },
+        list: async () => {
+          return [];
+        },
+        set: async (id, blob) => {
+          await blobStorage.set({
+            key: id,
+            data: new Uint8Array(await blob.arrayBuffer()),
+            mime: blob.type,
+          });
+          return id;
+        },
+        name: 'blob',
+        readonly: false,
+      },
+      onLoadDoc: doc => {
+        docList.add(doc);
+      },
     });
 
     try {
@@ -127,13 +208,22 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       await initial(docCollection, blobStorage, docStorage);
 
       // save workspace to local storage, should be vary fast
-      await docStorage.doc.set(
-        workspaceId,
-        encodeStateAsUpdate(docCollection.doc)
-      );
-      for (const subdocs of docCollection.doc.getSubdocs()) {
-        await docStorage.doc.set(subdocs.guid, encodeStateAsUpdate(subdocs));
+      for (const subdocs of docList) {
+        await docStorage.pushDocUpdate({
+          docId: subdocs.guid,
+          bin: encodeStateAsUpdate(subdocs),
+        });
       }
+
+      const accountId = this.authService.session.account$.value?.id;
+      await this.writeInitialDocProperties(
+        workspaceId,
+        docStorage,
+        accountId ?? ''
+      );
+
+      docStorage.connection.disconnect();
+      blobStorage.connection.disconnect();
 
       this.revalidate();
       await this.waitForLoaded();
@@ -178,7 +268,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
             })),
           };
         }).pipe(
-          mergeMap(data => {
+          tap(data => {
             if (data) {
               const { accountId, workspaces } = data;
               const sorted = workspaces.sort((a, b) => {
@@ -194,7 +284,6 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
             } else {
               this.workspaces$.next([]);
             }
-            return EMPTY;
           }),
           catchErrorInto(this.error$, err => {
             logger.error('error to revalidate cloud workspaces', err);
@@ -228,11 +317,23 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     // get information from both cloud and local storage
 
     // we use affine 'static' storage here, which use http protocol, no need to websocket.
-    const cloudStorage = new CloudStaticDocStorage(id, this.fetchService);
-    const docStorage = this.storageProvider.getDocStorage(id);
+    const cloudStorage = new StaticCloudDocStorage({
+      id: id,
+      serverBaseUrl: this.server.serverMetadata.baseUrl,
+    });
+    const docStorage = new this.DocStorageType({
+      id: id,
+      flavour: this.flavour,
+      type: 'workspace',
+      readonlyMode: true,
+    });
+    docStorage.connection.connect();
+    await docStorage.connection.waitForConnected();
     // download root doc
-    const localData = await docStorage.doc.get(id);
-    const cloudData = (await cloudStorage.pull(id))?.data;
+    const localData = (await docStorage.getDoc(id))?.bin;
+    const cloudData = (await cloudStorage.getDoc(id))?.bin;
+
+    docStorage.connection.disconnect();
 
     const info = await this.getWorkspaceInfo(id, signal);
 
@@ -260,48 +361,60 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     };
   }
   async getWorkspaceBlob(id: string, blob: string): Promise<Blob | null> {
-    const localBlob = await this.storageProvider.getBlobStorage(id).get(blob);
+    const storage = new this.BlobStorageType({
+      id: id,
+      flavour: this.flavour,
+      type: 'workspace',
+    });
+    storage.connection.connect();
+    await storage.connection.waitForConnected();
+    const localBlob = await storage.get(blob);
+
+    storage.connection.disconnect();
 
     if (localBlob) {
-      return localBlob;
+      return new Blob([localBlob.data], { type: localBlob.mime });
     }
 
-    const cloudBlob = new CloudBlobStorage(
+    const cloudBlob = await new CloudBlobStorage({
       id,
-      this.fetchService,
-      this.graphqlService
-    );
-    return await cloudBlob.get(blob);
+      serverBaseUrl: this.server.serverMetadata.baseUrl,
+    }).get(blob);
+    if (!cloudBlob) {
+      return null;
+    }
+    return new Blob([cloudBlob.data], { type: cloudBlob.mime });
   }
 
-  getEngineProvider(workspaceId: string): WorkspaceEngineProvider {
-    return {
-      getAwarenessConnections: () => {
-        return [
-          new BroadcastChannelAwarenessConnection(workspaceId),
-          new CloudAwarenessConnection(workspaceId, this.webSocketService),
-        ];
-      },
-      getDocServer: () => {
-        return new CloudDocEngineServer(workspaceId, this.webSocketService);
-      },
-      getDocStorage: () => {
-        return this.storageProvider.getDocStorage(workspaceId);
-      },
-      getLocalBlobStorage: () => {
-        return this.storageProvider.getBlobStorage(workspaceId);
-      },
-      getRemoteBlobStorages: () => {
-        return [
-          new CloudBlobStorage(
-            workspaceId,
-            this.fetchService,
-            this.graphqlService
-          ),
-          new StaticBlobStorage(),
-        ];
-      },
-    };
+  async listBlobs(id: string): Promise<ListedBlobRecord[]> {
+    const cloudStorage = new CloudBlobStorage({
+      id,
+      serverBaseUrl: this.server.serverMetadata.baseUrl,
+    });
+    return cloudStorage.list();
+  }
+
+  async deleteBlob(
+    id: string,
+    blob: string,
+    permanent: boolean
+  ): Promise<void> {
+    const cloudStorage = new CloudBlobStorage({
+      id,
+      serverBaseUrl: this.server.serverMetadata.baseUrl,
+    });
+    await cloudStorage.delete(blob, permanent);
+
+    // should also delete from local storage
+    const storage = new this.BlobStorageType({
+      id: id,
+      flavour: this.flavour,
+      type: 'workspace',
+    });
+    storage.connection.connect();
+    await storage.connection.waitForConnected();
+    await storage.delete(blob, permanent);
+    storage.connection.disconnect();
   }
 
   onWorkspaceInitialized(workspace: Workspace): void {
@@ -317,6 +430,159 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
       },
       context: { signal },
     });
+  }
+
+  getEngineWorkerInitOptions(workspaceId: string): WorkerInitOptions {
+    return {
+      local: {
+        doc: {
+          name: this.DocStorageType.identifier,
+          opts: {
+            flavour: this.flavour,
+            type: 'workspace',
+            id: workspaceId,
+          },
+        },
+        blob: {
+          name: this.BlobStorageType.identifier,
+          opts: {
+            flavour: this.flavour,
+            type: 'workspace',
+            id: workspaceId,
+          },
+        },
+        docSync: {
+          name: this.DocSyncStorageType.identifier,
+          opts: {
+            flavour: this.flavour,
+            type: 'workspace',
+            id: workspaceId,
+          },
+        },
+        blobSync: {
+          name: this.BlobSyncStorageType.identifier,
+          opts: {
+            flavour: this.flavour,
+            type: 'workspace',
+            id: workspaceId,
+          },
+        },
+        awareness: {
+          name: 'BroadcastChannelAwarenessStorage',
+          opts: {
+            id: `${this.flavour}:${workspaceId}`,
+          },
+        },
+        indexer: {
+          name: 'IndexedDBIndexerStorage',
+          opts: {
+            flavour: this.flavour,
+            type: 'workspace',
+            id: workspaceId,
+          },
+        },
+        indexerSync: {
+          name: 'IndexedDBIndexerSyncStorage',
+          opts: {
+            flavour: this.flavour,
+            type: 'workspace',
+            id: workspaceId,
+          },
+        },
+      },
+      remotes: {
+        [`cloud:${this.flavour}`]: {
+          doc: {
+            name: 'CloudDocStorage',
+            opts: {
+              type: 'workspace',
+              id: workspaceId,
+              serverBaseUrl: this.server.serverMetadata.baseUrl,
+              isSelfHosted:
+                this.server.config$.value.type ===
+                ServerDeploymentType.Selfhosted,
+            },
+          },
+          blob: {
+            name: 'CloudBlobStorage',
+            opts: {
+              id: workspaceId,
+              serverBaseUrl: this.server.serverMetadata.baseUrl,
+            },
+          },
+          awareness: {
+            name: 'CloudAwarenessStorage',
+            opts: {
+              type: 'workspace',
+              id: workspaceId,
+              serverBaseUrl: this.server.serverMetadata.baseUrl,
+              isSelfHosted:
+                this.server.config$.value.type ===
+                ServerDeploymentType.Selfhosted,
+            },
+          },
+        },
+        v1: {
+          doc: this.DocStorageV1Type
+            ? {
+                name: this.DocStorageV1Type.identifier,
+                opts: {
+                  id: workspaceId,
+                  type: 'workspace',
+                },
+              }
+            : undefined,
+          blob: this.BlobStorageV1Type
+            ? {
+                name: this.BlobStorageV1Type.identifier,
+                opts: {
+                  id: workspaceId,
+                  type: 'workspace',
+                },
+              }
+            : undefined,
+        },
+      },
+    };
+  }
+
+  async writeInitialDocProperties(
+    workspaceId: string,
+    docStorage: DocStorage,
+    creatorId: string
+  ) {
+    try {
+      const rootDocBuffer = await docStorage.getDoc(workspaceId);
+      const rootDoc = new YDoc({ guid: workspaceId });
+      if (rootDocBuffer) {
+        applyUpdate(rootDoc, rootDocBuffer.bin);
+      }
+
+      const docIds = (
+        rootDoc.getMap('meta').get('pages') as YArray<YMap<string>>
+      )
+        ?.map(page => page.get('id'))
+        .filter(Boolean) as string[];
+
+      const propertiesDBBuffer = await docStorage.getDoc('db$docProperties');
+      const propertiesDB = new YDoc({ guid: 'db$docProperties' });
+      if (propertiesDBBuffer) {
+        applyUpdate(propertiesDB, propertiesDBBuffer.bin);
+      }
+
+      for (const docId of docIds) {
+        const docProperties = propertiesDB.getMap(docId);
+        docProperties.set('id', docId);
+        docProperties.set('createdBy', creatorId);
+      }
+
+      await docStorage.pushDocUpdate({
+        docId: 'db$docProperties',
+        bin: encodeStateAsUpdate(propertiesDB),
+      });
+    } catch (error) {
+      logger.error('error to write initial doc properties', error);
+    }
   }
 
   private waitForLoaded() {
@@ -335,7 +601,6 @@ export class CloudWorkspaceFlavoursProvider
 {
   constructor(
     private readonly globalState: GlobalState,
-    private readonly storageProvider: WorkspaceEngineStorageProvider,
     private readonly serversService: ServersService
   ) {
     super();
@@ -351,7 +616,6 @@ export class CloudWorkspaceFlavoursProvider
           }
           const provider = new CloudWorkspaceFlavourProvider(
             this.globalState,
-            this.storageProvider,
             server
           );
           provider.revalidate();

@@ -3,11 +3,7 @@ import { useSignOut } from '@affine/core/components/hooks/affine/use-sign-out';
 import { AuthService } from '@affine/core/modules/cloud';
 import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
-import {
-  useEnsureLiveData,
-  useLiveData,
-  useService,
-} from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { type ReactNode } from 'react';
 
 import { UserPlanTag } from '../../../components';
@@ -52,7 +48,7 @@ const BaseLayout = ({
 
 const AuthorizedUserProfile = () => {
   const session = useService(AuthService).session;
-  const account = useEnsureLiveData(session.account$);
+  const account = useLiveData(session.account$);
   const confirmSignOut = useSignOut();
 
   return (
@@ -61,14 +57,14 @@ const AuthorizedUserProfile = () => {
         <Avatar
           size={48}
           rounded={4}
-          url={account.avatar}
-          name={account.label}
+          url={account?.avatar}
+          name={account?.label}
         />
       }
-      caption={<span className={styles.emailInfo}>{account.email}</span>}
+      caption={<span className={styles.emailInfo}>{account?.email}</span>}
       title={
         <div className={styles.nameWithTag}>
-          <span className={styles.name}>{account.label}</span>
+          <span className={styles.name}>{account?.label}</span>
           <UserPlanTag />
         </div>
       }

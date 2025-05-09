@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let EditorType = ApolloAPI.Object(
     typename: "EditorType",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

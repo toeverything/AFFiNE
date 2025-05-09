@@ -1,0 +1,88 @@
+[package]
+edition = "2021"
+name    = "y-octo-fuzz"
+publish = false
+version = "0.0.0"
+
+  [package.metadata]
+  cargo-fuzz = true
+
+[dependencies]
+lib0          = "=0.16.10"
+libfuzzer-sys = "0.4"
+rand          = "0.9"
+rand_chacha   = "0.9"
+yrs           = "=0.23.1"
+
+y-octo-utils = { path = "..", features = ["fuzz"] }
+
+  [dependencies.y-octo]
+  path = "../../core"
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+doc  = false
+name = "codec_doc_any_struct"
+path = "fuzz_targets/codec_doc_any_struct.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "codec_doc_any"
+path = "fuzz_targets/codec_doc_any.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "decode_bytes"
+path = "fuzz_targets/decode_bytes.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "ins_del_text"
+path = "fuzz_targets/ins_del_text.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "sync_message"
+path = "fuzz_targets/sync_message.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "i32_decode"
+path = "fuzz_targets/i32_decode.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "i32_encode"
+path = "fuzz_targets/i32_encode.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "u64_decode"
+path = "fuzz_targets/u64_decode.rs"
+test = false
+
+
+[[bin]]
+doc  = false
+name = "u64_encode"
+path = "fuzz_targets/u64_encode.rs"
+test = false
+
+[[bin]]
+doc  = false
+name = "apply_update"
+path = "fuzz_targets/apply_update.rs"
+test = false

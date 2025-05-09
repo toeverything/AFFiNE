@@ -5,8 +5,9 @@ import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import {
   IndexedDBBlobStorage,
+  IndexedDBBlobSyncStorage,
   IndexedDBDocStorage,
-  IndexedDBSyncStorage,
+  IndexedDBDocSyncStorage,
 } from '../impls/idb';
 import { SpaceStorage } from '../storage';
 import { Sync } from '../sync';
@@ -23,7 +24,7 @@ test('doc', async () => {
     type: 'workspace',
   });
 
-  const peerASync = new IndexedDBSyncStorage({
+  const peerASync = new IndexedDBDocSyncStorage({
     id: 'ws1',
     flavour: 'a',
     type: 'workspace',
@@ -42,7 +43,7 @@ test('doc', async () => {
 
   const peerA = new SpaceStorage({
     doc: peerADoc,
-    sync: peerASync,
+    docSync: peerASync,
   });
   const peerB = new SpaceStorage({
     doc: peerBDoc,
@@ -138,8 +139,15 @@ test('blob', async () => {
     type: 'workspace',
   });
 
+  const blobSync = new IndexedDBBlobSyncStorage({
+    id: 'ws1',
+    flavour: 'a',
+    type: 'workspace',
+  });
+
   const peerA = new SpaceStorage({
     blob: a,
+    blobSync,
   });
   const peerB = new SpaceStorage({
     blob: b,

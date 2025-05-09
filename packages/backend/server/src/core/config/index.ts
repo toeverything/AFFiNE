@@ -3,24 +3,25 @@ import './config';
 import { Module } from '@nestjs/common';
 
 import {
+  AppConfigResolver,
   ServerConfigResolver,
   ServerFeatureConfigResolver,
-  ServerRuntimeConfigResolver,
-  ServerServiceConfigResolver,
 } from './resolver';
 import { ServerService } from './service';
 
 @Module({
-  providers: [
-    ServerService,
-    ServerConfigResolver,
-    ServerFeatureConfigResolver,
-    ServerRuntimeConfigResolver,
-    ServerServiceConfigResolver,
-  ],
+  providers: [ServerService],
   exports: [ServerService],
 })
 export class ServerConfigModule {}
+@Module({
+  imports: [ServerConfigModule],
+  providers: [
+    ServerConfigResolver,
+    ServerFeatureConfigResolver,
+    AppConfigResolver,
+  ],
+})
+export class ServerConfigResolverModule {}
 export { ServerService };
-export { ADD_ENABLED_FEATURES } from './server-feature';
 export { ServerFeature } from './types';

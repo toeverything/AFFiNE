@@ -382,7 +382,7 @@ const PageListItemWrapper = forwardRef(
 
     if (to) {
       return (
-        <WorkbenchLink ref={ref} {...commonProps} to={to}>
+        <WorkbenchLink ref={ref} draggable={false} {...commonProps} to={to}>
           {children}
         </WorkbenchLink>
       );

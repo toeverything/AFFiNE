@@ -3,12 +3,14 @@
 
 import ApolloAPI
 
-/// The type of workspace feature
 public enum FeatureType: String, EnumType {
   case aIEarlyAccess = "AIEarlyAccess"
   case admin = "Admin"
-  case copilot = "Copilot"
   case earlyAccess = "EarlyAccess"
+  case freePlan = "FreePlan"
+  case lifetimeProPlan = "LifetimeProPlan"
+  case proPlan = "ProPlan"
+  case teamPlan = "TeamPlan"
   case unlimitedCopilot = "UnlimitedCopilot"
   case unlimitedWorkspace = "UnlimitedWorkspace"
 }

@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let DeleteAccount = ApolloAPI.Object(
     typename: "DeleteAccount",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

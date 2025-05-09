@@ -28,7 +28,16 @@ export function caretRangeFromPoint(
     }
     // TODO handle caret is covered by popup
     const range = document.createRange();
-    range.setStart(caret.offsetNode, caret.offset);
+    let offset = caret.offset;
+    if (caret.offsetNode.nodeType === Node.TEXT_NODE) {
+      const textNode = caret.offsetNode as Text;
+      offset = Math.max(0, Math.min(offset, textNode.length));
+    } else if (caret.offsetNode.nodeType === Node.ELEMENT_NODE) {
+      const elementNode = caret.offsetNode as Element;
+      offset = Math.max(0, Math.min(offset, elementNode.childNodes.length));
+    }
+
+    range.setStart(caret.offsetNode, offset);
     return range;
   }
 

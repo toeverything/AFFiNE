@@ -1,7 +1,6 @@
 import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
-export const floatingMaxWidth = 768;
 export const navWrapperStyle = style({
   '@media': {
     print: {

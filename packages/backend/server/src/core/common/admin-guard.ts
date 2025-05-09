@@ -7,16 +7,16 @@ import { Injectable, UseGuards } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 
 import { ActionForbidden, getRequestResponseFromContext } from '../../base';
-import { FeatureManagementService } from '../features/management';
+import { FeatureService } from '../features/service';
 
 @Injectable()
 export class AdminGuard implements CanActivate, OnModuleInit {
-  private feature!: FeatureManagementService;
+  private feature!: FeatureService;
 
   constructor(private readonly ref: ModuleRef) {}
 
   onModuleInit() {
-    this.feature = this.ref.get(FeatureManagementService, { strict: false });
+    this.feature = this.ref.get(FeatureService, { strict: false });
   }
 
   async canActivate(context: ExecutionContext) {

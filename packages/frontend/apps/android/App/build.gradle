@@ -1,33 +1,52 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-
 buildscript {
-
-  repositories {
-        google()
-        mavenCentral()
-        maven {
-            url "https://plugins.gradle.org/m2/"
+    repositories {
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
         }
+        mavenCentral()
+        gradlePluginPortal()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.8.0'
-        classpath 'com.google.gms:google-services:4.4.2'
-
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+        classpath libs.android.gradle.plugin
+        classpath libs.google.services
     }
 }
 
 plugins {
-  id("org.mozilla.rust-android-gradle.rust-android") version "0.9.6"
-  id("org.jetbrains.kotlin.jvm") version "2.1.0"
+    alias libs.plugins.gradle.versions
+    alias libs.plugins.version.catalog.update
+    alias libs.plugins.android.application apply false
+    alias libs.plugins.android.library apply false
+    alias libs.plugins.apollo.android apply false
+    alias libs.plugins.compose apply false
+    alias libs.plugins.firebase.crashlytics apply false
+    alias libs.plugins.google.service apply false
+    alias libs.plugins.hilt apply false
+    alias libs.plugins.jetbrains.kotlin.jvm apply false
+    alias libs.plugins.kotlin.android apply false
+    alias libs.plugins.kotlin.parcelize apply false
+    alias libs.plugins.kotlin.serialization apply false
+    alias libs.plugins.ksp apply false
+    alias libs.plugins.rust.android apply false
 }
 
 apply from: "variables.gradle"
+apply from: "${project.rootDir}/buildscripts/toml-updater-config.gradle"
 
 allprojects {
     repositories {
-        google()
+        google {
+            content {
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+                includeGroupByRegex("androidx.*")
+            }
+        }
         mavenCentral()
+        gradlePluginPortal()
     }
 }

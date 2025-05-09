@@ -14,6 +14,7 @@ export const RenameSubMenu = ({
   children,
   menuProps,
   onConfirm,
+  disabled,
   ...props
 }: RenameSubMenuProps) => {
   const t = useI18n();
@@ -33,6 +34,7 @@ export const RenameSubMenu = ({
       triggerOptions={{
         prefixIcon: icon ?? <EditIcon />,
         suffixIcon: null,
+        disabled,
         ...triggerOptions,
       }}
       items={

@@ -4,20 +4,22 @@ import type { PropertyConfig } from './types.js';
 export type PropertyMetaConfig<
   Type extends string = string,
   PropertyData extends NonNullable<unknown> = NonNullable<unknown>,
-  CellData = unknown,
+  RawValue = unknown,
+  JsonValue = unknown,
 > = {
   type: Type;
-  config: PropertyConfig<PropertyData, CellData>;
+  config: PropertyConfig<PropertyData, RawValue, JsonValue>;
   create: Create<PropertyData>;
-  renderer: Renderer<PropertyData, CellData>;
+  renderer: Renderer<PropertyData, RawValue, JsonValue>;
 };
 type CreatePropertyMeta<
   Type extends string = string,
   PropertyData extends Record<string, unknown> = Record<string, never>,
-  CellData = unknown,
+  RawValue = unknown,
+  JsonValue = unknown,
 > = (
-  renderer: Omit<Renderer<PropertyData, CellData>, 'type'>
-) => PropertyMetaConfig<Type, PropertyData, CellData>;
+  renderer: Omit<Renderer<PropertyData, RawValue, JsonValue>, 'type'>
+) => PropertyMetaConfig<Type, PropertyData, RawValue, JsonValue>;
 type Create<
   PropertyData extends Record<string, unknown> = Record<string, never>,
 > = (
@@ -32,26 +34,33 @@ type Create<
 export type PropertyModel<
   Type extends string = string,
   PropertyData extends Record<string, unknown> = Record<string, unknown>,
-  CellData = unknown,
+  RawValue = unknown,
+  JsonValue = unknown,
 > = {
   type: Type;
-  config: PropertyConfig<PropertyData, CellData>;
+  config: PropertyConfig<PropertyData, RawValue, JsonValue>;
   create: Create<PropertyData>;
-  createPropertyMeta: CreatePropertyMeta<Type, PropertyData, CellData>;
+  createPropertyMeta: CreatePropertyMeta<
+    Type,
+    PropertyData,
+    RawValue,
+    JsonValue
+  >;
 };
 export const propertyType = <Type extends string>(type: Type) => ({
   type: type,
   modelConfig: <
-    CellData,
     PropertyData extends Record<string, unknown> = Record<string, never>,
+    RawValue = unknown,
+    JsonValue = unknown,
   >(
-    ops: PropertyConfig<PropertyData, CellData>
-  ): PropertyModel<Type, PropertyData, CellData> => {
+    ops: PropertyConfig<PropertyData, RawValue, JsonValue>
+  ): PropertyModel<Type, PropertyData, RawValue, JsonValue> => {
     const create: Create<PropertyData> = (name, data) => {
       return {
         type,
         name,
-        data: data ?? ops.defaultData(),
+        data: data ?? ops.propertyData.default(),
       };
     };
     return {

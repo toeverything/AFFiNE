@@ -107,13 +107,6 @@ export class InitCommand extends Command {
         ['references'],
         this.workspace.packages
           .filter(p => p.isTsProject)
-          .filter(
-            p =>
-              // NOTE(@forehalo): there two packages including outdated types, will be fixed when merged with affine-e2e
-              !['@blocksuite/playground', '@blocksuite/legacy-e2e'].includes(
-                p.name
-              )
-          )
           .map(p => ({ path: p.path.relativePath })),
         {}
       )

@@ -1,3 +1,0 @@
-mutation removeWorkspaceFeature($workspaceId: String!, $feature: FeatureType!) {
-  removeWorkspaceFeature(workspaceId: $workspaceId, feature: $feature)
-}

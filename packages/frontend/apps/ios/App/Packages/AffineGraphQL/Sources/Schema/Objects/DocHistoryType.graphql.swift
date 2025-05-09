@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let DocHistoryType = ApolloAPI.Object(
     typename: "DocHistoryType",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

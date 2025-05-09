@@ -1,0 +1,51 @@
+{
+  "name": "@blocksuite/std",
+  "description": "Std for blocksuite blocks",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "sideEffects": false,
+  "keywords": [],
+  "author": "toeverything",
+  "license": "MIT",
+  "dependencies": {
+    "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
+    "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "^2.1.0",
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.0.3",
+    "@blocksuite/global": "workspace:*",
+    "@blocksuite/store": "workspace:*",
+    "@lit/context": "^1.1.2",
+    "@preact/signals-core": "^1.8.0",
+    "@types/hast": "^3.0.4",
+    "@types/lodash-es": "^4.17.12",
+    "dompurify": "^3.2.4",
+    "fractional-indexing": "^3.2.0",
+    "lib0": "^0.2.97",
+    "lit": "^3.2.0",
+    "lodash-es": "^4.17.21",
+    "lz-string": "^1.5.0",
+    "rehype-parse": "^9.0.0",
+    "rxjs": "^7.8.1",
+    "unified": "^11.0.5",
+    "w3c-keyname": "^2.2.8",
+    "yjs": "^13.6.21",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "vitest": "3.1.3"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./gfx": "./src/gfx/index.ts",
+    "./effects": "./src/effects.ts",
+    "./inline": "./src/inline/index.ts"
+  },
+  "files": [
+    "src",
+    "dist",
+    "!src/__tests__",
+    "!dist/__tests__"
+  ],
+  "version": "0.21.0"
+}

@@ -1,9 +1,7 @@
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
-import type { BlockComponent } from '@blocksuite/block-std';
+import { type BlockComponent, TextSelection } from '@blocksuite/std';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
-
-import { focusTextModel } from '../rich-text';
 
 export class BlockZeroWidth extends LitElement {
   static override styles = css`
@@ -19,13 +17,20 @@ export class BlockZeroWidth extends LitElement {
 
   _handleClick = (e: MouseEvent) => {
     stopPropagation(e);
-    if (this.block.doc.readonly) return;
-    const nextBlock = this.block.doc.getNext(this.block.model);
+    if (this.block.store.readonly) return;
+    const nextBlock = this.block.store.getNext(this.block.model);
     if (nextBlock?.flavour !== 'affine:paragraph') {
-      const [paragraphId] = this.block.doc.addSiblingBlocks(this.block.model, [
-        { flavour: 'affine:paragraph' },
+      const [paragraphId] = this.block.store.addSiblingBlocks(
+        this.block.model,
+        [{ flavour: 'affine:paragraph' }]
+      );
+      const std = this.block.std;
+      std.selection.setGroup('note', [
+        std.selection.create(TextSelection, {
+          from: { blockId: paragraphId, index: 0, length: 0 },
+          to: null,
+        }),
       ]);
-      focusTextModel(this.block.host.std, paragraphId);
     }
   };
 

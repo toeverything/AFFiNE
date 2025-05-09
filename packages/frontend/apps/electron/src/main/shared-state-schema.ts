@@ -51,5 +51,35 @@ export const SpellCheckStateSchema = z.object({
 });
 
 export const SpellCheckStateKey = 'spellCheckState' as const;
-// eslint-disable-next-line no-redeclare
+// oxlint-disable-next-line no-redeclare
 export type SpellCheckStateSchema = z.infer<typeof SpellCheckStateSchema>;
+
+export const MenubarStateKey = 'menubarState' as const;
+export const MenubarStateSchema = z.object({
+  enabled: z.boolean().default(true),
+});
+
+export type MenubarStateSchema = z.infer<typeof MenubarStateSchema>;
+
+export const MeetingSettingsKey = 'meetingSettings' as const;
+export const MeetingSettingsSchema = z.object({
+  // global meeting feature control
+  enabled: z.boolean().default(false),
+
+  // if false (and enabled = false), show a prompt page
+  betaDisclaimerAccepted: z.boolean().default(false),
+
+  // when recording is saved, where to create the recording block
+  recordingSavingMode: z.enum(['new-doc', 'journal-today']).default('new-doc'),
+
+  // whether to enable generation of summary for new meeting recordings
+  autoTranscriptionSummary: z.boolean().default(true),
+
+  // whether to enable generation of todo list for new meeting recordings
+  autoTranscriptionTodo: z.boolean().default(true),
+
+  // recording reactions to new meeting events
+  recordingMode: z.enum(['none', 'prompt', 'auto-start']).default('prompt'),
+});
+
+export type MeetingSettingsSchema = z.infer<typeof MeetingSettingsSchema>;

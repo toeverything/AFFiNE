@@ -6,5 +6,9 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["./src"],
-  "references": [{ "path": "../../tools/utils" }]
+  "references": [
+    { "path": "../../tools/utils" },
+    { "path": "../../blocksuite/affine/all" },
+    { "path": "../../packages/common/infra" }
+  ]
 }

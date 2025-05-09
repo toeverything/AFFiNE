@@ -96,7 +96,7 @@ export class DataViewHeaderViews extends WidgetBase {
       popupTargetFromElement(event.currentTarget as HTMLElement),
       [
         menu.group({
-          items: views.map(id => {
+          items: views.flatMap(id => {
             const openViewOption = (event: MouseEvent) => {
               event.stopPropagation();
               this.openViewOption(
@@ -105,9 +105,12 @@ export class DataViewHeaderViews extends WidgetBase {
               );
             };
             const view = this.viewManager.viewGet(id);
+            if (!view) {
+              return [];
+            }
             return menu.action({
               prefix: html`<uni-lit
-                .uni=${this.getRenderer(id).icon}
+                .uni=${this.getRenderer(id)?.icon}
               ></uni-lit>`,
               name: view.name$.value ?? '',
               label: () => html`${view.name$.value}`,
@@ -161,6 +164,7 @@ export class DataViewHeaderViews extends WidgetBase {
         items: [
           menu.input({
             initialValue: view.name$.value,
+            placeholder: 'View name',
             onChange: text => {
               view.nameSet(text);
             },
@@ -262,7 +266,7 @@ export class DataViewHeaderViews extends WidgetBase {
           style="margin-right: 4px;"
           @click="${(event: MouseEvent) => this._clickView(event, id)}"
         >
-          <uni-lit class="icon" .uni="${this.getRenderer(id).icon}"></uni-lit>
+          <uni-lit class="icon" .uni="${this.getRenderer(id)?.icon}"></uni-lit>
           <div class="name">${view?.name}</div>
         </div>
       `;
@@ -274,7 +278,7 @@ export class DataViewHeaderViews extends WidgetBase {
   }
 
   private getRenderer(viewId: string) {
-    return this.dataSource.viewMetaGetById(viewId).renderer;
+    return this.dataSource.viewMetaGetById(viewId)?.renderer;
   }
 
   _clickView(event: MouseEvent, id: string) {

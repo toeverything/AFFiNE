@@ -3,6 +3,7 @@ export * from './component/index.js';
 export { DataSourceBase } from './data-source/base.js';
 export { DataView } from './data-view.js';
 export * from './filter/index.js';
+export * from './group-by';
 export * from './logical/index.js';
 export * from './property/index.js';
 export type { DataViewSelection } from './types.js';

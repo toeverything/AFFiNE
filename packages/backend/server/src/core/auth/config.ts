@@ -1,100 +1,69 @@
-import {
-  defineRuntimeConfig,
-  defineStartupConfig,
-  ModuleConfig,
-} from '../../base/config';
+import { z } from 'zod';
 
-export interface AuthStartupConfigurations {
-  /**
-   * auth session config
-   */
+import { defineModuleConfig } from '../../base';
+
+export interface AuthConfig {
   session: {
-    /**
-     * Application auth expiration time in seconds
-     */
     ttl: number;
-    /**
-     * Application auth time to refresh in seconds
-     */
     ttr: number;
   };
-
-  /**
-   * Application access token config
-   */
-  accessToken: {
-    /**
-     * Application access token expiration time in seconds
-     */
-    ttl: number;
-    /**
-     * Application refresh token expiration time in seconds
-     */
-    refreshTokenTtl: number;
-  };
-}
-
-export interface AuthRuntimeConfigurations {
-  /**
-   * Whether allow anonymous users to sign up
-   */
   allowSignup: boolean;
-
-  /**
-   * Whether require email domain record verification before access restricted resources
-   */
   requireEmailDomainVerification: boolean;
-
-  /**
-   * Whether require email verification before access restricted resources
-   */
   requireEmailVerification: boolean;
-
-  /**
-   * The minimum and maximum length of the password when registering new users
-   */
-  password: {
+  passwordRequirements: ConfigItem<{
     min: number;
     max: number;
-  };
+  }>;
 }
 
-declare module '../../base/config' {
-  interface AppConfig {
-    auth: ModuleConfig<AuthStartupConfigurations, AuthRuntimeConfigurations>;
+declare global {
+  interface AppConfigSchema {
+    auth: AuthConfig;
   }
 }
 
-defineStartupConfig('auth', {
-  session: {
-    ttl: 60 * 60 * 24 * 15, // 15 days
-    ttr: 60 * 60 * 24 * 7, // 7 days
-  },
-  accessToken: {
-    ttl: 60 * 60 * 24 * 7, // 7 days
-    refreshTokenTtl: 60 * 60 * 24 * 30, // 30 days
-  },
-});
-
-defineRuntimeConfig('auth', {
+defineModuleConfig('auth', {
   allowSignup: {
-    desc: 'Whether allow new registrations',
+    desc: 'Whether allow new registrations.',
     default: true,
   },
   requireEmailDomainVerification: {
-    desc: 'Whether require email domain record verification before accessing restricted resources',
+    desc: 'Whether require email domain record verification before accessing restricted resources.',
     default: false,
   },
   requireEmailVerification: {
-    desc: 'Whether require email verification before accessing restricted resources',
+    desc: 'Whether require email verification before accessing restricted resources(not implemented).',
     default: true,
   },
-  'password.min': {
-    desc: 'The minimum length of user password',
-    default: 8,
+  passwordRequirements: {
+    desc: 'The password strength requirements when set new password.',
+    default: {
+      min: 8,
+      max: 32,
+    },
+    shape: z
+      .object({
+        min: z.number().min(1),
+        max: z.number().max(100),
+      })
+      .strict()
+      .refine(data => data.min < data.max, {
+        message: 'Minimum length of password must be less than maximum length',
+      }),
+    schema: {
+      type: 'object',
+      properties: {
+        min: { type: 'number' },
+        max: { type: 'number' },
+      },
+    },
   },
-  'password.max': {
-    desc: 'The maximum length of user password',
-    default: 32,
+  'session.ttl': {
+    desc: 'Application auth expiration time in seconds.',
+    default: 60 * 60 * 24 * 15, // 15 days
+  },
+  'session.ttr': {
+    desc: 'Application auth time to refresh in seconds.',
+    default: 60 * 60 * 24 * 7, // 7 days
   },
 });

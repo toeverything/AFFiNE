@@ -1,10 +1,9 @@
 {
   "name": "@affine/server-native",
-  "version": "0.19.0",
+  "version": "0.21.0",
   "engines": {
     "node": ">= 10.16.0 < 11 || >= 11.8.0"
   },
-  "type": "module",
   "main": "./index.js",
   "module": "./index.js",
   "types": "index.d.ts",
@@ -33,10 +32,10 @@
     "build:debug": "napi build"
   },
   "devDependencies": {
-    "@napi-rs/cli": "3.0.0-alpha.65",
+    "@napi-rs/cli": "3.0.0-alpha.78",
     "lib0": "^0.2.99",
     "tiktoken": "^1.0.17",
-    "tinybench": "^3.0.7",
+    "tinybench": "^4.0.0",
     "yjs": "^13.6.21"
   }
 }

@@ -1,8 +1,7 @@
-/* oxlint-disable @typescript-eslint/no-non-null-assertion */
+import { getAttachmentFileIcon } from '@blocksuite/affine/components/icons';
+import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { AttachmentBlockModel } from '@blocksuite/affine-model';
 import { humanFileSize } from '@blocksuite/affine-shared/utils';
-import { getAttachmentFileIcons } from '@blocksuite/blocks';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
 import {
   ArrowDownBigIcon,
   ArrowUpBigIcon,
@@ -152,10 +151,10 @@ export class AttachmentViewerPanel extends SignalWatcher(
   open(model: AttachmentBlockModel) {
     this.#dialog.showModal();
 
-    const { name, size } = model;
+    const { name, size } = model.props;
 
     const fileType = name.split('.').pop() ?? '';
-    const icon = getAttachmentFileIcons(fileType);
+    const icon = getAttachmentFileIcon(fileType);
     const isPDF = fileType === 'pdf';
 
     this.#fileInfo.value = {
@@ -166,7 +165,7 @@ export class AttachmentViewerPanel extends SignalWatcher(
     };
 
     if (!isPDF) return;
-    if (!model.sourceId) return;
+    if (!model.props.sourceId) return;
     if (this.#worker) return;
 
     const process = async ({ data }: MessageEvent<MessageData>) => {
@@ -183,7 +182,7 @@ export class AttachmentViewerPanel extends SignalWatcher(
           console.debug('connected');
           this.#state.value = State.Connected;
 
-          const blob = await model.doc.blobSync.get(model.sourceId!);
+          const blob = await model.store.blobSync.get(model.props.sourceId!);
 
           if (!blob) return;
           const buffer = await blob.arrayBuffer();

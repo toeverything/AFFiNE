@@ -14,8 +14,10 @@
   "references": [
     { "path": "../../common/debug" },
     { "path": "../electron-api" },
-    { "path": "../graphql" },
+    { "path": "../../common/error" },
+    { "path": "../../common/graphql" },
     { "path": "../i18n" },
+    { "path": "../../../tools/utils" },
     { "path": "../../../blocksuite/affine/all" }
   ]
 }

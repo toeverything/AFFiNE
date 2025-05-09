@@ -1,3 +1,5 @@
+import { BlockSchemaExtension } from '@blocksuite/store';
+
 import { createEmbedBlockSchema } from '../../../utils/index.js';
 import {
   type EmbedHtmlBlockProps,
@@ -18,3 +20,6 @@ export const EmbedHtmlBlockSchema = createEmbedBlockSchema({
   toModel: () => new EmbedHtmlModel(),
   props: (): EmbedHtmlBlockProps => defaultEmbedHtmlProps,
 });
+
+export const EmbedHtmlBlockSchemaExtension =
+  BlockSchemaExtension(EmbedHtmlBlockSchema);

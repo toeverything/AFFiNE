@@ -81,6 +81,7 @@ export const tab = style({
   height: 32,
   minWidth: 32,
   maxWidth: tabMaxWidth,
+  width: 200,
   overflow: 'clip',
   background: cssVarV2('tab/tabBackground/default'),
   display: 'flex',
@@ -113,6 +114,7 @@ export const splitViewLabel = style({
   fontWeight: 500,
   alignItems: 'center',
   cursor: 'default',
+  flex: 1,
   selectors: {
     '&[data-active="true"]': {
       background: cssVarV2('tab/tabBackground/active'),

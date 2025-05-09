@@ -1,7 +1,7 @@
 import type { PropertyModel } from './property-config.js';
 import type {
-  GetCellDataFromConfig,
   GetPropertyDataFromConfig,
+  GetRawValueFromConfig,
 } from './types.js';
 
 export type ConvertFunction<
@@ -9,14 +9,14 @@ export type ConvertFunction<
   To extends PropertyModel = PropertyModel,
 > = (
   property: GetPropertyDataFromConfig<From['config']>,
-  cells: (GetCellDataFromConfig<From['config']> | undefined)[]
+  cells: (GetRawValueFromConfig<From['config']> | undefined)[]
 ) => {
   property: GetPropertyDataFromConfig<To['config']>;
-  cells: (GetCellDataFromConfig<To['config']> | undefined)[];
+  cells: (GetRawValueFromConfig<To['config']> | undefined)[];
 };
 export const createPropertyConvert = <
-  From extends PropertyModel<any, any, any>,
-  To extends PropertyModel<any, any, any>,
+  From extends PropertyModel<any, any, any, any>,
+  To extends PropertyModel<any, any, any, any>,
 >(
   from: From,
   to: To,

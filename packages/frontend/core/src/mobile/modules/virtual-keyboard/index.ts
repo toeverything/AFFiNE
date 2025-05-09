@@ -6,8 +6,5 @@ import { VirtualKeyboardService } from './services/virtual-keyboard';
 export { VirtualKeyboardProvider, VirtualKeyboardService };
 
 export function configureMobileVirtualKeyboardModule(framework: Framework) {
-  framework.service(
-    VirtualKeyboardService,
-    f => new VirtualKeyboardService(f.getOptional(VirtualKeyboardProvider))
-  );
+  framework.service(VirtualKeyboardService, [VirtualKeyboardProvider]);
 }

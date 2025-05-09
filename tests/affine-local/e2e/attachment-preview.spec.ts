@@ -1,4 +1,6 @@
-import { Path, test } from '@affine-test/kit/playwright';
+import { test } from '@affine-test/kit/playwright';
+import { importAttachment } from '@affine-test/kit/utils/attachment';
+import { locateToolbar } from '@affine-test/kit/utils/editor';
 import { openHomePage } from '@affine-test/kit/utils/load-page';
 import {
   clickNewPageButton,
@@ -13,8 +15,6 @@ import {
 } from '@affine-test/kit/utils/setting';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
-
-const fixturesDir = Path.dir(import.meta.url).join('../../fixtures');
 
 async function clickPeekViewControl(page: Page, n = 0) {
   await page.getByTestId('peek-view-control').nth(n).click();
@@ -41,23 +41,6 @@ async function enablePDFEmbedView(page: Page) {
   await page.keyboard.press('Escape');
 }
 
-async function insertAttachment(page: Page, filepath: string) {
-  await page.evaluate(() => {
-    // Force fallback to input[type=file] in tests
-    // See https://github.com/microsoft/playwright/issues/8850
-    // @ts-expect-error allow
-    window.showOpenFilePicker = undefined;
-  });
-
-  const fileChooser = page.waitForEvent('filechooser');
-
-  // open slash menu
-  await page.keyboard.type('/attachment', { delay: 50 });
-  await page.keyboard.press('Enter');
-
-  await (await fileChooser).setFiles(filepath);
-}
-
 test('attachment preview should be shown', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
@@ -66,7 +49,7 @@ test('attachment preview should be shown', async ({ page }) => {
   await title.click();
   await page.keyboard.press('Enter');
 
-  await insertAttachment(page, fixturesDir.join('lorem-ipsum.pdf').value);
+  await importAttachment(page, 'lorem-ipsum.pdf');
 
   await page.locator('affine-attachment').first().dblclick();
 
@@ -104,7 +87,7 @@ test('attachment preview can be expanded', async ({ page }) => {
   await title.click();
   await page.keyboard.press('Enter');
 
-  await insertAttachment(page, fixturesDir.join('lorem-ipsum.pdf').value);
+  await importAttachment(page, 'lorem-ipsum.pdf');
 
   await page.locator('affine-attachment').first().dblclick();
 
@@ -155,17 +138,17 @@ test('should preview PDF in embed view', async ({ page }) => {
 
   await page.keyboard.press('Enter');
 
-  await insertAttachment(page, fixturesDir.join('lorem-ipsum.pdf').value);
+  await importAttachment(page, 'lorem-ipsum.pdf');
 
   const attachment = page.locator('affine-attachment');
-  await attachment.hover();
+  await attachment.click();
 
-  const attachmentToolbar = page.locator('.affine-attachment-toolbar');
-  await expect(attachmentToolbar).toBeVisible();
+  const toolbar = locateToolbar(page);
+  await expect(toolbar).toBeVisible();
 
   // Switches to embed view
-  await attachmentToolbar.getByRole('button', { name: 'Switch view' }).click();
-  await attachmentToolbar.getByRole('button', { name: 'Embed view' }).click();
+  await toolbar.getByLabel('Switch view').click();
+  await toolbar.getByLabel('Embed view').click();
 
   await page.waitForTimeout(500);
 
@@ -208,7 +191,6 @@ test('should preview PDF in embed view', async ({ page }) => {
     await doc1.click();
 
     const inlineLink = page.locator('affine-reference').nth(0);
-    const inlineToolbar = page.locator('reference-popup');
     const inlineTitle = inlineLink.locator('.affine-reference-title');
 
     await expect(inlineTitle).toHaveText('PDF preview');
@@ -220,10 +202,10 @@ test('should preview PDF in embed view', async ({ page }) => {
     await page.waitForTimeout(500);
     await page.mouse.click(bouding!.x - 50, bouding!.y + bouding!.height / 2);
 
-    await inlineLink.hover({ timeout: 500 });
+    await inlineLink.hover();
 
     // Edits title
-    await inlineToolbar.getByRole('button', { name: 'Edit' }).click();
+    await toolbar.getByRole('button', { name: 'Edit' }).click();
 
     // Title alias
     await page.keyboard.type('PDF embed preview');
@@ -262,13 +244,13 @@ test('should sync name in pdf embed view', async ({ page }) => {
   await title.click();
   await page.keyboard.press('Enter');
 
-  await insertAttachment(page, fixturesDir.join('lorem-ipsum.pdf').value);
+  await importAttachment(page, 'lorem-ipsum.pdf');
 
   const attachment = page.locator('affine-attachment');
-  await attachment.hover();
+  await attachment.click();
 
-  const attachmentToolbar = page.locator('.affine-attachment-toolbar');
-  await expect(attachmentToolbar).toBeVisible();
+  const toolbar = locateToolbar(page);
+  await expect(toolbar).toBeVisible();
 
   const attachmentTitle = attachment.locator(
     '.affine-attachment-content-title-text'
@@ -276,7 +258,7 @@ test('should sync name in pdf embed view', async ({ page }) => {
   await expect(attachmentTitle).toHaveText('lorem-ipsum.pdf');
 
   // Renames
-  await attachmentToolbar.getByRole('button', { name: 'Rename' }).click();
+  await toolbar.getByRole('button', { name: 'Rename' }).click();
   const input = page
     .locator('.affine-attachment-rename-input-wrapper')
     .locator('input');
@@ -284,11 +266,11 @@ test('should sync name in pdf embed view', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(attachmentTitle).toHaveText('What is Lorem Ipsum.pdf');
 
-  await attachment.hover();
+  await attachment.click();
 
   // Switches to embed view
-  await attachmentToolbar.getByRole('button', { name: 'Switch view' }).click();
-  await attachmentToolbar.getByRole('button', { name: 'Embed view' }).click();
+  await toolbar.getByLabel('Switch view').click();
+  await toolbar.getByLabel('Embed view').click();
 
   await page.waitForTimeout(500);
 
@@ -299,11 +281,67 @@ test('should sync name in pdf embed view', async ({ page }) => {
   await page.waitForTimeout(500);
   await expect(portalName).toHaveText('What is Lorem Ipsum.pdf');
 
-  await attachment.hover();
+  await attachment.click();
 
   // Renames
-  await attachmentToolbar.getByRole('button', { name: 'Rename' }).click();
+  await toolbar.getByRole('button', { name: 'Rename' }).click();
   await input.fill('lorem-ipsum');
   await page.keyboard.press('Enter');
   await expect(portalName).toHaveText('lorem-ipsum.pdf');
+});
+
+test('should enable pointer event in pdf viewer', async ({ page }) => {
+  await openHomePage(page);
+  await clickNewPageButton(page);
+  await waitForEmptyEditor(page);
+
+  const title = getBlockSuiteEditorTitle(page);
+  await title.click();
+  await page.keyboard.type('PDF preview');
+
+  await page.keyboard.press('Enter');
+
+  await importAttachment(page, 'lorem-ipsum.pdf');
+
+  const attachment = page.locator('affine-attachment');
+  await attachment.click();
+
+  const attachmentSelection = attachment.locator(
+    '.affine-attachment-container.focused'
+  );
+
+  const toolbar = locateToolbar(page);
+
+  // Switches to embed view
+  await toolbar.getByLabel('Switch view').click();
+  await toolbar.getByLabel('Embed view').click();
+
+  await attachment.locator('iframe').waitFor({ state: 'visible' });
+
+  const rect = await attachment.boundingBox();
+  expect(rect).not.toBeNull();
+
+  const { x, y, width, height } = rect!;
+  const startPoint = [x - 10, y - 10];
+  const endPoint = [x + width / 2, y + height / 2];
+
+  await page.mouse.move(startPoint[0], startPoint[1]);
+  await page.mouse.down();
+  await page.mouse.move(endPoint[0], endPoint[1]);
+  await page.mouse.move(
+    endPoint[0] + width / 2 + 10,
+    endPoint[1] + height / 2 + 10
+  );
+
+  await expect(attachmentSelection).toBeVisible();
+
+  await page.mouse.move(startPoint[0], startPoint[1]);
+
+  await expect(attachmentSelection).toBeHidden();
+
+  await page.mouse.move(startPoint[0] - 50, startPoint[1] - 50);
+
+  await page.mouse.up();
+
+  await expect(attachmentSelection).toBeHidden();
 });

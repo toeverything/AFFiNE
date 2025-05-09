@@ -1,0 +1,883 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AFFiNE Application Configuration",
+  "type": "object",
+  "properties": {
+    "metrics": {
+      "type": "object",
+      "description": "Configuration for metrics module",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable metric and tracing collection\n@default false",
+          "default": false
+        }
+      }
+    },
+    "crypto": {
+      "type": "object",
+      "description": "Configuration for crypto module",
+      "properties": {
+        "privateKey": {
+          "type": "string",
+          "description": "The private key for used by the crypto module to create signed tokens or encrypt data.\n@default \"\"\n@environment `AFFINE_PRIVATE_KEY`",
+          "default": ""
+        }
+      }
+    },
+    "job": {
+      "type": "object",
+      "description": "Configuration for job module",
+      "properties": {
+        "queue": {
+          "type": "object",
+          "description": "The config for job queues\n@default {\"attempts\":5,\"removeOnComplete\":true,\"removeOnFail\":{\"age\":86400,\"count\":500}}\n@link https://api.docs.bullmq.io/interfaces/v5.QueueOptions.html",
+          "default": {
+            "attempts": 5,
+            "removeOnComplete": true,
+            "removeOnFail": {
+              "age": 86400,
+              "count": 500
+            }
+          }
+        },
+        "worker": {
+          "type": "object",
+          "description": "The config for job workers\n@default {}\n@link https://api.docs.bullmq.io/interfaces/v5.WorkerOptions.html",
+          "default": {}
+        },
+        "queues.copilot": {
+          "type": "object",
+          "description": "The config for copilot job queue\n@default {\"concurrency\":1}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 1
+          }
+        },
+        "queues.doc": {
+          "type": "object",
+          "description": "The config for doc job queue\n@default {\"concurrency\":1}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 1
+          }
+        },
+        "queues.notification": {
+          "type": "object",
+          "description": "The config for notification job queue\n@default {\"concurrency\":10}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 10
+          }
+        },
+        "queues.nightly": {
+          "type": "object",
+          "description": "The config for nightly job queue\n@default {\"concurrency\":1}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 1
+          }
+        }
+      }
+    },
+    "throttle": {
+      "type": "object",
+      "description": "Configuration for throttle module",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the throttler is enabled.\n@default true",
+          "default": true
+        },
+        "throttlers.default": {
+          "type": "object",
+          "description": "The config for the default throttler.\n@default {\"ttl\":60,\"limit\":120}",
+          "default": {
+            "ttl": 60,
+            "limit": 120
+          }
+        },
+        "throttlers.strict": {
+          "type": "object",
+          "description": "The config for the strict throttler.\n@default {\"ttl\":60,\"limit\":20}",
+          "default": {
+            "ttl": 60,
+            "limit": 20
+          }
+        }
+      }
+    },
+    "websocket": {
+      "type": "object",
+      "description": "Configuration for websocket module",
+      "properties": {
+        "transports": {
+          "type": "array",
+          "description": "The enabled transports for accepting websocket traffics.\n@default [\"websocket\",\"polling\"]\n@link https://docs.nestjs.com/websockets/gateways#transports",
+          "items": {
+            "type": "string",
+            "enum": [
+              "websocket",
+              "polling"
+            ]
+          },
+          "default": [
+            "websocket",
+            "polling"
+          ]
+        },
+        "maxHttpBufferSize": {
+          "type": "number",
+          "description": "How many bytes or characters a message can be, before closing the session (to avoid DoS).\n@default 100000000",
+          "default": 100000000
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "description": "Configuration for auth module",
+      "properties": {
+        "allowSignup": {
+          "type": "boolean",
+          "description": "Whether allow new registrations.\n@default true",
+          "default": true
+        },
+        "requireEmailDomainVerification": {
+          "type": "boolean",
+          "description": "Whether require email domain record verification before accessing restricted resources.\n@default false",
+          "default": false
+        },
+        "requireEmailVerification": {
+          "type": "boolean",
+          "description": "Whether require email verification before accessing restricted resources(not implemented).\n@default true",
+          "default": true
+        },
+        "passwordRequirements": {
+          "type": "object",
+          "description": "The password strength requirements when set new password.\n@default {\"min\":8,\"max\":32}",
+          "properties": {
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "min": 8,
+            "max": 32
+          }
+        },
+        "session.ttl": {
+          "type": "number",
+          "description": "Application auth expiration time in seconds.\n@default 1296000",
+          "default": 1296000
+        },
+        "session.ttr": {
+          "type": "number",
+          "description": "Application auth time to refresh in seconds.\n@default 604800",
+          "default": 604800
+        }
+      }
+    },
+    "mailer": {
+      "type": "object",
+      "description": "Configuration for mailer module",
+      "properties": {
+        "SMTP.host": {
+          "type": "string",
+          "description": "Host of the email server (e.g. smtp.gmail.com)\n@default \"\"\n@environment `MAILER_HOST`",
+          "default": ""
+        },
+        "SMTP.port": {
+          "type": "number",
+          "description": "Port of the email server (they commonly are 25, 465 or 587)\n@default 465\n@environment `MAILER_PORT`",
+          "default": 465
+        },
+        "SMTP.username": {
+          "type": "string",
+          "description": "Username used to authenticate the email server\n@default \"\"\n@environment `MAILER_USER`",
+          "default": ""
+        },
+        "SMTP.password": {
+          "type": "string",
+          "description": "Password used to authenticate the email server\n@default \"\"\n@environment `MAILER_PASSWORD`",
+          "default": ""
+        },
+        "SMTP.sender": {
+          "type": "string",
+          "description": "Sender of all the emails (e.g. \"AFFiNE Team <noreply@affine.pro>\")\n@default \"\"\n@environment `MAILER_SENDER`",
+          "default": ""
+        },
+        "SMTP.ignoreTLS": {
+          "type": "boolean",
+          "description": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.\n@default false\n@environment `MAILER_IGNORE_TLS`",
+          "default": false
+        }
+      }
+    },
+    "doc": {
+      "type": "object",
+      "description": "Configuration for doc module",
+      "properties": {
+        "experimental.yocto": {
+          "type": "boolean",
+          "description": "Use `y-octo` to merge updates at the same time when merging using Yjs.\n@default false",
+          "default": false
+        },
+        "history.interval": {
+          "type": "number",
+          "description": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated.\n@default 600000",
+          "default": 600000
+        }
+      }
+    },
+    "storages": {
+      "type": "object",
+      "description": "Configuration for storages module",
+      "properties": {
+        "avatar.publicPath": {
+          "type": "string",
+          "description": "The public accessible path prefix for user avatars.\n@default \"/api/avatars/\"",
+          "default": "/api/avatars/"
+        },
+        "avatar.storage": {
+          "type": "object",
+          "description": "The config of storage for user avatars.\n@default {\"provider\":\"fs\",\"bucket\":\"avatars\",\"config\":{\"path\":\"~/.affine/storage\"}}",
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "fs"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "aws-s3"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "description": "The config for the s3 compatible storage provider. directly passed to aws-sdk client.\n@link https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html",
+                  "properties": {
+                    "credentials": {
+                      "type": "object",
+                      "description": "The credentials for the s3 compatible storage provider.",
+                      "properties": {
+                        "accessKeyId": {
+                          "type": "string"
+                        },
+                        "secretAccessKey": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "cloudflare-r2"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "description": "The config for the s3 compatible storage provider. directly passed to aws-sdk client.\n@link https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html",
+                  "properties": {
+                    "credentials": {
+                      "type": "object",
+                      "description": "The credentials for the s3 compatible storage provider.",
+                      "properties": {
+                        "accessKeyId": {
+                          "type": "string"
+                        },
+                        "secretAccessKey": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "accountId": {
+                      "type": "string",
+                      "description": "The account id for the cloudflare r2 storage provider."
+                    },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "The presigned url config for the cloudflare r2 storage provider.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether to use presigned url for the cloudflare r2 storage provider."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "The presigned url prefix for the cloudflare r2 storage provider.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "The presigned key for the cloudflare r2 storage provider."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "default": {
+            "provider": "fs",
+            "bucket": "avatars",
+            "config": {
+              "path": "~/.affine/storage"
+            }
+          }
+        },
+        "blob.storage": {
+          "type": "object",
+          "description": "The config of storage for all uploaded blobs(images, videos, etc.).\n@default {\"provider\":\"fs\",\"bucket\":\"blobs\",\"config\":{\"path\":\"~/.affine/storage\"}}",
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "fs"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "aws-s3"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "description": "The config for the s3 compatible storage provider. directly passed to aws-sdk client.\n@link https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html",
+                  "properties": {
+                    "credentials": {
+                      "type": "object",
+                      "description": "The credentials for the s3 compatible storage provider.",
+                      "properties": {
+                        "accessKeyId": {
+                          "type": "string"
+                        },
+                        "secretAccessKey": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "cloudflare-r2"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "description": "The config for the s3 compatible storage provider. directly passed to aws-sdk client.\n@link https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html",
+                  "properties": {
+                    "credentials": {
+                      "type": "object",
+                      "description": "The credentials for the s3 compatible storage provider.",
+                      "properties": {
+                        "accessKeyId": {
+                          "type": "string"
+                        },
+                        "secretAccessKey": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "accountId": {
+                      "type": "string",
+                      "description": "The account id for the cloudflare r2 storage provider."
+                    },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "The presigned url config for the cloudflare r2 storage provider.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether to use presigned url for the cloudflare r2 storage provider."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "The presigned url prefix for the cloudflare r2 storage provider.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "The presigned key for the cloudflare r2 storage provider."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "default": {
+            "provider": "fs",
+            "bucket": "blobs",
+            "config": {
+              "path": "~/.affine/storage"
+            }
+          }
+        }
+      }
+    },
+    "server": {
+      "type": "object",
+      "description": "Configuration for server module",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "A recognizable name for the server. Will be shown when connected with AFFiNE Desktop.\n@default undefined"
+        },
+        "externalUrl": {
+          "type": "string",
+          "description": "Base url of AFFiNE server, used for generating external urls.\nDefault to be `[server.protocol]://[server.host][:server.port]` if not specified.\n    \n@default \"\"\n@environment `AFFINE_SERVER_EXTERNAL_URL`",
+          "default": ""
+        },
+        "https": {
+          "type": "boolean",
+          "description": "Whether the server is hosted on a ssl enabled domain (https://).\n@default false\n@environment `AFFINE_SERVER_HTTPS`",
+          "default": false
+        },
+        "host": {
+          "type": "string",
+          "description": "Where the server get deployed(FQDN).\n@default \"localhost\"\n@environment `AFFINE_SERVER_HOST`",
+          "default": "localhost"
+        },
+        "port": {
+          "type": "number",
+          "description": "Which port the server will listen on.\n@default 3010\n@environment `AFFINE_SERVER_PORT`",
+          "default": 3010
+        },
+        "path": {
+          "type": "string",
+          "description": "Subpath where the server get deployed if there is one.(e.g. /affine)\n@default \"\"\n@environment `AFFINE_SERVER_SUB_PATH`",
+          "default": ""
+        }
+      }
+    },
+    "flags": {
+      "type": "object",
+      "description": "Configuration for flags module",
+      "properties": {
+        "earlyAccessControl": {
+          "type": "boolean",
+          "description": "Only allow users with early access features to access the app\n@default false",
+          "default": false
+        }
+      }
+    },
+    "docService": {
+      "type": "object",
+      "description": "Configuration for docService module",
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "description": "The endpoint of the doc service.\n@default \"\"\n@environment `DOC_SERVICE_ENDPOINT`",
+          "default": ""
+        }
+      }
+    },
+    "client": {
+      "type": "object",
+      "description": "Configuration for client module",
+      "properties": {
+        "versionControl.enabled": {
+          "type": "boolean",
+          "description": "Whether check version of client before accessing the server.\n@default false",
+          "default": false
+        },
+        "versionControl.requiredVersion": {
+          "type": "string",
+          "description": "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect.\n@default \">=0.20.0\"",
+          "default": ">=0.20.0"
+        }
+      }
+    },
+    "captcha": {
+      "type": "object",
+      "description": "Configuration for captcha module",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Check captcha challenge when user authenticating the app.\n@default false",
+          "default": false
+        },
+        "config": {
+          "type": "object",
+          "description": "The config for the captcha plugin.\n@default {\"turnstile\":{\"secret\":\"\"},\"challenge\":{\"bits\":20}}",
+          "default": {
+            "turnstile": {
+              "secret": ""
+            },
+            "challenge": {
+              "bits": 20
+            }
+          }
+        }
+      }
+    },
+    "copilot": {
+      "type": "object",
+      "description": "Configuration for copilot module",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether to enable the copilot plugin.\n@default false",
+          "default": false
+        },
+        "providers.openai": {
+          "type": "object",
+          "description": "The config for the openai provider.\n@default {\"apiKey\":\"\"}\n@link https://github.com/openai/openai-node",
+          "default": {
+            "apiKey": ""
+          }
+        },
+        "providers.fal": {
+          "type": "object",
+          "description": "The config for the fal provider.\n@default {\"apiKey\":\"\"}",
+          "default": {
+            "apiKey": ""
+          }
+        },
+        "providers.gemini": {
+          "type": "object",
+          "description": "The config for the gemini provider.\n@default {\"apiKey\":\"\"}",
+          "default": {
+            "apiKey": ""
+          }
+        },
+        "providers.perplexity": {
+          "type": "object",
+          "description": "The config for the perplexity provider.\n@default {\"apiKey\":\"\"}",
+          "default": {
+            "apiKey": ""
+          }
+        },
+        "unsplash": {
+          "type": "object",
+          "description": "The config for the unsplash key.\n@default {\"key\":\"\"}",
+          "default": {
+            "key": ""
+          }
+        },
+        "storage": {
+          "type": "object",
+          "description": "The config for the storage provider.\n@default {\"provider\":\"fs\",\"bucket\":\"copilot\",\"config\":{\"path\":\"~/.affine/storage\"}}",
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "fs"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "aws-s3"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "description": "The config for the s3 compatible storage provider. directly passed to aws-sdk client.\n@link https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html",
+                  "properties": {
+                    "credentials": {
+                      "type": "object",
+                      "description": "The credentials for the s3 compatible storage provider.",
+                      "properties": {
+                        "accessKeyId": {
+                          "type": "string"
+                        },
+                        "secretAccessKey": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "enum": [
+                    "cloudflare-r2"
+                  ]
+                },
+                "bucket": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "description": "The config for the s3 compatible storage provider. directly passed to aws-sdk client.\n@link https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html",
+                  "properties": {
+                    "credentials": {
+                      "type": "object",
+                      "description": "The credentials for the s3 compatible storage provider.",
+                      "properties": {
+                        "accessKeyId": {
+                          "type": "string"
+                        },
+                        "secretAccessKey": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "accountId": {
+                      "type": "string",
+                      "description": "The account id for the cloudflare r2 storage provider."
+                    },
+                    "usePresignedURL": {
+                      "type": "object",
+                      "description": "The presigned url config for the cloudflare r2 storage provider.",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "Whether to use presigned url for the cloudflare r2 storage provider."
+                        },
+                        "urlPrefix": {
+                          "type": "string",
+                          "description": "The presigned url prefix for the cloudflare r2 storage provider.\nsee https://developers.cloudflare.com/waf/custom-rules/use-cases/configure-token-authentication/ to configure it.\nExample value: \"https://storage.example.com\"\nExample rule: is_timed_hmac_valid_v0(\"your_secret\", http.request.uri, 10800, http.request.timestamp.sec, 6)"
+                        },
+                        "signKey": {
+                          "type": "string",
+                          "description": "The presigned key for the cloudflare r2 storage provider."
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "default": {
+            "provider": "fs",
+            "bucket": "copilot",
+            "config": {
+              "path": "~/.affine/storage"
+            }
+          }
+        }
+      }
+    },
+    "customerIo": {
+      "type": "object",
+      "description": "Configuration for customerIo module",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable customer.io integration\n@default false",
+          "default": false
+        },
+        "token": {
+          "type": "string",
+          "description": "Customer.io token\n@default \"\"",
+          "default": ""
+        }
+      }
+    },
+    "oauth": {
+      "type": "object",
+      "description": "Configuration for oauth module",
+      "properties": {
+        "providers.google": {
+          "type": "object",
+          "description": "Google OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://developers.google.com/identity/protocols/oauth2/web-server",
+          "properties": {
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "args": {
+              "type": "object"
+            }
+          },
+          "default": {
+            "clientId": "",
+            "clientSecret": ""
+          }
+        },
+        "providers.github": {
+          "type": "object",
+          "description": "GitHub OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://docs.github.com/en/apps/oauth-apps",
+          "properties": {
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "args": {
+              "type": "object"
+            }
+          },
+          "default": {
+            "clientId": "",
+            "clientSecret": ""
+          }
+        },
+        "providers.oidc": {
+          "type": "object",
+          "description": "OIDC OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\",\"args\":{}}",
+          "default": {
+            "clientId": "",
+            "clientSecret": "",
+            "issuer": "",
+            "args": {}
+          }
+        }
+      }
+    },
+    "payment": {
+      "type": "object",
+      "description": "Configuration for payment module",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether enable payment plugin\n@default false",
+          "default": false
+        },
+        "showLifetimePrice": {
+          "type": "boolean",
+          "description": "Whether enable lifetime price and allow user to pay for it.\n@default true",
+          "default": true
+        },
+        "apiKey": {
+          "type": "string",
+          "description": "Stripe API key to enable payment service.\n@default \"\"\n@environment `STRIPE_API_KEY`",
+          "default": ""
+        },
+        "webhookKey": {
+          "type": "string",
+          "description": "Stripe webhook key to enable payment service.\n@default \"\"\n@environment `STRIPE_WEBHOOK_KEY`",
+          "default": ""
+        },
+        "stripe": {
+          "type": "object",
+          "description": "Stripe sdk options\n@default {}\n@link https://docs.stripe.com/api",
+          "default": {}
+        }
+      }
+    },
+    "worker": {
+      "type": "object",
+      "description": "Configuration for worker module",
+      "properties": {
+        "allowedOrigin": {
+          "type": "array",
+          "description": "Allowed origin\n@default [\"localhost\",\"127.0.0.1\"]",
+          "default": [
+            "localhost",
+            "127.0.0.1"
+          ]
+        }
+      }
+    }
+  }
+}

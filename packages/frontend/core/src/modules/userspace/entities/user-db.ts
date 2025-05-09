@@ -19,8 +19,8 @@ export class UserDB extends Entity<{
         const ydoc = new YDoc({
           guid,
         });
-        this.engine.docEngine.addDoc(ydoc, false);
-        this.engine.docEngine.setPriority(ydoc.guid, 50);
+        this.engine.client.docFrontend.connectDoc(ydoc);
+        this.engine.client.docFrontend.addPriority(ydoc.guid, 50);
         return ydoc;
       },
     })
@@ -38,6 +38,10 @@ export class UserDB extends Entity<{
         get: () => table,
       });
     });
+  }
+
+  override dispose(): void {
+    this.engine.dispose();
   }
 }
 

@@ -1,10 +1,8 @@
 import { PropertyValue } from '@affine/component';
 import { ConfigModal } from '@affine/core/components/mobile';
-import type { BlockStdScope } from '@blocksuite/affine/block-std';
-import {
-  DefaultInlineManagerExtension,
-  RichText,
-} from '@blocksuite/affine/blocks';
+import { DefaultInlineManagerExtension } from '@blocksuite/affine/inlines/preset';
+import { RichText } from '@blocksuite/affine/rich-text';
+import type { BlockStdScope } from '@blocksuite/affine/std';
 import type { Store } from '@blocksuite/affine/store';
 import { TextIcon } from '@blocksuite/icons/rc';
 import { type LiveData, useLiveData } from '@toeverything/infra';
@@ -12,7 +10,7 @@ import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import type * as Y from 'yjs';
 
 import type { DatabaseCellRendererProps } from '../../../types';
-import { useBlockStdScope } from '../../../utils';
+import { useBlockStdScope } from '../../../use-std';
 import * as styles from './rich-text.css';
 
 // todo(@pengx17): handle markdown/keyboard shortcuts

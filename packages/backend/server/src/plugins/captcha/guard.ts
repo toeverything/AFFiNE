@@ -6,9 +6,9 @@ import type {
 import { Injectable } from '@nestjs/common';
 
 import {
+  Config,
   getRequestResponseFromContext,
   GuardProvider,
-  Runtime,
 } from '../../base';
 import { CaptchaService } from './service';
 
@@ -20,14 +20,14 @@ export class CaptchaGuardProvider
   name = 'captcha' as const;
 
   constructor(
-    private readonly captcha: CaptchaService,
-    private readonly runtime: Runtime
+    private readonly config: Config,
+    private readonly captcha: CaptchaService
   ) {
     super();
   }
 
   async canActivate(context: ExecutionContext) {
-    if (!(await this.runtime.fetch('plugins.captcha/enable'))) {
+    if (!this.config.captcha.enabled) {
       return true;
     }
 

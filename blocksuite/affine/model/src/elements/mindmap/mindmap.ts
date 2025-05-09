@@ -1,26 +1,23 @@
+import type { Bound, SerializedXYWH, XYWH } from '@blocksuite/global/gfx';
+import { deserializeXYWH } from '@blocksuite/global/gfx';
+import { assertType, noop } from '@blocksuite/global/utils';
 import type {
   BaseElementProps,
   GfxModel,
+  GfxPrimitiveElementModel,
   PointTestOptions,
   SerializedElement,
-} from '@blocksuite/block-std/gfx';
+} from '@blocksuite/std/gfx';
 import {
   convert,
   field,
   GfxGroupLikeElementModel,
   observe,
   watch,
-} from '@blocksuite/block-std/gfx';
-import type { Bound, SerializedXYWH, XYWH } from '@blocksuite/global/utils';
-import {
-  assertType,
-  deserializeXYWH,
-  keys,
-  last,
-  noop,
-  pick,
-} from '@blocksuite/global/utils';
+} from '@blocksuite/std/gfx';
 import { generateKeyBetween } from 'fractional-indexing';
+import last from 'lodash-es/last';
+import pick from 'lodash-es/pick';
 import * as Y from 'yjs';
 import { z } from 'zod';
 
@@ -44,7 +41,7 @@ export type MindmapNode = {
   id: string;
   detail: NodeDetail;
 
-  element: BlockSuite.SurfaceElementModel;
+  element: GfxPrimitiveElementModel;
   children: MindmapNode[];
 
   parent: MindmapNode | null;
@@ -121,7 +118,7 @@ function watchLayoutType(
     return;
   }
 
-  instance.surface.doc.transact(() => {
+  instance.surface.store.transact(() => {
     instance['_tree']?.children.forEach(child => {
       if (!instance.children.has(child.id)) {
         return;
@@ -179,7 +176,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
     return 'mindmap';
   }
 
-  static override propsToY(props: Record<string, unknown>) {
+  static propsToY(props: Record<string, unknown>) {
     if (
       props.children &&
       !isNodeType(props.children as Record<string, unknown>) &&
@@ -187,11 +184,11 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
     ) {
       const children: Y.Map<NodeDetail> = new Y.Map();
 
-      keys(props.children).forEach(key => {
-        const detail = pick<Record<string, unknown>, keyof NodeDetail>(
-          props.children![key],
-          ['index', 'parent']
-        );
+      Object.entries(props.children).forEach(([key, value]) => {
+        const detail = pick<Record<string, unknown>, keyof NodeDetail>(value, [
+          'index',
+          'parent',
+        ]);
         children.set(key as string, detail as NodeDetail);
       });
 
@@ -288,7 +285,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
 
     const type = (props.type as string) ?? 'shape';
     let id: string;
-    this.surface.doc.transact(() => {
+    this.surface.store.transact(() => {
       const parentNode = parent ? this._nodeMap.get(parent)! : null;
 
       if (parentNode) {
@@ -436,7 +433,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
     const loops = findInfiniteLoop(rootNode, mindmapNodeMap);
 
     if (loops.length) {
-      this.surface.doc.withoutTransact(() => {
+      this.surface.store.withoutTransact(() => {
         loops.forEach(loop => {
           if (loop.detached) {
             loop.chain.forEach(node => {
@@ -746,9 +743,9 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
     const targetPos =
       typeof targetXYWH === 'string' ? deserializeXYWH(targetXYWH) : targetXYWH;
     const offsetX = targetPos[0] - x;
-    const offsetY = targetPos[1] - y + targetPos[3];
+    const offsetY = targetPos[1] - y;
 
-    this.surface.doc.transact(() => {
+    this.surface.store.transact(() => {
       this.childElements.forEach(el => {
         const deserializedXYWH = deserializeXYWH(el.xywh);
 
@@ -778,7 +775,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
       removedDescendants.push(node.id);
     };
 
-    surface.doc.transact(() => {
+    surface.store.transact(() => {
       remove(this._nodeMap.get(element.id)!);
     });
 
@@ -836,7 +833,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
       return;
     }
 
-    const stashed = new Set<BlockSuite.SurfaceElementModel>();
+    const stashed = new Set<GfxPrimitiveElementModel>();
     const traverse = (node: MindmapNode) => {
       node.element.stash('xywh');
       stashed.add(node.element);
@@ -880,7 +877,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
       };
 
       node.children.forEach(changeNodesVisibility);
-      this.surface.doc.transact(() => {
+      this.surface.store.transact(() => {
         this.children.set(node.id, {
           ...node.detail,
           collapsed,
@@ -924,7 +921,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
 
       const map: Y.Map<NodeDetail> = new Y.Map();
       const surface = instance.surface;
-      const doc = surface.doc;
+      const doc = surface.store;
       const recursive = (
         node: NodeType,
         parent: string | null = null,
@@ -974,12 +971,4 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
   @watch(watchStyle)
   @field()
   accessor style: MindmapStyle = MindmapStyle.ONE;
-}
-
-declare global {
-  namespace BlockSuite {
-    interface SurfaceGroupLikeModelMap {
-      mindmap: MindmapElementModel;
-    }
-  }
 }

@@ -44,12 +44,14 @@ runs:
         RUSTUP_HOME: ${{ env.DEV_DRIVE }}/.rustup
 
     - name: Set CC
-      if: ${{ contains(inputs.target, 'linux') && inputs.package != '@affine/native' && inputs.no-build != 'true' }}
+      if: ${{ contains(inputs.target, 'linux') && inputs.no-build != 'true' }}
       working-directory: ${{ env.DEV_DRIVE_WORKSPACE || github.workspace }}
       shell: bash
+      # https://github.com/tree-sitter/tree-sitter/issues/4186
+      # pass -D_BSD_SOURCE to clang to fix the tree-sitter build issue
       run: |
-        echo "CC=clang" >> "$GITHUB_ENV"
-        echo "TARGET_CC=clang" >> "$GITHUB_ENV"
+        echo "CC=clang -D_BSD_SOURCE" >> "$GITHUB_ENV"
+        echo "TARGET_CC=clang -D_BSD_SOURCE" >> "$GITHUB_ENV"
 
     - name: Cache cargo
       uses: Swatinem/rust-cache@v2
@@ -82,7 +84,7 @@ runs:
       shell: bash
       if: ${{ runner.os == 'Windows' && inputs.no-build != 'true' }}
       run: |
-        yarn workspace ${{ inputs.package }} build --target ${{ inputs.target }} --use-napi-cross
+        yarn workspace ${{ inputs.package }} build --target ${{ inputs.target }}
       env:
         DEBUG: 'napi:*'
         CARGO_HOME: ${{ env.DEV_DRIVE }}/.cargo

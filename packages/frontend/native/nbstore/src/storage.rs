@@ -16,24 +16,28 @@ impl SqliteDocStorage {
   pub fn new(path: String) -> Self {
     let sqlite_options = SqliteConnectOptions::new()
       .filename(&path)
-      .foreign_keys(false)
-      .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
+      .foreign_keys(false);
 
     let mut pool_options = SqlitePoolOptions::new();
 
-    if cfg!(test) && path == ":memory:" {
+    if path == ":memory:" {
       pool_options = pool_options
         .min_connections(1)
         .max_connections(1)
         .idle_timeout(None)
         .max_lifetime(None);
-    } else {
-      pool_options = pool_options.max_connections(4);
-    }
 
-    Self {
-      pool: pool_options.connect_lazy_with(sqlite_options),
-      path,
+      Self {
+        pool: pool_options.connect_lazy_with(sqlite_options),
+        path,
+      }
+    } else {
+      Self {
+        pool: pool_options
+          .max_connections(4)
+          .connect_lazy_with(sqlite_options.journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)),
+        path,
+      }
     }
   }
 
@@ -47,7 +51,7 @@ impl SqliteDocStorage {
         let name: &str = row.try_get("description")?;
         Ok(name == "init_v2")
       }
-      _ => return Ok(false),
+      _ => Ok(false),
     }
   }
 

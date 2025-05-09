@@ -1,68 +1,55 @@
-import type { ColorScheme, Palette } from '@blocksuite/affine-model';
-import { resolveColor } from '@blocksuite/affine-model';
+import type { Color, ColorScheme, Palette } from '@blocksuite/affine-model';
+import { DefaultTheme, resolveColor } from '@blocksuite/affine-model';
 import type { ColorEvent } from '@blocksuite/affine-shared/utils';
-import { WithDisposable } from '@blocksuite/global/utils';
+import { WithDisposable } from '@blocksuite/global/lit';
 import { html, LitElement } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import { when } from 'lit-html/directives/when.js';
 
-import type { EditorMenuButton } from '../toolbar/menu-button.js';
-import type { ModeType, PickColorEvent, PickColorType } from './types.js';
-import { keepColor, preprocessColor, rgbaToHex8 } from './utils.js';
+import type { EditorMenuButton } from '../toolbar/menu-button';
+import type { PickColorEvent } from './types';
+import {
+  calcCustomButtonStyle,
+  keepColor,
+  packColorsWith,
+  preprocessColor,
+  rgbaToHex8,
+} from './utils.js';
 
 type Type = 'normal' | 'custom';
 
 export class EdgelessColorPickerButton extends WithDisposable(LitElement) {
   readonly #select = (e: ColorEvent) => {
+    e.stopPropagation();
     this.#pick(e.detail);
   };
 
   switchToCustomTab = (e: MouseEvent) => {
     e.stopPropagation();
-    if (this.colorType === 'palette') {
-      this.colorType = 'normal';
-    }
+
     this.tabType = 'custom';
     // refresh menu's position
     this.menuButton.show(true);
   };
 
   get colorWithoutAlpha() {
-    return this.isCSSVariable ? this.color : keepColor(this.color);
-  }
-
-  get customButtonStyle() {
-    let b = 'transparent';
-    let c = 'transparent';
-
-    if (!this.isCustomColor) {
-      return { '--b': b, '--c': c };
-    }
-
-    if (this.isCSSVariable) {
-      if (!this.color.endsWith('transparent')) {
-        b = 'var(--affine-background-overlay-panel-color)';
-        c = keepColor(
-          rgbaToHex8(
+    return keepColor(
+      this.color.startsWith('--')
+        ? rgbaToHex8(
             preprocessColor(window.getComputedStyle(this))({
               type: 'normal',
               value: this.color,
             }).rgba
           )
-        );
-      }
-    } else {
-      b = 'var(--affine-background-overlay-panel-color)';
-      c = keepColor(this.color);
-    }
-
-    return { '--b': b, '--c': c };
+        : this.color
+    );
   }
 
-  get isCSSVariable() {
-    return this.color.startsWith('--');
+  get customButtonStyle() {
+    return calcCustomButtonStyle(this.color, this.isCustomColor, this);
   }
 
   get isCustomColor() {
@@ -82,12 +69,16 @@ export class EdgelessColorPickerButton extends WithDisposable(LitElement) {
   }
 
   override firstUpdated() {
-    this.disposables.addFromEvent(this.menuButton, 'toggle', (e: Event) => {
-      const opened = (e as CustomEvent<boolean>).detail;
-      if (!opened && this.tabType !== 'normal') {
-        this.tabType = 'normal';
+    this.disposables.addFromEvent(
+      this.menuButton,
+      'toggle',
+      (e: CustomEvent<boolean>) => {
+        const opened = e.detail;
+        if (!opened && this.tabType !== 'normal') {
+          this.tabType = 'normal';
+        }
       }
-    });
+    );
   }
 
   override render() {
@@ -99,18 +90,20 @@ export class EdgelessColorPickerButton extends WithDisposable(LitElement) {
             aria-label=${this.label}
             .tooltip=${this.tooltip || this.label}
           >
-            ${this.isText
-              ? html`
-                  <edgeless-text-color-icon
-                    .color=${this.colorWithoutAlpha}
-                  ></edgeless-text-color-icon>
-                `
-              : html`
-                  <edgeless-color-button
-                    .color=${this.colorWithoutAlpha}
-                    .hollowCircle=${this.hollowCircle}
-                  ></edgeless-color-button>
-                `}
+            ${when(
+              this.isText,
+              () => html`
+                <edgeless-text-color-icon
+                  .color=${this.colorWithoutAlpha}
+                ></edgeless-text-color-icon>
+              `,
+              () => html`
+                <edgeless-color-button
+                  .color=${this.colorWithoutAlpha}
+                  .hollowCircle=${this.hollowCircle}
+                ></edgeless-color-button>
+              `
+            )}
           </editor-icon-button>
         `}
       >
@@ -128,35 +121,45 @@ export class EdgelessColorPickerButton extends WithDisposable(LitElement) {
                   .theme=${this.theme}
                   .palettes=${this.palettes}
                   .hollowCircle=${this.hollowCircle}
-                  .openColorPicker=${this.switchToCustomTab}
                   .hasTransparent=${false}
                   @select=${this.#select}
                 >
-                  <edgeless-color-custom-button
-                    slot="custom"
-                    style=${styleMap(this.customButtonStyle)}
-                    ?active=${this.isCustomColor}
-                    @click=${this.switchToCustomTab}
-                  ></edgeless-color-custom-button>
+                  ${when(
+                    this.enableCustomColor,
+                    () => html`
+                      <edgeless-color-custom-button
+                        slot="custom"
+                        style=${styleMap(this.customButtonStyle)}
+                        ?active=${this.isCustomColor}
+                        @click=${this.switchToCustomTab}
+                      ></edgeless-color-custom-button>
+                    `
+                  )}
                 </edgeless-color-panel>
               </div>
             `,
           ],
           [
             'custom',
-            () => html`
-              <edgeless-color-picker
-                class="custom"
-                .pick=${this.pick}
-                .colors=${{
-                  type:
-                    this.colorType === 'palette' ? 'normal' : this.colorType,
-                  modes: this.colors.map(
-                    preprocessColor(window.getComputedStyle(this))
-                  ),
-                }}
-              ></edgeless-color-picker>
-            `,
+            () => {
+              const packed = packColorsWith(
+                this.theme,
+                this.color,
+                this.originalColor
+              );
+              const type = packed.type === 'palette' ? 'normal' : packed.type;
+              const modes = packed.colors.map(
+                preprocessColor(window.getComputedStyle(this))
+              );
+
+              return html`
+                <edgeless-color-picker
+                  class="custom"
+                  .pick=${this.pick}
+                  .colors=${{ type, modes }}
+                ></edgeless-color-picker>
+              `;
+            },
           ],
         ])}
       </editor-menu-button>
@@ -164,16 +167,13 @@ export class EdgelessColorPickerButton extends WithDisposable(LitElement) {
   }
 
   @property()
+  accessor originalColor!: Color;
+
+  @property()
   accessor color!: string;
 
   @property()
   accessor colorPanelClass: string | undefined = undefined;
-
-  @property({ attribute: false })
-  accessor colors: { type: ModeType; value: string }[] = [];
-
-  @property()
-  accessor colorType: PickColorType = 'palette';
 
   @property({ attribute: false })
   accessor hollowCircle: boolean = false;
@@ -188,7 +188,7 @@ export class EdgelessColorPickerButton extends WithDisposable(LitElement) {
   accessor menuButton!: EditorMenuButton;
 
   @property({ attribute: false })
-  accessor palettes: Palette[] = [];
+  accessor palettes: Palette[] = DefaultTheme.Palettes;
 
   @property({ attribute: false })
   accessor pick!: (event: PickColorEvent) => void;
@@ -201,10 +201,7 @@ export class EdgelessColorPickerButton extends WithDisposable(LitElement) {
 
   @property()
   accessor tooltip: string | undefined = undefined;
-}
 
-declare global {
-  interface HTMLElementTagNameMap {
-    'edgeless-color-picker-button': EdgelessColorPickerButton;
-  }
+  @property()
+  accessor enableCustomColor: boolean = true;
 }

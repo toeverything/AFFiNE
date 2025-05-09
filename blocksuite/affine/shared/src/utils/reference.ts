@@ -1,5 +1,5 @@
 import type { ReferenceInfo } from '@blocksuite/affine-model';
-import cloneDeep from 'lodash.clonedeep';
+import cloneDeep from 'lodash-es/cloneDeep';
 
 /**
  * Clones reference info.

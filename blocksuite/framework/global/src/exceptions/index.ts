@@ -1,6 +1,8 @@
-import type { ErrorCode } from './code.js';
+import { ErrorCode } from './code.js';
 
 export class BlockSuiteError extends Error {
+  static ErrorCode = ErrorCode;
+
   code: ErrorCode;
 
   isFatal: boolean;

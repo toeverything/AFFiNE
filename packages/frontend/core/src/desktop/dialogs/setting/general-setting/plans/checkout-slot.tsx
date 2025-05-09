@@ -65,7 +65,7 @@ export const CheckoutSlot = ({
         idempotencyKey,
         ...checkoutOptions,
       });
-      urlService.openPopupWindow(session);
+      urlService.openExternal(session);
       setOpenedExternalWindow(true);
       setIdempotencyKey(nanoid());
       onCheckoutSuccess?.();

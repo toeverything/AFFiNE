@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import type { Color } from '../themes/color.js';
 import { createEnumMap } from '../utils/enum.js';
 
@@ -59,3 +61,8 @@ export enum TextResizing {
   AUTO_WIDTH_AND_HEIGHT,
   AUTO_HEIGHT,
 }
+
+export const FontFamilySchema = z.nativeEnum(FontFamily);
+export const FontWeightSchema = z.nativeEnum(FontWeight);
+export const FontStyleSchema = z.nativeEnum(FontStyle);
+export const TextAlignSchema = z.nativeEnum(TextAlign);

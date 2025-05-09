@@ -1,15 +1,19 @@
 import {
+  BlockModel,
+  BlockSchemaExtension,
   defineBlockSchema,
-  type SchemaToModel,
   type Text,
 } from '@blocksuite/store';
 
-interface CodeBlockProps {
+import type { BlockMeta } from '../../utils/types';
+
+type CodeBlockProps = {
   text: Text;
   language: string | null;
   wrap: boolean;
   caption: string;
-}
+  preview?: boolean;
+} & BlockMeta;
 
 export const CodeBlockSchema = defineBlockSchema({
   flavour: 'affine:code',
@@ -19,6 +23,11 @@ export const CodeBlockSchema = defineBlockSchema({
       language: null,
       wrap: false,
       caption: '',
+      preview: undefined,
+      'meta:createdAt': undefined,
+      'meta:createdBy': undefined,
+      'meta:updatedAt': undefined,
+      'meta:updatedBy': undefined,
     }) as CodeBlockProps,
   metadata: {
     version: 1,
@@ -31,14 +40,9 @@ export const CodeBlockSchema = defineBlockSchema({
     ],
     children: [],
   },
+  toModel: () => new CodeBlockModel(),
 });
 
-export type CodeBlockModel = SchemaToModel<typeof CodeBlockSchema>;
+export const CodeBlockSchemaExtension = BlockSchemaExtension(CodeBlockSchema);
 
-declare global {
-  namespace BlockSuite {
-    interface BlockModels {
-      'affine:code': CodeBlockModel;
-    }
-  }
-}
+export class CodeBlockModel extends BlockModel<CodeBlockProps> {}

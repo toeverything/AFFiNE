@@ -10,10 +10,32 @@ export const StoreExtensionIdentifier =
 
 export const storeExtensionSymbol = Symbol('StoreExtension');
 
+/**
+ * Store extensions are used to extend the store.
+ * They should be registered to the store. And they should be able to run in a none-dom environment.
+ *
+ * @category Extension
+ */
 export class StoreExtension extends Extension {
+  /**
+   * The key of the store extension.
+   * **You must override this property with a unique string.**
+   */
+  static readonly key: string;
+
   constructor(readonly store: Store) {
     super();
   }
+
+  /**
+   * Lifecycle hook when the yjs document is loaded.
+   */
+  loaded() {}
+
+  /**
+   * Lifecycle hook when the yjs document is disposed.
+   */
+  disposed() {}
 
   static readonly [storeExtensionSymbol] = true;
 
@@ -30,8 +52,6 @@ export class StoreExtension extends Extension {
       provider.get(this)
     );
   }
-
-  static readonly key: string;
 }
 
 export function isStoreExtensionConstructor(

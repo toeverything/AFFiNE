@@ -8,7 +8,6 @@ import { useAppUpdater } from '@affine/core/components/hooks/use-app-updater';
 import { UrlService } from '@affine/core/modules/url';
 import { appIconMap, appNames } from '@affine/core/utils/channel';
 import { useI18n } from '@affine/i18n';
-import { mixpanel } from '@affine/track';
 import { ArrowRightSmallIcon, OpenInNewIcon } from '@blocksuite/icons/rc';
 import { useServices } from '@toeverything/infra';
 import { useCallback } from 'react';
@@ -47,11 +46,6 @@ export const AboutAffine = () => {
 
   const onSwitchTelemetry = useCallback(
     (checked: boolean) => {
-      if (!checked) {
-        mixpanel.opt_out_tracking();
-      } else {
-        mixpanel.opt_in_tracking();
-      }
       updateSettings('enableTelemetry', checked);
     },
     [updateSettings]

@@ -19,3 +19,11 @@ export async function clickSideBarUseAvatar(page: Page) {
 export async function clickNewPageButton(page: Page) {
   return page.getByTestId('sidebar-new-page-button').click();
 }
+
+export async function openRightSideBar(
+  page: Page,
+  tab?: 'chat' | 'properties' | 'journal' | 'outline' | 'frame'
+) {
+  await page.getByTestId('right-sidebar-toggle').click();
+  tab && (await page.getByTestId(`sidebar-tab-${tab}`).click());
+}

@@ -1,6 +1,12 @@
-import { PANEL_BASE } from '@blocksuite/affine-shared/styles';
-import { createButtonPopper } from '@blocksuite/affine-shared/utils';
-import { WithDisposable } from '@blocksuite/global/utils';
+import {
+  panelBaseStyle,
+  scrollbarStyle,
+} from '@blocksuite/affine-shared/styles';
+import {
+  type ButtonPopperOptions,
+  createButtonPopper,
+} from '@blocksuite/affine-shared/utils';
+import { WithDisposable } from '@blocksuite/global/lit';
 import {
   css,
   html,
@@ -22,16 +28,16 @@ export class EditorMenuButton extends WithDisposable(LitElement) {
     }
   `;
 
-  private _popper!: ReturnType<typeof createButtonPopper>;
+  private _popper: ReturnType<typeof createButtonPopper> | null = null;
 
-  override firstUpdated() {
-    this._popper = createButtonPopper(
-      this._trigger,
-      this._content,
-      ({ display }) => {
+  private _updatePopper() {
+    this._popper?.dispose();
+    this._popper = createButtonPopper({
+      reference: this._trigger,
+      popperElement: this._content,
+      stateUpdated: ({ display }) => {
         const opened = display === 'show';
         this._trigger.showTooltip = !opened;
-
         this.dispatchEvent(
           new CustomEvent('toggle', {
             detail: opened,
@@ -40,25 +46,41 @@ export class EditorMenuButton extends WithDisposable(LitElement) {
             composed: true,
           })
         );
+
+        if (opened) {
+          this.dataset.open = 'true';
+        } else {
+          delete this.dataset.open;
+        }
       },
-      {
-        mainAxis: 12,
-        ignoreShift: true,
-      }
-    );
+      mainAxis: 0,
+      offsetHeight: 6 * 4,
+      ...this.popperOptions,
+    });
+  }
+
+  override willUpdate(changedProperties: PropertyValues) {
+    if (changedProperties.has('contentPadding')) {
+      this.style.setProperty('--content-padding', this.contentPadding ?? '');
+    }
+
+    if (this.hasUpdated && changedProperties.has('popperOptions')) {
+      this._updatePopper();
+    }
+  }
+
+  override firstUpdated() {
+    this._updatePopper();
     this._disposables.addFromEvent(this, 'keydown', (e: KeyboardEvent) => {
       e.stopPropagation();
       if (e.key === 'Escape') {
-        this._popper.hide();
+        this._popper?.hide();
       }
     });
     this._disposables.addFromEvent(this._trigger, 'click', (_: MouseEvent) => {
-      this._popper.toggle();
-      if (this._popper.state === 'show') {
-        this._content.focus({ preventScroll: true });
-      }
+      this._popper?.toggle();
     });
-    this._disposables.add(this._popper);
+    this._disposables.add(() => this._popper?.dispose());
   }
 
   hide() {
@@ -78,12 +100,6 @@ export class EditorMenuButton extends WithDisposable(LitElement) {
     this._popper?.show(force);
   }
 
-  override willUpdate(changedProperties: PropertyValues) {
-    if (changedProperties.has('contentPadding')) {
-      this.style.setProperty('--content-padding', this.contentPadding ?? '');
-    }
-  }
-
   @query('editor-menu-content')
   private accessor _content!: EditorMenuContent;
 
@@ -91,41 +107,33 @@ export class EditorMenuButton extends WithDisposable(LitElement) {
   private accessor _trigger!: EditorIconButton;
 
   @property({ attribute: false })
-  accessor button!: string | TemplateResult<1>;
+  accessor button!: TemplateResult;
 
   @property({ attribute: false })
   accessor contentPadding: string | undefined = undefined;
+
+  @property({ attribute: false })
+  accessor popperOptions: Partial<ButtonPopperOptions> = {};
 }
 
 export class EditorMenuContent extends LitElement {
   static override styles = css`
     :host {
-      --packed-height: 6px;
-      --offset-height: calc(-1 * var(--packed-height));
+      padding: 12px 0;
       display: none;
       outline: none;
     }
 
-    :host::before,
-    :host::after {
-      content: '';
-      display: block;
-      position: absolute;
-      height: var(--packed-height);
-      width: 100%;
-    }
-
-    :host::before {
-      top: var(--offset-height);
-    }
-
-    :host::after {
-      bottom: var(--offset-height);
-    }
-
     :host([data-show]) {
-      ${PANEL_BASE};
+      display: flex;
       justify-content: center;
+    }
+
+    ${panelBaseStyle('.content-wrapper')}
+    ${scrollbarStyle('.content-wrapper')}
+    .content-wrapper {
+      overscroll-behavior: contain;
+      overflow-y: auto;
       padding: var(--content-padding, 0 6px);
     }
 
@@ -153,12 +161,12 @@ export class EditorMenuContent extends LitElement {
       flex-direction: column;
       align-items: stretch;
       gap: unset;
-      min-height: unset;
+      min-height: fit-content;
     }
   `;
 
   override render() {
-    return html`<slot></slot>`;
+    return html`<div class="content-wrapper"><slot></slot></div>`;
   }
 }
 
@@ -205,6 +213,13 @@ export class EditorMenuAction extends LitElement {
     ::slotted(svg) {
       color: var(--affine-icon-color);
       font-size: 20px;
+    }
+
+    ::slotted(.label) {
+      color: inherit !important;
+    }
+    ::slotted(.label.capitalize) {
+      text-transform: capitalize !important;
     }
   `;
 

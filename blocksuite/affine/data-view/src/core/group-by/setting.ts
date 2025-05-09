@@ -5,9 +5,9 @@ import {
   popMenu,
   type PopupTarget,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { DeleteIcon } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { computed } from '@preact/signals-core';
 import { css, html, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
@@ -189,22 +189,25 @@ export const selectGroupByProperty = (
     },
     items: [
       menu.group({
-        items: view.propertiesWithoutFilter$.value
-          .filter(id => {
-            if (view.propertyGet(id).type$.value === 'title') {
+        items: view.propertiesRaw$.value
+          .filter(property => {
+            if (property.type$.value === 'title') {
               return false;
             }
-            return !!groupByMatcher.match(view.propertyGet(id).dataType$.value);
+            const dataType = property.dataType$.value;
+            if (!dataType) {
+              return false;
+            }
+            return !!groupByMatcher.match(dataType);
           })
-          .map<MenuConfig>(id => {
-            const property = view.propertyGet(id);
+          .map<MenuConfig>(property => {
             return menu.action({
               name: property.name$.value,
-              isSelected: group.property$.value?.id === id,
+              isSelected: group.property$.value?.id === property.id,
               prefix: html` <uni-lit .uni="${property.icon}"></uni-lit>`,
               select: () => {
-                group.changeGroup(id);
-                ops?.onSelect?.(id);
+                group.changeGroup(property.id);
+                ops?.onSelect?.(property.id);
               },
             });
           }),
@@ -254,7 +257,7 @@ export const popGroupSetting = (
   if (!type) {
     return;
   }
-  const icon = view.propertyIconGet(type);
+  const icon = groupProperty.icon;
   const menuHandler = popMenu(target, {
     options: {
       title: {

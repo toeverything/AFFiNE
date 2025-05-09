@@ -3,20 +3,22 @@ import {
   popFilterableSimpleMenu,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { PlusIcon } from '@blocksuite/icons/lit';
-import { css, html } from 'lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import { cssVarV2 } from '@toeverything/theme/v2';
+import { css, html, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import type { DataViewRenderer } from '../../../core/data-view.js';
 import { GroupTitle } from '../../../core/group-by/group-title.js';
 import type { GroupData } from '../../../core/group-by/trait.js';
+import type { Row } from '../../../core/index.js';
 import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
 import type { DataViewTable } from '../pc/table-view.js';
+import { TableViewAreaSelection } from '../selection';
 import type { TableSingleView } from '../table-view-manager.js';
-import { TableAreaSelection } from '../types.js';
 
 const styles = css`
   .data-view-table-group-add-row {
@@ -28,7 +30,7 @@ const styles = css`
     cursor: pointer;
     transition: opacity 0.2s ease-in-out;
     padding: 4px 8px;
-    border-bottom: 1px solid var(--affine-border-color);
+    border-bottom: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
   }
 
   .data-view-table-group-add-row-button {
@@ -52,12 +54,13 @@ export class MobileTableGroup extends SignalWatcher(
 
   private readonly clickAddRow = () => {
     this.view.rowAdd('end', this.group?.key);
+    const selectionController = this.viewEle.selectionController;
+    selectionController.selection = undefined;
     requestAnimationFrame(() => {
-      const selectionController = this.viewEle.selectionController;
       const index = this.view.properties$.value.findIndex(
         v => v.type$.value === 'title'
       );
-      selectionController.selection = TableAreaSelection.create({
+      selectionController.selection = TableViewAreaSelection.create({
         groupKey: this.group?.key,
         focus: {
           rowIndex: this.rows.length - 1,
@@ -70,12 +73,13 @@ export class MobileTableGroup extends SignalWatcher(
 
   private readonly clickAddRowInStart = () => {
     this.view.rowAdd('start', this.group?.key);
+    const selectionController = this.viewEle.selectionController;
+    selectionController.selection = undefined;
     requestAnimationFrame(() => {
-      const selectionController = this.viewEle.selectionController;
       const index = this.view.properties$.value.findIndex(
         v => v.type$.value === 'title'
       );
-      selectionController.selection = TableAreaSelection.create({
+      selectionController.selection = TableViewAreaSelection.create({
         groupKey: this.group?.key,
         focus: {
           rowIndex: 0,
@@ -97,15 +101,15 @@ export class MobileTableGroup extends SignalWatcher(
         name: 'Ungroup',
         hide: () => group.value == null,
         select: () => {
-          group.rows.forEach(id => {
-            group.manager.removeFromGroup(id, group.key);
+          group.rows.forEach(row => {
+            group.manager.removeFromGroup(row.rowId, group.key);
           });
         },
       }),
       menu.action({
         name: 'Delete Cards',
         select: () => {
-          this.view.rowDelete(group.rows);
+          this.view.rowsDelete(group.rows.map(row => row.rowId));
         },
       }),
     ]);
@@ -132,7 +136,7 @@ export class MobileTableGroup extends SignalWatcher(
     return this.group?.rows ?? this.view.rows$.value;
   }
 
-  private renderRows(ids: string[]) {
+  private renderRows(rows: Row[]) {
     return html`
       <mobile-table-header
         .renderGroupHeader="${this.renderGroupHeader}"
@@ -140,15 +144,15 @@ export class MobileTableGroup extends SignalWatcher(
       ></mobile-table-header>
       <div class="mobile-affine-table-body">
         ${repeat(
-          ids,
-          id => id,
-          (id, idx) => {
+          rows,
+          row => row.rowId,
+          (row, idx) => {
             return html` <mobile-table-row
               data-row-index="${idx}"
-              data-row-id="${id}"
+              data-row-id="${row.rowId}"
               .dataViewEle="${this.dataViewEle}"
               .view="${this.view}"
-              .rowId="${id}"
+              .rowId="${row.rowId}"
               .rowIndex="${idx}"
             ></mobile-table-row>`;
           }

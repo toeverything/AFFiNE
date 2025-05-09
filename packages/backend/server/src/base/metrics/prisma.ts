@@ -10,7 +10,7 @@ import {
   ScopeMetrics,
 } from '@opentelemetry/sdk-metrics';
 
-import { PrismaService } from '../prisma';
+import { PrismaFactory } from '../prisma/factory';
 
 function transformPrismaKey(key: string) {
   // replace first '_' to '/' as a scope prefix
@@ -30,11 +30,11 @@ export class PrismaMetricProducer implements MetricProducer {
       errors: [],
     };
 
-    if (!PrismaService.INSTANCE) {
+    if (!PrismaFactory.INSTANCE) {
       return result;
     }
 
-    const prisma = PrismaService.INSTANCE;
+    const prisma = PrismaFactory.INSTANCE;
 
     const endTime = hrTime();
 

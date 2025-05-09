@@ -1,8 +1,5 @@
 import type { CookiesSetDetails } from 'electron';
 
-import { logger } from './logger';
-import { globalStateStorage } from './shared-storage/storage';
-
 export function parseCookie(
   cookieString: string,
   url: string
@@ -55,16 +52,3 @@ export function parseCookie(
 
   return details;
 }
-
-export const isOfflineModeEnabled = () => {
-  try {
-    return (
-      // todo(pengx17): better abstraction for syncing flags with electron
-      // packages/common/infra/src/modules/feature-flag/entities/flags.ts
-      globalStateStorage.get('affine-flag:enable_offline_mode') ?? false
-    );
-  } catch (error) {
-    logger.error('Failed to get offline mode flag', error);
-    return false;
-  }
-};

@@ -13,10 +13,10 @@ import type { SnapshotHistory } from '@prisma/client';
 
 import { CurrentUser } from '../../auth';
 import { PgWorkspaceDocStorageAdapter } from '../../doc';
-import { Permission, PermissionService } from '../../permission';
+import { AccessController } from '../../permission';
 import { DocID } from '../../utils/doc';
 import { WorkspaceType } from '../types';
-import { EditorType } from './workspace';
+import { EditorType } from './doc';
 
 @ObjectType()
 class DocHistoryType implements Partial<SnapshotHistory> {
@@ -37,7 +37,7 @@ class DocHistoryType implements Partial<SnapshotHistory> {
 export class DocHistoryResolver {
   constructor(
     private readonly workspace: PgWorkspaceDocStorageAdapter,
-    private readonly permission: PermissionService
+    private readonly ac: AccessController
   ) {}
 
   @ResolveField(() => [DocHistoryType])
@@ -76,12 +76,7 @@ export class DocHistoryResolver {
   ): Promise<Date> {
     const docId = new DocID(guid, workspaceId);
 
-    await this.permission.checkPagePermission(
-      docId.workspace,
-      docId.guid,
-      user.id,
-      Permission.Write
-    );
+    await this.ac.user(user.id).doc(docId).assert('Doc.Update');
 
     await this.workspace.rollbackDoc(
       docId.workspace,

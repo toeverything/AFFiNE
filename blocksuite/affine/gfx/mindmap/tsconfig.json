@@ -1,0 +1,28 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["./src"],
+  "references": [
+    { "path": "../../blocks/attachment" },
+    { "path": "../../blocks/edgeless-text" },
+    { "path": "../../blocks/image" },
+    { "path": "../../blocks/surface" },
+    { "path": "../../components" },
+    { "path": "../../ext-loader" },
+    { "path": "../connector" },
+    { "path": "../pointer" },
+    { "path": "../shape" },
+    { "path": "../text" },
+    { "path": "../../model" },
+    { "path": "../../rich-text" },
+    { "path": "../../shared" },
+    { "path": "../../widgets/edgeless-toolbar" },
+    { "path": "../../../framework/global" },
+    { "path": "../../../framework/std" },
+    { "path": "../../../framework/store" }
+  ]
+}

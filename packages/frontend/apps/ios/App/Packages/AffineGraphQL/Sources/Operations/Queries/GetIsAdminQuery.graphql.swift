@@ -28,6 +28,7 @@ public class GetIsAdminQuery: GraphQLQuery {
     ] }
 
     /// Get is admin of workspace
+    @available(*, deprecated, message: "use WorkspaceType[role] instead")
     public var isAdmin: Bool { __data["isAdmin"] }
   }
 }

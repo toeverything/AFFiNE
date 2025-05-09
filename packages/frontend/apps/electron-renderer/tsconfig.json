@@ -10,8 +10,12 @@
   "references": [
     { "path": "../../component" },
     { "path": "../../core" },
+    { "path": "../../../common/debug" },
     { "path": "../../electron-api" },
     { "path": "../../i18n" },
+    { "path": "../../../common/nbstore" },
+    { "path": "../../track" },
+    { "path": "../../../../blocksuite/affine/all" },
     { "path": "../../../common/infra" },
     { "path": "../../../../tools/utils" }
   ]

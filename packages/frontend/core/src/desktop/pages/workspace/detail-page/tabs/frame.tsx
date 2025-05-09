@@ -1,37 +1,30 @@
-import { assertExists } from '@blocksuite/affine/global/utils';
-import type { AffineEditorContainer } from '@blocksuite/affine/presets';
-import { FramePanel } from '@blocksuite/affine/presets';
-import { useCallback, useRef } from 'react';
+import { FramePanel } from '@blocksuite/affine/fragments/frame-panel';
+import type { EditorHost } from '@blocksuite/affine/std';
+import { useCallback, useEffect, useRef } from 'react';
 
 import * as styles from './frame.css';
 
 // A wrapper for FramePanel
-export const EditorFramePanel = ({
-  editor,
-}: {
-  editor: AffineEditorContainer | null;
-}) => {
+export const EditorFramePanel = ({ editor }: { editor: EditorHost | null }) => {
   const framePanelRef = useRef<FramePanel | null>(null);
 
-  const onRefChange = useCallback((container: HTMLDivElement | null) => {
-    if (container) {
-      assertExists(framePanelRef.current, 'frame panel should be initialized');
-      container.append(framePanelRef.current);
+  const onRefChange = useCallback(
+    (container: HTMLDivElement | null) => {
+      if (editor && container && container.children.length === 0) {
+        framePanelRef.current = new FramePanel();
+        framePanelRef.current.host = editor;
+        framePanelRef.current.fitPadding = [20, 20, 20, 20];
+        container.append(framePanelRef.current);
+      }
+    },
+    [editor]
+  );
+
+  useEffect(() => {
+    if (editor && framePanelRef.current) {
+      framePanelRef.current.host = editor;
     }
-  }, []);
-
-  if (!editor) {
-    return;
-  }
-
-  if (!framePanelRef.current) {
-    framePanelRef.current = new FramePanel();
-  }
-
-  if (editor.host !== framePanelRef.current?.host && editor.host) {
-    (framePanelRef.current as FramePanel).host = editor.host;
-    (framePanelRef.current as FramePanel).fitPadding = [20, 20, 20, 20];
-  }
+  }, [editor]);
 
   return <div className={styles.root} ref={onRefChange} />;
 };

@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let SubscriptionPrice = ApolloAPI.Object(
     typename: "SubscriptionPrice",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

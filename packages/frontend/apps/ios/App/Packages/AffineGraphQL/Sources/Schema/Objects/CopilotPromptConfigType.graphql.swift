@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let CopilotPromptConfigType = ApolloAPI.Object(
     typename: "CopilotPromptConfigType",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

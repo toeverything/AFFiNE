@@ -1,4 +1,4 @@
-import { getFigmaSquircleSvgPath } from '@blocksuite/global/utils';
+import { getFigmaSquircleSvgPath } from '@blocksuite/affine-shared/utils';
 import { css, html, LitElement, svg, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 

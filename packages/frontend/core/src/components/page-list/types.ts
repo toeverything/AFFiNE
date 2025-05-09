@@ -1,4 +1,4 @@
-import type { Collection, Tag } from '@affine/env/filter';
+import type { Collection } from '@affine/env/filter';
 import type { DocMeta, Workspace } from '@blocksuite/affine/store';
 import type { JSX, PropsWithChildren, ReactNode } from 'react';
 import type { To } from 'react-router-dom';
@@ -13,7 +13,7 @@ export interface CollectionMeta extends Collection {
 
 export type TagMeta = {
   id: string;
-  title: string;
+  name: string;
   color: string;
   pageCount?: number;
   createDate?: Date | number;
@@ -27,7 +27,6 @@ export type PageListItemProps = {
   icon: JSX.Element;
   title: ReactNode; // using ReactNode to allow for rich content rendering
   preview?: ReactNode; // using ReactNode to allow for rich content rendering
-  tags: Tag[];
   createDate: Date;
   updatedDate?: Date;
   isPublicPage?: boolean;
@@ -59,7 +58,6 @@ export type TagListItemProps = {
   tagId: string;
   color: string;
   title: ReactNode; // using ReactNode to allow for rich content rendering
-  pageCount?: number;
   createDate?: Date | number;
   updatedDate?: Date | number;
   to?: To; // whether or not to render this item as a Link

@@ -11,9 +11,7 @@ import type { TagListItemProps } from '../types';
 import { ColWrapper } from '../utils';
 import * as styles from './tag-list-item.css';
 
-const TagListTitleCell = ({
-  title,
-}: Pick<TagListItemProps, 'title' | 'pageCount'>) => {
+const TagListTitleCell = ({ title }: Pick<TagListItemProps, 'title'>) => {
   const t = useI18n();
   return (
     <div data-testid="tag-list-item-title" className={styles.titleCell}>
@@ -119,7 +117,7 @@ export const TagListItem = (props: TagListItemProps) => {
               />
               <ListIconCell color={props.color} />
             </div>
-            <TagListTitleCell title={props.title} pageCount={props.pageCount} />
+            <TagListTitleCell title={props.title} />
           </ColWrapper>
           <ColWrapper
             flex={4}
@@ -147,7 +145,7 @@ export const TagListItem = (props: TagListItemProps) => {
             />
             <ListIconCell color={props.color} />
           </div>
-          <TagListTitleCell title={props.title} pageCount={props.pageCount} />
+          <TagListTitleCell title={props.title} />
         </div>
       </CustomDragPreview>
     </>

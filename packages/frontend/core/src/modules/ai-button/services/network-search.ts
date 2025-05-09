@@ -1,7 +1,7 @@
 import {
   createSignalFromObservable,
   type Signal,
-} from '@blocksuite/affine-shared/utils';
+} from '@blocksuite/affine/shared/utils';
 import { LiveData, Service } from '@toeverything/infra';
 
 import type { FeatureFlagService } from '../../feature-flag';
@@ -17,12 +17,18 @@ export class AINetworkSearchService extends Service {
     super();
 
     const { signal: enabled, cleanup: enabledCleanup } =
-      createSignalFromObservable<boolean | undefined>(this._enabled$, false);
+      createSignalFromObservable<boolean | undefined>(
+        this._enabled$,
+        undefined
+      );
     this.enabled = enabled;
     this.disposables.push(enabledCleanup);
 
     const { signal: visible, cleanup: visibleCleanup } =
-      createSignalFromObservable<boolean | undefined>(this._visible$, false);
+      createSignalFromObservable<boolean | undefined>(
+        this._visible$,
+        undefined
+      );
     this.visible = visible;
     this.disposables.push(visibleCleanup);
   }
@@ -36,7 +42,7 @@ export class AINetworkSearchService extends Service {
 
   private readonly _enabled$ = LiveData.from(
     this.globalStateService.globalState.watch<boolean>(AI_NETWORK_SEARCH_KEY),
-    false
+    undefined
   );
 
   setEnabled = (enabled: boolean) => {

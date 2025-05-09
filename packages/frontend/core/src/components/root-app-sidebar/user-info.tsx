@@ -8,10 +8,13 @@ import {
   type MenuProps,
   Skeleton,
 } from '@affine/component';
-import { GlobalDialogService } from '@affine/core/modules/dialogs';
+import {
+  GlobalDialogService,
+  WorkspaceDialogService,
+} from '@affine/core/modules/dialogs';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import { AccountIcon, SignOutIcon } from '@blocksuite/icons/rc';
+import { AccountIcon, AdminIcon, SignOutIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVar } from '@toeverything/theme';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
@@ -24,6 +27,7 @@ import {
   ServerService,
   SubscriptionService,
   UserCopilotQuotaService,
+  UserFeatureService,
   UserQuotaService,
 } from '../../modules/cloud';
 import { UserPlanButton } from '../affine/auth/user-plan-button';
@@ -75,17 +79,28 @@ const UnauthorizedUserInfo = () => {
 };
 
 const AccountMenu = () => {
-  const globalDialogService = useService(GlobalDialogService);
+  const workspaceDialogService = useService(WorkspaceDialogService);
   const openSignOutModal = useSignOut();
+  const serverService = useService(ServerService);
+  const userFeatureService = useService(UserFeatureService);
+  const isAdmin = useLiveData(userFeatureService.userFeature.isAdmin$);
 
   const onOpenAccountSetting = useCallback(() => {
     track.$.navigationPanel.profileAndBadge.openSettings({ to: 'account' });
-    globalDialogService.open('setting', {
+    workspaceDialogService.open('setting', {
       activeTab: 'account',
     });
-  }, [globalDialogService]);
+  }, [workspaceDialogService]);
+
+  const onOpenAdminPanel = useCallback(() => {
+    window.open(`${serverService.server.baseUrl}/admin`, '_blank');
+  }, [serverService.server.baseUrl]);
 
   const t = useI18n();
+
+  useEffect(() => {
+    userFeatureService.userFeature.revalidate();
+  }, [userFeatureService]);
 
   return (
     <>
@@ -96,6 +111,15 @@ const AccountMenu = () => {
       >
         {t['com.affine.workspace.cloud.account.settings']()}
       </MenuItem>
+      {isAdmin ? (
+        <MenuItem
+          prefixIcon={<AdminIcon />}
+          data-testid="workspace-modal-account-admin-option"
+          onClick={onOpenAdminPanel}
+        >
+          {t['com.affine.workspace.cloud.account.admin']()}
+        </MenuItem>
+      ) : null}
       <MenuItem
         prefixIcon={<SignOutIcon />}
         data-testid="workspace-modal-sign-out-option"
@@ -112,13 +136,13 @@ const CloudUsage = () => {
   const quota = useService(UserQuotaService).quota;
   const quotaError = useLiveData(quota.error$);
 
-  const globalDialogService = useService(GlobalDialogService);
+  const workspaceDialogService = useService(WorkspaceDialogService);
   const handleClick = useCatchEventCallback(() => {
-    globalDialogService.open('setting', {
+    workspaceDialogService.open('setting', {
       activeTab: 'plans',
       scrollAnchor: 'cloudPricingPlan',
     });
-  }, [globalDialogService]);
+  }, [workspaceDialogService]);
 
   useEffect(() => {
     // revalidate quota to get the latest status
@@ -192,20 +216,20 @@ const AIUsage = () => {
   const loading = copilotActionLimit === null || copilotActionUsed === null;
   const loadError = useLiveData(copilotQuotaService.copilotQuota.error$);
 
-  const globalDialogService = useService(GlobalDialogService);
+  const workspaceDialogService = useService(WorkspaceDialogService);
 
   const goToAIPlanPage = useCallback(() => {
-    globalDialogService.open('setting', {
+    workspaceDialogService.open('setting', {
       activeTab: 'plans',
       scrollAnchor: 'aiPricingPlan',
     });
-  }, [globalDialogService]);
+  }, [workspaceDialogService]);
 
   const goToAccountSetting = useCallback(() => {
-    globalDialogService.open('setting', {
+    workspaceDialogService.open('setting', {
       activeTab: 'account',
     });
-  }, [globalDialogService]);
+  }, [workspaceDialogService]);
 
   if (loading) {
     if (loadError) console.error(loadError);

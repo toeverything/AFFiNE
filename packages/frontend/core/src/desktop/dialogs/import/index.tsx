@@ -1,22 +1,26 @@
 import { Button, IconButton, Modal } from '@affine/component';
+import { getStoreManager } from '@affine/core/blocksuite/manager/migrating-store';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import type {
   DialogComponentProps,
   WORKSPACE_DIALOG_SCHEMA,
 } from '@affine/core/modules/dialogs';
 import { UrlService } from '@affine/core/modules/url';
-import { WorkspaceService } from '@affine/core/modules/workspace';
+import {
+  getAFFiNEWorkspaceSchema,
+  WorkspaceService,
+} from '@affine/core/modules/workspace';
 import { DebugLogger } from '@affine/debug';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
+import { openFileOrFiles } from '@blocksuite/affine/shared/utils';
+import type { Workspace } from '@blocksuite/affine/store';
 import {
   HtmlTransformer,
   MarkdownTransformer,
   NotionHtmlTransformer,
-  openFileOrFiles,
   ZipTransformer,
-} from '@blocksuite/affine/blocks';
-import type { Workspace } from '@blocksuite/affine/store';
+} from '@blocksuite/affine/widgets/linked-doc';
 import {
   ExportToHtmlIcon,
   ExportToMarkdownIcon,
@@ -55,8 +59,6 @@ type ImportConfig = {
     file: File | File[]
   ) => Promise<ImportResult>;
 };
-
-const DISCORD_URL = 'https://discord.gg/whd5mjYqVw';
 
 const importOptions = [
   {
@@ -119,6 +121,10 @@ const importOptions = [
     prefixIcon: (
       <PageIcon color={cssVarV2('icon/primary')} width={20} height={20} />
     ),
+    suffixIcon: (
+      <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+    ),
+    suffixTooltip: 'com.affine.import.snapshot.tooltip',
     testId: 'editor-option-menu-import-snapshot',
     type: 'snapshot' as ImportType,
   },
@@ -137,8 +143,10 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         const fileName = file.name.split('.').slice(0, -1).join('.');
         const docId = await MarkdownTransformer.importMarkdownToDoc({
           collection: docCollection,
+          schema: getAFFiNEWorkspaceSchema(),
           markdown: text,
           fileName,
+          extensions: getStoreManager().get('store'),
         });
         if (docId) docIds.push(docId);
       }
@@ -155,7 +163,9 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       }
       const docIds = await MarkdownTransformer.importMarkdownZip({
         collection: docCollection,
+        schema: getAFFiNEWorkspaceSchema(),
         imported: file,
+        extensions: getStoreManager().get('store'),
       });
       return {
         docIds,
@@ -174,6 +184,8 @@ const importConfigs: Record<ImportType, ImportConfig> = {
         const fileName = file.name.split('.').slice(0, -1).join('.');
         const docId = await HtmlTransformer.importHTMLToDoc({
           collection: docCollection,
+          schema: getAFFiNEWorkspaceSchema(),
+          extensions: getStoreManager().get('store'),
           html: text,
           fileName,
         });
@@ -193,7 +205,9 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       const { entryId, pageIds, isWorkspaceFile } =
         await NotionHtmlTransformer.importNotionZip({
           collection: docCollection,
+          schema: getAFFiNEWorkspaceSchema(),
           imported: file,
+          extensions: getStoreManager().get('store'),
         });
       return {
         docIds: pageIds,
@@ -208,7 +222,13 @@ const importConfigs: Record<ImportType, ImportConfig> = {
       if (Array.isArray(file)) {
         throw new Error('Expected a single zip file for snapshot import');
       }
-      const docIds = (await ZipTransformer.importDocs(docCollection, file))
+      const docIds = (
+        await ZipTransformer.importDocs(
+          docCollection,
+          getAFFiNEWorkspaceSchema(),
+          file
+        )
+      )
         .filter(doc => doc !== undefined)
         .map(doc => doc.id);
 
@@ -226,6 +246,7 @@ const ImportOptionItem = ({
   suffixTooltip,
   type,
   onImport,
+  ...props
 }: {
   label: string;
   prefixIcon: ReactElement<SVGAttributes<SVGElement>>;
@@ -236,7 +257,7 @@ const ImportOptionItem = ({
 }) => {
   const t = useI18n();
   return (
-    <div className={style.importItem} onClick={() => onImport(type)}>
+    <div className={style.importItem} onClick={() => onImport(type)} {...props}>
       {prefixIcon}
       <div className={style.importItemLabel}>{t[label]()}</div>
       {suffixIcon && (
@@ -277,9 +298,9 @@ const ImportOptions = ({
               suffixIcon={suffixIcon}
               suffixTooltip={suffixTooltip}
               label={label}
-              data-testid={testId}
               type={type}
               onImport={onImport}
+              data-testid={testId}
             />
           )
         )}
@@ -288,7 +309,7 @@ const ImportOptions = ({
         {t['com.affine.import.modal.tip']()}{' '}
         <a
           className={style.link}
-          href="https://discord.gg/whd5mjYqVw"
+          href={BUILD_CONFIG.discordUrl}
           target="_blank"
           rel="noreferrer"
         >
@@ -325,7 +346,7 @@ const SuccessStatus = ({ onComplete }: { onComplete: () => void }) => {
         {t['com.affine.import.status.success.message']()}{' '}
         <a
           className={style.link}
-          href={DISCORD_URL}
+          href={BUILD_CONFIG.discordUrl}
           target="_blank"
           rel="noreferrer"
         >
@@ -362,7 +383,7 @@ const ErrorStatus = ({
       <div className={style.importModalButtonContainer}>
         <Button
           onClick={() => {
-            urlService.openPopupWindow(DISCORD_URL);
+            urlService.openPopupWindow(BUILD_CONFIG.discordUrl);
           }}
           variant="secondary"
         >

@@ -1,6 +1,6 @@
 {
   "name": "@affine/web",
-  "version": "0.19.0",
+  "version": "0.21.0",
   "description": "AFFiNE Desktop Web application",
   "private": true,
   "browser": "src/index.tsx",
@@ -11,9 +11,12 @@
   "dependencies": {
     "@affine/component": "workspace:*",
     "@affine/core": "workspace:*",
+    "@affine/env": "workspace:*",
     "@affine/i18n": "workspace:*",
+    "@affine/nbstore": "workspace:*",
+    "@affine/track": "workspace:*",
     "@emotion/react": "^11.14.0",
-    "@sentry/react": "^8.44.0",
+    "@sentry/react": "^9.2.0",
     "@toeverything/infra": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

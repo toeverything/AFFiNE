@@ -1,6 +1,6 @@
 name: Bug Report
 description: File a bug report
-title: "\u200b"
+title: '[Bug]: '
 labels: ['bug']
 body:
   - type: markdown
@@ -18,20 +18,26 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: version
+    id: distribution
     attributes:
       label: Distribution version
-      description: What version of AFFiNE are you using?
+      description: What distribution of AFFiNE are you using?
       options:
         - macOS x64 (Intel)
         - macOS ARM 64 (Apple Silicon)
         - Windows x64
         - Linux
-        - Web (app.affine.pro)
-        - Web (affine.fail)
-        - Web (insider.affine.pro)
+        - Web (https://app.affine.pro)
+        - Beta Web (https://insider.affine.pro)
+        - Canary Web (https://affine.fail)
     validations:
       required: true
+  - type: input
+    id: version
+    attributes:
+      label: App Version
+      description: What version of AFFiNE are you using?
+      placeholder: (You can find AFFiNE version in [About AFFiNE] setting panel)
   - type: dropdown
     id: browsers
     attributes:
@@ -51,6 +57,11 @@ body:
         If you are self-hosting, please check the box and provide information about your setup.
       options:
         - label: 'Yes'
+  - type: input
+    id: selfhost-version
+    attributes:
+      label: Self-hosting Version
+      description: What version of AFFiNE are you selfhosting?
   - type: textarea
     id: logs
     attributes:

@@ -1,9 +1,12 @@
-import { useDndMonitor } from '@affine/component';
+import { Checkbox, notify, useDndMonitor } from '@affine/component';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import type { AffineDNDData } from '@affine/core/types/dnd';
+import { useI18n } from '@affine/i18n';
+import track from '@affine/track';
 import { useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useSetAtom } from 'jotai';
+import { nanoid } from 'nanoid';
 import type { HTMLAttributes } from 'react';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
@@ -83,11 +86,15 @@ export const SplitView = ({
 
   const setDraggingOverResizeHandle = useSetAtom(draggingOverResizeHandleAtom);
 
+  const t = useI18n();
+  const hideFolderWarningRef = useRef(false);
+
   useDndMonitor<AffineDNDData>(() => {
     return {
-      // todo(@pengx17): external data for monitor is not supported yet
-      // allowExternal: true,
       canMonitor(data) {
+        if (!BUILD_CONFIG.isElectron) {
+          return false;
+        }
         // allow dropping doc && tab view to split view panel
         const from = data.source.data.from;
         const entity = data.source.data.entity;
@@ -95,7 +102,9 @@ export const SplitView = ({
           return false;
         } else if (
           entity?.type &&
-          allowedSplitViewEntityTypes.has(entity?.type)
+          (allowedSplitViewEntityTypes.has(entity?.type) ||
+            // will show a toast warning for folder for now
+            entity?.type === 'folder')
         ) {
           return true;
         } else if (from?.at === 'workbench:link') {
@@ -108,6 +117,46 @@ export const SplitView = ({
       },
       onDrop(data) {
         setDraggingEntity(false);
+
+        if (data.source.data.entity?.type === 'folder') {
+          if (hideFolderWarningRef.current) {
+            return;
+          }
+          const toastid = nanoid();
+          const showOrUpdateWarning = () => {
+            notify.warning(
+              {
+                title: t['tips'](),
+                message: (
+                  <div className={styles.folderWarningMessage}>
+                    <p>
+                      {t['com.affine.split-view-folder-warning.description']()}
+                    </p>
+                    <p>
+                      <Checkbox
+                        checked={hideFolderWarningRef.current}
+                        onClick={() => {
+                          hideFolderWarningRef.current =
+                            !hideFolderWarningRef.current;
+                          showOrUpdateWarning();
+                        }}
+                        label={t['do-not-show-this-again']()}
+                      />
+                    </p>
+                  </div>
+                ),
+                theme: 'info',
+              },
+              {
+                id: toastid,
+              }
+            );
+          };
+
+          showOrUpdateWarning();
+          return;
+        }
+
         const candidate = data.location.current.dropTargets.find(
           target => target.data.at === 'workbench:resize-handle'
         );
@@ -120,7 +169,10 @@ export const SplitView = ({
         const entity = data.source.data.entity;
         const from = data.source.data.from;
 
-        if (dropTarget?.at === 'workbench:resize-handle') {
+        if (
+          dropTarget?.at === 'workbench:resize-handle' &&
+          entity?.type !== 'custom-property'
+        ) {
           const { edge, viewId } = dropTarget;
           const index = views.findIndex(v => v.id === viewId);
           const at = (() => {
@@ -147,6 +199,10 @@ export const SplitView = ({
 
           if (to) {
             workbench.createView(at, to);
+            track.$.splitViewIndicator.$.openInSplitView({
+              type: entity?.type,
+              route: to,
+            });
           }
         }
       },

@@ -26,6 +26,12 @@ pub struct UpdateRow {
 }
 
 #[napi(object)]
+pub struct DocTimestampRow {
+  pub doc_id: Option<String>,
+  pub timestamp: NaiveDateTime,
+}
+
+#[napi(object)]
 pub struct InsertRow {
   pub doc_id: Option<String>,
   pub data: Uint8Array,
@@ -83,7 +89,8 @@ impl SqliteConnection {
     let blob = blob.as_ref();
     sqlx::query_as!(
       BlobRow,
-      "INSERT INTO blobs (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = excluded.data",
+      "INSERT INTO blobs (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = \
+       excluded.data",
       key,
       blob,
     )
@@ -143,6 +150,20 @@ impl SqliteConnection {
       .await
       .map_err(anyhow::Error::from)?,
     };
+    Ok(updates)
+  }
+
+  #[napi]
+  pub async fn get_doc_timestamps(&self) -> napi::Result<Vec<DocTimestampRow>> {
+    // get the greatest timestamp of each doc_id
+    let updates = sqlx::query_as!(
+      DocTimestampRow,
+      "SELECT doc_id, MAX(timestamp) as timestamp FROM updates GROUP BY doc_id"
+    )
+    .fetch_all(&self.pool)
+    .await
+    .map_err(anyhow::Error::from)?;
+
     Ok(updates)
   }
 
@@ -268,7 +289,8 @@ impl SqliteConnection {
   pub async fn set_server_clock(&self, key: String, data: Uint8Array) -> napi::Result<()> {
     let data = data.as_ref();
     sqlx::query!(
-      "INSERT INTO server_clock (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = excluded.data",
+      "INSERT INTO server_clock (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = \
+       excluded.data",
       key,
       data,
     )
@@ -322,7 +344,8 @@ impl SqliteConnection {
   pub async fn set_sync_metadata(&self, key: String, data: Uint8Array) -> napi::Result<()> {
     let data = data.as_ref();
     sqlx::query!(
-      "INSERT INTO sync_metadata (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data = excluded.data",
+      "INSERT INTO sync_metadata (key, data) VALUES ($1, $2) ON CONFLICT(key) DO UPDATE SET data \
+       = excluded.data",
       key,
       data,
     )

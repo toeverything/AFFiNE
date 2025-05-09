@@ -6,17 +6,18 @@ import {
   PropertyCollapsibleSection,
   Scrollable,
 } from '@affine/component';
+import { useGuard } from '@affine/core/components/guard';
 import {
   type DefaultOpenProperty,
-  DocPropertyRow,
-} from '@affine/core/components/doc-properties';
-import { CreatePropertyMenuItems } from '@affine/core/components/doc-properties/menu/create-doc-property';
+  WorkspacePropertyRow,
+} from '@affine/core/components/properties';
+import { CreatePropertyMenuItems } from '@affine/core/components/properties/menu/create-doc-property';
 import { LinksRow } from '@affine/core/desktop/dialogs/doc-info/links-row';
 import { TimeRow } from '@affine/core/desktop/dialogs/doc-info/time-row';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
-import { DocsService } from '@affine/core/modules/doc';
 import { DocDatabaseBacklinkInfo } from '@affine/core/modules/doc-info';
 import { DocsSearchService } from '@affine/core/modules/docs-search';
+import { WorkspacePropertyService } from '@affine/core/modules/workspace-property';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
 import { LiveData, useLiveData, useServices } from '@toeverything/infra';
@@ -30,12 +31,14 @@ export const DocInfoSheet = ({
   docId: string;
   defaultOpenProperty?: DefaultOpenProperty;
 }) => {
-  const { docsSearchService, docsService } = useServices({
+  const { docsSearchService, workspacePropertyService } = useServices({
     DocsSearchService,
-    DocsService,
+    WorkspacePropertyService,
   });
   const t = useI18n();
 
+  const canEditPropertyInfo = useGuard('Workspace_Properties_Update');
+  const canEditProperty = useGuard('Doc_Update', docId);
   const links = useLiveData(
     useMemo(
       () => LiveData.from(docsSearchService.watchRefsFrom(docId), null),
@@ -66,7 +69,7 @@ export const DocInfoSheet = ({
     setNewPropertyId(property.id);
   }, []);
 
-  const properties = useLiveData(docsService.propertyList.sortedProperties$);
+  const properties = useLiveData(workspacePropertyService.sortedProperties$);
 
   return (
     <Scrollable.Root className={styles.scrollableRoot}>
@@ -98,20 +101,15 @@ export const DocInfoSheet = ({
               }
             >
               {properties.map(property => (
-                <DocPropertyRow
+                <WorkspacePropertyRow
                   key={property.id}
                   propertyInfo={property}
                   defaultOpenEditMenu={newPropertyId === property.id}
+                  propertyInfoReadonly={!canEditPropertyInfo}
+                  readonly={!canEditProperty}
                 />
               ))}
-              <Menu
-                items={<CreatePropertyMenuItems onCreated={onPropertyAdded} />}
-                contentOptions={{
-                  onClick(e) {
-                    e.stopPropagation();
-                  },
-                }}
-              >
+              {!canEditPropertyInfo ? (
                 <Button
                   variant="plain"
                   prefix={<PlusIcon />}
@@ -119,7 +117,26 @@ export const DocInfoSheet = ({
                 >
                   {t['com.affine.page-properties.add-property']()}
                 </Button>
-              </Menu>
+              ) : (
+                <Menu
+                  items={
+                    <CreatePropertyMenuItems onCreated={onPropertyAdded} />
+                  }
+                  contentOptions={{
+                    onClick(e) {
+                      e.stopPropagation();
+                    },
+                  }}
+                >
+                  <Button
+                    variant="plain"
+                    prefix={<PlusIcon />}
+                    className={styles.addPropertyButton}
+                  >
+                    {t['com.affine.page-properties.add-property']()}
+                  </Button>
+                </Menu>
+              )}
             </PropertyCollapsibleContent>
           </PropertyCollapsibleSection>
           <Divider size="thinner" />

@@ -3,12 +3,8 @@ import { Logger } from '@nestjs/common';
 import { AiPrompt } from '@prisma/client';
 import Mustache from 'mustache';
 
-import {
-  getTokenEncoder,
-  PromptConfig,
-  PromptMessage,
-  PromptParams,
-} from '../types';
+import { PromptConfig, PromptMessage, PromptParams } from '../providers';
+import { getTokenEncoder } from '../types';
 
 // disable escaping
 Mustache.escape = (text: string) => text;
@@ -121,6 +117,13 @@ export class ChatPrompt {
     }
   }
 
+  private preDefinedParams(params: PromptParams) {
+    return {
+      'affine::date': new Date().toLocaleDateString(),
+      'affine::language': params.language || 'same language as the user query',
+    };
+  }
+
   /**
    * render prompt messages with params
    * @param params record of params, e.g. { name: 'Alice' }
@@ -129,7 +132,9 @@ export class ChatPrompt {
   finish(params: PromptParams, sessionId?: string): PromptMessage[] {
     this.checkParams(params, sessionId);
 
-    const { attachments: attach, ...restParams } = params;
+    const { attachments: attach, ...restParams } = Object.fromEntries(
+      Object.entries(params).filter(([k]) => !k.startsWith('affine::'))
+    );
     const paramsAttach = Array.isArray(attach) ? attach : [];
 
     return this.messages.map(
@@ -137,7 +142,10 @@ export class ChatPrompt {
         const result: PromptMessage = {
           ...rest,
           params,
-          content: Mustache.render(content, restParams),
+          content: Mustache.render(
+            content,
+            Object.assign({}, restParams, this.preDefinedParams(restParams))
+          ),
         };
 
         const attachments = [

@@ -7,7 +7,7 @@ import {
   SUPPORTED_LANGUAGES,
 } from '@affine/i18n';
 import { effect, Entity, fromPromise, LiveData } from '@toeverything/infra';
-import { catchError, EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import { catchError, EMPTY, exhaustMap } from 'rxjs';
 
 import type { GlobalCache } from '../../storage';
 
@@ -76,8 +76,7 @@ export class I18n extends Entity {
           logger.error('Failed to change language', error);
 
           return EMPTY;
-        }),
-        mergeMap(() => EMPTY)
+        })
       )
     )
   );

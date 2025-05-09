@@ -1,9 +1,9 @@
-import type { Command } from '@blocksuite/block-std';
+import type { Command } from '@blocksuite/std';
+import type { BlockModel } from '@blocksuite/store';
 
-export const retainFirstModelCommand: Command<'selectedModels'> = (
-  ctx,
-  next
-) => {
+export const retainFirstModelCommand: Command<{
+  selectedModels?: BlockModel[];
+}> = (ctx, next) => {
   if (!ctx.selectedModels) {
     console.error(
       '`selectedModels` is required, you need to use `getSelectedModels` command before adding this command to the pipeline.'
@@ -17,11 +17,3 @@ export const retainFirstModelCommand: Command<'selectedModels'> = (
 
   return next();
 };
-
-declare global {
-  namespace BlockSuite {
-    interface Commands {
-      retainFirstModel: typeof retainFirstModelCommand;
-    }
-  }
-}

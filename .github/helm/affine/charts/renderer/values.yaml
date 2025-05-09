@@ -27,8 +27,8 @@ podSecurityContext:
 
 resources:
   requests:
-    cpu: '4'
-    memory: 4Gi
+    cpu: '1'
+    memory: 2Gi
 
 probe:
   initialDelaySeconds: 20

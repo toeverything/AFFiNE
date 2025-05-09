@@ -37,6 +37,12 @@ export const splitViewPanel = style({
   display: 'flex',
 
   selectors: {
+    '[data-is-resizing="true"]&': {
+      transition: 'none',
+    },
+    '[data-is-reordering="true"]&': {
+      flexGrow: 1,
+    },
     '[data-client-border="false"] &[data-is-first="true"]': {
       borderTopLeftRadius: borderRadius,
     },
@@ -214,4 +220,10 @@ export const splitViewRoot = style({
       overflow: 'clip',
     },
   },
+});
+
+export const folderWarningMessage = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '8px',
 });

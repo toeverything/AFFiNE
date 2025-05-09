@@ -1,0 +1,62 @@
+{
+  "children": [
+    {
+      "children": [
+        {
+          "children": [
+          ],
+          "flavour": "affine:paragraph",
+          "id": "4",
+          "props": {
+            "collapsed": false,
+            "text": {
+              "$blocksuite:internal:text$": true,
+              "delta": [
+                {
+                  "insert": "hello"
+                }
+              ]
+            },
+            "type": "text"
+          },
+          "type": "block",
+          "version": 1
+        }
+      ],
+      "flavour": "affine:note",
+      "id": "1",
+      "props": {
+        "background": {
+          "dark": "#252525",
+          "light": "#ffffff"
+        },
+        "displayMode": "both",
+        "edgeless": {
+          "style": {
+            "borderRadius": 8,
+            "borderSize": 4,
+            "borderStyle": "none",
+            "shadowType": "--affine-note-shadow-box"
+          }
+        },
+        "hidden": false,
+        "index": "a0",
+        "lockedBySelf": false,
+        "xywh": "[0,0,498,92]"
+      },
+      "type": "block",
+      "version": 1
+    }
+  ],
+  "flavour": "affine:page",
+  "id": "0",
+  "props": {
+    "title": {
+      "$blocksuite:internal:text$": true,
+      "delta": [
+      ]
+    }
+  },
+  "type": "block",
+  "version": 2
+}

@@ -10,3 +10,5 @@ export type DeepPartial<T> = {
       : DeepPartial<T[P]>
     : T[P];
 };
+
+export function assertType<T>(_: unknown): asserts _ is T {}

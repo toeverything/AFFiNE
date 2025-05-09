@@ -19,6 +19,7 @@ export const divider = style({
   display: 'flex',
   alignItems: 'center',
   position: 'relative',
+  flexShrink: 0,
   ':before': {
     content: '""',
     width: '100%',
@@ -38,6 +39,11 @@ export const head = style([
     color: cssVarV2('text/primary'),
   },
 ]);
+export const headActions = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 14,
+});
 export const body = style({
   overflowY: 'auto',
   flexShrink: 0,
@@ -79,3 +85,30 @@ export const wsName = style([
     textAlign: 'left',
   },
 ]);
+
+export const serverInfo = style({
+  padding: '6px 20px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+});
+export const serverName = style([
+  footnoteRegular,
+  {
+    color: cssVarV2.text.secondary,
+    flexShrink: 0,
+  },
+]);
+export const serverAccount = style([
+  serverName,
+  {
+    flexShrink: 1,
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+  },
+]);
+export const spaceX = style({
+  width: 0,
+  flex: 1,
+});

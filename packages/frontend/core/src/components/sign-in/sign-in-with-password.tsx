@@ -1,8 +1,10 @@
-import { notify, Wrapper } from '@affine/component';
+import { notify } from '@affine/component';
 import {
+  AuthContainer,
+  AuthContent,
+  AuthFooter,
+  AuthHeader,
   AuthInput,
-  BackButton,
-  ModalHeader,
 } from '@affine/component/auth-components';
 import { Button } from '@affine/component/ui/button';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
@@ -20,6 +22,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import type { SignInState } from '.';
+import { Back } from './back';
 import { Captcha } from './captcha';
 import * as styles from './style.css';
 
@@ -105,18 +108,13 @@ export const SignInWithPasswordStep = ({
   }, [changeState]);
 
   return (
-    <>
-      <ModalHeader
+    <AuthContainer>
+      <AuthHeader
         title={t['com.affine.auth.sign.in']()}
         subTitle={serverName}
       />
 
-      <Wrapper
-        marginTop={30}
-        style={{
-          position: 'relative',
-        }}
-      >
+      <AuthContent>
         <AuthInput
           label={t['com.affine.settings.email']()}
           disabled={true}
@@ -157,12 +155,10 @@ export const SignInWithPasswordStep = ({
         >
           {t['com.affine.auth.sign.in']()}
         </Button>
-      </Wrapper>
-      <BackButton
-        onClick={useCallback(() => {
-          changeState(prev => ({ ...prev, step: 'signIn' }));
-        }, [changeState])}
-      />
-    </>
+      </AuthContent>
+      <AuthFooter>
+        <Back changeState={changeState} />
+      </AuthFooter>
+    </AuthContainer>
   );
 };

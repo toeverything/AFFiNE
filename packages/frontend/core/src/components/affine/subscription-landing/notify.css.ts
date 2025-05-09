@@ -6,13 +6,6 @@ export const notifyHeader = style({
   fontSize: 15,
 });
 
-export const notifyFooter = style({
-  display: 'flex',
-  justifyContent: 'end',
-  gap: 12,
-  paddingTop: 8,
-});
-
 export const actionButton = style({
   fontSize: cssVar('fontSm'),
   fontWeight: 500,

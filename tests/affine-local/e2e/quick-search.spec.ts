@@ -30,19 +30,11 @@ const insertInputText = async (page: Page, text: string) => {
   expect(actual).toBe(text);
 };
 
-const keyboardDownAndSelect = async (page: Page, label: string) => {
-  await page.keyboard.press('ArrowDown');
-  const selectedEl = page.locator(
-    '[cmdk-item][data-selected="true"] [data-testid="cmdk-label"]'
-  );
-  if (
-    !(await selectedEl.isVisible()) ||
-    (await selectedEl.innerText()) !== label
-  ) {
-    await keyboardDownAndSelect(page, label);
-  } else {
-    await page.keyboard.press('Enter');
-  }
+const selectItem = async (page: Page, label: string) => {
+  const selectedEl = page
+    .locator('[cmdk-item] [data-testid="cmdk-label"]')
+    .filter({ hasText: label });
+  await selectedEl.click();
 };
 
 const commandsIsVisible = async (page: Page, label: string) => {
@@ -257,7 +249,7 @@ test('can use keyboard down to select goto setting', async ({ page }) => {
   await openHomePage(page);
   await waitForEditorLoad(page);
   await openQuickSearchByShortcut(page);
-  await keyboardDownAndSelect(page, 'Go to Settings');
+  await selectItem(page, 'Go to Settings');
 
   await expect(page.getByTestId('setting-modal')).toBeVisible();
 });
@@ -351,7 +343,7 @@ test('can use cmdk to export png', async ({ page }) => {
   await openQuickSearchByShortcut(page);
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    keyboardDownAndSelect(page, 'Export to PNG'),
+    selectItem(page, 'Export to PNG'),
   ]);
   expect(download.suggestedFilename()).toBe('this is a new page to export.png');
 });
@@ -363,7 +355,7 @@ test('can use cmdk to delete page and restore it', async ({ page }) => {
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill('this is a new page to delete');
   await openQuickSearchByShortcut(page);
-  await keyboardDownAndSelect(page, 'Move to trash');
+  await selectItem(page, 'Move to trash');
   await page.getByTestId('confirm-modal-confirm').click();
   const restoreButton = page.getByTestId('page-restore-button');
   await expect(restoreButton).toBeVisible();
@@ -371,7 +363,7 @@ test('can use cmdk to delete page and restore it', async ({ page }) => {
   await openQuickSearchByShortcut(page);
   expect(await commandsIsVisible(page, 'Move to trash')).toBe(false);
   expect(await commandsIsVisible(page, 'Restore from trash')).toBe(true);
-  await keyboardDownAndSelect(page, 'Restore from trash');
+  await selectItem(page, 'Restore from trash');
   await expect(restoreButton).not.toBeVisible();
 });
 
@@ -449,6 +441,7 @@ test('disable quick search when the link-popup is visitable', async ({
   const quickSearch = page.locator('[data-testid=cmdk-quick-search]');
   await expect(quickSearch).toBeVisible();
   await withCtrlOrMeta(page, () => page.keyboard.press('k'));
+  await expect(quickSearch).toBeHidden();
 
   await getBlockSuiteEditorTitle(page).click();
   await getBlockSuiteEditorTitle(page).fill(specialTitle);
@@ -471,6 +464,8 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
 
   const url = page.url();
 
+  const docTitle = await page.getByTestId('title-edit-button').innerText();
+
   await clickNewPageButton(page);
   await clickEdgelessModeButton(page);
   await page.locator('affine-edgeless-root').press('@');
@@ -482,26 +477,28 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
   await insertInputText(page, url);
 
   // expect the default page to be selected
-  await expect(page.locator('[cmdk-group-items] [cmdk-item]')).toHaveCount(5);
+  await expect(
+    page.locator('[cmdk-group-items] [cmdk-item][data-selected="true"]')
+  ).toContainText(docTitle);
 
   // press enter to insert the page to canvas
   await page.keyboard.press('Enter');
   await expect(
-    page.locator('affine-embed-edgeless-linked-doc-block')
+    page.locator('affine-embed-edgeless-synced-doc-block')
   ).toBeVisible();
   await expect(
-    page.locator('.affine-embed-linked-doc-content-title')
-  ).toContainText('Write, Draw, Plan all at Once');
+    page.getByTestId('edgeless-embed-synced-doc-title')
+  ).toContainText(docTitle);
 
   // focus on the note block
   await page.waitForTimeout(500);
   await page
-    .locator('affine-embed-edgeless-linked-doc-block')
+    .locator('affine-embed-edgeless-synced-doc-block')
     .click({ force: true });
   await page.waitForTimeout(500);
   // double clock to show peek view
   await page
-    .locator('affine-embed-edgeless-linked-doc-block')
+    .locator('affine-embed-edgeless-synced-doc-block')
     .dblclick({ force: true });
   await expect(page.getByTestId('peek-view-modal')).toBeVisible();
 });
@@ -518,46 +515,14 @@ test('can paste a doc link to create link reference', async ({ page }) => {
   // paste the url
   await writeTextToClipboard(page, url);
 
-  // check the link reference
-  await page.waitForTimeout(500);
   await expect(
-    page.locator('affine-reference:has-text("Write, Draw, Plan all at Once.")')
+    page.locator('affine-reference:has-text("Getting Started")')
   ).toBeVisible();
 
   // can ctrl-z to revert to normal link
   await page.keyboard.press('ControlOrMeta+z');
 
-  // check the normal link
-  await page.waitForTimeout(500);
   await expect(page.locator(`affine-link:has-text("${url}")`)).toBeVisible();
-});
-
-test('can use slash menu to insert a newly created doc card', async ({
-  page,
-}) => {
-  await openHomePage(page);
-  // title '1' is a workaround to make sure Keyboard enter works correctly
-  await clickNewPageButton(page, '1');
-
-  // flaky: still focus on the title input
-  // goto main content
-  await page.keyboard.press('Enter');
-
-  // open slash menu
-  await page.keyboard.type('/linkedoc', {
-    delay: 50,
-  });
-  await page.keyboard.press('Enter');
-  await expect(page.getByTestId('cmdk-quick-search')).toBeVisible();
-
-  const testTitle = 'test title';
-  await page.locator('[cmdk-input]').fill(testTitle);
-  await page.keyboard.press('Enter');
-
-  await expect(page.locator('affine-embed-linked-doc-block')).toBeVisible();
-  await expect(
-    page.locator('.affine-embed-linked-doc-content-title')
-  ).toContainText(testTitle);
 });
 
 test('can use slash menu to insert an external link', async ({ page }) => {

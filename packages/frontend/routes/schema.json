@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "AFFiNE Routes Schema",
+  "definitions": {
+    "route": {
+      "type": "string",
+      "description": "route path"
+    },
+    "children": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "required": ["route", "children"],
+            "properties": {
+              "route": { "$ref": "#/definitions/route" },
+              "children": { "$ref": "#/definitions/children" }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "properties": {
+    "route": { "$ref": "#/definitions/route" },
+    "children": { "$ref": "#/definitions/children" }
+  }
+}

@@ -1,0 +1,7 @@
+query getDocDefaultRole($workspaceId: String!, $docId: String!) {
+  workspace(id: $workspaceId) {
+    doc(docId: $docId) {
+      defaultRole
+    }
+  }
+}

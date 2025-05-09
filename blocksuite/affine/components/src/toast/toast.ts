@@ -1,4 +1,4 @@
-import type { EditorHost } from '@blocksuite/block-std';
+import type { EditorHost } from '@blocksuite/std';
 import { baseTheme } from '@toeverything/theme';
 import { html } from 'lit';
 

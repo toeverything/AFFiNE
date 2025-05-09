@@ -2,15 +2,28 @@ import EventEmitter2 from 'eventemitter2';
 
 import type { AwarenessStorage } from './awareness';
 import type { BlobStorage } from './blob';
+import type { BlobSyncStorage } from './blob-sync';
 import type { DocStorage } from './doc';
+import type { DocSyncStorage } from './doc-sync';
 import { DummyAwarenessStorage } from './dummy/awareness';
 import { DummyBlobStorage } from './dummy/blob';
+import { DummyBlobSyncStorage } from './dummy/blob-sync';
 import { DummyDocStorage } from './dummy/doc';
-import { DummySyncStorage } from './dummy/sync';
+import { DummyDocSyncStorage } from './dummy/doc-sync';
+import { DummyIndexerStorage } from './dummy/indexer';
+import { DummyIndexerSyncStorage } from './dummy/indexer-sync';
+import type { IndexerStorage } from './indexer';
+import type { IndexerSyncStorage } from './indexer-sync';
 import type { StorageType } from './storage';
-import type { SyncStorage } from './sync';
 
-type Storages = DocStorage | BlobStorage | SyncStorage | AwarenessStorage;
+type Storages =
+  | DocStorage
+  | BlobStorage
+  | BlobSyncStorage
+  | DocSyncStorage
+  | AwarenessStorage
+  | IndexerStorage
+  | IndexerSyncStorage;
 
 export type SpaceStorageOptions = {
   [K in StorageType]?: Storages & { storageType: K };
@@ -27,8 +40,11 @@ export class SpaceStorage {
     this.storages = {
       awareness: storages.awareness ?? new DummyAwarenessStorage(),
       blob: storages.blob ?? new DummyBlobStorage(),
+      blobSync: storages.blobSync ?? new DummyBlobSyncStorage(),
       doc: storages.doc ?? new DummyDocStorage(),
-      sync: storages.sync ?? new DummySyncStorage(),
+      docSync: storages.docSync ?? new DummyDocSyncStorage(),
+      indexer: storages.indexer ?? new DummyIndexerStorage(),
+      indexerSync: storages.indexerSync ?? new DummyIndexerSyncStorage(),
     };
   }
 
@@ -70,8 +86,10 @@ export class SpaceStorage {
 
 export * from './awareness';
 export * from './blob';
+export * from './blob-sync';
 export * from './doc';
+export * from './doc-sync';
 export * from './errors';
 export * from './history';
+export * from './indexer';
 export * from './storage';
-export * from './sync';

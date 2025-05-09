@@ -1,0 +1,9 @@
+mutation acceptInviteByInviteId(
+  $workspaceId: String!
+  $inviteId: String!
+) {
+  acceptInviteById(
+    workspaceId: $workspaceId
+    inviteId: $inviteId
+  )
+}

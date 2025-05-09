@@ -23,13 +23,9 @@ interface JournalTodayActivityMenuItemProps {
 type Category = 'created' | 'updated';
 
 const DocItem = ({ docId }: { docId: string }) => {
-  const i18n = useI18n();
   const docDisplayMetaService = useService(DocDisplayMetaService);
-  const Icon = useLiveData(
-    docDisplayMetaService.icon$(docId, { compareDate: new Date() })
-  );
-  const titleMeta = useLiveData(docDisplayMetaService.title$(docId));
-  const title = i18n.t(titleMeta);
+  const Icon = useLiveData(docDisplayMetaService.icon$(docId));
+  const title = useLiveData(docDisplayMetaService.title$(docId));
   return (
     <WorkbenchLink aria-label={title} to={`/${docId}`}>
       <MenuItem prefixIcon={<Icon />}>{title}</MenuItem>

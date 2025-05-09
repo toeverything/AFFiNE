@@ -2,10 +2,10 @@ import type { BlockModel, Store, Text } from '@blocksuite/store';
 
 export function transformModel(
   model: BlockModel,
-  flavour: BlockSuite.Flavour,
+  flavour: string,
   props?: Parameters<Store['addBlock']>[1]
 ) {
-  const doc = model.doc;
+  const doc = model.store;
   const parent = doc.getParent(model);
   if (!parent) {
     return null;

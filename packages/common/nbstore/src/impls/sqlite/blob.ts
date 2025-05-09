@@ -4,6 +4,7 @@ import { NativeDBConnection, type SqliteNativeDBOptions } from './db';
 
 export class SqliteBlobStorage extends BlobStorageBase {
   static readonly identifier = 'SqliteBlobStorage';
+  override readonly isReadonly = false;
 
   override connection = share(new NativeDBConnection(this.options));
 

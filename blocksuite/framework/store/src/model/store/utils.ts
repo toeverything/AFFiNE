@@ -1,7 +1,6 @@
 import type { z } from 'zod';
 
 import { SYS_KEYS } from '../../consts.js';
-import { native2Y } from '../../reactive/index.js';
 import type { BlockModel } from '../block/block-model.js';
 import type { BlockProps, YBlock } from '../block/types.js';
 import type { BlockSchema } from '../block/zod.js';
@@ -20,7 +19,7 @@ export function syncBlockProps(
     if (value === undefined) return;
 
     // @ts-expect-error allow props
-    model[key] = value;
+    model.props[key] = value;
   });
 
   // set default value
@@ -32,6 +31,6 @@ export function syncBlockProps(
     }
 
     // @ts-expect-error allow props
-    model[key] = native2Y(value);
+    model[key] = value;
   });
 }

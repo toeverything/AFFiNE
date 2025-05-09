@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
-import { Config, URLHelper } from '../../../base';
+import { InvalidOauthCallbackCode, URLHelper } from '../../../base';
 import { OAuthProviderName } from '../config';
-import { AutoRegisteredOAuthProvider } from '../register';
+import { OAuthProvider } from './def';
 
 interface AuthTokenResponse {
   access_token: string;
@@ -18,13 +18,10 @@ export interface UserInfo {
 }
 
 @Injectable()
-export class GithubOAuthProvider extends AutoRegisteredOAuthProvider {
+export class GithubOAuthProvider extends OAuthProvider {
   provider = OAuthProviderName.GitHub;
 
-  constructor(
-    protected readonly AFFiNEConfig: Config,
-    private readonly url: URLHelper
-  ) {
+  constructor(private readonly url: URLHelper) {
     super();
   }
 
@@ -64,10 +61,12 @@ export class GithubOAuthProvider extends AutoRegisteredOAuthProvider {
         scope: ghToken.scope,
       };
     } else {
+      const body = await response.text();
+      if (response.status < 500) {
+        throw new InvalidOauthCallbackCode({ status: response.status, body });
+      }
       throw new Error(
-        `Server responded with non-success code ${
-          response.status
-        }, ${JSON.stringify(await response.json())}`
+        `Server responded with non-success status ${response.status}, body: ${body}`
       );
     }
   }

@@ -4,12 +4,14 @@ import { Injectable } from '@nestjs/common';
 
 import { SessionCache } from '../../base';
 import { OAuthProviderName } from './config';
-import { OAuthProviderFactory } from './register';
+import { OAuthProviderFactory } from './factory';
 
 const OAUTH_STATE_KEY = 'OAUTH_STATE';
 
 interface OAuthState {
   redirectUri?: string;
+  client?: string;
+  clientNonce?: string;
   provider: OAuthProviderName;
 }
 

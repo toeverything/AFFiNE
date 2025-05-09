@@ -6,9 +6,10 @@ import type {
 
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
-  fullyParallel: !process.env.CI,
+  fullyParallel: true,
   timeout: 120_000,
   outputDir: testResultDir,
+  globalSetup: './global-setup.ts',
   use: {
     baseURL: 'http://localhost:8080/',
     browserName:
@@ -18,8 +19,8 @@ const config: PlaywrightTestConfig = {
     viewport: { width: 1440, height: 800 },
     actionTimeout: 10 * 1000,
     locale: 'en-US',
-    trace: 'on',
-    video: 'on',
+    trace: 'retain-on-failure',
+    video: 'retain-on-failure',
   },
   forbidOnly: !!process.env.CI,
   workers: 4,
@@ -29,6 +30,8 @@ const config: PlaywrightTestConfig = {
     {
       command: 'yarn run -T affine dev -p @affine/web',
       port: 8080,
+      stdout: 'ignore',
+      stderr: 'ignore',
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       env: {
@@ -40,8 +43,8 @@ const config: PlaywrightTestConfig = {
       port: 3010,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
-      stdout: 'pipe',
-      stderr: 'pipe',
+      stdout: 'ignore',
+      stderr: 'ignore',
       env: {
         DATABASE_URL:
           process.env.DATABASE_URL ??

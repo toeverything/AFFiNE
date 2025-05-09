@@ -38,7 +38,7 @@ public class UpdateAccountMutation: GraphQLMutation {
       ]),
     ] }
 
-    /// Update a user
+    /// Update an user
     public var updateUser: UpdateUser { __data["updateUser"] }
 
     /// UpdateUser

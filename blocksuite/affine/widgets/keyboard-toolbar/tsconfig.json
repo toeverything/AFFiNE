@@ -1,0 +1,35 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["./src"],
+  "references": [
+    { "path": "../../blocks/attachment" },
+    { "path": "../../blocks/database" },
+    { "path": "../../blocks/embed" },
+    { "path": "../../blocks/image" },
+    { "path": "../../blocks/latex" },
+    { "path": "../../blocks/list" },
+    { "path": "../../blocks/note" },
+    { "path": "../../blocks/paragraph" },
+    { "path": "../../blocks/surface" },
+    { "path": "../../blocks/surface-ref" },
+    { "path": "../../components" },
+    { "path": "../../ext-loader" },
+    { "path": "../../fragments/doc-title" },
+    { "path": "../../inlines/latex" },
+    { "path": "../../inlines/link" },
+    { "path": "../../inlines/preset" },
+    { "path": "../../inlines/reference" },
+    { "path": "../../model" },
+    { "path": "../../rich-text" },
+    { "path": "../../shared" },
+    { "path": "../../data-view" },
+    { "path": "../../../framework/global" },
+    { "path": "../../../framework/std" },
+    { "path": "../../../framework/store" }
+  ]
+}

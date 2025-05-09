@@ -25,7 +25,7 @@ export const radioButton = style({
     '&[data-state="checked"]': {
       color: cssVarV2('switch/fontColor/primary'),
     },
-    '&[data-state="unchecked"]:hover': {
+    '&[data-state="unchecked"]:hover:not([disabled])': {
       background: cssVarV2('switch/buttonBackground/hover'),
     },
     '[data-icon-mode=true] &': {

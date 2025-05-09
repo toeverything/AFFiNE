@@ -188,11 +188,6 @@ export default tseslint.config(
               message: "Don't import from src",
               allowTypeImports: false,
             },
-            {
-              group: ['@blocksuite/store'],
-              message: "Import from '@blocksuite/global/utils'",
-              importNames: ['assertExists', 'assertEquals'],
-            },
           ],
         },
       ],
@@ -255,6 +250,8 @@ export default tseslint.config(
 
           types: {
             '^LiveData$': true,
+            '^Signal$': true,
+            '^ReadonlySignal$': true,
             '^Doc$': false,
             '^Awareness$': false,
             '^UndoManager$': false,
@@ -302,7 +299,10 @@ export default tseslint.config(
       '**/e2e/**/*',
     ],
     rules: {
-      '@typescript-eslint/no-floating-promises': 0,
+      '@typescript-eslint/no-floating-promises': [
+        'error',
+        { ignoreVoid: true },
+      ],
       '@typescript-eslint/no-misused-promises': 0,
       '@typescript-eslint/no-restricted-imports': 0,
     },
@@ -316,7 +316,7 @@ export default tseslint.config(
   {
     files: [
       'packages/frontend/apps/electron/scripts/**/*',
-      'blocksuite/tests-legacy/**/*.{ts,tsx}',
+      'tests/blocksuite/**/*.{ts,tsx}',
       'blocksuite/**/__tests__/**/*.{ts,tsx}',
     ],
     rules: {

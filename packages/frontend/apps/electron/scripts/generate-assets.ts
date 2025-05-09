@@ -4,7 +4,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import fs from 'fs-extra';
-import { glob } from 'glob';
 
 const require = createRequire(import.meta.url);
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -58,29 +57,6 @@ if (!process.env.SKIP_WEB_BUILD) {
     env: process.env,
     cwd,
     shell: true,
-  });
-
-  // step 1.5: amend sourceMappingURL to allow debugging in devtools
-  await glob('**/*.{js,css}', { cwd: affineWebOutDir }).then(files => {
-    return Promise.all(
-      files.map(async file => {
-        const dir = path.dirname(file);
-        const fullpath = path.join(affineWebOutDir, file);
-        let content = await fs.readFile(fullpath, 'utf-8');
-        // replace # sourceMappingURL=76-6370cd185962bc89.js.map
-        // to      # sourceMappingURL=assets://./{dir}/76-6370cd185962bc89.js.map
-        content = content.replace(/# sourceMappingURL=(.*)\.map/g, (_, p1) => {
-          return `# sourceMappingURL=assets://./${dir}/${p1}.map`;
-        });
-        try {
-          await fs.writeFile(fullpath, content);
-          console.log('amended sourceMappingURL for', fullpath);
-        } catch (e) {
-          // do not crash the build
-          console.error('error writing file', fullpath, e);
-        }
-      })
-    );
   });
 
   await fs.move(affineWebOutDir, publicAffineOutDir, { overwrite: true });

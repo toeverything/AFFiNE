@@ -1,5 +1,6 @@
 import { ModalConfigContext } from '@affine/component';
 import { NavigationGestureService } from '@affine/core/mobile/modules/navigation-gesture';
+import { globalVars } from '@affine/core/mobile/styles/variables.css';
 import { useService } from '@toeverything/infra';
 import { type PropsWithChildren, useCallback } from 'react';
 
@@ -18,7 +19,9 @@ export const ModalConfigProvider = ({ children }: PropsWithChildren) => {
   }, [navigationGesture]);
 
   return (
-    <ModalConfigContext.Provider value={{ onOpen }}>
+    <ModalConfigContext.Provider
+      value={{ onOpen, dynamicKeyboardHeight: globalVars.appKeyboardHeight }}
+    >
       {children}
     </ModalConfigContext.Provider>
   );

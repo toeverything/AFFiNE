@@ -18,14 +18,19 @@ export class BasicGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext) {
     // get registered guard name
-    const providerName = this.reflector.get<string>(
+    const providerName = this.reflector.get<string[]>(
       BasicGuardSymbol,
       context.getHandler()
     );
 
-    const provider = GUARD_PROVIDER[providerName as NamedGuards];
-    if (provider) {
-      return await provider.canActivate(context);
+    if (Array.isArray(providerName) && providerName.length > 0) {
+      for (const name of providerName) {
+        const provider = GUARD_PROVIDER[name as NamedGuards];
+        if (provider) {
+          const ret = await provider.canActivate(context);
+          if (!ret) return false;
+        }
+      }
     }
 
     return true;
@@ -46,5 +51,5 @@ export class BasicGuard implements CanActivate {
  * }
  * ```
  */
-export const UseNamedGuard = (name: NamedGuards) =>
+export const UseNamedGuard = (...name: NamedGuards[]) =>
   applyDecorators(UseGuards(BasicGuard), SetMetadata(BasicGuardSymbol, name));

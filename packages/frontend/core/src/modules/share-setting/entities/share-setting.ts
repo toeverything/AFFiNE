@@ -1,7 +1,6 @@
 import { DebugLogger } from '@affine/debug';
 import type { GetWorkspaceConfigQuery, InviteLink } from '@affine/graphql';
 import {
-  backoffRetry,
   catchErrorInto,
   effect,
   Entity,
@@ -9,10 +8,10 @@ import {
   LiveData,
   onComplete,
   onStart,
+  smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, exhaustMap, mergeMap } from 'rxjs';
+import { exhaustMap, tap } from 'rxjs';
 
-import { isBackendError, isNetworkError } from '../../cloud';
 import type { WorkspaceService } from '../../workspace';
 import type { WorkspaceShareSettingStore } from '../stores/share-setting';
 
@@ -45,21 +44,13 @@ export class WorkspaceShareSetting extends Entity {
           signal
         )
       ).pipe(
-        backoffRetry({
-          when: isNetworkError,
-          count: Infinity,
-        }),
-        backoffRetry({
-          when: isBackendError,
-          count: 3,
-        }),
-        mergeMap(value => {
+        smartRetry(),
+        tap(value => {
           if (value) {
             this.enableAi$.next(value.enableAi);
             this.enableUrlPreview$.next(value.enableUrlPreview);
             this.inviteLink$.next(value.inviteLink);
           }
-          return EMPTY;
         }),
         catchErrorInto(this.error$, error => {
           logger.error('Failed to fetch enableUrlPreview', error);

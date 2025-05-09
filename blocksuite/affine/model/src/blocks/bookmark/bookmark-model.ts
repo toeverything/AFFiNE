@@ -1,25 +1,36 @@
 import type {
   GfxCommonBlockProps,
   GfxElementGeometry,
-} from '@blocksuite/block-std/gfx';
-import { GfxCompatible } from '@blocksuite/block-std/gfx';
-import { BlockModel, defineBlockSchema } from '@blocksuite/store';
+} from '@blocksuite/std/gfx';
+import { GfxCompatible } from '@blocksuite/std/gfx';
+import {
+  BlockModel,
+  BlockSchemaExtension,
+  defineBlockSchema,
+} from '@blocksuite/store';
 
-import type { EmbedCardStyle, LinkPreviewData } from '../../utils/index.js';
+import type {
+  BlockMeta,
+  EmbedCardStyle,
+  LinkPreviewData,
+} from '../../utils/index.js';
 
 export const BookmarkStyles: EmbedCardStyle[] = [
   'vertical',
   'horizontal',
   'list',
   'cube',
+  'citation',
 ] as const;
 
 export type BookmarkBlockProps = {
   style: (typeof BookmarkStyles)[number];
   url: string;
   caption: string | null;
+  footnoteIdentifier: string | null;
 } & LinkPreviewData &
-  Omit<GfxCommonBlockProps, 'scale'>;
+  Omit<GfxCommonBlockProps, 'scale'> &
+  BlockMeta;
 
 const defaultBookmarkProps: BookmarkBlockProps = {
   style: BookmarkStyles[1],
@@ -35,6 +46,12 @@ const defaultBookmarkProps: BookmarkBlockProps = {
   xywh: '[0,0,0,0]',
   lockedBySelf: false,
   rotate: 0,
+  'meta:createdAt': undefined,
+  'meta:updatedAt': undefined,
+  'meta:createdBy': undefined,
+  'meta:updatedBy': undefined,
+
+  footnoteIdentifier: null,
 };
 
 export const BookmarkBlockSchema = defineBlockSchema({
@@ -54,17 +71,9 @@ export const BookmarkBlockSchema = defineBlockSchema({
   toModel: () => new BookmarkBlockModel(),
 });
 
+export const BookmarkBlockSchemaExtension =
+  BlockSchemaExtension(BookmarkBlockSchema);
+
 export class BookmarkBlockModel
   extends GfxCompatible<BookmarkBlockProps>(BlockModel)
   implements GfxElementGeometry {}
-
-declare global {
-  namespace BlockSuite {
-    interface EdgelessBlockModelMap {
-      'affine:bookmark': BookmarkBlockModel;
-    }
-    interface BlockModels {
-      'affine:bookmark': BookmarkBlockModel;
-    }
-  }
-}

@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let InvoiceType = ApolloAPI.Object(
     typename: "InvoiceType",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

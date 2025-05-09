@@ -20,11 +20,12 @@ export const AddWorkspace = ({
   );
 
   return (
-    <div>
+    <>
       {BUILD_CONFIG.isElectron && (
         <MenuItem
           block={true}
           prefixIcon={<ImportIcon />}
+          prefixIconClassName={styles.prefixIcon}
           onClick={onAddWorkspace}
           data-testid="add-workspace"
           className={styles.ItemContainer}
@@ -37,6 +38,7 @@ export const AddWorkspace = ({
       <MenuItem
         block={true}
         prefixIcon={<PlusIcon />}
+        prefixIconClassName={styles.prefixIcon}
         onClick={onNewWorkspace}
         data-testid="new-workspace"
         className={styles.ItemContainer}
@@ -47,6 +49,6 @@ export const AddWorkspace = ({
             : t['com.affine.workspaceList.addWorkspace.create-cloud']()}
         </div>
       </MenuItem>
-    </div>
+    </>
   );
 };

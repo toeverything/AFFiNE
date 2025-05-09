@@ -1,385 +1,278 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Injectable, Logger } from '@nestjs/common';
 
-import type { EventPayload } from '../../base';
-import { OnEvent, PrismaTransaction } from '../../base';
-import { FeatureManagementService } from '../features/management';
-import { FeatureKind } from '../features/types';
-import { QuotaConfig } from './quota';
-import { QuotaType } from './types';
+import { InternalServerError, MemberQuotaExceeded, OnEvent } from '../../base';
+import {
+  Models,
+  type UserQuota,
+  WorkspaceQuota as BaseWorkspaceQuota,
+  WorkspaceRole,
+} from '../../models';
+import { WorkspaceBlobStorage } from '../storage';
+import {
+  UserQuotaHumanReadableType,
+  UserQuotaType,
+  WorkspaceQuotaHumanReadableType,
+  WorkspaceQuotaType,
+} from './types';
+import { formatDate, formatSize } from './utils';
+
+type UserQuotaWithUsage = Omit<UserQuotaType, 'humanReadable'>;
+type WorkspaceQuota = Omit<BaseWorkspaceQuota, 'seatQuota'> & {
+  ownerQuota?: string;
+};
+type WorkspaceQuotaWithUsage = Omit<WorkspaceQuotaType, 'humanReadable'>;
 
 @Injectable()
 export class QuotaService {
+  protected logger = new Logger(QuotaService.name);
+
   constructor(
-    private readonly prisma: PrismaClient,
-    private readonly feature: FeatureManagementService
+    private readonly models: Models,
+    private readonly storage: WorkspaceBlobStorage
   ) {}
 
-  async getQuota<Q extends QuotaType>(
-    quota: Q,
-    tx?: PrismaTransaction
-  ): Promise<QuotaConfig | undefined> {
-    const executor = tx ?? this.prisma;
-
-    const data = await executor.feature.findFirst({
-      where: { feature: quota, type: FeatureKind.Quota },
-      select: { id: true },
-      orderBy: { version: 'desc' },
-    });
-
-    if (data) {
-      return QuotaConfig.get(this.prisma, data.id);
-    }
-    return undefined;
+  @OnEvent('user.postCreated')
+  async onUserCreated({ id }: Events['user.postCreated']) {
+    await this.setupUserBaseQuota(id);
   }
 
-  // ======== User Quota ========
+  async getUserQuota(userId: string): Promise<UserQuota> {
+    let quota = await this.models.userFeature.getQuota(userId);
 
-  // get activated user quota
-  async getUserQuota(userId: string) {
-    const quota = await this.prisma.userFeature.findFirst({
-      where: {
-        userId,
-        feature: { type: FeatureKind.Quota },
-        activated: true,
-      },
-      select: {
-        reason: true,
-        createdAt: true,
-        expiredAt: true,
-        featureId: true,
-      },
-    });
-
+    // not possible, but just in case, we do a little fix for user to avoid system dump
     if (!quota) {
-      // this should unreachable
-      throw new Error(`User ${userId} has no quota`);
+      await this.setupUserBaseQuota(userId);
+      quota = await this.models.userFeature.getQuota(userId);
     }
 
-    const feature = await QuotaConfig.get(this.prisma, quota.featureId);
-    return { ...quota, feature };
-  }
-
-  // get user all quota records
-  async getUserQuotas(userId: string) {
-    const quotas = await this.prisma.userFeature.findMany({
-      where: {
-        userId,
-        feature: { type: FeatureKind.Quota },
-      },
-      select: {
-        activated: true,
-        reason: true,
-        createdAt: true,
-        expiredAt: true,
-        featureId: true,
-      },
-      orderBy: { id: 'asc' },
-    });
-    const configs = await Promise.all(
-      quotas.map(async quota => {
-        try {
-          return {
-            ...quota,
-            feature: await QuotaConfig.get(this.prisma, quota.featureId),
-          };
-        } catch {}
-        return null as unknown as typeof quota & {
-          feature: QuotaConfig;
-        };
-      })
+    const unlimitedCopilot = await this.models.userFeature.has(
+      userId,
+      'unlimited_copilot'
     );
 
-    return configs.filter(quota => !!quota);
-  }
-
-  // switch user to a new quota
-  // currently each user can only have one quota
-  async switchUserQuota(
-    userId: string,
-    quota: QuotaType,
-    reason?: string,
-    expiredAt?: Date
-  ) {
-    await this.prisma.$transaction(async tx => {
-      const hasSameActivatedQuota = await this.hasUserQuota(userId, quota, tx);
-      if (hasSameActivatedQuota) return; // don't need to switch
-
-      const featureId = await tx.feature
-        .findFirst({
-          where: { feature: quota, type: FeatureKind.Quota },
-          select: { id: true },
-          orderBy: { version: 'desc' },
-        })
-        .then(f => f?.id);
-
-      if (!featureId) {
-        throw new Error(`Quota ${quota} not found`);
-      }
-
-      // we will deactivate all exists quota for this user
-      await tx.userFeature.updateMany({
-        where: {
-          id: undefined,
-          userId,
-          feature: {
-            type: FeatureKind.Quota,
-          },
-        },
-        data: {
-          activated: false,
-        },
-      });
-
-      await tx.userFeature.create({
-        data: {
-          userId,
-          featureId,
-          reason: reason ?? 'switch quota',
-          activated: true,
-          expiredAt,
-        },
-      });
-    });
-  }
-
-  async hasUserQuota(userId: string, quota: QuotaType, tx?: PrismaTransaction) {
-    const executor = tx ?? this.prisma;
-
-    return executor.userFeature
-      .count({
-        where: {
-          userId,
-          feature: {
-            feature: quota,
-            type: FeatureKind.Quota,
-          },
-          activated: true,
-        },
-      })
-      .then(count => count > 0);
-  }
-
-  // ======== Workspace Quota ========
-
-  // get activated workspace quota
-  async getWorkspaceQuota(workspaceId: string) {
-    const quota = await this.prisma.workspaceFeature.findFirst({
-      where: {
-        workspaceId,
-        feature: { type: FeatureKind.Quota },
-        activated: true,
-      },
-      select: {
-        configs: true,
-        reason: true,
-        createdAt: true,
-        expiredAt: true,
-        featureId: true,
-      },
-    });
-
-    if (quota) {
-      const feature = await QuotaConfig.get(this.prisma, quota.featureId);
-      const { configs, ...rest } = quota;
-      return { ...rest, feature: feature.withOverride(configs) };
-    }
-    return null;
-  }
-
-  // switch user to a new quota
-  // currently each user can only have one quota
-  async switchWorkspaceQuota(
-    workspaceId: string,
-    quota: QuotaType,
-    reason?: string,
-    expiredAt?: Date
-  ) {
-    await this.prisma.$transaction(async tx => {
-      const hasSameActivatedQuota = await this.hasWorkspaceQuota(
-        workspaceId,
-        quota,
-        tx
-      );
-      if (hasSameActivatedQuota) return; // don't need to switch
-
-      const featureId = await tx.feature
-        .findFirst({
-          where: { feature: quota, type: FeatureKind.Quota },
-          select: { id: true },
-          orderBy: { version: 'desc' },
-        })
-        .then(f => f?.id);
-
-      if (!featureId) {
-        throw new Error(`Quota ${quota} not found`);
-      }
-
-      // we will deactivate all exists quota for this workspace
-      await this.deactivateWorkspaceQuota(workspaceId, undefined, tx);
-
-      await tx.workspaceFeature.create({
-        data: {
-          workspaceId,
-          featureId,
-          reason: reason ?? 'switch quota',
-          activated: true,
-          expiredAt,
-        },
-      });
-    });
-  }
-
-  async deactivateWorkspaceQuota(
-    workspaceId: string,
-    quota?: QuotaType,
-    tx?: PrismaTransaction
-  ) {
-    const executor = tx ?? this.prisma;
-
-    await executor.workspaceFeature.updateMany({
-      where: {
-        id: undefined,
-        workspaceId,
-        feature: quota
-          ? { feature: quota, type: FeatureKind.Quota }
-          : { type: FeatureKind.Quota },
-      },
-      data: { activated: false },
-    });
-  }
-
-  async hasWorkspaceQuota(
-    workspaceId: string,
-    quota: QuotaType,
-    tx?: PrismaTransaction
-  ) {
-    const executor = tx ?? this.prisma;
-
-    return executor.workspaceFeature
-      .count({
-        where: {
-          workspaceId,
-          feature: {
-            feature: quota,
-            type: FeatureKind.Quota,
-          },
-          activated: true,
-        },
-      })
-      .then(count => count > 0);
-  }
-
-  /// check if workspaces have quota
-  /// return workspaces's id that have quota
-  async hasWorkspacesQuota(
-    workspaces: string[],
-    quota?: QuotaType
-  ): Promise<string[]> {
-    const workspaceIds = await this.prisma.workspaceFeature.findMany({
-      where: {
-        workspaceId: { in: workspaces },
-        feature: { feature: quota, type: FeatureKind.Quota },
-        activated: true,
-      },
-      select: { workspaceId: true },
-    });
-    return Array.from(new Set(workspaceIds.map(w => w.workspaceId)));
-  }
-
-  async getWorkspaceConfig<Q extends QuotaType>(
-    workspaceId: string,
-    type: Q
-  ): Promise<QuotaConfig | undefined> {
-    const quota = await this.getQuota(type);
-    if (quota) {
-      const configs = await this.prisma.workspaceFeature
-        .findFirst({
-          where: {
-            workspaceId,
-            feature: { feature: type, type: FeatureKind.Quota },
-            activated: true,
-          },
-          select: { configs: true },
-        })
-        .then(q => q?.configs);
-      return quota.withOverride(configs);
-    }
-    return undefined;
-  }
-
-  async updateWorkspaceConfig(
-    workspaceId: string,
-    quota: QuotaType,
-    configs: any
-  ) {
-    const current = await this.getWorkspaceConfig(workspaceId, quota);
-
-    const ret = current?.checkOverride(configs);
-    if (!ret || !ret.success) {
-      throw new Error(
-        `Invalid quota config: ${ret?.error.message || 'quota not defined'}`
+    if (!quota) {
+      throw new InternalServerError(
+        'User quota not found and can not be created.'
       );
     }
-    const r = await this.prisma.workspaceFeature.updateMany({
-      where: {
-        workspaceId,
-        feature: { feature: quota, type: FeatureKind.Quota },
-        activated: true,
-      },
-      data: { configs },
-    });
-    return r.count;
+
+    return {
+      ...quota.configs,
+      copilotActionLimit: unlimitedCopilot
+        ? undefined
+        : quota.configs.copilotActionLimit,
+    } as UserQuotaWithUsage;
   }
 
-  @OnEvent('user.subscription.activated')
-  async onSubscriptionUpdated({
-    userId,
-    plan,
-    recurring,
-  }: EventPayload<'user.subscription.activated'>) {
-    switch (plan) {
-      case 'ai':
-        await this.feature.addCopilot(userId, 'subscription activated');
-        break;
-      case 'pro':
-        await this.switchUserQuota(
-          userId,
-          recurring === 'lifetime'
-            ? QuotaType.LifetimeProPlanV1
-            : QuotaType.ProPlanV1,
-          'subscription activated'
-        );
-        break;
-      default:
-        break;
-    }
+  async getUserQuotaWithUsage(userId: string): Promise<UserQuotaWithUsage> {
+    const quota = await this.getUserQuota(userId);
+    const usedStorageQuota = await this.getUserStorageUsage(userId);
+
+    return { ...quota, usedStorageQuota };
   }
 
-  @OnEvent('user.subscription.canceled')
-  async onSubscriptionCanceled({
-    userId,
-    plan,
-  }: EventPayload<'user.subscription.canceled'>) {
-    switch (plan) {
-      case 'ai':
-        await this.feature.removeCopilot(userId);
-        break;
-      case 'pro': {
-        // edge case: when user switch from recurring Pro plan to `Lifetime` plan,
-        // a subscription canceled event will be triggered because `Lifetime` plan is not subscription based
-        const quota = await this.getUserQuota(userId);
-        if (quota.feature.name !== QuotaType.LifetimeProPlanV1) {
-          await this.switchUserQuota(
-            userId,
-            QuotaType.FreePlanV1,
-            'subscription canceled'
-          );
+  async getUserStorageUsage(userId: string) {
+    const workspaces = await this.models.workspaceUser.getUserActiveRoles(
+      userId,
+      {
+        role: WorkspaceRole.Owner,
+      }
+    );
+
+    const ids = workspaces.map(w => w.workspaceId);
+
+    const workspacesWithQuota =
+      await this.models.workspaceFeature.batchHasQuota(ids);
+
+    const sizes = await Promise.allSettled(
+      ids
+        .filter(w => !workspacesWithQuota.includes(w))
+        .map(workspace => this.storage.totalSize(workspace))
+    );
+
+    return sizes.reduce((total, size) => {
+      if (size.status === 'fulfilled') {
+        // ensure that size is within the safe range of gql
+        const totalSize = total + size.value;
+        if (Number.isSafeInteger(totalSize)) {
+          return totalSize;
+        } else {
+          this.logger.error(`Workspace size is invalid: ${size.value}`);
         }
-        break;
+      } else {
+        this.logger.error(`Failed to get workspace size`, size.reason);
       }
-      default:
-        break;
+      return total;
+    }, 0);
+  }
+
+  async getWorkspaceStorageUsage(workspaceId: string) {
+    const totalSize = await this.storage.totalSize(workspaceId);
+    // ensure that size is within the safe range of gql
+    if (Number.isSafeInteger(totalSize)) {
+      return totalSize;
+    } else {
+      this.logger.error(`Workspace size is invalid: ${totalSize}`);
     }
+
+    return 0;
+  }
+
+  async getWorkspaceQuota(workspaceId: string): Promise<WorkspaceQuota> {
+    const quota = await this.models.workspaceFeature.getQuota(workspaceId);
+
+    if (!quota) {
+      // get and convert to workspace quota from owner's quota
+      const owner = await this.models.workspaceUser.getOwner(workspaceId);
+      const ownerQuota = await this.getUserQuota(owner.id);
+
+      return {
+        ...ownerQuota,
+        ownerQuota: owner.id,
+      };
+    }
+
+    return quota.configs;
+  }
+
+  async getWorkspaceQuotaWithUsage(
+    workspaceId: string
+  ): Promise<WorkspaceQuotaWithUsage> {
+    const quota = await this.getWorkspaceQuota(workspaceId);
+    const usedStorageQuota = quota.ownerQuota
+      ? await this.getUserStorageUsage(quota.ownerQuota)
+      : await this.getWorkspaceStorageUsage(workspaceId);
+    const memberCount =
+      await this.models.workspaceUser.chargedCount(workspaceId);
+    const overcapacityMemberCount =
+      await this.models.workspaceUser.insufficientSeatMemberCount(workspaceId);
+
+    return {
+      ...quota,
+      usedStorageQuota,
+      memberCount,
+      overcapacityMemberCount,
+      usedSize: usedStorageQuota,
+    };
+  }
+
+  formatUserQuota(
+    quota: Omit<UserQuotaType, 'humanReadable'>
+  ): UserQuotaHumanReadableType {
+    return {
+      name: quota.name,
+      blobLimit: formatSize(quota.blobLimit),
+      storageQuota: formatSize(quota.storageQuota),
+      usedStorageQuota: formatSize(quota.usedStorageQuota),
+      historyPeriod: formatDate(quota.historyPeriod),
+      memberLimit: quota.memberLimit.toString(),
+      copilotActionLimit: quota.copilotActionLimit
+        ? `${quota.copilotActionLimit} times`
+        : 'Unlimited',
+    };
+  }
+
+  async getWorkspaceSeatQuota(workspaceId: string) {
+    const quota = await this.getWorkspaceQuota(workspaceId);
+    const memberCount = await this.models.workspaceUser.count(workspaceId);
+
+    return {
+      memberCount,
+      memberLimit: quota.memberLimit,
+    };
+  }
+
+  async tryCheckSeat(workspaceId: string, excludeSelf = false) {
+    const quota = await this.getWorkspaceSeatQuota(workspaceId);
+
+    return quota.memberCount - (excludeSelf ? 1 : 0) < quota.memberLimit;
+  }
+
+  async checkSeat(workspaceId: string, excludeSelf = false) {
+    const available = await this.tryCheckSeat(workspaceId, excludeSelf);
+
+    if (!available) {
+      throw new MemberQuotaExceeded();
+    }
+  }
+
+  formatWorkspaceQuota(
+    quota: Omit<WorkspaceQuotaType, 'humanReadable'>
+  ): WorkspaceQuotaHumanReadableType {
+    return {
+      name: quota.name,
+      blobLimit: formatSize(quota.blobLimit),
+      storageQuota: formatSize(quota.storageQuota),
+      storageQuotaUsed: formatSize(quota.usedStorageQuota),
+      historyPeriod: formatDate(quota.historyPeriod),
+      memberLimit: quota.memberLimit.toString(),
+      memberCount: quota.memberCount.toString(),
+      overcapacityMemberCount: quota.overcapacityMemberCount.toString(),
+    };
+  }
+
+  async getUserQuotaCalculator(userId: string) {
+    const quota = await this.getUserQuota(userId);
+    const usedSize = await this.getUserStorageUsage(userId);
+
+    return this.generateQuotaCalculator(
+      quota.storageQuota,
+      quota.blobLimit,
+      usedSize
+    );
+  }
+
+  async getWorkspaceQuotaCalculator(workspaceId: string) {
+    const quota = await this.getWorkspaceQuota(workspaceId);
+    const unlimited = await this.models.workspaceFeature.has(
+      workspaceId,
+      'unlimited_workspace'
+    );
+
+    // quota check will be disabled for unlimited workspace
+    // we save a complicated db read for used size
+    if (unlimited) {
+      return this.generateQuotaCalculator(0, quota.blobLimit, 0, true);
+    }
+
+    const usedSize = quota.ownerQuota
+      ? await this.getUserStorageUsage(quota.ownerQuota)
+      : await this.getWorkspaceStorageUsage(workspaceId);
+
+    return this.generateQuotaCalculator(
+      quota.storageQuota,
+      quota.blobLimit,
+      usedSize
+    );
+  }
+
+  private async setupUserBaseQuota(userId: string) {
+    await this.models.userFeature.add(userId, 'free_plan_v1', 'sign up');
+  }
+
+  private generateQuotaCalculator(
+    storageQuota: number,
+    blobLimit: number,
+    usedQuota: number,
+    unlimited = false
+  ) {
+    const checkExceeded = (recvSize: number) => {
+      const currentSize = usedQuota + recvSize;
+      // only skip total storage check if workspace has unlimited feature
+      if (currentSize > storageQuota && !unlimited) {
+        this.logger.warn(
+          `storage size limit exceeded: ${currentSize} > ${storageQuota}`
+        );
+        return { storageQuotaExceeded: true, blobQuotaExceeded: false };
+      } else if (recvSize > blobLimit) {
+        this.logger.warn(
+          `blob size limit exceeded: ${recvSize} > ${blobLimit}`
+        );
+        return { storageQuotaExceeded: false, blobQuotaExceeded: true };
+      } else {
+        return;
+      }
+    };
+    return checkExceeded;
   }
 }

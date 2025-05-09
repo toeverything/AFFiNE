@@ -134,7 +134,7 @@ export const groupByMatchers = [
         },
       ];
     },
-    addToGroup: value => (typeof value === 'number' ? value * 10 : undefined),
+    addToGroup: value => (typeof value === 'number' ? value * 10 : null),
     view: createUniComponentFromWebComponent(NumberGroupView),
   }),
   groupByMatcherCreator.createMatcher(t.boolean.instance(), {

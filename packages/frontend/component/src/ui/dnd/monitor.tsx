@@ -10,7 +10,7 @@ import { getAdaptedEventArgs } from './common';
 import { DNDContext } from './context';
 import type { DNDData, fromExternalData } from './types';
 
-type MonitorGetFeedback<D extends DNDData = DNDData> = Parameters<
+export type MonitorGetFeedback<D extends DNDData = DNDData> = Parameters<
   NonNullable<Parameters<typeof monitorForElements>[0]['canMonitor']>
 >[0] & {
   source: {
@@ -22,7 +22,7 @@ type MonitorGet<T, D extends DNDData = DNDData> =
   | T
   | ((data: MonitorGetFeedback<D>) => T);
 
-type MonitorDragEvent<D extends DNDData = DNDData> = {
+export type MonitorDragEvent<D extends DNDData = DNDData> = {
   /**
    * Location history for the drag operation
    */
@@ -119,3 +119,5 @@ export const useDndMonitor = <D extends DNDData = DNDData>(
     return monitorForExternal(monitorOptions);
   }, [monitorOptions, options.fromExternalData]);
 };
+
+export { monitorForElements };

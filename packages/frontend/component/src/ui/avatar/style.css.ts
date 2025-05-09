@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { createVar, keyframes, style } from '@vanilla-extract/css';
 export const sizeVar = createVar('sizeVar');
 export const blurVar = createVar('blurVar');
@@ -163,6 +164,12 @@ export const avatarFallback = style({
   lineHeight: '1',
   fontWeight: '500',
 });
+export const avatarDefaultFallback = style([
+  avatarFallback,
+  {
+    backgroundColor: cssVarV2('portrait/localPortraitBackground'),
+  },
+]);
 export const hoverWrapper = style({
   width: '100%',
   height: '100%',

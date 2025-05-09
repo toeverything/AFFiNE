@@ -1,10 +1,12 @@
-import { PANEL_BASE, scrollbarStyle } from '@blocksuite/affine-shared/styles';
+import {
+  panelBaseStyle,
+  scrollbarStyle,
+} from '@blocksuite/affine-shared/styles';
 import { css } from 'lit';
 
 export const filterableListStyles = css`
+  ${panelBaseStyle(':host')}
   :host {
-    ${PANEL_BASE};
-
     flex-direction: column;
     padding: 0;
 

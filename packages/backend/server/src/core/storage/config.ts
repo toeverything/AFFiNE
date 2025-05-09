@@ -1,34 +1,50 @@
-import { defineStartupConfig, ModuleConfig } from '../../base/config';
-import { StorageProviderType } from '../../base/storage';
+import {
+  defineModuleConfig,
+  StorageJSONSchema,
+  StorageProviderConfig,
+} from '../../base';
 
-export type StorageConfig<Ext = unknown> = {
-  provider: StorageProviderType;
-  bucket: string;
-} & Ext;
-
-export interface StorageStartupConfigurations {
-  avatar: StorageConfig<{
-    publicLinkFactory: (key: string) => string;
-    keyInPublicLink: (link: string) => string;
-  }>;
-  blob: StorageConfig;
+export interface Storages {
+  avatar: {
+    storage: ConfigItem<StorageProviderConfig>;
+    publicPath: string;
+  };
+  blob: {
+    storage: ConfigItem<StorageProviderConfig>;
+  };
 }
 
-declare module '../../base/config' {
-  interface AppConfig {
-    storages: ModuleConfig<StorageStartupConfigurations>;
+declare global {
+  interface AppConfigSchema {
+    storages: Storages;
   }
 }
 
-defineStartupConfig('storages', {
-  avatar: {
-    provider: 'fs',
-    bucket: 'avatars',
-    publicLinkFactory: key => `/api/avatars/${key}`,
-    keyInPublicLink: link => link.split('/').pop() as string,
+defineModuleConfig('storages', {
+  'avatar.publicPath': {
+    desc: 'The public accessible path prefix for user avatars.',
+    default: '/api/avatars/',
   },
-  blob: {
-    provider: 'fs',
-    bucket: 'blobs',
+  'avatar.storage': {
+    desc: 'The config of storage for user avatars.',
+    default: {
+      provider: 'fs',
+      bucket: 'avatars',
+      config: {
+        path: '~/.affine/storage',
+      },
+    },
+    schema: StorageJSONSchema,
+  },
+  'blob.storage': {
+    desc: 'The config of storage for all uploaded blobs(images, videos, etc.).',
+    default: {
+      provider: 'fs',
+      bucket: 'blobs',
+      config: {
+        path: '~/.affine/storage',
+      },
+    },
+    schema: StorageJSONSchema,
   },
 });

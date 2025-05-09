@@ -6,17 +6,16 @@ interface NativeDBV1Apis {
     workspaceId: string,
     key: string
   ) => Promise<Buffer | null>;
-  deleteBlob: (
-    spaceType: SpaceType,
-    workspaceId: string,
-    key: string
-  ) => Promise<void>;
   getBlobKeys: (spaceType: SpaceType, workspaceId: string) => Promise<string[]>;
   getDocAsUpdates: (
     spaceType: SpaceType,
     workspaceId: string,
     subdocId: string
   ) => Promise<Uint8Array>;
+  getDocTimestamps: (
+    spaceType: SpaceType,
+    workspaceId: string
+  ) => Promise<{ docId?: string; timestamp: Date }[]>;
 }
 
 export let apis: NativeDBV1Apis | null = null;

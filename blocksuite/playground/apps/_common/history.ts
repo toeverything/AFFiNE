@@ -1,27 +1,29 @@
-import type { DocModeProvider } from '@blocksuite/blocks';
-import { assertExists } from '@blocksuite/global/utils';
-import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Blocks, Doc, Workspace } from '@blocksuite/store';
-import type { LitElement } from 'lit';
+import type { DocModeProvider } from '@blocksuite/affine/shared/services';
+import type { Doc, Store, Workspace } from '@blocksuite/affine/store';
+import type { TestAffineEditorContainer } from '@blocksuite/integration-test';
 
 export function getDocFromUrlParams(collection: Workspace, url: URL) {
-  let doc: Blocks | null = null;
+  let doc: Store | null = null;
 
   const docId = decodeURIComponent(url.hash.slice(1));
 
   if (docId) {
-    doc = collection.getDoc(docId);
+    doc = collection.getDoc(docId)?.getStore() ?? null;
   }
   if (!doc) {
     const blockCollection = collection.docs.values().next().value as Doc;
-    assertExists(blockCollection, 'Need to create a doc first');
+    if (!blockCollection) {
+      throw new Error('Need to create a doc first');
+    }
     doc = blockCollection.getStore();
   }
 
   doc.load();
   doc.resetHistory();
 
-  assertExists(doc.root, 'Doc root is not ready');
+  if (!doc.root) {
+    throw new Error('Doc root is not ready');
+  }
 
   return doc;
 }
@@ -41,9 +43,9 @@ export function setDocModeFromUrlParams(
 
 export function listenHashChange(
   collection: Workspace,
-  editor: AffineEditorContainer,
-  panel?: LitElement
+  editor: TestAffineEditorContainer
 ) {
+  const panel = document.querySelector('docs-panel');
   window.addEventListener('hashchange', () => {
     const url = new URL(location.toString());
     const doc = getDocFromUrlParams(collection, url);

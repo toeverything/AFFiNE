@@ -6,7 +6,7 @@ import { AllDocsIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { type MouseEvent, useCallback } from 'react';
 
-import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
+import { usePageHelper } from '../../../blocksuite/block-suite-page-list/utils';
 import { ActionButton } from './action-button';
 import docsIllustrationDark from './assets/docs.dark.png';
 import docsIllustrationLight from './assets/docs.light.png';

@@ -1,5 +1,4 @@
 import { apis } from '@affine/electron-api';
-import { assertExists } from '@blocksuite/affine/global/utils';
 import type { AppConfigSchema } from '@toeverything/infra';
 import { AppConfigStorage, defaultAppConfig } from '@toeverything/infra';
 import type { Dispatch } from 'react';
@@ -12,12 +11,16 @@ class AppConfigProxy {
   value: AppConfigSchema = defaultAppConfig;
 
   async getSync(): Promise<AppConfigSchema> {
-    assertExists(apis);
+    if (!apis) {
+      throw new Error('electron apis is not found');
+    }
     return (this.value = await apis.configStorage.get());
   }
 
   async setSync(): Promise<void> {
-    assertExists(apis);
+    if (!apis) {
+      throw new Error('electron apis is not found');
+    }
     await apis.configStorage.set(this.value);
   }
 

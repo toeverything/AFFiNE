@@ -32,6 +32,7 @@ export const MobileMenu = ({
 
     ...otherContentOptions
   } = {},
+  contentWrapperStyle,
   rootOptions,
 }: MenuProps) => {
   const [subMenus, setSubMenus] = useState<SubMenuContent[]>([]);
@@ -131,6 +132,7 @@ export const MobileMenu = ({
             className: clsx(className, styles.mobileMenuModal),
             ...otherContentOptions,
           }}
+          contentWrapperStyle={contentWrapperStyle}
           disableAutoFocus={true}
         >
           <div

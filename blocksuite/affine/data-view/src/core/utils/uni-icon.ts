@@ -1,5 +1,5 @@
-import { ShadowlessElement } from '@blocksuite/block-std';
 import * as icons from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { css, html, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 

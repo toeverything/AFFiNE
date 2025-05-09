@@ -1,24 +1,21 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   Prisma,
-  PrismaClient,
   type Session,
   type User,
   type UserSession,
 } from '@prisma/client';
 
 import { Config } from '../base';
+import { BaseModel } from './base';
 
 export type { Session, UserSession };
 export type UserSessionWithUser = UserSession & { user: User };
 
 @Injectable()
-export class SessionModel {
-  private readonly logger = new Logger(SessionModel.name);
-  constructor(
-    private readonly db: PrismaClient,
-    private readonly config: Config
-  ) {}
+export class SessionModel extends BaseModel {
+  @Inject(Config)
+  private readonly config!: Config;
 
   async createSession() {
     return await this.db.session.create({
@@ -40,7 +37,9 @@ export class SessionModel {
         id,
       },
     });
-    this.logger.log(`Deleted session success by id: ${id}`);
+    if (count > 0) {
+      this.logger.log(`Deleted session success by id: ${id}`);
+    }
     return count;
   }
 
@@ -130,27 +129,31 @@ export class SessionModel {
     });
   }
 
-  async deleteUserSession(userId: string, sessionId?: string) {
+  async deleteUserSessions(userId: string, sessionId?: string) {
     const { count } = await this.db.userSession.deleteMany({
       where: {
         userId,
         sessionId,
       },
     });
-    this.logger.log(
-      `Deleted user session success by userId: ${userId} and sessionId: ${sessionId}`
-    );
+    if (count > 0) {
+      this.logger.log(
+        `Deleted user sessions success by userId: ${userId} and sessionId: ${sessionId}`
+      );
+    }
     return count;
   }
 
   async cleanExpiredUserSessions() {
-    const result = await this.db.userSession.deleteMany({
+    const { count } = await this.db.userSession.deleteMany({
       where: {
         expiresAt: {
           lte: new Date(),
         },
       },
     });
-    this.logger.log(`Cleaned ${result.count} expired user sessions`);
+    if (count > 0) {
+      this.logger.log(`Cleaned ${count} expired user sessions`);
+    }
   }
 }

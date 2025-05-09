@@ -15,9 +15,12 @@ export async function openWorkspaceListModal(page: Page) {
 
 export async function createLocalWorkspace(
   params: CreateWorkspaceParams,
-  page: Page
+  page: Page,
+  skipOpenWorkspaceListModal = false
 ) {
-  await openWorkspaceListModal(page);
+  if (!skipOpenWorkspaceListModal) {
+    await openWorkspaceListModal(page);
+  }
 
   // open create workspace modal
   await page.getByTestId('new-workspace').click();
@@ -29,6 +32,11 @@ export async function createLocalWorkspace(
   // input workspace name
   await page.getByPlaceholder('Set a Workspace name').click();
   await page.getByPlaceholder('Set a Workspace name').fill(params.name);
+
+  // select local server
+  await page.getByTestId('server-selector-trigger').click();
+  const serverSelectorList = page.getByTestId('server-selector-list');
+  await serverSelectorList.getByTestId('local').click();
 
   // click create button
   await page.getByTestId('create-workspace-create-button').click({

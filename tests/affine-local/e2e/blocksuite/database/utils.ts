@@ -71,22 +71,28 @@ export async function verifyCellContents(
   }
 }
 
-export async function selectColumnType(page: Page, columnType: string) {
+export async function selectColumnType(
+  page: Page,
+  columnType: string,
+  nth: number = 1
+) {
   const typeMenu = page.locator('affine-menu').getByText('Type');
   await page.waitForTimeout(100);
   await typeMenu.hover();
   await page.waitForTimeout(100);
   await page.keyboard.type(columnType);
   await page.waitForTimeout(100);
-  await page.keyboard.press('ArrowDown');
+  for (let i = 0; i < nth; i++) {
+    await page.keyboard.press('ArrowDown');
+  }
   await page.waitForTimeout(100);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(100);
 }
 
-export async function addColumn(page: Page, type: string) {
+export async function addColumn(page: Page, type: string, nth: number = 1) {
   await clickAddColumnButton(page);
-  await selectColumnType(page, type);
+  await selectColumnType(page, type, nth);
 }
 
 export async function clickAddColumnButton(page: Page) {

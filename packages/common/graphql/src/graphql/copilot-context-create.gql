@@ -1,0 +1,3 @@
+mutation createCopilotContext($workspaceId: String!, $sessionId: String!) {
+  createCopilotContext(workspaceId: $workspaceId, sessionId: $sessionId)
+}

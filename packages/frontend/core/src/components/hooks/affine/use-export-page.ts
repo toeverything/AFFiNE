@@ -3,26 +3,29 @@ import {
   pushGlobalLoadingEventAtom,
   resolveGlobalLoadingEventAtom,
 } from '@affine/component/global-loading';
+import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor/blocksuite-editor';
 import { EditorService } from '@affine/core/modules/editor';
+import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace/global-schema';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import type { BlockStdScope } from '@blocksuite/affine/block-std';
+import { ExportManager } from '@blocksuite/affine/blocks/surface';
+import {
+  docLinkBaseURLMiddleware,
+  embedSyncedDocMiddleware,
+  HtmlAdapterFactoryIdentifier,
+  MarkdownAdapterFactoryIdentifier,
+  titleMiddleware,
+} from '@blocksuite/affine/shared/adapters';
+import { printToPdf } from '@blocksuite/affine/shared/utils';
+import type { BlockStdScope } from '@blocksuite/affine/std';
+import { type Store, Transformer } from '@blocksuite/affine/store';
 import {
   createAssetsArchive,
-  docLinkBaseURLMiddleware,
   download,
-  embedSyncedDocMiddleware,
-  ExportManager,
-  HtmlAdapterFactoryIdentifier,
   HtmlTransformer,
-  MarkdownAdapterFactoryIdentifier,
   MarkdownTransformer,
-  printToPdf,
-  titleMiddleware,
   ZipTransformer,
-} from '@blocksuite/affine/blocks';
-import type { AffineEditorContainer } from '@blocksuite/affine/presets';
-import { type Store, Transformer } from '@blocksuite/affine/store';
+} from '@blocksuite/affine/widgets/linked-doc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useSetAtom } from 'jotai';
 import { nanoid } from 'nanoid';
@@ -59,11 +62,11 @@ async function exportDoc(
   config: AdapterConfig
 ) {
   const transformer = new Transformer({
-    schema: doc.workspace.schema,
+    schema: getAFFiNEWorkspaceSchema(),
     blobCRUD: doc.workspace.blobSync,
     docCRUD: {
-      create: (id: string) => doc.workspace.createDoc({ id }),
-      get: (id: string) => doc.workspace.getDoc(id),
+      create: (id: string) => doc.workspace.createDoc(id).getStore({ id }),
+      get: (id: string) => doc.workspace.getDoc(id)?.getStore({ id }) ?? null,
       delete: (id: string) => doc.workspace.removeDoc(id),
     },
     middlewares: [
@@ -73,7 +76,7 @@ async function exportDoc(
     ],
   });
 
-  const adapterFactory = std.provider.get(config.identifier);
+  const adapterFactory = std.store.provider.get(config.identifier);
   const adapter = adapterFactory.get(transformer);
   const result = (await adapter.fromDoc(doc)) as AdapterResult;
 
@@ -148,7 +151,11 @@ async function exportHandler({
       await exportToMarkdown(page, editorRoot?.std);
       return;
     case 'snapshot':
-      await ZipTransformer.exportDocs(page.workspace, [page]);
+      await ZipTransformer.exportDocs(
+        page.workspace,
+        getAFFiNEWorkspaceSchema(),
+        [page]
+      );
       return;
     case 'pdf':
       await printToPdf(editorContainer);

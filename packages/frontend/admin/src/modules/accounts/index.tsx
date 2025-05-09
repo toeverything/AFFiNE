@@ -1,25 +1,39 @@
-import { Separator } from '@affine/admin/components/ui/separator';
+import { useEffect, useMemo, useState } from 'react';
 
-import { columns } from './components/columns';
+import { Header } from '../header';
+import { useColumns } from './components/columns';
 import { DataTable } from './components/data-table';
+import type { UserType } from './schema';
 import { useUserList } from './use-user-list';
 
 export function AccountPage() {
   const { users, pagination, setPagination } = useUserList();
+  // Remember the user temporarily, because userList is paginated on the server side,can't get all users at once.
+  const [memoUsers, setMemoUsers] = useState<UserType[]>([]);
+
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(
+    new Set<string>()
+  );
+  const columns = useColumns({ setSelectedUserIds });
+
+  useEffect(() => {
+    setMemoUsers(prev => [...new Set([...prev, ...users])]);
+  }, [users]);
+
+  const selectedUsers = useMemo(() => {
+    return memoUsers.filter(user => selectedUserIds.has(user.id));
+  }, [selectedUserIds, memoUsers]);
 
   return (
     <div className=" h-screen flex-1 flex-col flex">
-      <div className="flex items-center justify-between px-6 py-3  my-[2px]  max-md:ml-9 max-md:mt-[2px]">
-        <div className="text-base font-medium">Accounts</div>
-      </div>
-      <Separator />
+      <Header title="Accounts" />
 
       <DataTable
         data={users}
-        // @ts-expect-error do not complains
         columns={columns}
         pagination={pagination}
         onPaginationChange={setPagination}
+        selectedUsers={selectedUsers}
       />
     </div>
   );

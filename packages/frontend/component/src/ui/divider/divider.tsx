@@ -16,7 +16,7 @@ export const Divider = forwardRef<HTMLDivElement, DividerProps>(
     {
       orientation = 'horizontal',
       size = 'default',
-      dividerColor = 'var(--affine-border-color)',
+      dividerColor,
       style,
       className,
       ...otherProps
@@ -36,7 +36,7 @@ export const Divider = forwardRef<HTMLDivElement, DividerProps>(
           className
         )}
         style={{
-          backgroundColor: dividerColor ? dividerColor : undefined,
+          borderColor: dividerColor ? dividerColor : undefined,
           ...style,
         }}
         {...otherProps}

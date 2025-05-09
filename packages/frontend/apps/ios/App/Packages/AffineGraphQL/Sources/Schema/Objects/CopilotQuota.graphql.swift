@@ -6,6 +6,7 @@ import ApolloAPI
 public extension Objects {
   static let CopilotQuota = ApolloAPI.Object(
     typename: "CopilotQuota",
-    implementedInterfaces: []
+    implementedInterfaces: [],
+    keyFields: nil
   )
 }

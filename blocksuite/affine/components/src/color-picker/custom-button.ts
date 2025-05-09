@@ -67,9 +67,3 @@ export class EdgelessColorCustomButton extends LitElement {
   @property({ attribute: true, type: Boolean })
   accessor active: boolean = false;
 }
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'edgeless-color-custom-button': EdgelessColorCustomButton;
-  }
-}

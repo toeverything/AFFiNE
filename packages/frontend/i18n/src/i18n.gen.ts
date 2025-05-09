@@ -144,6 +144,10 @@ export function useAFFiNEI18N(): {
       */
     Delete(): string;
     /**
+      * `Deleted`
+      */
+    Deleted(): string;
+    /**
       * `Disable`
       */
     Disable(): string;
@@ -188,13 +192,25 @@ export function useAFFiNEI18N(): {
       */
     ["Enable cloud hint"](): string;
     /**
-      * `Export`
+      * `Full Backup`
       */
-    Export(): string;
+    ["Full Backup"](): string;
     /**
-      * `You can export the entire Workspace data for backup, and the exported data can be re-imported.`
+      * `Export a complete workspace backup`
       */
-    ["Export Description"](): string;
+    ["Full Backup Description"](): string;
+    /**
+      * `Sync all cloud data and export a complete workspace backup`
+      */
+    ["Full Backup Hint"](): string;
+    /**
+      * `Quick Export`
+      */
+    ["Quick Export"](): string;
+    /**
+      * `Skip cloud synchronization and quickly export current data(some attachments or docs may be missing)`
+      */
+    ["Quick Export Description"](): string;
     /**
       * `Export failed`
       */
@@ -290,6 +306,10 @@ export function useAFFiNEI18N(): {
       */
     ["Invite Members Message"](): string;
     /**
+      * `Insufficient team seat`
+      */
+    ["insufficient-team-seat"](): string;
+    /**
       * `Joined workspace`
       */
     ["Joined Workspace"](): string;
@@ -353,6 +373,10 @@ export function useAFFiNEI18N(): {
       * `Need More Seats`
       */
     ["Need-More-Seats"](): string;
+    /**
+      * `Allocating Seat`
+      */
+    ["Allocating Seat"](): string;
     /**
       * `Admin`
       */
@@ -554,9 +578,21 @@ export function useAFFiNEI18N(): {
       */
     ["Zoom out"](): string;
     /**
+      * `Unknown User`
+      */
+    ["Unknown User"](): string;
+    /**
+      * `Deleted User`
+      */
+    ["Deleted User"](): string;
+    /**
       * `all`
       */
     all(): string;
+    /**
+      * `current`
+      */
+    current(): string;
     /**
       * `Automatically check for new updates periodically.`
       */
@@ -924,9 +960,21 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.appearanceSettings.sidebar.title"](): string;
     /**
-      * `Customise your AFFiNE appearance`
+      * `Customize your AFFiNE appearance`
       */
     ["com.affine.appearanceSettings.subtitle"](): string;
+    /**
+      * `Menubar`
+      */
+    ["com.affine.appearanceSettings.menubar.title"](): string;
+    /**
+      * `Enable menubar app`
+      */
+    ["com.affine.appearanceSettings.menubar.toggle"](): string;
+    /**
+      * `Display the menubar app in the tray for quick access to AFFiNE or meeting recordings.`
+      */
+    ["com.affine.appearanceSettings.menubar.description"](): string;
     /**
       * `Theme`
       */
@@ -1061,6 +1109,28 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.send.verify.email.hint"](): string;
     /**
+      * `Verification code`
+      */
+    ["com.affine.auth.sign.auth.code"](): string;
+    /**
+      * `Invalid verification code`
+      */
+    ["com.affine.auth.sign.auth.code.invalid"](): string;
+    /**
+      * `Continue with code`
+      */
+    ["com.affine.auth.sign.auth.code.continue"](): string;
+    /**
+      * `Resend code`
+      */
+    ["com.affine.auth.sign.auth.code.resend"](): string;
+    /**
+      * `Resend in {{second}}s`
+      */
+    ["com.affine.auth.sign.auth.code.resend.hint"](options: {
+        readonly second: string;
+    }): string;
+    /**
       * `Sent`
       */
     ["com.affine.auth.sent"](): string;
@@ -1077,7 +1147,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.sent.change.password.hint"](): string;
     /**
-      * `Your password has upgraded! You can sign in AFFiNE Cloud with new password!`
+      * `Your password has been updated! You can sign in AFFiNE Cloud with new password!`
       */
     ["com.affine.auth.sent.reset.password.success.message"](): string;
     /**
@@ -1162,10 +1232,6 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.sign.auth.code.message"](): string;
     /**
-      * `Resend link`
-      */
-    ["com.affine.auth.sign.auth.code.resend.hint"](): string;
-    /**
       * `Sign in with magic link`
       */
     ["com.affine.auth.sign.auth.code.send-email.sign-in"](): string;
@@ -1194,6 +1260,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.auth.sign.in.sent.email.subtitle"](): string;
     /**
+      * `Self-Hosted`
+      */
+    ["com.affine.auth.sign.add-selfhosted.title"](): string;
+    /**
       * `Connect to a Self-Hosted Instance`
       */
     ["com.affine.auth.sign.add-selfhosted"](): string;
@@ -1213,18 +1283,6 @@ export function useAFFiNEI18N(): {
       * `Privacy policy`
       */
     ["com.affine.auth.sign.policy"](): string;
-    /**
-      * ` You can click the link to create an account automatically.`
-      */
-    ["com.affine.auth.sign.sent.email.message.end"](): string;
-    /**
-      * `You can click the link to sign in automatically.`
-      */
-    ["com.affine.auth.sign.sent.email.message.sent-tips.sign-in"](): string;
-    /**
-      * `You can click the link to create an account automatically.`
-      */
-    ["com.affine.auth.sign.sent.email.message.sent-tips.sign-up"](): string;
     /**
       * `Sign up`
       */
@@ -1666,6 +1724,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.confirmModal.button.cancel"](): string;
     /**
+      * `Ok`
+      */
+    ["com.affine.confirmModal.button.ok"](): string;
+    /**
       * `Current year`
       */
     ["com.affine.currentYear"](): string;
@@ -1781,6 +1843,10 @@ export function useAFFiNEI18N(): {
       * `is`
       */
     ["com.affine.editCollection.rules.include.is"](): string;
+    /**
+      * `is-not`
+      */
+    ["com.affine.editCollection.rules.include.is-not"](): string;
     /**
       * `Doc`
       */
@@ -1932,6 +1998,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.error.no-page-root.title"](): string;
     /**
+      * `It takes longer to load the doc content.`
+      */
+    ["com.affine.error.loading-timeout-error"](): string;
+    /**
       * `Refetch`
       */
     ["com.affine.error.refetch"](): string;
@@ -2020,6 +2090,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.filter.empty-tag"](): string;
     /**
+      * `Empty`
+      */
+    ["com.affine.filter.empty"](): string;
+    /**
       * `false`
       */
     ["com.affine.filter.false"](): string;
@@ -2044,6 +2118,42 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.filter.is-public"](): string;
     /**
+      * `between`
+      */
+    ["com.affine.filter.between"](): string;
+    /**
+      * `last 3 days`
+      */
+    ["com.affine.filter.last 3 days"](): string;
+    /**
+      * `last 7 days`
+      */
+    ["com.affine.filter.last 7 days"](): string;
+    /**
+      * `last 15 days`
+      */
+    ["com.affine.filter.last 15 days"](): string;
+    /**
+      * `last 30 days`
+      */
+    ["com.affine.filter.last 30 days"](): string;
+    /**
+      * `this week`
+      */
+    ["com.affine.filter.this week"](): string;
+    /**
+      * `this month`
+      */
+    ["com.affine.filter.this month"](): string;
+    /**
+      * `this quarter`
+      */
+    ["com.affine.filter.this quarter"](): string;
+    /**
+      * `this year`
+      */
+    ["com.affine.filter.this year"](): string;
+    /**
       * `last`
       */
     ["com.affine.filter.last"](): string;
@@ -2059,6 +2169,26 @@ export function useAFFiNEI18N(): {
       * `Add filter`
       */
     ["com.affine.filterList.button.add"](): string;
+    /**
+      * `Display`
+      */
+    ["com.affine.explorer.display-menu.button"](): string;
+    /**
+      * `Grouping`
+      */
+    ["com.affine.explorer.display-menu.grouping"](): string;
+    /**
+      * `Ordering`
+      */
+    ["com.affine.explorer.display-menu.ordering"](): string;
+    /**
+      * `View in Page mode`
+      */
+    ["com.affine.header.mode-switch.page"](): string;
+    /**
+      * `View in Edgeless Canvas`
+      */
+    ["com.affine.header.mode-switch.edgeless"](): string;
     /**
       * `Add tag`
       */
@@ -2184,6 +2314,28 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import-template.dialog.errorLoad"](): string;
     /**
+      * `Create into a New Workspace`
+      */
+    ["com.affine.import-clipper.dialog.createDocToNewWorkspace"](): string;
+    /**
+      * `Create doc to "{{workspace}}"`
+      */
+    ["com.affine.import-clipper.dialog.createDocToWorkspace"](options: {
+        readonly workspace: string;
+    }): string;
+    /**
+      * `Create doc from Web Clipper`
+      */
+    ["com.affine.import-clipper.dialog.createDocFromClipper"](): string;
+    /**
+      * `Failed to import content, please try again.`
+      */
+    ["com.affine.import-clipper.dialog.errorImport"](): string;
+    /**
+      * `Failed to load content, please try again.`
+      */
+    ["com.affine.import-clipper.dialog.errorLoad"](): string;
+    /**
       * `Support Markdown/Notion`
       */
     ["com.affine.import_file"](): string;
@@ -2227,6 +2379,10 @@ export function useAFFiNEI18N(): {
       * `Snapshot`
       */
     ["com.affine.import.snapshot"](): string;
+    /**
+      * `Import your AFFiNE workspace and page snapshot file.`
+      */
+    ["com.affine.import.snapshot.tooltip"](): string;
     /**
       * `Import failed, please try again.`
       */
@@ -2504,9 +2660,13 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.lastYear"](): string;
     /**
-      * `Loading...`
+      * `Loading`
       */
     ["com.affine.loading"](): string;
+    /**
+      * `Loading document content, please wait a moment.`
+      */
+    ["com.affine.loading.description"](): string;
     /**
       * `Rename`
       */
@@ -2649,6 +2809,10 @@ export function useAFFiNEI18N(): {
       * `Workspace name`
       */
     ["com.affine.nameWorkspace.subtitle.workspace-name"](): string;
+    /**
+      * `Workspace type`
+      */
+    ["com.affine.nameWorkspace.subtitle.workspace-type"](): string;
     /**
       * `Name your workspace`
       */
@@ -2886,6 +3050,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.page-properties.property.pageWidth"](): string;
     /**
+      * `Template`
+      */
+    ["com.affine.page-properties.property.template"](): string;
+    /**
       * `Add relevant identifiers or categories to the doc. Useful for organizing content, improving searchability, and grouping related docs together.`
       */
     ["com.affine.page-properties.property.tags.tooltips"](): string;
@@ -2958,6 +3126,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.page-properties.property.pageWidth.tooltips"](): string;
     /**
+      * `Mark this doc as a template, which can be used to create new docs.`
+      */
+    ["com.affine.page-properties.property.template.tooltips"](): string;
+    /**
       * `Properties`
       */
     ["com.affine.propertySidebar.property-list.section"](): string;
@@ -3029,6 +3201,12 @@ export function useAFFiNEI18N(): {
       * `Select all`
       */
     ["com.affine.page.group-header.select-all"](): string;
+    /**
+      * `Created by {{name}}`
+      */
+    ["com.affine.page.toolbar.created_by"](options: {
+        readonly name: string;
+    }): string;
     /**
       * `Doc mode`
       */
@@ -3166,6 +3344,12 @@ export function useAFFiNEI18N(): {
         readonly due: string;
     }): string;
     /**
+      * `Your recent payment failed, the next payment date is {{due}}.`
+      */
+    ["com.affine.payment.billing-tip.past-due"](options: {
+        readonly due: string;
+    }): string;
+    /**
       * `You are currently on the Free plan.`
       */
     ["com.affine.payment.ai.pricing-plan.caption-free"](): string;
@@ -3221,6 +3405,18 @@ export function useAFFiNEI18N(): {
         limit: string;
     }>): string;
     /**
+      * `Active`
+      */
+    ["com.affine.payment.subscription-status.active"](): string;
+    /**
+      * `Past-due bill`
+      */
+    ["com.affine.payment.subscription-status.past-due"](): string;
+    /**
+      * `Trialing`
+      */
+    ["com.affine.payment.subscription-status.trialing"](): string;
+    /**
       * `Unlimited local workspaces`
       */
     ["com.affine.payment.benefit-1"](): string;
@@ -3264,6 +3460,10 @@ export function useAFFiNEI18N(): {
       * `Purchase`
       */
     ["com.affine.payment.billing-setting.ai.purchase"](): string;
+    /**
+      * `Start free trial`
+      */
+    ["com.affine.payment.billing-setting.ai.start-free-trial"](): string;
     /**
       * `One-time payment`
       */
@@ -3479,11 +3679,11 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.cloud.free.benefit.g2-5"](): string;
     /**
-      * `Open-source under MIT license.`
+      * `Local Editor under MIT license.`
       */
     ["com.affine.payment.cloud.free.description"](): string;
     /**
-      * `FOSS + Basic`
+      * `Local FOSS + Cloud Basic`
       */
     ["com.affine.payment.cloud.free.name"](): string;
     /**
@@ -3556,6 +3756,10 @@ export function useAFFiNEI18N(): {
       * `Real-time syncing & collaboration for more people.`
       */
     ["com.affine.payment.cloud.pro.benefit.g1-8"](): string;
+    /**
+      * `Granular edit access to docs.`
+      */
+    ["com.affine.payment.cloud.pro.benefit.g1-9"](): string;
     /**
       * `For family and small teams.`
       */
@@ -3817,6 +4021,12 @@ export function useAFFiNEI18N(): {
         readonly number: string;
     }): string;
     /**
+      * `To expire at: {{expireTime}}`
+      */
+    ["com.affine.payment.member.team.invite.expire-at"](options: {
+        readonly expireTime: string;
+    }): string;
+    /**
       * `Invitation link`
       */
     ["com.affine.payment.member.team.invite.invitation-link"](): string;
@@ -3864,6 +4074,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.member.team.remove"](): string;
     /**
+      * `Retry payment`
+      */
+    ["com.affine.payment.member.team.retry-payment"](): string;
+    /**
       * `Change role to admin`
       */
     ["com.affine.payment.member.team.change.admin"](): string;
@@ -3875,6 +4089,34 @@ export function useAFFiNEI18N(): {
       * `Assign as owner`
       */
     ["com.affine.payment.member.team.assign"](): string;
+    /**
+      * `Insufficient Team Seats`
+      */
+    ["com.affine.payment.member.team.retry-payment.title"](): string;
+    /**
+      * `The payment for adding new team members has failed. To add more seats, please update your payment method and process unpaid invoices.`
+      */
+    ["com.affine.payment.member.team.retry-payment.owner.description"](): string;
+    /**
+      * `The payment for adding new team members has failed. Please contact your workspace owner to update the payment method and process unpaid invoices.`
+      */
+    ["com.affine.payment.member.team.retry-payment.admin.description"](): string;
+    /**
+      * `Update Payment`
+      */
+    ["com.affine.payment.member.team.retry-payment.update-payment"](): string;
+    /**
+      * `Subscription has been disabled for your team workspace. To add more seats, you'll need to resume subscription first.`
+      */
+    ["com.affine.payment.member.team.disabled-subscription.owner.description"](): string;
+    /**
+      * `Your team workspace has subscription disabled, which prevents adding more seats. Please contact your workspace owner to enable subscription.`
+      */
+    ["com.affine.payment.member.team.disabled-subscription.admin.description"](): string;
+    /**
+      * `Resume Subscription`
+      */
+    ["com.affine.payment.member.team.disabled-subscription.resume-subscription"](): string;
     /**
       * `Invitation Revoked`
       */
@@ -4064,6 +4306,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.resume"](): string;
     /**
+      * `Subscription Resumed`
+      */
+    ["com.affine.payment.resume.success.title"](): string;
+    /**
+      * `Your team workspace subscription has been enabled successfully. Changes will take effect immediately.`
+      */
+    ["com.affine.payment.resume.success.team.message"](): string;
+    /**
       * `Resume auto-renewal`
       */
     ["com.affine.payment.resume-renewal"](): string;
@@ -4168,6 +4418,26 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.upgrade-success-page.team.text-1"](): string;
     /**
+      * `Thank you for your purchase!`
+      */
+    ["com.affine.payment.license-success.title"](): string;
+    /**
+      * `Thank you for purchasing the AFFiNE self-hosted license.`
+      */
+    ["com.affine.payment.license-success.text-1"](): string;
+    /**
+      * `You can use this key to upgrade in Settings > Workspace > Billing > Upgrade`
+      */
+    ["com.affine.payment.license-success.hint"](): string;
+    /**
+      * `Open AFFiNE`
+      */
+    ["com.affine.payment.license-success.open-affine"](): string;
+    /**
+      * `Copied key to clipboard`
+      */
+    ["com.affine.payment.license-success.copy"](): string;
+    /**
       * `Close`
       */
     ["com.affine.peek-view-controls.close"](): string;
@@ -4175,6 +4445,10 @@ export function useAFFiNEI18N(): {
       * `Open this doc`
       */
     ["com.affine.peek-view-controls.open-doc"](): string;
+    /**
+      * `Open in edgeless`
+      */
+    ["com.affine.peek-view-controls.open-doc-in-edgeless"](): string;
     /**
       * `Open in new tab`
       */
@@ -4204,6 +4478,22 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.peek-view-controls.open-doc-in-center-peek"](): string;
     /**
+      * `Copy link`
+      */
+    ["com.affine.peek-view-controls.copy-link"](): string;
+    /**
+      * `Click or drag`
+      */
+    ["com.affine.split-view-drag-handle.tooltip"](): string;
+    /**
+      * `Split view does not support folders.`
+      */
+    ["com.affine.split-view-folder-warning.description"](): string;
+    /**
+      * `Do not show this again`
+      */
+    ["do-not-show-this-again"](): string;
+    /**
       * `New`
       */
     ["com.affine.quicksearch.group.creation"](): string;
@@ -4225,6 +4515,10 @@ export function useAFFiNEI18N(): {
       * `Collections`
       */
     ["com.affine.rootAppSidebar.collections"](): string;
+    /**
+      * `Notifications`
+      */
+    ["com.affine.rootAppSidebar.notifications"](): string;
     /**
       * `Only doc can be placed on here`
       */
@@ -4368,6 +4662,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.rootAppSidebar.organize.folder.add-collections"](): string;
     /**
+      * `New doc`
+      */
+    ["com.affine.rootAppSidebar.organize.folder.new-doc"](): string;
+    /**
       * `Add docs`
       */
     ["com.affine.rootAppSidebar.organize.folder.add-docs"](): string;
@@ -4463,6 +4761,38 @@ export function useAFFiNEI18N(): {
       * `Search tags...`
       */
     ["com.affine.selector-tag.search.placeholder"](): string;
+    /**
+      * `Notifications`
+      */
+    ["com.affine.setting.notifications"](): string;
+    /**
+      * `Notifications`
+      */
+    ["com.affine.setting.notifications.header.title"](): string;
+    /**
+      * `Choose the types of updates you want to receive and where to get them.`
+      */
+    ["com.affine.setting.notifications.header.description"](): string;
+    /**
+      * `Email notifications`
+      */
+    ["com.affine.setting.notifications.email.title"](): string;
+    /**
+      * `Mention`
+      */
+    ["com.affine.setting.notifications.email.mention.title"](): string;
+    /**
+      * `You will be notified through email when other members of the workspace @ you.`
+      */
+    ["com.affine.setting.notifications.email.mention.subtitle"](): string;
+    /**
+      * `Invites`
+      */
+    ["com.affine.setting.notifications.email.invites.title"](): string;
+    /**
+      * `Invitation related messages will be sent through emails.`
+      */
+    ["com.affine.setting.notifications.email.invites.subtitle"](): string;
     /**
       * `Account settings`
       */
@@ -4772,6 +5102,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.editorSettings.edgeless.shape.triangle"](): string;
     /**
+      * `Frame`
+      */
+    ["com.affine.settings.editorSettings.edgeless.frame"](): string;
+    /**
+      * `Background`
+      */
+    ["com.affine.settings.editorSettings.edgeless.frame.background"](): string;
+    /**
       * `Style`
       */
     ["com.affine.settings.editorSettings.edgeless.style"](): string;
@@ -4916,6 +5254,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.editorSettings.page"](): string;
     /**
+      * `Middle click paste`
+      */
+    ["com.affine.settings.editorSettings.general.middle-click-paste.title"](): string;
+    /**
+      * `Enable default middle click paste behavior on Linux.`
+      */
+    ["com.affine.settings.editorSettings.general.middle-click-paste.description"](): string;
+    /**
       * `Display bi-directional links on the doc.`
       */
     ["com.affine.settings.editorSettings.page.display-bi-link.description"](): string;
@@ -5004,6 +5350,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.editorSettings.title"](): string;
     /**
+      * `Ask me every time`
+      */
+    ["com.affine.settings.editorSettings.ask-me-every-time"](): string;
+    /**
       * `Email`
       */
     ["com.affine.settings.email"](): string;
@@ -5091,6 +5441,123 @@ export function useAFFiNEI18N(): {
       * `Use transparency effect on the sidebar.`
       */
     ["com.affine.settings.translucent-style-description"](): string;
+    /**
+      * `Meetings`
+      */
+    ["com.affine.settings.meetings"](): string;
+    /**
+      * `Beyond Recording
+    Your AI Meeting Assistant is Here`
+      */
+    ["com.affine.settings.meetings.setting.welcome"](): string;
+    /**
+      * `Native Audio Capture, No Bots Required - Direct from Your Mac to Meeting Intelligence.`
+      */
+    ["com.affine.settings.meetings.setting.prompt"](): string;
+    /**
+      * `Learn more`
+      */
+    ["com.affine.settings.meetings.setting.welcome.learn-more"](): string;
+    /**
+      * `Enable meeting notes`
+      */
+    ["com.affine.settings.meetings.enable.title"](): string;
+    /**
+      * `Meeting recording`
+      */
+    ["com.affine.settings.meetings.record.header"](): string;
+    /**
+      * `When meeting starts`
+      */
+    ["com.affine.settings.meetings.record.recording-mode"](): string;
+    /**
+      * `Choose the behavior when the meeting starts.`
+      */
+    ["com.affine.settings.meetings.record.recording-mode.description"](): string;
+    /**
+      * `Open saved recordings`
+      */
+    ["com.affine.settings.meetings.record.open-saved-file"](): string;
+    /**
+      * `Open the locally stored recording files.`
+      */
+    ["com.affine.settings.meetings.record.open-saved-file.description"](): string;
+    /**
+      * `Transcription with AI`
+      */
+    ["com.affine.settings.meetings.transcription.header"](): string;
+    /**
+      * `AI auto summary`
+      */
+    ["com.affine.settings.meetings.transcription.auto-summary"](): string;
+    /**
+      * `Automatically generate a summary of the meeting notes.`
+      */
+    ["com.affine.settings.meetings.transcription.auto-summary.description"](): string;
+    /**
+      * `AI auto todo list`
+      */
+    ["com.affine.settings.meetings.transcription.auto-todo"](): string;
+    /**
+      * `Automatically generate a todo list of the meeting notes.`
+      */
+    ["com.affine.settings.meetings.transcription.auto-todo.description"](): string;
+    /**
+      * `Privacy & Security`
+      */
+    ["com.affine.settings.meetings.privacy.header"](): string;
+    /**
+      * `Screen & System audio recording`
+      */
+    ["com.affine.settings.meetings.privacy.screen-system-audio-recording"](): string;
+    /**
+      * `The Meeting feature requires permission to be used.`
+      */
+    ["com.affine.settings.meetings.privacy.screen-system-audio-recording.description"](): string;
+    /**
+      * `Click to allow`
+      */
+    ["com.affine.settings.meetings.privacy.screen-system-audio-recording.permission-setting"](): string;
+    /**
+      * `Microphone`
+      */
+    ["com.affine.settings.meetings.privacy.microphone"](): string;
+    /**
+      * `The Meeting feature requires permission to be used.`
+      */
+    ["com.affine.settings.meetings.privacy.microphone.description"](): string;
+    /**
+      * `Click to allow`
+      */
+    ["com.affine.settings.meetings.privacy.microphone.permission-setting"](): string;
+    /**
+      * `Do nothing`
+      */
+    ["com.affine.settings.meetings.record.recording-mode.none"](): string;
+    /**
+      * `Auto start recording`
+      */
+    ["com.affine.settings.meetings.record.recording-mode.auto-start"](): string;
+    /**
+      * `Show a recording prompt`
+      */
+    ["com.affine.settings.meetings.record.recording-mode.prompt"](): string;
+    /**
+      * `Screen & System Audio Recording`
+      */
+    ["com.affine.settings.meetings.record.permission-modal.title"](): string;
+    /**
+      * `AFFiNE will generate meeting notes by recording your meetings. Authorization to "Screen & System Audio Recording" is necessary.`
+      */
+    ["com.affine.settings.meetings.record.permission-modal.description"](): string;
+    /**
+      * `Save meeting's recording block to`
+      */
+    ["com.affine.settings.meetings.record.save-mode"](): string;
+    /**
+      * `Open System Settings`
+      */
+    ["com.affine.settings.meetings.record.permission-modal.open-setting"](): string;
     /**
       * `Workspace`
       */
@@ -5220,13 +5687,37 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-mind-map-import.description"](): string;
     /**
-      * `Split View`
+      * `Block Meta`
       */
-    ["com.affine.settings.workspace.experimental-features.enable-multi-view.name"](): string;
+    ["com.affine.settings.workspace.experimental-features.enable-block-meta.name"](): string;
     /**
-      * `The Split View feature enables you to divide your tab into multiple sections for simultaneous viewing and editing of different documents.`
+      * `Once enabled, all blocks will have created time, updated time, created by and updated by.`
       */
-    ["com.affine.settings.workspace.experimental-features.enable-multi-view.description"](): string;
+    ["com.affine.settings.workspace.experimental-features.enable-block-meta.description"](): string;
+    /**
+      * `Callout`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-callout.name"](): string;
+    /**
+      * `Let your words stand out. This also include the callout in the transcription block.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-callout.description"](): string;
+    /**
+      * `Citation`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-citation.name"](): string;
+    /**
+      * `Enable citation feature.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-citation.description"](): string;
+    /**
+      * `Embed Iframe Block`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-embed-iframe-block.name"](): string;
+    /**
+      * `Enables Embed Iframe Block.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-embed-iframe-block.description"](): string;
     /**
       * `Emoji Folder Icon`
       */
@@ -5251,14 +5742,6 @@ export function useAFFiNEI18N(): {
       * `Enables editor settings.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-editor-settings.description"](): string;
-    /**
-      * `Offline Mode`
-      */
-    ["com.affine.settings.workspace.experimental-features.enable-offline-mode.name"](): string;
-    /**
-      * `Stop Connecting to the Internet. Even with AFFiNE Cloud, enabling this toggle stops internet connection and keeps everything local, but syncing will be disabled.`
-      */
-    ["com.affine.settings.workspace.experimental-features.enable-offline-mode.description"](): string;
     /**
       * `Theme Editor`
       */
@@ -5332,6 +5815,46 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-pdf-embed-preview.description"](): string;
     /**
+      * `Audio block`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-audio-block.name"](): string;
+    /**
+      * `Audio block allows you to play audio files globally and add notes to them.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-audio-block.description"](): string;
+    /**
+      * `Meetings`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-meetings.name"](): string;
+    /**
+      * `Meetings allows you to record and transcribe meetings. Don't forget to enable it in AFFiNE settings.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-meetings.description"](): string;
+    /**
+      * `Editor RTL`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-editor-rtl.name"](): string;
+    /**
+      * `Once enabled, the editor will be displayed in RTL mode.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-editor-rtl.description"](): string;
+    /**
+      * `Edgeless scribbled style`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-edgeless-scribbled-style.name"](): string;
+    /**
+      * `Once enabled, you can use scribbled style in edgeless mode.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-edgeless-scribbled-style.description"](): string;
+    /**
+      * `Database block table view virtual scroll`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.name"](): string;
+    /**
+      * `Once enabled, switch table view to virtual scroll mode in Database Block.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.description"](): string;
+    /**
       * `Only an owner can edit the workspace avatar and name. Changes will be shown for everyone.`
       */
     ["com.affine.settings.workspace.not-owner"](): string;
@@ -5340,7 +5863,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.preferences"](): string;
     /**
-      * `Billing`
+      * `Team's Billing`
       */
     ["com.affine.settings.workspace.billing"](): string;
     /**
@@ -5375,6 +5898,116 @@ export function useAFFiNEI18N(): {
       * `Cancel Plan`
       */
     ["com.affine.settings.workspace.billing.team-workspace.cancel-plan"](): string;
+    /**
+      * `License`
+      */
+    ["com.affine.settings.workspace.license"](): string;
+    /**
+      * `Manage license information and invoices for the self host team workspace.`
+      */
+    ["com.affine.settings.workspace.license.description"](): string;
+    /**
+      * `Get teams plan for your self hosted workspace.`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.title"](): string;
+    /**
+      * `Need more seats? Best for scalable teams.`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.subtitle"](): string;
+    /**
+      * `Everything in Self Hosted FOSS`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g1"](): string;
+    /**
+      * `{{initialQuota}} initial storage + {{quotaPerSeat}} per seat`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g2"](options: Readonly<{
+        initialQuota: string;
+        quotaPerSeat: string;
+    }>): string;
+    /**
+      * `{{quota}} of maximum file size`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g3"](options: {
+        readonly quota: string;
+    }): string;
+    /**
+      * `Unlimited team members (10+ seats)`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g4"](): string;
+    /**
+      * `Multiple admin roles`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g5"](): string;
+    /**
+      * `Priority customer support`
+      */
+    ["com.affine.settings.workspace.license.benefit.team.g6"](): string;
+    /**
+      * `Lean more`
+      */
+    ["com.affine.settings.workspace.license.lean-more"](): string;
+    /**
+      * `Selfhosted workspace`
+      */
+    ["com.affine.settings.workspace.license.self-host"](): string;
+    /**
+      * `Self-host Team Workspace`
+      */
+    ["com.affine.settings.workspace.license.self-host-team"](): string;
+    /**
+      * `This license will expire on {{expirationDate}}, with {{leftDays}} days remaining.`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.team.description"](options: Readonly<{
+        expirationDate: string;
+        leftDays: string;
+    }>): string;
+    /**
+      * `Basic version: {{memberCount}} seats. For more, purchase or use activation key.`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.free.description"](options: {
+        readonly memberCount: string;
+    }): string;
+    /**
+      * `Seats`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.seats"](): string;
+    /**
+      * `Active key`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.active-key"](): string;
+    /**
+      * `Deactivate`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.deactivate-license"](): string;
+    /**
+      * `Buy more seat`
+      */
+    ["com.affine.settings.workspace.license.buy-more-seat"](): string;
+    /**
+      * `Activate License`
+      */
+    ["com.affine.settings.workspace.license.activate-modal.title"](): string;
+    /**
+      * `Enter license key to activate this self host workspace.`
+      */
+    ["com.affine.settings.workspace.license.activate-modal.description"](): string;
+    /**
+      * `License activated successfully.`
+      */
+    ["com.affine.settings.workspace.license.activate-success"](): string;
+    /**
+      * `Deactivate License`
+      */
+    ["com.affine.settings.workspace.license.deactivate-modal.title"](): string;
+    /**
+      * `Are you sure you want to deactivate this license?`
+      */
+    ["com.affine.settings.workspace.license.deactivate-modal.description"](): string;
+    /**
+      * `License deactivated successfully.`
+      */
+    ["com.affine.settings.workspace.license.deactivate-success"](): string;
     /**
       * `Local`
       */
@@ -5452,6 +6085,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.properties.unused"](): string;
     /**
+      * `You can view current workspace's storage and files here.`
+      */
+    ["com.affine.settings.workspace.storage.subtitle"](): string;
+    /**
       * `Enable AFFiNE Cloud to publish this workspace`
       */
     ["com.affine.settings.workspace.publish-tooltip"](): string;
@@ -5480,6 +6117,49 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.affine-ai.description"](): string;
     /**
+      * `Archived workspaces`
+      */
+    ["com.affine.settings.workspace.backup"](): string;
+    /**
+      * `Manage archived local workspace files`
+      */
+    ["com.affine.settings.workspace.backup.subtitle"](): string;
+    /**
+      * `No archived workspace files found`
+      */
+    ["com.affine.settings.workspace.backup.empty"](): string;
+    /**
+      * `Delete archived workspace`
+      */
+    ["com.affine.settings.workspace.backup.delete"](): string;
+    /**
+      * `Are you sure you want to delete this workspace. This action cannot be undone. Make sure you no longer need them before proceeding.`
+      */
+    ["com.affine.settings.workspace.backup.delete.warning"](): string;
+    /**
+      * `Workspace backup deleted successfully`
+      */
+    ["com.affine.settings.workspace.backup.delete.success"](): string;
+    /**
+      * `Workspace enabled successfully`
+      */
+    ["com.affine.settings.workspace.backup.import.success"](): string;
+    /**
+      * `Enable local workspace`
+      */
+    ["com.affine.settings.workspace.backup.import"](): string;
+    /**
+      * `Open`
+      */
+    ["com.affine.settings.workspace.backup.import.success.action"](): string;
+    /**
+      * `Deleted on {{date}} at {{time}}`
+      */
+    ["com.affine.settings.workspace.backup.delete-at"](options: Readonly<{
+        date: string;
+        time: string;
+    }>): string;
+    /**
       * `Sharing doc requires AFFiNE Cloud.`
       */
     ["com.affine.share-menu.EnableCloudDescription"](): string;
@@ -5491,6 +6171,10 @@ export function useAFFiNEI18N(): {
       * `Share doc`
       */
     ["com.affine.share-menu.SharePage"](): string;
+    /**
+      * `General access`
+      */
+    ["com.affine.share-menu.generalAccess"](): string;
     /**
       * `Share via export`
       */
@@ -5515,14 +6199,6 @@ export function useAFFiNEI18N(): {
       * `Shared doc`
       */
     ["com.affine.share-menu.SharedPage"](): string;
-    /**
-      * `Please try again later.`
-      */
-    ["com.affine.share-menu.confirm-modify-mode.notification.fail.message"](): string;
-    /**
-      * `Failed to modify`
-      */
-    ["com.affine.share-menu.confirm-modify-mode.notification.fail.title"](): string;
     /**
       * `Copy Link`
       */
@@ -5580,7 +6256,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.share-menu.option.link.label"](): string;
     /**
-      * `No Access`
+      * `No access`
       */
     ["com.affine.share-menu.option.link.no-access"](): string;
     /**
@@ -5588,7 +6264,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.share-menu.option.link.no-access.description"](): string;
     /**
-      * `Read Only`
+      * `Read only`
       */
     ["com.affine.share-menu.option.link.readonly"](): string;
     /**
@@ -5596,13 +6272,29 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.share-menu.option.link.readonly.description"](): string;
     /**
-      * `Can Edit`
+      * `Can manage`
+      */
+    ["com.affine.share-menu.option.permission.can-manage"](): string;
+    /**
+      * `Can edit`
       */
     ["com.affine.share-menu.option.permission.can-edit"](): string;
+    /**
+      * `Can read`
+      */
+    ["com.affine.share-menu.option.permission.can-read"](): string;
+    /**
+      * `No access`
+      */
+    ["com.affine.share-menu.option.permission.no-access"](): string;
     /**
       * `Members in workspace`
       */
     ["com.affine.share-menu.option.permission.label"](): string;
+    /**
+      * `Workspace admins and owner automatically have Can manage permissions.`
+      */
+    ["com.affine.share-menu.option.permission.tips"](): string;
     /**
       * `Publish to web`
       */
@@ -5619,6 +6311,111 @@ export function useAFFiNEI18N(): {
       * `Shared`
       */
     ["com.affine.share-menu.sharedButton"](): string;
+    /**
+      * `{{member1}} and {{member2}} are in this doc`
+      */
+    ["com.affine.share-menu.member-management.member-count-2"](options: Readonly<{
+        member1: string;
+        member2: string;
+    }>): string;
+    /**
+      * `{{member1}}, {{member2}} and {{member3}} are in this doc`
+      */
+    ["com.affine.share-menu.member-management.member-count-3"](options: Readonly<{
+        member1: string;
+        member2: string;
+        member3: string;
+    }>): string;
+    /**
+      * `{{member1}}, {{member2}} and {{memberCount}} others`
+      */
+    ["com.affine.share-menu.member-management.member-count-more"](options: Readonly<{
+        member1: string;
+        member2: string;
+        memberCount: string;
+    }>): string;
+    /**
+      * `Remove`
+      */
+    ["com.affine.share-menu.member-management.remove"](): string;
+    /**
+      * `Set as owner`
+      */
+    ["com.affine.share-menu.member-management.set-as-owner"](): string;
+    /**
+      * `Make this person the owner?`
+      */
+    ["com.affine.share-menu.member-management.set-as-owner.confirm.title"](): string;
+    /**
+      * `The new owner will be effective immediately, and you might lose access to this doc if other users remove you, please confirm.`
+      */
+    ["com.affine.share-menu.member-management.set-as-owner.confirm.description"](): string;
+    /**
+      * `Permission updated`
+      */
+    ["com.affine.share-menu.member-management.update-success"](): string;
+    /**
+      * `Failed to update permission`
+      */
+    ["com.affine.share-menu.member-management.update-fail"](): string;
+    /**
+      * `{{memberCount}} collaborators in the doc`
+      */
+    ["com.affine.share-menu.member-management.header"](options: {
+        readonly memberCount: string;
+    }): string;
+    /**
+      * `Add collaborators`
+      */
+    ["com.affine.share-menu.member-management.add-collaborators"](): string;
+    /**
+      * `Send invite`
+      */
+    ["com.affine.share-menu.invite-editor.header"](): string;
+    /**
+      * `Manage members`
+      */
+    ["com.affine.share-menu.invite-editor.manage-members"](): string;
+    /**
+      * `Invite`
+      */
+    ["com.affine.share-menu.invite-editor.invite"](): string;
+    /**
+      * `No results found`
+      */
+    ["com.affine.share-menu.invite-editor.no-found"](): string;
+    /**
+      * `Invite other members`
+      */
+    ["com.affine.share-menu.invite-editor.placeholder"](): string;
+    /**
+      * `Notify via Email`
+      */
+    ["com.affine.share-menu.invite-editor.sent-email"](): string;
+    /**
+      * `Permission not available in Free plan`
+      */
+    ["com.affine.share-menu.paywall.owner.title"](): string;
+    /**
+      * `Upgrade to Pro or higher to unlock permission settings for this doc.`
+      */
+    ["com.affine.share-menu.paywall.owner.description"](): string;
+    /**
+      * `Upgrade`
+      */
+    ["com.affine.share-menu.paywall.owner.confirm"](): string;
+    /**
+      * `Permission requires a workspace upgrade`
+      */
+    ["com.affine.share-menu.paywall.member.title"](): string;
+    /**
+      * `Ask your workspace owner to upgrade to Pro or higher to enable permissions.`
+      */
+    ["com.affine.share-menu.paywall.member.description"](): string;
+    /**
+      * `Got it`
+      */
+    ["com.affine.share-menu.paywall.member.confirm"](): string;
     /**
       * `Built with`
       */
@@ -6012,6 +6809,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.workspace.cloud.account.settings"](): string;
     /**
+      * `Admin panel`
+      */
+    ["com.affine.workspace.cloud.account.admin"](): string;
+    /**
       * `Sign up/ Sign in`
       */
     ["com.affine.workspace.cloud.auth"](): string;
@@ -6095,6 +6896,18 @@ export function useAFFiNEI18N(): {
       * `Yesterday`
       */
     ["com.affine.yesterday"](): string;
+    /**
+      * `Inactive`
+      */
+    ["com.affine.inactive"](): string;
+    /**
+      * `Inactive member`
+      */
+    ["com.affine.inactive-member"](): string;
+    /**
+      * `Inactive workspace`
+      */
+    ["com.affine.inactive-workspace"](): string;
     /**
       * `core`
       */
@@ -6328,6 +7141,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.editor.at-menu.recent-docs"](): string;
     /**
+      * `Tags`
+      */
+    ["com.affine.editor.at-menu.tags"](): string;
+    /**
+      * `Collections`
+      */
+    ["com.affine.editor.at-menu.collections"](): string;
+    /**
       * `Loading...`
       */
     ["com.affine.editor.at-menu.loading"](): string;
@@ -6366,6 +7187,32 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.editor.at-menu.date-picker"](): string;
     /**
+      * `Mention Members`
+      */
+    ["com.affine.editor.at-menu.mention-members"](): string;
+    /**
+      * `Member not notified`
+      */
+    ["com.affine.editor.at-menu.member-not-notified"](): string;
+    /**
+      * `This member does not have access to this doc, they are not notified.`
+      */
+    ["com.affine.editor.at-menu.member-not-notified-message"](): string;
+    /**
+      * `Invited and notified`
+      */
+    ["com.affine.editor.at-menu.invited-and-notified"](): string;
+    /**
+      * `Access needed`
+      */
+    ["com.affine.editor.at-menu.access-needed"](): string;
+    /**
+      * `{{username}} does not have access to this doc, do you want to invite and notify them?`
+      */
+    ["com.affine.editor.at-menu.access-needed-message"](options: {
+        readonly username: string;
+    }): string;
+    /**
       * `Show`
       */
     ["com.affine.editor.bi-directional-link-panel.show"](): string;
@@ -6373,6 +7220,26 @@ export function useAFFiNEI18N(): {
       * `Hide`
       */
     ["com.affine.editor.bi-directional-link-panel.hide"](): string;
+    /**
+      * `Fold page block`
+      */
+    ["com.affine.editor.edgeless-note-header.fold-page-block"](): string;
+    /**
+      * `Open in Page`
+      */
+    ["com.affine.editor.edgeless-note-header.open-in-page"](): string;
+    /**
+      * `Fold`
+      */
+    ["com.affine.editor.edgeless-embed-synced-doc-header.fold"](): string;
+    /**
+      * `Unfold`
+      */
+    ["com.affine.editor.edgeless-embed-synced-doc-header.unfold"](): string;
+    /**
+      * `Open`
+      */
+    ["com.affine.editor.edgeless-embed-synced-doc-header.open"](): string;
     /**
       * `Empower Your Team with Seamless Collaboration`
       */
@@ -6509,6 +7376,1111 @@ export function useAFFiNEI18N(): {
       * `Delete Server`
       */
     ["com.affine.server.delete"](): string;
+    /**
+      * `Start`
+      */
+    ["com.affine.page-starter-bar.start"](): string;
+    /**
+      * `Template`
+      */
+    ["com.affine.page-starter-bar.template"](): string;
+    /**
+      * `With AI`
+      */
+    ["com.affine.page-starter-bar.ai"](): string;
+    /**
+      * `Edgeless`
+      */
+    ["com.affine.page-starter-bar.edgeless"](): string;
+    /**
+      * `Unsupported message`
+      */
+    ["com.affine.notification.unsupported"](): string;
+    /**
+      * `No new notifications`
+      */
+    ["com.affine.notification.empty"](): string;
+    /**
+      * `Loading more...`
+      */
+    ["com.affine.notification.loading-more"](): string;
+    /**
+      * `You'll be notified here for @mentions and workspace invites.`
+      */
+    ["com.affine.notification.empty.description"](): string;
+    /**
+      * `Open workspace`
+      */
+    ["com.affine.notification.invitation-review-approved.open-workspace"](): string;
+    /**
+      * `Accept & Join`
+      */
+    ["com.affine.notification.invitation.accept"](): string;
+    /**
+      * `Tips`
+      */
+    tips(): string;
+    /**
+      * `Template`
+      */
+    Template(): string;
+    /**
+      * `Delete Template`
+      */
+    ["com.affine.template-list.delete"](): string;
+    /**
+      * `No template`
+      */
+    ["com.affine.template-list.empty"](): string;
+    /**
+      * `Create new template`
+      */
+    ["com.affine.template-list.create-new"](): string;
+    /**
+      * `Set a Template for the Journal`
+      */
+    ["com.affine.template-journal-onboarding.title"](): string;
+    /**
+      * `Select`
+      */
+    ["com.affine.template-journal-onboarding.select"](): string;
+    /**
+      * `My Templates`
+      */
+    ["com.affine.settings.workspace.template.title"](): string;
+    /**
+      * `Template for journal`
+      */
+    ["com.affine.settings.workspace.template.journal"](): string;
+    /**
+      * `Select a template for your journal`
+      */
+    ["com.affine.settings.workspace.template.journal-desc"](): string;
+    /**
+      * `Keep empty`
+      */
+    ["com.affine.settings.workspace.template.keep-empty"](): string;
+    /**
+      * `New doc with template`
+      */
+    ["com.affine.settings.workspace.template.page"](): string;
+    /**
+      * `New docs will use the specified template, ignoring default settings.`
+      */
+    ["com.affine.settings.workspace.template.page-desc"](): string;
+    /**
+      * `Template for new doc`
+      */
+    ["com.affine.settings.workspace.template.page-select"](): string;
+    /**
+      * `Remove template`
+      */
+    ["com.affine.settings.workspace.template.remove"](): string;
+    /**
+      * `You don't have permission to do this`
+      */
+    ["com.affine.no-permission"](): string;
+    /**
+      * `Unused blobs`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs"](): string;
+    /**
+      * `No unused blobs`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs.empty"](): string;
+    /**
+      * `Selected`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs.selected"](): string;
+    /**
+      * `Delete blob files`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs.delete.title"](): string;
+    /**
+      * `Are you sure you want to delete these blob files? This action cannot be undone. Make sure you no longer need them before proceeding.`
+      */
+    ["com.affine.settings.workspace.storage.unused-blobs.delete.warning"](): string;
+    /**
+      * `Join Failed`
+      */
+    ["com.affine.fail-to-join-workspace.title"](): string;
+    /**
+      * `Please contact your workspace owner to add more seats.`
+      */
+    ["com.affine.fail-to-join-workspace.description-2"](): string;
+    /**
+      * `Request to join`
+      */
+    ["com.affine.request-to-join-workspace.button"](): string;
+    /**
+      * `Request Sent successfully`
+      */
+    ["com.affine.sent-request-to-join-workspace.title"](): string;
+    /**
+      * `Request failed to send`
+      */
+    ["com.affine.failed-to-send-request.title"](): string;
+    /**
+      * `Readwise`
+      */
+    ["com.affine.integration.name.readwise"](): string;
+    /**
+      * `Integrations`
+      */
+    ["com.affine.integration.integrations"](): string;
+    /**
+      * `Web Clipper`
+      */
+    ["com.affine.integration.web-clipper.name"](): string;
+    /**
+      * `Import web pages to AFFiNE`
+      */
+    ["com.affine.integration.web-clipper.desc"](): string;
+    /**
+      * `Elevate your AFFiNE experience with diverse add-ons and seamless integrations.`
+      */
+    ["com.affine.integration.setting.description"](): string;
+    /**
+      * `Learn how to develop a integration for AFFiNE`
+      */
+    ["com.affine.integration.setting.learn"](): string;
+    /**
+      * `Readwise`
+      */
+    ["com.affine.integration.readwise.name"](): string;
+    /**
+      * `Manually import your content to AFFiNE from Readwise`
+      */
+    ["com.affine.integration.readwise.desc"](): string;
+    /**
+      * `Connect`
+      */
+    ["com.affine.integration.readwise.connect"](): string;
+    /**
+      * `Connect to Readwise`
+      */
+    ["com.affine.integration.readwise.connect.title"](): string;
+    /**
+      * `Paste your access token here`
+      */
+    ["com.affine.integration.readwise.connect.placeholder"](): string;
+    /**
+      * `Please enter a valid access token.`
+      */
+    ["com.affine.integration.readwise.connect.input-error"](): string;
+    /**
+      * `Access Token failed validation`
+      */
+    ["com.affine.integration.readwise.connect.error-notify-title"](): string;
+    /**
+      * `The token could not access Readwise. Please verify access and try again.`
+      */
+    ["com.affine.integration.readwise.connect.error-notify-desc"](): string;
+    /**
+      * `Import`
+      */
+    ["com.affine.integration.readwise.import"](): string;
+    /**
+      * `Disconnect`
+      */
+    ["com.affine.integration.readwise.disconnect"](): string;
+    /**
+      * `Disconnect Readwise?`
+      */
+    ["com.affine.integration.readwise.disconnect.title"](): string;
+    /**
+      * `Once disconnected, content will no longer be imported. Do you want to keep your existing highlights in AFFiNE?`
+      */
+    ["com.affine.integration.readwise.disconnect.desc"](): string;
+    /**
+      * `Keep`
+      */
+    ["com.affine.integration.readwise.disconnect.keep"](): string;
+    /**
+      * `Delete`
+      */
+    ["com.affine.integration.readwise.disconnect.delete"](): string;
+    /**
+      * `Highlights to be imported this time`
+      */
+    ["com.affine.integration.readwise.import.title"](): string;
+    /**
+      * `Importing everything from the start`
+      */
+    ["com.affine.integration.readwise.import.desc-from-start"](): string;
+    /**
+      * `Content`
+      */
+    ["com.affine.integration.readwise.import.cell-h-content"](): string;
+    /**
+      * `Todo`
+      */
+    ["com.affine.integration.readwise.import.cell-h-todo"](): string;
+    /**
+      * `Last update on Readwise`
+      */
+    ["com.affine.integration.readwise.import.cell-h-time"](): string;
+    /**
+      * `New`
+      */
+    ["com.affine.integration.readwise.import.todo-new"](): string;
+    /**
+      * `Skip`
+      */
+    ["com.affine.integration.readwise.import.todo-skip"](): string;
+    /**
+      * `Updated`
+      */
+    ["com.affine.integration.readwise.import.todo-update"](): string;
+    /**
+      * `No highlights needs to be imported`
+      */
+    ["com.affine.integration.readwise.import.empty"](): string;
+    /**
+      * `Importing...`
+      */
+    ["com.affine.integration.readwise.import.importing"](): string;
+    /**
+      * `Please keep this app active until it's finished`
+      */
+    ["com.affine.integration.readwise.import.importing-desc"](): string;
+    /**
+      * `Stop Importing`
+      */
+    ["com.affine.integration.readwise.import.importing-stop"](): string;
+    /**
+      * `Importing aborted`
+      */
+    ["com.affine.integration.readwise.import.abort-notify-title"](): string;
+    /**
+      * `Import aborted, with {{finished}} highlights processed`
+      */
+    ["com.affine.integration.readwise.import.abort-notify-desc"](options: {
+        readonly finished: string;
+    }): string;
+    /**
+      * `Configuration`
+      */
+    ["com.affine.integration.readwise.setting.caption"](): string;
+    /**
+      * `New Readwise highlights will be imported to AFFiNE `
+      */
+    ["com.affine.integration.readwise.setting.sync-new-name"](): string;
+    /**
+      * `New highlights in Readwise will be synced to AFFiNE `
+      */
+    ["com.affine.integration.readwise.setting.sync-new-desc"](): string;
+    /**
+      * `Updates to Readwise highlights will be imported`
+      */
+    ["com.affine.integration.readwise.setting.update-name"](): string;
+    /**
+      * `Enable this, so that we will process updates of existing highlights from Readwise `
+      */
+    ["com.affine.integration.readwise.setting.update-desc"](): string;
+    /**
+      * `How do we handle updates`
+      */
+    ["com.affine.integration.readwise.setting.update-strategy"](): string;
+    /**
+      * `Append new version to the end`
+      */
+    ["com.affine.integration.readwise.setting.update-append-name"](): string;
+    /**
+      * `Cited or modified highlights will have future versions added to the end of them`
+      */
+    ["com.affine.integration.readwise.setting.update-append-desc"](): string;
+    /**
+      * `Overwrite with new version`
+      */
+    ["com.affine.integration.readwise.setting.update-override-name"](): string;
+    /**
+      * `Cited or modified highlights will be overwritten if there are future updates`
+      */
+    ["com.affine.integration.readwise.setting.update-override-desc"](): string;
+    /**
+      * `Start Importing`
+      */
+    ["com.affine.integration.readwise.setting.start-import-name"](): string;
+    /**
+      * `Using the settings above`
+      */
+    ["com.affine.integration.readwise.setting.start-import-desc"](): string;
+    /**
+      * `Import`
+      */
+    ["com.affine.integration.readwise.setting.start-import-button"](): string;
+    /**
+      * `Apply tags to highlight imports`
+      */
+    ["com.affine.integration.readwise.setting.tags-label"](): string;
+    /**
+      * `Click to add tags`
+      */
+    ["com.affine.integration.readwise.setting.tags-placeholder"](): string;
+    /**
+      * `Author`
+      */
+    ["com.affine.integration.readwise-prop.author"](): string;
+    /**
+      * `Source`
+      */
+    ["com.affine.integration.readwise-prop.source"](): string;
+    /**
+      * `Created`
+      */
+    ["com.affine.integration.readwise-prop.created"](): string;
+    /**
+      * `Updated`
+      */
+    ["com.affine.integration.readwise-prop.updated"](): string;
+    /**
+      * `Integration properties`
+      */
+    ["com.affine.integration.properties"](): string;
+    /**
+      * `Calendar`
+      */
+    ["com.affine.integration.calendar.name"](): string;
+    /**
+      * `New events will be scheduled in AFFiNE’s journal`
+      */
+    ["com.affine.integration.calendar.desc"](): string;
+    /**
+      * `Subscribe`
+      */
+    ["com.affine.integration.calendar.new-subscription"](): string;
+    /**
+      * `Unsubscribe`
+      */
+    ["com.affine.integration.calendar.unsubscribe"](): string;
+    /**
+      * `Add a calendar by URL`
+      */
+    ["com.affine.integration.calendar.new-title"](): string;
+    /**
+      * `Calendar URL`
+      */
+    ["com.affine.integration.calendar.new-url-label"](): string;
+    /**
+      * `An error occurred while adding the calendar`
+      */
+    ["com.affine.integration.calendar.new-error"](): string;
+    /**
+      * `All day`
+      */
+    ["com.affine.integration.calendar.all-day"](): string;
+    /**
+      * `New doc`
+      */
+    ["com.affine.integration.calendar.new-doc"](): string;
+    /**
+      * `Show calendar events`
+      */
+    ["com.affine.integration.calendar.show-events"](): string;
+    /**
+      * `Enabling this setting allows you to connect your calendar events to your Journal in AFFiNE`
+      */
+    ["com.affine.integration.calendar.show-events-desc"](): string;
+    /**
+      * `Show all day event`
+      */
+    ["com.affine.integration.calendar.show-all-day-events"](): string;
+    /**
+      * `Are you sure you want to unsubscribe "{{name}}"? Unsubscribing this account will remove its data from Journal.`
+      */
+    ["com.affine.integration.calendar.unsubscribe-content"](options: {
+        readonly name: string;
+    }): string;
+    /**
+      * `Notes`
+      */
+    ["com.affine.audio.notes"](): string;
+    /**
+      * `Transcribing`
+      */
+    ["com.affine.audio.transcribing"](): string;
+    /**
+      * `Unable to retrieve AI results for others`
+      */
+    ["com.affine.audio.transcribe.non-owner.confirm.title"](): string;
+    /**
+      * `Audio activity`
+      */
+    ["com.affine.recording.new"](): string;
+    /**
+      * `Finished`
+      */
+    ["com.affine.recording.success.prompt"](): string;
+    /**
+      * `Open app`
+      */
+    ["com.affine.recording.success.button"](): string;
+    /**
+      * `Failed to save`
+      */
+    ["com.affine.recording.failed.prompt"](): string;
+    /**
+      * `Open file`
+      */
+    ["com.affine.recording.failed.button"](): string;
+    /**
+      * `{{appName}}'s audio`
+      */
+    ["com.affine.recording.recording"](options: {
+        readonly appName: string;
+    }): string;
+    /**
+      * `Audio recording`
+      */
+    ["com.affine.recording.recording.unnamed"](): string;
+    /**
+      * `Start`
+      */
+    ["com.affine.recording.start"](): string;
+    /**
+      * `Dismiss`
+      */
+    ["com.affine.recording.dismiss"](): string;
+    /**
+      * `Stop`
+      */
+    ["com.affine.recording.stop"](): string;
+    /**
+      * `All docs data needs to be migrated in order to fully utilize its features.`
+      */
+    ["com.affine.migration-all-docs-notification.title"](): string;
+    /**
+      * `We upgraded the data format, requiring local data migration to utilize features. Created by and Updated by info is now stored locally. Without the update, you will see the actual status. Perform the upgrade under better network conditions.`
+      */
+    ["com.affine.migration-all-docs-notification.content"](): string;
+    /**
+      * `Migration failed: {{errorMessage}}`
+      */
+    ["com.affine.migration-all-docs-notification.error"](options: {
+        readonly errorMessage: string;
+    }): string;
+    /**
+      * `Migrate data`
+      */
+    ["com.affine.migration-all-docs-notification.button"](): string;
+    /**
+      * `An internal error occurred.`
+      */
+    ["error.INTERNAL_SERVER_ERROR"](): string;
+    /**
+      * `Network error.`
+      */
+    ["error.NETWORK_ERROR"](): string;
+    /**
+      * `Too many requests.`
+      */
+    ["error.TOO_MANY_REQUEST"](): string;
+    /**
+      * `Resource not found.`
+      */
+    ["error.NOT_FOUND"](): string;
+    /**
+      * `Bad request.`
+      */
+    ["error.BAD_REQUEST"](): string;
+    /**
+      * `GraphQL bad request, code: {{code}}, {{message}}`
+      */
+    ["error.GRAPHQL_BAD_REQUEST"](options: Readonly<{
+        code: string;
+        message: string;
+    }>): string;
+    /**
+      * `HTTP request error, message: {{message}}`
+      */
+    ["error.HTTP_REQUEST_ERROR"](options: {
+        readonly message: string;
+    }): string;
+    /**
+      * `Email service is not configured.`
+      */
+    ["error.EMAIL_SERVICE_NOT_CONFIGURED"](): string;
+    /**
+      * `Query is too long, max length is {{max}}.`
+      */
+    ["error.QUERY_TOO_LONG"](options: {
+        readonly max: string;
+    }): string;
+    /**
+      * `Validation error, errors: {{errors}}`
+      */
+    ["error.VALIDATION_ERROR"](options: {
+        readonly errors: string;
+    }): string;
+    /**
+      * `User not found.`
+      */
+    ["error.USER_NOT_FOUND"](): string;
+    /**
+      * `User avatar not found.`
+      */
+    ["error.USER_AVATAR_NOT_FOUND"](): string;
+    /**
+      * `This email has already been registered.`
+      */
+    ["error.EMAIL_ALREADY_USED"](): string;
+    /**
+      * `You are trying to update your account email to the same as the old one.`
+      */
+    ["error.SAME_EMAIL_PROVIDED"](): string;
+    /**
+      * `Wrong user email or password: {{email}}`
+      */
+    ["error.WRONG_SIGN_IN_CREDENTIALS"](options: {
+        readonly email: string;
+    }): string;
+    /**
+      * `Unknown authentication provider {{name}}.`
+      */
+    ["error.UNKNOWN_OAUTH_PROVIDER"](options: {
+        readonly name: string;
+    }): string;
+    /**
+      * `OAuth state expired, please try again.`
+      */
+    ["error.OAUTH_STATE_EXPIRED"](): string;
+    /**
+      * `Invalid callback state parameter.`
+      */
+    ["error.INVALID_OAUTH_CALLBACK_STATE"](): string;
+    /**
+      * `Invalid callback code parameter, provider response status: {{status}} and body: {{body}}.`
+      */
+    ["error.INVALID_OAUTH_CALLBACK_CODE"](options: Readonly<{
+        status: string;
+        body: string;
+    }>): string;
+    /**
+      * `Invalid auth state. You might start the auth progress from another device.`
+      */
+    ["error.INVALID_AUTH_STATE"](): string;
+    /**
+      * `Missing query parameter `{{name}}`.`
+      */
+    ["error.MISSING_OAUTH_QUERY_PARAMETER"](options: {
+        readonly name: string;
+    }): string;
+    /**
+      * `The third-party account has already been connected to another user.`
+      */
+    ["error.OAUTH_ACCOUNT_ALREADY_CONNECTED"](): string;
+    /**
+      * `An invalid email provided: {{email}}`
+      */
+    ["error.INVALID_EMAIL"](options: {
+        readonly email: string;
+    }): string;
+    /**
+      * `Password must be between {{min}} and {{max}} characters`
+      */
+    ["error.INVALID_PASSWORD_LENGTH"](options: Readonly<{
+        min: string;
+        max: string;
+    }>): string;
+    /**
+      * `Password is required.`
+      */
+    ["error.PASSWORD_REQUIRED"](): string;
+    /**
+      * `You are trying to sign in by a different method than you signed up with.`
+      */
+    ["error.WRONG_SIGN_IN_METHOD"](): string;
+    /**
+      * `You don't have early access permission. Visit https://community.affine.pro/c/insider-general/ for more information.`
+      */
+    ["error.EARLY_ACCESS_REQUIRED"](): string;
+    /**
+      * `You are not allowed to sign up.`
+      */
+    ["error.SIGN_UP_FORBIDDEN"](): string;
+    /**
+      * `The email token provided is not found.`
+      */
+    ["error.EMAIL_TOKEN_NOT_FOUND"](): string;
+    /**
+      * `An invalid email token provided.`
+      */
+    ["error.INVALID_EMAIL_TOKEN"](): string;
+    /**
+      * `The link has expired.`
+      */
+    ["error.LINK_EXPIRED"](): string;
+    /**
+      * `You must sign in first to access this resource.`
+      */
+    ["error.AUTHENTICATION_REQUIRED"](): string;
+    /**
+      * `You are not allowed to perform this action.`
+      */
+    ["error.ACTION_FORBIDDEN"](): string;
+    /**
+      * `You do not have permission to access this resource.`
+      */
+    ["error.ACCESS_DENIED"](): string;
+    /**
+      * `You must verify your email before accessing this resource.`
+      */
+    ["error.EMAIL_VERIFICATION_REQUIRED"](): string;
+    /**
+      * `Space {{spaceId}} permission not found.`
+      */
+    ["error.WORKSPACE_PERMISSION_NOT_FOUND"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
+      * `Space {{spaceId}} not found.`
+      */
+    ["error.SPACE_NOT_FOUND"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
+      * `Member not found in Space {{spaceId}}.`
+      */
+    ["error.MEMBER_NOT_FOUND_IN_SPACE"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
+      * `You should join in Space {{spaceId}} before broadcasting messages.`
+      */
+    ["error.NOT_IN_SPACE"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
+      * `You have already joined in Space {{spaceId}}.`
+      */
+    ["error.ALREADY_IN_SPACE"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
+      * `You do not have permission to access Space {{spaceId}}.`
+      */
+    ["error.SPACE_ACCESS_DENIED"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
+      * `Owner of Space {{spaceId}} not found.`
+      */
+    ["error.SPACE_OWNER_NOT_FOUND"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
+      * `Space should have only one owner.`
+      */
+    ["error.SPACE_SHOULD_HAVE_ONLY_ONE_OWNER"](): string;
+    /**
+      * `Owner can not leave the workspace.`
+      */
+    ["error.OWNER_CAN_NOT_LEAVE_WORKSPACE"](): string;
+    /**
+      * `You can not revoke your own permission.`
+      */
+    ["error.CAN_NOT_REVOKE_YOURSELF"](): string;
+    /**
+      * `Doc {{docId}} under Space {{spaceId}} not found.`
+      */
+    ["error.DOC_NOT_FOUND"](options: Readonly<{
+        docId: string;
+        spaceId: string;
+    }>): string;
+    /**
+      * `You do not have permission to perform {{action}} action on doc {{docId}}.`
+      */
+    ["error.DOC_ACTION_DENIED"](options: Readonly<{
+        action: string;
+        docId: string;
+    }>): string;
+    /**
+      * `Doc {{docId}} under Space {{spaceId}} is blocked from updating.`
+      */
+    ["error.DOC_UPDATE_BLOCKED"](options: Readonly<{
+        docId: string;
+        spaceId: string;
+    }>): string;
+    /**
+      * `Your client with version {{version}} is rejected by remote sync server. Please upgrade to {{serverVersion}}.`
+      */
+    ["error.VERSION_REJECTED"](options: Readonly<{
+        version: string;
+        serverVersion: string;
+    }>): string;
+    /**
+      * `Invalid doc history timestamp provided.`
+      */
+    ["error.INVALID_HISTORY_TIMESTAMP"](): string;
+    /**
+      * `History of {{docId}} at {{timestamp}} under Space {{spaceId}}.`
+      */
+    ["error.DOC_HISTORY_NOT_FOUND"](options: Readonly<{
+        docId: string;
+        timestamp: string;
+        spaceId: string;
+    }>): string;
+    /**
+      * `Blob {{blobId}} not found in Space {{spaceId}}.`
+      */
+    ["error.BLOB_NOT_FOUND"](options: Readonly<{
+        blobId: string;
+        spaceId: string;
+    }>): string;
+    /**
+      * `Expected to publish a doc, not a Space.`
+      */
+    ["error.EXPECT_TO_PUBLISH_DOC"](): string;
+    /**
+      * `Expected to revoke a public doc, not a Space.`
+      */
+    ["error.EXPECT_TO_REVOKE_PUBLIC_DOC"](): string;
+    /**
+      * `Expect grant roles on doc {{docId}} under Space {{spaceId}}, not a Space.`
+      */
+    ["error.EXPECT_TO_GRANT_DOC_USER_ROLES"](options: Readonly<{
+        docId: string;
+        spaceId: string;
+    }>): string;
+    /**
+      * `Expect revoke roles on doc {{docId}} under Space {{spaceId}}, not a Space.`
+      */
+    ["error.EXPECT_TO_REVOKE_DOC_USER_ROLES"](options: Readonly<{
+        docId: string;
+        spaceId: string;
+    }>): string;
+    /**
+      * `Expect update roles on doc {{docId}} under Space {{spaceId}}, not a Space.`
+      */
+    ["error.EXPECT_TO_UPDATE_DOC_USER_ROLE"](options: Readonly<{
+        docId: string;
+        spaceId: string;
+    }>): string;
+    /**
+      * `Doc is not public.`
+      */
+    ["error.DOC_IS_NOT_PUBLIC"](): string;
+    /**
+      * `Failed to store doc updates.`
+      */
+    ["error.FAILED_TO_SAVE_UPDATES"](): string;
+    /**
+      * `Failed to store doc snapshot.`
+      */
+    ["error.FAILED_TO_UPSERT_SNAPSHOT"](): string;
+    /**
+      * `A Team workspace is required to perform this action.`
+      */
+    ["error.ACTION_FORBIDDEN_ON_NON_TEAM_WORKSPACE"](): string;
+    /**
+      * `Doc default role can not be owner.`
+      */
+    ["error.DOC_DEFAULT_ROLE_CAN_NOT_BE_OWNER"](): string;
+    /**
+      * `Can not batch grant doc owner permissions.`
+      */
+    ["error.CAN_NOT_BATCH_GRANT_DOC_OWNER_PERMISSIONS"](): string;
+    /**
+      * `Can not set a non-active member as owner.`
+      */
+    ["error.NEW_OWNER_IS_NOT_ACTIVE_MEMBER"](): string;
+    /**
+      * `Invalid invitation provided.`
+      */
+    ["error.INVALID_INVITATION"](): string;
+    /**
+      * `No more seat available in the Space {{spaceId}}.`
+      */
+    ["error.NO_MORE_SEAT"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
+      * `Unsupported subscription plan: {{plan}}.`
+      */
+    ["error.UNSUPPORTED_SUBSCRIPTION_PLAN"](options: {
+        readonly plan: string;
+    }): string;
+    /**
+      * `Failed to create checkout session.`
+      */
+    ["error.FAILED_TO_CHECKOUT"](): string;
+    /**
+      * `Invalid checkout parameters provided.`
+      */
+    ["error.INVALID_CHECKOUT_PARAMETERS"](): string;
+    /**
+      * `You have already subscribed to the {{plan}} plan.`
+      */
+    ["error.SUBSCRIPTION_ALREADY_EXISTS"](options: {
+        readonly plan: string;
+    }): string;
+    /**
+      * `Invalid subscription parameters provided.`
+      */
+    ["error.INVALID_SUBSCRIPTION_PARAMETERS"](): string;
+    /**
+      * `You didn't subscribe to the {{plan}} plan.`
+      */
+    ["error.SUBSCRIPTION_NOT_EXISTS"](options: {
+        readonly plan: string;
+    }): string;
+    /**
+      * `Your subscription has already been canceled.`
+      */
+    ["error.SUBSCRIPTION_HAS_BEEN_CANCELED"](): string;
+    /**
+      * `Your subscription has not been canceled.`
+      */
+    ["error.SUBSCRIPTION_HAS_NOT_BEEN_CANCELED"](): string;
+    /**
+      * `Your subscription has expired.`
+      */
+    ["error.SUBSCRIPTION_EXPIRED"](): string;
+    /**
+      * `Your subscription has already been in {{recurring}} recurring state.`
+      */
+    ["error.SAME_SUBSCRIPTION_RECURRING"](options: {
+        readonly recurring: string;
+    }): string;
+    /**
+      * `Failed to create customer portal session.`
+      */
+    ["error.CUSTOMER_PORTAL_CREATE_FAILED"](): string;
+    /**
+      * `You are trying to access a unknown subscription plan.`
+      */
+    ["error.SUBSCRIPTION_PLAN_NOT_FOUND"](): string;
+    /**
+      * `You cannot update an onetime payment subscription.`
+      */
+    ["error.CANT_UPDATE_ONETIME_PAYMENT_SUBSCRIPTION"](): string;
+    /**
+      * `A workspace is required to checkout for team subscription.`
+      */
+    ["error.WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION"](): string;
+    /**
+      * `Workspace id is required to update team subscription.`
+      */
+    ["error.WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION"](): string;
+    /**
+      * `Copilot session not found.`
+      */
+    ["error.COPILOT_SESSION_NOT_FOUND"](): string;
+    /**
+      * `Copilot session has been deleted.`
+      */
+    ["error.COPILOT_SESSION_DELETED"](): string;
+    /**
+      * `No copilot provider available.`
+      */
+    ["error.NO_COPILOT_PROVIDER_AVAILABLE"](): string;
+    /**
+      * `Failed to generate text.`
+      */
+    ["error.COPILOT_FAILED_TO_GENERATE_TEXT"](): string;
+    /**
+      * `Failed to create chat message.`
+      */
+    ["error.COPILOT_FAILED_TO_CREATE_MESSAGE"](): string;
+    /**
+      * `Unsplash is not configured.`
+      */
+    ["error.UNSPLASH_IS_NOT_CONFIGURED"](): string;
+    /**
+      * `Action has been taken, no more messages allowed.`
+      */
+    ["error.COPILOT_ACTION_TAKEN"](): string;
+    /**
+      * `Doc {{docId}} not found.`
+      */
+    ["error.COPILOT_DOC_NOT_FOUND"](options: {
+        readonly docId: string;
+    }): string;
+    /**
+      * `Some docs not found.`
+      */
+    ["error.COPILOT_DOCS_NOT_FOUND"](): string;
+    /**
+      * `Copilot message {{messageId}} not found.`
+      */
+    ["error.COPILOT_MESSAGE_NOT_FOUND"](options: {
+        readonly messageId: string;
+    }): string;
+    /**
+      * `Copilot prompt {{name}} not found.`
+      */
+    ["error.COPILOT_PROMPT_NOT_FOUND"](options: {
+        readonly name: string;
+    }): string;
+    /**
+      * `Copilot prompt is invalid.`
+      */
+    ["error.COPILOT_PROMPT_INVALID"](): string;
+    /**
+      * `Provider {{provider}} failed with {{kind}} error: {{message}}`
+      */
+    ["error.COPILOT_PROVIDER_SIDE_ERROR"](options: Readonly<{
+        provider: string;
+        kind: string;
+        message: string;
+    }>): string;
+    /**
+      * `Invalid copilot context {{contextId}}.`
+      */
+    ["error.COPILOT_INVALID_CONTEXT"](options: {
+        readonly contextId: string;
+    }): string;
+    /**
+      * `File {{fileName}} is not supported to use as context: {{message}}`
+      */
+    ["error.COPILOT_CONTEXT_FILE_NOT_SUPPORTED"](options: Readonly<{
+        fileName: string;
+        message: string;
+    }>): string;
+    /**
+      * `Failed to modify context {{contextId}}: {{message}}`
+      */
+    ["error.COPILOT_FAILED_TO_MODIFY_CONTEXT"](options: Readonly<{
+        contextId: string;
+        message: string;
+    }>): string;
+    /**
+      * `Failed to match context {{contextId}} with "%7B%7Bcontent%7D%7D": {{message}}`
+      */
+    ["error.COPILOT_FAILED_TO_MATCH_CONTEXT"](options: Readonly<{
+        contextId: string;
+        message: string;
+    }>): string;
+    /**
+      * `Embedding feature is disabled, please contact the administrator to enable it in the workspace settings.`
+      */
+    ["error.COPILOT_EMBEDDING_DISABLED"](): string;
+    /**
+      * `Embedding feature not available, you may need to install pgvector extension to your database`
+      */
+    ["error.COPILOT_EMBEDDING_UNAVAILABLE"](): string;
+    /**
+      * `Transcription job already exists`
+      */
+    ["error.COPILOT_TRANSCRIPTION_JOB_EXISTS"](): string;
+    /**
+      * `Transcription job not found.`
+      */
+    ["error.COPILOT_TRANSCRIPTION_JOB_NOT_FOUND"](): string;
+    /**
+      * `Audio not provided.`
+      */
+    ["error.COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED"](): string;
+    /**
+      * `Failed to add workspace file embedding: {{message}}`
+      */
+    ["error.COPILOT_FAILED_TO_ADD_WORKSPACE_FILE_EMBEDDING"](options: {
+        readonly message: string;
+    }): string;
+    /**
+      * `You have exceeded your blob size quota.`
+      */
+    ["error.BLOB_QUOTA_EXCEEDED"](): string;
+    /**
+      * `You have exceeded your storage quota.`
+      */
+    ["error.STORAGE_QUOTA_EXCEEDED"](): string;
+    /**
+      * `You have exceeded your workspace member quota.`
+      */
+    ["error.MEMBER_QUOTA_EXCEEDED"](): string;
+    /**
+      * `You have reached the limit of actions in this workspace, please upgrade your plan.`
+      */
+    ["error.COPILOT_QUOTA_EXCEEDED"](): string;
+    /**
+      * `Runtime config {{key}} not found.`
+      */
+    ["error.RUNTIME_CONFIG_NOT_FOUND"](options: {
+        readonly key: string;
+    }): string;
+    /**
+      * `Invalid runtime config type  for '{{key}}', want '{{want}}', but get {{get}}.`
+      */
+    ["error.INVALID_RUNTIME_CONFIG_TYPE"](options: Readonly<{
+        key: string;
+        want: string;
+        get: string;
+    }>): string;
+    /**
+      * `Mailer service is not configured.`
+      */
+    ["error.MAILER_SERVICE_IS_NOT_CONFIGURED"](): string;
+    /**
+      * `Cannot delete all admin accounts.`
+      */
+    ["error.CANNOT_DELETE_ALL_ADMIN_ACCOUNT"](): string;
+    /**
+      * `Cannot delete own account.`
+      */
+    ["error.CANNOT_DELETE_OWN_ACCOUNT"](): string;
+    /**
+      * `Captcha verification failed.`
+      */
+    ["error.CAPTCHA_VERIFICATION_FAILED"](): string;
+    /**
+      * `Invalid session id to generate license key.`
+      */
+    ["error.INVALID_LICENSE_SESSION_ID"](): string;
+    /**
+      * `License key has been revealed. Please check your mail box of the one provided during checkout.`
+      */
+    ["error.LICENSE_REVEALED"](): string;
+    /**
+      * `Workspace already has a license applied.`
+      */
+    ["error.WORKSPACE_LICENSE_ALREADY_EXISTS"](): string;
+    /**
+      * `License not found.`
+      */
+    ["error.LICENSE_NOT_FOUND"](): string;
+    /**
+      * `Invalid license to activate.`
+      */
+    ["error.INVALID_LICENSE_TO_ACTIVATE"](): string;
+    /**
+      * `Invalid license update params. {{reason}}`
+      */
+    ["error.INVALID_LICENSE_UPDATE_PARAMS"](options: {
+        readonly reason: string;
+    }): string;
+    /**
+      * `You cannot downgrade the workspace from team workspace because there are more than {{limit}} members that are currently active.`
+      */
+    ["error.WORKSPACE_MEMBERS_EXCEED_LIMIT_TO_DOWNGRADE"](options: {
+        readonly limit: string;
+    }): string;
+    /**
+      * `Unsupported client with version [{{clientVersion}}], required version is [{{requiredVersion}}].`
+      */
+    ["error.UNSUPPORTED_CLIENT_VERSION"](options: Readonly<{
+        clientVersion: string;
+        requiredVersion: string;
+    }>): string;
+    /**
+      * `Notification not found.`
+      */
+    ["error.NOTIFICATION_NOT_FOUND"](): string;
+    /**
+      * `Mentioned user can not access doc {{docId}}.`
+      */
+    ["error.MENTION_USER_DOC_ACCESS_DENIED"](options: {
+        readonly docId: string;
+    }): string;
+    /**
+      * `You can not mention yourself.`
+      */
+    ["error.MENTION_USER_ONESELF_DENIED"](): string;
+    /**
+      * `Invalid app config.`
+      */
+    ["error.INVALID_APP_CONFIG"](): string;
 } { const { t } = useTranslation(); return useMemo(() => createProxy((key) => t.bind(null, key)), [t]); }
 function createComponent(i18nKey: string) {
     return (props) => createElement(Trans, { i18nKey, shouldUnescape: true, ...props });
@@ -6541,6 +8513,14 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
+      * `To continue signing in, please enter the code that was sent to <a>{{email}}</a>.`
+      */
+    ["com.affine.auth.sign.auth.code.hint"]: ComponentType<TypedTransProps<{
+        readonly email: string;
+    }, {
+        a: JSX.Element;
+    }>>;
+    /**
       * `Or <1>sign in with password</1> instead.`
       */
     ["com.affine.auth.sign.auth.code.message.password"]: ComponentType<TypedTransProps<Readonly<{}>, {
@@ -6558,14 +8538,6 @@ export const TypedTrans: {
     ["com.affine.auth.sign.message"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
         ["3"]: JSX.Element;
-    }>>;
-    /**
-      * `An email with a magic link has been sent to <a>{{email}}</a>.`
-      */
-    ["com.affine.auth.sign.sent.email.message.sent-tips"]: ComponentType<TypedTransProps<{
-        readonly email: string;
-    }, {
-        a: JSX.Element;
     }>>;
     /**
       * `This demo is limited. <1>Download the AFFiNE Client</1> for the latest features and Performance.`
@@ -6665,6 +8637,12 @@ export const TypedTrans: {
         readonly highlight: string;
     }, {
         ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `If you are still experiencing this issue, please <1>contact us through the community</1>.`
+      */
+    ["com.affine.error.contact-us"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `With the workspace creator's free account, every member can access up to <1>7 days<1> of version history.`
@@ -6785,6 +8763,12 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
+      * `If you have any questions, please contact our <1>customer support</1>.`
+      */
+    ["com.affine.payment.license-success.text-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
       * `This action deletes the old Favorites section. <b>Your documents are safe</b>, ensure you've moved your frequently accessed documents to the new personal Favorites section.`
       */
     ["com.affine.rootAppSidebar.migration-data.clean-all.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
@@ -6820,6 +8804,34 @@ export const TypedTrans: {
       * `Love our app? <1>Star us on GitHub</1> and <2>create issues</2> for your valuable feedback!`
       */
     ["com.affine.settings.suggestion-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `Meeting Features Available <strong>Free</strong> in Beta Phase`
+      */
+    ["com.affine.settings.meetings.setting.prompt.2"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        strong: JSX.Element;
+    }>>;
+    /**
+      * `<strong>Where AI meets your meetings - affine your collaboration.</strong>
+    <ul><li>Extract Action Items & Key Insights Instantly</li><li>Smart Auto-Capture Starts With Your Meeting</li><li>Seamless Integration Across All Meeting Platforms</li><li>One Unified Space for All Your Meeting's Context</li><li>Your AI Assistant with Every Meeting Context Preserved</li></ul>`
+      */
+    ["com.affine.settings.meetings.setting.welcome.hints"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        strong: JSX.Element;
+        ul: JSX.Element;
+        li: JSX.Element;
+    }>>;
+    /**
+      * `Utilize the meeting notes and AI summarization features provided by AFFiNE. <1>Discuss more in the community</1>.`
+      */
+    ["com.affine.settings.meetings.enable.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `If you encounter any issues, please contact our <1>customer support</1>. No license yet? <2>Click to purchase</2>.`
+      */
+    ["com.affine.settings.workspace.license.activate-modal.tips"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
         ["2"]: JSX.Element;
     }>>;
@@ -6918,6 +8930,126 @@ export const TypedTrans: {
       */
     ["com.affine.upgrade-to-team-page.upgrade-confirm.description"]: ComponentType<TypedTransProps<{
         readonly workspaceName: string;
+    }, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> mentioned you in <2>{{docTitle}}</2>`
+      */
+    ["com.affine.notification.mention"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        docTitle: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> has accept your invitation`
+      */
+    ["com.affine.notification.invitation-accepted"]: ComponentType<TypedTransProps<{
+        readonly username: string;
+    }, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> has requested to join <2>{{workspaceName}}</2>`
+      */
+    ["com.affine.notification.invitation-review-request"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        workspaceName: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> has declined your request to join <2>{{workspaceName}}</2>`
+      */
+    ["com.affine.notification.invitation-review-declined"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        workspaceName: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> has approved your request to join <2>{{workspaceName}}</2>`
+      */
+    ["com.affine.notification.invitation-review-approved"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        workspaceName: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `There is an issue regarding your invitation to <1>{{workspaceName}}</1> `
+      */
+    ["com.affine.notification.invitation-blocked"]: ComponentType<TypedTransProps<{
+        readonly workspaceName: string;
+    }, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> invited you to join <2>{{workspaceName}}</2>`
+      */
+    ["com.affine.notification.invitation"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        workspaceName: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `Unable to join <1/> <2>{{workspaceName}}</2> due to insufficient seats available.`
+      */
+    ["com.affine.fail-to-join-workspace.description-1"]: ComponentType<TypedTransProps<{
+        readonly workspaceName: string;
+    }, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `You requested to join <1/> <2>{{workspaceName}}</2> with <3>{{userEmail}}</3>, the workspace owner and team admins will review your request.`
+      */
+    ["com.affine.sent-request-to-join-workspace.description"]: ComponentType<TypedTransProps<Readonly<{
+        workspaceName: string;
+        userEmail: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+        ["3"]: JSX.Element;
+    }>>;
+    /**
+      * `Unable to process your request to join <1/> <2>{{workspaceName}}</2> with <3>{{userEmail}}</3>, the workspace has reached its member limit. Please contact the workspace owner for available seats.`
+      */
+    ["com.affine.failed-to-send-request.description"]: ComponentType<TypedTransProps<Readonly<{
+        workspaceName: string;
+        userEmail: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+        ["3"]: JSX.Element;
+    }>>;
+    /**
+      * `Import your Readwise highlights to AFFiNE. Please visit Readwise, <br />click <a>"Get Access Token"</a>, and paste the token below.`
+      */
+    ["com.affine.integration.readwise.connect.desc"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        br: JSX.Element;
+        a: JSX.Element;
+    }>>;
+    /**
+      * `Updates to be imported since last successful import on {{lastImportedAt}} <a>Import everything instead</a>`
+      */
+    ["com.affine.integration.readwise.import.desc-from-last"]: ComponentType<TypedTransProps<{
+        readonly lastImportedAt: string;
+    }, {
+        a: JSX.Element;
+    }>>;
+    /**
+      * `Please contact <1>{{user}}</1> to upgrade AI rights or resend the attachment.`
+      */
+    ["com.affine.audio.transcribe.non-owner.confirm.message"]: ComponentType<TypedTransProps<{
+        readonly user: string;
     }, {
         ["1"]: JSX.Element;
     }>>;

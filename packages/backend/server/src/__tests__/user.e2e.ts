@@ -1,33 +1,32 @@
-import type { INestApplication } from '@nestjs/common';
 import test from 'ava';
-import request from 'supertest';
 
-import { AppModule } from '../app.module';
-import { createTestingApp, currentUser, signUp } from './utils';
+import {
+  createTestingApp,
+  currentUser,
+  deleteAccount,
+  TestingApp,
+} from './utils';
 
-let app: INestApplication;
+let app: TestingApp;
 
-test.beforeEach(async () => {
-  const { app: testApp } = await createTestingApp({
-    imports: [AppModule],
-  });
-  app = testApp;
+test.before(async () => {
+  app = await createTestingApp();
 });
 
-test.afterEach.always(async () => {
+test.beforeEach(async () => {
+  await app.initTestingDB();
+});
+
+test.after.always(async () => {
   await app.close();
 });
 
-test('should register a user', async t => {
-  const user = await signUp(app, 'u1', 'u1@affine.pro', '123456');
-  t.is(typeof user.id, 'string', 'user.id is not a string');
-  t.is(user.name, 'u1', 'user.name is not valid');
-  t.is(user.email, 'u1@affine.pro', 'user.email is not valid');
-});
+// TODO(@forehalo): signup test case
+test.skip('should register a user', () => {});
 
 test('should get current user', async t => {
-  const user = await signUp(app, 'u1', 'u1@affine.pro', '123456');
-  const currUser = await currentUser(app, user.token.token);
+  const user = await app.signupV1('u1@affine.pro');
+  const currUser = await currentUser(app);
   t.is(currUser.id, user.id, 'user.id is not valid');
   t.is(currUser.name, user.name, 'user.name is not valid');
   t.is(currUser.email, user.email, 'user.email is not valid');
@@ -35,20 +34,9 @@ test('should get current user', async t => {
 });
 
 test('should be able to delete user', async t => {
-  const user = await signUp(app, 'u1', 'u1@affine.pro', '123456');
-  await request(app.getHttpServer())
-    .post('/graphql')
-    .auth(user.token.token, { type: 'bearer' })
-    .send({
-      query: `
-          mutation {
-            deleteAccount {
-              success
-            }
-          }
-        `,
-    })
-    .expect(200);
-  t.is(await currentUser(app, user.token.token), null);
-  t.pass();
+  await app.signupV1('u1@affine.pro');
+  const deleted = await deleteAccount(app);
+  t.true(deleted);
+  const currUser = await currentUser(app);
+  t.is(currUser, null);
 });

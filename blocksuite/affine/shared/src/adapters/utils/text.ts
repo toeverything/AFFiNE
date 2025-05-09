@@ -1,6 +1,6 @@
 import type { ReferenceParams } from '@blocksuite/affine-model';
-import { isEqual } from '@blocksuite/global/utils';
-import type { DeltaInsert } from '@blocksuite/inline';
+import type { DeltaInsert } from '@blocksuite/store';
+import isEqual from 'lodash-es/isEqual';
 
 const mergeDeltas = (
   acc: DeltaInsert[],
@@ -86,7 +86,7 @@ function generateDocUrl(
   return url;
 }
 
-export const TextUtils = {
+export const AdapterTextUtils = {
   mergeDeltas,
   isNullish,
   createText,

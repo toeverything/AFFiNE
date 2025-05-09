@@ -11,15 +11,23 @@ export const applicationMenuEvents = {
   /**
    * File -> New Doc
    */
-  onNewPageAction: (fn: () => void) => {
+  onNewPageAction: (fn: (type: 'page' | 'edgeless') => void) => {
     const sub = applicationMenuSubjects.newPageAction$.subscribe(fn);
     return () => {
       sub.unsubscribe();
     };
   },
-  openAboutPageInSettingModal: (fn: () => void) => {
-    const sub =
-      applicationMenuSubjects.openAboutPageInSettingModal$.subscribe(fn);
+  // todo: properly define the active tab type
+  openInSettingModal: (
+    fn: (props: { activeTab: string; scrollAnchor?: string }) => void
+  ) => {
+    const sub = applicationMenuSubjects.openInSettingModal$.subscribe(fn);
+    return () => {
+      sub.unsubscribe();
+    };
+  },
+  onOpenJournal: (fn: () => void) => {
+    const sub = applicationMenuSubjects.openJournal$.subscribe(fn);
     return () => {
       sub.unsubscribe();
     };

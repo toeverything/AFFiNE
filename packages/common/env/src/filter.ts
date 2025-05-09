@@ -74,14 +74,4 @@ export type DeleteCollectionInfo = {
 } | null;
 export type DeletedCollection = z.input<typeof deletedCollectionSchema>;
 
-export const tagSchema = z.object({
-  id: z.string(),
-  value: z.string(),
-  color: z.string(),
-  parentId: z.string().optional(),
-  createDate: z.union([z.date(), z.number()]).optional(),
-  updateDate: z.union([z.date(), z.number()]).optional(),
-});
-export type Tag = z.input<typeof tagSchema>;
-
 export type PropertiesMeta = DocsPropertiesMeta;

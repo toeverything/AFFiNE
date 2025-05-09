@@ -1,4 +1,5 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { createVar, globalStyle, style } from '@vanilla-extract/css';
 import { range } from 'lodash-es';
 
@@ -9,6 +10,7 @@ const previewTopOffset = createVar('preview-top-offset');
 export const root = style({
   height: '100%',
   width: '100%',
+  fontFamily: 'Inter',
   vars: {
     [headerHeight]: '52px',
     [footerHeight]: '68px',
@@ -119,32 +121,8 @@ export const editor = style({
 });
 export const rowWrapper = style({
   display: 'flex',
-  height: '100%',
   position: 'relative',
   overflow: 'hidden',
-  ':before': {
-    content: '""',
-    width: 1,
-    height: '100%',
-    backgroundColor: cssVar('borderColor'),
-    position: 'absolute',
-    left: 16,
-    top: 0,
-    bottom: 0,
-    transform: 'translate(-50%)',
-  },
-  selectors: {
-    '&:is(:last-of-type, :first-of-type):not(:last-of-type:first-of-type)::before':
-      {
-        height: '50%',
-      },
-    '&:last-of-type:first-of-type::before': {
-      display: 'none',
-    },
-    '&:first-of-type::before': {
-      top: '50%',
-    },
-  },
 });
 export const loadingContainer = style({
   display: 'flex',
@@ -166,6 +144,8 @@ export const historyListScrollable = style({
 export const historyListScrollableInner = style({
   display: 'flex',
   flexDirection: 'column',
+  paddingBottom: 16,
+  height: '-webkit-fill-available',
 });
 export const historyListHeader = style({
   display: 'flex',
@@ -179,71 +159,101 @@ export const historyListHeader = style({
 export const historyItemGroup = style({
   display: 'flex',
   flexDirection: 'column',
+  padding: '0 8px',
+  gap: 8,
+  marginTop: 4,
+  marginBottom: 4,
+});
+export const historyItemGroupContent = style({
+  position: 'relative',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+  paddingLeft: 24,
+  '::before': {
+    position: 'absolute',
+    top: 0,
+    left: 15.5,
+    content: '""',
+    display: 'block',
+    height: '100%',
+    width: '1px',
+    borderLeft: `1px solid ${cssVar('borderColor')}`,
+  },
 });
 export const historyItemGroupTitle = style({
   display: 'flex',
   alignItems: 'center',
   padding: '0 12px 0 4px',
+  borderRadius: 4,
   whiteSpace: 'nowrap',
-  color: cssVar('textSecondaryColor'),
+  fontSize: cssVar('fontXs'),
+  color: cssVarV2('text/secondary'),
+  fontWeight: 500,
+  textTransform: 'capitalize',
   gap: 4,
-  backgroundColor: cssVar('backgroundPrimaryColor'),
-  height: 28,
+  backgroundColor: cssVarV2('layer/background/primary'),
+  height: 24,
   ':hover': {
-    background: cssVar('hoverColor'),
+    background: cssVarV2('layer/background/hoverOverlay'),
   },
 });
 export const historyItem = style([
   rowWrapper,
   {
+    borderRadius: 4,
     display: 'flex',
-    alignItems: 'center',
-    padding: '0 32px',
-    height: 30,
+    gap: 4,
+    flexDirection: 'column',
+    padding: '4px 8px',
     cursor: 'pointer',
-    selectors: {
-      '&:hover, &[data-active=true]': {
-        backgroundColor: cssVar('hoverColor'),
-      },
-      // draw circle
-      '&::after': {
-        content: '""',
-        width: 7,
-        height: 7,
-        backgroundColor: cssVar('backgroundSecondaryColor'),
-        borderRadius: '50%',
-        border: `1px solid ${cssVar('borderColor')}`,
-        position: 'absolute',
-        left: 16,
-        top: '50%',
-        bottom: 0,
-        transform: 'translate(-50%, -50%)',
-      },
-      '&[data-active=true]::after': {
-        backgroundColor: cssVar('primaryColor'),
-        borderColor: cssVar('black30'),
-      },
+    ':hover': {
+      background: cssVarV2('layer/background/hoverOverlay'),
     },
   },
 ]);
-export const historyItemGap = style([
-  rowWrapper,
-  {
-    height: 16,
-  },
-]);
+
+export const historyItemTimestamp = style({
+  color: cssVarV2('text/primary'),
+  borderRadius: 4,
+  fontSize: cssVar('fontXs'),
+  fontWeight: 500,
+  display: 'flex',
+  alignItems: 'center',
+  gap: '0.5em',
+});
+
+export const historyItemCurrent = style({
+  color: cssVarV2('text/emphasis'),
+  textTransform: 'capitalize',
+});
+
+export const historyItemNameWrapper = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  color: cssVarV2('text/secondary'),
+  fontSize: cssVar('fontXs'),
+});
+
+export const historyItemAvatar = style({
+  backgroundColor: cssVarV2('layer/background/secondary'),
+});
+
+export const historyItemName = style({
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+});
+
 export const historyItemLoadMore = style([
   historyItem,
   {
     cursor: 'pointer',
-    color: cssVar('textSecondaryColor'),
+    color: cssVarV2('text/secondary'),
     flexShrink: 0,
-    borderRadius: 0,
-    selectors: {
-      '&:hover': {
-        backgroundColor: cssVar('hoverColor'),
-      },
-    },
+    textAlign: 'left',
+    alignItems: 'flex-start',
   },
 ]);
 globalStyle(`${historyItem} button`, {
@@ -302,7 +312,7 @@ export const collapsedIconContainer = style({
   color: 'inherit',
 });
 export const planPromptWrapper = style({
-  padding: '4px 12px',
+  padding: '4px 8px',
 });
 export const planPrompt = style({
   gap: 6,

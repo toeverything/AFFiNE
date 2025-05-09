@@ -1,0 +1,310 @@
+{
+  "metrics": {
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Enable metric and tracing collection"
+    }
+  },
+  "crypto": {
+    "privateKey": {
+      "type": "String",
+      "desc": "The private key for used by the crypto module to create signed tokens or encrypt data.",
+      "env": "AFFINE_PRIVATE_KEY"
+    }
+  },
+  "job": {
+    "queue": {
+      "type": "Object",
+      "desc": "The config for job queues",
+      "link": "https://api.docs.bullmq.io/interfaces/v5.QueueOptions.html"
+    },
+    "worker": {
+      "type": "Object",
+      "desc": "The config for job workers",
+      "link": "https://api.docs.bullmq.io/interfaces/v5.WorkerOptions.html"
+    },
+    "queues.copilot": {
+      "type": "Object",
+      "desc": "The config for copilot job queue"
+    },
+    "queues.doc": {
+      "type": "Object",
+      "desc": "The config for doc job queue"
+    },
+    "queues.notification": {
+      "type": "Object",
+      "desc": "The config for notification job queue"
+    },
+    "queues.nightly": {
+      "type": "Object",
+      "desc": "The config for nightly job queue"
+    }
+  },
+  "throttle": {
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Whether the throttler is enabled."
+    },
+    "throttlers.default": {
+      "type": "Object",
+      "desc": "The config for the default throttler."
+    },
+    "throttlers.strict": {
+      "type": "Object",
+      "desc": "The config for the strict throttler."
+    }
+  },
+  "websocket": {
+    "transports": {
+      "type": "Array",
+      "desc": "The enabled transports for accepting websocket traffics.",
+      "link": "https://docs.nestjs.com/websockets/gateways#transports"
+    },
+    "maxHttpBufferSize": {
+      "type": "Number",
+      "desc": "How many bytes or characters a message can be, before closing the session (to avoid DoS)."
+    }
+  },
+  "auth": {
+    "allowSignup": {
+      "type": "Boolean",
+      "desc": "Whether allow new registrations."
+    },
+    "requireEmailDomainVerification": {
+      "type": "Boolean",
+      "desc": "Whether require email domain record verification before accessing restricted resources."
+    },
+    "requireEmailVerification": {
+      "type": "Boolean",
+      "desc": "Whether require email verification before accessing restricted resources(not implemented)."
+    },
+    "passwordRequirements": {
+      "type": "Object",
+      "desc": "The password strength requirements when set new password."
+    },
+    "session.ttl": {
+      "type": "Number",
+      "desc": "Application auth expiration time in seconds."
+    },
+    "session.ttr": {
+      "type": "Number",
+      "desc": "Application auth time to refresh in seconds."
+    }
+  },
+  "mailer": {
+    "SMTP.host": {
+      "type": "String",
+      "desc": "Host of the email server (e.g. smtp.gmail.com)",
+      "env": "MAILER_HOST"
+    },
+    "SMTP.port": {
+      "type": "Number",
+      "desc": "Port of the email server (they commonly are 25, 465 or 587)",
+      "env": "MAILER_PORT"
+    },
+    "SMTP.username": {
+      "type": "String",
+      "desc": "Username used to authenticate the email server",
+      "env": "MAILER_USER"
+    },
+    "SMTP.password": {
+      "type": "String",
+      "desc": "Password used to authenticate the email server",
+      "env": "MAILER_PASSWORD"
+    },
+    "SMTP.sender": {
+      "type": "String",
+      "desc": "Sender of all the emails (e.g. \"AFFiNE Team <noreply@affine.pro>\")",
+      "env": "MAILER_SENDER"
+    },
+    "SMTP.ignoreTLS": {
+      "type": "Boolean",
+      "desc": "Whether ignore email server's TSL certification verification. Enable it for self-signed certificates.",
+      "env": "MAILER_IGNORE_TLS"
+    }
+  },
+  "doc": {
+    "experimental.yocto": {
+      "type": "Boolean",
+      "desc": "Use `y-octo` to merge updates at the same time when merging using Yjs."
+    },
+    "history.interval": {
+      "type": "Number",
+      "desc": "The minimum time interval in milliseconds of creating a new history snapshot when doc get updated."
+    }
+  },
+  "storages": {
+    "avatar.publicPath": {
+      "type": "String",
+      "desc": "The public accessible path prefix for user avatars."
+    },
+    "avatar.storage": {
+      "type": "Object",
+      "desc": "The config of storage for user avatars."
+    },
+    "blob.storage": {
+      "type": "Object",
+      "desc": "The config of storage for all uploaded blobs(images, videos, etc.)."
+    }
+  },
+  "server": {
+    "name": {
+      "type": "String",
+      "desc": "A recognizable name for the server. Will be shown when connected with AFFiNE Desktop."
+    },
+    "externalUrl": {
+      "type": "String",
+      "desc": "Base url of AFFiNE server, used for generating external urls.\nDefault to be `[server.protocol]://[server.host][:server.port]` if not specified.\n    ",
+      "env": "AFFINE_SERVER_EXTERNAL_URL"
+    },
+    "https": {
+      "type": "Boolean",
+      "desc": "Whether the server is hosted on a ssl enabled domain (https://).",
+      "env": "AFFINE_SERVER_HTTPS"
+    },
+    "host": {
+      "type": "String",
+      "desc": "Where the server get deployed(FQDN).",
+      "env": "AFFINE_SERVER_HOST"
+    },
+    "port": {
+      "type": "Number",
+      "desc": "Which port the server will listen on.",
+      "env": "AFFINE_SERVER_PORT"
+    },
+    "path": {
+      "type": "String",
+      "desc": "Subpath where the server get deployed if there is one.(e.g. /affine)",
+      "env": "AFFINE_SERVER_SUB_PATH"
+    }
+  },
+  "flags": {
+    "earlyAccessControl": {
+      "type": "Boolean",
+      "desc": "Only allow users with early access features to access the app"
+    }
+  },
+  "docService": {
+    "endpoint": {
+      "type": "String",
+      "desc": "The endpoint of the doc service.",
+      "env": "DOC_SERVICE_ENDPOINT"
+    }
+  },
+  "client": {
+    "versionControl.enabled": {
+      "type": "Boolean",
+      "desc": "Whether check version of client before accessing the server."
+    },
+    "versionControl.requiredVersion": {
+      "type": "String",
+      "desc": "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect."
+    }
+  },
+  "captcha": {
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Check captcha challenge when user authenticating the app."
+    },
+    "config": {
+      "type": "Object",
+      "desc": "The config for the captcha plugin."
+    }
+  },
+  "copilot": {
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Whether to enable the copilot plugin."
+    },
+    "providers.openai": {
+      "type": "Object",
+      "desc": "The config for the openai provider.",
+      "link": "https://github.com/openai/openai-node"
+    },
+    "providers.fal": {
+      "type": "Object",
+      "desc": "The config for the fal provider."
+    },
+    "providers.gemini": {
+      "type": "Object",
+      "desc": "The config for the gemini provider."
+    },
+    "providers.perplexity": {
+      "type": "Object",
+      "desc": "The config for the perplexity provider."
+    },
+    "providers.anthropic": {
+      "type": "Object",
+      "desc": "The config for the anthropic provider."
+    },
+    "unsplash": {
+      "type": "Object",
+      "desc": "The config for the unsplash key."
+    },
+    "exa": {
+      "type": "Object",
+      "desc": "The config for the exa web search key."
+    },
+    "storage": {
+      "type": "Object",
+      "desc": "The config for the storage provider."
+    }
+  },
+  "customerIo": {
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Enable customer.io integration"
+    },
+    "token": {
+      "type": "String",
+      "desc": "Customer.io token"
+    }
+  },
+  "oauth": {
+    "providers.google": {
+      "type": "Object",
+      "desc": "Google OAuth provider config",
+      "link": "https://developers.google.com/identity/protocols/oauth2/web-server"
+    },
+    "providers.github": {
+      "type": "Object",
+      "desc": "GitHub OAuth provider config",
+      "link": "https://docs.github.com/en/apps/oauth-apps"
+    },
+    "providers.oidc": {
+      "type": "Object",
+      "desc": "OIDC OAuth provider config"
+    }
+  },
+  "payment": {
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Whether enable payment plugin"
+    },
+    "showLifetimePrice": {
+      "type": "Boolean",
+      "desc": "Whether enable lifetime price and allow user to pay for it."
+    },
+    "apiKey": {
+      "type": "String",
+      "desc": "Stripe API key to enable payment service.",
+      "env": "STRIPE_API_KEY"
+    },
+    "webhookKey": {
+      "type": "String",
+      "desc": "Stripe webhook key to enable payment service.",
+      "env": "STRIPE_WEBHOOK_KEY"
+    },
+    "stripe": {
+      "type": "Object",
+      "desc": "Stripe sdk options",
+      "link": "https://docs.stripe.com/api"
+    }
+  },
+  "worker": {
+    "allowedOrigin": {
+      "type": "Array",
+      "desc": "Allowed origin"
+    }
+  }
+}

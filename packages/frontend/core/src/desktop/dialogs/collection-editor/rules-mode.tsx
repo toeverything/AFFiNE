@@ -96,12 +96,6 @@ export const RulesMode = ({
 
   return (
     <>
-      {/*prevents modal autofocus to the first input*/}
-      <input
-        type="text"
-        style={{ width: 0, height: 0 }}
-        onFocus={e => requestAnimationFrame(() => e.target.blur())}
-      />
       <Tooltip content={tips}>
         <div className={clsx(styles.rulesTitle, styles.ellipsis)}>{tips}</div>
       </Tooltip>

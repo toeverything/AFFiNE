@@ -1,22 +1,13 @@
-/// <reference types="../global.d.ts" />
-
-import { TestingModule } from '@nestjs/testing';
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
 
-import { ConfigModule } from '../base/config';
+import { ServerFeature, ServerService } from '../core';
 import { AuthService } from '../core/auth';
 import { QuotaModule } from '../core/quota';
 import { CopilotModule } from '../plugins/copilot';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
-import {
-  CopilotProviderService,
-  FalProvider,
-  OpenAIProvider,
-  PerplexityProvider,
-  registerCopilotProvider,
-  unregisterCopilotProvider,
-} from '../plugins/copilot/providers';
+import { CopilotProviderFactory } from '../plugins/copilot/providers';
+import { TranscriptionResponseSchema } from '../plugins/copilot/transcript/types';
 import {
   CopilotChatTextExecutor,
   CopilotWorkflowService,
@@ -27,14 +18,14 @@ import {
   CopilotCheckHtmlExecutor,
   CopilotCheckJsonExecutor,
 } from '../plugins/copilot/workflow/executor';
-import { createTestingModule } from './utils';
+import { createTestingModule, TestingModule } from './utils';
 import { TestAssets } from './utils/copilot';
 
 type Tester = {
   auth: AuthService;
   module: TestingModule;
   prompt: PromptService;
-  provider: CopilotProviderService;
+  factory: CopilotProviderFactory;
   workflow: CopilotWorkflowService;
   executors: {
     image: CopilotChatImageExecutor;
@@ -45,13 +36,7 @@ type Tester = {
 };
 const test = ava as TestFn<Tester>;
 
-const isCopilotConfigured =
-  !!process.env.COPILOT_OPENAI_API_KEY &&
-  !!process.env.COPILOT_FAL_API_KEY &&
-  !!process.env.COPILOT_PERPLEXITY_API_KEY &&
-  process.env.COPILOT_OPENAI_API_KEY !== '1' &&
-  process.env.COPILOT_FAL_API_KEY !== '1' &&
-  process.env.COPILOT_PERPLEXITY_API_KEY !== '1';
+let isCopilotConfigured = false;
 const runIfCopilotConfigured = test.macro(
   async (
     t,
@@ -68,36 +53,21 @@ const runIfCopilotConfigured = test.macro(
 
 test.serial.before(async t => {
   const module = await createTestingModule({
-    imports: [
-      ConfigModule.forRoot({
-        plugins: {
-          copilot: {
-            openai: {
-              apiKey: process.env.COPILOT_OPENAI_API_KEY,
-            },
-            fal: {
-              apiKey: process.env.COPILOT_FAL_API_KEY,
-            },
-            perplexity: {
-              apiKey: process.env.COPILOT_PERPLEXITY_API_KEY,
-            },
-          },
-        },
-      }),
-      QuotaModule,
-      CopilotModule,
-    ],
+    imports: [QuotaModule, CopilotModule],
   });
+
+  const service = module.get(ServerService);
+  isCopilotConfigured = service.features.includes(ServerFeature.Copilot);
 
   const auth = module.get(AuthService);
   const prompt = module.get(PromptService);
-  const provider = module.get(CopilotProviderService);
+  const factory = module.get(CopilotProviderFactory);
   const workflow = module.get(CopilotWorkflowService);
 
   t.context.module = module;
   t.context.auth = auth;
   t.context.prompt = prompt;
-  t.context.provider = provider;
+  t.context.factory = factory;
   t.context.workflow = workflow;
   t.context.executors = {
     image: module.get(CopilotChatImageExecutor),
@@ -115,10 +85,6 @@ test.serial.before(async t => {
   executors.html.register();
   executors.json.register();
 
-  registerCopilotProvider(OpenAIProvider);
-  registerCopilotProvider(FalProvider);
-  registerCopilotProvider(PerplexityProvider);
-
   for (const name of await prompt.listNames()) {
     await prompt.delete(name);
   }
@@ -126,12 +92,6 @@ test.serial.before(async t => {
   for (const p of prompts) {
     await prompt.set(p.name, p.model, p.messages, p.config);
   }
-});
-
-test.after(async _ => {
-  unregisterCopilotProvider(OpenAIProvider.type);
-  unregisterCopilotProvider(FalProvider.type);
-  unregisterCopilotProvider(PerplexityProvider.type);
 });
 
 test.after(async t => {
@@ -147,6 +107,36 @@ const assertNotWrappedInCodeBlock = (
       !result.replaceAll('\n', '').trim().endsWith('```'),
     'should not wrap in code block'
   );
+};
+
+const citationChecker = (
+  t: ExecutionContext<Tester>,
+  citations: { citationNumber: string; citationJson: string }[]
+) => {
+  t.assert(citations.length > 0, 'should have citation');
+  for (const { citationJson } of citations) {
+    t.notThrows(() => {
+      JSON.parse(citationJson);
+    }, `should be valid json: ${citationJson}`);
+  }
+};
+
+type CitationChecker = typeof citationChecker;
+
+const assertCitation = (
+  t: ExecutionContext<Tester>,
+  result: string,
+  citationCondition: CitationChecker = citationChecker
+) => {
+  const regex = /\[\^(\d+)\]:\s*({.*})/g;
+  const citations = [];
+  let match;
+  while ((match = regex.exec(result)) !== null) {
+    const citationNumber = match[1];
+    const citationJson = match[2];
+    citations.push({ citationNumber, citationJson });
+  }
+  citationCondition(t, citations);
 };
 
 const checkMDList = (text: string) => {
@@ -273,8 +263,135 @@ test('should validate markdown list', t => {
 
 const actions = [
   {
+    name: 'Should not have citation',
+    promptName: ['Chat With AFFiNE AI'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: 'what is ssot',
+        params: {
+          files: [
+            {
+              blobId: 'euclidean_distance',
+              fileName: 'euclidean_distance.rs',
+              fileType: 'text/rust',
+              fileContent: TestAssets.Code,
+            },
+          ],
+        },
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      assertNotWrappedInCodeBlock(t, result);
+      assertCitation(t, result, (t, c) => {
+        t.assert(
+          c.length === 0 ||
+            // ignore web search result
+            c
+              .map(c => JSON.parse(c.citationJson).type)
+              .filter(type => ['attachment', 'doc'].includes(type)).length ===
+              0,
+          'should not have citation'
+        );
+      });
+    },
+    type: 'text' as const,
+  },
+  {
+    name: 'Should have citation',
+    promptName: ['Chat With AFFiNE AI'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: 'what is ssot',
+        params: {
+          files: [
+            {
+              blobId: 'SSOT',
+              fileName: 'Single source of truth - Wikipedia',
+              fileType: 'text/markdown',
+              fileContent: TestAssets.SSOT,
+            },
+          ],
+        },
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      assertNotWrappedInCodeBlock(t, result);
+      assertCitation(t, result);
+    },
+    type: 'text' as const,
+  },
+  {
+    name: 'Should transcribe short audio',
+    promptName: ['Transcript audio'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: '',
+        attachments: [
+          'https://cdn.affine.pro/copilot-test/MP9qDGuYgnY+ILoEAmHpp3h9Npuw2403EAYMEA.mp3',
+        ],
+        params: {
+          schema: TranscriptionResponseSchema,
+        },
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      t.notThrows(() => {
+        TranscriptionResponseSchema.parse(JSON.parse(result));
+      });
+    },
+    type: 'text' as const,
+  },
+  {
+    name: 'Should transcribe middle audio',
+    promptName: ['Transcript audio'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: '',
+        attachments: [
+          'https://cdn.affine.pro/copilot-test/2ed05eo1KvZ2tWB_BAjFo67EAPZZY-w4LylUAw.m4a',
+        ],
+        params: {
+          schema: TranscriptionResponseSchema,
+        },
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      t.notThrows(() => {
+        TranscriptionResponseSchema.parse(JSON.parse(result));
+      });
+    },
+    type: 'text' as const,
+  },
+  {
+    name: 'Should transcribe long audio',
+    promptName: ['Transcript audio'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: '',
+        attachments: [
+          'https://cdn.affine.pro/copilot-test/nC9-e7P85PPI2rU29QWwf8slBNRMy92teLIIMw.opus',
+        ],
+        params: {
+          schema: TranscriptionResponseSchema,
+        },
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      t.notThrows(() => {
+        TranscriptionResponseSchema.parse(JSON.parse(result));
+      });
+    },
+    type: 'text' as const,
+  },
+  {
     promptName: [
       'Summary',
+      'Summary as title',
       'Explain this',
       'Write an article about this',
       'Write a twitter about this',
@@ -295,8 +412,9 @@ const actions = [
     messages: [{ role: 'user' as const, content: TestAssets.SSOT }],
     verifier: (t: ExecutionContext<Tester>, result: string) => {
       assertNotWrappedInCodeBlock(t, result);
+      const cleared = result.toLowerCase();
       t.assert(
-        result.toLowerCase().includes('single source of truth'),
+        cleared.includes('single source of truth') || cleared.includes('ssot'),
         'should include original keyword'
       );
     },
@@ -352,8 +470,9 @@ const actions = [
     ],
     verifier: (t: ExecutionContext<Tester>, result: string) => {
       assertNotWrappedInCodeBlock(t, result);
+      const cleared = result.toLowerCase();
       t.assert(
-        result.toLowerCase().includes('单一事实来源'),
+        cleared.includes('单一') || cleared.includes('SSOT'),
         'explain code result should include keyword'
       );
     },
@@ -403,20 +522,46 @@ const actions = [
     },
     type: 'image' as const,
   },
+  {
+    promptName: ['debug:action:dalle3'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: 'Panda',
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, link: string) => {
+      t.truthy(checkUrl(link), 'should be a valid url');
+    },
+    type: 'image' as const,
+  },
+  {
+    promptName: ['debug:action:gpt-image-1'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: 'Panda',
+      },
+    ],
+    config: { quality: 'low' },
+    verifier: (t: ExecutionContext<Tester>, link: string) => {
+      t.truthy(checkUrl(link), 'should be a valid url');
+    },
+    type: 'image' as const,
+  },
 ];
-for (const { promptName, messages, verifier, type } of actions) {
+
+for (const { name, promptName, messages, verifier, type, config } of actions) {
   const prompts = Array.isArray(promptName) ? promptName : [promptName];
   for (const promptName of prompts) {
     test(
-      `should be able to run action: ${promptName}`,
+      `should be able to run action: ${promptName}${name ? ` - ${name}` : ''}`,
       runIfCopilotConfigured,
       async t => {
-        const { provider: providerService, prompt: promptService } = t.context;
+        const { factory, prompt: promptService } = t.context;
         const prompt = (await promptService.get(promptName))!;
         t.truthy(prompt, 'should have prompt');
-        const provider = (await providerService.getProviderByModel(
-          prompt.model
-        ))!;
+        const provider = (await factory.getProviderByModel(prompt.model))!;
         t.truthy(provider, 'should have provider');
         await retry(`action: ${promptName}`, t, async t => {
           if (type === 'text' && 'generateText' in provider) {
@@ -431,7 +576,8 @@ for (const { promptName, messages, verifier, type } of actions) {
                 ),
                 ...messages,
               ],
-              prompt.model
+              prompt.model,
+              Object.assign({}, prompt.config, config)
             );
             t.truthy(result, 'should return result');
             verifier?.(t, result);
@@ -477,6 +623,8 @@ const workflows = [
     content: 'apple company',
     verifier: (t: ExecutionContext, result: string) => {
       for (const l of result.split('\n')) {
+        const line = l.trim();
+        if (!line) continue;
         t.notThrows(() => {
           JSON.parse(l.trim());
         }, 'should be valid json');

@@ -1,14 +1,8 @@
-import {
-  type AffineEditorContainer,
-  MobileOutlineMenu,
-} from '@blocksuite/affine/presets';
+import { MobileOutlineMenu } from '@blocksuite/affine/fragments/outline';
+import type { EditorHost } from '@blocksuite/affine/std';
 import { useCallback, useRef } from 'react';
 
-export const MobileTocMenu = ({
-  editor,
-}: {
-  editor: AffineEditorContainer | null;
-}) => {
+export const MobileTocMenu = ({ editor }: { editor: EditorHost | null }) => {
   const outlineMenuRef = useRef<MobileOutlineMenu | null>(null);
   const onRefChange = useCallback((container: HTMLDivElement | null) => {
     if (container) {

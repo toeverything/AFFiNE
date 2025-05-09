@@ -15,42 +15,51 @@ import '@shoelace-style/shoelace/dist/components/tooltip/tooltip.js';
 import '@shoelace-style/shoelace/dist/themes/light.css';
 import '@shoelace-style/shoelace/dist/themes/dark.css';
 import './left-side-panel.js';
-import './side-panel.js';
 
-import { NotionHtmlAdapter } from '@blocksuite/affine-shared/adapters';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
-import { ShadowlessElement } from '@blocksuite/block-std';
+import { PresentTool } from '@blocksuite/affine/blocks/frame';
+import { ExportManager } from '@blocksuite/affine/blocks/surface';
+import { toast } from '@blocksuite/affine/components/toast';
+import { StoreExtensionManagerIdentifier } from '@blocksuite/affine/ext-loader';
 import {
-  ColorScheme,
-  ColorVariables,
-  createAssetsArchive,
+  BlockSuiteError,
+  ErrorCode,
+} from '@blocksuite/affine/global/exceptions';
+import type { SerializedXYWH } from '@blocksuite/affine/global/gfx';
+import { ColorScheme, type DocMode } from '@blocksuite/affine/model';
+import {
   defaultImageProxyMiddleware,
   docLinkBaseURLMiddleware,
-  type DocMode,
-  DocModeProvider,
-  download,
-  EdgelessRootService,
-  ExportManager,
-  FontFamilyVariables,
   HtmlAdapterFactoryIdentifier,
-  HtmlTransformer,
   MarkdownAdapterFactoryIdentifier,
-  MarkdownTransformer,
-  NotionHtmlTransformer,
-  openFileOrFiles,
   PlainTextAdapterFactoryIdentifier,
-  printToPdf,
+  titleMiddleware,
+} from '@blocksuite/affine/shared/adapters';
+import { DocModeProvider } from '@blocksuite/affine/shared/services';
+import {
+  ColorVariables,
+  FontFamilyVariables,
   SizeVariables,
   StyleVariables,
-  titleMiddleware,
-  toast,
+} from '@blocksuite/affine/shared/theme';
+import { openFileOrFiles, printToPdf } from '@blocksuite/affine/shared/utils';
+import { ShadowlessElement } from '@blocksuite/affine/std';
+import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
+import {
+  type DeltaInsert,
+  Text,
+  type Workspace,
+} from '@blocksuite/affine/store';
+import {
+  createAssetsArchive,
+  download,
+  HtmlTransformer,
+  MarkdownTransformer,
+  NotionHtmlTransformer,
   ZipTransformer,
-} from '@blocksuite/blocks';
-import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import type { SerializedXYWH } from '@blocksuite/global/utils';
-import type { DeltaInsert } from '@blocksuite/inline/types';
-import { AffineEditorContainer, type CommentPanel } from '@blocksuite/presets';
-import { Text, Transformer, type Workspace } from '@blocksuite/store';
+} from '@blocksuite/affine/widgets/linked-doc';
+import { NotionHtmlAdapter } from '@blocksuite/affine-shared/adapters';
+import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import { TestAffineEditorContainer } from '@blocksuite/integration-test';
 import type { SlDropdown } from '@shoelace-style/shoelace';
 import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path.js';
 import { css, html } from 'lit';
@@ -58,6 +67,8 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 import * as lz from 'lz-string';
 import type { Pane } from 'tweakpane';
 
+import type { CommentPanel } from '../../comment/index.js';
+import { createTestEditor } from '../../starter/utils/extensions.js';
 import { mockEdgelessTheme } from '../mock-services.js';
 import { AdaptersPanel } from './adapters-panel.js';
 import type { CustomFramePanel } from './custom-frame-panel.js';
@@ -65,7 +76,6 @@ import type { CustomOutlinePanel } from './custom-outline-panel.js';
 import type { CustomOutlineViewer } from './custom-outline-viewer.js';
 import type { DocsPanel } from './docs-panel.js';
 import type { LeftSidePanel } from './left-side-panel.js';
-import type { SidePanel } from './side-panel.js';
 
 const basePath =
   'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.11.2/dist';
@@ -212,10 +222,6 @@ export class StarterDebugMenu extends ShadowlessElement {
     this.editor.mode = value;
   }
 
-  get rootService() {
-    return this.editor.std?.getService('affine:page');
-  }
-
   private _addNote() {
     const rootModel = this.doc.root;
     if (!rootModel) return;
@@ -241,19 +247,10 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private async _exportFile(config: AdapterConfig) {
     const doc = this.editor.doc;
-    const job = new Transformer({
-      schema: this.collection.schema,
-      blobCRUD: this.collection.blobSync,
-      docCRUD: {
-        create: (id: string) => this.collection.createDoc({ id }),
-        get: (id: string) => this.collection.getDoc(id),
-        delete: (id: string) => this.collection.removeDoc(id),
-      },
-      middlewares: [
-        docLinkBaseURLMiddleware(this.collection.id),
-        titleMiddleware(this.collection.meta.docMetas),
-      ],
-    });
+    const job = doc.getTransformer([
+      docLinkBaseURLMiddleware(this.collection.id),
+      titleMiddleware(this.collection.meta.docMetas),
+    ]);
 
     const adapterFactory = this.editor.std.provider.get(config.identifier);
     const adapter = adapterFactory.get(job);
@@ -329,10 +326,15 @@ export class StarterDebugMenu extends ShadowlessElement {
   private async _exportSnapshot() {
     await ZipTransformer.exportDocs(
       this.collection,
+      this.editor.doc.schema,
       Array.from(this.collection.docs.values()).map(collection =>
         collection.getStore()
       )
     );
+  }
+
+  private _getStoreManager() {
+    return this.editor.std.get(StoreExtensionManagerIdentifier);
   }
 
   private async _importHTML() {
@@ -350,8 +352,10 @@ export class StarterDebugMenu extends ShadowlessElement {
         const fileName = file.name.split('.').slice(0, -1).join('.');
         const pageId = await HtmlTransformer.importHTMLToDoc({
           collection: this.collection,
+          schema: this.editor.doc.schema,
           html: text,
           fileName,
+          extensions: this._getStoreManager().get('store'),
         });
         if (pageId) {
           pageIds.push(pageId);
@@ -373,7 +377,9 @@ export class StarterDebugMenu extends ShadowlessElement {
       if (!file) return;
       const result = await HtmlTransformer.importHTMLZip({
         collection: this.collection,
+        schema: this.editor.doc.schema,
         imported: file,
+        extensions: this._getStoreManager().get('store'),
       });
       if (!this.editor.host) return;
       toast(
@@ -400,8 +406,10 @@ export class StarterDebugMenu extends ShadowlessElement {
         const fileName = file.name.split('.').slice(0, -1).join('.');
         const pageId = await MarkdownTransformer.importMarkdownToDoc({
           collection: this.collection,
+          schema: this.editor.doc.schema,
           markdown: text,
           fileName,
+          extensions: this._getStoreManager().get('store'),
         });
         if (pageId) {
           pageIds.push(pageId);
@@ -423,7 +431,9 @@ export class StarterDebugMenu extends ShadowlessElement {
       if (!file) return;
       const result = await MarkdownTransformer.importMarkdownZip({
         collection: this.collection,
+        schema: this.editor.doc.schema,
         imported: file,
+        extensions: this._getStoreManager().get('store'),
       });
       if (!this.editor.host) return;
       toast(
@@ -442,16 +452,8 @@ export class StarterDebugMenu extends ShadowlessElement {
         multiple: false,
       });
       if (!file) return;
-      const job = new Transformer({
-        schema: this.collection.schema,
-        blobCRUD: this.collection.blobSync,
-        docCRUD: {
-          create: (id: string) => this.collection.createDoc({ id }),
-          get: (id: string) => this.collection.getDoc(id),
-          delete: (id: string) => this.collection.removeDoc(id),
-        },
-        middlewares: [defaultImageProxyMiddleware],
-      });
+      const doc = this.editor.doc;
+      const job = doc.getTransformer([defaultImageProxyMiddleware]);
       const htmlAdapter = new NotionHtmlAdapter(job, this.editor.std.provider);
       await htmlAdapter.toDoc({
         file: await file.text(),
@@ -469,7 +471,9 @@ export class StarterDebugMenu extends ShadowlessElement {
       if (!file) return;
       const result = await NotionHtmlTransformer.importNotionZip({
         collection: this.collection,
+        schema: this.editor.doc.schema,
         imported: file,
+        extensions: this._getStoreManager().get('store'),
       });
       if (!this.editor.host) return;
       toast(
@@ -492,10 +496,14 @@ export class StarterDebugMenu extends ShadowlessElement {
         return;
       }
       try {
-        const docs = await ZipTransformer.importDocs(this.collection, file);
+        const docs = await ZipTransformer.importDocs(
+          this.collection,
+          this.editor.doc.schema,
+          file
+        );
         for (const doc of docs) {
           if (doc) {
-            const noteBlock = window.doc.getBlockByFlavour('affine:note');
+            const noteBlock = window.doc.getModelsByFlavour('affine:note');
             window.doc.addBlock(
               'affine:paragraph',
               {
@@ -546,18 +554,8 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   private _present() {
     if (!this.editor.std || !this.editor.host) return;
-    const rootService = this.editor.std.getService('affine:page');
-    if (!(rootService instanceof EdgelessRootService)) {
-      toast(
-        this.editor.host,
-        'The presentation mode is only available on edgeless mode.',
-        3000
-      );
-      return;
-    }
-
-    const edgelessRootService = rootService as EdgelessRootService;
-    edgelessRootService?.gfx.tool.setTool('frameNavigator', {
+    const gfx = this.editor.std.get(GfxControllerIdentifier);
+    gfx.tool.setTool(PresentTool, {
       mode: 'fit',
     });
   }
@@ -659,11 +657,10 @@ export class StarterDebugMenu extends ShadowlessElement {
       ).length;
       if (currentEditorCount === 1) {
         // Add a second editor
-        const newEditor = document.createElement('affine-editor-container');
-        newEditor.doc = this.doc;
+        const newEditor = createTestEditor(this.doc, this.collection);
         app.append(newEditor);
         app.childNodes.forEach(child => {
-          if (child instanceof AffineEditorContainer) {
+          if (child instanceof TestAffineEditorContainer) {
             child.style.flex = '1';
           }
         });
@@ -749,7 +746,7 @@ export class StarterDebugMenu extends ShadowlessElement {
   }
 
   override firstUpdated() {
-    this.doc.slots.historyUpdated.on(() => {
+    this.doc.slots.historyUpdated.subscribe(() => {
       this._canUndo = this.doc.canUndo;
       this._canRedo = this.doc.canRedo;
     });
@@ -1030,7 +1027,7 @@ export class StarterDebugMenu extends ShadowlessElement {
   accessor docsPanel!: DocsPanel;
 
   @property({ attribute: false })
-  accessor editor!: AffineEditorContainer;
+  accessor editor!: TestAffineEditorContainer;
 
   @property({ attribute: false })
   accessor framePanel!: CustomFramePanel;
@@ -1046,9 +1043,6 @@ export class StarterDebugMenu extends ShadowlessElement {
 
   @property({ attribute: false })
   accessor readonly = false;
-
-  @property({ attribute: false })
-  accessor sidePanel!: SidePanel;
 }
 
 declare global {

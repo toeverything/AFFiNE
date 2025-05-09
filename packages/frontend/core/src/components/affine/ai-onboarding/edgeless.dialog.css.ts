@@ -20,10 +20,6 @@ export const thumbContent = style({
   height: 'calc(100% + 4px)',
 });
 
-export const actionButton = style({
-  fontSize: cssVar('fontSm'),
-  lineHeight: '22px',
-});
 export const getStartedButtonText = style({
   color: cssVar('textSecondaryColor'),
 });

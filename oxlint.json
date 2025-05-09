@@ -8,7 +8,7 @@
   "ignorePatterns": [
     "**/node_modules",
     ".yarn",
-    ".github",
+    ".github/helm",
     ".vscode",
     ".yarnrc.yml",
     ".docker",
@@ -29,22 +29,27 @@
     "**/*.d.ts",
     "tools/cli/src/webpack/error-handler.js",
     "packages/backend/native/index.d.ts",
+    "packages/backend/server/src/__tests__/__snapshots__",
+    "packages/common/native/fixtures/**",
+    "packages/common/graphql/src/graphql/index.ts",
     "packages/frontend/native/index.d.ts",
     "packages/frontend/native/index.js",
-    "packages/frontend/graphql/src/graphql/index.ts",
-    "packages/frontend/graphql/src/schema.ts",
-    "packages/frontend/apps/android/App/app/build/**",
-    "blocksuite/tests-legacy/snapshots"
+    "packages/frontend/apps/android/App/**",
+    "packages/frontend/apps/ios/App/**",
+    "tests/blocksuite/snapshots",
+    "blocksuite/docs/api/**",
+    "packages/frontend/admin/src/config.json"
   ],
   "rules": {
-    "import/named": "allow",
     "no-await-in-loop": "allow",
+    "no-redeclare": "allow",
     "promise/no-callback-in-promise": "allow",
     "typescript/ban-types": "allow",
     "array-callback-return": "error",
     "constructor-super": "error",
     "eqeqeq": ["error", "smart"],
     "getter-return": "error",
+    "import/named": "error",
     "for-direction": "error",
     "require-yield": "error",
     "use-isnan": "error",
@@ -86,7 +91,6 @@
     "no-sparse-arrays": "error",
     "no-delete-var": "error",
     "no-compare-neg-zero": "error",
-    "no-redeclare": "error",
     "no-case-declarations": "error",
     "no-class-assign": "error",
     "no-var": "error",
@@ -226,12 +230,12 @@
       }
     },
     {
-      "files": ["blocksuite/tests-legacy/**/*.ts"],
+      "files": ["tests/blocksuite/**/*.ts"],
       "rules": {
         "typescript/ban-ts-comment": "off",
         "unicorn/prefer-dom-node-dataset": "off",
         "typescript/consistent-type-imports": "off",
-        "no-cycle": "off"
+        "import/no-cycle": "off"
       }
     }
   ]

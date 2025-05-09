@@ -60,7 +60,8 @@ impl SqliteDocStorage {
   pub async fn list_blobs(&self) -> Result<Vec<ListedBlob>> {
     let result = sqlx::query_as!(
       ListedBlob,
-      "SELECT key, size, mime, created_at FROM blobs WHERE deleted_at IS NULL ORDER BY created_at DESC;"
+      "SELECT key, size, mime, created_at FROM blobs WHERE deleted_at IS NULL ORDER BY created_at \
+       DESC;"
     )
     .fetch_all(&self.pool)
     .await?;
@@ -90,7 +91,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0].into(),
+          data: vec![0, 0],
           mime: "text/plain".to_string(),
         })
         .await
@@ -130,7 +131,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0].into(),
+          data: vec![0, 0],
           mime: "text/plain".to_string(),
         })
         .await
@@ -178,7 +179,7 @@ mod tests {
       storage
         .set_blob(SetBlob {
           key: format!("test_{}", i),
-          data: vec![0, 0].into(),
+          data: vec![0, 0],
           mime: "text/plain".to_string(),
         })
         .await

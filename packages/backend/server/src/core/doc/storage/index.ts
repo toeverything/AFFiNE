@@ -26,6 +26,7 @@ export class SpaceStorage extends Connection {
 
 export { BlobStorageAdapter, type BlobStorageOptions } from './blob';
 export {
+  type DocDiff,
   type DocRecord,
   DocStorageAdapter,
   type DocStorageOptions,

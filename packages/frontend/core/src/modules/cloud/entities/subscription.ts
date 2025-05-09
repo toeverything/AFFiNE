@@ -5,7 +5,6 @@ import {
   SubscriptionVariant,
 } from '@affine/graphql';
 import {
-  backoffRetry,
   catchErrorInto,
   effect,
   Entity,
@@ -14,10 +13,10 @@ import {
   LiveData,
   onComplete,
   onStart,
+  smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, map, mergeMap } from 'rxjs';
+import { map, tap } from 'rxjs';
 
-import { isBackendError, isNetworkError } from '../error';
 import type { AuthService } from '../services/auth';
 import type { ServerService } from '../services/server';
 import type { SubscriptionStore } from '../stores/subscription';
@@ -122,14 +121,8 @@ export class Subscription extends Entity {
             subscriptions: subscriptions,
           };
         }).pipe(
-          backoffRetry({
-            when: isNetworkError,
-            count: Infinity,
-          }),
-          backoffRetry({
-            when: isBackendError,
-          }),
-          mergeMap(data => {
+          smartRetry(),
+          tap(data => {
             if (data) {
               this.store.setCachedSubscriptions(
                 data.userId,
@@ -139,7 +132,6 @@ export class Subscription extends Entity {
             } else {
               this.subscription$.next(undefined);
             }
-            return EMPTY;
           }),
           catchErrorInto(this.error$),
           onStart(() => this.isRevalidating$.next(true)),

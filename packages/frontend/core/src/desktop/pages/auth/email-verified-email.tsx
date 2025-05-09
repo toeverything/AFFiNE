@@ -2,11 +2,8 @@ import { Button } from '@affine/component';
 import { AuthPageContainer } from '@affine/component/auth-components';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import { GraphQLService } from '@affine/core/modules/cloud';
-import {
-  ErrorNames,
-  UserFriendlyError,
-  verifyEmailMutation,
-} from '@affine/graphql';
+import { UserFriendlyError } from '@affine/error';
+import { verifyEmailMutation } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import { type FC, useEffect, useState } from 'react';
@@ -35,8 +32,8 @@ export const ConfirmVerifiedEmail: FC<{
           },
         })
         .catch(error => {
-          const userFriendlyError = UserFriendlyError.fromAnyError(error);
-          if (userFriendlyError.name === ErrorNames.INVALID_EMAIL_TOKEN) {
+          const userFriendlyError = UserFriendlyError.fromAny(error);
+          if (userFriendlyError.is('INVALID_EMAIL_TOKEN')) {
             return navigateHelper.jumpToExpired();
           }
           throw error;

@@ -1,0 +1,26 @@
+query getWorkspaceRolePermissions($id: String!) {
+  workspaceRolePermissions(id: $id) {
+    permissions {
+      Workspace_Administrators_Manage
+      Workspace_Blobs_List
+      Workspace_Blobs_Read
+      Workspace_Blobs_Write
+      Workspace_Copilot
+      Workspace_CreateDoc
+      Workspace_Delete
+      Workspace_Organize_Read
+      Workspace_Payment_Manage
+      Workspace_Properties_Create
+      Workspace_Properties_Delete
+      Workspace_Properties_Read
+      Workspace_Properties_Update
+      Workspace_Read
+      Workspace_Settings_Read
+      Workspace_Settings_Update
+      Workspace_Sync
+      Workspace_TransferOwner
+      Workspace_Users_Manage
+      Workspace_Users_Read
+    }
+  }
+}

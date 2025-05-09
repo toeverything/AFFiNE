@@ -41,10 +41,7 @@ const useLoadDoc = (pageId: string) => {
 
   // set sync engine priority target
   useEffect(() => {
-    currentWorkspace.engine.doc.setPriority(pageId, 10);
-    return () => {
-      currentWorkspace.engine.doc.setPriority(pageId, 5);
-    };
+    return currentWorkspace.engine.doc.addPriority(pageId, 10);
   }, [currentWorkspace, pageId]);
 
   const isInTrash = useLiveData(doc?.meta$.map(meta => meta.trash));
@@ -53,7 +50,7 @@ const useLoadDoc = (pageId: string) => {
     if (doc && isInTrash) {
       doc.blockSuiteDoc.readonly = true;
     }
-  }, [currentWorkspace.docCollection.awarenessStore, doc, isInTrash]);
+  }, [doc, isInTrash]);
 
   return {
     doc,
@@ -71,10 +68,12 @@ export const DetailPageWrapper = ({
   children,
   skeleton,
   notFound,
+  canAccess,
 }: PropsWithChildren<{
   pageId: string;
   skeleton: ReactNode;
   notFound: ReactNode;
+  canAccess?: boolean;
 }>) => {
   const { doc, editor, docListReady } = useLoadDoc(pageId);
   // if sync engine has been synced and the page is null, show 404 page.
@@ -82,8 +81,10 @@ export const DetailPageWrapper = ({
     return notFound;
   }
 
-  if (!doc || !editor) {
+  if (canAccess === undefined || !doc || !editor) {
     return skeleton;
+  } else if (!canAccess) {
+    return notFound;
   }
 
   return (

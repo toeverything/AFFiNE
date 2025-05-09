@@ -2,19 +2,21 @@ import { app, Menu } from 'electron';
 
 import { isMacOS } from '../../shared/utils';
 import { logger, revealLogFile } from '../logger';
+import { uiSubjects } from '../ui/subject';
 import { checkForUpdates } from '../updater';
 import {
   addTab,
-  closeTab,
   initAndShowMainWindow,
   reloadView,
-  showDevTools,
   showMainWindow,
   switchTab,
   switchToNextTab,
   switchToPreviousTab,
   undoCloseTab,
+  WebContentViewsManager,
 } from '../windows-manager';
+import { popupManager } from '../windows-manager/popup';
+import { WorkerManager } from '../worker/pool';
 import { applicationMenuSubjects } from './subject';
 
 // Unique id for menuitems
@@ -37,7 +39,9 @@ export function createApplicationMenu() {
                 label: `About ${app.getName()}`,
                 click: async () => {
                   await showMainWindow();
-                  applicationMenuSubjects.openAboutPageInSettingModal$.next();
+                  applicationMenuSubjects.openInSettingModal$.next({
+                    activeTab: 'about',
+                  });
                 },
               },
               { type: 'separator' },
@@ -63,7 +67,7 @@ export function createApplicationMenu() {
           click: async () => {
             await initAndShowMainWindow();
             // fixme: if the window is just created, the new page action will not be triggered
-            applicationMenuSubjects.newPageAction$.next();
+            applicationMenuSubjects.newPageAction$.next('page');
           },
         },
       ],
@@ -104,10 +108,62 @@ export function createApplicationMenu() {
           },
         },
         {
+          role: 'windowMenu',
+        },
+        {
           label: 'Open devtools',
           accelerator: isMac ? 'Cmd+Option+I' : 'Ctrl+Shift+I',
           click: () => {
-            showDevTools();
+            const workerContents = Array.from(
+              WorkerManager.instance.workers.values()
+            ).map(
+              worker => [worker.key, worker.browserWindow.webContents] as const
+            );
+
+            const tabs = Array.from(
+              WebContentViewsManager.instance.tabViewsMap
+            ).map(view => {
+              const isActive = WebContentViewsManager.instance.isActiveTab(
+                view[0]
+              );
+              return [
+                view[0] + (isActive ? ' (active)' : ''),
+                view[1].webContents,
+              ] as const;
+            });
+
+            const popups = Array.from(popupManager.popupWindows$.value.values())
+              .filter(popup => popup.browserWindow)
+              .map(popup => {
+                // oxlint-disable-next-line no-non-null-assertion
+                return [popup.type, popup.browserWindow!.webContents] as const;
+              });
+
+            const allWebContents = [
+              ['tabs', tabs],
+              ['workers', workerContents],
+              ['popups', popups],
+            ] as const;
+
+            Menu.buildFromTemplate(
+              allWebContents.flatMap(([type, contents]) => {
+                return [
+                  {
+                    label: type,
+                    enabled: false,
+                  },
+                  ...contents.map(([id, webContents]) => ({
+                    label: id,
+                    click: () => {
+                      webContents.openDevTools({
+                        mode: 'undocked',
+                      });
+                    },
+                  })),
+                  { type: 'separator' },
+                ];
+              })
+            ).popup();
           },
         },
         { type: 'separator' },
@@ -129,11 +185,12 @@ export function createApplicationMenu() {
           },
         },
         {
-          label: 'Close tab',
+          label: 'Close view',
           accelerator: 'CommandOrControl+W',
           click() {
-            logger.info('Close tab with shortcut');
-            closeTab().catch(console.error);
+            logger.info('Close view with shortcut');
+            // tell the active workbench to close the current view
+            uiSubjects.onCloseView$.next();
           },
         },
         {
@@ -159,14 +216,14 @@ export function createApplicationMenu() {
         }),
         {
           label: 'Switch to next tab',
-          accelerator: 'CommandOrControl+Tab',
+          accelerator: 'Control+Tab',
           click: () => {
             switchToNextTab();
           },
         },
         {
           label: 'Switch to previous tab',
-          accelerator: 'CommandOrControl+Shift+Tab',
+          accelerator: 'Control+Shift+Tab',
           click: () => {
             switchToPreviousTab();
           },
@@ -195,7 +252,7 @@ export function createApplicationMenu() {
         {
           label: 'Learn More',
           click: async () => {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            // oxlint-disable-next-line no-var-requires
             const { shell } = require('electron');
             await shell.openExternal('https://affine.pro/');
           },
@@ -216,7 +273,7 @@ export function createApplicationMenu() {
         {
           label: 'Documentation',
           click: async () => {
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            // oxlint-disable-next-line no-var-requires
             const { shell } = require('electron');
             await shell.openExternal(
               'https://docs.affine.pro/docs/hello-bonjour-aloha-你好'

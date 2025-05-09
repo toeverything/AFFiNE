@@ -6,5 +6,9 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["./e2e"],
-  "references": [{ "path": "../kit" }]
+  "references": [
+    { "path": "../kit" },
+    { "path": "../../tools/cli" },
+    { "path": "../../tools/utils" }
+  ]
 }

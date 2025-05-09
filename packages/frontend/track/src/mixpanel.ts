@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import type { OverridedMixpanel } from 'mixpanel-browser';
+import type { Dict, OverridedMixpanel } from 'mixpanel-browser';
 import mixpanelBrowser from 'mixpanel-browser';
 
 const logger = new DebugLogger('mixpanel');
@@ -11,8 +11,8 @@ type Middleware = (
 
 function createMixpanel() {
   let mixpanel;
-  if (process.env.MIXPANEL_TOKEN) {
-    mixpanelBrowser.init(process.env.MIXPANEL_TOKEN || '', {
+  if (BUILD_CONFIG.MIXPANEL_TOKEN) {
+    mixpanelBrowser.init(BUILD_CONFIG.MIXPANEL_TOKEN || '', {
       track_pageview: true,
       persistence: 'localStorage',
       api_host: 'https://telemetry.affine.run',
@@ -30,13 +30,19 @@ function createMixpanel() {
 
   const wrapped = {
     init() {
-      mixpanel.register({
+      const defaultProps = {
         appVersion: BUILD_CONFIG.appVersion,
         environment: BUILD_CONFIG.appBuildType,
         editorVersion: BUILD_CONFIG.editorVersion,
         isDesktop: BUILD_CONFIG.isElectron,
-        isSelfHosted: environment.isSelfHosted,
-      });
+        distribution: BUILD_CONFIG.distribution,
+      };
+      this.register(defaultProps);
+    },
+    // provide a way to override the default properties
+    register(props: Dict) {
+      logger.debug('register with', props);
+      mixpanel.register(props);
     },
     reset() {
       mixpanel.reset();
@@ -93,7 +99,6 @@ function createMixpanel() {
 }
 
 export const mixpanel = createMixpanel();
-mixpanel.init();
 
 function createProxyHandler() {
   const handler = {

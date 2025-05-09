@@ -4,7 +4,6 @@ import {
   type LoaderFunction,
   redirect,
   useLoaderData,
-  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
   useNavigate,
 } from 'react-router-dom';
 
@@ -76,9 +75,8 @@ export const Component = () => {
     triggeredRef.current = true;
     auth
       .signInOauth(data.code, data.state, data.provider)
-      .then(({ redirectUri }) => {
-        // TODO(@forehalo): need a good way to go back to previous tab and close current one
-        nav(redirectUri ?? '/');
+      .then(() => {
+        window.close();
       })
       .catch(e => {
         nav(`/sign-in?error=${encodeURIComponent(e.message)}`);

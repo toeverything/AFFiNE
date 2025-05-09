@@ -3,7 +3,7 @@ import { PrismaClient, WorkspaceMemberStatus } from '@prisma/client';
 export class MigrateInviteStatus1732861452428 {
   // do the migration
   static async up(db: PrismaClient) {
-    await db.workspaceUserPermission.updateMany({
+    await db.workspaceUserRole.updateMany({
       where: {
         accepted: true,
       },

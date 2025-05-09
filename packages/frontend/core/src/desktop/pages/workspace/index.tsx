@@ -8,14 +8,17 @@ import {
 import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { DndService } from '@affine/core/modules/dnd/services';
 import { GlobalContextService } from '@affine/core/modules/global-context';
+import { OpenInAppGuard } from '@affine/core/modules/open-in-app';
 import {
+  getAFFiNEWorkspaceSchema,
   type Workspace,
   type WorkspaceMetadata,
   WorkspacesService,
 } from '@affine/core/modules/workspace';
-import { ZipTransformer } from '@blocksuite/affine/blocks';
+import { ZipTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import {
   FrameworkScope,
+  LiveData,
   useLiveData,
   useService,
   useServices,
@@ -28,6 +31,7 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
+import { map } from 'rxjs';
 import * as _Y from 'yjs';
 
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
@@ -119,17 +123,20 @@ export const Component = (): ReactElement => {
   // if workspace is not found, we should retry
   const retryTimesRef = useRef(3);
   useEffect(() => {
-    retryTimesRef.current = 3; // reset retry times
-  }, [params.workspaceId]);
+    if (params.workspaceId) {
+      retryTimesRef.current = 3; // reset retry times
+      workspacesService.list.revalidate();
+    }
+  }, [params.workspaceId, workspacesService]);
   useEffect(() => {
     if (listLoading === false && meta === undefined) {
-      const timer = setInterval(() => {
+      const timer = setTimeout(() => {
         if (retryTimesRef.current > 0) {
           workspacesService.list.revalidate();
           retryTimesRef.current--;
         }
       }, 5000);
-      return () => clearInterval(timer);
+      return () => clearTimeout(timer);
     }
     return;
   }, [listLoading, meta, workspaceNotFound, workspacesService]);
@@ -247,7 +254,20 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
   }, [meta, workspacesService]);
 
   const isRootDocReady =
-    useLiveData(workspace?.engine.rootDocState$.map(v => v.ready)) ?? false;
+    useLiveData(
+      useMemo(
+        () =>
+          workspace
+            ? LiveData.from(
+                workspace.engine.doc
+                  .docState$(workspace.id)
+                  .pipe(map(v => v.ready)),
+                false
+              )
+            : null,
+        [workspace]
+      )
+    ) ?? false;
 
   useEffect(() => {
     if (workspace) {
@@ -263,6 +283,7 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
       window.exportWorkspaceSnapshot = async (docs?: string[]) => {
         await ZipTransformer.exportDocs(
           workspace.docCollection,
+          getAFFiNEWorkspaceSchema(),
           Array.from(workspace.docCollection.docs.values())
             .filter(doc => (docs ? docs.includes(doc.id) : true))
             .map(doc => doc.getStore())
@@ -278,6 +299,7 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
             const blob = new Blob([file], { type: 'application/zip' });
             const newDocs = await ZipTransformer.importDocs(
               workspace.docCollection,
+              getAFFiNEWorkspaceSchema(),
               blob
             );
             console.log(
@@ -315,7 +337,9 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
     return (
       <FrameworkScope scope={workspace.scope}>
         <DNDContextProvider>
-          <AppContainer fallback />
+          <OpenInAppGuard>
+            <AppContainer fallback />
+          </OpenInAppGuard>
         </DNDContextProvider>
       </FrameworkScope>
     );
@@ -324,11 +348,13 @@ const WorkspacePage = ({ meta }: { meta: WorkspaceMetadata }) => {
   return (
     <FrameworkScope scope={workspace.scope}>
       <DNDContextProvider>
-        <AffineErrorBoundary height="100vh">
-          <WorkspaceLayout>
-            <WorkbenchRoot />
-          </WorkspaceLayout>
-        </AffineErrorBoundary>
+        <OpenInAppGuard>
+          <AffineErrorBoundary height="100vh">
+            <WorkspaceLayout>
+              <WorkbenchRoot />
+            </WorkspaceLayout>
+          </AffineErrorBoundary>
+        </OpenInAppGuard>
       </DNDContextProvider>
     </FrameworkScope>
   );

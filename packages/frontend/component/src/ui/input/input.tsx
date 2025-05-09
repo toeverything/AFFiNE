@@ -24,7 +24,7 @@ export type InputProps = {
   endFix?: ReactNode;
   type?: HTMLInputElement['type'];
   inputStyle?: CSSProperties;
-  onEnter?: () => void;
+  onEnter?: (value: string) => void;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'size' | 'onBlur'>;
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(

@@ -17,7 +17,7 @@ import { inferOpenMode } from '@affine/core/utils';
 import type { Collection } from '@affine/env/filter';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import type { DocMode } from '@blocksuite/affine/blocks';
+import type { DocMode } from '@blocksuite/affine/model';
 import {
   ArrowDownSmallIcon,
   SearchIcon,
@@ -28,8 +28,8 @@ import clsx from 'clsx';
 import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { usePageHelper } from '../../../blocksuite/block-suite-page-list/utils';
 import { CollectionService } from '../../../modules/collection';
-import { usePageHelper } from '../../blocksuite/block-suite-page-list/utils';
 import { createTagFilter } from '../filter/utils';
 import { SaveAsCollectionButton } from '../view';
 import * as styles from './page-list-header.css';

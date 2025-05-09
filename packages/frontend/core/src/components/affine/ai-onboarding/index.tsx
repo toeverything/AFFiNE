@@ -1,7 +1,6 @@
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import { useService } from '@toeverything/infra';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 
+import { useEnableAI } from '../../hooks/affine/use-enable-ai';
 import { AIOnboardingEdgeless } from './edgeless.dialog';
 import { AIOnboardingLocal } from './local.dialog';
 import { AIOnboardingType } from './type';
@@ -28,8 +27,7 @@ const useDismiss = (key: AIOnboardingType) => {
 
 export const WorkspaceAIOnboarding = () => {
   const [dismissLocal] = useDismiss(AIOnboardingType.LOCAL);
-  const featureFlagService = useService(FeatureFlagService);
-  const enableAI = featureFlagService.flags.enable_ai.value;
+  const enableAI = useEnableAI();
 
   return (
     <Suspense>
@@ -40,8 +38,7 @@ export const WorkspaceAIOnboarding = () => {
 
 export const PageAIOnboarding = () => {
   const [dismissEdgeless] = useDismiss(AIOnboardingType.EDGELESS);
-  const featureFlagService = useService(FeatureFlagService);
-  const enableAI = featureFlagService.flags.enable_ai.value;
+  const enableAI = useEnableAI();
 
   return (
     <Suspense>

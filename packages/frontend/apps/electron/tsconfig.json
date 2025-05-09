@@ -7,7 +7,6 @@
   },
   "include": ["./src"],
   "references": [
-    { "path": "../../../../tests/kit" },
     { "path": "../../../../tools/utils" },
     { "path": "../../native" },
     { "path": "../../../common/nbstore" },

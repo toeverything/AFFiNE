@@ -25,5 +25,5 @@ export const affineDocViewport = style({
   userSelect: 'none',
   containerName: 'viewport',
   containerType: 'inline-size',
-  background: cssVarV2('layer/background/mobile/secondary'),
+  background: cssVarV2('layer/background/primary'),
 });

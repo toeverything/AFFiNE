@@ -42,35 +42,42 @@ export class SyncController {
         if (!type) {
           return;
         }
+        const isLocal =
+          !this.yBlock.doc ||
+          !event.transaction.origin ||
+          event.transaction.origin instanceof Y.UndoManager ||
+          event.transaction.origin.proxy
+            ? true
+            : event.transaction.origin === this.yBlock.doc.clientID;
         if (type.action === 'update' || type.action === 'add') {
           const value = this.yBlock.get(key);
           const keyName = key.replace('prop:', '');
           const proxy = this._getPropsProxy(keyName, value);
           this._byPassUpdate(() => {
             // @ts-expect-error allow magic props
-            this.model[keyName] = proxy;
+            this.model.props[keyName] = proxy;
             const signalKey = `${keyName}$`;
             this._mutex(() => {
-              if (signalKey in this.model) {
+              if (signalKey in this.model.props) {
                 // @ts-expect-error allow magic props
-                this.model[signalKey].value = y2Native(value);
+                this.model.props[signalKey].value = y2Native(value);
               }
             });
           });
-          this.onChange?.(keyName, value);
+          this.onChange?.(keyName, isLocal);
           return;
         }
         if (type.action === 'delete') {
           const keyName = key.replace('prop:', '');
           this._byPassUpdate(() => {
             // @ts-expect-error allow magic props
-            delete this.model[keyName];
-            if (`${keyName}$` in this.model) {
+            delete this.model.props[keyName];
+            if (`${keyName}$` in this.model.props) {
               // @ts-expect-error allow magic props
-              this.model[`${keyName}$`].value = undefined;
+              this.model.props[`${keyName}$`].value = undefined;
             }
           });
-          this.onChange?.(keyName, undefined);
+          this.onChange?.(keyName, isLocal);
           return;
         }
       });
@@ -105,7 +112,7 @@ export class SyncController {
     readonly schema: Schema,
     readonly yBlock: YBlock,
     readonly doc?: Store,
-    readonly onChange?: (key: string, value: unknown) => void
+    readonly onChange?: (key: string, isLocal: boolean) => void
   ) {
     const { id, flavour, version, yChildren, props } = this._parseYBlock();
 
@@ -130,6 +137,7 @@ export class SyncController {
     }
 
     const model = schema.model.toModel?.() ?? new BlockModel<object>();
+    model.schema = schema;
     const signalWithProps = Object.entries(props).reduce(
       (acc, [key, value]) => {
         const data = signal(value);
@@ -138,10 +146,13 @@ export class SyncController {
           if (!this.model) return;
           _mutex(() => {
             // @ts-expect-error allow magic props
-            this.model[key] = value;
+            this.model.props[key] = value;
           });
         });
-        model.deleted.once(dispose);
+        const subscription = model.deleted.subscribe(() => {
+          subscription.unsubscribe();
+          dispose();
+        });
         return {
           ...acc,
           [`${key}$`]: data,
@@ -150,21 +161,17 @@ export class SyncController {
       },
       {} as Record<string, unknown>
     );
-    Object.assign(model, signalWithProps);
 
     model.id = this.id;
-    model.version = this.version;
     model.keys = Object.keys(props);
-    model.flavour = schema.model.flavour;
-    model.role = schema.model.role;
     model.yBlock = this.yBlock;
     model.stash = this.stash;
     model.pop = this.pop;
     if (this.doc) {
-      model.doc = this.doc;
+      model.store = this.doc;
     }
 
-    const proxy = new Proxy(model, {
+    const proxy = new Proxy(signalWithProps, {
       has: (target, p) => {
         return Reflect.has(target, p);
       },
@@ -177,11 +184,14 @@ export class SyncController {
           if (this._stashed.has(p)) {
             setValue(target, p, value);
             const result = Reflect.set(target, p, value, receiver);
-            this.onChange?.(p, value);
+            this.onChange?.(p, true);
             return result;
           }
 
           const yValue = native2Y(value);
+          if (this.yBlock.get(`prop:${p}`) === yValue) {
+            return Reflect.set(target, p, value, receiver);
+          }
           this.yBlock.set(`prop:${p}`, yValue);
           const proxy = this._getPropsProxy(p, yValue);
           setValue(target, p, value);
@@ -206,25 +216,26 @@ export class SyncController {
         return Reflect.deleteProperty(target, p);
       },
     });
+    model._props = proxy;
 
-    function setValue(target: BlockModel, p: string, value: unknown) {
+    function setValue(target: UnRecord, p: string, value: unknown) {
       _mutex(() => {
         // @ts-expect-error allow magic props
         target[`${p}$`].value = value;
       });
     }
-    return proxy;
+    return model;
   }
 
   private _getPropsProxy(name: string, value: unknown) {
     return createYProxy(value, {
-      onChange: () => {
-        this.onChange?.(name, value);
+      onChange: (_, isLocal) => {
+        this.onChange?.(name, isLocal);
         const signalKey = `${name}$`;
-        if (signalKey in this.model) {
+        if (signalKey in this.model.props) {
           this._mutex(() => {
             // @ts-expect-error allow magic props
-            this.model[signalKey].value = this.model[name];
+            this.model.props[signalKey].value = y2Native(value);
           });
         }
       },
@@ -301,7 +312,9 @@ export class SyncController {
         if (key in props) return;
 
         const yValue = native2Y(value);
-        this.yBlock.set(`prop:${key}`, yValue);
+        if (value !== undefined) {
+          this.yBlock.set(`prop:${key}`, yValue);
+        }
         props[key] = this._getPropsProxy(key, yValue);
       });
     }
@@ -318,13 +331,13 @@ export class SyncController {
   private _popProp(prop: string) {
     const model = this.model as BlockModel<Record<string, unknown>>;
 
-    const value = model[prop];
+    const value = model.props[prop];
     this._stashed.delete(prop);
-    model[prop] = value;
+    model.props[prop] = value;
   }
 
   private _stashProp(prop: string) {
-    (this.model as BlockModel<Record<string, unknown>>)[prop] = y2Native(
+    (this.model as BlockModel<Record<string, unknown>>).props[prop] = y2Native(
       this.yBlock.get(`prop:${prop}`),
       {
         transform: (value, origin) => {
@@ -338,12 +351,12 @@ export class SyncController {
               },
               set: (target, p, value, receiver) => {
                 const result = Reflect.set(target, p, value, receiver);
-                this.onChange?.(prop, value);
+                this.onChange?.(prop, true);
                 return result;
               },
               deleteProperty: (target, p) => {
                 const result = Reflect.deleteProperty(target, p);
-                this.onChange?.(prop, undefined);
+                this.onChange?.(prop, true);
                 return result;
               },
             });
@@ -359,12 +372,12 @@ export class SyncController {
                   return Reflect.set(target, p, value, receiver);
                 }
                 const result = Reflect.set(target, p, value, receiver);
-                this.onChange?.(prop, value);
+                this.onChange?.(prop, true);
                 return result;
               },
               deleteProperty: (target, p) => {
                 const result = Reflect.deleteProperty(target, p);
-                this.onChange?.(p as string, undefined);
+                this.onChange?.(p as string, true);
                 return result;
               },
             });

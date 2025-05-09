@@ -1,11 +1,15 @@
 import type {
   GfxCommonBlockProps,
   GfxElementGeometry,
-} from '@blocksuite/block-std/gfx';
-import { GfxCompatible } from '@blocksuite/block-std/gfx';
-import { BlockModel, defineBlockSchema } from '@blocksuite/store';
+} from '@blocksuite/std/gfx';
+import { GfxCompatible } from '@blocksuite/std/gfx';
+import {
+  BlockModel,
+  BlockSchemaExtension,
+  defineBlockSchema,
+} from '@blocksuite/store';
 
-import type { EmbedCardStyle } from '../../utils/index.js';
+import type { BlockMeta, EmbedCardStyle } from '../../utils/index.js';
 import { AttachmentBlockTransformer } from './attachment-transformer.js';
 
 /**
@@ -51,7 +55,10 @@ export type AttachmentBlockProps = {
   embed: boolean | BackwardCompatibleUndefined;
 
   style?: (typeof AttachmentBlockStyles)[number];
-} & Omit<GfxCommonBlockProps, 'scale'>;
+
+  footnoteIdentifier: string | null;
+} & Omit<GfxCommonBlockProps, 'scale'> &
+  BlockMeta;
 
 export const defaultAttachmentProps: AttachmentBlockProps = {
   name: '',
@@ -65,6 +72,11 @@ export const defaultAttachmentProps: AttachmentBlockProps = {
   xywh: '[0,0,0,0]',
   lockedBySelf: false,
   rotate: 0,
+  'meta:createdAt': undefined,
+  'meta:updatedAt': undefined,
+  'meta:createdBy': undefined,
+  'meta:updatedBy': undefined,
+  footnoteIdentifier: null,
 };
 
 export const AttachmentBlockSchema = defineBlockSchema({
@@ -80,22 +92,17 @@ export const AttachmentBlockSchema = defineBlockSchema({
       'affine:paragraph',
       'affine:list',
     ],
+    children: ['@attachment-viewer'],
   },
-  transformer: () => new AttachmentBlockTransformer(),
+  transformer: transformerConfigs =>
+    new AttachmentBlockTransformer(transformerConfigs),
   toModel: () => new AttachmentBlockModel(),
 });
+
+export const AttachmentBlockSchemaExtension = BlockSchemaExtension(
+  AttachmentBlockSchema
+);
 
 export class AttachmentBlockModel
   extends GfxCompatible<AttachmentBlockProps>(BlockModel)
   implements GfxElementGeometry {}
-
-declare global {
-  namespace BlockSuite {
-    interface EdgelessBlockModelMap {
-      'affine:attachment': AttachmentBlockModel;
-    }
-    interface BlockModels {
-      'affine:attachment': AttachmentBlockModel;
-    }
-  }
-}

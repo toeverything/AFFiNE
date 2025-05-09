@@ -54,7 +54,7 @@ jobs:
   build-ios-web:
     needs:
       - output-env
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     environment: ${{ needs.output-env.outputs.ENVIRONMENT }}
     outputs:
       RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
@@ -85,7 +85,7 @@ jobs:
           path: packages/frontend/apps/ios/dist
 
   build-android-web:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     needs:
       - output-env
     environment: ${{ needs.output-env.outputs.ENVIRONMENT }}
@@ -117,10 +117,31 @@ jobs:
           name: android
           path: packages/frontend/apps/android/dist
 
-  ios:
-    runs-on: macos-latest
+  determine-ios-runner:
+    runs-on: ubuntu-latest
     needs:
       - build-ios-web
+    outputs:
+      RUNNER: ${{ steps.runner.outputs.RUNNER }}
+    steps:
+      - name: Determine Runner
+        id: runner
+        # Randomly pick runner with 80% chance for blaze/macos-14 and 20% chance for namespace-profile-macos
+        # blaze/macos-14 is free but has limited concurrency
+        run: |
+          RANDOM_NUMBER=$(( $RANDOM % 100 + 1 ))
+          if [ $RANDOM_NUMBER -le 20 ]; then
+            echo "Selected namespace-profile-macos (20% probability)"
+            echo "RUNNER=namespace-profile-macos" >> $GITHUB_OUTPUT
+          else
+            echo "Selected blaze/macos-14 (80% probability)"
+            echo "RUNNER=blaze/macos-14" >> $GITHUB_OUTPUT
+          fi
+
+  ios:
+    runs-on: ${{ github.ref_name == 'canary' && 'macos-latest' || needs.determine-ios-runner.outputs.RUNNER }}
+    needs:
+      - determine-ios-runner
     steps:
       - uses: actions/checkout@v4
       - name: Download mobile artifact
@@ -139,11 +160,13 @@ jobs:
           enableScripts: false
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.1
+          xcode-version: 16.2
+      - name: Install Swiftformat
+        run: brew install swiftformat
       - name: Cap sync
-        run: yarn workspace @affine/ios cap sync
+        run: yarn workspace @affine/ios sync
       - name: Signing By Apple Developer ID
-        uses: apple-actions/import-codesign-certs@v3
+        uses: apple-actions/import-codesign-certs@v5
         id: import-codesign-certs
         with:
           p12-file-base64: ${{ secrets.CERTIFICATES_P12_MOBILE }}
@@ -154,11 +177,6 @@ jobs:
           target: 'aarch64-apple-ios'
           package: 'affine_mobile_native'
           no-build: 'true'
-      - name: Build Rust
-        run: |
-          brew install swiftformat
-          cargo build -p affine_mobile_native --lib --release --target aarch64-apple-ios
-          cargo run -p affine_mobile_native --bin uniffi-bindgen generate --library target/aarch64-apple-ios/release/libaffine_mobile_native.a --language swift --out-dir packages/frontend/apps/ios/App/App/uniffi
       - name: Testflight
         if: ${{ env.BUILD_TYPE != 'stable' }}
         working-directory: packages/frontend/apps/ios/App
@@ -182,11 +200,18 @@ jobs:
       - build-android-web
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Version
+        id: version
+        uses: ./.github/actions/setup-version
       - name: Download mobile artifact
         uses: actions/download-artifact@v4
         with:
           name: android
           path: packages/frontend/apps/android/dist
+      - name: Load Google Service file
+        env:
+          DATA: ${{ secrets.FIREBASE_ANDROID_GOOGLE_SERVICE_JSON }}
+        run: echo $DATA | base64 -di > packages/frontend/apps/android/App/app/google-services.json
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
         timeout-minutes: 10
@@ -206,7 +231,7 @@ jobs:
         run: yarn workspace @affine/android cap sync
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
       - name: Auth gcloud
         id: auth
         uses: google-github-actions/auth@v2
@@ -220,7 +245,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: 'gradle'
       - name: Auto increment version code
         id: bump
@@ -231,19 +256,20 @@ jobs:
       - name: Build
         run: |
           echo -n "${{ env.AFFINE_ANDROID_SIGN_KEYSTORE }}" | base64 --decode > packages/frontend/apps/android/affine.keystore
-          yarn workspace @affine/android cap build android
+          yarn workspace @affine/android cap build android --flavor ${{ env.BUILD_TYPE }} --androidreleasetype AAB
         env:
           AFFINE_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.AFFINE_ANDROID_KEYSTORE_PASSWORD }}
           AFFINE_ANDROID_KEYSTORE_ALIAS_PASSWORD: ${{ secrets.AFFINE_ANDROID_KEYSTORE_ALIAS_PASSWORD }}
           AFFINE_ANDROID_SIGN_KEYSTORE: ${{ secrets.AFFINE_ANDROID_SIGN_KEYSTORE }}
-
+          VERSION_NAME: ${{ steps.version.outputs.APP_VERSION }}
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         if: ${{ env.BUILD_TARGET == 'distribution' }}
         with:
           serviceAccountJson: ${{ steps.auth.outputs.credentials_file_path }}
           packageName: app.affine.pro
-          releaseFiles: packages/frontend/apps/android/App/app/build/outputs/bundle/release/app-release-signed.aab
+          releaseName: ${{ steps.version.outputs.APP_VERSION }}
+          releaseFiles: packages/frontend/apps/android/App/app/build/outputs/bundle/${{ env.BUILD_TYPE }}Release/app-${{ env.BUILD_TYPE }}-release-signed.aab
           track: internal
           status: draft
           existingEditId: ${{ steps.bump.outputs.EDIT_ID }}

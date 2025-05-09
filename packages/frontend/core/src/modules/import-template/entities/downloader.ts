@@ -1,5 +1,4 @@
 import {
-  backoffRetry,
   catchErrorInto,
   effect,
   Entity,
@@ -7,10 +6,10 @@ import {
   LiveData,
   onComplete,
   onStart,
+  smartRetry,
 } from '@toeverything/infra';
-import { EMPTY, mergeMap, switchMap } from 'rxjs';
+import { switchMap, tap } from 'rxjs';
 
-import { isBackendError, isNetworkError } from '../../cloud';
 import type { TemplateDownloaderStore } from '../store/downloader';
 
 export class TemplateDownloader extends Entity {
@@ -25,17 +24,10 @@ export class TemplateDownloader extends Entity {
   readonly download = effect(
     switchMap(({ snapshotUrl }: { snapshotUrl: string }) => {
       return fromPromise(() => this.store.download(snapshotUrl)).pipe(
-        mergeMap(({ data }) => {
+        tap(({ data }) => {
           this.data$.next(data);
-          return EMPTY;
         }),
-        backoffRetry({
-          when: isNetworkError,
-          count: Infinity,
-        }),
-        backoffRetry({
-          when: isBackendError,
-        }),
+        smartRetry(),
         catchErrorInto(this.error$),
         onStart(() => {
           this.isDownloading$.next(true);

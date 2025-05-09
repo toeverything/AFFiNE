@@ -2,7 +2,7 @@ import type { DeepPartial } from '@blocksuite/affine/global/utils';
 import {
   createSignalFromObservable,
   type Signal,
-} from '@blocksuite/affine-shared/utils';
+} from '@blocksuite/affine/shared/utils';
 import { Entity, LiveData } from '@toeverything/infra';
 import { isObject, merge } from 'lodash-es';
 import type { Observable } from 'rxjs';
@@ -14,7 +14,7 @@ import { EditorSettingSchema } from '../schema';
 type SettingItem<T> = {
   readonly value: T;
   set: (value: T) => void;
-  // eslint-disable-next-line rxjs/finnish
+
   $: LiveData<T>;
 };
 

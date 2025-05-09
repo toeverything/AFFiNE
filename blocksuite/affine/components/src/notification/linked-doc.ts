@@ -1,47 +1,22 @@
 import { NotificationProvider } from '@blocksuite/affine-shared/services';
-import type { BlockStdScope } from '@blocksuite/block-std';
+import { type BlockStdScope } from '@blocksuite/std';
 
 import { toast } from '../toast/toast.js';
 
 function notify(std: BlockStdScope, title: string, message: string) {
   const notification = std.getOptional(NotificationProvider);
-  const { store: doc, host } = std;
+  const { host } = std;
 
   if (!notification) {
     toast(host, title);
     return;
   }
 
-  const abortController = new AbortController();
-  const clear = () => {
-    doc.history.off('stack-item-added', addHandler);
-    doc.history.off('stack-item-popped', popHandler);
-    disposable.dispose();
-  };
-  const closeNotify = () => {
-    abortController.abort();
-    clear();
-  };
-
-  // edit or undo or switch doc, close notify toast
-  const addHandler = doc.history.on('stack-item-added', closeNotify);
-  const popHandler = doc.history.on('stack-item-popped', closeNotify);
-  const disposable = host.slots.unmounted.on(closeNotify);
-
-  notification.notify({
+  notification.notifyWithUndoAction({
     title,
     message,
     accent: 'info',
     duration: 10 * 1000,
-    action: {
-      label: 'Undo',
-      onClick: () => {
-        doc.undo();
-        clear();
-      },
-    },
-    abort: abortController.signal,
-    onClose: clear,
   });
 }
 

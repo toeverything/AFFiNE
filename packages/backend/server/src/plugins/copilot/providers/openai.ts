@@ -1,5 +1,17 @@
-import { Logger } from '@nestjs/common';
-import { APIError, BadRequestError, ClientOptions, OpenAI } from 'openai';
+import {
+  createOpenAI,
+  openai,
+  type OpenAIProvider as VercelOpenAIProvider,
+  OpenAIResponsesProviderOptions,
+} from '@ai-sdk/openai';
+import {
+  AISDKError,
+  embedMany,
+  experimental_generateImage as generateImage,
+  generateObject,
+  generateText,
+  streamText,
+} from 'ai';
 
 import {
   CopilotPromptInvalid,
@@ -7,6 +19,8 @@ import {
   metrics,
   UserFriendlyError,
 } from '../../../base';
+import { createExaSearchTool } from '../tools';
+import { CopilotProvider } from './provider';
 import {
   ChatMessageRole,
   CopilotCapability,
@@ -19,33 +33,48 @@ import {
   CopilotTextToImageProvider,
   CopilotTextToTextProvider,
   PromptMessage,
-} from '../types';
+} from './types';
+import { chatToGPTMessage, CitationParser } from './utils';
 
 export const DEFAULT_DIMENSIONS = 256;
 
-const SIMPLE_IMAGE_URL_REGEX = /^(https?:\/\/|data:image\/)/;
+export type OpenAIConfig = {
+  apiKey: string;
+  baseUrl?: string;
+};
+
+type OpenAITools = {
+  web_search_preview: ReturnType<typeof openai.tools.webSearchPreview>;
+  web_search_exa: ReturnType<typeof createExaSearchTool>;
+};
 
 export class OpenAIProvider
+  extends CopilotProvider<OpenAIConfig>
   implements
     CopilotTextToTextProvider,
     CopilotTextToEmbeddingProvider,
     CopilotTextToImageProvider,
     CopilotImageToTextProvider
 {
-  static readonly type = CopilotProviderType.OpenAI;
-  static readonly capabilities = [
+  readonly type = CopilotProviderType.OpenAI;
+  readonly capabilities = [
     CopilotCapability.TextToText,
     CopilotCapability.TextToEmbedding,
     CopilotCapability.TextToImage,
     CopilotCapability.ImageToText,
   ];
 
-  readonly availableModels = [
+  readonly models = [
     // text to text
     'gpt-4o',
     'gpt-4o-2024-08-06',
     'gpt-4o-mini',
     'gpt-4o-mini-2024-07-18',
+    'gpt-4.1',
+    'gpt-4.1-2025-04-14',
+    'gpt-4.1-mini',
+    'o1',
+    'o4-mini',
     // embeddings
     'text-embedding-3-large',
     'text-embedding-3-small',
@@ -55,74 +84,24 @@ export class OpenAIProvider
     'text-moderation-stable',
     // text to image
     'dall-e-3',
+    'gpt-image-1',
   ];
 
-  private readonly logger = new Logger(OpenAIProvider.type);
-  private readonly instance: OpenAI;
-  private existsModels: string[] | undefined;
+  private readonly MAX_STEPS = 20;
 
-  constructor(config: ClientOptions) {
-    this.instance = new OpenAI(config);
+  private readonly CALLOUT_PREFIX = '\n> [!]\n> ';
+
+  #instance!: VercelOpenAIProvider;
+
+  override configured(): boolean {
+    return !!this.config.apiKey;
   }
 
-  static assetsConfig(config: ClientOptions) {
-    return !!config?.apiKey;
-  }
-
-  get type(): CopilotProviderType {
-    return OpenAIProvider.type;
-  }
-
-  getCapabilities(): CopilotCapability[] {
-    return OpenAIProvider.capabilities;
-  }
-
-  async isModelAvailable(model: string): Promise<boolean> {
-    const knownModels = this.availableModels.includes(model);
-    if (knownModels) return true;
-
-    if (!this.existsModels) {
-      try {
-        this.existsModels = await this.instance.models
-          .list()
-          .then(({ data }) => data.map(m => m.id));
-      } catch (e: any) {
-        this.logger.error('Failed to fetch online model list', e.stack);
-      }
-    }
-    return !!this.existsModels?.includes(model);
-  }
-
-  protected chatToGPTMessage(
-    messages: PromptMessage[]
-  ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
-    // filter redundant fields
-    return messages.map(({ role, content, attachments }) => {
-      content = content.trim();
-      if (Array.isArray(attachments)) {
-        const contents: OpenAI.Chat.Completions.ChatCompletionContentPart[] =
-          [];
-        if (content.length) {
-          contents.push({
-            type: 'text',
-            text: content,
-          });
-        }
-        contents.push(
-          ...(attachments
-            .filter(url => SIMPLE_IMAGE_URL_REGEX.test(url))
-            .map(url => ({
-              type: 'image_url',
-              image_url: { url, detail: 'high' },
-            })) as OpenAI.Chat.Completions.ChatCompletionContentPartImage[])
-        );
-        return {
-          role,
-          content: contents,
-        } as OpenAI.Chat.Completions.ChatCompletionMessageParam;
-      } else {
-        return { role, content };
-      }
+  protected override setup() {
+    super.setup();
+    this.#instance = createOpenAI({
+      apiKey: this.config.apiKey,
+      baseURL: this.config.baseUrl,
     });
   }
 
@@ -189,11 +168,8 @@ export class OpenAIProvider
   ) {
     if (e instanceof UserFriendlyError) {
       return e;
-    } else if (e instanceof APIError) {
-      if (
-        e instanceof BadRequestError &&
-        (e.message.includes('safety') || e.message.includes('risk'))
-      ) {
+    } else if (e instanceof AISDKError) {
+      if (e.message.includes('safety') || e.message.includes('risk')) {
         metrics.ai
           .counter('chat_text_risk_errors')
           .add(1, { model, user: options.user || undefined });
@@ -201,7 +177,7 @@ export class OpenAIProvider
 
       return new CopilotProviderSideError({
         provider: this.type,
-        kind: e.type || 'unknown',
+        kind: e.name || 'unknown',
         message: e.message,
       });
     } else {
@@ -213,32 +189,72 @@ export class OpenAIProvider
     }
   }
 
+  private getTools(
+    options: CopilotChatOptions,
+    model: string
+  ): Partial<OpenAITools> {
+    const tools: Partial<OpenAITools> = {};
+    if (options?.tools?.length) {
+      for (const tool of options.tools) {
+        switch (tool) {
+          case 'webSearch': {
+            // o series reasoning models
+            if (model.startsWith('o')) {
+              tools.web_search_exa = createExaSearchTool(this.AFFiNEConfig);
+            } else {
+              tools.web_search_preview = openai.tools.webSearchPreview();
+            }
+            break;
+          }
+        }
+      }
+      return tools;
+    }
+    return tools;
+  }
+
   // ====== text to text ======
   async generateText(
     messages: PromptMessage[],
-    model: string = 'gpt-4o-mini',
+    model: string = 'gpt-4.1-mini',
     options: CopilotChatOptions = {}
   ): Promise<string> {
     await this.checkParams({ messages, model, options });
 
     try {
       metrics.ai.counter('chat_text_calls').add(1, { model });
-      const result = await this.instance.chat.completions.create(
-        {
-          messages: this.chatToGPTMessage(messages),
-          model: model,
-          temperature: options.temperature || 0,
-          max_tokens: options.maxTokens || 4096,
-          response_format: {
-            type: options.jsonMode ? 'json_object' : 'text',
-          },
-          user: options.user,
-        },
-        { signal: options.signal }
-      );
-      const { content } = result.choices[0].message;
-      if (!content) throw new Error('Failed to generate text');
-      return content.trim();
+
+      const [system, msgs, schema] = await chatToGPTMessage(messages);
+
+      const modelInstance = this.#instance(model, {
+        structuredOutputs: Boolean(options.jsonMode),
+        user: options.user,
+      });
+
+      const commonParams = {
+        model: modelInstance,
+        system,
+        messages: msgs,
+        temperature: options.temperature || 0,
+        maxTokens: options.maxTokens || 4096,
+        abortSignal: options.signal,
+      };
+
+      const { text } = schema
+        ? await generateObject({
+            ...commonParams,
+            schema,
+          }).then(r => ({ text: JSON.stringify(r.object) }))
+        : await generateText({
+            ...commonParams,
+            providerOptions: {
+              openai: this.getOpenAIOptions(options),
+            },
+            tools: this.getTools(options, model),
+            maxSteps: this.MAX_STEPS,
+          });
+
+      return text.trim();
     } catch (e: any) {
       metrics.ai.counter('chat_text_errors').add(1, { model });
       throw this.handleError(e, model, options);
@@ -247,43 +263,98 @@ export class OpenAIProvider
 
   async *generateTextStream(
     messages: PromptMessage[],
-    model: string = 'gpt-4o-mini',
+    model: string = 'gpt-4.1-mini',
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
     await this.checkParams({ messages, model, options });
 
     try {
       metrics.ai.counter('chat_text_stream_calls').add(1, { model });
-      const result = await this.instance.chat.completions.create(
-        {
-          stream: true,
-          messages: this.chatToGPTMessage(messages),
-          model: model,
-          frequency_penalty: options.frequencyPenalty || 0,
-          presence_penalty: options.presencePenalty || 0,
-          temperature: options.temperature || 0.5,
-          max_tokens: options.maxTokens || 4096,
-          response_format: {
-            type: options.jsonMode ? 'json_object' : 'text',
-          },
-          user: options.user,
-        },
-        {
-          signal: options.signal,
-        }
-      );
 
-      for await (const message of result) {
-        if (!Array.isArray(message.choices) || !message.choices.length) {
-          continue;
-        }
-        const content = message.choices[0].delta.content;
-        if (content) {
-          yield content;
+      const [system, msgs] = await chatToGPTMessage(messages);
+
+      const modelInstance = this.#instance.responses(model);
+
+      const tools = this.getTools(options, model);
+      const { fullStream } = streamText({
+        model: modelInstance,
+        system,
+        messages: msgs,
+        providerOptions: {
+          openai: this.getOpenAIOptions(options),
+        },
+        tools: tools as OpenAITools,
+        maxSteps: this.MAX_STEPS,
+        frequencyPenalty: options.frequencyPenalty || 0,
+        presencePenalty: options.presencePenalty || 0,
+        temperature: options.temperature || 0,
+        maxTokens: options.maxTokens || 4096,
+        abortSignal: options.signal,
+      });
+
+      const parser = new CitationParser();
+      let lastType;
+      // reasoning, tool-call, tool-result need to mark as callout
+      let prefix: string | null = this.CALLOUT_PREFIX;
+      for await (const chunk of fullStream) {
+        if (chunk) {
+          switch (chunk.type) {
+            case 'text-delta': {
+              let result = parser.parse(chunk.textDelta);
+              if (lastType !== chunk.type) {
+                result = '\n\n' + result;
+              }
+              yield result;
+              break;
+            }
+            case 'reasoning': {
+              if (prefix) {
+                yield prefix;
+                prefix = null;
+              }
+              let result = chunk.textDelta;
+              if (lastType !== chunk.type) {
+                result = '\n\n' + result;
+              }
+              yield this.markAsCallout(result);
+              break;
+            }
+            case 'tool-call': {
+              if (prefix) {
+                yield prefix;
+                prefix = null;
+              }
+              if (chunk.toolName === 'web_search_exa') {
+                yield this.markAsCallout(
+                  `\nSearching the web "${chunk.args.query}"\n`
+                );
+              }
+              break;
+            }
+            case 'tool-result': {
+              if (chunk.toolName === 'web_search_exa') {
+                yield this.markAsCallout(
+                  `\n${this.getWebSearchLinks(chunk.result)}\n`
+                );
+              }
+              break;
+            }
+            case 'finish': {
+              const result = parser.end();
+              yield result;
+              break;
+            }
+            case 'error': {
+              const error = chunk.error as { type: string; message: string };
+              throw new Error(error.message);
+            }
+          }
+
           if (options.signal?.aborted) {
-            result.controller.abort();
+            await fullStream.cancel();
             break;
           }
+          lastType = chunk.type;
         }
       }
     } catch (e: any) {
@@ -304,15 +375,18 @@ export class OpenAIProvider
 
     try {
       metrics.ai.counter('generate_embedding_calls').add(1, { model });
-      const result = await this.instance.embeddings.create({
-        model: model,
-        input: messages,
+
+      const modelInstance = this.#instance.embedding(model, {
         dimensions: options.dimensions || DEFAULT_DIMENSIONS,
         user: options.user,
       });
-      return result.data
-        .map(e => e?.embedding)
-        .filter(v => v && Array.isArray(v));
+
+      const { embeddings } = await embedMany({
+        model: modelInstance,
+        values: messages,
+      });
+
+      return embeddings.filter(v => v && Array.isArray(v));
     } catch (e: any) {
       metrics.ai.counter('generate_embedding_errors').add(1, { model });
       throw this.handleError(e, model, options);
@@ -330,19 +404,22 @@ export class OpenAIProvider
 
     try {
       metrics.ai.counter('generate_images_calls').add(1, { model });
-      const result = await this.instance.images.generate(
-        {
-          prompt,
-          model,
-          response_format: 'url',
-          user: options.user,
-        },
-        { signal: options.signal }
-      );
 
-      return result.data
-        .map(image => image.url)
-        .filter((v): v is string => !!v);
+      const modelInstance = this.#instance.image(model);
+
+      const result = await generateImage({
+        model: modelInstance,
+        prompt,
+        providerOptions: {
+          openai: {
+            quality: options.quality || null,
+          },
+        },
+      });
+
+      return result.images.map(
+        image => `data:image/png;base64,${image.base64}`
+      );
     } catch (e: any) {
       metrics.ai.counter('generate_images_errors').add(1, { model });
       throw this.handleError(e, model, options);
@@ -364,5 +441,33 @@ export class OpenAIProvider
       metrics.ai.counter('generate_images_stream_errors').add(1, { model });
       throw e;
     }
+  }
+
+  private getOpenAIOptions(options: CopilotChatOptions) {
+    const result: OpenAIResponsesProviderOptions = {};
+    if (options?.reasoning) {
+      result.reasoningEffort = 'medium';
+      result.reasoningSummary = 'detailed';
+    }
+    if (options?.user) {
+      result.user = options.user;
+    }
+    return result;
+  }
+
+  private getWebSearchLinks(
+    list: {
+      title: string | null;
+      url: string;
+    }[]
+  ): string {
+    const links = list.reduce((acc, result) => {
+      return acc + `\n[${result.title ?? result.url}](${result.url})\n\n`;
+    }, '');
+    return links;
+  }
+
+  private markAsCallout(text: string) {
+    return text.replaceAll('\n', '\n> ');
   }
 }

@@ -1,14 +1,3 @@
-import type {
-  BaseElementProps,
-  PointTestOptions,
-} from '@blocksuite/block-std/gfx';
-import {
-  convert,
-  derive,
-  field,
-  GfxPrimitiveElementModel,
-  watch,
-} from '@blocksuite/block-std/gfx';
 import {
   Bound,
   getBoundFromPoints,
@@ -26,7 +15,15 @@ import {
   type SerializedXYWH,
   transformPointsToNewBound,
   Vec,
-} from '@blocksuite/global/utils';
+} from '@blocksuite/global/gfx';
+import type { BaseElementProps, PointTestOptions } from '@blocksuite/std/gfx';
+import {
+  convert,
+  derive,
+  field,
+  GfxPrimitiveElementModel,
+  watch,
+} from '@blocksuite/std/gfx';
 
 import { type Color, DefaultTheme } from '../../themes/index';
 
@@ -61,10 +58,6 @@ export class BrushElementModel extends GfxPrimitiveElementModel<BrushProps> {
 
   override get type() {
     return 'brush';
-  }
-
-  static override propsToY(props: BrushProps) {
-    return props;
   }
 
   override containsBound(bounds: Bound) {
@@ -137,7 +130,7 @@ export class BrushElementModel extends GfxPrimitiveElementModel<BrushProps> {
     instance['_local'].delete('commands');
   })
   @derive((lineWidth: number, instance: Instance) => {
-    const oldBound = instance.elementBound;
+    const oldBound = Bound.fromXYWH(instance.deserializedXYWH);
 
     if (
       lineWidth === instance.lineWidth ||
@@ -224,11 +217,3 @@ export class BrushElementModel extends GfxPrimitiveElementModel<BrushProps> {
 }
 
 type Instance = GfxPrimitiveElementModel<BrushProps> & BrushProps;
-
-declare global {
-  namespace BlockSuite {
-    interface SurfaceElementModelMap {
-      brush: BrushElementModel;
-    }
-  }
-}

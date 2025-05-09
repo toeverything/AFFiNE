@@ -1,12 +1,12 @@
 import { FrameBlockModel, GroupElementModel } from '@blocksuite/affine-model';
-import type { GfxBlockElementModel } from '@blocksuite/block-std/gfx';
 import {
   deserializeXYWH,
   getQuadBoundWithRotation,
-} from '@blocksuite/global/utils';
+} from '@blocksuite/global/gfx';
+import type { GfxBlockElementModel, GfxModel } from '@blocksuite/std/gfx';
 import type { BlockModel } from '@blocksuite/store';
 
-export function getSelectedRect(selected: BlockSuite.EdgelessModel[]): DOMRect {
+export function getSelectedRect(selected: GfxModel[]): DOMRect {
   if (selected.length === 0) {
     return new DOMRect();
   }
@@ -57,8 +57,8 @@ export function getSelectedRect(selected: BlockSuite.EdgelessModel[]): DOMRect {
   );
 }
 
-export function getElementsWithoutGroup(elements: BlockSuite.EdgelessModel[]) {
-  const set = new Set<BlockSuite.EdgelessModel>();
+export function getElementsWithoutGroup(elements: GfxModel[]) {
+  const set = new Set<GfxModel>();
 
   elements.forEach(element => {
     if (element instanceof GroupElementModel) {
@@ -73,7 +73,7 @@ export function getElementsWithoutGroup(elements: BlockSuite.EdgelessModel[]) {
 }
 
 export function isTopLevelBlock(
-  selectable: BlockModel | BlockSuite.EdgelessModel | null
+  selectable: BlockModel | GfxModel | null
 ): selectable is GfxBlockElementModel {
   return !!selectable && 'flavour' in selectable;
 }

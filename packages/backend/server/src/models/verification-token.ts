@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaClient, type VerificationToken } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
+import { type VerificationToken } from '@prisma/client';
 
 import { CryptoHelper } from '../base/helpers';
+import { BaseModel } from './base';
 
 export type { VerificationToken };
 
@@ -16,12 +17,10 @@ export enum TokenType {
 }
 
 @Injectable()
-export class VerificationTokenModel {
-  private readonly logger = new Logger(VerificationTokenModel.name);
-  constructor(
-    private readonly db: PrismaClient,
-    private readonly crypto: CryptoHelper
-  ) {}
+export class VerificationTokenModel extends BaseModel {
+  constructor(private readonly crypto: CryptoHelper) {
+    super();
+  }
 
   /**
    * create token by type and credential (optional) with ttl in seconds (default 30 minutes)
@@ -123,7 +122,11 @@ export class VerificationTokenModel {
         type,
       },
     });
-    this.logger.log(`Deleted token success by type ${type} and token ${token}`);
+    if (count > 0) {
+      this.logger.log(
+        `Deleted token success by type ${type} and token ${token}`
+      );
+    }
     return count;
   }
 
@@ -138,7 +141,9 @@ export class VerificationTokenModel {
         },
       },
     });
-    this.logger.log(`Cleaned ${count} expired tokens`);
+    if (count > 0) {
+      this.logger.log(`Cleaned ${count} expired tokens`);
+    }
     return count;
   }
 }

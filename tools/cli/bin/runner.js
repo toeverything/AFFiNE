@@ -28,6 +28,10 @@ const lookups = [];
  */
 let scriptLocation;
 for (const location of fileLocationCandidates) {
+  if (scriptLocation) {
+    break;
+  }
+
   const fileCandidates = [file, `${file}.js`, `${file}.ts`];
   for (const candidate of fileCandidates) {
     const candidateLocation = join(location, candidate);

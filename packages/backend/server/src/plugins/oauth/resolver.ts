@@ -2,7 +2,7 @@ import { registerEnumType, ResolveField, Resolver } from '@nestjs/graphql';
 
 import { ServerConfigType } from '../../core/config/types';
 import { OAuthProviderName } from './config';
-import { OAuthProviderFactory } from './register';
+import { OAuthProviderFactory } from './factory';
 
 registerEnumType(OAuthProviderName, { name: 'OAuthProviderType' });
 

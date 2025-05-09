@@ -1,28 +1,29 @@
 import { cssVar } from '@toeverything/theme';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { globalStyle, style } from '@vanilla-extract/css';
 export const settingSlideBar = style({
   width: '25%',
   maxWidth: '242px',
   background: cssVar('backgroundSecondaryColor'),
-  padding: '20px 0px',
+  padding: '20px 12px',
   height: '100%',
   flexShrink: 0,
   display: 'flex',
   flexDirection: 'column',
+  gap: '16px',
+  overflowY: 'auto',
 });
 export const sidebarTitle = style({
   fontSize: cssVar('fontH6'),
   fontWeight: '600',
   lineHeight: cssVar('lineHeight'),
-  padding: '0px 16px 0px 24px',
+  padding: '0 8px',
 });
 export const sidebarSubtitle = style({
   fontSize: cssVar('fontSm'),
   lineHeight: cssVar('lineHeight'),
   color: cssVar('textSecondaryColor'),
-  padding: '0px 16px 0px 24px',
-  marginTop: '20px',
-  marginBottom: '4px',
+  padding: '4px 8px',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
@@ -31,18 +32,11 @@ export const sidebarItemsWrapper = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 4,
-  selectors: {
-    '&.scroll': {
-      flexGrow: 1,
-      overflowY: 'auto',
-    },
-  },
 });
 export const sidebarSelectItem = style({
   display: 'flex',
   alignItems: 'center',
-  margin: '0px 16px',
-  padding: '0px 8px',
+  padding: '4px 8px',
   height: '30px',
   flexShrink: 0,
   fontSize: cssVar('fontSm'),
@@ -76,19 +70,38 @@ export const sidebarSelectSubItem = style({
     },
   },
 });
-globalStyle(`${settingSlideBar} .icon`, {
+
+export const sidebarSelectItemIcon = style({
   width: '16px',
   height: '16px',
+  fontSize: '16px',
   marginRight: '10px',
   flexShrink: 0,
+  color: cssVarV2('icon/primary'),
+  display: 'inline-flex',
 });
-globalStyle(`${settingSlideBar} .setting-name`, {
+
+export const sidebarSelectItemName = style({
   minWidth: 0,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   flexGrow: 1,
 });
+
+export const sidebarSelectItemBeta = style({
+  fontSize: cssVar('fontXs'),
+  color: cssVarV2('text/primary'),
+  background: cssVarV2('chip/label/blue'),
+  height: 20,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '0 8px',
+  borderRadius: '4px',
+  transform: 'translateX(2px)',
+});
+
 export const currentWorkspaceLabel = style({
   width: '20px',
   height: '20px',
@@ -105,9 +118,13 @@ export const currentWorkspaceLabel = style({
     },
   },
 });
-export const sidebarFooter = style({
-  padding: '0 16px',
+
+export const sidebarGroup = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '4px',
 });
+
 export const accountButton = style({
   padding: '4px 8px',
   borderRadius: '8px',

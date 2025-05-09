@@ -1,16 +1,16 @@
-import type { DefaultOpenProperty } from '@affine/core/components/doc-properties';
+import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
+import type { DefaultOpenProperty } from '@affine/core/components/properties';
+import { PresentTool } from '@blocksuite/affine/blocks/frame';
+import { DefaultTool } from '@blocksuite/affine/blocks/surface';
+import type { DocTitle } from '@blocksuite/affine/fragments/doc-title';
+import type { DocMode, ReferenceParams } from '@blocksuite/affine/model';
+import { HighlightSelection } from '@blocksuite/affine/shared/selection';
 import {
-  type DocMode,
-  EdgelessRootService,
+  DocModeProvider,
   FeatureFlagService as BSFeatureFlagService,
-  HighlightSelection,
-  type ReferenceParams,
-} from '@blocksuite/affine/blocks';
-import type {
-  AffineEditorContainer,
-  DocTitle,
-} from '@blocksuite/affine/presets';
-import type { InlineEditor } from '@blocksuite/inline';
+} from '@blocksuite/affine/shared/services';
+import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
+import type { InlineEditor } from '@blocksuite/std/inline';
 import { effect } from '@preact/signals-core';
 import { Entity, LiveData } from '@toeverything/infra';
 import { defaults, isEqual, omit } from 'lodash-es';
@@ -73,15 +73,15 @@ export class Editor extends Entity {
   isPresenting$ = new LiveData<boolean>(false);
 
   togglePresentation() {
-    const edgelessRootService =
-      this.editorContainer$.value?.host?.std.getService(
-        'affine:page'
-      ) as EdgelessRootService;
-    if (!edgelessRootService) return;
-
-    edgelessRootService.gfx.tool.setTool({
-      type: !this.isPresenting$.value ? 'frameNavigator' : 'default',
-    });
+    const gfx = this.editorContainer$.value?.host?.std.get(
+      GfxControllerIdentifier
+    );
+    if (!gfx) return;
+    if (!this.isPresenting$.value) {
+      gfx.tool.setTool(PresentTool);
+    } else {
+      gfx.tool.setTool(DefaultTool);
+    }
   }
 
   setSelector(selector: EditorSelector | undefined) {
@@ -200,7 +200,7 @@ export class Editor extends Entity {
     this.editorContainer$.next(editorContainer);
     const unsubs: (() => void)[] = [];
 
-    const rootService = editorContainer.host?.std.getService('affine:page');
+    const gfx = editorContainer.host?.std.get(GfxControllerIdentifier);
 
     // ----- Scroll Position and Selection -----
     // if we have default scroll position, we should restore it
@@ -209,9 +209,9 @@ export class Editor extends Entity {
     } else if (
       this.mode$.value === 'edgeless' &&
       this.scrollPosition.edgeless &&
-      rootService instanceof EdgelessRootService
+      gfx
     ) {
-      rootService.viewport.setViewport(this.scrollPosition.edgeless.zoom, [
+      gfx.viewport.setViewport(this.scrollPosition.edgeless.zoom, [
         this.scrollPosition.edgeless.centerX,
         this.scrollPosition.edgeless.centerY,
       ]);
@@ -253,14 +253,11 @@ export class Editor extends Entity {
       if (this.mode$.value === 'page' && scrollViewport) {
         this.scrollPosition.page = scrollViewport.scrollTop;
         this.workbenchView?.setScrollPosition(scrollViewport.scrollTop);
-      } else if (
-        this.mode$.value === 'edgeless' &&
-        rootService instanceof EdgelessRootService
-      ) {
+      } else if (this.mode$.value === 'edgeless' && gfx) {
         const pos = {
-          centerX: rootService.viewport.centerX,
-          centerY: rootService.viewport.centerY,
-          zoom: rootService.viewport.zoom,
+          centerX: gfx.viewport.centerX,
+          centerY: gfx.viewport.centerY,
+          zoom: gfx.viewport.zoom,
         };
         this.scrollPosition.edgeless = pos;
         this.workbenchView?.setScrollPosition(pos);
@@ -270,10 +267,10 @@ export class Editor extends Entity {
     unsubs.push(() => {
       scrollViewport?.removeEventListener('scroll', saveScrollPosition);
     });
-    if (rootService instanceof EdgelessRootService) {
-      unsubs.push(
-        rootService.viewport.viewportUpdated.on(saveScrollPosition).dispose
-      );
+    if (gfx) {
+      const subscription =
+        gfx.viewport.viewportUpdated.subscribe(saveScrollPosition);
+      unsubs.push(subscription.unsubscribe.bind(subscription));
     }
 
     // update selection when focusAt$ changed
@@ -303,19 +300,18 @@ export class Editor extends Entity {
     unsubs.push(subscription.unsubscribe.bind(subscription));
 
     // ----- Presenting -----
-    const edgelessPage = editorContainer.host?.querySelector(
-      'affine-edgeless-root'
-    );
-    if (!edgelessPage) {
+    const std = editorContainer.host?.std;
+    const editorMode = std?.get(DocModeProvider)?.getEditorMode();
+    if (!editorMode || editorMode !== 'edgeless' || !gfx) {
       this.isPresenting$.next(false);
     } else {
       this.isPresenting$.next(
-        edgelessPage.gfx.tool.currentToolName$.peek() === 'frameNavigator'
+        gfx.tool.currentToolName$.peek() === 'frameNavigator'
       );
 
       const disposable = effect(() => {
         this.isPresenting$.next(
-          edgelessPage.gfx.tool.currentToolName$.value === 'frameNavigator'
+          gfx.tool.currentToolName$.value === 'frameNavigator'
         );
       });
       unsubs.push(disposable);

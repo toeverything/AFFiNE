@@ -1,0 +1,10 @@
+{
+  "extends": "../../../tsconfig.web.json",
+  "compilerOptions": {
+    "rootDir": "./web",
+    "outDir": "./dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["./web", "server/types.d.ts"],
+  "references": [{ "path": "../native" }]
+}

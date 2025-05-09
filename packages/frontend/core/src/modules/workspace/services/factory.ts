@@ -1,9 +1,6 @@
+import type { BlobStorage, DocStorage } from '@affine/nbstore';
 import type { Workspace } from '@blocksuite/affine/store';
-import {
-  type BlobStorage,
-  type DocStorage,
-  Service,
-} from '@toeverything/infra';
+import { Service } from '@toeverything/infra';
 
 import type { WorkspaceFlavoursService } from './flavours';
 
@@ -22,8 +19,8 @@ export class WorkspaceFactoryService extends Service {
     flavour: string,
     initial: (
       docCollection: Workspace,
-      blobStorage: BlobStorage,
-      docStorage: DocStorage
+      blobFrontend: BlobStorage,
+      docFrontend: DocStorage
     ) => Promise<void> = () => Promise.resolve()
   ) => {
     const provider = this.flavoursService.flavours$.value.find(

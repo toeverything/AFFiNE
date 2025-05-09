@@ -3,9 +3,9 @@ import {
   popFilterableSimpleMenu,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
-import { ShadowlessElement } from '@blocksuite/block-std';
-import { SignalWatcher, WithDisposable } from '@blocksuite/global/utils';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { AddCursorIcon } from '@blocksuite/icons/lit';
+import { ShadowlessElement } from '@blocksuite/std';
 import { css, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -143,15 +143,15 @@ export class KanbanGroup extends SignalWatcher(
         name: 'Ungroup',
         hide: () => this.group.value == null,
         select: () => {
-          this.group.rows.forEach(id => {
-            this.group.manager.removeFromGroup(id, this.group.key);
+          this.group.rows.forEach(row => {
+            this.group.manager.removeFromGroup(row.rowId, this.group.key);
           });
         },
       }),
       menu.action({
         name: 'Delete Cards',
         select: () => {
-          this.view.rowDelete(this.group.rows);
+          this.view.rowsDelete(this.group.rows.map(row => row.rowId));
         },
       }),
     ]);
@@ -170,15 +170,15 @@ export class KanbanGroup extends SignalWatcher(
       <div class="group-body">
         ${repeat(
           cards,
-          id => id,
-          id => {
+          row => row.rowId,
+          row => {
             return html`
               <affine-data-view-kanban-card
-                data-card-id="${id}"
+                data-card-id="${row.rowId}"
                 .groupKey="${this.group.key}"
                 .dataViewEle="${this.dataViewEle}"
                 .view="${this.view}"
-                .cardId="${id}"
+                .cardId="${row.rowId}"
               ></affine-data-view-kanban-card>
             `;
           }

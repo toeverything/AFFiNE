@@ -236,6 +236,7 @@ export const popViewOptions = (
   items.push(
     menu.input({
       initialValue: view.name$.value,
+      placeholder: 'View name',
       onChange: text => {
         view.nameSet(text);
       },
@@ -276,7 +277,7 @@ export const popViewOptions = (
                 const data: MenuButtonData = {
                   content: () => html`
                     <div
-                      style="color:var(--affine-text-emphasis-color);width:100%;display: flex;flex-direction: column;align-items: center;justify-content: center;padding: 6px 16px;"
+                      style="color:var(--affine-text-emphasis-color);width:100%;display: flex;flex-direction: column;align-items: center;justify-content: center;padding: 6px 16px;white-space: nowrap"
                     >
                       <div style="${iconStyle}">
                         ${renderUniLit(meta.renderer.icon)}

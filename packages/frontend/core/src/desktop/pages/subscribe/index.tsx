@@ -1,4 +1,6 @@
 import { Button, Loading } from '@affine/component';
+import { UrlService } from '@affine/core/modules/url';
+import { UserFriendlyError } from '@affine/error';
 import {
   SubscriptionPlan,
   SubscriptionRecurring,
@@ -9,18 +11,14 @@ import { effect, fromPromise, useServices } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { EMPTY, mergeMap, switchMap } from 'rxjs';
+import { switchMap } from 'rxjs';
 
 import { generateSubscriptionCallbackLink } from '../../../components/hooks/affine/use-subscription-notify';
 import {
   RouteLogic,
   useNavigateHelper,
 } from '../../../components/hooks/use-navigate-helper';
-import {
-  AuthService,
-  BackendError,
-  SubscriptionService,
-} from '../../../modules/cloud';
+import { AuthService, SubscriptionService } from '../../../modules/cloud';
 import { container } from './subscribe.css';
 
 interface ProductTriple {
@@ -36,6 +34,8 @@ const products = {
   believer: 'pro_lifetime',
   team: 'team_yearly',
   'monthly-team': 'team_monthly',
+  'yearly-selfhost-team': 'selfhost-team_yearly',
+  'monthly-selfhost-team': 'selfhost-team_monthly',
   'oneyear-ai': 'ai_yearly_onetime',
   'oneyear-pro': 'pro_yearly_onetime',
   'onemonth-pro': 'pro_monthly_onetime',
@@ -45,6 +45,7 @@ const allowedPlan = {
   ai: SubscriptionPlan.AI,
   pro: SubscriptionPlan.Pro,
   team: SubscriptionPlan.Team,
+  'selfhost-team': SubscriptionPlan.SelfHostedTeam,
 };
 const allowedRecurring = {
   monthly: SubscriptionRecurring.Monthly,
@@ -95,9 +96,10 @@ function getProductTriple(searchParams: URLSearchParams): ProductTriple {
 }
 
 export const Component = () => {
-  const { authService, subscriptionService } = useServices({
+  const { authService, subscriptionService, urlService } = useServices({
     AuthService,
     SubscriptionService,
+    UrlService,
   });
   const [searchParams] = useSearchParams();
   const [message, setMessage] = useState('');
@@ -155,16 +157,12 @@ export const Component = () => {
               ),
             });
             setMessage('Redirecting...');
-            location.href = checkout;
+            urlService.openExternal(checkout);
           } catch (err) {
-            if (err instanceof BackendError) {
-              setMessage(err.originError.message);
-            } else {
-              console.log(err);
-              setError('Something went wrong, please contact support.');
-            }
+            const e = UserFriendlyError.fromAny(err);
+            setMessage(e.message);
           }
-        }).pipe(mergeMap(() => EMPTY));
+        });
       })
     );
 
@@ -184,6 +182,7 @@ export const Component = () => {
     retryKey,
     variant,
     coupon,
+    urlService,
   ]);
 
   return (

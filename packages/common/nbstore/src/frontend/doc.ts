@@ -1,12 +1,21 @@
 import { groupBy } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import type { Subscription } from 'rxjs';
-import { combineLatest, map, Observable, Subject } from 'rxjs';
+import {
+  combineLatest,
+  map,
+  Observable,
+  ReplaySubject,
+  share,
+  Subject,
+} from 'rxjs';
 import {
   applyUpdate,
   type Doc as YDoc,
   encodeStateAsUpdate,
+  Map as YMap,
   mergeUpdates,
+  type Transaction as YTransaction,
 } from 'yjs';
 
 import type { DocRecord, DocStorage } from '../storage';
@@ -173,7 +182,10 @@ export class DocFrontend {
       synced: sync.synced,
       syncRetrying: sync.retrying,
       syncErrorMessage: sync.errorMessage,
-    }))
+    })),
+    share({
+      connector: () => new ReplaySubject(1),
+    })
   ) satisfies Observable<DocFrontendState>;
 
   start() {
@@ -207,6 +219,7 @@ export class DocFrontend {
 
       while (true) {
         throwIfAborted(signal);
+
         const docId = await this.status.jobDocQueue.asyncPop(signal);
         const jobs = this.status.jobMap.get(docId);
         this.status.jobMap.delete(docId);
@@ -234,6 +247,9 @@ export class DocFrontend {
         if (save?.length) {
           await this.jobs.save(docId, save as any, signal);
         }
+
+        this.status.currentJob = null;
+        this.statusUpdatedSubject$.next(docId);
       }
     } finally {
       dispose();
@@ -241,19 +257,11 @@ export class DocFrontend {
   }
 
   /**
-   * Add a doc to the frontend, the doc will sync with the doc storage.
-   * @param doc - The doc to add
-   * @param withSubDoc - Whether to add the subdocs of the doc
+   * Connect a doc to the frontend, the doc will sync with the doc storage.
+   * @param doc - The doc to connect
    */
-  addDoc(doc: YDoc, withSubDoc: boolean = false) {
-    this._addDoc(doc);
-    if (withSubDoc) {
-      doc.on('subdocs', ({ loaded }) => {
-        for (const subdoc of loaded) {
-          this._addDoc(subdoc);
-        }
-      });
-    }
+  connectDoc(doc: YDoc) {
+    this._connectDoc(doc);
   }
 
   readonly jobs = {
@@ -275,18 +283,16 @@ export class DocFrontend {
       // mark doc as loaded
       doc.emit('sync', [true, doc]);
 
-      this.status.connectedDocs.add(job.docId);
-      this.statusUpdatedSubject$.next(job.docId);
-
       const docRecord = await this.storage.getDoc(job.docId);
       throwIfAborted(signal);
 
-      if (!docRecord || isEmptyUpdate(docRecord.bin)) {
-        return;
+      if (docRecord && !isEmptyUpdate(docRecord.bin)) {
+        this.applyUpdate(job.docId, docRecord.bin);
+
+        this.status.readyDocs.add(job.docId);
       }
 
-      this.applyUpdate(job.docId, docRecord.bin);
-      this.status.readyDocs.add(job.docId);
+      this.status.connectedDocs.add(job.docId);
       this.statusUpdatedSubject$.next(job.docId);
     },
     save: async (
@@ -339,12 +345,12 @@ export class DocFrontend {
   };
 
   /**
-   * Remove a doc from the frontend, the doc will stop syncing with the doc storage.
+   * Disconnect a doc from the frontend, the doc will stop syncing with the doc storage.
    * It's not recommended to use this method directly, better to use `doc.destroy()`.
    *
-   * @param doc - The doc to remove
+   * @param doc - The doc to disconnect
    */
-  removeDoc(doc: YDoc) {
+  disconnectDoc(doc: YDoc) {
     this.status.docs.delete(doc.guid);
     this.status.connectedDocs.delete(doc.guid);
     this.status.readyDocs.delete(doc.guid);
@@ -370,7 +376,10 @@ export class DocFrontend {
     };
   }
 
-  private _addDoc(doc: YDoc) {
+  private _connectDoc(doc: YDoc) {
+    if (this.status.docs.has(doc.guid)) {
+      throw new Error('doc already connected');
+    }
     this.schedule({
       type: 'load',
       docId: doc.guid,
@@ -382,7 +391,7 @@ export class DocFrontend {
     doc.on('update', this.handleDocUpdate);
 
     doc.on('destroy', () => {
-      this.removeDoc(doc);
+      this.disconnectDoc(doc);
     });
   }
 
@@ -396,13 +405,18 @@ export class DocFrontend {
     this.statusUpdatedSubject$.next(job.docId);
   }
 
+  private isApplyingUpdate = false;
+
   applyUpdate(docId: string, update: Uint8Array) {
     const doc = this.status.docs.get(docId);
     if (doc && !isEmptyUpdate(update)) {
       try {
+        this.isApplyingUpdate = true;
         applyUpdate(doc, update, NBSTORE_ORIGIN);
       } catch (err) {
         console.error('failed to apply update yjs doc', err);
+      } finally {
+        this.isApplyingUpdate = false;
       }
     }
   }
@@ -410,10 +424,27 @@ export class DocFrontend {
   private readonly handleDocUpdate = (
     update: Uint8Array,
     origin: any,
-    doc: YDoc
+    doc: YDoc,
+    transaction: YTransaction
   ) => {
     if (origin === NBSTORE_ORIGIN) {
       return;
+    }
+    if (this.isApplyingUpdate && BUILD_CONFIG.debug) {
+      let changedList = '';
+      for (const [changed, keys] of transaction.changed) {
+        for (const key of keys) {
+          if (changed instanceof YMap && key) {
+            changedList += `${key} => ${changed.get(key)}\n`;
+          }
+        }
+      }
+      console.warn(`⚠️ When nbstore applies a remote update, some code triggers a local change to the doc.
+This will causes the document's 'edited by' to become the current user, even if the user has not actually modified the document.
+This is usually caused by a coding error and needs to be fixed by the developer.
+Changed:
+${changedList}
+`);
     }
     if (!this.status.docs.has(doc.guid)) {
       return;
@@ -483,7 +514,7 @@ export class DocFrontend {
     return Promise.race([
       new Promise<void>(resolve => {
         sub = this.docState$(docId).subscribe(state => {
-          if (state.syncing) {
+          if (state.synced && !state.updating) {
             resolve();
           }
         });
@@ -522,5 +553,9 @@ export class DocFrontend {
     ]).finally(() => {
       sub?.unsubscribe();
     });
+  }
+
+  async resetSync() {
+    await this.sync.resetSync();
   }
 }

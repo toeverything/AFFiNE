@@ -1,81 +1,76 @@
 import { cssVar } from '@toeverything/theme';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
-export const workspaceListsWrapper = style({
-  display: 'flex',
-  width: '100%',
-  flexDirection: 'column',
-  maxHeight: 'calc(100vh - 300px)',
-});
-export const workspaceListWrapper = style({
-  display: 'flex',
-  width: '100%',
-  flexDirection: 'column',
-  gap: 2,
-});
+
 export const workspaceServer = style({
   display: 'flex',
   justifyContent: 'space-between',
-  gap: 4,
-  paddingLeft: '12px',
-  marginBottom: '4px',
+  alignItems: 'center',
+  padding: '0px 8px',
+  gap: 8,
+  marginBottom: 6,
 });
-
+export const workspaceServerIcon = style({
+  border: `1px solid ${cssVarV2.layer.insideBorder.border}`,
+  borderRadius: 4,
+  color: cssVarV2.icon.primary,
+  fontSize: 18,
+  width: 30,
+  height: 30,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
 export const workspaceServerContent = style({
   display: 'flex',
   flexDirection: 'column',
-  color: cssVarV2('text/secondary'),
-  gap: 4,
-  width: '100%',
-  overflow: 'hidden',
 });
-export const workspaceServerName = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: 4,
-  fontWeight: 500,
-  fontSize: cssVar('fontXs'),
-  lineHeight: '20px',
+const ellipsis = style({
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-});
-export const account = style({
-  fontSize: cssVar('fontXs'),
   overflow: 'hidden',
-  width: '100%',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
 });
-export const workspaceTypeIcon = style({
-  color: cssVarV2('icon/primary'),
-  fontSize: '16px',
-});
-export const scrollbar = style({
-  width: '4px',
-});
-export const workspaceCard = style({
-  height: '44px',
-  padding: '0 12px',
+export const workspaceServerAccount = style([
+  ellipsis,
+  {
+    fontSize: cssVar('fontXs'),
+    lineHeight: '20px',
+    color: cssVarV2.text.secondary,
+    marginTop: -1.5,
+  },
+]);
+export const workspaceServerName = style([
+  ellipsis,
+  {
+    fontSize: cssVar('fontXs'),
+    lineHeight: '20px',
+    fontWeight: 500,
+    color: cssVarV2.text.primary,
+    selectors: {
+      [`&:has(~ ${workspaceServerAccount})`]: {
+        marginBottom: -1.5,
+      },
+    },
+  },
+]);
+export const infoMoreIcon = style({
+  color: cssVarV2.icon.secondary,
 });
 
-export const ItemContainer = style({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'flex-start',
-  padding: '8px 14px',
-  gap: '14px',
-  cursor: 'pointer',
-  borderRadius: '8px',
-  transition: 'background-color 0.2s',
-  fontSize: '24px',
-  color: cssVarV2('icon/secondary'),
+export const workspaceServerSpacer = style({
+  width: 0,
+  flexGrow: 1,
 });
-export const ItemText = style({
-  fontSize: cssVar('fontSm'),
-  lineHeight: '22px',
-  color: cssVarV2('text/secondary'),
-  fontWeight: 400,
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
+
+export const workspaceCard = style({
+  height: 36,
+  padding: '7px 12px',
+});
+export const workspaceCardInfoContainer = style({
+  gap: 12,
+});
+
+export const serverDivider = style({
+  marginTop: 8,
+  marginBottom: 12,
 });

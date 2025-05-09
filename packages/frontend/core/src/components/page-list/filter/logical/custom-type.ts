@@ -1,5 +1,4 @@
-import type { Tag } from '@affine/env/filter';
-
+import type { TagMeta } from '../../types';
 import { DataHelper, typesystem } from './typesystem';
 
 export const tNumber = typesystem.defineData(
@@ -15,7 +14,7 @@ export const tDate = typesystem.defineData(
   DataHelper.create<{ value: number }>('Date')
 );
 
-export const tTag = typesystem.defineData<{ tags: Tag[] }>({
+export const tTag = typesystem.defineData<{ tags: TagMeta[] }>({
   name: 'Tag',
   supers: [],
 });

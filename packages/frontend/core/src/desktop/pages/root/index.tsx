@@ -6,7 +6,7 @@ import { Outlet } from 'react-router-dom';
 
 import { GlobalDialogs } from '../../dialogs';
 import { CustomThemeModifier } from './custom-theme';
-import { FindInPageModal } from './find-in-page/find-in-page-modal';
+import { FindInPagePopup } from './find-in-page/find-in-page-popup';
 
 export const RootWrapper = () => {
   const defaultServerService = useService(DefaultServerService);
@@ -30,7 +30,7 @@ export const RootWrapper = () => {
       <NotificationCenter />
       <Outlet />
       <CustomThemeModifier />
-      {BUILD_CONFIG.isElectron && <FindInPageModal />}
+      {BUILD_CONFIG.isElectron && <FindInPagePopup />}
     </FrameworkScope>
   );
 };

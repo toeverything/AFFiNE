@@ -3,6 +3,6 @@
   "compilerOptions": {
     "outDir": "./dist"
   },
-  "include": ["index.d.ts"],
+  "include": ["index.d.ts", "media-capture-example.ts"],
   "references": []
 }

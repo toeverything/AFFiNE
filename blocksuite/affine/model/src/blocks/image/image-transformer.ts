@@ -24,7 +24,7 @@ export class ImageBlockTransformer extends BaseBlockTransformer<ImageBlockProps>
     snapshot: ToSnapshotPayload<ImageBlockProps>
   ): BlockSnapshotLeaf {
     const snapshotRet = super.toSnapshot(snapshot);
-    const sourceId = snapshot.model.sourceId;
+    const sourceId = snapshot.model.props.sourceId;
     if (sourceId) {
       const pathBlobIdMap = snapshot.assets.getPathBlobIdMap();
       pathBlobIdMap.set(snapshot.model.id, sourceId);

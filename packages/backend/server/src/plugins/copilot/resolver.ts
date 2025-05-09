@@ -21,18 +21,20 @@ import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import {
   CallMetric,
+  CopilotDocNotFound,
   CopilotFailedToCreateMessage,
   CopilotSessionNotFound,
-  FileUpload,
+  type FileUpload,
   RequestMutex,
   Throttle,
   TooManyRequest,
 } from '../../base';
 import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
-import { PermissionService } from '../../core/permission';
+import { AccessController } from '../../core/permission';
 import { UserType } from '../../core/user';
 import { PromptService } from './prompt';
+import { PromptMessage } from './providers';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import {
@@ -112,14 +114,14 @@ class CreateChatMessageInput implements Omit<SubmittedMessage, 'content'> {
   @Field(() => String, { nullable: true })
   content!: string | undefined;
 
-  @Field(() => [String], { nullable: true })
+  @Field(() => [String], { nullable: true, deprecationReason: 'use blobs' })
   attachments!: string[] | undefined;
 
   @Field(() => [GraphQLUpload], { nullable: true })
   blobs!: Promise<FileUpload>[] | undefined;
 
   @Field(() => GraphQLJSON, { nullable: true })
-  params!: Record<string, string> | undefined;
+  params!: Record<string, any> | undefined;
 }
 
 enum ChatHistoryOrder {
@@ -128,6 +130,12 @@ enum ChatHistoryOrder {
 }
 
 registerEnumType(ChatHistoryOrder, { name: 'ChatHistoryOrder' });
+
+@InputType()
+class QueryChatSessionsInput {
+  @Field(() => Boolean, { nullable: true })
+  action: boolean | undefined;
+}
 
 @InputType()
 class QueryChatHistoriesInput implements Partial<ListHistoriesOptions> {
@@ -151,6 +159,9 @@ class QueryChatHistoriesInput implements Partial<ListHistoriesOptions> {
 
   @Field(() => String, { nullable: true })
   sessionId: string | undefined;
+
+  @Field(() => Boolean, { nullable: true })
+  withPrompt: boolean | undefined;
 }
 
 // ================== Return Types ==================
@@ -159,7 +170,7 @@ class QueryChatHistoriesInput implements Partial<ListHistoriesOptions> {
 class ChatMessageType implements Partial<ChatMessage> {
   // id will be null if message is a prompt message
   @Field(() => ID, { nullable: true })
-  id!: string;
+  id!: string | undefined;
 
   @Field(() => String)
   role!: 'system' | 'assistant' | 'user';
@@ -186,7 +197,7 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
     description: 'An mark identifying which view to use to display the session',
     nullable: true,
   })
-  action!: string | undefined;
+  action!: string | null;
 
   @Field(() => Number, {
     description: 'The number of tokens used in the session',
@@ -265,19 +276,31 @@ class CopilotPromptType {
   messages!: CopilotPromptMessageType[];
 }
 
+@ObjectType()
+class CopilotSessionType {
+  @Field(() => ID)
+  id!: string;
+
+  @Field(() => ID, { nullable: true })
+  parentSessionId!: string | null;
+
+  @Field(() => String)
+  promptName!: string;
+}
+
 // ================== Resolver ==================
 
 @ObjectType('Copilot')
 export class CopilotType {
   @Field(() => ID, { nullable: true })
-  workspaceId!: string | undefined;
+  workspaceId!: string | null;
 }
 
 @Throttle()
 @Resolver(() => CopilotType)
 export class CopilotResolver {
   constructor(
-    private readonly permissions: PermissionService,
+    private readonly ac: AccessController,
     private readonly mutex: RequestMutex,
     private readonly chatSession: ChatSessionService,
     private readonly storage: CopilotStorage
@@ -288,36 +311,46 @@ export class CopilotResolver {
     description: 'Get the quota of the user in the workspace',
     complexity: 2,
   })
-  async getQuota(@CurrentUser() user: CurrentUser) {
+  async getQuota(@CurrentUser() user: CurrentUser): Promise<CopilotQuotaType> {
     return await this.chatSession.getQuota(user.id);
   }
 
   @ResolveField(() => [String], {
-    description: 'Get the session list of chats in the workspace',
+    description: 'Get the session id list in the workspace',
     complexity: 2,
+    deprecationReason: 'Use `sessions` instead',
   })
-  async chats(
+  async sessionIds(
     @Parent() copilot: CopilotType,
-    @CurrentUser() user: CurrentUser
-  ) {
-    if (!copilot.workspaceId) return [];
-    await this.permissions.checkCloudWorkspace(copilot.workspaceId, user.id);
-    return await this.chatSession.listSessions(user.id, copilot.workspaceId);
+    @CurrentUser() user: CurrentUser,
+    @Args('docId', { nullable: true }) docId?: string,
+    @Args('options', { nullable: true }) options?: QueryChatSessionsInput
+  ): Promise<string[]> {
+    return (await this.sessions(copilot, user, docId, options)).map(s => s.id);
   }
 
-  @ResolveField(() => [String], {
-    description: 'Get the session list of actions in the workspace',
+  @ResolveField(() => [CopilotSessionType], {
+    description: 'Get the session list in the workspace',
     complexity: 2,
   })
-  async actions(
+  async sessions(
     @Parent() copilot: CopilotType,
-    @CurrentUser() user: CurrentUser
-  ) {
+    @CurrentUser() user: CurrentUser,
+    @Args('docId', { nullable: true }) docId?: string,
+    @Args('options', { nullable: true }) options?: QueryChatSessionsInput
+  ): Promise<CopilotSessionType[]> {
     if (!copilot.workspaceId) return [];
-    await this.permissions.checkCloudWorkspace(copilot.workspaceId, user.id);
-    return await this.chatSession.listSessions(user.id, copilot.workspaceId, {
-      action: true,
-    });
+    await this.ac
+      .user(user.id)
+      .workspace(copilot.workspaceId)
+      .allowLocal()
+      .assert('Workspace.Copilot');
+    return await this.chatSession.listSessions(
+      user.id,
+      copilot.workspaceId,
+      docId,
+      options
+    );
   }
 
   @ResolveField(() => [CopilotHistoriesType], {})
@@ -327,32 +360,37 @@ export class CopilotResolver {
     @CurrentUser() user: CurrentUser,
     @Args('docId', { nullable: true }) docId?: string,
     @Args('options', { nullable: true }) options?: QueryChatHistoriesInput
-  ) {
+  ): Promise<CopilotHistoriesType[]> {
     const workspaceId = copilot.workspaceId;
     if (!workspaceId) {
       return [];
     } else if (docId) {
-      await this.permissions.checkCloudPagePermission(
-        workspaceId,
-        docId,
-        user.id
-      );
+      await this.ac
+        .user(user.id)
+        .doc({ workspaceId, docId })
+        .allowLocal()
+        .assert('Doc.Read');
     } else {
-      await this.permissions.checkCloudWorkspace(workspaceId, user.id);
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
     }
 
     const histories = await this.chatSession.listHistories(
       user.id,
       workspaceId,
       docId,
-      options,
-      true
+      options
     );
 
     return histories.map(h => ({
       ...h,
       // filter out empty messages
-      messages: h.messages.filter(m => m.content || m.attachments?.length),
+      messages: h.messages.filter(
+        m => m.content || m.attachments?.length
+      ) as ChatMessageType[],
     }));
   }
 
@@ -364,16 +402,17 @@ export class CopilotResolver {
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => CreateChatSessionInput })
     options: CreateChatSessionInput
-  ) {
-    await this.permissions.checkCloudPagePermission(
-      options.workspaceId,
-      options.docId,
-      user.id
-    );
+  ): Promise<string> {
+    await this.ac.user(user.id).doc(options).allowLocal().assert('Doc.Update');
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
-      return new TooManyRequest('Server is busy');
+      throw new TooManyRequest('Server is busy');
+    }
+
+    if (options.workspaceId === options.docId) {
+      // filter out session create request for root doc
+      throw new CopilotDocNotFound({ docId: options.docId });
     }
 
     await this.chatSession.checkQuota(user.id);
@@ -392,21 +431,21 @@ export class CopilotResolver {
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => UpdateChatSessionInput })
     options: UpdateChatSessionInput
-  ) {
+  ): Promise<string> {
     const session = await this.chatSession.get(options.sessionId);
     if (!session) {
       throw new CopilotSessionNotFound();
     }
     const { workspaceId, docId } = session.config;
-    await this.permissions.checkCloudPagePermission(
-      workspaceId,
-      docId,
-      user.id
-    );
+    await this.ac
+      .user(user.id)
+      .doc(workspaceId, docId)
+      .allowLocal()
+      .assert('Doc.Update');
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
-      return new TooManyRequest('Server is busy');
+      throw new TooManyRequest('Server is busy');
     }
 
     await this.chatSession.checkQuota(user.id);
@@ -424,16 +463,17 @@ export class CopilotResolver {
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => ForkChatSessionInput })
     options: ForkChatSessionInput
-  ) {
-    await this.permissions.checkCloudPagePermission(
-      options.workspaceId,
-      options.docId,
-      user.id
-    );
+  ): Promise<string> {
+    await this.ac.user(user.id).doc(options).allowLocal().assert('Doc.Update');
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
-      return new TooManyRequest('Server is busy');
+      throw new TooManyRequest('Server is busy');
+    }
+
+    if (options.workspaceId === options.docId) {
+      // filter out session create request for root doc
+      throw new CopilotDocNotFound({ docId: options.docId });
     }
 
     await this.chatSession.checkQuota(user.id);
@@ -452,19 +492,15 @@ export class CopilotResolver {
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => DeleteSessionInput })
     options: DeleteSessionInput
-  ) {
-    await this.permissions.checkCloudPagePermission(
-      options.workspaceId,
-      options.docId,
-      user.id
-    );
+  ): Promise<string[]> {
+    await this.ac.user(user.id).doc(options).allowLocal().assert('Doc.Update');
     if (!options.sessionIds.length) {
-      return new NotFoundException('Session not found');
+      throw new NotFoundException('Session not found');
     }
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
-      return new TooManyRequest('Server is busy');
+      throw new TooManyRequest('Server is busy');
     }
 
     return await this.chatSession.cleanup({
@@ -481,19 +517,19 @@ export class CopilotResolver {
     @CurrentUser() user: CurrentUser,
     @Args({ name: 'options', type: () => CreateChatMessageInput })
     options: CreateChatMessageInput
-  ) {
+  ): Promise<string> {
     const lockFlag = `${COPILOT_LOCKER}:message:${user?.id}:${options.sessionId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
-      return new TooManyRequest('Server is busy');
+      throw new TooManyRequest('Server is busy');
     }
     const session = await this.chatSession.get(options.sessionId);
     if (!session || session.config.userId !== user.id) {
-      return new BadRequestException('Session not found');
+      throw new BadRequestException('Session not found');
     }
 
+    const attachments: PromptMessage['attachments'] = options.attachments || [];
     if (options.blobs) {
-      options.attachments = options.attachments || [];
       const { workspaceId } = session.config;
 
       const blobs = await Promise.all(options.blobs);
@@ -504,18 +540,18 @@ export class CopilotResolver {
         const filename = createHash('sha256')
           .update(uploaded.buffer)
           .digest('base64url');
-        const link = await this.storage.put(
+        const attachment = await this.storage.put(
           user.id,
           workspaceId,
           filename,
           uploaded.buffer
         );
-        options.attachments.push(link);
+        attachments.push({ attachment, mimeType: blob.mimetype });
       }
     }
 
     try {
-      return await this.chatSession.createMessage(options);
+      return await this.chatSession.createMessage({ ...options, attachments });
     } catch (e: any) {
       throw new CopilotFailedToCreateMessage(e.message);
     }
@@ -525,17 +561,21 @@ export class CopilotResolver {
 @Throttle()
 @Resolver(() => UserType)
 export class UserCopilotResolver {
-  constructor(private readonly permissions: PermissionService) {}
+  constructor(private readonly ac: AccessController) {}
 
   @ResolveField(() => CopilotType)
   async copilot(
     @CurrentUser() user: CurrentUser,
     @Args('workspaceId', { nullable: true }) workspaceId?: string
-  ) {
+  ): Promise<CopilotType> {
     if (workspaceId) {
-      await this.permissions.checkCloudWorkspace(workspaceId, user.id);
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
     }
-    return { workspaceId };
+    return { workspaceId: workspaceId || null };
   }
 }
 

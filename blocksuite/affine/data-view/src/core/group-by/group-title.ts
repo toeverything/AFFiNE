@@ -37,7 +37,11 @@ const GroupTitleMobile = (
     value: groupData.value,
     data: groupData.property.data$.value,
     updateData: groupData.manager.updateData,
-    updateValue: value => groupData.manager.updateValue(groupData.rows, value),
+    updateValue: value =>
+      groupData.manager.updateValue(
+        groupData.rows.map(row => row.rowId),
+        value
+      ),
     readonly: ops.readonly,
   };
 
@@ -140,7 +144,11 @@ export const GroupTitle = (
     value: groupData.value,
     data: groupData.property.data$.value,
     updateData: groupData.manager.updateData,
-    updateValue: value => groupData.manager.updateValue(groupData.rows, value),
+    updateValue: value =>
+      groupData.manager.updateValue(
+        groupData.rows.map(row => row.rowId),
+        value
+      ),
     readonly: ops.readonly,
   };
 

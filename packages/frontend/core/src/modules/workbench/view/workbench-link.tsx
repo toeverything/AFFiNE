@@ -47,7 +47,10 @@ function resolveToEntity(
 }
 
 export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
-  function WorkbenchLink({ to, onClick, replaceHistory, ...other }, ref) {
+  function WorkbenchLink(
+    { to, onClick, draggable = true, replaceHistory, ...other },
+    ref
+  ) {
     const { workbenchService } = useServices({
       WorkbenchService,
     });
@@ -79,8 +82,10 @@ export const WorkbenchLink = forwardRef<HTMLAnchorElement, WorkbenchLinkProps>(
             to: stringTo,
           },
         },
+        canDrag:
+          typeof draggable === 'boolean' ? draggable : draggable === 'true',
       };
-    }, [to, basename, stringTo]);
+    }, [to, basename, stringTo, draggable]);
 
     return (
       <a

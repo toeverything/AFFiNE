@@ -1,200 +1,144 @@
-import type { INestApplication } from '@nestjs/common';
-import request, { type Response } from 'supertest';
+import { PublicUserType } from '../../core/user';
+import { TestingApp } from './testing-app';
 
-import {
-  AuthService,
-  type ClientTokenType,
-  type CurrentUser,
-} from '../../core/auth';
-import { sessionUser } from '../../core/auth/service';
-import { UserService, type UserType } from '../../core/user';
-import { gql } from './common';
-
-export type UserAuthedType = UserType & { token: ClientTokenType };
-
-export async function internalSignIn(app: INestApplication, userId: string) {
-  const auth = app.get(AuthService);
-
-  const session = await auth.createUserSession(userId);
-
-  return `${AuthService.sessionCookieName}=${session.sessionId}`;
+export async function currentUser(app: TestingApp) {
+  const res = await app.gql(`
+      query {
+        currentUser {
+          id, name, email, emailVerified, avatarUrl, hasPassword,
+          token { token }
+        }
+      }
+    `);
+  return res.currentUser;
 }
 
-export function sessionCookie(headers: any): string {
-  const cookie = headers['set-cookie']?.find((c: string) =>
-    c.startsWith(`${AuthService.sessionCookieName}=`)
+export async function getPublicUserById(
+  app: TestingApp,
+  id: string
+): Promise<PublicUserType | null> {
+  const res = await app.gql(
+    `
+    query getPublicUserById($id: String!) {
+      publicUserById(id: $id) {
+        id
+        name
+        avatarUrl
+      }
+    }
+    `,
+    { id }
   );
-
-  if (!cookie) {
-    return '';
-  }
-
-  return cookie.split(';')[0];
-}
-
-export async function getSession(
-  app: INestApplication,
-  signInRes: Response
-): Promise<{ user?: CurrentUser }> {
-  const cookie = sessionCookie(signInRes.headers);
-  const res = await request(app.getHttpServer())
-    .get('/api/auth/session')
-    .set('cookie', cookie!)
-    .expect(200);
-
-  return res.body;
-}
-
-export async function signUp(
-  app: INestApplication,
-  name: string,
-  email: string,
-  password: string,
-  autoVerifyEmail = true
-): Promise<UserAuthedType> {
-  const user = await app.get(UserService).createUser({
-    name,
-    email,
-    password,
-    emailVerifiedAt: autoVerifyEmail ? new Date() : null,
-  });
-  const { sessionId } = await app.get(AuthService).createUserSession(user.id);
-
-  return {
-    ...sessionUser(user),
-    token: { token: sessionId, refresh: '' },
-  };
-}
-
-export async function currentUser(app: INestApplication, token: string) {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(token, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            query {
-              currentUser {
-                id, name, email, emailVerified, avatarUrl, hasPassword,
-                token { token }
-              }
-            }
-          `,
-    })
-    .expect(200);
-  return res.body.data.currentUser;
+  return res.publicUserById;
 }
 
 export async function sendChangeEmail(
-  app: INestApplication,
-  userToken: string,
+  app: TestingApp,
   email: string,
   callbackUrl: string
 ): Promise<boolean> {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(userToken, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            mutation {
-              sendChangeEmail(email: "${email}", callbackUrl: "${callbackUrl}")
-            }
-          `,
-    })
-    .expect(200);
+  const res = await app.gql(`
+    mutation {
+      sendChangeEmail(email: "${email}", callbackUrl: "${callbackUrl}")
+    }
+  `);
 
-  return res.body.data.sendChangeEmail;
+  return res.sendChangeEmail;
 }
 
 export async function sendSetPasswordEmail(
-  app: INestApplication,
-  userToken: string,
+  app: TestingApp,
   email: string,
   callbackUrl: string
 ): Promise<boolean> {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(userToken, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            mutation {
-              sendSetPasswordEmail(email: "${email}", callbackUrl: "${callbackUrl}")
-            }
-          `,
-    })
-    .expect(200);
+  const res = await app.gql(`
+    mutation {
+      sendSetPasswordEmail(email: "${email}", callbackUrl: "${callbackUrl}")
+    }
+  `);
 
-  return res.body.data.sendChangeEmail;
+  return res.sendSetPasswordEmail;
 }
 
 export async function changePassword(
-  app: INestApplication,
+  app: TestingApp,
   userId: string,
   token: string,
   password: string
 ): Promise<string> {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            mutation changePassword($token: String!, $userId: String!, $password: String!) {
-              changePassword(token: $token, userId: $userId, newPassword: $password)
-            }
-          `,
-      variables: { token, password, userId },
-    })
-    .expect(200);
-  return res.body.data.changePassword;
+  const res = await app.gql(`
+    mutation {
+      changePassword(token: "${token}", userId: "${userId}", newPassword: "${password}")
+    }
+  `);
+
+  return res.changePassword;
 }
 
 export async function sendVerifyChangeEmail(
-  app: INestApplication,
-  userToken: string,
+  app: TestingApp,
   token: string,
   email: string,
   callbackUrl: string
 ): Promise<boolean> {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(userToken, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            mutation {
-              sendVerifyChangeEmail(token:"${token}", email: "${email}", callbackUrl: "${callbackUrl}")
-            }
-          `,
-    })
-    .expect(200);
+  const res = await app.gql(`
+    mutation {
+      sendVerifyChangeEmail(token: "${token}", email: "${email}", callbackUrl: "${callbackUrl}")
+    }
+  `);
 
-  return res.body.data.sendVerifyChangeEmail;
+  return res.sendVerifyChangeEmail;
 }
 
 export async function changeEmail(
-  app: INestApplication,
-  userToken: string,
+  app: TestingApp,
   token: string,
   email: string
-): Promise<UserAuthedType> {
-  const res = await request(app.getHttpServer())
-    .post(gql)
-    .auth(userToken, { type: 'bearer' })
-    .set({ 'x-request-id': 'test', 'x-operation-name': 'test' })
-    .send({
-      query: `
-            mutation {
-               changeEmail(token: "${token}", email: "${email}") {
-                id
-                name
-                avatarUrl
-                email
-              }
-            }
-          `,
-    })
-    .expect(200);
-  return res.body.data.changeEmail;
+) {
+  const res = await app.gql(`
+    mutation {
+      changeEmail(token: "${token}", email: "${email}") {
+        id
+        name
+        avatarUrl
+        email
+      }
+    }
+  `);
+
+  return res.changeEmail;
+}
+
+export async function deleteAccount(app: TestingApp) {
+  const res = await app.gql(`
+    mutation {
+      deleteAccount {
+        success
+      }
+    }
+  `);
+
+  return res.deleteAccount.success;
+}
+
+export async function updateAvatar(app: TestingApp, avatar: Buffer) {
+  return app
+    .POST('/graphql')
+    .field(
+      'operations',
+      JSON.stringify({
+        name: 'uploadAvatar',
+        query: `mutation uploadAvatar($avatar: Upload!) {
+      uploadAvatar(avatar: $avatar) {
+        avatarUrl
+      }
+    }`,
+        variables: { avatar: null },
+      })
+    )
+    .field('map', JSON.stringify({ '0': ['variables.avatar'] }))
+    .attach('0', avatar, {
+      filename: 'test.png',
+      contentType: 'image/png',
+    });
 }

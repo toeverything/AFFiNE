@@ -1,6 +1,6 @@
 import { SwipeHelper } from '@affine/core/mobile/utils';
 import { useI18n } from '@affine/i18n';
-import anime from 'animejs';
+import { animate, eases } from 'animejs';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import {
@@ -82,12 +82,12 @@ export const WeekRowSwipe = ({ start }: WeekRowProps) => {
     (dir: 0 | 1 | -1) => {
       setAnimating(true);
 
-      anime({
-        targets: swipeRef.current,
+      if (!swipeRef.current) return;
+      animate(swipeRef.current, {
         translateX: -dir * width,
-        easing: 'easeInOutSine',
+        ease: eases.inOutSine,
         duration: 300,
-        complete: () => {
+        onComplete: () => {
           setSwipingDeltaX(0);
           setAnimating(false);
           if (dir !== 0) {

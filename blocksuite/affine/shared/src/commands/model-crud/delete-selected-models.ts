@@ -1,9 +1,9 @@
-import type { Command } from '@blocksuite/block-std';
+import type { Command } from '@blocksuite/std';
+import type { BlockModel } from '@blocksuite/store';
 
-export const deleteSelectedModelsCommand: Command<'selectedModels'> = (
-  ctx,
-  next
-) => {
+export const deleteSelectedModelsCommand: Command<{
+  selectedModels?: BlockModel[];
+}> = (ctx, next) => {
   const models = ctx.selectedModels;
 
   if (!models) {
@@ -19,11 +19,3 @@ export const deleteSelectedModelsCommand: Command<'selectedModels'> = (
 
   return next();
 };
-
-declare global {
-  namespace BlockSuite {
-    interface Commands {
-      deleteSelectedModels: typeof deleteSelectedModelsCommand;
-    }
-  }
-}
