@@ -92,6 +92,32 @@ export class ReactiveYArray extends BaseReactiveYData<
         return Reflect.set(target, p, data, receiver);
       },
       get: (target, p, receiver) => {
+        if (p === 'splice') {
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn(
+              '`splice` is called on ReactiveYArray. You must been knowing what you are doing.'
+            );
+          }
+
+          return (index: number, count?: number, ...items: unknown[]) => {
+            this._transact(this._ySource.doc!, () => {
+              this._ySource.delete(index, count);
+              this._ySource.insert(index, items);
+
+              if (items.length === 0) {
+                target.splice(index, count);
+              } else {
+                target.splice(
+                  index,
+                  count!,
+                  ...items.map(i => {
+                    return createYProxy(native2Y(i), this._options);
+                  })
+                );
+              }
+            });
+          };
+        }
         return Reflect.get(target, p, receiver);
       },
       deleteProperty: (target, p): boolean => {
