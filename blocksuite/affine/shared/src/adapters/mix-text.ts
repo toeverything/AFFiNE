@@ -101,7 +101,7 @@ export class MixTextAdapter extends BaseAdapter<MixText> {
         }
       }
     });
-    await walker.walkONode(snapshot);
+    walker.walkONode(snapshot);
     return {
       mixtext: buffer,
     };
@@ -258,14 +258,14 @@ export class MixTextAdapter extends BaseAdapter<MixText> {
     };
   }
 
-  async toSliceSnapshot(
+  toSliceSnapshot(
     payload: MixTextToSliceSnapshotPayload
-  ): Promise<SliceSnapshot | null> {
+  ): SliceSnapshot | null {
     if (payload.file.trim().length === 0) {
       return null;
     }
     payload.file = payload.file.replaceAll('\r', '');
-    const sliceSnapshot = await this._markdownAdapter.toSliceSnapshot({
+    const sliceSnapshot = this._markdownAdapter.toSliceSnapshot({
       file: payload.file,
       assets: payload.assets,
       workspaceId: payload.workspaceId,
@@ -341,7 +341,7 @@ export class MixTextAdapter extends BaseAdapter<MixText> {
           }
         }
       });
-      await walker.walk(contentSlice, blockSnapshotRoot);
+      walker.walk(contentSlice, blockSnapshotRoot);
       contentSlice.children = blockSnapshotRoot.children;
     }
     return sliceSnapshot;

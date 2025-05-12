@@ -63,10 +63,10 @@ export class SurfaceBlockTransformer extends BaseBlockTransformer<SurfaceBlockPr
     return yMap;
   }
 
-  override async fromSnapshot(
+  override fromSnapshot(
     payload: FromSnapshotPayload
-  ): Promise<SnapshotNode<SurfaceBlockProps>> {
-    const snapshotRet = await super.fromSnapshot(payload);
+  ): SnapshotNode<SurfaceBlockProps> {
+    const snapshotRet = super.fromSnapshot(payload);
     const elementsJSON = snapshotRet.props.elements as unknown as Record<
       string,
       unknown

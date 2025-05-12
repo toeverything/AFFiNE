@@ -65,9 +65,7 @@ export class PlainTextAdapter extends BaseAdapter<PlainText> {
     );
   }
 
-  private async _traverseSnapshot(
-    snapshot: BlockSnapshot
-  ): Promise<{ plaintext: string }> {
+  private _traverseSnapshot(snapshot: BlockSnapshot): { plaintext: string } {
     const textBuffer: TextBuffer = {
       content: '',
     };
@@ -76,7 +74,7 @@ export class PlainTextAdapter extends BaseAdapter<PlainText> {
       (node): node is BlockSnapshot =>
         BlockSnapshotSchema.safeParse(node).success
     );
-    walker.setEnter(async (o, context) => {
+    walker.setEnter((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.fromMatch(o)) {
           const adapterContext: AdapterContext<BlockSnapshot, TextBuffer> = {
@@ -88,11 +86,11 @@ export class PlainTextAdapter extends BaseAdapter<PlainText> {
             provider: this.provider,
             textBuffer,
           };
-          await matcher.fromBlockSnapshot.enter?.(o, adapterContext);
+          matcher.fromBlockSnapshot.enter?.(o, adapterContext);
         }
       }
     });
-    walker.setLeave(async (o, context) => {
+    walker.setLeave((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.fromMatch(o)) {
           const adapterContext: AdapterContext<BlockSnapshot, TextBuffer> = {
@@ -104,11 +102,11 @@ export class PlainTextAdapter extends BaseAdapter<PlainText> {
             provider: this.provider,
             textBuffer,
           };
-          await matcher.fromBlockSnapshot.leave?.(o, adapterContext);
+          matcher.fromBlockSnapshot.leave?.(o, adapterContext);
         }
       }
     });
-    await walker.walkONode(snapshot);
+    walker.walkONode(snapshot);
     return {
       plaintext: textBuffer.content,
     };
@@ -117,7 +115,7 @@ export class PlainTextAdapter extends BaseAdapter<PlainText> {
   async fromBlockSnapshot({
     snapshot,
   }: FromBlockSnapshotPayload): Promise<FromBlockSnapshotResult<PlainText>> {
-    const { plaintext } = await this._traverseSnapshot(snapshot);
+    const { plaintext } = this._traverseSnapshot(snapshot);
     return {
       file: plaintext,
       assetsIds: [],
@@ -149,7 +147,7 @@ export class PlainTextAdapter extends BaseAdapter<PlainText> {
     let buffer = '';
     const sliceAssetsIds: string[] = [];
     for (const contentSlice of snapshot.content) {
-      const { plaintext } = await this._traverseSnapshot(contentSlice);
+      const { plaintext } = this._traverseSnapshot(contentSlice);
       buffer += plaintext;
     }
     const plaintext =

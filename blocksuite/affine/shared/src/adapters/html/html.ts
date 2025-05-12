@@ -55,7 +55,7 @@ export class HtmlAdapter extends BaseAdapter<Html> {
     return unified().use(rehypeStringify).stringify(ast);
   };
 
-  private readonly _traverseHtml = async (
+  private readonly _traverseHtml = (
     html: HtmlAST,
     snapshot: BlockSnapshot,
     assets?: AssetsManager
@@ -65,7 +65,7 @@ export class HtmlAdapter extends BaseAdapter<Html> {
       (node): node is HtmlAST =>
         'type' in (node as object) && (node as HtmlAST).type !== undefined
     );
-    walker.setEnter(async (o, context) => {
+    walker.setEnter((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.toMatch(o)) {
           const adapterContext: AdapterContext<
@@ -81,11 +81,11 @@ export class HtmlAdapter extends BaseAdapter<Html> {
             textBuffer: { content: '' },
             assets,
           };
-          await matcher.toBlockSnapshot.enter?.(o, adapterContext);
+          matcher.toBlockSnapshot.enter?.(o, adapterContext);
         }
       }
     });
-    walker.setLeave(async (o, context) => {
+    walker.setLeave((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.toMatch(o)) {
           const adapterContext: AdapterContext<
@@ -101,7 +101,7 @@ export class HtmlAdapter extends BaseAdapter<Html> {
             textBuffer: { content: '' },
             assets,
           };
-          await matcher.toBlockSnapshot.leave?.(o, adapterContext);
+          matcher.toBlockSnapshot.leave?.(o, adapterContext);
         }
       }
     });
@@ -119,7 +119,7 @@ export class HtmlAdapter extends BaseAdapter<Html> {
       (node): node is BlockSnapshot =>
         BlockSnapshotSchema.safeParse(node).success
     );
-    walker.setEnter(async (o, context) => {
+    walker.setEnter((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.fromMatch(o)) {
           const adapterContext: AdapterContext<
@@ -139,11 +139,11 @@ export class HtmlAdapter extends BaseAdapter<Html> {
               assetsIds.push(assetsId);
             },
           };
-          await matcher.fromBlockSnapshot.enter?.(o, adapterContext);
+          matcher.fromBlockSnapshot.enter?.(o, adapterContext);
         }
       }
     });
-    walker.setLeave(async (o, context) => {
+    walker.setLeave((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.fromMatch(o)) {
           const adapterContext: AdapterContext<
@@ -160,12 +160,12 @@ export class HtmlAdapter extends BaseAdapter<Html> {
             textBuffer: { content: '' },
             assets,
           };
-          await matcher.fromBlockSnapshot.leave?.(o, adapterContext);
+          matcher.fromBlockSnapshot.leave?.(o, adapterContext);
         }
       }
     });
     return {
-      ast: (await walker.walk(snapshot, html)) as Root,
+      ast: walker.walk(snapshot, html) as Root,
       assetsIds,
     };
   };
@@ -261,7 +261,7 @@ export class HtmlAdapter extends BaseAdapter<Html> {
     };
   }
 
-  override toBlockSnapshot(
+  override async toBlockSnapshot(
     payload: ToBlockSnapshotPayload<string>
   ): Promise<BlockSnapshot> {
     const htmlAst = this._htmlToAst(payload.file);
@@ -336,7 +336,7 @@ export class HtmlAdapter extends BaseAdapter<Html> {
             },
             children: [],
           },
-          await this._traverseHtml(
+          this._traverseHtml(
             htmlAst,
             blockSnapshotRoot as BlockSnapshot,
             payload.assets
@@ -346,9 +346,9 @@ export class HtmlAdapter extends BaseAdapter<Html> {
     };
   }
 
-  override async toSliceSnapshot(
+  override toSliceSnapshot(
     payload: HtmlToSliceSnapshotPayload
-  ): Promise<SliceSnapshot | null> {
+  ): SliceSnapshot | null {
     const htmlAst = this._htmlToAst(payload.file);
     const blockSnapshotRoot = {
       type: 'block',
@@ -363,11 +363,11 @@ export class HtmlAdapter extends BaseAdapter<Html> {
       },
       children: [],
     };
-    const contentSlice = (await this._traverseHtml(
+    const contentSlice = this._traverseHtml(
       htmlAst,
       blockSnapshotRoot as BlockSnapshot,
       payload.assets
-    )) as BlockSnapshot;
+    ) as BlockSnapshot;
     if (contentSlice.children.length === 0) {
       return null;
     }

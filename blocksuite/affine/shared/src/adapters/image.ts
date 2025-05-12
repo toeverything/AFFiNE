@@ -1,5 +1,5 @@
+import { ImageBlockSchema } from '@blocksuite/affine-model';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
-import { sha } from '@blocksuite/global/utils';
 import {
   type AssetsManager,
   BaseAdapter,
@@ -88,27 +88,31 @@ export class ImageAdapter extends BaseAdapter<Image> {
     );
   }
 
-  override async toSliceSnapshot(
+  override toSliceSnapshot(
     payload: ImageToSliceSnapshotPayload
-  ): Promise<SliceSnapshot | null> {
+  ): SliceSnapshot | null {
+    if (payload.file.length === 0) return null;
+
     const content: SliceSnapshot['content'] = [];
-    for (const item of payload.file) {
-      const blobId = await sha(await item.arrayBuffer());
-      payload.assets?.getAssets().set(blobId, item);
-      await payload.assets?.writeToBlob(blobId);
+    const flavour = ImageBlockSchema.model.flavour;
+
+    for (const blob of payload.file) {
+      const id = nanoid();
+
+      payload.assets?.tempAssetsMap.set(id, {
+        blob,
+        mapInto: sourceId => ({ sourceId }),
+      });
+
       content.push({
         type: 'block',
-        flavour: 'affine:image',
-        id: nanoid(),
-        props: {
-          sourceId: blobId,
-        },
+        flavour,
+        id,
+        props: {},
         children: [],
       });
     }
-    if (content.length === 0) {
-      return null;
-    }
+
     return {
       type: 'slice',
       content,

@@ -118,7 +118,7 @@ export const markdownToSnapshot = async (
     pageId: store.id,
   };
 
-  const snapshot = await markdownAdapter.toSliceSnapshot(payload);
+  const snapshot = markdownAdapter.toSliceSnapshot(payload);
 
   return {
     snapshot,

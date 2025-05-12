@@ -97,11 +97,11 @@ export class ClipboardAdapter extends BaseAdapter<string> {
 
   override toSliceSnapshot(
     payload: ToSliceSnapshotPayload<string>
-  ): Promise<SliceSnapshot> {
+  ): SliceSnapshot {
     const json = JSON.parse(payload.file);
     const { blobs, snapshot } = json;
     const map = payload.assets?.getAssets();
     decodeClipboardBlobs(blobs, map);
-    return Promise.resolve(snapshot);
+    return snapshot;
   }
 }

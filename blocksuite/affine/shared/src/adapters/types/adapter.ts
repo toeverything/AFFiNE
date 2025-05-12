@@ -76,7 +76,7 @@ export type BlockAdapterMatcher<
     enter?: (
       o: NodeProps<TNode>,
       context: AdapterContext<TNode, BlockSnapshot, TConverter>
-    ) => void | Promise<void>;
+    ) => void;
 
     /**
      * Called when leaving a target walker node during traversal
@@ -86,7 +86,7 @@ export type BlockAdapterMatcher<
     leave?: (
       o: NodeProps<TNode>,
       context: AdapterContext<TNode, BlockSnapshot, TConverter>
-    ) => void | Promise<void>;
+    ) => void;
   };
 
   /**
@@ -101,7 +101,7 @@ export type BlockAdapterMatcher<
     enter?: (
       o: NodeProps<BlockSnapshot>,
       context: AdapterContext<BlockSnapshot, TNode, TConverter>
-    ) => void | Promise<void>;
+    ) => void;
 
     /**
      * Called when leaving a BlockSnapshot walker node during traversal
@@ -111,7 +111,7 @@ export type BlockAdapterMatcher<
     leave?: (
       o: NodeProps<BlockSnapshot>,
       context: AdapterContext<BlockSnapshot, TNode, TConverter>
-    ) => void | Promise<void>;
+    ) => void;
   };
 };
 

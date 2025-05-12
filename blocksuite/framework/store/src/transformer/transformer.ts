@@ -225,7 +225,7 @@ export class Transformer {
         props,
       };
       const transformer = this._getTransformer(schema);
-      const modelData = await transformer.fromSnapshot({
+      const modelData = transformer.fromSnapshot({
         json: snapshotLeaf,
         assets: this._assetsManager,
         children,
@@ -245,8 +245,9 @@ export class Transformer {
     parent?: string,
     index?: number
   ): Promise<Slice | undefined> => {
-    SliceSnapshotSchema.parse(snapshot);
     try {
+      SliceSnapshotSchema.parse(snapshot);
+
       this._slots.beforeImport.next({
         type: 'slice',
         snapshot,
@@ -266,10 +267,11 @@ export class Transformer {
       for (const block of content) {
         this._triggerBeforeImportEvent(block, parent, index);
       }
+
       const flatSnapshots: FlatSnapshot[] = [];
       this._flattenSnapshot(tmpRootSnapshot, flatSnapshots, parent, index);
 
-      const blockTree = await this._convertFlatSnapshots(flatSnapshots);
+      const blockTree = this._convertFlatSnapshots(flatSnapshots);
       const first = content[0];
 
       // check if the slice is already in the doc
@@ -406,12 +408,12 @@ export class Transformer {
     return snapshot;
   }
 
-  private async _convertFlatSnapshots(flatSnapshots: FlatSnapshot[]) {
+  private _convertFlatSnapshots(flatSnapshots: FlatSnapshot[]) {
     // Phase 1: Convert snapshots to draft models in series
     // This is not time-consuming, this is faster than Promise.all
     const draftModels = [];
     for (const flat of flatSnapshots) {
-      const draft = await this._convertSnapshotToDraftModel(flat);
+      const draft = this._convertSnapshotToDraftModel(flat);
       if (draft) {
         draft.id = flat.snapshot.id;
       }
@@ -436,14 +438,14 @@ export class Transformer {
     return blockTree;
   }
 
-  private async _convertSnapshotToDraftModel(
+  private _convertSnapshotToDraftModel(
     flat: FlatSnapshot
-  ): Promise<DraftModel | undefined> {
+  ): DraftModel | undefined {
     try {
       const { children, flavour } = flat.snapshot;
       const schema = this._getSchema(flavour);
       const transformer = this._getTransformer(schema);
-      const { props } = await transformer.fromSnapshot({
+      const { props } = transformer.fromSnapshot({
         json: {
           id: flat.snapshot.id,
           flavour: flat.snapshot.flavour,
@@ -520,16 +522,16 @@ export class Transformer {
     doc: Store,
     parentId?: string,
     startIndex?: number,
-    counter: number = 0
+    counter = 0
   ) {
     for (let index = 0; index < nodes.length; index++) {
       const node = nodes[index];
       const { draft } = node;
-      const { id, flavour } = draft;
+      const { id, flavour, props } = draft;
 
       const actualIndex =
         startIndex !== undefined ? startIndex + index : undefined;
-      doc.addBlock(flavour, { id, ...draft.props }, parentId, actualIndex);
+      doc.addBlock(flavour, { id, ...props }, parentId, actualIndex);
 
       const model = doc.getBlock(id)?.model;
       if (!model) {
@@ -610,7 +612,7 @@ export class Transformer {
     const flatSnapshots: FlatSnapshot[] = [];
     this._flattenSnapshot(snapshot, flatSnapshots, parent, index);
 
-    const blockTree = await this._convertFlatSnapshots(flatSnapshots);
+    const blockTree = this._convertFlatSnapshots(flatSnapshots);
 
     await this._insertBlockTree([blockTree], doc, parent, index);
 

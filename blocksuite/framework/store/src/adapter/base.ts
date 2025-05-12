@@ -191,7 +191,7 @@ export abstract class BaseAdapter<AdapterTarget = unknown> {
     index?: number
   ) {
     try {
-      const snapshot = await this.toSliceSnapshot(payload);
+      const snapshot = this.toSliceSnapshot(payload);
       if (!snapshot) return;
       return await this.job.snapshotToSlice(snapshot, doc, parent, index);
     } catch (error) {
@@ -203,7 +203,7 @@ export abstract class BaseAdapter<AdapterTarget = unknown> {
 
   abstract toSliceSnapshot(
     payload: ToSliceSnapshotPayload<AdapterTarget>
-  ): Promise<SliceSnapshot | null> | SliceSnapshot | null;
+  ): SliceSnapshot | null;
 }
 
 type Keyof<T> = T extends unknown ? keyof T : never;
@@ -211,7 +211,7 @@ type Keyof<T> = T extends unknown ? keyof T : never;
 type WalkerFn<ONode extends object, TNode extends object> = (
   o: NodeProps<ONode>,
   context: ASTWalkerContext<TNode>
-) => Promise<void> | void;
+) => void;
 
 export type NodeProps<Node extends object> = {
   node: Node;
@@ -229,18 +229,18 @@ export class ASTWalker<ONode extends object, TNode extends object | never> {
 
   private _leave: WalkerFn<ONode, TNode> | undefined;
 
-  private readonly _visit = async (o: NodeProps<ONode>) => {
+  private readonly _visit = (o: NodeProps<ONode>) => {
     if (!o.node) return;
     this.context._skipChildrenNum = 0;
     this.context._skip = false;
 
     if (this._enter) {
-      await this._enter(o, this.context);
+      this._enter(o, this.context);
     }
 
     if (this.context._skip) {
       if (this._leave) {
-        await this._leave(o, this.context);
+        this._leave(o, this.context);
       }
       return;
     }
@@ -262,7 +262,7 @@ export class ASTWalker<ONode extends object, TNode extends object | never> {
               this._isONode(item)
             ) {
               const nextItem = value[i + 1] ?? null;
-              await this._visit({
+              this._visit({
                 node: item,
                 next: nextItem,
                 parent: o,
@@ -275,7 +275,7 @@ export class ASTWalker<ONode extends object, TNode extends object | never> {
           this.context._skipChildrenNum === 0 &&
           this._isONode(value)
         ) {
-          await this._visit({
+          this._visit({
             node: value,
             next: null,
             parent: o,
@@ -287,7 +287,7 @@ export class ASTWalker<ONode extends object, TNode extends object | never> {
     }
 
     if (this._leave) {
-      await this._leave(o, this.context);
+      this._leave(o, this.context);
     }
   };
 
@@ -305,17 +305,17 @@ export class ASTWalker<ONode extends object, TNode extends object | never> {
     this._isONode = fn;
   };
 
-  walk = async (oNode: ONode, tNode: TNode) => {
+  walk = (oNode: ONode, tNode: TNode) => {
     this.context.openNode(tNode);
-    await this._visit({ node: oNode, parent: null, prop: null, index: null });
+    this._visit({ node: oNode, parent: null, prop: null, index: null });
     if (this.context.stack.length !== 1) {
       throw new BlockSuiteError(1, 'There are unclosed nodes');
     }
     return this.context.currentNode();
   };
 
-  walkONode = async (oNode: ONode) => {
-    await this._visit({ node: oNode, parent: null, prop: null, index: null });
+  walkONode = (oNode: ONode) => {
+    this._visit({ node: oNode, parent: null, prop: null, index: null });
   };
 
   constructor() {

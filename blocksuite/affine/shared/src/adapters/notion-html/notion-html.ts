@@ -55,7 +55,7 @@ type NotionHtmlToDocSnapshotPayload = {
 type NotionHtmlToBlockSnapshotPayload = NotionHtmlToDocSnapshotPayload;
 
 export class NotionHtmlAdapter extends BaseAdapter<NotionHtml> {
-  private readonly _traverseNotionHtml = async (
+  private readonly _traverseNotionHtml = (
     html: HtmlAST,
     snapshot: BlockSnapshot,
     assets?: AssetsManager,
@@ -66,7 +66,7 @@ export class NotionHtmlAdapter extends BaseAdapter<NotionHtml> {
       (node): node is HtmlAST =>
         'type' in (node as object) && (node as HtmlAST).type !== undefined
     );
-    walker.setEnter(async (o, context) => {
+    walker.setEnter((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.toMatch(o)) {
           const adapterContext: AdapterContext<
@@ -83,11 +83,11 @@ export class NotionHtmlAdapter extends BaseAdapter<NotionHtml> {
             assets,
             pageMap,
           };
-          await matcher.toBlockSnapshot.enter?.(o, adapterContext);
+          matcher.toBlockSnapshot.enter?.(o, adapterContext);
         }
       }
     });
-    walker.setLeave(async (o, context) => {
+    walker.setLeave((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.toMatch(o)) {
           const adapterContext: AdapterContext<
@@ -104,7 +104,7 @@ export class NotionHtmlAdapter extends BaseAdapter<NotionHtml> {
             assets,
             pageMap,
           };
-          await matcher.toBlockSnapshot.leave?.(o, adapterContext);
+          matcher.toBlockSnapshot.leave?.(o, adapterContext);
         }
       }
     });
@@ -162,7 +162,7 @@ export class NotionHtmlAdapter extends BaseAdapter<NotionHtml> {
     );
   }
 
-  override toBlockSnapshot(
+  override async toBlockSnapshot(
     payload: NotionHtmlToBlockSnapshotPayload
   ): Promise<BlockSnapshot> {
     const notionHtmlAst = this._htmlToAst(payload.file);
@@ -243,7 +243,7 @@ export class NotionHtmlAdapter extends BaseAdapter<NotionHtml> {
             },
             children: [],
           },
-          await this._traverseNotionHtml(
+          this._traverseNotionHtml(
             notionHtmlAst,
             blockSnapshotRoot as BlockSnapshot,
             payload.assets,
@@ -254,9 +254,9 @@ export class NotionHtmlAdapter extends BaseAdapter<NotionHtml> {
     };
   }
 
-  override async toSliceSnapshot(
+  override toSliceSnapshot(
     payload: NotionHtmlToSliceSnapshotPayload
-  ): Promise<SliceSnapshot | null> {
+  ): SliceSnapshot | null {
     const notionHtmlAst = this._htmlToAst(payload.file);
     const blockSnapshotRoot = {
       type: 'block',
@@ -271,11 +271,11 @@ export class NotionHtmlAdapter extends BaseAdapter<NotionHtml> {
       },
       children: [],
     };
-    const contentSlice = (await this._traverseNotionHtml(
+    const contentSlice = this._traverseNotionHtml(
       notionHtmlAst,
       blockSnapshotRoot as BlockSnapshot,
       payload.assets
-    )) as BlockSnapshot;
+    ) as BlockSnapshot;
     if (contentSlice.children.length === 0) {
       return null;
     }

@@ -8,3 +8,4 @@ export * from './proxy';
 export * from './replace-id';
 export * from './surface-ref-to-embed';
 export * from './title';
+export * from './upload';

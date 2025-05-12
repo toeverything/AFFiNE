@@ -101,10 +101,14 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
 
     this.resourceController.setEngine(this.std.store.blobSync);
 
+    this.disposables.add(
+      this.resourceController.blobId$.subscribe(blobId => {
+        if (!blobId) return;
+        this.refreshData();
+      })
+    );
     this.disposables.add(this.resourceController.subscribe());
     this.disposables.add(this.resourceController);
-
-    this.refreshData();
   }
 
   override firstUpdated() {

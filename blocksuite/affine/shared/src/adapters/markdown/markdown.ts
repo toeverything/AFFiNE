@@ -61,7 +61,7 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
         'type' in (node as object) &&
         (node as MarkdownAST).type !== undefined
     );
-    walker.setEnter(async (o, context) => {
+    walker.setEnter((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.toMatch(o)) {
           const adapterContext: AdapterContext<
@@ -78,11 +78,11 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
             textBuffer: { content: '' },
             assets,
           };
-          await matcher.toBlockSnapshot.enter?.(o, adapterContext);
+          matcher.toBlockSnapshot.enter?.(o, adapterContext);
         }
       }
     });
-    walker.setLeave(async (o, context) => {
+    walker.setLeave((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.toMatch(o)) {
           const adapterContext: AdapterContext<
@@ -99,7 +99,7 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
             textBuffer: { content: '' },
             assets,
           };
-          await matcher.toBlockSnapshot.leave?.(o, adapterContext);
+          matcher.toBlockSnapshot.leave?.(o, adapterContext);
         }
       }
     });
@@ -117,7 +117,7 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
       (node): node is BlockSnapshot =>
         BlockSnapshotSchema.safeParse(node).success
     );
-    walker.setEnter(async (o, context) => {
+    walker.setEnter((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.fromMatch(o)) {
           const adapterContext: AdapterContext<
@@ -137,11 +137,11 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
               assetsIds.push(assetsId);
             },
           };
-          await matcher.fromBlockSnapshot.enter?.(o, adapterContext);
+          matcher.fromBlockSnapshot.enter?.(o, adapterContext);
         }
       }
     });
-    walker.setLeave(async (o, context) => {
+    walker.setLeave((o, context) => {
       for (const matcher of this.blockMatchers) {
         if (matcher.fromMatch(o)) {
           const adapterContext: AdapterContext<
@@ -158,12 +158,12 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
             textBuffer: { content: '' },
             assets,
           };
-          await matcher.fromBlockSnapshot.leave?.(o, adapterContext);
+          matcher.fromBlockSnapshot.leave?.(o, adapterContext);
         }
       }
     });
     return {
-      ast: (await walker.walk(snapshot, markdown)) as Root,
+      ast: walker.walk(snapshot, markdown) as Root,
       assetsIds,
     };
   };
@@ -354,7 +354,7 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
             },
             children: [],
           },
-          await this._traverseMarkdown(
+          this._traverseMarkdown(
             markdownAst,
             blockSnapshotRoot as BlockSnapshot,
             payload.assets
@@ -364,9 +364,9 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
     };
   }
 
-  async toSliceSnapshot(
+  toSliceSnapshot(
     payload: MarkdownToSliceSnapshotPayload
-  ): Promise<SliceSnapshot | null> {
+  ): SliceSnapshot | null {
     const markdownFile = this.preprocessorManager.process(
       'slice',
       payload.file
@@ -385,11 +385,11 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
       },
       children: [],
     } as BlockSnapshot;
-    const contentSlice = (await this._traverseMarkdown(
+    const contentSlice = this._traverseMarkdown(
       markdownAst,
       blockSnapshotRoot,
       payload.assets
-    )) as BlockSnapshot;
+    ) as BlockSnapshot;
     if (contentSlice.children.length === 0) {
       return null;
     }

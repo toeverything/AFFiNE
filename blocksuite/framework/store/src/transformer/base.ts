@@ -59,9 +59,7 @@ export class BaseBlockTransformer<Props extends object = object> {
 
   constructor(public readonly transformerConfigs: Map<string, unknown>) {}
 
-  fromSnapshot({
-    json,
-  }: FromSnapshotPayload): Promise<SnapshotNode<Props>> | SnapshotNode<Props> {
+  fromSnapshot({ json }: FromSnapshotPayload): SnapshotNode<Props> {
     const { flavour, id, version, props: _props } = json;
 
     const props = this._propsFromSnapshot(_props);
