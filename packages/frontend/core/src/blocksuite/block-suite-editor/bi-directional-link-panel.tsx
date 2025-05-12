@@ -165,7 +165,8 @@ const usePreviewExtensions = () => {
   const extensions = useMemo(() => {
     const manager = getViewManager()
       .config.init()
-      .common(framework, enableAI)
+      .common(framework)
+      .ai(enableAI, framework)
       .theme(framework)
       .database(framework)
       .linkedDoc(framework)

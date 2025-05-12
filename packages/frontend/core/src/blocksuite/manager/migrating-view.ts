@@ -1,4 +1,5 @@
 import type { ReactToLit } from '@affine/component';
+import { AIViewExtension } from '@affine/core/blocksuite/extensions/ai';
 import { CloudViewExtension } from '@affine/core/blocksuite/extensions/cloud';
 import {
   EdgelessBlockHeaderConfigViewExtension,
@@ -7,6 +8,7 @@ import {
 import { AffineEditorConfigViewExtension } from '@affine/core/blocksuite/extensions/editor-config';
 import { createDatabaseOptionsConfig } from '@affine/core/blocksuite/extensions/editor-config/database';
 import { createLinkedWidgetConfig } from '@affine/core/blocksuite/extensions/editor-config/linked';
+import { ElectronViewExtension } from '@affine/core/blocksuite/extensions/electron';
 import { MobileViewExtension } from '@affine/core/blocksuite/extensions/mobile';
 import { PdfViewExtension } from '@affine/core/blocksuite/extensions/pdf';
 import { AffineThemeViewExtension } from '@affine/core/blocksuite/extensions/theme';
@@ -40,6 +42,8 @@ type Configure = {
   turboRenderer: (enableTurboRenderer?: boolean) => Configure;
   pdf: (enablePDFEmbedPreview?: boolean, reactToLit?: ReactToLit) => Configure;
   mobile: (framework?: FrameworkProvider) => Configure;
+  ai: (enable?: boolean, framework?: FrameworkProvider) => Configure;
+  electron: (framework?: FrameworkProvider) => Configure;
 
   value: ViewExtensionManager;
 };
@@ -69,6 +73,8 @@ class ViewProvider {
       CloudViewExtension,
       PdfViewExtension,
       MobileViewExtension,
+      AIViewExtension,
+      ElectronViewExtension,
     ]);
   }
 
@@ -91,6 +97,8 @@ class ViewProvider {
       turboRenderer: this._configureTurboRenderer,
       pdf: this._configurePdf,
       mobile: this._configureMobile,
+      ai: this._configureAI,
+      electron: this._configureElectron,
       value: this._manager,
     };
   }
@@ -108,18 +116,16 @@ class ViewProvider {
       .cloud()
       .turboRenderer()
       .pdf()
-      .mobile();
+      .mobile()
+      .ai()
+      .electron();
 
     return this.config;
   };
 
-  private readonly _configureCommon = (
-    framework?: FrameworkProvider,
-    enableAI?: boolean
-  ) => {
+  private readonly _configureCommon = (framework?: FrameworkProvider) => {
     this._manager.configure(AffineCommonViewExtension, {
       framework,
-      enableAI,
     });
     return this.config;
   };
@@ -235,6 +241,19 @@ class ViewProvider {
 
   private readonly _configureMobile = (framework?: FrameworkProvider) => {
     this._manager.configure(MobileViewExtension, { framework });
+    return this.config;
+  };
+
+  private readonly _configureAI = (
+    enable?: boolean,
+    framework?: FrameworkProvider
+  ) => {
+    this._manager.configure(AIViewExtension, { framework, enable });
+    return this.config;
+  };
+
+  private readonly _configureElectron = (framework?: FrameworkProvider) => {
+    this._manager.configure(ElectronViewExtension, { framework });
     return this.config;
   };
 }
