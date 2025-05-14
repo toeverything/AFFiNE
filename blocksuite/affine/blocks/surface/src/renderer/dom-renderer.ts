@@ -46,8 +46,6 @@ type RendererOptions = {
 const PLACEHOLDER_RESET_STYLES = {
   border: 'none',
   borderRadius: '0',
-  transform: '',
-  transformOrigin: '',
   boxShadow: 'none',
   opacity: '1',
 };
@@ -58,6 +56,7 @@ function calculatePlaceholderRect(
   zoom: number
 ) {
   return {
+    transform: elementModel.rotate ? `rotate(${elementModel.rotate}deg)` : '',
     left: `${(elementModel.x - viewportBounds.x) * zoom}px`,
     top: `${(elementModel.y - viewportBounds.y) * zoom}px`,
     width: `${elementModel.w * zoom}px`,
