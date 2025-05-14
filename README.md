@@ -193,6 +193,8 @@ We would like to express our gratitude to all the individuals who have already c
 
 Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiNE. Our team is diligently updating to the latest version. For more information on how to self-host AFFiNE, please refer to our [documentation](https://docs.affine.pro/docs/self-host-affine).
 
+[![Run on ClawCloud](https://raw.githubusercontent.com/ClawCloud/Run-Template/refs/heads/main/Run-on-ClawCloud.svg)](https://template.run.claw.cloud/?openapp=system-fastdeploy%3FtemplateName%3Daffine)
+
 ## Hiring
 
 Some amazing companies, including AFFiNE, are looking for developers! Are you interested in joining AFFiNE or its partners? Check out our [Discord channel](https://affine.pro/redirect/discord) for some of the latest jobs available.
