@@ -34,6 +34,7 @@ export const body = style({
 export const scrollArea = style({
   height: 0,
   flex: 1,
+  paddingTop: '24px',
 });
 
 // group
@@ -45,7 +46,7 @@ export const docItem = style({
   transition: 'width 0.2s ease-in-out',
 });
 
-export const filterArea = style({
+export const pinnedCollection = style({
   display: 'flex',
   flexDirection: 'column',
   gap: 8,
@@ -59,4 +60,24 @@ export const filterArea = style({
       padding: '0 16px',
     },
   },
+});
+
+export const filterArea = style({
+  display: 'flex',
+  flexDirection: 'row',
+  gap: 8,
+  padding: '0 24px',
+  paddingTop: '24px',
+  '@container': {
+    'docs-body (width <= 500px)': {
+      padding: '0 20px',
+    },
+    'docs-body (width <= 393px)': {
+      padding: '0 16px',
+    },
+  },
+});
+
+export const filters = style({
+  flex: 1,
 });

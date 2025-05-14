@@ -2,7 +2,7 @@ import { IconButton, Menu, MenuItem, MenuSeparator } from '@affine/component';
 import type { FilterParams } from '@affine/core/modules/collection-rules';
 import { WorkspacePropertyService } from '@affine/core/modules/workspace-property';
 import { useI18n } from '@affine/i18n';
-import { FavoriteIcon, PlusIcon } from '@blocksuite/icons/rc';
+import { ArrowLeftBigIcon, FavoriteIcon, PlusIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 
 import { WorkspacePropertyIcon, WorkspacePropertyName } from '../properties';
@@ -11,8 +11,10 @@ import * as styles from './styles.css';
 
 export const AddFilterMenu = ({
   onAdd,
+  onBack,
 }: {
   onAdd: (params: FilterParams) => void;
+  onBack?: () => void;
 }) => {
   const t = useI18n();
   const workspacePropertyService = useService(WorkspacePropertyService);
@@ -20,9 +22,17 @@ export const AddFilterMenu = ({
 
   return (
     <>
-      <div className={styles.variableSelectTitleStyle}>
-        {t['com.affine.filter']()}
+      <div className={styles.selectHeaderContainer}>
+        {onBack && (
+          <IconButton onClick={onBack}>
+            <ArrowLeftBigIcon />
+          </IconButton>
+        )}
+        <div className={styles.variableSelectTitleStyle}>
+          {t['com.affine.filter']()}
+        </div>
       </div>
+
       <MenuSeparator />
       <MenuItem
         prefixIcon={<FavoriteIcon className={styles.filterTypeItemIcon} />}

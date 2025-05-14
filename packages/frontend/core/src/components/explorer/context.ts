@@ -12,7 +12,9 @@ export type DocExplorerContextType = {
   selectedDocIds$: LiveData<string[]>;
   prevCheckAnchorId$?: LiveData<string | null>;
 } & {
-  [K in keyof ExplorerPreference as `${K}$`]: LiveData<ExplorerPreference[K]>;
+  [K in keyof Omit<ExplorerPreference, 'filters'> as `${K}$`]: LiveData<
+    ExplorerPreference[K]
+  >;
 };
 
 export const DocExplorerContext = createContext<DocExplorerContextType>(
@@ -27,7 +29,6 @@ export const createDocExplorerContext = () =>
     selectMode$: new LiveData<boolean>(false),
     selectedDocIds$: new LiveData<string[]>([]),
     prevCheckAnchorId$: new LiveData<string | null>(null),
-    filters$: new LiveData<ExplorerPreference['filters']>([]),
     groupBy$: new LiveData<ExplorerPreference['groupBy']>(undefined),
     orderBy$: new LiveData<ExplorerPreference['orderBy']>(undefined),
     displayProperties$: new LiveData<ExplorerPreference['displayProperties']>(

@@ -6969,6 +6969,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.all-docs.quick-action.select"](): string;
     /**
+      * `All`
+      */
+    ["com.affine.all-docs.pinned-collection.all"](): string;
+    /**
       * `core`
       */
     core(): string;

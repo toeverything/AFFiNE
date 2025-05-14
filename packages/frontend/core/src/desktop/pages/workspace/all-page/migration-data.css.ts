@@ -6,6 +6,16 @@ export const migrationDataNotificationContainer = style({
   border: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
   padding: '12px 240px 12px 12px',
   borderRadius: '8px',
+  margin: '0 24px',
+  marginTop: '24px',
+  '@container': {
+    'docs-body (width <= 500px)': {
+      margin: '0 20px',
+    },
+    'docs-body (width <= 393px)': {
+      margin: '0 16px',
+    },
+  },
 });
 
 export const migrationDataNotificationTitle = style({

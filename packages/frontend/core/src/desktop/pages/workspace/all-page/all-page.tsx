@@ -1,4 +1,10 @@
-import { Masonry, type MasonryGroup, useConfirmModal } from '@affine/component';
+import {
+  Button,
+  Masonry,
+  type MasonryGroup,
+  useConfirmModal,
+  usePromptModal,
+} from '@affine/component';
 import {
   createDocExplorerContext,
   DocExplorerContext,
@@ -7,6 +13,10 @@ import { DocListItem } from '@affine/core/components/explorer/docs-view/doc-list
 import { Filters } from '@affine/core/components/filter';
 import { ListFloatingToolbar } from '@affine/core/components/page-list/components/list-floating-toolbar';
 import { WorkspacePropertyTypes } from '@affine/core/components/workspace-property-types';
+import {
+  CollectionService,
+  PinnedCollectionService,
+} from '@affine/core/modules/collection';
 import { CollectionRulesService } from '@affine/core/modules/collection-rules';
 import type { FilterParams } from '@affine/core/modules/collection-rules/types';
 import { DocsService } from '@affine/core/modules/doc';
@@ -35,6 +45,7 @@ import { AllDocSidebarTabs } from '../layouts/all-doc-sidebar-tabs';
 import * as styles from './all-page.css';
 import { AllDocsHeader } from './all-page-header';
 import { MigrationAllDocsDataNotification } from './migration-data';
+import { PinnedCollections } from './pinned-collections';
 
 const GroupHeader = memo(function GroupHeader({
   groupId,
@@ -100,11 +111,34 @@ const DocListItemComponent = memo(function DocListItemComponent({
 export const AllPage = () => {
   const t = useI18n();
   const docsService = useService(DocsService);
+  const collectionService = useService(CollectionService);
+  const pinnedCollectionService = useService(PinnedCollectionService);
+
+  const [selectedCollectionId, setSelectedCollectionId] = useState<
+    string | null
+  >(null);
+  const selectedCollection = useLiveData(
+    selectedCollectionId
+      ? collectionService.collection$(selectedCollectionId)
+      : null
+  );
+
+  useEffect(() => {
+    // if selected collection is not found, set selected collection id to null
+    if (!selectedCollection && selectedCollectionId) {
+      setSelectedCollectionId(null);
+    }
+  }, [selectedCollection, selectedCollectionId]);
+
+  const selectedCollectionInfo = useLiveData(
+    selectedCollection ? selectedCollection.info$ : null
+  );
+
+  const [tempFilters, setTempFilters] = useState<FilterParams[]>([]);
 
   const [explorerContextValue] = useState(createDocExplorerContext);
 
   const view = useLiveData(explorerContextValue.view$);
-  const filters = useLiveData(explorerContextValue.filters$);
   const groupBy = useLiveData(explorerContextValue.groupBy$);
   const orderBy = useLiveData(explorerContextValue.orderBy$);
   const groups = useLiveData(explorerContextValue.groups$);
@@ -112,8 +146,8 @@ export const AllPage = () => {
   const collapsedGroups = useLiveData(explorerContextValue.collapsedGroups$);
   const selectMode = useLiveData(explorerContextValue.selectMode$);
 
+  const { openPromptModal } = usePromptModal();
   const { openConfirmModal } = useConfirmModal();
-
   const masonryItems = useMemo(() => {
     const items = groups.map((group: any) => {
       return {
@@ -143,12 +177,21 @@ export const AllPage = () => {
   const collectionRulesService = useService(CollectionRulesService);
   useEffect(() => {
     const subscription = collectionRulesService
-      .watch({
-        filters:
-          filters && filters.length > 0
-            ? filters
-            : [
-                // if no filters are present, match all non-trash documents
+      .watch(
+        // collection filters and temp filters can't exist at the same time
+        selectedCollectionInfo
+          ? {
+              filters: selectedCollectionInfo.rules.filters,
+              groupBy,
+              orderBy,
+              extraAllowList: selectedCollectionInfo.allowList,
+              extraFilters: [
+                {
+                  type: 'system',
+                  key: 'empty-journal',
+                  method: 'is',
+                  value: 'false',
+                },
                 {
                   type: 'system',
                   key: 'trash',
@@ -156,23 +199,38 @@ export const AllPage = () => {
                   value: 'false',
                 },
               ],
-        groupBy,
-        orderBy,
-        extraFilters: [
-          {
-            type: 'system',
-            key: 'empty-journal',
-            method: 'is',
-            value: 'false',
-          },
-          {
-            type: 'system',
-            key: 'trash',
-            method: 'is',
-            value: 'false',
-          },
-        ],
-      })
+            }
+          : {
+              filters:
+                tempFilters && tempFilters.length > 0
+                  ? tempFilters
+                  : [
+                      // if no filters are present, match all non-trash documents
+                      {
+                        type: 'system',
+                        key: 'trash',
+                        method: 'is',
+                        value: 'false',
+                      },
+                    ],
+              groupBy,
+              orderBy,
+              extraFilters: [
+                {
+                  type: 'system',
+                  key: 'empty-journal',
+                  method: 'is',
+                  value: 'false',
+                },
+                {
+                  type: 'system',
+                  key: 'trash',
+                  method: 'is',
+                  value: 'false',
+                },
+              ],
+            }
+      )
       .subscribe({
         next: result => {
           explorerContextValue.groups$.next(result.groups);
@@ -186,10 +244,12 @@ export const AllPage = () => {
     };
   }, [
     collectionRulesService,
-    explorerContextValue.groups$,
-    filters,
+    explorerContextValue,
     groupBy,
     orderBy,
+    selectedCollection,
+    selectedCollectionInfo,
+    tempFilters,
   ]);
 
   useEffect(() => {
@@ -206,12 +266,9 @@ export const AllPage = () => {
     };
   }, [explorerContextValue]);
 
-  const handleFilterChange = useCallback(
-    (filters: FilterParams[]) => {
-      explorerContextValue.filters$.next(filters);
-    },
-    [explorerContextValue]
-  );
+  const handleFilterChange = useCallback((filters: FilterParams[]) => {
+    setTempFilters(filters);
+  }, []);
 
   const handleCloseFloatingToolbar = useCallback(() => {
     explorerContextValue.selectMode$.next(false);
@@ -246,6 +303,42 @@ export const AllPage = () => {
     });
   }, [docsService.list, openConfirmModal, selectedDocIds, t]);
 
+  const handleSaveFilters = useCallback(() => {
+    openPromptModal({
+      title: t['com.affine.editCollection.saveCollection'](),
+      label: t['com.affine.editCollectionName.name'](),
+      inputOptions: {
+        placeholder: t['com.affine.editCollectionName.name.placeholder'](),
+      },
+      children: t['com.affine.editCollectionName.createTips'](),
+      confirmText: t['com.affine.editCollection.save'](),
+      cancelText: t['com.affine.editCollection.button.cancel'](),
+      confirmButtonOptions: {
+        variant: 'primary',
+      },
+      onConfirm(name) {
+        const id = collectionService.createCollection({
+          name,
+          rules: {
+            filters: tempFilters,
+          },
+        });
+        pinnedCollectionService.addPinnedCollection({
+          collectionId: id,
+          index: pinnedCollectionService.indexAt('after'),
+        });
+        setTempFilters([]);
+        setSelectedCollectionId(id);
+      },
+    });
+  }, [
+    collectionService,
+    openPromptModal,
+    pinnedCollectionService,
+    t,
+    tempFilters,
+  ]);
+
   return (
     <DocExplorerContext.Provider value={explorerContextValue}>
       <ViewTitle title={t['All pages']()} />
@@ -255,10 +348,40 @@ export const AllPage = () => {
       </ViewHeader>
       <ViewBody>
         <div className={styles.body}>
-          <div className={styles.filterArea}>
-            <MigrationAllDocsDataNotification />
-            <Filters filters={filters ?? []} onChange={handleFilterChange} />
+          <MigrationAllDocsDataNotification />
+          <div className={styles.pinnedCollection}>
+            <PinnedCollections
+              activeCollectionId={selectedCollectionId}
+              onClickAll={() => setSelectedCollectionId(null)}
+              onClickCollection={collectionId => {
+                setSelectedCollectionId(collectionId);
+                setTempFilters([]);
+              }}
+              onAddFilter={params => {
+                setSelectedCollectionId(null);
+                setTempFilters([...(tempFilters ?? []), params]);
+              }}
+              hiddenAdd={tempFilters.length > 0}
+            />
           </div>
+          {tempFilters.length > 0 && (
+            <div className={styles.filterArea}>
+              <Filters
+                className={styles.filters}
+                filters={tempFilters ?? []}
+                onChange={handleFilterChange}
+              />
+              <Button
+                variant="plain"
+                onClick={() => {
+                  setTempFilters([]);
+                }}
+              >
+                {t['Cancel']()}
+              </Button>
+              <Button onClick={handleSaveFilters}>{t['save']()}</Button>
+            </div>
+          )}
           <div className={styles.scrollArea}>
             <Masonry
               items={masonryItems}

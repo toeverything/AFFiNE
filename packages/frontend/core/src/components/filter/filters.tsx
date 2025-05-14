@@ -1,4 +1,5 @@
 import type { FilterParams } from '@affine/core/modules/collection-rules';
+import clsx from 'clsx';
 
 import { AddFilter } from './add-filter';
 import { Filter } from './filter';
@@ -6,9 +7,11 @@ import * as styles from './styles.css';
 
 export const Filters = ({
   filters,
+  className,
   onChange,
 }: {
   filters: FilterParams[];
+  className?: string;
   onChange?: (filters: FilterParams[]) => void;
 }) => {
   const handleDelete = (index: number) => {
@@ -20,7 +23,7 @@ export const Filters = ({
   };
 
   return (
-    <div className={styles.container}>
+    <div className={clsx(styles.container, className)}>
       {filters.map((filter, index) => {
         return (
           <Filter

@@ -42,6 +42,10 @@ export const AFFiNE_WORKSPACE_DB_SCHEMA = {
     isDeleted: f.boolean().optional(),
     // we will keep deleted properties in the database, for override legacy data
   },
+  pinnedCollections: {
+    collectionId: f.string().primaryKey(),
+    index: f.string(),
+  },
 } as const satisfies DBSchemaBuilder;
 export type AFFiNEWorkspaceDbSchema = typeof AFFiNE_WORKSPACE_DB_SCHEMA;
 

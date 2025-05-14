@@ -30,12 +30,24 @@ export const filterItemCloseStyle = style({
   marginLeft: '4px',
 });
 
+export const selectHeaderContainer = style({
+  display: 'flex',
+  flexDirection: 'row',
+  margin: '2px 2px',
+  alignItems: 'center',
+  gap: '4px',
+});
+
 export const variableSelectTitleStyle = style({
-  margin: '2px 12px',
   fontWeight: 500,
   lineHeight: '22px',
   fontSize: cssVar('fontSm'),
   color: cssVar('textPrimaryColor'),
+  selectors: {
+    '&:first-child': {
+      marginLeft: '12px',
+    },
+  },
 });
 
 export const filterTypeItemIcon = style({
