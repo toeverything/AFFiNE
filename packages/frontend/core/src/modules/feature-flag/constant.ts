@@ -250,6 +250,14 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
+  enable_dom_renderer: {
+    category: 'blocksuite',
+    bsFlag: 'enable_dom_renderer',
+    displayName: 'Enable DOM Renderer',
+    description: 'Enable DOM renderer for graphics elements',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
   enable_edgeless_scribbled_style: {
     category: 'blocksuite',
     bsFlag: 'enable_edgeless_scribbled_style',

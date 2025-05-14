@@ -2,6 +2,7 @@ import { addAttachments } from '@blocksuite/affine-block-attachment';
 import { EdgelessFrameManagerIdentifier } from '@blocksuite/affine-block-frame';
 import { addImages } from '@blocksuite/affine-block-image';
 import {
+  CanvasRenderer,
   DefaultTool,
   EdgelessCRUDIdentifier,
   ExportManager,
@@ -507,6 +508,14 @@ export class EdgelessClipboardController extends PageClipboard {
       }
 
       this._checkCanContinueToCanvas(host, pathname, editorMode);
+    }
+
+    // TODO: handle DOM renderer case for clipboard image generation
+    if (!(this.surface.renderer instanceof CanvasRenderer)) {
+      console.warn(
+        'Skipping canvas generation for clipboard: DOM renderer active.'
+      );
+      return canvas; // Return the empty canvas or handle error
     }
 
     const surfaceCanvas = this.surface.renderer.getCanvasByBound(

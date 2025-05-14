@@ -152,7 +152,6 @@ export class CanvasRenderer {
         : 1;
 
       this.canvas.style.zIndex = maximumZIndex.toString();
-
       for (let i = 0; i < canvasLayers.length; ++i) {
         const layer = canvasLayers[i];
         const created = i < currentCanvases.length;

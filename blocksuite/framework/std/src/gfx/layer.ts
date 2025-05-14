@@ -165,7 +165,6 @@ export class LayerManager extends GfxExtension {
         ];
         curLayer.zIndex = currentCSSZindex;
         layers.push(curLayer as LayerManager['layers'][number]);
-
         currentCSSZindex +=
           curLayer.type === 'block' ? curLayer.elements.length : 1;
       }
@@ -772,9 +771,7 @@ export class LayerManager extends GfxExtension {
   getZIndex(element: GfxModel): number {
     // @ts-expect-error FIXME: ts error
     const layer = this.layers.find(layer => layer.set.has(element));
-
-    if (!layer) return -1;
-
+    if (!layer) return 0;
     // @ts-expect-error FIXME: ts error
     return layer.zIndex + layer.elements.indexOf(element);
   }

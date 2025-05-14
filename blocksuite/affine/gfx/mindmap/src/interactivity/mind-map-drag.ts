@@ -1,4 +1,5 @@
 import {
+  CanvasRenderer,
   OverlayIdentifier,
   type SurfaceBlockComponent,
 } from '@blocksuite/affine-block-surface';
@@ -315,8 +316,16 @@ export class MindMapDragExtension extends InteractivityExtension {
     const renderer = surfaceBlock?.renderer;
     const indicatorOverlay = this._indicatorOverlay;
 
-    if (!renderer || !indicatorOverlay) {
-      return;
+    // TODO: handle DOM renderer case for mindmap drag image
+    if (
+      !renderer ||
+      !(renderer instanceof CanvasRenderer) ||
+      !indicatorOverlay
+    ) {
+      console.warn(
+        'Skipping drag image setup: DOM renderer or overlay missing.'
+      );
+      return () => {}; // Return an empty cleanup function
     }
 
     const nodeBound = mindmapNode.element.elementBound;
