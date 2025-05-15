@@ -202,7 +202,12 @@ export const TagsDocListProperty = ({ doc }: DocListPropertyProps) => {
   );
 };
 
-export const TagsGroupHeader = ({ groupId, docCount }: GroupHeaderProps) => {
+export const TagsGroupHeader = ({
+  groupId,
+  docCount,
+  collapsed,
+  onCollapse,
+}: GroupHeaderProps) => {
   const t = useI18n();
   const tagService = useService(TagService);
   const tag = useLiveData(tagService.tagList.tagByTagId$(groupId));
@@ -212,6 +217,8 @@ export const TagsGroupHeader = ({ groupId, docCount }: GroupHeaderProps) => {
       <PlainTextDocGroupHeader
         groupId={groupId}
         docCount={docCount}
+        collapsed={collapsed}
+        onCollapse={onCollapse}
         icon={
           <div
             style={{
@@ -231,6 +238,8 @@ export const TagsGroupHeader = ({ groupId, docCount }: GroupHeaderProps) => {
     <PlainTextDocGroupHeader
       groupId={groupId}
       docCount={docCount}
+      collapsed={collapsed}
+      onCollapse={onCollapse}
       icon={<TagIcon tag={tag} />}
     >
       <TagName tag={tag} />

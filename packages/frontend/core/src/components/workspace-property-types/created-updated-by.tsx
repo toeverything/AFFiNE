@@ -166,11 +166,18 @@ export const UpdatedByDocListInlineProperty = ({
 export const ModifiedByGroupHeader = ({
   groupId,
   docCount,
+  collapsed,
+  onCollapse,
 }: GroupHeaderProps) => {
   const userId = groupId;
 
   return (
-    <PlainTextDocGroupHeader groupId={groupId} docCount={docCount}>
+    <PlainTextDocGroupHeader
+      groupId={groupId}
+      docCount={docCount}
+      collapsed={collapsed}
+      onCollapse={onCollapse}
+    >
       <div className={styles.userLabelContainer}>
         <PublicUserLabel id={userId} size={20} showName={false} />
       </div>

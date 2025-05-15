@@ -30,4 +30,5 @@ export interface GroupHeaderProps {
   groupId: string;
   docCount: number;
   collapsed: boolean;
+  onCollapse: (collapsed: boolean) => void;
 }

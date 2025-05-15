@@ -61,6 +61,8 @@ export const calcLayout = (
     groupsGap: number;
     groupHeaderGapWithItems: number;
     collapsedGroups: string[];
+    groupHeight: number | ((group: MasonryGroup) => number);
+    itemHeight: number | ((item: MasonryItem) => number);
   }
 ) => {
   const {
@@ -74,6 +76,8 @@ export const calcLayout = (
     groupsGap,
     groupHeaderGapWithItems,
     collapsedGroups,
+    groupHeight,
+    itemHeight,
   } = options;
   const paddingX = calcPX(_paddingX, totalWidth);
 
@@ -92,7 +96,7 @@ export const calcLayout = (
       x: 0,
       y: finalHeight,
       w: totalWidth,
-      h: group.height,
+      h: typeof groupHeight === 'function' ? groupHeight(group) : groupHeight,
     };
     layout.set(group.id, groupHeaderLayout);
 
@@ -110,19 +114,21 @@ export const calcLayout = (
       const hasGap = heightStack[minHeightIndex] ? gapY : 0;
       const x = minHeightIndex * (width + gapX) + paddingX;
       const y = finalHeight + minHeight + hasGap;
+      const height =
+        typeof itemHeight === 'function' ? itemHeight(item) : itemHeight;
 
-      heightStack[minHeightIndex] += item.height + hasGap;
+      heightStack[minHeightIndex] += height + hasGap;
       layout.set(itemId, {
         type: 'item',
         x,
         y,
         w: width,
-        h: item.height,
+        h: height,
       });
     });
 
-    const groupHeight = Math.max(...heightStack) + paddingY;
-    finalHeight += groupHeight;
+    const height = Math.max(...heightStack) + paddingY;
+    finalHeight += height;
   });
 
   return { layout, height: finalHeight };
@@ -167,9 +173,9 @@ export const calcSticky = (options: {
     return xywh.y < scrollY && (!next || next[1].y > scrollY);
   });
 
-  return stickyGroupEntry
+  return stickyGroupEntry !== undefined
     ? stickyGroupEntry[0]
     : groupEntries.length > 0
       ? groupEntries[0][0]
-      : '';
+      : undefined;
 };

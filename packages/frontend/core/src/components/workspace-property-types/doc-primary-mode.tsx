@@ -137,6 +137,8 @@ export const DocPrimaryModeDocListProperty = ({
 export const DocPrimaryModeGroupHeader = ({
   groupId,
   docCount,
+  collapsed,
+  onCollapse,
 }: GroupHeaderProps) => {
   const t = useI18n();
   const text =
@@ -147,7 +149,12 @@ export const DocPrimaryModeGroupHeader = ({
         : 'Default';
 
   return (
-    <PlainTextDocGroupHeader groupId={groupId} docCount={docCount}>
+    <PlainTextDocGroupHeader
+      groupId={groupId}
+      docCount={docCount}
+      collapsed={collapsed}
+      onCollapse={onCollapse}
+    >
       {text}
     </PlainTextDocGroupHeader>
   );

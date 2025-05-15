@@ -236,10 +236,20 @@ export const JournalDocListProperty = ({ doc }: DocListPropertyProps) => {
   );
 };
 
-export const JournalGroupHeader = ({ groupId, docCount }: GroupHeaderProps) => {
+export const JournalGroupHeader = ({
+  groupId,
+  docCount,
+  collapsed,
+  onCollapse,
+}: GroupHeaderProps) => {
   const text = groupId === 'true' ? 'Journal' : 'Not Journal';
   return (
-    <PlainTextDocGroupHeader groupId={groupId} docCount={docCount}>
+    <PlainTextDocGroupHeader
+      groupId={groupId}
+      docCount={docCount}
+      collapsed={collapsed}
+      onCollapse={onCollapse}
+    >
       {text}
     </PlainTextDocGroupHeader>
   );

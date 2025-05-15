@@ -7,7 +7,6 @@ import type { ExplorerPreference } from './types';
 export type DocExplorerContextType = {
   view$: LiveData<DocListItemView>;
   groups$: LiveData<Array<{ key: string; items: string[] }>>;
-  collapsedGroups$: LiveData<string[]>;
   selectMode$?: LiveData<boolean>;
   selectedDocIds$: LiveData<string[]>;
   prevCheckAnchorId$?: LiveData<string | null>;
@@ -25,7 +24,6 @@ export const createDocExplorerContext = () =>
   ({
     view$: new LiveData<DocListItemView>('list'),
     groups$: new LiveData<Array<{ key: string; items: string[] }>>([]),
-    collapsedGroups$: new LiveData<string[]>([]),
     selectMode$: new LiveData<boolean>(false),
     selectedDocIds$: new LiveData<string[]>([]),
     prevCheckAnchorId$: new LiveData<string | null>(null),

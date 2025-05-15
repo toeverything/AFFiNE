@@ -31,6 +31,23 @@ import {
 export interface MasonryProps extends React.HTMLAttributes<HTMLDivElement> {
   items: MasonryItem[] | MasonryGroup[];
 
+  itemComponent: React.ComponentType<{
+    groupId: string;
+    itemId: string;
+  }>;
+  groupComponent?: React.ComponentType<{
+    groupId: string;
+    itemCount: number;
+    collapsed: boolean;
+    onCollapse: (collapsed: boolean) => void;
+  }>;
+
+  groupHeight?: number | ((group: MasonryGroup) => number);
+  itemHeight: number | ((item: MasonryItem) => number);
+
+  groupClassName?: string;
+  itemClassName?: string;
+
   gapX?: number;
   gapY?: number;
   paddingX?: MasonryPX;
@@ -39,8 +56,7 @@ export interface MasonryProps extends React.HTMLAttributes<HTMLDivElement> {
   groupsGap?: number;
   groupHeaderGapWithItems?: number;
   stickyGroupHeader?: boolean;
-  collapsedGroups?: string[];
-  onGroupCollapse?: (groupId: string, collapsed: boolean) => void;
+
   /**
    * Specify the width of the item.
    * - `number`: The width of the item in pixels.
@@ -61,6 +77,9 @@ export interface MasonryProps extends React.HTMLAttributes<HTMLDivElement> {
   columns?: number;
   resizeDebounce?: number;
   preloadHeight?: number;
+
+  itemSelected?: string[];
+  onItemSelectedChanged?: (selected: string[]) => void;
 }
 
 export const Masonry = ({
@@ -77,11 +96,15 @@ export const Masonry = ({
   groupsGap = 0,
   groupHeaderGapWithItems = 0,
   stickyGroupHeader = true,
-  collapsedGroups,
   columns,
   preloadHeight = 50,
   resizeDebounce = 20,
-  onGroupCollapse,
+  groupComponent: GroupComponent,
+  itemComponent: ItemComponent,
+  groupClassName,
+  itemClassName,
+  itemHeight,
+  groupHeight,
   ...props
 }: MasonryProps) => {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -99,9 +122,17 @@ export const Masonry = ({
     undefined
   );
   const [totalWidth, setTotalWidth] = useState(0);
+
+  const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
+  const onGroupCollapse = useCallback((groupId: string, collapsed: boolean) => {
+    setCollapsedGroups(prev =>
+      collapsed ? [...prev, groupId] : prev.filter(id => id !== groupId)
+    );
+  }, []);
+
   const stickyGroupCollapsed = !!(
     collapsedGroups &&
-    stickyGroupId &&
+    stickyGroupId !== undefined &&
     collapsedGroups.includes(stickyGroupId)
   );
 
@@ -114,7 +145,7 @@ export const Masonry = ({
   }, [items]);
 
   const stickyGroup = useMemo(() => {
-    if (!stickyGroupId) return undefined;
+    if (stickyGroupId === undefined) return undefined;
     return groups.find(group => group.id === stickyGroupId);
   }, [groups, stickyGroupId]);
 
@@ -164,6 +195,8 @@ export const Masonry = ({
       groupsGap,
       groupHeaderGapWithItems,
       collapsedGroups: collapsedGroups ?? [],
+      groupHeight: groupHeight ?? 0,
+      itemHeight,
     });
     setLayoutMap(layout);
     setHeight(height);
@@ -180,8 +213,10 @@ export const Masonry = ({
     gapX,
     gapY,
     groupHeaderGapWithItems,
+    groupHeight,
     groups,
     groupsGap,
+    itemHeight,
     itemWidth,
     itemWidthMin,
     paddingX,
@@ -233,13 +268,7 @@ export const Masonry = ({
       >
         {groups.map(group => {
           // sleep is not calculated, do not render
-          const {
-            id: groupId,
-            items,
-            className,
-            Component,
-            ...groupProps
-          } = group;
+          const { id: groupId, items, ...groupProps } = group;
           const collapsed =
             collapsedGroups && collapsedGroups.includes(groupId);
 
@@ -248,14 +277,16 @@ export const Masonry = ({
               {/* group header */}
               {virtualScroll && !activeMap.get(group.id) ? null : (
                 <MasonryGroupHeader
-                  className={clsx(styles.groupHeader, className)}
+                  className={clsx(styles.groupHeader, groupClassName)}
                   key={`header-${groupId}`}
                   id={groupId}
                   locateMode={locateMode}
                   xywh={layoutMap.get(groupId)}
                   {...groupProps}
-                  onClick={() => onGroupCollapse?.(groupId, !collapsed)}
-                  Component={Component}
+                  onCollapse={collapsed =>
+                    onGroupCollapse?.(groupId, collapsed)
+                  }
+                  Component={GroupComponent}
                   itemCount={items.length}
                   collapsed={!!collapsed}
                   groupId={groupId}
@@ -265,19 +296,20 @@ export const Masonry = ({
               {/* group items */}
               {collapsed
                 ? null
-                : items.map(({ id: itemId, Component, ...item }) => {
+                : items.map(item => {
+                    const itemId = item.id;
                     const mixId = groupId ? `${groupId}:${itemId}` : itemId;
                     if (virtualScroll && !activeMap.get(mixId)) return null;
                     return (
                       <MasonryGroupItem
                         key={mixId}
                         id={mixId}
-                        {...item}
                         locateMode={locateMode}
                         xywh={layoutMap.get(mixId)}
                         groupId={groupId}
                         itemId={itemId}
-                        Component={Component}
+                        className={itemClassName}
+                        Component={ItemComponent}
                       />
                     );
                   })}
@@ -289,24 +321,24 @@ export const Masonry = ({
       <Scrollable.Scrollbar />
       {stickyGroup ? (
         <div
-          className={clsx(styles.stickyGroupHeader, stickyGroup.className)}
+          className={clsx(styles.stickyGroupHeader, groupClassName)}
           style={{
             padding: `0 ${calcPX(paddingX, totalWidth)}px`,
-            height: stickyGroup.height,
-            ...stickyGroup.style,
+            height:
+              typeof groupHeight === 'function'
+                ? groupHeight(stickyGroup)
+                : groupHeight,
           }}
-          onClick={() =>
-            onGroupCollapse?.(stickyGroup.id, !stickyGroupCollapsed)
-          }
         >
-          {stickyGroup.Component ? (
-            <stickyGroup.Component
+          {GroupComponent && (
+            <GroupComponent
               groupId={stickyGroup.id}
               itemCount={stickyGroup.items.length}
               collapsed={stickyGroupCollapsed}
+              onCollapse={collapsed => {
+                onGroupCollapse(stickyGroup.id, collapsed);
+              }}
             />
-          ) : (
-            stickyGroup.children
           )}
         </div>
       ) : null}
@@ -330,11 +362,12 @@ const MasonryGroupHeader = memo(function MasonryGroupHeader({
   groupId,
   itemCount,
   collapsed,
-  height,
   paddingX,
+  onCollapse,
   ...props
 }: Omit<MasonryItemProps, 'Component'> & {
-  Component?: MasonryGroup['Component'];
+  Component?: MasonryProps['groupComponent'];
+  onCollapse: (collapsed: boolean) => void;
   groupId: string;
   itemCount: number;
   collapsed: boolean;
@@ -347,16 +380,16 @@ const MasonryGroupHeader = memo(function MasonryGroupHeader({
           groupId={groupId}
           itemCount={itemCount}
           collapsed={collapsed}
+          onCollapse={onCollapse}
         />
       );
     }
     return children;
-  }, [Component, children, collapsed, groupId, itemCount]);
+  }, [Component, children, collapsed, groupId, itemCount, onCollapse]);
 
   return (
     <MasonryItem
       id={id}
-      height={height}
       style={{
         padding: `0 ${paddingX}px`,
         height: '100%',
@@ -381,6 +414,7 @@ const MasonryGroupItem = memo(function MasonryGroupItem({
 }: MasonryItemProps & {
   groupId: string;
   itemId: string;
+  Component?: MasonryProps['itemComponent'];
 }) {
   const content = useMemo(() => {
     if (Component) {

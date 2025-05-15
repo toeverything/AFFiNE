@@ -100,10 +100,17 @@ export const CheckboxDocListProperty = ({
 export const CheckboxGroupHeader = ({
   groupId,
   docCount,
+  collapsed,
+  onCollapse,
 }: GroupHeaderProps) => {
   const text = groupId === 'true' ? 'Checked' : 'Unchecked';
   return (
-    <PlainTextDocGroupHeader docCount={docCount} groupId={groupId}>
+    <PlainTextDocGroupHeader
+      docCount={docCount}
+      groupId={groupId}
+      collapsed={collapsed}
+      onCollapse={onCollapse}
+    >
       {text}
     </PlainTextDocGroupHeader>
   );

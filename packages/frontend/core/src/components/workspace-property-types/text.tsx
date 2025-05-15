@@ -260,10 +260,20 @@ export const TextDocListProperty = ({ value }: { value: string }) => {
   return <StackProperty icon={<TextTypeIcon />}>{value}</StackProperty>;
 };
 
-export const TextGroupHeader = ({ groupId, docCount }: GroupHeaderProps) => {
+export const TextGroupHeader = ({
+  groupId,
+  docCount,
+  collapsed,
+  onCollapse,
+}: GroupHeaderProps) => {
   const text = groupId || 'No Text';
   return (
-    <PlainTextDocGroupHeader groupId={groupId} docCount={docCount}>
+    <PlainTextDocGroupHeader
+      groupId={groupId}
+      docCount={docCount}
+      collapsed={collapsed}
+      onCollapse={onCollapse}
+    >
       {text}
     </PlainTextDocGroupHeader>
   );

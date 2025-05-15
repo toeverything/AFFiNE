@@ -50,10 +50,12 @@ import { PinnedCollections } from './pinned-collections';
 const GroupHeader = memo(function GroupHeader({
   groupId,
   collapsed,
+  onCollapse,
   itemCount,
 }: {
   groupId: string;
   collapsed?: boolean;
+  onCollapse: (collapsed: boolean) => void;
   itemCount: number;
 }) {
   const contextValue = useContext(DocExplorerContext);
@@ -76,12 +78,21 @@ const GroupHeader = memo(function GroupHeader({
           groupId={groupId}
           docCount={itemCount}
           collapsed={!!collapsed}
+          onCollapse={onCollapse}
         />
       );
     } else {
       return '// TODO: ' + groupType;
     }
-  }, [allProperties, collapsed, groupId, groupKey, groupType, itemCount]);
+  }, [
+    allProperties,
+    collapsed,
+    groupId,
+    groupKey,
+    groupType,
+    itemCount,
+    onCollapse,
+  ]);
 
   if (!groupType) {
     return null;
@@ -166,7 +177,6 @@ export const AllPage = () => {
   const orderBy = useLiveData(explorerContextValue.orderBy$);
   const groups = useLiveData(explorerContextValue.groups$);
   const selectedDocIds = useLiveData(explorerContextValue.selectedDocIds$);
-  const collapsedGroups = useLiveData(explorerContextValue.collapsedGroups$);
   const selectMode = useLiveData(explorerContextValue.selectMode$);
 
   const { openPromptModal } = usePromptModal();
@@ -175,27 +185,15 @@ export const AllPage = () => {
     const items = groups.map((group: any) => {
       return {
         id: group.key,
-        Component: groups.length > 1 ? GroupHeader : undefined,
-        height: groups.length > 1 ? 24 : 0,
-        className: styles.groupHeader,
         items: group.items.map((docId: string) => {
           return {
             id: docId,
-            Component: DocListItemComponent,
-            height:
-              view === 'list'
-                ? 42
-                : view === 'grid'
-                  ? 280
-                  : calcCardHeightById(docId),
-            'data-view': view,
-            className: styles.docItem,
           };
         }),
       } satisfies MasonryGroup;
     });
     return items;
-  }, [groups, view]);
+  }, [groups]);
 
   const collectionRulesService = useService(CollectionRulesService);
   useEffect(() => {
@@ -443,10 +441,23 @@ export const AllPage = () => {
               preloadHeight={100}
               itemWidth={'stretch'}
               virtualScroll
-              collapsedGroups={collapsedGroups}
+              groupComponent={GroupHeader}
+              itemComponent={DocListItemComponent}
+              groupClassName={styles.groupHeader}
+              itemClassName={styles.docItem}
               paddingX={useCallback(
                 (w: number) => (w > 500 ? 24 : w > 393 ? 20 : 16),
                 []
+              )}
+              groupHeight={groupBy ? 24 : 0}
+              itemHeight={useMemo(
+                () =>
+                  view === 'list'
+                    ? 42
+                    : view === 'grid'
+                      ? 280
+                      : item => calcCardHeightById(item.id),
+                [view]
               )}
             />
           </div>

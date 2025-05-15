@@ -16,16 +16,19 @@ import * as styles from './group-header.css';
 export const DocGroupHeader = ({
   className,
   groupId,
+  collapsed,
+  onCollapse,
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
   groupId: string;
+  collapsed: boolean;
+  onCollapse: (collapsed: boolean) => void;
 }) => {
   const t = useI18n();
   const contextValue = useContext(DocExplorerContext);
 
   const groups = useLiveData(contextValue.groups$);
   const selectedDocIds = useLiveData(contextValue.selectedDocIds$);
-  const collapsedGroups = useLiveData(contextValue.collapsedGroups$);
   const selectMode = useLiveData(contextValue.selectMode$);
 
   const group = groups.find(g => g.key === groupId);
@@ -34,13 +37,8 @@ export const DocGroupHeader = ({
   );
 
   const handleToggleCollapse = useCallback(() => {
-    const prev = contextValue.collapsedGroups$.value;
-    contextValue.collapsedGroups$.next(
-      prev.includes(groupId)
-        ? prev.filter(id => id !== groupId)
-        : [...prev, groupId]
-    );
-  }, [groupId, contextValue]);
+    onCollapse(!collapsed);
+  }, [collapsed, onCollapse]);
 
   const handleSelectAll = useCallback(() => {
     const prev = contextValue.selectedDocIds$.value;
@@ -64,10 +62,7 @@ export const DocGroupHeader = ({
   ).length;
 
   return (
-    <div
-      className={styles.groupHeader}
-      data-collapsed={collapsedGroups.includes(groupId)}
-    >
+    <div className={styles.groupHeader} data-collapsed={collapsed}>
       <div className={clsx(styles.content, className)} {...props} />
       {selectMode ? (
         <div className={styles.selectInfo}>
@@ -105,6 +100,8 @@ export const PlainTextDocGroupHeader = ({
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
   groupId: string;
+  collapsed: boolean;
+  onCollapse: (collapsed: boolean) => void;
   docCount: number;
   icon?: ReactNode;
 }) => {

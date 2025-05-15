@@ -243,11 +243,21 @@ export const UpdatedDateDocListProperty = ({ doc }: DocListPropertyProps) => {
   );
 };
 
-export const DateGroupHeader = ({ groupId, docCount }: GroupHeaderProps) => {
+export const DateGroupHeader = ({
+  groupId,
+  docCount,
+  collapsed,
+  onCollapse,
+}: GroupHeaderProps) => {
   const date = groupId || 'No Date';
 
   return (
-    <PlainTextDocGroupHeader groupId={groupId} docCount={docCount}>
+    <PlainTextDocGroupHeader
+      groupId={groupId}
+      docCount={docCount}
+      collapsed={collapsed}
+      onCollapse={onCollapse}
+    >
       {date}
     </PlainTextDocGroupHeader>
   );
