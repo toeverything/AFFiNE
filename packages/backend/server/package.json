@@ -18,7 +18,7 @@
     "e2e": "cross-env TEST_MODE=e2e ava --serial",
     "e2e:coverage": "cross-env TEST_MODE=e2e c8 ava --serial",
     "data-migration": "cross-env NODE_ENV=development SERVER_FLAVOR=script r ./src/index.ts",
-    "init": "yarn prisma migrate dev && yarn data-migration run",
+    "init": "yarn affine @affine/reader build && yarn prisma migrate dev && yarn data-migration run",
     "seed": "r ./src/seed/index.ts",
     "genconfig": "r ./scripts/genconfig.ts",
     "cli": "cross-env SERVER_FLAVOR=script node ./dist/main.js",
