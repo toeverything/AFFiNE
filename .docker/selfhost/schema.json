@@ -634,9 +634,9 @@
         },
         "providers.gemini": {
           "type": "object",
-          "description": "The config for the gemini provider.\n@default {\"apiKey\":\"\"}",
+          "description": "The config for the gemini provider.\n@default {\"privateKey\":\"\"}",
           "default": {
-            "apiKey": ""
+            "privateKey": ""
           }
         },
         "providers.perplexity": {

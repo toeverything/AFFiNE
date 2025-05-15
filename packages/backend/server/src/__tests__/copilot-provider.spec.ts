@@ -328,7 +328,7 @@ const actions = [
     messages: [
       {
         role: 'user' as const,
-        content: '',
+        content: 'transcript the audio',
         attachments: [
           'https://cdn.affine.pro/copilot-test/MP9qDGuYgnY+ILoEAmHpp3h9Npuw2403EAYMEA.mp3',
         ],
@@ -350,7 +350,7 @@ const actions = [
     messages: [
       {
         role: 'user' as const,
-        content: '',
+        content: 'transcript the audio',
         attachments: [
           'https://cdn.affine.pro/copilot-test/2ed05eo1KvZ2tWB_BAjFo67EAPZZY-w4LylUAw.m4a',
         ],
@@ -372,7 +372,7 @@ const actions = [
     messages: [
       {
         role: 'user' as const,
-        content: '',
+        content: 'transcript the audio',
         attachments: [
           'https://cdn.affine.pro/copilot-test/nC9-e7P85PPI2rU29QWwf8slBNRMy92teLIIMw.opus',
         ],

@@ -334,7 +334,7 @@ const actions: Prompt[] = [
   {
     name: 'Transcript audio',
     action: 'Transcript audio',
-    model: 'gemini-2.5-pro-preview-03-25',
+    model: 'gemini-2.5-pro-preview-05-06',
     messages: [
       {
         role: 'system',
@@ -1071,6 +1071,8 @@ const chat: Prompt[] = [
       'o4-mini',
       'claude-3-7-sonnet-20250219',
       'claude-3-5-sonnet-20241022',
+      'gemini-2.5-flash-preview-04-17',
+      'gemini-2.5-pro-preview-05-06',
     ],
     messages: [
       {
@@ -1097,11 +1099,12 @@ When referencing information from the provided documents, files or web search re
 1. Use markdown footnote format for citations
 2. Add citations immediately after the relevant sentence or paragraph
 3. Required format: [^reference_index] where reference_index is an increasing positive integer
-4. You MUST include citations at the end of your response in this exact format:
+4. When a single sentence needs multiple citations, write each marker in its own pair of brackets and place them consecutively. Correct: [^2][^4][^12], Incorrect: [^2, 4, 12].
+5. You MUST include citations at the end of your response in this exact format:
   - For documents: [^reference_index]:{"type":"doc","docId":"document_id"}
   - For files: [^reference_index]:{"type":"attachment","blobId":"blob_id","fileName":"file_name","fileType":"file_type"}
   - For web search results: [^reference_index]:{"type":"url","url":"url_path"}
-5. Ensure citations adhere strictly to the required format. Do not add extra spaces in citations like [^ reference_index] or [ ^reference_index].
+6. Ensure citations adhere strictly to the required format. Do not add extra spaces in citations like [^ reference_index] or [ ^reference_index].
 
 ### Citations Structure
 Your response MUST follow this structure:
@@ -1111,6 +1114,7 @@ Your response MUST follow this structure:
 
 Example Output with Citations:
 This is my response with a document citation[^1]. Here is more content with another file citation[^2]. And here is a web search result citation[^3].
+Here is multiple citations: [^1][^2][^3].
 
 [^1]:{"type":"doc","docId":"abc123"}
 [^2]:{"type":"attachment","blobId":"xyz789","fileName":"example.txt","fileType":"text"}

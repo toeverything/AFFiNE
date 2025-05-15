@@ -30,9 +30,9 @@ runs:
     - name: Import config
       shell: bash
       run: |
-        printf '{"copilot":{"enabled":true,"providers.fal":{"apiKey":"%s"},"providers.gemini":{"apiKey":"%s"},"providers.openai":{"apiKey":"%s"},"providers.perplexity":{"apiKey":"%s"},"providers.anthropic":{"apiKey":"%s"},"exa":{"key":"%s"}}}' \
+        printf '{"copilot":{"enabled":true,"providers.fal":{"apiKey":"%s"},"providers.gemini":{"privateKey":%s},"providers.openai":{"apiKey":"%s"},"providers.perplexity":{"apiKey":"%s"},"providers.anthropic":{"apiKey":"%s"},"exa":{"key":"%s"}}}' \
         "$COPILOT_FAL_API_KEY" \
-        "$COPILOT_GOOGLE_API_KEY" \
+        "$(printf '%s' "$COPILOT_GOOGLE_PRIVATE_KEY" | jq -aRs .)" \
         "$COPILOT_OPENAI_API_KEY" \
         "$COPILOT_PERPLEXITY_API_KEY" \
         "$COPILOT_ANTHROPIC_API_KEY" \

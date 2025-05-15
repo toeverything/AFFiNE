@@ -52,7 +52,7 @@ defineModuleConfig('copilot', {
   'providers.gemini': {
     desc: 'The config for the gemini provider.',
     default: {
-      apiKey: '',
+      privateKey: '',
     },
   },
   'providers.perplexity': {
