@@ -1000,7 +1000,8 @@ jobs:
         if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.apifilter.outputs.changed == 'true' }}
         env:
           COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
-          COPILOT_GOOGLE_API_KEY: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
+          COPILOT_GOOGLE_PRIVATE_KEY: ${{ secrets.COPILOT_GOOGLE_PRIVATE_KEY }}
+          COPILOT_GOOGLE_REGION_ID: ${{ secrets.COPILOT_GOOGLE_REGION_ID }}
           COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
           COPILOT_PERPLEXITY_API_KEY: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
           COPILOT_ANTHROPIC_API_KEY: ${{ secrets.COPILOT_ANTHROPIC_API_KEY }}
@@ -1103,7 +1104,8 @@ jobs:
         if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.e2efilter.outputs.changed == 'true' }}
         env:
           COPILOT_OPENAI_API_KEY: ${{ secrets.COPILOT_OPENAI_API_KEY }}
-          COPILOT_GOOGLE_API_KEY: ${{ secrets.COPILOT_GOOGLE_API_KEY }}
+          COPILOT_GOOGLE_PRIVATE_KEY: ${{ secrets.COPILOT_GOOGLE_PRIVATE_KEY }}
+          COPILOT_GOOGLE_REGION_ID: ${{ secrets.COPILOT_GOOGLE_REGION_ID }}
           COPILOT_FAL_API_KEY: ${{ secrets.COPILOT_FAL_API_KEY }}
           COPILOT_PERPLEXITY_API_KEY: ${{ secrets.COPILOT_PERPLEXITY_API_KEY }}
           COPILOT_ANTHROPIC_API_KEY: ${{ secrets.COPILOT_ANTHROPIC_API_KEY }}

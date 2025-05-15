@@ -89,6 +89,10 @@ test.before(async t => {
             fal: {
               apiKey: process.env.COPILOT_FAL_API_KEY ?? '1',
             },
+            gemini: {
+              privateKey: process.env.COPILOT_GOOGLE_PRIVATE_KEY ?? '',
+              regionId: process.env.COPILOT_GOOGLE_REGION_ID ?? '',
+            },
             perplexity: {
               apiKey: process.env.COPILOT_PERPLEXITY_API_KEY ?? '1',
             },

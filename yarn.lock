@@ -909,7 +909,8 @@ __metadata:
     "@affine/reader": "workspace:*"
     "@affine/server-native": "workspace:*"
     "@ai-sdk/anthropic": "npm:^1.2.10"
-    "@ai-sdk/google": "npm:^1.2.10"
+    "@ai-sdk/google": "npm:^1.2.18"
+    "@ai-sdk/google-vertex": "npm:^2.2.22"
     "@ai-sdk/openai": "npm:^1.3.21"
     "@ai-sdk/perplexity": "npm:^1.1.6"
     "@apollo/server": "npm:^4.11.3"
@@ -1073,7 +1074,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:^1.2.10":
+"@ai-sdk/anthropic@npm:1.2.11, @ai-sdk/anthropic@npm:^1.2.10":
   version: 1.2.11
   resolution: "@ai-sdk/anthropic@npm:1.2.11"
   dependencies:
@@ -1085,15 +1086,30 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/google@npm:^1.2.10":
-  version: 1.2.17
-  resolution: "@ai-sdk/google@npm:1.2.17"
+"@ai-sdk/google-vertex@npm:^2.2.22":
+  version: 2.2.22
+  resolution: "@ai-sdk/google-vertex@npm:2.2.22"
+  dependencies:
+    "@ai-sdk/anthropic": "npm:1.2.11"
+    "@ai-sdk/google": "npm:1.2.18"
+    "@ai-sdk/provider": "npm:1.1.3"
+    "@ai-sdk/provider-utils": "npm:2.2.8"
+    google-auth-library: "npm:^9.15.0"
+  peerDependencies:
+    zod: ^3.0.0
+  checksum: 10/852928d35797cc14802d8c4a7dba2794197f019507a24124e7f87e456ba19f2b4e50438af626dd30e3a2a0f9f10819d6534a31e23c08f7f3d148d56b68167d0a
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/google@npm:1.2.18, @ai-sdk/google@npm:^1.2.18":
+  version: 1.2.18
+  resolution: "@ai-sdk/google@npm:1.2.18"
   dependencies:
     "@ai-sdk/provider": "npm:1.1.3"
     "@ai-sdk/provider-utils": "npm:2.2.8"
   peerDependencies:
     zod: ^3.0.0
-  checksum: 10/588d1d9c9de7dbfe4ddb628c65c2cd06509024bf44d889eb3f9d1156a16899ebfd56db7a727793070a5c38f8d74c3896997319b09875b92182f084ac17a993d4
+  checksum: 10/e8ff1ea1cae8f6c1c17e5526e3e51a8e584bb60d8e407646594c9b07600e06ef43c85518d08aafd3856aa2d46a1ae88111d6c61532bdf8c917859e0baad23432
   languageName: node
   linkType: hard
 
@@ -22646,7 +22662,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"google-auth-library@npm:^9.0.0, google-auth-library@npm:^9.7.0":
+"google-auth-library@npm:^9.0.0, google-auth-library@npm:^9.15.0, google-auth-library@npm:^9.7.0":
   version: 9.15.1
   resolution: "google-auth-library@npm:9.15.1"
   dependencies:
