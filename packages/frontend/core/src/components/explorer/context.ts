@@ -1,7 +1,21 @@
 import { LiveData } from '@toeverything/infra';
+import { uniq } from 'lodash-es';
 import { createContext } from 'react';
 
 import type { ExplorerDisplayPreference } from './types';
+
+const DefaultDisplayPreference: ExplorerDisplayPreference = {
+  view: 'list',
+  displayProperties: [
+    'system:createdAt',
+    'system:updatedAt',
+    'system:createdBy',
+    'system:tags',
+  ],
+  showDocIcon: true,
+  showDocPreview: true,
+  quickFavorite: true,
+};
 
 export type DocExplorerContextType = {
   groups$: LiveData<Array<{ key: string; items: string[] }>>;
@@ -23,9 +37,14 @@ export const DocExplorerContext = createContext<DocExplorerContextType>(
 export const createDocExplorerContext = (
   initialState?: ExplorerDisplayPreference
 ) => {
-  const displayPreference$ = new LiveData<ExplorerDisplayPreference>(
-    initialState ?? {}
-  );
+  const displayPreference$ = new LiveData<ExplorerDisplayPreference>({
+    ...DefaultDisplayPreference,
+    ...initialState,
+    displayProperties: uniq([
+      ...(DefaultDisplayPreference.displayProperties ?? []),
+      ...(initialState?.displayProperties ?? []),
+    ]),
+  });
   return {
     groups$: new LiveData<Array<{ key: string; items: string[] }>>([]),
     collapsedGroups$: new LiveData<string[]>([]),
