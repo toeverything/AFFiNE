@@ -38,3 +38,10 @@ runs:
         "$COPILOT_PERPLEXITY_API_KEY" \
         "$COPILOT_ANTHROPIC_API_KEY" \
         "$COPILOT_EXA_API_KEY" > ./packages/backend/server/config.json
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-copilot
+        path: ./packages/backend/server/config.json
+        if-no-files-found: ignore
