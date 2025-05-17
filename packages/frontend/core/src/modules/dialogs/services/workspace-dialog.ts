@@ -16,7 +16,7 @@ export class WorkspaceDialogService extends Service {
       const alreadyOpen = this.dialogs$.value.some((dialog: OpenedDialog<WORKSPACE_DIALOG_SCHEMA>) => dialog.type === 'setting');
       if (alreadyOpen) {
         const dialog = this.dialogs$.value.find((dialog: OpenedDialog<WORKSPACE_DIALOG_SCHEMA>) => dialog.type === 'setting');
-        return dialog?.id || '';
+        return dialog!.id;
       }
     }
     const id = nanoid();
