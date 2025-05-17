@@ -12,6 +12,13 @@ export class WorkspaceDialogService extends Service {
     props: DialogProps<WORKSPACE_DIALOG_SCHEMA[T]>,
     callback?: (result?: DialogResult<WORKSPACE_DIALOG_SCHEMA[T]>) => void
   ): string {
+    if (type === 'setting') {
+      const alreadyOpen = this.dialogs$.value.some((dialog: OpenedDialog<WORKSPACE_DIALOG_SCHEMA>) => dialog.type === 'setting');
+      if (alreadyOpen) {
+        const dialog = this.dialogs$.value.find((dialog: OpenedDialog<WORKSPACE_DIALOG_SCHEMA>) => dialog.type === 'setting');
+        return dialog?.id || '';
+      }
+    }
     const id = nanoid();
     this.dialogs$.next([
       ...this.dialogs$.value,
@@ -27,7 +34,7 @@ export class WorkspaceDialogService extends Service {
 
   close(id: string, result?: unknown) {
     this.dialogs$.next(
-      this.dialogs$.value.filter(dialog => {
+      this.dialogs$.value.filter((dialog: OpenedDialog<WORKSPACE_DIALOG_SCHEMA>) => {
         if (dialog.id === id) {
           if (dialog.callback) {
             dialog.callback(result as any);
@@ -41,7 +48,7 @@ export class WorkspaceDialogService extends Service {
 
   closeAll() {
     const dialogs = this.dialogs$.value;
-    dialogs.forEach(dialog => {
+    dialogs.forEach((dialog: OpenedDialog<WORKSPACE_DIALOG_SCHEMA>) => {
       this.close(dialog.id);
     });
   }
