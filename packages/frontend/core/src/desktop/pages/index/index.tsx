@@ -1,4 +1,5 @@
 import { DesktopApiService } from '@affine/core/modules/desktop-api';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { WorkspacesService } from '@affine/core/modules/workspace';
 import {
   buildShowcaseWorkspace,
@@ -127,7 +128,14 @@ export const Component = ({
     desktopApi?.handler.ui.pingAppLayoutReady().catch(console.error);
   }, [desktopApi]);
 
+  const featureFlagService = useService(FeatureFlagService);
+  const localWorkspaceEnabled =
+    featureFlagService.flags.enable_local_workspace.value;
+
   useEffect(() => {
+    if (!localWorkspaceEnabled) {
+      return;
+    }
     setCreating(true);
     createFirstAppData(workspacesService)
       .then(createdWorkspace => {
@@ -148,7 +156,7 @@ export const Component = ({
       .finally(() => {
         setCreating(false);
       });
-  }, [jumpToPage, openPage, workspacesService]);
+  }, [localWorkspaceEnabled, jumpToPage, openPage, workspacesService]);
 
   if (navigating || creating) {
     return fallback ?? <AppContainer fallback />;
