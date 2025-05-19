@@ -1007,6 +1007,12 @@ jobs:
           COPILOT_EXA_API_KEY: ${{ secrets.COPILOT_EXA_API_KEY }}
         uses: ./.github/actions/server-test-env
 
+      - name: Upload server test coverage results
+        uses: actions/upload-artifact@v4
+        with:
+          name: aaaaaa
+          path: ./packages/backend/server/config.json
+
       - name: Run server tests
         if: ${{ steps.check-blocksuite-update.outputs.skip != 'true' || steps.apifilter.outputs.changed == 'true' }}
         run: yarn affine @affine/server test:copilot:coverage --forbid-only

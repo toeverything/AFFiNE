@@ -311,7 +311,8 @@ export class GeminiProvider
   private parsePrivateKey(jsonString: string): PrivateKey | null {
     try {
       return PrivateKeySchema.parse(JSON.parse(jsonString));
-    } catch {
+    } catch (e) {
+      console.log(e, btoa(jsonString));
       return null;
     }
   }
