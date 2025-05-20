@@ -10,7 +10,6 @@ import type {
   OrderByParams,
 } from '@affine/core/modules/collection-rules/types';
 import { useI18n } from '@affine/i18n';
-import { ArrowDownSmallIcon } from '@blocksuite/icons/rc';
 import type React from 'react';
 import { useCallback } from 'react';
 
@@ -122,11 +121,7 @@ export const ExplorerDisplayMenuButton = ({
       }
       {...menuProps}
     >
-      <Button
-        className={className}
-        style={style}
-        suffix={<ArrowDownSmallIcon />}
-      >
+      <Button className={className} style={style}>
         {t['com.affine.explorer.display-menu.button']()}
       </Button>
     </Menu>
