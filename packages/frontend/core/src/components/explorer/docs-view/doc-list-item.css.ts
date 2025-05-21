@@ -224,3 +224,17 @@ export const cardViewCheckbox = style({
   color: cssVarV2.icon.primary,
   pointerEvents: 'none',
 });
+export const cardDragHandle = style([
+  dragHandle,
+  {
+    left: -4,
+    top: 0,
+    transform: 'translateX(-100%)',
+    opacity: 0,
+    selectors: {
+      [`${cardViewRoot}:hover &`]: {
+        opacity: 1,
+      },
+    },
+  },
+]);

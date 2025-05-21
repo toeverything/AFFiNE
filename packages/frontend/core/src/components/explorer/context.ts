@@ -49,6 +49,9 @@ export const createDocExplorerContext = (
     selectedDocIds$: new LiveData<string[]>([]),
     prevCheckAnchorId$: new LiveData<string | null>(null),
     displayPreference$: displayPreference$,
+    showDragHandle$: displayPreference$.selector(
+      displayPreference => displayPreference.showDragHandle
+    ),
     view$: displayPreference$.selector(
       displayPreference => displayPreference.view
     ),

@@ -227,8 +227,8 @@ export const DocsExplorer = ({
       <Masonry
         className={className}
         items={masonryItems}
-        gapY={12}
-        gapX={12}
+        gapY={view === 'list' ? 12 : 24}
+        gapX={24}
         groupsGap={12}
         groupHeaderGapWithItems={12}
         columns={view === 'list' ? 1 : undefined}
