@@ -254,7 +254,11 @@ export const JournalDocListProperty = ({ doc }: DocListPropertyProps) => {
 };
 
 export const JournalGroupHeader = ({ groupId, docCount }: GroupHeaderProps) => {
-  const text = groupId === 'true' ? 'Journal' : 'Not Journal';
+  const t = useI18n();
+  const text =
+    groupId === 'true'
+      ? t['com.affine.all-docs.group.is-journal']()
+      : t['com.affine.all-docs.group.is-not-journal']();
   return (
     <PlainTextDocGroupHeader groupId={groupId} docCount={docCount}>
       {text}

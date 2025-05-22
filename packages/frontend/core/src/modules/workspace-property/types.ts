@@ -39,9 +39,9 @@ export type WorkspacePropertyTypes = {
   createdAt: { filter: DateFilters };
   docPrimaryMode: { filter: 'is' | 'is-not' };
   journal: { filter: 'is' | 'is-not' };
-  edgelessTheme: { filter: never };
-  pageWidth: { filter: never };
-  template: { filter: never };
+  edgelessTheme: { filter: 'is' | 'is-not' };
+  pageWidth: { filter: 'is' | 'is-not' };
+  template: { filter: 'is' | 'is-not' };
   unknown: { filter: never };
 };
 export type WorkspacePropertyType = keyof WorkspacePropertyTypes;

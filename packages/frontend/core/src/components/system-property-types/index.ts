@@ -3,11 +3,15 @@ import type { DocRecord } from '@affine/core/modules/doc';
 import type { I18nString } from '@affine/i18n';
 import {
   DateTimeIcon,
+  EdgelessIcon,
   FavoriteIcon,
   HistoryIcon,
+  IntegrationsIcon,
+  LongerIcon,
   MemberIcon,
   ShareIcon,
   TagIcon,
+  TemplateIcon,
 } from '@blocksuite/icons/rc';
 
 import type { GroupHeaderProps } from '../explorer/types';
@@ -26,9 +30,29 @@ import {
   ModifiedByGroupHeader,
   UpdatedByDocListInlineProperty,
 } from './created-updated-by';
+import {
+  EdgelessThemeDocListProperty,
+  EdgelessThemeFilterValue,
+  EdgelessThemeGroupHeader,
+} from './edgeless-theme';
 import { FavoriteFilterValue } from './favorite';
+import {
+  IntegrationTypeDocListProperty,
+  IntegrationTypeFilterValue,
+  IntegrationTypeGroupHeader,
+} from './integration-type';
+import {
+  PageWidthDocListProperty,
+  PageWidthFilterValue,
+  PageWidthGroupHeader,
+} from './page-width';
 import { SharedFilterValue } from './shared';
 import { TagsDocListProperty, TagsFilterValue, TagsGroupHeader } from './tags';
+import {
+  TemplateDocListProperty,
+  TemplateFilterValue,
+  TemplateGroupHeader,
+} from './template';
 
 export const SystemPropertyTypes = {
   tags: {
@@ -121,6 +145,66 @@ export const SystemPropertyTypes = {
       is: 'com.affine.filter.is',
     },
     filterValue: SharedFilterValue,
+  },
+  edgelessTheme: {
+    icon: EdgelessIcon,
+    name: 'com.affine.page-properties.property.edgelessTheme',
+    showInDocList: 'stack',
+    allowInGroupBy: true,
+    allowInOrderBy: true,
+    docListProperty: EdgelessThemeDocListProperty,
+    groupHeader: EdgelessThemeGroupHeader,
+    filterMethod: {
+      is: 'com.affine.editCollection.rules.include.is',
+      'is-not': 'com.affine.editCollection.rules.include.is-not',
+    },
+    filterValue: EdgelessThemeFilterValue,
+    defaultFilter: { method: 'is', value: 'system' },
+  },
+  pageWidth: {
+    icon: LongerIcon,
+    name: 'com.affine.page-properties.property.pageWidth',
+    showInDocList: 'stack',
+    allowInGroupBy: true,
+    allowInOrderBy: true,
+    docListProperty: PageWidthDocListProperty,
+    groupHeader: PageWidthGroupHeader,
+    filterMethod: {
+      is: 'com.affine.editCollection.rules.include.is',
+      'is-not': 'com.affine.editCollection.rules.include.is-not',
+    },
+    filterValue: PageWidthFilterValue,
+    defaultFilter: { method: 'is', value: 'fullWidth' },
+  },
+  template: {
+    icon: TemplateIcon,
+    name: 'com.affine.page-properties.property.template',
+    showInDocList: 'stack',
+    allowInGroupBy: true,
+    allowInOrderBy: true,
+    docListProperty: TemplateDocListProperty,
+    groupHeader: TemplateGroupHeader,
+    filterMethod: {
+      is: 'com.affine.editCollection.rules.include.is',
+      'is-not': 'com.affine.editCollection.rules.include.is-not',
+    },
+    filterValue: TemplateFilterValue,
+    defaultFilter: { method: 'is', value: 'true' },
+  },
+  integrationType: {
+    icon: IntegrationsIcon,
+    name: 'com.affine.integration.integrations',
+    showInDocList: 'stack',
+    allowInGroupBy: true,
+    allowInOrderBy: true,
+    docListProperty: IntegrationTypeDocListProperty,
+    groupHeader: IntegrationTypeGroupHeader,
+    filterMethod: {
+      is: 'com.affine.editCollection.rules.include.is',
+      'is-not': 'com.affine.editCollection.rules.include.is-not',
+    },
+    filterValue: IntegrationTypeFilterValue,
+    defaultFilter: { method: 'is', value: 'readwise' },
   },
 } as {
   [type: string]: {

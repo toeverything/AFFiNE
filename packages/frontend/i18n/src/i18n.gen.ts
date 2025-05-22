@@ -7077,6 +7077,30 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.all-docs.pinned-collection.all"](): string;
     /**
+      * `Template`
+      */
+    ["com.affine.all-docs.group.is-template"](): string;
+    /**
+      * `Not Template`
+      */
+    ["com.affine.all-docs.group.is-not-template"](): string;
+    /**
+      * `Journal`
+      */
+    ["com.affine.all-docs.group.is-journal"](): string;
+    /**
+      * `Not Journal`
+      */
+    ["com.affine.all-docs.group.is-not-journal"](): string;
+    /**
+      * `Checked`
+      */
+    ["com.affine.all-docs.group.is-checked"](): string;
+    /**
+      * `Unchecked`
+      */
+    ["com.affine.all-docs.group.is-not-checked"](): string;
+    /**
       * `core`
       */
     core(): string;
