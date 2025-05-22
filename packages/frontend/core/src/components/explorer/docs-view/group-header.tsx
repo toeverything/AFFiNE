@@ -43,6 +43,9 @@ export const DocGroupHeader = ({
   }, [groupId, contextValue]);
 
   const handleSelectAll = useCallback(() => {
+    if (!contextValue.selectMode$?.value) {
+      contextValue.selectMode$?.next(true);
+    }
     const prev = contextValue.selectedDocIds$.value;
     if (isGroupAllSelected) {
       contextValue.selectedDocIds$.next(
