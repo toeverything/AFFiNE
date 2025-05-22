@@ -159,6 +159,14 @@ export const listHide560 = style({
 export const cardViewRoot = style({
   vars: {
     '--ring-color': 'transparent',
+    '--light-shadow':
+      '0px 0px 0px 1px var(--ring-color), 0px 2px 3px rgba(0,0,0,.05)',
+    '--dark-shadow':
+      '0px 0px 0px 1px var(--ring-color), 0px 2px 3px rgba(0,0,0,.05)',
+    '--light-shadow-hover':
+      '0px 0px 0px 1px var(--ring-color), 0px 4px 6px rgba(0,0,0,.1)',
+    '--dark-shadow-hover':
+      '0px 0px 0px 1px var(--ring-color), 0px 4px 6px rgba(0,0,0,.1)',
   },
   width: '100%',
   height: '100%',
@@ -170,13 +178,29 @@ export const cardViewRoot = style({
   backgroundColor: cssVarV2.layer.background.mobile.secondary,
   border: `0.5px solid ${cssVarV2.layer.insideBorder.border}`,
   // TODO: use variable
-  boxShadow: '0px 0px 0px 1px var(--ring-color),0px 0px 3px rgba(0,0,0,.05)',
+  boxShadow: '0px 0px 0px 1px var(--ring-color), 0px 0px 3px rgba(0,0,0,.05)',
   overflow: 'hidden',
+  transition: 'box-shadow 0.23s ease, border-color 0.23s ease',
   selectors: {
     [`${root}[data-selected="true"] &`]: {
       vars: {
         '--ring-color': cssVarV2.layer.insideBorder.primaryBorder,
       },
+    },
+    '&:hover': {
+      borderColor: cssVarV2.pagelist.hoverBorder,
+    },
+    '[data-theme="light"] &': {
+      boxShadow: 'var(--light-shadow)',
+    },
+    '[data-theme="light"] &:hover': {
+      boxShadow: 'var(--light-shadow-hover)',
+    },
+    '[data-theme="dark"] &': {
+      boxShadow: 'var(--dark-shadow)',
+    },
+    '[data-theme="dark"] &:hover': {
+      boxShadow: 'var(--dark-shadow-hover)',
     },
   },
 });
