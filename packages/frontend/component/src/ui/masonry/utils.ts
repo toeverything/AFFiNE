@@ -101,7 +101,10 @@ export const calcLayout = (
       return;
     }
 
-    finalHeight += groupHeaderLayout.h + groupHeaderGapWithItems;
+    finalHeight +=
+      groupHeaderLayout.h +
+      // if group header is empty, don't add gap
+      (groupHeaderLayout.h > 0 ? groupHeaderGapWithItems : 0);
     // calculate group items
     group.items.forEach(item => {
       const itemId = group.id ? `${group.id}:${item.id}` : item.id;

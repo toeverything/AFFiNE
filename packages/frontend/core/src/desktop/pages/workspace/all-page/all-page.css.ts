@@ -33,7 +33,7 @@ export const body = style({
 export const scrollArea = style({
   height: 0,
   flex: 1,
-  paddingTop: '24px',
+  paddingTop: '12px',
 });
 
 // group
@@ -43,7 +43,7 @@ export const pinnedCollection = style({
   flexDirection: 'column',
   gap: 8,
   padding: '0 24px',
-  paddingTop: '24px',
+  paddingTop: '12px',
   '@container': {
     'docs-body (width <= 500px)': {
       padding: '0 20px',
