@@ -20,6 +20,9 @@ export const stickyGroupHeader = style({
   top: 0,
   width: '100%',
 });
+export const scrollbar = style({
+  zIndex: 1,
+});
 
 export const item = style({
   position: 'absolute',

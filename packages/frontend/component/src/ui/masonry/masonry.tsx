@@ -286,7 +286,6 @@ export const Masonry = ({
         })}
         <div data-masonry-placeholder style={{ height }} />
       </Scrollable.Viewport>
-      <Scrollable.Scrollbar />
       {stickyGroup ? (
         <div
           className={clsx(styles.stickyGroupHeader, stickyGroup.className)}
@@ -310,6 +309,7 @@ export const Masonry = ({
           )}
         </div>
       ) : null}
+      <Scrollable.Scrollbar className={styles.scrollbar} />
     </Scrollable.Root>
   );
 };
