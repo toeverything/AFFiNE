@@ -1,9 +1,9 @@
 import {
   Checkbox,
   DragHandle as DragHandleIcon,
-  Skeleton,
   Tooltip,
   useDraggable,
+  Wrapper,
 } from '@affine/component';
 import { DocsService } from '@affine/core/modules/doc';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
@@ -23,7 +23,6 @@ import {
   type SVGProps,
   useCallback,
   useContext,
-  useState,
 } from 'react';
 
 import { PagePreview } from '../../page-list/page-content-preview';
@@ -312,9 +311,6 @@ export const ListViewDoc = ({ docId }: DocListItemProps) => {
   const t = useI18n();
   const docsService = useService(DocsService);
   const doc = useLiveData(docsService.list.doc$(docId));
-  const [previewSkeletonWidth] = useState(
-    Math.round(100 + Math.random() * 100)
-  );
 
   if (!doc) {
     return null;
@@ -334,7 +330,7 @@ export const ListViewDoc = ({ docId }: DocListItemProps) => {
         <DocPreview
           id={docId}
           className={styles.listPreview}
-          loading={<Skeleton height={20} width={previewSkeletonWidth} />}
+          loading={<Wrapper height={20} width={10} />}
         />
       </div>
       <div className={styles.listSpace} />
@@ -360,19 +356,13 @@ const cardMoreMenuContentOptions = {
   sideOffset: 12,
   alignOffset: -4,
 } as const;
-const randomPreviewSkeleton = () => {
-  return Array.from({ length: Math.floor(Math.random() * 2) + 1 }, (_, i) => ({
-    id: i,
-    width: Math.round(30 + Math.random() * 70),
-  }));
-};
+
 export const CardViewDoc = ({ docId }: DocListItemProps) => {
   const t = useI18n();
   const contextValue = useContext(DocExplorerContext);
   const selectMode = useLiveData(contextValue.selectMode$);
   const docsService = useService(DocsService);
   const doc = useLiveData(docsService.list.doc$(docId));
-  const [previewSkeleton] = useState(randomPreviewSkeleton);
 
   if (!doc) {
     return null;
@@ -405,17 +395,7 @@ export const CardViewDoc = ({ docId }: DocListItemProps) => {
           />
         )}
       </header>
-      <DocPreview
-        id={docId}
-        className={styles.cardPreviewContainer}
-        loading={
-          <div>
-            {previewSkeleton.map(({ id, width }) => (
-              <Skeleton key={id} height={20} width={`${width}%`} />
-            ))}
-          </div>
-        }
-      />
+      <DocPreview id={docId} className={styles.cardPreviewContainer} />
       <CardViewProperties docId={docId} />
     </li>
   );
