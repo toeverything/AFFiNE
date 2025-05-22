@@ -32,7 +32,7 @@ const ExplorerDisplayMenu = ({
   const t = useI18n();
 
   const handleGroupByChange = useCallback(
-    (groupBy: GroupByParams) => {
+    (groupBy: GroupByParams | undefined) => {
       onDisplayPreferenceChange({ ...displayPreference, groupBy });
     },
     [displayPreference, onDisplayPreferenceChange]

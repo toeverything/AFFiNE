@@ -546,6 +546,7 @@
   "com.affine.filterList.button.add": "Add filter",
   "com.affine.explorer.display-menu.button": "Display",
   "com.affine.explorer.display-menu.grouping": "Grouping",
+  "com.affine.explorer.display-menu.grouping.remove": "Remove group",
   "com.affine.explorer.display-menu.ordering": "Ordering",
   "com.affine.header.mode-switch.page": "View in Page mode",
   "com.affine.header.mode-switch.edgeless": "View in Edgeless Canvas",

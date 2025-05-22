@@ -1,4 +1,4 @@
-import { MenuItem } from '@affine/component';
+import { Divider, MenuItem } from '@affine/component';
 import type { GroupByParams } from '@affine/core/modules/collection-rules/types';
 import { WorkspacePropertyService } from '@affine/core/modules/workspace-property';
 import { useI18n } from '@affine/i18n';
@@ -48,8 +48,9 @@ export const GroupByList = ({
   onChange,
 }: {
   groupBy?: GroupByParams;
-  onChange?: (next: GroupByParams) => void;
+  onChange?: (next: GroupByParams | undefined) => void;
 }) => {
+  const t = useI18n();
   const workspacePropertyService = useService(WorkspacePropertyService);
   const propertyList = useLiveData(workspacePropertyService.sortedProperties$);
   const explorerPropertyList = useMemo(() => {
@@ -66,6 +67,10 @@ export const GroupByList = ({
           onChange={onChange}
         />
       ))}
+      <Divider size="thinner" style={{ margin: '4px 0' }} />
+      <MenuItem onClick={() => onChange?.(undefined)}>
+        {t['com.affine.explorer.display-menu.grouping.remove']()}
+      </MenuItem>
     </>
   );
 };
