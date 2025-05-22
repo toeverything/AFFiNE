@@ -2,7 +2,12 @@ import { IconButton, Menu, MenuItem, MenuSeparator } from '@affine/component';
 import type { FilterParams } from '@affine/core/modules/collection-rules';
 import { WorkspacePropertyService } from '@affine/core/modules/workspace-property';
 import { useI18n } from '@affine/i18n';
-import { ArrowLeftBigIcon, FavoriteIcon, PlusIcon } from '@blocksuite/icons/rc';
+import {
+  ArrowLeftBigIcon,
+  CloudWorkspaceIcon,
+  FavoriteIcon,
+  PlusIcon,
+} from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useMemo } from 'react';
 
@@ -57,7 +62,9 @@ export const AddFilterMenu = ({
         <span className={styles.filterTypeItemName}>{t['Favorited']()}</span>
       </MenuItem>
       <MenuItem
-        prefixIcon={<FavoriteIcon className={styles.filterTypeItemIcon} />}
+        prefixIcon={
+          <CloudWorkspaceIcon className={styles.filterTypeItemIcon} />
+        }
         key={'shared'}
         onClick={() => {
           onAdd({
