@@ -279,3 +279,34 @@ export const MultiViewTransition = () => {
     </div>
   );
 };
+
+const availableRatios = [0.8, 1.2, 1.4, 1.5, 1.6, 1.7, 1.8];
+const ratioItems = Array.from({ length: 10000 }, (_, i) => {
+  const ratio =
+    availableRatios[Math.floor(Math.random() * availableRatios.length)];
+  return {
+    id: i.toString(),
+    ratio,
+    children: (
+      <Card>
+        {i} <br /> ratio: {ratio}
+      </Card>
+    ),
+  };
+});
+export const HeightByRatio = () => {
+  return (
+    <ResizePanel width={800} height={600}>
+      <Masonry
+        gapX={10}
+        gapY={10}
+        style={{ width: '100%', height: '100%' }}
+        paddingX={12}
+        paddingY={12}
+        items={ratioItems}
+        virtualScroll
+        itemWidthMin={120}
+      />
+    </ResizePanel>
+  );
+};

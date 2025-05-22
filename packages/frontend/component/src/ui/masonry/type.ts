@@ -1,8 +1,7 @@
-export interface MasonryItem extends React.HTMLAttributes<HTMLDivElement> {
+export type MasonryItem = React.HTMLAttributes<HTMLDivElement> & {
   id: string;
-  height: number;
   Component?: React.ComponentType<{ groupId: string; itemId: string }>;
-}
+} & ({ height: number } | { ratio: number });
 
 export interface MasonryGroup extends React.HTMLAttributes<HTMLDivElement> {
   id: string;

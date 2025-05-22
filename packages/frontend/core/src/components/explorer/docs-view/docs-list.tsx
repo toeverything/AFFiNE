@@ -1,4 +1,9 @@
-import { Masonry, type MasonryGroup, useConfirmModal } from '@affine/component';
+import {
+  Masonry,
+  type MasonryGroup,
+  type MasonryItem,
+  useConfirmModal,
+} from '@affine/component';
 import { DocsService } from '@affine/core/modules/doc';
 import { WorkspacePropertyService } from '@affine/core/modules/workspace-property';
 import { Trans, useI18n } from '@affine/i18n';
@@ -69,15 +74,13 @@ const GroupHeader = memo(function GroupHeader({
   return header;
 });
 
-const calcCardHeightById = (id: string, base = 250, scale = 10) => {
+const ratios = [1.26, 1.304, 1.13, 1.391, 1.521];
+const calcCardRatioById = (id: string) => {
   if (!id) {
-    return base;
+    return ratios[0];
   }
-  const max = 5;
-  const min = 1;
   const code = id.charCodeAt(0);
-  const value = Math.floor((code % (max - min)) + min);
-  return base + value * scale;
+  return ratios[code % ratios.length];
 };
 
 export const DocListItemComponent = memo(function DocListItemComponent({
@@ -94,16 +97,12 @@ export const DocsExplorer = ({
   className,
   disableMultiDelete,
   masonryItemWidthMin,
-  heightBase,
-  heightScale,
   onRestore,
   onDelete,
 }: {
   className?: string;
   disableMultiDelete?: boolean;
   masonryItemWidthMin?: number;
-  heightBase?: number;
-  heightScale?: number;
   onRestore?: (ids: string[]) => void;
   /** Override the default delete action */
   onDelete?: (ids: string[]) => void;
@@ -129,23 +128,23 @@ export const DocsExplorer = ({
         height: groupBy ? 24 : 0,
         className: styles.groupHeader,
         items: group.items.map((docId: string) => {
+          if (view === 'list') {
+            return {
+              id: docId,
+              Component: DocListItemComponent,
+              height: 42,
+            } satisfies MasonryItem;
+          }
           return {
             id: docId,
             Component: DocListItemComponent,
-            height:
-              view === 'list'
-                ? 42
-                : view === 'grid'
-                  ? 280
-                  : calcCardHeightById(docId, heightBase, heightScale),
-            'data-view': view,
-            className: styles.docItem,
-          };
+            ratio: view === 'grid' ? ratios[0] : calcCardRatioById(docId),
+          } satisfies MasonryItem;
         }),
       } satisfies MasonryGroup;
     });
     return items;
-  }, [groupBy, groups, heightBase, heightScale, view]);
+  }, [groupBy, groups, view]);
 
   const handleCloseFloatingToolbar = useCallback(() => {
     contextValue.selectMode$?.next(false);
@@ -222,13 +221,18 @@ export const DocsExplorer = ({
     };
   }, [contextValue]);
 
+  const responsivePaddingX = useCallback(
+    (w: number) => (w > 500 ? 24 : w > 393 ? 20 : 16),
+    []
+  );
+
   return (
     <>
       <Masonry
         className={className}
         items={masonryItems}
-        gapY={view === 'list' ? 12 : 24}
-        gapX={24}
+        gapY={BUILD_CONFIG.isMobileEdition ? 12 : view === 'list' ? 12 : 24}
+        gapX={BUILD_CONFIG.isMobileEdition ? 12 : 24}
         groupsGap={12}
         groupHeaderGapWithItems={12}
         columns={view === 'list' ? 1 : undefined}
@@ -237,10 +241,8 @@ export const DocsExplorer = ({
         itemWidth={'stretch'}
         virtualScroll
         collapsedGroups={collapsedGroups}
-        paddingX={useCallback(
-          (w: number) => (w > 500 ? 24 : w > 393 ? 20 : 16),
-          []
-        )}
+        paddingY={BUILD_CONFIG.isMobileEdition ? 12 : 0}
+        paddingX={BUILD_CONFIG.isMobileEdition ? 16 : responsivePaddingX}
       />
       {!disableMultiDelete || onRestore ? (
         <ListFloatingToolbar

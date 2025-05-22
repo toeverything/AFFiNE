@@ -314,12 +314,11 @@ export const Masonry = ({
   );
 };
 
-interface MasonryItemProps
-  extends MasonryItem,
-    Omit<React.HTMLAttributes<HTMLDivElement>, 'id' | 'height'> {
-  locateMode?: 'transform' | 'leftTop' | 'transform3d';
-  xywh?: MasonryItemXYWH;
-}
+type MasonryItemProps = MasonryItem &
+  Omit<React.HTMLAttributes<HTMLDivElement>, 'id' | 'height'> & {
+    locateMode?: 'transform' | 'leftTop' | 'transform3d';
+    xywh?: MasonryItemXYWH;
+  };
 
 const MasonryGroupHeader = memo(function MasonryGroupHeader({
   id,
@@ -330,7 +329,6 @@ const MasonryGroupHeader = memo(function MasonryGroupHeader({
   groupId,
   itemCount,
   collapsed,
-  height,
   paddingX,
   ...props
 }: Omit<MasonryItemProps, 'Component'> & {
@@ -356,7 +354,6 @@ const MasonryGroupHeader = memo(function MasonryGroupHeader({
   return (
     <MasonryItem
       id={id}
-      height={height}
       style={{
         padding: `0 ${paddingX}px`,
         height: '100%',
@@ -404,7 +401,7 @@ const MasonryItem = memo(function MasonryItem({
   className,
   style: styleProp,
   ...props
-}: MasonryItemProps) {
+}: Omit<MasonryItemProps, 'height' | 'ratio'>) {
   const style = useMemo(() => {
     if (!xywh) return { display: 'none' };
 

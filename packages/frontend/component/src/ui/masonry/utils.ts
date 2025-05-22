@@ -82,6 +82,7 @@ export const calcLayout = (
 
   groups.forEach((group, index) => {
     const heightStack = Array.from({ length: columns }, () => 0);
+    const ratioStack = Array.from({ length: columns }, () => 0);
     if (index !== 0) {
       finalHeight += groupsGap;
     }
@@ -108,20 +109,45 @@ export const calcLayout = (
     // calculate group items
     group.items.forEach(item => {
       const itemId = group.id ? `${group.id}:${item.id}` : item.id;
-      const minHeight = Math.min(...heightStack);
-      const minHeightIndex = heightStack.indexOf(minHeight);
-      const hasGap = heightStack[minHeightIndex] ? gapY : 0;
-      const x = minHeightIndex * (width + gapX) + paddingX;
-      const y = finalHeight + minHeight + hasGap;
+      const ratioMode = 'ratio' in item;
+      const height = ratioMode ? item.ratio * width : item.height;
 
-      heightStack[minHeightIndex] += item.height + hasGap;
-      layout.set(itemId, {
-        type: 'item',
-        x,
-        y,
-        w: width,
-        h: item.height,
-      });
+      if (ratioMode) {
+        const minRatio = Math.min(...ratioStack);
+        const minRatioIndex = ratioStack.indexOf(minRatio);
+        const minHeight = heightStack[minRatioIndex];
+        const hasGap = heightStack[minRatioIndex] ? gapY : 0;
+        const x = minRatioIndex * (width + gapX) + paddingX;
+        const y = finalHeight + minHeight + hasGap;
+
+        ratioStack[minRatioIndex] += item.ratio * 10000;
+        heightStack[minRatioIndex] += height + hasGap;
+        layout.set(itemId, {
+          type: 'item',
+          x,
+          y,
+          w: width,
+          h: height,
+        });
+      } else {
+        const minHeight = Math.min(...heightStack);
+        const minHeightIndex = heightStack.indexOf(minHeight);
+        const hasGap = heightStack[minHeightIndex] ? gapY : 0;
+        const x = minHeightIndex * (width + gapX) + paddingX;
+        const y = finalHeight + minHeight + hasGap;
+
+        const ratio = height / width;
+        heightStack[minHeightIndex] += height + hasGap;
+        ratioStack[minHeightIndex] += ratio * 10000;
+
+        layout.set(itemId, {
+          type: 'item',
+          x,
+          y,
+          w: width,
+          h: height,
+        });
+      }
     });
 
     const groupHeight = Math.max(...heightStack) + paddingY;
