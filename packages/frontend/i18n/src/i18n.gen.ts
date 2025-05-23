@@ -2190,6 +2190,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.explorer.display-menu.grouping"](): string;
     /**
+      * `Remove group`
+      */
+    ["com.affine.explorer.display-menu.grouping.remove"](): string;
+    /**
       * `Ordering`
       */
     ["com.affine.explorer.display-menu.ordering"](): string;
@@ -3141,6 +3145,18 @@ export function useAFFiNEI18N(): {
       * `Mark this doc as a template, which can be used to create new docs.`
       */
     ["com.affine.page-properties.property.template.tooltips"](): string;
+    /**
+      * `Created by {{userName}}`
+      */
+    ["com.affine.page-properties.property.createdBy.tip"](options: {
+        readonly userName: string;
+    }): string;
+    /**
+      * `Last edited by {{userName}}`
+      */
+    ["com.affine.page-properties.property.updatedBy.tip"](options: {
+        readonly userName: string;
+    }): string;
     /**
       * `Properties`
       */

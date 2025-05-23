@@ -13,6 +13,19 @@ import type { GroupHeaderProps } from '../explorer/types';
 import { MemberSelectorInline } from '../member-selector';
 import * as styles from './created-updated-by.css';
 
+const CreatedUsernameTip = ({ userName }: { userName: string }) => {
+  const i18n = useI18n();
+  return i18n.t('com.affine.page-properties.property.createdBy.tip', {
+    userName,
+  });
+};
+const UpdatedUsernameTip = ({ userName }: { userName: string }) => {
+  const i18n = useI18n();
+  return i18n.t('com.affine.page-properties.property.updatedBy.tip', {
+    userName,
+  });
+};
+
 const CreatedByUpdatedByAvatar = (props: {
   type: 'CreatedBy' | 'UpdatedBy';
   doc: DocRecord;
@@ -33,6 +46,9 @@ const CreatedByUpdatedByAvatar = (props: {
           id={userId}
           size={props.size}
           showName={props.showName}
+          tooltip={
+            props.type === 'CreatedBy' ? CreatedUsernameTip : UpdatedUsernameTip
+          }
         />
       </div>
     );

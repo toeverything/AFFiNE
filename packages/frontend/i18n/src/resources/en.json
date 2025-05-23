@@ -781,6 +781,8 @@
   "com.affine.page-properties.property.edgelessTheme.tooltips": "Select the doc theme from Light, Dark, or System. Useful for precise control over content viewing style.",
   "com.affine.page-properties.property.pageWidth.tooltips": "Control the width of this page to fit content display needs.",
   "com.affine.page-properties.property.template.tooltips": "Mark this doc as a template, which can be used to create new docs.",
+  "com.affine.page-properties.property.createdBy.tip": "Created by {{userName}}",
+  "com.affine.page-properties.property.updatedBy.tip": "Last edited by {{userName}}",
   "com.affine.propertySidebar.property-list.section": "Properties",
   "com.affine.propertySidebar.add-more.section": "Add more properties",
   "com.affine.page-properties.settings.title": "customize properties",
