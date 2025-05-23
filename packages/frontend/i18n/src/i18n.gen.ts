@@ -8151,6 +8151,12 @@ export function useAFFiNEI18N(): {
       */
     ["error.OAUTH_ACCOUNT_ALREADY_CONNECTED"](): string;
     /**
+      * `Invalid OAuth response: {{reason}}.`
+      */
+    ["error.INVALID_OAUTH_RESPONSE"](options: {
+        readonly reason: string;
+    }): string;
+    /**
       * `An invalid email provided: {{email}}`
       */
     ["error.INVALID_EMAIL"](options: {

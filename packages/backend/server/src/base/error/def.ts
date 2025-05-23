@@ -350,6 +350,11 @@ export const USER_FRIENDLY_ERRORS = {
     message:
       'The third-party account has already been connected to another user.',
   },
+  invalid_oauth_response: {
+    type: 'bad_request',
+    args: { reason: 'string' },
+    message: ({ reason }) => `Invalid OAuth response: ${reason}.`,
+  },
   invalid_email: {
     type: 'invalid_input',
     args: { email: 'string' },

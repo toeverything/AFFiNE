@@ -114,7 +114,7 @@ export class AuthService extends Service {
     provider: OAuthProviderType,
     client: string,
     /** @deprecated*/ redirectUrl?: string
-  ) {
+  ): Promise<Record<string, string>> {
     this.setClientNonce();
     try {
       const res = await this.fetchService.fetch('/api/oauth/preflight', {
@@ -130,9 +130,7 @@ export class AuthService extends Service {
         },
       });
 
-      let { url } = await res.json();
-
-      return url as string;
+      return await res.json();
     } catch (e) {
       track.$.$.auth.signInFail({
         method: 'oauth',

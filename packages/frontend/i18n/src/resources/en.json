@@ -2035,6 +2035,7 @@
   "error.INVALID_AUTH_STATE": "Invalid auth state. You might start the auth progress from another device.",
   "error.MISSING_OAUTH_QUERY_PARAMETER": "Missing query parameter `{{name}}`.",
   "error.OAUTH_ACCOUNT_ALREADY_CONNECTED": "The third-party account has already been connected to another user.",
+  "error.INVALID_OAUTH_RESPONSE": "Invalid OAuth response: {{reason}}.",
   "error.INVALID_EMAIL": "An invalid email provided: {{email}}",
   "error.INVALID_PASSWORD_LENGTH": "Password must be between {{min}} and {{max}} characters",
   "error.PASSWORD_REQUIRED": "Password is required.",

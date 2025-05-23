@@ -891,12 +891,42 @@
         },
         "providers.oidc": {
           "type": "object",
-          "description": "OIDC OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\",\"args\":{}}",
+          "description": "OIDC OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\",\"args\":{}}\n@link https://openid.net/specs/openid-connect-core-1_0.html",
+          "properties": {
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "args": {
+              "type": "object"
+            }
+          },
           "default": {
             "clientId": "",
             "clientSecret": "",
             "issuer": "",
             "args": {}
+          }
+        },
+        "providers.apple": {
+          "type": "object",
+          "description": "Apple OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_js/implementing_sign_in_with_apple_in_your_app",
+          "properties": {
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "args": {
+              "type": "object"
+            }
+          },
+          "default": {
+            "clientId": "",
+            "clientSecret": ""
           }
         }
       }

@@ -315,7 +315,13 @@
     },
     "providers.oidc": {
       "type": "Object",
-      "desc": "OIDC OAuth provider config"
+      "desc": "OIDC OAuth provider config",
+      "link": "https://openid.net/specs/openid-connect-core-1_0.html"
+    },
+    "providers.apple": {
+      "type": "Object",
+      "desc": "Apple OAuth provider config",
+      "link": "https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_js/implementing_sign_in_with_apple_in_your_app"
     }
   },
   "payment": {

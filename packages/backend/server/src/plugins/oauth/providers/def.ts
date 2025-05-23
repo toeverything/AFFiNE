@@ -17,12 +17,19 @@ export interface Tokens {
   expiresAt?: Date;
 }
 
+export interface AuthOptions {
+  client_id: string;
+  redirect_uri: string;
+  scope: string;
+  state: string;
+}
+
 @Injectable()
 export abstract class OAuthProvider {
   abstract provider: OAuthProviderName;
-  abstract getAuthUrl(state: string): string;
+  abstract getAuthUrl(state: string, clientNonce?: string): string;
   abstract getToken(code: string): Promise<Tokens>;
-  abstract getUser(token: string): Promise<OAuthAccount>;
+  abstract getUser(tokens: Tokens, state: any): Promise<OAuthAccount>;
 
   protected readonly logger = new Logger(this.constructor.name);
   @Inject() private readonly factory!: OAuthProviderFactory;
@@ -33,7 +40,9 @@ export abstract class OAuthProvider {
   }
 
   get configured() {
-    return this.config && this.config.clientId && this.config.clientSecret;
+    return (
+      !!this.config && !!this.config.clientId && !!this.config.clientSecret
+    );
   }
 
   @OnEvent('config.init')
