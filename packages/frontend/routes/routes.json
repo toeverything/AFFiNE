@@ -2,6 +2,70 @@
   "$schema": "./schema.json",
   "route": "/",
   "children": {
+    "workspace": {
+      "route": "workspaces/:workspaceId",
+      "children": {
+        "all": "all",
+        "trash": "trash",
+        "doc": {
+          "route": "docs/:docId",
+          "children": {
+            "attachment": "attachment/:attachmentId"
+          }
+        },
+        "journals": "journals",
+        "collections": {
+          "route": "collections",
+          "children": {
+            "collection": ":collectionId"
+          }
+        },
+        "tags": {
+          "route": "tags",
+          "children": {
+            "tag": ":tagId"
+          }
+        },
+        "settings": "settings"
+      }
+    },
+    "share": "share/:workspaceId/:pageId",
+    "expired": "expired",
+    "invite": "invite/:inviteId",
+    "payment": "payment/:plan/success",
+    "onboarding": "onboarding",
+    "redirect": "redirect",
+    "subscribe": "subscribe",
+    "upgradeToTeam": "upgrade-to-team",
+    "upgradeSuccess": {
+      "route": "upgrade-success",
+      "children": {
+        "team": "team",
+        "selfHostTeam": "self-host-team"
+      }
+    },
+    "aiUpgradeSuccess": "ai-upgrade-success",
+    "tryCloud": "try-cloud",
+    "themeEditor": "theme-editor",
+    "template": {
+      "route": "template",
+      "children": {
+        "import": "import",
+        "preview": "preview"
+      }
+    },
+    "auth": "auth/:authType",
+    "signIn": "sign-in",
+    "magicLink": "magic-link",
+    "oauth": {
+      "route": "oauth",
+      "children": {
+        "login": "login",
+        "callback": "callback"
+      }
+    },
+    "openApp": "open-app/:action",
+    "notFound": "404",
     "admin": {
       "route": "admin",
       "children": {

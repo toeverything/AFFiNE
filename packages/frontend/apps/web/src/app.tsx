@@ -1,5 +1,5 @@
 import { AffineContext } from '@affine/core/components/context';
-import { router } from '@affine/core/desktop/router';
+import { Router } from '@affine/core/desktop/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import { LifecycleService } from '@affine/core/modules/lifecycle';
@@ -17,7 +17,7 @@ import { CacheProvider } from '@emotion/react';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { Suspense } from 'react';
-import { RouterProvider } from 'react-router/dom';
+import { BrowserRouter } from 'react-router';
 
 const cache = createEmotionCache();
 
@@ -85,7 +85,9 @@ export function App() {
         <CacheProvider value={cache}>
           <I18nProvider>
             <AffineContext store={getCurrentStore()}>
-              <RouterProvider router={router} />
+              <BrowserRouter basename={environment.subPath}>
+                <Router />
+              </BrowserRouter>
             </AffineContext>
           </I18nProvider>
         </CacheProvider>

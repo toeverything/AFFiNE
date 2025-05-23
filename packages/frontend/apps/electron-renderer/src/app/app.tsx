@@ -1,12 +1,12 @@
 import { AffineContext } from '@affine/core/components/context';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
-import { router } from '@affine/core/desktop/router';
+import { Router } from '@affine/core/desktop/router';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { CacheProvider } from '@emotion/react';
 import { FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { Suspense } from 'react';
-import { RouterProvider } from 'react-router/dom';
+import { BrowserRouter } from 'react-router';
 
 import { setupEffects } from './effects';
 import { DesktopThemeSync } from './theme-sync';
@@ -41,7 +41,9 @@ export function App() {
           <I18nProvider>
             <AffineContext store={getCurrentStore()}>
               <DesktopThemeSync />
-              <RouterProvider router={router} />
+              <BrowserRouter basename={environment.subPath}>
+                <Router />
+              </BrowserRouter>
               {environment.isWindows && (
                 <div style={{ position: 'fixed', right: 0, top: 0, zIndex: 5 }}>
                   <WindowsAppControls />

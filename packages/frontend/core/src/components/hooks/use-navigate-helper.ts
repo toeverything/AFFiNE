@@ -3,6 +3,7 @@ import type { SettingTab } from '@affine/core/modules/dialogs/constant';
 import { toDocSearchParams } from '@affine/core/modules/navigation';
 import { getOpenUrlInDesktopAppLink } from '@affine/core/modules/open-in-app';
 import { UserFriendlyError } from '@affine/error';
+import { FACTORIES } from '@affine/routes';
 import type { DocMode } from '@blocksuite/affine/model';
 import { nanoid } from 'nanoid';
 import { createContext, useCallback, useContext, useMemo } from 'react';
@@ -52,7 +53,7 @@ export function useNavigateHelper() {
       pageId: string,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      return navigate(`/workspace/${workspaceId}/${pageId}`, {
+      return navigate(FACTORIES.workspace.doc({ workspaceId, docId: pageId }), {
         replace: logic === RouteLogic.REPLACE,
       });
     },
@@ -74,15 +75,18 @@ export function useNavigateHelper() {
         refreshKey: nanoid(),
       });
       const query = search?.size ? `?${search.toString()}` : '';
-      return navigate(`/workspace/${workspaceId}/${pageId}${query}`, {
-        replace: logic === RouteLogic.REPLACE,
-      });
+      return navigate(
+        FACTORIES.workspace.doc({ workspaceId, docId: pageId }) + query,
+        {
+          replace: logic === RouteLogic.REPLACE,
+        }
+      );
     },
     [navigate]
   );
   const jumpToCollections = useCallback(
     (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
-      return navigate(`/workspace/${workspaceId}/collection`, {
+      return navigate(FACTORIES.workspace.collections({ workspaceId }), {
         replace: logic === RouteLogic.REPLACE,
       });
     },
@@ -90,7 +94,7 @@ export function useNavigateHelper() {
   );
   const jumpToTags = useCallback(
     (workspaceId: string, logic: RouteLogic = RouteLogic.PUSH) => {
-      return navigate(`/workspace/${workspaceId}/tag`, {
+      return navigate(FACTORIES.workspace.tags({ workspaceId }), {
         replace: logic === RouteLogic.REPLACE,
       });
     },
@@ -102,7 +106,7 @@ export function useNavigateHelper() {
       tagId: string,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      return navigate(`/workspace/${workspaceId}/tag/${tagId}`, {
+      return navigate(FACTORIES.workspace.tags.tag({ workspaceId, tagId }), {
         replace: logic === RouteLogic.REPLACE,
       });
     },
@@ -114,16 +118,22 @@ export function useNavigateHelper() {
       collectionId: string,
       logic: RouteLogic = RouteLogic.PUSH
     ) => {
-      return navigate(`/workspace/${workspaceId}/collection/${collectionId}`, {
-        replace: logic === RouteLogic.REPLACE,
-      });
+      return navigate(
+        FACTORIES.workspace.collections.collection({
+          workspaceId,
+          collectionId,
+        }),
+        {
+          replace: logic === RouteLogic.REPLACE,
+        }
+      );
     },
     [navigate]
   );
 
   const jumpToAll = useCallback(
     (workspaceId: string, logic?: RouteLogic) => {
-      return navigate(`/workspace/${workspaceId}/all`, {
+      return navigate(FACTORIES.workspace.all({ workspaceId }), {
         replace: logic === RouteLogic.REPLACE,
       });
     },
@@ -144,7 +154,7 @@ export function useNavigateHelper() {
 
   const jumpTo404 = useCallback(
     (logic: RouteLogic = RouteLogic.PUSH) => {
-      return navigate('/404', {
+      return navigate(FACTORIES.notFound(), {
         replace: logic === RouteLogic.REPLACE,
       });
     },
@@ -152,7 +162,7 @@ export function useNavigateHelper() {
   );
   const jumpToExpired = useCallback(
     (logic: RouteLogic = RouteLogic.PUSH) => {
-      return navigate('/expired', {
+      return navigate(FACTORIES.expired(), {
         replace: logic === RouteLogic.REPLACE,
       });
     },
@@ -176,7 +186,7 @@ export function useNavigateHelper() {
       }
 
       return navigate(
-        '/sign-in' +
+        FACTORIES.signIn() +
           (searchParams.toString() ? '?' + searchParams.toString() : ''),
         {
           replace: logic === RouteLogic.REPLACE,
@@ -196,7 +206,7 @@ export function useNavigateHelper() {
       }
 
       const encodedUrl = encodeURIComponent(deeplink);
-      return navigate(`/open-app/url?url=${encodedUrl}`);
+      return navigate(FACTORIES.openApp({ action: `url?url=${encodedUrl}` }));
     },
     [navigate]
   );
@@ -204,7 +214,8 @@ export function useNavigateHelper() {
   const jumpToImportTemplate = useCallback(
     (name: string, snapshotUrl: string) => {
       return navigate(
-        `/template/import?name=${encodeURIComponent(name)}&snapshotUrl=${encodeURIComponent(snapshotUrl)}`
+        FACTORIES.template.import() +
+          `?name=${encodeURIComponent(name)}&snapshotUrl=${encodeURIComponent(snapshotUrl)}`
       );
     },
     [navigate]
@@ -221,7 +232,8 @@ export function useNavigateHelper() {
         searchParams.set('tab', tab);
       }
       return navigate(
-        `/workspace/${workspaceId}/settings?${searchParams.toString()}`,
+        FACTORIES.workspace.settings({ workspaceId }) +
+          (searchParams.toString() ? `?${searchParams.toString()}` : ''),
         {
           replace: logic === RouteLogic.REPLACE,
         }

@@ -1,4 +1,5 @@
 import { NavigateContext } from '@affine/core/components/hooks/use-navigate-helper';
+import { ROUTES } from '@affine/routes';
 import { wrapCreateBrowserRouterV7 } from '@sentry/react';
 import { useEffect, useState } from 'react';
 import type { RouteObject } from 'react-router';
@@ -34,58 +35,60 @@ export const topLevelRoutes = [
     hydrateFallbackElement: <AppFallback />,
     children: [
       {
-        path: '/',
+        path: ROUTES.index,
         lazy: async () => await import('./pages/index'),
       },
       {
-        path: '/workspace/:workspaceId/*',
+        path: `${ROUTES.workspace.index}/*`,
         lazy: async () => await import('./pages/workspace/index'),
       },
       {
-        path: '/share/:workspaceId/:pageId',
+        path: ROUTES.share,
         loader: async ({ params }) => {
-          return redirect(`/workspace/${params.workspaceId}/${params.pageId}`);
+          return redirect(
+            `/workspaces/${params.workspaceId}/docs/${params.pageId}`
+          );
         },
       },
       {
-        path: '/404',
+        path: ROUTES.notFound,
         lazy: async () => await import('./pages/404'),
       },
       {
-        path: '/auth/:authType',
+        path: ROUTES.auth,
         lazy: async () => await import('./pages/auth'),
       },
       {
-        path: '/sign-in',
+        path: ROUTES.signIn,
         lazy: async () => await import('./pages/sign-in'),
       },
       {
-        path: '/magic-link',
+        path: ROUTES.magicLink,
         lazy: async () =>
           await import(
             /* webpackChunkName: "auth" */ '@affine/core/desktop/pages/auth/magic-link'
           ),
       },
       {
-        path: '/oauth/login',
+        path: ROUTES.oauth.login,
         lazy: async () =>
           await import(
             /* webpackChunkName: "auth" */ '@affine/core/desktop/pages/auth/oauth-login'
           ),
       },
       {
-        path: '/oauth/callback',
+        path: ROUTES.oauth.callback,
         lazy: async () =>
           await import(
             /* webpackChunkName: "auth" */ '@affine/core/desktop/pages/auth/oauth-callback'
           ),
       },
       {
-        path: '/redirect-proxy',
+        path: ROUTES.redirect,
         lazy: async () => await import('@affine/core/desktop/pages/redirect'),
       },
       {
-        path: '/open-app/:action',
+        path: ROUTES.openApp,
         lazy: async () => await import('@affine/core/desktop/pages/open-app'),
       },
       {

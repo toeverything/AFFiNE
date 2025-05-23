@@ -14,9 +14,7 @@ import {
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
-import type { LoaderFunction } from 'react-router';
-import { redirect, useParams, useSearchParams } from 'react-router';
-import { z } from 'zod';
+import { useParams, useSearchParams } from 'react-router';
 
 import { useMutation } from '../../../components/hooks/use-mutation';
 import {
@@ -27,18 +25,6 @@ import { AuthService, ServerService } from '../../../modules/cloud';
 import { AppContainer } from '../../components/app-container';
 import { ConfirmChangeEmail } from './confirm-change-email';
 import { ConfirmVerifiedEmail } from './email-verified-email';
-
-const authTypeSchema = z.enum([
-  'onboarding',
-  'setPassword',
-  'signIn',
-  'changePassword',
-  'signUp',
-  'changeEmail',
-  'confirm-change-email',
-  'subscription-redirect',
-  'verify-email',
-]);
 
 export const Component = () => {
   const authService = useService(AuthService);
@@ -157,16 +143,5 @@ export const Component = () => {
       return <ConfirmVerifiedEmail onOpenAffine={onOpenAffine} />;
     }
   }
-  return null;
-};
-
-export const loader: LoaderFunction = async args => {
-  if (!args.params.authType) {
-    return redirect('/404');
-  }
-  if (!authTypeSchema.safeParse(args.params.authType).success) {
-    return redirect('/404');
-  }
-
   return null;
 };

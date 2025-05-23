@@ -1,57 +1,19 @@
 import { useAsyncNavigate } from '@affine/core/utils/use-async-navigate';
 import { useService } from '@toeverything/infra';
 import { useEffect, useRef } from 'react';
-import { type LoaderFunction, redirect, useLoaderData } from 'react-router';
+import { useLoaderData } from 'react-router';
 
 import { AuthService } from '../../../modules/cloud';
-import { supportedClient } from './common';
-
-interface LoaderData {
+export interface MagicLinkLoaderData {
   token: string;
   email: string;
   redirectUri: string | null;
 }
 
-export const loader: LoaderFunction = ({ request }) => {
-  const url = new URL(request.url);
-  const params = url.searchParams;
-  const client = params.get('client');
-  const email = params.get('email');
-  const token = params.get('token');
-  const redirectUri = params.get('redirect_uri');
-
-  if (!email || !token) {
-    return redirect('/sign-in?error=Invalid magic link');
-  }
-
-  const payload: LoaderData = {
-    email,
-    token,
-    redirectUri,
-  };
-
-  if (!client || client === 'web') {
-    return payload;
-  }
-
-  const clientCheckResult = supportedClient.safeParse(client);
-  if (!clientCheckResult.success) {
-    return redirect('/sign-in?error=Invalid callback parameters');
-  }
-
-  const authParams = new URLSearchParams();
-  authParams.set('method', 'magic-link');
-  authParams.set('payload', JSON.stringify(payload));
-
-  return redirect(
-    `/open-app/url?url=${encodeURIComponent(`${client}://authentication?${authParams.toString()}`)}`
-  );
-};
-
 export const Component = () => {
   // TODO(@eyhn): loading ui
   const auth = useService(AuthService);
-  const data = useLoaderData() as LoaderData;
+  const data = useLoaderData() as MagicLinkLoaderData;
 
   const nav = useAsyncNavigate();
 
