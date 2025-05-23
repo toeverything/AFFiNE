@@ -1,6 +1,7 @@
 import { Button, Input, Modal, notify } from '@affine/component';
 import { IntegrationService } from '@affine/core/modules/integration';
 import { useI18n } from '@affine/i18n';
+import track from '@affine/track';
 import { PlusIcon, TodayIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useState } from 'react';
@@ -72,6 +73,11 @@ const AddSubscription = () => {
       .then(() => {
         setOpen(false);
         setUrl('');
+        track.$.settingsPanel.integrationList.connectIntegration({
+          type: 'calendar',
+          control: 'Calendar Setting',
+          result: 'success',
+        });
       })
       .catch(() => {
         notify.error({

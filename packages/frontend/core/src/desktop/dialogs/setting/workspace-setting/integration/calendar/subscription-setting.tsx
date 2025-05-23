@@ -4,6 +4,7 @@ import {
   IntegrationService,
 } from '@affine/core/modules/integration';
 import { useI18n } from '@affine/i18n';
+import track from '@affine/track';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -114,6 +115,10 @@ const UnsubscribeButton = ({ url, name }: { url: string; name: string }) => {
       }),
       onConfirm: () => {
         calendar.deleteSubscription(url);
+        track.$.settingsPanel.integrationList.disconnectIntegration({
+          type: 'calendar',
+          control: 'Calendar Setting',
+        });
       },
       confirmText: t['com.affine.integration.calendar.unsubscribe'](),
       confirmButtonOptions: {

@@ -70,7 +70,12 @@ import {
   JournalGroupHeader,
   JournalValue,
 } from './journal';
-import { NumberDocListProperty, NumberValue } from './number';
+import {
+  NumberDocListProperty,
+  NumberFilterValue,
+  NumberGroupHeader,
+  NumberValue,
+} from './number';
 import {
   PageWidthDocListProperty,
   PageWidthFilterValue,
@@ -158,8 +163,23 @@ export const WorkspacePropertyTypes = {
     value: NumberValue,
     name: 'com.affine.page-properties.property.number',
     description: 'com.affine.page-properties.property.number.tooltips',
+    filterMethod: {
+      '<': '<',
+      '=': '=',
+      '≠': '≠',
+      '≥': '≥',
+      '≤': '≤',
+      '>': '>',
+      'is-not-empty': 'com.affine.filter.is not empty',
+      'is-empty': 'com.affine.filter.is empty',
+    },
+    allowInGroupBy: true,
+    allowInOrderBy: true,
+    filterValue: NumberFilterValue,
+    defaultFilter: { method: 'is-not-empty' },
     showInDocList: 'stack',
     docListProperty: NumberDocListProperty,
+    groupHeader: NumberGroupHeader,
   },
   checkbox: {
     icon: CheckBoxCheckLinearIcon,

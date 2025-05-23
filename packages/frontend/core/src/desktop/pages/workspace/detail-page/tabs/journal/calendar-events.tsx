@@ -10,6 +10,7 @@ import { JournalService } from '@affine/core/modules/journal';
 import { GuardService } from '@affine/core/modules/permissions';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
+import track from '@affine/track';
 import { FullDayIcon, PeriodIcon, PlusIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
@@ -94,6 +95,7 @@ const CalendarEventRenderer = ({ event }: { event: CalendarEvent }) => {
         await docsService.changeDocTitle(newDoc.id, title);
         await docsService.addLinkedDoc(doc.id, newDoc.id);
       }
+      track.doc.sidepanel.journal.createCalendarDocEvent();
     } finally {
       setLoading(false);
     }

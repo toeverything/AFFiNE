@@ -6,9 +6,11 @@ import ava, { TestFn } from 'ava';
 import { Config } from '../../base';
 import { CopilotContextModel } from '../../models/copilot-context';
 import { CopilotSessionModel } from '../../models/copilot-session';
+import { CopilotWorkspaceConfigModel } from '../../models/copilot-workspace';
 import { UserModel } from '../../models/user';
 import { WorkspaceModel } from '../../models/workspace';
 import { createTestingModule, type TestingModule } from '../utils';
+import { cleanObject } from '../utils/copilot';
 
 interface Context {
   config: Config;
@@ -18,6 +20,7 @@ interface Context {
   workspace: WorkspaceModel;
   copilotSession: CopilotSessionModel;
   copilotContext: CopilotContextModel;
+  copilotWorkspace: CopilotWorkspaceConfigModel;
 }
 
 const test = ava as TestFn<Context>;
@@ -28,6 +31,7 @@ test.before(async t => {
   t.context.workspace = module.get(WorkspaceModel);
   t.context.copilotSession = module.get(CopilotSessionModel);
   t.context.copilotContext = module.get(CopilotContextModel);
+  t.context.copilotWorkspace = module.get(CopilotWorkspaceConfigModel);
   t.context.db = module.get(PrismaClient);
   t.context.config = module.get(Config);
   t.context.module = module;
@@ -74,7 +78,7 @@ test('should create a copilot context', async t => {
 
 test('should get null for non-exist job', async t => {
   const job = await t.context.copilotContext.get('non-exist');
-  t.is(job, null);
+  t.snapshot(job, 'should return null for non-exist job');
 });
 
 test('should update context', async t => {
@@ -111,7 +115,10 @@ test('should insert embedding by doc id', async t => {
         1,
         1
       );
-      t.snapshot(ret, 'should match file embedding');
+      t.snapshot(
+        cleanObject(ret, ['chunk', 'content', 'distance']),
+        'should match file embedding'
+      );
     }
 
     {
@@ -122,7 +129,7 @@ test('should insert embedding by doc id', async t => {
         1,
         1
       );
-      t.is(ret.length, 0);
+      t.snapshot(ret, 'should return empty array when embedding is deleted');
     }
   }
 
@@ -155,7 +162,7 @@ test('should insert embedding by doc id', async t => {
         workspace.id,
         [docId]
       );
-      t.true(ret.has(docId), 'should return true when embedding exists');
+      t.true(ret.has(docId), 'should return doc id when embedding is inserted');
     }
 
     {
@@ -165,8 +172,39 @@ test('should insert embedding by doc id', async t => {
         1,
         1
       );
-      t.is(ret.length, 1);
-      t.is(ret[0].content, 'content');
+      t.snapshot(
+        cleanObject(ret, ['chunk', 'content', 'distance']),
+        'should match workspace embedding'
+      );
+    }
+
+    {
+      await t.context.copilotWorkspace.updateIgnoredDocs(workspace.id, [docId]);
+      const ret = await t.context.copilotContext.matchWorkspaceEmbedding(
+        Array.from({ length: 1024 }, () => 0.9),
+        workspace.id,
+        1,
+        1
+      );
+      t.snapshot(ret, 'should return empty array when doc is ignored');
+    }
+
+    {
+      await t.context.copilotWorkspace.updateIgnoredDocs(
+        workspace.id,
+        undefined,
+        [docId]
+      );
+      const ret = await t.context.copilotContext.matchWorkspaceEmbedding(
+        Array.from({ length: 1024 }, () => 0.9),
+        workspace.id,
+        1,
+        1
+      );
+      t.snapshot(
+        cleanObject(ret, ['chunk', 'content', 'distance']),
+        'should return workspace embedding'
+      );
     }
 
     {
@@ -188,7 +226,7 @@ test('should insert embedding by doc id', async t => {
 test('should check embedding table', async t => {
   {
     const ret = await t.context.copilotContext.checkEmbeddingAvailable();
-    t.true(ret, 'should return true when embedding table is available');
+    t.snapshot(ret, 'should return true when embedding table is available');
   }
 
   // {

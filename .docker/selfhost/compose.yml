@@ -10,8 +10,6 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
-      indexer:
-        condition: service_healthy
       affine_migration:
         condition: service_completed_successfully
     volumes:
@@ -23,7 +21,7 @@ services:
     environment:
       - REDIS_SERVER_HOST=redis
       - DATABASE_URL=postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE:-affine}
-      - AFFINE_INDEXER_SEARCH_ENDPOINT=http://indexer:9308
+      - AFFINE_INDEXER_ENABLED=false
     restart: unless-stopped
 
   affine_migration:
@@ -39,13 +37,11 @@ services:
     environment:
       - REDIS_SERVER_HOST=redis
       - DATABASE_URL=postgresql://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE:-affine}
-      - AFFINE_INDEXER_SEARCH_ENDPOINT=http://indexer:9308
+      - AFFINE_INDEXER_ENABLED=false
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      indexer:
         condition: service_healthy
 
   redis:
@@ -74,27 +70,6 @@ services:
     healthcheck:
       test:
         ['CMD', 'pg_isready', '-U', "${DB_USERNAME}", '-d', "${DB_DATABASE:-affine}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  indexer:
-    image: manticoresearch/manticore:${MANTICORE_VERSION:-9.2.14}
-    container_name: affine_indexer
-    volumes:
-      - ${MANTICORE_DATA_LOCATION}:/var/lib/manticore
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 65535
-        hard: 65535
-      memlock:
-        soft: -1
-        hard: -1
-    healthcheck:
-      test:
-        ['CMD', 'wget', '-O-', 'http://127.0.0.1:9308']
       interval: 10s
       timeout: 5s
       retries: 5

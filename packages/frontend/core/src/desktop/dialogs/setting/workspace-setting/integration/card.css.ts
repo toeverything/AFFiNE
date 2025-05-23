@@ -40,6 +40,7 @@ export const cardIcon = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  color: cssVarV2.icon.monotone,
 });
 export const cardContent = style([
   spaceY,

@@ -60,7 +60,7 @@ jobs:
           - 1025:1025
           - 8025:8025
       indexer:
-        image: manticoresearch/manticore:9.2.14
+        image: manticoresearch/manticore:9.3.2
         ports:
           - 9308:9308
     steps:
@@ -135,7 +135,7 @@ jobs:
         ports:
           - 6379:6379
       indexer:
-        image: manticoresearch/manticore:9.2.14
+        image: manticoresearch/manticore:9.3.2
         ports:
           - 9308:9308
     steps:

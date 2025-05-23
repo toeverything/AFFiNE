@@ -3,6 +3,7 @@ import { File } from 'node:buffer';
 import { z } from 'zod';
 
 import { CopilotContextFileNotSupported } from '../../../base';
+import type { PageDocContent } from '../../../core/utils/blocksuite';
 import { ChunkSimilarity, Embedding } from '../../../models';
 import { parseDoc } from '../../../native';
 
@@ -10,7 +11,7 @@ declare global {
   interface Events {
     'workspace.embedding': {
       workspaceId: string;
-      enableDocEmbedding: boolean;
+      enableDocEmbedding?: boolean;
     };
 
     'workspace.doc.embedding': Array<{
@@ -53,6 +54,13 @@ declare global {
   }
 }
 
+export type DocFragment = PageDocContent & {
+  createdAt: string;
+  createdBy?: string;
+  updatedAt: string;
+  updatedBy?: string;
+};
+
 export type Chunk = {
   index: number;
   content: string;
@@ -63,11 +71,12 @@ export const EMBEDDING_DIMENSIONS = 1024;
 export abstract class EmbeddingClient {
   async getFileEmbeddings(
     file: File,
+    chunkMapper: (chunk: Chunk[]) => Chunk[],
     signal?: AbortSignal
   ): Promise<Embedding[][]> {
     const chunks = await this.getFileChunks(file, signal);
     const chunkedEmbeddings = await Promise.all(
-      chunks.map(chunk => this.generateEmbeddings(chunk))
+      chunks.map(chunk => this.generateEmbeddings(chunkMapper(chunk)))
     );
     return chunkedEmbeddings;
   }

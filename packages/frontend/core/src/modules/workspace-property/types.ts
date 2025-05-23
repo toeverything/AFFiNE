@@ -25,7 +25,7 @@ export type WorkspacePropertyTypes = {
     filter: 'is' | 'is-not' | 'is-not-empty' | 'is-empty';
   };
   number: {
-    filter: 'is' | 'is-not' | 'is-not-empty' | 'is-empty';
+    filter: '=' | '≠' | '>' | '<' | '≥' | '≤' | 'is-not-empty' | 'is-empty';
   };
   checkbox: {
     filter: 'is' | 'is-not';

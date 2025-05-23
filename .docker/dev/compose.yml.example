@@ -26,7 +26,7 @@ services:
 
   # https://manual.manticoresearch.com/Starting_the_server/Docker
   manticoresearch:
-    image: manticoresearch/manticore:${MANTICORE_VERSION:-9.2.14}
+    image: manticoresearch/manticore:${MANTICORE_VERSION:-9.3.2}
     ports:
       - 9308:9308
     ulimits:

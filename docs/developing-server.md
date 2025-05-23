@@ -22,7 +22,7 @@ cp ./.docker/dev/.env.example ./.docker/dev/.env
 docker compose -f ./.docker/dev/compose.yml up
 ```
 
-#### Notify
+### Notify
 
 > Starting from AFFiNE 0.20, compose.yml includes a breaking change: the default database image has switched from `postgres:16` to `pgvector/pgvector:pg16`. If you were previously using another major version of Postgres, please change the number after `pgvector/pgvector:pg` to the major version you are using.
 
@@ -108,6 +108,6 @@ yarn affine server prisma studio
 
 ### Seed the db
 
-```
+```sh
 yarn affine server seed -h
 ```

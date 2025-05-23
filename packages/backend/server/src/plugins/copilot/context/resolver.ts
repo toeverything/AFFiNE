@@ -498,7 +498,7 @@ export class CopilotContextResolver {
             workspaceId: session.workspaceId,
             docId,
           })),
-          session.id
+          { contextId: session.id, priority: 0 }
         );
       }
 
@@ -559,7 +559,7 @@ export class CopilotContextResolver {
 
       await this.jobs.addDocEmbeddingQueue(
         [{ workspaceId: session.workspaceId, docId: options.docId }],
-        session.id
+        { contextId: session.id, priority: 0 }
       );
 
       return { ...record, status: record.status || null };

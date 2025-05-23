@@ -98,6 +98,16 @@ export const TagsFilterValue = ({
     },
     [filter, onChange, selectedTags]
   );
+
+  useEffect(() => {
+    if (
+      isDraft &&
+      (filter.method === 'is-not-empty' || filter.method === 'is-empty')
+    ) {
+      onDraftCompleted?.();
+    }
+  }, [isDraft, filter.method, onDraftCompleted]);
+
   return filter.method !== 'is-not-empty' && filter.method !== 'is-empty' ? (
     <WorkspaceTagsInlineEditor
       placeholder={

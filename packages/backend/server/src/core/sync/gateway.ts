@@ -14,6 +14,7 @@ import {
   CallMetric,
   DocNotFound,
   DocUpdateBlocked,
+  EventBus,
   GatewayErrorWrapper,
   metrics,
   NotInSpace,
@@ -144,6 +145,7 @@ export class SpaceSyncGateway
 
   constructor(
     private readonly ac: AccessController,
+    private readonly event: EventBus,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly userspace: PgUserspaceDocStorageAdapter,
     private readonly docReader: DocReader,
@@ -201,6 +203,7 @@ export class SpaceSyncGateway
         await client.join(room);
       }
     } else {
+      this.event.emit('workspace.embedding', { workspaceId: spaceId });
       await this.selectAdapter(client, spaceType).join(user.id, spaceId);
     }
 

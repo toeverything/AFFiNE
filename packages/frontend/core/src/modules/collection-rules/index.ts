@@ -17,6 +17,7 @@ import { EmptyJournalFilterProvider } from './impls/filters/empty-journal';
 import { FavoriteFilterProvider } from './impls/filters/favorite';
 import { IntegrationTypeFilterProvider } from './impls/filters/integration-type';
 import { JournalFilterProvider } from './impls/filters/journal';
+import { NumberPropertyFilterProvider } from './impls/filters/number';
 import { PageWidthFilterProvider } from './impls/filters/page-width';
 import { PropertyFilterProvider } from './impls/filters/property';
 import { SharedFilterProvider } from './impls/filters/shared';
@@ -36,6 +37,7 @@ import { DocPrimaryModeGroupByProvider } from './impls/group-by/doc-primary-mode
 import { EdgelessThemeGroupByProvider } from './impls/group-by/edgeless-theme';
 import { IntegrationTypeGroupByProvider } from './impls/group-by/integration-type';
 import { JournalGroupByProvider } from './impls/group-by/journal';
+import { NumberPropertyGroupByProvider } from './impls/group-by/number';
 import { PageWidthGroupByProvider } from './impls/group-by/page-width';
 import { PropertyGroupByProvider } from './impls/group-by/property';
 import { SystemGroupByProvider } from './impls/group-by/system';
@@ -52,6 +54,7 @@ import { DocPrimaryModeOrderByProvider } from './impls/order-by/doc-primary-mode
 import { EdgelessThemeOrderByProvider } from './impls/order-by/edgeless-theme';
 import { IntegrationTypeOrderByProvider } from './impls/order-by/integration-type';
 import { JournalOrderByProvider } from './impls/order-by/journal';
+import { NumberPropertyOrderByProvider } from './impls/order-by/number';
 import { PageWidthOrderByProvider } from './impls/order-by/page-width';
 import { PropertyOrderByProvider } from './impls/order-by/property';
 import { SystemOrderByProvider } from './impls/order-by/system';
@@ -79,6 +82,9 @@ export function configureCollectionRulesModule(framework: Framework) {
       DocsService,
     ])
     .impl(FilterProvider('property:text'), TextPropertyFilterProvider, [
+      DocsService,
+    ])
+    .impl(FilterProvider('property:number'), NumberPropertyFilterProvider, [
       DocsService,
     ])
     .impl(FilterProvider('property:tags'), TagsFilterProvider, [
@@ -196,6 +202,9 @@ export function configureCollectionRulesModule(framework: Framework) {
     .impl(GroupByProvider('property:text'), TextPropertyGroupByProvider, [
       DocsService,
     ])
+    .impl(GroupByProvider('property:number'), NumberPropertyGroupByProvider, [
+      DocsService,
+    ])
     .impl(
       GroupByProvider('property:docPrimaryMode'),
       DocPrimaryModeGroupByProvider,
@@ -291,6 +300,9 @@ export function configureCollectionRulesModule(framework: Framework) {
       DocsService,
     ])
     .impl(OrderByProvider('property:text'), TextPropertyOrderByProvider, [
+      DocsService,
+    ])
+    .impl(OrderByProvider('property:number'), NumberPropertyOrderByProvider, [
       DocsService,
     ])
     .impl(OrderByProvider('property:date'), DatePropertyOrderByProvider, [

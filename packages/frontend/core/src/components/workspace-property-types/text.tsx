@@ -216,14 +216,25 @@ export const TextFilterValue = ({
       if (e.key !== 'Escape') return;
       submitTempValue();
       setValueMenuOpen(false);
+      onDraftCompleted?.();
     },
-    [submitTempValue]
+    [submitTempValue, onDraftCompleted]
   );
 
   const handleInputEnter = useCallback(() => {
     submitTempValue();
     setValueMenuOpen(false);
-  }, [submitTempValue]);
+    onDraftCompleted?.();
+  }, [submitTempValue, onDraftCompleted]);
+
+  useEffect(() => {
+    if (
+      isDraft &&
+      (filter.method === 'is-not-empty' || filter.method === 'is-empty')
+    ) {
+      onDraftCompleted?.();
+    }
+  }, [isDraft, filter.method, onDraftCompleted]);
 
   return filter.method !== 'is-not-empty' && filter.method !== 'is-empty' ? (
     <Menu

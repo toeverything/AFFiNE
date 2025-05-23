@@ -16,6 +16,7 @@ import { Models } from '../../../models';
 import { CopilotStorage } from '../storage';
 import { readStream } from '../utils';
 import { OpenAIEmbeddingClient } from './embedding';
+import type { Chunk, DocFragment } from './types';
 import { EMBEDDING_DIMENSIONS, EmbeddingClient } from './types';
 
 @Injectable()
@@ -78,16 +79,23 @@ export class CopilotContextDocJob {
   @OnEvent('workspace.doc.embedding')
   async addDocEmbeddingQueue(
     docs: Events['workspace.doc.embedding'],
-    contextId?: string
+    options?: { contextId: string; priority: number }
   ) {
     if (!this.supportEmbedding) return;
 
     for (const { workspaceId, docId } of docs) {
-      await this.queue.add('copilot.embedding.docs', {
-        contextId,
-        workspaceId,
-        docId,
-      });
+      await this.queue.add(
+        'copilot.embedding.docs',
+        {
+          contextId: options?.contextId,
+          workspaceId,
+          docId,
+        },
+        {
+          jobId: `workspace:embedding:${workspaceId}:${docId}`,
+          priority: options?.priority ?? 1,
+        }
+      );
     }
   }
 
@@ -110,14 +118,26 @@ export class CopilotContextDocJob {
   }: Events['workspace.embedding']) {
     if (!this.supportEmbedding || !this.embeddingClient) return;
 
+    if (enableDocEmbedding === undefined) {
+      enableDocEmbedding =
+        await this.models.workspace.allowEmbedding(workspaceId);
+    }
+
     if (enableDocEmbedding) {
       const toBeEmbedDocIds =
         await this.models.copilotWorkspace.findDocsToEmbed(workspaceId);
       for (const docId of toBeEmbedDocIds) {
-        await this.queue.add('copilot.embedding.docs', {
-          workspaceId,
-          docId,
-        });
+        await this.queue.add(
+          'copilot.embedding.docs',
+          {
+            workspaceId,
+            docId,
+          },
+          {
+            jobId: `workspace:embedding:${workspaceId}:${docId}`,
+            priority: 1,
+          }
+        );
       }
     } else {
       const controller = this.workspaceJobAbortController.get(workspaceId);
@@ -132,14 +152,25 @@ export class CopilotContextDocJob {
   async addDocEmbeddingQueueFromEvent(doc: Events['doc.indexer.updated']) {
     if (!this.supportEmbedding || !this.embeddingClient) return;
 
-    await this.queue.add('copilot.embedding.docs', {
-      workspaceId: doc.workspaceId,
-      docId: doc.workspaceId,
-    });
+    await this.queue.add(
+      'copilot.embedding.docs',
+      {
+        workspaceId: doc.workspaceId,
+        docId: doc.docId,
+      },
+      {
+        jobId: `workspace:embedding:${doc.workspaceId}:${doc.docId}`,
+        priority: 2,
+      }
+    );
   }
 
   @OnEvent('doc.indexer.deleted')
   async deleteDocEmbeddingQueueFromEvent(doc: Events['doc.indexer.deleted']) {
+    await this.queue.remove(
+      `workspace:embedding:${doc.workspaceId}:${doc.docId}`,
+      'copilot.embedding.docs'
+    );
     await this.models.copilotContext.deleteWorkspaceEmbedding(
       doc.workspaceId,
       doc.docId
@@ -221,6 +252,43 @@ export class CopilotContextDocJob {
     }
   }
 
+  private async getDocFragment(
+    workspaceId: string,
+    docId: string
+  ): Promise<DocFragment | null> {
+    const docContent = await this.doc.getFullDocContent(workspaceId, docId);
+    const authors = await this.models.doc.getAuthors(workspaceId, docId);
+    if (docContent?.summary && authors) {
+      const { title = 'Untitled', summary } = docContent;
+      const { createdAt, updatedAt, createdByUser, updatedByUser } = authors;
+      return {
+        title,
+        summary,
+        createdAt: createdAt.toDateString(),
+        updatedAt: updatedAt.toDateString(),
+        createdBy: createdByUser?.name,
+        updatedBy: updatedByUser?.name,
+      };
+    }
+    return null;
+  }
+
+  private formatDocChunks(chunks: Chunk[], fragment: DocFragment): Chunk[] {
+    return chunks.map(chunk => ({
+      index: chunk.index,
+      content: [
+        `Title: ${fragment.title}`,
+        `Created at: ${fragment.createdAt}`,
+        `Updated at: ${fragment.updatedAt}`,
+        fragment.createdBy ? `Created by: ${fragment.createdBy}` : undefined,
+        fragment.updatedBy ? `Updated by: ${fragment.updatedBy}` : undefined,
+        chunk.content,
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    }));
+  }
+
   private getWorkspaceSignal(workspaceId: string) {
     let controller = this.workspaceJobAbortController.get(workspaceId);
     if (!controller) {
@@ -241,39 +309,49 @@ export class CopilotContextDocJob {
     const signal = this.getWorkspaceSignal(workspaceId);
 
     try {
-      const content = await this.doc.getFullDocContent(workspaceId, docId);
-      if (signal.aborted) {
-        return;
-      } else if (content) {
-        // fast fall for empty doc, journal is easily to create a empty doc
-        if (content.summary) {
-          const embeddings = await this.embeddingClient.getFileEmbeddings(
-            new File([content.summary], `${content.title || 'Untitled'}.md`),
-            signal
-          );
+      const needEmbedding =
+        await this.models.copilotWorkspace.checkDocNeedEmbedded(
+          workspaceId,
+          docId
+        );
+      if (needEmbedding) {
+        if (signal.aborted) return;
+        const fragment = await this.getDocFragment(workspaceId, docId);
+        if (fragment) {
+          // fast fall for empty doc, journal is easily to create a empty doc
+          if (fragment.summary) {
+            const embeddings = await this.embeddingClient.getFileEmbeddings(
+              new File(
+                [fragment.summary],
+                `${fragment.title || 'Untitled'}.md`
+              ),
+              chunks => this.formatDocChunks(chunks, fragment),
+              signal
+            );
 
-          for (const chunks of embeddings) {
+            for (const chunks of embeddings) {
+              await this.models.copilotContext.insertWorkspaceEmbedding(
+                workspaceId,
+                docId,
+                chunks
+              );
+            }
+          } else {
+            // for empty doc, insert empty embedding
+            const emptyEmbedding = {
+              index: 0,
+              content: '',
+              embedding: Array.from({ length: EMBEDDING_DIMENSIONS }, () => 0),
+            };
             await this.models.copilotContext.insertWorkspaceEmbedding(
               workspaceId,
               docId,
-              chunks
+              [emptyEmbedding]
             );
           }
-        } else {
-          // for empty doc, insert empty embedding
-          const emptyEmbedding = {
-            index: 0,
-            content: '',
-            embedding: Array.from({ length: EMBEDDING_DIMENSIONS }, () => 0),
-          };
-          await this.models.copilotContext.insertWorkspaceEmbedding(
-            workspaceId,
-            docId,
-            [emptyEmbedding]
-          );
+        } else if (contextId) {
+          throw new DocNotFound({ spaceId: workspaceId, docId });
         }
-      } else if (contextId) {
-        throw new DocNotFound({ spaceId: workspaceId, docId });
       }
     } catch (error: any) {
       if (contextId) {

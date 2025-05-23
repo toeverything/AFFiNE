@@ -175,6 +175,55 @@ export class CopilotWorkspaceConfigModel extends BaseModel {
     };
   }
 
+  @Transactional()
+  async checkDocNeedEmbedded(workspaceId: string, docId: string) {
+    // NOTE: check if the document needs re-embedding.
+    // 1. check if there have been any recent updates to the document snapshot and update
+    // 2. check if the embedding is older than the snapshot and update
+    // 3. check if the embedding is older than 10 minutes (avoid frequent updates)
+    // if all conditions are met, re-embedding is required.
+    const result = await this.db.$queryRaw<{ needs_embedding: boolean }[]>`
+      SELECT
+        EXISTS (
+          WITH docs AS (
+            SELECT
+              s.workspace_id,
+              s.guid AS doc_id,
+              s.updated_at
+            FROM
+              snapshots s
+            WHERE
+              s.workspace_id = ${workspaceId}
+              AND s.guid = ${docId}
+            UNION
+            ALL
+            SELECT
+              u.workspace_id,
+              u.guid AS doc_id,
+              u.created_at AS updated_at
+            FROM
+              "updates" u
+            WHERE
+              u.workspace_id = ${workspaceId}
+              AND u.guid = ${docId}
+          )
+          SELECT
+            1
+          FROM
+            docs
+            LEFT JOIN ai_workspace_embeddings e
+              ON e.workspace_id = docs.workspace_id
+              AND e.doc_id = docs.doc_id
+          WHERE
+            e.updated_at IS NULL
+            OR docs.updated_at > e.updated_at
+            OR e.updated_at < NOW() - INTERVAL '10 minutes'
+        ) AS needs_embedding;
+    `;
+
+    return result[0]?.needs_embedding ?? false;
+  }
+
   // ================ embeddings ================
 
   async checkEmbeddingAvailable(): Promise<boolean> {

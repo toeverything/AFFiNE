@@ -201,6 +201,68 @@ test('should insert and search embedding', async t => {
   }
 });
 
+test('should check need to be embedded', async t => {
+  const docId = randomUUID();
+
+  await t.context.doc.upsert({
+    spaceId: workspace.id,
+    docId,
+    blob: Uint8Array.from([1, 2, 3]),
+    timestamp: Date.now(),
+    editorId: user.id,
+  });
+
+  {
+    let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
+      workspace.id,
+      docId
+    );
+    t.true(needsEmbedding, 'document with no embedding should need embedding');
+  }
+
+  {
+    await t.context.copilotContext.insertWorkspaceEmbedding(
+      workspace.id,
+      docId,
+      [
+        {
+          index: 0,
+          content: 'content',
+          embedding: Array.from({ length: 1024 }, () => 1),
+        },
+      ]
+    );
+
+    let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
+      workspace.id,
+      docId
+    );
+    t.false(
+      needsEmbedding,
+      'document with recent embedding should not need embedding'
+    );
+  }
+
+  {
+    await t.context.doc.upsert({
+      spaceId: workspace.id,
+      docId,
+      blob: Uint8Array.from([4, 5, 6]),
+      timestamp: Date.now() + 1000, // Ensure timestamp is later
+      editorId: user.id,
+    });
+
+    let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
+      workspace.id,
+      docId
+    );
+    t.true(
+      needsEmbedding,
+      'document updated after embedding should need embedding'
+    );
+  }
+});
+
 test('should check embedding table', async t => {
   {
     const ret = await t.context.copilotWorkspace.checkEmbeddingAvailable();

@@ -163,7 +163,8 @@ type IntegrationEvents =
   | 'selectIntegrationImport'
   | 'confirmIntegrationImport'
   | 'abortIntegrationImport'
-  | 'completeIntegrationImport';
+  | 'completeIntegrationImport'
+  | 'createCalendarDocEvent';
 // END SECTION
 
 // SECTION: journal
@@ -455,6 +456,7 @@ interface PageEvents extends PageDivision {
     };
     sidepanel: {
       property: ['addProperty', 'editPropertyMeta'];
+      journal: ['createCalendarDocEvent'];
     };
     biDirectionalLinksPanel: {
       $: ['toggle'];
@@ -576,7 +578,11 @@ type ImportArgs = {
 };
 type IntegrationArgs<T extends Record<string, any>> = {
   type: string;
-  control: 'Readwise Card' | 'Readwise settings' | 'Readwise import list';
+  control:
+    | 'Readwise Card'
+    | 'Readwise settings'
+    | 'Readwise import list'
+    | 'Calendar Setting';
 } & T;
 
 type RecordingEventArgs = {
