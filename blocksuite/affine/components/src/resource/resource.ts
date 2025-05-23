@@ -178,6 +178,9 @@ export class ResourceController implements Disposable {
   }
 
   async refreshUrlWith(type?: string) {
+    // Resets the state.
+    this.state$.value = {};
+
     const url = await this.createUrlWith(type);
     if (!url) return;
 
