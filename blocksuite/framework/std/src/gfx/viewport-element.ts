@@ -91,7 +91,7 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
 
       // Step 2: Hide all the blocks that should not be visible
       previousVisible.forEach(model => {
-        if (!shouldBeVisible.has(model)) return;
+        if (shouldBeVisible.has(model)) return;
 
         const view = gfx.view.get(model);
         if (!isGfxBlockComponent(view)) return;
