@@ -82,7 +82,7 @@ export class GfxViewportElement extends WithDisposable(ShadowlessElement) {
       : new Set<GfxBlockElementModel>();
 
     batch(() => {
-      // Step 1: Acitvate all the blocks that should be visible
+      // Step 1: Activate all the blocks that should be visible
       shouldBeVisible.forEach(model => {
         const view = gfx.view.get(model);
         if (!isGfxBlockComponent(view)) return;
