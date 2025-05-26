@@ -11,8 +11,10 @@ export {
   extractNumericPart,
   formatId,
   generateNextId,
+  generateTemporaryId,
   initializeAllIds,
   initializeIdsForAllRows,
+  resetIdGenerator,
 } from './generator.js';
 export {
   createIdSettingsMenu,

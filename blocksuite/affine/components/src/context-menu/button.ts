@@ -37,6 +37,12 @@ export class MenuButton extends MenuFocusable {
       color: var(--affine-icon-color);
     }
 
+    .affine-menu-button.affine-menu-action-disabled {
+      opacity: 0.5;
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+
     .affine-menu-button:hover,
     affine-menu-button.active .affine-menu-button {
       background-color: var(--affine-hover-color);

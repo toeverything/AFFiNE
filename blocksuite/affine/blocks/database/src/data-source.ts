@@ -20,7 +20,10 @@ import {
   ViewManagerBase,
   type ViewMeta,
 } from '@blocksuite/data-view';
-import { propertyPresets } from '@blocksuite/data-view/property-presets';
+import {
+  initializeAllIds,
+  propertyPresets,
+} from '@blocksuite/data-view/property-presets';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { EditorHost } from '@blocksuite/std';
@@ -51,7 +54,6 @@ import {
   databaseBlockViewMap,
   databaseBlockViews,
 } from './views/index.js';
-
 type SpacialProperty = {
   valueSet: (rowId: string, propertyId: string, value: unknown) => void;
   valueGet: (rowId: string, propertyId: string) => unknown;
@@ -515,7 +517,6 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     )?.convert;
     const result = convertFunction?.(
       currentData as any,
-
       currentCells as any
     ) ?? {
       property: meta.config.propertyData.default(),
@@ -536,6 +537,21 @@ export class DatabaseBlockDataSource extends DataSourceBase {
       }
     });
     updateCells(this._model, propertyId, cells);
+    // Si on passe sur le type ID, on force la numérotation de tous les éléments
+    if (toType === 'id') {
+      try {
+        // Import statique pour garantir l'exécution
+        const currentView = this.viewManager.currentView$.value;
+        if (currentView) {
+          const property = currentView.propertyGetOrCreate(propertyId);
+          if (property) {
+            initializeAllIds(property);
+          }
+        }
+      } catch {
+        // fail silently
+      }
+    }
   }
 
   rowAdd(insertPosition: InsertToPosition | number): string {

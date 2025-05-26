@@ -228,3 +228,12 @@ export function initializeAllIds(property: Property): void {
     property.valueSet(row.rowId, formattedId);
   });
 }
+
+// Export all required functions
+export function generateTemporaryId() {
+  // Implementation
+}
+
+export function resetIdGenerator() {
+  // Implementation
+}

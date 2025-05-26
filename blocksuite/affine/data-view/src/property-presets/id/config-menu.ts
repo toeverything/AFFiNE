@@ -6,6 +6,7 @@ export const idPropertyConfigMenu = (property: Property) =>
  * @description Configuration menu component for ID property type in AFFiNE databases.
  * Allows users to customize ID column settings like prefix, suffix, and padding.
  */
+import type { MenuConfig } from '@blocksuite/affine-components/context-menu';
 import { menu } from '@blocksuite/affine-components/context-menu';
 
 import type { Property } from '../../core/view-manager/property.js';
@@ -16,9 +17,7 @@ import { initializeAllIds } from './generator.js';
  * @param property - The ID property to configure
  * @returns Array of MenuConfig
  */
-export const idPropertyConfigMenuItems = (
-  property: Property
-): import('@blocksuite/affine-components/context-menu').MenuConfig[] => [
+export const idPropertyConfigMenuItems = (property: Property): MenuConfig[] => [
   // Prefix input: always reads latest value
   menu.input({
     placeholder: 'Prefix (e.g., TASK-)',
@@ -97,5 +96,5 @@ export const idPropertyConfigMenuItems = (
     select: () => {
       initializeAllIds(property);
     },
-  }) as import('@blocksuite/affine-components/context-menu').MenuConfig,
+  }) as MenuConfig,
 ];

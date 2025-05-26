@@ -24,7 +24,7 @@ export function textToIdConverter(params: ConvertFunctionParams<any, any>) {
   };
 
   // Reset all cell values to empty so they'll be auto-assigned
-  const cells = params.cells.map(() => '');
+  const cells = Array.isArray(params.cells) ? params.cells.map(() => '') : [];
 
   return {
     property: propertyData,

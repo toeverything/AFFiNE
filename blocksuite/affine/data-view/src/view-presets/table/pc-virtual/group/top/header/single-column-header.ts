@@ -39,6 +39,7 @@ import {
   droppable,
 } from '../../../../../../core/utils/wc-dnd/dnd-context';
 import type { Property } from '../../../../../../core/view-manager/property';
+import { initializeAllIds } from '../../../../../../property-presets/id/generator';
 import { numberFormats } from '../../../../../../property-presets/number/utils/formats';
 import {
   createDefaultShowQuickSettingBar,
@@ -83,15 +84,30 @@ export class DatabaseHeaderColumn extends SignalWatcher(
       return;
     }
     event.stopPropagation();
+    const idColumnExists = this.tableViewManager.properties$.value.some(
+      property =>
+        property.type$.value === 'id' && property.id !== this.column.id
+    );
     popMenu(popupTargetFromElement(this), {
       options: {
         items: this.tableViewManager.propertyMetas$.value.map(config => {
+          const isIdType = config.type === 'id';
+          const shouldDisableId = isIdType && idColumnExists;
           return menu.action({
             name: config.config.name,
             isSelected: config.type === this.column.type$.value,
             prefix: renderUniLit(config.renderer.icon),
+            class: shouldDisableId
+              ? { 'affine-menu-action-disabled': true }
+              : {},
             select: () => {
+              if (shouldDisableId) return;
               this.column.typeSet?.(config.type);
+              if (config.type === 'id') {
+                // Import dynamique pour éviter les cycles
+
+                initializeAllIds(this.column);
+              }
             },
           });
         }),
