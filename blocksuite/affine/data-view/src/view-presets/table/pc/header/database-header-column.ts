@@ -39,8 +39,8 @@ import {
   droppable,
 } from '../../../../core/utils/wc-dnd/dnd-context.js';
 import type { Property } from '../../../../core/view-manager/property.js';
-import { idPropertyConfigMenuItems } from '../../../../property-presets/id/config-menu.js';
 import { initializeAllIds } from '../../../../property-presets/id/generator';
+import { createDynamicIdConfigMenuItems } from '../../../../property-presets/id/property-menu-extension.js';
 import { numberFormats } from '../../../../property-presets/number/utils/formats.js';
 import {
   createDefaultShowQuickSettingBar,
@@ -240,7 +240,7 @@ export class DatabaseHeaderColumn extends SignalWatcher(
               title: {
                 text: 'ID Column Settings',
               },
-              items: [...idPropertyConfigMenuItems(this.column)],
+              items: createDynamicIdConfigMenuItems(this.column),
             },
           }),
           // Number format begin

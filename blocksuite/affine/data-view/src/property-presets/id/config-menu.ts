@@ -17,84 +17,92 @@ import { initializeAllIds } from './generator.js';
  * @param property - The ID property to configure
  * @returns Array of MenuConfig
  */
-export const idPropertyConfigMenuItems = (property: Property): MenuConfig[] => [
-  // Prefix input: always reads latest value
-  menu.input({
-    placeholder: 'Prefix (e.g., TASK-)',
-    initialValue: String(property.data$.value.prefix ?? ''),
-    onComplete: (value: string) => {
-      property.dataUpdate(() => ({ prefix: value }));
-    },
-    onChange: (value: string) => {
-      property.dataUpdate(() => ({ prefix: value }));
-    },
-  }),
-  // Suffix input: always reads latest value
-  menu.input({
-    placeholder: 'Suffix (e.g., -2025)',
-    initialValue: String(property.data$.value.suffix ?? ''),
-    onComplete: (value: string) => {
-      property.dataUpdate(() => ({ suffix: value }));
-    },
-    onChange: (value: string) => {
-      property.dataUpdate(() => ({ suffix: value }));
-    },
-  }),
-  // Padding submenu: always reads latest value
-  menu.subMenu({
-    name: 'Padding',
-    options: {
-      title: {
-        text: 'ID Padding',
+export const idPropertyConfigMenuItems = (property: Property): MenuConfig[] => {
+  // Read current values at the time of menu creation to ensure reactivity
+  const currentData = property.data$.value;
+  const currentPrefix = String(currentData.prefix ?? '');
+  const currentSuffix = String(currentData.suffix ?? '');
+  const currentPadding = currentData.padding ?? 3;
+
+  return [
+    // Prefix input: uses current value at menu creation time
+    menu.input({
+      placeholder: 'Prefix (e.g., TASK-)',
+      initialValue: currentPrefix,
+      onComplete: (value: string) => {
+        property.dataUpdate(() => ({ prefix: value }));
       },
-      items: [
-        menu.group({
-          items: [
-            menu.action({
-              name: '1 (e.g., 1, 2, 3...)',
-              isSelected: (property.data$.value.padding ?? 3) === 1,
-              select: () => {
-                property.dataUpdate(() => ({ padding: 1 }));
-              },
-            }),
-            menu.action({
-              name: '2 (e.g., 01, 02, 03...)',
-              isSelected: (property.data$.value.padding ?? 3) === 2,
-              select: () => {
-                property.dataUpdate(() => ({ padding: 2 }));
-              },
-            }),
-            menu.action({
-              name: '3 (e.g., 001, 002, 003...)',
-              isSelected: (property.data$.value.padding ?? 3) === 3,
-              select: () => {
-                property.dataUpdate(() => ({ padding: 3 }));
-              },
-            }),
-            menu.action({
-              name: '4 (e.g., 0001, 0002, 0003...)',
-              isSelected: (property.data$.value.padding ?? 3) === 4,
-              select: () => {
-                property.dataUpdate(() => ({ padding: 4 }));
-              },
-            }),
-            menu.action({
-              name: '5 (e.g., 00001, 00002, 00003...)',
-              isSelected: (property.data$.value.padding ?? 3) === 5,
-              select: () => {
-                property.dataUpdate(() => ({ padding: 5 }));
-              },
-            }),
-          ],
-        }),
-      ],
-    },
-  }),
-  // Add a regenerate button with an emphasis
-  menu.action({
-    name: 'Re-generate all IDs',
-    select: () => {
-      initializeAllIds(property);
-    },
-  }) as MenuConfig,
-];
+      onChange: (value: string) => {
+        property.dataUpdate(() => ({ prefix: value }));
+      },
+    }),
+    // Suffix input: uses current value at menu creation time
+    menu.input({
+      placeholder: 'Suffix (e.g., -2025)',
+      initialValue: currentSuffix,
+      onComplete: (value: string) => {
+        property.dataUpdate(() => ({ suffix: value }));
+      },
+      onChange: (value: string) => {
+        property.dataUpdate(() => ({ suffix: value }));
+      },
+    }),
+    // Padding submenu: uses current value at menu creation time
+    menu.subMenu({
+      name: 'Padding',
+      options: {
+        title: {
+          text: 'ID Padding',
+        },
+        items: [
+          menu.group({
+            items: [
+              menu.action({
+                name: '1 (e.g., 1, 2, 3...)',
+                isSelected: currentPadding === 1,
+                select: () => {
+                  property.dataUpdate(() => ({ padding: 1 }));
+                },
+              }),
+              menu.action({
+                name: '2 (e.g., 01, 02, 03...)',
+                isSelected: currentPadding === 2,
+                select: () => {
+                  property.dataUpdate(() => ({ padding: 2 }));
+                },
+              }),
+              menu.action({
+                name: '3 (e.g., 001, 002, 003...)',
+                isSelected: currentPadding === 3,
+                select: () => {
+                  property.dataUpdate(() => ({ padding: 3 }));
+                },
+              }),
+              menu.action({
+                name: '4 (e.g., 0001, 0002, 0003...)',
+                isSelected: currentPadding === 4,
+                select: () => {
+                  property.dataUpdate(() => ({ padding: 4 }));
+                },
+              }),
+              menu.action({
+                name: '5 (e.g., 00001, 00002, 00003...)',
+                isSelected: currentPadding === 5,
+                select: () => {
+                  property.dataUpdate(() => ({ padding: 5 }));
+                },
+              }),
+            ],
+          }),
+        ],
+      },
+    }),
+    // Add a regenerate button with an emphasis
+    menu.action({
+      name: 'Re-generate all IDs',
+      select: () => {
+        initializeAllIds(property);
+      },
+    }) as MenuConfig,
+  ];
+};
