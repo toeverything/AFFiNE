@@ -95,12 +95,14 @@ export const DocListItemComponent = memo(function DocListItemComponent({
 
 export const DocsExplorer = ({
   className,
+  disableMultiSelectToolbar,
   disableMultiDelete,
   masonryItemWidthMin,
   onRestore,
   onDelete,
 }: {
   className?: string;
+  disableMultiSelectToolbar?: boolean;
   disableMultiDelete?: boolean;
   masonryItemWidthMin?: number;
   onRestore?: (ids: string[]) => void;
@@ -244,7 +246,7 @@ export const DocsExplorer = ({
         paddingY={BUILD_CONFIG.isMobileEdition ? 12 : 0}
         paddingX={BUILD_CONFIG.isMobileEdition ? 16 : responsivePaddingX}
       />
-      {!disableMultiDelete || onRestore ? (
+      {!disableMultiSelectToolbar || onRestore ? (
         <ListFloatingToolbar
           open={!!selectMode}
           onDelete={disableMultiDelete ? undefined : handleMultiDelete}

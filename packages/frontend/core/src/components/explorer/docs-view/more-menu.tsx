@@ -9,6 +9,7 @@ import {
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { DocsService } from '@affine/core/modules/doc';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
+import { GuardService } from '@affine/core/modules/permissions';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
@@ -142,6 +143,9 @@ const MoveToTrash = ({ docId }: DocOperationProps) => {
   const docsService = useService(DocsService);
   const { openConfirmModal } = useConfirmModal();
   const doc = useLiveData(docsService.list.doc$(docId));
+  const guardService = useService(GuardService);
+
+  const canTrash = useLiveData(guardService.can$('Doc_Trash', docId));
 
   const onMoveToTrash = useCallback(() => {
     if (!doc) {
@@ -170,6 +174,7 @@ const MoveToTrash = ({ docId }: DocOperationProps) => {
       prefixIcon={<DeleteIcon />}
       data-testid="doc-list-operation-trash"
       onClick={onMoveToTrash}
+      disabled={!canTrash}
     >
       {t['com.affine.moveToTrash.title']()}
     </MenuItem>

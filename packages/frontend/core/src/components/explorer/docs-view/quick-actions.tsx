@@ -9,6 +9,7 @@ import type { DocRecord } from '@affine/core/modules/doc';
 import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { GuardService } from '@affine/core/modules/permissions';
 import { WorkbenchService } from '@affine/core/modules/workbench';
+import { UserFriendlyError } from '@affine/error';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import {
@@ -135,6 +136,7 @@ export const QuickDelete = memo(function QuickDelete({
   const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
   const contextValue = useContext(DocExplorerContext);
+  const guardService = useService(GuardService);
   const quickTrash = useLiveData(contextValue.quickTrash$);
 
   const onMoveToTrash = useCallback(
@@ -157,12 +159,23 @@ export const QuickDelete = memo(function QuickDelete({
         confirmButtonOptions: {
           variant: 'error',
         },
-        onConfirm: () => {
-          doc.moveToTrash();
+        onConfirm: async () => {
+          try {
+            const canTrash = await guardService.can('Doc_Trash', doc.id);
+            if (!canTrash) {
+              toast(t['com.affine.no-permission']());
+              return;
+            }
+            doc.moveToTrash();
+          } catch (error) {
+            console.error(error);
+            const userFriendlyError = UserFriendlyError.fromAny(error);
+            toast(t[`error.${userFriendlyError.name}`](userFriendlyError.data));
+          }
         },
       });
     },
-    [doc, onClick, openConfirmModal, t]
+    [doc, guardService, onClick, openConfirmModal, t]
   );
 
   if (!quickTrash) {

@@ -182,7 +182,7 @@ export const SelectPage = memo(function SelectPage({
         ) : null}
         {!isEmpty ? (
           <DocExplorerContext.Provider value={docExplorerContextValue}>
-            <DocsExplorer disableMultiDelete />
+            <DocsExplorer disableMultiSelectToolbar />
           </DocExplorerContext.Provider>
         ) : (
           <EmptyList search={searchText} />
