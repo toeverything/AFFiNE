@@ -7,7 +7,7 @@ import { Trans, useI18n } from '@affine/i18n';
 import { CopyIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 
 import { PageNotFound } from '../../404';
 import * as styles from './styles.css';

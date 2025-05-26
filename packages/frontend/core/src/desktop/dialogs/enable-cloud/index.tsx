@@ -49,7 +49,7 @@ const Dialog = ({
     ? workspacesService.open({ metadata: workspaceMeta })
     : { workspace: undefined };
 
-  const { jumpToPage } = useNavigateHelper();
+  const { jumpToPage, jumpToAll } = useNavigateHelper();
 
   const enableCloud = useCallback(async () => {
     try {
@@ -61,7 +61,11 @@ const Dialog = ({
         account.id,
         selectedServer.id
       );
-      jumpToPage(newId, openPageId || 'all');
+      if (openPageId) {
+        jumpToPage(newId, openPageId);
+      } else {
+        jumpToAll(newId);
+      }
       close?.();
     } catch (e) {
       console.error(e);
@@ -74,9 +78,10 @@ const Dialog = ({
     account,
     workspacesService,
     selectedServer.id,
-    jumpToPage,
     openPageId,
     close,
+    jumpToPage,
+    jumpToAll,
     t,
   ]);
 

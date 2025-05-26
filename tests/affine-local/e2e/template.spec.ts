@@ -255,6 +255,7 @@ test('create template doc from sidebar template entrance', async ({ page }) => {
 test('should show starter-bar when doc is empty', async ({ page }) => {
   await openHomePage(page);
   await page.getByTestId('sidebar-new-page-button').click();
+  await waitForEditorLoad(page);
   await page.keyboard.press('ArrowDown');
   const starterBar = page.getByTestId('starter-bar');
   await expect(starterBar).toBeVisible();

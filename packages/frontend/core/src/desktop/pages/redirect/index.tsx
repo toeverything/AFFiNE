@@ -1,5 +1,5 @@
 import { DebugLogger } from '@affine/debug';
-import { type LoaderFunction, Navigate, useLoaderData } from 'react-router-dom';
+import { type LoaderFunction, Navigate, useLoaderData } from 'react-router';
 
 const trustedDomain = [
   'google.com',

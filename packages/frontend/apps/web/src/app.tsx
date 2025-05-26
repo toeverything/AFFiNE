@@ -1,5 +1,4 @@
 import { AffineContext } from '@affine/core/components/context';
-import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { router } from '@affine/core/desktop/router';
 import { configureCommonModules } from '@affine/core/modules';
 import { I18nProvider } from '@affine/core/modules/i18n';
@@ -18,7 +17,7 @@ import { CacheProvider } from '@emotion/react';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { Suspense } from 'react';
-import { RouterProvider } from 'react-router-dom';
+import { RouterProvider } from 'react-router/dom';
 
 const cache = createEmotionCache();
 
@@ -41,10 +40,6 @@ if (
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
-
-const future = {
-  v7_startTransition: true,
-} as const;
 
 const framework = new Framework();
 configureCommonModules(framework);
@@ -90,11 +85,7 @@ export function App() {
         <CacheProvider value={cache}>
           <I18nProvider>
             <AffineContext store={getCurrentStore()}>
-              <RouterProvider
-                fallbackElement={<AppContainer fallback />}
-                router={router}
-                future={future}
-              />
+              <RouterProvider router={router} />
             </AffineContext>
           </I18nProvider>
         </CacheProvider>

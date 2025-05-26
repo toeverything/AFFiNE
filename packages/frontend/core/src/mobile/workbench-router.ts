@@ -1,4 +1,4 @@
-import type { RouteObject } from 'react-router-dom';
+import type { RouteObject } from 'react-router';
 
 import { Component as All } from './pages/workspace/all';
 import { Component as Collection } from './pages/workspace/collection';
@@ -43,14 +43,15 @@ export const workbenchRoutes = [
   },
   {
     path: '/trash',
-    lazy: () => import('./pages/workspace/trash'),
+    lazy: async () => await import('./pages/workspace/trash'),
   },
   {
     path: '/:pageId',
-    lazy: () => import('./pages/workspace/detail/mobile-detail-page'),
+    lazy: async () =>
+      await import('./pages/workspace/detail/mobile-detail-page'),
   },
   {
     path: '*',
-    lazy: () => import('./pages/404'),
+    lazy: async () => await import('./pages/404'),
   },
 ] satisfies [RouteObject, ...RouteObject[]];

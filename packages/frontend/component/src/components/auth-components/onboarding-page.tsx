@@ -1,14 +1,16 @@
+import { UserFriendlyError } from '@affine/error';
 import { ArrowRightSmallIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
-import { useMemo, useState } from 'react';
-import type { Location } from 'react-router-dom';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useCallback, useMemo, useState } from 'react';
+import type { Location } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import useSWR from 'swr';
 
 import { Button } from '../../ui/button';
 import { Checkbox } from '../../ui/checkbox';
 import { Divider } from '../../ui/divider';
 import Input from '../../ui/input';
+import { notify } from '../../ui/notification';
 import { ScrollableContainer } from '../../ui/scrollbar';
 import * as styles from './onboarding-page.css';
 import type { User } from './type';
@@ -118,6 +120,21 @@ export const OnboardingPage = ({
     () => questions?.[questionIdx],
     [questionIdx, questions]
   );
+
+  const onClick = useCallback(() => {
+    if (callbackUrl) {
+      const result = navigate(callbackUrl);
+      if (result instanceof Promise) {
+        result.catch((err: Error) => {
+          const error = UserFriendlyError.fromAny(err);
+          console.error(error);
+          notify.error(error);
+        });
+      }
+    } else {
+      onOpenAffine();
+    }
+  }, [callbackUrl, navigate, onOpenAffine]);
   const isMacosDesktop = BUILD_CONFIG.isElectron && environment.isMacOs;
   const isWindowsDesktop = BUILD_CONFIG.isElectron && environment.isWindows;
 
@@ -263,13 +280,7 @@ export const OnboardingPage = ({
           className={clsx(styles.button, styles.openAFFiNEButton)}
           variant="primary"
           size="extraLarge"
-          onClick={() => {
-            if (callbackUrl) {
-              navigate(callbackUrl);
-            } else {
-              onOpenAffine();
-            }
-          }}
+          onClick={onClick}
           suffix={<ArrowRightSmallIcon />}
         >
           Get Started

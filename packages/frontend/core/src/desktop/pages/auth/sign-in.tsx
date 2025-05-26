@@ -4,9 +4,10 @@ import { SignInPageContainer } from '@affine/component/auth-components';
 import { SignInPanel } from '@affine/core/components/sign-in';
 import { SignInBackgroundArts } from '@affine/core/components/sign-in/background-arts';
 import type { AuthSessionStatus } from '@affine/core/modules/cloud/entities/session';
+import { useAsyncNavigate } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { useCallback, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 
 import {
   RouteLogic,
@@ -19,7 +20,7 @@ export const SignIn = ({
   redirectUrl?: string;
 }) => {
   const t = useI18n();
-  const navigate = useNavigate();
+  const navigate = useAsyncNavigate();
   const { jumpToIndex } = useNavigateHelper();
   const [searchParams] = useSearchParams();
   const redirectUrl = redirectUrlFromProps ?? searchParams.get('redirect_uri');

@@ -1,10 +1,12 @@
+import { notify } from '@affine/component';
 import type { SettingTab } from '@affine/core/modules/dialogs/constant';
 import { toDocSearchParams } from '@affine/core/modules/navigation';
 import { getOpenUrlInDesktopAppLink } from '@affine/core/modules/open-in-app';
+import { UserFriendlyError } from '@affine/error';
 import type { DocMode } from '@blocksuite/affine/model';
 import { nanoid } from 'nanoid';
 import { createContext, useCallback, useContext, useMemo } from 'react';
-import type { NavigateFunction, NavigateOptions } from 'react-router-dom';
+import type { NavigateFunction, NavigateOptions, To } from 'react-router';
 
 /**
  * In workbench, we use nested react-router, so default `useNavigate` can't get correct navigate function in workbench.
@@ -22,11 +24,27 @@ export enum RouteLogic {
  * Use this for over workbench navigate, for navigate in workbench, use `WorkbenchService`.
  */
 export function useNavigateHelper() {
-  const navigate = useContext(NavigateContext);
+  const navigateFunction = useContext(NavigateContext);
 
-  if (!navigate) {
-    throw new Error('useNavigateHelper must be used within a NavigateProvider');
-  }
+  const navigate = useCallback(
+    (to: To, options?: NavigateOptions) => {
+      if (!navigateFunction) {
+        throw new Error(
+          'useNavigateHelper must be used within a NavigateProvider'
+        );
+      }
+      const result = navigateFunction(to, options);
+      if (result instanceof Promise) {
+        result.catch((err: Error) => {
+          const error = UserFriendlyError.fromAny(err);
+          console.error(error);
+          notify.error(error);
+        });
+      }
+      return;
+    },
+    [navigateFunction]
+  );
 
   const jumpToPage = useCallback(
     (
@@ -103,11 +121,13 @@ export function useNavigateHelper() {
     [navigate]
   );
 
-  const openPage = useCallback(
-    (workspaceId: string, pageId: string, logic?: RouteLogic) => {
-      return jumpToPage(workspaceId, pageId, logic);
+  const jumpToAll = useCallback(
+    (workspaceId: string, logic?: RouteLogic) => {
+      return navigate(`/workspace/${workspaceId}/all`, {
+        replace: logic === RouteLogic.REPLACE,
+      });
     },
-    [jumpToPage]
+    [navigate]
   );
 
   const jumpToIndex = useCallback(
@@ -215,7 +235,7 @@ export function useNavigateHelper() {
       jumpToPageBlock,
       jumpToIndex,
       jumpTo404,
-      openPage,
+      jumpToAll,
       jumpToExpired,
       jumpToSignIn,
       jumpToCollection,
@@ -231,7 +251,7 @@ export function useNavigateHelper() {
       jumpToPageBlock,
       jumpToIndex,
       jumpTo404,
-      openPage,
+      jumpToAll,
       jumpToExpired,
       jumpToSignIn,
       jumpToCollection,

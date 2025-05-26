@@ -10,7 +10,7 @@ import type { GetCurrentUserQuery } from '@affine/graphql';
 import { getCurrentUserQuery } from '@affine/graphql';
 import { useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router';
 
 import { AppContainer } from '../../components/app-container';
 

@@ -1,13 +1,12 @@
 import { AffineContext } from '@affine/core/components/context';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
-import { AppContainer } from '@affine/core/desktop/components/app-container';
 import { router } from '@affine/core/desktop/router';
 import { I18nProvider } from '@affine/core/modules/i18n';
 import createEmotionCache from '@affine/core/utils/create-emotion-cache';
 import { CacheProvider } from '@emotion/react';
 import { FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { Suspense } from 'react';
-import { RouterProvider } from 'react-router-dom';
+import { RouterProvider } from 'react-router/dom';
 
 import { setupEffects } from './effects';
 import { DesktopThemeSync } from './theme-sync';
@@ -34,10 +33,6 @@ if (
 
 const cache = createEmotionCache();
 
-const future = {
-  v7_startTransition: true,
-} as const;
-
 export function App() {
   return (
     <Suspense>
@@ -46,11 +41,7 @@ export function App() {
           <I18nProvider>
             <AffineContext store={getCurrentStore()}>
               <DesktopThemeSync />
-              <RouterProvider
-                fallbackElement={<AppContainer fallback />}
-                router={router}
-                future={future}
-              />
+              <RouterProvider router={router} />
               {environment.isWindows && (
                 <div style={{ position: 'fixed', right: 0, top: 0, zIndex: 5 }}>
                   <WindowsAppControls />

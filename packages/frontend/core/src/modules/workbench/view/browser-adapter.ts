@@ -1,8 +1,8 @@
+import { useAsyncNavigate } from '@affine/core/utils';
 import { useLiveData } from '@toeverything/infra';
 import type { Location } from 'history';
 import { useEffect } from 'react';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import type { Workbench } from '../entities/workbench';
 
@@ -26,7 +26,7 @@ export function useBindWorkbenchToBrowserRouter(
   workbench: Workbench,
   basename: string
 ) {
-  const navigate = useNavigate();
+  const navigate = useAsyncNavigate();
   const browserLocation = useLocation();
 
   const view = useLiveData(workbench.activeView$);

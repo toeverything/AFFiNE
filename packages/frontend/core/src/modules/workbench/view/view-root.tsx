@@ -1,12 +1,12 @@
 import { FrameworkScope, useLiveData } from '@toeverything/infra';
 import { useLayoutEffect, useMemo } from 'react';
-import type { RouteObject } from 'react-router-dom';
+import type { RouteObject } from 'react-router';
 import {
   createMemoryRouter,
   RouterProvider,
   UNSAFE_LocationContext,
   UNSAFE_RouteContext,
-} from 'react-router-dom';
+} from 'react-router';
 
 import type { View } from '../entities/view';
 

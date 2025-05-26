@@ -10,7 +10,7 @@ import { track } from '@affine/track';
 import { effect, fromPromise, useServices } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import { switchMap } from 'rxjs';
 
 import { generateSubscriptionCallbackLink } from '../../../components/hooks/affine/use-subscription-notify';

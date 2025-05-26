@@ -1,12 +1,7 @@
+import { useAsyncNavigate } from '@affine/core/utils/use-async-navigate';
 import { useService } from '@toeverything/infra';
 import { useEffect, useRef } from 'react';
-import {
-  type LoaderFunction,
-  redirect,
-  useLoaderData,
-  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-  useNavigate,
-} from 'react-router-dom';
+import { type LoaderFunction, redirect, useLoaderData } from 'react-router';
 
 import { AuthService } from '../../../modules/cloud';
 import { supportedClient } from './common';
@@ -58,7 +53,8 @@ export const Component = () => {
   const auth = useService(AuthService);
   const data = useLoaderData() as LoaderData;
 
-  const nav = useNavigate();
+  const nav = useAsyncNavigate();
+
   // loader data from useLoaderData is not reactive, so that we can safely
   // assume the effect below is only triggered once
   const triggeredRef = useRef(false);

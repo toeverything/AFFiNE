@@ -46,6 +46,7 @@ test('all tab', async ({ page }) => {
   await expect(docsTab).toBeVisible();
 
   await docsTab.click();
+  await page.waitForTimeout(300);
 
   const todayDocs = page.getByTestId('doc-list-item');
   expect(await todayDocs.count()).toBeGreaterThan(0);

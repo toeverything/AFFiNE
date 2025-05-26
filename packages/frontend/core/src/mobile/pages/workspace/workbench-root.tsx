@@ -5,7 +5,7 @@ import {
 import { ViewRoot } from '@affine/core/modules/workbench/view/view-root';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
-import { type RouteObject, useLocation } from 'react-router-dom';
+import { type RouteObject, useLocation } from 'react-router';
 
 export const MobileWorkbenchRoot = ({ routes }: { routes: RouteObject[] }) => {
   const workbench = useService(WorkbenchService).workbench;

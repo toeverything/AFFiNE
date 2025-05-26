@@ -1,5 +1,5 @@
 import { Toaster } from '@affine/admin/components/ui/sonner';
-import { lazy, ROUTES } from '@affine/routes';
+import { FACTORIES, lazy, RELATIVE_ROUTES } from '@affine/routes';
 import { withSentryReactRouterV7Routing } from '@sentry/react';
 import { useEffect } from 'react';
 import {
@@ -9,7 +9,7 @@ import {
   Route,
   Routes as ReactRouterRoutes,
   useLocation,
-} from 'react-router-dom';
+} from 'react-router';
 import { toast } from 'sonner';
 import { SWRConfig } from 'swr';
 
@@ -18,22 +18,24 @@ import { isAdmin, useCurrentUser, useServerConfig } from './modules/common';
 import { Layout } from './modules/layout';
 
 export const Setup = lazy(
-  () => import(/* webpackChunkName: "setup" */ './modules/setup')
+  async () => await import(/* webpackChunkName: "setup" */ './modules/setup')
 );
 export const Accounts = lazy(
-  () => import(/* webpackChunkName: "accounts" */ './modules/accounts')
+  async () =>
+    await import(/* webpackChunkName: "accounts" */ './modules/accounts')
 );
 export const AI = lazy(
-  () => import(/* webpackChunkName: "ai" */ './modules/ai')
+  async () => await import(/* webpackChunkName: "ai" */ './modules/ai')
 );
 export const About = lazy(
-  () => import(/* webpackChunkName: "about" */ './modules/about')
+  async () => await import(/* webpackChunkName: "about" */ './modules/about')
 );
 export const Settings = lazy(
-  () => import(/* webpackChunkName: "settings" */ './modules/settings')
+  async () =>
+    await import(/* webpackChunkName: "settings" */ './modules/settings')
 );
 export const Auth = lazy(
-  () => import(/* webpackChunkName: "auth" */ './modules/auth')
+  async () => await import(/* webpackChunkName: "auth" */ './modules/auth')
 );
 
 const Routes = window.SENTRY_RELEASE
@@ -50,7 +52,7 @@ function AuthenticatedRoutes() {
   }, [user]);
 
   if (!user || !isAdmin(user)) {
-    return <Navigate to="/admin/auth" />;
+    return <Navigate to={FACTORIES.admin.auth()} />;
   }
 
   return (
@@ -86,19 +88,21 @@ export const App = () => {
       >
         <BrowserRouter basename={environment.subPath}>
           <Routes>
-            <Route path={ROUTES.admin.index} element={<RootRoutes />}>
-              <Route path={ROUTES.admin.auth} element={<Auth />} />
-              <Route path={ROUTES.admin.setup} element={<Setup />} />
+            <Route path={RELATIVE_ROUTES.admin.index}>
+              <Route index element={<RootRoutes />} />
+              <Route path={RELATIVE_ROUTES.admin.auth} element={<Auth />} />
+              <Route path={RELATIVE_ROUTES.admin.setup} element={<Setup />} />
               <Route element={<AuthenticatedRoutes />}>
-                <Route path={ROUTES.admin.accounts} element={<Accounts />} />
-                <Route path={ROUTES.admin.ai} element={<AI />} />
-                <Route path={ROUTES.admin.about} element={<About />} />
                 <Route
-                  path={ROUTES.admin.settings.index}
-                  element={<Settings />}
-                >
+                  path={RELATIVE_ROUTES.admin.accounts}
+                  element={<Accounts />}
+                />
+                <Route path={RELATIVE_ROUTES.admin.ai} element={<AI />} />
+                <Route path={RELATIVE_ROUTES.admin.about} element={<About />} />
+                <Route path={RELATIVE_ROUTES.admin.settings.index}>
+                  <Route index element={<Settings />} />
                   <Route
-                    path={ROUTES.admin.settings.module}
+                    path={RELATIVE_ROUTES.admin.settings.module}
                     element={<Settings />}
                   />
                 </Route>

@@ -18,7 +18,7 @@ import { useI18n } from '@affine/i18n';
 import { ViewLayersIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService, useServices } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import { useNavigateHelper } from '../../../../components/hooks/use-navigate-helper';
 import {

@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { Provider } from 'jotai/react';
 import type { FC } from 'react';
 import { useCallback, useMemo } from 'react';
-import { useRouteError } from 'react-router-dom';
+import { useRouteError } from 'react-router';
 
 import * as styles from './affine-error-fallback.css';
 import { ErrorDetail } from './error-basic/error-detail';

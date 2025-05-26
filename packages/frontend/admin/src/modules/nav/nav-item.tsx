@@ -1,7 +1,7 @@
 import { buttonVariants } from '@affine/admin/components/ui/button';
 import { cn } from '@affine/admin/utils';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router';
 
 interface NavItemProps {
   icon: React.ReactNode;

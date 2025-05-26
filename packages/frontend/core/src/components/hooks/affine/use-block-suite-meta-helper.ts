@@ -8,7 +8,7 @@ import { useNavigateHelper } from '../use-navigate-helper';
 
 export function useBlockSuiteMetaHelper() {
   const workspace = useService(WorkspaceService).workspace;
-  const { openPage } = useNavigateHelper();
+  const { jumpToPage } = useNavigateHelper();
   const docsService = useService(DocsService);
   const docRecordList = useService(DocsService).list;
 
@@ -45,9 +45,9 @@ export function useBlockSuiteMetaHelper() {
     async (pageId: string, openPageAfterDuplication: boolean = true) => {
       const newPageId = await docsService.duplicate(pageId);
       openPageAfterDuplication &&
-        openPage(workspace.docCollection.id, newPageId);
+        jumpToPage(workspace.docCollection.id, newPageId);
     },
-    [docsService, openPage, workspace.docCollection.id]
+    [docsService, jumpToPage, workspace.docCollection.id]
   );
 
   return {

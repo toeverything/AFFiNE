@@ -1,11 +1,7 @@
+import { useAsyncNavigate } from '@affine/core/utils/use-async-navigate';
 import { useService } from '@toeverything/infra';
 import { useEffect, useRef } from 'react';
-import {
-  type LoaderFunction,
-  redirect,
-  useLoaderData,
-  useNavigate,
-} from 'react-router-dom';
+import { type LoaderFunction, redirect, useLoaderData } from 'react-router';
 
 import { AuthService } from '../../../modules/cloud';
 import { supportedClient } from './common';
@@ -66,7 +62,7 @@ export const Component = () => {
   // assume the effect below is only triggered once
   const triggeredRef = useRef(false);
 
-  const nav = useNavigate();
+  const nav = useAsyncNavigate();
 
   useEffect(() => {
     if (triggeredRef.current) {

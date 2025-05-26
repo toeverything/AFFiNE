@@ -17,7 +17,7 @@ import {
 } from '@affine/core/modules/workbench';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import { PageNotFound } from '../../404';
 import { AllDocSidebarTabs } from '../layouts/all-doc-sidebar-tabs';

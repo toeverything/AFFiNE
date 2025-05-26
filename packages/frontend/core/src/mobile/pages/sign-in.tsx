@@ -1,10 +1,13 @@
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { useNavigate } from 'react-router-dom';
+import { useAsyncNavigate } from '@affine/core/utils';
+import { useCallback } from 'react';
 
 import { MobileSignInPanel } from '../components/sign-in';
 
 export const Component = () => {
-  const navigate = useNavigate();
+  const navigate = useAsyncNavigate();
+  const onClose = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
 
-  return <MobileSignInPanel onClose={() => navigate('/')} />;
+  return <MobileSignInPanel onClose={onClose} />;
 };

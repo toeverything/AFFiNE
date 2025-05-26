@@ -2,7 +2,7 @@ import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import type { DocMode } from '@blocksuite/affine/model';
 import { useService } from '@toeverything/infra';
 import { useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 
 import { useNavigateHelper } from '../../../components/hooks/use-navigate-helper';
 

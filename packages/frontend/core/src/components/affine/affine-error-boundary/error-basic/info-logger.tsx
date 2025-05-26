@@ -1,7 +1,7 @@
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useEffect } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router';
 
 export interface DumpInfoProps {
   error: any;

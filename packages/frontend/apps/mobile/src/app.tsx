@@ -1,5 +1,4 @@
 import { AffineContext } from '@affine/core/components/context';
-import { AppFallback } from '@affine/core/mobile/components/app-fallback';
 import { configureMobileModules } from '@affine/core/mobile/modules';
 import { HapticProvider } from '@affine/core/mobile/modules/haptics';
 import { VirtualKeyboardProvider } from '@affine/core/mobile/modules/virtual-keyboard';
@@ -19,7 +18,7 @@ import { StoreManagerClient } from '@affine/nbstore/worker/client';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { Suspense } from 'react';
-import { RouterProvider } from 'react-router-dom';
+import { RouterProvider } from 'react-router/dom';
 
 let storeManagerClient: StoreManagerClient;
 
@@ -34,10 +33,6 @@ if (window.SharedWorker) {
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
-
-const future = {
-  v7_startTransition: true,
-} as const;
 
 const framework = new Framework();
 configureCommonModules(framework);
@@ -149,11 +144,7 @@ export function App() {
       <FrameworkRoot framework={frameworkProvider}>
         <I18nProvider>
           <AffineContext store={getCurrentStore()}>
-            <RouterProvider
-              fallbackElement={<AppFallback />}
-              router={router}
-              future={future}
-            />
+            <RouterProvider router={router} />
           </AffineContext>
         </I18nProvider>
       </FrameworkRoot>

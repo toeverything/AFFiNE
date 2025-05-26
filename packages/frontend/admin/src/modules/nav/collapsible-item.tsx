@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router';
 
 import { buttonVariants } from '../../components/ui/button';
 import { cn } from '../../utils';

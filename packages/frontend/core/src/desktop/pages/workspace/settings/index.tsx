@@ -3,7 +3,7 @@ import type { SettingTab } from '@affine/core/modules/dialogs/constant';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useService } from '@toeverything/infra';
 import { useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 
 export const Component = () => {
   const workbenchService = useService(WorkbenchService);

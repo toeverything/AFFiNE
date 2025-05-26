@@ -4,7 +4,7 @@ import { GlobalContextService } from '@affine/core/modules/global-context';
 import { TagService } from '@affine/core/modules/tag';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import { TagDetail } from '../../../views';
 

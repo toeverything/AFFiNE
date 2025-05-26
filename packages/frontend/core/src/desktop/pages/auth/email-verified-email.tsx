@@ -7,7 +7,7 @@ import { verifyEmailMutation } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { useService } from '@toeverything/infra';
 import { type FC, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 
 import { AppContainer } from '../../components/app-container';
 

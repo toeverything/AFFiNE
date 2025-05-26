@@ -4,7 +4,7 @@ import { Label } from '@affine/admin/components/ui/label';
 import { FeatureType, getUserFeaturesQuery } from '@affine/graphql';
 import type { FormEvent } from 'react';
 import { useCallback, useRef } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router';
 import { toast } from 'sonner';
 
 import { affineFetch } from '../../fetch-utils';

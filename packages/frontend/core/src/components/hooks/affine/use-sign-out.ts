@@ -26,7 +26,7 @@ export const useSignOut = ({
 }: ConfirmModalProps = {}) => {
   const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
-  const { openPage } = useNavigateHelper();
+  const { jumpToAll } = useNavigateHelper();
 
   const serverService = useService(ServerService);
   const authService = useService(AuthService);
@@ -56,14 +56,14 @@ export const useSignOut = ({
         w => w.flavour !== serverService.server.id
       );
       if (localWorkspace) {
-        openPage(localWorkspace.id, 'all');
+        jumpToAll(localWorkspace.id);
       }
     }
   }, [
     authService,
     currentWorkspaceFlavour,
+    jumpToAll,
     onConfirm,
-    openPage,
     serverService.server.id,
     workspaces,
   ]);

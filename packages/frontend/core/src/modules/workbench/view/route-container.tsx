@@ -3,7 +3,7 @@ import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error
 import { RightSidebarIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { Suspense, useCallback } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 
 import { AppSidebarService } from '../../app-sidebar';
 import { SidebarSwitch } from '../../app-sidebar/views/sidebar-header';

@@ -8,7 +8,7 @@ import {
 import { validateEmailAndPassword } from '@affine/admin/utils';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 
 import { affineFetch } from '../../fetch-utils';
@@ -149,7 +149,7 @@ export const Form = () => {
     }
 
     if (current === count) {
-      return navigate('/', { replace: true });
+      return await navigate('/', { replace: true });
     }
 
     api?.scrollNext();
@@ -168,7 +168,7 @@ export const Form = () => {
   const onPrevious = useAsyncCallback(async () => {
     if (current === count) {
       if (serverConfig.initialized === true) {
-        return navigate('/admin', { replace: true });
+        return await navigate('/admin', { replace: true });
       }
       toast.error('Goto Admin Panel failed, please try again.');
       return;

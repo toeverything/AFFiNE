@@ -30,7 +30,7 @@ import {
   useLocation,
   useParams,
   useSearchParams,
-} from 'react-router-dom';
+} from 'react-router';
 import { map } from 'rxjs';
 import * as _Y from 'yjs';
 

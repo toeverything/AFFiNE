@@ -17,7 +17,7 @@ import {
   type RouteObject,
   useLocation,
   useParams,
-} from 'react-router-dom';
+} from 'react-router';
 
 import { WorkspaceLayout } from './layout';
 import { MobileWorkbenchRoot } from './workbench-root';
@@ -37,7 +37,11 @@ const MobileRouteContainer = ({ route }: { route: Route }) => {
 };
 
 const warpedRoutes = workbenchRoutes.map((originalRoute: RouteObject) => {
-  if (originalRoute.Component || !originalRoute.lazy) {
+  if (
+    originalRoute.Component ||
+    !originalRoute.lazy ||
+    typeof originalRoute.lazy !== 'function'
+  ) {
     return originalRoute;
   }
 

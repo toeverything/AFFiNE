@@ -1,52 +1,52 @@
-import type { RouteObject } from 'react-router-dom';
+import type { RouteObject } from 'react-router';
 
 export const workbenchRoutes = [
   {
     path: '/all',
-    lazy: () => import('./pages/workspace/all-page/all-page'),
+    lazy: async () => await import('./pages/workspace/all-page/all-page'),
   },
   {
     path: '/all-old',
-    lazy: () => import('./pages/workspace/all-page-old/all-page'),
+    lazy: async () => await import('./pages/workspace/all-page-old/all-page'),
   },
   {
     path: '/collection',
-    lazy: () => import('./pages/workspace/all-collection'),
+    lazy: async () => await import('./pages/workspace/all-collection'),
   },
   {
     path: '/collection/:collectionId',
-    lazy: () => import('./pages/workspace/collection/index'),
+    lazy: async () => await import('./pages/workspace/collection/index'),
   },
   {
     path: '/tag',
-    lazy: () => import('./pages/workspace/all-tag'),
+    lazy: async () => await import('./pages/workspace/all-tag'),
   },
   {
     path: '/tag/:tagId',
-    lazy: () => import('./pages/workspace/tag'),
+    lazy: async () => await import('./pages/workspace/tag'),
   },
   {
     path: '/trash',
-    lazy: () => import('./pages/workspace/trash-page'),
+    lazy: async () => await import('./pages/workspace/trash-page'),
   },
   {
     path: '/:pageId',
-    lazy: () => import('./pages/workspace/detail-page/detail-page'),
+    lazy: async () => await import('./pages/workspace/detail-page/detail-page'),
   },
   {
     path: '/:pageId/attachments/:attachmentId',
-    lazy: () => import('./pages/workspace/attachment/index'),
+    lazy: async () => await import('./pages/workspace/attachment/index'),
   },
   {
     path: '/journals',
-    lazy: () => import('./pages/journals'),
+    lazy: async () => await import('./pages/journals'),
   },
   {
     path: '/settings',
-    lazy: () => import('./pages/workspace/settings'),
+    lazy: async () => await import('./pages/workspace/settings'),
   },
   {
     path: '*',
-    lazy: () => import('./pages/404'),
+    lazy: async () => await import('./pages/404'),
   },
 ] satisfies RouteObject[];

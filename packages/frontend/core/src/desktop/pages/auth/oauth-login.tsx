@@ -1,14 +1,9 @@
 import { AuthService } from '@affine/core/modules/cloud';
+import { useAsyncNavigate } from '@affine/core/utils';
 import { OAuthProviderType } from '@affine/graphql';
 import { useService } from '@toeverything/infra';
 import { useEffect } from 'react';
-import {
-  type LoaderFunction,
-  redirect,
-  useLoaderData,
-  // oxlint-disable-next-line @typescript-eslint/no-restricted-imports
-  useNavigate,
-} from 'react-router-dom';
+import { type LoaderFunction, redirect, useLoaderData } from 'react-router';
 import { z } from 'zod';
 
 import { supportedClient } from './common';
@@ -62,7 +57,7 @@ export const Component = () => {
   const auth = useService(AuthService);
   const data = useLoaderData() as LoaderData;
 
-  const nav = useNavigate();
+  const nav = useAsyncNavigate();
 
   useEffect(() => {
     auth

@@ -14,8 +14,8 @@ import {
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
-import type { LoaderFunction } from 'react-router-dom';
-import { redirect, useParams, useSearchParams } from 'react-router-dom';
+import type { LoaderFunction } from 'react-router';
+import { redirect, useParams, useSearchParams } from 'react-router';
 import { z } from 'zod';
 
 import { useMutation } from '../../../components/hooks/use-mutation';

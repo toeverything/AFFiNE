@@ -12,7 +12,7 @@ import { UserFriendlyError } from '@affine/error';
 import { WorkspaceMemberStatus } from '@affine/graphql';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router';
 
 import {
   RouteLogic,

@@ -52,7 +52,7 @@ import {
 import clsx from 'clsx';
 import { nanoid } from 'nanoid';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import type { Subscription } from 'rxjs';
 
 import { PageNotFound } from '../../404';

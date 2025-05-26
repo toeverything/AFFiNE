@@ -57,7 +57,7 @@ const Dialog = ({
     workspaces.find(w => w.flavour !== 'local') ??
     workspaces.at(0);
   const selectedWorkspaceName = useWorkspaceName(selectedWorkspace);
-  const { openPage, jumpToSignIn } = useNavigateHelper();
+  const { jumpToPage, jumpToSignIn } = useNavigateHelper();
 
   const noWorkspace = workspaces.length === 0;
 
@@ -119,7 +119,7 @@ const Dialog = ({
           templateDownloader.data$.value,
           templateMode
         );
-        openPage(selectedWorkspace.id, docId);
+        jumpToPage(selectedWorkspace.id, docId);
         onClose?.();
       } catch (err) {
         setImportingError(err);
@@ -129,8 +129,8 @@ const Dialog = ({
     }
   }, [
     importTemplateService,
+    jumpToPage,
     onClose,
-    openPage,
     selectedWorkspace,
     templateDownloader.data$.value,
     templateMode,
@@ -149,7 +149,7 @@ const Dialog = ({
           'Workspace',
           templateDownloader.data$.value
         );
-      openPage(workspaceId, docId);
+      jumpToPage(workspaceId, docId);
       onClose?.();
     } catch (err) {
       setImportingError(err);
@@ -158,8 +158,8 @@ const Dialog = ({
     }
   }, [
     importTemplateService,
+    jumpToPage,
     onClose,
-    openPage,
     templateDownloader.data$.value,
   ]);
 

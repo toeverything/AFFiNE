@@ -1,6 +1,5 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
-import { AppFallback } from '@affine/core/mobile/components/app-fallback';
 import { configureMobileModules } from '@affine/core/mobile/modules';
 import { VirtualKeyboardProvider } from '@affine/core/mobile/modules/virtual-keyboard';
 import { router } from '@affine/core/mobile/router';
@@ -46,7 +45,7 @@ import { OpClient } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
 import { useTheme } from 'next-themes';
 import { Suspense, useEffect } from 'react';
-import { RouterProvider } from 'react-router-dom';
+import { RouterProvider } from 'react-router/dom';
 
 import { AffineTheme } from './plugins/affine-theme';
 import { AIButton } from './plugins/ai-button';
@@ -59,10 +58,6 @@ const storeManagerClient = createStoreManagerClient();
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
-
-const future = {
-  v7_startTransition: true,
-} as const;
 
 const framework = new Framework();
 configureCommonModules(framework);
@@ -342,11 +337,7 @@ export function App() {
         <I18nProvider>
           <AffineContext store={getCurrentStore()}>
             <ThemeProvider />
-            <RouterProvider
-              fallbackElement={<AppFallback />}
-              router={router}
-              future={future}
-            />
+            <RouterProvider router={router} />
           </AffineContext>
         </I18nProvider>
       </FrameworkRoot>

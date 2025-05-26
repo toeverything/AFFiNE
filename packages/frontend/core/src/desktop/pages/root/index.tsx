@@ -2,7 +2,7 @@ import { NotificationCenter } from '@affine/component';
 import { DefaultServerService } from '@affine/core/modules/cloud';
 import { FrameworkScope, useService } from '@toeverything/infra';
 import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 
 import { GlobalDialogs } from '../../dialogs';
 import { CustomThemeModifier } from './custom-theme';

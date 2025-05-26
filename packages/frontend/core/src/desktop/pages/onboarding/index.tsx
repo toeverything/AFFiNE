@@ -1,7 +1,7 @@
 import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { useServiceOptional } from '@toeverything/infra';
 import { useCallback } from 'react';
-import { redirect } from 'react-router-dom';
+import { redirect } from 'react-router';
 
 import { Onboarding } from '../../../components/affine/onboarding/onboarding';
 import { appConfigStorage } from '../../../components/hooks/use-app-config-storage';

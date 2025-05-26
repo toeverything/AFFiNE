@@ -27,7 +27,7 @@ import { Logo1Icon } from '@blocksuite/icons/rc';
 import { FrameworkScope, useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 import { PageNotFound } from '../../404';
 import { ShareFooter } from './share-footer';
@@ -186,7 +186,7 @@ const SharePageInner = ({
 
   const t = useI18n();
   const pageTitle = useLiveData(page?.title$);
-  const { jumpToPageBlock, openPage } = useNavigateHelper();
+  const { jumpToPageBlock, jumpToPage } = useNavigateHelper();
 
   const onEditorLoad = useCallback(
     (editorContainer: AffineEditorContainer) => {
@@ -212,7 +212,7 @@ const SharePageInner = ({
               return;
             }
 
-            return openPage(workspaceId, pageId);
+            return jumpToPage(workspaceId, pageId);
           })
         );
       }
@@ -221,7 +221,13 @@ const SharePageInner = ({
         unbind();
       };
     },
-    [editor, setActiveBlocksuiteEditor, jumpToPageBlock, openPage, workspaceId]
+    [
+      setActiveBlocksuiteEditor,
+      editor,
+      jumpToPage,
+      workspaceId,
+      jumpToPageBlock,
+    ]
   );
 
   if (noPermission) {

@@ -1,6 +1,5 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
-import { AppFallback } from '@affine/core/mobile/components/app-fallback';
 import { configureMobileModules } from '@affine/core/mobile/modules';
 import { HapticProvider } from '@affine/core/mobile/modules/haptics';
 import { NavigationGestureProvider } from '@affine/core/mobile/modules/navigation-gesture';
@@ -56,7 +55,7 @@ import { AsyncCall } from 'async-call-rpc';
 import { AppTrackingTransparency } from 'capacitor-plugin-app-tracking-transparency';
 import { useTheme } from 'next-themes';
 import { Suspense, useEffect } from 'react';
-import { RouterProvider } from 'react-router-dom';
+import { RouterProvider } from 'react-router/dom';
 
 import { BlocksuiteMenuConfigProvider } from './bs-menu-config';
 import { ModalConfigProvider } from './modal-config';
@@ -71,10 +70,6 @@ const storeManagerClient = createStoreManagerClient();
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
-
-const future = {
-  v7_startTransition: true,
-} as const;
 
 const framework = new Framework();
 configureCommonModules(framework);
@@ -411,11 +406,7 @@ export function App() {
             <KeyboardThemeProvider />
             <ModalConfigProvider>
               <BlocksuiteMenuConfigProvider>
-                <RouterProvider
-                  fallbackElement={<AppFallback />}
-                  router={router}
-                  future={future}
-                />
+                <RouterProvider router={router} />
               </BlocksuiteMenuConfigProvider>
             </ModalConfigProvider>
           </AffineContext>

@@ -1,7 +1,7 @@
 import { DialogTrigger } from '@radix-ui/react-dialog';
 import { cssVar } from '@toeverything/theme';
 import { memo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 import type { ButtonProps } from '../button';
 import { Button } from '../button';

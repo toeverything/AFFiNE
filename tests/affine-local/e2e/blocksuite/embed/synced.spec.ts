@@ -46,6 +46,7 @@ test('should not show hidden note in embed view page mode', async ({
   await createLinkedPage(page, 'Test Page');
   const inlineLink = page.locator('affine-reference');
   await inlineLink.dblclick();
+  await waitForEditorLoad(page);
 
   // reference the previous page
   await page.keyboard.press('Enter');

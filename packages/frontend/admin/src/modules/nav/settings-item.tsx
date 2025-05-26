@@ -10,7 +10,7 @@ import { SettingsIcon } from '@blocksuite/icons/rc';
 import * as NavigationMenuPrimitive from '@radix-ui/react-navigation-menu';
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router';
 
 import { KNOWN_CONFIG_GROUPS, UNKNOWN_CONFIG_GROUPS } from '../settings/config';
 import { NormalSubItem } from './collapsible-item';

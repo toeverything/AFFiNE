@@ -3,7 +3,7 @@ import { CollectionService } from '@affine/core/modules/collection';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { useLiveData, useServices } from '@toeverything/infra';
 import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import { CollectionDetail } from '../../../views';
 

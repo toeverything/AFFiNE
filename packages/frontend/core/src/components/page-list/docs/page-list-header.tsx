@@ -25,7 +25,7 @@ import {
 import { useLiveData, useService, useServices } from '@toeverything/infra';
 import clsx from 'clsx';
 import { useCallback, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 import { usePageHelper } from '../../../blocksuite/block-suite-page-list/utils';
 import {

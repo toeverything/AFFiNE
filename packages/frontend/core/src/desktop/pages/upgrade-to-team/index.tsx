@@ -29,7 +29,7 @@ import { type I18nString, Trans, useI18n } from '@affine/i18n';
 import { DoneIcon, NewPageIcon, SignOutIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 
 import { Upgrade } from '../../dialogs/setting/general-setting/plans/plan-card';
 import { PageNotFound } from '../404';

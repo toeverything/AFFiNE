@@ -37,7 +37,7 @@ import { cssVarV2 } from '@toeverything/theme/v2';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 import { AppTabs } from '../../../components';
 import { JournalConflictBlock } from './journal-conflict-block';
@@ -73,7 +73,7 @@ const DetailPageImpl = () => {
   const mode = useLiveData(editor.mode$);
 
   const isInTrash = useLiveData(doc.meta$.map(meta => meta.trash));
-  const { openPage, jumpToPageBlock } = useNavigateHelper();
+  const { jumpToPage, jumpToPageBlock } = useNavigateHelper();
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
 
   const editorContainer = useLiveData(editor.editorContainer$);
@@ -163,7 +163,7 @@ const DetailPageImpl = () => {
               );
             }
 
-            return openPage(docCollection.id, pageId);
+            return jumpToPage(docCollection.id, pageId);
           })
         );
       }
@@ -178,7 +178,7 @@ const DetailPageImpl = () => {
         disposable.dispose();
       };
     },
-    [docCollection.id, editor, jumpToPageBlock, openPage, server]
+    [docCollection.id, editor, jumpToPage, jumpToPageBlock, server.baseUrl]
   );
 
   const canEdit = useGuard('Doc_Update', doc.id);

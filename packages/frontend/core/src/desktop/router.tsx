@@ -1,11 +1,11 @@
-import { wrapCreateBrowserRouterV6 } from '@sentry/react';
+import { wrapCreateBrowserRouterV7 } from '@sentry/react';
 import { useEffect, useState } from 'react';
-import type { RouteObject } from 'react-router-dom';
+import type { RouteObject } from 'react-router';
 import {
   createBrowserRouter as reactRouterCreateBrowserRouter,
   redirect,
   useNavigate,
-} from 'react-router-dom';
+} from 'react-router';
 
 import { AffineErrorComponent } from '../components/affine/affine-error-boundary/affine-error-fallback';
 import { NavigateContext } from '../components/hooks/use-navigate-helper';
@@ -35,11 +35,11 @@ export const topLevelRoutes = [
     children: [
       {
         path: '/',
-        lazy: () => import('./pages/index'),
+        lazy: async () => await import('./pages/index'),
       },
       {
         path: '/workspace/:workspaceId/*',
-        lazy: () => import('./pages/workspace/index'),
+        lazy: async () => await import('./pages/workspace/index'),
       },
       {
         path: '/share/:workspaceId/:pageId',
@@ -49,47 +49,48 @@ export const topLevelRoutes = [
       },
       {
         path: '/404',
-        lazy: () => import('./pages/404'),
+        lazy: async () => await import('./pages/404'),
       },
       {
         path: '/expired',
-        lazy: () => import('./pages/expired'),
+        lazy: async () => await import('./pages/expired'),
       },
       {
         path: '/invite/:inviteId',
-        lazy: () => import('./pages/invite'),
+        lazy: async () => await import('./pages/invite'),
       },
       {
         path: '/upgrade-success',
-        lazy: () => import('./pages/upgrade-success'),
+        lazy: async () => await import('./pages/upgrade-success'),
       },
       {
         path: '/upgrade-success/team',
-        lazy: () => import('./pages/upgrade-success/team'),
+        lazy: async () => await import('./pages/upgrade-success/team'),
       },
       {
         path: '/upgrade-success/self-hosted-team',
-        lazy: () => import('./pages/upgrade-success/self-host-team'),
+        lazy: async () =>
+          await import('./pages/upgrade-success/self-host-team'),
       },
       {
         path: '/ai-upgrade-success',
-        lazy: () => import('./pages/ai-upgrade-success'),
+        lazy: async () => await import('./pages/ai-upgrade-success'),
       },
       {
         path: '/onboarding',
-        lazy: () => import('./pages/onboarding'),
+        lazy: async () => await import('./pages/onboarding'),
       },
       {
         path: '/redirect-proxy',
-        lazy: () => import('./pages/redirect'),
+        lazy: async () => await import('./pages/redirect'),
       },
       {
         path: '/subscribe',
-        lazy: () => import('./pages/subscribe'),
+        lazy: async () => await import('./pages/subscribe'),
       },
       {
         path: '/upgrade-to-team',
-        lazy: () => import('./pages/upgrade-to-team'),
+        lazy: async () => await import('./pages/upgrade-to-team'),
       },
       {
         path: '/try-cloud',
@@ -101,15 +102,15 @@ export const topLevelRoutes = [
       },
       {
         path: '/theme-editor',
-        lazy: () => import('./pages/theme-editor'),
+        lazy: async () => await import('./pages/theme-editor'),
       },
       {
         path: '/clipper/import',
-        lazy: () => import('./pages/import-clipper'),
+        lazy: async () => await import('./pages/import-clipper'),
       },
       {
         path: '/template/import',
-        lazy: () => import('./pages/import-template'),
+        lazy: async () => await import('./pages/import-template'),
       },
       {
         path: '/template/preview',
@@ -133,63 +134,69 @@ export const topLevelRoutes = [
       },
       {
         path: '/auth/:authType',
-        lazy: () => import(/* webpackChunkName: "auth" */ './pages/auth/auth'),
+        lazy: async () =>
+          await import(/* webpackChunkName: "auth" */ './pages/auth/auth'),
       },
       {
         path: '/sign-In',
-        lazy: () =>
-          import(/* webpackChunkName: "auth" */ './pages/auth/sign-in'),
+        lazy: async () =>
+          await import(/* webpackChunkName: "auth" */ './pages/auth/sign-in'),
       },
       {
         path: '/magic-link',
-        lazy: () =>
-          import(/* webpackChunkName: "auth" */ './pages/auth/magic-link'),
+        lazy: async () =>
+          await import(
+            /* webpackChunkName: "auth" */ './pages/auth/magic-link'
+          ),
       },
       {
         path: '/oauth/login',
-        lazy: () =>
-          import(/* webpackChunkName: "auth" */ './pages/auth/oauth-login'),
+        lazy: async () =>
+          await import(
+            /* webpackChunkName: "auth" */ './pages/auth/oauth-login'
+          ),
       },
       {
         path: '/oauth/callback',
-        lazy: () =>
-          import(/* webpackChunkName: "auth" */ './pages/auth/oauth-callback'),
+        lazy: async () =>
+          await import(
+            /* webpackChunkName: "auth" */ './pages/auth/oauth-callback'
+          ),
       },
       // deprecated, keep for old client compatibility
       // TODO(@forehalo): remove
       {
         path: '/desktop-signin',
-        lazy: () =>
-          import(/* webpackChunkName: "auth" */ './pages/auth/oauth-login'),
+        lazy: async () =>
+          await import(
+            /* webpackChunkName: "auth" */ './pages/auth/oauth-login'
+          ),
       },
       // deprecated, keep for old client compatibility
       // use '/sign-in'
       // TODO(@forehalo): remove
       {
         path: '/signIn',
-        lazy: () =>
-          import(/* webpackChunkName: "auth" */ './pages/auth/sign-in'),
+        lazy: async () =>
+          await import(/* webpackChunkName: "auth" */ './pages/auth/sign-in'),
       },
       {
         path: '/open-app/:action',
-        lazy: () => import('./pages/open-app'),
+        lazy: async () => await import('./pages/open-app'),
       },
       {
         path: '*',
-        lazy: () => import('./pages/404'),
+        lazy: async () => await import('./pages/404'),
       },
     ],
   },
 ] satisfies [RouteObject, ...RouteObject[]];
 
-const createBrowserRouter = wrapCreateBrowserRouterV6(
+const createBrowserRouter = wrapCreateBrowserRouterV7(
   reactRouterCreateBrowserRouter
 );
 export const router = (
   window.SENTRY_RELEASE ? createBrowserRouter : reactRouterCreateBrowserRouter
 )(topLevelRoutes, {
   basename: environment.subPath,
-  future: {
-    v7_normalizeFormMethod: true,
-  },
 });

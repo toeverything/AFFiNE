@@ -10,7 +10,7 @@
     "@affine/debug": "workspace:*",
     "@sentry/react": "^9.2.0",
     "mixpanel-browser": "^2.56.0",
-    "react-router-dom": "6.30.0"
+    "react-router": "^7.6.0"
   },
   "devDependencies": {
     "@types/mixpanel-browser": "^2.50.2",

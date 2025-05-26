@@ -17,12 +17,9 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 
-import {
-  RouteLogic,
-  useNavigateHelper,
-} from '../../../components/hooks/use-navigate-helper';
+import { useNavigateHelper } from '../../../components/hooks/use-navigate-helper';
 import { WorkspaceNavigator } from '../../../components/workspace-selector';
 import { AuthService } from '../../../modules/cloud';
 import { AppContainer } from '../../components/app-container';
@@ -55,7 +52,7 @@ export const Component = ({
   const list = useLiveData(workspacesService.list.workspaces$);
   const listIsLoading = useLiveData(workspacesService.list.isRevalidating$);
 
-  const { openPage, jumpToPage } = useNavigateHelper();
+  const { jumpToAll, jumpToPage } = useNavigateHelper();
   const [searchParams] = useSearchParams();
 
   const createOnceRef = useRef(false);
@@ -68,12 +65,14 @@ export const Component = ({
       .then(({ meta, defaultDocId }) => {
         if (defaultDocId) {
           jumpToPage(meta.id, defaultDocId);
+        } else if (defaultIndexRoute === 'all') {
+          jumpToAll(meta.id);
         } else {
-          openPage(meta.id, defaultIndexRoute);
+          jumpToPage(meta.id, defaultIndexRoute);
         }
       })
       .catch(err => console.error('Failed to create cloud workspace', err));
-  }, [defaultIndexRoute, jumpToPage, openPage, workspacesService]);
+  }, [defaultIndexRoute, jumpToPage, jumpToAll, workspacesService]);
 
   useLayoutEffect(() => {
     if (!navigating) {
@@ -95,7 +94,11 @@ export const Component = ({
         // open first cloud workspace
         const openWorkspace =
           list.find(w => w.flavour === 'affine-cloud') ?? list[0];
-        openPage(openWorkspace.id, defaultIndexRoute);
+        if (defaultIndexRoute === 'all') {
+          jumpToAll(openWorkspace.id);
+        } else {
+          jumpToPage(openWorkspace.id, defaultIndexRoute);
+        }
       } else {
         return;
       }
@@ -108,17 +111,22 @@ export const Component = ({
       const lastId = localStorage.getItem('last_workspace_id');
 
       const openWorkspace = list.find(w => w.id === lastId) ?? list[0];
-      openPage(openWorkspace.id, defaultIndexRoute, RouteLogic.REPLACE);
+      if (defaultIndexRoute === 'all') {
+        jumpToAll(openWorkspace.id);
+      } else {
+        jumpToPage(openWorkspace.id, defaultIndexRoute);
+      }
     }
   }, [
     createCloudWorkspace,
     list,
-    openPage,
     searchParams,
     listIsLoading,
     loggedIn,
     navigating,
     defaultIndexRoute,
+    jumpToAll,
+    jumpToPage,
   ]);
 
   const desktopApi = useServiceOptional(DesktopApiService);
@@ -138,7 +146,7 @@ export const Component = ({
               createdWorkspace.defaultPageId
             );
           } else {
-            openPage(createdWorkspace.meta.id, 'all');
+            jumpToAll(createdWorkspace.meta.id);
           }
         }
       })
@@ -148,7 +156,7 @@ export const Component = ({
       .finally(() => {
         setCreating(false);
       });
-  }, [jumpToPage, openPage, workspacesService]);
+  }, [jumpToAll, jumpToPage, workspacesService]);
 
   if (navigating || creating) {
     return fallback ?? <AppContainer fallback />;

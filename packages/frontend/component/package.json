@@ -61,7 +61,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-paginate": "^8.2.0",
-    "react-router-dom": "^6.28.0",
+    "react-router": "^7.6.0",
     "react-transition-state": "^2.2.0",
     "sonner": "^2.0.0",
     "swr": "^2.2.5",

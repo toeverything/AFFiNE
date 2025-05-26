@@ -5,7 +5,7 @@ import {
   matchRoutes,
   useLocation,
   useNavigationType,
-} from 'react-router-dom';
+} from 'react-router';
 
 function createSentry() {
   let client: Sentry.BrowserClient | undefined;
@@ -18,7 +18,7 @@ function createSentry() {
           debug: BUILD_CONFIG.debug ?? false,
           environment: BUILD_CONFIG.appBuildType,
           integrations: [
-            Sentry.reactRouterV6BrowserTracingIntegration({
+            Sentry.reactRouterV7BrowserTracingIntegration({
               useEffect,
               useLocation,
               useNavigationType,

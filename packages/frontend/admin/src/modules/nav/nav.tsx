@@ -2,7 +2,7 @@ import { buttonVariants } from '@affine/admin/components/ui/button';
 import { cn } from '@affine/admin/utils';
 import { AccountIcon, AiOutlineIcon, SelfhostIcon } from '@blocksuite/icons/rc';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router';
 
 import { ServerVersion } from './server-version';
 import { SettingsItem } from './settings-item';
