@@ -88,9 +88,6 @@ export const createDocExplorerContext = (
     showMoreOperation$: displayPreference$.selector(
       displayPreference => displayPreference.showMoreOperation
     ),
-    showDragHandle$: displayPreference$.selector(
-      displayPreference => displayPreference.showDragHandle
-    ),
     quickDeletePermanently$: displayPreference$.selector(
       displayPreference => displayPreference.quickDeletePermanently
     ),
