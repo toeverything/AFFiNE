@@ -329,6 +329,9 @@ function PDFViewerContainer({
       [pdf]
     )
   );
+  const blobId = useLiveData(
+    useMemo(() => LiveData.fromSignal(model.props.sourceId$), [model])
+  );
 
   useEffect(() => {
     if (state.status !== PDFStatus.Error) return;
@@ -337,13 +340,15 @@ function PDFViewerContainer({
   }, [state]);
 
   useEffect(() => {
-    const { pdf, release } = pdfService.get(model);
+    if (!blobId) return;
+
+    const { pdf, release } = pdfService.get(blobId);
     setPdf(pdf);
 
     return () => {
       release();
     };
-  }, [model, pdfService, setPdf]);
+  }, [blobId, pdfService, setPdf]);
 
   if (pdf && state.status === PDFStatus.Opened) {
     return <PDFViewerInner {...props} pdf={pdf} meta={state.meta} />;

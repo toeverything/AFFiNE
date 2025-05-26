@@ -22,7 +22,10 @@ import {
   FileSizeLimitProvider,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import { formatSize } from '@blocksuite/affine-shared/utils';
+import {
+  formatSize,
+  openSingleFileWith,
+} from '@blocksuite/affine-shared/utils';
 import {
   AttachmentIcon,
   ResetIcon,
@@ -31,7 +34,7 @@ import {
 } from '@blocksuite/icons/lit';
 import { BlockSelection } from '@blocksuite/std';
 import { nanoid, Slice } from '@blocksuite/store';
-import { computed, signal } from '@preact/signals-core';
+import { batch, computed, signal } from '@preact/signals-core';
 import { html, type TemplateResult } from 'lit';
 import { choose } from 'lit/directives/choose.js';
 import { type ClassInfo, classMap } from 'lit/directives/class-map.js';
@@ -42,7 +45,7 @@ import { filter } from 'rxjs/operators';
 
 import { AttachmentEmbedProvider } from './embed';
 import { styles } from './styles';
-import { downloadAttachmentBlob, refreshData } from './utils';
+import { downloadAttachmentBlob, getFileType, refreshData } from './utils';
 
 type AttachmentResolvedStateInfo = ResolvedStateInfo & {
   kind?: TemplateResult;
@@ -129,12 +132,50 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
 
   // Refreshes the embed component.
   reload = () => {
-    if (this.model.props.embed) {
-      this._refreshKey$.value = nanoid();
-      return;
-    }
+    batch(() => {
+      if (this.model.props.embed$.value) {
+        this._refreshKey$.value = nanoid();
+        return;
+      }
 
-    this.refreshData();
+      this.refreshData();
+    });
+  };
+
+  // Replaces the current attachment.
+  replace = async () => {
+    const state = this.resourceController.state$.peek();
+    if (state.uploading) return;
+
+    const file = await openSingleFileWith();
+    if (!file) return;
+
+    const sourceId = await this.std.store.blobSync.set(file);
+    const type = await getFileType(file);
+    const { name, size } = file;
+
+    let embed = this.model.props.embed$.value ?? false;
+
+    this.std.store.captureSync();
+    this.std.store.transact(() => {
+      this.std.store.updateBlock(this.blockId, {
+        name,
+        size,
+        type,
+        sourceId,
+        embed: false,
+      });
+
+      const provider = this.std.get(AttachmentEmbedProvider);
+      embed &&= provider.embedded(this.model);
+
+      if (embed) {
+        provider.convertTo(this.model);
+      }
+
+      // Reloads
+      this.reload();
+    });
   };
 
   private _selectBlock() {
@@ -403,7 +444,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
 
   protected renderEmbedView = () => {
     const { model, blobUrl } = this;
-    if (!model.props.embed || !blobUrl) return null;
+    if (!model.props.embed$.value || !blobUrl) return null;
 
     const { std, _maxFileSize } = this;
     const provider = std.get(AttachmentEmbedProvider);
