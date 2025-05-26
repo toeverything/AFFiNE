@@ -69,11 +69,7 @@ const CollectionDocs = ({ collection }: { collection: Collection }) => {
 
   return (
     <DocExplorerContext.Provider value={explorerContextValue}>
-      <DocsExplorer
-        masonryItemWidthMin={150}
-        heightBase={180}
-        heightScale={12}
-      />
+      <DocsExplorer masonryItemWidthMin={150} />
     </DocExplorerContext.Provider>
   );
 };
