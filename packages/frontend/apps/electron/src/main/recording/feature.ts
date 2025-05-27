@@ -1,5 +1,6 @@
 /* oxlint-disable no-var-requires */
 import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
@@ -19,7 +20,7 @@ import {
 } from 'rxjs';
 import { filter, map, shareReplay } from 'rxjs/operators';
 
-import { isMacOS, shallowEqual } from '../../shared/utils';
+import { isMacOS, isWindows, shallowEqual } from '../../shared/utils';
 import { beforeAppQuit } from '../cleanup';
 import { logger } from '../logger';
 import {
@@ -239,15 +240,30 @@ function setupNewRunningAppGroup() {
   );
 }
 
+function getSanitizedAppId(bundleIdentifier?: string) {
+  if (!bundleIdentifier) {
+    return 'unknown';
+  }
+
+  return isWindows()
+    ? createHash('sha256')
+        .update(bundleIdentifier)
+        .digest('hex')
+        .substring(0, 8)
+    : bundleIdentifier;
+}
+
 export function createRecording(status: RecordingStatus) {
   let recording = recordings.get(status.id);
   if (recording) {
     return recording;
   }
 
+  const appId = getSanitizedAppId(status.appGroup?.bundleIdentifier);
+
   const bufferedFilePath = path.join(
     SAVED_RECORDINGS_DIR,
-    `${status.appGroup?.bundleIdentifier ?? 'unknown'}-${status.id}-${status.startTime}.raw`
+    `${appId}-${status.id}-${status.startTime}.raw`
   );
 
   fs.ensureDirSync(SAVED_RECORDINGS_DIR);
@@ -273,11 +289,12 @@ export function createRecording(status: RecordingStatus) {
   }
 
   // MUST require dynamically to avoid loading @affine/native for unsupported platforms
-  const ShareableContent = require('@affine/native').ShareableContent;
+  const SC: typeof ShareableContent =
+    require('@affine/native').ShareableContent;
 
   const stream = status.app
-    ? status.app.rawInstance.tapAudio(tapAudioSamples)
-    : ShareableContent.tapGlobalAudio(null, tapAudioSamples);
+    ? SC.tapAudio(status.app.processId, tapAudioSamples)
+    : SC.tapGlobalAudio(null, tapAudioSamples);
 
   recording = {
     id: status.id,
@@ -379,15 +396,22 @@ function getAllApps(): TappableAppInfo[] {
   if (!shareableContent) {
     return [];
   }
+
+  // MUST require dynamically to avoid loading @affine/native for unsupported platforms
+  const { ShareableContent } = require('@affine/native');
+
   const apps = shareableContent.applications().map(app => {
     try {
+      // Check if this process is actively using microphone/audio
+      const isRunning = ShareableContent.isUsingMicrophone(app.processId);
+
       return {
-        rawInstance: app,
+        info: app,
         processId: app.processId,
         processGroupId: app.processGroupId,
         bundleIdentifier: app.bundleIdentifier,
         name: app.name,
-        isRunning: app.isRunning,
+        isRunning,
       };
     } catch (error) {
       logger.error('failed to get app info', error);
@@ -441,15 +465,15 @@ function setupMediaListeners() {
 
       apps.forEach(app => {
         try {
-          const tappableApp = app.rawInstance;
+          const applicationInfo = app.info;
           _appStateSubscribers.push(
-            ShareableContent.onAppStateChanged(tappableApp, () => {
+            ShareableContent.onAppStateChanged(applicationInfo, () => {
               updateApplicationsPing$.next(Date.now());
             })
           );
         } catch (error) {
           logger.error(
-            `Failed to convert app ${app.name} to TappableApplication`,
+            `Failed to set up app state listener for ${app.name}`,
             error
           );
         }
@@ -668,15 +692,18 @@ export async function readyRecording(id: number, buffer: Buffer) {
     return;
   }
 
-  const filepath = path.join(
-    SAVED_RECORDINGS_DIR,
-    `${recordingStatus.appGroup?.bundleIdentifier ?? 'unknown'}-${recordingStatus.id}-${recordingStatus.startTime}.opus`
-  );
+  const rawFilePath = String(recording.file.path);
+
+  const filepath = rawFilePath.replace('.raw', '.opus');
+
+  if (!filepath) {
+    logger.error(`readyRecording: Recording ${id} has no filepath`);
+    return;
+  }
 
   await fs.writeFile(filepath, buffer);
 
   // can safely remove the raw file now
-  const rawFilePath = recording.file.path;
   logger.info('remove raw file', rawFilePath);
   if (rawFilePath) {
     try {
@@ -768,14 +795,24 @@ export const getMacOSVersion = () => {
 
 // check if the system is MacOS and the version is >= 14.2
 export const checkRecordingAvailable = () => {
-  if (!isMacOS()) {
-    return false;
+  if (isMacOS()) {
+    const version = getMacOSVersion();
+    return (version.major === 14 && version.minor >= 2) || version.major > 14;
   }
-  const version = getMacOSVersion();
-  return (version.major === 14 && version.minor >= 2) || version.major > 14;
+  if (isWindows()) {
+    return true;
+  }
+  return false;
 };
 
 export const checkMeetingPermissions = () => {
+  if (isWindows()) {
+    return {
+      screen: true,
+      microphone: true,
+    };
+  }
+
   if (!isMacOS()) {
     return undefined;
   }

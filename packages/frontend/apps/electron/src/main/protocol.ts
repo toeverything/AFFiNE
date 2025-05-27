@@ -1,9 +1,9 @@
-import { join } from 'node:path';
+import path, { join } from 'node:path';
 
 import { app, net, protocol, session } from 'electron';
 import cookieParser from 'set-cookie-parser';
 
-import { resourcesPath } from '../shared/utils';
+import { isWindows, resourcesPath } from '../shared/utils';
 import { anotherHost, mainHost } from './constants';
 import { logger } from './logger';
 
@@ -77,9 +77,13 @@ async function handleFileRequest(request: Request) {
     }
   } else {
     filepath = decodeURIComponent(urlObject.pathname);
+    // on windows, the path could be start with '/'
+    if (isWindows()) {
+      filepath = path.resolve(filepath.replace(/^\//, ''));
+    }
     // security check if the filepath is within app.getPath('sessionData')
-    const sessionDataPath = app.getPath('sessionData');
-    const tempPath = app.getPath('temp');
+    const sessionDataPath = path.resolve(app.getPath('sessionData'));
+    const tempPath = path.resolve(app.getPath('temp'));
     if (
       !filepath.startsWith(sessionDataPath) &&
       !filepath.startsWith(tempPath)

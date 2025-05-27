@@ -375,16 +375,14 @@ if (!nativeBinding) {
 }
 
 module.exports = nativeBinding
-module.exports.Application = nativeBinding.Application
+module.exports.ApplicationInfo = nativeBinding.ApplicationInfo
 module.exports.ApplicationListChangedSubscriber = nativeBinding.ApplicationListChangedSubscriber
 module.exports.ApplicationStateChangedSubscriber = nativeBinding.ApplicationStateChangedSubscriber
 module.exports.AudioCaptureSession = nativeBinding.AudioCaptureSession
 module.exports.DocStorage = nativeBinding.DocStorage
 module.exports.DocStoragePool = nativeBinding.DocStoragePool
-module.exports.RecordingPermissions = nativeBinding.RecordingPermissions
 module.exports.ShareableContent = nativeBinding.ShareableContent
 module.exports.SqliteConnection = nativeBinding.SqliteConnection
-module.exports.TappableApplication = nativeBinding.TappableApplication
 module.exports.decodeAudio = nativeBinding.decodeAudio
 module.exports.decodeAudioSync = nativeBinding.decodeAudioSync
 module.exports.mintChallengeResponse = nativeBinding.mintChallengeResponse

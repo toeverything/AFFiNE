@@ -38,7 +38,7 @@ use crate::{
   device::get_device_uid,
   error::CoreAudioError,
   queue::create_audio_tap_queue,
-  screen_capture_kit::TappableApplication,
+  screen_capture_kit::ApplicationInfo,
   utils::{cfstring_from_bytes_with_nul, get_global_main_property},
 };
 
@@ -69,7 +69,7 @@ pub struct AggregateDevice {
 }
 
 impl AggregateDevice {
-  pub fn new(app: &TappableApplication) -> Result<Self> {
+  pub fn new(app: &ApplicationInfo) -> Result<Self> {
     let object_id = app.object_id;
 
     let tap_description = CATapDescription::init_stereo_mixdown_of_processes(object_id)?;
@@ -604,7 +604,7 @@ pub struct AggregateDeviceManager {
 
 impl AggregateDeviceManager {
   /// Creates a new AggregateDeviceManager for a specific application
-  pub fn new(app: &TappableApplication) -> Result<Self> {
+  pub fn new(app: &ApplicationInfo) -> Result<Self> {
     let device = AggregateDevice::new(app)?;
 
     Ok(Self {
@@ -720,7 +720,9 @@ impl AggregateDeviceManager {
         let result: Result<AggregateDevice> = (|| {
           if is_app_specific {
             if let Some(id) = app_id {
-              let app = TappableApplication::new(id)?;
+              // For device change listener, we need to create a minimal ApplicationInfo
+              // We don't have the name here, so we'll use an empty string
+              let app = ApplicationInfo::new(id as i32, String::new(), id);
               AggregateDevice::new(&app)
             } else {
               Err(CoreAudioError::CreateProcessTapFailed(0).into())
