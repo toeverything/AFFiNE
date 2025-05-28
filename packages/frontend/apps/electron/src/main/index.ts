@@ -30,7 +30,19 @@ if (isDev) {
   app.commandLine.appendSwitch('host-rules', 'MAP 0.0.0.0 127.0.0.1');
 }
 // https://github.com/electron/electron/issues/43556
-app.commandLine.appendSwitch('disable-features', 'PlzDedicatedWorker');
+// // `CalculateNativeWinOcclusion` - Disable native window occlusion tracker (https://groups.google.com/a/chromium.org/g/embedder-dev/c/ZF3uHHyWLKw/m/VDN2hDXMAAAJ)
+app.commandLine.appendSwitch(
+  'disable-features',
+  'PlzDedicatedWorker,CalculateNativeWinOcclusion'
+);
+
+// Following features are enabled from the runtime:
+// `DocumentPolicyIncludeJSCallStacksInCrashReports` - https://www.electronjs.org/docs/latest/api/web-frame-main#framecollectjavascriptcallstack-experimental
+// `EarlyEstablishGpuChannel` - Refs https://issues.chromium.org/issues/40208065
+// `EstablishGpuChannelAsync` - Refs https://issues.chromium.org/issues/40208065
+const featuresToEnable = `DocumentPolicyIncludeJSCallStacksInCrashReports,EarlyEstablishGpuChannel,EstablishGpuChannelAsync`;
+app.commandLine.appendSwitch('enable-features', featuresToEnable);
+app.commandLine.appendSwitch('force-color-profile', 'srgb');
 
 // use the same data for internal & beta for testing
 if (overrideSession) {
