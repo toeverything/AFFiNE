@@ -1,4 +1,4 @@
 export interface AffineThemePlugin {
   onThemeChanged(options: { darkMode: boolean }): Promise<void>;
-  getSystemNaviBarHeight(): Promise<{ height: number }>;
+  getSystemNavBarHeight(): Promise<{ height: number }>;
 }

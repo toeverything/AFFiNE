@@ -112,7 +112,13 @@ export class MockServerBlobSource implements BlobSource {
 }
 
 function defaultState(): BlobState {
-  return { uploading: false, downloading: false, overSize: false };
+  return {
+    uploading: false,
+    downloading: false,
+    overSize: false,
+    needDownload: false,
+    needUpload: false,
+  };
 }
 
 function nextState(

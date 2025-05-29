@@ -28,6 +28,7 @@ export type ResolvedStateInfoPart = {
   error: boolean;
   state: StateKind;
   url: string | null;
+  needUpload: boolean;
 };
 
 export type ResolvedStateInfo = StateInfo & ResolvedStateInfoPart;
@@ -41,6 +42,7 @@ export class ResourceController implements Disposable {
   readonly resolvedState$ = computed<ResolvedStateInfoPart>(() => {
     const url = this.blobUrl$.value;
     const {
+      needUpload = false,
       uploading = false,
       downloading = false,
       overSize = false,
@@ -57,7 +59,13 @@ export class ResourceController implements Disposable {
 
     const loading = state === 'uploading' || state === 'loading';
 
-    return { error: hasError, loading, state, url };
+    return {
+      error: hasError,
+      needUpload,
+      loading,
+      state,
+      url,
+    };
   });
 
   private engine?: BlobEngine;
@@ -92,7 +100,8 @@ export class ResourceController implements Disposable {
       errorIcon?: TemplateResult;
     } & StateInfo
   ): ResolvedStateInfo {
-    const { error, loading, state, url } = this.resolvedState$.value;
+    const { error, loading, state, url, needUpload } =
+      this.resolvedState$.value;
 
     const { icon, title, description, loadingIcon, errorIcon } = info;
 
@@ -104,11 +113,11 @@ export class ResourceController implements Disposable {
       title,
       description,
       url,
+      needUpload,
     };
 
     if (loading) {
       result.icon = loadingIcon ?? icon;
-      result.title = state === 'uploading' ? 'Uploading...' : 'Loading...';
     } else if (error) {
       result.icon = errorIcon ?? icon;
       result.description = this.state$.value.errorMessage ?? description;
@@ -130,13 +139,15 @@ export class ResourceController implements Disposable {
       if (!blobState$) return;
 
       const subscription = blobState$.subscribe(state => {
-        let { uploading, downloading } = state;
-        if (state.overSize || state.errorMessage) {
+        let { uploading, downloading, errorMessage } = state;
+        if (state.overSize) {
           uploading = false;
           downloading = false;
+        } else if ((uploading || downloading) && errorMessage) {
+          errorMessage = null;
         }
 
-        this.updateState({ ...state, uploading, downloading });
+        this.updateState({ ...state, uploading, downloading, errorMessage });
       });
 
       return () => subscription.unsubscribe();
@@ -178,6 +189,9 @@ export class ResourceController implements Disposable {
   }
 
   async refreshUrlWith(type?: string) {
+    // Resets the state.
+    this.state$.value = {};
+
     const url = await this.createUrlWith(type);
     if (!url) return;
 
@@ -189,6 +203,21 @@ export class ResourceController implements Disposable {
 
     // Releases the previous url.
     URL.revokeObjectURL(prevUrl);
+  }
+
+  // Re-upload to the server.
+  async upload() {
+    const blobId = this.blobId$.peek();
+    if (!blobId) return;
+
+    const state = this.state$.peek();
+    if (!state.needUpload) return;
+    if (state.uploading) return;
+
+    // Resets the state.
+    this.state$.value = {};
+
+    return await this.engine?.upload(blobId);
   }
 
   dispose() {

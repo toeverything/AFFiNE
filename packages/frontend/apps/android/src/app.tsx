@@ -116,10 +116,14 @@ framework.impl(VirtualKeyboardProvider, {
 
     Promise.all([
       Keyboard.addListener('keyboardWillShow', info => {
-        callback({
-          visible: true,
-          height: info.keyboardHeight,
-        });
+        (async () => {
+          const navBarHeight = (await AffineTheme.getSystemNavBarHeight())
+            .height;
+          callback({
+            visible: true,
+            height: info.keyboardHeight - navBarHeight,
+          });
+        })().catch(console.error);
       }),
       Keyboard.addListener('keyboardWillHide', () => {
         callback({

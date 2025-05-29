@@ -22,6 +22,7 @@ export const SettingWrapper = ({
       id={id}
       className={clsx(wrapper, disabled && wrapperDisabled)}
       data-testid={testId}
+      aria-disabled={disabled}
     >
       {title ? <div className="title">{title}</div> : null}
       {children}

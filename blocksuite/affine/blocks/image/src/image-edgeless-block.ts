@@ -42,7 +42,10 @@ export class ImageEdgelessBlockComponent extends GfxBlockComponent<ImageBlockMod
       height: 36px;
       padding: 5px;
       border-radius: 8px;
-      background: ${unsafeCSSVarV2('loading/backgroundLayer')};
+      background: ${unsafeCSSVarV2(
+        'loading/imageLoadingBackground',
+        '#92929238'
+      )};
 
       & > svg {
         font-size: 25.71px;
@@ -126,12 +129,15 @@ export class ImageEdgelessBlockComponent extends GfxBlockComponent<ImageBlockMod
     const resovledState = this.resourceController.resolveStateWith({
       loadingIcon: LoadingIcon({
         strokeColor: cssVarV2('button/pureWhiteText'),
+        ringColor: cssVarV2('loading/imageLoadingLayer', '#ffffff8f'),
       }),
       errorIcon: BrokenImageIcon(),
       icon: ImageIcon(),
       title: 'Image',
       description: formatSize(size),
     });
+
+    const { loading, icon, description, error, needUpload } = resovledState;
 
     return html`
       <div class="affine-image-container" style=${containerStyleMap}>
@@ -148,17 +154,18 @@ export class ImageEdgelessBlockComponent extends GfxBlockComponent<ImageBlockMod
                 @error=${this._handleError}
               />
             </div>
+            ${when(loading, () => html`<div class="loading">${icon}</div>`)}
             ${when(
-              resovledState.loading,
-              () => html`<div class="loading">${resovledState.icon}</div>`
-            )}
-            ${when(
-              resovledState.error && resovledState.description,
+              Boolean(error && description),
               () =>
                 html`<affine-resource-status
                   class="affine-image-status"
-                  .message=${resovledState.description}
-                  .reload=${() => this.refreshData()}
+                  .message=${description}
+                  .needUpload=${needUpload}
+                  .action=${() =>
+                    needUpload
+                      ? this.resourceController.upload()
+                      : this.refreshData()}
                 ></affine-resource-status>`
             )}
           `,

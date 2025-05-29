@@ -18,7 +18,6 @@ import { Service } from '@toeverything/infra';
 
 import type { DocsService } from '../../doc';
 import type { EditorSettingService } from '../../editor-setting';
-import type { FeatureFlagService } from '../../feature-flag';
 import { resolveLinkToDoc } from '../../navigation';
 import type { WorkspaceService } from '../../workspace';
 
@@ -35,8 +34,7 @@ export class DndService extends Service {
   constructor(
     private readonly docsService: DocsService,
     private readonly workspaceService: WorkspaceService,
-    private readonly editorSettingService: EditorSettingService,
-    private readonly featureFlagService: FeatureFlagService
+    private readonly editorSettingService: EditorSettingService
   ) {
     super();
 
@@ -186,9 +184,7 @@ export class DndService extends Service {
           return false;
         },
         onDropTargetChange: (args: MonitorDragEvent<MixedDNDData>) => {
-          if (this.featureFlagService.flags.enable_embed_doc_with_alias.value) {
-            changeDocCardView(args);
-          }
+          changeDocCardView(args);
         },
       })
     );

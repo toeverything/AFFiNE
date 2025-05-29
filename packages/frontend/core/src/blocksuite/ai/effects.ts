@@ -50,6 +50,7 @@ import { AskAIToolbarButton } from './components/ask-ai-toolbar';
 import { ChatActionList } from './components/chat-action-list';
 import { ChatCopyMore } from './components/copy-more';
 import { ImagePreviewGrid } from './components/image-preview-grid';
+import { effects as componentPlaygroundEffects } from './components/playground';
 import { TextRenderer } from './components/text-renderer';
 import { AIErrorWrapper } from './messages/error';
 import { AISlidesRenderer } from './messages/slides-renderer';
@@ -80,6 +81,7 @@ import { EdgelessCopilotToolbarEntry } from './widgets/edgeless-copilot-panel/to
 export function registerAIEffects() {
   registerMiniMindmapBlocks();
   componentAiItemEffects();
+  componentPlaygroundEffects();
 
   customElements.define('ask-ai-icon', AskAIIcon);
   customElements.define('ask-ai-button', AskAIButton);

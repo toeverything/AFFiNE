@@ -65,7 +65,7 @@ export interface AttachmentReloadedEvent extends TelemetryEvent {
   page: 'doc editor' | 'whiteboard editor';
   segment: 'doc' | 'whiteboard';
   module: 'attachment';
-  control: 'reload';
+  control: 'reload' | 'retry';
   category: 'card' | 'embed';
   type: string; // file type
 }

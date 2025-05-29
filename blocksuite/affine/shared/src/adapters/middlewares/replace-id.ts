@@ -32,7 +32,7 @@ export const replaceIdMiddleware =
       map(({ model }) => model)
     );
 
-    afterImportBlock$
+    const afterImportBlockSubscription = afterImportBlock$
       .pipe(filter(model => matchModels(model, [DatabaseBlockModel])))
       .subscribe(model => {
         Object.keys(model.props.cells).forEach(cellId => {
@@ -44,7 +44,7 @@ export const replaceIdMiddleware =
       });
 
     // replace LinkedPage pageId with new id in paragraph blocks
-    afterImportBlock$
+    const replaceLinkedPageIdSubscription = afterImportBlock$
       .pipe(
         filter(model =>
           matchModels(model, [ParagraphBlockModel, ListBlockModel])
@@ -84,7 +84,7 @@ export const replaceIdMiddleware =
         }
       });
 
-    afterImportBlock$
+    const replaceSurfaceRefIdSubscription = afterImportBlock$
       .pipe(filter(model => matchModels(model, [SurfaceRefBlockModel])))
       .subscribe(model => {
         const original = model.props.reference;
@@ -105,7 +105,7 @@ export const replaceIdMiddleware =
       });
 
     // TODO(@fundon): process linked block/element
-    afterImportBlock$
+    const replaceLinkedDocIdSubscription = afterImportBlock$
       .pipe(
         filter(model =>
           matchModels(model, [EmbedLinkedDocModel, EmbedSyncedDocModel])
@@ -128,7 +128,7 @@ export const replaceIdMiddleware =
 
     // Before Import
 
-    slots.beforeImport
+    const beforeImportPageSubscription = slots.beforeImport
       .pipe(filter(payload => payload.type === 'page'))
       .subscribe(payload => {
         if (idMap.has(payload.snapshot.meta.id)) {
@@ -140,7 +140,7 @@ export const replaceIdMiddleware =
         payload.snapshot.meta.id = newId;
       });
 
-    slots.beforeImport
+    const beforeImportBlockSubscription = slots.beforeImport
       .pipe(
         filter(
           (payload): payload is BeforeImportBlockPayload =>
@@ -244,4 +244,13 @@ export const replaceIdMiddleware =
           });
         }
       });
+
+    return () => {
+      afterImportBlockSubscription.unsubscribe();
+      replaceLinkedPageIdSubscription.unsubscribe();
+      replaceSurfaceRefIdSubscription.unsubscribe();
+      replaceLinkedDocIdSubscription.unsubscribe();
+      beforeImportPageSubscription.unsubscribe();
+      beforeImportBlockSubscription.unsubscribe();
+    };
   };

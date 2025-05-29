@@ -4,10 +4,12 @@ import { html } from 'lit';
 export const LoadingIcon = ({
   size = '1em',
   progress = 0.2,
+  ringColor = cssVarV2('loading/background'),
   strokeColor = cssVarV2('loading/foreground'),
 }: {
   size?: string;
   progress?: number;
+  ringColor?: string;
   strokeColor?: string;
 } = {}) =>
   html`<svg
@@ -28,13 +30,7 @@ export const LoadingIcon = ({
         }
       }
     </style>
-    <circle
-      cx="12"
-      cy="12"
-      r="8"
-      stroke="${cssVarV2('loading/background')}"
-      stroke-width="4"
-    />
+    <circle cx="12" cy="12" r="8" stroke="${ringColor}" stroke-width="4" />
     <circle
       class="spinner"
       cx="12"

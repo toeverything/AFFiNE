@@ -142,14 +142,6 @@ test.describe('Embed synced doc in edgeless mode', () => {
         { title: 'Page 1', content: 'hello page 1', inEdgeless: true },
       ]);
 
-      // TODO(@L-Sun): remove this after this feature is released
-      await page.evaluate(() => {
-        const { FeatureFlagService } = window.$blocksuite.services;
-        window.editor.std
-          .get(FeatureFlagService)
-          .setFlag('enable_embed_doc_with_alias', true);
-      });
-
       await switchEditorMode(page);
 
       const edgelessEmbedSyncedBlock = page.locator(

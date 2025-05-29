@@ -39,7 +39,7 @@
     "@sentry/react": "^9.2.0",
     "@tanstack/react-table": "^8.20.5",
     "@toeverything/infra": "workspace:*",
-    "@toeverything/theme": "^1.1.14",
+    "@toeverything/theme": "^1.1.15",
     "cmdk": "^1.0.4",
     "embla-carousel-react": "^8.5.1",
     "input-otp": "^1.4.1",

@@ -6286,6 +6286,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.indexer-embedding.embedding.description"](): string;
     /**
+      * `Only the workspace owner can enable Workspace Embedding.`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.disabled-tooltip"](): string;
+    /**
       * `Select doc`
       */
     ["com.affine.settings.workspace.indexer-embedding.embedding.select-doc"](): string;

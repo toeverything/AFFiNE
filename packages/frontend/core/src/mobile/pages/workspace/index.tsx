@@ -1,9 +1,11 @@
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 import { AffineErrorComponent } from '@affine/core/components/affine/affine-error-boundary/affine-error-fallback';
 import { PageNotFound } from '@affine/core/desktop/pages/404';
+import { SharePage } from '@affine/core/desktop/pages/workspace/share/share-page';
 import { workbenchRoutes } from '@affine/core/mobile/workbench-router';
+import { ServersService } from '@affine/core/modules/cloud';
 import { WorkspacesService } from '@affine/core/modules/workspace';
-import { useLiveData, useServices } from '@toeverything/infra';
+import { FrameworkScope, useLiveData, useServices } from '@toeverything/infra';
 import {
   lazy as reactLazy,
   Suspense,
@@ -17,6 +19,7 @@ import {
   type RouteObject,
   useLocation,
   useParams,
+  useSearchParams,
 } from 'react-router-dom';
 
 import { WorkspaceLayout } from './layout';
@@ -62,12 +65,14 @@ const warpedRoutes = workbenchRoutes.map((originalRoute: RouteObject) => {
 });
 
 export const Component = () => {
-  const { workspacesService } = useServices({
+  const { workspacesService, serversService } = useServices({
     WorkspacesService,
+    ServersService,
   });
 
   const params = useParams();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   // todo(pengx17): dedupe the code with core
   // check if we are in detail doc route, if so, maybe render share page
@@ -115,7 +120,8 @@ export const Component = () => {
   const retryTimesRef = useRef(3);
   useEffect(() => {
     retryTimesRef.current = 3; // reset retry times
-  }, [params.workspaceId]);
+    workspacesService.list.revalidate();
+  }, [params.workspaceId, workspacesService.list]);
   useEffect(() => {
     if (listLoading === false && meta === undefined) {
       const timer = setInterval(() => {
@@ -129,12 +135,33 @@ export const Component = () => {
     return;
   }, [listLoading, meta, workspaceNotFound, workspacesService]);
 
+  // server search params
+  const serverFromSearchParams = useLiveData(
+    searchParams.has('server')
+      ? serversService.serverByBaseUrl$(searchParams.get('server') as string)
+      : undefined
+  );
+  // server from workspace
+  const serverFromWorkspace = useLiveData(
+    meta?.flavour && meta.flavour !== 'local'
+      ? serversService.server$(meta?.flavour)
+      : undefined
+  );
+  const server = serverFromWorkspace ?? serverFromSearchParams;
+
   if (workspaceNotFound) {
     if (
-      BUILD_CONFIG.isDesktopEdition /* only browser has share page */ &&
+      BUILD_CONFIG.isMobileWeb /* only browser has share page */ &&
       detailDocRoute
     ) {
-      return <div>TODO: share page</div>;
+      return (
+        <FrameworkScope scope={server?.scope}>
+          <SharePage
+            docId={detailDocRoute.docId}
+            workspaceId={detailDocRoute.workspaceId}
+          />
+        </FrameworkScope>
+      );
     }
     return <PageNotFound noPermission />;
   }

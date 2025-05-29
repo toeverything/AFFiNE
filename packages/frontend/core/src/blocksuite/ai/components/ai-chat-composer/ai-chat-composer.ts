@@ -97,13 +97,13 @@ export class AIChatComposer extends SignalWatcher(
   accessor onChatSuccess: (() => void) | undefined;
 
   @property({ attribute: false })
-  accessor trackOptions!: BlockSuitePresets.TrackerOptions;
+  accessor trackOptions: BlockSuitePresets.TrackerOptions | undefined;
 
   @property({ attribute: false })
   accessor portalContainer: HTMLElement | null = null;
 
   @property({ attribute: false })
-  accessor sideBarWidth: Signal<number | undefined> = signal(undefined);
+  accessor panelWidth: Signal<number | undefined> = signal(undefined);
 
   @state()
   accessor chips: ChatChip[] = [];
@@ -144,7 +144,7 @@ export class AIChatComposer extends SignalWatcher(
         .docDisplayConfig=${this.docDisplayConfig}
         .onChatSuccess=${this.onChatSuccess}
         .trackOptions=${this.trackOptions}
-        .sideBarWidth=${this.sideBarWidth}
+        .panelWidth=${this.panelWidth}
         .addImages=${this.addImages}
       ></ai-chat-input>
       <div class="chat-panel-footer">

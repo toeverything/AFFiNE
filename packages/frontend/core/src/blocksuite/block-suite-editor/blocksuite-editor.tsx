@@ -9,6 +9,7 @@ import {
   fontStyleOptions,
 } from '@affine/core/modules/editor-setting';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { WorkspaceService } from '@affine/core/modules/workspace';
 import track from '@affine/track';
 import { appendParagraphCommand } from '@blocksuite/affine/blocks/paragraph';
 import type { DocTitle } from '@blocksuite/affine/fragments/doc-title';
@@ -272,6 +273,7 @@ export const BlockSuiteEditor = (props: EditorProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [longerLoading, setLongerLoading] = useState(false);
   const [loadStartTime] = useState(Date.now());
+  const workspaceService = useService(WorkspaceService);
 
   const editorSetting = useService(EditorSettingService).editorSetting;
   const settings = useLiveData(
@@ -300,37 +302,59 @@ export const BlockSuiteEditor = (props: EditorProps) => {
       setIsLoading(false);
       return;
     }
+
+    const disposable = props.page.slots.rootAdded.subscribe(() => {
+      disposable.unsubscribe();
+      setIsLoading(false);
+      setLongerLoading(false);
+    });
+    return () => {
+      disposable.unsubscribe();
+    };
+  }, [loadStartTime, props.page]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
-      setLongerLoading(true);
+      if (isLoading) {
+        setLongerLoading(true);
+      }
     }, 20 * 1000);
     const reportErrorTimer = setTimeout(() => {
       if (isLoading) {
         track.doc.$.$.loadDoc({
           workspaceId: props.page.workspace.id,
           docId: props.page.id,
-          // time cost in ms
           time: Date.now() - loadStartTime,
           success: false,
         });
       }
     }, 60 * 1000);
-    const disposable = props.page.slots.rootAdded.subscribe(() => {
-      disposable.unsubscribe();
-      track.doc.$.$.loadDoc({
-        workspaceId: props.page.workspace.id,
-        docId: props.page.id,
-        time: Date.now() - loadStartTime,
-        success: true,
-      });
-      setIsLoading(false);
-      setLongerLoading(false);
-    });
     return () => {
-      disposable.unsubscribe();
       clearTimeout(timer);
       clearTimeout(reportErrorTimer);
     };
   }, [isLoading, loadStartTime, props.page]);
+
+  useEffect(() => {
+    workspaceService.workspace.engine.doc
+      .waitForDocLoaded(props.page.id)
+      .then(() => {
+        track.doc.$.$.loadDoc({
+          workspaceId: props.page.workspace.id,
+          docId: props.page.id,
+          time: Date.now() - loadStartTime,
+          success: true,
+        });
+      })
+      .catch(() => {
+        track.doc.$.$.loadDoc({
+          workspaceId: props.page.workspace.id,
+          docId: props.page.id,
+          time: Date.now() - loadStartTime,
+          success: false,
+        });
+      });
+  }, [loadStartTime, props.page, workspaceService]);
 
   return (
     <Slot style={{ '--affine-font-family': fontFamily } as CSSProperties}>

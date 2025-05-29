@@ -113,6 +113,8 @@ type TransformerMiddlewareOptions = {
   transformerConfigs: Map<string, unknown>;
 };
 
+type TransformerMiddlewareCleanup = () => void;
+
 export type TransformerMiddleware = (
   options: TransformerMiddlewareOptions
-) => void;
+) => void | TransformerMiddlewareCleanup;

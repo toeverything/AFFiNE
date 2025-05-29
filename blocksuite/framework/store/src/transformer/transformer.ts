@@ -1,3 +1,4 @@
+import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import { nextTick } from '@blocksuite/global/utils';
 import { Subject } from 'rxjs';
@@ -66,6 +67,8 @@ export class Transformer {
   private readonly _schema: Schema;
 
   private readonly _docCRUD: DocCRUD;
+
+  private readonly _disposables: DisposableGroup = new DisposableGroup();
 
   private readonly _slots: TransformerSlots = {
     beforeImport: new Subject<BeforeImportPayload>(),
@@ -366,13 +369,16 @@ export class Transformer {
     this._docCRUD = docCRUD;
 
     middlewares.forEach(middleware => {
-      middleware({
+      const cleanup = middleware({
         slots: this._slots,
         docCRUD: this._docCRUD,
         assetsManager: this._assetsManager,
         adapterConfigs: this._adapterConfigs,
         transformerConfigs: this._transformerConfigs,
       });
+      if (cleanup) {
+        this._disposables.add(cleanup);
+      }
     });
   }
 
@@ -644,6 +650,11 @@ export class Transformer {
   }
 
   reset() {
+    this._assetsManager.cleanup();
+  }
+
+  [Symbol.dispose]() {
+    this._disposables.dispose();
     this._assetsManager.cleanup();
   }
 }

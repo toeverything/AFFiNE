@@ -17,7 +17,6 @@ import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
 import {
   ActionPlacement,
   EditorSettingProvider,
-  FeatureFlagService,
   type LinkEventType,
   type OpenDocMode,
   type ToolbarAction,
@@ -163,12 +162,7 @@ const conversionsActionGroup = {
       label: 'Card view',
       run(ctx) {
         const block = ctx.getCurrentBlockByType(EmbedSyncedDocBlockComponent);
-        if (
-          ctx.std
-            .get(FeatureFlagService)
-            .getFlag('enable_embed_doc_with_alias') &&
-          isGfxBlockComponent(block)
-        ) {
+        if (isGfxBlockComponent(block)) {
           const editorSetting = ctx.std.getOptional(EditorSettingProvider);
           editorSetting?.set?.(
             'docCanvasPreferView',
@@ -296,8 +290,6 @@ const builtinSurfaceToolbarConfig = {
       label: 'Insert to page',
       tooltip: 'Insert to page',
       icon: InsertIntoPageIcon(),
-      when: ({ std }) =>
-        std.get(FeatureFlagService).getFlag('enable_embed_doc_with_alias'),
       run: ctx => {
         const model = ctx.getCurrentModelByType(EmbedSyncedDocModel);
         if (!model) return;
@@ -334,8 +326,6 @@ const builtinSurfaceToolbarConfig = {
       tooltip:
         'Duplicate as note to create an editable copy, the original remains unchanged.',
       icon: DuplicateIcon(),
-      when: ({ std }) =>
-        std.get(FeatureFlagService).getFlag('enable_embed_doc_with_alias'),
       run: ctx => {
         const { gfx } = ctx;
 

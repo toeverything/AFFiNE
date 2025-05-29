@@ -2,7 +2,7 @@ import {
   fontBaseStyle,
   panelBaseColorsStyle,
 } from '@blocksuite/affine-shared/styles';
-import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
+import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import {
   createButtonPopper,
   stopPropagation,
@@ -15,7 +15,8 @@ import { property, query } from 'lit/decorators.js';
 
 @requiredProperties({
   message: PropTypes.string,
-  reload: PropTypes.instanceOf(Function),
+  needUpload: PropTypes.boolean,
+  action: PropTypes.instanceOf(Function),
 })
 export class ResourceStatus extends WithDisposable(LitElement) {
   static override styles = css`
@@ -32,7 +33,7 @@ export class ResourceStatus extends WithDisposable(LitElement) {
       cursor: pointer;
       color: ${unsafeCSSVarV2('button/pureWhiteText')};
       background: ${unsafeCSSVarV2('status/error')};
-      box-shadow: var(--affine-overlay-shadow);
+      box-shadow: ${unsafeCSSVar('overlayShadow')};
     }
 
     ${panelBaseColorsStyle('.popper')}
@@ -43,28 +44,36 @@ export class ResourceStatus extends WithDisposable(LitElement) {
       padding: 8px;
       border-radius: 8px;
       width: 260px;
-      font-size: var(--affine-font-sm);
       font-style: normal;
       font-weight: 400;
       line-height: 22px;
+      font-size: ${unsafeCSSVar('fontSm')};
 
       &[data-show] {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 4px;
       }
     }
 
+    .header {
+      font-weight: 500;
+    }
+
     .content {
+      font-feature-settings:
+        'liga' off,
+        'clig' off;
       color: ${unsafeCSSVarV2('text/primary')};
     }
 
     .footer {
       display: flex;
       justify-content: flex-end;
+      margin-top: 4px;
     }
 
-    button.reload {
+    button.action {
       display: flex;
       align-items: center;
       padding: 2px 12px;
@@ -102,23 +111,35 @@ export class ResourceStatus extends WithDisposable(LitElement) {
       this._popper?.toggle();
     });
     this.disposables.addFromEvent(
-      this._reloadButton,
+      this._actionButton,
       'click',
       (_: MouseEvent) => {
         this._popper?.hide();
-        this.reload();
+        this.action();
       }
     );
     this.disposables.add(() => this._popper?.dispose());
   }
 
   override render() {
+    const { message, needUpload } = this;
+    const { type, label } = needUpload
+      ? {
+          type: 'Upload',
+          label: 'Retry',
+        }
+      : {
+          type: 'Download',
+          label: 'Reload',
+        };
+
     return html`
       <button class="status">${InformationIcon()}</button>
       <div class="popper">
-        <div class="content">${this.message}</div>
+        <div class="header">${type} failed</div>
+        <div class="content">${message}</div>
         <div class="footer">
-          <button class="reload">Reload</button>
+          <button class="action">${label}</button>
         </div>
       </div>
     `;
@@ -130,12 +151,15 @@ export class ResourceStatus extends WithDisposable(LitElement) {
   @query('button.status')
   private accessor _trigger!: HTMLButtonElement;
 
-  @query('button.reload')
-  private accessor _reloadButton!: HTMLButtonElement;
+  @query('button.action')
+  private accessor _actionButton!: HTMLButtonElement;
 
   @property({ attribute: false })
   accessor message!: string;
 
   @property({ attribute: false })
-  accessor reload!: () => void;
+  accessor needUpload!: boolean;
+
+  @property({ attribute: false })
+  accessor action!: () => void;
 }

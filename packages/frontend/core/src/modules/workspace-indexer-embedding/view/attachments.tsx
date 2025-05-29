@@ -33,11 +33,13 @@ interface AttachmentsProps {
   totalCount: number;
   onPageChange: (offset: number) => void;
   onDelete: (id: string) => void;
+  disabled: boolean;
 }
 
 interface AttachmentItemProps {
   attachment: AttachmentFile;
   onDelete: (id: string) => void;
+  disabled: boolean;
 }
 
 const UploadingItem: React.FC<{ attachment: UploadingAttachmentFile }> = ({
@@ -88,6 +90,7 @@ const PersistedItem: React.FC<{ attachment: PersistedAttachmentFile }> = ({
 const AttachmentItem: React.FC<AttachmentItemProps> = ({
   attachment,
   onDelete,
+  disabled,
 }) => {
   const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
@@ -131,20 +134,22 @@ const AttachmentItem: React.FC<AttachmentItemProps> = ({
       ) : isPersistedAttachment(attachment) ? (
         <PersistedItem attachment={attachment} />
       ) : null}
-      <div className={attachmentOperation}>
-        <Tooltip
-          content={t[
-            'com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.remove-attachment.tooltip'
-          ]()}
-        >
-          <CloseIcon
-            data-testid="workspace-embedding-setting-attachment-delete-button"
-            onClick={handleDelete}
-            color={cssVarV2('icon/primary')}
-            style={{ cursor: 'pointer' }}
-          />
-        </Tooltip>
-      </div>
+      {!disabled && (
+        <div className={attachmentOperation}>
+          <Tooltip
+            content={t[
+              'com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.remove-attachment.tooltip'
+            ]()}
+          >
+            <CloseIcon
+              data-testid="workspace-embedding-setting-attachment-delete-button"
+              onClick={handleDelete}
+              color={cssVarV2('icon/primary')}
+              style={{ cursor: 'pointer' }}
+            />
+          </Tooltip>
+        </div>
+      )}
     </div>
   );
 };
@@ -154,6 +159,7 @@ export const Attachments: React.FC<AttachmentsProps> = ({
   totalCount,
   onDelete,
   onPageChange,
+  disabled,
 }) => {
   const handlePageChange = useCallback(
     (offset: number) => {
@@ -172,6 +178,7 @@ export const Attachments: React.FC<AttachmentsProps> = ({
           key={getAttachmentId(attachment)}
           attachment={attachment}
           onDelete={onDelete}
+          disabled={disabled}
         />
       ))}
       <Pagination
