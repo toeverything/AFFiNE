@@ -43,6 +43,23 @@ type RendererOptions = {
   surfaceModel: SurfaceBlockModel;
 };
 
+enum UpdateType {
+  ELEMENT_ADDED = 'element-added',
+  ELEMENT_REMOVED = 'element-removed',
+  ELEMENT_UPDATED = 'element-updated',
+  VIEWPORT_CHANGED = 'viewport-changed',
+  SIZE_CHANGED = 'size-changed',
+  ZOOM_STATE_CHANGED = 'zoom-state-changed',
+}
+
+interface IncrementalUpdateState {
+  dirtyElementIds: Set<string>;
+  viewportDirty: boolean;
+  sizeDirty: boolean;
+  usePlaceholderDirty: boolean;
+  pendingUpdates: Map<string, UpdateType[]>;
+}
+
 const PLACEHOLDER_RESET_STYLES = {
   border: 'none',
   borderRadius: '0',
@@ -141,6 +158,18 @@ export class DomRenderer {
 
   private _sizeUpdatedRafId: number | null = null;
 
+  private readonly _updateState: IncrementalUpdateState = {
+    dirtyElementIds: new Set(),
+    viewportDirty: false,
+    sizeDirty: false,
+    usePlaceholderDirty: false,
+    pendingUpdates: new Map(),
+  };
+
+  private _lastViewportBounds: Bound | null = null;
+  private _lastZoom: number | null = null;
+  private _lastUsePlaceholder: boolean = false;
+
   rootElement: HTMLElement;
 
   private readonly _elementsMap = new Map<string, HTMLElement>();
@@ -186,6 +215,7 @@ export class DomRenderer {
   private _initViewport() {
     this._disposables.add(
       this.viewport.viewportUpdated.subscribe(() => {
+        this._markViewportDirty();
         this.refresh();
       })
     );
@@ -195,6 +225,7 @@ export class DomRenderer {
         if (this._sizeUpdatedRafId) return;
         this._sizeUpdatedRafId = requestConnectedFrame(() => {
           this._sizeUpdatedRafId = null;
+          this._markSizeDirty();
           this._resetSize();
           this._render();
           this.refresh();
@@ -208,6 +239,7 @@ export class DomRenderer {
 
         if (this.usePlaceholder !== shouldRenderPlaceholders) {
           this.usePlaceholder = shouldRenderPlaceholders;
+          this._markUsePlaceholderDirty();
           this.refresh();
         }
       })
@@ -307,6 +339,292 @@ export class DomRenderer {
   }
 
   private _render() {
+    this._renderIncremental();
+  }
+
+  private _watchSurface(surfaceModel: SurfaceBlockModel) {
+    this._disposables.add(
+      surfaceModel.elementAdded.subscribe(payload => {
+        this._markElementDirty(payload.id, UpdateType.ELEMENT_ADDED);
+        this.refresh();
+      })
+    );
+    this._disposables.add(
+      surfaceModel.elementRemoved.subscribe(payload => {
+        this._markElementDirty(payload.id, UpdateType.ELEMENT_REMOVED);
+        this.refresh();
+      })
+    );
+    this._disposables.add(
+      surfaceModel.localElementAdded.subscribe(payload => {
+        this._markElementDirty(payload.id, UpdateType.ELEMENT_ADDED);
+        this.refresh();
+      })
+    );
+    this._disposables.add(
+      surfaceModel.localElementDeleted.subscribe(payload => {
+        this._markElementDirty(payload.id, UpdateType.ELEMENT_REMOVED);
+        this.refresh();
+      })
+    );
+    this._disposables.add(
+      surfaceModel.localElementUpdated.subscribe(payload => {
+        this._markElementDirty(payload.model.id, UpdateType.ELEMENT_UPDATED);
+        this.refresh();
+      })
+    );
+
+    this._disposables.add(
+      surfaceModel.elementUpdated.subscribe(payload => {
+        // ignore externalXYWH update cause it's updated by the renderer
+        if (payload.props['externalXYWH']) return;
+        this._markElementDirty(payload.id, UpdateType.ELEMENT_UPDATED);
+        this.refresh();
+      })
+    );
+  }
+
+  addOverlay(overlay: Overlay) {
+    overlay.setRenderer(null);
+    this._overlays.add(overlay);
+    this.refresh();
+  }
+
+  attach(container: HTMLElement) {
+    this._container = container;
+    container.append(this.rootElement);
+
+    this._resetSize();
+    this.refresh();
+  }
+
+  dispose(): void {
+    this._overlays.forEach(overlay => overlay.dispose());
+    this._overlays.clear();
+    this._disposables.dispose();
+
+    if (this._refreshRafId) {
+      cancelAnimationFrame(this._refreshRafId);
+      this._refreshRafId = null;
+    }
+    if (this._sizeUpdatedRafId) {
+      cancelAnimationFrame(this._sizeUpdatedRafId);
+      this._sizeUpdatedRafId = null;
+    }
+
+    this.rootElement.remove();
+    this._elementsMap.clear();
+  }
+
+  generateColorProperty(color: Color, fallback?: Color) {
+    return (
+      this.provider.generateColorProperty?.(color, fallback) ?? 'transparent'
+    );
+  }
+
+  getColorScheme() {
+    return this.provider.getColorScheme?.() ?? ColorScheme.Light;
+  }
+
+  getColorValue(color: Color, fallback?: Color, real?: boolean) {
+    return (
+      this.provider.getColorValue?.(color, fallback, real) ?? 'transparent'
+    );
+  }
+
+  getPropertyValue(property: string) {
+    return this.provider.getPropertyValue?.(property) ?? '';
+  }
+
+  refresh() {
+    if (this._refreshRafId !== null) return;
+
+    this._refreshRafId = requestConnectedFrame(() => {
+      this._refreshRafId = null;
+      this._render();
+    }, this._container);
+  }
+
+  removeOverlay(overlay: Overlay) {
+    if (!this._overlays.has(overlay)) {
+      return;
+    }
+
+    this._overlays.delete(overlay);
+    this.refresh();
+  }
+
+  /**
+   * Mark a specific element as dirty for incremental updates
+   * @param elementId - The ID of the element to mark as dirty
+   * @param updateType - The type of update (optional, defaults to ELEMENT_UPDATED)
+   */
+  markElementDirty(
+    elementId: string,
+    updateType: UpdateType = UpdateType.ELEMENT_UPDATED
+  ) {
+    this._markElementDirty(elementId, updateType);
+  }
+
+  /**
+   * Force a full re-render of all elements
+   */
+  forceFullRender() {
+    this._updateState.viewportDirty = true;
+    this.refresh();
+  }
+
+  private _markElementDirty(elementId: string, updateType: UpdateType) {
+    this._updateState.dirtyElementIds.add(elementId);
+    const currentUpdates =
+      this._updateState.pendingUpdates.get(elementId) || [];
+    if (!currentUpdates.includes(updateType)) {
+      currentUpdates.push(updateType);
+      this._updateState.pendingUpdates.set(elementId, currentUpdates);
+    }
+  }
+
+  private _markViewportDirty() {
+    this._updateState.viewportDirty = true;
+  }
+
+  private _markSizeDirty() {
+    this._updateState.sizeDirty = true;
+  }
+
+  private _markUsePlaceholderDirty() {
+    this._updateState.usePlaceholderDirty = true;
+  }
+
+  private _clearUpdateState() {
+    this._updateState.dirtyElementIds.clear();
+    this._updateState.viewportDirty = false;
+    this._updateState.sizeDirty = false;
+    this._updateState.usePlaceholderDirty = false;
+    this._updateState.pendingUpdates.clear();
+  }
+
+  private _isViewportChanged(): boolean {
+    const { viewportBounds, zoom } = this.viewport;
+
+    if (!this._lastViewportBounds || !this._lastZoom) {
+      return true;
+    }
+
+    return (
+      this._lastViewportBounds.x !== viewportBounds.x ||
+      this._lastViewportBounds.y !== viewportBounds.y ||
+      this._lastViewportBounds.w !== viewportBounds.w ||
+      this._lastViewportBounds.h !== viewportBounds.h ||
+      this._lastZoom !== zoom
+    );
+  }
+
+  private _isUsePlaceholderChanged(): boolean {
+    return this._lastUsePlaceholder !== this.usePlaceholder;
+  }
+
+  private _updateLastState() {
+    const { viewportBounds, zoom } = this.viewport;
+    this._lastViewportBounds = {
+      x: viewportBounds.x,
+      y: viewportBounds.y,
+      w: viewportBounds.w,
+      h: viewportBounds.h,
+    } as Bound;
+    this._lastZoom = zoom;
+    this._lastUsePlaceholder = this.usePlaceholder;
+  }
+
+  private _renderIncremental() {
+    const { viewportBounds, zoom } = this.viewport;
+    const addedElements: HTMLElement[] = [];
+    const elementsToRemove: HTMLElement[] = [];
+
+    const needsFullRender =
+      this._isViewportChanged() ||
+      this._isUsePlaceholderChanged() ||
+      this._updateState.sizeDirty ||
+      this._updateState.viewportDirty ||
+      this._updateState.usePlaceholderDirty;
+
+    if (needsFullRender) {
+      this._renderFull();
+      this._updateLastState();
+      this._clearUpdateState();
+      return;
+    }
+
+    // Only update dirty elements
+    const elementsFromGrid = this.grid.search(viewportBounds, {
+      filter: ['canvas', 'local'],
+    }) as SurfaceElementModel[];
+
+    const visibleElementIds = new Set<string>();
+
+    // 1. Update dirty elements
+    for (const elementModel of elementsFromGrid) {
+      const display = (elementModel.display ?? true) && !elementModel.hidden;
+      if (
+        display &&
+        intersects(getBoundWithRotation(elementModel), viewportBounds)
+      ) {
+        visibleElementIds.add(elementModel.id);
+
+        // Only update dirty elements
+        if (this._updateState.dirtyElementIds.has(elementModel.id)) {
+          if (
+            this.usePlaceholder &&
+            !(elementModel as GfxCompatibleInterface).forceFullRender
+          ) {
+            this._renderOrUpdatePlaceholder(
+              elementModel,
+              viewportBounds,
+              zoom,
+              addedElements
+            );
+          } else {
+            this._renderOrUpdateFullElement(
+              elementModel,
+              viewportBounds,
+              zoom,
+              addedElements
+            );
+          }
+        }
+      }
+    }
+
+    // 2. Remove elements that are no longer in the grid
+    for (const elementId of this._updateState.dirtyElementIds) {
+      const updateTypes = this._updateState.pendingUpdates.get(elementId) || [];
+      if (
+        updateTypes.includes(UpdateType.ELEMENT_REMOVED) ||
+        !visibleElementIds.has(elementId)
+      ) {
+        const domElem = this._elementsMap.get(elementId);
+        if (domElem) {
+          domElem.remove();
+          this._elementsMap.delete(elementId);
+          elementsToRemove.push(domElem);
+        }
+      }
+    }
+
+    // 3. Notify changes
+    if (addedElements.length > 0 || elementsToRemove.length > 0) {
+      this.elementsUpdated.next({
+        elements: Array.from(this._elementsMap.values()),
+        added: addedElements,
+        removed: elementsToRemove,
+      });
+    }
+
+    this._updateLastState();
+    this._clearUpdateState();
+  }
+
+  private _renderFull() {
     const { viewportBounds, zoom } = this.viewport;
     const addedElements: HTMLElement[] = [];
     const elementsToRemove: HTMLElement[] = [];
@@ -386,101 +704,5 @@ export class DomRenderer {
         removed: elementsToRemove,
       });
     }
-  }
-
-  private _watchSurface(surfaceModel: SurfaceBlockModel) {
-    this._disposables.add(
-      surfaceModel.elementAdded.subscribe(() => this.refresh())
-    );
-    this._disposables.add(
-      surfaceModel.elementRemoved.subscribe(() => this.refresh())
-    );
-    this._disposables.add(
-      surfaceModel.localElementAdded.subscribe(() => this.refresh())
-    );
-    this._disposables.add(
-      surfaceModel.localElementDeleted.subscribe(() => this.refresh())
-    );
-    this._disposables.add(
-      surfaceModel.localElementUpdated.subscribe(() => this.refresh())
-    );
-
-    this._disposables.add(
-      surfaceModel.elementUpdated.subscribe(payload => {
-        // ignore externalXYWH update cause it's updated by the renderer
-        if (payload.props['externalXYWH']) return;
-        this.refresh();
-      })
-    );
-  }
-
-  addOverlay(overlay: Overlay) {
-    overlay.setRenderer(null);
-    this._overlays.add(overlay);
-    this.refresh();
-  }
-
-  attach(container: HTMLElement) {
-    this._container = container;
-    container.append(this.rootElement);
-
-    this._resetSize();
-    this.refresh();
-  }
-
-  dispose(): void {
-    this._overlays.forEach(overlay => overlay.dispose());
-    this._overlays.clear();
-    this._disposables.dispose();
-
-    if (this._refreshRafId) {
-      cancelAnimationFrame(this._refreshRafId);
-      this._refreshRafId = null;
-    }
-    if (this._sizeUpdatedRafId) {
-      cancelAnimationFrame(this._sizeUpdatedRafId);
-      this._sizeUpdatedRafId = null;
-    }
-
-    this.rootElement.remove();
-    this._elementsMap.clear();
-  }
-
-  generateColorProperty(color: Color, fallback?: Color) {
-    return (
-      this.provider.generateColorProperty?.(color, fallback) ?? 'transparent'
-    );
-  }
-
-  getColorScheme() {
-    return this.provider.getColorScheme?.() ?? ColorScheme.Light;
-  }
-
-  getColorValue(color: Color, fallback?: Color, real?: boolean) {
-    return (
-      this.provider.getColorValue?.(color, fallback, real) ?? 'transparent'
-    );
-  }
-
-  getPropertyValue(property: string) {
-    return this.provider.getPropertyValue?.(property) ?? '';
-  }
-
-  refresh() {
-    if (this._refreshRafId !== null) return;
-
-    this._refreshRafId = requestConnectedFrame(() => {
-      this._refreshRafId = null;
-      this._render();
-    }, this._container);
-  }
-
-  removeOverlay(overlay: Overlay) {
-    if (!this._overlays.has(overlay)) {
-      return;
-    }
-
-    this._overlays.delete(overlay);
-    this.refresh();
   }
 }

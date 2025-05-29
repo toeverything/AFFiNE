@@ -6,6 +6,7 @@ import {
 import { BrushTool } from './brush-tool';
 import { effects } from './effects';
 import { BrushElementRendererExtension } from './element-renderer';
+import { BrushDomRendererExtension } from './element-renderer/brush-dom';
 import { EraserTool } from './eraser-tool';
 import { HighlighterTool } from './highlighter-tool';
 import {
@@ -30,6 +31,7 @@ export class BrushViewExtension extends ViewExtensionProvider {
     context.register(HighlighterTool);
 
     context.register(BrushElementRendererExtension);
+    context.register(BrushDomRendererExtension);
 
     context.register(brushToolbarExtension);
     context.register(highlighterToolbarExtension);
