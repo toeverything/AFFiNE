@@ -9,7 +9,6 @@ export type IntegrationType = NonNullable<DocIntegrationRef['type']>;
 
 export type IntegrationDocPropertiesMap = {
   readwise: ReadwiseDocProperties;
-  zotero: never;
 };
 
 export type IntegrationProperty<T extends IntegrationType> = {

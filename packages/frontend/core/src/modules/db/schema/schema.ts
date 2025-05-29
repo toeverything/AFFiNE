@@ -9,7 +9,7 @@ import { nanoid } from 'nanoid';
 
 import type { WorkspacePropertyType } from '../../workspace-property';
 
-const integrationType = f.enum('readwise', 'zotero');
+const integrationType = f.enum('readwise');
 
 export const AFFiNE_WORKSPACE_DB_SCHEMA = {
   folders: {

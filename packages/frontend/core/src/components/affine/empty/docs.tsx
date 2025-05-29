@@ -19,11 +19,13 @@ export interface EmptyDocsProps extends UniversalEmptyProps {
    * Used for "New doc", if provided, new doc will be created with this tag.
    */
   tagId?: string;
+  allowCreate?: boolean;
 }
 
 export const EmptyDocs = ({
   type = 'all',
   tagId,
+  allowCreate = true,
   ...props
 }: EmptyDocsProps) => {
   const t = useI18n();
@@ -56,7 +58,7 @@ export const EmptyDocs = ({
           : t['com.affine.empty.docs.all-description']()
       }
       action={
-        showActionButton ? (
+        allowCreate && showActionButton ? (
           <ActionButton onClick={onCreate} prefix={<AllDocsIcon />}>
             {t['com.affine.empty.docs.action.new-doc']()}
           </ActionButton>
