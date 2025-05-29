@@ -1001,7 +1001,7 @@ __metadata:
     nanoid: "npm:^5.0.9"
     nest-commander: "npm:^3.15.0"
     nest-winston: "npm:^1.9.7"
-    nestjs-cls: "npm:^5.0.0"
+    nestjs-cls: "npm:^6.0.0"
     nodemailer: "npm:^7.0.0"
     nodemon: "npm:^3.1.7"
     on-headers: "npm:^1.0.2"
@@ -27459,15 +27459,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nestjs-cls@npm:^5.0.0":
-  version: 5.4.3
-  resolution: "nestjs-cls@npm:5.4.3"
+"nestjs-cls@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "nestjs-cls@npm:6.0.0"
   peerDependencies:
     "@nestjs/common": ">= 10 < 12"
     "@nestjs/core": ">= 10 < 12"
     reflect-metadata: "*"
     rxjs: ">= 7"
-  checksum: 10/b690350b050a5f6daf7b486f1dfd8ed0e5fc973fdc0091934525113a4229e169f3dbadd67afb91018cbe839b4ff3d909641cbfa00bbfb432b7cb3e33e27501d5
+  checksum: 10/2c1118ecceae8993d873f27d9a87422340a81626642c0e11acc9859e9619c0c4b8a41356f1ac94f5d34544cbc8c5ebebbd2b95c768623255a3005767c993dcd8
   languageName: node
   linkType: hard
 

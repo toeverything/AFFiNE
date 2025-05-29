@@ -100,7 +100,7 @@
     "nanoid": "^5.0.9",
     "nest-commander": "^3.15.0",
     "nest-winston": "^1.9.7",
-    "nestjs-cls": "^5.0.0",
+    "nestjs-cls": "^6.0.0",
     "nodemailer": "^7.0.0",
     "on-headers": "^1.0.2",
     "piscina": "^5.0.0-alpha.0",
