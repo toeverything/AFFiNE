@@ -8968,14 +8968,14 @@ __metadata:
   linkType: hard
 
 "@nestjs-cls/transactional-adapter-prisma@npm:^1.2.19":
-  version: 1.2.20
-  resolution: "@nestjs-cls/transactional-adapter-prisma@npm:1.2.20"
+  version: 1.2.21
+  resolution: "@nestjs-cls/transactional-adapter-prisma@npm:1.2.21"
   peerDependencies:
-    "@nestjs-cls/transactional": ^2.7.0
+    "@nestjs-cls/transactional": ^3.0.0
     "@prisma/client": "> 4 < 7"
-    nestjs-cls: ^5.4.3
+    nestjs-cls: ^6.0.0
     prisma: "> 4 < 7"
-  checksum: 10/203e1b0ee785073529121e4eeef4852ede41d72cb557e7908582dc8d5fd556b439f1c6ecca19c01c0ecdbba0d38c35d57c9a354d15bb9c2edd1ae469ad06c103
+  checksum: 10/3a0e6ed43ab97b6f94a859bcb9c71d79034f5c1ded1038204e374f170f81ea198ec93793c05b70d556342e4cec3d9fbd4e792f544f229572474bc10231b6a0ae
   languageName: node
   linkType: hard
 
@@ -10607,9 +10607,9 @@ __metadata:
   linkType: hard
 
 "@opentelemetry/semantic-conventions@npm:^1.22.0, @opentelemetry/semantic-conventions@npm:^1.27.0, @opentelemetry/semantic-conventions@npm:^1.28.0, @opentelemetry/semantic-conventions@npm:^1.30.0":
-  version: 1.33.0
-  resolution: "@opentelemetry/semantic-conventions@npm:1.33.0"
-  checksum: 10/c20899b6d1959d55656f3ace8e90f172a696921e174d6d784a1ef500f958bd235be69df997a9ec298f4761a26d3f3a9f312726cbe0f5e39ab7bc4d43803c0fc9
+  version: 1.34.0
+  resolution: "@opentelemetry/semantic-conventions@npm:1.34.0"
+  checksum: 10/1892b4cc69c9e00456c809604a980e32696563e96463ff5f9d07e72d5aca73836a7378090509f28f54445ac6e072d2343a888c9d64d9ce287198e899082ff7aa
   languageName: node
   linkType: hard
 
