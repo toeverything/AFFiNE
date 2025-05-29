@@ -132,12 +132,13 @@ export class DocEngine {
         this.logger
       );
 
-      cleanUp.push(
-        state.mainPeer.onStatusChange.subscribe(() => {
-          if (!signal.aborted)
-            this.updateSyncingState(state.mainPeer, state.shadowPeers);
-        }).unsubscribe
-      );
+      const subscriber = state.mainPeer.onStatusChange.subscribe(() => {
+        if (!signal.aborted)
+          this.updateSyncingState(state.mainPeer, state.shadowPeers);
+      });
+      cleanUp.push(() => {
+        subscriber.unsubscribe();
+      });
 
       this.updateSyncingState(state.mainPeer, state.shadowPeers);
 
@@ -152,12 +153,15 @@ export class DocEngine {
           this.priorityTarget,
           this.logger
         );
-        cleanUp.push(
-          peer.onStatusChange.subscribe(() => {
-            if (!signal.aborted)
-              this.updateSyncingState(state.mainPeer, state.shadowPeers);
-          }).unsubscribe
-        );
+
+        const subscriber = peer.onStatusChange.subscribe(() => {
+          if (!signal.aborted)
+            this.updateSyncingState(state.mainPeer, state.shadowPeers);
+        });
+        cleanUp.push(() => {
+          subscriber.unsubscribe();
+        });
+
         return peer;
       });
 
