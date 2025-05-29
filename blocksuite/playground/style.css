@@ -1,6 +1,8 @@
 @import '@toeverything/theme/style.css';
 @import '@toeverything/theme/fonts.css';
 
+@import 'katex/dist/katex.min.css';
+
 @font-face {
   font-family: 'color-emoji';
   src:

@@ -188,6 +188,8 @@ export class AffineLatexNode extends SignalWatcher(
     this._editorAbortController?.abort();
     this._editorAbortController = new AbortController();
 
+    blockComponent.selection.setGroup('note', []);
+
     const portal = createLitPortal({
       template: html`<latex-editor-menu
         .std=${this.std}

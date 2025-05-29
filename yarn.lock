@@ -4355,6 +4355,7 @@ __metadata:
     browser-fs-access: "npm:^0.37.0"
     graphql: "npm:^16.9.0"
     jszip: "npm:^3.10.1"
+    katex: "npm:^0.16.11"
     lit: "npm:^3.2.0"
     lz-string: "npm:^1.5.0"
     magic-string: "npm:^0.30.11"

@@ -24,6 +24,7 @@
     "@types/katex": "^0.16.7",
     "browser-fs-access": "^0.37.0",
     "jszip": "^3.10.1",
+    "katex": "^0.16.11",
     "lit": "^3.2.0",
     "lz-string": "^1.5.0",
     "rxjs": "^7.8.1",
