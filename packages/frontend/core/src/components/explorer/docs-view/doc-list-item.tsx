@@ -3,7 +3,6 @@ import {
   DragHandle as DragHandleIcon,
   Tooltip,
   useDraggable,
-  Wrapper,
 } from '@affine/component';
 import { DocsService } from '@affine/core/modules/doc';
 import { DocDisplayMetaService } from '@affine/core/modules/doc-display-meta';
@@ -331,11 +330,7 @@ export const ListViewDoc = ({ docId }: DocListItemProps) => {
           className={styles.listTitle}
           data-testid="doc-list-item-title"
         />
-        <DocPreview
-          id={docId}
-          className={styles.listPreview}
-          loading={<Wrapper height={20} width={10} />}
-        />
+        <DocPreview id={docId} className={styles.listPreview} />
       </div>
       <div className={styles.listSpace} />
       <ListViewProperties docId={docId} />
