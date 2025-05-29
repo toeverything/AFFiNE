@@ -47,9 +47,9 @@ log                    = "0.4"
 loom                   = { version = "0.7", features = ["checkpoint"] }
 mimalloc               = "0.1"
 nanoid                 = "0.4"
-napi                   = { version = "3.0.0-alpha.31", features = ["async", "chrono_date", "error_anyhow", "napi9", "serde"] }
+napi                   = { version = "3.0.0-beta.3", features = ["async", "chrono_date", "error_anyhow", "napi9", "serde"] }
 napi-build             = { version = "2" }
-napi-derive            = { version = "3.0.0-alpha.28" }
+napi-derive            = { version = "3.0.0-beta.3" }
 nom                    = "8"
 notify                 = { version = "8", features = ["serde"] }
 objc2                  = "0.6"
@@ -80,7 +80,7 @@ symphonia              = { version = "0.5", features = ["all", "opt-simd"] }
 text-splitter          = "0.25"
 thiserror              = "2"
 tiktoken-rs            = "0.6"
-tokio                  = "1.37"
+tokio                  = "1.45"
 tree-sitter            = { version = "0.25" }
 tree-sitter-c          = { version = "0.23" }
 tree-sitter-c-sharp    = { version = "0.23" }

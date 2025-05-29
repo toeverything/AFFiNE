@@ -1,4 +1,4 @@
-use napi::bindgen_prelude::{Env, Object, ValueType};
+use napi::bindgen_prelude::{Env, JsValue, Null, Object, ToNapiValue, ValueType};
 use y_octo::{Any, Map, Value};
 
 use super::*;
@@ -25,18 +25,18 @@ impl YMap {
   }
 
   #[napi(ts_generic_types = "T = unknown", ts_return_type = "T")]
-  pub fn get(&self, env: Env, key: String) -> Result<MixedYType> {
+  pub fn get<'a>(&'a self, env: &'a Env, key: String) -> Result<MixedYType<'a>> {
     if let Some(value) = self.map.get(&key) {
       match value {
         Value::Any(any) => get_js_unknown_from_any(env, any).map(MixedYType::D),
         Value::Array(array) => Ok(MixedYType::A(YArray::inner_new(array))),
         Value::Map(map) => Ok(MixedYType::B(YMap::inner_new(map))),
         Value::Text(text) => Ok(MixedYType::C(YText::inner_new(text))),
-        _ => env.get_null().map(|v| v.into_unknown()).map(MixedYType::D),
+        _ => Null.into_unknown(env).map(MixedYType::D),
       }
       .map_err(anyhow::Error::from)
     } else {
-      Ok(MixedYType::D(env.get_null()?.into_unknown()))
+      Ok(MixedYType::D(Null.into_unknown(env)?))
     }
   }
 
@@ -63,7 +63,7 @@ impl YMap {
           ValueType::Undefined | ValueType::Null => {
             self.map.insert(key, Any::Null).map_err(anyhow::Error::from)
           }
-          ValueType::Boolean => match unknown.coerce_to_bool().and_then(|v| v.get_value()) {
+          ValueType::Boolean => match unsafe { unknown.cast::<bool>() } {
             Ok(boolean) => self.map.insert(key, boolean).map_err(anyhow::Error::from),
             Err(e) => Err(anyhow::Error::from(e).context("Failed to coerce value to boolean")),
           },
@@ -106,9 +106,9 @@ impl YMap {
 
   #[napi]
   pub fn to_json(&self, env: Env) -> Result<Object> {
-    let mut js_object = env.create_object()?;
+    let mut js_object = Object::new(&env)?;
     for (key, value) in self.map.iter() {
-      js_object.set(key, get_js_unknown_from_value(env, value))?;
+      js_object.set(key, get_js_unknown_from_value(&env, value))?;
     }
     Ok(js_object)
   }
