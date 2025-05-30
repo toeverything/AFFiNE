@@ -478,3 +478,46 @@ test('undo/redo should work when change frame background', async ({ page }) => {
     expect(await getFrameBackground()).not.toBe(prevBackground);
   }
 });
+
+test('connector and shape created simultaneously with edgeless-auto-complete should both be added to frame', async ({
+  page,
+}) => {
+  // Create a larger frame to ensure everything fits
+  const frameId = await createFrame(page, [50, 50], [650, 650]);
+
+  // Create first shape inside the frame (well within bounds)
+  const shape1Id = await createShapeElement(
+    page,
+    [150, 150],
+    [250, 250],
+    Shape.Square
+  );
+
+  // Click on the existing shape to start connection
+  await clickView(page, [200, 200]);
+
+  const autoComplete = page.locator('edgeless-auto-complete');
+  const rightArrowButton = autoComplete
+    .locator('.edgeless-auto-complete-arrow')
+    .nth(0);
+
+  await rightArrowButton.click();
+
+  // Wait for async processing
+  await waitNextFrame(page);
+
+  // Verify that the frame contains 3 children: original shape + new shape + connector
+  await assertContainerChildCount(page, frameId, 3);
+
+  // Verify by moving the frame - all elements should move together
+  const frameTitle = page.locator('affine-frame-title');
+  await frameTitle.click();
+  await dragBetweenViewCoords(page, [60, 60], [110, 110]);
+
+  // Check that the original shape moved with the frame
+  await assertEdgelessElementBound(page, shape1Id, [200, 200, 100, 100]);
+  await assertEdgelessElementBound(page, frameId, [100, 100, 600, 600]);
+
+  // Frame should still contain all 3 elements after the move
+  await assertContainerChildCount(page, frameId, 3);
+});

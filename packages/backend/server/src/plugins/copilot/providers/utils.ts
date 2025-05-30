@@ -64,7 +64,10 @@ export async function inferMimeType(url: string) {
 export async function chatToGPTMessage(
   messages: PromptMessage[],
   // TODO(@darkskygit): move this logic in interface refactoring
-  withAttachment: boolean = true
+  withAttachment: boolean = true,
+  // NOTE: some providers in vercel ai sdk are not able to handle url attachments yet
+  //       so we need to use base64 encoded attachments instead
+  useBase64Attachment: boolean = false
 ): Promise<[string | undefined, ChatMessage[], ZodType?]> {
   const system = messages[0]?.role === 'system' ? messages.shift() : undefined;
   const schema =
@@ -101,9 +104,10 @@ export async function chatToGPTMessage(
             if (mimeType.startsWith('image/')) {
               contents.push({ type: 'image', image: attachment, mimeType });
             } else {
-              const data = attachment.startsWith('data:')
-                ? await fetch(attachment).then(r => r.arrayBuffer())
-                : new URL(attachment);
+              const data =
+                attachment.startsWith('data:') || useBase64Attachment
+                  ? await fetch(attachment).then(r => r.arrayBuffer())
+                  : new URL(attachment);
               contents.push({ type: 'file' as const, data, mimeType });
             }
           }

@@ -125,7 +125,7 @@ __metadata:
     "@swc/core": "npm:^1.10.1"
     "@tailwindcss/postcss": "npm:^4.0.0"
     "@types/lodash-es": "npm:^4.17.12"
-    "@types/mime-types": "npm:^2.1.4"
+    "@types/mime-types": "npm:^3.0.0"
     "@types/node": "npm:^22.0.0"
     "@types/webpack-env": "npm:^1.18.5"
     "@vanilla-extract/webpack-plugin": "npm:^2.3.15"
@@ -908,11 +908,11 @@ __metadata:
     "@affine/graphql": "workspace:*"
     "@affine/reader": "workspace:*"
     "@affine/server-native": "workspace:*"
-    "@ai-sdk/anthropic": "npm:^1.2.10"
+    "@ai-sdk/anthropic": "npm:^1.2.12"
     "@ai-sdk/google": "npm:^1.2.18"
-    "@ai-sdk/google-vertex": "npm:^2.2.22"
-    "@ai-sdk/openai": "npm:^1.3.21"
-    "@ai-sdk/perplexity": "npm:^1.1.6"
+    "@ai-sdk/google-vertex": "npm:^2.2.23"
+    "@ai-sdk/openai": "npm:^1.3.22"
+    "@ai-sdk/perplexity": "npm:^1.1.9"
     "@apollo/server": "npm:^4.11.3"
     "@aws-sdk/client-s3": "npm:^3.779.0"
     "@aws-sdk/s3-request-presigner": "npm:^3.779.0"
@@ -1075,30 +1075,30 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:1.2.11, @ai-sdk/anthropic@npm:^1.2.10":
-  version: 1.2.11
-  resolution: "@ai-sdk/anthropic@npm:1.2.11"
+"@ai-sdk/anthropic@npm:1.2.12, @ai-sdk/anthropic@npm:^1.2.12":
+  version: 1.2.12
+  resolution: "@ai-sdk/anthropic@npm:1.2.12"
   dependencies:
     "@ai-sdk/provider": "npm:1.1.3"
     "@ai-sdk/provider-utils": "npm:2.2.8"
   peerDependencies:
     zod: ^3.0.0
-  checksum: 10/89f48e23f406bef946d2b9153e67eb8417ba01693e291566693f4d49ca4eb9e41e7e49ec83cbb738c7ac2eaf8c3aa572327a0ab6ae7f8f8bf50f08d3be0c2471
+  checksum: 10/ee09f00328c88954fba8d00795f6c379091f95b7717bb90292acf32f41b072b2c89b178c1c18dfc23fcec7532e04fcd13233b9a813ce4881e0a16cae20a878c8
   languageName: node
   linkType: hard
 
-"@ai-sdk/google-vertex@npm:^2.2.22":
-  version: 2.2.22
-  resolution: "@ai-sdk/google-vertex@npm:2.2.22"
+"@ai-sdk/google-vertex@npm:^2.2.23":
+  version: 2.2.23
+  resolution: "@ai-sdk/google-vertex@npm:2.2.23"
   dependencies:
-    "@ai-sdk/anthropic": "npm:1.2.11"
+    "@ai-sdk/anthropic": "npm:1.2.12"
     "@ai-sdk/google": "npm:1.2.18"
     "@ai-sdk/provider": "npm:1.1.3"
     "@ai-sdk/provider-utils": "npm:2.2.8"
     google-auth-library: "npm:^9.15.0"
   peerDependencies:
     zod: ^3.0.0
-  checksum: 10/852928d35797cc14802d8c4a7dba2794197f019507a24124e7f87e456ba19f2b4e50438af626dd30e3a2a0f9f10819d6534a31e23c08f7f3d148d56b68167d0a
+  checksum: 10/19b7120879662e3597e95b84d30a587ada24d5fbd4306e4551f88605ae4e7c9d3f52bc60b6ea3bfbfc487a58c0a0ad35d1e058f7408140ea84e2ff86e6a1d052
   languageName: node
   linkType: hard
 
@@ -1114,7 +1114,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/openai@npm:^1.3.21":
+"@ai-sdk/openai@npm:^1.3.22":
   version: 1.3.22
   resolution: "@ai-sdk/openai@npm:1.3.22"
   dependencies:
@@ -1126,7 +1126,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/perplexity@npm:^1.1.6":
+"@ai-sdk/perplexity@npm:^1.1.9":
   version: 1.1.9
   resolution: "@ai-sdk/perplexity@npm:1.1.9"
   dependencies:
@@ -15334,10 +15334,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mime-types@npm:^2.1.4":
-  version: 2.1.4
-  resolution: "@types/mime-types@npm:2.1.4"
-  checksum: 10/f8c521c54ee0c0b9f90a65356a80b1413ed27ccdc94f5c7ebb3de5d63cedb559cd2610ea55b4100805c7349606a920d96e54f2d16b2f0afa6b7cd5253967ccc9
+"@types/mime-types@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@types/mime-types@npm:3.0.0"
+  checksum: 10/64745608ff00e2cd1b7ee08705ec02a07bae6c34e2a70d2ad40527836220b9b9c5618b4cb32bdd4dc74d409ff5b069b73a4d85ff1636544ff9423409779ff8c7
   languageName: node
   linkType: hard
 

@@ -75,6 +75,7 @@ export class DataViewHeaderToolsFilter extends WidgetBase {
             conditions: [filter],
           };
           this.toggleShowFilter(true);
+          this.dataViewLogic.eventTrace('CreateDatabaseFilter', {});
         },
       }
     );

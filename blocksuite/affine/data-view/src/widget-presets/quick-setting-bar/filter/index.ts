@@ -16,5 +16,6 @@ export const renderFilterBar = (props: DataViewWidgetProps) => {
     .vars="${filterTrait.view.vars$}"
     .filterGroup="${filterTrait.filter$}"
     .onChange="${filterTrait.filterSet}"
+    .dataViewLogic="${props.dataViewLogic}"
   ></filter-bar>`;
 };

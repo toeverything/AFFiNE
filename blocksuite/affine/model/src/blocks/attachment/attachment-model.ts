@@ -30,11 +30,12 @@ import { AttachmentBlockTransformer } from './attachment-transformer.js';
  */
 type BackwardCompatibleUndefined = undefined;
 
-export const AttachmentBlockStyles: EmbedCardStyle[] = [
+export const AttachmentBlockStyles = [
   'cubeThick',
   'horizontalThin',
   'pdf',
-] as const;
+  'citation',
+] as const satisfies EmbedCardStyle[];
 
 export type AttachmentBlockProps = {
   name: string;

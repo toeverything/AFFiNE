@@ -9,18 +9,35 @@ function applyShapeSpecificStyles(
   element: HTMLElement,
   zoom: number
 ) {
-  if (model.shapeType === 'rect') {
-    const w = model.w * zoom;
-    const h = model.h * zoom;
-    const r = model.radius ?? 0;
-    const borderRadius =
-      r < 1 ? `${Math.min(w * r, h * r)}px` : `${r * zoom}px`;
-    element.style.borderRadius = borderRadius;
-  } else if (model.shapeType === 'ellipse') {
-    element.style.borderRadius = '50%';
-  } else {
-    element.style.borderRadius = '';
+  // Reset properties that might be set by different shape types
+  element.style.removeProperty('clip-path');
+  element.style.removeProperty('border-radius');
+  // Clear DOM for shapes that don't use SVG, or if type changes from SVG-based to non-SVG-based
+  if (model.shapeType !== 'diamond' && model.shapeType !== 'triangle') {
+    while (element.firstChild) element.firstChild.remove();
   }
+
+  switch (model.shapeType) {
+    case 'rect': {
+      const w = model.w * zoom;
+      const h = model.h * zoom;
+      const r = model.radius ?? 0;
+      const borderRadius =
+        r < 1 ? `${Math.min(w * r, h * r)}px` : `${r * zoom}px`;
+      element.style.borderRadius = borderRadius;
+      break;
+    }
+    case 'ellipse':
+      element.style.borderRadius = '50%';
+      break;
+    case 'diamond':
+      element.style.clipPath = 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)';
+      break;
+    case 'triangle':
+      element.style.clipPath = 'polygon(50% 0%, 100% 100%, 0% 100%)';
+      break;
+  }
+  // No 'else' needed to clear styles, as they are reset at the beginning of the function.
 }
 
 function applyBorderStyles(
@@ -78,6 +95,9 @@ export const shapeDomRenderer = (
   renderer: DomRenderer
 ): void => {
   const { zoom } = renderer.viewport;
+  const unscaledWidth = model.w;
+  const unscaledHeight = model.h;
+
   const fillColor = renderer.getColorValue(
     model.fillColor,
     DefaultTheme.shapeFillColor,
@@ -89,17 +109,80 @@ export const shapeDomRenderer = (
     true
   );
 
-  element.style.width = `${model.w * zoom}px`;
-  element.style.height = `${model.h * zoom}px`;
+  element.style.width = `${unscaledWidth * zoom}px`;
+  element.style.height = `${unscaledHeight * zoom}px`;
+  element.style.boxSizing = 'border-box';
 
+  // Apply shape-specific clipping, border-radius, and potentially clear innerHTML
   applyShapeSpecificStyles(model, element, zoom);
 
-  element.style.backgroundColor = model.filled ? fillColor : 'transparent';
+  if (model.shapeType === 'diamond' || model.shapeType === 'triangle') {
+    // For diamond and triangle, fill and border are handled by inline SVG
+    element.style.border = 'none'; // Ensure no standard CSS border interferes
+    element.style.backgroundColor = 'transparent'; // Host element is transparent
 
-  applyBorderStyles(model, element, strokeColor, zoom);
+    const strokeW = model.strokeWidth;
+    const halfStroke = strokeW / 2; // Calculate half stroke width for point adjustment
+
+    let svgPoints = '';
+    if (model.shapeType === 'diamond') {
+      // Adjusted points for diamond
+      svgPoints = [
+        `${unscaledWidth / 2},${halfStroke}`,
+        `${unscaledWidth - halfStroke},${unscaledHeight / 2}`,
+        `${unscaledWidth / 2},${unscaledHeight - halfStroke}`,
+        `${halfStroke},${unscaledHeight / 2}`,
+      ].join(' ');
+    } else {
+      // triangle
+      // Adjusted points for triangle
+      svgPoints = [
+        `${unscaledWidth / 2},${halfStroke}`,
+        `${unscaledWidth - halfStroke},${unscaledHeight - halfStroke}`,
+        `${halfStroke},${unscaledHeight - halfStroke}`,
+      ].join(' ');
+    }
+
+    // Determine if stroke should be visible and its color
+    const finalStrokeColor =
+      model.strokeStyle !== 'none' && strokeW > 0 ? strokeColor : 'transparent';
+    // Determine dash array, only if stroke is visible and style is 'dash'
+    const finalStrokeDasharray =
+      model.strokeStyle === 'dash' && finalStrokeColor !== 'transparent'
+        ? '12, 12'
+        : 'none';
+    // Determine fill color
+    const finalFillColor = model.filled ? fillColor : 'transparent';
+
+    // Build SVG safely with DOM-API
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.setAttribute('viewBox', `0 0 ${unscaledWidth} ${unscaledHeight}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+
+    const polygon = document.createElementNS(SVG_NS, 'polygon');
+    polygon.setAttribute('points', svgPoints);
+    polygon.setAttribute('fill', finalFillColor);
+    polygon.setAttribute('stroke', finalStrokeColor);
+    polygon.setAttribute('stroke-width', String(strokeW));
+    if (finalStrokeDasharray !== 'none') {
+      polygon.setAttribute('stroke-dasharray', finalStrokeDasharray);
+    }
+    svg.append(polygon);
+
+    // Replace existing children to avoid memory leaks
+    element.replaceChildren(svg);
+  } else {
+    // Standard rendering for other shapes (e.g., rect, ellipse)
+    // innerHTML was already cleared by applyShapeSpecificStyles if necessary
+    element.style.backgroundColor = model.filled ? fillColor : 'transparent';
+    applyBorderStyles(model, element, strokeColor, zoom); // Uses standard CSS border
+  }
+
   applyTransformStyles(model, element);
 
-  element.style.boxSizing = 'border-box';
   element.style.zIndex = renderer.layerManager.getZIndex(model).toString();
 
   manageClassNames(model, element);

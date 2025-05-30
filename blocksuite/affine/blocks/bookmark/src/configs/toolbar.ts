@@ -407,7 +407,7 @@ const builtinSurfaceToolbarConfig = {
               if (options?.viewType !== 'embed') return;
 
               const { flavour, styles } = options;
-              let { style } = model.props;
+              let style: EmbedCardStyle = model.props.style;
 
               if (!styles.includes(style)) {
                 style = styles[0];
@@ -482,24 +482,26 @@ const builtinSurfaceToolbarConfig = {
     } satisfies ToolbarActionGroup<ToolbarAction>,
     {
       id: 'b.style',
-      actions: [
-        {
-          id: 'horizontal',
-          label: 'Large horizontal style',
-        },
-        {
-          id: 'list',
-          label: 'Small horizontal style',
-        },
-        {
-          id: 'vertical',
-          label: 'Large vertical style',
-        },
-        {
-          id: 'cube',
-          label: 'Small vertical style',
-        },
-      ].filter(action => BookmarkStyles.includes(action.id as EmbedCardStyle)),
+      actions: (
+        [
+          {
+            id: 'horizontal',
+            label: 'Large horizontal style',
+          },
+          {
+            id: 'list',
+            label: 'Small horizontal style',
+          },
+          {
+            id: 'vertical',
+            label: 'Large vertical style',
+          },
+          {
+            id: 'cube',
+            label: 'Small vertical style',
+          },
+        ] as const
+      ).filter(action => BookmarkStyles.includes(action.id)),
       content(ctx) {
         const model = ctx.getCurrentModelByType(BookmarkBlockModel);
         if (!model) return null;

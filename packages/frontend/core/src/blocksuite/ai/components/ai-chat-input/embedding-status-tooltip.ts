@@ -9,9 +9,14 @@ import { AIProvider } from '../../provider/ai-provider';
 
 export class AIChatEmbeddingStatusTooltip extends SignalWatcher(LitElement) {
   static override styles = css`
+    :host {
+      width: 100%;
+    }
     .embedding-status {
       display: flex;
+      width: 100%;
       align-items: center;
+      justify-content: space-between;
       gap: 4px;
       user-select: none;
     }
@@ -80,17 +85,19 @@ export class AIChatEmbeddingStatusTooltip extends SignalWatcher(LitElement) {
         class="embedding-status"
         data-testid="ai-chat-embedding-status-tooltip"
       >
-        <span class="embedding-status-text">
+        <div class="embedding-status-text">
           Better results after embedding finished.
-        </span>
-        <span
+        </div>
+        <div
           class="check-status"
           data-testid="ai-chat-embedding-status-tooltip-check"
           @mouseenter=${this._handleCheckStatusMouseEnter}
         >
           Check status
-        </span>
-        <affine-tooltip>${this.progressText}</affine-tooltip>
+          <affine-tooltip tip-position="top-start"
+            >${this.progressText}</affine-tooltip
+          >
+        </div>
       </div>
     `;
   }

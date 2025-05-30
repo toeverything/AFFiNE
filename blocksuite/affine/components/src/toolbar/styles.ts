@@ -9,6 +9,7 @@ const toolbarColorKeys: Array<keyof AffineCssVariables> = [
   '--affine-background-overlay-panel-color',
   '--affine-v2-layer-background-overlayPanel' as never,
   '--affine-v2-layer-insideBorder-blackBorder' as never,
+  '--affine-v2-icon-primary' as never,
   '--affine-background-error-color',
   '--affine-background-primary-color',
   '--affine-background-tertiary-color',

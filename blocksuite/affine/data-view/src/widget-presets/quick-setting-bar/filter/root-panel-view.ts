@@ -26,7 +26,10 @@ import { repeat } from 'lit/directives/repeat.js';
 import type { Variable } from '../../../core/expression/types.js';
 import type { FilterTrait } from '../../../core/filter/trait.js';
 import type { Filter, FilterGroup } from '../../../core/filter/types.js';
-import { popCreateFilter } from '../../../core/index.js';
+import {
+  type DataViewUILogicBase,
+  popCreateFilter,
+} from '../../../core/index.js';
 import {
   type FilterGroupView,
   getDepth,
@@ -375,6 +378,7 @@ export const popFilterRoot = (
   props: {
     filterTrait: FilterTrait;
     onBack: () => void;
+    dataViewLogic: DataViewUILogicBase;
   }
 ) => {
   const filterTrait = props.filterTrait;
@@ -414,6 +418,10 @@ export const popFilterRoot = (
                         ...value,
                         conditions: [...value.conditions, filter],
                       });
+                      props.dataViewLogic.eventTrace(
+                        'CreateDatabaseFilter',
+                        {}
+                      );
                     },
                   },
                   { middleware: subMenuMiddleware }

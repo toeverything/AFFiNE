@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
-    "@types/mime-types": "^2.1.4",
+    "@types/mime-types": "^3.0.0",
     "@types/node": "^22.0.0",
     "@types/webpack-env": "^1.18.5"
   }

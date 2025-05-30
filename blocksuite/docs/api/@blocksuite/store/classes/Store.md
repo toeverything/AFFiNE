@@ -566,9 +566,15 @@ Optional flag to insert before sibling
 
 ### updateBlock()
 
-> **updateBlock**(`modelOrId`, `callBackOrProps`): `void`
+> **updateBlock**\<`T`\>(`modelOrId`, `callBackOrProps`): `void`
 
 Updates a block's properties or executes a callback in a transaction
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BlockModel`\<`object`\> = `BlockModel`\<`object`\>
 
 #### Parameters
 
@@ -576,13 +582,13 @@ Updates a block's properties or executes a callback in a transaction
 
 The block model or block ID to update
 
-`string` | `BlockModel`\<`object`\>
+`string` | `T`
 
 ##### callBackOrProps
 
 Either a callback function to execute or properties to update
 
-`Partial`\<`BlockProps`\> | () => `void`
+() => `void` | `Partial`\<`BlockProps` \| `PropsOfModel`\<`T`\> & `BlockSysProps`\>
 
 #### Returns
 

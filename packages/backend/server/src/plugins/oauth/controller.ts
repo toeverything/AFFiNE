@@ -80,8 +80,10 @@ export class OAuthController {
     };
   }
 
+  // the prerequest `/oauth/prelight` request already checked client version,
+  // let's simply ignore it for callback which will block apple oauth post_form mode
+  // @UseNamedGuard('version')
   @Public()
-  @UseNamedGuard('version')
   @Post('/callback')
   @HttpCode(HttpStatus.OK)
   async callback(

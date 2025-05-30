@@ -5,7 +5,9 @@ import type { ReferenceInfo } from '../../../consts/doc.js';
 import type { EmbedCardStyle } from '../../../utils/index.js';
 import { defineEmbedModel } from '../../../utils/index.js';
 
-export const EmbedSyncedDocStyles: EmbedCardStyle[] = ['syncedDoc'];
+export const EmbedSyncedDocStyles = [
+  'syncedDoc',
+] as const satisfies EmbedCardStyle[];
 
 export type EmbedSyncedDocBlockProps = {
   style: EmbedCardStyle;

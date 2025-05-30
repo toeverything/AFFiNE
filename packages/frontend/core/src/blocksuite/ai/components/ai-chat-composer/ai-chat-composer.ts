@@ -153,6 +153,7 @@ export class AIChatComposer extends SignalWatcher(
             html`<span>AI outputs can be misleading or wrong</span>`,
             html`<ai-chat-embedding-status-tooltip .host=${this.host} />`,
           ]}
+          .loop=${false}
         ></ai-chat-composer-tip>
       </div>
     </div>`;

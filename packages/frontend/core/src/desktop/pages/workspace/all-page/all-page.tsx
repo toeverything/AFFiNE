@@ -15,7 +15,7 @@ import type { FilterParams } from '@affine/core/modules/collection-rules/types';
 import { WorkspaceLocalState } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   ViewBody,
@@ -29,22 +29,89 @@ import { AllDocsHeader } from './all-page-header';
 import { MigrationAllDocsDataNotification } from './migration-data';
 import { PinnedCollections } from './pinned-collections';
 
-interface AllDocsStateSave extends ExplorerDisplayPreference {
-  selectedCollectionId: string | null;
-}
+const DefaultDisplayPreference: {
+  [key in ViewMode]: ExplorerDisplayPreference;
+} = {
+  grid: {
+    view: 'grid',
+    displayProperties: [
+      'system:createdAt',
+      'system:updatedAt',
+      'system:createdBy',
+      'system:tags',
+    ],
+    orderBy: {
+      type: 'system',
+      key: 'updatedAt',
+      desc: true,
+    },
+    groupBy: undefined,
+    showDocIcon: true,
+    showDocPreview: true,
+    quickFavorite: true,
+    showDragHandle: true,
+    showMoreOperation: true,
+  },
+  masonry: {
+    view: 'masonry',
+    displayProperties: [
+      'system:createdAt',
+      'system:updatedAt',
+      'system:createdBy',
+      'system:tags',
+    ],
+    orderBy: {
+      type: 'system',
+      key: 'updatedAt',
+      desc: true,
+    },
+    groupBy: undefined,
+    showDocIcon: true,
+    showDocPreview: true,
+    quickFavorite: true,
+    showDragHandle: true,
+    showMoreOperation: true,
+  },
+  list: {
+    view: 'list',
+    displayProperties: [
+      'system:createdAt',
+      'system:updatedAt',
+      'system:createdBy',
+      'system:tags',
+    ],
+    orderBy: {
+      type: 'system',
+      key: 'updatedAt',
+      desc: true,
+    },
+    groupBy: {
+      type: 'system',
+      key: 'updatedAt',
+    },
+    showDocIcon: true,
+    showDocPreview: true,
+    quickFavorite: true,
+    showDragHandle: true,
+    showMoreOperation: true,
+  },
+};
+
+type ViewMode = NonNullable<ExplorerDisplayPreference['view']>;
 
 export const AllPage = () => {
   const t = useI18n();
 
   const collectionService = useService(CollectionService);
   const pinnedCollectionService = useService(PinnedCollectionService);
-  const workspaceLocalState = useService(WorkspaceLocalState);
-
-  const [initialState] = useState(() => {
-    return workspaceLocalState.get<AllDocsStateSave>(
-      'allDocsDisplayPreference'
-    );
-  });
+  const {
+    viewMode,
+    setViewMode,
+    selectedCollectionId,
+    setSelectedCollectionId,
+    displayPreference,
+    setDisplayPreference,
+  } = useAllDocsOptions();
 
   const isCollectionDataReady = useLiveData(
     collectionService.collectionDataReady$
@@ -58,9 +125,6 @@ export const AllPage = () => {
     pinnedCollectionService.pinnedCollections$
   );
 
-  const [selectedCollectionId, setSelectedCollectionId] = useState<
-    string | null
-  >(initialState?.selectedCollectionId ?? null);
   const selectedCollection = useLiveData(
     selectedCollectionId
       ? collectionService.collection$(selectedCollectionId)
@@ -76,14 +140,24 @@ export const AllPage = () => {
     ) {
       setSelectedCollectionId(null);
     }
-  }, [isPinnedCollectionDataReady, pinnedCollections, selectedCollectionId]);
+  }, [
+    isPinnedCollectionDataReady,
+    pinnedCollections,
+    selectedCollectionId,
+    setSelectedCollectionId,
+  ]);
 
   useEffect(() => {
     // if selected collection is not found, set selected collection id to null
     if (!selectedCollection && selectedCollectionId && isCollectionDataReady) {
       setSelectedCollectionId(null);
     }
-  }, [isCollectionDataReady, selectedCollection, selectedCollectionId]);
+  }, [
+    isCollectionDataReady,
+    selectedCollection,
+    selectedCollectionId,
+    setSelectedCollectionId,
+  ]);
 
   const selectedCollectionInfo = useLiveData(
     selectedCollection ? selectedCollection.info$ : null
@@ -94,25 +168,15 @@ export const AllPage = () => {
     useState<FilterParams | null>(null);
 
   const [explorerContextValue] = useState(() =>
-    createDocExplorerContext(initialState)
+    createDocExplorerContext(displayPreference)
   );
-
-  const groupBy = useLiveData(explorerContextValue.groupBy$);
-  const orderBy = useLiveData(explorerContextValue.orderBy$);
-  const displayPreference = useLiveData(
-    explorerContextValue.displayPreference$
-  );
-
-  const allDocsStateSave = useMemo(() => {
-    return {
-      ...displayPreference,
-      selectedCollectionId,
-    };
-  }, [displayPreference, selectedCollectionId]);
 
   useEffect(() => {
-    workspaceLocalState.set('allDocsDisplayPreference', allDocsStateSave);
-  }, [allDocsStateSave, workspaceLocalState]);
+    explorerContextValue.displayPreference$.next(displayPreference);
+  }, [displayPreference, explorerContextValue]);
+
+  const groupBy = displayPreference.groupBy;
+  const orderBy = displayPreference.orderBy;
 
   const { openPromptModal } = usePromptModal();
 
@@ -211,15 +275,18 @@ export const AllPage = () => {
     setTempFilters(filters);
   }, []);
 
-  const handleSelectCollection = useCallback((collectionId: string) => {
-    setSelectedCollectionId(collectionId);
-    setTempFilters(null);
-  }, []);
+  const handleSelectCollection = useCallback(
+    (collectionId: string) => {
+      setSelectedCollectionId(collectionId);
+      setTempFilters(null);
+    },
+    [setSelectedCollectionId]
+  );
 
   const handleSelectAll = useCallback(() => {
     setSelectedCollectionId(null);
     setTempFilters(null);
-  }, []);
+  }, [setSelectedCollectionId]);
 
   const handleSaveFilters = useCallback(() => {
     if (selectedCollectionId) {
@@ -263,21 +330,25 @@ export const AllPage = () => {
     openPromptModal,
     pinnedCollectionService,
     selectedCollectionId,
+    setSelectedCollectionId,
     t,
     tempFilters,
   ]);
 
-  const handleNewTempFilter = useCallback((params: FilterParams) => {
-    setSelectedCollectionId(null);
-    setTempFilters([]);
-    setTempFiltersInitial(params);
-  }, []);
+  const handleNewTempFilter = useCallback(
+    (params: FilterParams) => {
+      setSelectedCollectionId(null);
+      setTempFilters([]);
+      setTempFiltersInitial(params);
+    },
+    [setSelectedCollectionId]
+  );
 
   const handleDisplayPreferenceChange = useCallback(
     (displayPreference: ExplorerDisplayPreference) => {
-      explorerContextValue.displayPreference$.next(displayPreference);
+      setDisplayPreference(displayPreference);
     },
-    [explorerContextValue]
+    [setDisplayPreference]
   );
 
   return (
@@ -288,6 +359,8 @@ export const AllPage = () => {
         <AllDocsHeader
           displayPreference={displayPreference}
           onDisplayPreferenceChange={handleDisplayPreferenceChange}
+          view={viewMode}
+          onViewChange={setViewMode}
         />
       </ViewHeader>
       <ViewBody>
@@ -337,4 +410,78 @@ export const AllPage = () => {
 
 export const Component = () => {
   return <AllPage />;
+};
+
+/**
+ * Since split view allows users to open multiple all docs simultaneously, each with its own state,
+ * we only read the stored state once during useState initialization to maintain independent states.
+ */
+const useAllDocsOptions = () => {
+  const workspaceLocalState = useService(WorkspaceLocalState);
+
+  const readSavedViewMode = useCallback(() => {
+    return workspaceLocalState.get<ViewMode>('allDocsMode') ?? 'list';
+  }, [workspaceLocalState]);
+
+  const readSavedDisplayPreference = useCallback(
+    (mode: ViewMode) => {
+      const saved = workspaceLocalState.get<ExplorerDisplayPreference>(
+        'allDocsDisplayPreference:' + mode
+      );
+      return {
+        ...DefaultDisplayPreference[mode],
+        ...saved,
+        view: mode,
+      };
+    },
+    [workspaceLocalState]
+  );
+
+  const [viewMode, setViewMode] = useState(readSavedViewMode);
+  const [displayPreference, setDisplayPreference] =
+    useState<ExplorerDisplayPreference>(() =>
+      readSavedDisplayPreference(viewMode)
+    );
+  const [selectedCollectionId, setSelectedCollectionId] = useState(
+    () =>
+      workspaceLocalState.get<string | null>('allDocsSelectedCollectionId') ??
+      null
+  );
+
+  const handleViewModeChange = useCallback(
+    (mode: ViewMode) => {
+      workspaceLocalState.set('allDocsMode', mode);
+      setViewMode(mode);
+      setDisplayPreference(readSavedDisplayPreference(mode));
+    },
+    [workspaceLocalState, readSavedDisplayPreference]
+  );
+
+  const handleDisplayPreferenceChange = useCallback(
+    (displayPreference: ExplorerDisplayPreference) => {
+      workspaceLocalState.set(
+        'allDocsDisplayPreference:' + viewMode,
+        displayPreference
+      );
+      setDisplayPreference(displayPreference);
+    },
+    [viewMode, workspaceLocalState]
+  );
+
+  const handleSelectedCollectionIdChange = useCallback(
+    (collectionId: string | null) => {
+      workspaceLocalState.set('allDocsSelectedCollectionId', collectionId);
+      setSelectedCollectionId(collectionId);
+    },
+    [workspaceLocalState]
+  );
+
+  return {
+    viewMode,
+    setViewMode: handleViewModeChange,
+    displayPreference,
+    setDisplayPreference: handleDisplayPreferenceChange,
+    selectedCollectionId,
+    setSelectedCollectionId: handleSelectedCollectionIdChange,
+  };
 };

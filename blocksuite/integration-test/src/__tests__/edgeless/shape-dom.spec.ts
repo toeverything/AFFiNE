@@ -30,7 +30,7 @@ describe('Shape rendering with DOM renderer', () => {
       fill: '#ff0000',
       stroke: '#000000',
     };
-    const shapeId = surfaceModel.addElement(shapeProps as any);
+    const shapeId = surfaceModel.addElement(shapeProps);
 
     await new Promise(resolve => setTimeout(resolve, 100));
     const shapeElement = surfaceView?.renderRoot.querySelector(
@@ -73,7 +73,7 @@ describe('Shape rendering with DOM renderer', () => {
       subType: 'ellipse',
       xywh: '[200, 200, 50, 50]',
     };
-    const shapeId = surfaceModel.addElement(shapeProps as any);
+    const shapeId = surfaceModel.addElement(shapeProps);
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -90,5 +90,49 @@ describe('Shape rendering with DOM renderer', () => {
       `[data-element-id="${shapeId}"]`
     );
     expect(shapeElement).toBeNull();
+  });
+
+  test('should correctly render diamond shape', async () => {
+    const surfaceView = getSurface(window.doc, window.editor);
+    const surfaceModel = surfaceView.model;
+    const shapeProps = {
+      type: 'shape',
+      subType: 'diamond',
+      xywh: '[150, 150, 80, 60]',
+      fillColor: '#ff0000',
+      strokeColor: '#000000',
+      filled: true,
+    };
+    const shapeId = surfaceModel.addElement(shapeProps);
+    await wait(100);
+    const shapeElement = surfaceView?.renderRoot.querySelector<HTMLElement>(
+      `[data-element-id="${shapeId}"]`
+    );
+
+    expect(shapeElement).not.toBeNull();
+    expect(shapeElement?.style.width).toBe('80px');
+    expect(shapeElement?.style.height).toBe('60px');
+  });
+
+  test('should correctly render triangle shape', async () => {
+    const surfaceView = getSurface(window.doc, window.editor);
+    const surfaceModel = surfaceView.model;
+    const shapeProps = {
+      type: 'shape',
+      subType: 'triangle',
+      xywh: '[150, 150, 80, 60]',
+      fillColor: '#ff0000',
+      strokeColor: '#000000',
+      filled: true,
+    };
+    const shapeId = surfaceModel.addElement(shapeProps);
+    await wait(100);
+    const shapeElement = surfaceView?.renderRoot.querySelector<HTMLElement>(
+      `[data-element-id="${shapeId}"]`
+    );
+
+    expect(shapeElement).not.toBeNull();
+    expect(shapeElement?.style.width).toBe('80px');
+    expect(shapeElement?.style.height).toBe('60px');
   });
 });

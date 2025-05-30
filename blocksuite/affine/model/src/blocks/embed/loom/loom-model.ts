@@ -10,7 +10,7 @@ export type EmbedLoomBlockUrlData = {
   description: string | null;
 };
 
-export const EmbedLoomStyles: EmbedCardStyle[] = ['video'] as const;
+export const EmbedLoomStyles = ['video'] as const satisfies EmbedCardStyle[];
 
 export type EmbedLoomBlockProps = {
   style: (typeof EmbedLoomStyles)[number];
