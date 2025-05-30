@@ -28,6 +28,17 @@ export const dt = {
   boolean: defineDataType('Boolean', zod.boolean(), zod.boolean()),
   richText: defineDataType('RichText', zod.string(), zod.string()),
   date: defineDataType('Date', zod.number(), zod.number()),
+  relativeDate: defineDataType(
+    'RelativeDate',
+    zod.tuple([
+      zod.enum(['past', 'this', 'next'] as const),
+      zod.enum(['day', 'week', 'month', 'year'] as const),
+    ]),
+    zod.tuple([
+      zod.enum(['past', 'this', 'next'] as const),
+      zod.enum(['day', 'week', 'month', 'year'] as const),
+    ]),
+  ),
   url: defineDataType('URL', zod.string(), zod.string()),
   image: defineDataType('Image', zod.string(), zod.string()),
   tag: defineDataType('Tag', zod.array(SelectTagSchema), zod.string()),

@@ -17,6 +17,7 @@ import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import type { Value } from '../../../core/expression/types.js';
 
+
 import { getRefType } from '../../../core/expression/ref/ref.js';
 import type { Variable } from '../../../core/expression/types.js';
 import { filterMatcher } from '../../../core/filter/filter-fn/matcher.js';
@@ -28,11 +29,6 @@ import {
   type TypeInstance,
   typeSystem,
 } from '../../../core/index.js';
-
-const DIRECTIONS = ['past', 'this', 'next'] as const;
-const UNITS = ['day', 'week', 'month', 'year'] as const;
-
-const lit = <T,>(v: T): Value => ({ type: 'literal', value: v });
 
 export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
   static override styles = css`
@@ -91,45 +87,6 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     this.onChange(list);
   }
 
-  private directionMenu(filter: SingleFilter) {
-    const current = (filter.args[0]?.value as string) ?? 'this';
-    return DIRECTIONS.map(dir =>
-      menu.action({
-        name: dir.charAt(0).toUpperCase() + dir.slice(1),
-        isSelected: current === dir,
-        select: () => {
-          this.setFilter({
-            ...filter,
-            args: [lit(dir), filter.args[1] ?? lit('week')],
-          });
-        },
-      })
-    );
-  }
-
-  private unitMenu(filter: SingleFilter) {
-    const current = (filter.args[1]?.value as string) ?? 'week';
-    return UNITS.map(u =>
-      menu.action({
-        name: u.charAt(0).toUpperCase() + u.slice(1),
-        isSelected: current === u,
-        select: () => {
-          this.setFilter({
-            ...filter,
-            args: [filter.args[0] ?? lit('this'), lit(u)],
-          });
-        },
-      })
-    );
-  }
-
-  private relativeArgsItems(filter: SingleFilter) {
-    return [
-      menu.group({ items: this.directionMenu(filter) }),
-      menu.group({ items: this.unitMenu(filter) }),
-    ];
-  }
-
   private getArgItems(argType: TypeInstance, index: number) {
     return literalItemsMatcher.getItems(
       argType,
@@ -144,19 +101,28 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     );
   }
 
-  private getArgsItems() {
+  private getArgsItems(): import('@blocksuite/affine-components/context-menu').MenuConfig[] {
     const f = this.filter$;
-    if (!f) return [];
+    const fnType = this.fnType$;
+    if (!f || !fnType) return [];
 
-    if (f.function === 'relativeToToday') {
-      return this.relativeArgsItems(f);
-    }
-
-    return (
-      this.fnType$?.args
-        .slice(1)
-        .flatMap((arg, i) => this.getArgItems(arg, i)) ?? []
-    );
+    // fnType.args is [ selfType, ...literalArgTypes ]
+    // slice(1) gets just the literal-argument types
+    return fnType.args
+      .slice(1)
+      .flatMap((argType, argIndex) =>
+        literalItemsMatcher.getItems(
+          argType,
+          // signal for the current literal value
+          computed(() => f.args[argIndex]?.value),
+          // when user picks something, re-set that arg and re-render
+          (newValue: unknown) => {
+            const newArgs = f.args.slice();
+            newArgs[argIndex] = { type: 'literal', value: newValue };
+            this.setFilter({ ...f, args: newArgs });
+          }
+        )
+      );
   }
 
   private getFunctionItems(target: PopupTarget) {
@@ -176,10 +142,8 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
             args: [],
           };
           if (v.name === 'relativeToToday') {
-            next.args = [
-              { type: 'literal', value: 'this' },
-              { type: 'literal', value: 'week' },
-            ];
+            // when you switch to the relative filter, seed it with a default tuple
+            next.args = [{ type: 'literal', value: ['this', 'week'] }];
           }
           this.setFilter(next);
           this.popConditionEdit(target);
@@ -205,15 +169,11 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                 select: el => {
                   popMenu(popupTargetFromElement(el), {
                     options: {
-                      items: [
-                        menu.group({
-                          items: this.getFunctionItems(target),
-                        }),
-                      ],
+                      items: [menu.group({ items: this.getFunctionItems(target) })],
                     },
                     middleware: subMenuMiddleware,
                   });
-                  return false;
+                  // no return false here
                 },
               }),
             ],
@@ -247,12 +207,12 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     if (!filter || !fn) return name;
 
     if (fn.name === 'relativeToToday') {
-      const dir = ((filter.args[0]?.value as string) ?? 'this').replace(
-        /^./,
-        s => s.toUpperCase()
-      );
-      const unit = (filter.args[1]?.value as string) ?? 'week';
-      return `${name}: ${dir} ${unit}`;
+      // now args[0].value is the [direction, unit] tuple
+      const tuple = filter.args[0]?.value as [string, string] | undefined;
+      const dirRaw = tuple?.[0] ?? 'this';
+      const unitRaw = tuple?.[1] ?? 'week';
+      const dir = dirRaw.charAt(0).toUpperCase() + dirRaw.slice(1);
+      return `${name}: ${dir} ${unitRaw}`;
     }
 
     const arg = filter.args[0]?.value;
@@ -261,9 +221,8 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     }
 
     const vals = (filter.args ?? []).map(a => a?.value);
-    const str =
-      fn.shortString?.(...vals.map(v => ({ value: v, type: null } as any))) ??
-      '';
+    const constWrapper = vals.map(v => ({ value: v, type: null } as any));
+    const str = fn.shortString?.(...constWrapper) ?? '';
     return str ? `${name}${str}` : name;
   }
 
@@ -285,7 +244,9 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
         )}
       .text=${html`<span
         style="overflow:hidden;max-width:230px;text-overflow:ellipsis"
-        >${this.buttonText}</span>`}
+      >
+        ${this.buttonText}
+      </span>`}
       .postfix=${ArrowDownSmallIcon()}
     ></data-view-component-button>`;
   }

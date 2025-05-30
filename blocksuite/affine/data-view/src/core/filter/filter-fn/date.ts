@@ -19,8 +19,7 @@ import { format } from 'date-fns/format';
 import { t } from '../../logical/type-presets.js';
 import { createFilter } from './create.js';
 
-const weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6 = 1;
-
+const weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6 = 0;
 type Direction = 'past' | 'this' | 'next';
 type Unit = 'day' | 'week' | 'month' | 'year';
 
@@ -74,27 +73,24 @@ export const dateFilter = [
     impl: (self, value) => (self == null ? false : self > value),
     defaultValue: args => addDays(args[0], 1).getTime(),
   }),
+
   createFilter({
     name: 'relativeToToday',
     self: t.date.instance(),
-    args: [t.string.instance(), t.string.instance()] as const,
+    args: [t.relativeDate.instance()] as const,
     label: 'Is relative to today',
-    shortString: (dir, unit) =>
-      dir && unit
-        ? `: ${dir.value.charAt(0).toUpperCase() + dir.value.slice(1)} ${unit.value}`
+    shortString: arg =>
+      arg
+        ? `: ${arg.value[0].charAt(0).toUpperCase() + arg.value[0].slice(1)} ${arg.value[1]}`
         : undefined,
-
-    impl: (self, dirRaw: string, unitRaw: string) => {
+    impl: (self, arg) => {
       if (self == null) return false;
-      const dir = dirRaw as Direction;
-      const unit = unitRaw as Unit;
+      const [dir, unit] = arg as [Direction, Unit];
       const [start, end] = getRange(dir, unit);
       return self >= start && self <= end;
     },
-
     defaultValue: args => {
-      const dir = args[0] as Direction;
-      const unit = args[1] as Unit;
+      const [dir, unit] = args[0] as [Direction, Unit];
       const [start, end] = getRange(dir, unit);
       if (dir === 'past') return end;
       if (dir === 'next') return start;
@@ -103,3 +99,6 @@ export const dateFilter = [
     },
   }),
 ] as const;
+
+// expose this helper for calendar previews
+export { getRange };

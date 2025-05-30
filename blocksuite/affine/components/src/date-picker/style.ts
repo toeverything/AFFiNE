@@ -3,6 +3,7 @@ import { css } from 'lit';
 export const datePickerStyle = css`
   :host {
     display: block;
+    overflow: visible;
   }
 
   .date-picker {
@@ -11,6 +12,12 @@ export const datePickerStyle = css`
     box-sizing: border-box;
     gap: var(--gap-v);
     font-family: var(--affine-font-family);
+    overflow: visible;
+  }
+
+  /* the wrapper around all the week-rows */
+  .date-picker-weeks {
+    overflow: visible;
   }
 
   .popup.date-picker {
@@ -126,15 +133,10 @@ export const datePickerStyle = css`
 
   /** week */
 
-  .date-picker-weeks {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap-v);
-  }
-
   .date-picker-week {
     display: flex;
     gap: var(--gap-h);
+    overflow: visible;
   }
 
   /** cell */
@@ -305,5 +307,74 @@ export const datePickerStyle = css`
 
   .footer-button:hover {
     background: var(--affine-hover-color);
+  }
+
+
+  
+  /* ===== full in-range cells (no rounding, bleed both sides) ===== */
+  .date-cell.date-cell--in-range {
+    background-color: rgba(35, 130, 226, 0.41);
+    border-radius: 0;
+    margin: 0 calc(var(--gap-h) / -2);  /* ← pull each cell half a gap into its neighbor */
+  }
+
+  /* ===== start of range: only round the left ===== */
+  .date-cell.date-cell--range-start {
+    background-color: rgba(35, 131, 226, 1);
+    color: var(--affine-pure-white);
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-left: calc(var(--gap-h) / -2); /* bleed into left neighbor */
+    margin-right: 0;                      /* flush against the next cell */
+  }
+
+  /* ===== end of range: only round the right ===== */
+  .date-cell.date-cell--range-end {
+    background-color: rgba(35, 131, 226, 1);
+    color: var(--affine-pure-white);
+    /* only round the *right* corners */
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    /* square off the *left* corners */
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    /* bleed half a gap into the right neighbor (or out of the row on the very last cell) */
+    margin-right: calc(var(--gap-h) / -2);
+    margin-left: 0;
+  }
+
+  /* ============================================
+    bump the endpoints above the in-range cells
+    so their corners never get clipped
+    ============================================ */
+  .date-cell.date-cell--range-start,
+  .date-cell.date-cell--range-end {
+    position: relative;    /* already inherited from .interactive */
+    z-index: 1;            /* make sure this paints on top */
+  }
+
+  /* ===================================================
+    if you want your start/end to look like a full pill
+    (instead of only left or right caps), round both
+    corners and cancel the half-bleed margins
+    =================================================== */
+  .date-cell.date-cell--range-start {
+    border-radius: 8px;     /* full pill */
+    margin: 0;              /* no bleed */
+  }
+  .date-cell.date-cell--range-end {
+    border-radius: 8px;     /* full pill */
+    margin: 0;              /* no bleed */
+  }
+
+  /* ===== today bubble: perfect red circle, no bleed ===== */
+  .date-cell.date-cell--today {
+    background-color: rgb(205, 60, 58);
+    color: var(--affine-pure-white);
+    font-weight: 600;
+    border-radius: 50%;
+    margin: 0;  /* cancel any bleed */
   }
 `;

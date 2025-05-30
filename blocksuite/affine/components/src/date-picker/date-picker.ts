@@ -33,6 +33,9 @@ const months = [
 ];
 
 export interface DateCell {
+  rangeEnd: any;
+  rangeStart: any;
+  inRange: any;
   date: Date;
   label: string;
   isToday: boolean;
@@ -121,6 +124,9 @@ export class DatePicker extends WithDisposable(LitElement) {
       'date-cell--today': cell.isToday,
       'date-cell--not-curr-month': cell.notCurrentMonth,
       'date-cell--selected': !!cell.selected,
+      'date-cell--in-range': !!cell.inRange,
+      'date-cell--range-start': !!cell.rangeStart,
+      'date-cell--range-end': !!cell.rangeEnd,
     });
     const dateRaw = `${cell.date.getFullYear()}-${cell.date.getMonth()}-${cell.date.getDate()}(${cell.date.getDay()})`;
     return html`<button
@@ -155,28 +161,28 @@ export class DatePicker extends WithDisposable(LitElement) {
         </div>
 
         ${this._navAction(
-          () => this._moveMonth(-1),
-          () => this._moveMonth(1),
-          html`<button
+      () => this._moveMonth(-1),
+      () => this._moveMonth(1),
+      html`<button
             tabindex="0"
             aria-label="today"
             class="action-label interactive today"
             @click=${() => {
-              this._onChange(new Date());
-            }}
+          this._onChange(new Date());
+        }}
           >
             <span>TODAY</span>
           </button>`
-        )}
+    )}
       </div>
       ${this._dayHeaderRenderer()}
       <div class="date-picker-weeks">
         ${this._matrix.map(
-          week =>
-            html`<div class="date-picker-week">
+      week =>
+        html`<div class="date-picker-week">
               ${week.map(cell => this._cellRenderer(cell))}
             </div>`
-        )}
+    )}
       </div>
       ${this.onClear
         ? html`<div class="date-picker-footer">
@@ -200,20 +206,48 @@ export class DatePicker extends WithDisposable(LitElement) {
   }
 
   private _getMatrix() {
-    this._matrix = getMonthMatrix(this._cursor).map(row => {
-      return row.map(date => {
+    this._matrix = getMonthMatrix(this._cursor).map(week =>
+      week.map(date => {
+        const time = date.getTime();
+
+        // am I in the middle of a preview range?
+        const isInRange =
+          this.rangeStart != null &&
+          this.rangeEnd != null &&
+          time > this.rangeStart &&
+          time < this.rangeEnd;
+
+        // boundary flags
+        const isRangeStart =
+          this.rangeStart != null &&
+          isSameDay(date, toDate(this.rangeStart));
+        const isRangeEnd =
+          this.rangeEnd != null &&
+          isSameDay(date, toDate(this.rangeEnd));
+
+        // only highlight a single selected date if no range is set
+        const isSelected =
+          this.rangeStart == null &&
+          this.value != null &&
+          isSameDay(date, toDate(this.value));
+
         const tabIndex = isSameDay(date, this._cursor) ? 0 : -1;
+
         return {
           date,
           label: date.getDate().toString(),
           isToday: isToday(date),
           notCurrentMonth: !isSameMonth(date, this._cursor),
-          selected: this.value ? isSameDay(date, toDate(this.value)) : false,
+          selected: isSelected,
+          inRange: isInRange,
+          rangeStart: isRangeStart,
+          rangeEnd: isRangeEnd,
           tabIndex,
         } satisfies DateCell;
-      });
-    });
+      })
+    );
   }
+
 
   private _getYearMatrix() {
     // every decade has 12 years
@@ -246,43 +280,43 @@ export class DatePicker extends WithDisposable(LitElement) {
         </button>
 
         ${this._navAction(
-          {
-            action: () => this._monthPickYearCursor--,
-            disable: this._monthPickYearCursor <= this._minYear,
-          },
-          {
-            action: () => this._monthPickYearCursor++,
-            disable: this._monthPickYearCursor >= this._maxYear,
-          }
-        )}
+      {
+        action: () => this._monthPickYearCursor--,
+        disable: this._monthPickYearCursor <= this._minYear,
+      },
+      {
+        action: () => this._monthPickYearCursor++,
+        disable: this._monthPickYearCursor >= this._maxYear,
+      }
+    )}
       </div>
       <div class="date-picker-month">
         ${months.map((month, index) => {
-          const isActive = this.value
-            ? isSameMonth(
-                this.value,
-                new Date(this._monthPickYearCursor, index, 1)
-              )
-            : false;
-          const classes = classMap({
-            'month-cell': true,
-            interactive: true,
-            active: isActive,
-          });
-          return html`<button
+      const isActive = this.value
+        ? isSameMonth(
+          this.value,
+          new Date(this._monthPickYearCursor, index, 1)
+        )
+        : false;
+      const classes = classMap({
+        'month-cell': true,
+        interactive: true,
+        active: isActive,
+      });
+      return html`<button
             tabindex=${this._monthCursor === index ? 0 : -1}
             aria-label=${month}
             class=${classes}
             @click=${() => {
-              this._cursor.setMonth(index);
-              this._cursor.setFullYear(this._monthPickYearCursor);
-              this._mode = 'date';
-              this._getMatrix();
-            }}
+          this._cursor.setMonth(index);
+          this._cursor.setFullYear(this._monthPickYearCursor);
+          this._mode = 'date';
+          this._getMatrix();
+        }}
           >
             ${month}
           </button>`;
-        })}
+    })}
       </div>`;
   }
 
@@ -348,37 +382,37 @@ export class DatePicker extends WithDisposable(LitElement) {
           <div>${startYear}-${endYear}</div>
         </button>
         ${this._navAction(
-          {
-            action: () => this._modeDecade(-12),
-            disable: startYear <= this._minYear,
-          },
-          {
-            action: () => this._modeDecade(12),
-            disable: endYear >= this._maxYear,
-          }
-        )}
+      {
+        action: () => this._modeDecade(-12),
+        disable: startYear <= this._minYear,
+      },
+      {
+        action: () => this._modeDecade(12),
+        disable: endYear >= this._maxYear,
+      }
+    )}
       </div>
       <div class="date-picker-year">
         ${this._yearMatrix.map(year => {
-          const isActive = year === this._cursor.getFullYear();
-          const classes = classMap({
-            'year-cell': true,
-            interactive: true,
-            active: isActive,
-          });
-          return html`<button
+      const isActive = year === this._cursor.getFullYear();
+      const classes = classMap({
+        'year-cell': true,
+        interactive: true,
+        active: isActive,
+      });
+      return html`<button
             tabindex=${this._yearCursor === year ? 0 : -1}
             aria-label=${year}
             class=${classes}
             @click=${() => {
-              this._cursor.setFullYear(year);
-              this._mode = 'date';
-              this._getMatrix();
-            }}
+          this._cursor.setFullYear(year);
+          this._mode = 'date';
+          this._getMatrix();
+        }}
           >
             ${year}
           </button>`;
-        })}
+    })}
       </div>`;
   }
 
@@ -540,10 +574,10 @@ export class DatePicker extends WithDisposable(LitElement) {
     return html`<div style=${wrapperStyle} class="date-picker-height-wrapper">
       <div class=${classes} style=${styleMap(this._cardStyle)}>
         ${this._switchMode({
-          date: this._dateContent(),
-          month: this._monthContent(),
-          year: this._yearContent(),
-        })}
+      date: this._dateContent(),
+      month: this._monthContent(),
+      year: this._yearContent(),
+    })}
       </div>
     </div>`;
   }
@@ -572,6 +606,14 @@ export class DatePicker extends WithDisposable(LitElement) {
 
   @property({ attribute: false })
   private accessor _mode: 'date' | 'month' | 'year' = 'date';
+
+  /** highlight this span (ms since epoch) */
+  @property({ attribute: false })
+  accessor rangeStart: number | undefined;
+
+  /** highlight up to this span (ms since epoch) */
+  @property({ attribute: false })
+  accessor rangeEnd: number | undefined;
 
   /** web-accessibility for month select */
   @property({ attribute: false })
