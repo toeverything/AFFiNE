@@ -21,7 +21,7 @@ const toURL = (str: string) => {
   }
 };
 
-function resolveURL(str: string) {
+function resolveURL(str: string, origin: string) {
   const url = toURL(str);
   if (!url) return null;
 
@@ -29,8 +29,11 @@ function resolveURL(str: string) {
   const hostname = url.hostname;
 
   let allowed = ALLOWED_SCHEMES.has(protocol);
-  if (allowed && hostname.includes('.')) {
-    allowed = TLD_REGEXP.test(hostname);
+
+  if (allowed) {
+    allowed =
+      url.origin === origin ||
+      (hostname.includes('.') && TLD_REGEXP.test(hostname));
   }
 
   return { url, allowed };
@@ -68,10 +71,10 @@ export function normalizeUrl(str: string) {
  *
  * For more detail see https://www.ietf.org/rfc/rfc1738.txt
  */
-export function isValidUrl(str: string) {
+export function isValidUrl(str: string, origin = location.origin) {
   str = str.trim();
 
-  let result = resolveURL(str);
+  let result = resolveURL(str, origin);
 
   if (result && !result.allowed) return false;
 
@@ -80,7 +83,7 @@ export function isValidUrl(str: string) {
     if (!hasScheme) {
       const dotIdx = str.indexOf('.');
       if (dotIdx > 0 && dotIdx < str.length - 1) {
-        result = resolveURL(`https://${str}`);
+        result = resolveURL(`https://${str}`, origin);
       }
     }
   }
