@@ -1,4 +1,3 @@
-// blocksuite/affine/components/src/date-picker/style.ts
 import { css } from 'lit';
 
 export const datePickerStyle = css`
@@ -7,20 +6,9 @@ export const datePickerStyle = css`
     overflow: visible;
   }
 
-  .date-picker {
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-    gap: var(--gap-v);
-    font-family: var(--affine-font-family);
-    overflow: visible;
-  }
-
-  .popup.date-picker {
-    background: var(--affine-background-overlay-panel-color);
-    border-radius: 12px;
-    box-shadow: var(--affine-menu-shadow);
-  }
+  /* ───────────────────  LAYOUT  ─────────────────────────────── */
+  .date-picker          { display:flex; flex-direction:column; gap:var(--gap-v); }
+  .popup.date-picker    { background:var(--affine-background-overlay-panel-color); border-radius:12px; box-shadow:var(--affine-menu-shadow); }
 
   /* small action */
   .date-picker-small-action {
@@ -132,34 +120,17 @@ export const datePickerStyle = css`
     overflow: visible;
   }
 
-  .date-picker-week {
-    display: flex;
-    gap: var(--gap-h);
-    overflow: visible;
-    position: relative; /* stacking context */
+  /** WEEK - each cell is still rendered inline, no extra wrapper **/
+  .date-picker-week { 
+    display:flex; gap:var(--gap-h); position:relative; 
   }
 
-  /* background bar behind the interior “in-range” days */
-  .range-bg {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    background-color: rgba(35, 130, 226, 0.41);
-    border-radius: 0;
-    z-index: 0;
-  }
-
-  /** cell */
+  /** CELL – baseline layer (z 0) **/
   .date-cell {
-    position: relative; /* above .range-bg */
-    z-index: 1;
-    width: var(--cell-size);
-    height: var(--cell-size);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
-    border-radius: 8px;
+    position:relative; z-index:0;
+    width:var(--cell-size); height:var(--cell-size);
+    display:flex; align-items:center; justify-content:center;
+    border-radius:8px; user-select:none;
   }
 
   .date-cell[data-date] {
@@ -177,7 +148,7 @@ export const datePickerStyle = css`
     font-weight: 500;
   }
 
-  /** interactive */
+  /** interactive **/
   .interactive {
     cursor: pointer;
     user-select: none;
@@ -226,7 +197,7 @@ export const datePickerStyle = css`
     opacity: 0.5;
   }
 
-  /** Month / Year picker */
+  /** Month / Year picker **/
   .date-picker-month {
     --btn-width: 36px;
   }
@@ -267,7 +238,7 @@ export const datePickerStyle = css`
     gap: 26px;
   }
 
-  /** footer */
+  /** footer **/
   .date-picker-footer {
     margin-top: 8px;
     padding-top: 8px;
@@ -287,56 +258,75 @@ export const datePickerStyle = css`
     background: var(--affine-hover-color);
   }
 
-  /** ===== R A N G E   H I G H L I G H T ===== **/
+  /* ─────────────  NOTION-STYLE RANGE BACKGROUND  ────────────── */
 
-  /* clear built-in in-range styling, but leave today’s circle intact */
-  .date-cell.date-cell--in-range
-    :not(.date-cell--today)
-    :not(.date-cell--range-start)
-    :not(.date-cell--range-end) {
-    background: none !important;
-    margin: 0;
-  }
-
-  /* background bar behind the interior “in-range” days */
   .range-bg {
     position: absolute;
     top: 0;
+    left: 0;
+    right: 0;
     bottom: 0;
-    background-color: rgba(35, 131, 226, 0.21);
-    border-radius: 8px;             /* ← round the edges */
-    z-index: 0;
+    background: rgba(35,131,226,.21);
+    /* always a full 8px rounded box behind any span of days */
+    border-radius: 8px !important;
+    z-index: -1;
+    pointer-events: none;
   }
 
-  /* lift start/end pills & today bubble above the bar */
+  .range-overflow { /* “pill” segment inside each cell */
+    position: absolute;
+    top: 2px;
+    left: 0;
+    width: var(--cell-size);
+    height: calc(var(--cell-size) - 2px);
+    background: rgba(35,131,226,.21);
+    border-radius: 8px;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* lift start/end pills & today button above the bg */
   .date-cell.date-cell--range-start,
   .date-cell.date-cell--range-end,
   .date-cell.date-cell--today {
-    position: relative;
     z-index: 1;
   }
 
-  /* full pill for both range start & end */
+  /* solid blue for the start day */
   .date-cell.date-cell--range-start {
-    background-color: rgba(35, 131, 226) !important;
-    color: var(--affine-pure-white) !important;
-    border-radius: 8px !important;
-    margin: 0;
-  }  
-
-  .date-cell.date-cell--range-end {
-    background-color: rgba(35, 131, 226, 0.43) !important;
-    color: var(--affine-pure-white) !important;
-    border-radius: 8px !important;
-    margin: 0;
+    background: rgb(35,131,226) !important;
+    color: var(--affine-pure-white);
   }
 
-  /* today: perfect red circle */
-  .date-cell.date-cell--today {
-    background-color: rgb(205, 60, 58) !important;
+  /* slightly lighter for the end day */
+  .date-cell.date-cell--range-end {
+    background: rgba(35,131,226,.43) !important;
     color: var(--affine-pure-white);
-    font-weight: 600;
+  }
+
+  /* TODAY in day-mode is tinted cyan by your host code */
+  /* TODAY in week/month/year → red circle */
+  :host(:not([unit="day"])) .date-cell.date-cell--today {
+    background: rgb(205,60,58) !important;
+    color: var(--affine-pure-white);
     border-radius: 50% !important;
-    margin: 0;
+  }
+
+  /* interior “in-range” cells only get the transparent pill */
+  .date-cell.date-cell--in-range
+    :not(.date-cell--range-start)
+    :not(.date-cell--range-end)
+    :not(.date-cell--today) {
+    background: none !important;
+  }
+
+  /* only show the little pill in day mode */
+  :host([unit="day"]) .range-overflow {
+    display: block;
+  }
+
+  /* hide overflow pills in other modes */
+  :host(:not([unit="day"])) .range-overflow {
+    display: none;
   }
 `;

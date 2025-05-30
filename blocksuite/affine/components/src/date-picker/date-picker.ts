@@ -111,7 +111,13 @@ export class DatePicker extends WithDisposable(LitElement) {
       'date-cell--range-start': !!cell.rangeStart,
       'date-cell--range-end': !!cell.rangeEnd,
     });
+
     const dateRaw = `${cell.date.getFullYear()}-${cell.date.getMonth()}-${cell.date.getDate()}(${cell.date.getDay()})`;
+
+    const overflow = (cell.inRange || cell.rangeStart || cell.rangeEnd)
+      ? html`<div class="range-overflow"></div>`
+      : nothing;
+
     return html`
       <button
         tabindex=${cell.tabIndex ?? -1}
@@ -122,103 +128,190 @@ export class DatePicker extends WithDisposable(LitElement) {
       >
         ${cell.label}
       </button>
+      ${overflow}
     `;
   }
 
-  /** main “date” view */
   private _dateContent() {
+    // find which week-rows hold the true start/end days
+    const firstRow = this._matrix.findIndex(week =>
+      week.some(c => c.rangeStart)
+    );
+    const lastRow = this._matrix.findIndex(week =>
+      week.some(c => c.rangeEnd)
+    );
+    const rowCount = this._matrix.length;
+
+    // if our selection covers from row 0 all the way to the last row,
+    // treat it as a single full-grid highlight (e.g. “this month”)
+    const fullCover =
+      this.unit === 'year' &&
+      firstRow === 0 &&
+      lastRow === rowCount - 1;
+
     return html`
-      <div class="date-picker-header">
-        <div class="date-picker-header__buttons">
-          <button
-            class="date-picker-header__date interactive"
-            @click=${() => this.toggleMonthSelector()}
-          >
-            <div>${this.monthLabel}</div>
-          </button>
-          <button
-            class="date-picker-header__date interactive"
-            @click=${() => this.toggleYearSelector()}
-          >
-            <div>${this.yearLabel}</div>
-          </button>
-        </div>
-        ${this._navAction(
+    <div class="date-picker-header">
+      <div class="date-picker-header__buttons">
+        <button
+          class="date-picker-header__date interactive"
+          @click=${() => this.toggleMonthSelector()}
+        >
+          <div>${this.monthLabel}</div>
+        </button>
+        <button
+          class="date-picker-header__date interactive"
+          @click=${() => this.toggleYearSelector()}
+        >
+          <div>${this.yearLabel}</div>
+        </button>
+      </div>
+
+      ${this._navAction(
       () => this._moveMonth(-1),
       () => this._moveMonth(1),
       html`
-            <button
-              tabindex="0"
-              aria-label="today"
-              class="action-label interactive today"
-              @click=${() => this._onChange(new Date())}
-            >
-              <span>TODAY</span>
-            </button>
-          `
+          <button
+            tabindex="0"
+            aria-label="today"
+            class="action-label interactive today"
+            @click=${() => this._onChange(new Date())}
+          >
+            <span>TODAY</span>
+          </button>`
     )}
-      </div>
+    </div>
 
-      ${this._dayHeaderRenderer()}
+    ${this._dayHeaderRenderer()}
 
-      <div class="date-picker-weeks">
-      ${this._matrix.map(week => {
-      // ─── gather all the indices of start, interior, or end ─────────
-      const indices = week
-        .map((c, i) =>
-          c.rangeStart || c.inRange || c.rangeEnd ? i : -1
-        )
-        .filter(i => i >= 0);
-      if (indices.length > 0) {
-        const startIdx = Math.min(...indices);
-        const endIdx = Math.max(...indices);
-        const total = this.size + this.gapH;
-        const left = startIdx * total;
-        const width = (endIdx - startIdx) * total + this.size;
-
-        // inset the highlight bar by 3px on each edge
-        const inset = 3;
-        const leftInset = left + inset;
-        const widthInset = Math.max(width - inset * 2, 0);
-
-        return html`
-            <div class="date-picker-week">
-              <div
-                class="range-bg"
-                style=${styleMap({
-          left: `${leftInset}px`,
-          width: `${widthInset}px`,
-        })}
-              ></div>
-              ${week.map(cell => this._cellRenderer(cell))}
-            </div>
-          `;
-      }
-
-      // no highlight this week
-      return html`
-            <div class="date-picker-week">
-              ${week.map(cell => this._cellRenderer(cell))}
-            </div>
-          `;
-    })}
-      </div>
-
-      ${this.onClear
+    <div
+      class="date-picker-weeks"
+      style=${styleMap({ position: 'relative' })}
+    >
+      ${fullCover
         ? html`
-            <div class="date-picker-footer">
-              <button
-                tabindex="0"
-                aria-label="clear"
-                class="footer-button interactive"
-                @click=${() => this.onClear!()}
-              >
-                Clear
-              </button>
-            </div>
+            <!-- one big rectangle behind the entire month -->
+            <div
+              class="range-bg"
+              style=${styleMap({
+          top: '0px',
+          left: '0px',
+          width: `${7 * this.size + 6 * this.gapH}px`,
+          height: `${rowCount * this.size +
+            (rowCount - 1) * this.gapV}px`,
+          borderRadius: '8px',
+        })}
+            ></div>
           `
         : nothing}
-    `;
+
+      ${this._matrix.map((week, rowIndex) => {
+          // if we're doing a fullCover, just render cells normally
+          if (fullCover) {
+            return html`
+            <div class="date-picker-week">
+              ${week.map(cell => this._cellRenderer(cell))}
+            </div>
+          `;
+          }
+
+          // otherwise fall back to per-row logic
+          const cols = week
+            .map((c, i) => (c.rangeStart || c.inRange || c.rangeEnd ? i : -1))
+            .filter(i => i >= 0);
+
+          // no highlight on this row?
+          if (cols.length === 0) {
+            return html`
+            <div class="date-picker-week">
+              ${week.map(cell => this._cellRenderer(cell))}
+            </div>
+          `;
+          }
+
+          const startCol = cols[0];
+          const endCol = cols[cols.length - 1];
+          const singleRow = firstRow === lastRow;
+          const radius = singleRow
+            ? '8px'
+            : rowIndex === firstRow
+              ? '8px 8px 0 0'
+              : rowIndex === lastRow
+                ? '0 0 8px 8px'
+                : '0';
+
+          const bgStyle = {
+            left: `${startCol * (this.size + this.gapH)}px`,
+            width: `${(endCol - startCol) * (this.size + this.gapH) + this.size
+              }px`,
+            borderRadius: radius,
+          };
+
+          return html`
+          <div class="date-picker-week">
+            <div class="range-bg" style=${styleMap(bgStyle)}></div>
+
+            ${week.map(cell => {
+            const isStart = cell.rangeStart;
+            const isEnd = cell.rangeEnd;
+            const showOverflow = isStart || isEnd;
+            const overflowStyle = showOverflow
+              ? styleMap({
+                borderRadius: isStart
+                  ? '8px 0 0 8px'
+                  : '0 8px 8px 0',
+              })
+              : undefined;
+
+            const classes = classMap({
+              interactive: true,
+              'date-cell': true,
+              'date-cell--today': cell.isToday,
+              'date-cell--not-curr-month': cell.notCurrentMonth,
+              'date-cell--selected': !!cell.selected,
+              // we no longer need an .in-range pill on EVERY cell,
+              // so you can even drop `'date-cell--in-range': cell.inRange` here
+              'date-cell--range-start': isStart,
+              'date-cell--range-end': isEnd,
+            });
+
+            return html`
+                <button
+                  tabindex=${cell.tabIndex ?? -1}
+                  aria-label=${cell.date.toISOString()}
+                  class=${classes}
+                  @click=${() => this._onChange(cell.date)}
+                >
+                  ${cell.label}
+                </button>
+
+                ${showOverflow
+                ? html`
+                      <div
+                        class="range-overflow"
+                        style=${overflowStyle}
+                      ></div>`
+                : nothing}
+              `;
+          })}
+          </div>
+        `;
+        })}
+    </div>
+
+    ${this.onClear
+        ? html`
+          <div class="date-picker-footer">
+            <button
+              tabindex="0"
+              aria-label="clear"
+              class="footer-button interactive"
+              @click=${() => this.onClear!()}
+            >
+              Clear
+            </button>
+          </div>`
+        : nothing}
+  `;
   }
 
   /** weekday header row */

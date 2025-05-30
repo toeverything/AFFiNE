@@ -100,5 +100,4 @@ export const dateFilter = [
   }),
 ] as const;
 
-// expose this helper for calendar previews
 export { getRange };

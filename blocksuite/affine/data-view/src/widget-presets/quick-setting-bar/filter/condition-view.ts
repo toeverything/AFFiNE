@@ -15,8 +15,6 @@ import { ShadowlessElement } from '@blocksuite/std';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
-import type { Value } from '../../../core/expression/types.js';
-
 
 import { getRefType } from '../../../core/expression/ref/ref.js';
 import type { Variable } from '../../../core/expression/types.js';
@@ -26,7 +24,6 @@ import type { Filter, SingleFilter } from '../../../core/filter/types.js';
 import {
   renderUniLit,
   t,
-  type TypeInstance,
   typeSystem,
 } from '../../../core/index.js';
 
@@ -66,9 +63,9 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
   private get fnType$() {
     const fn = this.fnConfig$;
     const filter = this.filter$;
-    if (!fn || !filter) return;
+    if (!fn || !filter) return undefined;
     const refType = getRefType(this.vars.value, filter.left);
-    if (!refType) return;
+    if (!refType) return undefined;
     return typeSystem.instanceFn(
       t.fn.instance([fn.self, ...fn.args], t.boolean.instance(), fn.vars),
       [refType],
@@ -87,35 +84,17 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     this.onChange(list);
   }
 
-  private getArgItems(argType: TypeInstance, index: number) {
-    return literalItemsMatcher.getItems(
-      argType,
-      computed(() => this.filter$?.args[index]?.value),
-      value => {
-        const filter = this.filter$;
-        if (!filter) return;
-        const args = filter.args.slice();
-        args[index] = { type: 'literal', value };
-        this.setFilter({ ...filter, args });
-      }
-    );
-  }
-
   private getArgsItems(): import('@blocksuite/affine-components/context-menu').MenuConfig[] {
     const f = this.filter$;
     const fnType = this.fnType$;
     if (!f || !fnType) return [];
 
-    // fnType.args is [ selfType, ...literalArgTypes ]
-    // slice(1) gets just the literal-argument types
     return fnType.args
       .slice(1)
       .flatMap((argType, argIndex) =>
         literalItemsMatcher.getItems(
           argType,
-          // signal for the current literal value
           computed(() => f.args[argIndex]?.value),
-          // when user picks something, re-set that arg and re-render
           (newValue: unknown) => {
             const newArgs = f.args.slice();
             newArgs[argIndex] = { type: 'literal', value: newValue };
@@ -142,7 +121,6 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
             args: [],
           };
           if (v.name === 'relativeToToday') {
-            // when you switch to the relative filter, seed it with a default tuple
             next.args = [{ type: 'literal', value: ['this', 'week'] }];
           }
           this.setFilter(next);
@@ -173,7 +151,6 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                     },
                     middleware: subMenuMiddleware,
                   });
-                  // no return false here
                 },
               }),
             ],
@@ -207,7 +184,6 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     if (!filter || !fn) return name;
 
     if (fn.name === 'relativeToToday') {
-      // now args[0].value is the [direction, unit] tuple
       const tuple = filter.args[0]?.value as [string, string] | undefined;
       const dirRaw = tuple?.[0] ?? 'this';
       const unitRaw = tuple?.[1] ?? 'week';
