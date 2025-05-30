@@ -822,7 +822,7 @@ export async function updateExistedBrushElementSize(
 ) {
   // get the nth brush size button
   const btn = page.locator(
-    `edgeless-line-width-panel .point-button:nth-child(${nthSizeButton})`
+    `editor-toolbar edgeless-line-width-panel .point-button:nth-child(${nthSizeButton})`
   );
 
   await btn.click();

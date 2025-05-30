@@ -5,7 +5,8 @@ import {
   DefaultTheme,
   type PointStyle,
 } from '@blocksuite/affine-model';
-import { PointLocation, SVGPathBuilder } from '@blocksuite/global/gfx';
+import { PointLocation } from '@blocksuite/global/gfx';
+import { SVG } from '@svgdotjs/svg.js';
 
 import { isConnectorWithLabel } from '../../connector-manager.js';
 import { DEFAULT_ARROW_SIZE } from '../utils.js';
@@ -43,111 +44,71 @@ function createConnectorPath(
 ): string {
   if (points.length < 2) return '';
 
-  const pathBuilder = new SVGPathBuilder();
-  pathBuilder.moveTo(points[0][0], points[0][1]);
+  let pathData = `M ${points[0][0]} ${points[0][1]}`;
 
   if (mode === ConnectorMode.Curve) {
     // Use bezier curves
     for (let i = 1; i < points.length; i++) {
       const prev = points[i - 1];
       const curr = points[i];
-      pathBuilder.curveTo(
-        prev.absOut[0],
-        prev.absOut[1],
-        curr.absIn[0],
-        curr.absIn[1],
-        curr[0],
-        curr[1]
-      );
+      pathData += ` C ${prev.absOut[0]} ${prev.absOut[1]} ${curr.absIn[0]} ${curr.absIn[1]} ${curr[0]} ${curr[1]}`;
     }
   } else {
     // Use straight lines
     for (let i = 1; i < points.length; i++) {
-      pathBuilder.lineTo(points[i][0], points[i][1]);
+      pathData += ` L ${points[i][0]} ${points[i][1]}`;
     }
   }
 
-  return pathBuilder.build();
+  return pathData;
 }
 
 function createArrowMarker(
+  svg: any,
   id: string,
   style: PointStyle,
   color: string,
   strokeWidth: number,
   isStart: boolean = false
-): SVGMarkerElement {
-  const marker = document.createElementNS(
-    'http://www.w3.org/2000/svg',
-    'marker'
-  );
+): void {
   const size = DEFAULT_ARROW_SIZE * (strokeWidth / 2);
+  const defs = svg.defs();
 
-  marker.id = id;
-  marker.setAttribute('viewBox', '0 0 20 20');
-  marker.setAttribute('refX', isStart ? '20' : '0');
-  marker.setAttribute('refY', '10');
-  marker.setAttribute('markerWidth', String(size));
-  marker.setAttribute('markerHeight', String(size));
-  marker.setAttribute('orient', 'auto');
-  marker.setAttribute('markerUnits', 'strokeWidth');
+  const marker = defs.marker(size, size, function (add: any) {
+    switch (style) {
+      case 'Arrow': {
+        add
+          .path(isStart ? 'M 20 5 L 10 10 L 20 15 Z' : 'M 0 5 L 10 10 L 0 15 Z')
+          .fill(color)
+          .stroke(color);
+        break;
+      }
+      case 'Triangle': {
+        add
+          .path(isStart ? 'M 20 7 L 12 10 L 20 13 Z' : 'M 0 7 L 8 10 L 0 13 Z')
+          .fill(color)
+          .stroke(color);
+        break;
+      }
+      case 'Circle': {
+        add.circle(8).center(10, 10).fill(color).stroke(color);
+        break;
+      }
+      case 'Diamond': {
+        add.path('M 10 6 L 14 10 L 10 14 L 6 10 Z').fill(color).stroke(color);
+        break;
+      }
+    }
+  });
 
-  switch (style) {
-    case 'Arrow': {
-      const path = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'path'
-      );
-      path.setAttribute(
-        'd',
-        isStart ? 'M 20 5 L 10 10 L 20 15 Z' : 'M 0 5 L 10 10 L 0 15 Z'
-      );
-      path.setAttribute('fill', color);
-      path.setAttribute('stroke', color);
-      marker.append(path);
-      break;
-    }
-    case 'Triangle': {
-      const path = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'path'
-      );
-      path.setAttribute(
-        'd',
-        isStart ? 'M 20 7 L 12 10 L 20 13 Z' : 'M 0 7 L 8 10 L 0 13 Z'
-      );
-      path.setAttribute('fill', color);
-      path.setAttribute('stroke', color);
-      marker.append(path);
-      break;
-    }
-    case 'Circle': {
-      const circle = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'circle'
-      );
-      circle.setAttribute('cx', '10');
-      circle.setAttribute('cy', '10');
-      circle.setAttribute('r', '4');
-      circle.setAttribute('fill', color);
-      circle.setAttribute('stroke', color);
-      marker.append(circle);
-      break;
-    }
-    case 'Diamond': {
-      const path = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'path'
-      );
-      path.setAttribute('d', 'M 10 6 L 14 10 L 10 14 L 6 10 Z');
-      path.setAttribute('fill', color);
-      path.setAttribute('stroke', color);
-      marker.append(path);
-      break;
-    }
-  }
-
-  return marker;
+  marker.id(id);
+  marker.attr({
+    viewBox: '0 0 20 20',
+    refX: isStart ? '20' : '0',
+    refY: '10',
+    orient: 'auto',
+    markerUnits: 'strokeWidth',
+  });
 }
 
 function renderConnectorLabel(
@@ -253,20 +214,12 @@ export const connectorDomRenderer = (
   const offsetX = pathBounds.minX - padding;
   const offsetY = pathBounds.minY - padding;
 
-  // Create SVG element
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.style.position = 'absolute';
-  svg.style.left = `${offsetX * zoom}px`;
-  svg.style.top = `${offsetY * zoom}px`;
-  svg.style.width = `${svgWidth}px`;
-  svg.style.height = `${svgHeight}px`;
-  svg.style.overflow = 'visible';
-  svg.style.pointerEvents = 'none';
-  svg.setAttribute('viewBox', `0 0 ${svgWidth / zoom} ${svgHeight / zoom}`);
-
-  // Create defs for markers
-  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-  svg.append(defs);
+  // Create SVG using svg.js
+  const svg = SVG().addTo(element).size(svgWidth, svgHeight);
+  svg.attr({
+    style: `position: absolute; left: ${offsetX * zoom}px; top: ${offsetY * zoom}px; overflow: visible; pointer-events: none;`,
+    viewBox: `0 0 ${svgWidth / zoom} ${svgHeight / zoom}`,
+  });
 
   const strokeColor = renderer.getColorValue(
     stroke,
@@ -280,33 +233,27 @@ export const connectorDomRenderer = (
 
   if (frontEndpointStyle !== 'None') {
     startMarkerId = `start-marker-${model.id}`;
-    const startMarker = createArrowMarker(
+    createArrowMarker(
+      svg,
       startMarkerId,
       frontEndpointStyle,
       strokeColor,
       strokeWidth,
       true
     );
-    defs.append(startMarker);
   }
 
   if (rearEndpointStyle !== 'None') {
     endMarkerId = `end-marker-${model.id}`;
-    const endMarker = createArrowMarker(
+    createArrowMarker(
+      svg,
       endMarkerId,
       rearEndpointStyle,
       strokeColor,
       strokeWidth,
       false
     );
-    defs.append(endMarker);
   }
-
-  // Create path element
-  const pathElement = document.createElementNS(
-    'http://www.w3.org/2000/svg',
-    'path'
-  );
 
   // Adjust points relative to the SVG coordinate system
   const adjustedPoints = points.map(point => {
@@ -329,29 +276,30 @@ export const connectorDomRenderer = (
     return adjustedPoint;
   });
 
+  // Create path element using svg.js
   const pathData = createConnectorPath(adjustedPoints, mode);
-  pathElement.setAttribute('d', pathData);
-  pathElement.setAttribute('stroke', strokeColor);
-  pathElement.setAttribute('stroke-width', String(strokeWidth));
-  pathElement.setAttribute('fill', 'none');
-  pathElement.setAttribute('stroke-linecap', 'round');
-  pathElement.setAttribute('stroke-linejoin', 'round');
+  const pathElement = svg.path(pathData);
+
+  pathElement.attr({
+    stroke: strokeColor,
+    'stroke-width': strokeWidth,
+    fill: 'none',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+  });
 
   // Apply stroke style
   if (strokeStyle === 'dash') {
-    pathElement.setAttribute('stroke-dasharray', '12,12');
+    pathElement.attr('stroke-dasharray', '12,12');
   }
 
   // Apply markers
   if (startMarkerId) {
-    pathElement.setAttribute('marker-start', `url(#${startMarkerId})`);
+    pathElement.attr('marker-start', `url(#${startMarkerId})`);
   }
   if (endMarkerId) {
-    pathElement.setAttribute('marker-end', `url(#${endMarkerId})`);
+    pathElement.attr('marker-end', `url(#${endMarkerId})`);
   }
-
-  svg.append(pathElement);
-  element.append(svg);
 
   // Set element size and position
   element.style.width = `${model.w * zoom}px`;

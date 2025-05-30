@@ -1,9 +1,36 @@
 import type { DomRenderer } from '@blocksuite/affine-block-surface';
 import type { ShapeElementModel } from '@blocksuite/affine-model';
 import { DefaultTheme } from '@blocksuite/affine-model';
-import { SVGShapeBuilder } from '@blocksuite/global/gfx';
+import { SVG } from '@svgdotjs/svg.js';
 
 import { manageClassNames, setStyles } from './utils';
+
+function createDiamondPoints(
+  width: number,
+  height: number,
+  strokeWidth: number = 0
+): string {
+  const halfStroke = strokeWidth / 2;
+  return [
+    `${width / 2},${halfStroke}`,
+    `${width - halfStroke},${height / 2}`,
+    `${width / 2},${height - halfStroke}`,
+    `${halfStroke},${height / 2}`,
+  ].join(' ');
+}
+
+function createTrianglePoints(
+  width: number,
+  height: number,
+  strokeWidth: number = 0
+): string {
+  const halfStroke = strokeWidth / 2;
+  return [
+    `${width / 2},${halfStroke}`,
+    `${width - halfStroke},${height - halfStroke}`,
+    `${halfStroke},${height - halfStroke}`,
+  ].join(' ');
+}
 
 function applyShapeSpecificStyles(
   model: ShapeElementModel,
@@ -126,19 +153,11 @@ export const shapeDomRenderer = (
 
     let svgPoints = '';
     if (model.shapeType === 'diamond') {
-      // Generate diamond points using shared utility
-      svgPoints = SVGShapeBuilder.diamond(
-        unscaledWidth,
-        unscaledHeight,
-        strokeW
-      );
+      // Generate diamond points directly
+      svgPoints = createDiamondPoints(unscaledWidth, unscaledHeight, strokeW);
     } else {
-      // triangle - generate triangle points using shared utility
-      svgPoints = SVGShapeBuilder.triangle(
-        unscaledWidth,
-        unscaledHeight,
-        strokeW
-      );
+      // Generate triangle points directly
+      svgPoints = createTrianglePoints(unscaledWidth, unscaledHeight, strokeW);
     }
 
     // Determine if stroke should be visible and its color
@@ -152,26 +171,26 @@ export const shapeDomRenderer = (
     // Determine fill color
     const finalFillColor = model.filled ? fillColor : 'transparent';
 
-    // Build SVG safely with DOM-API
-    const SVG_NS = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(SVG_NS, 'svg');
-    svg.setAttribute('width', '100%');
-    svg.setAttribute('height', '100%');
-    svg.setAttribute('viewBox', `0 0 ${unscaledWidth} ${unscaledHeight}`);
-    svg.setAttribute('preserveAspectRatio', 'none');
+    // Build SVG using svg.js
+    const svg = SVG().addTo(element).size('100%', '100%');
+    svg.attr({
+      viewBox: `0 0 ${unscaledWidth} ${unscaledHeight}`,
+      preserveAspectRatio: 'none',
+    });
 
-    const polygon = document.createElementNS(SVG_NS, 'polygon');
-    polygon.setAttribute('points', svgPoints);
-    polygon.setAttribute('fill', finalFillColor);
-    polygon.setAttribute('stroke', finalStrokeColor);
-    polygon.setAttribute('stroke-width', String(strokeW));
+    const polygon = svg.polygon(svgPoints);
+    polygon.attr({
+      fill: finalFillColor,
+      stroke: finalStrokeColor,
+      'stroke-width': strokeW,
+    });
+
     if (finalStrokeDasharray !== 'none') {
-      polygon.setAttribute('stroke-dasharray', finalStrokeDasharray);
+      polygon.attr('stroke-dasharray', finalStrokeDasharray);
     }
-    svg.append(polygon);
 
     // Replace existing children to avoid memory leaks
-    element.replaceChildren(svg);
+    element.replaceChildren(svg.node);
   } else {
     // Standard rendering for other shapes (e.g., rect, ellipse)
     // innerHTML was already cleared by applyShapeSpecificStyles if necessary

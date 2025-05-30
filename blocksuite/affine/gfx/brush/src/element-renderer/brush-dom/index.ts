@@ -1,6 +1,7 @@
 import type { DomRenderer } from '@blocksuite/affine-block-surface';
 import type { BrushElementModel } from '@blocksuite/affine-model';
 import { DefaultTheme } from '@blocksuite/affine-model';
+import { SVG } from '@svgdotjs/svg.js';
 
 /**
  * Renders a BrushElementModel to a given HTMLElement using DOM properties.
@@ -29,22 +30,19 @@ export const brushDomRenderer = (
   // Clear any existing content
   element.replaceChildren();
 
-  // Create SVG element to render the brush stroke
-  const SVG_NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', '100%');
-  svg.setAttribute('viewBox', `0 0 ${unscaledWidth} ${unscaledHeight}`);
-  svg.setAttribute('preserveAspectRatio', 'none');
+  // Create SVG element using svg.js to render the brush stroke
+  const svg = SVG().addTo(element).size('100%', '100%');
+  svg.attr({
+    viewBox: `0 0 ${unscaledWidth} ${unscaledHeight}`,
+    preserveAspectRatio: 'none',
+  });
 
   // Create path element for the brush stroke
-  const path = document.createElementNS(SVG_NS, 'path');
-  path.setAttribute('d', model.commands);
-  path.setAttribute('fill', color);
-  path.setAttribute('stroke', 'none');
-
-  svg.append(path);
-  element.append(svg);
+  const path = svg.path(model.commands);
+  path.attr({
+    fill: color,
+    stroke: 'none',
+  });
 
   // Apply rotation if needed
   if (model.rotate) {
