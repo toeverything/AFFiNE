@@ -132,50 +132,55 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
 
   private popConditionEdit(target: PopupTarget) {
     const filter = this.filter$;
-    const fn = this.fnConfig$;
+    const fnConfig = this.fnConfig$;
     const leftVar = this.leftVar$;
-    if (!filter || !fn || !leftVar) return;
+    if (!filter || !fnConfig || !leftVar) return;
+    const origTarget = target;
+    const fnItems = this.getFunctionItems(origTarget);
+    const literalSection = menu.dynamic(() => this.getArgsItems());
 
-    popMenu(target, {
+    const deleteGroup = menu.group({
+      items: [
+        menu.action({
+          name: 'Delete',
+          class: { 'delete-item': true },
+          prefix: DeleteIcon(),
+          select: () => {
+            const list = this.value.value.slice();
+            list.splice(this.index, 1);
+            this.onChange(list);
+          },
+        }),
+      ],
+    });
+
+    popMenu(origTarget, {
       options: {
         items: [
           menu.group({
             items: [
               menu.action({
-                name: fn.label,
+                name: fnConfig.label,
                 postfix: ArrowRightSmallIcon(),
-                select: el => {
-                  popMenu(popupTargetFromElement(el), {
+                select: () => {
+                  popMenu(origTarget, {
                     options: {
-                      items: [menu.group({ items: this.getFunctionItems(target) })],
+                      items: [
+                        menu.group({ items: fnItems }),
+                      ],
                     },
-                    middleware: subMenuMiddleware,
                   });
                 },
               }),
             ],
           }),
-
-          menu.dynamic(() => this.getArgsItems()),
-
-          menu.group({
-            items: [
-              menu.action({
-                name: 'Delete',
-                class: { 'delete-item': true },
-                prefix: DeleteIcon(),
-                select: () => {
-                  const list = this.value.value.slice();
-                  list.splice(this.index, 1);
-                  this.onChange(list);
-                },
-              }),
-            ],
-          }),
+          literalSection,
+          deleteGroup,
         ],
       },
     });
   }
+
 
   private get buttonText() {
     const name = this.leftVar$?.name ?? '';

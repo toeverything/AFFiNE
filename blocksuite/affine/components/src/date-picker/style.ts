@@ -116,7 +116,7 @@ export const datePickerStyle = css`
   .date-picker-weeks {
     display: flex;
     flex-direction: column;
-    gap: var(--gap-v);    /* ← vertical spacing between each week’s bar */
+    gap: var(--gap-v);
     overflow: visible;
   }
 
@@ -267,13 +267,13 @@ export const datePickerStyle = css`
     right: 0;
     bottom: 0;
     background: rgba(35,131,226,.21);
-    /* always a full 8px rounded box behind any span of days */
     border-radius: 8px !important;
     z-index: -1;
     pointer-events: none;
   }
 
-  .range-overflow { /* “pill” segment inside each cell */
+  /* “pill” segment inside each cell */
+  .range-overflow { 
     position: absolute;
     top: 2px;
     left: 0;
