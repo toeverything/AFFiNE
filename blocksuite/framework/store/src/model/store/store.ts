@@ -22,6 +22,7 @@ import {
   type BlockModel,
   type BlockOptions,
   type BlockProps,
+  toDraftModel,
   type YBlock,
 } from '../block/index.js';
 import { DocCRUD } from './crud.js';
@@ -1143,13 +1144,82 @@ export class Store {
       return;
     }
 
-    this.transact(() => {
-      this._crud.moveBlocks(
-        blocksToMove.map(model => model.id),
-        newParent.id,
-        targetSibling?.id ?? null,
-        shouldInsertBeforeSibling
+    if (
+      blocksToMove.length > 1 &&
+      targetSibling &&
+      blocksToMove.includes(targetSibling)
+    ) {
+      console.error(
+        'Cannot move blocks when the target sibling is in the blocks to move'
       );
+      return;
+    }
+
+    if (blocksToMove.length === 1 && targetSibling === blocksToMove[0]) {
+      return;
+    }
+
+    if (blocksToMove.includes(newParent)) {
+      console.error(
+        'Cannot move blocks when the new parent is in the blocks to move'
+      );
+      return;
+    }
+
+    for (let i = 0; i < blocksToMove.length - 1; i++) {
+      const block = blocksToMove[i];
+      const nextBlock = blocksToMove[i + 1];
+
+      if (
+        block.parent &&
+        block.parent === nextBlock.parent &&
+        this.getNext(block) !== nextBlock
+      ) {
+        console.error(
+          'The blocks to move are not contiguous under their parent'
+        );
+        return;
+      }
+    }
+
+    this.transact(() => {
+      let insertIndex = 0;
+      const updateInsertIndex = () => {
+        if (targetSibling) {
+          const targetIndex = newParent.children.indexOf(targetSibling);
+          if (targetIndex === -1) {
+            console.warn('Target sibling not found, just insert to the end');
+          } else {
+            insertIndex = shouldInsertBeforeSibling
+              ? targetIndex
+              : targetIndex + 1;
+          }
+        }
+      };
+
+      blocksToMove.forEach(block => {
+        const draftModel = toDraftModel(block);
+        const props = {
+          ...draftModel.props,
+          children: block.children,
+        };
+
+        console.log(props);
+
+        this._crud.deleteBlock(block.id, {
+          deleteChildren: false,
+        });
+
+        updateInsertIndex();
+
+        this._crud.addBlock(
+          draftModel.id,
+          draftModel.flavour,
+          props,
+          newParent.id,
+          insertIndex
+        );
+      });
     });
   }
 
