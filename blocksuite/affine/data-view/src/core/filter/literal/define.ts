@@ -116,9 +116,9 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
 
          <!-- calendar below -->
          <date-picker
-           .padding   ="${8}"
-           .rangeStart="${start}"
-           .rangeEnd  ="${end}"
+           .padding=${8}
+           .rangeStart=${start}
+           .rangeEnd=${end}
          ></date-picker>
        </div>
      `];
