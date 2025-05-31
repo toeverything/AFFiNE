@@ -153,7 +153,7 @@ function createBuiltinToolbarConfigForExternal(
                 .get(EmbedOptionProvider)
                 .getEmbedBlockOptions(url);
 
-              let { style } = model.props;
+              let style: EmbedCardStyle = model.props.style;
               let flavour = 'affine:bookmark';
 
               if (options?.viewType === 'card') {
@@ -227,7 +227,7 @@ function createBuiltinToolbarConfigForExternal(
               if (options?.viewType !== 'embed') return;
 
               const { flavour, styles } = options;
-              let { style } = model.props;
+              let style: EmbedCardStyle = model.props.style;
 
               if (!styles.includes(style)) {
                 style =
@@ -441,7 +441,11 @@ const createBuiltinSurfaceToolbarConfigForExternal = (
               let { style } = model.props;
               let flavour = 'affine:bookmark';
 
-              if (!BookmarkStyles.includes(style)) {
+              if (
+                !BookmarkStyles.includes(
+                  style as (typeof BookmarkStyles)[number]
+                )
+              ) {
                 style = BookmarkStyles[0];
               }
 
@@ -517,26 +521,26 @@ const createBuiltinSurfaceToolbarConfigForExternal = (
       } satisfies ToolbarActionGroup<ToolbarAction>,
       {
         id: 'c.style',
-        actions: [
-          {
-            id: 'horizontal',
-            label: 'Large horizontal style',
-          },
-          {
-            id: 'list',
-            label: 'Small horizontal style',
-          },
-          {
-            id: 'vertical',
-            label: 'Large vertical style',
-          },
-          {
-            id: 'cube',
-            label: 'Small vertical style',
-          },
-        ].filter(action =>
-          EmbedGithubStyles.includes(action.id as EmbedCardStyle)
-        ),
+        actions: (
+          [
+            {
+              id: 'horizontal',
+              label: 'Large horizontal style',
+            },
+            {
+              id: 'list',
+              label: 'Small horizontal style',
+            },
+            {
+              id: 'vertical',
+              label: 'Large vertical style',
+            },
+            {
+              id: 'cube',
+              label: 'Small vertical style',
+            },
+          ] as const
+        ).filter(action => EmbedGithubStyles.includes(action.id)),
         when(ctx) {
           return Boolean(ctx.getCurrentModelByType(EmbedGithubModel));
         },

@@ -22,6 +22,8 @@ import {
   type BlockModel,
   type BlockOptions,
   type BlockProps,
+  type BlockSysProps,
+  type PropsOfModel,
   type YBlock,
 } from '../block/index.js';
 import { DocCRUD } from './crud.js';
@@ -852,9 +854,12 @@ export class Store {
    *
    * @category Block CRUD
    */
-  updateBlock(
-    modelOrId: BlockModel | string,
-    callBackOrProps: (() => void) | Partial<BlockProps>
+
+  updateBlock<T extends BlockModel = BlockModel>(
+    modelOrId: T | string,
+    callBackOrProps:
+      | (() => void)
+      | Partial<(PropsOfModel<T> & BlockSysProps) | BlockProps>
   ) {
     if (this.readonly) {
       console.error('cannot modify data in readonly mode');

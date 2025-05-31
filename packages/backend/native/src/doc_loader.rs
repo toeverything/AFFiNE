@@ -1,8 +1,8 @@
 use affine_common::doc_loader::Doc;
 use napi::{
   anyhow::anyhow,
-  bindgen_prelude::{AsyncTask, Buffer},
-  Env, JsObject, Result, Task,
+  bindgen_prelude::{Array, AsyncTask, Buffer, Object},
+  Env, Result, Task,
 };
 
 pub struct Document {
@@ -14,24 +14,21 @@ impl Document {
     self.inner.name.clone()
   }
 
-  fn chunks(&self, env: Env) -> Result<JsObject> {
-    let mut array = env.create_array_with_length(self.inner.chunks.len())?;
-    for (i, chunk) in self.inner.chunks.iter().enumerate() {
-      let content = crate::utils::clean_content(&chunk.content);
-
-      let mut obj = env.create_object()?;
-      obj.set_named_property("index", i as i64)?;
-      obj.set_named_property("content", content)?;
-      array.set_element(i as u32, obj)?;
-    }
-    Ok(array)
-  }
-
-  fn resolve(self, env: Env) -> Result<JsObject> {
-    let mut obj = env.create_object()?;
-    obj.set_named_property("name", self.name())?;
-    obj.set_named_property("chunks", self.chunks(env)?)?;
-    Ok(obj)
+  fn chunks(&self, env: &Env) -> Result<Array> {
+    let vec = self
+      .inner
+      .chunks
+      .iter()
+      .enumerate()
+      .map(|(i, chunk)| {
+        let content = crate::utils::clean_content(&chunk.content);
+        let mut obj = Object::new(env)?;
+        obj.set("index", i as i64)?;
+        obj.set("content", content)?;
+        Ok(obj)
+      })
+      .collect::<Result<Vec<Object>>>()?;
+    Array::from_vec(env, vec)
   }
 }
 
@@ -43,7 +40,7 @@ pub struct AsyncParseDocResponse {
 #[napi]
 impl Task for AsyncParseDocResponse {
   type Output = Document;
-  type JsValue = JsObject;
+  type JsValue = Object<'static>;
 
   fn compute(&mut self) -> Result<Self::Output> {
     let doc = Doc::new(&self.file_path, &self.doc).map_err(|e| anyhow!(e))?;
@@ -51,7 +48,10 @@ impl Task for AsyncParseDocResponse {
   }
 
   fn resolve(&mut self, env: Env, doc: Document) -> Result<Self::JsValue> {
-    doc.resolve(env)
+    let mut obj = Object::new(&env)?;
+    obj.set("name", doc.name())?;
+    obj.set("chunks", doc.chunks(&env)?)?;
+    Ok(obj)
   }
 }
 

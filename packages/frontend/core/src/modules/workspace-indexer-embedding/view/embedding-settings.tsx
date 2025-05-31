@@ -1,18 +1,22 @@
-import { Button, notify, Switch } from '@affine/component';
+import { Button, notify, Switch, Tooltip } from '@affine/component';
 import {
   SettingHeader,
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
 import { Upload } from '@affine/core/components/pure/file-upload';
+import { EnableCloudPanel } from '@affine/core/desktop/dialogs/setting/workspace-setting/preference/enable-cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { UserFriendlyError } from '@affine/error';
+import { ServerFeature } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import { useLiveData, useService } from '@toeverything/infra';
 import type React from 'react';
 import { useCallback, useEffect } from 'react';
 
+import { ServerService } from '../../cloud/services/server';
+import { WorkspaceService } from '../../workspace/services/workspace';
 import { COUNT_PER_PAGE } from '../constants';
 import { EmbeddingService } from '../services/embedding';
 import { Attachments } from './attachments';
@@ -21,7 +25,11 @@ import { IgnoredDocs } from './ignored-docs';
 
 interface EmbeddingSettingsProps {}
 
-export const EmbeddingSettings: React.FC<EmbeddingSettingsProps> = () => {
+const EmbeddingLocal: React.FC<{}> = () => {
+  return <EnableCloudPanel />;
+};
+
+const EmbeddingCloud: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const t = useI18n();
   const embeddingService = useService(EmbeddingService);
   const workspaceDialogService = useService(WorkspaceDialogService);
@@ -171,96 +179,135 @@ export const EmbeddingSettings: React.FC<EmbeddingSettingsProps> = () => {
   ]);
 
   return (
-    <>
-      <SettingHeader
-        title={t[
-          'com.affine.settings.workspace.indexer-embedding.embedding.title'
+    <SettingWrapper
+      title={''}
+      testId="workspace-embedding-setting-wrapper"
+      disabled={disabled}
+    >
+      <SettingRow
+        name={t[
+          'com.affine.settings.workspace.indexer-embedding.embedding.switch.title'
         ]()}
-        subtitle={t[
-          'com.affine.settings.workspace.indexer-embedding.embedding.description'
+        desc={t[
+          'com.affine.settings.workspace.indexer-embedding.embedding.switch.description'
         ]()}
-      />
-      <SettingWrapper title={''} testId="workspace-embedding-setting-wrapper">
-        <SettingRow
-          name={t[
-            'com.affine.settings.workspace.indexer-embedding.embedding.switch.title'
-          ]()}
-          desc={t[
-            'com.affine.settings.workspace.indexer-embedding.embedding.switch.description'
-          ]()}
-        >
-          <Switch
-            data-testid="workspace-embedding-setting-switch"
-            checked={embeddingEnabled ?? false}
-            onChange={handleEmbeddingToggle}
-            disabled={isEnabledLoading}
-          />
-        </SettingRow>
-
-        <SettingRow
-          name={t[
-            'com.affine.settings.workspace.indexer-embedding.embedding.progress.title'
-          ]()}
-          style={{ marginBottom: '0px' }}
+      >
+        <Switch
+          data-testid="workspace-embedding-setting-switch"
+          checked={embeddingEnabled ?? false}
+          onChange={handleEmbeddingToggle}
+          disabled={isEnabledLoading}
         />
-
-        <EmbeddingProgress status={embeddingProgress} />
-
-        <SettingRow
-          name={t[
-            'com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.title'
-          ]()}
-          desc={t[
-            'com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.description'
-          ]()}
-        >
-          <Upload fileChange={handleAttachmentUpload}>
-            <Button
-              data-testid="workspace-embedding-setting-upload-button"
-              variant="primary"
-            >
-              {t[
-                'com.affine.settings.workspace.indexer-embedding.embedding.upload-file'
-              ]()}
-            </Button>
-          </Upload>
-        </SettingRow>
-
-        {attachments.length > 0 && (
-          <Attachments
-            attachments={attachments}
-            onDelete={handleAttachmentsDelete}
-            totalCount={totalCount}
-            onPageChange={handleAttachmentsPageChange}
+      </SettingRow>
+      {
+        <>
+          <SettingRow
+            name={t[
+              'com.affine.settings.workspace.indexer-embedding.embedding.progress.title'
+            ]()}
+            style={{ marginBottom: '0px' }}
           />
-        )}
 
-        <SettingRow
-          name={t[
-            'com.affine.settings.workspace.indexer-embedding.embedding.ignore-docs.title'
-          ]()}
-          desc={t[
-            'com.affine.settings.workspace.indexer-embedding.embedding.ignore-docs.description'
-          ]()}
-        >
+          <EmbeddingProgress status={embeddingProgress} />
+        </>
+      }
+
+      <SettingRow
+        name={t[
+          'com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.title'
+        ]()}
+        desc={t[
+          'com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.description'
+        ]()}
+      >
+        <Upload fileChange={handleAttachmentUpload}>
           <Button
-            data-testid="workspace-embedding-setting-ignore-docs-button"
+            data-testid="workspace-embedding-setting-upload-button"
             variant="primary"
-            onClick={handleSelectDoc}
           >
             {t[
-              'com.affine.settings.workspace.indexer-embedding.embedding.select-doc'
+              'com.affine.settings.workspace.indexer-embedding.embedding.upload-file'
             ]()}
           </Button>
-        </SettingRow>
+        </Upload>
+      </SettingRow>
 
-        {ignoredDocs.length > 0 && (
-          <IgnoredDocs
-            ignoredDocs={ignoredDocs}
-            isLoading={isIgnoredDocsLoading}
-          />
-        )}
-      </SettingWrapper>
+      {attachments.length > 0 && (
+        <Attachments
+          disabled={disabled}
+          attachments={attachments}
+          onDelete={handleAttachmentsDelete}
+          totalCount={totalCount}
+          onPageChange={handleAttachmentsPageChange}
+        />
+      )}
+
+      <SettingRow
+        name={t[
+          'com.affine.settings.workspace.indexer-embedding.embedding.ignore-docs.title'
+        ]()}
+        desc={t[
+          'com.affine.settings.workspace.indexer-embedding.embedding.ignore-docs.description'
+        ]()}
+      >
+        <Button
+          data-testid="workspace-embedding-setting-ignore-docs-button"
+          variant="primary"
+          onClick={handleSelectDoc}
+        >
+          {t[
+            'com.affine.settings.workspace.indexer-embedding.embedding.select-doc'
+          ]()}
+        </Button>
+      </SettingRow>
+
+      {ignoredDocs.length > 0 && (
+        <IgnoredDocs
+          ignoredDocs={ignoredDocs}
+          isLoading={isIgnoredDocsLoading}
+        />
+      )}
+    </SettingWrapper>
+  );
+};
+
+export const EmbeddingSettings: React.FC<EmbeddingSettingsProps> = () => {
+  const workspaceService = useService(WorkspaceService);
+  const serverService = useService(ServerService);
+  const isLocal = workspaceService.workspace.flavour === 'local';
+  const serverConfig = useLiveData(serverService.server.config$);
+  const isEmbeddingEnabled = serverConfig?.features.includes(
+    ServerFeature.CopilotEmbedding
+  );
+
+  const t = useI18n();
+
+  return (
+    <>
+      <Tooltip
+        content={
+          !isEmbeddingEnabled &&
+          t[
+            'com.affine.settings.workspace.indexer-embedding.embedding.disabled-tooltip'
+          ]()
+        }
+      >
+        <SettingHeader
+          data-testid="workspace-embedding-setting-header"
+          title={t[
+            'com.affine.settings.workspace.indexer-embedding.embedding.title'
+          ]()}
+          subtitle={t[
+            'com.affine.settings.workspace.indexer-embedding.embedding.description'
+          ]()}
+        />
+      </Tooltip>
+
+      {isLocal ? (
+        <EmbeddingLocal />
+      ) : (
+        <EmbeddingCloud disabled={!isEmbeddingEnabled} />
+      )}
     </>
   );
 };

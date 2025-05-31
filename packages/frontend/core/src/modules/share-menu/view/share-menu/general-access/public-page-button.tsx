@@ -21,6 +21,9 @@ export const PublicDoc = ({ disabled }: { disabled?: boolean }) => {
   const t = useI18n();
   const shareInfoService = useService(ShareInfoService);
   const isSharedPage = useLiveData(shareInfoService.shareInfo.isShared$);
+  const isRevalidating = useLiveData(
+    shareInfoService.shareInfo.isRevalidating$
+  );
 
   useEffect(() => {
     shareInfoService.shareInfo.revalidate();
@@ -135,6 +138,8 @@ export const PublicDoc = ({ disabled }: { disabled?: boolean }) => {
             contentStyle={{
               width: '100%',
             }}
+            loading={isRevalidating}
+            disabled={isRevalidating}
           >
             {isSharedPage
               ? t['com.affine.share-menu.option.link.readonly']()

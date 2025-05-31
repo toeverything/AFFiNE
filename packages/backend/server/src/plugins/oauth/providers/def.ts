@@ -7,6 +7,7 @@ import { OAuthProviderFactory } from '../factory';
 export interface OAuthAccount {
   id: string;
   email: string;
+  name?: string;
   avatarUrl?: string;
 }
 

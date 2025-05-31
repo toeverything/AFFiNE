@@ -15,13 +15,13 @@ import type {
   LinkPreviewData,
 } from '../../utils/index.js';
 
-export const BookmarkStyles: EmbedCardStyle[] = [
+export const BookmarkStyles = [
   'vertical',
   'horizontal',
   'list',
   'cube',
   'citation',
-] as const;
+] as const satisfies EmbedCardStyle[];
 
 export type BookmarkBlockProps = {
   style: (typeof BookmarkStyles)[number];

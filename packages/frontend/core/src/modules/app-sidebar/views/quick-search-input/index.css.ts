@@ -6,16 +6,18 @@ export const root = style({
   background: cssVarV2('button/siderbarPrimary/background'),
   alignItems: 'center',
   borderRadius: '8px',
-  border: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
   fontSize: cssVar('fontSm'),
   width: '100%',
-  height: '36px',
+  height: '30px',
   userSelect: 'none',
   cursor: 'pointer',
-  padding: '0 12px',
+  padding: '0 12px 0 20px',
   position: 'relative',
   whiteSpace: 'nowrap',
   overflow: 'hidden',
+  ':hover': {
+    background: cssVarV2('layer/background/hoverOverlay'),
+  },
 });
 export const icon = style({
   marginRight: '8px',

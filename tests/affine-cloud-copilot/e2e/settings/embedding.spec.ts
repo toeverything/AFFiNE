@@ -1,3 +1,4 @@
+import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
@@ -41,6 +42,57 @@ test.describe('AISettings/Embedding', () => {
     await utils.settings.disableWorkspaceEmbedding(page);
     await utils.settings.enableWorkspaceEmbedding(page);
     await utils.settings.waitForWorkspaceEmbeddingSwitchToBe(page, true);
+  });
+
+  test('should show enable cloud panel if workspace is local', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    await utils.settings.closeSettingsPanel(page);
+    await createLocalWorkspace({ name: 'test' }, page);
+    await utils.settings.openSettingsPanel(page);
+    await expect(
+      page.getByTestId('publish-enable-affine-cloud-button')
+    ).toBeVisible();
+  });
+
+  test('should disable embedding settings if the user is not workspace owner', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    // mock the features to be empty(without CopilotEmbedding)
+    await page.route('**/graphql', async (route, request) => {
+      const postData = request.postData();
+      if (postData && postData.includes('serverConfig')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            data: {
+              serverConfig: {
+                version: '1.0.0',
+                baseUrl: 'http://localhost:8080',
+                name: 'AFFiNE',
+                features: [],
+                type: 'cloud',
+                initialized: true,
+                credentialsRequirement: null,
+              },
+            },
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.reload();
+    await utils.settings.openSettingsPanel(page);
+
+    const wrapper = await page.getByTestId(
+      'workspace-embedding-setting-wrapper'
+    );
+    await expect(wrapper).toHaveAttribute('aria-disabled', 'true');
   });
 
   test('should show error message if enable workspace embedding failed', async ({

@@ -145,13 +145,16 @@ const createSettingMenus = (
                 popFilterRoot(target, {
                   filterTrait: filterTrait,
                   onBack: reopen,
+                  dataViewLogic: dataViewLogic,
                 });
+                dataViewLogic.eventTrace('CreateDatabaseFilter', {});
               },
             });
           } else {
             popFilterRoot(target, {
               filterTrait: filterTrait,
               onBack: reopen,
+              dataViewLogic: dataViewLogic,
             });
           }
         },

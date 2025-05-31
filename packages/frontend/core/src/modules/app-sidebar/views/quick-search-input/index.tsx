@@ -3,7 +3,6 @@ import { SearchIcon } from '@blocksuite/icons/rc';
 import clsx from 'clsx';
 import type { HTMLAttributes } from 'react';
 
-import { Spotlight } from '../spolight';
 import * as styles from './index.css';
 
 interface QuickSearchInputProps extends HTMLAttributes<HTMLDivElement> {
@@ -25,11 +24,6 @@ export function QuickSearchInput({ onClick, ...props }: QuickSearchInputProps) {
       <span className={styles.quickSearchBarEllipsisStyle}>
         {t['Quick search']()}
       </span>
-      <div className={styles.spacer} />
-      <div className={styles.shortcutHint}>
-        {environment.isMacOs ? ' ⌘ + K' : ' Ctrl + K'}
-      </div>
-      <Spotlight />
     </div>
   );
 }

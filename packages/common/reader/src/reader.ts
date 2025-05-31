@@ -59,9 +59,9 @@ const bookmarkFlavours = new Set([
 ]);
 
 function generateMarkdownPreviewBuilder(
-  yRootDoc: YDoc,
   workspaceId: string,
-  blocks: BlockDocumentInfo[]
+  blocks: BlockDocumentInfo[],
+  yRootDoc?: YDoc
 ) {
   function yblockToDraftModal(yblock: YBlock): DraftModel | null {
     const flavour = yblock.get('sys:flavour') as string;
@@ -91,7 +91,7 @@ function generateMarkdownPreviewBuilder(
   }
 
   const titleMiddleware: TransformerMiddleware = ({ adapterConfigs }) => {
-    const pages = yRootDoc.getMap('meta').get('pages');
+    const pages = yRootDoc?.getMap('meta').get('pages');
     if (!(pages instanceof YArray)) {
       return;
     }
@@ -442,7 +442,7 @@ export async function readAllBlocksFromDoc({
   maxSummaryLength,
 }: {
   ydoc: YDoc;
-  rootYDoc: YDoc;
+  rootYDoc?: YDoc;
   spaceId: string;
   maxSummaryLength?: number;
 }): Promise<
@@ -459,9 +459,9 @@ export async function readAllBlocksFromDoc({
   const blockDocuments: BlockDocumentInfo[] = [];
 
   const generateMarkdownPreview = generateMarkdownPreviewBuilder(
-    rootYDoc,
     spaceId,
-    blockDocuments
+    blockDocuments,
+    rootYDoc
   );
 
   const blocks = ydoc.getMap<any>('blocks');

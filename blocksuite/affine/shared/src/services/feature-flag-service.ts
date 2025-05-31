@@ -19,7 +19,6 @@ export interface BlockSuiteFlags {
   enable_callout: boolean;
   enable_edgeless_scribbled_style: boolean;
   enable_table_virtual_scroll: boolean;
-  enable_embed_doc_with_alias: boolean;
   enable_turbo_renderer: boolean;
   enable_dom_renderer: boolean;
 }
@@ -45,7 +44,6 @@ export class FeatureFlagService extends StoreExtension {
     enable_callout: false,
     enable_edgeless_scribbled_style: false,
     enable_table_virtual_scroll: false,
-    enable_embed_doc_with_alias: false,
     enable_turbo_renderer: false,
     enable_dom_renderer: false,
   });

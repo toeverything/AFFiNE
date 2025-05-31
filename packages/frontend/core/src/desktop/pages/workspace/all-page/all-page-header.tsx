@@ -28,11 +28,15 @@ const menuProps: Partial<MenuProps> = {
 export const AllDocsHeader = ({
   displayPreference,
   onDisplayPreferenceChange,
+  view,
+  onViewChange,
 }: {
   displayPreference: ExplorerDisplayPreference;
   onDisplayPreferenceChange: (
     displayPreference: ExplorerDisplayPreference
   ) => void;
+  view: DocListItemView;
+  onViewChange: (view: DocListItemView) => void;
 }) => {
   const t = useI18n();
   const workspaceService = useService(WorkspaceService);
@@ -77,22 +81,12 @@ export const AllDocsHeader = ({
     });
   }, [workspaceDialogService, handleOpenDocs]);
 
-  const handleViewChange = useCallback(
-    (view: DocListItemView) => {
-      onDisplayPreferenceChange({ ...displayPreference, view });
-    },
-    [displayPreference, onDisplayPreferenceChange]
-  );
-
   return (
     <div className={styles.header}>
       <ExplorerNavigation active="docs" />
 
       <div className={styles.actions}>
-        <ViewToggle
-          view={displayPreference.view ?? 'list'}
-          onViewChange={handleViewChange}
-        />
+        <ViewToggle view={view} onViewChange={onViewChange} />
         <ExplorerDisplayMenuButton
           menuProps={menuProps}
           displayPreference={displayPreference}

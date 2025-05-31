@@ -12,7 +12,7 @@ class AffineThemePlugin : Plugin() {
 
     interface Callback {
         fun onThemeChanged(darkMode: Boolean)
-        fun getSystemNaviBarHeight(): Int
+        fun getSystemNavBarHeight(): Int
     }
 
     @PluginMethod
@@ -24,8 +24,8 @@ class AffineThemePlugin : Plugin() {
     }
 
     @PluginMethod
-    fun getSystemNaviBarHeight(call: PluginCall) {
-        val height = (bridge.activity as? Callback)?.getSystemNaviBarHeight() ?: 0
+    fun getSystemNavBarHeight(call: PluginCall) {
+        val height = (bridge.activity as? Callback)?.getSystemNavBarHeight() ?: 0
         call.resolve(JSObject().put("height", height))
     }
 }

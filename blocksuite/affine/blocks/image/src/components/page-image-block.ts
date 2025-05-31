@@ -51,7 +51,10 @@ export class ImageBlockPageComponent extends SignalWatcher(
       height: 36px;
       padding: 5px;
       border-radius: 8px;
-      background: ${unsafeCSSVarV2('loading/backgroundLayer')};
+      background: ${unsafeCSSVarV2(
+        'loading/imageLoadingBackground',
+        '#92929238'
+      )};
 
       & > svg {
         font-size: 25.71px;
@@ -356,7 +359,9 @@ export class ImageBlockPageComponent extends SignalWatcher(
       ? ImageSelectedRect(this._doc.readonly)
       : null;
 
-    const { loading, error, icon, description } = this.state;
+    const blobUrl = this.block.blobUrl;
+    const caption = this.block.model.props.caption$.value ?? 'Image';
+    const { loading, error, icon, description, needUpload } = this.state;
 
     return html`
       <div class="resizable-img" style=${styleMap(imageSize)}>
@@ -364,8 +369,8 @@ export class ImageBlockPageComponent extends SignalWatcher(
           class="drag-target"
           draggable="false"
           loading="lazy"
-          src=${this.block.blobUrl}
-          alt=${this.block.model.props.caption$.value ?? 'Image'}
+          src=${blobUrl}
+          alt=${caption}
           @error=${this._handleError}
         />
 
@@ -374,12 +379,16 @@ export class ImageBlockPageComponent extends SignalWatcher(
 
       ${when(loading, () => html`<div class="loading">${icon}</div>`)}
       ${when(
-        error && description,
+        Boolean(error && description),
         () =>
           html`<affine-resource-status
             class="affine-image-status"
             .message=${description}
-            .reload=${() => this.block.refreshData()}
+            .needUpload=${needUpload}
+            .action=${() =>
+              needUpload
+                ? this.block.resourceController.upload()
+                : this.block.refreshData()}
           ></affine-resource-status>`
       )}
     `;

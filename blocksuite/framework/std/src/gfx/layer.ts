@@ -825,7 +825,7 @@ export class LayerManager extends GfxExtension {
           const block = store.getModelById(payload.id);
 
           if (block instanceof GfxBlockElementModel) {
-            this.delete(block as GfxBlockElementModel);
+            this.delete(block);
           }
         }
       })
@@ -834,20 +834,29 @@ export class LayerManager extends GfxExtension {
     const watchSurface = (surface: SurfaceBlockModel) => {
       let lastChildMap = new Map(surface.childMap.peek());
       this._disposable.add(
-        surface.childMap.subscribe(val => {
-          val.forEach((_, id) => {
+        surface.childMap.subscribe(currentChildMap => {
+          currentChildMap.forEach((_, id) => {
             if (lastChildMap.has(id)) {
               lastChildMap.delete(id);
               return;
             }
           });
           lastChildMap.forEach((_, id) => {
-            const block = this._doc.getBlock(id);
-            if (block?.model) {
-              this.delete(block.model as GfxBlockElementModel);
+            const model = this._doc.getModelById(id);
+            if (model instanceof GfxBlockElementModel) {
+              this.delete(model);
             }
           });
-          lastChildMap = new Map(val);
+          currentChildMap.forEach((_, id) => {
+            const model = store.getModelById(id);
+            if (
+              model instanceof GfxBlockElementModel &&
+              !this.blocks.includes(model)
+            ) {
+              this.add(model);
+            }
+          });
+          lastChildMap = new Map(currentChildMap);
         })
       );
 

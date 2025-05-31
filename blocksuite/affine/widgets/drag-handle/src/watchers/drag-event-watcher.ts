@@ -76,6 +76,7 @@ import last from 'lodash-es/last';
 import type { AffineDragHandleWidget } from '../drag-handle.js';
 import { PreviewHelper } from '../helpers/preview-helper.js';
 import { gfxBlocksFilter } from '../middleware/blocks-filter.js';
+import { cardStyleUpdater } from '../middleware/card-style-updater.js';
 import { newIdCrossDoc } from '../middleware/new-id-cross-doc.js';
 import { reorderList } from '../middleware/reorder-list';
 import {
@@ -1433,6 +1434,7 @@ export class DragEventWatcher {
       newIdCrossDoc(std),
       reorderList(std),
       surfaceRefToEmbed(std),
+      cardStyleUpdater(std),
     ];
 
     if (selectedIds) {

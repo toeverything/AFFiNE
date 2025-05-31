@@ -35,6 +35,18 @@ test('should read doc blocks work', async () => {
   expect(result).toMatchSnapshot();
 });
 
+test('should read doc blocks work without root doc', async () => {
+  const doc = new YDoc({
+    guid: 'test-doc',
+  });
+  applyUpdate(doc, docSnapshot);
+  const result = await readAllBlocksFromDoc({
+    ydoc: doc,
+    spaceId: 'test-space',
+  });
+  expect(result).toMatchSnapshot();
+});
+
 test('should get all docs from root doc work', async () => {
   const rootDoc = new YDoc({
     guid: 'test-root-doc',

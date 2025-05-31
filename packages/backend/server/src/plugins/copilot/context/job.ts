@@ -129,6 +129,10 @@ export class CopilotContextDocJob {
     if (enableDocEmbedding) {
       const toBeEmbedDocIds =
         await this.models.copilotWorkspace.findDocsToEmbed(workspaceId);
+      this.logger.debug('Trigger embedding for docs', {
+        workspaceId,
+        toBeEmbedDocs: toBeEmbedDocIds.length,
+      });
       for (const docId of toBeEmbedDocIds) {
         await this.queue.add(
           'copilot.embedding.docs',

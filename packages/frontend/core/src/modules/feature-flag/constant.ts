@@ -259,15 +259,6 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
-  // TODO(@L-Sun): remove this flag after the feature is released
-  enable_embed_doc_with_alias: {
-    category: 'blocksuite',
-    bsFlag: 'enable_embed_doc_with_alias',
-    displayName: 'Embed doc with alias',
-    description: 'Embed doc with alias',
-    configurable: isCanaryBuild,
-    defaultState: isCanaryBuild,
-  },
   enable_setting_subpage_animation: {
     category: 'affine',
     displayName: 'Enable Setting Subpage Animation',

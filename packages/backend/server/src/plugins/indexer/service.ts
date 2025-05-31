@@ -226,11 +226,14 @@ export class IndexerService {
       this.logger.debug(`doc ${workspaceId}/${docId} is empty, skip indexing`);
       return;
     }
+    const MAX_WORKSPACE_SNAPSHOT_SIZE = 1024 * 1024 * 10; // 10MB
     const result = await readAllBlocksFromDocSnapshot(
       workspaceId,
-      workspaceSnapshot.blob,
       docId,
-      docSnapshot.blob
+      docSnapshot.blob,
+      workspaceSnapshot.blob.length < MAX_WORKSPACE_SNAPSHOT_SIZE
+        ? workspaceSnapshot.blob
+        : undefined
     );
     if (!result) {
       this.logger.warn(

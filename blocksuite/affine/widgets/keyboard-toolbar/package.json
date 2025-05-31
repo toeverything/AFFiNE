@@ -37,7 +37,7 @@
     "@blocksuite/store": "workspace:*",
     "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
-    "@toeverything/theme": "^1.1.14",
+    "@toeverything/theme": "^1.1.15",
     "@types/lodash-es": "^4.17.12",
     "fflate": "^0.8.2",
     "lit": "^3.2.0",

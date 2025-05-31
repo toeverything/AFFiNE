@@ -1,5 +1,6 @@
 import './utils/declare-test-window.js';
 
+import type { BookmarkBlockComponent } from '@blocksuite/affine/blocks/bookmark';
 import type { BlockSnapshot } from '@blocksuite/store';
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
@@ -8,7 +9,9 @@ import {
   activeNoteInEdgeless,
   clickView,
   copyByKeyboard,
+  createNote,
   dragBlockToPoint,
+  edgelessCommonSetup,
   enterPlaygroundRoom,
   expectConsoleMessage,
   focusRichText,
@@ -499,4 +502,29 @@ test.describe('embed github card', () => {
     const banner = page.locator('.affine-embed-github-banner');
     await expect(banner).toBeVisible();
   });
+});
+
+test('drag a card from canvas to note should not change the style of the card', async ({
+  page,
+}) => {
+  const url = 'https://github.com/toeverything/AFFiNE/pull/12660';
+
+  await edgelessCommonSetup(page);
+  await createNote(page, [-100, -300]);
+  await page.locator('edgeless-link-tool-button').click();
+  await page.locator('.embed-card-modal-input').fill(url);
+  await pressEnter(page);
+
+  const edgelessBookmark = page.locator('affine-edgeless-bookmark');
+  await edgelessBookmark.click();
+  await waitNextFrame(page);
+  const dragHandle = page.locator('.affine-drag-handle-container');
+  await dragHandle.dragTo(page.locator('affine-edgeless-note'));
+
+  const noteBookmark = page.locator('affine-bookmark');
+  await expect(noteBookmark).toBeVisible();
+  const style = await noteBookmark.evaluate(
+    (el: BookmarkBlockComponent) => el.model.props.style
+  );
+  expect(style).toBe('horizontal');
 });

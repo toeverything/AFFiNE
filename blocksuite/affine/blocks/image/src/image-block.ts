@@ -135,6 +135,7 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
     const resovledState = this.resourceController.resolveStateWith({
       loadingIcon: LoadingIcon({
         strokeColor: cssVarV2('button/pureWhiteText'),
+        ringColor: cssVarV2('loading/imageLoadingLayer', '#ffffff8f'),
       }),
       errorIcon: BrokenImageIcon(),
       icon: ImageIcon(),

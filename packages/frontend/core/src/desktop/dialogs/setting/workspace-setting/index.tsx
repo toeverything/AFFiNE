@@ -6,6 +6,7 @@ import { EmbeddingSettings } from '@affine/core/modules/workspace-indexer-embedd
 import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import {
+  AiEmbeddingIcon,
   CollaborationIcon,
   IntegrationsIcon,
   PaymentIcon,
@@ -115,7 +116,7 @@ export const useWorkspaceSettingList = (): SettingSidebarItem[] => {
           t[
             'com.affine.settings.workspace.indexer-embedding.embedding.title'
           ](),
-        icon: <SettingsIcon />,
+        icon: <AiEmbeddingIcon />,
         testId: 'workspace-setting:embedding',
       },
       showBilling && {

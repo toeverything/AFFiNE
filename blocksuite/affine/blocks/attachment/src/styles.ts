@@ -91,6 +91,7 @@ export const styles = css`
     font-size: var(--affine-font-xs);
     font-style: normal;
     font-weight: 500;
+    text-transform: capitalize;
     line-height: 20px;
 
     svg {

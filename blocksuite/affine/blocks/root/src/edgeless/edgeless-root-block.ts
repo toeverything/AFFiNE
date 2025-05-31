@@ -129,7 +129,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
     ) as SurfaceBlockModel;
   }
 
-  private get _viewportElement(): HTMLElement {
+  get viewportElement(): HTMLElement {
     return this.std.get(ViewportElementProvider).viewportElement;
   }
 
@@ -267,7 +267,7 @@ export class EdgelessRootBlockComponent extends BlockComponent<
       this.gfx.viewport.onResize();
     });
 
-    resizeObserver.observe(this._viewportElement);
+    resizeObserver.observe(this.viewportElement);
     this._resizeObserver = resizeObserver;
   }
 

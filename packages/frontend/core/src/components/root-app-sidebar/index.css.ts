@@ -11,6 +11,7 @@ export const quickSearchAndNewPage = style({
   alignItems: 'center',
   gap: 8,
   padding: '8px 0',
+  marginLeft: -8,
 });
 export const quickSearch = style({
   width: 0,

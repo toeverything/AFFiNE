@@ -1575,6 +1575,7 @@
   "com.affine.settings.workspace.indexer-embedding.description": "Manage AFFiNE indexing and AFFiNE AI Embedding for local content processing",
   "com.affine.settings.workspace.indexer-embedding.embedding.title": "Embedding",
   "com.affine.settings.workspace.indexer-embedding.embedding.description": "Embedding allows AI to retrieve your content. If the indexer uses local settings, it may affect some of the results of the Embedding.",
+  "com.affine.settings.workspace.indexer-embedding.embedding.disabled-tooltip": "Only the workspace owner can enable Workspace Embedding.",
   "com.affine.settings.workspace.indexer-embedding.embedding.select-doc": "Select doc",
   "com.affine.settings.workspace.indexer-embedding.embedding.upload-file": "Upload file",
   "com.affine.settings.workspace.indexer-embedding.embedding.switch.title": "Workspace Embedding",

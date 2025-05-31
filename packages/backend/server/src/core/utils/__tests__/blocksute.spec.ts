@@ -45,7 +45,23 @@ test('can read all blocks from doc snapshot', async t => {
 
   const result = await readAllBlocksFromDocSnapshot(
     workspace.id,
-    rootDoc!.blob,
+    'doc-0',
+    docSnapshot.blob,
+    rootDoc!.blob
+  );
+
+  t.snapshot({
+    ...result,
+    blocks: result!.blocks.map(block => omit(block, ['yblock'])),
+  });
+});
+
+test('can read all blocks from doc snapshot without workspace snapshot', async t => {
+  const doc = await models.doc.get(workspace.id, docSnapshot.id);
+  t.truthy(doc);
+
+  const result = await readAllBlocksFromDocSnapshot(
+    workspace.id,
     'doc-0',
     docSnapshot.blob
   );

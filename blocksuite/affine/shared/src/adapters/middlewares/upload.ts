@@ -79,7 +79,7 @@ export const uploadMiddleware = (
       }
     }
 
-    blockView$
+    const blockViewSubscription = blockView$
       .pipe(
         map(payload => {
           if (assetsManager.uploadingAssetsMap.size === 0) return null;
@@ -110,5 +110,9 @@ export const uploadMiddleware = (
         )
       )
       .subscribe();
+
+    return () => {
+      blockViewSubscription.unsubscribe();
+    };
   };
 };

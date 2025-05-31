@@ -3,11 +3,13 @@ import './chat-panel-messages';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { ContextEmbedStatus, CopilotSessionType } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
+import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType, Store } from '@blocksuite/affine/store';
+import { CenterPeekIcon } from '@blocksuite/icons/lit';
 import { type Signal, signal } from '@preact/signals-core';
-import { css, html, type PropertyValues } from 'lit';
+import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -23,6 +25,7 @@ import type {
   AIReasoningConfig,
 } from '../components/ai-chat-input';
 import { type HistoryMessage } from '../components/ai-chat-messages';
+import { createPlaygroundModal } from '../components/playground/modal';
 import { AIProvider } from '../provider';
 import { extractSelectedContent } from '../utils/extract';
 import {
@@ -104,6 +107,20 @@ export class ChatPanel extends SignalWatcher(
     .chat-panel-hints :nth-child(2) {
       color: var(--affine-text-secondary-color);
     }
+
+    .chat-panel-playground {
+      cursor: pointer;
+      padding: 2px;
+      margin-left: 8px;
+      margin-right: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .chat-panel-playground:hover svg {
+      color: ${unsafeCSSVarV2('icon/activated')};
+    }
   `;
 
   private readonly _chatMessagesRef: Ref<ChatPanelMessages> =
@@ -165,13 +182,7 @@ export class ChatPanel extends SignalWatcher(
         this.doc.id,
         { action: false }
       )) || []
-    ).filter(session => {
-      if (this.parentSessionId) {
-        return session.parentSessionId === this.parentSessionId;
-      } else {
-        return !session.parentSessionId;
-      }
-    });
+    ).filter(session => !session.parentSessionId);
     this.session = sessions.at(-1);
     return this.session?.id;
   };
@@ -224,9 +235,6 @@ export class ChatPanel extends SignalWatcher(
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
-  @property({ attribute: false })
-  accessor parentSessionId: string | undefined = undefined;
-
   @state()
   accessor isLoading = false;
 
@@ -275,6 +283,25 @@ export class ChatPanel extends SignalWatcher(
     this.isLoading = false;
     this._isInitialized = false;
     this.embeddingProgress = [0, 0];
+  };
+
+  private readonly _openPlayground = () => {
+    const playgroundContent = html`
+      <playground-content
+        .host=${this.host}
+        .doc=${this.doc}
+        .networkSearchConfig=${this.networkSearchConfig}
+        .reasoningConfig=${this.reasoningConfig}
+        .modelSwitchConfig=${this.modelSwitchConfig}
+        .appSidebarConfig=${this.appSidebarConfig}
+        .searchMenuConfig=${this.searchMenuConfig}
+        .docDisplayConfig=${this.docDisplayConfig}
+        .extensions=${this.extensions}
+        .affineFeatureFlagService=${this.affineFeatureFlagService}
+      ></playground-content>
+    `;
+
+    createPlaygroundModal(playgroundContent, 'AI Playground');
   };
 
   protected override willUpdate(_changedProperties: PropertyValues) {
@@ -404,6 +431,13 @@ export class ChatPanel extends SignalWatcher(
               >`
             : 'AFFiNE AI'}
         </div>
+        ${this.modelSwitchConfig.visible.value
+          ? html`
+              <div class="chat-panel-playground" @click=${this._openPlayground}>
+                ${CenterPeekIcon()}
+              </div>
+            `
+          : nothing}
         <ai-history-clear
           .host=${this.host}
           .doc=${this.doc}
@@ -442,7 +476,7 @@ export class ChatPanel extends SignalWatcher(
           where: 'chat-panel',
           control: 'chat-send',
         }}
-        .sideBarWidth=${this._sidebarWidth}
+        .panelWidth=${this._sidebarWidth}
       ></ai-chat-composer>
     </div>`;
   }

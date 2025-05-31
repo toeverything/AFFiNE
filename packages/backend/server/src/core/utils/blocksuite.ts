@@ -173,15 +173,18 @@ export function readAllDocIdsFromWorkspaceSnapshot(snapshot: Uint8Array) {
 
 export async function readAllBlocksFromDocSnapshot(
   workspaceId: string,
-  workspaceSnapshot: Uint8Array,
   docId: string,
   docSnapshot: Uint8Array,
+  workspaceSnapshot?: Uint8Array,
   maxSummaryLength?: number
 ) {
-  const rootYDoc = new YDoc({
-    guid: workspaceId,
-  });
-  applyUpdate(rootYDoc, workspaceSnapshot);
+  let rootYDoc: YDoc | undefined;
+  if (workspaceSnapshot) {
+    rootYDoc = new YDoc({
+      guid: workspaceId,
+    });
+    applyUpdate(rootYDoc, workspaceSnapshot);
+  }
   const ydoc = new YDoc({
     guid: docId,
   });

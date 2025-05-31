@@ -9,7 +9,10 @@ import {
   getSurfaceComponent,
 } from '@blocksuite/affine-block-surface';
 import { splitIntoLines } from '@blocksuite/affine-gfx-text';
-import type { ShapeElementModel } from '@blocksuite/affine-model';
+import type {
+  EmbedCardStyle,
+  ShapeElementModel,
+} from '@blocksuite/affine-model';
 import {
   BookmarkStyles,
   DEFAULT_NOTE_HEIGHT,
@@ -236,7 +239,7 @@ export class EdgelessClipboardController extends PageClipboard {
       const options: Record<string, unknown> = {};
 
       let flavour = 'affine:bookmark';
-      let style = BookmarkStyles[0];
+      let style: EmbedCardStyle = BookmarkStyles[0];
       let isInternalLink = false;
       let isLinkedBlock = false;
 
