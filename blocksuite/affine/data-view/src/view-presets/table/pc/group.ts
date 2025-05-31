@@ -4,11 +4,12 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
+import { signal } from '@preact/signals-core';
 import { PlusIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { effect } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { css, html, unsafeCSS } from 'lit';
+import { css, html, unsafeCSS, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
@@ -30,6 +31,13 @@ const styles = css`
     opacity: 1;
   }
 
+  affine-data-view-table-group {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid var(--affine-border-color);
+  }
+
+
   .data-view-table-group-add-row {
     display: flex;
     width: 100%;
@@ -40,6 +48,10 @@ const styles = css`
     transition: opacity 0.2s ease-in-out;
     padding: 4px 8px;
     border-bottom: 1px solid ${unsafeCSS(cssVarV2.layer.insideBorder.border)};
+  }
+
+  .affine-data-view-table-group:hover svg {
+    fill: var(--affine-icon-color);
   }
 
   @media print {
@@ -60,12 +72,47 @@ const styles = css`
     line-height: 20px;
     color: var(--affine-text-secondary-color);
   }
+
+  .group-toggle-btn {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 150ms cubic-bezier(0.42,0,1,1);
+  }
+
+  .group-toggle-btn:hover {
+    background: var(--affine-hover-color);
+  }
+
+  .group-toggle-btn svg {
+    width: 24px;
+    height: 24px;
+    transition: transform 120ms cubic-bezier(0.42,0,1,1);
+    flex-shrink: 0;
+    user-select: none;
+    transform: rotate(-90deg);
+  }
+
+  .group-toggle-btn.expanded svg {
+    transform: rotate(0deg);
+  }
 `;
 
 export class TableGroup extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
   static override styles = styles;
+
+  collapsed$ = signal(false);
+
+  private readonly _toggleCollapse = (e?: MouseEvent) => {
+    e?.stopPropagation();
+    this.collapsed$.value = !this.collapsed$.value;
+  };
 
   private readonly clickAddRow = () => {
     this.view.rowAdd('end', this.group?.key);
@@ -134,17 +181,35 @@ export class TableGroup extends SignalWatcher(
     if (!this.group) {
       return null;
     }
+    const Arrow = html`<svg
+     xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 24 24"
+     fill="none"
+   >
+     <path
+       fill="currentColor"
+       d="M13.15 15.132a.757.757 0 0 1-1.3 0L8.602 9.605c-.29-.491.072-1.105.65-1.105h6.497c.577 0 .938.614.65 1.105z"
+     />
+   </svg>`;
+
     return html`
+     <div
+       style="position: sticky;left: 0;width: max-content;padding: 6px 0;margin-bottom: 4px;display:flex;align-items:center;gap: 8px;max-width: 400px"
+     >
       <div
-        style="position: sticky;left: 0;width: max-content;padding: 6px 0;margin-bottom: 4px;display:flex;align-items:center;gap: 12px;max-width: 400px"
+        class=${`group-toggle-btn ${this.collapsed$.value ? '' : 'expanded'}`}
+        @click=${this._toggleCollapse}
       >
-        ${GroupTitle(this.group, {
-          readonly: this.view.readonly$.value,
-          clickAdd: this.clickAddRowInStart,
-          clickOps: this.clickGroupOptions,
-        })}
+        ${Arrow}
       </div>
-    `;
+
+       ${GroupTitle(this.group, {
+      readonly: this.view.readonly$.value,
+      clickAdd: this.clickAddRowInStart,
+      clickOps: this.clickGroupOptions,
+    })}
+     </div>
+   `;
   };
 
   @property({ attribute: false })
@@ -240,24 +305,20 @@ export class TableGroup extends SignalWatcher(
 
   private renderRows(rows: Row[]) {
     return html`
-      <affine-database-column-header
-        .renderGroupHeader="${this.renderGroupHeader}"
-        .tableViewLogic="${this.tableViewLogic}"
-      ></affine-database-column-header>
       <div class="affine-database-block-rows">
         ${repeat(
-          rows,
-          row => row.rowId,
-          (row, idx) => {
-            return html` <data-view-table-row
+      rows,
+      row => row.rowId,
+      (row, idx) => {
+        return html` <data-view-table-row
               data-row-index="${idx}"
               data-row-id="${row.rowId}"
               .tableViewLogic="${this.tableViewLogic}"
               .rowId="${row.rowId}"
               .rowIndex="${idx}"
             ></data-view-table-row>`;
-          }
-        )}
+      }
+    )}
       </div>
       ${this.view.readonly$.value
         ? null
@@ -287,7 +348,10 @@ export class TableGroup extends SignalWatcher(
   }
 
   override render() {
-    return this.renderRows(this.rows);
+    return html`
+      ${this.renderGroupHeader()}
+      ${this.collapsed$.value ? nothing : this.renderRows(this.rows)}
+    `;
   }
 
   @query('.affine-database-block-rows')

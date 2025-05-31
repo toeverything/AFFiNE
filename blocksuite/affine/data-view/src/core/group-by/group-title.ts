@@ -29,10 +29,7 @@ const GroupTitleMobile = (
   const icon =
     groupData.value == null
       ? ''
-      : html` <uni-lit
-          class="group-header-icon"
-          .uni="${groupData.property.icon}"
-        ></uni-lit>`;
+      : html``;
   const props: GroupRenderProps = {
     group: groupData,
     readonly: ops.readonly,
@@ -129,10 +126,7 @@ export const GroupTitle = (
   const icon =
     groupData.value == null
       ? ''
-      : html` <uni-lit
-          class="group-header-icon"
-          .uni="${groupData.property.icon}"
-        ></uni-lit>`;
+      : html``;
   const props: GroupRenderProps = {
     group: groupData,
     readonly: ops.readonly,
