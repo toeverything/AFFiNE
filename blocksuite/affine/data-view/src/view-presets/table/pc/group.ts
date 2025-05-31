@@ -197,17 +197,27 @@ export class TableGroup extends SignalWatcher(
        style="position: sticky;left: 0;width: max-content;padding: 6px 0;margin-bottom: 4px;display:flex;align-items:center;gap: 8px;max-width: 400px"
      >
       <div
-        class=${`group-toggle-btn ${this.collapsed$.value ? '' : 'expanded'}`}
+        class=${`group-toggle-btn ${this.collapsed$.value ? '' : 'expanded'}`}  
+        role="button"  
+        aria-expanded=${this.collapsed$.value ? 'false' : 'true'}  
+        aria-label=${this.collapsed$.value ? 'Expand group' : 'Collapse group'}  
+        tabindex="0"
         @click=${this._toggleCollapse}
+        @keydown=${(e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this._toggleCollapse();
+        }
+      }}  
       >
         ${Arrow}
       </div>
 
        ${GroupTitle(this.group, {
-      readonly: this.view.readonly$.value,
-      clickAdd: this.clickAddRowInStart,
-      clickOps: this.clickGroupOptions,
-    })}
+        readonly: this.view.readonly$.value,
+        clickAdd: this.clickAddRowInStart,
+        clickOps: this.clickGroupOptions,
+      })}
      </div>
    `;
   };
