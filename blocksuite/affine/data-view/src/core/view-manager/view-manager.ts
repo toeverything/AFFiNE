@@ -11,6 +11,7 @@ import type {
 import type { SingleView } from './single-view.js';
 
 export interface ViewManager {
+  propertyGetOrCreate(propId: string): Property<unknown, unknown, unknown>;
   viewMetas: ViewMeta[];
   dataSource: DataSource;
   readonly$: ReadonlySignal<boolean>;

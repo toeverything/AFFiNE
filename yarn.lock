@@ -4268,6 +4268,7 @@ __metadata:
     "@preact/signals-core": "npm:^1.8.0"
     "@toeverything/theme": "npm:^1.1.15"
     "@types/lodash-es": "npm:^4.17.12"
+    chart.js: "npm:^4.4.9"
     clsx: "npm:^2.1.1"
     date-fns: "npm:^4.0.0"
     lit: "npm:^3.2.0"
@@ -7682,6 +7683,13 @@ __metadata:
   dependencies:
     buffer: "npm:^6.0.3"
   checksum: 10/d6a9194dd781bc26cc4d55f392d843810c1fdc0da81e69203e633cb289fc0a8edc8bc6466f66c4cbb55da0a5b405e89f14a68b48d6e73919ae82f8249fb5e444
+  languageName: node
+  linkType: hard
+
+"@kurkle/color@npm:^0.3.0":
+  version: 0.3.4
+  resolution: "@kurkle/color@npm:0.3.4"
+  checksum: 10/a15bfb55eec4ff92ee27cdacff54e85c7497ec1f9e8e0e8eaec3d39320cc90b82eb7f716d92792a8235fad1617003c6e0c0d2cd07f6a79b7b138ca17ec5eb6e7
   languageName: node
   linkType: hard
 
@@ -18431,6 +18439,15 @@ __metadata:
   version: 0.7.0
   resolution: "chardet@npm:0.7.0"
   checksum: 10/b0ec668fba5eeec575ed2559a0917ba41a6481f49063c8445400e476754e0957ee09e44dc032310f526182b8f1bf25e9d4ed371f74050af7be1383e06bc44952
+  languageName: node
+  linkType: hard
+
+"chart.js@npm:^4.4.9":
+  version: 4.4.9
+  resolution: "chart.js@npm:4.4.9"
+  dependencies:
+    "@kurkle/color": "npm:^0.3.0"
+  checksum: 10/b19adf26347589fccf8efa314d927284674c46d2a934869bc8dda1ee56e3cd2fffa627bd0b6c6e16e2cc876b2c3880e106e48f22737138f06293f8373c8ae9f9
   languageName: node
   linkType: hard
 

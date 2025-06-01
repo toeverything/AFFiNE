@@ -781,6 +781,23 @@ const databaseToolGroup: KeyboardToolPanelGroup = {
           .run();
       },
     },
+    {
+      name: 'Chart view',
+      icon: DatabaseKanbanViewIcon(),
+      showWhen: ({ std }) =>
+        std.store.schema.flavourSchemaMap.has('affine:database'),
+      action: ({ std }) => {
+        std.command
+          .chain()
+          .pipe(getSelectedModelsCommand)
+          .pipe(insertDatabaseBlockCommand, {
+            viewType: viewPresets.chartViewMeta.type,
+            place: 'after',
+            removeEmptyLine: true,
+          })
+          .run();
+      },
+    },
   ],
 };
 

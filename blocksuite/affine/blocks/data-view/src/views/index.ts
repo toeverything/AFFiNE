@@ -4,6 +4,7 @@ import { viewPresets } from '@blocksuite/data-view/view-presets';
 export const blockQueryViews: ViewMeta[] = [
   viewPresets.tableViewMeta,
   viewPresets.kanbanViewMeta,
+  viewPresets.chartViewMeta,
 ];
 
 export const blockQueryViewMap = Object.fromEntries(
