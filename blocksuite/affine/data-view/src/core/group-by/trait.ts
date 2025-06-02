@@ -2,7 +2,11 @@ import {
   insertPositionToIndex,
   type InsertToPosition,
 } from '@blocksuite/affine-shared/utils';
-import { computed, type ReadonlySignal } from '@preact/signals-core';
+import {
+  computed,
+  type ReadonlySignal,
+  signal,
+} from '@preact/signals-core';
 
 import type { GroupBy, GroupProperty } from '../common/types.js';
 import type { TypeInstance } from '../logical/type.js';
@@ -12,8 +16,31 @@ import type { Property } from '../view-manager/property.js';
 import type { Row } from '../view-manager/row.js';
 import type { SingleView } from '../view-manager/single-view.js';
 import { defaultGroupBy } from './default.js';
-import { getGroupByService } from './matcher.js';
+import {
+  getGroupByService,
+  findGroupByConfigByName,
+} from './matcher.js';
 import type { GroupByConfig } from './types.js';
+
+const RELATIVE_ASC = ['today', 'yesterday', 'last7', 'last30', 'older'];
+const RELATIVE_DESC = [...RELATIVE_ASC].reverse();
+
+
+function compareDateKeys(mode: string | undefined, asc: boolean) {
+  return (a: string, b: string) => {
+    if (mode === 'date-relative') {
+      const order = asc ? RELATIVE_ASC : RELATIVE_DESC;
+      return order.indexOf(a) - order.indexOf(b);
+    }
+
+    const na = Number(a);
+    const nb = Number(b);
+    if (Number.isFinite(na) && Number.isFinite(nb)) {
+      return asc ? na - nb : nb - na;
+    }
+    return asc ? a.localeCompare(b) : b.localeCompare(a);
+  };
+}
 
 export type GroupInfo<
   RawValue = unknown,
@@ -36,156 +63,143 @@ export class Group<
     public readonly key: string,
     public readonly value: JsonValue,
     private readonly groupInfo: GroupInfo<RawValue, JsonValue, Data>,
-    public readonly manager: GroupTrait
-  ) {}
+    public readonly manager: GroupTrait,
+  ) { }
 
   get property() {
     return this.groupInfo.property;
   }
-
   name$ = computed(() => {
     const type = this.property.dataType$.value;
-    if (!type) {
-      return '';
-    }
-    return this.groupInfo.config.groupName(type, this.value);
+    return type ? this.groupInfo.config.groupName(type, this.value) : '';
   });
-
   private get config() {
     return this.groupInfo.config;
   }
-
   get tType() {
     return this.groupInfo.tType;
   }
-
   get view() {
     return this.config.view;
   }
 }
 
 export class GroupTrait {
-  groupInfo$ = computed<GroupInfo | undefined>(() => {
-    const groupBy = this.groupBy$.value;
-    if (!groupBy) {
-      return;
-    }
-    const property = this.view.propertyGetOrCreate(groupBy.columnId);
-    if (!property) {
-      return;
-    }
-    const tType = property.dataType$.value;
-    if (!tType) {
-      return;
-    }
-    const groupByService = getGroupByService(this.view.manager.dataSource);
-    const result = groupByService?.matcher.match(tType);
-    if (!result) {
-      return;
-    }
-    return {
-      config: result,
-      property,
-      tType: tType,
-    };
-  });
-
-  staticInfo$ = computed(() => {
-    const groupInfo = this.groupInfo$.value;
-    if (!groupInfo) {
-      return;
-    }
-    const staticMap = Object.fromEntries(
-      groupInfo.config
-        .defaultKeys(groupInfo.tType)
-        .map(({ key, value }) => [key, new Group(key, value, groupInfo, this)])
-    );
-    return {
-      staticMap,
-      groupInfo,
-    };
-  });
-
-  groupDataMap$ = computed(() => {
-    const staticInfo = this.staticInfo$.value;
-    if (!staticInfo) {
-      return;
-    }
-    const { staticMap, groupInfo } = staticInfo;
-    const groupMap: Record<string, Group> = {};
-    Object.entries(staticMap).forEach(([key, group]) => {
-      groupMap[key] = new Group(key, group.value, groupInfo, this);
-    });
-    this.view.rows$.value.forEach(row => {
-      const value = this.view.cellGetOrCreate(row.rowId, groupInfo.property.id)
-        .jsonValue$.value;
-      const keys = groupInfo.config.valuesGroup(value, groupInfo.tType);
-      keys.forEach(({ key, value }) => {
-        if (!groupMap[key]) {
-          groupMap[key] = new Group(key, value, groupInfo, this);
-        }
-        groupMap[key].rows.push(row);
-      });
-    });
-    return groupMap;
-  });
-
-  groupsDataList$ = computedLock(
-    computed(() => {
-      const groupMap = this.groupDataMap$.value;
-      if (!groupMap) {
-        return;
-      }
-      const sortedGroup = this.ops.sortGroup(Object.keys(groupMap));
-      sortedGroup.forEach(key => {
-        if (!groupMap[key]) return;
-        groupMap[key].rows = this.ops.sortRow(key, groupMap[key].rows);
-      });
-      return sortedGroup
-        .map(key => groupMap[key])
-        .filter((v): v is Group => v != null);
-    }),
-    this.view.isLocked$
-  );
-
-  updateData = (data: NonNullable<unknown>) => {
-    const property = this.property$.value;
-    if (!property) {
-      return;
-    }
-    this.view.propertyGetOrCreate(property.id).dataUpdate(() => data);
-  };
-
-  get addGroup() {
-    return this.property$.value?.meta$.value?.config.addGroup;
-  }
-
-  property$ = computed(() => {
-    const groupInfo = this.groupInfo$.value;
-    if (!groupInfo) {
-      return;
-    }
-    return groupInfo.property;
-  });
-
   constructor(
     private readonly groupBy$: ReadonlySignal<GroupBy | undefined>,
     public view: SingleView,
     private readonly ops: {
-      groupBySet: (groupBy: GroupBy | undefined) => void;
+      groupBySet: (g: GroupBy | undefined) => void;
       sortGroup: (keys: string[]) => string[];
       sortRow: (groupKey: string, rows: Row[]) => Row[];
       changeGroupSort: (keys: string[]) => void;
       changeRowSort: (
         groupKeys: string[],
         groupKey: string,
-        keys: string[]
+        keys: string[],
       ) => void;
-    }
-  ) {}
+    },
+  ) { }
+
+  hideEmpty$ = signal<boolean>(true);
+  sortAsc$ = signal<boolean>(true);
+
+  groupInfo$ = computed<GroupInfo | undefined>(() => {
+    const groupBy = this.groupBy$.value;
+    if (!groupBy) return;
+    const property = this.view.propertyGetOrCreate(groupBy.columnId);
+    if (!property) return;
+    const tType = property.dataType$.value;
+    if (!tType) return;
+    const svc = getGroupByService(this.view.manager.dataSource);
+
+    const res =
+      groupBy.name != null
+        ? findGroupByConfigByName(this.view.manager.dataSource, groupBy.name) ??
+        svc?.matcher.match(tType)
+        : svc?.matcher.match(tType);
+
+    if (!res) return;
+    return { config: res, property, tType };
+  });
+
+  staticInfo$ = computed(() => {
+    const info = this.groupInfo$.value;
+    if (!info) return;
+    const staticMap = Object.fromEntries(
+      info.config
+        .defaultKeys(info.tType)
+        .map(({ key, value }) => [key, new Group(key, value, info, this)]),
+    );
+    return { staticMap, groupInfo: info };
+  });
+
+  groupDataMap$ = computed(() => {
+    const st = this.staticInfo$.value;
+    if (!st) return;
+    const { staticMap, groupInfo } = st;
+    const map: Record<string, Group> = { ...staticMap };
+    this.view.rows$.value.forEach(row => {
+      const cell = this.view.cellGetOrCreate(row.rowId, groupInfo.property.id);
+      const jv = cell.jsonValue$.value;
+      const keys = groupInfo.config.valuesGroup(jv, groupInfo.tType);
+      keys.forEach(({ key, value }) => {
+        if (!map[key]) map[key] = new Group(key, value, groupInfo, this);
+        map[key].rows.push(row);
+      });
+    });
+    return map;
+  });
+
+  groupsDataList$ = computedLock(
+    computed(() => {
+      const map = this.groupDataMap$.value;
+      if (!map) return;
+
+      const gi = this.groupInfo$.value;
+
+      let ordered: string[];
+
+      if (gi?.config.matchType.type === 'date') {
+        ordered = [...Object.keys(map)].sort(
+          compareDateKeys(gi.config.name, this.sortAsc$.value),
+        );
+      } else {
+        ordered = this.ops.sortGroup(Object.keys(map));
+      }
+      return ordered
+        .map(k => map[k])
+        .filter(
+          g =>
+            g != null && (!this.hideEmpty$.value || g.rows.length > 0),
+        );
+    }),
+    this.view.isLocked$,
+  );
+
+  setHideEmpty(v: boolean) {
+    this.hideEmpty$.value = v;
+  }
+  setDateSortOrder(asc: boolean) {
+    this.sortAsc$.value = asc;
+
+    const gi = this.groupInfo$.value;
+    if (!gi || !gi.config.name?.startsWith('date-')) return;
+
+    const map = this.groupDataMap$.value;
+    if (!map) return;
+
+    const keys = Object.keys(map)
+      .filter(k => k !== 'Ungroups')
+      .sort(compareDateKeys(gi.config.name, asc));
+
+    if (map['Ungroups']) keys.push('Ungroups');
+
+    this.changeGroupSort(keys);
+  }
+
 
   addToGroup(rowId: string, key: string) {
-    this.view.lockRows(false);
     const groupMap = this.groupDataMap$.value;
     const groupInfo = this.groupInfo$.value;
     if (!groupMap || !groupInfo) {
@@ -206,17 +220,14 @@ export class GroupTrait {
         .valueSet(newValue);
     }
   }
-
-  changeCardSort(groupKey: string, cardIds: string[]) {
-    const groups = this.groupsDataList$.value;
-    if (!groups) {
-      return;
-    }
-    this.ops.changeRowSort(
-      groups.map(v => v.key),
-      groupKey,
-      cardIds
-    );
+  changeGroupMode(modeName: string) {
+    const propId = this.property$.value?.id;
+    if (!propId) return;
+    this.ops.groupBySet({
+      type: 'groupBy',
+      columnId: propId,
+      name: modeName,
+    });
   }
 
   changeGroup(columnId: string | undefined) {
@@ -225,31 +236,35 @@ export class GroupTrait {
       return;
     }
     const column = this.view.propertyGetOrCreate(columnId);
-    const propertyMeta = this.view.manager.dataSource.propertyMetaGet(
-      column.type$.value
+    const meta = this.view.manager.dataSource.propertyMetaGet(
+      column.type$.value,
     );
-    if (propertyMeta) {
+    if (meta) {
       this.ops.groupBySet(
         defaultGroupBy(
           this.view.manager.dataSource,
-          propertyMeta,
+          meta,
           column.id,
-          column.data$.value
-        )
+          column.data$.value,
+        ),
       );
     }
   }
 
-  changeGroupSort(keys: string[]) {
-    this.ops.changeGroupSort(keys);
+  property$ = computed(() => this.groupInfo$.value?.property);
+
+  get addGroup() {
+    return this.property$.value?.meta$.value?.config.addGroup;
   }
 
-  defaultGroupProperty(key: string): GroupProperty {
-    return {
-      key,
-      hide: false,
-      manuallyCardSort: [],
-    };
+  updateData = (data: NonNullable<unknown>) => {
+    const prop = this.property$.value;
+    if (!prop) return;
+    this.view.propertyGetOrCreate(prop.id).dataUpdate(() => data);
+  };
+
+  changeGroupSort(keys: string[]) {
+    this.ops.changeGroupSort(keys);
   }
 
   moveCardTo(
@@ -258,7 +273,6 @@ export class GroupTrait {
     toGroupKey: string,
     position: InsertToPosition
   ) {
-    this.view.lockRows(false);
     const groupMap = this.groupDataMap$.value;
     if (!groupMap) {
       return;
@@ -295,7 +309,6 @@ export class GroupTrait {
   }
 
   moveGroupTo(groupKey: string, position: InsertToPosition) {
-    this.view.lockRows(false);
     const groups = this.groupsDataList$.value;
     if (!groups) {
       return;
@@ -311,7 +324,6 @@ export class GroupTrait {
   }
 
   removeFromGroup(rowId: string, key: string) {
-    this.view.lockRows(false);
     const groupMap = this.groupDataMap$.value;
     if (!groupMap) {
       return;
@@ -330,7 +342,6 @@ export class GroupTrait {
   }
 
   updateValue(rows: string[], value: unknown) {
-    this.view.lockRows(false);
     const propertyId = this.property$.value?.id;
     if (!propertyId) {
       return;
@@ -346,7 +357,7 @@ export const groupTraitKey = createTraitKey<GroupTrait>('group');
 export const sortByManually = <T>(
   arr: T[],
   getId: (v: T) => string,
-  ids: string[]
+  ids: string[],
 ) => {
   const map = new Map(arr.map(v => [getId(v), v]));
   const result: T[] = [];

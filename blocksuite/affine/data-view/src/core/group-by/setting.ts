@@ -28,8 +28,26 @@ import { getGroupByService } from './matcher.js';
 import type { GroupTrait } from './trait.js';
 import type { GroupRenderProps } from './types.js';
 
+const dateModeLabel = (key?: string) => {
+  switch (key) {
+    case 'date-relative':
+      return 'Relative';
+    case 'date-day':
+      return 'Day';
+    case 'date-week-mon':
+    case 'date-week-sun':
+      return 'Week';
+    case 'date-month':
+      return 'Month';
+    case 'date-year':
+      return 'Year';
+    default:
+      return '';
+  }
+};
+
 export class GroupSetting extends SignalWatcher(
-  WithDisposable(ShadowlessElement)
+  WithDisposable(ShadowlessElement),
 ) {
   static override styles = css`
     data-view-group-setting {
@@ -45,7 +63,6 @@ export class GroupSetting extends SignalWatcher(
       position: relative;
       cursor: grab;
     }
-
     .group-item-drag-bar {
       width: 4px;
       height: 12px;
@@ -57,7 +74,6 @@ export class GroupSetting extends SignalWatcher(
       bottom: 0;
       margin: auto;
     }
-
     .group-item:hover .group-item-drag-bar {
       background-color: #c0bfc1;
     }
@@ -66,9 +82,7 @@ export class GroupSetting extends SignalWatcher(
   @property({ attribute: false })
   accessor groupTrait!: GroupTrait;
 
-  groups$ = computed(() => {
-    return this.groupTrait.groupsDataList$.value;
-  });
+  groups$ = computed(() => this.groupTrait.groupsDataList$.value);
 
   sortContext = createSortContext({
     activators: defaultActivators,
@@ -78,116 +92,74 @@ export class GroupSetting extends SignalWatcher(
       const activeId = evt.active.id;
       const groups = this.groups$.value;
       if (over && over.id !== activeId && groups) {
-        const activeIndex = groups.findIndex(data => data?.key === activeId);
-        const overIndex = groups.findIndex(data => data?.key === over.id);
-
+        const aIndex = groups.findIndex(g => g?.key === activeId);
+        const oIndex = groups.findIndex(g => g?.key === over.id);
         this.groupTrait.moveGroupTo(
           activeId,
-          activeIndex > overIndex
-            ? {
-                before: true,
-                id: over.id,
-              }
-            : {
-                before: false,
-                id: over.id,
-              }
+          aIndex > oIndex
+            ? { before: true, id: over.id }
+            : { before: false, id: over.id },
         );
       }
     },
-    modifiers: [
-      ({ transform }) => {
-        return {
-          ...transform,
-          x: 0,
-        };
-      },
-    ],
-    items: computed(() => {
-      return (
-        this.groupTrait.groupsDataList$.value?.map(
-          v => v?.key ?? 'default key'
-        ) ?? []
-      );
-    }),
+    modifiers: [({ transform }) => ({ ...transform, x: 0 })],
+    items: computed(() =>
+      this.groupTrait.groupsDataList$.value?.map(v => v?.key ?? '') ?? [],
+    ),
     strategy: verticalListSortingStrategy,
   });
 
   override connectedCallback() {
     super.connectedCallback();
-    this._disposables.addFromEvent(this, 'pointerdown', e => {
-      e.stopPropagation();
-    });
+    this._disposables.addFromEvent(this, 'pointerdown', e => e.stopPropagation());
   }
 
-  protected override render(): unknown {
+  protected override render() {
     const groups = this.groupTrait.groupsDataList$.value;
-    if (!groups) {
-      return;
-    }
+    if (!groups) return;
     return html`
-      <div style="padding: 7px 0;">
+      <div style="padding:7px 0;">
         <div
-          style="padding: 0 4px; font-size: 12px;color: var(--affine-text-secondary-color);line-height: 20px;"
+          style="padding:0 4px;font-size:12px;color:var(--affine-text-secondary-color);line-height:20px;"
         >
           Groups
         </div>
-        <div></div>
       </div>
-      <div
-        style="display:flex;flex-direction: column;gap: 4px;"
-        class="group-sort-setting"
-      >
+
+      <div style="display:flex;flex-direction:column;gap:4px;" class="group-sort-setting">
         ${repeat(
-          groups,
-          group => group?.key ?? 'default key',
-          group => {
-            const type = group.property.dataType$.value;
-            if (!type) return;
-            const props: GroupRenderProps = {
-              group,
-              readonly: true,
-            };
-            return html` <div
-              ${sortable(group.key)}
-              ${dragHandler(group.key)}
-              class="dv-hover dv-round-4 group-item"
-            >
-              <div class="group-item-drag-bar"></div>
-              <div
-                style="padding: 0 4px;position:relative;pointer-events: none;max-width: 330px"
-              >
-                ${renderUniLit(group.view, props)}
-                <div
-                  style="position:absolute;left: 0;top: 0;right: 0;bottom: 0;"
-                ></div>
+      groups,
+      g => g?.key ?? 'k',
+      g => {
+        const type = g.property.dataType$.value;
+        if (!type) return;
+        const props: GroupRenderProps = { group: g, readonly: true };
+        return html`
+              <div ${sortable(g.key)} ${dragHandler(g.key)} class="dv-hover dv-round-4 group-item">
+                <div class="group-item-drag-bar"></div>
+                <div style="padding:0 4px;position:relative;pointer-events:none;max-width:330px;">
+                  ${renderUniLit(g.view, props)}
+                  <div style="position:absolute;left:0;top:0;right:0;bottom:0;"></div>
+                </div>
               </div>
-            </div>`;
-          }
-        )}
+            `;
+      },
+    )}
       </div>
     `;
   }
 
-  @query('.group-sort-setting')
-  accessor groupContainer!: HTMLElement;
+  @query('.group-sort-setting') accessor groupContainer!: HTMLElement;
 }
 
 export const selectGroupByProperty = (
   group: GroupTrait,
-  ops?: {
-    onSelect?: (id?: string) => void;
-    onClose?: () => void;
-    onBack?: () => void;
-  }
+  ops?: { onSelect?: (id?: string) => void; onClose?: () => void; onBack?: () => void },
 ): MenuOptions => {
   const view = group.view;
   return {
     onClose: ops?.onClose,
-    title: {
-      text: 'Group by',
-      onBack: ops?.onBack,
-    },
+    title: { text: 'Group by', onBack: ops?.onBack },
     items: [
       menu.group({
         items: view.propertiesRaw$.value
@@ -218,8 +190,7 @@ export const selectGroupByProperty = (
         items: [
           menu.action({
             prefix: DeleteIcon(),
-            hide: () =>
-              view instanceof KanbanSingleView || group.property$.value == null,
+            hide: () => view instanceof KanbanSingleView || !group.property$.value,
             class: { 'delete-item': true },
             name: 'Remove Grouping',
             select: () => {
@@ -232,40 +203,30 @@ export const selectGroupByProperty = (
     ],
   };
 };
+
 export const popSelectGroupByProperty = (
   target: PopupTarget,
   group: GroupTrait,
-  ops?: {
-    onSelect?: () => void;
-    onClose?: () => void;
-    onBack?: () => void;
-  }
+  ops?: { onSelect?: () => void; onClose?: () => void; onBack?: () => void },
 ) => {
-  popMenu(target, {
-    options: selectGroupByProperty(group, ops),
-  });
+  popMenu(target, { options: selectGroupByProperty(group, ops) });
 };
+
 export const popGroupSetting = (
   target: PopupTarget,
   group: GroupTrait,
-  onBack: () => void
+  onBack: () => void,
 ) => {
   const view = group.view;
-  const groupProperty = group.property$.value;
-  if (groupProperty == null) {
-    return;
-  }
-  const type = groupProperty.type$.value;
-  if (!type) {
-    return;
-  }
-  const icon = groupProperty.icon;
+  const gProp = group.property$.value;
+  if (!gProp) return;
+  const type = gProp.type$.value;
+  if (!type) return;
+
+  const icon = gProp.icon;
   const menuHandler = popMenu(target, {
     options: {
-      title: {
-        text: 'Group',
-        onBack: onBack,
-      },
+      title: { text: 'Group', onBack },
       items: [
         menu.group({
           items: [
@@ -273,16 +234,14 @@ export const popGroupSetting = (
               name: 'Group By',
               postfix: html`
                 <div
-                  style="display:flex;align-items:center;gap: 4px;font-size: 12px;line-height: 20px;color: var(--affine-text-secondary-color);margin-right: 4px;margin-left: 8px;"
+                  style="display:flex;align-items:center;gap:4px;font-size:12px;line-height:20px;color:var(--affine-text-secondary-color);margin-right:4px;margin-left:8px;"
                   class="dv-icon-16"
                 >
-                  ${renderUniLit(icon, {})} ${groupProperty.name$.value}
+                  ${renderUniLit(icon, {})} ${gProp.name$.value}
                 </div>
               `,
               label: () => html`
-                <div style="color: var(--affine-text-secondary-color);">
-                  Group By
-                </div>
+                <div style="color:var(--affine-text-secondary-color);">Group By</div>
               `,
               options: selectGroupByProperty(group, {
                 onSelect: () => {
@@ -293,16 +252,131 @@ export const popGroupSetting = (
             }),
           ],
         }),
+
+        ...(type === 'date'
+          ? [
+            menu.group({
+              items: [
+                menu.subMenu({
+                  name: 'Date by',
+                  postfix: html`
+                    <div style="font-size:16px;color:var(--affine-text-secondary-color);">
+                      ${dateModeLabel(group.groupInfo$.value?.config.name)}
+                    </div>
+                    `,
+                  options: {
+                    items: (
+                      [
+                        ['Relative', 'date-relative'],
+                        ['Day', 'date-day'],
+                        [
+                          'Week',
+                          group.groupInfo$.value?.config.name ===
+                            'date-week-mon'
+                            ? 'date-week-mon'
+                            : 'date-week-sun',
+                        ],
+                        ['Month', 'date-month'],
+                        ['Year', 'date-year'],
+                      ] as [string, string][]
+                    ).map(([label, key]): MenuConfig =>
+                      menu.action({
+                        name: label,
+                        isSelected: group.groupInfo$.value?.config.name === key,
+                        select: () => group.changeGroupMode(key),
+                      }),
+                    ),
+                  },
+                }),
+              ],
+            }),
+
+            ...(type === 'date'
+              ? [
+                menu.group({
+                  items: [
+                    menu.subMenu({
+                      name: 'Start week on',
+                      postfix: html`
+                            <div style="font-size:16px;color:var(--affine-text-secondary-color);">
+                              ${group.groupInfo$.value?.config.name === 'date-week-mon'
+                          ? 'Monday'
+                          : 'Sunday'}
+                            </div>
+                          `,
+                      options: {
+                        items: [
+                          menu.action({
+                            name: 'Monday',
+                            isSelected:
+                              group.groupInfo$.value?.config.name === 'date-week-mon',
+                            select: () => group.changeGroupMode('date-week-mon'),
+                          }),
+                          menu.action({
+                            name: 'Sunday',
+                            isSelected:
+                              group.groupInfo$.value?.config.name === 'date-week-sun',
+                            select: () => group.changeGroupMode('date-week-sun'),
+                          }),
+                        ],
+                      },
+                    }),
+                  ],
+                }),
+              ]
+              : []),
+
+            menu.group({
+              items: [
+                menu.subMenu({
+                  name: 'Sort',
+                  postfix: html`
+                      <div style="font-size:16px;color:var(--affine-text-secondary-color);">
+                        ${group.sortAsc$.value ? 'Oldest first' : 'Newest first'}
+                      </div>
+                    `,
+                  options: {
+                    items: [
+                      menu.action({
+                        name: 'Oldest first',
+                        isSelected: group.sortAsc$.value,
+                        select: () => group.setDateSortOrder(true),
+                      }),
+                      menu.action({
+                        name: 'Newest first',
+                        isSelected: !group.sortAsc$.value,
+                        select: () => group.setDateSortOrder(false),
+                      }),
+                    ],
+                  },
+                }),
+              ],
+            }),
+
+            menu.group({
+              items: [
+                menu.action({
+                  name: 'Hide empty groups',
+                  isSelected: group.hideEmpty$.value,
+                  select: () => group.setHideEmpty(!group.hideEmpty$.value),
+                }),
+              ],
+            }),
+          ]
+          : []),
+
         menu.group({
           items: [
-            menu =>
-              html` <data-view-group-setting
-                @mouseenter="${() => menu.closeSubMenu()}"
-                .groupTrait="${group}"
-                .columnId="${groupProperty.id}"
-              ></data-view-group-setting>`,
+            menu => html`
+              <data-view-group-setting
+                @mouseenter=${() => menu.closeSubMenu()}
+                .groupTrait=${group}
+                .columnId=${gProp.id}
+              ></data-view-group-setting>
+            `,
           ],
         }),
+
         menu.group({
           items: [
             menu.action({
@@ -310,9 +384,7 @@ export const popGroupSetting = (
               prefix: DeleteIcon(),
               class: { 'delete-item': true },
               hide: () => !(view instanceof TableSingleView),
-              select: () => {
-                group.changeGroup(undefined);
-              },
+              select: () => group.changeGroup(undefined),
             }),
           ],
         }),
