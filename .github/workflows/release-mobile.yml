@@ -119,6 +119,8 @@ jobs:
 
   ios:
     runs-on: ${{ github.ref_name == 'canary' && 'macos-latest' || 'blaze/macos-14' }}
+    needs:
+      - build-ios-web
     steps:
       - uses: actions/checkout@v4
       - name: Download mobile artifact
