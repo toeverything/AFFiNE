@@ -142,17 +142,17 @@ export class ChatSession implements AsyncDisposable {
   }
 
   private mergeUserContent(params: PromptParams) {
-    const messages = this.stashMessages;
-    const firstMessage = messages.at(0);
+    const messages = this.takeMessages();
+    const lastMessage = messages.pop();
     if (
       this.state.prompt.paramKeys.includes('content') &&
       !messages.some(m => m.role === AiPromptRole.assistant) &&
-      firstMessage
+      lastMessage?.role === AiPromptRole.user
     ) {
       const normalizedParams = {
         ...params,
-        ...firstMessage.params,
-        content: firstMessage.content,
+        ...lastMessage.params,
+        content: lastMessage.content,
       };
       const finished = this.state.prompt.finish(
         normalizedParams,
@@ -160,11 +160,16 @@ export class ChatSession implements AsyncDisposable {
       );
 
       // attachments should be combined with the first user message
-      const firstUserMessage =
-        finished.find(m => m.role === 'user') || finished[0];
+      const firstUserMessageIndex = finished.findIndex(
+        m => m.role === AiPromptRole.user
+      );
+      // if prompt not contains user message, skip merge content
+      if (firstUserMessageIndex < 0) return null;
+      const firstUserMessage = finished[firstUserMessageIndex];
+
       firstUserMessage.attachments = [
         finished[0].attachments || [],
-        firstMessage.attachments || [],
+        lastMessage.attachments || [],
       ]
         .flat()
         .filter(v =>
@@ -172,6 +177,8 @@ export class ChatSession implements AsyncDisposable {
             ? !!v.trim()
             : v && v.attachment.trim() && v.mimeType
         );
+      //insert all previous user message content before first user message
+      finished.splice(firstUserMessageIndex, 0, ...messages);
 
       return finished;
     }

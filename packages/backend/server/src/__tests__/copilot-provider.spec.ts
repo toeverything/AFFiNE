@@ -273,12 +273,67 @@ test('should validate markdown list', t => {
 
 const actions = [
   {
+    name: 'Should chat with histories',
+    promptName: ['Chat With AFFiNE AI'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: `
+Hi! I’m going to send you a technical term related to real-time collaborative editing (e.g., CRDT, Operational Transformation, OT Composer, etc.). Whenever I send you a term:
+1. Translate it into Chinese (send me the Chinese version).
+2. Then translate that Chinese back into English (send me the retranslated English).
+3. Provide a brief, English-language introduction and context for this concept.
+4. In that English explanation, annotate any niche terms with their Chinese equivalents in parentheses (for example: “Conflict-Free Replicated Data Type (无冲突复制数据类型)”).
+5. Finally, give the origin or “term history” (e.g., who introduced it, in which paper or year).
+
+If you understand, please proceed by explaining the term “CRDT.”
+      `.trim(),
+      },
+      {
+        role: 'assistant' as const,
+        content: `
+1. **Chinese Translation:**  
+“CRDT” → **无冲突复制数据类型**
+
+2. **Back-Translation to English:**  
+无冲突复制数据类型 → **Conflict-Free Replicated Data Type**
+
+3. **English Introduction & Context:**  
+A **Conflict-Free Replicated Data Type (无冲突复制数据类型)** is an abstract data type designed for distributed systems where replicas of shared state may be modified concurrently without requiring coordination. CRDTs allow multiple users or processes to update the same data structure (for example, a shared document in a collaborative editor) at the same time.  
+- **Key Terms (with Chinese equivalents):**  
+  - **Replica (副本):** Each node or client maintains its own copy of the data.  
+  - **State-based (状态型) vs. Operation-based (操作型):** Two main CRDT classes; state-based CRDTs exchange entire state snapshots occasionally, whereas operation-based CRDTs broadcast only incremental operations.  
+  - **Merge Function (合并函数):** A deterministic function that resolves differences between two replicas without conflicts.  
+
+CRDTs enable **eventual consistency (最终一致性)** in real-time collaborative editors by ensuring that, after all updates propagate, every replica converges to the same state, even if operations arrive in different orders. This approach removes the need for a centralized server to resolve conflicts, making offline or peer-to-peer editing possible.
+
+4. **Origin / Term History:**  
+The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Carlos Baquero, and Marek Zawirski in their 2011 paper titled “Conflict-free Replicated Data Types” (published in the _Stabilization, Safety, and Security of Distributed Systems (SSS)_ conference). They formalized two families of CRDTs—state-based (“Convergent Replicated Data Types” or CvRDTs) and operation-based (“Commutative Replicated Data Types” or CmRDTs)—and proved their convergence properties under asynchronous, unreliable networks.
+      `.trim(),
+      },
+      {
+        role: 'user' as const,
+        content: `Thanks! Now please just tell me the **Chinese translation** and the **back-translated English term** that you provided previously for “CRDT.” Do not reprint the full introduction—only those two lines.`,
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      assertNotWrappedInCodeBlock(t, result);
+      const lower = result.toLowerCase();
+      t.assert(
+        lower.includes('无冲突复制数据类型') &&
+          lower.includes('conflict-free replicated data type'),
+        'The response should include “无冲突复制数据类型” and “Conflict-Free Replicated Data Type”'
+      );
+    },
+    type: 'text' as const,
+  },
+  {
     name: 'Should not have citation',
     promptName: ['Chat With AFFiNE AI'],
     messages: [
       {
         role: 'user' as const,
-        content: 'what is ssot',
+        content: 'what is AFFiNE AI?',
         params: {
           files: [
             {

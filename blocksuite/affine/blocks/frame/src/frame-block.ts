@@ -16,6 +16,7 @@ import {
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { html } from 'lit';
 import { state } from 'lit/decorators.js';
+import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import {
@@ -87,6 +88,12 @@ export class FrameBlockComponent extends GfxBlockComponent<FrameBlockModel> {
       this.gfx.tool.currentToolName$.value === 'frameNavigator';
     const frameIndex = this.gfx.layer.getZIndex(model);
 
+    const widgets = html`${repeat(
+      Object.entries(this.widgets),
+      ([id]) => id,
+      ([_, widget]) => widget
+    )}`;
+
     return html`
       <div
         class="affine-frame-container"
@@ -102,6 +109,7 @@ export class FrameBlockComponent extends GfxBlockComponent<FrameBlockModel> {
               : `1px solid ${cssVarV2('edgeless/frame/border/default')}`,
         })}
       ></div>
+      ${widgets}
     `;
   }
 
@@ -178,10 +186,21 @@ export const FrameBlockInteraction =
           selectable(context) {
             const { model } = context;
 
+            const onTitle =
+              model.externalBound?.containsPoint([
+                context.position.x,
+                context.position.y,
+              ]) ?? false;
+
             return (
               context.default(context) &&
-              (model.isLocked() || !isTransparent(model.props.background))
+              (model.isLocked() ||
+                !isTransparent(model.props.background) ||
+                onTitle)
             );
+          },
+          onSelect(context) {
+            return context.default(context);
           },
         };
       },

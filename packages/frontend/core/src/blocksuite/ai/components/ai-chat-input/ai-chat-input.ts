@@ -492,6 +492,7 @@ export class AIChatInput extends SignalWatcher(
   };
 
   private readonly _handlePaste = (event: ClipboardEvent) => {
+    event.stopPropagation();
     const items = event.clipboardData?.items;
     if (!items) return;
 

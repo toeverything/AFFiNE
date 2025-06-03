@@ -13,11 +13,13 @@ import { ConnectedAccount } from '@prisma/client';
 import type { Request, Response } from 'express';
 
 import {
+  Config,
   InvalidAuthState,
   InvalidOauthCallbackState,
   MissingOauthQueryParameter,
   OauthAccountAlreadyConnected,
   OauthStateExpired,
+  SignUpForbidden,
   UnknownOauthProvider,
   URLHelper,
   UseNamedGuard,
@@ -38,7 +40,8 @@ export class OAuthController {
     private readonly oauth: OAuthService,
     private readonly models: Models,
     private readonly providerFactory: OAuthProviderFactory,
-    private readonly url: URLHelper
+    private readonly url: URLHelper,
+    private readonly config: Config
   ) {}
 
   @Public()
@@ -184,7 +187,7 @@ export class OAuthController {
     }
 
     const externAccount = await provider.getUser(tokens, state);
-    const user = await this.loginFromOauth(
+    const user = await this.getOrCreateUserFromOauth(
       state.provider,
       externAccount,
       tokens
@@ -205,7 +208,7 @@ export class OAuthController {
     });
   }
 
-  private async loginFromOauth(
+  private async getOrCreateUserFromOauth(
     provider: OAuthProviderName,
     externalAccount: OAuthAccount,
     tokens: Tokens
@@ -219,6 +222,10 @@ export class OAuthController {
       // already connected
       await this.updateConnectedAccount(connectedAccount, tokens);
       return connectedAccount.user;
+    }
+
+    if (!this.config.auth.allowSignup) {
+      throw new SignUpForbidden();
     }
 
     const user = await this.models.user.fulfill(externalAccount.email, {

@@ -266,13 +266,6 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
-  enable_calendar_integration: {
-    category: 'affine',
-    displayName: 'Enable Calendar Integration',
-    description: 'Enable calendar integration',
-    configurable: false,
-    defaultState: isCanaryBuild,
-  },
   enable_cloud_indexer: {
     category: 'affine',
     displayName: 'Enable Cloud Indexer',

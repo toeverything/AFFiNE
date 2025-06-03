@@ -61,6 +61,8 @@ export const PromptConfigStrictSchema = z.object({
   // params requirements
   requireContent: z.boolean().nullable().optional(),
   requireAttachment: z.boolean().nullable().optional(),
+  // structure output
+  maxRetries: z.number().nullable().optional(),
   // openai
   frequencyPenalty: z.number().nullable().optional(),
   presencePenalty: z.number().nullable().optional(),

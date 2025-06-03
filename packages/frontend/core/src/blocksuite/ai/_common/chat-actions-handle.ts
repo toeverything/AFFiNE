@@ -34,6 +34,7 @@ import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import type { Store } from '@blocksuite/affine/store';
 import {
   BlockIcon,
+  EdgelessIcon,
   InsertBleowIcon as InsertBelowIcon,
   LinkedPageIcon,
   PageIcon,
@@ -430,7 +431,7 @@ const SAVE_AS_BLOCK: ChatAction = {
 };
 
 const ADD_TO_EDGELESS_AS_NOTE = {
-  icon: PageIcon({ width: '20px', height: '20px' }),
+  icon: EdgelessIcon({ width: '20px', height: '20px' }),
   title: 'Add to edgeless as note',
   showWhen: (host: EditorHost) => {
     if (host.std.store.readonly$.value) {

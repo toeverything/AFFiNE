@@ -80,4 +80,8 @@ describe('isValidUrl: determining whether a URL is valid is very complicated', (
     // See also https://stackoverflow.com/questions/9238640/how-long-can-a-tld-possibly-be#:~:text=Longest%20TLD%20up%20to%20date,17%20when%20decoded%20%5Bverm%C3%B6gensberatung%5D.
     expect(isValidUrl('example.xn--vermgensberatung-pwb')).toEqual(false);
   });
+
+  test('should allow ip address url when origin is same', () => {
+    expect(isValidUrl('http://127.0.0.1', 'http://127.0.0.1')).toEqual(true);
+  });
 });
