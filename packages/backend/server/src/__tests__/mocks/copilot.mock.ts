@@ -79,7 +79,7 @@ export class MockCopilotProvider extends OpenAIProvider {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Structured],
         },
       ],
     },

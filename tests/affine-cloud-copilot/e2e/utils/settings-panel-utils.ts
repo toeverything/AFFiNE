@@ -88,6 +88,10 @@ export class SettingsPanelUtils {
 
       const fileChooser = await fileChooserPromise;
       await fileChooser.setFiles(attachment);
+
+      await page
+        .getByTestId('workspace-embedding-setting-attachment-uploading-item')
+        .waitFor({ state: 'hidden' });
     }
   }
 

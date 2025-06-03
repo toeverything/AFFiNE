@@ -11,9 +11,12 @@ crate-type = ["cdylib", "staticlib"]
 name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 
+[features]
+use-as-lib = ["affine_nbstore/use-as-lib"]
+
 [dependencies]
 affine_common  = { workspace = true }
-affine_nbstore = { workspace = true, features = ["use-as-lib"] }
+affine_nbstore = { workspace = true }
 anyhow         = { workspace = true }
 base64-simd    = { workspace = true }
 chrono         = { workspace = true }

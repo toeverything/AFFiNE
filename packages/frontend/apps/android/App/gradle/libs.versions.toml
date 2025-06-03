@@ -34,6 +34,7 @@ ksp = "2.1.20-2.0.1"
 minSdk = "22"
 mozilla-rust-android = "0.9.6"
 okhttp-bom = "5.0.0-alpha.14"
+richtext = "1.0.0-alpha02"
 # @keep
 targetSdk = "35"
 timber = "5.0.1"
@@ -90,6 +91,8 @@ okhttp-bom = { module = "com.squareup.okhttp3:okhttp-bom", version.ref = "okhttp
 okhttp-coroutines = { module = "com.squareup.okhttp3:okhttp-coroutines" }
 okhttp-logging = { module = "com.squareup.okhttp3:logging-interceptor" }
 okhttp-sse = { module = "com.squareup.okhttp3:okhttp-sse" }
+richtext-commonmark = { module = "com.halilibo.compose-richtext:richtext-commonmark", version.ref = "richtext" }
+richtext-ui = { module = "com.halilibo.compose-richtext:richtext-ui", version.ref = "richtext" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 
 [plugins]

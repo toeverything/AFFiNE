@@ -335,7 +335,66 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
       requireAttachment: true,
     },
   },
+  {
+    name: 'Rerank results',
+    action: 'Rerank results',
+    model: 'gpt-4.1-mini',
+    messages: [
+      {
+        role: 'system',
+        content: `Evaluate and rank search results based on their relevance and quality to the given query by assigning a score from 1 to 10, where 10 denotes the highest relevance.
 
+Consider various factors such as content alignment with the query, source credibility, timeliness, and user intent.
+
+# Steps
+
+1. **Read the Query**: Understand the main intent and specific details of the search query.
+2. **Review Each Result**:
+   - Analyze the content's relevance to the query.
+   - Assess the credibility of the source or website.
+   - Consider the timeliness of the information, ensuring it's current and relevant.
+   - Evaluate the alignment with potential user intent based on the query.
+3. **Scoring**:
+   - Assign a score from 1 to 10 based on the overall relevance and quality, with 10 being the most relevant.
+
+# Output Format
+
+Return a JSON object for each result in the following format in raw:
+{
+  "scores": [
+    {
+      "reason": "[Reasoning behind the score in 20 words]",
+      "chunk": "[chunk]",
+      "targetId": "[targetId]",
+      "score": [1-10]
+    }
+  ]
+}
+
+# Notes
+
+- Be aware of the potential biases or inaccuracies in the sources.
+- Consider if the content is comprehensive and directly answers the query.
+- Pay attention to the nuances of user intent that might influence relevance.`,
+      },
+      {
+        role: 'user',
+        content: `
+<query>{{query}}</query>
+<results>
+{{#results}}
+<result>
+<targetId>{{targetId}}</targetId>
+<chunk>{{chunk}}</chunk>
+<content>
+{{content}}
+</content>
+</result>
+{{/results}}
+</results>`,
+      },
+    ],
+  },
   {
     name: 'Generate a caption',
     action: 'Generate a caption',
@@ -1558,7 +1617,7 @@ const imageActions: Prompt[] = [
 ];
 
 const CHAT_PROMPT: Omit<Prompt, 'name'> = {
-  model: 'gpt-4.1',
+  model: 'claude-sonnet-4@20250514',
   optionalModels: [
     'gpt-4.1',
     'o3',

@@ -11,6 +11,9 @@ const ALLOWED_SCHEMES = new Set([
 // https://publicsuffix.org/
 const TLD_REGEXP = /(?:\.[a-zA-Z]+)?(\.[a-zA-Z]{2,})$/;
 
+const IPV4_ADDR_REGEXP =
+  /^(25[0-5]|2[0-4]\d|[01]?\d\d?)(\.(25[0-5]|2[0-4]\d|[01]?\d\d?)){3}$/;
+
 const toURL = (str: string) => {
   try {
     if (!URL.canParse(str)) return null;
@@ -21,16 +24,20 @@ const toURL = (str: string) => {
   }
 };
 
-function resolveURL(str: string) {
+function resolveURL(str: string, baseUrl: string, padded = false) {
   const url = toURL(str);
   if (!url) return null;
 
   const protocol = url.protocol.substring(0, url.protocol.length - 1);
   const hostname = url.hostname;
+  const origin = url.origin;
 
   let allowed = ALLOWED_SCHEMES.has(protocol);
   if (allowed && hostname.includes('.')) {
-    allowed = TLD_REGEXP.test(hostname);
+    allowed =
+      origin === baseUrl ||
+      TLD_REGEXP.test(hostname) ||
+      (padded ? false : IPV4_ADDR_REGEXP.test(hostname));
   }
 
   return { url, allowed };
@@ -68,10 +75,10 @@ export function normalizeUrl(str: string) {
  *
  * For more detail see https://www.ietf.org/rfc/rfc1738.txt
  */
-export function isValidUrl(str: string) {
+export function isValidUrl(str: string, baseUrl = location.origin) {
   str = str.trim();
 
-  let result = resolveURL(str);
+  let result = resolveURL(str, baseUrl);
 
   if (result && !result.allowed) return false;
 
@@ -80,7 +87,7 @@ export function isValidUrl(str: string) {
     if (!hasScheme) {
       const dotIdx = str.indexOf('.');
       if (dotIdx > 0 && dotIdx < str.length - 1) {
-        result = resolveURL(`https://${str}`);
+        result = resolveURL(`https://${str}`, baseUrl, true);
       }
     }
   }

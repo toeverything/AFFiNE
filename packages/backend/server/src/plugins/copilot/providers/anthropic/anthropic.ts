@@ -142,7 +142,7 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
   }
 
   private isReasoningModel(model: string) {
-    // only claude 3.7 sonnet supports reasoning config
-    return model.startsWith('claude-3-7-sonnet');
+    // claude 3.5 sonnet doesn't support reasoning config
+    return model.includes('sonnet') && !model.startsWith('claude-3-5-sonnet');
   }
 }

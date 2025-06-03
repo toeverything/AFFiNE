@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import {
   AFFiNELogger,
   BlobNotFound,
-  Config,
+  CallMetric,
   CopilotContextFileNotSupported,
   DocNotFound,
   EventBus,
@@ -14,9 +14,11 @@ import {
 } from '../../../base';
 import { DocReader } from '../../../core/doc';
 import { Models } from '../../../models';
+import { PromptService } from '../prompt';
+import { CopilotProviderFactory } from '../providers';
 import { CopilotStorage } from '../storage';
 import { readStream } from '../utils';
-import { OpenAIEmbeddingClient } from './embedding';
+import { getEmbeddingClient } from './embedding';
 import type { Chunk, DocFragment } from './types';
 import { EMBEDDING_DIMENSIONS, EmbeddingClient } from './types';
 
@@ -29,11 +31,12 @@ export class CopilotContextDocJob {
   private client: EmbeddingClient | undefined;
 
   constructor(
-    private readonly config: Config,
     private readonly doc: DocReader,
     private readonly event: EventBus,
     private readonly logger: AFFiNELogger,
     private readonly models: Models,
+    private readonly providerFactory: CopilotProviderFactory,
+    private readonly prompt: PromptService,
     private readonly queue: JobQueue,
     private readonly storage: CopilotStorage
   ) {
@@ -53,10 +56,8 @@ export class CopilotContextDocJob {
   private async setup() {
     this.supportEmbedding =
       await this.models.copilotContext.checkEmbeddingAvailable();
-    if (this.supportEmbedding && this.config.copilot.providers.openai.apiKey) {
-      this.client = new OpenAIEmbeddingClient(
-        this.config.copilot.providers.openai
-      );
+    if (this.supportEmbedding) {
+      this.client = await getEmbeddingClient(this.providerFactory, this.prompt);
     }
   }
 
@@ -65,6 +66,7 @@ export class CopilotContextDocJob {
     return this.client as EmbeddingClient;
   }
 
+  @CallMetric('ai', 'addFileEmbeddingQueue')
   async addFileEmbeddingQueue(file: Jobs['copilot.embedding.files']) {
     if (!this.supportEmbedding) return;
 
@@ -87,6 +89,14 @@ export class CopilotContextDocJob {
     if (!this.supportEmbedding) return;
 
     for (const { workspaceId, docId } of docs) {
+      const jobId = `workspace:embedding:${workspaceId}:${docId}`;
+      const job = await this.queue.get(jobId, 'copilot.embedding.docs');
+      // if the job exists and is older than 5 minute, remove it
+      if (job && job.timestamp + 5 * 60 * 1000 < Date.now()) {
+        this.logger.verbose(`Removing old embedding job ${jobId}`);
+        await this.queue.remove(jobId, 'copilot.embedding.docs');
+      }
+
       await this.queue.add(
         'copilot.embedding.docs',
         {
@@ -97,6 +107,7 @@ export class CopilotContextDocJob {
         {
           jobId: `workspace:embedding:${workspaceId}:${docId}`,
           priority: options?.priority ?? 1,
+          timestamp: Date.now(),
         }
       );
     }
@@ -184,7 +195,7 @@ export class CopilotContextDocJob {
     );
   }
 
-  async readCopilotBlob(
+  private async readCopilotBlob(
     userId: string,
     workspaceId: string,
     blobId: string,
@@ -334,6 +345,9 @@ export class CopilotContextDocJob {
           workspaceId,
           docId
         );
+      this.logger.verbose(
+        `Check if doc ${docId} in workspace ${workspaceId} needs embedding: ${needEmbedding}`
+      );
       if (needEmbedding) {
         if (signal.aborted) return;
         const fragment = await this.getDocFragment(workspaceId, docId);
@@ -375,6 +389,9 @@ export class CopilotContextDocJob {
         error instanceof CopilotContextFileNotSupported &&
         error.message.includes('no content found')
       ) {
+        this.logger.warn(
+          `Doc ${docId} in workspace ${workspaceId} has no content, fulfilling empty embedding.`
+        );
         // if the doc is empty, we still need to fulfill the embedding
         await this.fulfillEmptyEmbedding(workspaceId, docId);
         return;

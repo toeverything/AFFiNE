@@ -29,12 +29,6 @@ export class OpenDocDropdownMenu extends SignalWatcher(
       gap: unset !important;
     }
 
-    editor-icon-button {
-      .label {
-        font-weight: 400;
-      }
-    }
-
     div[data-orientation] {
       width: 264px;
       gap: 4px;

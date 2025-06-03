@@ -69,6 +69,10 @@ export type Chunk = {
 export const EMBEDDING_DIMENSIONS = 1024;
 
 export abstract class EmbeddingClient {
+  async configured() {
+    return true;
+  }
+
   async getFileEmbeddings(
     file: File,
     chunkMapper: (chunk: Chunk[]) => Chunk[],

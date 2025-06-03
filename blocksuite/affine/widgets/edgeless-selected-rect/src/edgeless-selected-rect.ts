@@ -374,6 +374,8 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
     type: 'resize' | 'rotate';
     angle: number;
     handle: ResizeHandle;
+    flipX?: boolean;
+    flipY?: boolean;
     pure?: boolean;
   }) => {
     if (!options) {
@@ -381,8 +383,25 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
       return 'default';
     }
 
-    const { type, angle, handle } = options;
+    const { type, angle, flipX, flipY } = options;
     let cursor: CursorType = 'default';
+    let handle: ResizeHandle = options.handle;
+
+    if (flipX) {
+      handle = (
+        handle.includes('left')
+          ? handle.replace('left', 'right')
+          : handle.replace('right', 'left')
+      ) as ResizeHandle;
+    }
+
+    if (flipY) {
+      handle = (
+        handle.includes('top')
+          ? handle.replace('top', 'bottom')
+          : handle.replace('bottom', 'top')
+      ) as ResizeHandle;
+    }
 
     if (type === 'rotate') {
       cursor = generateCursorUrl(angle, handle);
@@ -626,7 +645,7 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
                 onResizeStart: () => {
                   this._mode = 'resize';
                 },
-                onResizeUpdate: ({ lockRatio, scaleX, exceed }) => {
+                onResizeUpdate: ({ lockRatio, scaleX, scaleY, exceed }) => {
                   if (lockRatio) {
                     this._scaleDirection = handle;
                     this._scalePercent = `${Math.round(scaleX * 100)}%`;
@@ -642,6 +661,8 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
                     type: 'resize',
                     angle: elements.length > 1 ? 0 : (elements[0]?.rotate ?? 0),
                     handle,
+                    flipX: scaleX < 0,
+                    flipY: scaleY < 0,
                   });
                 },
                 onResizeEnd: () => {
@@ -652,6 +673,14 @@ export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> 
             }
           },
           option => {
+            if (
+              ['resize', 'rotate'].includes(
+                interaction.activeInteraction$.value?.type ?? ''
+              )
+            ) {
+              return '';
+            }
+
             return this._updateCursor({
               ...option,
               angle: elements.length > 1 ? 0 : (elements[0]?.rotate ?? 0),

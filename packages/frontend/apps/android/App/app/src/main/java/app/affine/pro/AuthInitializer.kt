@@ -24,9 +24,9 @@ object AuthInitializer {
                 MainScope().launch(Dispatchers.IO) {
                     try {
                         val server = bridge.getCurrentServerBaseUrl().toHttpUrl()
-                        val sessionCookieStr = AffineApp.context().dataStore
+                        val sessionCookieStr = AFFiNEApp.context().dataStore
                             .get(server.host + CookieStore.AFFINE_SESSION)
-                        val userIdCookieStr = AffineApp.context().dataStore
+                        val userIdCookieStr = AFFiNEApp.context().dataStore
                             .get(server.host + CookieStore.AFFINE_USER_ID)
                         if (sessionCookieStr.isEmpty() || userIdCookieStr.isEmpty()) {
                             Timber.i("[init] user has not signed in yet.")
