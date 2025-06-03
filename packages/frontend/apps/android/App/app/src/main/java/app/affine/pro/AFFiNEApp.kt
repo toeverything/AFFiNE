@@ -13,7 +13,7 @@ import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 
 @HiltAndroidApp
-class AffineApp : Application() {
+class AFFiNEApp : Application() {
 
     override fun onCreate() {
         super.onCreate()

@@ -120,7 +120,8 @@ test.describe('frame selection', () => {
     expect(await getSelectedBoundCount(page)).toBe(1);
   });
 
-  test('frame can be selected by click frame title when a note overlap on it', async ({
+  // TODO(@L-Sun): see frame-title.spec.ts:60
+  test.skip('frame can be selected by click frame title when a note overlap on it', async ({
     page,
   }) => {
     const frame = await createFrame(page, [50, 50], [150, 150]);

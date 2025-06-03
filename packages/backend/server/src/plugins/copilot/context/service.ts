@@ -2,7 +2,6 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 
 import {
   Cache,
-  Config,
   CopilotInvalidContext,
   NoCopilotProviderAvailable,
   OnEvent,
@@ -15,9 +14,11 @@ import {
   ContextFile,
   Models,
 } from '../../../models';
-import { OpenAIEmbeddingClient } from './embedding';
+import { PromptService } from '../prompt';
+import { CopilotProviderFactory } from '../providers';
+import { getEmbeddingClient } from './embedding';
 import { ContextSession } from './session';
-import { EmbeddingClient } from './types';
+import type { EmbeddingClient } from './types';
 
 const CONTEXT_SESSION_KEY = 'context-session';
 
@@ -27,26 +28,24 @@ export class CopilotContextService implements OnApplicationBootstrap {
   private client: EmbeddingClient | undefined;
 
   constructor(
-    private readonly config: Config,
     private readonly cache: Cache,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly providerFactory: CopilotProviderFactory,
+    private readonly prompt: PromptService
   ) {}
 
   @OnEvent('config.init')
-  onConfigInit() {
-    this.setup();
+  async onConfigInit() {
+    await this.setup();
   }
 
   @OnEvent('config.changed')
-  onConfigChanged() {
-    this.setup();
+  async onConfigChanged() {
+    await this.setup();
   }
 
-  private setup() {
-    const configure = this.config.copilot.providers.openai;
-    if (configure.apiKey) {
-      this.client = new OpenAIEmbeddingClient(configure);
-    }
+  private async setup() {
+    this.client = await getEmbeddingClient(this.providerFactory, this.prompt);
   }
 
   async onApplicationBootstrap() {

@@ -1,6 +1,6 @@
 import { OverlayIdentifier } from '@blocksuite/affine-block-surface';
 import { MindmapElementModel } from '@blocksuite/affine-model';
-import { Bound } from '@blocksuite/global/gfx';
+import { type Bound } from '@blocksuite/global/gfx';
 import {
   type DragExtensionInitializeContext,
   type ExtensionDragMoveContext,
@@ -74,47 +74,63 @@ export class SnapExtension extends InteractivityExtension {
         return {};
       }
 
-      let alignBound: Bound | null = null;
-
       return {
         onResizeStart(context) {
-          alignBound = snapOverlay.setMovingElements(context.elements);
+          snapOverlay.setMovingElements(context.elements);
         },
         onResizeMove(context) {
-          if (!alignBound || alignBound.w === 0 || alignBound.h === 0) {
-            return;
+          const {
+            handle,
+            originalBound,
+            scaleX,
+            scaleY,
+            handleSign,
+            currentHandlePos,
+            elements,
+          } = context;
+          const rotate = elements.length > 1 ? 0 : elements[0].rotate;
+          const alignDirection: ('vertical' | 'horizontal')[] = [];
+          let switchDirection = false;
+          let nx = handleSign.x;
+          let ny = handleSign.y;
+
+          if (handle.length > 6) {
+            alignDirection.push('vertical', 'horizontal');
+          } else if (rotate % 90 === 0) {
+            nx =
+              handleSign.x * Math.cos((rotate / 180) * Math.PI) -
+              handleSign.y * Math.sin((rotate / 180) * Math.PI);
+            ny =
+              handleSign.x * Math.sin((rotate / 180) * Math.PI) +
+              handleSign.y * Math.cos((rotate / 180) * Math.PI);
+
+            if (Math.abs(nx) > Math.abs(ny)) {
+              alignDirection.push('horizontal');
+            } else {
+              alignDirection.push('vertical');
+            }
+
+            if (rotate % 180 !== 0) {
+              switchDirection = true;
+            }
           }
 
-          const { handle, handleSign, lockRatio } = context;
-          let { dx, dy } = context;
-
-          if (lockRatio) {
-            const min = Math.min(
-              Math.abs(dx / alignBound.w),
-              Math.abs(dy / alignBound.h)
+          if (alignDirection.length > 0) {
+            const rst = snapOverlay.alignResize(
+              currentHandlePos,
+              alignDirection
             );
 
-            dx = min * Math.sign(dx) * alignBound.w;
-            dy = min * Math.sign(dy) * alignBound.h;
+            const dx = switchDirection ? ny * rst.dy : nx * rst.dx;
+            const dy = switchDirection ? nx * rst.dx : ny * rst.dy;
+
+            context.suggest({
+              scaleX: scaleX + dx / originalBound.w,
+              scaleY: scaleY + dy / originalBound.h,
+            });
           }
-
-          const currentBound = new Bound(
-            alignBound.x +
-              (handle.includes('left') ? -dx * handleSign.xSign : 0),
-            alignBound.y +
-              (handle.includes('top') ? -dy * handleSign.ySign : 0),
-            Math.abs(alignBound.w + dx * handleSign.xSign),
-            Math.abs(alignBound.h + dy * handleSign.ySign)
-          );
-          const alignRst = snapOverlay.align(currentBound);
-
-          context.suggest({
-            dx: alignRst.dx + context.dx,
-            dy: alignRst.dy + context.dy,
-          });
         },
         onResizeEnd() {
-          alignBound = null;
           snapOverlay.clear();
         },
       };

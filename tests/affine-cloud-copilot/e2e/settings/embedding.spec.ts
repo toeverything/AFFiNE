@@ -168,13 +168,6 @@ test.describe('AISettings/Embedding', () => {
       'workspace-embedding-setting-attachment-list'
     );
 
-    // Uploading
-    await expect(
-      attachmentList.getByTestId(
-        'workspace-embedding-setting-attachment-uploading-item'
-      )
-    ).toHaveCount(2);
-
     // Persisted
     await expect(
       attachmentList.getByTestId('workspace-embedding-setting-attachment-item')

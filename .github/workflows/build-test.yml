@@ -151,7 +151,8 @@ jobs:
       - name: Clippy
         run: |
           rustup component add clippy
-          cargo clippy --all-targets --all-features -- -D warnings
+          cargo clippy --workspace --exclude affine_server_native --all-targets --all-features -- -D warnings
+          cargo clippy -p affine_server_native --all-targets --all-features -- -D warnings
 
   check-git-status:
     name: Check Git Status
@@ -923,7 +924,7 @@ jobs:
         uses: taiki-e/install-action@nextest
 
       - name: Run tests
-        run: cargo nextest run --release --no-fail-fast
+        run: cargo nextest run --workspace --exclude affine_server_native --features use-as-lib --release --no-fail-fast
 
   copilot-api-test:
     name: Server Copilot Api Test

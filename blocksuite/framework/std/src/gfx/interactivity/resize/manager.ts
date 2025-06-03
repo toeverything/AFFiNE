@@ -2,6 +2,7 @@ import {
   Bound,
   getCommonBoundWithRotation,
   type IBound,
+  type IPoint,
   type IVec,
 } from '@blocksuite/global/gfx';
 
@@ -29,7 +30,7 @@ export const DEFAULT_HANDLES: ResizeHandle[] = [
   'bottom',
 ];
 
-type ElementInitialSnapshot = Readonly<Required<IBound>>;
+type ReadonlyIBound = Readonly<Required<IBound>>;
 
 export interface OptionResize {
   elements: GfxModel[];
@@ -37,16 +38,18 @@ export interface OptionResize {
   lockRatio: boolean;
   event: PointerEvent;
   onResizeMove: (payload: {
-    dx: number;
-    dy: number;
+    scaleX: number;
+    scaleY: number;
 
-    handleSign: {
-      xSign: number;
-      ySign: number;
-    };
+    originalBound: IBound;
+
+    handleSign: IPoint;
+
+    handlePos: IVec;
+    currentHandlePos: IVec;
 
     lockRatio: boolean;
-  }) => { dx: number; dy: number };
+  }) => { scaleX: number; scaleY: number };
   onResizeUpdate: (payload: {
     lockRatio: boolean;
     scaleX: number;
@@ -59,8 +62,16 @@ export interface OptionResize {
       matrix: DOMMatrix;
     }[];
   }) => void;
-  onResizeStart?: (payload: { data: { model: GfxModel }[] }) => void;
-  onResizeEnd?: (payload: { data: { model: GfxModel }[] }) => void;
+  onResizeStart?: (payload: {
+    handlePos: IVec;
+    handleSign: IPoint;
+    data: { model: GfxModel }[];
+  }) => void;
+  onResizeEnd?: (payload: {
+    handlePos: IVec;
+    handleSign: IPoint;
+    data: { model: GfxModel }[];
+  }) => void;
 }
 
 export type RotateOption = {
@@ -95,11 +106,102 @@ export class ResizeController {
     this.gfx = option.gfx;
   }
 
+  getCoordsTransform(originalBound: IBound, handle: ResizeHandle) {
+    const { x: xSign, y: ySign } = this.getHandleSign(handle);
+    const pivot = new DOMPoint(
+      originalBound.x + ((-xSign + 1) / 2) * originalBound.w,
+      originalBound.y + ((-ySign + 1) / 2) * originalBound.h
+    );
+    const toLocalM = new DOMMatrix().translate(-pivot.x, -pivot.y);
+    const toLocalRotatedM = new DOMMatrix()
+      .translate(-pivot.x, -pivot.y)
+      .translate(
+        originalBound.w / 2 + originalBound.x,
+        originalBound.h / 2 + originalBound.y
+      )
+      .rotate(-(originalBound.rotate ?? 0))
+      .translate(
+        -(originalBound.w / 2 + originalBound.x),
+        -(originalBound.h / 2 + originalBound.y)
+      );
+
+    const toLocal = (p: DOMPoint, withRotation: boolean = false) =>
+      p.matrixTransform(withRotation ? toLocalRotatedM : toLocalM);
+    const toModel = (p: DOMPoint) =>
+      p.matrixTransform(toLocalRotatedM.inverse());
+
+    const handlePos = toModel(
+      new DOMPoint(originalBound.w * xSign, originalBound.h * ySign)
+    );
+
+    return {
+      xSign,
+      ySign,
+      originalBound,
+      toLocalM,
+      toLocalRotatedM,
+      toLocal,
+      toModel,
+      handlePos: [handlePos.x, handlePos.y] as IVec,
+    };
+  }
+
+  getScaleFromDelta(
+    transform: ReturnType<ResizeController['getCoordsTransform']>,
+    delta: { dx: number; dy: number },
+    handleStartPos: IVec,
+    lockRatio: boolean
+  ) {
+    const { originalBound, xSign, ySign, toModel, toLocal } = transform;
+    const currentPos = toLocal(
+      new DOMPoint(handleStartPos[0] + delta.dx, handleStartPos[1] + delta.dy),
+      true
+    );
+
+    let scaleX = xSign ? currentPos.x / (originalBound.w * xSign) : 1;
+    let scaleY = ySign ? currentPos.y / (originalBound.h * ySign) : 1;
+
+    if (lockRatio) {
+      const min = Math.min(Math.abs(scaleX), Math.abs(scaleY));
+      scaleX = Math.sign(scaleX) * min;
+      scaleY = Math.sign(scaleY) * min;
+    }
+
+    const finalHandlePos = toModel(
+      new DOMPoint(
+        originalBound.w * xSign * scaleX,
+        originalBound.h * ySign * scaleY
+      )
+    );
+
+    return {
+      scaleX,
+      scaleY,
+      handlePos: [finalHandlePos.x, finalHandlePos.y] as IVec,
+    };
+  }
+
+  getScaleMatrix(
+    { scaleX, scaleY }: { scaleX: number; scaleY: number },
+    lockRatio: boolean
+  ) {
+    if (lockRatio) {
+      const min = Math.min(Math.abs(scaleX), Math.abs(scaleY));
+      scaleX = Math.sign(scaleX) * min;
+      scaleY = Math.sign(scaleY) * min;
+    }
+
+    return {
+      scaleX,
+      scaleY,
+      scaleM: new DOMMatrix().scaleSelf(scaleX, scaleY),
+    };
+  }
+
   startResize(options: OptionResize) {
     const {
       elements,
       handle,
-      lockRatio,
       onResizeStart,
       onResizeMove,
       onResizeUpdate,
@@ -107,19 +209,32 @@ export class ResizeController {
       event,
     } = options;
 
-    const originals: ElementInitialSnapshot[] = elements.map(el => ({
+    const originals: ReadonlyIBound[] = elements.map(el => ({
       x: el.x,
       y: el.y,
       w: el.w,
       h: el.h,
       rotate: el.rotate,
     }));
-    const originalBound = getCommonBoundWithRotation(originals);
+    const originalBound: IBound =
+      originals.length > 1
+        ? getCommonBoundWithRotation(originals)
+        : {
+            x: originals[0].x,
+            y: originals[0].y,
+            w: originals[0].w,
+            h: originals[0].h,
+            rotate: originals[0].rotate,
+          };
     const startPt = this.gfx.viewport.toModelCoordFromClientCoord([
       event.clientX,
       event.clientY,
     ]);
-    const handleSign = this.getHandleSign(handle);
+    const transform = this.getCoordsTransform(originalBound, handle);
+    const handleSign = {
+      x: transform.xSign,
+      y: transform.ySign,
+    };
 
     const onPointerMove = (e: PointerEvent) => {
       const currPt = this.gfx.viewport.toModelCoordFromClientCoord([
@@ -130,45 +245,69 @@ export class ResizeController {
         dx: currPt[0] - startPt[0],
         dy: currPt[1] - startPt[1],
       };
-      const shouldLockRatio = lockRatio || e.shiftKey;
+      const shouldLockRatio =
+        options.lockRatio || e.shiftKey || elements.length > 1;
+      const {
+        scaleX,
+        scaleY,
+        handlePos: currentHandlePos,
+      } = this.getScaleFromDelta(
+        transform,
+        delta,
+        transform.handlePos,
+        shouldLockRatio
+      );
 
-      delta = onResizeMove({
-        dx: delta.dx,
-        dy: delta.dy,
+      const scale = onResizeMove({
+        scaleX,
+        scaleY,
+
+        originalBound,
+
         handleSign,
+
+        handlePos: transform.handlePos,
+        currentHandlePos,
+
         lockRatio: shouldLockRatio,
       });
+      const scaleInfo = this.getScaleMatrix(scale, shouldLockRatio);
 
       if (elements.length === 1) {
         this.resizeSingle(
           originals[0],
           elements[0],
           shouldLockRatio,
-          startPt,
-          delta,
-          handleSign,
+          transform,
+          scaleInfo,
           onResizeUpdate
         );
       } else {
         this.resizeMulti(
-          originalBound,
           originals,
           elements,
-          startPt,
-          delta,
-          handleSign,
+          transform,
+          scaleInfo,
           onResizeUpdate
         );
       }
     };
 
-    onResizeStart?.({ data: elements.map(model => ({ model })) });
+    onResizeStart?.({
+      handleSign,
+      handlePos: transform.handlePos,
+      data: elements.map(model => ({ model })),
+    });
 
     const onPointerUp = () => {
       this.host.removeEventListener('pointermove', onPointerMove);
       this.host.removeEventListener('pointerup', onPointerUp);
 
-      onResizeEnd?.({ data: elements.map(model => ({ model })) });
+      onResizeEnd?.({
+        handleSign,
+        handlePos: transform.handlePos,
+        data: elements.map(model => ({ model })),
+      });
     };
 
     this.host.addEventListener('pointermove', onPointerMove);
@@ -176,55 +315,15 @@ export class ResizeController {
   }
 
   private resizeSingle(
-    orig: ElementInitialSnapshot,
+    orig: ReadonlyIBound,
     model: GfxModel,
     lockRatio: boolean,
-    startPt: IVec,
-    delta: {
-      dx: number;
-      dy: number;
-    },
-    handleSign: { xSign: number; ySign: number },
+    transform: ReturnType<typeof ResizeController.prototype.getCoordsTransform>,
+    scale: { scaleX: number; scaleY: number; scaleM: DOMMatrix },
     updateCallback: OptionResize['onResizeUpdate']
   ) {
-    const { xSign, ySign } = handleSign;
-
-    const pivot = new DOMPoint(
-      orig.x + (-xSign === 1 ? orig.w : 0),
-      orig.y + (-ySign === 1 ? orig.h : 0)
-    );
-    const toLocalRotatedM = new DOMMatrix()
-      .translate(-pivot.x, -pivot.y)
-      .translate(orig.w / 2 + orig.x, orig.h / 2 + orig.y)
-      .rotate(-orig.rotate)
-      .translate(-(orig.w / 2 + orig.x), -(orig.h / 2 + orig.y));
-    const toLocalM = new DOMMatrix().translate(-pivot.x, -pivot.y);
-
-    const toLocal = (p: DOMPoint, withRotation: boolean) =>
-      p.matrixTransform(withRotation ? toLocalRotatedM : toLocalM);
-    const toModel = (p: DOMPoint) =>
-      p.matrixTransform(toLocalRotatedM.inverse());
-
-    const handleLocal = toLocal(new DOMPoint(startPt[0], startPt[1]), true);
-    const currPtLocal = toLocal(
-      new DOMPoint(startPt[0] + delta.dx, startPt[1] + delta.dy),
-      true
-    );
-
-    let scaleX = xSign
-      ? (xSign * (currPtLocal.x - handleLocal.x) + orig.w) / orig.w
-      : 1;
-    let scaleY = ySign
-      ? (ySign * (currPtLocal.y - handleLocal.y) + orig.h) / orig.h
-      : 1;
-
-    if (lockRatio) {
-      const min = Math.min(Math.abs(scaleX), Math.abs(scaleY));
-      scaleX = Math.sign(scaleX) * min;
-      scaleY = Math.sign(scaleY) * min;
-    }
-
-    const scaleM = new DOMMatrix().scale(scaleX, scaleY);
+    const { toLocalM, toLocalRotatedM, toLocal, toModel } = transform;
+    const { scaleX, scaleY, scaleM } = scale;
 
     const [visualTopLeft, visualBottomRight] = [
       new DOMPoint(orig.x, orig.y),
@@ -282,45 +381,14 @@ export class ResizeController {
   }
 
   private resizeMulti(
-    originalBound: Bound,
-    originals: ElementInitialSnapshot[],
+    originals: ReadonlyIBound[],
     elements: GfxModel[],
-    startPt: IVec,
-    delta: {
-      dx: number;
-      dy: number;
-    },
-    handleSign: { xSign: number; ySign: number },
+    transform: ReturnType<ResizeController['getCoordsTransform']>,
+    scale: { scaleX: number; scaleY: number; scaleM: DOMMatrix },
     updateCallback: OptionResize['onResizeUpdate']
   ) {
-    const { xSign, ySign } = handleSign;
-    const pivot = new DOMPoint(
-      originalBound.x + ((-xSign + 1) / 2) * originalBound.w,
-      originalBound.y + ((-ySign + 1) / 2) * originalBound.h
-    );
-    const toLocalM = new DOMMatrix().translate(-pivot.x, -pivot.y);
-
-    const toLocal = (p: DOMPoint) => p.matrixTransform(toLocalM);
-
-    const handleLocal = toLocal(new DOMPoint(startPt[0], startPt[1]));
-    const currPtLocal = toLocal(
-      new DOMPoint(startPt[0] + delta.dx, startPt[1] + delta.dy)
-    );
-
-    let scaleX = xSign
-      ? (xSign * (currPtLocal.x - handleLocal.x) + originalBound.w) /
-        originalBound.w
-      : 1;
-    let scaleY = ySign
-      ? (ySign * (currPtLocal.y - handleLocal.y) + originalBound.h) /
-        originalBound.h
-      : 1;
-
-    const min = Math.max(Math.abs(scaleX), Math.abs(scaleY));
-    scaleX = Math.sign(scaleX) * min;
-    scaleY = Math.sign(scaleY) * min;
-
-    const scaleM = new DOMMatrix().scale(scaleX, scaleY);
+    const { toLocalM } = transform;
+    const { scaleX, scaleY, scaleM } = scale;
 
     const data = elements.map((model, i) => {
       const orig = originals[i];
@@ -357,7 +425,7 @@ export class ResizeController {
   startRotate(option: RotateOption) {
     const { event, elements, onRotateUpdate } = option;
 
-    const originals: ElementInitialSnapshot[] = elements.map(el => ({
+    const originals: ReadonlyIBound[] = elements.map(el => ({
       x: el.x,
       y: el.y,
       w: el.w,
@@ -429,7 +497,7 @@ export class ResizeController {
   }
 
   private rotateSingle(option: {
-    orig: ElementInitialSnapshot;
+    orig: ReadonlyIBound;
     model: GfxModel;
     startPt: IVec;
     currentPt: IVec;
@@ -481,7 +549,7 @@ export class ResizeController {
   }
 
   private rotateMulti(option: {
-    origs: ElementInitialSnapshot[];
+    origs: ReadonlyIBound[];
     models: GfxModel[];
     startPt: IVec;
     currentPt: IVec;
@@ -567,23 +635,23 @@ export class ResizeController {
   private getHandleSign(handle: ResizeHandle) {
     switch (handle) {
       case 'top-left':
-        return { xSign: -1, ySign: -1 };
+        return { x: -1, y: -1 };
       case 'top':
-        return { xSign: 0, ySign: -1 };
+        return { x: 0, y: -1 };
       case 'top-right':
-        return { xSign: 1, ySign: -1 };
+        return { x: 1, y: -1 };
       case 'right':
-        return { xSign: 1, ySign: 0 };
+        return { x: 1, y: 0 };
       case 'bottom-right':
-        return { xSign: 1, ySign: 1 };
+        return { x: 1, y: 1 };
       case 'bottom':
-        return { xSign: 0, ySign: 1 };
+        return { x: 0, y: 1 };
       case 'bottom-left':
-        return { xSign: -1, ySign: 1 };
+        return { x: -1, y: 1 };
       case 'left':
-        return { xSign: -1, ySign: 0 };
+        return { x: -1, y: 0 };
       default:
-        return { xSign: 0, ySign: 0 };
+        return { x: 0, y: 0 };
     }
   }
 }

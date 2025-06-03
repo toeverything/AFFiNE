@@ -56,16 +56,11 @@ export type IntegrationItem = Exclude<IntegrationCard, 'id'> & {
 };
 
 export function getAllowedIntegrationList$(
-  featureFlagService: FeatureFlagService
+  _featureFlagService: FeatureFlagService
 ) {
-  return LiveData.computed(get => {
+  return LiveData.computed(() => {
     return INTEGRATION_LIST.filter(item => {
       if (!item) return false;
-
-      if (item.id === 'calendar') {
-        return get(featureFlagService.flags.enable_calendar_integration.$);
-      }
-
       return true;
     }) as IntegrationItem[];
   });

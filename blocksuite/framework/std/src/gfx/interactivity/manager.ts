@@ -947,23 +947,34 @@ export class InteractivityManager extends GfxExtension {
       ...options,
       lockRatio,
       elements,
-      onResizeMove: ({ dx, dy, handleSign, lockRatio }) => {
+      onResizeMove: ({
+        scaleX,
+        scaleY,
+        originalBound,
+        handleSign,
+        handlePos,
+        currentHandlePos,
+        lockRatio,
+      }) => {
         const suggested: {
-          dx: number;
-          dy: number;
+          scaleX: number;
+          scaleY: number;
           priority?: number;
         }[] = [];
-        const suggest = (distance: { dx: number; dy: number }) => {
+        const suggest = (distance: { scaleX: number; scaleY: number }) => {
           suggested.push(distance);
         };
 
         extensionHandlers.forEach(ext => {
           ext.onResizeMove?.({
-            dx,
-            dy,
+            scaleX,
+            scaleY,
             elements,
-            handleSign,
             handle,
+            handleSign,
+            handlePos,
+            originalBound,
+            currentHandlePos,
             lockRatio,
             suggest,
           });
@@ -973,9 +984,9 @@ export class InteractivityManager extends GfxExtension {
           return (a.priority ?? 0) - (b.priority ?? 0);
         });
 
-        return last(suggested) ?? { dx, dy };
+        return last(suggested) ?? { scaleX, scaleY };
       },
-      onResizeStart: ({ data }) => {
+      onResizeStart: ({ handleSign, handlePos, data }) => {
         this.activeInteraction$.value = {
           type: 'resize',
           elements,
@@ -984,6 +995,8 @@ export class InteractivityManager extends GfxExtension {
           ext.onResizeStart?.({
             elements,
             handle,
+            handlePos,
+            handleSign,
           });
         });
 
@@ -1045,13 +1058,15 @@ export class InteractivityManager extends GfxExtension {
 
         options.onResizeUpdate?.({ scaleX, scaleY, lockRatio, exceed });
       },
-      onResizeEnd: ({ data }) => {
+      onResizeEnd: ({ handleSign, handlePos, data }) => {
         this.activeInteraction$.value = null;
 
         extensionHandlers.forEach(ext => {
           ext.onResizeEnd?.({
             elements,
             handle,
+            handlePos,
+            handleSign,
           });
         });
         options.onResizeEnd?.();

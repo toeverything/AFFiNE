@@ -172,7 +172,7 @@ export abstract class CopilotProvider<C = any> {
   structure(
     _cond: ModelConditions,
     _messages: PromptMessage[],
-    _options: CopilotStructuredOptions
+    _options?: CopilotStructuredOptions
   ): Promise<string> {
     throw new CopilotProviderNotSupported({
       provider: this.type,
@@ -193,7 +193,7 @@ export abstract class CopilotProvider<C = any> {
 
   embedding(
     _model: ModelConditions,
-    _text: string,
+    _text: string | string[],
     _options?: CopilotEmbeddingOptions
   ): Promise<number[][]> {
     throw new CopilotProviderNotSupported({

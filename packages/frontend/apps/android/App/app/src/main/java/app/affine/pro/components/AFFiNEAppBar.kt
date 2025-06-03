@@ -1,18 +1,15 @@
 package app.affine.pro.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
-import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,11 +18,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import app.affine.pro.theme.AffineTheme
+import androidx.compose.ui.unit.dp
+import app.affine.pro.R
+import app.affine.pro.theme.AFFiNETheme
+import app.affine.pro.theme.ThemeMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AffineAppBar(
+fun AFFiNEAppBar(
     modifier: Modifier = Modifier,
     scrollBehavior: TopAppBarScrollBehavior? = null,
     onNavIconPressed: () -> Unit = { },
@@ -37,30 +37,33 @@ fun AffineAppBar(
         actions = actions,
         title = title,
         scrollBehavior = scrollBehavior,
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors().copy(
+            containerColor = AFFiNETheme.colors.backgroundPrimary,
+            titleContentColor = AFFiNETheme.colors.textPrimary,
+        ),
         navigationIcon = {
-            IconButton(
+            AFFiNEIconButton(
+                R.drawable.ic_close,
+                modifier = Modifier.size(44.dp),
                 onClick = onNavIconPressed
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Default.ArrowBackIos,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            )
         }
     )
 }
 
 @Composable
-fun AffineDropMenu(
-    icon: @Composable () -> Unit,
+fun AFFiNEDropMenu(
+    @DrawableRes resId: Int,
+    modifier: Modifier,
     menuItems: @Composable ColumnScope.() -> Unit = {}
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { expanded = !expanded }) {
-            icon()
-        }
+        AFFiNEIconButton(
+            resId,
+            modifier = modifier,
+            onClick = { expanded = !expanded },
+        )
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
@@ -73,16 +76,12 @@ fun AffineDropMenu(
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
-fun AffineAppBarPreview() {
-    AffineTheme {
-        AffineAppBar(
+fun AffineAppBarPreviewLight() {
+    AFFiNETheme(mode = ThemeMode.Light) {
+        AFFiNEAppBar(
             title = { Text("Preview!") },
             actions = {
-                AffineDropMenu(
-                    icon = {
-                        Icon(Icons.Default.MoreHoriz, contentDescription = "Actions")
-                    },
-                )
+                AFFiNEDropMenu(R.drawable.ic_more_horizontal, Modifier.size(44.dp))
             },
         )
     }
@@ -92,15 +91,11 @@ fun AffineAppBarPreview() {
 @Preview
 @Composable
 fun AffineAppBarPreviewDark() {
-    AffineTheme(isDarkTheme = true) {
-        AffineAppBar(
+    AFFiNETheme(mode = ThemeMode.Dark) {
+        AFFiNEAppBar(
             title = { Text("Preview!") },
             actions = {
-                AffineDropMenu(
-                    icon = {
-                        Icon(Icons.Default.MoreHoriz, contentDescription = "Actions")
-                    },
-                )
+                AFFiNEDropMenu(R.drawable.ic_more_horizontal, Modifier.size(44.dp))
             },
         )
     }

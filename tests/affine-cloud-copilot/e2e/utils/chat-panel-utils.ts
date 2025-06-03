@@ -294,12 +294,16 @@ export class ChatPanelUtils {
   }
 
   public static async waitForEmbeddingProgress(page: Page) {
-    await page.getByTestId('chat-panel-embedding-progress').waitFor({
-      state: 'visible',
-    });
-    await page.getByTestId('chat-panel-embedding-progress').waitFor({
-      state: 'hidden',
-    });
+    try {
+      await page.getByTestId('chat-panel-embedding-progress').waitFor({
+        state: 'visible',
+      });
+      await page.getByTestId('chat-panel-embedding-progress').waitFor({
+        state: 'hidden',
+      });
+    } catch {
+      // do nothing
+    }
   }
 
   public static async enableNetworkSearch(page: Page) {

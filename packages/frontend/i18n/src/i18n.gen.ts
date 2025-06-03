@@ -2748,6 +2748,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.mobile.setting.others.website"](): string;
     /**
+      * `Delete my account`
+      */
+    ["com.affine.mobile.setting.others.delete-account"](): string;
+    /**
       * `Want to keep data local?`
       */
     ["com.affine.mobile.sign-in.skip.hint"](): string;

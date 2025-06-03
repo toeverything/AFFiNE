@@ -1,6 +1,7 @@
 package app.affine.pro.service
 
-import app.affine.pro.AffineApp
+import app.affine.pro.AFFiNEApp
+import app.affine.pro.CapacitorConfig
 import app.affine.pro.utils.dataStore
 import app.affine.pro.utils.set
 import com.google.firebase.crashlytics.ktx.crashlytics
@@ -32,6 +33,14 @@ object OkHttp {
                 CookieStore.saveCookies(url.host, cookies)
             }
         })
+        .addInterceptor {
+            it.proceed(
+                it.request()
+                    .newBuilder()
+                    .addHeader("x-affine-version", CapacitorConfig.getAffineVersion())
+                    .build()
+            )
+        }
         .addInterceptor(HttpLoggingInterceptor { msg ->
             Timber.d(msg)
         }.apply {
@@ -52,11 +61,11 @@ object CookieStore {
         _cookies[host] = cookies
         MainScope().launch(Dispatchers.IO) {
             cookies.find { it.name == AFFINE_SESSION }?.let {
-                AffineApp.context().dataStore.set(host + AFFINE_SESSION, it.toString())
+                AFFiNEApp.context().dataStore.set(host + AFFINE_SESSION, it.toString())
             }
             cookies.find { it.name == AFFINE_USER_ID }?.let {
                 Timber.d("Update user id [${it.value}]")
-                AffineApp.context().dataStore.set(host + AFFINE_USER_ID, it.toString())
+                AFFiNEApp.context().dataStore.set(host + AFFINE_USER_ID, it.toString())
                 Firebase.crashlytics.setUserId(it.value)
             }
         }

@@ -124,8 +124,8 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
         model: modelInstance,
         system,
         messages: msgs,
-        temperature: options.temperature || 0,
-        maxTokens: options.maxTokens || 4096,
+        temperature: options.temperature ?? 0,
+        maxTokens: options.maxTokens ?? 4096,
         abortSignal: options.signal,
       });
 
@@ -164,8 +164,8 @@ export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
         model: modelInstance,
         system,
         messages: msgs,
-        temperature: options.temperature || 0,
-        maxTokens: options.maxTokens || 4096,
+        temperature: options.temperature ?? 0,
+        maxTokens: options.maxTokens ?? 4096,
         abortSignal: options.signal,
       });
 

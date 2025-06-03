@@ -103,7 +103,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Structured],
           defaultForOutputType: true,
         },
       ],
@@ -113,7 +113,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Structured],
         },
       ],
     },
@@ -122,7 +122,16 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Structured],
+        },
+      ],
+    },
+    {
+      id: 'gpt-4.1-nano',
+      capabilities: [
+        {
+          input: [ModelInputType.Text, ModelInputType.Image],
+          output: [ModelOutputType.Text, ModelOutputType.Structured],
         },
       ],
     },
@@ -283,8 +292,8 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         model: modelInstance,
         system,
         messages: msgs,
-        temperature: options.temperature || 0,
-        maxTokens: options.maxTokens || 4096,
+        temperature: options.temperature ?? 0,
+        maxTokens: options.maxTokens ?? 4096,
         providerOptions: {
           openai: this.getOpenAIOptions(options, model.id),
         },
@@ -322,10 +331,10 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         model: modelInstance,
         system,
         messages: msgs,
-        frequencyPenalty: options.frequencyPenalty || 0,
-        presencePenalty: options.presencePenalty || 0,
-        temperature: options.temperature || 0,
-        maxTokens: options.maxTokens || 4096,
+        frequencyPenalty: options.frequencyPenalty ?? 0,
+        presencePenalty: options.presencePenalty ?? 0,
+        temperature: options.temperature ?? 0,
+        maxTokens: options.maxTokens ?? 4096,
         providerOptions: {
           openai: this.getOpenAIOptions(options, model.id),
         },
@@ -388,8 +397,9 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         model: modelInstance,
         system,
         messages: msgs,
-        temperature: ('temperature' in options && options.temperature) || 0,
-        maxTokens: ('maxTokens' in options && options.maxTokens) || 4096,
+        temperature: options.temperature ?? 0,
+        maxTokens: options.maxTokens ?? 4096,
+        maxRetries: options.maxRetries ?? 3,
         schema,
         providerOptions: {
           openai: options.user ? { user: options.user } : {},
