@@ -2,7 +2,7 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import pkg from '../package.json'
+import pkg from '../package.json' with { type: 'json' };
 
 declare global {
   namespace globalThis {
