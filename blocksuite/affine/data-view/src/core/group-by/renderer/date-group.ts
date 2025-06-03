@@ -5,9 +5,9 @@ import { property } from 'lit/decorators.js';
 import type { Group } from '../trait.js';
 
 export class DateGroupView extends SignalWatcher(
-    WithDisposable(ShadowlessElement),
+  WithDisposable(ShadowlessElement),
 ) {
-    static override styles = css`
+  static override styles = css`
     .dv-date-group {
       border-radius: 8px;
       padding: 4px 8px;
@@ -34,16 +34,16 @@ export class DateGroupView extends SignalWatcher(
     }
   `;
 
-    @property({ attribute: false })
-    accessor group!: Group;
+  @property({ attribute: false })
+  accessor group!: Group;
 
-    protected override render() {
-        const name = this.group.name$.value;
-        const count = this.group.rows.length;
-        return html`<div class="dv-date-group">
+  protected override render() {
+    const name = this.group.name$.value;
+    const count = this.group.rows.length;
+    return html`<div class="dv-date-group">
       <span>${name || 'Ungroups'}</span>
       ${count ? html`<span class="counter">${count}</span>` : ''}
     </div>`;
-    }
+  }
 }
 customElements.define('data-view-date-group-view', DateGroupView);

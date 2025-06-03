@@ -291,41 +291,36 @@ export const popGroupSetting = (
               ],
             }),
 
-            ...(type === 'date'
-              ? [
-                menu.group({
-                  items: [
-                    menu.subMenu({
-                      name: 'Start week on',
-                      postfix: html`
-                            <div style="font-size:16px;color:var(--affine-text-secondary-color);">
-                              ${group.groupInfo$.value?.config.name === 'date-week-mon'
-                          ? 'Monday'
-                          : 'Sunday'}
-                            </div>
-                          `,
-                      options: {
-                        items: [
-                          menu.action({
-                            name: 'Monday',
-                            isSelected:
-                              group.groupInfo$.value?.config.name === 'date-week-mon',
-                            select: () => group.changeGroupMode('date-week-mon'),
-                          }),
-                          menu.action({
-                            name: 'Sunday',
-                            isSelected:
-                              group.groupInfo$.value?.config.name === 'date-week-sun',
-                            select: () => group.changeGroupMode('date-week-sun'),
-                          }),
-                        ],
-                      },
-                    }),
-                  ],
+            menu.group({
+              items: [
+                menu.subMenu({
+                  name: 'Start week on',
+                  postfix: html`
+                        <div style="font-size:16px;color:var(--affine-text-secondary-color);">
+                          ${group.groupInfo$.value?.config.name === 'date-week-mon'
+                      ? 'Monday'
+                      : 'Sunday'}
+                        </div>
+                      `,
+                  options: {
+                    items: [
+                      menu.action({
+                        name: 'Monday',
+                        isSelected:
+                          group.groupInfo$.value?.config.name === 'date-week-mon',
+                        select: () => group.changeGroupMode('date-week-mon'),
+                      }),
+                      menu.action({
+                        name: 'Sunday',
+                        isSelected:
+                          group.groupInfo$.value?.config.name === 'date-week-sun',
+                        select: () => group.changeGroupMode('date-week-sun'),
+                      }),
+                    ],
+                  },
                 }),
-              ]
-              : []),
-
+              ],
+            }),
             menu.group({
               items: [
                 menu.subMenu({
