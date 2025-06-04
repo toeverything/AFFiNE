@@ -61,10 +61,13 @@ function fixFailedMigrations() {
       });
       console.log(`migration [${migration}] has been rolled back.`);
     } catch (err) {
-      if (
-        err.message.includes(
-          'cannot be rolled back because it is not in a failed state'
-        )
+      if (err.message.includes(
+            'cannot be rolled back because it is not in a failed state'
+          )
+          ||
+          err.message.includes(
+            'cannot be rolled back because it was never applied'
+          )
       ) {
         // migration has been rolled back, skip it
         continue;
