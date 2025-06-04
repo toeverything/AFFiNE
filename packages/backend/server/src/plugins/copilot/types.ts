@@ -47,26 +47,24 @@ export enum AvailableModels {
   Gpt41 = 'gpt-4.1',
   Gpt410414 = 'gpt-4.1-2025-04-14',
   Gpt41Mini = 'gpt-4.1-mini',
+  Gpt41Nano = 'gpt-4.1-nano',
   // embeddings
   TextEmbedding3Large = 'text-embedding-3-large',
   TextEmbedding3Small = 'text-embedding-3-small',
   TextEmbeddingAda002 = 'text-embedding-ada-002',
-  // moderation
-  TextModerationLatest = 'text-moderation-latest',
-  TextModerationStable = 'text-moderation-stable',
   // text to image
   DallE3 = 'dall-e-3',
+  GptImage = 'gpt-image-1',
 }
 
-export type AvailableModel = keyof typeof AvailableModels;
+const availableModels = Object.values(AvailableModels);
 
 export function getTokenEncoder(model?: string | null): Tokenizer | null {
   if (!model) return null;
-  const modelStr = AvailableModels[model as AvailableModel];
-  if (!modelStr) return null;
-  if (modelStr.startsWith('gpt')) {
-    return fromModelName(modelStr);
-  } else if (modelStr.startsWith('dall')) {
+  if (!availableModels.includes(model as AvailableModels)) return null;
+  if (model.startsWith('gpt')) {
+    return fromModelName(model);
+  } else if (model.startsWith('dall')) {
     // dalle don't need to calc the token
     return null;
   } else {

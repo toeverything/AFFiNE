@@ -12,6 +12,7 @@ import {
   MemberIcon,
   TagIcon,
   TemplateIcon,
+  TitleIcon,
 } from '@blocksuite/icons/rc';
 
 import type { GroupHeaderProps } from '../explorer/types';
@@ -55,6 +56,11 @@ import {
 } from './template';
 
 export const SystemPropertyTypes = {
+  title: {
+    icon: TitleIcon,
+    name: 'Title',
+    allowInOrderBy: true,
+  },
   tags: {
     icon: TagIcon,
     name: 'Tags',
@@ -213,8 +219,8 @@ export const SystemPropertyTypes = {
 
     allowInOrderBy?: boolean;
     allowInGroupBy?: boolean;
-    filterMethod: { [key: string]: I18nString };
-    filterValue: React.FC<{
+    filterMethod?: { [key: string]: I18nString };
+    filterValue?: React.FC<{
       filter: FilterParams;
       isDraft?: boolean;
       onDraftCompleted?: () => void;
