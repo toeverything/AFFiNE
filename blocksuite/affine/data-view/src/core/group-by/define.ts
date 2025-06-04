@@ -68,17 +68,18 @@ const dateRelativeCfg = buildDateCfg(
     if (isYesterday(d)) return [{ key: 'yesterday', value: +d }];
     if (daysAgo <= 7) return [{ key: 'last7', value: +d }];
     if (daysAgo <= 30) return [{ key: 'last30', value: +d }];
-    return [{ key: 'older', value: +d }];
+    const m = startOfMonth(d);
+    return [{ key: `${+m}`, value: +m }];
   },
   v => {
-    const map: Record<string, string> = {
-      today: 'Today',
-      yesterday: 'Yesterday',
-      last7: 'Last 7 days',
-      last30: 'Last 30 days',
-      older: 'Older',
-    };
-    return map[v as unknown as string] ?? '';
+    if (v == null) return '';
+    const d = startOfDay(new Date(v));
+    const daysAgo = differenceInCalendarDays(new Date(), d);
+    if (isToday(d)) return 'Today';
+    if (isYesterday(d)) return 'Yesterday';
+    if (daysAgo <= 7) return 'Last 7 days';
+    if (daysAgo <= 30) return 'Last 30 days';
+    return fmt(new Date(v), 'MMM yyyy');
   },
 );
 

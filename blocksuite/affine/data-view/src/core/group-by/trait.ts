@@ -6,6 +6,7 @@ import {
   computed,
   type ReadonlySignal,
   signal,
+  effect,
 } from '@preact/signals-core';
 
 import type { GroupBy, GroupProperty } from '../common/types.js';
@@ -22,7 +23,7 @@ import {
 } from './matcher.js';
 import type { GroupByConfig } from './types.js';
 
-const RELATIVE_ASC = ['today', 'yesterday', 'last7', 'last30', 'older'];
+const RELATIVE_ASC = ['last30', 'last7', 'yesterday', 'today'];
 const RELATIVE_DESC = [...RELATIVE_ASC].reverse();
 
 
@@ -30,7 +31,28 @@ function compareDateKeys(mode: string | undefined, asc: boolean) {
   return (a: string, b: string) => {
     if (mode === 'date-relative') {
       const order = asc ? RELATIVE_ASC : RELATIVE_DESC;
-      return order.indexOf(a) - order.indexOf(b);
+      const idxA = order.indexOf(a);
+      const idxB = order.indexOf(b);
+      const na = Number(a);
+      const nb = Number(b);
+      const aNum = Number.isFinite(na);
+      const bNum = Number.isFinite(nb);
+
+      if (aNum && bNum) {
+        return asc ? na - nb : nb - na;
+      }
+
+      if (aNum && idxB !== -1) return asc ? -1 : 1;
+      if (bNum && idxA !== -1) return asc ? 1 : -1;
+
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return asc ? 1 : -1;
+      if (idxB !== -1) return asc ? -1 : 1;
+
+      if (aNum) return asc ? -1 : 1;
+      if (bNum) return asc ? 1 : -1;
+
+      return asc ? a.localeCompare(b) : b.localeCompare(a);
     }
 
     const na = Number(a);
@@ -85,6 +107,8 @@ export class Group<
 }
 
 export class GroupTrait {
+  hideEmpty$ = signal<boolean>(true);
+  sortAsc$ = signal<boolean>(true);
   constructor(
     private readonly groupBy$: ReadonlySignal<GroupBy | undefined>,
     public view: SingleView,
@@ -99,10 +123,14 @@ export class GroupTrait {
         keys: string[],
       ) => void;
     },
-  ) { }
-
-  hideEmpty$ = signal<boolean>(true);
-  sortAsc$ = signal<boolean>(true);
+  ) {
+    effect(() => {
+      const desc = this.groupBy$.value?.sort?.desc;
+      if (desc != null) {
+        this.sortAsc$.value = !desc;
+      }
+    });
+  }
 
   groupInfo$ = computed<GroupInfo | undefined>(() => {
     const groupBy = this.groupBy$.value;
@@ -183,6 +211,11 @@ export class GroupTrait {
   setDateSortOrder(asc: boolean) {
     this.sortAsc$.value = asc;
 
+    const gb = this.groupBy$.value;
+    if (gb) {
+      this.ops.groupBySet({ ...gb, sort: { desc: !asc } });
+    }
+
     const gi = this.groupInfo$.value;
     if (!gi || !gi.config.name?.startsWith('date-')) return;
 
@@ -227,6 +260,7 @@ export class GroupTrait {
       type: 'groupBy',
       columnId: propId,
       name: modeName,
+      sort: { desc: !this.sortAsc$.value },
     });
   }
 
@@ -240,14 +274,16 @@ export class GroupTrait {
       column.type$.value,
     );
     if (meta) {
-      this.ops.groupBySet(
-        defaultGroupBy(
-          this.view.manager.dataSource,
-          meta,
-          column.id,
-          column.data$.value,
-        ),
+      const gb = defaultGroupBy(
+        this.view.manager.dataSource,
+        meta,
+        column.id,
+        column.data$.value,
       );
+      if (gb) {
+        gb.sort = { desc: !this.sortAsc$.value };
+      }
+      this.ops.groupBySet(gb);
     }
   }
 
