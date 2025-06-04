@@ -13,6 +13,10 @@ import { repeat } from 'lit/directives/repeat.js';
 import { debounce } from 'lodash-es';
 
 import { AffineIcon } from '../_common/icons';
+import type {
+  AINetworkSearchConfig,
+  AIReasoningConfig,
+} from '../components/ai-chat-input';
 import {
   type ChatMessage,
   isChatAction,
@@ -161,6 +165,12 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
+  @property({ attribute: false })
+  accessor networkSearchConfig!: AINetworkSearchConfig;
+
+  @property({ attribute: false })
+  accessor reasoningConfig!: AIReasoningConfig;
+
   @query('.chat-panel-messages-container')
   accessor messagesContainer: HTMLDivElement | null = null;
 
@@ -173,6 +183,17 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
 
   getScrollContainer(): HTMLDivElement | null {
     return this.messagesContainer;
+  }
+
+  private get _isNetworkActive() {
+    return (
+      !!this.networkSearchConfig.visible.value &&
+      !!this.networkSearchConfig.enabled.value
+    );
+  }
+
+  private get _isReasoningActive() {
+    return !!this.reasoningConfig.enabled.value;
   }
 
   private _renderAIOnboarding() {
@@ -380,6 +401,8 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         where: 'chat-panel',
         control: 'chat-send',
         isRootSession: true,
+        reasoning: this._isReasoningActive,
+        webSearch: this._isNetworkActive,
       });
       this.updateContext({ abortController });
       for await (const text of stream) {

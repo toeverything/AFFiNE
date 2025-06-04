@@ -19,7 +19,6 @@ import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
 import { PromptMessage, PromptParams } from './providers';
 import {
-  AvailableModel,
   ChatHistory,
   ChatMessage,
   ChatMessageSchema,
@@ -38,7 +37,7 @@ export class ChatSession implements AsyncDisposable {
     private readonly messageCache: ChatMessageCache,
     private readonly state: ChatSessionState,
     private readonly dispose?: (state: ChatSessionState) => Promise<void>,
-    private readonly maxTokenSize = 3840
+    private readonly maxTokenSize = state.prompt.config?.maxTokens || 128 * 1024
   ) {}
 
   get model() {
@@ -297,8 +296,8 @@ export class ChatSessionService {
               messageCost: { increment: userMessages.length },
               tokenCost: {
                 increment: this.calculateTokenSize(
-                  userMessages,
-                  state.prompt.model as AvailableModel
+                  state.messages,
+                  state.prompt.model
                 ),
               },
             },
@@ -402,10 +401,7 @@ export class ChatSessionService {
     });
   }
 
-  private calculateTokenSize(
-    messages: PromptMessage[],
-    model: AvailableModel
-  ): number {
+  private calculateTokenSize(messages: PromptMessage[], model: string): number {
     const encoder = getTokenEncoder(model);
     return messages
       .map(m => encoder?.count(m.content) ?? 0)

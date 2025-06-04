@@ -81,6 +81,10 @@ export class DocsService extends Service {
     return this.store.watchTrashDocIds();
   }
 
+  allDocTitle$() {
+    return this.store.watchAllDocTitle();
+  }
+
   constructor(
     private readonly store: DocsStore,
     private readonly docPropertiesStore: DocPropertiesStore,
