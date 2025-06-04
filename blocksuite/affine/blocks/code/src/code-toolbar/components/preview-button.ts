@@ -58,11 +58,7 @@ export class PreviewButton extends WithDisposable(SignalWatcher(LitElement)) {
   `;
 
   private readonly _toggle = (value: boolean) => {
-    if (this.blockComponent.store.readonly) return;
-
-    this.blockComponent.store.updateBlock(this.blockComponent.model, {
-      preview: value,
-    });
+    this.blockComponent.setPreviewState(value);
 
     const std = this.blockComponent.std;
     const mode = std.getOptional(DocModeProvider)?.getEditorMode() ?? 'page';
@@ -77,7 +73,7 @@ export class PreviewButton extends WithDisposable(SignalWatcher(LitElement)) {
   };
 
   get preview() {
-    return !!this.blockComponent.model.props.preview$.value;
+    return this.blockComponent.preview$.value;
   }
 
   override render() {

@@ -69,6 +69,17 @@ export class AIChatBlockPeekView extends LitElement {
     return this.blockModel.props.rootWorkspaceId;
   }
 
+  private get _isNetworkActive() {
+    return (
+      !!this.networkSearchConfig.visible.value &&
+      !!this.networkSearchConfig.enabled.value
+    );
+  }
+
+  private get _isReasoningActive() {
+    return !!this.reasoningConfig.enabled.value;
+  }
+
   private _textRendererOptions: TextRendererOptions = {};
 
   private _forkBlockId: string | undefined = undefined;
@@ -347,6 +358,8 @@ export class AIChatBlockPeekView extends LitElement {
         signal: abortController.signal,
         where: 'ai-chat-block',
         control: 'chat-send',
+        reasoning: this._isReasoningActive,
+        webSearch: this._isNetworkActive,
       });
 
       this.updateContext({ abortController });
