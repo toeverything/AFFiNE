@@ -40,6 +40,16 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
 
   private _inlineRangeProvider: InlineRangeProvider | null = null;
 
+  private readonly _localPreview$ = signal<boolean | null>(null);
+
+  preview$: Signal<boolean> = computed(() => {
+    const modelPreview = !!this.model.props.preview$.value;
+    if (this.store.readonly) {
+      return this._localPreview$.value ?? modelPreview;
+    }
+    return modelPreview;
+  });
+
   highlightTokens$: Signal<ThemedToken[][]> = signal([]);
 
   languageName$: Signal<string> = computed(() => {
@@ -393,7 +403,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
         true) &&
       (this.model.props.lineNumber ?? true);
 
-    const preview = !!this.model.props.preview;
+    const preview = this.preview$.value;
     const previewContext = this.std.getOptional(
       CodeBlockPreviewIdentifier(this.model.props.language ?? '')
     );
@@ -461,6 +471,14 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   override accessor useCaptionEditor = true;
 
   override accessor useZeroWidth = true;
+
+  setPreviewState(preview: boolean) {
+    if (this.store.readonly) {
+      this._localPreview$.value = preview;
+    } else {
+      this.store.updateBlock(this.model, { preview });
+    }
+  }
 }
 
 declare global {

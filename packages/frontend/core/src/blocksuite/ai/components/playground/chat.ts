@@ -299,6 +299,8 @@ export class PlaygroundChat extends SignalWatcher(
         .isLoading=${this.isLoading}
         .extensions=${this.extensions}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
+        .networkSearchConfig=${this.networkSearchConfig}
+        .reasoningConfig=${this.reasoningConfig}
       ></chat-panel-messages>
       <ai-chat-composer
         .host=${this.host}

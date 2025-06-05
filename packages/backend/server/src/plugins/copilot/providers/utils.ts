@@ -101,13 +101,13 @@ export async function chatToGPTMessage(
             ({ attachment, mimeType } = attachment);
           }
           if (SIMPLE_IMAGE_URL_REGEX.test(attachment)) {
+            const data =
+              attachment.startsWith('data:') || useBase64Attachment
+                ? await fetch(attachment).then(r => r.arrayBuffer())
+                : new URL(attachment);
             if (mimeType.startsWith('image/')) {
-              contents.push({ type: 'image', image: attachment, mimeType });
+              contents.push({ type: 'image', image: data, mimeType });
             } else {
-              const data =
-                attachment.startsWith('data:') || useBase64Attachment
-                  ? await fetch(attachment).then(r => r.arrayBuffer())
-                  : new URL(attachment);
               contents.push({ type: 'file' as const, data, mimeType });
             }
           }

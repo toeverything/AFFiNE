@@ -356,12 +356,12 @@ export enum CopilotModels {
   Gpt4OmniMini0718 = 'Gpt4OmniMini0718',
   Gpt41 = 'Gpt41',
   Gpt41Mini = 'Gpt41Mini',
+  Gpt41Nano = 'Gpt41Nano',
   Gpt410414 = 'Gpt410414',
+  GptImage = 'GptImage',
   TextEmbedding3Large = 'TextEmbedding3Large',
   TextEmbedding3Small = 'TextEmbedding3Small',
   TextEmbeddingAda002 = 'TextEmbeddingAda002',
-  TextModerationLatest = 'TextModerationLatest',
-  TextModerationStable = 'TextModerationStable',
 }
 
 export interface CopilotPromptConfigInput {

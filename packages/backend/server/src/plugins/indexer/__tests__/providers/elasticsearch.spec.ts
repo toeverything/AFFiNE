@@ -33,6 +33,7 @@ _test.before(async () => {
       IndexerModule,
       ConfigModule.override({
         indexer: {
+          enabled: true,
           provider: {
             type: SearchProviderType.Elasticsearch,
             endpoint: 'http://localhost:9200',
