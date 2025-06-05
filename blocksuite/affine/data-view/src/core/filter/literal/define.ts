@@ -1,7 +1,6 @@
 import { menu, popMenu, popupTargetFromElement, subMenuMiddleware } from '@blocksuite/affine-components/context-menu';
-import { ArrowDownSmallIcon } from '@blocksuite/icons/lit';
+import { ArrowDownSmallIcon, CheckBoxCheckSolidIcon, CheckBoxUnIcon } from '@blocksuite/icons/lit';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import { CheckBoxCheckSolidIcon, CheckBoxUnIcon } from '@blocksuite/icons/lit';
 import { html, css } from 'lit';
 
 import { t } from '../../logical/type-presets.js';

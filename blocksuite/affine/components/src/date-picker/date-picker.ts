@@ -603,6 +603,7 @@ export class DatePicker extends WithDisposable(LitElement) {
   @property({ type: Number }) accessor padding: number = 20;
   @property({ type: Boolean }) accessor popup: boolean = false;
   @property({ type: Number }) accessor size: number = 28;
+  @property({ type: String, reflect: true }) accessor unit: 'day' | 'week' | 'month' | 'year' = 'day';
   @property({ type: Number }) accessor value: number | undefined = undefined;
 
   @property({ attribute: false }) accessor onChange: ((value: Date) => void) | undefined = undefined;

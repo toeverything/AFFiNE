@@ -3,8 +3,8 @@ import {
   popMenu,
   type PopupTarget,
   popupTargetFromElement,
-  subMenuMiddleware,
 } from '@blocksuite/affine-components/context-menu';
+import type { MenuConfig } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
   ArrowDownSmallIcon,
@@ -84,7 +84,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     this.onChange(list);
   }
 
-  private getArgsItems(): import('@blocksuite/affine-components/context-menu').MenuConfig[] {
+  private getArgsItems(): MenuConfig[] {
     const f = this.filter$;
     const fnType = this.fnType$;
     if (!f || !fnType) return [];
