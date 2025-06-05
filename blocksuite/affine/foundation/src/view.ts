@@ -9,6 +9,7 @@ import {
 } from '@blocksuite/affine-ext-loader';
 import {
   AutoClearSelectionService,
+  CitationService,
   DefaultOpenDocExtension,
   DNDAPIExtension,
   DocDisplayMetaService,
@@ -76,6 +77,7 @@ export class FoundationViewExtension extends ViewExtensionProvider<FoundationVie
       FileSizeLimitService,
       LinkPreviewCache,
       LinkPreviewService,
+      CitationService,
     ]);
     context.register(clipboardConfigs);
     if (this.isEdgeless(context.scope)) {
