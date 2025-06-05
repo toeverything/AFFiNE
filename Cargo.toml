@@ -77,12 +77,12 @@ smol_str               = "0.3"
 sqlx                   = { version = "0.8", default-features = false, features = ["chrono", "macros", "migrate", "runtime-tokio", "sqlite", "tls-rustls"] }
 strum_macros           = "0.27.0"
 symphonia              = { version = "0.5", features = ["all", "opt-simd"] }
-text-splitter          = "0.25"
+text-splitter          = "0.27"
 thiserror              = "2"
-tiktoken-rs            = "0.6"
+tiktoken-rs            = "0.7"
 tokio                  = "1.45"
 tree-sitter            = { version = "0.25" }
-tree-sitter-c          = { version = "0.23" }
+tree-sitter-c          = { version = "0.24" }
 tree-sitter-c-sharp    = { version = "0.23" }
 tree-sitter-cpp        = { version = "0.23" }
 tree-sitter-go         = { version = "0.23" }

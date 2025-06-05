@@ -37,6 +37,16 @@ export const SystemFilterCondition = ({
   const methods = type.filterMethod;
   const Value = type.filterValue;
 
+  if (!methods || !Value) {
+    return (
+      <UnknownFilterCondition
+        isDraft={isDraft}
+        onDraftCompleted={onDraftCompleted}
+        filter={filter}
+      />
+    );
+  }
+
   return (
     <Condition
       filter={filter}

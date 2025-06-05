@@ -220,6 +220,12 @@ export class UIEventDispatcher extends LifeCycleWatcher {
 
       this._setActive(false);
     });
+    // When the document is hidden, the event dispatcher should be inactive
+    this.disposables.addFromEvent(document, 'visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        this._setActive(false);
+      }
+    });
   }
 
   private _buildEventScopeBySelection(name: EventName) {

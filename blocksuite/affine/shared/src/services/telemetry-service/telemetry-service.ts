@@ -1,6 +1,7 @@
 import { createIdentifier } from '@blocksuite/global/di';
 import type { ExtensionType } from '@blocksuite/store';
 
+import type { CitationEvents } from './citation.js';
 import type { CodeBlockEvents } from './code-block.js';
 import type { OutDatabaseAllEvents } from './database.js';
 import type { LinkToolbarEvents } from './link.js';
@@ -28,7 +29,8 @@ export type TelemetryEventMap = OutDatabaseAllEvents &
   LinkToolbarEvents &
   SlashMenuEvents &
   CodeBlockEvents &
-  NoteEvents & {
+  NoteEvents &
+  CitationEvents & {
     DocCreated: DocCreatedEvent;
     Link: TelemetryEvent;
     LinkedDocCreated: LinkedDocCreatedEvent;
