@@ -387,8 +387,11 @@ export class AIChatComposer extends SignalWatcher(
 
     this._isLoading = true;
     await this._initChips();
-    const isProcessing = this.chips.some(chip => chip.state === 'processing');
-    if (isProcessing) {
+    const needPoll = this.chips.some(
+      chip =>
+        chip.state === 'processing' || isTagChip(chip) || isCollectionChip(chip)
+    );
+    if (needPoll) {
       await this._pollContextDocsAndFiles();
     }
     this._isLoading = false;

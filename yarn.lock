@@ -573,7 +573,7 @@ __metadata:
     builder-util-runtime: "npm:^9.2.10"
     cross-env: "npm:^7.0.3"
     debug: "npm:^4.4.0"
-    electron: "npm:^36.0.0"
+    electron: "npm:^35.0.0"
     electron-log: "npm:^5.2.4"
     electron-squirrel-startup: "npm:1.0.1"
     electron-updater: "npm:^6.3.9"
@@ -776,7 +776,7 @@ __metadata:
     "@vitest/coverage-istanbul": "npm:3.1.3"
     "@vitest/ui": "npm:3.1.3"
     cross-env: "npm:^7.0.3"
-    electron: "npm:^36.0.0"
+    electron: "npm:^35.0.0"
     eslint: "npm:^9.16.0"
     eslint-config-prettier: "npm:^10.0.0"
     eslint-import-resolver-typescript: "npm:^4.0.0"
@@ -8968,14 +8968,14 @@ __metadata:
   linkType: hard
 
 "@nestjs-cls/transactional-adapter-prisma@npm:^1.2.19":
-  version: 1.2.21
-  resolution: "@nestjs-cls/transactional-adapter-prisma@npm:1.2.21"
+  version: 1.2.23
+  resolution: "@nestjs-cls/transactional-adapter-prisma@npm:1.2.23"
   peerDependencies:
-    "@nestjs-cls/transactional": ^3.0.0
+    "@nestjs-cls/transactional": ^3.0.2
     "@prisma/client": "> 4 < 7"
-    nestjs-cls: ^6.0.0
+    nestjs-cls: ^6.0.1
     prisma: "> 4 < 7"
-  checksum: 10/3a0e6ed43ab97b6f94a859bcb9c71d79034f5c1ded1038204e374f170f81ea198ec93793c05b70d556342e4cec3d9fbd4e792f544f229572474bc10231b6a0ae
+  checksum: 10/98228a8fe132951095082b1657d73889ecbf564c4426bfc1b1daf6b0cdcfd29a9f243a77f1c9021edff5484e44664bc224b4337b6db3da188a6a969640a65a15
   languageName: node
   linkType: hard
 
@@ -20595,16 +20595,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"electron@npm:^36.0.0":
-  version: 36.2.1
-  resolution: "electron@npm:36.2.1"
+"electron@npm:^35.0.0":
+  version: 35.5.1
+  resolution: "electron@npm:35.5.1"
   dependencies:
     "@electron/get": "npm:^2.0.0"
     "@types/node": "npm:^22.7.7"
     extract-zip: "npm:^2.0.1"
   bin:
     electron: cli.js
-  checksum: 10/2dbcac9208c6a513b75ef92a969441407e44fb11377a3d831d3e043d3c5e1bf927badc475a490b554e6007995f1a28db9d833044202d21d629bb84587745dbf7
+  checksum: 10/765752c94c3bea799f62fb0a75049a10452ff97e791a96111f36b97293ffed9240b27dbc083c01f7a2c7172e84b6b394b07c9aaf91d57783958b2adb4e570579
   languageName: node
   linkType: hard
 

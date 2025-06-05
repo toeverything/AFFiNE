@@ -142,6 +142,25 @@ export class DocsStore extends Store {
     );
   }
 
+  watchAllDocTitle() {
+    return yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(pages => yjsObservePath(pages, '*.title')),
+      map(pages => {
+        if (pages instanceof YArray) {
+          return pages.map(v => ({
+            id: v.get('id') as string,
+            title: (v.get('title') ?? '') as string,
+          }));
+        } else {
+          return [];
+        }
+      })
+    );
+  }
+
   watchNonTrashDocIds() {
     return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),

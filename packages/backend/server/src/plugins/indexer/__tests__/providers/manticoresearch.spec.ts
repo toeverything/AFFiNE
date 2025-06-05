@@ -18,6 +18,7 @@ const module = await createModule({
     IndexerModule,
     ConfigModule.override({
       indexer: {
+        enabled: true,
         provider: {
           type: SearchProviderType.Manticoresearch,
           endpoint: 'http://localhost:9308',

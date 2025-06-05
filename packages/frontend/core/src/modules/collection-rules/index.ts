@@ -61,6 +61,7 @@ import { SystemOrderByProvider } from './impls/order-by/system';
 import { TagsOrderByProvider } from './impls/order-by/tags';
 import { TemplateOrderByProvider } from './impls/order-by/template';
 import { TextPropertyOrderByProvider } from './impls/order-by/text';
+import { TitleOrderByProvider } from './impls/order-by/title';
 import { UpdatedAtOrderByProvider } from './impls/order-by/updated-at';
 import { UpdatedByOrderByProvider } from './impls/order-by/updated-by';
 import { FilterProvider, GroupByProvider, OrderByProvider } from './provider';
@@ -365,5 +366,6 @@ export function configureCollectionRulesModule(framework: Framework) {
     ])
     .impl(OrderByProvider('system:template'), TemplateOrderByProvider, [
       DocsService,
-    ]);
+    ])
+    .impl(OrderByProvider('system:title'), TitleOrderByProvider, [DocsService]);
 }

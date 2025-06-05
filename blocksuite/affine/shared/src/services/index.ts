@@ -1,5 +1,6 @@
 export * from './auto-clear-selection-service';
 export * from './block-meta-service';
+export * from './citation-service';
 export * from './doc-display-meta-service';
 export * from './doc-mode-service';
 export * from './drag-handle-config';

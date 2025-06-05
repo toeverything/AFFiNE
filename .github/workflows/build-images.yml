@@ -113,6 +113,7 @@ jobs:
   build-server-native:
     name: Build Server native - ${{ matrix.targets.name }}
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.flavor }}
     strategy:
       fail-fast: false
       matrix:

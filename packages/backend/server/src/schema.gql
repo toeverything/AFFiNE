@@ -262,12 +262,12 @@ enum CopilotModels {
   Gpt4OmniMini0718
   Gpt41
   Gpt41Mini
+  Gpt41Nano
   Gpt410414
+  GptImage
   TextEmbedding3Large
   TextEmbedding3Small
   TextEmbeddingAda002
-  TextModerationLatest
-  TextModerationStable
 }
 
 input CopilotPromptConfigInput {
