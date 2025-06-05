@@ -4,12 +4,11 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { PlusIcon } from '@blocksuite/icons/lit';
+import { PlusIcon, GroupToggleArrowIcon } from '@blocksuite/icons/lit';
 import { signal } from '@preact/signals-core';
 import { ShadowlessElement } from '@blocksuite/std';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { css, html, unsafeCSS, nothing } from 'lit';
-import { GroupToggleArrowIcon } from '../../../../../components/src/icons/misc.js';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
