@@ -69,37 +69,39 @@ export async function prepareClipboardData(
 
 export function isPureFileInClipboard(clipboardData: DataTransfer) {
   const types = clipboardData.types;
-  return (
-    (types.length === 1 && types[0] === 'Files') ||
-    (types.length === 2 &&
-      (types.includes('text/plain') || types.includes('text/html')) &&
-      types.includes('Files'))
-  );
+  const allowedTypes = new Set([
+    'Files',
+    'text/plain',
+    'text/html',
+    'application/x-moz-file',
+  ]);
+
+  return types.includes('Files') && types.every(type => allowedTypes.has(type));
 }
 
 export function tryGetSvgFromClipboard(clipboardData: DataTransfer) {
-  const types = clipboardData.types;
+  try {
+    const parser = new DOMParser();
+    const svgDoc = parser.parseFromString(
+      clipboardData.getData('text/plain'),
+      'image/svg+xml'
+    );
+    const svg = svgDoc.documentElement;
 
-  if (types.length === 1 && types[0] !== 'text/plain') {
+    if (svg.tagName !== 'svg' || !svg.hasAttribute('xmlns')) {
+      return null;
+    }
+    const svgContent = DOMPurify.sanitize(svgDoc.documentElement, {
+      USE_PROFILES: { svg: true },
+    });
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+    const file = new File([blob], 'pasted-image.svg', {
+      type: 'image/svg+xml',
+    });
+    return file;
+  } catch {
     return null;
   }
-
-  const parser = new DOMParser();
-  const svgDoc = parser.parseFromString(
-    clipboardData.getData('text/plain'),
-    'image/svg+xml'
-  );
-  const svg = svgDoc.documentElement;
-
-  if (svg.tagName !== 'svg' || !svg.hasAttribute('xmlns')) {
-    return null;
-  }
-  const svgContent = DOMPurify.sanitize(svgDoc.documentElement, {
-    USE_PROFILES: { svg: true },
-  });
-  const blob = new Blob([svgContent], { type: 'image/svg+xml' });
-  const file = new File([blob], 'pasted-image.svg', { type: 'image/svg+xml' });
-  return file;
 }
 
 export function edgelessElementsBoundFromRawData(
