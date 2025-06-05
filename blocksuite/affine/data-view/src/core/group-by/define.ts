@@ -9,7 +9,7 @@ import { SelectGroupView } from './renderer/select-group.js';
 import { StringGroupView } from './renderer/string-group.js';
 import { DateGroupView } from './renderer/date-group.js';
 import type { GroupByConfig } from './types.js';
-import { addDays } from 'date-fns' 
+import { addDays } from 'date-fns'
 
 import {
   differenceInCalendarDays,
@@ -39,13 +39,12 @@ export const ungroups = {
 const WEEK_OPTS_MON = { weekStartsOn: 1 } as const;
 const WEEK_OPTS_SUN = { weekStartsOn: 0 } as const;
 
-const DAY_MS = 86_400_000;
 const rangeLabel = (a: Date, b: Date) =>
   `${fmt(a, 'MMM d yyyy')} – ${fmt(b, 'MMM d yyyy')}`;
 
 function buildDateCfg(
   name: string,
-  grouper: (iso: string | null) => { key: string; value: number | null }[],
+  grouper: (ms: number | null) => { key: string; value: number | null }[],
   groupName: (v: number | null) => string,
 ): GroupByConfig {
   return createGroupByConfig({
@@ -53,8 +52,8 @@ function buildDateCfg(
     matchType: t.date.instance(),
     groupName: (_t, v) => groupName(v),
     defaultKeys: _t => [ungroups],
-    valuesGroup: (v: string | null) => grouper(v),
-    addToGroup: (grp, _old) => (grp == null ? null : new Date(grp).toISOString()),
+    valuesGroup: (v: number | null, _t) => grouper(v),
+    addToGroup: (grp: number | null, _old: number | null) => grp,
     view: createUniComponentFromWebComponent(DateGroupView),
   });
 }
@@ -103,7 +102,7 @@ const dateWeekSunCfg = buildDateCfg(
   },
   v =>
     v
-      ? rangeLabel(new Date(v), new Date(v + 6 * DAY_MS))
+      ? rangeLabel(new Date(v), addDays(new Date(v), 6))
       : '',
 );
 
@@ -159,7 +158,7 @@ export const groupByMatchers: GroupByConfig[] = [
       value == null
         ? [ungroups]
         : [{ key: `${value}`, value }],
-    addToGroup: v => v,
+    addToGroup: (v: string | null, _old: string | null) => v,
     view: createUniComponentFromWebComponent(SelectGroupView),
   }),
 
@@ -184,7 +183,10 @@ export const groupByMatchers: GroupByConfig[] = [
         return value.map(id => ({ key: `${id}`, value: id }));
       return [ungroups];
     },
-    addToGroup: (value, old) => {
+    addToGroup: (
+      value: string | null,
+      old: string[] | null,
+    ): string[] | null => {
       if (value == null) return old;
       return Array.isArray(old) ? [...old, value] : [value];
     },
@@ -202,7 +204,7 @@ export const groupByMatchers: GroupByConfig[] = [
       typeof v !== 'string' || !v
         ? [ungroups]
         : [{ key: hash(v), value: v }],
-    addToGroup: v => v,
+    addToGroup: (v: string | null, _old: string | null) => v,
     view: createUniComponentFromWebComponent(StringGroupView),
   }),
 
@@ -215,7 +217,10 @@ export const groupByMatchers: GroupByConfig[] = [
       typeof v !== 'number'
         ? [ungroups]
         : [{ key: `g:${Math.floor(v / 10)}`, value: Math.floor(v / 10) }],
-    addToGroup: v => (typeof v === 'number' ? v * 10 : null),
+    addToGroup: (
+      v: number | null,
+      _old: number | null,
+    ) => (typeof v === 'number' ? v * 10 : null),
     view: createUniComponentFromWebComponent(NumberGroupView),
   }),
 
@@ -231,7 +236,7 @@ export const groupByMatchers: GroupByConfig[] = [
       typeof v !== 'boolean'
         ? [{ key: 'false', value: false }]
         : [{ key: v.toString(), value: v }],
-    addToGroup: v => v,
+    addToGroup: (v: boolean | null, _old: boolean | null) => v,
     view: createUniComponentFromWebComponent(BooleanGroupView),
   }),
 

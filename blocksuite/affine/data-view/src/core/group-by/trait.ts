@@ -9,7 +9,7 @@ import {
   effect,
 } from '@preact/signals-core';
 
-import type { GroupBy, GroupProperty } from '../common/types.js';
+import type { GroupBy } from '../common/types.js';
 import type { TypeInstance } from '../logical/type.js';
 import { createTraitKey } from '../traits/key.js';
 import { computedLock } from '../utils/lock.js';
@@ -22,47 +22,8 @@ import {
   findGroupByConfigByName,
 } from './matcher.js';
 import type { GroupByConfig } from './types.js';
+import { compareDateKeys } from './compare-date-keys.js';
 
-const RELATIVE_ASC = ['last30', 'last7', 'yesterday', 'today'];
-const RELATIVE_DESC = [...RELATIVE_ASC].reverse();
-
-
-function compareDateKeys(mode: string | undefined, asc: boolean) {
-  return (a: string, b: string) => {
-    if (mode === 'date-relative') {
-      const order = asc ? RELATIVE_ASC : RELATIVE_DESC;
-      const idxA = order.indexOf(a);
-      const idxB = order.indexOf(b);
-      const na = Number(a);
-      const nb = Number(b);
-      const aNum = Number.isFinite(na);
-      const bNum = Number.isFinite(nb);
-
-      if (aNum && bNum) {
-        return asc ? na - nb : nb - na;
-      }
-
-      if (aNum && idxB !== -1) return asc ? -1 : 1;
-      if (bNum && idxA !== -1) return asc ? 1 : -1;
-
-      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-      if (idxA !== -1) return asc ? 1 : -1;
-      if (idxB !== -1) return asc ? -1 : 1;
-
-      if (aNum) return asc ? -1 : 1;
-      if (bNum) return asc ? 1 : -1;
-
-      return asc ? a.localeCompare(b) : b.localeCompare(a);
-    }
-
-    const na = Number(a);
-    const nb = Number(b);
-    if (Number.isFinite(na) && Number.isFinite(nb)) {
-      return asc ? na - nb : nb - na;
-    }
-    return asc ? a.localeCompare(b) : b.localeCompare(a);
-  };
-}
 
 export type GroupInfo<
   RawValue = unknown,
@@ -188,8 +149,8 @@ export class GroupTrait {
 
       let ordered: string[];
 
-      if (gi?.config.matchType.type === 'date') {
-        ordered = [...Object.keys(map)].sort(
+      if (gi?.config.matchType.name === 'Date') {
+        ordered = Object.keys(map).sort(
           compareDateKeys(gi.config.name, this.sortAsc$.value),
         );
       } else {
@@ -215,20 +176,6 @@ export class GroupTrait {
     if (gb) {
       this.ops.groupBySet({ ...gb, sort: { desc: !asc } });
     }
-
-    const gi = this.groupInfo$.value;
-    if (!gi || !gi.config.name?.startsWith('date-')) return;
-
-    const map = this.groupDataMap$.value;
-    if (!map) return;
-
-    const keys = Object.keys(map)
-      .filter(k => k !== 'Ungroups')
-      .sort(compareDateKeys(gi.config.name, asc));
-
-    if (map['Ungroups']) keys.push('Ungroups');
-
-    this.changeGroupSort(keys);
   }
 
 
@@ -341,7 +288,8 @@ export class GroupTrait {
         .map(row => row.rowId) ?? [];
     const index = insertPositionToIndex(position, rows, row => row);
     rows.splice(index, 0, rowId);
-    this.changeCardSort(toGroupKey, rows);
+    const groupKeys = Object.keys(groupMap);
+    this.ops.changeRowSort(groupKeys, toGroupKey, rows);
   }
 
   moveGroupTo(groupKey: string, position: InsertToPosition) {
@@ -349,7 +297,7 @@ export class GroupTrait {
     if (!groups) {
       return;
     }
-    const keys = groups.map(v => v.key);
+    const keys = groups.map(v => v!.key);
     keys.splice(
       keys.findIndex(key => key === groupKey),
       1
