@@ -1,6 +1,7 @@
 import { ConfirmIcon } from '@blocksuite/affine-components/icons';
 import { toast } from '@blocksuite/affine-components/toast';
 import type { AttachmentBlockModel } from '@blocksuite/affine-model';
+import { CitationProvider } from '@blocksuite/affine-shared/services';
 import type { EditorHost } from '@blocksuite/std';
 import { html } from 'lit';
 import { createRef, ref } from 'lit/directives/ref.js';
@@ -33,6 +34,7 @@ export const RenameModal = ({
 
   let fileName = includeExtension ? nameWithoutExtension : originalName;
   const extension = includeExtension ? originalExtension : '';
+  const citationService = editorHost.std.get(CitationProvider);
 
   const abort = () => abortController.abort();
   const onConfirm = () => {
@@ -44,6 +46,9 @@ export const RenameModal = ({
     model.store.updateBlock(model, {
       name: newFileName,
     });
+    if (citationService.isCitationModel(model)) {
+      citationService.trackEvent('Edit');
+    }
     abort();
   };
   const onInput = (e: InputEvent) => {

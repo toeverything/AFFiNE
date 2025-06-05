@@ -30,7 +30,7 @@ declare global {
 defineModuleConfig('indexer', {
   enabled: {
     desc: 'Enable indexer plugin',
-    default: true,
+    default: false,
     env: ['AFFINE_INDEXER_ENABLED', 'boolean'],
   },
   'provider.type': {

@@ -17,6 +17,7 @@ import {
   AttachmentBlockStyles,
 } from '@blocksuite/affine-model';
 import {
+  CitationProvider,
   DocModeProvider,
   FileSizeLimitProvider,
   TelemetryProvider,
@@ -37,6 +38,7 @@ import { type ClassInfo, classMap } from 'lit/directives/class-map.js';
 import { guard } from 'lit/directives/guard.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
+import { filter } from 'rxjs/operators';
 
 import { AttachmentEmbedProvider } from './embed';
 import { styles } from './styles';
@@ -79,8 +81,12 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     return this.std.get(FileSizeLimitProvider).maxFileSize;
   }
 
+  get citationService() {
+    return this.std.get(CitationProvider);
+  }
+
   get isCitation() {
-    return !!this.model.props.footnoteIdentifier;
+    return this.citationService.isCitationModel(this.model);
   }
 
   convertTo = () => {
@@ -139,6 +145,34 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     selectionManager.setGroup('note', [blockSelection]);
   }
 
+  private readonly _trackCitationDeleteEvent = () => {
+    // Check citation delete event
+    this._disposables.add(
+      this.std.store.slots.blockUpdated
+        .pipe(
+          filter(payload => {
+            if (!payload.isLocal) return false;
+
+            const { flavour, id, type } = payload;
+            if (
+              type !== 'delete' ||
+              flavour !== this.model.flavour ||
+              id !== this.model.id
+            )
+              return false;
+
+            const { model } = payload;
+            if (!this.citationService.isCitationModel(model)) return false;
+
+            return true;
+          })
+        )
+        .subscribe(() => {
+          this.citationService.trackEvent('Delete');
+        })
+    );
+  };
+
   override connectedCallback() {
     super.connectedCallback();
 
@@ -162,6 +196,8 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
         });
       });
     }
+
+    this._trackCitationDeleteEvent();
   }
 
   override firstUpdated() {

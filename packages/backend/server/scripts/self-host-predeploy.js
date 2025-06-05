@@ -67,12 +67,18 @@ function fixFailedMigrations() {
         ) ||
         err.message.includes(
           'cannot be rolled back because it was never applied'
+        ) ||
+        err.message.includes(
+          'called markMigrationRolledBack on a database without migrations table'
         )
       ) {
         // migration has been rolled back, skip it
         continue;
       }
-      throw err;
+      // ignore other errors
+      console.log(
+        `migration [${migration}] rolled back failed. ${err.message}`
+      );
     }
   }
 }
