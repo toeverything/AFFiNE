@@ -5,14 +5,13 @@ import {
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { signal } from '@preact/signals-core';
-import { PlusIcon } from '@blocksuite/icons/lit';
+import { PlusIcon, GroupToggleArrowIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { effect } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { css, html, unsafeCSS, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
-
 import { GroupTitle } from '../../../core/group-by/group-title.js';
 import type { Group } from '../../../core/group-by/trait.js';
 import type { Row } from '../../../core/index.js';
@@ -181,16 +180,6 @@ export class TableGroup extends SignalWatcher(
     if (!this.group) {
       return null;
     }
-    const Arrow = html`<svg
-     xmlns="http://www.w3.org/2000/svg"
-     viewBox="0 0 24 24"
-     fill="none"
-   >
-     <path
-       fill="currentColor"
-       d="M13.15 15.132a.757.757 0 0 1-1.3 0L8.602 9.605c-.29-.491.072-1.105.65-1.105h6.497c.577 0 .938.614.65 1.105z"
-     />
-   </svg>`;
 
     return html`
      <div
@@ -210,7 +199,7 @@ export class TableGroup extends SignalWatcher(
         }
       }}  
       >
-        ${Arrow}
+        ${GroupToggleArrowIcon}
       </div>
 
        ${GroupTitle(this.group, {

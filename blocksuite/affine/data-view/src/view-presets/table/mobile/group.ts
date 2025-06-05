@@ -5,9 +5,11 @@ import {
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { PlusIcon } from '@blocksuite/icons/lit';
+import { signal } from '@preact/signals-core';
 import { ShadowlessElement } from '@blocksuite/std';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { css, html, unsafeCSS } from 'lit';
+import { css, html, unsafeCSS, nothing } from 'lit';
+import { GroupToggleArrowIcon } from '../../../../../components/src/icons/misc.js';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
@@ -42,12 +44,47 @@ const styles = css`
     line-height: 20px;
     color: var(--affine-text-secondary-color);
   }
+
+  .group-toggle-btn {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 150ms cubic-bezier(0.42, 0, 1, 1);
+  }
+
+  .group-toggle-btn:hover {
+    background: var(--affine-hover-color);
+  }
+
+  .group-toggle-btn svg {
+    width: 24px;
+    height: 24px;
+    transition: transform 120ms cubic-bezier(0.42, 0, 1, 1);
+    flex-shrink: 0;
+    user-select: none;
+    transform: rotate(-90deg);
+  }
+
+  .group-toggle-btn.expanded svg {
+    transform: rotate(0deg);
+  }
 `;
 
 export class MobileTableGroup extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
   static override styles = styles;
+
+  collapsed$ = signal(false);
+
+  private readonly _toggleCollapse = (e?: MouseEvent) => {
+    e?.stopPropagation();
+    this.collapsed$.value = !this.collapsed$.value;
+  };
 
   private readonly clickAddRow = () => {
     this.view.rowAdd('end', this.group?.key);
@@ -90,11 +127,28 @@ export class MobileTableGroup extends SignalWatcher(
       <div
         style="position: sticky;left: 0;width: max-content;padding: 6px 0;margin-bottom: 4px;display:flex;align-items:center;gap: 12px;max-width: 400px"
       >
+        <div
+          class=${`group-toggle-btn ${this.collapsed$.value ? '' : 'expanded'}`}
+          role="button"
+          aria-expanded=${this.collapsed$.value ? 'false' : 'true'}
+          aria-label=${this.collapsed$.value ? 'Expand group' : 'Collapse group'}
+          tabindex="0"
+          @click=${this._toggleCollapse}
+          @keydown=${(e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this._toggleCollapse();
+        }
+      }}
+        >
+          ${GroupToggleArrowIcon()}
+        </div>
+
         ${GroupTitle(this.group, {
-          readonly: this.view.readonly$.value,
-          clickAdd: this.clickAddRowInStart,
-          clickOps: this.clickGroupOptions,
-        })}
+        readonly: this.view.readonly$.value,
+        clickAdd: this.clickAddRowInStart,
+        clickOps: this.clickGroupOptions,
+      })}
       </div>
     `;
   };
@@ -106,23 +160,22 @@ export class MobileTableGroup extends SignalWatcher(
   private renderRows(rows: Row[]) {
     return html`
       <mobile-table-header
-        .renderGroupHeader="${this.renderGroupHeader}"
         .tableViewManager="${this.view}"
       ></mobile-table-header>
       <div class="mobile-affine-table-body">
         ${repeat(
-          rows,
-          row => row.rowId,
-          (row, idx) => {
-            return html` <mobile-table-row
+      rows,
+      row => row.rowId,
+      (row, idx) => {
+        return html` <mobile-table-row
               data-row-index="${idx}"
               data-row-id="${row.rowId}"
               .tableViewLogic="${this.tableViewLogic}"
               .rowId="${row.rowId}"
               .rowIndex="${idx}"
             ></mobile-table-row>`;
-          }
-        )}
+      }
+    )}
       </div>
       ${this.view.readonly$.value
         ? null
@@ -142,7 +195,10 @@ export class MobileTableGroup extends SignalWatcher(
   }
 
   override render() {
-    return this.renderRows(this.rows);
+    return html`
+      ${this.renderGroupHeader()}
+      ${this.collapsed$.value ? nothing : this.renderRows(this.rows)}
+    `;
   }
 
   @property({ attribute: false })
