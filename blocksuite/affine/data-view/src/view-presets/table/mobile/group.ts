@@ -140,7 +140,7 @@ export class MobileTableGroup extends SignalWatcher(
         }
       }}
         >
-          ${GroupToggleArrowIcon()}
+          ${GroupToggleArrowIcon}
         </div>
 
         ${GroupTitle(this.group, {
