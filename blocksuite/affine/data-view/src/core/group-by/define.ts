@@ -9,6 +9,7 @@ import { SelectGroupView } from './renderer/select-group.js';
 import { StringGroupView } from './renderer/string-group.js';
 import { DateGroupView } from './renderer/date-group.js';
 import type { GroupByConfig } from './types.js';
+import { addDays } from 'date-fns' 
 
 import {
   differenceInCalendarDays,
@@ -115,7 +116,7 @@ const dateWeekMonCfg = buildDateCfg(
   },
   v =>
     v
-      ? rangeLabel(new Date(v), new Date(v + 6 * DAY_MS))
+      ? rangeLabel(new Date(v), addDays(new Date(v), 6))
       : '',
 );
 
