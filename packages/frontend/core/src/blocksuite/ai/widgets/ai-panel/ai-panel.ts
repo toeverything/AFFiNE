@@ -333,20 +333,14 @@ export class AffineAIPanelWidget extends WidgetComponent {
     }
   };
 
-  toggle = (
-    reference: Element,
-    input?: string,
-    shouldTriggerCallback?: boolean
-  ) => {
-    if (typeof input === 'string') {
-      this._inputText = input;
+  toggle = (reference: Element, type: 'input' | 'generate') => {
+    if (type === 'generate') {
+      this._inputText = '';
       this.generate();
-    } else {
-      // reset state
-      this.hide(shouldTriggerCallback);
+    } else if (type === 'input') {
+      this.hide();
       this.state = 'input';
     }
-
     this._autoUpdatePosition(reference);
   };
 
