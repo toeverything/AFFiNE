@@ -3,11 +3,19 @@ import Sinon from 'sinon';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Config } from '../../../base';
+import { ConfigModule } from '../../../base/config';
 import { IndexerModule } from '..';
 import { IndexerEvent } from '../event';
 
 const module = await createModule({
-  imports: [IndexerModule],
+  imports: [
+    IndexerModule,
+    ConfigModule.override({
+      indexer: {
+        enabled: true,
+      },
+    }),
+  ],
 });
 const indexerEvent = module.get(IndexerEvent);
 const config = module.get(Config);

@@ -51,6 +51,7 @@ import { getSelectedModelsCommand } from '@blocksuite/affine/shared/commands';
 import { ImageSelection } from '@blocksuite/affine/shared/selection';
 import {
   ActionPlacement,
+  CitationProvider,
   GenerateDocUrlProvider,
   isRemovedUserInfo,
   OpenDocExtensionIdentifier,
@@ -462,6 +463,10 @@ function createExternalLinkableToolbarConfig(
                 (_std, _component, props) => {
                   ctx.store.updateBlock(model, props);
                   block.requestUpdate();
+                  const citationService = ctx.std.get(CitationProvider);
+                  if (citationService.isCitationModel(model)) {
+                    citationService.trackEvent('Edit');
+                  }
                 },
                 abortController
               );
@@ -805,6 +810,10 @@ const embedLinkedDocToolbarConfig = {
               (_std, _component, props) => {
                 ctx.store.updateBlock(model, props);
                 block.requestUpdate();
+                const citationService = ctx.std.get(CitationProvider);
+                if (citationService.isCitationModel(model)) {
+                  citationService.trackEvent('Edit');
+                }
               },
               abortController
             );

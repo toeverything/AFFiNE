@@ -20,6 +20,7 @@ env:
   COVERAGE: true
   MACOSX_DEPLOYMENT_TARGET: '10.13'
   DEPLOYMENT_TYPE: affine
+  AFFINE_INDEXER_ENABLED: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

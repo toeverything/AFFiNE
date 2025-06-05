@@ -7,6 +7,7 @@ import Sinon from 'sinon';
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
 import { JOB_SIGNAL } from '../../../base';
+import { ConfigModule } from '../../../base/config';
 import { ServerConfigModule } from '../../../core/config';
 import { Models } from '../../../models';
 import { IndexerModule, IndexerService } from '..';
@@ -15,7 +16,15 @@ import { IndexerJob } from '../job';
 import { ManticoresearchProvider } from '../providers';
 
 const module = await createModule({
-  imports: [IndexerModule, ServerConfigModule],
+  imports: [
+    IndexerModule,
+    ServerConfigModule,
+    ConfigModule.override({
+      indexer: {
+        enabled: true,
+      },
+    }),
+  ],
   providers: [IndexerService],
 });
 const indexerService = module.get(IndexerService);

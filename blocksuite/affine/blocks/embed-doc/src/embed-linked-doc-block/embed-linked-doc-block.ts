@@ -17,6 +17,7 @@ import {
   REFERENCE_NODE,
 } from '@blocksuite/affine-shared/consts';
 import {
+  CitationProvider,
   DocDisplayMetaProvider,
   DocModeProvider,
   OpenDocExtensionIdentifier,
@@ -43,6 +44,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
 import throttle from 'lodash-es/throttle';
+import { filter } from 'rxjs/operators';
 import * as Y from 'yjs';
 
 import { renderLinkedDocInCard } from '../common/render-linked-doc';
@@ -254,11 +256,12 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     return this.store.readonly;
   }
 
+  get citationService() {
+    return this.std.get(CitationProvider);
+  }
+
   get isCitation() {
-    return (
-      !!this.model.props.footnoteIdentifier &&
-      this.model.props.style === 'citation'
-    );
+    return this.citationService.isCitationModel(this.model);
   }
 
   private readonly _handleDoubleClick = (event: MouseEvent) => {
@@ -454,6 +457,31 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
     );
   };
 
+  private readonly _trackCitationDeleteEvent = () => {
+    // Check citation delete event
+    this._disposables.add(
+      this.std.store.slots.blockUpdated
+        .pipe(
+          filter(payload => {
+            if (!payload.isLocal) return false;
+            const { flavour, id, type } = payload;
+            if (
+              type !== 'delete' ||
+              flavour !== this.model.flavour ||
+              id !== this.model.id
+            )
+              return false;
+            const { model } = payload;
+            if (!this.citationService.isCitationModel(model)) return false;
+            return true;
+          })
+        )
+        .subscribe(() => {
+          this.citationService.trackEvent('Delete');
+        })
+    );
+  };
+
   override connectedCallback() {
     super.connectedCallback();
 
@@ -532,6 +560,8 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
         }
       })
     );
+
+    this._trackCitationDeleteEvent();
   }
 
   getInitialState(): {
