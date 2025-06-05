@@ -60,7 +60,7 @@ export class OIDCProvider extends OAuthProvider {
     const validate = async () => {
       this.#endpoints = null;
 
-      if (this.configured) {
+      if (super.configured) {
         const config = this.config as OAuthOIDCProviderConfig;
         try {
           const res = await fetch(
@@ -73,7 +73,6 @@ export class OIDCProvider extends OAuthProvider {
 
           if (res.ok) {
             this.#endpoints = OIDCConfigurationSchema.parse(await res.json());
-            super.setup();
           } else {
             this.logger.error(`Invalid OIDC issuer ${config.issuer}`);
           }
@@ -81,6 +80,8 @@ export class OIDCProvider extends OAuthProvider {
           this.logger.error('Failed to validate OIDC configuration', e);
         }
       }
+
+      super.setup();
     };
 
     validate().catch(() => {
