@@ -1,5 +1,3 @@
-// AFFiNE/blocksuite/affine/data-view/src/view-presets/chart/styles.ts
-
 import { css } from '@emotion/css';
 
 export const chartContainerStyle = css({

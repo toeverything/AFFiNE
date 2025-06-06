@@ -79,10 +79,6 @@ export const databaseSlashMenuConfig: SlashMenuConfig = {
           .run();
       },
     },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // ► NEW “Chart View” ENTRY
-    // ─────────────────────────────────────────────────────────────────────────
     {
       name: 'Chart View',
       description: 'Display items as a chart.',
@@ -115,6 +111,5 @@ export const databaseSlashMenuConfig: SlashMenuConfig = {
           .run();
       },
     }, 
-    // ─────────────────────────────────────────────────────────────────────────
   ],
 };

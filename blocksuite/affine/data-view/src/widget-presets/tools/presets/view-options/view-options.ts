@@ -38,6 +38,8 @@ import { popCreateSort } from '../../../../core/sort/add-sort.js';
 import { sortTraitKey } from '../../../../core/sort/manager.js';
 import { createSortUtils } from '../../../../core/sort/utils.js';
 import { WidgetBase } from '../../../../core/widget/widget-base.js';
+import type { ChartSingleView } from '../../../view-presets/chart/chart-view-manager.js';
+import type { ChartType } from '../../../view-presets/chart/define.js';
 import { popFilterRoot } from '../../../quick-setting-bar/filter/root-panel-view.js';
 import { popSortRoot } from '../../../quick-setting-bar/sort/root-panel.js';
 
@@ -126,10 +128,10 @@ const createSettingMenus = (
         prefix: FilterIcon(),
         postfix: html` <div style="font-size: 14px;">
             ${filterCount === 0
-              ? ''
-              : filterCount === 1
-                ? '1 filter'
-                : `${filterCount} filters`}
+            ? ''
+            : filterCount === 1
+              ? '1 filter'
+              : `${filterCount} filters`}
           </div>
           ${ArrowRightSmallIcon()}`,
         select: () => {
@@ -170,10 +172,10 @@ const createSettingMenus = (
         prefix: SortIcon(),
         postfix: html` <div style="font-size: 14px;">
             ${sortCount === 0
-              ? ''
-              : sortCount === 1
-                ? '1 sort'
-                : `${sortCount} sorts`}
+            ? ''
+            : sortCount === 1
+              ? '1 sort'
+              : `${sortCount} sorts`}
           </div>
           ${ArrowRightSmallIcon()}`,
         select: () => {
@@ -226,6 +228,106 @@ const createSettingMenus = (
   }
   return settingItems;
 };
+
+const createChartMenus = (
+  target: PopupTarget,
+  view: ChartSingleView,
+  reopen: () => void
+) => {
+  const chartType = view.data$.value?.chartType ?? 'pie';
+  const chartTypeLabel = (t: ChartType) =>
+    t === 'pie'
+      ? 'Pie'
+      : t === 'bar'
+        ? 'Bar'
+        : t === 'stacked-bar'
+          ? 'Stacked Bar'
+          : 'Line';
+  const items: MenuConfig[] = [];
+  items.push(
+    menu.subMenu({
+      name: 'Chart type',
+      postfix: html` <div style="font-size: 14px;">
+          ${chartTypeLabel(chartType)}
+        </div>
+        ${ArrowRightSmallIcon()}`,
+      options: {
+        items: (['bar', 'stacked-bar', 'line', 'pie'] as ChartType[]).map(t =>
+          menu.action({
+            name: chartTypeLabel(t),
+            isSelected: chartType === t,
+            select: () => {
+              view.dataUpdate(() => ({ chartType: t }));
+              reopen();
+            },
+          })
+        ),
+      },
+    })
+  );
+
+  const currentProp = view.properties$.value.find(
+    p => p.id === view.data$.value?.categoryPropertyId
+  );
+  items.push(
+    menu.subMenu({
+      name: 'What to show',
+      postfix: html` <div style="font-size: 14px;">
+          ${currentProp?.name$.value ?? 'None'}
+        </div>
+        ${ArrowRightSmallIcon()}`,
+      options: {
+        items: view.properties$.value.map(prop =>
+          menu.action({
+            name: prop.name$.value,
+            isSelected: prop.id === view.data$.value?.categoryPropertyId,
+            select: () => {
+              view.dataUpdate(() => ({ categoryPropertyId: prop.id }));
+              reopen();
+            },
+          })
+        ),
+      },
+    })
+  );
+
+  items.push(
+    menu.action({
+      name: 'Each slice represents',
+      postfix: html` <div style="font-size: 14px;">Count</div>
+        ${ArrowRightSmallIcon()}`,
+      select: () => { },
+    })
+  );
+
+  items.push(
+    menu.action({
+      name: 'Sort by',
+      postfix: html` <div style="font-size: 14px;">Count High → Low</div>
+        ${ArrowRightSmallIcon()}`,
+      select: () => { },
+    })
+  );
+
+  items.push(
+    menu.action({
+      name: 'Color',
+      postfix: html`Auto ${ArrowRightSmallIcon()}`,
+      select: () => { },
+    })
+  );
+
+  items.push(
+    menu.action({
+      name: 'More style options',
+      postfix: ArrowRightSmallIcon(),
+      select: () => { },
+    })
+  );
+
+  return items;
+};
+
 export const popViewOptions = (
   target: PopupTarget,
   dataViewLogic: DataViewUILogicBase,
@@ -345,6 +447,18 @@ export const popViewOptions = (
       ],
     })
   );
+
+  if (view.type === 'chart') {
+    items.push(
+      menu.group({
+        items: createChartMenus(
+          target,
+          view as unknown as ChartSingleView,
+          reopen
+        ),
+      })
+    );
+  }
 
   items.push(
     menu.group({

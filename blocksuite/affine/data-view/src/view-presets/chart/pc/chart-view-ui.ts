@@ -1,5 +1,3 @@
-// AFFiNE/blocksuite/affine/data-view/src/view-presets/chart/pc/chart-view-ui.ts
-
 import { DataViewUIBase } from '../../../core/view/data-view-base.js';
 import type { ChartViewUILogic } from './chart-view-ui-logic.js';
 import { html, css, LitElement } from 'lit';
@@ -101,9 +99,20 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
             return defaultColors[idx % defaultColors.length];
         });
 
+        // Pick chart.js type and options based on view settings
+        const chartType = this.logic.view.data$.value?.chartType ?? 'pie';
+        const type = chartType === 'pie'
+            ? 'doughnut'
+            : chartType === 'vertical-bar' || chartType === 'horizontal-bar'
+                ? 'bar'
+                : chartType === 'line'
+                    ? 'line'
+                    : 'bar';
+        const horizontal = chartType === 'horizontal-bar';
+
         // Instantiate Chart.js
         this.logic.chartInstance = new Chart(ctx, {
-            type: 'doughnut',
+            type,
             data: {
                 labels: displayLabels,
                 datasets: [
@@ -111,12 +120,18 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
                         data: dataValues,
                         backgroundColor,
                         borderWidth: 1,
+                        //barThickness: 2,
+                        //maxBarThickness: 10,
+                        weight: 1,
+                        hoverOffset: 4
                     },
                 ],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
+                indexAxis: horizontal ? 'y' : 'x',
+                cutout: '85%',
                 plugins: {
                     legend: {
                         position: 'bottom',

@@ -274,6 +274,7 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
       widgetPresets.tools.viewOptions,
       widgetPresets.tools.tableAddRow,
     ],
+    chart: [widgetPresets.tools.viewOptions],
   });
 
   private readonly viewSelection$ = computed(() => {
