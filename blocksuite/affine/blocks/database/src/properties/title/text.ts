@@ -209,7 +209,6 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
       }
     };
 
-    this.addEventListener('keydown', selectAll);
     this.disposables.addFromEvent(this, 'keydown', selectAll);
   }
 
