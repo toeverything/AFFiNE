@@ -6,6 +6,6 @@ export const chartContainerStyle = css({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    padding: '16px',
+    padding: '24px',
     boxSizing: 'border-box',
 });

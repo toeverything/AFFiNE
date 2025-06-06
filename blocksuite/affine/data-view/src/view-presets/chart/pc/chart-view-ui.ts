@@ -22,16 +22,15 @@ import { chartContainerStyle } from '../styles.js';
 export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     static override styles = css`
     :host {
-      display: block;
-      box-sizing: border-box;
-      background-color: #121212; /* dark background like Notion */
+      //display: block;
+      //box-sizing: border-box;
+      //background-color: #121212; /* dark background like Notion */
     }
 
     /* This wrapper sits inside chartContainerStyle padding and centers the canvas */
     .chart-wrapper {
       width: 100%;
-      max-width: 600px;
-      height: 400px;          /* give it a fixed height so the doughnut is never squished */
+      height: 450px;         /* smaller so the doughnut is more compact */
       position: relative;     /* so child <canvas> can absolutely fill */
     }
 
@@ -105,11 +104,11 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
             this.logic.chartInstance = null;
         }
 
-        // 3) Build the “outer” display labels for callouts, e.g. “TODO (7 – 53.8%)”
+        // 3) Build the “outer” display labels for callouts, e.g. “7(53.8%)”
         const displayLabels = rawLabels.map((label, idx) => {
             const count = dataValues[idx];
             const pct = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
-            return `${label} (${count} – ${pct}%)`;
+            return `${count}(${pct}%)`;
         });
 
         // 4) Pick a color palette (cycle if more categories exist)
@@ -201,7 +200,7 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
                     const sy = props.y + Math.sin(angle) * props.outerRadius;
 
                     // Now we extend ~25% farther out so that “7 – 53.8%” sits well away:
-                    const extension = props.outerRadius * 1.25;
+                    const extension = props.outerRadius * 1.42;
                     const ex = props.x + Math.cos(angle) * extension;
                     const ey = props.y + Math.sin(angle) * extension;
 
@@ -211,11 +210,30 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
                     ctx.lineTo(ex, ey);
                     ctx.stroke();
 
-                    // Finally, draw the dynamic text label just above the endpoint:
-                    // e.g. “TODO (7 – 53.8%)”
-                    ctx.textAlign = 'center';
+                    // ----- Position the text “at” the tip of this line -----
+                    // Compute a small “push-out” along the same angle so the text does not
+                    // overlap the line itself. Adjust `labelPadding` as needed (e.g. 4px).
+                    const labelPadding = 4;
+                    const offsetX = Math.cos(angle) * labelPadding;
+                    const offsetY = Math.sin(angle) * labelPadding;
+
+                    // Determine horizontal alignment so text is always “outside”:
+                    // If angle is on right half (cos(angle) > 0), left-align text;
+                    // if on left half (cos(angle) < 0), right-align text;
+                    if (Math.cos(angle) >= 0) {
+                        ctx.textAlign = 'left';
+                    } else {
+                        ctx.textAlign = 'right';
+                    }
+                    // Vertically center the text relative to the endpoint:
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(displayLabels[index], ex, ey - 6);
+
+                    // Final draw of label, anchored at (ex + offsetX, ey + offsetY)
+                    ctx.fillText(
+                        displayLabels[index],
+                        ex + offsetX,
+                        ey + offsetY
+                    );
                 });
 
                 ctx.restore();
@@ -237,12 +255,11 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
                         label: '',
                         data: dataValues,
                         backgroundColor,
-                        borderWidth: 0,
+                        borderWidth: 1,
                         hoverOffset: 4,
-                        // Outer radius = 70% – 80% works well; here we choose 75%
+                        // Slightly smaller and thinner ring
                         radius: '75%',
-                        // Inner cutout = 75% so that the ring is neither too thin nor too thick
-                        cutout: '75%',
+                        cutout: '85%',
                     },
                 ],
             },
@@ -253,7 +270,7 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
                 layout: {
                     // Keep a little padding but not so much that it looks “squished”
                     padding: {
-                        top: 12,
+                        top: 80,
                         bottom: 12,
                         left: 12,
                         right: 12,
@@ -290,10 +307,10 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
                                         ? ((count / total) * 100).toFixed(1)
                                         : '0.0';
                                 const rawLabel = rawLabels[ctx.dataIndex];
-                                return `${rawLabel}: ${count} (${pct}%)`;
+                                return `${rawLabel} ${count} (${pct}%)`;
                             },
                         },
-                        backgroundColor: '#222',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
                         titleColor: '#fff',
                         bodyColor: '#fff',
                     },
