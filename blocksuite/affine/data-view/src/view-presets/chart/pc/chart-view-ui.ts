@@ -1,11 +1,43 @@
-// File: blocksuite/affine/data-view/src/view-presets/chart/pc/chart-view-ui.ts
-
 import { DataViewUIBase } from '../../../core/view/data-view-base.js';
 import type { ChartViewUILogic } from './chart-view-ui-logic.js';
 import { html, css, LitElement } from 'lit';
+import { state } from 'lit/decorators.js';
+import { signal, computed } from '@preact/signals-core';
 import { renderUniLit } from '../../../core/index.js';
 import Chart from 'chart.js/auto';
 import { chartContainerStyle } from '../styles.js';
+import { tableViewStyle } from '../../table/pc/table-view-style.js';
+import { TableSingleView } from '../../table/table-view-manager.js';
+import { tableViewModel } from '../../table/define.js';
+import { TableViewUILogic } from '../../table/pc/table-view-ui-logic.js';
+import type { TableViewData } from '../../table/define.js';
+import { DEFAULT_COLUMN_WIDTH } from '../../table/consts.js';
+import type { FilterGroup } from '../../../core/filter/types.js';
+import type { ViewManager } from '../../../core/view-manager/view-manager.js';
+
+class DialogTableView extends TableSingleView {
+    private readonly _data: ReturnType<typeof signal<TableViewData>>;
+    override data$: ReturnType<typeof signal<TableViewData>>;
+    readonly$ = computed(() => true);
+
+    constructor(manager: ViewManager, data: TableViewData) {
+        super(manager, 'dialog-table');
+        this._data = signal<TableViewData>(data);
+        this.data$ = this._data;
+    }
+
+    override dataUpdate(updater: (data: TableViewData) => Partial<TableViewData>): void {
+        const cur = this._data.value;
+        this._data.value = { ...cur, ...updater(cur) };
+    }
+}
+
+class DialogTableViewUILogic extends TableViewUILogic {
+    override get headerWidget() {
+        return undefined;
+    }
+}
+
 
 /**
  * ChartViewUI is a LitElement that:
@@ -128,7 +160,10 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
     private tooltipEl?: HTMLDivElement;
     private dialogEl?: HTMLDialogElement;
     private chartLabels: string[] = [];
-    private selectedCategory: string | null = null;
+    @state()
+    private accessor selectedCategory: string | null = null;
+    private dialogTable?: DialogTableView;
+    private dialogLogic?: TableViewUILogic;
 
     override connectedCallback(): void {
         super.connectedCallback();
@@ -154,7 +189,6 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       </div>
     `;
     }
-
     override firstUpdated() {
         // Grab the <canvas> once the template is rendered to the DOM
         this.canvasEl = this.renderRoot.querySelector(
@@ -452,6 +486,50 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
 
     private async openDataDialog(category: string) {
         this.selectedCategory = category;
+        const categoryId = this.logic.view.data$.value?.categoryPropertyId;
+        if (!categoryId) return;
+
+        if (!this.dialogTable) {
+            const data = tableViewModel.model.defaultData(
+                this.logic.view.manager,
+            );
+            const props = this.logic.view.manager.dataSource.properties$.value;
+            data.columns = props.map(id => ({ id, width: DEFAULT_COLUMN_WIDTH }));
+            this.dialogTable = new DialogTableView(this.logic.view.manager, data);
+            this.dialogLogic = new DialogTableViewUILogic(this.logic.root, this.dialogTable);
+        }
+
+        const prop = this.logic.view.propertyGetOrCreate(categoryId);
+        const parsed = prop.parseValueFromString(category);
+        let filterFn = 'is';
+        let filterValue: unknown = category;
+        const type = prop.type$.value;
+
+        if (parsed) {
+            filterValue = parsed.value;
+            if (type === 'select') {
+                filterFn = 'isOneOf';
+                filterValue = [parsed.value];
+            } else if (type === 'multi-select') {
+                filterFn = 'containsOneOf';
+                filterValue = [parsed.value];
+            }
+        }
+
+        const filter: FilterGroup = {
+            type: 'group',
+            op: 'and',
+            conditions: [
+                {
+                    type: 'filter',
+                    left: { type: 'ref', name: categoryId },
+                    function: filterFn,
+                    args: [{ type: 'literal', value: filterValue }],
+                },
+            ],
+        };
+        this.dialogTable.dataUpdate(() => ({ filter }));
+
         await this.updateComplete;
         if (!this.dialogEl) {
             this.dialogEl = this.renderRoot.querySelector('#data-dialog') as HTMLDialogElement | undefined;
@@ -460,10 +538,13 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
         this.dialogEl?.showModal();
     }
 
+
     private closeDataDialog = () => {
         this.dialogEl = this.renderRoot.querySelector('#data-dialog') as HTMLDialogElement | undefined;
         this.dialogEl?.close();
         this.selectedCategory = null;
+        this.dialogTable = undefined;
+        this.dialogLogic = undefined;
     };
 
     private renderDataDialog() {
@@ -472,37 +553,13 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
 
         const prop = this.logic.view.propertyGetOrCreate(categoryId);
         const propName = prop.name$.value;
-        const allProps = this.logic.view.propertiesRaw$.value;
-        const rows = this.logic.view.rows$.value.filter(row => {
-            const val = this.logic.view
-                .cellGetOrCreate(row.rowId, categoryId)
-                .stringValue$.value;
-            return val === this.selectedCategory;
-        });
+        if (!this.dialogLogic) return html``;
 
         return html`
-            <div class="dialog-content">
+            <div class="dialog-content affine-database-table ${tableViewStyle}">
                 <button class="close-btn" @click=${this.closeDataDialog}>✕</button>
                 <h4>📋 Filtered View: ${propName} = ${this.selectedCategory}</h4>
-                <p><strong>Filters Applied</strong>: ${propName}: ${this.selectedCategory
-            }</p>
-                <table>
-                    <thead>
-                        <tr>
-                            ${allProps.map(p => html`<th>${p.name$.value}</th>`)}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows.map(row => html`<tr>
-                                ${allProps.map(p => {
-                const val = this.logic.view
-                    .cellGetOrCreate(row.rowId, p.id)
-                    .stringValue$.value;
-                return html`<td>${val ?? ''}</td>`;
-            })}
-                            </tr>`)}
-                    </tbody>
-                </table>
+                <dv-table-view-ui .logic=${this.dialogLogic}></dv-table-view-ui>
             </div>
         `;
     }
