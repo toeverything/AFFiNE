@@ -38,8 +38,6 @@ import type {
   TappableAppInfo,
 } from './types';
 
-const MAX_DURATION_FOR_TRANSCRIPTION = 1.5 * 60 * 60 * 1000; // 1.5 hours
-
 export const MeetingsSettingsState = {
   $: globalStateStorage.watch<MeetingSettingsSchema>(MeetingSettingsKey).pipe(
     map(v => MeetingSettingsSchema.parse(v ?? {})),
@@ -546,19 +544,6 @@ export function startRecording(
   if (state?.status === 'recording') {
     createRecording(state);
   }
-
-  // set a timeout to stop the recording after MAX_DURATION_FOR_TRANSCRIPTION
-  setTimeout(() => {
-    const state = recordingStateMachine.status$.value;
-    if (
-      state?.status === 'recording' &&
-      state.id === recordingStatus$.value?.id
-    ) {
-      stopRecording(state.id).catch(err => {
-        logger.error('failed to stop recording', err);
-      });
-    }
-  }, MAX_DURATION_FOR_TRANSCRIPTION);
 
   recordingStateMachine.status$.next(state);
 
