@@ -42,9 +42,93 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       width: 100%  !important;
       height: 100% !important;
     }
+
+
+    /* Custom tooltip element for external handler */
+    .chart-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      font-size: 12px;
+      border-radius: 6px;
+      padding: 6px 8px;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+    .chart-tooltip .title {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .chart-tooltip .color-box {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .chart-tooltip .divider {
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      margin: 4px 0;
+    }
+  .chart-tooltip .action {
+      color: #ccc;
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    dialog {
+      border: none;
+      border-radius: 8px;
+      background: #000;
+      color: #fff;
+      padding: 0;
+      min-width: 300px;
+    }
+
+    .dialog-content {
+      padding: 16px;
+      max-height: 60vh;
+      overflow: auto;
+      position: relative;
+    }
+
+    .dialog-content table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .dialog-content th,
+    .dialog-content td {
+      padding: 4px 8px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+
+    .dialog-content h4 {
+      margin-top: 0;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
   `;
 
     private canvasEl?: HTMLCanvasElement;
+    private tooltipEl?: HTMLDivElement;
+    private dialogEl?: HTMLDialogElement;
+    private chartLabels: string[] = [];
+    private selectedCategory: string | null = null;
 
     override connectedCallback(): void {
         super.connectedCallback();
@@ -63,6 +147,9 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       <div class="${chartContainerStyle}">
         <div class="chart-wrapper">
           <canvas id="chart-canvas"></canvas>
+          <dialog id="data-dialog">
+            ${this.selectedCategory ? this.renderDataDialog() : ''}
+          </dialog>
         </div>
       </div>
     `;
@@ -73,6 +160,10 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
         this.canvasEl = this.renderRoot.querySelector(
             '#chart-canvas'
         ) as HTMLCanvasElement | undefined;
+        this.dialogEl = this.renderRoot.querySelector(
+            '#data-dialog'
+        ) as HTMLDialogElement | undefined;
+        this.dialogEl?.addEventListener('close', this.closeDataDialog);
         this.createOrUpdateChart();
     }
 
@@ -96,6 +187,7 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
 
         // 1b) Now build the cleaned counts array in the same order
         const dataValues = rawLabels.map((lbl) => rawMap[lbl]);
+        this.chartLabels = [...rawLabels];
         const total = dataValues.reduce((sum, v) => sum + v, 0);
 
         // 2) Destroy any existing chart so we can redraw
@@ -267,6 +359,7 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
                 responsive: true,
                 maintainAspectRatio: false,
                 indexAxis: horizontal ? 'y' : 'x',
+                onClick: this.handleChartClick,
                 layout: {
                     // Keep a little padding but not so much that it looks “squished”
                     padding: {
@@ -296,23 +389,10 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
                         },
                     },
 
-                    // ─── Tooltip ───────────────────────────────────────────────────────────────
+                    // ─── Tooltip ─────────────────────────
                     tooltip: {
-                        enabled: true,
-                        callbacks: {
-                            label: (ctx) => {
-                                const count = ctx.parsed as number;
-                                const pct =
-                                    total > 0
-                                        ? ((count / total) * 100).toFixed(1)
-                                        : '0.0';
-                                const rawLabel = rawLabels[ctx.dataIndex];
-                                return `${rawLabel} ${count} (${pct}%)`;
-                            },
-                        },
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
+                        enabled: false,
+                        external: this.externalTooltipHandler,
                     },
                 },
 
@@ -325,6 +405,114 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
             plugins: [centerTextPlugin, outerLabelPlugin],
         });
     }
+
+    private getOrCreateTooltip(chart: Chart): HTMLDivElement {
+        if (!this.tooltipEl) {
+            this.tooltipEl = document.createElement('div');
+            this.tooltipEl.className = 'chart-tooltip';
+            chart.canvas.parentNode?.appendChild(this.tooltipEl);
+        }
+        return this.tooltipEl;
+    }
+
+    // Custom external tooltip to mimic design
+    private externalTooltipHandler = (context: any) => {
+        const { chart, tooltip } = context;
+        const tooltipEl = this.getOrCreateTooltip(chart);
+
+        if (tooltip.opacity === 0) {
+            tooltipEl.style.opacity = '0';
+            return;
+        }
+
+        const dataPoint = tooltip.dataPoints?.[0];
+        if (!dataPoint) return;
+
+        const count = dataPoint.parsed as number;
+        const total = chart.data.datasets[0].data.reduce((a: number, b: number) => a + (b as number), 0);
+        const pct = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
+        const rawLabel = dataPoint.label as string;
+
+        tooltipEl.innerHTML = `
+            <div class="title"><span class="color-box" style="background:${dataPoint.backgroundColor}"></span>${rawLabel} ${count} (${pct}%)</div>
+            <div class="divider"></div>
+            <div class="action">Click to view data</div>
+        `;
+
+        const { offsetLeft: left, offsetTop: top } = chart.canvas;
+        tooltipEl.style.opacity = '1';
+        tooltipEl.style.left = left + tooltip.caretX + 'px';
+        tooltipEl.style.top = top + tooltip.caretY + 'px';
+
+        const action = tooltipEl.querySelector('.action') as HTMLElement | null;
+        if (action) {
+            action.onclick = () => this.openDataDialog(rawLabel);
+        }
+    };
+
+    private async openDataDialog(category: string) {
+        this.selectedCategory = category;
+        await this.updateComplete;
+        if (!this.dialogEl) {
+            this.dialogEl = this.renderRoot.querySelector('#data-dialog') as HTMLDialogElement | undefined;
+            this.dialogEl?.addEventListener('close', this.closeDataDialog);
+        }
+        this.dialogEl?.showModal();
+    }
+
+    private closeDataDialog = () => {
+        this.dialogEl = this.renderRoot.querySelector('#data-dialog') as HTMLDialogElement | undefined;
+        this.dialogEl?.close();
+        this.selectedCategory = null;
+    };
+
+    private renderDataDialog() {
+        const categoryId = this.logic.view.data$.value?.categoryPropertyId;
+        if (!categoryId || !this.selectedCategory) return html``;
+
+        const prop = this.logic.view.propertyGetOrCreate(categoryId);
+        const propName = prop.name$.value;
+        const allProps = this.logic.view.propertiesRaw$.value;
+        const rows = this.logic.view.rows$.value.filter(row => {
+            const val = this.logic.view
+                .cellGetOrCreate(row.rowId, categoryId)
+                .stringValue$.value;
+            return val === this.selectedCategory;
+        });
+
+        return html`
+            <div class="dialog-content">
+                <button class="close-btn" @click=${this.closeDataDialog}>✕</button>
+                <h4>📋 Filtered View: ${propName} = ${this.selectedCategory}</h4>
+                <p><strong>Filters Applied</strong>: ${propName}: ${this.selectedCategory
+            }</p>
+                <table>
+                    <thead>
+                        <tr>
+                            ${allProps.map(p => html`<th>${p.name$.value}</th>`)}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => html`<tr>
+                                ${allProps.map(p => {
+                const val = this.logic.view
+                    .cellGetOrCreate(row.rowId, p.id)
+                    .stringValue$.value;
+                return html`<td>${val ?? ''}</td>`;
+            })}
+                            </tr>`)}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    private handleChartClick = (_event: unknown, elements: any[]) => {
+        if (!elements || elements.length === 0) return;
+        const index = elements[0].index;
+        const label = this.chartLabels[index];
+        this.openDataDialog(label);
+    };
 
     override updated(changedProps: Map<string, unknown>) {
         super.updated(changedProps);
