@@ -457,7 +457,7 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
 
     togglePanel()
       .then(isEmpty => {
-        aiPanel.toggle(referenceElement, isEmpty ? undefined : '', false);
+        aiPanel.toggle(referenceElement, isEmpty ? 'input' : 'generate');
       })
       .catch(console.error);
   };
