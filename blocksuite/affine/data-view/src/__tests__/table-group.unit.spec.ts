@@ -1,8 +1,8 @@
 import { describe, test, expect } from 'vitest';  
 
-import { MobileTableGroup } from '../view-presets/table/mobile/group.js';  
+import type { MobileTableGroup } from '../view-presets/table/mobile/group.js';  
 import { mobileEffects } from '../view-presets/table/mobile/effect.js';  
-import { TableGroup } from '../view-presets/table/pc/group.js';  
+import type { TableGroup } from '../view-presets/table/pc/group.js';  
 import { pcEffects } from '../view-presets/table/pc/effect.js';  
 
 /** @vitest-environment happy-dom */

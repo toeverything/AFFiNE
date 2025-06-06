@@ -4,10 +4,9 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { signal } from '@preact/signals-core';
+import { signal, effect } from '@preact/signals-core';
 import { PlusIcon, GroupToggleArrowIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
-import { effect } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { css, html, unsafeCSS, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
