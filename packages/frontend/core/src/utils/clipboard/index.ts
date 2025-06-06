@@ -34,12 +34,12 @@ export const copyLinkToBlockStdScopeClipboard = async (
 
   if (clipboardWriteIsSupported) {
     try {
-      await clipboard.writeToClipboard(items => {
-        items['text/plain'] = text;
+      await clipboard.writeToClipboard(items => ({
+        ...items,
+        'text/plain': text,
         // wrap a link
-        items['text/html'] = `<a href="${text}">${text}</a>`;
-        return items;
-      });
+        'text/html': `<a href="${text}">${text}</a>`,
+      }));
       success = true;
     } catch (error) {
       console.error(error);

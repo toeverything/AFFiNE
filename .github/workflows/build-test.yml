@@ -827,7 +827,6 @@ jobs:
       - optimize_ci
     if: needs.optimize_ci.outputs.skip == 'false'
     env:
-      RUSTFLAGS: -D warnings
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v4

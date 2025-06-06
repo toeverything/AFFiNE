@@ -551,9 +551,11 @@ export class EditorUtils {
       explainImage: this.createAction(page, () =>
         page.getByTestId('action-explain-image').click()
       ),
-      generateImage: this.createAction(page, () =>
-        page.getByTestId('action-generate-image').click()
-      ),
+      generateImage: this.createAction(page, async () => {
+        await page.getByTestId('action-generate-image').click();
+        await page.keyboard.type('generate an image');
+        await page.getByTestId('ai-panel-input-send').click();
+      }),
       generateCaption: this.createAction(page, () =>
         page.getByTestId('action-generate-caption').click()
       ),
