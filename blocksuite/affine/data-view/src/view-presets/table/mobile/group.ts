@@ -8,7 +8,7 @@ import { PlusIcon, GroupToggleArrowIcon } from '@blocksuite/icons/lit';
 import { signal } from '@preact/signals-core';
 import { ShadowlessElement } from '@blocksuite/std';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { css, html, unsafeCSS, nothing } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
