@@ -9,9 +9,9 @@ import { SelectGroupView } from './renderer/select-group.js';
 import { StringGroupView } from './renderer/string-group.js';
 import { DateGroupView } from './renderer/date-group.js';
 import type { GroupByConfig } from './types.js';
-import { addDays } from 'date-fns'
 
 import {
+  addDays,
   differenceInCalendarDays,
   format as fmt,
   isToday,
