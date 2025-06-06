@@ -43,9 +43,9 @@ export class ChartSingleView extends SingleViewBase<ChartViewData> {
     });
 
     /**
-     * Overrides propertyGetOrCreate only if you need custom Property handling.
-     * For Chart, we only group by an existing property; we do not need extra property logic.
-     */
+    * Overrides propertyGetOrCreate only if you need custom Property handling.
+    * For Chart, we only group by an existing property; we do not need extra property logic.
+    */
     override propertyGetOrCreate(propertyId: string): ChartProperty {
         return new ChartProperty(this, propertyId);
     }
