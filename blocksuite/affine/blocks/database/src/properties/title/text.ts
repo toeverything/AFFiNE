@@ -213,6 +213,16 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
     this.disposables.addFromEvent(this, 'keydown', selectAll);
   }
 
+  private readonly _handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') {
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        return;
+      }
+      event.stopPropagation();
+    }
+  };
+
   override firstUpdated(props: Map<string, unknown>) {
     super.firstUpdated(props);
     this.richText.value?.updateComplete
@@ -233,6 +243,12 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
             'paste',
             this._onPaste
           );
+          const inlineEditor = this.inlineEditor;
+          if (inlineEditor) {
+            this.disposables.add(
+              inlineEditor.slots.keydown.subscribe(this._handleKeyDown)
+            );
+          }
         }
       })
       .catch(console.error);

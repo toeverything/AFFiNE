@@ -647,6 +647,16 @@ export class TableCell extends SignalWatcher(
     return this.richText$.value?.inlineEditor;
   }
 
+  private readonly _handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key !== 'Escape') {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        return;
+      }
+      e.stopPropagation();
+    }
+  };
+
   override connectedCallback() {
     super.connectedCallback();
     if (this.readonly) {
@@ -659,10 +669,7 @@ export class TableCell extends SignalWatcher(
         this.inlineEditor?.selectAll();
       }
     };
-    this.addEventListener('keydown', selectAll);
-    this.disposables.add(() => {
-      this.removeEventListener('keydown', selectAll);
-    });
+    this.disposables.addFromEvent(this, 'keydown', selectAll);
     this.disposables.addFromEvent(this, 'click', (e: MouseEvent) => {
       e.stopPropagation();
       requestAnimationFrame(() => {
@@ -679,6 +686,13 @@ export class TableCell extends SignalWatcher(
     }
     this.richText$.value?.updateComplete
       .then(() => {
+        const inlineEditor = this.inlineEditor;
+        if (inlineEditor) {
+          this.disposables.add(
+            inlineEditor.slots.keydown.subscribe(this._handleKeyDown)
+          );
+        }
+
         this.disposables.add(
           effect(() => {
             const richText = this.richText$.value;
