@@ -2,9 +2,9 @@ import {
   menu,
   popMenu,
   type PopupTarget,
+  type MenuConfig,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
-import type { MenuConfig } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
   ArrowDownSmallIcon,
