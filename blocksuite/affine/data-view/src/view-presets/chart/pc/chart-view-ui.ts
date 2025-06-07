@@ -1,6 +1,6 @@
 import { DataViewUIBase } from '../../../core/view/data-view-base.js';
 import type { ChartViewUILogic } from './chart-view-ui-logic.js';
-import { html, css, LitElement } from 'lit';
+import { html, css } from 'lit';
 import { state } from 'lit/decorators.js';
 import { signal, computed } from '@preact/signals-core';
 import { renderUniLit } from '../../../core/index.js';
@@ -144,10 +144,23 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       margin-top: 0;
     }
 
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      gap: 8px;
+    }
+
+    .dialog-content h1 {
+      margin: 0 0 8px;
+    }
+
+    .dialog-content affine-database-column-stats {
+      display: none;
+    }
+
     .close-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
       background: none;
       border: none;
       color: #fff;
@@ -189,6 +202,7 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
       </div>
     `;
     }
+    
     override firstUpdated() {
         // Grab the <canvas> once the template is rendered to the DOM
         this.canvasEl = this.renderRoot.querySelector(
@@ -552,13 +566,17 @@ export class ChartViewUI extends DataViewUIBase<ChartViewUILogic> {
         if (!categoryId || !this.selectedCategory) return html``;
 
         const prop = this.logic.view.propertyGetOrCreate(categoryId);
-        const propName = prop.name$.value;
         if (!this.dialogLogic) return html``;
 
         return html`
             <div class="dialog-content affine-database-table ${tableViewStyle}">
-                <button class="close-btn" @click=${this.closeDataDialog}>✕</button>
-                <h4>📋 Filtered View: ${propName} = ${this.selectedCategory}</h4>
+                <div class="dialog-header">
+                    <data-view-header-tools-search
+                        .dataViewLogic=${this.dialogLogic}
+                    ></data-view-header-tools-search>
+                    <button class="close-btn" @click=${this.closeDataDialog}>✕</button>
+                </div>
+                <h1>${this.selectedCategory}</h1>
                 <dv-table-view-ui .logic=${this.dialogLogic}></dv-table-view-ui>
             </div>
         `;
