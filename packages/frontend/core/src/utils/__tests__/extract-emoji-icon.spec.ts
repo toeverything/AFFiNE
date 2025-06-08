@@ -9,7 +9,7 @@ test('extract-emoji-icon', () => {
   });
 
   expect(extractEmojiIcon('❤️123')).toEqual({
-    emoji: null,
-    rest: '❤️123',
+    emoji: '❤️',
+    rest: '123',
   });
 });
