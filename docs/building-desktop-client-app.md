@@ -37,6 +37,8 @@ On Windows, you must enable symbolic links this code repo. See [#### Windows](./
 
 ## Build, package & make the desktop client app
 
+# repos/AFFiNE/.github/workflows/release-desktop.yml contains real order to build the desktop client app, but here we will explain the steps in a more detailed way. Up-to date.
+
 ### 0. Build the native modules
 
 Please refer to `Build Native Dependencies` section in [BUILDING.md](./BUILDING.md#Build-Native-Dependencies) to build the native modules.
@@ -46,6 +48,8 @@ Please refer to `Build Native Dependencies` section in [BUILDING.md](./BUILDING.
 On Mac & Linux
 
 ```shell
+BUILD_TYPE=canary yarn affine @affine/electron build
+
 BUILD_TYPE=canary yarn affine @affine/electron generate-assets
 ```
 
@@ -119,3 +123,9 @@ Please refer to `.github/workflows/release-desktop-app.yml` for the CI workflow.
 
 - build the app for all supported platforms
 - upload the artifacts to GitHub Actions
+
+#### Linux
+
+```
+sudo apt install ./packages/frontend/apps/electron/out/canary/make/deb/x64/affine-canary_0.21.0_amd64.deb
+```
