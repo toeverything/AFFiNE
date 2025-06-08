@@ -12,4 +12,19 @@ test('extract-emoji-icon', () => {
     emoji: '❤️',
     rest: '123',
   });
+
+  expect(extractEmojiIcon('➡️456')).toEqual({
+    emoji: '➡️',
+    rest: '456',
+  });
+
+  expect(extractEmojiIcon('✈️789')).toEqual({
+    emoji: '✈️',
+    rest: '789',
+  });
+
+  expect(extractEmojiIcon('plain text')).toEqual({
+    emoji: null,
+    rest: 'plain text',
+  });
 });
