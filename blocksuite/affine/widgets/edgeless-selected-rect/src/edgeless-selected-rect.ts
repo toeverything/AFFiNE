@@ -31,7 +31,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { RenderResizeHandles } from './resize-handles.js';
 import { generateCursorUrl, getRotatedResizeCursor } from './utils.js';
-
+export * from './utils';
 export const EDGELESS_SELECTED_RECT_WIDGET = 'edgeless-selected-rect';
 
 export class EdgelessSelectedRectWidget extends WidgetComponent<RootBlockModel> {
