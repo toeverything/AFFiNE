@@ -333,6 +333,163 @@ export const changePasswordMutation = {
 }`,
 };
 
+export const listCommentChangesQuery = {
+  id: 'listCommentChangesQuery' as const,
+  op: 'listCommentChanges',
+  query: `query listCommentChanges($workspaceId: String!, $docId: String!, $pagination: PaginationInput!) {
+  workspace(id: $workspaceId) {
+    commentChanges(docId: $docId, pagination: $pagination) {
+      totalCount
+      edges {
+        cursor
+        node {
+          action
+          id
+          commentId
+          item
+        }
+      }
+      pageInfo {
+        startCursor
+        endCursor
+        hasNextPage
+        hasPreviousPage
+      }
+    }
+  }
+}`,
+};
+
+export const createCommentMutation = {
+  id: 'createCommentMutation' as const,
+  op: 'createComment',
+  query: `mutation createComment($input: CommentCreateInput!) {
+  createComment(input: $input) {
+    id
+    content
+    resolved
+    user {
+      id
+      name
+      avatarUrl
+    }
+    createdAt
+    updatedAt
+    replies {
+      commentId
+      id
+      content
+      createdAt
+      updatedAt
+    }
+  }
+}`,
+};
+
+export const deleteCommentMutation = {
+  id: 'deleteCommentMutation' as const,
+  op: 'deleteComment',
+  query: `mutation deleteComment($id: String!) {
+  deleteComment(id: $id)
+}`,
+};
+
+export const listCommentsQuery = {
+  id: 'listCommentsQuery' as const,
+  op: 'listComments',
+  query: `query listComments($workspaceId: String!, $docId: String!, $pagination: PaginationInput) {
+  workspace(id: $workspaceId) {
+    comments(docId: $docId, pagination: $pagination) {
+      totalCount
+      edges {
+        cursor
+        node {
+          id
+          content
+          resolved
+          createdAt
+          updatedAt
+          user {
+            id
+            name
+            avatarUrl
+          }
+          replies {
+            commentId
+            id
+            content
+            createdAt
+            updatedAt
+            user {
+              id
+              name
+              avatarUrl
+            }
+          }
+        }
+      }
+      pageInfo {
+        startCursor
+        endCursor
+        hasNextPage
+        hasPreviousPage
+      }
+    }
+  }
+}`,
+};
+
+export const createReplyMutation = {
+  id: 'createReplyMutation' as const,
+  op: 'createReply',
+  query: `mutation createReply($input: ReplyCreateInput!) {
+  createReply(input: $input) {
+    commentId
+    id
+    content
+    user {
+      id
+      name
+      avatarUrl
+    }
+    createdAt
+    updatedAt
+  }
+}`,
+};
+
+export const deleteReplyMutation = {
+  id: 'deleteReplyMutation' as const,
+  op: 'deleteReply',
+  query: `mutation deleteReply($id: String!) {
+  deleteReply(id: $id)
+}`,
+};
+
+export const updateReplyMutation = {
+  id: 'updateReplyMutation' as const,
+  op: 'updateReply',
+  query: `mutation updateReply($input: ReplyUpdateInput!) {
+  updateReply(input: $input)
+}`,
+};
+
+export const resolveCommentMutation = {
+  id: 'resolveCommentMutation' as const,
+  op: 'resolveComment',
+  query: `mutation resolveComment($input: CommentResolveInput!) {
+  resolveComment(input: $input)
+}`,
+};
+
+export const updateCommentMutation = {
+  id: 'updateCommentMutation' as const,
+  op: 'updateComment',
+  query: `mutation updateComment($input: CommentUpdateInput!) {
+  updateComment(input: $input)
+}`,
+};
+
 export const addContextCategoryMutation = {
   id: 'addContextCategoryMutation' as const,
   op: 'addContextCategory',

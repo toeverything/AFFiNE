@@ -65,6 +65,13 @@ export const Actions = {
       Read: '',
       Manage: '',
     },
+    Comments: {
+      Read: '',
+      Create: '',
+      Update: '',
+      Delete: '',
+      Resolve: '',
+    },
   },
 } as const;
 
@@ -112,7 +119,12 @@ export const RoleActionsMap = {
   },
   DocRole: {
     get [DocRole.External]() {
-      return [Action.Doc.Read, Action.Doc.Copy, Action.Doc.Properties.Read];
+      return [
+        Action.Doc.Read,
+        Action.Doc.Copy,
+        Action.Doc.Properties.Read,
+        Action.Doc.Comments.Read,
+      ];
     },
     get [DocRole.Reader]() {
       return [
@@ -121,14 +133,20 @@ export const RoleActionsMap = {
         Action.Doc.Duplicate,
       ];
     },
+    get [DocRole.Commenter]() {
+      return [...this[DocRole.Reader], Action.Doc.Comments.Create];
+    },
     get [DocRole.Editor]() {
       return [
         ...this[DocRole.Reader],
+        ...this[DocRole.Commenter],
         Action.Doc.Trash,
         Action.Doc.Restore,
         Action.Doc.Delete,
         Action.Doc.Properties.Update,
         Action.Doc.Update,
+        Action.Doc.Comments.Resolve,
+        Action.Doc.Comments.Delete,
       ];
     },
     get [DocRole.Manager]() {

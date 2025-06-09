@@ -28,6 +28,7 @@ import { StorageProviderModule } from './base/storage';
 import { RateLimiterModule } from './base/throttler';
 import { WebSocketModule } from './base/websocket';
 import { AuthModule } from './core/auth';
+import { CommentModule } from './core/comment';
 import { ServerConfigModule, ServerConfigResolverModule } from './core/config';
 import { DocStorageModule } from './core/doc';
 import { DocRendererModule } from './core/doc-renderer';
@@ -180,7 +181,8 @@ export function buildAppModule(env: Env) {
       CopilotModule,
       CaptchaModule,
       OAuthModule,
-      CustomerIoModule
+      CustomerIoModule,
+      CommentModule
     )
     // doc service only
     .useIf(() => env.flavors.doc, DocServiceModule)
