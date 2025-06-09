@@ -148,6 +148,7 @@ export class DocRendererController {
     if (env.selfhosted) {
       envMeta.isSelfHosted = true;
     }
+    envMeta.allowDemoWorkspace = this.config.flags.allowDemoWorkspace;
 
     const title = opts?.title
       ? htmlSanitize(`${opts.title} | AFFiNE`)

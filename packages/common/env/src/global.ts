@@ -16,6 +16,7 @@ export function setupGlobal() {
     isPwa: false,
     isMobile: false,
     isSelfHosted: false,
+    allowDemoWorkspace: true,
     // publicPath is the root of assets files
     publicPath: '/',
     // subPath is the path to access the affine service

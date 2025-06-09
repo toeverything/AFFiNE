@@ -22,6 +22,8 @@ declare global {
 declare type Environment = {
   // Variant
   isSelfHosted: boolean;
+  /** allow showing demo workspace for guests */
+  allowDemoWorkspace: boolean;
 
   // Device
   isLinux: boolean;

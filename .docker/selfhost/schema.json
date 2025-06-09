@@ -560,6 +560,11 @@
           "type": "boolean",
           "description": "Only allow users with early access features to access the app\n@default false",
           "default": false
+        },
+        "allowDemoWorkspace": {
+          "type": "boolean",
+          "description": "Allow guests to use the demo workspace\n@default true\n@environment `AFFINE_ALLOW_DEMO_WORKSPACE`",
+          "default": true
         }
       }
     },

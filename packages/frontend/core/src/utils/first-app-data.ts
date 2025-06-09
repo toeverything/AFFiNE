@@ -68,6 +68,9 @@ export async function buildShowcaseWorkspace(
 const logger = new DebugLogger('createFirstAppData');
 
 export async function createFirstAppData(workspacesService: WorkspacesService) {
+  if (!environment.allowDemoWorkspace) {
+    return;
+  }
   if (localStorage.getItem('is-first-open') !== null) {
     return;
   }

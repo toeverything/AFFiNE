@@ -157,7 +157,8 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-local-workspace.description',
     configurable: isCanaryBuild,
-    defaultState: isDesktopEnvironment || isCanaryBuild,
+    defaultState:
+      (isDesktopEnvironment || isCanaryBuild) && environment.allowDemoWorkspace,
   },
   enable_advanced_block_visibility: {
     category: 'blocksuite',

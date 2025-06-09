@@ -4,6 +4,7 @@ import { defineModuleConfig } from '../../base';
 
 export interface ServerFlags {
   earlyAccessControl: boolean;
+  allowDemoWorkspace: boolean;
 }
 
 declare global {
@@ -68,5 +69,10 @@ defineModuleConfig('flags', {
   earlyAccessControl: {
     desc: 'Only allow users with early access features to access the app',
     default: false,
+  },
+  allowDemoWorkspace: {
+    desc: 'Allow guests to use the demo workspace',
+    default: true,
+    env: ['AFFINE_ALLOW_DEMO_WORKSPACE', 'boolean'],
   },
 });

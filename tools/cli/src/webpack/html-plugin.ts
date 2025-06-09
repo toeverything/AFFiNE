@@ -192,6 +192,8 @@ export function createHTMLPlugins(
       publicPath,
       meta: {
         'env:publicPath': publicPath,
+        'env:allowDemoWorkspace':
+          process.env.AFFINE_ALLOW_DEMO_WORKSPACE ?? 'true',
       },
     })
   );
@@ -205,6 +207,8 @@ export function createHTMLPlugins(
         publicPath,
         meta: {
           'env:publicPath': publicPath,
+          'env:allowDemoWorkspace':
+            process.env.AFFINE_ALLOW_DEMO_WORKSPACE ?? 'true',
         },
       }),
       new HTMLPlugin({
@@ -214,6 +218,8 @@ export function createHTMLPlugins(
         publicPath,
         meta: {
           'env:publicPath': publicPath,
+          'env:allowDemoWorkspace':
+            process.env.AFFINE_ALLOW_DEMO_WORKSPACE ?? 'true',
         },
       }),
       new HTMLPlugin({
@@ -223,6 +229,8 @@ export function createHTMLPlugins(
         publicPath,
         meta: {
           'env:publicPath': publicPath,
+          'env:allowDemoWorkspace':
+            process.env.AFFINE_ALLOW_DEMO_WORKSPACE ?? 'true',
         },
       })
     );
@@ -248,6 +256,8 @@ export function createHTMLPlugins(
         meta: {
           'env:isSelfHosted': 'true',
           'env:publicPath': '/',
+          'env:allowDemoWorkspace':
+            process.env.AFFINE_ALLOW_DEMO_WORKSPACE ?? 'true',
         },
         filename: 'selfhost.html',
         templateParameters: {
