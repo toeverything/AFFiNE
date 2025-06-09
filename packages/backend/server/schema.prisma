@@ -46,6 +46,8 @@ model User {
   // receive notifications
   notifications                Notification[]                 @relation("user_notifications")
   settings                     UserSettings?
+  comments                     Comment[]
+  replies                      Reply[]
 
   @@index([email])
   @@map("users")
@@ -126,6 +128,7 @@ model Workspace {
   blobs          Blob[]
   ignoredDocs    AiWorkspaceIgnoredDocs[]
   embedFiles     AiWorkspaceFiles[]
+  comments       Comment[]
 
   @@map("workspaces")
 }
@@ -854,4 +857,51 @@ model UserSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
+}
+
+model Comment {
+  // NOTE: manually set this column type to identity in migration file
+  sid         Int       @unique @default(autoincrement()) @db.Integer
+  id          String    @id @default(uuid()) @db.VarChar
+  workspaceId String    @map("workspace_id") @db.VarChar
+  docId       String    @map("doc_id") @db.VarChar
+  userId      String    @map("user_id") @db.VarChar
+  content     Json      @db.JsonB
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+  // whether the comment is resolved
+  resolved    Boolean   @default(false) @map("resolved")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  replies   Reply[]
+
+  @@index([workspaceId, docId, sid])
+  @@index([workspaceId, docId, updatedAt])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Reply {
+  // NOTE: manually set this column type to identity in migration file
+  sid         Int       @unique @default(autoincrement()) @db.Integer
+  id          String    @id @default(uuid()) @db.VarChar
+  userId      String    @map("user_id") @db.VarChar
+  commentId   String    @map("comment_id") @db.VarChar
+  // query new replies by workspaceId and docId
+  workspaceId String    @map("workspace_id") @db.VarChar
+  docId       String    @map("doc_id") @db.VarChar
+  content     Json      @db.JsonB
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([commentId, sid])
+  @@index([workspaceId, docId, updatedAt])
+  @@index([userId])
+  @@map("replies")
 }

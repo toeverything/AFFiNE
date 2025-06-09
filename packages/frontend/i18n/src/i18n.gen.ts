@@ -8875,6 +8875,14 @@ export function useAFFiNEI18N(): {
     ["error.INVALID_INDEXER_INPUT"](options: {
         readonly reason: string;
     }): string;
+    /**
+      * `Comment not found.`
+      */
+    ["error.COMMENT_NOT_FOUND"](): string;
+    /**
+      * `Reply not found.`
+      */
+    ["error.REPLY_NOT_FOUND"](): string;
 } { const { t } = useTranslation(); return useMemo(() => createProxy((key) => t.bind(null, key)), [t]); }
 function createComponent(i18nKey: string) {
     return (props) => createElement(Trans, { i18nKey, shouldUnescape: true, ...props });
