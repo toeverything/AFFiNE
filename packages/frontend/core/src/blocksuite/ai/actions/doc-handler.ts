@@ -208,7 +208,18 @@ export function actionToHandler<T extends keyof BlockSuitePresets.AIActions>(
     if (!blocks || blocks.length === 0) return;
     const block = blocks.at(-1);
     if (!block) return;
-    aiPanel.toggle(block, '');
+    if (
+      blocks.length === 1 &&
+      block.model.flavour === 'affine:image' &&
+      id === 'createImage'
+    ) {
+      // if only one image block is selected, and the action is createImage
+      // toggle panel to allow user to enter text prompt
+      aiPanel.toggle(block, 'input');
+    } else {
+      // generate the answer
+      aiPanel.toggle(block, 'generate');
+    }
   };
 }
 
@@ -232,7 +243,7 @@ export function handleInlineAskAIAction(
   });
 
   if (!actionGroups) {
-    panel.toggle(block);
+    panel.toggle(block, 'input');
     return;
   }
 
@@ -252,7 +263,7 @@ export function handleInlineAskAIAction(
     clear();
   };
 
-  panel.toggle(block);
+  panel.toggle(block, 'input');
 
   setTimeout(() => {
     abortController = new AbortController();

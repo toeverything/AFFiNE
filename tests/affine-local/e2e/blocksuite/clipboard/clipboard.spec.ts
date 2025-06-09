@@ -1,11 +1,14 @@
 import { test } from '@affine-test/kit/playwright';
+import { importFile } from '@affine-test/kit/utils/attachment';
 import { pasteContent } from '@affine-test/kit/utils/clipboard';
 import {
   clickEdgelessModeButton,
   clickPageModeButton,
+  clickView,
   getCodeBlockIds,
   getParagraphIds,
   locateEditorContainer,
+  toViewCoord,
 } from '@affine-test/kit/utils/editor';
 import {
   copyByKeyboard,
@@ -469,4 +472,37 @@ test.describe('paste in readonly mode', () => {
 
     await verifyParagraphContent(page, 0, 'This is a test paragraph');
   });
+});
+
+test('should copy single image from edgeless and paste to page', async ({
+  page,
+}) => {
+  await clickEdgelessModeButton(page);
+
+  const button = page.locator('edgeless-mindmap-tool-button');
+  await button.click();
+
+  const menu = page.locator('edgeless-mindmap-menu');
+  const mediaItem = menu.locator('.media-item');
+  await mediaItem.click();
+
+  await importFile(page, 'large-image.png', async () => {
+    await toViewCoord(page, [100, 250]);
+    await clickView(page, [100, 250]);
+  });
+
+  const image = page.locator('affine-edgeless-image').first();
+  await image.click();
+
+  await copyByKeyboard(page);
+
+  await clickPageModeButton(page);
+  await waitForEditorLoad(page);
+
+  const container = locateEditorContainer(page);
+  await container.click();
+
+  await pasteByKeyboard(page);
+
+  await expect(page.locator('affine-page-image')).toBeVisible();
 });

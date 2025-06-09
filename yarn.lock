@@ -853,7 +853,7 @@ __metadata:
   dependencies:
     "@affine-tools/cli": "workspace:*"
     "@affine-tools/utils": "workspace:*"
-    "@googleapis/androidpublisher": "npm:^27.0.0"
+    "@googleapis/androidpublisher": "npm:^28.0.0"
     "@types/node": "npm:^22.0.0"
     typescript: "npm:^5.7.2"
   languageName: unknown
@@ -6079,12 +6079,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@googleapis/androidpublisher@npm:^27.0.0":
-  version: 27.0.0
-  resolution: "@googleapis/androidpublisher@npm:27.0.0"
+"@googleapis/androidpublisher@npm:^28.0.0":
+  version: 28.0.1
+  resolution: "@googleapis/androidpublisher@npm:28.0.1"
   dependencies:
-    googleapis-common: "npm:^7.0.0"
-  checksum: 10/e18dadca4c51cb99b0fc4b876cef154b5ff18694898ce7ff3481a82f7d79e0f141a1726eabdc49b7f1e9fc28acff0f0a8310396db6f869a3a346b7430d7daf0b
+    googleapis-common: "npm:^8.0.2-rc.0"
+  checksum: 10/6fffeb8c918bc9ac4ca370f0468803cb0d0ede8cc794efd045fdbdb353bedc5007098f22a896a5804bf819edd2d6b74e6059d2e9b37332b14facf9db560e6eee
   languageName: node
   linkType: hard
 
@@ -9047,8 +9047,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/common@npm:^11.0.12":
-  version: 11.1.2
-  resolution: "@nestjs/common@npm:11.1.2"
+  version: 11.1.3
+  resolution: "@nestjs/common@npm:11.1.3"
   dependencies:
     file-type: "npm:21.0.0"
     iterare: "npm:1.2.1"
@@ -9065,13 +9065,13 @@ __metadata:
       optional: true
     class-validator:
       optional: true
-  checksum: 10/547a81f368b0bf0e3ca3d08fa811cdd272b89cf82f5a1b92a16794b32289fcbfb33f11b388b220cf410fb81e8d5092f40b28d401d255198893445d87e84135e8
+  checksum: 10/b1c9699cdf9cee96ed0178e5eed3b1829c210bbdbd703bb9e1e0def2c7456273d73329635439b16164e43de8a8d54dd5b7d1dd5dba65417d746bd731b8c5d685
   languageName: node
   linkType: hard
 
 "@nestjs/core@npm:^11.0.12":
-  version: 11.1.2
-  resolution: "@nestjs/core@npm:11.1.2"
+  version: 11.1.3
+  resolution: "@nestjs/core@npm:11.1.3"
   dependencies:
     "@nuxt/opencollective": "npm:0.4.1"
     fast-safe-stringify: "npm:2.1.1"
@@ -9093,7 +9093,7 @@ __metadata:
       optional: true
     "@nestjs/websockets":
       optional: true
-  checksum: 10/045107a7dfe990f9380220a2163281ba19d2e00a2b9f6f004f98fb71f4e2031489f88b38da0e29b65d09b847b42782a66d4dbe3d35d0e8d25b860a0c767b3f91
+  checksum: 10/b46a9f877170f7e96429da5970684525277bcb341f3a24032b6748ad503b5c7164b77410daf9c0f3ca99b5f6b99985d5eb739501cfc01c941218397f32f2d095
   languageName: node
   linkType: hard
 
@@ -9154,24 +9154,24 @@ __metadata:
   linkType: hard
 
 "@nestjs/platform-express@npm:^11.0.12":
-  version: 11.1.2
-  resolution: "@nestjs/platform-express@npm:11.1.2"
+  version: 11.1.3
+  resolution: "@nestjs/platform-express@npm:11.1.3"
   dependencies:
     cors: "npm:2.8.5"
     express: "npm:5.1.0"
-    multer: "npm:2.0.0"
+    multer: "npm:2.0.1"
     path-to-regexp: "npm:8.2.0"
     tslib: "npm:2.8.1"
   peerDependencies:
     "@nestjs/common": ^11.0.0
     "@nestjs/core": ^11.0.0
-  checksum: 10/7673728310c57f37ee308de408e843dc9464cf96b1bfef8f1d31dc2e08b7c8e89c2de588a4eeca4e3c8dc37c971c7361030640954bef6cc9ac5db438b594a231
+  checksum: 10/3570330af397b8fc9395776afff0916209061488e537446a98c39c19aa011038a94ad22b11f2378ad1ab931455c40bd809fe3ba71f622935ce349504da8756a9
   languageName: node
   linkType: hard
 
 "@nestjs/platform-socket.io@npm:^11.0.12":
-  version: 11.1.2
-  resolution: "@nestjs/platform-socket.io@npm:11.1.2"
+  version: 11.1.3
+  resolution: "@nestjs/platform-socket.io@npm:11.1.3"
   dependencies:
     socket.io: "npm:4.8.1"
     tslib: "npm:2.8.1"
@@ -9179,7 +9179,7 @@ __metadata:
     "@nestjs/common": ^11.0.0
     "@nestjs/websockets": ^11.0.0
     rxjs: ^7.1.0
-  checksum: 10/ed8d7ae55f3bf32cd2a35671e1393819d30a575a301976a02aaa05fa608c6ce52b427efd1d2b0d4f7f29d3a0dd17786d82637b7343ce7c3e4ca6b7a019705b0e
+  checksum: 10/8231356ea086f5b56c137dd3f29ec5bf346eb5a6efad67b8cb606268dba31d6419067cc077fd5d1a8d1391cb9648acb4bd1eeffba99744a9030111aec28b1fa6
   languageName: node
   linkType: hard
 
@@ -9245,8 +9245,8 @@ __metadata:
   linkType: hard
 
 "@nestjs/websockets@npm:^11.0.12":
-  version: 11.1.2
-  resolution: "@nestjs/websockets@npm:11.1.2"
+  version: 11.1.3
+  resolution: "@nestjs/websockets@npm:11.1.3"
   dependencies:
     iterare: "npm:1.2.1"
     object-hash: "npm:3.0.0"
@@ -9260,7 +9260,7 @@ __metadata:
   peerDependenciesMeta:
     "@nestjs/platform-socket.io":
       optional: true
-  checksum: 10/a29b286df3b73c096c70c4e016bc455106b1ae264503ff839df0964ed99eb3e43efade5195b94c2d658183b945bf69f222d9536d7c087d8b1f8768accce703cc
+  checksum: 10/cd42ecd890597f010680d2001b3ca86788eb69f9e472db39e8a307d0a5387faa56cbf7aa6a0fae979a1cd6e820389f35db52fde75f21569d264b08e8a6f0756d
   languageName: node
   linkType: hard
 
@@ -17996,7 +17996,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"busboy@npm:1.6.0, busboy@npm:^1.0.0, busboy@npm:^1.6.0":
+"busboy@npm:1.6.0, busboy@npm:^1.6.0":
   version: 1.6.0
   resolution: "busboy@npm:1.6.0"
   dependencies:
@@ -19136,15 +19136,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"concat-stream@npm:^1.5.2":
-  version: 1.6.2
-  resolution: "concat-stream@npm:1.6.2"
+"concat-stream@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "concat-stream@npm:2.0.0"
   dependencies:
     buffer-from: "npm:^1.0.0"
     inherits: "npm:^2.0.3"
-    readable-stream: "npm:^2.2.2"
+    readable-stream: "npm:^3.0.2"
     typedarray: "npm:^0.0.6"
-  checksum: 10/71db903c84fc073ca35a274074e8d26c4330713d299f8623e993c448c1f6bf8b967806dd1d1a7b0f8add6f15ab1af7435df21fe79b4fe7efd78420c89e054e28
+  checksum: 10/250e576d0617e7c58e1c4b2dd6fe69560f316d2c962a409f9f3aac794018499ddb31948b1e4296f217008e124cd5d526432097745157fe504b5d9f3dc469eadb
   languageName: node
   linkType: hard
 
@@ -22398,7 +22398,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gaxios@npm:^6.0.0, gaxios@npm:^6.0.3, gaxios@npm:^6.1.1":
+"gaxios@npm:^6.0.0, gaxios@npm:^6.1.1":
   version: 6.7.1
   resolution: "gaxios@npm:6.7.1"
   dependencies:
@@ -22411,6 +22411,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"gaxios@npm:^7.0.0-rc.1, gaxios@npm:^7.0.0-rc.4":
+  version: 7.0.0-rc.6
+  resolution: "gaxios@npm:7.0.0-rc.6"
+  dependencies:
+    extend: "npm:^3.0.2"
+    https-proxy-agent: "npm:^7.0.1"
+    node-fetch: "npm:^3.3.2"
+  checksum: 10/60c688d4c65062c97bf0f33f959713df106e207065586bf5deb546ef5d02cddcba46d138c0b7eb8712950ca880fa28d3665936b19156224f8c478d9c4f817aea
+  languageName: node
+  linkType: hard
+
 "gcp-metadata@npm:^6.0.0, gcp-metadata@npm:^6.1.0":
   version: 6.1.1
   resolution: "gcp-metadata@npm:6.1.1"
@@ -22419,6 +22430,17 @@ __metadata:
     google-logging-utils: "npm:^0.0.2"
     json-bigint: "npm:^1.0.0"
   checksum: 10/f6b1a604d5888db261a9a3ca0a494338b5cdbf815efa393aa38051d814387545bbfd9f25874bf8ea36441f2052625add42658e8973648e53f9b90f151b4bad1b
+  languageName: node
+  linkType: hard
+
+"gcp-metadata@npm:^7.0.0-rc.1":
+  version: 7.0.0-rc.1
+  resolution: "gcp-metadata@npm:7.0.0-rc.1"
+  dependencies:
+    gaxios: "npm:^7.0.0-rc.1"
+    google-logging-utils: "npm:^1.0.0"
+    json-bigint: "npm:^1.0.0"
+  checksum: 10/2c58401c7945c41144bc6a44a066c050d36c34ee10e04e85ffde488afec6a3f67ebe29e697d0328aa20181b38a36aae9165896c0201387ea8cff031cdb790ab9
   languageName: node
   linkType: hard
 
@@ -22782,7 +22804,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"google-auth-library@npm:^9.0.0, google-auth-library@npm:^9.15.0, google-auth-library@npm:^9.7.0":
+"google-auth-library@npm:^10.0.0-rc.1":
+  version: 10.0.0-rc.3
+  resolution: "google-auth-library@npm:10.0.0-rc.3"
+  dependencies:
+    base64-js: "npm:^1.3.0"
+    ecdsa-sig-formatter: "npm:^1.0.11"
+    gaxios: "npm:^7.0.0-rc.4"
+    gcp-metadata: "npm:^7.0.0-rc.1"
+    google-logging-utils: "npm:^1.0.0"
+    gtoken: "npm:^8.0.0-rc.1"
+    jws: "npm:^4.0.0"
+  checksum: 10/d76f470ddba1d5ec84cb72b03af388722db2987a95f64c7d91169f3f67608528a327fd132bb00d74be10b08e6446906b16983cf0aa9f6fa10ac7a6d3aacff0d7
+  languageName: node
+  linkType: hard
+
+"google-auth-library@npm:^9.0.0, google-auth-library@npm:^9.15.0":
   version: 9.15.1
   resolution: "google-auth-library@npm:9.15.1"
   dependencies:
@@ -22803,17 +22840,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"googleapis-common@npm:^7.0.0":
-  version: 7.2.0
-  resolution: "googleapis-common@npm:7.2.0"
+"google-logging-utils@npm:^1.0.0":
+  version: 1.1.1
+  resolution: "google-logging-utils@npm:1.1.1"
+  checksum: 10/51f915d97a812af9edeccf24d43bbec5f4d98dab4f874a08083e847d495fc94185d309f21ae7f590c9f7951bc25bc3095fa4ae73113aba47e86482f69860a806
+  languageName: node
+  linkType: hard
+
+"googleapis-common@npm:^8.0.2-rc.0":
+  version: 8.0.2-rc.0
+  resolution: "googleapis-common@npm:8.0.2-rc.0"
   dependencies:
     extend: "npm:^3.0.2"
-    gaxios: "npm:^6.0.3"
-    google-auth-library: "npm:^9.7.0"
+    gaxios: "npm:^7.0.0-rc.4"
+    google-auth-library: "npm:^10.0.0-rc.1"
     qs: "npm:^6.7.0"
     url-template: "npm:^2.0.8"
-    uuid: "npm:^9.0.0"
-  checksum: 10/4b914be6681f2a5a02bd0954a4a5cee1725d8623cb9d0a7c2fd7132de110e8d5707566cba39784e58147be39e74bc5513ad30fdcdaa6edcbb47ecf687003cb6c
+  checksum: 10/f630e8f37b2baa4980e3a66fb7736caa2a47f1f915bc6082ef844aa24be776ad2fbff39631346dcccc01c99dd5707fca02c786c6ba23ae459bcb23b125b4fb63
   languageName: node
   linkType: hard
 
@@ -22966,6 +23009,16 @@ __metadata:
     gaxios: "npm:^6.0.0"
     jws: "npm:^4.0.0"
   checksum: 10/640392261e55c9242137a81a4af8feb053b57061762cedddcbb6a0d62c2314316161808ac2529eea67d06d69fdc56d82361af50f2d840a04a87ea29e124d7382
+  languageName: node
+  linkType: hard
+
+"gtoken@npm:^8.0.0-rc.1":
+  version: 8.0.0-rc.1
+  resolution: "gtoken@npm:8.0.0-rc.1"
+  dependencies:
+    gaxios: "npm:^7.0.0-rc.1"
+    jws: "npm:^4.0.0"
+  checksum: 10/d2481344df8d9f62ec3ae7fe97b562c93dc294c7d1e7d8e1603162fe2726cfb5993f2b1a4e04388ee0f49c5fd02c1b0799dc58cebbf8af10489af8de80a72902
   languageName: node
   linkType: hard
 
@@ -27077,7 +27130,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mkdirp@npm:^0.5.1, mkdirp@npm:^0.5.4":
+"mkdirp@npm:^0.5.1, mkdirp@npm:^0.5.6":
   version: 0.5.6
   resolution: "mkdirp@npm:0.5.6"
   dependencies:
@@ -27253,18 +27306,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"multer@npm:2.0.0, multer@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "multer@npm:2.0.0"
+"multer@npm:2.0.1, multer@npm:^2.0.0":
+  version: 2.0.1
+  resolution: "multer@npm:2.0.1"
   dependencies:
     append-field: "npm:^1.0.0"
-    busboy: "npm:^1.0.0"
-    concat-stream: "npm:^1.5.2"
-    mkdirp: "npm:^0.5.4"
+    busboy: "npm:^1.6.0"
+    concat-stream: "npm:^2.0.0"
+    mkdirp: "npm:^0.5.6"
     object-assign: "npm:^4.1.1"
-    type-is: "npm:^1.6.4"
-    xtend: "npm:^4.0.0"
-  checksum: 10/e6aebea164666dff522a4d2aff235dbab12ac6d50c6e491c6b9ccafeddc229c5ccd34911374d223d597d602454951dd2e9b7d6e0a7b401053e47ef43e2838e2a
+    type-is: "npm:^1.6.18"
+    xtend: "npm:^4.0.2"
+  checksum: 10/cb0dda65ae37be40968fc1f9ea492bdb4c20bd189ce427e11e95d333837193544606b82ef6431f2acd3cd11156164f215bdeb46f47847d29b6bf3a36ac736a8f
   languageName: node
   linkType: hard
 
@@ -30208,7 +30261,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"readable-stream@npm:3, readable-stream@npm:^3.0.6, readable-stream@npm:^3.4.0, readable-stream@npm:^3.6.2":
+"readable-stream@npm:3, readable-stream@npm:^3.0.2, readable-stream@npm:^3.0.6, readable-stream@npm:^3.4.0, readable-stream@npm:^3.6.2":
   version: 3.6.2
   resolution: "readable-stream@npm:3.6.2"
   dependencies:
@@ -30219,7 +30272,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"readable-stream@npm:^2.0.1, readable-stream@npm:^2.2.2, readable-stream@npm:~2.3.6":
+"readable-stream@npm:^2.0.1, readable-stream@npm:~2.3.6":
   version: 2.3.8
   resolution: "readable-stream@npm:2.3.8"
   dependencies:
@@ -33358,7 +33411,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"type-is@npm:^1.6.4, type-is@npm:~1.6.18":
+"type-is@npm:^1.6.18, type-is@npm:~1.6.18":
   version: 1.6.18
   resolution: "type-is@npm:1.6.18"
   dependencies:
@@ -34902,7 +34955,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"xtend@npm:^4.0.0":
+"xtend@npm:^4.0.0, xtend@npm:^4.0.2":
   version: 4.0.2
   resolution: "xtend@npm:4.0.2"
   checksum: 10/ac5dfa738b21f6e7f0dd6e65e1b3155036d68104e67e5d5d1bde74892e327d7e5636a076f625599dc394330a731861e87343ff184b0047fef1360a7ec0a5a36a
