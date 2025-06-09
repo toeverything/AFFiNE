@@ -60,3 +60,11 @@ export async function readBufferWithLimit(
       : undefined
   );
 }
+
+export async function readableToBuffer(readable: Readable) {
+  const chunks: Buffer[] = [];
+  for await (const chunk of readable) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}

@@ -231,7 +231,7 @@ export async function createApp(
   app.useBodyParser('raw', { limit: 1 * OneMB });
   app.use(
     graphqlUploadExpress({
-      maxFileSize: 10 * OneMB,
+      maxFileSize: 100 * OneMB,
       maxFiles: 5,
     })
   );

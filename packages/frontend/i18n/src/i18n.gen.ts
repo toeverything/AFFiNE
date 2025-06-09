@@ -8895,6 +8895,10 @@ export function useAFFiNEI18N(): {
       * `Comment attachment not found.`
       */
     ["error.COMMENT_ATTACHMENT_NOT_FOUND"](): string;
+    /**
+      * `You have exceeded the comment attachment size quota.`
+      */
+    ["error.COMMENT_ATTACHMENT_QUOTA_EXCEEDED"](): string;
 } { const { t } = useTranslation(); return useMemo(() => createProxy((key) => t.bind(null, key)), [t]); }
 function createComponent(i18nKey: string) {
     return (props) => createElement(Trans, { i18nKey, shouldUnescape: true, ...props });
