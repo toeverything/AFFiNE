@@ -29,7 +29,7 @@ import {
   shift,
   size,
 } from '@floating-ui/dom';
-import { html, nothing, render } from 'lit';
+import { html, render } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 import { join } from 'lit/directives/join.js';
 import { keyed } from 'lit/directives/keyed.js';
@@ -297,10 +297,21 @@ export function renderToolbar(
   render(
     join(
       renderActions(primaryActionGroup, context),
-      innerToolbar ? nothing : renderToolbarSeparator()
+      innerToolbar ? null : renderToolbarSeparator()
     ),
     toolbar
   );
+
+  // Avoids shaking
+  if (flavour === 'affine:note' && context.std.range.value) {
+    if (!('inline' in toolbar.dataset)) {
+      toolbar.dataset.inline = '';
+    } else {
+      toolbar.dataset.inline = 'true';
+    }
+  } else {
+    delete toolbar.dataset.inline;
+  }
 
   if (toolbar.dataset.open) return;
   toolbar.dataset.open = 'true';
