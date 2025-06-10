@@ -70,8 +70,7 @@ export const ListMarkdownExtension =
           parent,
           index
         );
-        console.log(id);
-        // store.deleteBlock(model, { deleteChildren: false });
+        store.deleteBlock(model, { deleteChildren: false });
         focusTextModel(std, id);
       } else {
         let order = parseInt(match[2]);
