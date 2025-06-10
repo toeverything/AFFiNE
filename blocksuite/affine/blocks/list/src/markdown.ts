@@ -97,6 +97,12 @@ export const ListMarkdownExtension =
         let order = parseInt(match[2]);
         if (!Number.isInteger(order)) order = 1;
 
+        store.captureSync();
+        inlineEditor.deleteText({
+          index: 0,
+          length: inlineRange.index,
+        });
+
         const id = toNumberedList(std, model, order);
         if (!id) return;
 
