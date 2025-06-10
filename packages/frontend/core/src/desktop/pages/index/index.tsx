@@ -90,6 +90,7 @@ export const Component = ({
     }
 
     if (!allowGuestDemo && !loggedIn) {
+      localStorage.removeItem('last_workspace_id');
       jumpToSignIn();
       return;
     }
@@ -142,6 +143,7 @@ export const Component = ({
       return;
     }
     if (!allowGuestDemo && !loggedIn) {
+      localStorage.removeItem('last_workspace_id');
       jumpToSignIn();
       return;
     }
