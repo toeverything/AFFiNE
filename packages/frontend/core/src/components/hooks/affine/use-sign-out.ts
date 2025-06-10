@@ -3,10 +3,10 @@ import {
   notify,
   useConfirmModal,
 } from '@affine/component';
-import { AuthService } from '@affine/core/modules/cloud';
+import { AuthService, DefaultServerService } from '@affine/core/modules/cloud';
 import { UserFriendlyError } from '@affine/error';
 import { useI18n } from '@affine/i18n';
-import { useService } from '@toeverything/infra';
+import { useService, useServices } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { useNavigateHelper } from '../use-navigate-helper';
@@ -25,21 +25,26 @@ export const useSignOut = ({
 }: ConfirmModalProps = {}) => {
   const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
-  const { jumpToSignIn } = useNavigateHelper();
+  const { jumpToSignIn, jumpToIndex } = useNavigateHelper();
 
   const authService = useService(AuthService);
+  const { defaultServerService } = useServices({ DefaultServerService });
 
   const signOut = useCallback(async () => {
     onConfirm?.()?.catch(console.error);
     try {
       await authService.signOut();
-      jumpToSignIn();
+      if (defaultServerService.server.config$.value.allowGuestDemoWorkspace) {
+        jumpToIndex();
+      } else {
+        jumpToSignIn();
+      }
     } catch (err) {
       console.error(err);
       const error = UserFriendlyError.fromAny(err);
       notify.error(error);
     }
-  }, [authService, jumpToSignIn, onConfirm]);
+  }, [authService, jumpToIndex, jumpToSignIn, defaultServerService, onConfirm]);
 
   const getDefaultText = useCallback(
     (key: SignOutConfirmModalI18NKeys) => {
