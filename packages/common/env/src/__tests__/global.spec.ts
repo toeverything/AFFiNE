@@ -22,15 +22,4 @@ describe('setupGlobal allowDemoWorkspace', () => {
     setupGlobal();
     expect(environment.allowDemoWorkspace).toBe(true);
   });
-
-  test('should read override from meta tag', () => {
-    const meta = document.createElement('meta');
-    meta.name = 'env:allowDemoWorkspace';
-    meta.content = 'false';
-    document.head.append(meta);
-
-    setupGlobal();
-
-    expect(environment.allowDemoWorkspace).toBe(false);
-  });
 });

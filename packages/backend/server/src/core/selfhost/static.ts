@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { Injectable, OnModuleInit } from '@nestjs/common';
@@ -65,13 +66,18 @@ export class StaticFilesResolver implements OnModuleInit {
       [basePath + '/admin', basePath + '/admin/*path'],
       this.check.use,
       (_req, res) => {
-        res.sendFile(
-          join(
-            staticPath,
-            'admin',
-            env.selfhosted ? 'selfhost.html' : 'index.html'
-          )
+        const file = join(
+          staticPath,
+          'admin',
+          env.selfhosted ? 'selfhost.html' : 'index.html'
         );
+        let html = readFileSync(file, 'utf-8');
+        html = html.replace(
+          /<\/head>/,
+          `<meta name="env:allowDemoWorkspace" content="${this.config.server.allowDemoWorkspace}" />\n</head>`
+        );
+        res.setHeader('Content-Type', 'text/html');
+        res.send(html);
       }
     );
     // END REGION
@@ -113,6 +119,19 @@ export class StaticFilesResolver implements OnModuleInit {
         isMobile({
           ua: req.headers['user-agent'] ?? undefined,
         });
+
+      const file = join(
+        staticPath,
+        mobile ? 'mobile' : '',
+        env.selfhosted ? 'selfhost.html' : 'index.html'
+      );
+      let html = readFileSync(file, 'utf-8');
+      html = html.replace(
+        /<\/head>/,
+        `<meta name="env:allowDemoWorkspace" content="${this.config.server.allowDemoWorkspace}" />\n</head>`
+      );
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
 
       return res.sendFile(
         join(

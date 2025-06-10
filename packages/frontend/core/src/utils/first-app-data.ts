@@ -12,10 +12,6 @@ import {
   getAFFiNEWorkspaceSchema,
   type WorkspacesService,
 } from '../modules/workspace';
-import {
-  getLocalWorkspaceIds,
-  setLocalWorkspaceIds,
-} from '../modules/workspace-engine/impls/local';
 
 export async function buildShowcaseWorkspace(
   workspacesService: WorkspacesService,
@@ -73,9 +69,6 @@ const logger = new DebugLogger('createFirstAppData');
 
 export async function createFirstAppData(workspacesService: WorkspacesService) {
   if (!environment.allowDemoWorkspace) {
-    if (getLocalWorkspaceIds().length > 0) {
-      setLocalWorkspaceIds([]);
-    }
     return;
   }
   if (localStorage.getItem('is-first-open') !== null) {

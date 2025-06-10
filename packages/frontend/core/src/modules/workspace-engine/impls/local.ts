@@ -1,3 +1,5 @@
+import '@affine/env/global';
+
 import { DebugLogger } from '@affine/debug';
 import {
   type BlobStorage,
@@ -33,6 +35,7 @@ import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
 import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
+import { AuthService } from '../../cloud';
 import { DesktopApiService } from '../../desktop-api';
 import type {
   WorkspaceFlavourProvider,
@@ -74,7 +77,10 @@ export function setLocalWorkspaceIds(
 }
 
 class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
-  constructor(private readonly framework: FrameworkProvider) {}
+  private readonly authService?: AuthService;
+  constructor(private readonly framework: FrameworkProvider) {
+    this.authService = framework.getOptional(AuthService);
+  }
 
   readonly flavour = 'local';
   readonly notifyChannel = new BroadcastChannel(
@@ -207,6 +213,16 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     new Observable<WorkspaceMetadata[]>(subscriber => {
       let last: WorkspaceMetadata[] | null = null;
       const emit = () => {
+        if (
+          !environment.allowDemoWorkspace &&
+          this.authService?.session.status$.value !== 'authenticated'
+        ) {
+          if (last?.length) {
+            subscriber.next([]);
+            last = [];
+          }
+          return;
+        }
         const value = getLocalWorkspaceIds().map(id => ({
           id,
           flavour: 'local',
@@ -221,10 +237,12 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         LOCAL_WORKSPACE_CHANGED_BROADCAST_CHANNEL_KEY
       );
       channel.addEventListener('message', emit);
+      const sub = this.authService?.session.status$.subscribe(emit);
 
       return () => {
         channel.removeEventListener('message', emit);
         channel.close();
+        sub?.unsubscribe();
       };
     }),
     []
