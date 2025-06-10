@@ -2,8 +2,10 @@ import { randomUUID } from 'node:crypto';
 
 import { AiSession, PrismaClient, User, Workspace } from '@prisma/client';
 import ava, { TestFn } from 'ava';
+import Sinon from 'sinon';
 
 import { Config } from '../../base';
+import { ContextEmbedStatus } from '../../models/common/copilot';
 import { CopilotContextModel } from '../../models/copilot-context';
 import { CopilotSessionModel } from '../../models/copilot-session';
 import { CopilotWorkspaceConfigModel } from '../../models/copilot-workspace';
@@ -235,4 +237,174 @@ test('should check embedding table', async t => {
   //   const ret = await t.context.copilotContext.checkEmbeddingAvailable();
   //   t.false(ret, 'should return false when embedding table is not available');
   // }
+});
+
+test('should merge doc status correctly', async t => {
+  const createDoc = (id: string, status?: string) => ({
+    id,
+    createdAt: Date.now(),
+    ...(status && { status: status as any }),
+  });
+
+  const createDocWithEmbedding = async (docId: string) => {
+    await t.context.db.snapshot.create({
+      data: {
+        workspaceId: workspace.id,
+        id: docId,
+        blob: Buffer.from([1, 1]),
+        state: Buffer.from([1, 1]),
+        updatedAt: new Date(),
+        createdAt: new Date(),
+      },
+    });
+
+    await t.context.copilotContext.insertWorkspaceEmbedding(
+      workspace.id,
+      docId,
+      [
+        {
+          index: 0,
+          content: 'content',
+          embedding: Array.from({ length: 1024 }, () => 1),
+        },
+      ]
+    );
+  };
+
+  const emptyResult = await t.context.copilotContext.mergeDocStatus(
+    workspace.id,
+    []
+  );
+  t.deepEqual(emptyResult, []);
+
+  const basicDocs = [
+    createDoc('doc1'),
+    createDoc('doc2'),
+    createDoc('doc3', 'failed'),
+    createDoc('doc4', 'processing'),
+  ];
+  const basicResult = await t.context.copilotContext.mergeDocStatus(
+    workspace.id,
+    basicDocs
+  );
+  t.snapshot(
+    basicResult.map(d => ({ id: d.id, status: d.status })),
+    'basic doc status merge'
+  );
+
+  {
+    await createDocWithEmbedding('doc5');
+
+    const mixedDocs = [
+      createDoc('doc5'),
+      createDoc('doc5', 'processing'),
+      createDoc('doc6'),
+      createDoc('doc6', 'failed'),
+      createDoc('doc7'),
+    ];
+    const mixedResult = await t.context.copilotContext.mergeDocStatus(
+      workspace.id,
+      mixedDocs
+    );
+    t.snapshot(
+      mixedResult.map(d => ({ id: d.id, status: d.status })),
+      'mixed doc status merge'
+    );
+
+    const hasEmbeddingStub = Sinon.stub(
+      t.context.copilotContext,
+      'hasWorkspaceEmbedding'
+    ).resolves(new Set<string>());
+
+    const stubResult = await t.context.copilotContext.mergeDocStatus(
+      workspace.id,
+      [createDoc('doc5')]
+    );
+    t.is(stubResult[0].status, ContextEmbedStatus.processing);
+
+    hasEmbeddingStub.restore();
+  }
+
+  {
+    const testCases = [
+      {
+        workspaceId: 'invalid-workspace',
+        docs: [{ id: 'doc1', createdAt: Date.now() }],
+      },
+      {
+        workspaceId: workspace.id,
+        docs: [{ id: 'doc1', createdAt: Date.now(), status: undefined as any }],
+      },
+      {
+        workspaceId: workspace.id,
+        docs: Array.from({ length: 100 }, (_, i) => ({
+          id: `doc-${i}`,
+          createdAt: Date.now() + i,
+        })),
+      },
+    ];
+
+    const results = await Promise.all(
+      testCases.map(testCase =>
+        t.context.copilotContext.mergeDocStatus(
+          testCase.workspaceId,
+          testCase.docs
+        )
+      )
+    );
+
+    t.snapshot(
+      results.map((result, index) => ({
+        case: index,
+        length: result.length,
+        statuses: result.map(d => d.status),
+      })),
+      'edge cases results'
+    );
+  }
+});
+
+test('should handle concurrent mergeDocStatus calls', async t => {
+  await t.context.db.snapshot.create({
+    data: {
+      workspaceId: workspace.id,
+      id: 'concurrent-doc',
+      blob: Buffer.from([1, 1]),
+      state: Buffer.from([1, 1]),
+      updatedAt: new Date(),
+      createdAt: new Date(),
+    },
+  });
+
+  await t.context.copilotContext.insertWorkspaceEmbedding(
+    workspace.id,
+    'concurrent-doc',
+    [
+      {
+        index: 0,
+        content: 'content',
+        embedding: Array.from({ length: 1024 }, () => 1),
+      },
+    ]
+  );
+
+  const concurrentDocs = [
+    [{ id: 'concurrent-doc', createdAt: Date.now() }],
+    [{ id: 'concurrent-doc', createdAt: Date.now() + 1000 }],
+    [{ id: 'non-existent-doc', createdAt: Date.now() }],
+  ];
+
+  const results = await Promise.all(
+    concurrentDocs.map(docs =>
+      t.context.copilotContext.mergeDocStatus(workspace.id, docs)
+    )
+  );
+
+  t.snapshot(
+    results.map((result, index) => ({
+      call: index + 1,
+      status: result[0].status,
+    })),
+    'concurrent calls results'
+  );
 });
