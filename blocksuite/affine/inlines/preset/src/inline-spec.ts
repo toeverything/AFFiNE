@@ -59,7 +59,7 @@ export const StrikeInlineSpecExtension =
 
 export const CodeInlineSpecExtension =
   InlineSpecExtension<AffineTextAttributes>({
-    name: 'code',
+    name: 'inline-code',
     schema: z.literal(true).optional().nullable().catch(undefined),
     match: delta => {
       return !!delta.attributes?.code;

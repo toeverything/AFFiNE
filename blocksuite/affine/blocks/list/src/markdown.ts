@@ -8,30 +8,7 @@ import { focusTextModel } from '@blocksuite/affine-rich-text';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { matchModels, toNumberedList } from '@blocksuite/affine-shared/utils';
 import type { BlockComponent } from '@blocksuite/std';
-import {
-  type InlineEditor,
-  InlineMarkdownExtension,
-} from '@blocksuite/std/inline';
-
-function isInFirstLine(inlineEditor: InlineEditor<AffineTextAttributes>) {
-  const inlineRange = inlineEditor.getInlineRange();
-  if (!inlineRange) return false;
-
-  const deltas = inlineEditor.embedDeltas;
-  let lineLength = 0;
-  for (const delta of deltas) {
-    if (!delta.insert.includes('\n')) {
-      lineLength += delta.insert.length;
-      continue;
-    }
-    const lineBreakIndex = lineLength + delta.insert.indexOf('\n');
-    return (
-      inlineRange.index >= lineLength && inlineRange.index < lineBreakIndex
-    );
-  }
-
-  return true;
-}
+import { InlineMarkdownExtension } from '@blocksuite/std/inline';
 
 export const ListMarkdownExtension =
   InlineMarkdownExtension<AffineTextAttributes>({
@@ -43,7 +20,9 @@ export const ListMarkdownExtension =
     // group 6: todo checked
     pattern: /^((\d+\.)|(-)|(\*)|(\[ ?\])|(\[x\]))\s$/,
     action: ({ inlineEditor, pattern, inlineRange, prefixText }) => {
-      if (!isInFirstLine(inlineEditor)) return;
+      if (inlineEditor.yTextString.slice(0, inlineRange.index).includes('\n')) {
+        return;
+      }
 
       const match = prefixText.match(pattern);
       if (!match) return;

@@ -17,6 +17,7 @@ import { toParagraph } from './paragraph.js';
 import { toCode } from './to-code.js';
 import { getPrefixText } from './utils.js';
 
+// TODO(@L-Sun): remove this after refactoring with InlineMarkdownExtension
 export function markdownInput(
   std: BlockStdScope,
   id?: string
