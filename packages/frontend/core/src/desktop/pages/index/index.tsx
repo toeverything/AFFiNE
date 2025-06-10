@@ -89,6 +89,11 @@ export const Component = ({
       return;
     }
 
+    if (!allowGuestDemo && !loggedIn) {
+      jumpToSignIn();
+      return;
+    }
+
     // check is user logged in && has cloud workspace
     if (searchParams.get('initCloud') === 'true') {
       if (loggedIn) {
