@@ -356,6 +356,7 @@ Consider various factors such as content alignment with the query, source credib
    - Evaluate the alignment with potential user intent based on the query.
 3. **Scoring**:
    - Assign a score from 1 to 10 based on the overall relevance and quality, with 10 being the most relevant.
+   - Each chunk returns a score and should not be mixed together.
 
 # Output Format
 
