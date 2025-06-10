@@ -66,7 +66,6 @@ Default to be \`[server.protocol]://[server.host][:server.port]\` if not specifi
   allowDemoWorkspace: {
     desc: 'Allow guests to use the demo workspace',
     default: true,
-    env: ['AFFINE_ALLOW_DEMO_WORKSPACE', 'boolean'],
   },
 });
 

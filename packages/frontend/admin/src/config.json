@@ -183,8 +183,7 @@
     },
     "allowDemoWorkspace": {
       "type": "Boolean",
-      "desc": "Allow guests to use the demo workspace",
-      "env": "AFFINE_ALLOW_DEMO_WORKSPACE"
+      "desc": "Allow guests to use the demo workspace"
     }
   },
   "flags": {

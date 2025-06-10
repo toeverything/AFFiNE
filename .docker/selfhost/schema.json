@@ -552,7 +552,7 @@
         },
         "allowDemoWorkspace": {
           "type": "boolean",
-          "description": "Allow guests to use the demo workspace\n@default true\n@environment `AFFINE_ALLOW_DEMO_WORKSPACE`",
+          "description": "Allow guests to use the demo workspace\n@default true",
           "default": true
         }
       }
