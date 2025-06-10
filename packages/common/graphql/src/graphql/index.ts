@@ -32,6 +32,7 @@ export const adminServerConfigQuery = {
     baseUrl
     name
     features
+    allowGuestDemoWorkspace
     type
     initialized
     credentialsRequirement {
@@ -1822,6 +1823,7 @@ export const serverConfigQuery = {
     baseUrl
     name
     features
+    allowGuestDemoWorkspace
     type
     initialized
     credentialsRequirement {

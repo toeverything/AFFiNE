@@ -38,4 +38,7 @@ export class ServerConfigType {
 
   @Field(() => [ServerFeature], { description: 'enabled server features' })
   features!: ServerFeature[];
+
+  @Field({ description: 'allow guests to access demo workspace' })
+  allowGuestDemoWorkspace!: boolean;
 }
