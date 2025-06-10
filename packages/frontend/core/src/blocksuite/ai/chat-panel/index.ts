@@ -1,5 +1,6 @@
 import './chat-panel-messages';
 
+import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { ContextEmbedStatus, CopilotSessionType } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
@@ -241,6 +242,9 @@ export class ChatPanel extends SignalWatcher(
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
+  @property({ attribute: false })
+  accessor affineWorkspaceDialogService!: WorkspaceDialogService;
+
   @state()
   accessor isLoading = false;
 
@@ -481,6 +485,7 @@ export class ChatPanel extends SignalWatcher(
         .playgroundConfig=${this.playgroundConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
+        .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
         .trackOptions=${{
           where: 'chat-panel',
           control: 'chat-send',

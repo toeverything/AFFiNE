@@ -1,5 +1,6 @@
 import './ai-chat-composer-tip';
 
+import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type {
   ContextEmbedStatus,
   ContextWorkspaceEmbeddingStatus,
@@ -104,11 +105,11 @@ export class AIChatComposer extends SignalWatcher(
   @property({ attribute: false })
   accessor panelWidth: Signal<number | undefined> = signal(undefined);
 
-  @state()
-  accessor chips: ChatChip[] = [];
+  @property({ attribute: false })
+  accessor affineWorkspaceDialogService!: WorkspaceDialogService;
 
   @state()
-  accessor embeddingProgressText = 'Loading embedding status...';
+  accessor chips: ChatChip[] = [];
 
   @state()
   accessor embeddingCompleted = false;
@@ -160,7 +161,8 @@ export class AIChatComposer extends SignalWatcher(
             this.embeddingCompleted
               ? null
               : html`<ai-chat-embedding-status-tooltip
-                  .progressText=${this.embeddingProgressText}
+                  .affineWorkspaceDialogService=${this
+                    .affineWorkspaceDialogService}
                 />`,
           ].filter(Boolean)}
           .loop=${false}
@@ -348,24 +350,20 @@ export class AIChatComposer extends SignalWatcher(
         this.host.std.workspace.id,
         (status: ContextWorkspaceEmbeddingStatus) => {
           if (!status) {
-            this.embeddingProgressText = 'Loading embedding status...';
             this.embeddingCompleted = false;
             return;
           }
           const completed = status.embedded === status.total;
           this.embeddingCompleted = completed;
           if (completed) {
-            this.embeddingProgressText =
-              'Embedding finished. You are getting the best results!';
+            this.embeddingCompleted = true;
           } else {
-            this.embeddingProgressText =
-              'File not embedded yet. Results will improve after embedding.';
+            this.embeddingCompleted = false;
           }
         },
         signal
       );
     } catch {
-      this.embeddingProgressText = 'Failed to load embedding status...';
       this.embeddingCompleted = false;
     }
   };
