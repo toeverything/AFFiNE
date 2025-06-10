@@ -26,6 +26,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                 maxLength: 32,
               },
             },
+            allowGuestDemoWorkspace: true,
           },
         },
       ]
@@ -52,6 +53,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                   maxLength: 32,
                 },
               },
+              allowGuestDemoWorkspace: true,
             },
           },
         ]
@@ -76,6 +78,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                     maxLength: 32,
                   },
                 },
+                allowGuestDemoWorkspace: true,
               },
             },
           ]
@@ -100,6 +103,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                       maxLength: 32,
                     },
                   },
+                  allowGuestDemoWorkspace: true,
                 },
               },
             ]
@@ -124,6 +128,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                         maxLength: 32,
                       },
                     },
+                    allowGuestDemoWorkspace: true,
                   },
                 },
               ]
@@ -148,6 +153,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                           maxLength: 32,
                         },
                       },
+                      allowGuestDemoWorkspace: true,
                     },
                   },
                 ]

@@ -2150,6 +2150,8 @@ export interface ServerConfigType {
   credentialsRequirement: CredentialsRequirementType;
   /** enabled server features */
   features: Array<ServerFeature>;
+  /** allow guests to access demo workspace */
+  allowGuestDemoWorkspace: Scalars['Boolean']['output'];
   /** whether server has been initialized */
   initialized: Scalars['Boolean']['output'];
   /** server identical name could be shown as badge on user interface */
@@ -2708,6 +2710,7 @@ export type AdminServerConfigQuery = {
     baseUrl: string;
     name: string;
     features: Array<ServerFeature>;
+    allowGuestDemoWorkspace: boolean;
     type: ServerDeploymentType;
     initialized: boolean;
     availableUserFeatures: Array<FeatureType>;
@@ -4651,6 +4654,7 @@ export type ServerConfigQuery = {
     baseUrl: string;
     name: string;
     features: Array<ServerFeature>;
+    allowGuestDemoWorkspace: boolean;
     type: ServerDeploymentType;
     initialized: boolean;
     credentialsRequirement: {
