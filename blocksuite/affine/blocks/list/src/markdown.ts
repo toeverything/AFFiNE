@@ -59,7 +59,6 @@ export const ListMarkdownExtension =
           index: 0,
           length: inlineRange.index,
         });
-        store.deleteBlock(model, { deleteChildren: false });
         const id = store.addBlock<ListBlockModel>(
           ListBlockSchema.model.flavour,
           {
@@ -71,6 +70,8 @@ export const ListMarkdownExtension =
           parent,
           index
         );
+        console.log(id);
+        // store.deleteBlock(model, { deleteChildren: false });
         focusTextModel(std, id);
       } else {
         let order = parseInt(match[2]);

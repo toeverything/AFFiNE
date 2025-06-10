@@ -7,7 +7,6 @@ import {
 import {
   focusTextModel,
   getInlineEditorByModel,
-  markdownInput,
 } from '@blocksuite/affine-rich-text';
 import {
   calculateCollapsedSiblings,
@@ -147,10 +146,6 @@ export const ParagraphKeymapExtension = KeymapExtension(
         }
 
         raw.preventDefault();
-
-        if (markdownInput(std, model.id)) {
-          return true;
-        }
 
         if (model.props.type.startsWith('h') && model.props.collapsed) {
           const parent = store.getParent(model);

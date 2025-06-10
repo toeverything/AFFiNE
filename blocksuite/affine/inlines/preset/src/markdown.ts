@@ -45,18 +45,13 @@ export const BoldItalicMarkdown = InlineMarkdownExtension<AffineTextAttributes>(
       );
 
       inlineEditor.deleteText({
-        index: startIndex + annotatedText.length,
-        length: 1,
-      });
-      inlineEditor.deleteText({
-        index: startIndex + annotatedText.length - 3,
-        length: 3,
+        index: inlineRange.index - 4,
+        length: 4,
       });
       inlineEditor.deleteText({
         index: startIndex,
         length: 3,
       });
-
       inlineEditor.setInlineRange({
         index: startIndex + annotatedText.length - 6,
         length: 0,
@@ -89,18 +84,13 @@ export const BoldMarkdown = InlineMarkdownExtension<AffineTextAttributes>({
     );
 
     inlineEditor.deleteText({
-      index: startIndex + annotatedText.length,
-      length: 1,
-    });
-    inlineEditor.deleteText({
-      index: startIndex + annotatedText.length - 2,
-      length: 2,
+      index: inlineRange.index - 3,
+      length: 3,
     });
     inlineEditor.deleteText({
       index: startIndex,
       length: 2,
     });
-
     inlineEditor.setInlineRange({
       index: startIndex + annotatedText.length - 4,
       length: 0,
@@ -132,18 +122,13 @@ export const ItalicExtension = InlineMarkdownExtension<AffineTextAttributes>({
     );
 
     inlineEditor.deleteText({
-      index: startIndex + annotatedText.length,
-      length: 1,
-    });
-    inlineEditor.deleteText({
-      index: startIndex + annotatedText.length - 1,
-      length: 1,
+      index: inlineRange.index - 2,
+      length: 2,
     });
     inlineEditor.deleteText({
       index: startIndex,
       length: 1,
     });
-
     inlineEditor.setInlineRange({
       index: startIndex + annotatedText.length - 2,
       length: 0,
@@ -185,12 +170,8 @@ export const StrikethroughExtension =
       );
 
       inlineEditor.deleteText({
-        index: startIndex + annotatedText.length,
-        length: 1,
-      });
-      inlineEditor.deleteText({
-        index: startIndex + annotatedText.length - 2,
-        length: 2,
+        index: inlineRange.index - 3,
+        length: 3,
       });
       inlineEditor.deleteText({
         index: startIndex,
@@ -238,12 +219,8 @@ export const UnderthroughExtension =
       );
 
       inlineEditor.deleteText({
-        index: startIndex + annotatedText.length,
-        length: 1,
-      });
-      inlineEditor.deleteText({
-        index: inlineRange.index - 1,
-        length: 1,
+        index: inlineRange.index - 2,
+        length: 2,
       });
       inlineEditor.deleteText({
         index: startIndex,
@@ -281,12 +258,8 @@ export const CodeExtension = InlineMarkdownExtension<AffineTextAttributes>({
     );
 
     inlineEditor.deleteText({
-      index: startIndex + annotatedText.length,
-      length: 1,
-    });
-    inlineEditor.deleteText({
-      index: startIndex + annotatedText.length - 1,
-      length: 1,
+      index: inlineRange.index - 2,
+      length: 2,
     });
     inlineEditor.deleteText({
       index: startIndex,

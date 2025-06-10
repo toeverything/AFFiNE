@@ -22,7 +22,7 @@ import * as Y from 'yjs';
 import { z } from 'zod';
 
 import { onVBeforeinput, onVCompositionEnd } from './hooks.js';
-import { getPrefixText } from './markdown/utils.js';
+import { getPrefixText } from './utils.js';
 
 interface RichTextStackItem {
   meta: Map<'richtext-v-range', InlineRange | null>;
@@ -187,15 +187,32 @@ export class RichText extends WithDisposable(ShadowlessElement) {
 
     const markdownMatches = this.markdownMatches;
     if (markdownMatches) {
-      const markdownTransform = () => {
-        const inlineRange = inlineEditor.getInlineRange();
-        if (!inlineRange) return;
+      const markdownTransform = (isEnter: boolean = false) => {
+        let inlineRange = inlineEditor.getInlineRange();
+        if (!inlineRange) return false;
 
-        const prefixText = getPrefixText(inlineEditor);
+        let prefixText = getPrefixText(inlineEditor);
+        if (isEnter) prefixText = `${prefixText} `;
 
         for (const match of markdownMatches) {
           const { pattern, action } = match;
           if (prefixText.match(pattern)) {
+            if (isEnter) {
+              inlineEditor.insertText(
+                {
+                  index: inlineRange.index,
+                  length: 0,
+                },
+                ' '
+              );
+              inlineEditor.setInlineRange({
+                index: inlineRange.index + 1,
+                length: 0,
+              });
+              inlineRange = inlineEditor.getInlineRange();
+              if (!inlineRange) return false;
+            }
+
             action({
               inlineEditor,
               prefixText,
@@ -203,15 +220,25 @@ export class RichText extends WithDisposable(ShadowlessElement) {
               pattern,
               undoManager: this.undoManager,
             });
-            break;
+            return true;
           }
         }
+        return false;
       };
 
       inlineEditor.disposables.add(
         inlineEditor.slots.inputting.subscribe(data => {
           if (!inlineEditor.isComposing && data === ' ') {
             markdownTransform();
+          }
+        })
+      );
+
+      inlineEditor.disposables.add(
+        inlineEditor.slots.keydown.subscribe(event => {
+          if (event.key === 'Enter' && markdownTransform(true)) {
+            event.stopPropagation();
+            event.preventDefault();
           }
         })
       );

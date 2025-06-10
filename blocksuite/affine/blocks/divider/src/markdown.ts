@@ -39,7 +39,6 @@ export const DividerMarkdownExtension =
           index: 0,
           length: inlineRange.index,
         });
-        store.deleteBlock(model, { deleteChildren: false });
         store.addBlock<DividerBlockModel>(
           DividerBlockSchema.model.flavour,
           {
