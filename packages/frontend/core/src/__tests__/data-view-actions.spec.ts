@@ -1,5 +1,5 @@
 /* eslint-disable rxjs/finnish */
-import { computed,signal } from '@preact/signals-core';
+import { computed, signal } from '@preact/signals-core';
 import { describe, expect, test, vi } from 'vitest';
 
 // mock context-menu utilities
@@ -73,6 +73,11 @@ describe('data view helpers', () => {
     const logic = new MobileKanbanViewUILogic(root, view);
     const update = vi.fn();
     logic.ui$.value = { requestUpdate: update } as any;
+
+    if (!logic.ui$.value) {
+      throw new Error('UI state must be defined before calling addRow');
+    }
+
     const id = logic.addRow('end');
     expect(id).toBe('r1');
     expect(view.rowAdd).toHaveBeenCalledWith('end');
@@ -116,7 +121,7 @@ describe('data view helpers', () => {
     } as any;
     const view = { rowsDelete: vi.fn() } as any;
     popMobileRowMenu({} as any, 'r1', tableViewLogic, view);
-    const groups = popFilterableSimpleMenu.mock.calls.pop()[1] as any;
+    const groups = popFilterableSimpleMenu.mock.calls.pop()![1] as any;
     groups[1].items[0].select();
     expect(view.rowsDelete).toHaveBeenCalledWith(['r1']);
     expect(update).toHaveBeenCalled();
