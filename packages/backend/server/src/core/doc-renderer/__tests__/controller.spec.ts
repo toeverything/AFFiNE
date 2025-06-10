@@ -68,3 +68,11 @@ test('should render page success', async t => {
   await app.GET(`/workspace/${workspace.id}/${docId}`).expect(200);
   t.pass();
 });
+
+test('should include allowDemoWorkspace meta', async t => {
+  const { app } = t.context;
+
+  const res = await app.GET(`/workspace/${workspace.id}/home`).expect(200);
+
+  t.regex(res.text, /<meta name="env:allowDemoWorkspace" content="true"\s*\/>/);
+});
