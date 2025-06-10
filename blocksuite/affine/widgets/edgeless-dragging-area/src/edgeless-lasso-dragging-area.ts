@@ -79,7 +79,7 @@ export class EdgelessLassoDraggingAreaWidget extends WidgetComponent<RootBlockMo
     }
 
     // Access the lasso path from the tool
-    const lassoPath = tool.lassoPath as [number, number][];
+    const lassoPath = tool.lassoPath;
 
     if (!lassoPath || lassoPath.length < 1) {
       return nothing;

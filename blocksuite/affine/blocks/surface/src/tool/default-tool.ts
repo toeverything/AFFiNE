@@ -135,7 +135,11 @@ export class DefaultTool extends BaseTool {
       const [xi, yi] = polygon[i];
       const [xj, yj] = polygon[j];
 
-      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
+      if (
+        yi > y !== yj > y &&
+        yj !== yi &&
+        x < ((xj - xi) * (y - yi)) / (yj - yi) + xi
+      ) {
         inside = !inside;
       }
     }
