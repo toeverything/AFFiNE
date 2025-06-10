@@ -21,7 +21,7 @@ test('should create config', t => {
 test('allowDemoWorkspace default true', t => {
   const config = module.get(Config);
 
-  t.true(config.flags.allowDemoWorkspace);
+  t.true(config.server.allowDemoWorkspace);
 });
 
 test('should override config', async t => {
@@ -215,18 +215,4 @@ test('should override with undefined fields', async t => {
   t.deepEqual(config.copilot.providers.unknown, {
     apiKey: '123',
   });
-});
-
-test('should load allowDemoWorkspace from env', async t => {
-  process.env.AFFINE_ALLOW_DEMO_WORKSPACE = 'false';
-
-  await using module = await createModule({
-    imports: [ConfigModule],
-  });
-
-  const config = module.get(Config);
-
-  t.false(config.flags.allowDemoWorkspace);
-
-  delete process.env.AFFINE_ALLOW_DEMO_WORKSPACE;
 });

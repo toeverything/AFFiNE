@@ -4,7 +4,6 @@ import { defineModuleConfig } from '../../base';
 
 export interface ServerFlags {
   earlyAccessControl: boolean;
-  allowDemoWorkspace: boolean;
 }
 
 declare global {
@@ -16,6 +15,7 @@ declare global {
       port: number;
       path: string;
       name?: string;
+      allowDemoWorkspace: boolean;
     };
     flags: ServerFlags;
   }
@@ -63,16 +63,16 @@ Default to be \`[server.protocol]://[server.host][:server.port]\` if not specifi
     default: '',
     env: 'AFFINE_SERVER_SUB_PATH',
   },
+  allowDemoWorkspace: {
+    desc: 'Allow guests to use the demo workspace',
+    default: true,
+    env: ['AFFINE_ALLOW_DEMO_WORKSPACE', 'boolean'],
+  },
 });
 
 defineModuleConfig('flags', {
   earlyAccessControl: {
     desc: 'Only allow users with early access features to access the app',
     default: false,
-  },
-  allowDemoWorkspace: {
-    desc: 'Allow guests to use the demo workspace',
-    default: true,
-    env: ['AFFINE_ALLOW_DEMO_WORKSPACE', 'boolean'],
   },
 });

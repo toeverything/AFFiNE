@@ -180,17 +180,17 @@
       "type": "String",
       "desc": "Subpath where the server get deployed if there is one.(e.g. /affine)",
       "env": "AFFINE_SERVER_SUB_PATH"
+    },
+    "allowDemoWorkspace": {
+      "type": "Boolean",
+      "desc": "Allow guests to use the demo workspace",
+      "env": "AFFINE_ALLOW_DEMO_WORKSPACE"
     }
   },
   "flags": {
     "earlyAccessControl": {
       "type": "Boolean",
       "desc": "Only allow users with early access features to access the app"
-    },
-    "allowDemoWorkspace": {
-      "type": "Boolean",
-      "desc": "Allow guests to use the demo workspace",
-      "env": "AFFINE_ALLOW_DEMO_WORKSPACE"
     }
   },
   "docService": {
