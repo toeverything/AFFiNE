@@ -135,7 +135,11 @@ export class TableHotkeysController implements ReactiveController {
                 });
             }
           } else if (selection.isEditing) {
-            return false;
+            this.selectionController.selection = {
+              ...selection,
+              isEditing: false,
+            };
+            this.selectionController.focusToCell('down');
           } else {
             this.selectionController.selection = {
               ...selection,
@@ -169,27 +173,31 @@ export class TableHotkeysController implements ReactiveController {
         },
         Tab: ctx => {
           const selection = this.selectionController.selection;
-          if (
-            !selection ||
-            TableViewRowSelection.is(selection) ||
-            selection.isEditing
-          ) {
+          if (!selection || TableViewRowSelection.is(selection)) {
             return false;
           }
           ctx.get('keyboardState').raw.preventDefault();
+          if (selection.isEditing) {
+            this.selectionController.selection = {
+              ...selection,
+              isEditing: false,
+            };
+          }
           this.selectionController.focusToCell('right');
           return true;
         },
         'Shift-Tab': ctx => {
           const selection = this.selectionController.selection;
-          if (
-            !selection ||
-            TableViewRowSelection.is(selection) ||
-            selection.isEditing
-          ) {
+          if (!selection || TableViewRowSelection.is(selection)) {
             return false;
           }
           ctx.get('keyboardState').raw.preventDefault();
+          if (selection.isEditing) {
+            this.selectionController.selection = {
+              ...selection,
+              isEditing: false,
+            };
+          }
           this.selectionController.focusToCell('left');
           return true;
         },
@@ -385,6 +393,37 @@ export class TableHotkeysController implements ReactiveController {
             );
           }
         },
+      })
+    );
+    this.host?.disposables.add(
+      this.logic.handleEvent('keyDown', ctx => {
+        const event = ctx.get('keyboardState').raw;
+        const selection = this.selectionController.selection;
+        if (
+          selection &&
+          !TableViewRowSelection.is(selection) &&
+          !selection.isEditing &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.altKey &&
+          event.key.length === 1
+        ) {
+          const cell = this.selectionController.getCellContainer(
+            selection.groupKey,
+            selection.focus.rowIndex,
+            selection.focus.columnIndex
+          );
+          if (cell) {
+            cell.column.valueSetFromString(cell.rowId, event.key);
+            this.selectionController.selection = {
+              ...selection,
+              isEditing: true,
+            };
+            event.preventDefault();
+            return true;
+          }
+        }
+        return false;
       })
     );
   }
