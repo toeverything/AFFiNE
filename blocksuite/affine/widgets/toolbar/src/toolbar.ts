@@ -536,9 +536,7 @@ export class AffineToolbarWidget extends WidgetComponent {
           );
         });
 
-        return () => {
-          subscription.unsubscribe();
-        };
+        disposables.add(subscription);
       })
     );
 
