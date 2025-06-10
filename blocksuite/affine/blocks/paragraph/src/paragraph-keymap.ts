@@ -199,20 +199,6 @@ export const ParagraphKeymapExtension = KeymapExtension(
         event.preventDefault();
         return true;
       },
-      Space: ctx => {
-        if (!markdownInput(std)) {
-          return;
-        }
-        ctx.get('keyboardState').raw.preventDefault();
-        return true;
-      },
-      'Shift-Space': ctx => {
-        if (!markdownInput(std)) {
-          return;
-        }
-        ctx.get('keyboardState').raw.preventDefault();
-        return true;
-      },
       Tab: ctx => {
         const [success] = std.command
           .chain()

@@ -6,17 +6,16 @@ import { focusTextModel } from '../dom.js';
 
 export function getPrefixText(inlineEditor: InlineEditor) {
   const inlineRange = inlineEditor.getInlineRange();
-  if (!inlineRange) return '';
-  const firstLineEnd = inlineEditor.yTextString.search(/\n/);
-  if (firstLineEnd !== -1 && inlineRange.index > firstLineEnd) {
-    return '';
-  }
-  const textPoint = inlineEditor.getTextPoint(inlineRange.index);
-  if (!textPoint) return '';
-  const [leafStart, offsetStart] = textPoint;
-  return leafStart.textContent
-    ? leafStart.textContent.slice(0, offsetStart)
-    : '';
+  if (!inlineRange || inlineRange.length > 0) return '';
+
+  const nearestLineBreakIndex = inlineEditor.yTextString
+    .slice(0, inlineRange.index)
+    .lastIndexOf('\n');
+  const prefixText = inlineEditor.yTextString.slice(
+    nearestLineBreakIndex + 1,
+    inlineRange.index
+  );
+  return prefixText;
 }
 
 export function beforeConvert(

@@ -22,6 +22,7 @@ import * as Y from 'yjs';
 import { z } from 'zod';
 
 import { onVBeforeinput, onVCompositionEnd } from './hooks.js';
+import { getPrefixText } from './markdown/utils.js';
 
 interface RichTextStackItem {
   meta: Map<'richtext-v-range', InlineRange | null>;
@@ -186,38 +187,33 @@ export class RichText extends WithDisposable(ShadowlessElement) {
 
     const markdownMatches = this.markdownMatches;
     if (markdownMatches) {
-      inlineEditor.disposables.addFromEvent(
-        this.inlineEventSource ?? this.inlineEditorContainer,
-        'keydown',
-        (e: KeyboardEvent) => {
-          if (e.key !== ' ' && e.key !== 'Enter') return;
+      const markdownTransform = () => {
+        const inlineRange = inlineEditor.getInlineRange();
+        if (!inlineRange) return;
 
-          const inlineRange = inlineEditor.getInlineRange();
-          if (!inlineRange || inlineRange.length > 0) return;
+        const prefixText = getPrefixText(inlineEditor);
 
-          const nearestLineBreakIndex = inlineEditor.yTextString
-            .slice(0, inlineRange.index)
-            .lastIndexOf('\n');
-          const prefixText = inlineEditor.yTextString.slice(
-            nearestLineBreakIndex + 1,
-            inlineRange.index
-          );
-
-          for (const match of markdownMatches) {
-            const { pattern, action } = match;
-            if (prefixText.match(pattern)) {
-              action({
-                inlineEditor,
-                prefixText,
-                inlineRange,
-                pattern,
-                undoManager: this.undoManager,
-              });
-              e.preventDefault();
-              break;
-            }
+        for (const match of markdownMatches) {
+          const { pattern, action } = match;
+          if (prefixText.match(pattern)) {
+            action({
+              inlineEditor,
+              prefixText,
+              inlineRange,
+              pattern,
+              undoManager: this.undoManager,
+            });
+            break;
           }
         }
+      };
+
+      inlineEditor.disposables.add(
+        inlineEditor.slots.inputting.subscribe(data => {
+          if (!inlineEditor.isComposing && data === ' ') {
+            markdownTransform();
+          }
+        })
       );
     }
 
