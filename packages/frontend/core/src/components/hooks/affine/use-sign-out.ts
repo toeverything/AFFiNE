@@ -25,7 +25,7 @@ export const useSignOut = ({
 }: ConfirmModalProps = {}) => {
   const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
-  const { jumpToIndex } = useNavigateHelper();
+  const { jumpToSignIn } = useNavigateHelper();
 
   const authService = useService(AuthService);
 
@@ -33,13 +33,13 @@ export const useSignOut = ({
     onConfirm?.()?.catch(console.error);
     try {
       await authService.signOut();
-      jumpToIndex();
+      jumpToSignIn();
     } catch (err) {
       console.error(err);
       const error = UserFriendlyError.fromAny(err);
       notify.error(error);
     }
-  }, [authService, jumpToIndex, onConfirm]);
+  }, [authService, jumpToSignIn, onConfirm]);
 
   const getDefaultText = useCallback(
     (key: SignOutConfirmModalI18NKeys) => {
