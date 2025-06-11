@@ -1,6 +1,7 @@
 import { IconButton, Menu, MenuItem } from '@affine/component';
 import { Divider } from '@affine/component/ui/divider';
 import { useEnableCloud } from '@affine/core/components/hooks/affine/use-enable-cloud';
+import { useSignOut } from '@affine/core/components/hooks/affine/use-sign-out';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
 import type { AuthAccountInfo, Server } from '@affine/core/modules/cloud';
@@ -161,10 +162,7 @@ const CloudWorkSpaceList = ({
     workspaces,
   ]);
 
-  const handleSignOut = useAsyncCallback(async () => {
-    await authService.signOut();
-    navigateHelper.jumpToSignIn();
-  }, [authService, navigateHelper]);
+  const handleSignOut = useSignOut();
 
   const handleSignIn = useAsyncCallback(async () => {
     globalDialogService.open('sign-in', {

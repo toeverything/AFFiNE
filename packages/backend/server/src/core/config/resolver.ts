@@ -85,7 +85,8 @@ export class ServerConfigResolver {
       baseUrl: this.url.home,
       type: env.DEPLOYMENT_TYPE,
       features: this.server.features,
-      allowGuestDemoWorkspace: this.config.client.allowGuestDemoWorkspace,
+      allowGuestDemoWorkspace:
+        this.config.client?.allowGuestDemoWorkspace ?? true,
     };
   }
 
