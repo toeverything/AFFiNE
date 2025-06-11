@@ -59,7 +59,7 @@ function buildDateCfg(
 const dateRelativeCfg = buildDateCfg(
   'date-relative',
   v => {
-    if (!v) return [ungroups];
+    if (v == null) return [ungroups];
     const d = startOfDay(new Date(v));
     const daysAgo = differenceInCalendarDays(new Date(), d);
     if (isToday(d)) return [{ key: 'today', value: +d }];
@@ -84,7 +84,7 @@ const dateRelativeCfg = buildDateCfg(
 const dateDayCfg = buildDateCfg(
   'date-day',
   v => {
-    if (!v) return [ungroups];
+    if (v == null) return [ungroups];
     const d = startOfDay(new Date(v));
     return [{ key: `${+d}`, value: +d }];
   },
@@ -94,7 +94,7 @@ const dateDayCfg = buildDateCfg(
 const dateWeekSunCfg = buildDateCfg(
   'date-week-sun',
   v => {
-    if (!v) return [ungroups];
+    if (v == null) return [ungroups];
     const w = startOfWeek(new Date(v), WEEK_OPTS_SUN);
     return [{ key: `${+w}`, value: +w }];
   },
@@ -104,7 +104,7 @@ const dateWeekSunCfg = buildDateCfg(
 const dateWeekMonCfg = buildDateCfg(
   'date-week-mon',
   v => {
-    if (!v) return [ungroups];
+    if (v == null) return [ungroups];
     const w = startOfWeek(new Date(v), WEEK_OPTS_MON);
     return [{ key: `${+w}`, value: +w }];
   },
@@ -114,7 +114,7 @@ const dateWeekMonCfg = buildDateCfg(
 const dateMonthCfg = buildDateCfg(
   'date-month',
   v => {
-    if (!v) return [ungroups];
+    if (v == null) return [ungroups];
     const m = startOfMonth(new Date(v));
     return [{ key: `${+m}`, value: +m }];
   },
@@ -124,7 +124,7 @@ const dateMonthCfg = buildDateCfg(
 const dateYearCfg = buildDateCfg(
   'date-year',
   v => {
-    if (!v) return [ungroups];
+    if (v == null) return [ungroups];
     const y = startOfYear(new Date(v));
     return [{ key: `${+y}`, value: +y }];
   },
