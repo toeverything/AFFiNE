@@ -2,6 +2,7 @@ import './ai-chat-composer-tip';
 
 import type {
   ContextEmbedStatus,
+  ContextWorkspaceEmbeddingStatus,
   CopilotContextDoc,
   CopilotContextFile,
   CopilotDocType,
@@ -33,6 +34,8 @@ import type {
   AIReasoningConfig,
 } from '../ai-chat-input';
 import { MAX_IMAGE_COUNT } from '../ai-chat-input/const';
+
+export const EMBEDDING_STATUS_CHECK_INTERVAL = 10000;
 
 export class AIChatComposer extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -108,6 +111,12 @@ export class AIChatComposer extends SignalWatcher(
   @state()
   accessor chips: ChatChip[] = [];
 
+  @state()
+  accessor embeddingProgressText = 'Loading embedding status...';
+
+  @state()
+  accessor embeddingCompleted = false;
+
   private _isInitialized = false;
 
   private _isLoading = false;
@@ -115,6 +124,8 @@ export class AIChatComposer extends SignalWatcher(
   private _contextId: string | undefined = undefined;
 
   private _pollAbortController: AbortController | null = null;
+
+  private _pollEmbeddingStatusAbortController: AbortController | null = null;
 
   override render() {
     return html`
@@ -151,8 +162,12 @@ export class AIChatComposer extends SignalWatcher(
         <ai-chat-composer-tip
           .tips=${[
             html`<span>AI outputs can be misleading or wrong</span>`,
-            html`<ai-chat-embedding-status-tooltip .host=${this.host} />`,
-          ]}
+            this.embeddingCompleted
+              ? null
+              : html`<ai-chat-embedding-status-tooltip
+                  .progressText=${this.embeddingProgressText}
+                />`,
+          ].filter(Boolean)}
           .loop=${false}
         ></ai-chat-composer-tip>
       </div>
@@ -174,8 +189,18 @@ export class AIChatComposer extends SignalWatcher(
         if (isVisible && !this._isInitialized) {
           this._initComposer().catch(console.error);
         }
+        if (!isVisible) {
+          this._abortPoll();
+          this._abortPollEmbeddingStatus();
+        }
       })
     );
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    this._abortPoll();
+    this._abortPollEmbeddingStatus();
   }
 
   protected override willUpdate(_changedProperties: PropertyValues) {
@@ -316,6 +341,40 @@ export class AIChatComposer extends SignalWatcher(
     );
   };
 
+  private readonly _pollEmbeddingStatus = async () => {
+    if (this._pollEmbeddingStatusAbortController) {
+      this._pollEmbeddingStatusAbortController.abort();
+    }
+    this._pollEmbeddingStatusAbortController = new AbortController();
+    const signal = this._pollEmbeddingStatusAbortController.signal;
+
+    try {
+      await AIProvider.context?.pollEmbeddingStatus(
+        this.host.std.workspace.id,
+        (status: ContextWorkspaceEmbeddingStatus) => {
+          if (!status) {
+            this.embeddingProgressText = 'Loading embedding status...';
+            this.embeddingCompleted = false;
+            return;
+          }
+          const completed = status.embedded === status.total;
+          this.embeddingCompleted = completed;
+          if (completed) {
+            this.embeddingProgressText =
+              'Embedding finished. You are getting the best results!';
+          } else {
+            this.embeddingProgressText =
+              'File not embedded yet. Results will improve after embedding.';
+          }
+        },
+        signal
+      );
+    } catch {
+      this.embeddingProgressText = 'Failed to load embedding status...';
+      this.embeddingCompleted = false;
+    }
+  };
+
   private readonly _onPoll = (
     result?: BlockSuitePresets.AIDocsAndFilesContext
   ) => {
@@ -378,6 +437,11 @@ export class AIChatComposer extends SignalWatcher(
     this._pollAbortController = null;
   };
 
+  private readonly _abortPollEmbeddingStatus = () => {
+    this._pollEmbeddingStatusAbortController?.abort();
+    this._pollEmbeddingStatusAbortController = null;
+  };
+
   private readonly _initComposer = async () => {
     if (!this.isVisible.value) return;
     if (this._isLoading) return;
@@ -394,12 +458,14 @@ export class AIChatComposer extends SignalWatcher(
     if (needPoll) {
       await this._pollContextDocsAndFiles();
     }
+    await this._pollEmbeddingStatus();
     this._isLoading = false;
     this._isInitialized = true;
   };
 
   private readonly _resetComposer = () => {
     this._abortPoll();
+    this._abortPollEmbeddingStatus();
     this.chips = [];
     this._contextId = undefined;
     this._isLoading = false;

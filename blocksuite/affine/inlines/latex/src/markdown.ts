@@ -10,7 +10,7 @@ export const LatexExtension = InlineMarkdownExtension<AffineTextAttributes>({
   name: 'latex',
 
   pattern:
-    /(?:\$\$)(?<content>[^$]+)(?:\$\$)$|(?<blockPrefix>\$\$\$\$)|(?<inlinePrefix>\$\$)$/g,
+    /(?:\$\$)(?<content>[^$]+)(?:\$\$)\s$|(?<blockPrefix>\$\$\$\$)\s$|(?<inlinePrefix>\$\$)\s$/g,
   action: ({ inlineEditor, prefixText, inlineRange, pattern, undoManager }) => {
     const match = pattern.exec(prefixText);
     if (!match || !match.groups) return;
@@ -33,22 +33,10 @@ export const LatexExtension = InlineMarkdownExtension<AffineTextAttributes>({
     const ifEdgelessText = blockComponent.closest('affine-edgeless-text');
 
     if (blockPrefix === '$$$$') {
-      inlineEditor.insertText(
-        {
-          index: inlineRange.index,
-          length: 0,
-        },
-        ' '
-      );
-      inlineEditor.setInlineRange({
-        index: inlineRange.index + 1,
-        length: 0,
-      });
-
       undoManager.stopCapturing();
 
       inlineEditor.deleteText({
-        index: inlineRange.index - 4,
+        index: inlineRange.index - 5,
         length: 5,
       });
 
@@ -88,34 +76,22 @@ export const LatexExtension = InlineMarkdownExtension<AffineTextAttributes>({
     }
 
     if (inlinePrefix === '$$') {
-      inlineEditor.insertText(
-        {
-          index: inlineRange.index,
-          length: 0,
-        },
-        ' '
-      );
-      inlineEditor.setInlineRange({
-        index: inlineRange.index + 1,
-        length: 0,
-      });
-
       undoManager.stopCapturing();
 
       inlineEditor.deleteText({
-        index: inlineRange.index - 2,
+        index: inlineRange.index - 3,
         length: 3,
       });
       inlineEditor.insertText(
         {
-          index: inlineRange.index - 2,
+          index: inlineRange.index - 3,
           length: 0,
         },
         ' '
       );
       inlineEditor.formatText(
         {
-          index: inlineRange.index - 2,
+          index: inlineRange.index - 3,
           length: 1,
         },
         {
@@ -129,7 +105,7 @@ export const LatexExtension = InlineMarkdownExtension<AffineTextAttributes>({
           await inlineEditor.waitForUpdate();
 
           const textPoint = inlineEditor.getTextPoint(
-            inlineRange.index - 2 + 1
+            inlineRange.index - 3 + 1
           );
           if (!textPoint) return;
 
@@ -159,21 +135,9 @@ export const LatexExtension = InlineMarkdownExtension<AffineTextAttributes>({
 
     if (!content || content.length === 0) return;
 
-    inlineEditor.insertText(
-      {
-        index: inlineRange.index,
-        length: 0,
-      },
-      ' '
-    );
-    inlineEditor.setInlineRange({
-      index: inlineRange.index + 1,
-      length: 0,
-    });
-
     undoManager.stopCapturing();
 
-    const startIndex = inlineRange.index - 2 - content.length - 2;
+    const startIndex = inlineRange.index - 1 - 2 - content.length - 2;
     inlineEditor.deleteText({
       index: startIndex,
       length: 2 + content.length + 2 + 1,

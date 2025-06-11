@@ -119,7 +119,7 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       this.editor as never
     );
 
-    this.editor.slots.inputting.next();
+    this.editor.slots.inputting.next(event.data ?? '');
   };
 
   private readonly _onClick = (event: MouseEvent) => {
@@ -181,10 +181,10 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       });
     }
 
-    this.editor.slots.inputting.next();
+    this.editor.slots.inputting.next(event.data ?? '');
   };
 
-  private readonly _onCompositionStart = () => {
+  private readonly _onCompositionStart = (event: CompositionEvent) => {
     this._isComposing = true;
     if (!this.editor.rootElement) return;
     // embeds is not editable and it will break IME
@@ -201,9 +201,11 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     } else {
       this._compositionInlineRange = null;
     }
+
+    this.editor.slots.inputting.next(event.data ?? '');
   };
 
-  private readonly _onCompositionUpdate = () => {
+  private readonly _onCompositionUpdate = (event: CompositionEvent) => {
     if (!this.editor.rootElement || !this.editor.rootElement.isConnected) {
       return;
     }
@@ -216,7 +218,7 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
     )
       return;
 
-    this.editor.slots.inputting.next();
+    this.editor.slots.inputting.next(event.data ?? '');
   };
 
   private readonly _onKeyDown = (event: KeyboardEvent) => {
@@ -359,13 +361,9 @@ export class EventService<TextAttributes extends BaseTextAttributes> {
       'compositionupdate',
       this._onCompositionUpdate
     );
-    this.editor.disposables.addFromEvent(
-      eventSource,
-      'compositionend',
-      (event: CompositionEvent) => {
-        this._onCompositionEnd(event).catch(console.error);
-      }
-    );
+    this.editor.disposables.addFromEvent(eventSource, 'compositionend', e => {
+      this._onCompositionEnd(e).catch(console.error);
+    });
     this.editor.disposables.addFromEvent(
       eventSource,
       'keydown',

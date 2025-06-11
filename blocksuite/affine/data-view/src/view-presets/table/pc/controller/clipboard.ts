@@ -78,6 +78,14 @@ export class TableClipboardController implements ReactiveController {
     const event = _context.get('clipboardState').raw;
     event.stopPropagation();
 
+    const active = document.activeElement as HTMLElement | null;
+    if (
+      active &&
+      (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
+    ) {
+      return true;
+    }
+
     const clipboardData = event.clipboardData;
     if (!clipboardData) return;
 
