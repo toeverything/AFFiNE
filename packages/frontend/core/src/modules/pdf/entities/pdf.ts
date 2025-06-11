@@ -1,8 +1,7 @@
-import type { AttachmentBlockModel } from '@blocksuite/affine/model';
 import { Entity, LiveData, ObjectPool } from '@toeverything/infra';
 import { catchError, from, map, of, startWith, switchMap } from 'rxjs';
 
-import { downloadBlobToBuffer } from '../../media/utils';
+import type { WorkspaceService } from '../../workspace';
 import type { PDFMeta } from '../renderer';
 import { PDFRenderer } from '../renderer';
 import { PDFPage } from './pdf-page';
@@ -27,8 +26,8 @@ export type PDFRendererState =
       error: Error;
     };
 
-export class PDF extends Entity<AttachmentBlockModel> {
-  public readonly id: string = this.props.id;
+export class PDF extends Entity<{ blobId: string }> {
+  public readonly id: string = this.props.blobId;
   readonly renderer = new PDFRenderer();
   readonly pages = new ObjectPool<string, PDFPage>({
     onDelete: page => page.dispose(),
@@ -36,8 +35,26 @@ export class PDF extends Entity<AttachmentBlockModel> {
 
   readonly state$ = LiveData.from<PDFRendererState>(
     // @ts-expect-error type alias
-    from(downloadBlobToBuffer(this.props)).pipe(
-      switchMap(data => this.renderer.ob$('open', { data })),
+    from(
+      this.workspaceService.workspace.engine.blob
+        .get(this.id)
+        .then(blobRecord => {
+          if (blobRecord) {
+            const { data, mime: type } = blobRecord;
+            const blob = new Blob([data], { type });
+            return blob.arrayBuffer();
+          }
+
+          return null;
+        })
+    ).pipe(
+      switchMap(data => {
+        if (data) {
+          return this.renderer.ob$('open', { data });
+        }
+
+        throw new Error('PDF not found');
+      }),
       map(meta => ({ status: PDFStatus.Opened, meta })),
       // @ts-expect-error type alias
       startWith({ status: PDFStatus.Opening }),
@@ -46,7 +63,7 @@ export class PDF extends Entity<AttachmentBlockModel> {
     { status: PDFStatus.IDLE }
   );
 
-  constructor() {
+  constructor(private readonly workspaceService: WorkspaceService) {
     super();
     this.disposables.push(() => this.pages.clear());
   }

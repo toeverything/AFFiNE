@@ -1,4 +1,3 @@
-import type { AttachmentBlockModel } from '@blocksuite/affine/model';
 import { ObjectPool, Service } from '@toeverything/infra';
 
 import { PDF } from '../entities/pdf';
@@ -19,11 +18,11 @@ export class PDFService extends Service {
     });
   }
 
-  get(model: AttachmentBlockModel) {
-    let rc = this.PDFs.get(model.id);
+  get(blobId: string) {
+    let rc = this.PDFs.get(blobId);
 
     if (!rc) {
-      rc = this.PDFs.put(model.id, this.framework.createEntity(PDF, model));
+      rc = this.PDFs.put(blobId, this.framework.createEntity(PDF, { blobId }));
     }
 
     return { pdf: rc.obj, release: rc.release };
