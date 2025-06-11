@@ -46,10 +46,6 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
   const parent = doc.getParent(model);
   if (!parent) return false;
 
-  // if (matchModels(parent, [EdgelessTextBlockModel])) {
-  //   return true;
-  // }
-
   const prevBlock = getPrevContentBlock(editorHost, model);
   if (!prevBlock) {
     return handleNoPreviousSibling(editorHost, model);
@@ -124,6 +120,13 @@ function handleNoPreviousSibling(editorHost: EditorHost, model: ExtendedModel) {
   const parent = doc.getParent(model);
   if (!parent) return false;
 
+  const focusFirstBlockStart = () => {
+    const firstBlock = parent.firstChild();
+    if (firstBlock) {
+      focusTextModel(editorHost.std, firstBlock.id, 0);
+    }
+  };
+
   if (matchModels(parent, [NoteBlockModel])) {
     const hasTitleEditor = getDocTitleInlineEditor(editorHost);
     const rootModel = model.store.root as RootBlockModel;
@@ -143,12 +146,22 @@ function handleNoPreviousSibling(editorHost: EditorHost, model: ExtendedModel) {
     }
 
     // Preserve at least one block to be able to focus on container click
-    if (model.text?.length === 0) {
+    if (
+      text?.length === 0 &&
+      (model.children.length > 0 || doc.getNext(model))
+    ) {
       doc.deleteBlock(model, {
         bringChildrenTo: parent,
       });
+      focusFirstBlockStart();
     } else if (shouldHandleTitle) {
-      text?.clear();
+      if (model.children.length > 0 || doc.getNext(model)) {
+        doc.deleteBlock(model, {
+          bringChildrenTo: parent,
+        });
+      } else {
+        text?.clear();
+      }
     }
 
     return true;
@@ -156,15 +169,13 @@ function handleNoPreviousSibling(editorHost: EditorHost, model: ExtendedModel) {
 
   if (
     matchModels(parent, [EdgelessTextBlockModel]) &&
-    model.text?.length === 0
+    text?.length === 0 &&
+    (model.children.length > 0 || doc.getNext(model))
   ) {
     doc.deleteBlock(model, {
       bringChildrenTo: parent,
     });
-    const firstBlock = parent.firstChild();
-    if (firstBlock) {
-      focusTextModel(editorHost.std, firstBlock.id, 0);
-    }
+    focusFirstBlockStart();
     return true;
   }
 
