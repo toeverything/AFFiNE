@@ -1,8 +1,8 @@
 import {
   menu,
+  type MenuConfig,
   popMenu,
   type PopupTarget,
-  type MenuConfig,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher } from '@blocksuite/global/lit';
@@ -21,11 +21,7 @@ import type { Variable } from '../../../core/expression/types.js';
 import { filterMatcher } from '../../../core/filter/filter-fn/matcher.js';
 import { literalItemsMatcher } from '../../../core/filter/literal/index.js';
 import type { Filter, SingleFilter } from '../../../core/filter/types.js';
-import {
-  renderUniLit,
-  t,
-  typeSystem,
-} from '../../../core/index.js';
+import { renderUniLit, t, typeSystem } from '../../../core/index.js';
 
 export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
   static override styles = css`
@@ -49,7 +45,9 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
   @property({ attribute: false }) accessor value!: ReadonlySignal<Filter[]>;
   @property({ attribute: false }) accessor vars!: ReadonlySignal<Variable[]>;
   @property({ attribute: false }) accessor index!: number;
-  @property({ attribute: false }) accessor onChange!: (filters: Filter[]) => void;
+  @property({ attribute: false }) accessor onChange!: (
+    filters: Filter[]
+  ) => void;
 
   private get filter$() {
     const f = this.value.value[this.index];
@@ -89,19 +87,17 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     const fnType = this.fnType$;
     if (!f || !fnType) return [];
 
-    return fnType.args
-      .slice(1)
-      .flatMap((argType, argIndex) =>
-        literalItemsMatcher.getItems(
-          argType,
-          computed(() => f.args[argIndex]?.value),
-          (newValue: unknown) => {
-            const newArgs = f.args.slice();
-            newArgs[argIndex] = { type: 'literal', value: newValue };
-            this.setFilter({ ...f, args: newArgs });
-          }
-        )
-      );
+    return fnType.args.slice(1).flatMap((argType, argIndex) =>
+      literalItemsMatcher.getItems(
+        argType,
+        computed(() => f.args[argIndex]?.value),
+        (newValue: unknown) => {
+          const newArgs = f.args.slice();
+          newArgs[argIndex] = { type: 'literal', value: newValue };
+          this.setFilter({ ...f, args: newArgs });
+        }
+      )
+    );
   }
 
   private getFunctionItems(target: PopupTarget) {
@@ -165,9 +161,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                 select: () => {
                   popMenu(origTarget, {
                     options: {
-                      items: [
-                        menu.group({ items: fnItems }),
-                      ],
+                      items: [menu.group({ items: fnItems })],
                     },
                   });
                 },
@@ -180,7 +174,6 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
       },
     });
   }
-
 
   private get buttonText() {
     const name = this.leftVar$?.name ?? '';
@@ -202,7 +195,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     }
 
     const vals = (filter.args ?? []).map(a => a?.value);
-    const constWrapper = vals.map(v => ({ value: v, type: null } as any));
+    const constWrapper = vals.map(v => ({ value: v, type: null }) as any);
     const str = fn.shortString?.(...constWrapper) ?? '';
     return str ? `${name}${str}` : name;
   }

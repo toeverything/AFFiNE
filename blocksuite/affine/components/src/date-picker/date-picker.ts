@@ -19,8 +19,18 @@ import { getMonthMatrix, toDate } from './utils.js';
 
 const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const months = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 export interface DateCell {
@@ -114,9 +124,10 @@ export class DatePicker extends WithDisposable(LitElement) {
 
     const dateRaw = `${cell.date.getFullYear()}-${cell.date.getMonth()}-${cell.date.getDate()}(${cell.date.getDay()})`;
 
-    const overflow = (cell.inRange || cell.rangeStart || cell.rangeEnd)
-      ? html`<div class="range-overflow"></div>`
-      : nothing;
+    const overflow =
+      cell.inRange || cell.rangeStart || cell.rangeEnd
+        ? html`<div class="range-overflow"></div>`
+        : nothing;
 
     return html`
       <button
@@ -137,40 +148,35 @@ export class DatePicker extends WithDisposable(LitElement) {
     const firstRow = this._matrix.findIndex(week =>
       week.some(c => c.rangeStart)
     );
-    const lastRow = this._matrix.findIndex(week =>
-      week.some(c => c.rangeEnd)
-    );
+    const lastRow = this._matrix.findIndex(week => week.some(c => c.rangeEnd));
     const rowCount = this._matrix.length;
 
     // if our selection covers from row 0 all the way to the last row,
     // treat it as a single full-grid highlight (e.g. “this month”)
     const fullCover =
-      this.unit === 'year' &&
-      firstRow === 0 &&
-      lastRow === rowCount - 1;
+      this.unit === 'year' && firstRow === 0 && lastRow === rowCount - 1;
 
     return html`
-    <div class="date-picker-header">
-      <div class="date-picker-header__buttons">
-        <button
-          class="date-picker-header__date interactive"
-          @click=${() => this.toggleMonthSelector()}
-        >
-          <div>${this.monthLabel}</div>
-        </button>
-        <button
-          class="date-picker-header__date interactive"
-          @click=${() => this.toggleYearSelector()}
-        >
-          <div>${this.yearLabel}</div>
-        </button>
-      </div>
-
-      ${this._navAction(
-      () => this._moveMonth(-1),
-      () => this._moveMonth(1),
-      html`
+      <div class="date-picker-header">
+        <div class="date-picker-header__buttons">
           <button
+            class="date-picker-header__date interactive"
+            @click=${() => this.toggleMonthSelector()}
+          >
+            <div>${this.monthLabel}</div>
+          </button>
+          <button
+            class="date-picker-header__date interactive"
+            @click=${() => this.toggleYearSelector()}
+          >
+            <div>${this.yearLabel}</div>
+          </button>
+        </div>
+
+        ${this._navAction(
+          () => this._moveMonth(-1),
+          () => this._moveMonth(1),
+          html` <button
             tabindex="0"
             aria-label="today"
             class="action-label interactive today"
@@ -178,40 +184,40 @@ export class DatePicker extends WithDisposable(LitElement) {
           >
             <span>TODAY</span>
           </button>`
-    )}
-    </div>
+        )}
+      </div>
 
-    ${this._dayHeaderRenderer()}
+      ${this._dayHeaderRenderer()}
 
-    <div
-      class="date-picker-weeks"
-      style=${styleMap({ position: 'relative' })}
-    >
-      ${fullCover
-        ? html`
-            <!-- one big rectangle behind the entire month -->
-            <div
-              class="range-bg"
-              style=${styleMap({
-          top: '0px',
-          left: '0px',
-          width: `${7 * this.size + 6 * this.gapH}px`,
-          height: `${rowCount * this.size +
-            (rowCount - 1) * this.gapV}px`,
-          borderRadius: '8px',
-        })}
-            ></div>
-          `
-        : nothing}
-
-      ${this._matrix.map((week, rowIndex) => {
+      <div
+        class="date-picker-weeks"
+        style=${styleMap({ position: 'relative' })}
+      >
+        ${fullCover
+          ? html`
+              <!-- one big rectangle behind the entire month -->
+              <div
+                class="range-bg"
+                style=${styleMap({
+                  top: '0px',
+                  left: '0px',
+                  width: `${7 * this.size + 6 * this.gapH}px`,
+                  height: `${
+                    rowCount * this.size + (rowCount - 1) * this.gapV
+                  }px`,
+                  borderRadius: '8px',
+                })}
+              ></div>
+            `
+          : nothing}
+        ${this._matrix.map((week, rowIndex) => {
           // if we're doing a fullCover, just render cells normally
           if (fullCover) {
             return html`
-            <div class="date-picker-week">
-              ${week.map(cell => this._cellRenderer(cell))}
-            </div>
-          `;
+              <div class="date-picker-week">
+                ${week.map(cell => this._cellRenderer(cell))}
+              </div>
+            `;
           }
 
           // otherwise fall back to per-row logic
@@ -222,10 +228,10 @@ export class DatePicker extends WithDisposable(LitElement) {
           // no highlight on this row?
           if (cols.length === 0) {
             return html`
-            <div class="date-picker-week">
-              ${week.map(cell => this._cellRenderer(cell))}
-            </div>
-          `;
+              <div class="date-picker-week">
+                ${week.map(cell => this._cellRenderer(cell))}
+              </div>
+            `;
           }
 
           const startCol = cols[0];
@@ -241,66 +247,63 @@ export class DatePicker extends WithDisposable(LitElement) {
 
           const bgStyle = {
             left: `${startCol * (this.size + this.gapH)}px`,
-            width: `${(endCol - startCol) * (this.size + this.gapH) + this.size
-              }px`,
+            width: `${
+              (endCol - startCol) * (this.size + this.gapH) + this.size
+            }px`,
             borderRadius: radius,
           };
 
           return html`
-          <div class="date-picker-week">
-            <div class="range-bg" style=${styleMap(bgStyle)}></div>
+            <div class="date-picker-week">
+              <div class="range-bg" style=${styleMap(bgStyle)}></div>
 
-            ${week.map(cell => {
-            const isStart = cell.rangeStart;
-            const isEnd = cell.rangeEnd;
-            const showOverflow = isStart || isEnd;
-            const overflowStyle = showOverflow
-              ? styleMap({
-                borderRadius: isStart
-                  ? '8px 0 0 8px'
-                  : '0 8px 8px 0',
-              })
-              : undefined;
+              ${week.map(cell => {
+                const isStart = cell.rangeStart;
+                const isEnd = cell.rangeEnd;
+                const showOverflow = isStart || isEnd;
+                const overflowStyle = showOverflow
+                  ? styleMap({
+                      borderRadius: isStart ? '8px 0 0 8px' : '0 8px 8px 0',
+                    })
+                  : undefined;
 
-            const classes = classMap({
-              interactive: true,
-              'date-cell': true,
-              'date-cell--today': cell.isToday,
-              'date-cell--not-curr-month': cell.notCurrentMonth,
-              'date-cell--selected': !!cell.selected,
-              // we no longer need an .in-range pill on EVERY cell,
-              // so you can even drop `'date-cell--in-range': cell.inRange` here
-              'date-cell--range-start': isStart,
-              'date-cell--range-end': isEnd,
-            });
+                const classes = classMap({
+                  interactive: true,
+                  'date-cell': true,
+                  'date-cell--today': cell.isToday,
+                  'date-cell--not-curr-month': cell.notCurrentMonth,
+                  'date-cell--selected': !!cell.selected,
+                  // we no longer need an .in-range pill on EVERY cell,
+                  // so you can even drop `'date-cell--in-range': cell.inRange` here
+                  'date-cell--range-start': isStart,
+                  'date-cell--range-end': isEnd,
+                });
 
-            return html`
-                <button
-                  tabindex=${cell.tabIndex ?? -1}
-                  aria-label=${cell.date.toISOString()}
-                  class=${classes}
-                  @click=${() => this._onChange(cell.date)}
-                >
-                  ${cell.label}
-                </button>
+                return html`
+                  <button
+                    tabindex=${cell.tabIndex ?? -1}
+                    aria-label=${cell.date.toISOString()}
+                    class=${classes}
+                    @click=${() => this._onChange(cell.date)}
+                  >
+                    ${cell.label}
+                  </button>
 
-                ${showOverflow
-                ? html`
-                      <div
+                  ${showOverflow
+                    ? html` <div
                         class="range-overflow"
                         style=${overflowStyle}
                       ></div>`
-                : nothing}
-              `;
-          })}
-          </div>
-        `;
+                    : nothing}
+                `;
+              })}
+            </div>
+          `;
         })}
-    </div>
+      </div>
 
-    ${this.onClear
-        ? html`
-          <div class="date-picker-footer">
+      ${this.onClear
+        ? html` <div class="date-picker-footer">
             <button
               tabindex="0"
               aria-label="clear"
@@ -311,7 +314,7 @@ export class DatePicker extends WithDisposable(LitElement) {
             </button>
           </div>`
         : nothing}
-  `;
+    `;
   }
 
   /** weekday header row */
@@ -337,13 +340,10 @@ export class DatePicker extends WithDisposable(LitElement) {
           this.rangeStart != null && isSameDay(date, toDate(this.rangeStart));
         const isRangeEnd =
           this.rangeEnd != null &&
-          (
-            /* inclusive timestamp (any time on the same day) */
-            isSameDay(date, toDate(this.rangeEnd)) ||
-
+          /* inclusive timestamp (any time on the same day) */
+          (isSameDay(date, toDate(this.rangeEnd)) ||
             /* exclusive timestamp (00:00 of next day)  →  subtract 1 ms */
-            isSameDay(date, toDate(this.rangeEnd - 1))
-          );
+            isSameDay(date, toDate(this.rangeEnd - 1)));
         const isSelected =
           this.rangeStart == null &&
           this.value != null &&
@@ -371,13 +371,19 @@ export class DatePicker extends WithDisposable(LitElement) {
     const decade = no * 12;
     const start = this._minYear + decade;
     const end = start + 12;
-    this._yearMatrix = Array.from({ length: end - start }, (_, i) => start + i)
-      .filter(v => v >= this._minYear && v <= this._maxYear);
+    this._yearMatrix = Array.from(
+      { length: end - start },
+      (_, i) => start + i
+    ).filter(v => v >= this._minYear && v <= this._maxYear);
   }
 
   /** navigate decades in the “year” view */
   private _modeDecade(offset: number) {
-    this._yearCursor = clamp(this._minYear, this._maxYear, this._yearCursor + offset);
+    this._yearCursor = clamp(
+      this._minYear,
+      this._maxYear,
+      this._yearCursor + offset
+    );
     this._getYearMatrix();
   }
 
@@ -392,28 +398,45 @@ export class DatePicker extends WithDisposable(LitElement) {
           <div>${this._monthPickYearCursor}</div>
         </button>
         ${this._navAction(
-      { action: () => this._monthPickYearCursor--, disable: this._monthPickYearCursor <= this._minYear },
-      { action: () => this._monthPickYearCursor++, disable: this._monthPickYearCursor >= this._maxYear }
-    )}
+          {
+            action: () => this._monthPickYearCursor--,
+            disable: this._monthPickYearCursor <= this._minYear,
+          },
+          {
+            action: () => this._monthPickYearCursor++,
+            disable: this._monthPickYearCursor >= this._maxYear,
+          }
+        )}
       </div>
       <div class="date-picker-month">
         ${months.map((m, idx) => {
-      const isActive = this.value != null && isSameMonth(this.value, new Date(this._monthPickYearCursor, idx, 1));
-      const classes = classMap({ 'month-cell': true, interactive: true, active: isActive });
-      return html`
+          const isActive =
+            this.value != null &&
+            isSameMonth(
+              this.value,
+              new Date(this._monthPickYearCursor, idx, 1)
+            );
+          const classes = classMap({
+            'month-cell': true,
+            interactive: true,
+            active: isActive,
+          });
+          return html`
             <button
               tabindex=${this._monthCursor === idx ? 0 : -1}
               aria-label=${m}
               class=${classes}
               @click=${() => {
-          this._cursor.setMonth(idx);
-          this._cursor.setFullYear(this._monthPickYearCursor);
-          this._mode = 'date';
-          this._getMatrix();
-        }}
-            >${m}</button>
+                this._cursor.setMonth(idx);
+                this._cursor.setFullYear(this._monthPickYearCursor);
+                this._mode = 'date';
+                this._getMatrix();
+              }}
+            >
+              ${m}
+            </button>
           `;
-    })}
+        })}
       </div>
     `;
   }
@@ -433,7 +456,10 @@ export class DatePicker extends WithDisposable(LitElement) {
     const onNext = typeof next === 'function' ? next : next.action;
     const prevDisable = typeof prev === 'function' ? false : prev.disable;
     const nextDisable = typeof next === 'function' ? false : next.disable;
-    const classes = classMap({ 'date-picker-header__action': true, 'with-slot': !!slot });
+    const classes = classMap({
+      'date-picker-header__action': true,
+      'with-slot': !!slot,
+    });
     return html`
       <div class=${classes}>
         <button
@@ -441,14 +467,18 @@ export class DatePicker extends WithDisposable(LitElement) {
           class="date-picker-small-action interactive left"
           @click=${onPrev}
           ?disabled=${prevDisable}
-        >${arrowLeftIcon}</button>
+        >
+          ${arrowLeftIcon}
+        </button>
         ${slot ?? nothing}
         <button
           aria-label="next"
           class="date-picker-small-action interactive right"
           @click=${onNext}
           ?disabled=${nextDisable}
-        >${arrowLeftIcon}</button>
+        >
+          ${arrowLeftIcon}
+        </button>
       </div>
     `;
   }
@@ -464,7 +494,6 @@ export class DatePicker extends WithDisposable(LitElement) {
     this.onChange?.(date);
   }
 
-
   private _switchMode<T>(map: Record<typeof this._mode, T>) {
     return (map[this._mode] as T) ?? nothing;
   }
@@ -478,31 +507,46 @@ export class DatePicker extends WithDisposable(LitElement) {
     const endYear = this._yearMatrix[this._yearMatrix.length - 1];
     return html`
       <div class="date-picker-header">
-        <button class="date-picker-header__date interactive" @click=${() => this.toggleYearSelector()}>
+        <button
+          class="date-picker-header__date interactive"
+          @click=${() => this.toggleYearSelector()}
+        >
           <div>${startYear}-${endYear}</div>
         </button>
         ${this._navAction(
-      { action: () => this._modeDecade(-12), disable: startYear <= this._minYear },
-      { action: () => this._modeDecade(12), disable: endYear >= this._maxYear }
-    )}
+          {
+            action: () => this._modeDecade(-12),
+            disable: startYear <= this._minYear,
+          },
+          {
+            action: () => this._modeDecade(12),
+            disable: endYear >= this._maxYear,
+          }
+        )}
       </div>
       <div class="date-picker-year">
         ${this._yearMatrix.map(y => {
-      const isActive = y === this._cursor.getFullYear();
-      const classes = classMap({ 'year-cell': true, interactive: true, active: isActive });
-      return html`
+          const isActive = y === this._cursor.getFullYear();
+          const classes = classMap({
+            'year-cell': true,
+            interactive: true,
+            active: isActive,
+          });
+          return html`
             <button
               tabindex=${this._yearCursor === y ? 0 : -1}
               aria-label=${y}
               class=${classes}
               @click=${() => {
-          this._cursor.setFullYear(y);
-          this._mode = 'date';
-          this._getMatrix();
-        }}
-            >${y}</button>
+                this._cursor.setFullYear(y);
+                this._mode = 'date';
+                this._getMatrix();
+              }}
+            >
+              ${y}
+            </button>
           `;
-    })}
+        })}
       </div>
     `;
   }
@@ -534,14 +578,30 @@ export class DatePicker extends WithDisposable(LitElement) {
     );
   }
 
-  focusDateCell() { /* … */ }
-  focusMonthCell() { /* … */ }
-  focusYearCell() { /* … */ }
-  isDateCellFocused() { /* … */ }
-  isMonthCellFocused() { /* … */ }
-  isYearCellFocused() { /* … */ }
-  openMonthSelector() { /* … */ }
-  openYearSelector() { /* … */ }
+  focusDateCell() {
+    /* … */
+  }
+  focusMonthCell() {
+    /* … */
+  }
+  focusYearCell() {
+    /* … */
+  }
+  isDateCellFocused() {
+    /* … */
+  }
+  isMonthCellFocused() {
+    /* … */
+  }
+  isYearCellFocused() {
+    /* … */
+  }
+  openMonthSelector() {
+    /* … */
+  }
+  openYearSelector() {
+    /* … */
+  }
 
   override render() {
     const classes = classMap({
@@ -554,25 +614,27 @@ export class DatePicker extends WithDisposable(LitElement) {
       <div style=${wrapperStyle} class="date-picker-height-wrapper">
         <div class=${classes} style=${styleMap(this._cardStyle)}>
           ${this._switchMode({
-      date: this._dateContent(),
-      month: this._monthContent(),
-      year: this._yearContent(),
-    })}
+            date: this._dateContent(),
+            month: this._monthContent(),
+            year: this._yearContent(),
+          })}
         </div>
       </div>
     `;
   }
 
   toggleMonthSelector() {
-    this._mode === 'month' ? this.closeMonthSelector() : this.openMonthSelector();
+    this._mode === 'month'
+      ? this.closeMonthSelector()
+      : this.openMonthSelector();
   }
   toggleYearSelector() {
     this._mode === 'year' ? this.closeYearSelector() : this.openYearSelector();
   }
 
   override updated(changed: PropertyValues) {
-    if (changed.has('value')) {
-      if (this.value != null) this._cursor = toDate(this.value);
+    if (changed.has('value') && this.value != null) {
+      this._cursor = toDate(this.value);
     }
 
     /* rebuild cells if any range parameter changed */
@@ -588,13 +650,19 @@ export class DatePicker extends WithDisposable(LitElement) {
   // ──────  P R O P E R T I E S  ───────────────────────────────────────────────
 
   @property({ attribute: false }) private accessor _matrix: DateCell[][] = [];
-  @property({ attribute: false }) private accessor _mode: 'date' | 'month' | 'year' = 'date';
+  @property({ attribute: false }) private accessor _mode:
+    | 'date'
+    | 'month'
+    | 'year' = 'date';
 
-  @property({ attribute: false }) accessor rangeStart: number | undefined = undefined;
-  @property({ attribute: false }) accessor rangeEnd: number | undefined = undefined;
+  @property({ attribute: false }) accessor rangeStart: number | undefined =
+    undefined;
+  @property({ attribute: false }) accessor rangeEnd: number | undefined =
+    undefined;
 
   @property({ attribute: false }) private accessor _monthCursor: number = 0;
-  @property({ attribute: false }) private accessor _monthPickYearCursor: number = 0;
+  @property({ attribute: false })
+  private accessor _monthPickYearCursor: number = 0;
   @property({ attribute: false }) private accessor _yearCursor: number = 0;
   @property({ attribute: false }) private accessor _yearMatrix: number[] = [];
 
@@ -603,12 +671,21 @@ export class DatePicker extends WithDisposable(LitElement) {
   @property({ type: Number }) accessor padding: number = 20;
   @property({ type: Boolean }) accessor popup: boolean = false;
   @property({ type: Number }) accessor size: number = 28;
-  @property({ type: String, reflect: true }) accessor unit: 'day' | 'week' | 'month' | 'year' = 'day';
+  @property({ type: String, reflect: true }) accessor unit:
+    | 'day'
+    | 'week'
+    | 'month'
+    | 'year' = 'day';
   @property({ type: Number }) accessor value: number | undefined = undefined;
 
-  @property({ attribute: false }) accessor onChange: ((value: Date) => void) | undefined = undefined;
-  @property({ attribute: false }) accessor onClear: (() => void) | undefined = undefined;
-  @property({ attribute: false }) accessor onEscape: ((value: Date) => void) | undefined = undefined;
+  @property({ attribute: false }) accessor onChange:
+    | ((value: Date) => void)
+    | undefined = undefined;
+  @property({ attribute: false }) accessor onClear: (() => void) | undefined =
+    undefined;
+  @property({ attribute: false }) accessor onEscape:
+    | ((value: Date) => void)
+    | undefined = undefined;
 }
 
 declare global {

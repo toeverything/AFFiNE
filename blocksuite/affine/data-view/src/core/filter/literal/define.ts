@@ -1,13 +1,21 @@
-import { menu, popMenu, popupTargetFromElement, subMenuMiddleware } from '@blocksuite/affine-components/context-menu';
-import { ArrowDownSmallIcon, CheckBoxCheckSolidIcon, CheckBoxUnIcon } from '@blocksuite/icons/lit';
+import {
+  menu,
+  popMenu,
+  popupTargetFromElement,
+  subMenuMiddleware,
+} from '@blocksuite/affine-components/context-menu';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
-import { html, css } from 'lit';
+import {
+  ArrowDownSmallIcon,
+  CheckBoxCheckSolidIcon,
+  CheckBoxUnIcon,
+} from '@blocksuite/icons/lit';
+import { css, html } from 'lit';
 
 import { t } from '../../logical/type-presets.js';
+import { getRange } from '../filter-fn/date.js';
 import { createLiteral } from './create.js';
 import type { LiteralItemsConfig } from './types.js';
-
-import { getRange } from '../filter-fn/date.js';
 
 const DROPDOWN_BUTTON_CSS = css`
   .affine-dropdown-button {
@@ -39,72 +47,86 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
       const [dir, unit] = value.value ?? ['this', 'day'];
       const [start, end] = getRange(dir, unit);
 
-      return [() => html`
-        <style>${DROPDOWN_BUTTON_CSS}</style>
-        <div style="padding:8px; display:flex; flex-direction:column; gap:12px;">
-          <div style="display:flex; gap:8px;">
-            <button class="affine-dropdown-button"
-                    @click=${(e: MouseEvent) => {
-          e.stopPropagation();
-          e.preventDefault();
-          const tgt = popupTargetFromElement(e.currentTarget as HTMLElement);
-          popMenu(tgt, {
-            middleware: subMenuMiddleware,
-            options: {
-              items: [
-                menu.group({
-                  items: DIRECTIONS.map(d =>
-                    menu.action({
-                      name: d[0].toUpperCase() + d.slice(1),
-                      isSelected: d === dir,
-                      select: () => onChange([d, unit])
-                    })
-                  )
-                })
-              ]
-            }
-          });
-        }}>
-              ${dir[0].toUpperCase() + dir.slice(1)} ${ArrowDownSmallIcon()}
-            </button>
+      return [
+        () => html`
+          <style>
+            ${DROPDOWN_BUTTON_CSS}
+          </style>
+          <div
+            style="padding:8px; display:flex; flex-direction:column; gap:12px;"
+          >
+            <div style="display:flex; gap:8px;">
+              <button
+                class="affine-dropdown-button"
+                @click=${(e: MouseEvent) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  const tgt = popupTargetFromElement(
+                    e.currentTarget as HTMLElement
+                  );
+                  popMenu(tgt, {
+                    middleware: subMenuMiddleware,
+                    options: {
+                      items: [
+                        menu.group({
+                          items: DIRECTIONS.map(d =>
+                            menu.action({
+                              name: d[0].toUpperCase() + d.slice(1),
+                              isSelected: d === dir,
+                              select: () => onChange([d, unit]),
+                            })
+                          ),
+                        }),
+                      ],
+                    },
+                  });
+                }}
+              >
+                ${dir[0].toUpperCase() + dir.slice(1)} ${ArrowDownSmallIcon()}
+              </button>
 
-            <button class="affine-dropdown-button"
-                    @click=${(e: MouseEvent) => {
-          e.stopPropagation();
-          e.preventDefault();
-          const tgt = popupTargetFromElement(e.currentTarget as HTMLElement);
-          popMenu(tgt, {
-            middleware: subMenuMiddleware,
-            options: {
-              items: [
-                menu.group({
-                  items: UNITS.map(u =>
-                    menu.action({
-                      name: u[0].toUpperCase() + u.slice(1),
-                      isSelected: u === unit,
-                      select: () => onChange([dir, u])
-                    })
-                  )
-                })
-              ]
-            }
-          });
-        }}>
-              ${unit[0].toUpperCase() + unit.slice(1)} ${ArrowDownSmallIcon()}
-            </button>
+              <button
+                class="affine-dropdown-button"
+                @click=${(e: MouseEvent) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  const tgt = popupTargetFromElement(
+                    e.currentTarget as HTMLElement
+                  );
+                  popMenu(tgt, {
+                    middleware: subMenuMiddleware,
+                    options: {
+                      items: [
+                        menu.group({
+                          items: UNITS.map(u =>
+                            menu.action({
+                              name: u[0].toUpperCase() + u.slice(1),
+                              isSelected: u === unit,
+                              select: () => onChange([dir, u]),
+                            })
+                          ),
+                        }),
+                      ],
+                    },
+                  });
+                }}
+              >
+                ${unit[0].toUpperCase() + unit.slice(1)} ${ArrowDownSmallIcon()}
+              </button>
+            </div>
+
+            <!-- calendar below -->
+            <date-picker
+              .padding=${8}
+              .direction=${dir}
+              .unit=${unit}
+              .rangeStart=${start}
+              .rangeEnd=${end}
+            ></date-picker>
           </div>
-
-          <!-- calendar below -->
-          <date-picker
-            .padding=${8}
-            .direction=${dir}
-            .unit=${unit}
-            .rangeStart=${start}
-            .rangeEnd=${end}
-          ></date-picker>
-        </div>
-      `];
-    }
+        `,
+      ];
+    },
   }),
   createLiteral({
     type: t.date.instance(),
@@ -115,7 +137,7 @@ export const allLiteralConfig: LiteralItemsConfig[] = [
           .value=${value.value}
           .onChange=${(d: Date) => onChange(d.getTime())}
         ></date-picker>
-      `
+      `,
     ],
   }),
   createLiteral({

@@ -37,7 +37,7 @@ export const dt = {
     zod.tuple([
       zod.enum(['past', 'this', 'next'] as const),
       zod.enum(['day', 'week', 'month', 'year'] as const),
-    ]),
+    ])
   ),
   url: defineDataType('URL', zod.string(), zod.string()),
   image: defineDataType('Image', zod.string(), zod.string()),

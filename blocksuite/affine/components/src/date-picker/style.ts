@@ -47,9 +47,15 @@ export const datePickerStyle = css`
   }
 
   /* Rotate the embedded SVG for directional arrows */
-  .date-picker-small-action.left   > svg { transform: rotate(0deg);   }
-  .date-picker-small-action.right  > svg { transform: rotate(180deg); }
-  .date-picker-small-action.down   > svg { transform: rotate(-90deg); }
+  .date-picker-small-action.left > svg {
+    transform: rotate(0deg);
+  }
+  .date-picker-small-action.right > svg {
+    transform: rotate(180deg);
+  }
+  .date-picker-small-action.down > svg {
+    transform: rotate(-90deg);
+  }
 
   /* ───────────────────  HEADER SECTION  ───────────────────── */
   /* Container for the header: month/year display and nav buttons */
@@ -315,17 +321,17 @@ export const datePickerStyle = css`
   }
   /* Solid pill color for the start of the range */
   .date-cell.date-cell--range-start {
-    background: rgb(35,131,226) !important;
+    background: rgb(35, 131, 226) !important;
     color: var(--affine-pure-white);
   }
   /* Slightly translucent pill color for the end of the range */
   .date-cell.date-cell--range-end {
-    background: rgba(35,131,226,0.43) !important;
+    background: rgba(35, 131, 226, 0.43) !important;
     color: var(--affine-pure-white);
   }
   /* Override ‘Today’ styling in week/month/year modes */
-  :host(:not([unit="day"])) .date-cell.date-cell--today {
-    background: rgb(205,60,58) !important;
+  :host(:not([unit='day'])) .date-cell.date-cell--today {
+    background: rgb(205, 60, 58) !important;
     color: var(--affine-pure-white);
     border-radius: 50% !important;
   }
@@ -337,11 +343,11 @@ export const datePickerStyle = css`
     background: none !important;
   }
   /* Show the little range pill only in day mode */
-  :host([unit="day"]) .range-overflow {
+  :host([unit='day']) .range-overflow {
     display: block;
   }
   /* Hide the overflow pill in other modes */
-  :host(:not([unit="day"])) .range-overflow {
+  :host(:not([unit='day'])) .range-overflow {
     display: none;
   }
 `;
