@@ -52,9 +52,12 @@ export const Component = ({
   const loggedIn = useLiveData(
     authService.session.status$.map(s => s === 'authenticated')
   );
-  const allowGuestDemo = useLiveData(
-    defaultServerService.server.config$.selector(c => c.allowGuestDemoWorkspace)
-  );
+  const allowGuestDemo =
+    useLiveData(
+      defaultServerService.server.config$.selector(
+        c => c.allowGuestDemoWorkspace
+      )
+    ) ?? true;
 
   const workspacesService = useService(WorkspacesService);
   const list = useLiveData(workspacesService.list.workspaces$);
@@ -122,10 +125,12 @@ export const Component = ({
       openPage(openWorkspace.id, defaultIndexRoute, RouteLogic.REPLACE);
     }
   }, [
+    allowGuestDemo,
     createCloudWorkspace,
     list,
     openPage,
     searchParams,
+    jumpToSignIn,
     listIsLoading,
     loggedIn,
     navigating,

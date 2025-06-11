@@ -5,7 +5,7 @@ export interface VersionConfig {
     enabled: boolean;
     requiredVersion: string;
   };
-  allowGuestDemoWorkspace: boolean;
+  allowGuestDemoWorkspace?: boolean;
 }
 
 declare global {
