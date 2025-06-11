@@ -4,9 +4,9 @@ import {
 } from '@blocksuite/affine-shared/utils';
 import {
   computed,
+  effect,
   type ReadonlySignal,
   signal,
-  effect,
 } from '@preact/signals-core';
 
 import type { GroupBy } from '../common/types.js';
@@ -16,14 +16,10 @@ import { computedLock } from '../utils/lock.js';
 import type { Property } from '../view-manager/property.js';
 import type { Row } from '../view-manager/row.js';
 import type { SingleView } from '../view-manager/single-view.js';
-import { defaultGroupBy } from './default.js';
-import {
-  getGroupByService,
-  findGroupByConfigByName,
-} from './matcher.js';
-import type { GroupByConfig } from './types.js';
 import { compareDateKeys } from './compare-date-keys.js';
-
+import { defaultGroupBy } from './default.js';
+import { findGroupByConfigByName, getGroupByService } from './matcher.js';
+import type { GroupByConfig } from './types.js';
 
 export type GroupInfo<
   RawValue = unknown,
@@ -46,8 +42,8 @@ export class Group<
     public readonly key: string,
     public readonly value: JsonValue,
     private readonly groupInfo: GroupInfo<RawValue, JsonValue, Data>,
-    public readonly manager: GroupTrait,
-  ) { }
+    public readonly manager: GroupTrait
+  ) {}
 
   get property() {
     return this.groupInfo.property;
@@ -81,9 +77,9 @@ export class GroupTrait {
       changeRowSort: (
         groupKeys: string[],
         groupKey: string,
-        keys: string[],
+        keys: string[]
       ) => void;
-    },
+    }
   ) {
     effect(() => {
       const desc = this.groupBy$.value?.sort?.desc;
@@ -104,8 +100,10 @@ export class GroupTrait {
 
     const res =
       groupBy.name != null
-        ? findGroupByConfigByName(this.view.manager.dataSource, groupBy.name) ??
-        svc?.matcher.match(tType)
+        ? (findGroupByConfigByName(
+            this.view.manager.dataSource,
+            groupBy.name
+          ) ?? svc?.matcher.match(tType))
         : svc?.matcher.match(tType);
 
     if (!res) return;
@@ -118,7 +116,7 @@ export class GroupTrait {
     const staticMap = Object.fromEntries(
       info.config
         .defaultKeys(info.tType)
-        .map(({ key, value }) => [key, new Group(key, value, info, this)]),
+        .map(({ key, value }) => [key, new Group(key, value, info, this)])
     );
     return { staticMap, groupInfo: info };
   });
@@ -151,7 +149,7 @@ export class GroupTrait {
 
       if (gi?.config.matchType.name === 'Date') {
         ordered = Object.keys(map).sort(
-          compareDateKeys(gi.config.name, this.sortAsc$.value),
+          compareDateKeys(gi.config.name, this.sortAsc$.value)
         );
       } else {
         ordered = this.ops.sortGroup(Object.keys(map));
@@ -159,11 +157,10 @@ export class GroupTrait {
       return ordered
         .map(k => map[k])
         .filter(
-          g =>
-            g != null && (!this.hideEmpty$.value || g.rows.length > 0),
+          g => g != null && (!this.hideEmpty$.value || g.rows.length > 0)
         );
     }),
-    this.view.isLocked$,
+    this.view.isLocked$
   );
 
   setHideEmpty(v: boolean) {
@@ -177,7 +174,6 @@ export class GroupTrait {
       this.ops.groupBySet({ ...gb, sort: { desc: !asc } });
     }
   }
-
 
   addToGroup(rowId: string, key: string) {
     const groupMap = this.groupDataMap$.value;
@@ -218,14 +214,14 @@ export class GroupTrait {
     }
     const column = this.view.propertyGetOrCreate(columnId);
     const meta = this.view.manager.dataSource.propertyMetaGet(
-      column.type$.value,
+      column.type$.value
     );
     if (meta) {
       const gb = defaultGroupBy(
         this.view.manager.dataSource,
         meta,
         column.id,
-        column.data$.value,
+        column.data$.value
       );
       if (gb) {
         gb.sort = { desc: !this.sortAsc$.value };
@@ -341,7 +337,7 @@ export const groupTraitKey = createTraitKey<GroupTrait>('group');
 export const sortByManually = <T>(
   arr: T[],
   getId: (v: T) => string,
-  ids: string[],
+  ids: string[]
 ) => {
   const map = new Map(arr.map(v => [getId(v), v]));
   const result: T[] = [];

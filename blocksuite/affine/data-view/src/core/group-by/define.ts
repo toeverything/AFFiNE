@@ -1,15 +1,4 @@
 import hash from '@emotion/hash';
-
-import type { TypeInstance } from '../logical/type.js';
-import { t } from '../logical/type-presets.js';
-import { createUniComponentFromWebComponent } from '../utils/uni-component/uni-component.js';
-import { BooleanGroupView } from './renderer/boolean-group.js';
-import { NumberGroupView } from './renderer/number-group.js';
-import { SelectGroupView } from './renderer/select-group.js';
-import { StringGroupView } from './renderer/string-group.js';
-import { DateGroupView } from './renderer/date-group.js';
-import type { GroupByConfig } from './types.js';
-
 import {
   addDays,
   differenceInCalendarDays,
@@ -22,13 +11,22 @@ import {
   startOfYear,
 } from 'date-fns';
 
+import type { TypeInstance } from '../logical/type.js';
+import { t } from '../logical/type-presets.js';
+import { createUniComponentFromWebComponent } from '../utils/uni-component/uni-component.js';
+import { BooleanGroupView } from './renderer/boolean-group.js';
+import { DateGroupView } from './renderer/date-group.js';
+import { NumberGroupView } from './renderer/number-group.js';
+import { SelectGroupView } from './renderer/select-group.js';
+import { StringGroupView } from './renderer/string-group.js';
+import type { GroupByConfig } from './types.js';
 
 export const createGroupByConfig = <
   Data extends Record<string, unknown>,
   MatchType extends TypeInstance,
   GroupValue = unknown,
 >(
-  config: GroupByConfig<Data, MatchType, GroupValue>,
+  config: GroupByConfig<Data, MatchType, GroupValue>
 ): GroupByConfig => config as never;
 
 export const ungroups = {
@@ -45,7 +43,7 @@ const rangeLabel = (a: Date, b: Date) =>
 function buildDateCfg(
   name: string,
   grouper: (ms: number | null) => { key: string; value: number | null }[],
-  groupName: (v: number | null) => string,
+  groupName: (v: number | null) => string
 ): GroupByConfig {
   return createGroupByConfig({
     name,
@@ -80,7 +78,7 @@ const dateRelativeCfg = buildDateCfg(
     if (daysAgo <= 7) return 'Last 7 days';
     if (daysAgo <= 30) return 'Last 30 days';
     return fmt(new Date(v), 'MMM yyyy');
-  },
+  }
 );
 
 const dateDayCfg = buildDateCfg(
@@ -90,7 +88,7 @@ const dateDayCfg = buildDateCfg(
     const d = startOfDay(new Date(v));
     return [{ key: `${+d}`, value: +d }];
   },
-  v => (v ? fmt(new Date(v), 'MMM d yyyy') : ''),
+  v => (v ? fmt(new Date(v), 'MMM d yyyy') : '')
 );
 
 const dateWeekSunCfg = buildDateCfg(
@@ -100,10 +98,7 @@ const dateWeekSunCfg = buildDateCfg(
     const w = startOfWeek(new Date(v), WEEK_OPTS_SUN);
     return [{ key: `${+w}`, value: +w }];
   },
-  v =>
-    v
-      ? rangeLabel(new Date(v), addDays(new Date(v), 6))
-      : '',
+  v => (v ? rangeLabel(new Date(v), addDays(new Date(v), 6)) : '')
 );
 
 const dateWeekMonCfg = buildDateCfg(
@@ -113,10 +108,7 @@ const dateWeekMonCfg = buildDateCfg(
     const w = startOfWeek(new Date(v), WEEK_OPTS_MON);
     return [{ key: `${+w}`, value: +w }];
   },
-  v =>
-    v
-      ? rangeLabel(new Date(v), addDays(new Date(v), 6))
-      : '',
+  v => (v ? rangeLabel(new Date(v), addDays(new Date(v), 6)) : '')
 );
 
 const dateMonthCfg = buildDateCfg(
@@ -126,7 +118,7 @@ const dateMonthCfg = buildDateCfg(
     const m = startOfMonth(new Date(v));
     return [{ key: `${+m}`, value: +m }];
   },
-  v => (v ? fmt(new Date(v), 'MMM yyyy') : ''),
+  v => (v ? fmt(new Date(v), 'MMM yyyy') : '')
 );
 
 const dateYearCfg = buildDateCfg(
@@ -136,7 +128,7 @@ const dateYearCfg = buildDateCfg(
     const y = startOfYear(new Date(v));
     return [{ key: `${+y}`, value: +y }];
   },
-  v => (v ? fmt(new Date(v), 'yyyy') : ''),
+  v => (v ? fmt(new Date(v), 'yyyy') : '')
 );
 
 export const groupByMatchers: GroupByConfig[] = [
@@ -144,20 +136,16 @@ export const groupByMatchers: GroupByConfig[] = [
     name: 'select',
     matchType: t.tag.instance(),
     groupName: (type, value: string | null) => {
-      if (t.tag.is(type) && type.data) return type.data.find(v => v.id === value)?.value ?? '';
+      if (t.tag.is(type) && type.data)
+        return type.data.find(v => v.id === value)?.value ?? '';
       return '';
     },
     defaultKeys: type =>
       t.tag.is(type) && type.data
-        ? [
-          ungroups,
-          ...type.data.map(v => ({ key: v.id, value: v.id })),
-        ]
+        ? [ungroups, ...type.data.map(v => ({ key: v.id, value: v.id }))]
         : [ungroups],
     valuesGroup: (value, _t) =>
-      value == null
-        ? [ungroups]
-        : [{ key: `${value}`, value }],
+      value == null ? [ungroups] : [{ key: `${value}`, value }],
     addToGroup: (v: string | null, _old: string | null) => v,
     view: createUniComponentFromWebComponent(SelectGroupView),
   }),
@@ -173,9 +161,9 @@ export const groupByMatchers: GroupByConfig[] = [
     defaultKeys: type =>
       t.array.is(type) && t.tag.is(type.element) && type.element.data
         ? [
-          ungroups,
-          ...type.element.data.map(v => ({ key: v.id, value: v.id })),
-        ]
+            ungroups,
+            ...type.element.data.map(v => ({ key: v.id, value: v.id })),
+          ]
         : [ungroups],
     valuesGroup: (value, _t) => {
       if (value == null) return [ungroups];
@@ -185,7 +173,7 @@ export const groupByMatchers: GroupByConfig[] = [
     },
     addToGroup: (
       value: string | null,
-      old: string[] | null,
+      old: string[] | null
     ): string[] | null => {
       if (value == null) return old;
       return Array.isArray(old) ? [...old, value] : [value];
@@ -201,9 +189,7 @@ export const groupByMatchers: GroupByConfig[] = [
     groupName: (_t, v) => `${v ?? ''}`,
     defaultKeys: _t => [ungroups],
     valuesGroup: (v, _t) =>
-      typeof v !== 'string' || !v
-        ? [ungroups]
-        : [{ key: hash(v), value: v }],
+      typeof v !== 'string' || !v ? [ungroups] : [{ key: hash(v), value: v }],
     addToGroup: (v: string | null, _old: string | null) => v,
     view: createUniComponentFromWebComponent(StringGroupView),
   }),
@@ -217,10 +203,8 @@ export const groupByMatchers: GroupByConfig[] = [
       typeof v !== 'number'
         ? [ungroups]
         : [{ key: `g:${Math.floor(v / 10)}`, value: Math.floor(v / 10) }],
-    addToGroup: (
-      v: number | null,
-      _old: number | null,
-    ) => (typeof v === 'number' ? v * 10 : null),
+    addToGroup: (v: number | null, _old: number | null) =>
+      typeof v === 'number' ? v * 10 : null,
     view: createUniComponentFromWebComponent(NumberGroupView),
   }),
 

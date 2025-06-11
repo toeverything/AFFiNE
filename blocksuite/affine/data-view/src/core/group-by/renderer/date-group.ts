@@ -2,10 +2,11 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
+
 import type { Group } from '../trait.js';
 
 export class DateGroupView extends SignalWatcher(
-  WithDisposable(ShadowlessElement),
+  WithDisposable(ShadowlessElement)
 ) {
   static override styles = css`
     .dv-date-group {

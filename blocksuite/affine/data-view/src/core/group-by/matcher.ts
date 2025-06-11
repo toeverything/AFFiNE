@@ -11,7 +11,7 @@ export const createGroupByMatcher = (list: GroupByConfig[]) => {
 
 export const findGroupByConfigByName = (
   dataSource: DataSource,
-  name: string,
+  name: string
 ): GroupByConfig | undefined => {
   const svc = getGroupByService(dataSource);
   const all: GroupByConfig[] = [
@@ -22,7 +22,7 @@ export const findGroupByConfigByName = (
 };
 
 export class GroupByService {
-  constructor(private readonly dataSource: DataSource) { }
+  constructor(private readonly dataSource: DataSource) {}
 
   allExternalGroupByConfig(): GroupByConfig[] {
     return Array.from(
