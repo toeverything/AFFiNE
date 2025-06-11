@@ -8,7 +8,9 @@ import {
   enterPlaygroundRoom,
   focusRichText,
   focusTitle,
+  getBlockIds,
   getIndexCoordinate,
+  getInlineSelectionIndex,
   getPageSnapshot,
   initEmptyEdgelessState,
   initEmptyParagraphState,
@@ -44,6 +46,7 @@ import {
   assertBlockChildrenIds,
   assertBlockCount,
   assertBlockSelections,
+  assertBlockTextContent,
   assertBlockType,
   assertClassName,
   assertDivider,
@@ -732,6 +735,45 @@ test('delete at start of paragraph with content', async ({ page }) => {
 
   await undoByClick(page);
   await assertRichTexts(page, ['123', '456']);
+});
+
+test('delete empty line should work correctly', async ({ page }) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyParagraphState(page);
+  await focusRichText(page);
+
+  // 2: aaa
+  // 3:     bbb
+  // 4: ccc|
+  {
+    await type(page, 'aaa');
+    await pressEnter(page);
+    await pressTab(page);
+    await type(page, 'bbb');
+    await pressEnter(page);
+    await pressShiftTab(page);
+    await type(page, 'ccc');
+  }
+
+  // 2: aaa
+  // 3:     bbb|
+  await pressBackspace(page, 4);
+  expect(await getBlockIds(page)).not.toContain(4);
+  await assertBlockTextContent(page, 2, 'aaa');
+  await assertBlockTextContent(page, 3, 'bbb');
+  expect(await getInlineSelectionIndex(page)).toBe(3);
+
+  // title: |aaa
+  // 3: bbb
+  {
+    await pressArrowUp(page);
+    await pressArrowLeft(page, 3);
+    await pressBackspace(page);
+  }
+  await expect(page.locator('doc-title')).toContainText('aaa');
+  expect(await getBlockIds(page)).not.toContain(2);
+  await assertBlockTextContent(page, 3, 'bbb');
+  expect(await getInlineSelectionIndex(page)).toBe(0);
 });
 
 test('get focus from page title enter', async ({ page }) => {
