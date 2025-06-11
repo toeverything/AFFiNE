@@ -2,6 +2,7 @@ import type {
   ChatHistoryOrder,
   ContextMatchedDocChunk,
   ContextMatchedFileChunk,
+  ContextWorkspaceEmbeddingStatus,
   CopilotContextCategory,
   CopilotContextDoc,
   CopilotContextFile,
@@ -327,6 +328,11 @@ declare global {
         sessionId: string,
         contextId: string,
         onPoll: (result: AIDocsAndFilesContext | undefined) => void,
+        abortSignal: AbortSignal
+      ) => Promise<void>;
+      pollEmbeddingStatus: (
+        workspaceId: string,
+        onPoll: (result: ContextWorkspaceEmbeddingStatus) => void,
         abortSignal: AbortSignal
       ) => Promise<void>;
       matchContext: (
