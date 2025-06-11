@@ -142,7 +142,17 @@ function handleNoPreviousSibling(editorHost: EditorHost, model: ExtendedModel) {
         textLength = text.length;
         title.join(text);
       }
+      if (model.children.length > 0 || doc.getNext(model)) {
+        doc.deleteBlock(model, {
+          bringChildrenTo: parent,
+        });
+      }
+      // no other blocks, preserve a empty line
+      else {
+        text?.clear();
+      }
       focusTitle(editorHost, title.length - textLength);
+      return true;
     }
 
     // Preserve at least one block to be able to focus on container click
@@ -154,17 +164,8 @@ function handleNoPreviousSibling(editorHost: EditorHost, model: ExtendedModel) {
         bringChildrenTo: parent,
       });
       focusFirstBlockStart();
-    } else if (shouldHandleTitle) {
-      if (model.children.length > 0 || doc.getNext(model)) {
-        doc.deleteBlock(model, {
-          bringChildrenTo: parent,
-        });
-      } else {
-        text?.clear();
-      }
+      return true;
     }
-
-    return true;
   }
 
   if (
