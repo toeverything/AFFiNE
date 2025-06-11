@@ -2,7 +2,7 @@
 /**
  * @vitest-environment happy-dom
  */
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 // mocks
@@ -63,20 +63,20 @@ describe('useSignOut', () => {
     jumpToSignIn.mockClear();
   });
 
-  test('redirects to index when guest demo allowed', () => {
+  test('redirects to index when guest demo allowed', async () => {
     allowGuestDemo = true;
     const { result } = renderHook(() => useSignOut());
     result.current();
-    expect(signOutFn).toHaveBeenCalled();
+    await waitFor(() => expect(signOutFn).toHaveBeenCalled());
     expect(jumpToIndex).toHaveBeenCalled();
     expect(jumpToSignIn).not.toHaveBeenCalled();
   });
 
-  test('redirects to sign in when guest demo disabled', () => {
+  test('redirects to sign in when guest demo disabled', async () => {
     allowGuestDemo = false;
     const { result } = renderHook(() => useSignOut());
     result.current();
-    expect(signOutFn).toHaveBeenCalled();
+    await waitFor(() => expect(signOutFn).toHaveBeenCalled());
     expect(jumpToSignIn).toHaveBeenCalled();
     expect(jumpToIndex).not.toHaveBeenCalled();
   });
