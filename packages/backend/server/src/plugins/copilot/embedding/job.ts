@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 
 import {
   AFFiNELogger,
@@ -14,8 +15,6 @@ import {
 } from '../../../base';
 import { DocReader } from '../../../core/doc';
 import { Models } from '../../../models';
-import { PromptService } from '../prompt';
-import { CopilotProviderFactory } from '../providers';
 import { CopilotStorage } from '../storage';
 import { readStream } from '../utils';
 import { getEmbeddingClient } from './client';
@@ -31,12 +30,11 @@ export class CopilotEmbeddingJob {
   private client: EmbeddingClient | undefined;
 
   constructor(
+    private readonly moduleRef: ModuleRef,
     private readonly doc: DocReader,
     private readonly event: EventBus,
     private readonly logger: AFFiNELogger,
     private readonly models: Models,
-    private readonly providerFactory: CopilotProviderFactory,
-    private readonly prompt: PromptService,
     private readonly queue: JobQueue,
     private readonly storage: CopilotStorage
   ) {
@@ -57,7 +55,7 @@ export class CopilotEmbeddingJob {
     this.supportEmbedding =
       await this.models.copilotContext.checkEmbeddingAvailable();
     if (this.supportEmbedding) {
-      this.client = await getEmbeddingClient(this.providerFactory, this.prompt);
+      this.client = await getEmbeddingClient(this.moduleRef);
     }
   }
 

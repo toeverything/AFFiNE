@@ -9,7 +9,11 @@ import {
 } from 'ai';
 import { ZodType } from 'zod';
 
-import { createExaCrawlTool, createExaSearchTool } from '../tools';
+import {
+  createExaCrawlTool,
+  createExaSearchTool,
+  createSemanticSearchTool,
+} from '../tools';
 import { PromptMessage } from './types';
 
 type ChatMessage = CoreUserMessage | CoreAssistantMessage;
@@ -378,6 +382,7 @@ export class CitationParser {
 export interface CustomAITools extends ToolSet {
   web_search_exa: ReturnType<typeof createExaSearchTool>;
   web_crawl_exa: ReturnType<typeof createExaCrawlTool>;
+  semantic_search: ReturnType<typeof createSemanticSearchTool>;
 }
 
 type ChunkType = TextStreamPart<CustomAITools>['type'];
@@ -424,6 +429,12 @@ export class TextStreamParser {
       case 'tool-result': {
         result = this.addPrefix(result);
         switch (chunk.toolName) {
+          case 'semantic_search': {
+            if (Array.isArray(chunk.result)) {
+              result += `\nFound ${chunk.result.length} document${chunk.result.length !== 1 ? 's' : ''} related to “${chunk.args.query}”.\n`;
+            }
+            break;
+          }
           case 'web_search_exa': {
             if (Array.isArray(chunk.result)) {
               result += `\n${this.getWebSearchLinks(chunk.result)}\n`;
