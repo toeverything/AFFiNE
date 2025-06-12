@@ -36,6 +36,7 @@ resources:
 
 probe:
   initialDelaySeconds: 20
+  timeoutSeconds: 5
 
 nodeSelector: {}
 tolerations: []
