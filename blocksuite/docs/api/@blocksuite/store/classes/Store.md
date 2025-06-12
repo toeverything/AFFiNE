@@ -118,9 +118,15 @@ Get the root block of the store.
 
 ### addBlock()
 
-> **addBlock**(`flavour`, `blockProps`, `parent?`, `parentIndex?`): `string`
+> **addBlock**\<`T`\>(`flavour`, `blockProps`, `parent?`, `parentIndex?`): `string`
 
 Creates and adds a new block to the store
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `BlockModel`\<`object`\> = `BlockModel`\<`object`\>
 
 #### Parameters
 
@@ -132,7 +138,7 @@ The block's flavour (type)
 
 ##### blockProps
 
-`Partial`\<`BlockSysProps` & `Record`\<`string`, `unknown`\> & `Omit`\<`BlockProps`, `"flavour"`\>\> = `{}`
+`Partial`\<`BlockProps` \| `PropsOfModel`\<`T`\> & `BlockSysProps`\> = `{}`
 
 Optional properties for the new block
 
