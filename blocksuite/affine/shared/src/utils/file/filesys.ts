@@ -176,9 +176,7 @@ export async function openFilesWith(
       resolve(input.files ? Array.from(input.files) : null);
     });
     // The `cancel` event fires when the user cancels the dialog.
-    input.addEventListener('cancel', () => {
-      resolve(null);
-    });
+    input.addEventListener('cancel', () => resolve(null));
     // Show the picker.
     if ('showPicker' in HTMLInputElement.prototype) {
       input.showPicker();
@@ -188,16 +186,16 @@ export async function openFilesWith(
   });
 }
 
-export function openSingleFileWith(
+export async function openSingleFileWith(
   acceptType?: AcceptTypes
 ): Promise<File | null> {
-  return openFilesWith(acceptType, false).then(files => files?.at(0) ?? null);
+  const files = await openFilesWith(acceptType, false);
+  return files?.at(0) ?? null;
 }
 
 export async function getImageFilesFromLocal() {
-  const imageFiles = await openFilesWith('Images');
-  if (!imageFiles) return [];
-  return imageFiles;
+  const files = await openFilesWith('Images');
+  return files ?? [];
 }
 
 export function downloadBlob(blob: Blob, name: string) {
