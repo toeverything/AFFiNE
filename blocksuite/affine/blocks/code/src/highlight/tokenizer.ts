@@ -11,7 +11,7 @@ export type LineKey = {
   lineIndex: number;
 };
 
-type HighlightedLineCache = {
+type HighlightedLine = {
   content: string;
 
   prevLineEndState?: GrammarState;
@@ -29,16 +29,16 @@ export interface TokensProvider {
 }
 
 export class CodeTokenizer {
-  private readonly _cache: Map<number, HighlightedLineCache> = new Map();
+  private readonly _tokenizedLines: Map<number, HighlightedLine> = new Map();
 
   constructor(public readonly provider: TokensProvider) {}
 
   clearCache(): void {
-    this._cache.clear();
+    this._tokenizedLines.clear();
   }
 
   private _tryGetCachedTokens(key: LineKey): ThemedToken[] | null {
-    const curLine = this._cache.get(key.lineIndex);
+    const curLine = this._tokenizedLines.get(key.lineIndex);
 
     if (!curLine) {
       return null;
@@ -52,7 +52,7 @@ export class CodeTokenizer {
       return null;
     }
 
-    const prevLine = this._cache.get(key.lineIndex - 1);
+    const prevLine = this._tokenizedLines.get(key.lineIndex - 1);
 
     if (!prevLine || !curLine.prevLineEndState || !prevLine.token.endState) {
       return null;
@@ -75,7 +75,7 @@ export class CodeTokenizer {
   private _tokenizeAndCache(key: LineKey, state?: GrammarState): ThemedToken[] {
     const token = this.provider.tokenize(key.lineContent, state);
 
-    this._cache.set(key.lineIndex, {
+    this._tokenizedLines.set(key.lineIndex, {
       content: key.lineContent,
       prevLineEndState: state,
       token,
@@ -86,7 +86,7 @@ export class CodeTokenizer {
 
   private _guessStateForLine(lineIndex: number): GrammarState | undefined {
     while (lineIndex > 0) {
-      const prevLineCache = this._cache.get(lineIndex - 1);
+      const prevLineCache = this._tokenizedLines.get(lineIndex - 1);
       if (prevLineCache && prevLineCache.token.endState) {
         return prevLineCache.token.endState;
       }
@@ -105,7 +105,7 @@ export class CodeTokenizer {
     if (index < 0) {
       throw new Error('Line number cannot be negative');
     }
-    return this._cache.get(index)?.token.lineTokens ?? [];
+    return this._tokenizedLines.get(index)?.token.lineTokens ?? [];
   }
 
   tokenizeLine(key: LineKey): ThemedToken[] {
