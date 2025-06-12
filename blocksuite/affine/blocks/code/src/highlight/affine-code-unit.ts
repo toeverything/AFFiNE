@@ -13,12 +13,18 @@ export class AffineCodeUnit extends ShadowlessElement {
     return this.closest('affine-code');
   }
 
+  get vLine() {
+    return this.closest('v-line');
+  }
+
   get vElement() {
     return this.closest('v-element');
   }
 
   override render() {
-    if (this.delta.attributes?.link && this.codeBlock) {
+    const codeBlock = this.codeBlock;
+
+    if (this.delta.attributes?.link && codeBlock) {
       return html`<affine-link
         .std=${this.codeBlock.std}
         .delta=${this.delta}
@@ -40,37 +46,47 @@ export class AffineCodeUnit extends ShadowlessElement {
       ><v-text .str=${this.delta.insert}></v-text
     ></span>`;
 
-    const codeBlock = this.codeBlock;
     const vElement = this.vElement;
-    if (!codeBlock || !vElement) return plainContent;
-    const tokens = codeBlock.highlightTokens$.value;
-    if (tokens.length === 0) return plainContent;
-    // copy the tokens to avoid modifying the original tokens
-    const lineTokens = structuredClone(tokens[vElement.lineIndex]);
+    const vLine = this.vLine;
+    const tokenizer = codeBlock?.tokenizer$.value;
+
+    if (!codeBlock || !tokenizer || !vElement || !vLine) {
+      return plainContent;
+    }
+
+    const lineTokens = structuredClone(tokenizer.getLineTokens(this.lineIndex));
+
+    const lineStartOffset = vLine.startOffset;
+
     if (lineTokens.length === 0) return plainContent;
 
     const startOffset = vElement.startOffset;
     const endOffset = vElement.endOffset;
+
     const includedTokens: ThemedToken[] = [];
     lineTokens.forEach(token => {
+      const tokenOffset = token.offset + lineStartOffset;
       if (
-        (token.offset <= startOffset &&
-          token.offset + token.content.length >= startOffset) ||
-        (token.offset >= startOffset &&
-          token.offset + token.content.length <= endOffset) ||
-        (token.offset <= endOffset &&
-          token.offset + token.content.length >= endOffset)
+        (tokenOffset <= startOffset &&
+          tokenOffset + token.content.length >= startOffset) ||
+        (tokenOffset >= startOffset &&
+          tokenOffset + token.content.length <= endOffset) ||
+        (tokenOffset <= endOffset &&
+          tokenOffset + token.content.length >= endOffset)
       ) {
         includedTokens.push(token);
       }
     });
+
     if (includedTokens.length === 0) return plainContent;
 
     if (includedTokens.length === 1) {
       const token = includedTokens[0];
+      const tokenOffset = token.offset + lineStartOffset;
+
       const content = token.content.slice(
-        startOffset - token.offset,
-        endOffset - token.offset
+        startOffset - tokenOffset,
+        endOffset - tokenOffset
       );
 
       return html`<span
@@ -83,14 +99,16 @@ export class AffineCodeUnit extends ShadowlessElement {
     } else {
       const firstToken = includedTokens[0];
       const lastToken = includedTokens[includedTokens.length - 1];
+      const firstTokenOffset = firstToken.offset + lineStartOffset;
+      const lastTokenOffset = lastToken.offset + lineStartOffset;
 
       const firstContent = firstToken.content.slice(
-        startOffset - firstToken.offset,
+        startOffset - firstTokenOffset,
         firstToken.content.length
       );
       const lastContent = lastToken.content.slice(
         0,
-        endOffset - lastToken.offset
+        endOffset - lastTokenOffset
       );
       firstToken.content = firstContent;
       lastToken.content = lastContent;
@@ -108,6 +126,9 @@ export class AffineCodeUnit extends ShadowlessElement {
       return html`<span>${vTexts}</span>`;
     }
   }
+
+  @property({ type: Number })
+  accessor lineIndex!: number;
 
   @property({ type: Object })
   accessor delta: DeltaInsert<AffineTextAttributes> = {

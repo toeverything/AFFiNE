@@ -42,6 +42,10 @@ export class VLine extends LitElement {
     return this.vElements.reduce((acc, el) => acc + el.delta.insert.length, 0);
   }
 
+  get lineContent() {
+    return this.elements.reduce((acc, [_, delta]) => acc + delta.insert, '');
+  }
+
   // you should use vElements.length or vTextLength because v-element corresponds to the actual delta
   get vTexts() {
     return Array.from(this.querySelectorAll('v-text'));

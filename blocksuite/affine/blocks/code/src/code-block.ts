@@ -27,12 +27,16 @@ import { html, nothing, type TemplateResult } from 'lit';
 import { query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import { bundledLanguagesInfo, type ThemedToken } from 'shiki';
+import { bundledLanguagesInfo } from 'shiki';
 
 import { CodeBlockConfigExtension } from './code-block-config.js';
 import { CodeBlockInlineManagerExtension } from './code-block-inline.js';
 import { CodeBlockHighlighter } from './code-block-service.js';
 import { CodeBlockPreviewIdentifier } from './code-preview-extension.js';
+import {
+  type CodeTokenizer,
+  createCodeTokenizer,
+} from './highlight/tokenizer.js';
 import { codeBlockStyles } from './styles.js';
 
 export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> {
@@ -42,6 +46,8 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
 
   private readonly _localPreview$ = signal<boolean | null>(null);
 
+  readonly tokenizer$: Signal<CodeTokenizer | null> = signal(null);
+
   preview$: Signal<boolean> = computed(() => {
     const modelPreview = !!this.model.props.preview$.value;
     if (this.store.readonly) {
@@ -49,8 +55,6 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
     }
     return modelPreview;
   });
-
-  highlightTokens$: Signal<ThemedToken[][]> = signal([]);
 
   languageName$: Signal<string> = computed(() => {
     const lang = this.model.props.language$.value;
@@ -101,10 +105,10 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
     return this.rootComponent;
   }
 
-  private _updateHighlightTokens() {
+  private updateTokenizer() {
     const modelLang = this.model.props.language$.value;
+
     if (modelLang === null) {
-      this.highlightTokens$.value = [];
       return;
     }
 
@@ -123,49 +127,59 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
       const highlighter = this.highlighter.highlighter$.value;
       const theme = this.highlighter.themeKey;
       if (!theme || !highlighter) {
-        this.highlightTokens$.value = [];
+        this.tokenizer$.value = null;
         return;
       }
-
-      noop(this.model.props.text.deltas$.value);
-      const code = this.model.props.text.toString();
 
       const loadedLanguages = highlighter.getLoadedLanguages();
       if (!loadedLanguages.includes(lang)) {
         highlighter
           .loadLanguage(langImport)
           .then(() => {
-            this.highlightTokens$.value = highlighter.codeToTokensBase(code, {
+            this.tokenizer$.value = createCodeTokenizer(
+              highlighter,
               lang,
-              theme,
-            });
+              theme
+            );
           })
           .catch(console.error);
       } else {
-        this.highlightTokens$.value = highlighter.codeToTokensBase(code, {
-          lang,
-          theme,
-        });
+        this.tokenizer$.value = createCodeTokenizer(highlighter, lang, theme);
       }
     } else {
-      this.highlightTokens$.value = [];
       // clear language if not found
       this.model.props.language$.value = null;
+      this.tokenizer$.value = null;
     }
   }
 
   override connectedCallback() {
     super.connectedCallback();
 
+    const theme = this.highlighter.themeKey;
+    const language = this.model.props.language$.peek();
+    this.disposables.add(
+      effect(() => {
+        const highlighter = this.highlighter.highlighter$.value;
+        if (highlighter && language && theme) {
+          this.tokenizer$.value = createCodeTokenizer(
+            highlighter,
+            language,
+            theme
+          );
+        }
+      })
+    );
     // set highlight options getter used by "exportToHtml"
     this.disposables.add(
       effect(() => {
-        this._updateHighlightTokens();
+        this.updateTokenizer();
       })
     );
     this.disposables.add(
       effect(() => {
-        noop(this.highlightTokens$.value);
+        noop(this.model.props.text.deltas$.value);
+        noop(this.tokenizer$.value);
         this._richTextElement?.inlineEditor?.render();
       })
     );
@@ -434,6 +448,10 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
           .wrapText=${this.model.props.wrap}
           .verticalScrollContainerGetter=${() => getViewportElement(this.host)}
           .vLineRenderer=${(vLine: VLine) => {
+            this.tokenizer$.value?.tokenizeLine({
+              lineContent: vLine.lineContent,
+              lineIndex: vLine.index,
+            });
             return html`
               <span contenteditable="false" class="line-number"
                 >${vLine.index + 1}</span

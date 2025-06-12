@@ -22,8 +22,11 @@ export const CodeBlockUnitSpecExtension =
     name: 'code-block-unit',
     schema: z.undefined(),
     match: () => true,
-    renderer: ({ delta }) => {
-      return html`<affine-code-unit .delta=${delta}></affine-code-unit>`;
+    renderer: ({ delta, lineIndex }) => {
+      return html`<affine-code-unit
+        .lineIndex=${lineIndex}
+        .delta=${delta}
+      ></affine-code-unit>`;
     },
   });
 
