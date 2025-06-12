@@ -1,20 +1,16 @@
 import type { GrammarState, HighlighterCore, ThemedToken } from 'shiki';
 
 export type LineKey = {
-  /**
-   * text content of the line to be tokenized
-   */
   lineContent: string;
-  /**
-   * first line should be 0
-   */
+
   lineIndex: number;
 };
 
 type HighlightedLine = {
   content: string;
 
-  prevLineEndState?: GrammarState;
+  //  == previous line's end state
+  startState?: GrammarState;
 
   token: TokenizationResult;
 };
@@ -54,18 +50,18 @@ export class CodeTokenizer {
 
     const prevLine = this._tokenizedLines.get(key.lineIndex - 1);
 
-    if (!prevLine || !curLine.prevLineEndState || !prevLine.token.endState) {
+    if (!prevLine || !curLine.startState || !prevLine.token.endState) {
       return null;
     }
 
-    const prevLineState = prevLine.token.endState.getInternalStack();
-    const curLineState = curLine.prevLineEndState.getInternalStack();
+    const prevLineEndStateStack = prevLine.token.endState.getInternalStack();
+    const curLineStartStateStack = curLine.startState.getInternalStack();
 
-    if (!prevLineState || !curLineState) {
+    if (!prevLineEndStateStack || !curLineStartStateStack) {
       return null;
     }
 
-    if (prevLineState.equals(curLineState)) {
+    if (prevLineEndStateStack.equals(curLineStartStateStack)) {
       return curLine.token.lineTokens;
     }
 
@@ -77,7 +73,7 @@ export class CodeTokenizer {
 
     this._tokenizedLines.set(key.lineIndex, {
       content: key.lineContent,
-      prevLineEndState: state,
+      startState: state,
       token,
     });
 
