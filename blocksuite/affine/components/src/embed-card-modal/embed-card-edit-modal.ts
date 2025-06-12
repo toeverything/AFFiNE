@@ -195,8 +195,7 @@ export class EmbedCardEditModal extends SignalWatcher(
 
     const description = this.description$.value.trim();
 
-    const props: AliasInfo = { title };
-    props.description = description;
+    const props: AliasInfo = { title, description };
 
     this.onSave?.(std, blockComponent, props);
 
