@@ -37,12 +37,6 @@ export class CodeTokenizer {
     this._cache.clear();
   }
 
-  private _getPreviousLineCache(
-    lineNumber: number
-  ): HighlightedLineCache | undefined {
-    return this._cache.get(lineNumber - 1);
-  }
-
   private _tryGetCachedTokens(key: LineKey): ThemedToken[] | null {
     const curLine = this._cache.get(key.lineIndex);
 
@@ -52,6 +46,10 @@ export class CodeTokenizer {
 
     if (key.lineIndex === 0 && curLine.content === key.lineContent) {
       return curLine.token.lineTokens;
+    }
+
+    if (curLine.content !== key.lineContent) {
+      return null;
     }
 
     const prevLine = this._cache.get(key.lineIndex - 1);
@@ -67,10 +65,7 @@ export class CodeTokenizer {
       return null;
     }
 
-    if (
-      prevLineState.equals(curLineState) &&
-      prevLine.content === key.lineContent
-    ) {
+    if (prevLineState.equals(curLineState)) {
       return curLine.token.lineTokens;
     }
 
@@ -90,8 +85,8 @@ export class CodeTokenizer {
   }
 
   private _guessStateForLine(lineIndex: number): GrammarState | undefined {
-    while (lineIndex >= 0) {
-      const prevLineCache = this._getPreviousLineCache(lineIndex);
+    while (lineIndex > 0) {
+      const prevLineCache = this._cache.get(lineIndex - 1);
       if (prevLineCache && prevLineCache.token.endState) {
         return prevLineCache.token.endState;
       }
