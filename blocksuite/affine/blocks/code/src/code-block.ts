@@ -156,26 +156,13 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   override connectedCallback() {
     super.connectedCallback();
 
-    const theme = this.highlighter.themeKey;
-    const language = this.model.props.language$.peek();
-    this.disposables.add(
-      effect(() => {
-        const highlighter = this.highlighter.highlighter$.value;
-        if (highlighter && language && theme) {
-          this.tokenizer$.value = createCodeTokenizer(
-            highlighter,
-            language,
-            theme
-          );
-        }
-      })
-    );
     // set highlight options getter used by "exportToHtml"
     this.disposables.add(
       effect(() => {
         this.updateTokenizer();
       })
     );
+
     this.disposables.add(
       effect(() => {
         noop(this.model.props.text.deltas$.value);
