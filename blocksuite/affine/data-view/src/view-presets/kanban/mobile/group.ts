@@ -61,10 +61,12 @@ export class MobileKanbanGroup extends SignalWatcher(
 
   private readonly clickAddCard = () => {
     this.view.addCard('end', this.group.key);
+    this.requestUpdate();
   };
 
   private readonly clickAddCardInStart = () => {
     this.view.addCard('start', this.group.key);
+    this.requestUpdate();
   };
 
   private readonly clickGroupOptions = (e: MouseEvent) => {
@@ -79,12 +81,14 @@ export class MobileKanbanGroup extends SignalWatcher(
               this.group.rows.forEach(row => {
                 this.group.manager.removeFromGroup(row.rowId, this.group.key);
               });
+              this.requestUpdate();
             },
           }),
           menu.action({
             name: 'Delete Cards',
             select: () => {
               this.view.rowsDelete(this.group.rows.map(row => row.rowId));
+              this.requestUpdate();
             },
           }),
         ],

@@ -51,10 +51,12 @@ export class MobileTableGroup extends SignalWatcher(
 
   private readonly clickAddRow = () => {
     this.view.rowAdd('end', this.group?.key);
+    this.requestUpdate();
   };
 
   private readonly clickAddRowInStart = () => {
     this.view.rowAdd('start', this.group?.key);
+    this.requestUpdate();
   };
 
   private readonly clickGroupOptions = (e: MouseEvent) => {
@@ -77,6 +79,7 @@ export class MobileTableGroup extends SignalWatcher(
         name: 'Delete Cards',
         select: () => {
           this.view.rowsDelete(group.rows.map(row => row.rowId));
+          this.requestUpdate();
         },
       }),
     ]);
