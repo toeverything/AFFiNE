@@ -21,6 +21,7 @@ import { CodeKeymapExtension } from './code-keymap.js';
 import { AFFINE_CODE_TOOLBAR_WIDGET } from './code-toolbar/index.js';
 import { codeSlashMenuConfig } from './configs/slash-menu.js';
 import { effects } from './effects.js';
+import { CodeBlockMarkdownExtension } from './markdown.js';
 
 const codeToolbarWidget = WidgetViewExtension(
   'affine:code',
@@ -44,6 +45,7 @@ export class CodeBlockViewExtension extends ViewExtensionProvider {
       BlockViewExtension('affine:code', literal`affine-code`),
       SlashMenuConfigExtension('affine:code', codeSlashMenuConfig),
       CodeKeymapExtension,
+      CodeBlockMarkdownExtension,
       ...getCodeClipboardExtensions(),
     ]);
     context.register([

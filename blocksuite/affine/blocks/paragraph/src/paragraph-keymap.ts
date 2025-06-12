@@ -7,7 +7,6 @@ import {
 import {
   focusTextModel,
   getInlineEditorByModel,
-  markdownInput,
 } from '@blocksuite/affine-rich-text';
 import {
   calculateCollapsedSiblings,
@@ -148,10 +147,6 @@ export const ParagraphKeymapExtension = KeymapExtension(
 
         raw.preventDefault();
 
-        if (markdownInput(std, model.id)) {
-          return true;
-        }
-
         if (model.props.type.startsWith('h') && model.props.collapsed) {
           const parent = store.getParent(model);
           if (!parent) return true;
@@ -197,20 +192,6 @@ export const ParagraphKeymapExtension = KeymapExtension(
         }
         const event = ctx.get('keyboardState').raw;
         event.preventDefault();
-        return true;
-      },
-      Space: ctx => {
-        if (!markdownInput(std)) {
-          return;
-        }
-        ctx.get('keyboardState').raw.preventDefault();
-        return true;
-      },
-      'Shift-Space': ctx => {
-        if (!markdownInput(std)) {
-          return;
-        }
-        ctx.get('keyboardState').raw.preventDefault();
         return true;
       },
       Tab: ctx => {

@@ -2,9 +2,13 @@ import {
   type ViewExtensionContext,
   ViewExtensionProvider,
 } from '@blocksuite/affine-ext-loader';
+import { ParagraphBlockModel } from '@blocksuite/affine-model';
 import { BlockViewExtension, FlavourExtension } from '@blocksuite/std';
 import { literal } from 'lit/static-html.js';
+import { z } from 'zod';
 
+import { effects } from './effects';
+import { ParagraphMarkdownExtension } from './markdown.js';
 import { ParagraphBlockConfigExtension } from './paragraph-block-config.js';
 import {
   ParagraphKeymapExtension,
@@ -21,11 +25,6 @@ const placeholders = {
   h6: 'Heading 6',
   quote: '',
 };
-
-import { ParagraphBlockModel } from '@blocksuite/affine-model';
-import { z } from 'zod';
-
-import { effects } from './effects';
 
 const optionsSchema = z.object({
   getPlaceholder: z.optional(
@@ -61,6 +60,7 @@ export class ParagraphViewExtension extends ViewExtensionProvider<
       ParagraphBlockConfigExtension({
         getPlaceholder,
       }),
+      ParagraphMarkdownExtension,
     ]);
   }
 }

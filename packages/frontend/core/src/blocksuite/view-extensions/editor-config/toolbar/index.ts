@@ -24,10 +24,7 @@ import {
 } from '@blocksuite/affine/blocks/embed-doc';
 import { SurfaceRefBlockComponent } from '@blocksuite/affine/blocks/surface-ref';
 import { toggleEmbedCardEditModal } from '@blocksuite/affine/components/embed-card-modal';
-import {
-  notifyLinkedDocClearedAliases,
-  notifyLinkedDocSwitchedToCard,
-} from '@blocksuite/affine/components/notification';
+import { notifyLinkedDocClearedAliases } from '@blocksuite/affine/components/notification';
 import { isPeekable, peek } from '@blocksuite/affine/components/peek';
 import { toast } from '@blocksuite/affine/components/toast';
 import {
@@ -859,44 +856,6 @@ const embedSyncedDocToolbarConfig = {
               category: 'linked doc',
               type: 'embed view',
               control: 'copy link',
-            });
-          },
-        },
-        {
-          id: 'edit',
-          tooltip: 'Edit',
-          icon: EditIcon(),
-          run(ctx) {
-            const block = ctx.getCurrentBlockByType(
-              EmbedSyncedDocBlockComponent
-            );
-            if (!block) return;
-
-            ctx.hide();
-
-            const model = block.model;
-            const doc = ctx.workspace.getDoc(model.props.pageId);
-            const abortController = new AbortController();
-            abortController.signal.onabort = () => ctx.show();
-
-            toggleEmbedCardEditModal(
-              ctx.host,
-              model,
-              'embed',
-              doc ? { title: doc.meta?.title } : undefined,
-              undefined,
-              (std, _component, props) => {
-                block.convertToCard(props);
-
-                notifyLinkedDocSwitchedToCard(std);
-              },
-              abortController
-            );
-
-            ctx.track('OpenedAliasPopup', {
-              category: 'linked doc',
-              type: 'embed view',
-              control: 'edit',
             });
           },
         },

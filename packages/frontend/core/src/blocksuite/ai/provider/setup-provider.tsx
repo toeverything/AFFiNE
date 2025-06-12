@@ -4,6 +4,7 @@ import type { GlobalDialogService } from '@affine/core/modules/dialogs';
 import {
   type ChatHistoryOrder,
   ContextCategories,
+  type ContextWorkspaceEmbeddingStatus,
   type getCopilotHistoriesQuery,
   type RequestOptions,
 } from '@affine/graphql';
@@ -698,6 +699,23 @@ Could you make a new website based on these notes and send back just the html fi
         await new Promise(resolve => setTimeout(resolve, interval));
       }
     },
+    pollEmbeddingStatus: async (
+      workspaceId: string,
+      onPoll: (result: ContextWorkspaceEmbeddingStatus) => void,
+      abortSignal: AbortSignal
+    ) => {
+      const poll = async () => {
+        const result = await client.getEmbeddingStatus(workspaceId);
+        onPoll(result);
+      };
+
+      const INTERVAL = 10 * 1000;
+
+      while (!abortSignal.aborted) {
+        await poll();
+        await new Promise(resolve => setTimeout(resolve, INTERVAL));
+      }
+    },
     matchContext: async (
       content: string,
       contextId?: string,
@@ -790,12 +808,6 @@ Could you make a new website based on these notes and send back just the html fi
 
   AIProvider.provide('forkChat', options => {
     return client.forkSession(options);
-  });
-
-  AIProvider.provide('embedding', {
-    getEmbeddingStatus: (workspaceId: string) => {
-      return client.getEmbeddingStatus(workspaceId);
-    },
   });
 
   const disposeRequestLoginHandler = AIProvider.slots.requestLogin.subscribe(

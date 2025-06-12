@@ -1,5 +1,4 @@
 import { Logger } from '@nestjs/common';
-import { chunk } from 'lodash-es';
 
 import {
   CopilotPromptNotFound,
@@ -63,7 +62,9 @@ export class ProductionEmbeddingClient extends EmbeddingClient {
     const provider = await this.getProvider({
       outputType: ModelOutputType.Embedding,
     });
-    this.logger.verbose(`Using provider ${provider.type} for embedding`, input);
+    this.logger.verbose(
+      `Using provider ${provider.type} for embedding: ${input.join(', ')}`
+    );
 
     const embeddings = await provider.embedding(
       { inputTypes: [ModelInputType.Text] },
@@ -76,6 +77,14 @@ export class ProductionEmbeddingClient extends EmbeddingClient {
       embedding,
       content: input[index],
     }));
+  }
+
+  private getTargetId<T extends ChunkSimilarity>(embedding: T) {
+    return 'docId' in embedding
+      ? embedding.docId
+      : 'fileId' in embedding
+        ? embedding.fileId
+        : '';
   }
 
   private async getEmbeddingRelevance<
@@ -98,11 +107,11 @@ export class ProductionEmbeddingClient extends EmbeddingClient {
       { modelId: prompt.model },
       prompt.finish({
         query,
-        results: embeddings.map(e => {
-          const targetId =
-            'docId' in e ? e.docId : 'fileId' in e ? e.fileId : '';
-          return { targetId, chunk: e.chunk, content: e.content };
-        }),
+        results: embeddings.map(e => ({
+          targetId: this.getTargetId(e),
+          chunk: e.chunk,
+          content: e.content,
+        })),
         schema,
       }),
       { maxRetries: 3, signal }
@@ -123,7 +132,19 @@ export class ProductionEmbeddingClient extends EmbeddingClient {
     topK: number,
     signal?: AbortSignal
   ): Promise<Chunk[]> {
-    const sortedEmbeddings = embeddings.toSorted(
+    // search in context and workspace may find same chunks, de-duplicate them
+    const { deduped: dedupedEmbeddings } = embeddings.reduce(
+      (acc, e) => {
+        const key = `${this.getTargetId(e)}:${e.chunk}`;
+        if (!acc.seen.has(key)) {
+          acc.seen.add(key);
+          acc.deduped.push(e);
+        }
+        return acc;
+      },
+      { deduped: [] as Chunk[], seen: new Set<string>() }
+    );
+    const sortedEmbeddings = dedupedEmbeddings.toSorted(
       (a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity)
     );
 
@@ -137,24 +158,36 @@ export class ProductionEmbeddingClient extends EmbeddingClient {
       {} as Record<string, Chunk>
     );
 
-    const ranks = [];
-    for (const c of chunk(sortedEmbeddings, Math.min(topK, 10))) {
-      const rank = await this.getEmbeddingRelevance(query, c, signal);
-      if (c.length !== rank.length) {
+    try {
+      // 4.1 mini's context windows large enough to handle all embeddings
+      const ranks = await this.getEmbeddingRelevance(
+        query,
+        sortedEmbeddings,
+        signal
+      );
+      if (sortedEmbeddings.length !== ranks.length) {
         // llm return wrong result, fallback to default sorting
-        return super.reRank(query, embeddings, topK, signal);
+        this.logger.warn(
+          `Batch size mismatch: expected ${sortedEmbeddings.length}, got ${ranks.length}`
+        );
+        return await super.reRank(query, dedupedEmbeddings, topK, signal);
       }
-      ranks.push(rank);
+
+      const highConfidenceChunks = ranks
+        .flat()
+        .toSorted((a, b) => b.scores.score - a.scores.score)
+        .filter(r => r.scores.score > 5)
+        .map(r => chunks[`${r.scores.targetId}:${r.scores.chunk}`])
+        .filter(Boolean);
+
+      this.logger.verbose(
+        `ReRank completed: ${highConfidenceChunks.length} high-confidence results found`
+      );
+      return highConfidenceChunks.slice(0, topK);
+    } catch (error) {
+      this.logger.warn('ReRank failed, falling back to default sorting', error);
+      return await super.reRank(query, dedupedEmbeddings, topK, signal);
     }
-
-    const highConfidenceChunks = ranks
-      .flat()
-      .toSorted((a, b) => b.scores.score - a.scores.score)
-      .filter(r => r.scores.score > 5)
-      .map(r => chunks[`${r.scores.targetId}:${r.scores.chunk}`])
-      .filter(Boolean);
-
-    return highConfidenceChunks.slice(0, topK);
   }
 }
 
