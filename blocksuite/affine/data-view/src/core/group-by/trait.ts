@@ -66,12 +66,13 @@ export class Group<
 export class GroupTrait {
   hideEmpty$ = signal<boolean>(true);
   sortAsc$ = signal<boolean>(true);
+
   constructor(
     private readonly groupBy$: ReadonlySignal<GroupBy | undefined>,
     public view: SingleView,
     private readonly ops: {
       groupBySet: (g: GroupBy | undefined) => void;
-      sortGroup: (keys: string[]) => string[];
+      sortGroup: (keys: string[], asc?: boolean) => string[];
       sortRow: (groupKey: string, rows: Row[]) => Row[];
       changeGroupSort: (keys: string[]) => void;
       changeRowSort: (
@@ -83,7 +84,7 @@ export class GroupTrait {
   ) {
     effect(() => {
       const desc = this.groupBy$.value?.sort?.desc;
-      if (desc != null) {
+      if (desc != null && this.sortAsc$.value === desc) {
         this.sortAsc$.value = !desc;
       }
     });
@@ -92,12 +93,14 @@ export class GroupTrait {
   groupInfo$ = computed<GroupInfo | undefined>(() => {
     const groupBy = this.groupBy$.value;
     if (!groupBy) return;
+
     const property = this.view.propertyGetOrCreate(groupBy.columnId);
     if (!property) return;
+
     const tType = property.dataType$.value;
     if (!tType) return;
-    const svc = getGroupByService(this.view.manager.dataSource);
 
+    const svc = getGroupByService(this.view.manager.dataSource);
     const res =
       groupBy.name != null
         ? (findGroupByConfigByName(
@@ -144,7 +147,6 @@ export class GroupTrait {
       if (!map) return;
 
       const gi = this.groupInfo$.value;
-
       let ordered: string[];
 
       if (gi?.config.matchType.name === 'Date') {
@@ -152,8 +154,9 @@ export class GroupTrait {
           compareDateKeys(gi.config.name, this.sortAsc$.value)
         );
       } else {
-        ordered = this.ops.sortGroup(Object.keys(map));
+        ordered = this.ops.sortGroup(Object.keys(map), this.sortAsc$.value);
       }
+
       return ordered
         .map(k => map[k])
         .filter(
