@@ -34,7 +34,7 @@ export const codeBlockStyles = css`
   }
 
   .affine-code-block-container.disable-line-numbers v-line {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: unset;
   }
 
   .affine-code-block-container div:has(> v-line) {
