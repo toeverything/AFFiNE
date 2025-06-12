@@ -355,9 +355,11 @@ export class NotificationService {
     );
 
     // fill user info
-    const userIds = new Set(notifications.map(n => n.body.createdByUserId));
-    const users = await this.models.user.getPublicUsers(Array.from(userIds));
-    const userInfos = new Map(users.map(u => [u.id, u]));
+    const userMap = await this.models.user.getPublicUsersMap(
+      notifications.map(n => ({
+        userId: n.body.createdByUserId,
+      }))
+    );
 
     // fill workspace info
     const workspaceIds = new Set(notifications.map(n => n.body.workspaceId));
@@ -393,7 +395,7 @@ export class NotificationService {
         // set type to body.type to improve type inference on frontend
         type: n.type,
         workspace: workspaceInfos.get(n.body.workspaceId),
-        createdByUser: userInfos.get(n.body.createdByUserId),
+        createdByUser: userMap.get(n.body.createdByUserId),
       },
     }));
   }

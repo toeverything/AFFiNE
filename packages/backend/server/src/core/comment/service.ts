@@ -4,6 +4,7 @@ import {
   CommentCreate,
   CommentResolve,
   CommentUpdate,
+  ItemWithUserId,
   Models,
   ReplyCreate,
   ReplyUpdate,
@@ -73,14 +74,10 @@ export class CommentService {
     );
 
     // fill user info
-    const userIds = new Set(comments.map(c => c.userId));
-    for (const c of comments) {
-      for (const r of c.replies) {
-        userIds.add(r.userId);
-      }
-    }
-    const users = await this.models.user.getPublicUsers(Array.from(userIds));
-    const userMap = new Map(users.map(u => [u.id, u]));
+    const userMap = await this.models.user.getPublicUsersMap([
+      ...comments,
+      ...comments.flatMap(c => c.replies),
+    ]);
 
     return comments.map(c => ({
       ...c,
@@ -108,14 +105,9 @@ export class CommentService {
     );
 
     // fill user info
-    const userIds = new Set<string>();
-    for (const c of changes) {
-      if ('userId' in c.item) {
-        userIds.add(c.item.userId);
-      }
-    }
-    const users = await this.models.user.getPublicUsers(Array.from(userIds));
-    const userMap = new Map(users.map(u => [u.id, u]));
+    const userMap = await this.models.user.getPublicUsersMap(
+      changes.map(c => c.item as ItemWithUserId)
+    );
 
     return changes.map(c => ({
       ...c,
