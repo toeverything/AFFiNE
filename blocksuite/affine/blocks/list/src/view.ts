@@ -7,6 +7,7 @@ import { literal } from 'lit/static-html.js';
 
 import { effects } from './effects.js';
 import { ListKeymapExtension, ListTextKeymapExtension } from './list-keymap.js';
+import { ListMarkdownExtension } from './markdown.js';
 
 export class ListViewExtension extends ViewExtensionProvider {
   override name = 'affine-list-block';
@@ -23,6 +24,7 @@ export class ListViewExtension extends ViewExtensionProvider {
       BlockViewExtension('affine:list', literal`affine-list`),
       ListKeymapExtension,
       ListTextKeymapExtension,
+      ListMarkdownExtension,
     ]);
   }
 }

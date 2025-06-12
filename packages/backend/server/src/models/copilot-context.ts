@@ -91,7 +91,9 @@ export class CopilotContextModel extends BaseModel {
       const status = finishedDoc.has(doc.id)
         ? ContextEmbedStatus.finished
         : undefined;
-      doc.status = status || doc.status;
+      // NOTE: when the document has not been synchronized to the server or is in the embedding queue
+      // the status will be empty, fallback to processing if no status is provided
+      doc.status = status || doc.status || ContextEmbedStatus.processing;
     }
 
     return docs;
