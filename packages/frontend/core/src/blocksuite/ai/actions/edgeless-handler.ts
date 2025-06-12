@@ -130,6 +130,12 @@ export async function getContentFromSelected(
       }
     );
 
+  const hasPageBlock = notes.find(note => note.isPageBlock());
+  const title =
+    hasPageBlock && host.std.store.meta?.title
+      ? `# ${host.std.store.meta?.title}\n`
+      : '';
+
   const noteContent = await getContentFromHubBlockModel(host, notes);
   const edgelessTextContent = await getContentFromHubBlockModel(
     host,
@@ -140,7 +146,7 @@ export async function getContentFromSelected(
     embedSyncedDocs
   );
 
-  return `${noteContent.join('\n')}
+  return `${title}${noteContent.join('\n')}
 ${edgelessTextContent.join('\n')}
 ${syncedDocsContent}
 ${texts.map(text => text.text.toString()).join('\n')}
