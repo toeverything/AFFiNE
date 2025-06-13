@@ -5,35 +5,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apollographql/apollo-ios",
       "state" : {
-        "revision" : "39fea7617346c0731be25f61afd537e7032fb562",
-        "version" : "1.22.0"
+        "revision" : "9aa748d6f0526a744d49d59a2383dc7fdf9d645b",
+        "version" : "1.18.0"
       }
     },
     {
-      "identity" : "chidorimenu",
+      "identity" : "sqlite.swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/ChidoriMenu",
+      "location" : "https://github.com/stephencelis/SQLite.swift.git",
       "state" : {
-        "revision" : "3bb4323fe0f7f8f435d15656c3eeffcbb7c9c605",
-        "version" : "3.0.0"
-      }
-    },
-    {
-      "identity" : "splash",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/JohnSundell/Splash",
-      "state" : {
-        "revision" : "7f4df436eb78fe64fe2c32c58006e9949fa28ad8",
-        "version" : "0.16.0"
-      }
-    },
-    {
-      "identity" : "swift-cmark",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-cmark",
-      "state" : {
-        "revision" : "b022b08312decdc46585e0b3440d97f6f22ef703",
-        "version" : "0.6.0"
+        "revision" : "a95fc6df17d108bd99210db5e8a9bac90fe984b8",
+        "version" : "0.15.3"
       }
     },
     {
