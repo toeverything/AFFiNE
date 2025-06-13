@@ -11,11 +11,11 @@ import { JobQueue } from '../base';
 import { ConfigModule } from '../base/config';
 import { AuthService } from '../core/auth';
 import { DocReader } from '../core/doc';
+import { CopilotContextService } from '../plugins/copilot/context';
 import {
-  CopilotContextDocJob,
-  CopilotContextService,
-} from '../plugins/copilot/context';
-import { MockEmbeddingClient } from '../plugins/copilot/context/embedding';
+  CopilotEmbeddingJob,
+  MockEmbeddingClient,
+} from '../plugins/copilot/embedding';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
@@ -65,7 +65,7 @@ const test = ava as TestFn<{
   app: TestingApp;
   db: PrismaClient;
   context: CopilotContextService;
-  jobs: CopilotContextDocJob;
+  jobs: CopilotEmbeddingJob;
   prompt: PromptService;
   factory: CopilotProviderFactory;
   storage: CopilotStorage;
@@ -115,7 +115,7 @@ test.before(async t => {
   const context = app.get(CopilotContextService);
   const prompt = app.get(PromptService);
   const storage = app.get(CopilotStorage);
-  const jobs = app.get(CopilotContextDocJob);
+  const jobs = app.get(CopilotEmbeddingJob);
 
   t.context.app = app;
   t.context.db = db;
