@@ -5,12 +5,23 @@ import { User, Workspace } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 import { applyUpdate, Doc as YDoc } from 'yjs';
 
+import { createModule } from '../../../__tests__/create-module';
+import { Mockers } from '../../../__tests__/mocks';
 import { createTestingApp, type TestingApp } from '../../../__tests__/utils';
 import { UserFriendlyError } from '../../../base';
 import { ConfigFactory } from '../../../base/config';
 import { Models } from '../../../models';
-import { DatabaseDocReader, DocReader, PgWorkspaceDocStorageAdapter } from '..';
+import {
+  DatabaseDocReader,
+  DocReader,
+  DocStorageModule,
+  PgWorkspaceDocStorageAdapter,
+} from '..';
 import { RpcDocReader } from '../reader';
+
+const module = await createModule({
+  imports: [DocStorageModule],
+});
 
 const test = ava as TestFn<{
   models: Models;
@@ -68,6 +79,12 @@ test.afterEach.always(() => {
 test.after.always(async t => {
   await t.context.app.close();
   await t.context.docApp.close();
+  await module.close();
+});
+
+test('should be rpc reader', async t => {
+  const { docReader } = t.context;
+  t.true(docReader instanceof RpcDocReader);
 });
 
 test('should return null when doc not found', async t => {
@@ -144,7 +161,6 @@ test('should fallback to database doc reader when endpoint network error', async
 
 test('should return doc when found', async t => {
   const { docReader } = t.context;
-  t.true(docReader instanceof RpcDocReader);
 
   const docId = randomUUID();
   const timestamp = Date.now();
@@ -358,4 +374,33 @@ test('should return null when workspace bin meta not exists', async t => {
   // workspace not exists
   const notExists = await docReader.getWorkspaceContent(randomUUID());
   t.is(notExists, null);
+});
+
+test('should return doc markdown success', async t => {
+  const { docReader } = t.context;
+
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+    name: '',
+  });
+
+  const docSnapshot = await module.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user,
+  });
+
+  const result = await docReader.getDocMarkdown(workspace.id, docSnapshot.id);
+  t.snapshot(result);
+});
+
+test('should read markdown return null when doc not exists', async t => {
+  const { docReader } = t.context;
+
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+    name: '',
+  });
+
+  const result = await docReader.getDocMarkdown(workspace.id, randomUUID());
+  t.is(result, null);
 });
