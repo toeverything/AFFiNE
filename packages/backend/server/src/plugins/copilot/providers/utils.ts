@@ -13,6 +13,7 @@ import { ZodType } from 'zod';
 import {
   createDocEditTool,
   createDocKeywordSearchTool,
+  createDocReadTool,
   createDocSemanticSearchTool,
   createExaCrawlTool,
   createExaSearchTool,
@@ -386,6 +387,7 @@ export interface CustomAITools extends ToolSet {
   doc_edit: ReturnType<typeof createDocEditTool>;
   doc_semantic_search: ReturnType<typeof createDocSemanticSearchTool>;
   doc_keyword_search: ReturnType<typeof createDocKeywordSearchTool>;
+  doc_read: ReturnType<typeof createDocReadTool>;
   web_search_exa: ReturnType<typeof createExaSearchTool>;
   web_crawl_exa: ReturnType<typeof createExaCrawlTool>;
 }
@@ -449,6 +451,10 @@ export class TextStreamParser {
           }
           case 'doc_keyword_search': {
             result += `\nSearching the keyword "${chunk.args.query}"\n`;
+            break;
+          }
+          case 'doc_read': {
+            result += `\nReading the doc "${chunk.args.doc_id}"\n`;
             break;
           }
         }

@@ -11,14 +11,17 @@ import {
 } from '../../../base';
 import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
+import { Models } from '../../../models';
 import { IndexerService } from '../../indexer';
 import { CopilotContextService } from '../context';
 import {
   buildContentGetter,
+  buildDocContentGetter,
   buildDocKeywordSearchGetter,
   buildDocSearchGetter,
   createDocEditTool,
   createDocKeywordSearchTool,
+  createDocReadTool,
   createDocSemanticSearchTool,
   createExaCrawlTool,
   createExaSearchTool,
@@ -180,6 +183,14 @@ export abstract class CopilotProvider<C = any> {
                 searchDocs.bind(null, options)
               );
             }
+            break;
+          }
+          case 'docRead': {
+            const ac = this.moduleRef.get(AccessController, { strict: false });
+            const models = this.moduleRef.get(Models, { strict: false });
+            const docReader = this.moduleRef.get(DocReader, { strict: false });
+            const getDoc = buildDocContentGetter(ac, docReader, models);
+            tools.doc_read = createDocReadTool(getDoc.bind(null, options));
             break;
           }
           case 'webSearch': {
