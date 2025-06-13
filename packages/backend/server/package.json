@@ -73,6 +73,7 @@
     "@prisma/instrumentation": "^6.7.0",
     "@react-email/components": "0.0.38",
     "@socket.io/redis-adapter": "^8.3.0",
+    "affine-reader": "3.8.8",
     "ai": "^4.3.4",
     "bullmq": "^5.40.2",
     "cookie-parser": "^1.4.7",

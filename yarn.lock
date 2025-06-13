@@ -968,6 +968,7 @@ __metadata:
     "@types/semver": "npm:^7.5.8"
     "@types/sinon": "npm:^17.0.3"
     "@types/supertest": "npm:^6.0.2"
+    affine-reader: "npm:3.8.8"
     ai: "npm:^4.3.4"
     ava: "npm:^6.2.0"
     bullmq: "npm:^5.40.2"
@@ -16444,6 +16445,16 @@ __metadata:
   bin:
     acorn: bin/acorn
   checksum: 10/d1379bbee224e8d44c3c3946e6ba6973e999fbdd4e22e41c3455d7f9b6f72f7ce18d3dc218002e1e48eea789539cf1cb6d1430c81838c6744799c712fb557d92
+  languageName: node
+  linkType: hard
+
+"affine-reader@npm:3.8.8":
+  version: 3.8.8
+  resolution: "affine-reader@npm:3.8.8"
+  dependencies:
+    fflate: "npm:^0.8.2"
+    yjs: "npm:^13.6.24"
+  checksum: 10/9a424f806ab962313db3f042a43e64e9a2d574d5e0817c6d68decdd52df4f408e07be9f91301373c2962c6e8792dcdf2742059208cc13fe5cd2bbf01915168d2
   languageName: node
   linkType: hard
 

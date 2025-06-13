@@ -11,6 +11,7 @@ import {
   readAllBlocksFromDoc,
   readAllDocIdsFromRootDoc,
 } from '@affine/reader/dist';
+import { parsePageDoc as parseDocToMarkdown } from 'affine-reader';
 import { applyUpdate, Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 export interface PageDocContent {
@@ -195,4 +196,31 @@ export async function readAllBlocksFromDocSnapshot(
     spaceId: workspaceId,
     maxSummaryLength,
   });
+}
+
+export function parseDocToMarkdownFromDocSnapshot(
+  workspaceId: string,
+  docId: string,
+  docSnapshot: Uint8Array
+) {
+  const ydoc = new YDoc({
+    guid: docId,
+  });
+  applyUpdate(ydoc, docSnapshot);
+
+  const parsed = parseDocToMarkdown({
+    workspaceId,
+    doc: ydoc,
+    buildBlobUrl: (blobId: string) => {
+      return `/${workspaceId}/blobs/${blobId}`;
+    },
+    buildDocUrl: (docId: string) => {
+      return `/workspace/${workspaceId}/${docId}`;
+    },
+  });
+
+  return {
+    title: parsed.title,
+    markdown: parsed.md,
+  };
 }
