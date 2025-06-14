@@ -9,7 +9,7 @@ import type {
 type HighlightedLine<State extends TokenizerState> = {
   content: string;
   //  == previous line's end state
-  startState?: State;
+  startState: State;
 
   token: TokenizationResult;
 };
@@ -30,36 +30,32 @@ export class CodeTokenizer<State extends TokenizerState = TokenizerState> {
     if (!curLine) {
       return null;
     }
+    const contentChanged = curLine.content! !== key.lineContent;
 
-    if (key.lineIndex === 0 && curLine.content === key.lineContent) {
+    if (key.lineIndex === 0 && !contentChanged) {
       return curLine.token.lineTokens;
     }
 
-    if (curLine.content !== key.lineContent) {
+    if (contentChanged) {
       return null;
     }
 
     const prevLine = this._tokenizedLines.get(key.lineIndex - 1);
 
-    if (!prevLine || !curLine.startState || !prevLine.token.endState) {
-      return null;
-    }
+    if (prevLine) {
+      const prevLineEndState = prevLine.token.endState;
+      const curLineStartState = curLine.startState;
 
-    const prevLineEndState = prevLine.token.endState;
-    const curLineStartState = curLine.startState;
-
-    if (prevLineEndState.equals(curLineStartState)) {
-      return curLine.token.lineTokens;
+      if (prevLineEndState.equals(curLineStartState)) {
+        return curLine.token.lineTokens;
+      }
     }
 
     return null;
   }
 
-  private _tokenizeAndCache(key: LineKey, state?: State): Token[] {
-    const token = this.provider.tokenize(
-      key.lineContent,
-      state ?? this.provider.initial()
-    );
+  private _tokenizeAndCache(key: LineKey, state: State): Token[] {
+    const token = this.provider.tokenize(key.lineContent, state);
 
     this._tokenizedLines.set(key.lineIndex, {
       content: key.lineContent,
@@ -70,16 +66,16 @@ export class CodeTokenizer<State extends TokenizerState = TokenizerState> {
     return token.lineTokens;
   }
 
-  private _guessStateForLine(lineIndex: number): State | undefined {
+  private _guessStateForLine(lineIndex: number): State {
     while (lineIndex > 0) {
       const prevLineCache = this._tokenizedLines.get(lineIndex - 1);
-      if (prevLineCache && prevLineCache.token.endState) {
+      if (prevLineCache) {
         return prevLineCache.token.endState as State;
       }
       lineIndex--;
     }
 
-    return undefined;
+    return this.provider.initial();
   }
 
   forceTokenizeLine(key: LineKey): Token[] {

@@ -15,7 +15,7 @@ export type Token = {
 
 export type TokenizationResult = {
   lineTokens: Token[];
-  endState?: TokenizerState;
+  endState: TokenizerState;
 };
 
 export interface TokensProvider<State extends TokenizerState = TokenizerState> {

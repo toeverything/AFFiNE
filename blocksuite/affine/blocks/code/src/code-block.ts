@@ -397,6 +397,11 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
     this._inlineRangeProvider = getInlineRangeProvider(this);
   }
 
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._languageLoadController?.abort();
+  }
+
   copyCode() {
     const model = this.model;
     const slice = Slice.fromModels(model.store, [model]);
