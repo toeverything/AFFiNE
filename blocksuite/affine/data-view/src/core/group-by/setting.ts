@@ -342,24 +342,6 @@ export const popGroupSetting = (
       title: {
         text: 'Group',
         onBack,
-        postfix: () => {
-          const map = group.groupDataMap$.value;
-          if (!map) return null;
-          const isAllShowed = Object.keys(map).every(
-            k => !group.isGroupHidden(k)
-          );
-          const clickChangeAll = () => {
-            Object.keys(map).forEach(key => {
-              group.setGroupHide(key, isAllShowed);
-            });
-          };
-          return html`<div
-            class="properties-group-op"
-            @click="${clickChangeAll}"
-          >
-            ${isAllShowed ? 'Hide All' : 'Show All'}
-          </div>`;
-        },
       },
       items: [
         menu.group({

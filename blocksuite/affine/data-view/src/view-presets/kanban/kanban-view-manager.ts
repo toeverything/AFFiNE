@@ -143,7 +143,17 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
           if (idx >= 0) {
             list[idx] = { ...list[idx], hide };
           } else {
-            list.push({ key, hide, manuallyCardSort: [] });
+            // maintain existing order when inserting a new entry
+            const order =
+              this.groupTrait.groupsDataListAll$.value?.map(g => g.key) ?? [];
+            let insertPos = 0;
+            for (const k of order) {
+              if (k === key) break;
+              if (list.findIndex(g => g.key === k) !== -1) {
+                insertPos++;
+              }
+            }
+            list.splice(insertPos, 0, { key, hide, manuallyCardSort: [] });
           }
           return { groupProperties: list };
         });

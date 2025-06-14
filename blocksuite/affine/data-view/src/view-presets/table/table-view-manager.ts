@@ -170,7 +170,16 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
           if (idx >= 0) {
             list[idx] = { ...list[idx], hide };
           } else {
-            list.push({ key, hide, manuallyCardSort: [] });
+            const order =
+              this.groupTrait.groupsDataListAll$.value?.map(g => g.key) ?? [];
+            let insertPos = 0;
+            for (const k of order) {
+              if (k === key) break;
+              if (list.findIndex(g => g.key === k) !== -1) {
+                insertPos++;
+              }
+            }
+            list.splice(insertPos, 0, { key, hide, manuallyCardSort: [] });
           }
           return { groupProperties: list };
         });
