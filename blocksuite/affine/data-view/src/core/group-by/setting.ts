@@ -9,6 +9,7 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { DeleteIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import type { Middleware } from '@floating-ui/dom';
+import { autoPlacement, offset, shift } from '@floating-ui/dom';
 import { computed } from '@preact/signals-core';
 import { css, html, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
@@ -56,6 +57,38 @@ export class GroupSetting extends SignalWatcher(
       flex-direction: column;
       gap: 4px;
       ${unsafeCSS(dataViewCssVariable())};
+    }
+
+    .group-sort-setting {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 1;
+      max-height: 200px;
+      overflow: hidden auto;
+      margin-right: 0;
+      margin-bottom: 0;
+
+      /* Only scrollbar color, not background */
+    }
+
+    /* WebKit-based browser scrollbar styling */
+    .group-sort-setting::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .group-sort-setting::-webkit-scrollbar-thumb {
+      background-color: #b0b0b0; /* Grey slider */
+      border-radius: 4px;
+    }
+
+    .group-sort-setting::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .group-sort-setting {
+      scrollbar-width: thin;
+      scrollbar-color: #b0b0b0 transparent;
     }
 
     .group-item {
@@ -129,10 +162,7 @@ export class GroupSetting extends SignalWatcher(
         </div>
       </div>
 
-      <div
-        style="display:flex;flex-direction:column;gap:4px;"
-        class="group-sort-setting"
-      >
+      <div class="group-sort-setting">
         ${repeat(
           groups,
           g => g?.key ?? 'k',
@@ -252,7 +282,7 @@ export const popGroupSetting = (
       items: [
         menu.group({
           items: [
-            menu.subMenu({
+            menu.action({
               name: 'Group By',
               postfix: html`
                 <div
@@ -262,13 +292,27 @@ export const popGroupSetting = (
                   ${renderUniLit(icon, {})} ${gProp.name$.value}
                 </div>
               `,
-              label: () => html` <div>Group By</div> `,
-              options: selectGroupByProperty(group, {
-                onSelect: () => {
-                  menuHandler.close();
-                  popGroupSetting(target, group, onBack, middleware);
-                },
-              }),
+              select: () => {
+                popMenu(target, {
+                  options: selectGroupByProperty(group, {
+                    onSelect: () => {
+                      menuHandler.close();
+                      popGroupSetting(target, group, onBack, middleware);
+                    },
+                    onBack: () => {
+                      menuHandler.close();
+                      popGroupSetting(target, group, onBack, middleware);
+                    },
+                  }),
+                  middleware: [
+                    autoPlacement({
+                      allowedPlacements: ['bottom-start', 'top-start'],
+                    }),
+                    offset({ mainAxis: 15, crossAxis: -162 }),
+                    shift({ crossAxis: true }),
+                  ],
+                });
+              },
             }),
           ],
         }),

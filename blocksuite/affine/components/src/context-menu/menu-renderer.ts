@@ -37,7 +37,10 @@ export class MenuComponent
       display: flex;
       flex-direction: column;
       user-select: none;
-      min-width: 180px;
+      min-width: 320px;
+      max-width: 320px;
+      min-height: 550px;
+      max-height: 700px;
       box-shadow: ${unsafeCSSVar('overlayPanelShadow')};
       border-radius: 4px;
       background-color: ${unsafeCSSVarV2('layer/background/overlayPanel')};

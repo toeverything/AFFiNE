@@ -119,7 +119,7 @@ const createSettingMenus = (
           },
           [
             autoPlacement({ allowedPlacements: ['bottom-start', 'top-start'] }),
-            offset({ mainAxis: 12, crossAxis: -75 }),
+            offset({ mainAxis: 15, crossAxis: -162 }),
             shift({ crossAxis: true }),
           ]
         );
@@ -167,7 +167,7 @@ const createSettingMenus = (
                       autoPlacement({
                         allowedPlacements: ['bottom-start', 'top-start'],
                       }),
-                      offset({ mainAxis: 12, crossAxis: -75 }),
+                      offset({ mainAxis: 15, crossAxis: -162 }),
                       shift({ crossAxis: true }),
                     ]
                   );
@@ -179,7 +179,7 @@ const createSettingMenus = (
                   autoPlacement({
                     allowedPlacements: ['bottom-start', 'top-start'],
                   }),
-                  offset({ mainAxis: 12, crossAxis: -75 }),
+                  offset({ mainAxis: 15, crossAxis: -162 }),
                   shift({ crossAxis: true }),
                 ],
               }
@@ -196,7 +196,7 @@ const createSettingMenus = (
                 autoPlacement({
                   allowedPlacements: ['bottom-start', 'top-start'],
                 }),
-                offset({ mainAxis: 12, crossAxis: -75 }),
+                offset({ mainAxis: 15, crossAxis: -162 }),
                 shift({ crossAxis: true }),
               ]
             );
@@ -238,7 +238,7 @@ const createSettingMenus = (
                   autoPlacement({
                     allowedPlacements: ['bottom-start', 'top-start'],
                   }),
-                  offset({ mainAxis: 12, crossAxis: -75 }),
+                  offset({ mainAxis: 15, crossAxis: -162 }),
                   shift({ crossAxis: true }),
                 ],
               }
@@ -257,7 +257,7 @@ const createSettingMenus = (
                 autoPlacement({
                   allowedPlacements: ['bottom-start', 'top-start'],
                 }),
-                offset({ mainAxis: 12, crossAxis: -75 }),
+                offset({ mainAxis: 15, crossAxis: -162 }),
                 shift({ crossAxis: true }),
               ]
             );
@@ -288,7 +288,7 @@ const createSettingMenus = (
                     autoPlacement({
                       allowedPlacements: ['bottom-start', 'top-start'],
                     }),
-                    offset({ mainAxis: 12, crossAxis: -75 }),
+                    offset({ mainAxis: 15, crossAxis: -162 }),
                     shift({ crossAxis: true }),
                   ]),
                 onBack: reopen,
@@ -297,7 +297,7 @@ const createSettingMenus = (
                 autoPlacement({
                   allowedPlacements: ['bottom-start', 'top-start'],
                 }),
-                offset({ mainAxis: 12, crossAxis: -75 }),
+                offset({ mainAxis: 15, crossAxis: -162 }),
                 shift({ crossAxis: true }),
               ]
             );
@@ -306,7 +306,7 @@ const createSettingMenus = (
               autoPlacement({
                 allowedPlacements: ['bottom-start', 'top-start'],
               }),
-              offset({ mainAxis: 12, crossAxis: -75 }),
+              offset({ mainAxis: 15, crossAxis: -162 }),
               shift({ crossAxis: true }),
             ]);
           }
@@ -432,7 +432,7 @@ export const popViewOptions = (
                 autoPlacement({
                   allowedPlacements: ['bottom-start', 'top-start'],
                 }),
-                offset({ mainAxis: 12, crossAxis: -75 }),
+                offset({ mainAxis: 15, crossAxis: -162 }),
                 shift({ crossAxis: true }),
               ],
             });
@@ -479,7 +479,7 @@ export const popViewOptions = (
     },
     middleware: [
       autoPlacement({ allowedPlacements: ['bottom-start', 'top-start'] }),
-      offset({ mainAxis: 12, crossAxis: -75 }),
+      offset({ mainAxis: 15, crossAxis: -162 }),
       shift({ crossAxis: true }),
     ],
   });
