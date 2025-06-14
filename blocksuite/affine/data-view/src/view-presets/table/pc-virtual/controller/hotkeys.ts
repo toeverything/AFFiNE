@@ -403,6 +403,15 @@ export class TableHotkeysController implements ReactiveController {
     this.disposables.add(
       this.logic.handleEvent('keyDown', ctx => {
         const event = ctx.get('keyboardState').raw;
+
+        const target = event.target as HTMLElement | null;
+        if (
+          target &&
+          (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
+        ) {
+          return false;
+        }
+
         const selection = this.selectionController.selection;
         if (
           selection &&
