@@ -9,12 +9,12 @@ import { PermissionModule } from '../../core/permission';
 import { QuotaModule } from '../../core/quota';
 import { WorkspaceModule } from '../../core/workspaces';
 import {
-  CopilotContextDocJob,
   CopilotContextResolver,
   CopilotContextRootResolver,
   CopilotContextService,
 } from './context';
 import { CopilotController } from './controller';
+import { CopilotEmbeddingJob } from './embedding';
 import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
 import { CopilotProviderFactory, CopilotProviders } from './providers';
@@ -61,7 +61,7 @@ import {
     // context
     CopilotContextResolver,
     CopilotContextService,
-    CopilotContextDocJob,
+    CopilotEmbeddingJob,
     // transcription
     CopilotTranscriptionService,
     CopilotTranscriptionResolver,

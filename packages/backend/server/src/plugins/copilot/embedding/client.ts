@@ -4,11 +4,11 @@ import {
   CopilotPromptNotFound,
   CopilotProviderNotSupported,
 } from '../../../base';
-import type { ChunkSimilarity, Embedding } from '../../../models';
-import type { PromptService } from '../prompt';
+import { ChunkSimilarity, Embedding } from '../../../models';
+import { PromptService } from '../prompt';
 import {
   type CopilotProvider,
-  type CopilotProviderFactory,
+  CopilotProviderFactory,
   type ModelFullConditions,
   ModelInputType,
   ModelOutputType,
@@ -22,7 +22,7 @@ import {
 
 const RERANK_PROMPT = 'Rerank results';
 
-export class ProductionEmbeddingClient extends EmbeddingClient {
+class ProductionEmbeddingClient extends EmbeddingClient {
   private readonly logger = new Logger(ProductionEmbeddingClient.name);
 
   constructor(
