@@ -11,11 +11,11 @@ import {
   FileChunkSimilarity,
   Models,
 } from '../../../models';
-import { EmbeddingClient } from './types';
+import { EmbeddingClient } from '../embedding';
 
 export class ContextSession implements AsyncDisposable {
   constructor(
-    private readonly client: EmbeddingClient,
+    private readonly client: EmbeddingClient | undefined,
     private readonly contextId: string,
     private readonly config: ContextConfig,
     private readonly models: Models,
@@ -204,6 +204,7 @@ export class ContextSession implements AsyncDisposable {
     scopedThreshold: number = 0.85,
     threshold: number = 0.5
   ): Promise<FileChunkSimilarity[]> {
+    if (!this.client) return [];
     const embedding = await this.client.getEmbedding(content, signal);
     if (!embedding) return [];
 
@@ -256,6 +257,7 @@ export class ContextSession implements AsyncDisposable {
     scopedThreshold: number = 0.85,
     threshold: number = 0.5
   ) {
+    if (!this.client) return [];
     const embedding = await this.client.getEmbedding(content, signal);
     if (!embedding) return [];
 
