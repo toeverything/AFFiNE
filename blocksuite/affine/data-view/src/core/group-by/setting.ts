@@ -1,4 +1,5 @@
 import {
+  dropdownSubMenuMiddleware,
   menu,
   type MenuConfig,
   type MenuOptions,
@@ -387,9 +388,12 @@ export const popGroupSetting = (
                 items: [
                   menu.subMenu({
                     name: 'Date by',
+                    openOnHover: false,
+                    middleware: dropdownSubMenuMiddleware,
+                    autoHeight: true,
                     postfix: html`
                       <div
-                        style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
+                        style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:30px;"
                       >
                         ${dateModeLabel(group.groupInfo$.value?.config.name)}
                       </div>
@@ -500,6 +504,9 @@ export const popGroupSetting = (
                 items: [
                   menu.subMenu({
                     name: 'Sort',
+                    openOnHover: false,
+                    middleware: dropdownSubMenuMiddleware,
+                    autoHeight: true,
                     postfix: html`
                       <div
                         style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"

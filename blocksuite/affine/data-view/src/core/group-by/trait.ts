@@ -219,11 +219,21 @@ export class GroupTrait {
         orderedKeys = this.ops.sortGroup(Object.keys(map), this.sortAsc$.value);
       }
 
-      return orderedKeys
+      const visible: Array<Group | undefined> = [];
+      const hidden: Array<Group | undefined> = [];
+      orderedKeys
         .map(key => map[key])
-        .filter(
-          g => g != null && (!this.hideEmpty$.value || g.rows.length > 0)
-        );
+        .filter(g => g != null && (!this.hideEmpty$.value || g.rows.length > 0))
+        .forEach(g => {
+          if (g) {
+            if (this.isGroupHidden(g.key)) {
+              hidden.push(g);
+            } else {
+              visible.push(g);
+            }
+          }
+        });
+      return [...visible, ...hidden];
     }),
     this.view.isLocked$
   );

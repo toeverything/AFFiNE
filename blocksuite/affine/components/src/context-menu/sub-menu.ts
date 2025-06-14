@@ -4,7 +4,9 @@ import {
   autoPlacement,
   autoUpdate,
   computePosition,
+  type Middleware,
   offset,
+  shift,
 } from '@floating-ui/dom';
 import { html, nothing, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -20,6 +22,9 @@ export type MenuSubMenuData = {
   options: MenuOptions;
   select?: () => void;
   class?: string;
+  openOnHover?: boolean;
+  middleware?: Middleware[];
+  autoHeight?: boolean;
 };
 export const subMenuOffset = offset({
   mainAxis: 16,
@@ -30,13 +35,21 @@ export const subMenuPlacements = autoPlacement({
 });
 export const subMenuMiddleware = [subMenuOffset, subMenuPlacements];
 
+export const dropdownSubMenuMiddleware = [
+  autoPlacement({ allowedPlacements: ['bottom-start', 'bottom-end'] }),
+  offset({ mainAxis: 8, crossAxis: -8 }),
+  shift({ crossAxis: true }),
+];
+
 export class MenuSubMenu extends MenuFocusable {
   createTime = 0;
 
   override connectedCallback() {
     super.connectedCallback();
     this.createTime = Date.now();
-    this.disposables.addFromEvent(this, 'mouseenter', this.onMouseEnter);
+    if (this.data.openOnHover !== false) {
+      this.disposables.addFromEvent(this, 'mouseenter', this.onMouseEnter);
+    }
     this.disposables.addFromEvent(this, 'click', e => {
       e.preventDefault();
       e.stopPropagation();
@@ -60,6 +73,28 @@ export class MenuSubMenu extends MenuFocusable {
   }
 
   openSubMenu() {
+    if (this.data.openOnHover === false) {
+      const { menu } = popMenu(popupTargetFromElement(this), {
+        options: {
+          ...this.data.options,
+          onComplete: () => {
+            this.menu.close();
+          },
+          onClose: () => {
+            menu.menuElement.remove();
+            this.data.options.onClose?.();
+          },
+        },
+        middleware: this.data.middleware,
+      });
+      if (this.data.autoHeight) {
+        menu.menuElement.style.minHeight = 'fit-content';
+        menu.menuElement.style.maxHeight = 'fit-content';
+      }
+      this.menu.openSubMenu(menu);
+      return;
+    }
+
     const focus = this.menu.currentFocused$.value;
     const menu = new Menu({
       ...this.data.options,
@@ -74,9 +109,13 @@ export class MenuSubMenu extends MenuFocusable {
       },
     });
     this.menu.menuElement.parentElement?.append(menu.menuElement);
+    if (this.data.autoHeight) {
+      menu.menuElement.style.minHeight = 'fit-content';
+      menu.menuElement.style.maxHeight = 'fit-content';
+    }
     const unsub = autoUpdate(this, menu.menuElement, () => {
       computePosition(this, menu.menuElement, {
-        middleware: subMenuMiddleware,
+        middleware: this.data.middleware ?? subMenuMiddleware,
       })
         .then(({ x, y }) => {
           menu.menuElement.style.left = `${x}px`;
@@ -132,7 +171,12 @@ export class MobileSubMenu extends MenuFocusable {
           this.data.options.onClose?.();
         },
       },
+      middleware: this.data.middleware,
     });
+    if (this.data.autoHeight) {
+      menu.menuElement.style.minHeight = 'fit-content';
+      menu.menuElement.style.maxHeight = 'fit-content';
+    }
     this.menu.openSubMenu(menu);
   }
 
@@ -175,6 +219,9 @@ export const subMenuItems = {
       options: MenuOptions;
       disableArrow?: boolean;
       hide?: () => boolean;
+      openOnHover?: boolean;
+      middleware?: Middleware[];
+      autoHeight?: boolean;
     }) =>
     menu => {
       if (config.hide?.() || !menu.search(config.name)) {
@@ -190,6 +237,9 @@ export const subMenuItems = {
             ${config.disableArrow ? nothing : ArrowRightSmallIcon()} `,
         class: config.class,
         options: config.options,
+        openOnHover: config.openOnHover,
+        middleware: config.middleware,
+        autoHeight: config.autoHeight,
       };
       return renderSubMenu(data, menu);
     },
