@@ -606,6 +606,10 @@ export class EdgelessClipboardController extends PageClipboard {
   }
 
   private async _pasteTextContentAsNote(content: BlockSnapshot[] | string) {
+    if (content === '') {
+      return;
+    }
+
     const { x, y } = this.toolManager.lastMousePos$.peek();
 
     const noteProps = {

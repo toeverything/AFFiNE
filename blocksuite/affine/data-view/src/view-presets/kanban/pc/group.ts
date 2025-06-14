@@ -110,6 +110,7 @@ export class KanbanGroup extends SignalWatcher(
         isEditing: true,
       };
     });
+    this.requestUpdate();
   };
 
   private readonly clickAddCardInStart = () => {
@@ -127,6 +128,7 @@ export class KanbanGroup extends SignalWatcher(
         isEditing: true,
       };
     });
+    this.requestUpdate();
   };
 
   private readonly clickGroupOptions = (e: MouseEvent) => {
@@ -139,12 +141,14 @@ export class KanbanGroup extends SignalWatcher(
           this.group.rows.forEach(row => {
             this.group.manager.removeFromGroup(row.rowId, this.group.key);
           });
+          this.requestUpdate();
         },
       }),
       menu.action({
         name: 'Delete Cards',
         select: () => {
           this.view.rowsDelete(this.group.rows.map(row => row.rowId));
+          this.requestUpdate();
         },
       }),
     ]);
