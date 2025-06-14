@@ -33,11 +33,9 @@ import { CodeBlockConfigExtension } from './code-block-config.js';
 import { CodeBlockInlineManagerExtension } from './code-block-inline.js';
 import { CodeBlockHighlighter } from './code-block-service.js';
 import { CodeBlockPreviewIdentifier } from './code-preview-extension.js';
-import {
-  type CodeTokenizer,
-  createCodeTokenizer,
-} from './highlight/tokenizer.js';
+import { ShikiTokenProvider } from './highlight/shiki.js';
 import { codeBlockStyles } from './styles.js';
+import { CodeTokenizer } from './tokenizer/index.js';
 
 export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> {
   static override styles = codeBlockStyles;
@@ -105,10 +103,13 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
     return this.rootComponent;
   }
 
+  private _languageLoadController: AbortController | null = null;
+
   private updateTokenizer() {
     const modelLang = this.model.props.language$.value;
 
     if (modelLang === null) {
+      this.tokenizer$.value = null;
       return;
     }
 
@@ -132,19 +133,38 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
       }
 
       const loadedLanguages = highlighter.getLoadedLanguages();
+
+      // Abort any ongoing language loading
+      this._languageLoadController?.abort();
+
       if (!loadedLanguages.includes(lang)) {
+        // Create a new controller for this request
+        this._languageLoadController = new AbortController();
+        const signal = this._languageLoadController.signal;
+
         highlighter
           .loadLanguage(langImport)
           .then(() => {
-            this.tokenizer$.value = createCodeTokenizer(
-              highlighter,
-              lang,
-              theme
+            // Check if this request was aborted
+            if (signal.aborted) return;
+
+            this.tokenizer$.value = new CodeTokenizer(
+              new ShikiTokenProvider(highlighter, lang, theme)
             );
+            this._languageLoadController = null;
           })
-          .catch(console.error);
+          .catch(error => {
+            // Ignore aborted request errors
+            if (signal.aborted) return;
+
+            console.error(`Failed to load language ${lang}:`, error);
+            this.tokenizer$.value = null;
+            this._languageLoadController = null;
+          });
       } else {
-        this.tokenizer$.value = createCodeTokenizer(highlighter, lang, theme);
+        this.tokenizer$.value = new CodeTokenizer(
+          new ShikiTokenProvider(highlighter, lang, theme)
+        );
       }
     } else {
       // clear language if not found
@@ -439,6 +459,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
               lineContent: vLine.lineContent,
               lineIndex: vLine.index,
             });
+
             return html`
               <span contenteditable="false" class="line-number"
                 >${vLine.index + 1}</span

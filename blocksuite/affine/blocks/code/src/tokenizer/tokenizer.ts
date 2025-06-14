@@ -1,39 +1,29 @@
-import type { GrammarState, HighlighterCore, ThemedToken } from 'shiki';
-
-export type LineKey = {
-  lineContent: string;
-
-  lineIndex: number;
-};
+import type {
+  LineKey,
+  Token,
+  TokenizationResult,
+  TokenizerState,
+  TokensProvider,
+} from './types';
 
 type HighlightedLine = {
   content: string;
-
   //  == previous line's end state
-  startState?: GrammarState;
+  startState?: TokenizerState;
 
   token: TokenizationResult;
 };
 
-export type TokenizationResult = {
-  lineTokens: ThemedToken[];
-  endState?: GrammarState;
-};
-
-export interface TokensProvider {
-  tokenize(line: string, state?: GrammarState): TokenizationResult;
-}
-
-export class CodeTokenizer {
+export class CodeTokenizer<State extends TokenizerState = TokenizerState> {
   private readonly _tokenizedLines: Map<number, HighlightedLine> = new Map();
 
-  constructor(public readonly provider: TokensProvider) {}
+  constructor(public readonly provider: TokensProvider<State>) {}
 
   clearCache(): void {
     this._tokenizedLines.clear();
   }
 
-  private _tryGetCachedTokens(key: LineKey): ThemedToken[] | null {
+  private _tryGetCachedTokens(key: LineKey): Token[] | null {
     const curLine = this._tokenizedLines.get(key.lineIndex);
 
     if (!curLine) {
@@ -54,8 +44,8 @@ export class CodeTokenizer {
       return null;
     }
 
-    const prevLineEndStateStack = prevLine.token.endState.getInternalStack();
-    const curLineStartStateStack = curLine.startState.getInternalStack();
+    const prevLineEndStateStack = prevLine.token.endState;
+    const curLineStartStateStack = curLine.startState;
 
     if (!prevLineEndStateStack || !curLineStartStateStack) {
       return null;
@@ -68,7 +58,7 @@ export class CodeTokenizer {
     return null;
   }
 
-  private _tokenizeAndCache(key: LineKey, state?: GrammarState): ThemedToken[] {
+  private _tokenizeAndCache(key: LineKey, state?: State): Token[] {
     const token = this.provider.tokenize(key.lineContent, state);
 
     this._tokenizedLines.set(key.lineIndex, {
@@ -80,11 +70,11 @@ export class CodeTokenizer {
     return token.lineTokens;
   }
 
-  private _guessStateForLine(lineIndex: number): GrammarState | undefined {
+  private _guessStateForLine(lineIndex: number): State | undefined {
     while (lineIndex > 0) {
       const prevLineCache = this._tokenizedLines.get(lineIndex - 1);
       if (prevLineCache && prevLineCache.token.endState) {
-        return prevLineCache.token.endState;
+        return prevLineCache.token.endState as State;
       }
       lineIndex--;
     }
@@ -92,51 +82,22 @@ export class CodeTokenizer {
     return undefined;
   }
 
-  forceTokenizeLine(key: LineKey): ThemedToken[] {
+  forceTokenizeLine(key: LineKey): Token[] {
     const guess = this._guessStateForLine(key.lineIndex);
     return this._tokenizeAndCache(key, guess);
   }
 
-  getLineTokens(index: number): ThemedToken[] {
+  getLineTokens(index: number): Token[] {
     if (index < 0) {
       throw new Error('Line number cannot be negative');
     }
     return this._tokenizedLines.get(index)?.token.lineTokens ?? [];
   }
 
-  tokenizeLine(key: LineKey): ThemedToken[] {
+  tokenizeLine(key: LineKey): Token[] {
     if (key.lineIndex < 0) {
       throw new Error('Line number cannot be negative');
     }
     return this._tryGetCachedTokens(key) ?? this.forceTokenizeLine(key);
   }
-}
-
-export class ShikiTokenProvider implements TokensProvider {
-  constructor(
-    private readonly highlighter: HighlighterCore,
-    public readonly lang: string,
-    public readonly theme: string
-  ) {}
-
-  tokenize(line: string, grammarState?: GrammarState): TokenizationResult {
-    const res = this.highlighter.codeToTokens(line, {
-      lang: this.lang,
-      theme: this.theme,
-      grammarState,
-    });
-
-    return {
-      lineTokens: res.tokens[0],
-      endState: res.grammarState,
-    };
-  }
-}
-
-export function createCodeTokenizer(
-  highlighter: HighlighterCore,
-  lang: string,
-  theme: string
-): CodeTokenizer {
-  return new CodeTokenizer(new ShikiTokenProvider(highlighter, lang, theme));
 }

@@ -6,7 +6,6 @@ import type { DeltaInsert } from '@blocksuite/store';
 import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import type { ThemedToken } from 'shiki';
 
 export class AffineCodeUnit extends ShadowlessElement {
   get codeBlock() {
@@ -63,7 +62,7 @@ export class AffineCodeUnit extends ShadowlessElement {
     const startOffset = vElement.startOffset;
     const endOffset = vElement.endOffset;
 
-    const includedTokens: ThemedToken[] = [];
+    const includedTokens: Token[] = [];
     lineTokens.forEach(token => {
       const tokenOffset = token.offset + lineStartOffset;
       if (
