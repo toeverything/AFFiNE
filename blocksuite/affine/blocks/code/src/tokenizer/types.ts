@@ -4,7 +4,6 @@ export interface TokenizerState {
 
 export type LineKey = {
   lineContent: string;
-
   lineIndex: number;
 };
 
@@ -20,5 +19,6 @@ export type TokenizationResult = {
 };
 
 export interface TokensProvider<State extends TokenizerState = TokenizerState> {
-  tokenize(line: string, state?: State): TokenizationResult;
+  initial(): State;
+  tokenize(line: string, state: State): TokenizationResult;
 }

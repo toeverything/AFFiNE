@@ -7,6 +7,8 @@ import type {
 } from '../tokenizer';
 
 class ShikiTokenizerState implements TokenizerState {
+  static INITIAL = new ShikiTokenizerState();
+
   constructor(public readonly grammarState?: GrammarState) {}
 
   equals(other: TokenizerState): boolean {
@@ -17,7 +19,10 @@ class ShikiTokenizerState implements TokenizerState {
     const a = this.grammarState?.getInternalStack();
     const b = other.grammarState?.getInternalStack();
 
-    return a !== undefined && b !== undefined && a.equals(b);
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+
+    return a.equals(b);
   }
 }
 
@@ -28,11 +33,15 @@ export class ShikiTokenProvider implements TokensProvider<ShikiTokenizerState> {
     public readonly theme: string
   ) {}
 
-  tokenize(line: string, state?: ShikiTokenizerState): TokenizationResult {
+  initial(): ShikiTokenizerState {
+    return ShikiTokenizerState.INITIAL;
+  }
+
+  tokenize(line: string, state: ShikiTokenizerState): TokenizationResult {
     const res = this.highlighter.codeToTokens(line, {
       lang: this.lang,
       theme: this.theme,
-      grammarState: state?.grammarState,
+      grammarState: state.grammarState,
     });
 
     return {

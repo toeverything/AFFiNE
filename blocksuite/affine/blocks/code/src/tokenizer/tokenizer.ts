@@ -6,16 +6,17 @@ import type {
   TokensProvider,
 } from './types';
 
-type HighlightedLine = {
+type HighlightedLine<State extends TokenizerState> = {
   content: string;
   //  == previous line's end state
-  startState?: TokenizerState;
+  startState?: State;
 
   token: TokenizationResult;
 };
 
 export class CodeTokenizer<State extends TokenizerState = TokenizerState> {
-  private readonly _tokenizedLines: Map<number, HighlightedLine> = new Map();
+  private readonly _tokenizedLines: Map<number, HighlightedLine<State>> =
+    new Map();
 
   constructor(public readonly provider: TokensProvider<State>) {}
 
@@ -44,14 +45,10 @@ export class CodeTokenizer<State extends TokenizerState = TokenizerState> {
       return null;
     }
 
-    const prevLineEndStateStack = prevLine.token.endState;
-    const curLineStartStateStack = curLine.startState;
+    const prevLineEndState = prevLine.token.endState;
+    const curLineStartState = curLine.startState;
 
-    if (!prevLineEndStateStack || !curLineStartStateStack) {
-      return null;
-    }
-
-    if (prevLineEndStateStack.equals(curLineStartStateStack)) {
+    if (prevLineEndState.equals(curLineStartState)) {
       return curLine.token.lineTokens;
     }
 
@@ -59,7 +56,10 @@ export class CodeTokenizer<State extends TokenizerState = TokenizerState> {
   }
 
   private _tokenizeAndCache(key: LineKey, state?: State): Token[] {
-    const token = this.provider.tokenize(key.lineContent, state);
+    const token = this.provider.tokenize(
+      key.lineContent,
+      state ?? this.provider.initial()
+    );
 
     this._tokenizedLines.set(key.lineIndex, {
       content: key.lineContent,
