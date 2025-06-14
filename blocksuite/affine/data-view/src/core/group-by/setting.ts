@@ -252,17 +252,13 @@ export const popGroupSetting = (
               name: 'Group By',
               postfix: html`
                 <div
-                  style="display:flex;align-items:center;gap:4px;font-size:12px;line-height:20px;color:var(--affine-text-secondary-color);margin-right:4px;margin-left:8px;"
+                  style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
                   class="dv-icon-16"
                 >
                   ${renderUniLit(icon, {})} ${gProp.name$.value}
                 </div>
               `,
-              label: () => html`
-                <div style="color:var(--affine-text-secondary-color);">
-                  Group By
-                </div>
-              `,
+              label: () => html` <div>Group By</div> `,
               options: selectGroupByProperty(group, {
                 onSelect: () => {
                   menuHandler.close();
@@ -281,7 +277,7 @@ export const popGroupSetting = (
                     name: 'Date by',
                     postfix: html`
                       <div
-                        style="font-size:16px;color:var(--affine-text-secondary-color);"
+                        style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
                       >
                         ${dateModeLabel(group.groupInfo$.value?.config.name)}
                       </div>
@@ -305,6 +301,16 @@ export const popGroupSetting = (
                         ([label, key]): MenuConfig =>
                           menu.action({
                             name: label,
+                            label: () => {
+                              const isSelected =
+                                group.groupInfo$.value?.config.name === key;
+                              return html`<span
+                                style="font-size:14px;color:${isSelected
+                                  ? 'var(--affine-text-emphasis-color)'
+                                  : 'var(--affine-text-secondary-color)'}"
+                                >${label}</span
+                              >`;
+                            },
                             isSelected:
                               group.groupInfo$.value?.config.name === key,
                             select: () => group.changeGroupMode(key),
@@ -323,7 +329,7 @@ export const popGroupSetting = (
                           name: 'Start week on',
                           postfix: html`
                             <div
-                              style="font-size:16px;color:var(--affine-text-secondary-color);"
+                              style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
                             >
                               ${group.groupInfo$.value?.config.name ===
                               'date-week-mon'
@@ -335,6 +341,17 @@ export const popGroupSetting = (
                             items: [
                               menu.action({
                                 name: 'Monday',
+                                label: () => {
+                                  const isSelected =
+                                    group.groupInfo$.value?.config.name ===
+                                    'date-week-mon';
+                                  return html`<span
+                                    style="font-size:14px;color:${isSelected
+                                      ? 'var(--affine-text-emphasis-color)'
+                                      : 'var(--affine-text-secondary-color)'}"
+                                    >Monday</span
+                                  >`;
+                                },
                                 isSelected:
                                   group.groupInfo$.value?.config.name ===
                                   'date-week-mon',
@@ -343,6 +360,17 @@ export const popGroupSetting = (
                               }),
                               menu.action({
                                 name: 'Sunday',
+                                label: () => {
+                                  const isSelected =
+                                    group.groupInfo$.value?.config.name ===
+                                    'date-week-sun';
+                                  return html`<span
+                                    style="font-size:14px;color:${isSelected
+                                      ? 'var(--affine-text-emphasis-color)'
+                                      : 'var(--affine-text-secondary-color)'}"
+                                    >Sunday</span
+                                  >`;
+                                },
                                 isSelected:
                                   group.groupInfo$.value?.config.name ===
                                   'date-week-sun',
@@ -362,7 +390,7 @@ export const popGroupSetting = (
                     name: 'Sort',
                     postfix: html`
                       <div
-                        style="font-size:16px;color:var(--affine-text-secondary-color);"
+                        style="display:flex;align-items:center;gap:4px;font-size:14px;line-height:20px;color:var(--affine-text-secondary-color);margin-left:8px;"
                       >
                         ${group.sortAsc$.value
                           ? 'Oldest first'
@@ -373,11 +401,29 @@ export const popGroupSetting = (
                       items: [
                         menu.action({
                           name: 'Oldest first',
+                          label: () => {
+                            const isSelected = group.sortAsc$.value;
+                            return html`<span
+                              style="font-size:14px;color:${isSelected
+                                ? 'var(--affine-text-emphasis-color)'
+                                : 'var(--affine-text-secondary-color)'}"
+                              >Oldest first</span
+                            >`;
+                          },
                           isSelected: group.sortAsc$.value,
                           select: () => group.setDateSortOrder(true),
                         }),
                         menu.action({
                           name: 'Newest first',
+                          label: () => {
+                            const isSelected = !group.sortAsc$.value;
+                            return html`<span
+                              style="font-size:14px;color:${isSelected
+                                ? 'var(--affine-text-emphasis-color)'
+                                : 'var(--affine-text-secondary-color)'}"
+                              >Newest first</span
+                            >`;
+                          },
                           isSelected: !group.sortAsc$.value,
                           select: () => group.setDateSortOrder(false),
                         }),
