@@ -329,6 +329,7 @@ export const popGroupSetting = (
   target: PopupTarget,
   group: GroupTrait,
   onBack: () => void,
+  onClose?: () => void,
   middleware?: Array<Middleware | null | undefined | false>
 ) => {
   const view = group.view;
@@ -343,6 +344,7 @@ export const popGroupSetting = (
       title: {
         text: 'Group',
         onBack,
+        onClose,
       },
       items: [
         menu.group({
@@ -362,12 +364,25 @@ export const popGroupSetting = (
                   options: selectGroupByProperty(group, {
                     onSelect: () => {
                       menuHandler.close();
-                      popGroupSetting(target, group, onBack, middleware);
+                      popGroupSetting(
+                        target,
+                        group,
+                        onBack,
+                        onClose,
+                        middleware
+                      );
                     },
                     onBack: () => {
                       menuHandler.close();
-                      popGroupSetting(target, group, onBack, middleware);
+                      popGroupSetting(
+                        target,
+                        group,
+                        onBack,
+                        onClose,
+                        middleware
+                      );
                     },
+                    onClose,
                   }),
                   middleware: [
                     autoPlacement({

@@ -204,6 +204,7 @@ export const popSortRoot = (
     title?: {
       text: string;
       onBack?: () => void;
+      onClose?: () => void;
     };
   },
   middleware?: Array<Middleware | null | undefined | false>

@@ -8,10 +8,11 @@ import {
   offset,
   shift,
 } from '@floating-ui/dom';
-import { html, nothing, type TemplateResult } from 'lit';
+import { css, html, nothing, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
+import { MenuButton } from './button.js';
 import { MenuFocusable } from './focusable.js';
 import { Menu, type MenuOptions } from './menu.js';
 import { popMenu, popupTargetFromElement } from './menu-renderer.js';
@@ -25,6 +26,7 @@ export type MenuSubMenuData = {
   openOnHover?: boolean;
   middleware?: Middleware[];
   autoHeight?: boolean;
+  closeOnSelect?: boolean;
 };
 export const subMenuOffset = offset({
   mainAxis: 16,
@@ -42,6 +44,18 @@ export const dropdownSubMenuMiddleware = [
 ];
 
 export class MenuSubMenu extends MenuFocusable {
+  static override styles = [
+    MenuButton.styles,
+    css`
+      .affine-menu-button svg:last-child {
+        transition: transform 150ms cubic-bezier(0.42, 0, 1, 1);
+      }
+      affine-menu-sub-menu.active .affine-menu-button svg:last-child {
+        transform: rotate(90deg);
+      }
+    `,
+  ];
+
   createTime = 0;
 
   override connectedCallback() {
@@ -55,7 +69,9 @@ export class MenuSubMenu extends MenuFocusable {
       e.stopPropagation();
       if (this.data.select) {
         this.data.select();
-        this.menu.close();
+        if (this.data.closeOnSelect !== false) {
+          this.menu.close();
+        }
       } else {
         this.openSubMenu();
       }
@@ -78,7 +94,9 @@ export class MenuSubMenu extends MenuFocusable {
         options: {
           ...this.data.options,
           onComplete: () => {
-            this.menu.close();
+            if (this.data.closeOnSelect !== false) {
+              this.menu.close();
+            }
           },
           onClose: () => {
             menu.menuElement.remove();
@@ -99,7 +117,9 @@ export class MenuSubMenu extends MenuFocusable {
     const menu = new Menu({
       ...this.data.options,
       onComplete: () => {
-        this.menu.close();
+        if (this.data.closeOnSelect !== false) {
+          this.menu.close();
+        }
       },
       onClose: () => {
         menu.menuElement.remove();
@@ -164,7 +184,9 @@ export class MobileSubMenu extends MenuFocusable {
       options: {
         ...this.data.options,
         onComplete: () => {
-          this.menu.close();
+          if (this.data.closeOnSelect !== false) {
+            this.menu.close();
+          }
         },
         onClose: () => {
           menu.menuElement.remove();
@@ -222,6 +244,7 @@ export const subMenuItems = {
       openOnHover?: boolean;
       middleware?: Middleware[];
       autoHeight?: boolean;
+      closeOnSelect?: boolean;
     }) =>
     menu => {
       if (config.hide?.() || !menu.search(config.name)) {
@@ -240,6 +263,7 @@ export const subMenuItems = {
         openOnHover: config.openOnHover,
         middleware: config.middleware,
         autoHeight: config.autoHeight,
+        closeOnSelect: config.closeOnSelect,
       };
       return renderSubMenu(data, menu);
     },

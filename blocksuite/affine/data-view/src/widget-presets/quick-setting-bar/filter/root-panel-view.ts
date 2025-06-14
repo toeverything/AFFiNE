@@ -379,6 +379,7 @@ export const popFilterRoot = (
   props: {
     filterTrait: FilterTrait;
     onBack: () => void;
+    onClose?: () => void;
     dataViewLogic: DataViewUILogicBase;
   },
   middleware?: Array<Middleware | null | undefined | false>
@@ -391,6 +392,7 @@ export const popFilterRoot = (
       title: {
         text: 'Filters',
         onBack: props.onBack,
+        onClose: props.onClose,
       },
       items: [
         menu.group({

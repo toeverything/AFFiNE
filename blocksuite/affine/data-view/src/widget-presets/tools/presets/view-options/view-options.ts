@@ -98,7 +98,8 @@ declare global {
 const createSettingMenus = (
   target: PopupTarget,
   dataViewLogic: DataViewUILogicBase,
-  reopen: () => void
+  reopen: () => void,
+  closeMenu: () => void
 ) => {
   const view = dataViewLogic.view;
   const settingItems: MenuConfig[] = [];
@@ -106,6 +107,7 @@ const createSettingMenus = (
     menu.action({
       name: 'Properties',
       prefix: InfoIcon(),
+      closeOnSelect: false,
       postfix: html` <div style="font-size: 14px;">
           ${view.properties$.value.length} shown
         </div>
@@ -116,6 +118,7 @@ const createSettingMenus = (
           {
             view: view,
             onBack: reopen,
+            onClose: closeMenu,
           },
           [
             autoPlacement({ allowedPlacements: ['bottom-start', 'top-start'] }),
@@ -133,6 +136,7 @@ const createSettingMenus = (
       menu.action({
         name: 'Filter',
         prefix: FilterIcon(),
+        closeOnSelect: false,
         postfix: html` <div style="font-size: 14px;">
             ${filterCount === 0
               ? ''
@@ -148,6 +152,7 @@ const createSettingMenus = (
               {
                 vars: view.vars$,
                 onBack: reopen,
+                onClose: closeMenu,
                 onSelect: filter => {
                   filterTrait.filterSet({
                     ...(filterTrait.filter$.value ?? emptyFilterGroup),
@@ -161,6 +166,7 @@ const createSettingMenus = (
                     {
                       filterTrait: filterTrait,
                       onBack: reopen,
+                      onClose: closeMenu,
                       dataViewLogic: dataViewLogic,
                     },
                     [
@@ -190,6 +196,7 @@ const createSettingMenus = (
               {
                 filterTrait: filterTrait,
                 onBack: reopen,
+                onClose: closeMenu,
                 dataViewLogic: dataViewLogic,
               },
               [
@@ -212,6 +219,7 @@ const createSettingMenus = (
       menu.action({
         name: 'Sort',
         prefix: SortIcon(),
+        closeOnSelect: false,
         postfix: html` <div style="font-size: 14px;">
             ${sortCount === 0
               ? ''
@@ -232,6 +240,7 @@ const createSettingMenus = (
               {
                 sortUtils: sortUtils,
                 onBack: reopen,
+                onClose: closeMenu,
               },
               {
                 middleware: [
@@ -251,6 +260,7 @@ const createSettingMenus = (
                 title: {
                   text: 'Sort',
                   onBack: reopen,
+                  onClose: closeMenu,
                 },
               },
               [
@@ -272,6 +282,7 @@ const createSettingMenus = (
       menu.action({
         name: 'Group',
         prefix: GroupingIcon(),
+        closeOnSelect: false,
         postfix: html` <div style="font-size: 14px;">
             ${groupTrait.property$.value?.name$.value ?? ''}
           </div>
@@ -284,7 +295,7 @@ const createSettingMenus = (
               groupTrait,
               {
                 onSelect: () =>
-                  popGroupSetting(target, groupTrait, reopen, [
+                  popGroupSetting(target, groupTrait, reopen, closeMenu, [
                     autoPlacement({
                       allowedPlacements: ['bottom-start', 'top-start'],
                     }),
@@ -292,6 +303,7 @@ const createSettingMenus = (
                     shift({ crossAxis: true }),
                   ]),
                 onBack: reopen,
+                onClose: closeMenu,
               },
               [
                 autoPlacement({
@@ -302,7 +314,7 @@ const createSettingMenus = (
               ]
             );
           } else {
-            popGroupSetting(target, groupTrait, reopen, [
+            popGroupSetting(target, groupTrait, reopen, closeMenu, [
               autoPlacement({
                 allowedPlacements: ['bottom-start', 'top-start'],
               }),
@@ -445,7 +457,9 @@ export const popViewOptions = (
 
   items.push(
     menu.group({
-      items: createSettingMenus(target, dataViewLogic, reopen),
+      items: createSettingMenus(target, dataViewLogic, reopen, () =>
+        handler.close()
+      ),
     })
   );
   items.push(
@@ -454,6 +468,7 @@ export const popViewOptions = (
         menu.action({
           name: 'Duplicate',
           prefix: DuplicateIcon(),
+          closeOnSelect: false,
           select: () => {
             view.duplicate();
           },
@@ -461,6 +476,7 @@ export const popViewOptions = (
         menu.action({
           name: 'Delete',
           prefix: DeleteIcon(),
+          closeOnSelect: false,
           select: () => {
             view.delete();
           },
@@ -469,10 +485,12 @@ export const popViewOptions = (
       ],
     })
   );
-  popMenu(target, {
+  let handler: ReturnType<typeof popMenu>;
+  handler = popMenu(target, {
     options: {
       title: {
         text: 'View settings',
+        onClose: () => handler.close(),
       },
       items,
       onClose: onClose,
@@ -483,4 +501,5 @@ export const popViewOptions = (
       shift({ crossAxis: true }),
     ],
   });
+  return handler;
 };
