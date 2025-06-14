@@ -62,12 +62,42 @@ export class Group<
   get view() {
     return this.config.view;
   }
+
+  hide$ = computed(
+    () => this.manager.groupPropertiesMap$.value[this.key]?.hide ?? false
+  );
+
+  hideSet(hide: boolean) {
+    this.manager.setGroupHide(this.key, hide);
+  }
+}
+
+function hasGroupProperties(
+  data: unknown
+): data is { groupProperties?: GroupProperty[] } {
+  return typeof data === 'object' && data !== null && 'groupProperties' in data;
 }
 
 export class GroupTrait {
   hideEmpty$ = signal<boolean>(true);
   sortAsc$ = signal<boolean>(true);
 
+  groupProperties$ = computed(() => {
+    const data = this.view.data$.value;
+    return hasGroupProperties(data) ? (data.groupProperties ?? []) : [];
+  });
+
+  groupPropertiesMap$ = computed(() => {
+    const map: Record<string, GroupProperty> = {};
+    this.groupProperties$.value.forEach(g => {
+      map[g.key] = g;
+    });
+    return map;
+  });
+
+  /**
+   * Synchronize sortAsc$ with the GroupBy sort descriptor
+   */
   constructor(
     private readonly groupBy$: ReadonlySignal<GroupBy | undefined>,
     public view: SingleView,
@@ -81,6 +111,7 @@ export class GroupTrait {
         groupKey: string,
         keys: string[]
       ) => void;
+      changeGroupHide?: (key: string, hide: boolean) => void;
     }
   ) {
     effect(() => {
@@ -161,7 +192,10 @@ export class GroupTrait {
       return ordered
         .map(k => map[k])
         .filter(
-          g => g != null && (!this.hideEmpty$.value || g.rows.length > 0)
+          g =>
+            g != null &&
+            !this.isGroupHidden(g.key) &&
+            (!this.hideEmpty$.value || g.rows.length > 0)
         );
     }),
     this.view.isLocked$
@@ -170,6 +204,18 @@ export class GroupTrait {
   setHideEmpty(v: boolean) {
     this.hideEmpty$.value = v;
   }
+
+  isGroupHidden(key: string): boolean {
+    return this.groupPropertiesMap$.value[key]?.hide ?? false;
+  }
+
+  setGroupHide(key: string, hide: boolean) {
+    this.ops.changeGroupHide?.(key, hide);
+  }
+
+  /**
+   * Set sort order for date groupings and update GroupBy sort descriptor.
+   */
   setDateSortOrder(asc: boolean) {
     this.sortAsc$.value = asc;
 

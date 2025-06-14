@@ -163,6 +163,18 @@ export class TableSingleView extends SingleViewBase<TableViewData> {
           };
         });
       },
+      changeGroupHide: (key, hide) => {
+        this.dataUpdate(() => {
+          const list = [...this.groupProperties];
+          const idx = list.findIndex(g => g.key === key);
+          if (idx >= 0) {
+            list[idx] = { ...list[idx], hide };
+          } else {
+            list.push({ key, hide, manuallyCardSort: [] });
+          }
+          return { groupProperties: list };
+        });
+      },
     })
   );
 

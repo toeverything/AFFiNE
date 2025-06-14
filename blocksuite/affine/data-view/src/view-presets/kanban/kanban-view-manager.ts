@@ -136,6 +136,18 @@ export class KanbanSingleView extends SingleViewBase<KanbanViewData> {
           };
         });
       },
+      changeGroupHide: (key, hide) => {
+        this.dataUpdate(() => {
+          const list = [...(this.view?.groupProperties ?? [])];
+          const idx = list.findIndex(g => g.key === key);
+          if (idx >= 0) {
+            list[idx] = { ...list[idx], hide };
+          } else {
+            list.push({ key, hide, manuallyCardSort: [] });
+          }
+          return { groupProperties: list };
+        });
+      },
     })
   );
 

@@ -6,11 +6,12 @@ import {
   type PopupTarget,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { DeleteIcon } from '@blocksuite/icons/lit';
+import { DeleteIcon, InvisibleIcon, ViewIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import type { Middleware } from '@floating-ui/dom';
 import { autoPlacement, offset, shift } from '@floating-ui/dom';
 import { computed } from '@preact/signals-core';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { css, html, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -68,8 +69,6 @@ export class GroupSetting extends SignalWatcher(
       overflow: hidden auto;
       margin-right: 0;
       margin-bottom: 0;
-
-      /* Only scrollbar color, not background */
     }
 
     /* WebKit-based browser scrollbar styling */
@@ -110,6 +109,40 @@ export class GroupSetting extends SignalWatcher(
     }
     .group-item:hover .group-item-drag-bar {
       background-color: #c0bfc1;
+    }
+    .group-item-op-icon {
+      display: flex;
+      align-items: center;
+      border-radius: 4px;
+    }
+    .group-item-op-icon:hover {
+      background-color: var(--affine-hover-color);
+    }
+    .group-item-op-icon svg {
+      fill: var(--affine-icon-color);
+      color: var(--affine-icon-color);
+      width: 20px;
+      height: 20px;
+    }
+
+    .group-item-name {
+      font-size: 14px;
+      line-height: 22px;
+      flex: 1;
+    }
+
+    .properties-group-op {
+      padding: 4px 8px;
+      font-size: 12px;
+      line-height: 20px;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+      color: ${unsafeCSS(cssVarV2.button.primary)};
+    }
+
+    .properties-group-op:hover {
+      background-color: var(--affine-hover-color);
     }
   `;
 
@@ -171,6 +204,7 @@ export class GroupSetting extends SignalWatcher(
             const type = g.property.dataType$.value;
             if (!type) return;
             const props: GroupRenderProps = { group: g, readonly: true };
+            const icon = g.hide$.value ? InvisibleIcon() : ViewIcon();
             return html`
               <div
                 ${sortable(g.key)}
@@ -179,12 +213,19 @@ export class GroupSetting extends SignalWatcher(
               >
                 <div class="group-item-drag-bar"></div>
                 <div
+                  class="group-item-name"
                   style="padding:0 4px;position:relative;pointer-events:none;max-width:330px;"
                 >
                   ${renderUniLit(g.view, props)}
                   <div
                     style="position:absolute;left:0;top:0;right:0;bottom:0;"
                   ></div>
+                </div>
+                <div
+                  class="group-item-op-icon"
+                  @click="${() => g.hideSet(!g.hide$.value)}"
+                >
+                  ${icon}
                 </div>
               </div>
             `;
@@ -278,7 +319,28 @@ export const popGroupSetting = (
   const icon = gProp.icon;
   const menuHandler = popMenu(target, {
     options: {
-      title: { text: 'Group', onBack },
+      title: {
+        text: 'Group',
+        onBack,
+        postfix: () => {
+          const map = group.groupDataMap$.value;
+          if (!map) return null;
+          const isAllShowed = Object.keys(map).every(
+            k => !group.isGroupHidden(k)
+          );
+          const clickChangeAll = () => {
+            Object.keys(map).forEach(key => {
+              group.setGroupHide(key, isAllShowed);
+            });
+          };
+          return html`<div
+            class="properties-group-op"
+            @click="${clickChangeAll}"
+          >
+            ${isAllShowed ? 'Hide All' : 'Show All'}
+          </div>`;
+        },
+      },
       items: [
         menu.group({
           items: [
