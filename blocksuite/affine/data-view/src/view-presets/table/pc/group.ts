@@ -83,6 +83,7 @@ export class TableGroup extends SignalWatcher(
         },
         isEditing: true,
       });
+      this.requestUpdate();
     });
   };
 
@@ -102,6 +103,7 @@ export class TableGroup extends SignalWatcher(
         },
         isEditing: true,
       });
+      this.requestUpdate();
     });
   };
 
@@ -125,6 +127,7 @@ export class TableGroup extends SignalWatcher(
         name: 'Delete Cards',
         select: () => {
           this.view.rowsDelete(group.rows.map(row => row.rowId));
+          this.requestUpdate();
         },
       }),
     ]);

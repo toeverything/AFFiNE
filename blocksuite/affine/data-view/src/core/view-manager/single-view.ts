@@ -128,6 +128,7 @@ export abstract class SingleViewBase<
   );
 
   rowsDelete(rows: string[]): void {
+    this.lockRows(false);
     this.dataSource.rowDelete(rows);
   }
 
@@ -258,6 +259,7 @@ export abstract class SingleViewBase<
   abstract propertyGetOrCreate(propertyId: string): Property;
 
   rowAdd(insertPosition: InsertToPosition | number): string {
+    this.lockRows(false);
     return this.dataSource.rowAdd(insertPosition);
   }
 

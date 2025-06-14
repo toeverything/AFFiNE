@@ -13,11 +13,11 @@ import { AuthService } from '../core/auth';
 import { QuotaModule } from '../core/quota';
 import { ContextCategories, WorkspaceModel } from '../models';
 import { CopilotModule } from '../plugins/copilot';
+import { CopilotContextService } from '../plugins/copilot/context';
 import {
-  CopilotContextDocJob,
-  CopilotContextService,
-} from '../plugins/copilot/context';
-import { MockEmbeddingClient } from '../plugins/copilot/context/embedding';
+  CopilotEmbeddingJob,
+  MockEmbeddingClient,
+} from '../plugins/copilot/embedding';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
@@ -69,7 +69,7 @@ const test = ava as TestFn<{
   workspaceEmbedding: CopilotWorkspaceService;
   factory: CopilotProviderFactory;
   session: ChatSessionService;
-  jobs: CopilotContextDocJob;
+  jobs: CopilotEmbeddingJob;
   storage: CopilotStorage;
   workflow: CopilotWorkflowService;
   executors: {
@@ -127,7 +127,7 @@ test.before(async t => {
   const storage = module.get(CopilotStorage);
 
   const context = module.get(CopilotContextService);
-  const jobs = module.get(CopilotContextDocJob);
+  const jobs = module.get(CopilotEmbeddingJob);
   const transcript = module.get(CopilotTranscriptionService);
   const workspaceEmbedding = module.get(CopilotWorkspaceService);
 
