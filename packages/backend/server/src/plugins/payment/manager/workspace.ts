@@ -166,6 +166,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
           'nextBillAt',
           'canceledAt',
           'quantity',
+          'end',
         ]),
       },
       create: {

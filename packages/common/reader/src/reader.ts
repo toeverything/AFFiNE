@@ -648,12 +648,24 @@ export async function readAllBlocksFromDoc({
           parentBlockId,
         });
       }
-    } else if (flavour === 'affine:attachment' || flavour === 'affine:image') {
+    } else if (flavour === 'affine:attachment') {
       const blobId = block.get('prop:sourceId');
       if (typeof blobId === 'string') {
         blockDocuments.push({
           ...commonBlockProps,
           blob: [blobId],
+          content: block.get('prop:name')?.toString() ?? '',
+          parentFlavour,
+          parentBlockId,
+        });
+      }
+    } else if (flavour === 'affine:image') {
+      const blobId = block.get('prop:sourceId');
+      if (typeof blobId === 'string') {
+        blockDocuments.push({
+          ...commonBlockProps,
+          blob: [blobId],
+          content: block.get('prop:caption')?.toString() ?? '',
           parentFlavour,
           parentBlockId,
         });

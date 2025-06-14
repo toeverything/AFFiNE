@@ -14,11 +14,10 @@ import {
   ContextFile,
   Models,
 } from '../../../models';
+import { type EmbeddingClient, getEmbeddingClient } from '../embedding';
 import { PromptService } from '../prompt';
 import { CopilotProviderFactory } from '../providers';
-import { getEmbeddingClient } from './embedding';
 import { ContextSession } from './session';
-import type { EmbeddingClient } from './types';
 
 const CONTEXT_SESSION_KEY = 'context-session';
 

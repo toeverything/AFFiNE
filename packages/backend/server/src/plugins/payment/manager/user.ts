@@ -243,6 +243,7 @@ export class UserSubscriptionManager extends SubscriptionManager {
         'stripeScheduleId',
         'nextBillAt',
         'canceledAt',
+        'end',
       ]),
       create: {
         targetId: userId,
