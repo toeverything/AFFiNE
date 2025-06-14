@@ -89,7 +89,9 @@ export class GroupSetting extends SignalWatcher(
       scrollbar-width: thin;
       scrollbar-color: #b0b0b0 transparent;
     }
-
+    .group-hidden {
+      opacity: 0.5;
+    }
     .group-item {
       display: flex;
       padding: 4px 12px;
@@ -149,7 +151,7 @@ export class GroupSetting extends SignalWatcher(
   @property({ attribute: false })
   accessor groupTrait!: GroupTrait;
 
-  groups$ = computed(() => this.groupTrait.groupsDataList$.value);
+  groups$ = computed(() => this.groupTrait.groupsDataListAll$.value);
 
   sortContext = createSortContext({
     activators: defaultActivators,
@@ -171,7 +173,8 @@ export class GroupSetting extends SignalWatcher(
     },
     modifiers: [({ transform }) => ({ ...transform, x: 0 })],
     items: computed(
-      () => this.groupTrait.groupsDataList$.value?.map(v => v?.key ?? '') ?? []
+      () =>
+        this.groupTrait.groupsDataListAll$.value?.map(v => v?.key ?? '') ?? []
     ),
     strategy: verticalListSortingStrategy,
   });
@@ -184,14 +187,29 @@ export class GroupSetting extends SignalWatcher(
   }
 
   protected override render() {
-    const groups = this.groupTrait.groupsDataList$.value;
+    const groups = this.groupTrait.groupsDataListAll$.value;
     if (!groups) return;
+    const map = this.groupTrait.groupDataMap$.value;
+    const isAllShowed = map
+      ? Object.keys(map).every(k => !this.groupTrait.isGroupHidden(k))
+      : true;
+    const clickChangeAll = () => {
+      if (!map) return;
+      Object.keys(map).forEach(key => {
+        this.groupTrait.setGroupHide(key, isAllShowed);
+      });
+    };
     return html`
-      <div style="padding:7px 0;">
+      <div
+        style="padding:7px 0;display:flex;justify-content:space-between;align-items:center;"
+      >
         <div
           style="padding:0 4px;font-size:12px;color:var(--affine-text-secondary-color);line-height:20px;"
         >
           Groups
+        </div>
+        <div class="properties-group-op" @click="${clickChangeAll}">
+          ${isAllShowed ? 'Hide All' : 'Show All'}
         </div>
       </div>
 
@@ -209,7 +227,9 @@ export class GroupSetting extends SignalWatcher(
               <div
                 ${sortable(g.key)}
                 ${dragHandler(g.key)}
-                class="dv-hover dv-round-4 group-item"
+                class="dv-hover dv-round-4 group-item ${g.hide$.value
+                  ? 'group-hidden'
+                  : ''}"
               >
                 <div class="group-item-drag-bar"></div>
                 <div

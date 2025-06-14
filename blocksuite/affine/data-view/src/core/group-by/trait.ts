@@ -201,8 +201,38 @@ export class GroupTrait {
     this.view.isLocked$
   );
 
-  setHideEmpty(v: boolean) {
-    this.hideEmpty$.value = v;
+  /**
+   * Computed list of groups including hidden ones, used by settings UI.
+   */
+  groupsDataListAll$ = computedLock(
+    computed(() => {
+      const map = this.groupDataMap$.value;
+      const info = this.groupInfo$.value;
+      if (!map || !info) return;
+
+      let orderedKeys: string[];
+      if (info.config.matchType.name === 'Date') {
+        orderedKeys = Object.keys(map).sort(
+          compareDateKeys(info.config.name, this.sortAsc$.value)
+        );
+      } else {
+        orderedKeys = this.ops.sortGroup(Object.keys(map), this.sortAsc$.value);
+      }
+
+      return orderedKeys
+        .map(key => map[key])
+        .filter(
+          g => g != null && (!this.hideEmpty$.value || g.rows.length > 0)
+        );
+    }),
+    this.view.isLocked$
+  );
+
+  /**
+   * Toggle hiding of empty groups.
+   */
+  setHideEmpty(value: boolean) {
+    this.hideEmpty$.value = value;
   }
 
   isGroupHidden(key: string): boolean {
