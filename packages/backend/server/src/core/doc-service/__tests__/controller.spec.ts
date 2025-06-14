@@ -36,6 +36,10 @@ test.beforeEach(async t => {
   workspace = await t.context.models.workspace.create(user.id);
 });
 
+test.afterEach.always(async () => {
+  mock.reset();
+});
+
 test.after.always(async t => {
   await t.context.app.close();
 });
@@ -176,6 +180,15 @@ test('should get doc content in json format', async t => {
       summary: 'test summary',
     })
     .expect(200);
+
+  await app
+    .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}/content?full=false`)
+    .set('x-access-token', t.context.crypto.sign(docId))
+    .expect({
+      title: 'test title',
+      summary: 'test summary',
+    })
+    .expect(200);
   t.pass();
 });
 
@@ -184,7 +197,7 @@ test('should get full doc content in json format', async t => {
   mock.method(t.context.databaseDocReader, 'getFullDocContent', async () => {
     return {
       title: 'test title',
-      summary: 'test summary',
+      summary: 'test summary full',
     };
   });
 
@@ -194,7 +207,7 @@ test('should get full doc content in json format', async t => {
     .set('x-access-token', t.context.crypto.sign(docId))
     .expect({
       title: 'test title',
-      summary: 'test summary',
+      summary: 'test summary full',
     })
     .expect(200);
   t.pass();

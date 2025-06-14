@@ -11,6 +11,8 @@ import {
   edgelessCommonSetup,
   enterPlaygroundRoom,
   getEdgelessSelectedRect,
+  getIds,
+  getInlineSelectionIndex,
   getPageSnapshot,
   initEmptyEdgelessState,
   pasteByKeyboard,
@@ -21,6 +23,8 @@ import {
   pressBackspace,
   pressEnter,
   pressEscape,
+  pressShiftTab,
+  pressTab,
   redoByKeyboard,
   selectAllByKeyboard,
   setEdgelessTool,
@@ -551,6 +555,52 @@ test.describe('edgeless text block', () => {
       ],
       1
     );
+  });
+
+  test('edgeless text should be able to delete line', async ({ page }) => {
+    await dblclickView(page, [100, -100]);
+    // 5: aaa
+    // 6:     bbb
+    // 7: ccc|
+    {
+      await type(page, 'aaa');
+      await pressEnter(page);
+      await pressTab(page);
+      await type(page, 'bbb');
+      await pressEnter(page);
+      await pressShiftTab(page);
+      await type(page, 'ccc');
+    }
+
+    // 5: aaa
+    // 6:     bbb|
+    await pressBackspace(page, 4);
+    expect(await getIds(page)).not.toContain(7);
+    await assertBlockTextContent(page, 5, 'aaa');
+    await assertBlockTextContent(page, 6, 'bbb');
+    expect(await getInlineSelectionIndex(page)).toBe(3);
+
+    // 5: |aaa
+    // 6:     bbb
+    {
+      await pressArrowUp(page);
+      await pressArrowLeft(page, 3);
+      await pressBackspace(page);
+    }
+
+    await assertBlockTextContent(page, 5, 'aaa');
+    await assertBlockTextContent(page, 6, 'bbb');
+    expect(await getInlineSelectionIndex(page)).toBe(0);
+
+    // 6: |bbb
+    {
+      await pressArrowRight(page, 3);
+      await pressBackspace(page, 4);
+    }
+
+    expect(await getIds(page)).not.toContain(7);
+    await assertBlockTextContent(page, 6, 'bbb');
+    expect(await getInlineSelectionIndex(page)).toBe(0);
   });
 });
 

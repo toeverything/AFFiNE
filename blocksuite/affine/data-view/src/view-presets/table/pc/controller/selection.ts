@@ -351,6 +351,7 @@ export class TableSelectionController implements ReactiveController {
   deleteRow(rowId: string) {
     this.view.rowsDelete([rowId]);
     this.focusToCell('up');
+    this.logic.ui$.value?.requestUpdate();
   }
 
   focusFirstCell() {
