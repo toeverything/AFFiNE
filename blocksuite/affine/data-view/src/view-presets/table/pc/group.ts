@@ -348,6 +348,10 @@ export class TableGroup extends SignalWatcher(
 
   private renderRows(rows: Row[]) {
     return html`
+      <affine-database-column-header
+        .renderGroupHeader=${this.renderGroupHeader}
+        .tableViewLogic=${this.tableViewLogic}
+      ></affine-database-column-header>
       <div class="affine-database-block-rows">
         ${repeat(
           rows,
