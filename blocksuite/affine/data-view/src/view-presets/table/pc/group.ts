@@ -111,8 +111,8 @@ const styles = css`
   }
 
   .group-toggle-btn svg {
-    width: 24px;
-    height: 24px;
+    width: 16px;
+    height: 16px;
     transition: transform 120ms cubic-bezier(0.42, 0, 1, 1);
     flex-shrink: 0;
     user-select: none;
