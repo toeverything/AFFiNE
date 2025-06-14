@@ -136,6 +136,7 @@ export class GroupSetting extends SignalWatcher(
           groups,
           g => g?.key ?? 'k',
           g => {
+            if (!g) return;
             const type = g.property.dataType$.value;
             if (!type) return;
             const props: GroupRenderProps = { group: g, readonly: true };
