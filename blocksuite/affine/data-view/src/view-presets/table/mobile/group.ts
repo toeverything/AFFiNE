@@ -3,10 +3,11 @@ import {
   popFilterableSimpleMenu,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
+import { GroupToggleArrowIcon } from '@blocksuite/affine-components/icons';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { PlusIcon, GroupToggleArrowIcon } from '@blocksuite/icons/lit';
-import { signal } from '@preact/signals-core';
+import { PlusIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
+import { signal } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { css, html, nothing, unsafeCSS } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -17,6 +18,29 @@ import type { Group } from '../../../core/group-by/trait.js';
 import type { Row } from '../../../core/index.js';
 import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
 import type { MobileTableViewUILogic } from './table-view-ui-logic.js';
+
+const collapsedState = {
+  get(viewId: string, groupKey: string) {
+    try {
+      const value = sessionStorage.getItem(
+        `affine:table-group:${viewId}:${groupKey}:collapsed`
+      );
+      return value ? JSON.parse(value) : false;
+    } catch {
+      return false;
+    }
+  },
+  set(viewId: string, groupKey: string, collapsed: boolean) {
+    try {
+      sessionStorage.setItem(
+        `affine:table-group:${viewId}:${groupKey}:collapsed`,
+        JSON.stringify(collapsed)
+      );
+    } catch {
+      // ignore
+    }
+  },
+};
 
 const styles = css`
   .data-view-table-group-add-row {
@@ -80,9 +104,25 @@ export class MobileTableGroup extends SignalWatcher(
 
   collapsed$ = signal(false);
 
+  private storageLoaded = false;
+
+  private _loadCollapsedState() {
+    if (this.storageLoaded) return;
+    this.storageLoaded = true;
+    const view = this.tableViewLogic?.view;
+    if (!view) return;
+    const value = collapsedState.get(view.id, this.group?.key ?? 'all');
+    this.collapsed$.value = value;
+  }
+
   private readonly _toggleCollapse = (e?: MouseEvent) => {
     e?.stopPropagation();
-    this.collapsed$.value = !this.collapsed$.value;
+    const next = !this.collapsed$.value;
+    this.collapsed$.value = next;
+    const view = this.tableViewLogic?.view;
+    if (view) {
+      collapsedState.set(view.id, this.group?.key ?? 'all', next);
+    }
   };
 
   private readonly clickAddRow = () => {
@@ -130,24 +170,26 @@ export class MobileTableGroup extends SignalWatcher(
           class=${`group-toggle-btn ${this.collapsed$.value ? '' : 'expanded'}`}
           role="button"
           aria-expanded=${this.collapsed$.value ? 'false' : 'true'}
-          aria-label=${this.collapsed$.value ? 'Expand group' : 'Collapse group'}
+          aria-label=${this.collapsed$.value
+            ? 'Expand group'
+            : 'Collapse group'}
           tabindex="0"
           @click=${this._toggleCollapse}
           @keydown=${(e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          this._toggleCollapse();
-        }
-      }}
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this._toggleCollapse();
+            }
+          }}
         >
           ${GroupToggleArrowIcon}
         </div>
 
         ${GroupTitle(this.group, {
-        readonly: this.view.readonly$.value,
-        clickAdd: this.clickAddRowInStart,
-        clickOps: this.clickGroupOptions,
-      })}
+          readonly: this.view.readonly$.value,
+          clickAdd: this.clickAddRowInStart,
+          clickOps: this.clickGroupOptions,
+        })}
       </div>
     `;
   };
@@ -163,18 +205,18 @@ export class MobileTableGroup extends SignalWatcher(
       ></mobile-table-header>
       <div class="mobile-affine-table-body">
         ${repeat(
-      rows,
-      row => row.rowId,
-      (row, idx) => {
-        return html` <mobile-table-row
+          rows,
+          row => row.rowId,
+          (row, idx) => {
+            return html` <mobile-table-row
               data-row-index="${idx}"
               data-row-id="${row.rowId}"
               .tableViewLogic="${this.tableViewLogic}"
               .rowId="${row.rowId}"
               .rowIndex="${idx}"
             ></mobile-table-row>`;
-      }
-    )}
+          }
+        )}
       </div>
       ${this.view.readonly$.value
         ? null
@@ -191,6 +233,21 @@ export class MobileTableGroup extends SignalWatcher(
             </div>
           </div>`}
     `;
+  }
+
+  override willUpdate(changed: Map<PropertyKey, unknown>): void {
+    super.willUpdate(changed);
+    if (
+      !this.storageLoaded &&
+      (changed.has('group') || changed.has('tableViewLogic'))
+    ) {
+      this._loadCollapsedState();
+    }
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this._loadCollapsedState();
   }
 
   override render() {

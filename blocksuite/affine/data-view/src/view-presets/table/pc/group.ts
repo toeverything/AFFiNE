@@ -3,14 +3,16 @@ import {
   popFilterableSimpleMenu,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
+import { GroupToggleArrowIcon } from '@blocksuite/affine-components/icons';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { signal, effect } from '@preact/signals-core';
-import { PlusIcon, GroupToggleArrowIcon } from '@blocksuite/icons/lit';
+import { PlusIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
+import { effect, signal } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { css, html, unsafeCSS, nothing } from 'lit';
+import { css, html, nothing, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
+
 import { GroupTitle } from '../../../core/group-by/group-title.js';
 import type { Group } from '../../../core/group-by/trait.js';
 import type { Row } from '../../../core/index.js';
@@ -23,6 +25,29 @@ import { DataViewColumnPreview } from './header/column-renderer.js';
 import { getVerticalIndicator } from './header/vertical-indicator.js';
 import type { TableViewUILogic } from './table-view-ui-logic.js';
 
+const collapsedState = {
+  get(viewId: string, groupKey: string) {
+    try {
+      const value = sessionStorage.getItem(
+        `affine:table-group:${viewId}:${groupKey}:collapsed`
+      );
+      return value ? JSON.parse(value) : false;
+    } catch {
+      return false;
+    }
+  },
+  set(viewId: string, groupKey: string, collapsed: boolean) {
+    try {
+      sessionStorage.setItem(
+        `affine:table-group:${viewId}:${groupKey}:collapsed`,
+        JSON.stringify(collapsed)
+      );
+    } catch {
+      // ignore
+    }
+  },
+};
+
 const styles = css`
   affine-data-view-table-group:hover .group-header-op {
     visibility: visible;
@@ -34,7 +59,6 @@ const styles = css`
     padding-top: 4px;
     border-top: 1px solid var(--affine-border-color);
   }
-
 
   .data-view-table-group-add-row {
     display: flex;
@@ -79,7 +103,7 @@ const styles = css`
     justify-content: center;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 150ms cubic-bezier(0.42,0,1,1);
+    transition: background-color 150ms cubic-bezier(0.42, 0, 1, 1);
   }
 
   .group-toggle-btn:hover {
@@ -89,7 +113,7 @@ const styles = css`
   .group-toggle-btn svg {
     width: 24px;
     height: 24px;
-    transition: transform 120ms cubic-bezier(0.42,0,1,1);
+    transition: transform 120ms cubic-bezier(0.42, 0, 1, 1);
     flex-shrink: 0;
     user-select: none;
     transform: rotate(-90deg);
@@ -107,9 +131,25 @@ export class TableGroup extends SignalWatcher(
 
   collapsed$ = signal(false);
 
+  private storageLoaded = false;
+
+  private _loadCollapsedState() {
+    if (this.storageLoaded) return;
+    this.storageLoaded = true;
+    const view = this.tableViewLogic?.view;
+    if (!view) return;
+    const value = collapsedState.get(view.id, this.group?.key ?? 'all');
+    this.collapsed$.value = value;
+  }
+
   private readonly _toggleCollapse = (e?: MouseEvent) => {
     e?.stopPropagation();
-    this.collapsed$.value = !this.collapsed$.value;
+    const next = !this.collapsed$.value;
+    this.collapsed$.value = next;
+    const view = this.tableViewLogic?.view;
+    if (view) {
+      collapsedState.set(view.id, this.group?.key ?? 'all', next);
+    }
   };
 
   private readonly clickAddRow = () => {
@@ -181,33 +221,35 @@ export class TableGroup extends SignalWatcher(
     }
 
     return html`
-     <div
-       style="position: sticky;left: 0;width: max-content;padding: 6px 0;margin-bottom: 4px;display:flex;align-items:center;gap: 8px;max-width: 400px"
-     >
       <div
-        class=${`group-toggle-btn ${this.collapsed$.value ? '' : 'expanded'}`}  
-        role="button"  
-        aria-expanded=${this.collapsed$.value ? 'false' : 'true'}  
-        aria-label=${this.collapsed$.value ? 'Expand group' : 'Collapse group'}  
-        tabindex="0"
-        @click=${this._toggleCollapse}
-        @keydown=${(e: KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          this._toggleCollapse();
-        }
-      }}  
+        style="position: sticky;left: 0;width: max-content;padding: 6px 0;margin-bottom: 4px;display:flex;align-items:center;gap: 8px;max-width: 400px"
       >
-        ${GroupToggleArrowIcon}
-      </div>
+        <div
+          class=${`group-toggle-btn ${this.collapsed$.value ? '' : 'expanded'}`}
+          role="button"
+          aria-expanded=${this.collapsed$.value ? 'false' : 'true'}
+          aria-label=${this.collapsed$.value
+            ? 'Expand group'
+            : 'Collapse group'}
+          tabindex="0"
+          @click=${this._toggleCollapse}
+          @keydown=${(e: KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this._toggleCollapse();
+            }
+          }}
+        >
+          ${GroupToggleArrowIcon}
+        </div>
 
-       ${GroupTitle(this.group, {
-        readonly: this.view.readonly$.value,
-        clickAdd: this.clickAddRowInStart,
-        clickOps: this.clickGroupOptions,
-      })}
-     </div>
-   `;
+        ${GroupTitle(this.group, {
+          readonly: this.view.readonly$.value,
+          clickAdd: this.clickAddRowInStart,
+          clickOps: this.clickGroupOptions,
+        })}
+      </div>
+    `;
   };
 
   @property({ attribute: false })
@@ -305,18 +347,18 @@ export class TableGroup extends SignalWatcher(
     return html`
       <div class="affine-database-block-rows">
         ${repeat(
-      rows,
-      row => row.rowId,
-      (row, idx) => {
-        return html` <data-view-table-row
+          rows,
+          row => row.rowId,
+          (row, idx) => {
+            return html` <data-view-table-row
               data-row-index="${idx}"
               data-row-id="${row.rowId}"
               .tableViewLogic="${this.tableViewLogic}"
               .rowId="${row.rowId}"
               .rowIndex="${idx}"
             ></data-view-table-row>`;
-      }
-    )}
+          }
+        )}
       </div>
       ${this.view.readonly$.value
         ? null
@@ -340,8 +382,19 @@ export class TableGroup extends SignalWatcher(
     `;
   }
 
+  override willUpdate(changed: Map<PropertyKey, unknown>): void {
+    super.willUpdate(changed);
+    if (
+      !this.storageLoaded &&
+      (changed.has('group') || changed.has('tableViewLogic'))
+    ) {
+      this._loadCollapsedState();
+    }
+  }
+
   override connectedCallback(): void {
     super.connectedCallback();
+    this._loadCollapsedState();
     this.showIndicator();
   }
 
