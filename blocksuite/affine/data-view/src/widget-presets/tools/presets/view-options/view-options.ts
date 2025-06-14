@@ -18,6 +18,7 @@ import {
   MoreHorizontalIcon,
   SortIcon,
 } from '@blocksuite/icons/lit';
+import { autoPlacement, offset, shift } from '@floating-ui/dom';
 import { css, html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -110,10 +111,18 @@ const createSettingMenus = (
         </div>
         ${ArrowRightSmallIcon()}`,
       select: () => {
-        popPropertiesSetting(target, {
-          view: view,
-          onBack: reopen,
-        });
+        popPropertiesSetting(
+          target,
+          {
+            view: view,
+            onBack: reopen,
+          },
+          [
+            autoPlacement({ allowedPlacements: ['bottom-start', 'top-start'] }),
+            offset({ mainAxis: 12, crossAxis: -75 }),
+            shift({ crossAxis: true }),
+          ]
+        );
       },
     })
   );
@@ -134,28 +143,63 @@ const createSettingMenus = (
           ${ArrowRightSmallIcon()}`,
         select: () => {
           if (!filterTrait.filter$.value.conditions.length) {
-            popCreateFilter(target, {
-              vars: view.vars$,
-              onBack: reopen,
-              onSelect: filter => {
-                filterTrait.filterSet({
-                  ...(filterTrait.filter$.value ?? emptyFilterGroup),
-                  conditions: [...filterTrait.filter$.value.conditions, filter],
-                });
-                popFilterRoot(target, {
-                  filterTrait: filterTrait,
-                  onBack: reopen,
-                  dataViewLogic: dataViewLogic,
-                });
-                dataViewLogic.eventTrace('CreateDatabaseFilter', {});
+            popCreateFilter(
+              target,
+              {
+                vars: view.vars$,
+                onBack: reopen,
+                onSelect: filter => {
+                  filterTrait.filterSet({
+                    ...(filterTrait.filter$.value ?? emptyFilterGroup),
+                    conditions: [
+                      ...filterTrait.filter$.value.conditions,
+                      filter,
+                    ],
+                  });
+                  popFilterRoot(
+                    target,
+                    {
+                      filterTrait: filterTrait,
+                      onBack: reopen,
+                      dataViewLogic: dataViewLogic,
+                    },
+                    [
+                      autoPlacement({
+                        allowedPlacements: ['bottom-start', 'top-start'],
+                      }),
+                      offset({ mainAxis: 12, crossAxis: -75 }),
+                      shift({ crossAxis: true }),
+                    ]
+                  );
+                  dataViewLogic.eventTrace('CreateDatabaseFilter', {});
+                },
               },
-            });
+              {
+                middleware: [
+                  autoPlacement({
+                    allowedPlacements: ['bottom-start', 'top-start'],
+                  }),
+                  offset({ mainAxis: 12, crossAxis: -75 }),
+                  shift({ crossAxis: true }),
+                ],
+              }
+            );
           } else {
-            popFilterRoot(target, {
-              filterTrait: filterTrait,
-              onBack: reopen,
-              dataViewLogic: dataViewLogic,
-            });
+            popFilterRoot(
+              target,
+              {
+                filterTrait: filterTrait,
+                onBack: reopen,
+                dataViewLogic: dataViewLogic,
+              },
+              [
+                autoPlacement({
+                  allowedPlacements: ['bottom-start', 'top-start'],
+                }),
+                offset({ mainAxis: 12, crossAxis: -75 }),
+                shift({ crossAxis: true }),
+              ]
+            );
           }
         },
       })
@@ -183,18 +227,40 @@ const createSettingMenus = (
             dataViewLogic.eventTrace
           );
           if (!sortList.length) {
-            popCreateSort(target, {
-              sortUtils: sortUtils,
-              onBack: reopen,
-            });
-          } else {
-            popSortRoot(target, {
-              sortUtils: sortUtils,
-              title: {
-                text: 'Sort',
+            popCreateSort(
+              target,
+              {
+                sortUtils: sortUtils,
                 onBack: reopen,
               },
-            });
+              {
+                middleware: [
+                  autoPlacement({
+                    allowedPlacements: ['bottom-start', 'top-start'],
+                  }),
+                  offset({ mainAxis: 12, crossAxis: -75 }),
+                  shift({ crossAxis: true }),
+                ],
+              }
+            );
+          } else {
+            popSortRoot(
+              target,
+              {
+                sortUtils: sortUtils,
+                title: {
+                  text: 'Sort',
+                  onBack: reopen,
+                },
+              },
+              [
+                autoPlacement({
+                  allowedPlacements: ['bottom-start', 'top-start'],
+                }),
+                offset({ mainAxis: 12, crossAxis: -75 }),
+                shift({ crossAxis: true }),
+              ]
+            );
           }
         },
       })
@@ -213,12 +279,36 @@ const createSettingMenus = (
         select: () => {
           const groupBy = groupTrait.property$.value;
           if (!groupBy) {
-            popSelectGroupByProperty(target, groupTrait, {
-              onSelect: () => popGroupSetting(target, groupTrait, reopen),
-              onBack: reopen,
-            });
+            popSelectGroupByProperty(
+              target,
+              groupTrait,
+              {
+                onSelect: () =>
+                  popGroupSetting(target, groupTrait, reopen, [
+                    autoPlacement({
+                      allowedPlacements: ['bottom-start', 'top-start'],
+                    }),
+                    offset({ mainAxis: 12, crossAxis: -75 }),
+                    shift({ crossAxis: true }),
+                  ]),
+                onBack: reopen,
+              },
+              [
+                autoPlacement({
+                  allowedPlacements: ['bottom-start', 'top-start'],
+                }),
+                offset({ mainAxis: 12, crossAxis: -75 }),
+                shift({ crossAxis: true }),
+              ]
+            );
           } else {
-            popGroupSetting(target, groupTrait, reopen);
+            popGroupSetting(target, groupTrait, reopen, [
+              autoPlacement({
+                allowedPlacements: ['bottom-start', 'top-start'],
+              }),
+              offset({ mainAxis: 12, crossAxis: -75 }),
+              shift({ crossAxis: true }),
+            ]);
           }
         },
       })
@@ -338,6 +428,13 @@ export const popViewOptions = (
                   // }),
                 ],
               },
+              middleware: [
+                autoPlacement({
+                  allowedPlacements: ['bottom-start', 'top-start'],
+                }),
+                offset({ mainAxis: 12, crossAxis: -75 }),
+                shift({ crossAxis: true }),
+              ],
             });
           },
           prefix: LayoutIcon(),
@@ -380,5 +477,10 @@ export const popViewOptions = (
       items,
       onClose: onClose,
     },
+    middleware: [
+      autoPlacement({ allowedPlacements: ['bottom-start', 'top-start'] }),
+      offset({ mainAxis: 12, crossAxis: -75 }),
+      shift({ crossAxis: true }),
+    ],
   });
 };

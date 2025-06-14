@@ -13,6 +13,7 @@ import {
   PlusIcon,
 } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
+import type { Middleware } from '@floating-ui/dom';
 import { computed } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -204,10 +205,12 @@ export const popSortRoot = (
       text: string;
       onBack?: () => void;
     };
-  }
+  },
+  middleware?: Array<Middleware | null | undefined | false>
 ) => {
   const sortUtils = props.sortUtils;
   popMenu(target, {
+    middleware,
     options: {
       title: props.title,
       items: [

@@ -8,6 +8,7 @@ import {
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { DeleteIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
+import type { Middleware } from '@floating-ui/dom';
 import { computed } from '@preact/signals-core';
 import { css, html, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
@@ -226,15 +227,17 @@ export const selectGroupByProperty = (
 export const popSelectGroupByProperty = (
   target: PopupTarget,
   group: GroupTrait,
-  ops?: { onSelect?: () => void; onClose?: () => void; onBack?: () => void }
+  ops?: { onSelect?: () => void; onClose?: () => void; onBack?: () => void },
+  middleware?: Array<Middleware | null | undefined | false>
 ) => {
-  popMenu(target, { options: selectGroupByProperty(group, ops) });
+  popMenu(target, { options: selectGroupByProperty(group, ops), middleware });
 };
 
 export const popGroupSetting = (
   target: PopupTarget,
   group: GroupTrait,
-  onBack: () => void
+  onBack: () => void,
+  middleware?: Array<Middleware | null | undefined | false>
 ) => {
   const view = group.view;
   const gProp = group.property$.value;
@@ -263,7 +266,7 @@ export const popGroupSetting = (
               options: selectGroupByProperty(group, {
                 onSelect: () => {
                   menuHandler.close();
-                  popGroupSetting(target, group, onBack);
+                  popGroupSetting(target, group, onBack, middleware);
                 },
               }),
             }),
@@ -470,5 +473,6 @@ export const popGroupSetting = (
         }),
       ],
     },
+    middleware,
   });
 };

@@ -17,6 +17,7 @@ import {
   PlusIcon,
 } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
+import type { Middleware } from '@floating-ui/dom';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -379,11 +380,13 @@ export const popFilterRoot = (
     filterTrait: FilterTrait;
     onBack: () => void;
     dataViewLogic: DataViewUILogicBase;
-  }
+  },
+  middleware?: Array<Middleware | null | undefined | false>
 ) => {
   const filterTrait = props.filterTrait;
   const view = filterTrait.view;
   popMenu(target, {
+    middleware,
     options: {
       title: {
         text: 'Filters',

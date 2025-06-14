@@ -6,6 +6,7 @@ import {
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { InvisibleIcon, ViewIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
+import type { Middleware } from '@floating-ui/dom';
 import { computed } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { css, html, unsafeCSS } from 'lit';
@@ -235,9 +236,11 @@ export const popPropertiesSetting = (
     view: SingleView;
     onClose?: () => void;
     onBack?: () => void;
-  }
+  },
+  middleware?: Array<Middleware | null | undefined | false>
 ) => {
   popMenu(target, {
+    middleware,
     options: {
       title: {
         text: 'Properties',
