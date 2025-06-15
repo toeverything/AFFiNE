@@ -44,12 +44,12 @@ import {
   FileChunkSimilarity,
   Models,
 } from '../../../models';
+import { CopilotEmbeddingJob } from '../embedding';
 import { COPILOT_LOCKER, CopilotType } from '../resolver';
 import { ChatSessionService } from '../session';
 import { CopilotStorage } from '../storage';
 import { MAX_EMBEDDABLE_SIZE } from '../types';
 import { readStream } from '../utils';
-import { CopilotContextDocJob } from './job';
 import { CopilotContextService } from './service';
 
 @InputType()
@@ -387,7 +387,7 @@ export class CopilotContextResolver {
     private readonly models: Models,
     private readonly mutex: RequestMutex,
     private readonly context: CopilotContextService,
-    private readonly jobs: CopilotContextDocJob,
+    private readonly jobs: CopilotEmbeddingJob,
     private readonly storage: CopilotStorage
   ) {}
 

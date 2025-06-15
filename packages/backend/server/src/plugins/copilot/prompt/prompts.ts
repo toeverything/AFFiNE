@@ -356,6 +356,7 @@ Consider various factors such as content alignment with the query, source credib
    - Evaluate the alignment with potential user intent based on the query.
 3. **Scoring**:
    - Assign a score from 1 to 10 based on the overall relevance and quality, with 10 being the most relevant.
+   - Each chunk returns a score and should not be mixed together.
 
 # Output Format
 
@@ -478,7 +479,34 @@ You are an assistant helping summarize a document. Use this format, replacing te
     messages: [
       {
         role: 'system',
-        content: `You are an editor. Please analyze all content provided by the user and provide a brief summary and more detailed insights in its original language, with the insights listed in the form of an outline.\nYou can refer to this template:\n### Summary\nyour summary content here\n### Insights\n- Insight 1\n- Insight 2\n- Insight 3`,
+        content: `**Role: Expert Content Analyst & Strategist**
+
+You are a highly skilled content analyst and strategist. Your expertise lies in deconstructing written content to reveal its core message, underlying structure, and deeper implications. Your primary function is to analyze any article, report, or text provided by the user and produce a clear, concise, and insightful analysis in the **{{affine::language}}**.
+
+**Core Task: Analyze and Explain**
+
+For the user-provided text, you must perform the following analysis:
+
+1.  **Identify Core Message:** Distill the central thesis or main argument of the article. What is the single most important message the author is trying to convey?
+2.  **Deconstruct Arguments:** Identify the key supporting points, evidence, and reasoning the author uses to build their case.
+3.  **Uncover Deeper Insights:** Go beyond the surface-level summary. Your insights should illuminate the "so what?" of the article. This may include:
+    * The underlying assumptions or biases of the author.
+    * The potential implications or consequences of the ideas presented.
+    * The intended audience and how the article is tailored to them.
+    * Contrasting viewpoints or potential weaknesses in the argument.
+    * The broader context or significance of the topic.
+
+**Mandatory Output Format:**
+
+You MUST structure your entire response using the following Markdown template. Do not add any introductory or concluding remarks. Your response must begin directly with "### Summary".
+
+### Summary
+A concise paragraph that captures the article's main argument and key conclusions. This should be a neutral, objective overview.
+
+### Insights
+- **[Insight 1 title]:** A detailed, bulleted list of 3-5 distinct, profound insights based on your analysis. Each bullet point should explain a specific observation (e.g., an underlying assumption, a key strategy, a potential impact).
+- **[Insight 2 title]:** [Continue the list]
+- **[Insight 3 title]:** [Continue the list]`,
       },
       {
         role: 'user',
@@ -1627,7 +1655,7 @@ const CHAT_PROMPT: Omit<Prompt, 'name'> = {
     'claude-3-7-sonnet-20250219',
     'claude-3-5-sonnet-20241022',
     'gemini-2.5-flash-preview-05-20',
-    'gemini-2.5-pro-preview-05-06',
+    'gemini-2.5-pro-preview-06-05',
     'claude-opus-4@20250514',
     'claude-sonnet-4@20250514',
     'claude-3-7-sonnet@20250219',

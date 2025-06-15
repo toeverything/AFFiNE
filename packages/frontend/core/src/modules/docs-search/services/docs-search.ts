@@ -240,18 +240,6 @@ export class DocsSearchService extends Service {
               field: 'refDocId',
               match: docId,
             },
-            // Ignore if it is a link to the current document.
-            {
-              type: 'boolean',
-              occur: 'must_not',
-              queries: [
-                {
-                  type: 'match',
-                  field: 'docId',
-                  match: docId,
-                },
-              ],
-            },
           ],
         },
         'docId',
@@ -281,6 +269,11 @@ export class DocsSearchService extends Service {
               const title =
                 this.docsService.list.doc$(bucket.key).value?.title$.value ??
                 '';
+
+              if (bucket.key === docId) {
+                // Ignore if it is a link to the current document.
+                return [];
+              }
 
               return bucket.hits.nodes.map(node => {
                 const blockId = node.fields.blockId ?? '';
@@ -359,18 +352,6 @@ export class DocsSearchService extends Service {
               field: 'parentFlavour',
               match: 'affine:database',
             },
-            // Ignore if it is a link to the current document.
-            {
-              type: 'boolean',
-              occur: 'must_not',
-              queries: [
-                {
-                  type: 'match',
-                  field: 'docId',
-                  match: docId,
-                },
-              ],
-            },
           ],
         },
         {
@@ -382,29 +363,36 @@ export class DocsSearchService extends Service {
       )
       .pipe(
         map(({ nodes }) => {
-          return nodes.map(node => {
-            const additional =
-              typeof node.fields.additional === 'string'
-                ? node.fields.additional
-                : node.fields.additional[0];
+          return nodes
+            .map(node => {
+              if (node.fields.docId === docId) {
+                // Ignore if it is a link to the current document.
+                return null;
+              }
 
-            return {
-              docId:
-                typeof node.fields.docId === 'string'
-                  ? node.fields.docId
-                  : node.fields.docId[0],
-              rowId:
-                typeof node.fields.blockId === 'string'
-                  ? node.fields.blockId
-                  : node.fields.blockId[0],
-              databaseBlockId:
-                typeof node.fields.parentBlockId === 'string'
-                  ? node.fields.parentBlockId
-                  : node.fields.parentBlockId[0],
-              databaseName: DatabaseAdditionalSchema.safeParse(additional).data
-                ?.databaseName as string | undefined,
-            };
-          });
+              const additional =
+                typeof node.fields.additional === 'string'
+                  ? node.fields.additional
+                  : node.fields.additional[0];
+
+              return {
+                docId:
+                  typeof node.fields.docId === 'string'
+                    ? node.fields.docId
+                    : node.fields.docId[0],
+                rowId:
+                  typeof node.fields.blockId === 'string'
+                    ? node.fields.blockId
+                    : node.fields.blockId[0],
+                databaseBlockId:
+                  typeof node.fields.parentBlockId === 'string'
+                    ? node.fields.parentBlockId
+                    : node.fields.parentBlockId[0],
+                databaseName: DatabaseAdditionalSchema.safeParse(additional)
+                  .data?.databaseName as string | undefined,
+              };
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
         })
       );
   }

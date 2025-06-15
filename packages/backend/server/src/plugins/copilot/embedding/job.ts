@@ -18,12 +18,12 @@ import { PromptService } from '../prompt';
 import { CopilotProviderFactory } from '../providers';
 import { CopilotStorage } from '../storage';
 import { readStream } from '../utils';
-import { getEmbeddingClient } from './embedding';
+import { getEmbeddingClient } from './client';
 import type { Chunk, DocFragment } from './types';
 import { EMBEDDING_DIMENSIONS, EmbeddingClient } from './types';
 
 @Injectable()
-export class CopilotContextDocJob {
+export class CopilotEmbeddingJob {
   private readonly workspaceJobAbortController: Map<string, AbortController> =
     new Map();
 
@@ -40,7 +40,7 @@ export class CopilotContextDocJob {
     private readonly queue: JobQueue,
     private readonly storage: CopilotStorage
   ) {
-    this.logger.setContext(CopilotContextDocJob.name);
+    this.logger.setContext(CopilotEmbeddingJob.name);
   }
 
   @OnEvent('config.init')
@@ -140,10 +140,9 @@ export class CopilotContextDocJob {
     if (enableDocEmbedding) {
       const toBeEmbedDocIds =
         await this.models.copilotWorkspace.findDocsToEmbed(workspaceId);
-      this.logger.debug('Trigger embedding for docs', {
-        workspaceId,
-        toBeEmbedDocs: toBeEmbedDocIds.length,
-      });
+      this.logger.debug(
+        `Trigger embedding for ${toBeEmbedDocIds.length} docs in workspace ${workspaceId}`
+      );
       for (const docId of toBeEmbedDocIds) {
         await this.queue.add(
           'copilot.embedding.docs',
