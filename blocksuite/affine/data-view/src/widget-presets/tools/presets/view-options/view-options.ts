@@ -410,7 +410,7 @@ export const popViewOptions = (
                 ></affine-menu-button>`;
               };
             });
-            popMenu(target, {
+            const subHandler = popMenu(target, {
               options: {
                 title: {
                   onBack: reopen,
@@ -448,6 +448,7 @@ export const popViewOptions = (
                 shift({ crossAxis: true }),
               ],
             });
+            subHandler.menu.menuElement.style.minHeight = '550px';
           },
           prefix: LayoutIcon(),
         }),

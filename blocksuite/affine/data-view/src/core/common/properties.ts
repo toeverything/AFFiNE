@@ -239,7 +239,7 @@ export const popPropertiesSetting = (
   },
   middleware?: Array<Middleware | null | undefined | false>
 ) => {
-  popMenu(target, {
+  const handler = popMenu(target, {
     middleware,
     options: {
       title: {
@@ -275,6 +275,7 @@ export const popPropertiesSetting = (
       ],
     },
   });
+  handler.menu.menuElement.style.minHeight = '550px';
 
   // const view = new DataViewPropertiesSettingView();
   // view.view = props.view;

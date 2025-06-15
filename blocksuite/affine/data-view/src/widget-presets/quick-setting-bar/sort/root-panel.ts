@@ -210,7 +210,7 @@ export const popSortRoot = (
   middleware?: Array<Middleware | null | undefined | false>
 ) => {
   const sortUtils = props.sortUtils;
-  popMenu(target, {
+  const handler = popMenu(target, {
     middleware,
     options: {
       title: props.title,
@@ -241,4 +241,5 @@ export const popSortRoot = (
       ],
     },
   });
+  handler.menu.menuElement.style.minHeight = '550px';
 };

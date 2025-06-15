@@ -4,7 +4,6 @@ import {
   popMenu,
   type PopupTarget,
   popupTargetFromElement,
-  subMenuMiddleware,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
@@ -386,7 +385,7 @@ export const popFilterRoot = (
 ) => {
   const filterTrait = props.filterTrait;
   const view = filterTrait.view;
-  popMenu(target, {
+  const handler = popMenu(target, {
     middleware,
     options: {
       title: {
@@ -414,23 +413,16 @@ export const popFilterRoot = (
               prefix: PlusIcon(),
               select: ele => {
                 const value = filterTrait.filter$.value;
-                popCreateFilter(
-                  popupTargetFromElement(ele),
-                  {
-                    vars: view.vars$,
-                    onSelect: filter => {
-                      filterTrait.filterSet({
-                        ...value,
-                        conditions: [...value.conditions, filter],
-                      });
-                      props.dataViewLogic.eventTrace(
-                        'CreateDatabaseFilter',
-                        {}
-                      );
-                    },
+                popCreateFilter(popupTargetFromElement(ele), {
+                  vars: view.vars$,
+                  onSelect: filter => {
+                    filterTrait.filterSet({
+                      ...value,
+                      conditions: [...value.conditions, filter],
+                    });
+                    props.dataViewLogic.eventTrace('CreateDatabaseFilter', {});
                   },
-                  { middleware: subMenuMiddleware }
-                );
+                });
                 return false;
               },
             }),
@@ -439,4 +431,5 @@ export const popFilterRoot = (
       ],
     },
   });
+  handler.menu.menuElement.style.minHeight = '550px';
 };

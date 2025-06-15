@@ -107,7 +107,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                 name: fn.label,
                 postfix: ArrowRightSmallIcon(),
                 select: ele => {
-                  popMenu(popupTargetFromElement(ele), {
+                  const subHandler = popMenu(popupTargetFromElement(ele), {
                     options: {
                       items: [
                         menu.group({
@@ -119,6 +119,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                     },
                     middleware: subMenuMiddleware,
                   });
+                  subHandler.menu.menuElement.style.minHeight = '550px';
                   return false;
                 },
               }),
@@ -142,6 +143,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
         ],
       },
     });
+    handler.menu.menuElement.style.minHeight = '550px';
   };
 
   @property({ attribute: false })

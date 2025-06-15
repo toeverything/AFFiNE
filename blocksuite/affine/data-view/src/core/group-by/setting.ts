@@ -322,7 +322,11 @@ export const popSelectGroupByProperty = (
   ops?: { onSelect?: () => void; onClose?: () => void; onBack?: () => void },
   middleware?: Array<Middleware | null | undefined | false>
 ) => {
-  popMenu(target, { options: selectGroupByProperty(group, ops), middleware });
+  const handler = popMenu(target, {
+    options: selectGroupByProperty(group, ops),
+    middleware,
+  });
+  handler.menu.menuElement.style.minHeight = '550px';
 };
 
 export const popGroupSetting = (
@@ -619,4 +623,5 @@ export const popGroupSetting = (
     },
     middleware,
   });
+  menuHandler.menu.menuElement.style.minHeight = '550px';
 };
