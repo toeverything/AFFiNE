@@ -1,6 +1,5 @@
 import {
   menu,
-  popFilterableSimpleMenu,
   popMenu,
   type PopupTarget,
   popupTargetFromElement,
@@ -208,66 +207,77 @@ export class FilterRootView extends SignalWatcher(ShadowlessElement) {
     if (!filter) {
       return;
     }
-    popFilterableSimpleMenu(popupTargetFromElement(target), [
-      menu.action({
-        name: filter.type === 'filter' ? 'Turn into group' : 'Wrap in group',
-        prefix: ConvertIcon(),
-        onHover: hover => {
-          this.containerClass = hover
-            ? { index: i, class: 'hover-style' }
-            : undefined;
-        },
-        hide: () => getDepth(filter) > 3,
-        select: () => {
-          this.onChange({
-            type: 'group',
-            op: 'and',
-            conditions: [this.filterGroup.value],
-          });
-        },
-      }),
-      menu.action({
-        name: 'Duplicate',
-        prefix: DuplicateIcon(),
-        onHover: hover => {
-          this.containerClass = hover
-            ? { index: i, class: 'hover-style' }
-            : undefined;
-        },
-        select: () => {
-          const conditions = [...this.filterGroup.value.conditions];
-          conditions.splice(
-            i + 1,
-            0,
-            JSON.parse(JSON.stringify(conditions[i]))
-          );
-          this.onChange({ ...this.filterGroup.value, conditions: conditions });
-        },
-      }),
-      menu.group({
-        name: '',
+    const handler = popMenu(popupTargetFromElement(target), {
+      placement: 'bottom-start',
+      options: {
         items: [
           menu.action({
-            name: 'Delete',
-            prefix: DeleteIcon(),
-            class: { 'delete-item': true },
+            name:
+              filter.type === 'filter' ? 'Turn into group' : 'Wrap in group',
+            prefix: ConvertIcon(),
             onHover: hover => {
               this.containerClass = hover
-                ? { index: i, class: 'delete-style' }
+                ? { index: i, class: 'hover-style' }
+                : undefined;
+            },
+            hide: () => getDepth(filter) > 3,
+            select: () => {
+              this.onChange({
+                type: 'group',
+                op: 'and',
+                conditions: [this.filterGroup.value],
+              });
+            },
+          }),
+          menu.action({
+            name: 'Duplicate',
+            prefix: DuplicateIcon(),
+            onHover: hover => {
+              this.containerClass = hover
+                ? { index: i, class: 'hover-style' }
                 : undefined;
             },
             select: () => {
               const conditions = [...this.filterGroup.value.conditions];
-              conditions.splice(i, 1);
+              conditions.splice(
+                i + 1,
+                0,
+                JSON.parse(JSON.stringify(conditions[i]))
+              );
               this.onChange({
                 ...this.filterGroup.value,
-                conditions,
+                conditions: conditions,
               });
             },
           }),
+          menu.group({
+            name: '',
+            items: [
+              menu.action({
+                name: 'Delete',
+                prefix: DeleteIcon(),
+                class: { 'delete-item': true },
+                onHover: hover => {
+                  this.containerClass = hover
+                    ? { index: i, class: 'delete-style' }
+                    : undefined;
+                },
+                select: () => {
+                  const conditions = [...this.filterGroup.value.conditions];
+                  conditions.splice(i, 1);
+                  this.onChange({
+                    ...this.filterGroup.value,
+                    conditions,
+                  });
+                },
+              }),
+            ],
+          }),
         ],
-      }),
-    ]);
+      },
+    });
+    handler.menu.menuElement.style.minHeight = 'fit-content';
+    handler.menu.menuElement.style.maxHeight = 'fit-content';
   }
 
   private deleteFilter(i: number) {

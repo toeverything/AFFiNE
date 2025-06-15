@@ -364,7 +364,7 @@ export const popGroupSetting = (
                 </div>
               `,
               select: () => {
-                popMenu(target, {
+                const subHandler = popMenu(target, {
                   options: selectGroupByProperty(group, {
                     onSelect: () => {
                       menuHandler.close();
@@ -396,6 +396,7 @@ export const popGroupSetting = (
                     shift({ crossAxis: true }),
                   ],
                 });
+                subHandler.menu.menuElement.style.minHeight = '550px';
               },
             }),
           ],
@@ -592,7 +593,10 @@ export const popGroupSetting = (
             menu.action({
               name: 'Hide empty groups',
               isSelected: group.hideEmpty$.value,
-              select: () => group.setHideEmpty(!group.hideEmpty$.value),
+              select: () => {
+                group.setHideEmpty(!group.hideEmpty$.value);
+                return false;
+              },
             }),
           ],
         }),
@@ -615,7 +619,10 @@ export const popGroupSetting = (
               prefix: DeleteIcon(),
               class: { 'delete-item': true },
               hide: () => !(view instanceof TableSingleView),
-              select: () => group.changeGroup(undefined),
+              select: () => {
+                group.changeGroup(undefined);
+                return false;
+              },
             }),
           ],
         }),

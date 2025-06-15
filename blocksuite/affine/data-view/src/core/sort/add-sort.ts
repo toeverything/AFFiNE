@@ -19,7 +19,7 @@ export const popCreateSort = (
     middleware?: Middleware[];
   }
 ) => {
-  popMenu(target, {
+  const subHandler = popMenu(target, {
     middleware: ops?.middleware,
     options: {
       onClose: props.onClose,
@@ -55,4 +55,5 @@ export const popCreateSort = (
       ],
     },
   });
+  subHandler.menu.menuElement.style.minHeight = '550px';
 };

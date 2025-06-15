@@ -15,6 +15,7 @@ import {
   computePosition,
   type Middleware,
   offset,
+  type Placement,
   type ReferenceElement,
   shift,
 } from '@floating-ui/dom';
@@ -441,6 +442,7 @@ export const createPopup = (
     onClose?: () => void;
     middleware?: Array<Middleware | null | undefined | false>;
     container?: HTMLElement;
+    placement?: Placement;
   }
 ) => {
   const close = () => {
@@ -450,6 +452,7 @@ export const createPopup = (
   const modal = createModal(target.root);
   autoUpdate(target.targetRect, content, () => {
     computePosition(target.targetRect, content, {
+      placement: options?.placement,
       middleware: options?.middleware ?? [shift({ crossAxis: true })],
     })
       .then(({ x, y }) => {
@@ -522,6 +525,7 @@ export const popMenu = (
     options: MenuOptions;
     middleware?: Array<Middleware | null | undefined | false>;
     container?: HTMLElement;
+    placement?: Placement;
   }
 ): MenuHandler => {
   if (IS_MOBILE) {
@@ -553,6 +557,7 @@ export const popMenu = (
       offset(4),
     ],
     container: props.container,
+    placement: props.placement,
   });
   return {
     close: closePopup,
@@ -565,13 +570,14 @@ export const popMenu = (
 export const popFilterableSimpleMenu = (
   target: PopupTarget,
   options: MenuConfig[],
-  onClose?: () => void
+  onClose?: () => void,
+  placement: Placement = 'bottom-start'
 ) => {
-  const handler = popMenu(target, {
+  popMenu(target, {
     options: {
       items: options,
       onClose,
     },
+    placement,
   });
-  handler.menu.menuElement.style.minHeight = '550px';
 };
