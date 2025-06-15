@@ -138,7 +138,6 @@ export class TableHotkeysController implements ReactiveController {
                 });
             }
           } else if (selection.isEditing) {
-            this.logic.commitEditing?.();
             this.selectionController.selection = {
               ...selection,
               isEditing: false,
@@ -182,7 +181,6 @@ export class TableHotkeysController implements ReactiveController {
           }
           ctx.get('keyboardState').raw.preventDefault();
           if (selection.isEditing) {
-            this.logic.commitEditing?.();
             this.selectionController.selection = {
               ...selection,
               isEditing: false,
