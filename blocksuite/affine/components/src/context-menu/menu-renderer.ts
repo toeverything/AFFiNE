@@ -39,7 +39,6 @@ export class MenuComponent
       user-select: none;
       min-width: 320px;
       max-width: 320px;
-      min-height: 550px;
       max-height: 700px;
       box-shadow: ${unsafeCSSVar('overlayPanelShadow')};
       border-radius: 4px;
@@ -568,10 +567,11 @@ export const popFilterableSimpleMenu = (
   options: MenuConfig[],
   onClose?: () => void
 ) => {
-  popMenu(target, {
+  const handler = popMenu(target, {
     options: {
       items: options,
       onClose,
     },
   });
+  handler.menu.menuElement.style.minHeight = '550px';
 };

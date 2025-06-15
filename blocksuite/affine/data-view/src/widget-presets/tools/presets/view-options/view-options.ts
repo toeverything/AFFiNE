@@ -501,5 +501,6 @@ export const popViewOptions = (
       shift({ crossAxis: true }),
     ],
   });
+  handler.menu.menuElement.style.minHeight = '550px';
   return handler;
 };
