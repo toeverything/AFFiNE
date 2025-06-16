@@ -32,7 +32,6 @@ public class IntelligentsButton: UIView {
 
     image.image = .init(named: "spark", in: .module, with: .none)
     image.contentMode = .scaleAspectFit
-    image.tintColor = .accent
     addSubview(image)
     let imageInsetValue: CGFloat = 12
     image.translatesAutoresizingMaskIntoConstraints = false

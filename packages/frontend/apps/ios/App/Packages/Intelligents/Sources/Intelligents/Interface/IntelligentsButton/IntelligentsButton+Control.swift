@@ -19,7 +19,7 @@ public extension UIViewController {
     button.translatesAutoresizingMaskIntoConstraints = false
     [
       button.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
-      button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20 - Constant.affineTabbarHeight),
+      button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20 - 44),
       button.widthAnchor.constraint(equalToConstant: 50),
       button.heightAnchor.constraint(equalToConstant: 50),
     ].forEach { $0.isActive = true }

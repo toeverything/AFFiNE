@@ -15,14 +15,14 @@ let package = Package(
   dependencies: [
     .package(path: "../AffineGraphQL"),
     .package(url: "https://github.com/apollographql/apollo-ios.git", from: "1.18.0"),
-    .package(url: "https://github.com/LaunchDarkly/swift-eventsource.git", from: "3.3.0"),
     .package(url: "https://github.com/apple/swift-collections", from: "1.2.0"),
+    .package(url: "https://github.com/SnapKit/SnapKit.git", .upToNextMajor(from: "5.0.1"))
   ],
   targets: [
     .target(name: "Intelligents", dependencies: [
       "AffineGraphQL",
+      "SnapKit",
       .product(name: "Apollo", package: "apollo-ios"),
-      .product(name: "LDSwiftEventSource", package: "swift-eventsource"),
       .product(name: "OrderedCollections", package: "swift-collections"),
     ]),
   ]

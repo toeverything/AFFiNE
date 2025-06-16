@@ -13,7 +13,6 @@
 		50802D612D112F8700694021 /* Intelligents in Frameworks */ = {isa = PBXBuildFile; productRef = 50802D602D112F8700694021 /* Intelligents */; };
 		50A285D72D112A5E000D5A6D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D62D112A5E000D5A6D /* Localizable.xcstrings */; };
 		50A285D82D112A5E000D5A6D /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D52D112A5E000D5A6D /* InfoPlist.xcstrings */; };
-		50A285DC2D112B24000D5A6D /* Intelligents in Frameworks */ = {isa = PBXBuildFile; productRef = 50A285DB2D112B24000D5A6D /* Intelligents */; };
 		50FF428A2D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */; };
 		50FF428C2D2E77CC0050AA83 /* AffineViewController+AIButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */; };
 		9D52FC432D26CDBF00105D0A /* JSValueContainerExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */; };
@@ -88,7 +87,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				50A285DC2D112B24000D5A6D /* Intelligents in Frameworks */,
 				9DFCD1462D27D1D70028C92B /* libaffine_mobile_native.a in Frameworks */,
 				50802D612D112F8700694021 /* Intelligents in Frameworks */,
 				2E0DD47B57B994A104B25EED /* Pods_AFFiNE.framework in Frameworks */,
@@ -614,10 +612,6 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		50802D602D112F8700694021 /* Intelligents */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Intelligents;
-		};
-		50A285DB2D112B24000D5A6D /* Intelligents */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Intelligents;
 		};

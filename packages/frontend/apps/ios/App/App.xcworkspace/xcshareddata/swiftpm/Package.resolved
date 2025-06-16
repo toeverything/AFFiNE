@@ -3,10 +3,19 @@
     {
       "identity" : "apollo-ios",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apollographql/apollo-ios.git",
+      "location" : "https://github.com/apollographql/apollo-ios",
       "state" : {
         "revision" : "9aa748d6f0526a744d49d59a2383dc7fdf9d645b",
         "version" : "1.18.0"
+      }
+    },
+    {
+      "identity" : "snapkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SnapKit/SnapKit.git",
+      "state" : {
+        "revision" : "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
+        "version" : "5.7.1"
       }
     },
     {
@@ -14,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/stephencelis/SQLite.swift.git",
       "state" : {
-        "revision" : "a95fc6df17d108bd99210db5e8a9bac90fe984b8",
-        "version" : "0.15.3"
+        "revision" : "392dd6058624d9f6c5b4c769d165ddd8c7293394",
+        "version" : "0.15.4"
       }
     },
     {
@@ -28,12 +37,12 @@
       }
     },
     {
-      "identity" : "swift-eventsource",
+      "identity" : "swift-toolchain-sqlite",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/LaunchDarkly/swift-eventsource.git",
+      "location" : "https://github.com/swiftlang/swift-toolchain-sqlite",
       "state" : {
-        "revision" : "57051701c58a93603ffa2051f8e9cf0c8cff7814",
-        "version" : "3.3.0"
+        "revision" : "b626d3002773b1a1304166643e7f118f724b2132",
+        "version" : "1.0.4"
       }
     }
   ],

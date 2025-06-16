@@ -3,13 +3,6 @@ import Intelligents
 import UIKit
 
 class AFFiNEViewController: CAPBridgeViewController {
-  var baseUrl: String? {
-    didSet { Intelligents.setUpstreamEndpoint(baseUrl ?? "") }
-  }
-  var documentID: String?
-  var workspaceID: String?
-  var documentContent: String?
-
   override func viewDidLoad() {
     super.viewDidLoad()
     webView?.allowsBackForwardNavigationGestures = true
