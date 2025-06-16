@@ -2180,6 +2180,19 @@ test('should search blob names work', async t => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
+      // no attachment
+      {
+        workspaceId,
+        blob: blobId3,
+        content: 'mock blob3 content',
+        flavour: 'affine:page',
+        docId: randomUUID(),
+        blockId: randomUUID(),
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ],
     {
       refresh: true,

@@ -400,6 +400,11 @@ export class IndexerService {
             match: workspaceId,
           },
           {
+            type: SearchQueryType.match,
+            field: 'flavour',
+            match: 'affine:attachment',
+          },
+          {
             type: SearchQueryType.boolean,
             occur: SearchQueryOccur.should,
             queries: blobIds.map(blobId => ({
