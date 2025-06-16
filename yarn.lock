@@ -8953,14 +8953,14 @@ __metadata:
   linkType: hard
 
 "@nestjs-cls/transactional-adapter-prisma@npm:^1.2.19":
-  version: 1.2.23
-  resolution: "@nestjs-cls/transactional-adapter-prisma@npm:1.2.23"
+  version: 1.2.24
+  resolution: "@nestjs-cls/transactional-adapter-prisma@npm:1.2.24"
   peerDependencies:
-    "@nestjs-cls/transactional": ^3.0.2
+    "@nestjs-cls/transactional": ^3.0.3
     "@prisma/client": "> 4 < 7"
     nestjs-cls: ^6.0.1
     prisma: "> 4 < 7"
-  checksum: 10/98228a8fe132951095082b1657d73889ecbf564c4426bfc1b1daf6b0cdcfd29a9f243a77f1c9021edff5484e44664bc224b4337b6db3da188a6a969640a65a15
+  checksum: 10/feeb8fa365dc6442280d98fce627e4316d724da22c60530e712553e9c9b0a8a6ecce84b27459cfe18aab7e93f05a89fc6a3a8f298f463abe4a774984b88e86f0
   languageName: node
   linkType: hard
 
