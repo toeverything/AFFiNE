@@ -387,6 +387,44 @@ export class IndexerService {
     await searchProvider.deleteByQuery(table, dsl, options);
   }
 
+  async searchBlobNames(workspaceId: string, blobIds: string[]) {
+    const result = await this.search({
+      table: SearchTable.block,
+      query: {
+        type: SearchQueryType.boolean,
+        occur: SearchQueryOccur.must,
+        queries: [
+          {
+            type: SearchQueryType.match,
+            field: 'workspaceId',
+            match: workspaceId,
+          },
+          {
+            type: SearchQueryType.boolean,
+            occur: SearchQueryOccur.should,
+            queries: blobIds.map(blobId => ({
+              type: SearchQueryType.match,
+              field: 'blob',
+              match: blobId,
+            })),
+          },
+        ],
+      },
+      options: {
+        fields: ['blob', 'content'],
+      },
+    });
+    const blobNameMap = new Map<string, string>();
+    for (const node of result.nodes) {
+      const blobId = node.fields.blob[0] as string;
+      const content = node.fields.content[0] as string;
+      if (content) {
+        blobNameMap.set(blobId, content);
+      }
+    }
+    return blobNameMap;
+  }
+
   #formatSearchNodes(nodes: SearchNode[]) {
     return nodes.map(node => ({
       ...node,

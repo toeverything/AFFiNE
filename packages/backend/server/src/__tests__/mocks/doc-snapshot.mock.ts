@@ -12,6 +12,7 @@ export type MockDocSnapshotInput = {
   docId?: string;
   blob?: Uint8Array;
   updatedAt?: Date;
+  snapshotFile?: string;
 };
 
 export type MockedDocSnapshot = Snapshot;
@@ -23,7 +24,10 @@ export class MockDocSnapshot extends Mocker<
   override async create(input: MockDocSnapshotInput) {
     if (!input.blob) {
       const snapshot = await readFile(
-        path.join(import.meta.dirname, '../__fixtures__/test-doc.snapshot.bin')
+        path.join(
+          import.meta.dirname,
+          `../__fixtures__/${input.snapshotFile ?? 'test-doc.snapshot.bin'}`
+        )
       );
       input.blob = snapshot;
     }
