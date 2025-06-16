@@ -33,7 +33,7 @@ export const subMenuOffset = offset({
   crossAxis: -8.5,
 });
 export const subMenuPlacements = autoPlacement({
-  allowedPlacements: ['right-start', 'left-start', 'right-end', 'left-end'],
+  allowedPlacements: ['bottom-start', 'bottom-end'],
 });
 export const subMenuMiddleware = [subMenuOffset, subMenuPlacements];
 
