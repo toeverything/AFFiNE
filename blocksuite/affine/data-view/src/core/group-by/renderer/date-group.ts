@@ -40,10 +40,8 @@ export class DateGroupView extends SignalWatcher(
 
   protected override render() {
     const name = this.group.name$.value;
-    const count = this.group.rows.length;
     return html`<div class="dv-date-group">
       <span>${name || 'Ungroups'}</span>
-      ${count ? html`<span class="counter">${count}</span>` : ''}
     </div>`;
   }
 }

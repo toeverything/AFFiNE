@@ -4,7 +4,6 @@ import {
   popMenu,
   type PopupTarget,
   popupTargetFromElement,
-  subMenuMiddleware,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher } from '@blocksuite/global/lit';
 import {
@@ -123,7 +122,13 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                         }),
                       ],
                     },
-                    middleware: subMenuMiddleware,
+                    middleware: [
+                      autoPlacement({
+                        allowedPlacements: ['bottom-start'],
+                      }),
+                      offset({ mainAxis: 4, crossAxis: 0 }),
+                      shift({ crossAxis: true }),
+                    ],
                   });
                   // allow submenu height and width to adjust to content
                   subHandler.menu.menuElement.style.minHeight = 'fit-content';

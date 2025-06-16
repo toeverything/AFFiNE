@@ -15,7 +15,7 @@ import {
   PlusIcon,
 } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
-import type { Middleware } from '@floating-ui/dom';
+import { type Middleware, offset, shift } from '@floating-ui/dom';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -208,7 +208,11 @@ export class FilterRootView extends SignalWatcher(ShadowlessElement) {
       return;
     }
     const handler = popMenu(popupTargetFromElement(target), {
-      placement: 'bottom-start',
+      placement: 'bottom-end',
+      middleware: [
+        offset({ mainAxis: 12, crossAxis: 0 }),
+        shift({ crossAxis: true }),
+      ],
       options: {
         items: [
           menu.action({
@@ -276,6 +280,8 @@ export class FilterRootView extends SignalWatcher(ShadowlessElement) {
         ],
       },
     });
+    handler.menu.menuElement.style.minWidth = 'fit-content';
+    handler.menu.menuElement.style.maxWidth = 'fit-content';
     handler.menu.menuElement.style.minHeight = 'fit-content';
     handler.menu.menuElement.style.maxHeight = 'fit-content';
   }
