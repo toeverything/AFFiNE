@@ -41,23 +41,27 @@ export class ChatPanelChips extends SignalWatcher(
   static override styles = css`
     .chips-wrapper {
       display: flex;
+      gap: 8px;
+      align-items: center;
       flex-wrap: wrap;
-      margin: 0 -4px 0 -4px;
+      padding: 4px 12px;
     }
     .add-button,
     .collapse-button,
     .more-candidate-button {
       display: flex;
+      flex-shrink: 0;
+      flex-grow: 0;
       align-items: center;
       justify-content: center;
       width: 24px;
       height: 24px;
       border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
       border-radius: 4px;
-      margin: 4px;
       box-sizing: border-box;
       cursor: pointer;
       font-size: 12px;
+      color: ${unsafeCSSVarV2('icon/primary')};
     }
     .add-button:hover,
     .collapse-button:hover,
