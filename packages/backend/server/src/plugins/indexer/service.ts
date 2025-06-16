@@ -423,7 +423,7 @@ export class IndexerService {
     for (const node of result.nodes) {
       const blobId = node.fields.blob[0] as string;
       const content = node.fields.content[0] as string;
-      if (content) {
+      if (blobId && content) {
         blobNameMap.set(blobId, content);
       }
     }
