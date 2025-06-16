@@ -417,6 +417,9 @@ export class IndexerService {
       },
       options: {
         fields: ['blob', 'content'],
+        pagination: {
+          limit: 10000,
+        },
       },
     });
     const blobNameMap = new Map<string, string>();
