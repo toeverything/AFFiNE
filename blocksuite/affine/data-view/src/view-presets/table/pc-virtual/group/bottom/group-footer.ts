@@ -45,6 +45,7 @@ export class TableGroupFooter extends WithDisposable(ShadowlessElement) {
   private readonly clickAddRow = () => {
     const group = this.group$.value;
     const rowId = this.tableViewManager.rowAdd('end', group?.key);
+    this.requestUpdate();
 
     requestAnimationFrame(() => {
       const rowIndex = this.selectionController.getRow(group?.key, rowId)

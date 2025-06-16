@@ -38,6 +38,7 @@ export const popMobileRowMenu = (
           prefix: DeleteIcon(),
           select: () => {
             view.rowsDelete([rowId]);
+            tableViewLogic.ui$.value?.requestUpdate();
           },
         }),
       ],

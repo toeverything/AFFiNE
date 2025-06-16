@@ -43,6 +43,7 @@ export class TableClipboardController implements ReactiveController {
       }
       if (deleteRows.length) {
         this.logic.view.rowsDelete(deleteRows);
+        this.logic.ui$.value?.requestUpdate();
       }
     }
     this.clipboard

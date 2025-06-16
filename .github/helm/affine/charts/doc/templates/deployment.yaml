@@ -95,11 +95,13 @@ spec:
               path: /info
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.probe.timeoutSeconds }}
           readinessProbe:
             httpGet:
               path: /info
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.probe.timeoutSeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

@@ -158,6 +158,7 @@ export class SelfhostTeamSubscriptionManager extends SubscriptionManager {
           'stripeScheduleId',
           'nextBillAt',
           'canceledAt',
+          'end',
         ]),
       });
     }
