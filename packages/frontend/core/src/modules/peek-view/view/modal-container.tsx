@@ -107,6 +107,35 @@ export const PeekViewModalContainer = forwardRef<
       duration: 230,
     });
   }, []);
+  const animateFade = useCallback(
+    (animateIn: boolean) => {
+      setAnimeState('animating');
+      onAnimationStart?.();
+      return new Promise<void>(resolve => {
+        if (animateIn) setVtOpen(true);
+        setTimeout(() => {
+          const overlay = overlayRef.current;
+          const contentClip = contentClipRef.current;
+          if (!overlay || !contentClip) {
+            resolve();
+            return;
+          }
+          waapi.animate([overlay, contentClip], {
+            opacity: animateIn ? [0, 1] : [1, 0],
+            ease: eases.inOutSine,
+            duration: 230,
+            onComplete: () => {
+              if (!animateIn) setVtOpen(false);
+              setAnimeState('idle');
+              onAnimationEnd?.();
+              resolve();
+            },
+          });
+        });
+      });
+    },
+    [onAnimationEnd, onAnimationStart]
+  );
   const zoomAnimate = useCallback(
     async (
       zoomIn?: boolean,
@@ -220,7 +249,7 @@ export const PeekViewModalContainer = forwardRef<
         };
       });
     },
-    [target]
+    [target, animateFade, onAnimationEnd]
   );
   /**
    * ### Animation timeline:
@@ -276,36 +305,6 @@ export const PeekViewModalContainer = forwardRef<
       .then(() => setVtOpen(false))
       .catch(console.error);
   }, [animateControls, onAnimationStart, zoomAnimate]);
-
-  const animateFade = useCallback(
-    (animateIn: boolean) => {
-      setAnimeState('animating');
-      onAnimationStart?.();
-      return new Promise<void>(resolve => {
-        if (animateIn) setVtOpen(true);
-        setTimeout(() => {
-          const overlay = overlayRef.current;
-          const contentClip = contentClipRef.current;
-          if (!overlay || !contentClip) {
-            resolve();
-            return;
-          }
-          waapi.animate([overlay, contentClip], {
-            opacity: animateIn ? [0, 1] : [1, 0],
-            ease: eases.inOutSine,
-            duration: 230,
-            onComplete: () => {
-              if (!animateIn) setVtOpen(false);
-              setAnimeState('idle');
-              onAnimationEnd?.();
-              resolve();
-            },
-          });
-        });
-      });
-    },
-    [onAnimationEnd, onAnimationStart]
-  );
 
   const animateFadeBottom = useCallback(
     (animateIn: boolean) => {

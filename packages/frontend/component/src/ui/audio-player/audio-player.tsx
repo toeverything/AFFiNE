@@ -113,11 +113,6 @@ export const AudioPlayer = ({
         <div className={styles.upperRight}>
           <Menu
             rootOptions={{ modal: false }}
-            children={
-              <Button variant="plain" className={styles.playbackRateDisplay}>
-                {playbackRate}x
-              </Button>
-            }
             items={
               <>
                 {playbackRates.map(rate => (
@@ -131,7 +126,11 @@ export const AudioPlayer = ({
                 ))}
               </>
             }
-          />
+          >
+            <Button variant="plain" className={styles.playbackRateDisplay}>
+              {playbackRate}x
+            </Button>
+          </Menu>
           {notesEntry}
           <AnimatedPlayIcon
             onClick={handlePlayToggle}
