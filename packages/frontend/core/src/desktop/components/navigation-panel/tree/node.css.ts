@@ -111,6 +111,7 @@ export const collapsedIconContainer = style({
   color: cssVarV2('icon/primary'),
   position: 'absolute',
   opacity: 0,
+  pointerEvents: 'none',
   selectors: {
     '&[data-collapsed="true"]': {
       transform: 'rotate(-90deg)',
