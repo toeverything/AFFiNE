@@ -1004,6 +1004,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.appearanceSettings.translucentUI.title"](): string;
     /**
+      * `Show linked doc in sidebar`
+      */
+    ["com.affine.appearanceSettings.showLinkedDocInSidebar.title"](): string;
+    /**
+      * `Control whether to show the structure of linked docs in the sidebar.`
+      */
+    ["com.affine.appearanceSettings.showLinkedDocInSidebar.description"](): string;
+    /**
       * `Your current email is {{email}}. We'll send a temporary verification link to this email.`
       */
     ["com.affine.auth.change.email.message"](options: {

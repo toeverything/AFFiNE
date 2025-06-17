@@ -32,6 +32,8 @@ interface WorkspaceSelectorProps {
   disable?: boolean;
   menuContentOptions?: MenuProps['contentOptions'];
   className?: string;
+  /** if true, will hide cloud/local, and scale the avatar */
+  dense?: boolean;
 }
 
 export const WorkspaceSelector = ({
@@ -46,6 +48,7 @@ export const WorkspaceSelector = ({
   showSyncStatus,
   className,
   menuContentOptions,
+  dense,
 }: WorkspaceSelectorProps) => {
   const { workspacesService, globalContextService } = useServices({
     GlobalContextService,
@@ -133,6 +136,7 @@ export const WorkspaceSelector = ({
           hideCollaborationIcon={true}
           hideTeamWorkspaceIcon={true}
           data-testid="current-workspace-card"
+          dense={dense}
         />
       ) : (
         <span></span>

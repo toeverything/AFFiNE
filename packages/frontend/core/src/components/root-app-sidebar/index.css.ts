@@ -5,6 +5,9 @@ export const workspaceAndUserWrapper = style({
   alignItems: 'center',
   justifyContent: 'space-between',
   gap: 8,
+  width: 'calc(100% + 12px)',
+  paddingRight: 6,
+  alignSelf: 'center',
 });
 export const quickSearchAndNewPage = style({
   display: 'flex',
