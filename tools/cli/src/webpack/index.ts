@@ -585,7 +585,7 @@ export function createNodeTargetConfig(
     plugins: compact([
       new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
       new webpack.IgnorePlugin({
-        checkResource(resource) {
+        checkResource(resource, context) {
           const lazyImports = [
             '@nestjs/microservices',
             '@nestjs/websockets/socket-module',
@@ -596,9 +596,16 @@ export function createNodeTargetConfig(
             'class-validator',
             'class-transformer',
           ];
-          return lazyImports.some(lazyImport =>
+          const shouldIgnoreLazyImport = lazyImports.some(lazyImport =>
             resource.startsWith(lazyImport)
           );
+
+          // 忽略 packages/backend/native 中特定架构的 .node 文件，因为它们在 try-catch 中，且不一定存在
+          const isNativeModuleSpecificArch =
+            resource.match(/server-native\.(arm64|armv7|x64)\.node$/) &&
+            context.endsWith('packages/backend/native');
+
+          return shouldIgnoreLazyImport || isNativeModuleSpecificArch;
         },
       }),
       new webpack.DefinePlugin({
