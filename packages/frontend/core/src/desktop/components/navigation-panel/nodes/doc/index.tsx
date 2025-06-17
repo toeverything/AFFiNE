@@ -6,6 +6,7 @@ import {
   Tooltip,
 } from '@affine/component';
 import { Guard } from '@affine/core/components/guard';
+import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { DocsService } from '@affine/core/modules/doc';
@@ -82,6 +83,7 @@ export const NavigationPanelDocNode = ({
   const enableEmojiIcon = useLiveData(
     featureFlagService.flags.enable_emoji_doc_icon.$
   );
+  const { appSettings } = useAppSettingHelper();
 
   const Icon = useCallback(
     ({ className }: { className?: string }) => {
@@ -247,8 +249,9 @@ export const NavigationPanelDocNode = ({
       onDrop={handleDropOnDoc}
       renameable
       extractEmojiAsIcon={enableEmojiIcon}
-      collapsed={collapsed}
+      collapsed={appSettings.showLinkedDocInSidebar ? collapsed : true}
       setCollapsed={setCollapsed}
+      collapsible={appSettings.showLinkedDocInSidebar}
       canDrop={handleCanDrop}
       to={`/${docId}`}
       onClick={() => {

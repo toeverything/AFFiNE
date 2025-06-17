@@ -66,6 +66,7 @@ export interface BaseNavigationPanelTreeNodeProps {
   extractEmojiAsIcon?: boolean;
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
+  collapsible?: boolean;
   disabled?: boolean;
   onClick?: () => void;
   to?: To;
@@ -140,6 +141,7 @@ export const NavigationPanelTreeNode = ({
   collapsed,
   extractEmojiAsIcon,
   setCollapsed,
+  collapsible = true,
   canDrop,
   reorderable = true,
   operations = [],
@@ -378,20 +380,20 @@ export const NavigationPanelTreeNode = ({
       className={styles.itemRoot}
       data-active={active}
       data-disabled={disabled}
+      data-collapsible={collapsible}
     >
-      <div
-        data-disabled={disabled}
-        onClick={handleCollapsedChange}
-        data-testid="navigation-panel-collapsed-button"
-        className={styles.collapsedIconContainer}
-      >
-        <ArrowDownSmallIcon
-          className={styles.collapsedIcon}
-          data-collapsed={collapsed !== false}
-        />
-      </div>
-
-      <div className={styles.itemMain}>
+      <div className={styles.toggleIcon}>
+        <div
+          data-disabled={disabled}
+          onClick={handleCollapsedChange}
+          data-testid="navigation-panel-collapsed-button"
+          className={styles.collapsedIconContainer}
+        >
+          <ArrowDownSmallIcon
+            className={styles.collapsedIcon}
+            data-collapsed={collapsed !== false}
+          />
+        </div>
         <div className={styles.iconContainer}>
           {emoji ??
             (Icon && (
@@ -402,6 +404,9 @@ export const NavigationPanelTreeNode = ({
               />
             ))}
         </div>
+      </div>
+
+      <div className={styles.itemMain}>
         <div className={styles.itemContent}>{name}</div>
         {postfix}
         <div

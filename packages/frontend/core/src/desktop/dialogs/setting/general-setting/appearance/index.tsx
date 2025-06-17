@@ -139,10 +139,10 @@ export const AppearanceSettings = () => {
         </SettingWrapper>
       ) : null}
 
-      {BUILD_CONFIG.isElectron ? (
-        <SettingWrapper
-          title={t['com.affine.appearanceSettings.sidebar.title']()}
-        >
+      <SettingWrapper
+        title={t['com.affine.appearanceSettings.sidebar.title']()}
+      >
+        {BUILD_CONFIG.isElectron ? (
           <SettingRow
             name={t['com.affine.appearanceSettings.noisyBackground.title']()}
             desc={t[
@@ -156,23 +156,38 @@ export const AppearanceSettings = () => {
               }
             />
           </SettingRow>
-          {environment.isMacOs && (
-            <SettingRow
-              name={t['com.affine.appearanceSettings.translucentUI.title']()}
-              desc={t[
-                'com.affine.appearanceSettings.translucentUI.description'
-              ]()}
-            >
-              <Switch
-                checked={appSettings.enableBlurBackground}
-                onChange={checked =>
-                  updateSettings('enableBlurBackground', checked)
-                }
-              />
-            </SettingRow>
-          )}
-        </SettingWrapper>
-      ) : null}
+        ) : null}
+        {BUILD_CONFIG.isElectron && environment.isMacOs && (
+          <SettingRow
+            name={t['com.affine.appearanceSettings.translucentUI.title']()}
+            desc={t[
+              'com.affine.appearanceSettings.translucentUI.description'
+            ]()}
+          >
+            <Switch
+              checked={appSettings.enableBlurBackground}
+              onChange={checked =>
+                updateSettings('enableBlurBackground', checked)
+              }
+            />
+          </SettingRow>
+        )}
+        <SettingRow
+          name={t[
+            'com.affine.appearanceSettings.showLinkedDocInSidebar.title'
+          ]()}
+          desc={t[
+            'com.affine.appearanceSettings.showLinkedDocInSidebar.description'
+          ]()}
+        >
+          <Switch
+            checked={appSettings.showLinkedDocInSidebar}
+            onChange={checked =>
+              updateSettings('showLinkedDocInSidebar', checked)
+            }
+          />
+        </SettingRow>
+      </SettingWrapper>
 
       {BUILD_CONFIG.isElectron ? <MenubarSetting /> : null}
     </>

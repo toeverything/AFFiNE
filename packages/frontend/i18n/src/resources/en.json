@@ -240,6 +240,8 @@
   "com.affine.appearanceSettings.title": "Appearance settings",
   "com.affine.appearanceSettings.translucentUI.description": "Use transparency effect on the sidebar.",
   "com.affine.appearanceSettings.translucentUI.title": "Translucent UI on the sidebar",
+  "com.affine.appearanceSettings.showLinkedDocInSidebar.title": "Show linked doc in sidebar",
+  "com.affine.appearanceSettings.showLinkedDocInSidebar.description": "Control whether to show the structure of linked docs in the sidebar.",
   "com.affine.auth.change.email.message": "Your current email is {{email}}. We'll send a temporary verification link to this email.",
   "com.affine.auth.change.email.page.subtitle": "Please enter your new email address below. We will send a verification link to this email address to complete the process.",
   "com.affine.auth.change.email.page.success.subtitle": "Congratulations! You have successfully updated the email address associated with your AFFiNE Cloud account.",
