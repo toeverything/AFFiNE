@@ -1,4 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
+import { Tool, ToolSet } from 'ai';
 import { z } from 'zod';
 
 import {
@@ -7,9 +9,18 @@ import {
   CopilotProviderNotSupported,
   OnEvent,
 } from '../../../base';
+import { AccessController } from '../../../core/permission';
+import { CopilotContextService } from '../context';
+import {
+  buildDocSearchGetter,
+  createExaCrawlTool,
+  createExaSearchTool,
+  createSemanticSearchTool,
+} from '../tools';
 import { CopilotProviderFactory } from './factory';
 import {
   type CopilotChatOptions,
+  CopilotChatTools,
   type CopilotEmbeddingOptions,
   type CopilotImageOptions,
   CopilotProviderModel,
@@ -33,6 +44,7 @@ export abstract class CopilotProvider<C = any> {
 
   @Inject() protected readonly AFFiNEConfig!: Config;
   @Inject() protected readonly factory!: CopilotProviderFactory;
+  @Inject() protected readonly moduleRef!: ModuleRef;
 
   get config(): C {
     return this.AFFiNEConfig.copilot.providers[this.type] as C;
@@ -96,6 +108,49 @@ export abstract class CopilotProvider<C = any> {
           ? `No model supports ${outputType} output with ${inputTypes ?? '<any>'} input for provider ${this.type}`
           : 'Output type is required when modelId is not provided'
     );
+  }
+
+  protected getProviderSpecificTools(
+    _toolName: CopilotChatTools,
+    _model: string
+  ): [string, Tool] | undefined {
+    return;
+  }
+
+  // use for tool use, shared between providers
+  protected async getTools(
+    options: CopilotChatOptions,
+    model: string
+  ): Promise<ToolSet> {
+    const tools: ToolSet = {};
+    if (options?.tools?.length) {
+      for (const tool of options.tools) {
+        const toolDef = this.getProviderSpecificTools(tool, model);
+        if (toolDef) {
+          tools[toolDef[0]] = toolDef[1];
+          continue;
+        }
+        switch (tool) {
+          case 'webSearch': {
+            tools.web_search_exa = createExaSearchTool(this.AFFiNEConfig);
+            tools.web_crawl_exa = createExaCrawlTool(this.AFFiNEConfig);
+            break;
+          }
+          case 'semanticSearch': {
+            const ac = this.moduleRef.get(AccessController, { strict: false });
+            const context = this.moduleRef.get(CopilotContextService, {
+              strict: false,
+            });
+            const searchDocs = buildDocSearchGetter(ac, context);
+            tools.semantic_search = createSemanticSearchTool(
+              searchDocs.bind(null, options)
+            );
+          }
+        }
+      }
+      return tools;
+    }
+    return tools;
   }
 
   private handleZodError(ret: z.SafeParseReturnType<any, any>) {

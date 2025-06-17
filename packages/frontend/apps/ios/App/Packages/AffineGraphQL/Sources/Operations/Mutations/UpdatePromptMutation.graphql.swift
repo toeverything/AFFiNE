@@ -7,7 +7,7 @@ public class UpdatePromptMutation: GraphQLMutation {
   public static let operationName: String = "updatePrompt"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation updatePrompt($name: String!, $messages: [CopilotPromptMessageInput!]!) { updateCopilotPrompt(name: $name, messages: $messages) { __typename name model action config { __typename jsonMode frequencyPenalty presencePenalty temperature topP } messages { __typename role content params } } }"#
+      #"mutation updatePrompt($name: String!, $messages: [CopilotPromptMessageInput!]!) { updateCopilotPrompt(name: $name, messages: $messages) { __typename name model action config { __typename frequencyPenalty presencePenalty temperature topP } messages { __typename role content params } } }"#
     ))
 
   public var name: String
@@ -74,14 +74,12 @@ public class UpdatePromptMutation: GraphQLMutation {
         public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotPromptConfigType }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
-          .field("jsonMode", Bool?.self),
           .field("frequencyPenalty", Double?.self),
           .field("presencePenalty", Double?.self),
           .field("temperature", Double?.self),
           .field("topP", Double?.self),
         ] }
 
-        public var jsonMode: Bool? { __data["jsonMode"] }
         public var frequencyPenalty: Double? { __data["frequencyPenalty"] }
         public var presencePenalty: Double? { __data["presencePenalty"] }
         public var temperature: Double? { __data["temperature"] }

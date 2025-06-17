@@ -57,7 +57,21 @@ export const VertexSchema: JSONSchema = {
 // ========== prompt ==========
 
 export const PromptConfigStrictSchema = z.object({
-  tools: z.enum(['webSearch']).array().nullable().optional(),
+  tools: z
+    .enum([
+      // work with morph
+      'editDoc',
+      // work with exa/model internal tools
+      'webSearch',
+      // work with indexer
+      'readDoc',
+      'keywordSearch',
+      // work with embeddings
+      'semanticSearch',
+    ])
+    .array()
+    .nullable()
+    .optional(),
   // params requirements
   requireContent: z.boolean().nullable().optional(),
   requireAttachment: z.boolean().nullable().optional(),
@@ -121,6 +135,7 @@ export type PromptParams = NonNullable<PromptMessage['params']>;
 const CopilotProviderOptionsSchema = z.object({
   signal: z.instanceof(AbortSignal).optional(),
   user: z.string().optional(),
+  workspace: z.string().optional(),
 });
 
 export const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.merge(
@@ -133,6 +148,9 @@ export const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.merge(
   .optional();
 
 export type CopilotChatOptions = z.infer<typeof CopilotChatOptionsSchema>;
+export type CopilotChatTools = NonNullable<
+  NonNullable<CopilotChatOptions>['tools']
+>[number];
 
 export const CopilotStructuredOptionsSchema =
   CopilotProviderOptionsSchema.merge(PromptConfigStrictSchema).optional();

@@ -4401,7 +4401,7 @@ export type InstallLicenseMutation = {
   };
 };
 
-export type LicenseFragment = {
+export type LicenseBodyFragment = {
   __typename?: 'License';
   expiredAt: string | null;
   installedAt: string;

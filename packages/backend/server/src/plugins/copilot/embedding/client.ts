@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import type { ModuleRef } from '@nestjs/core';
 
 import {
   CopilotPromptNotFound,
@@ -193,12 +194,16 @@ class ProductionEmbeddingClient extends EmbeddingClient {
 
 let EMBEDDING_CLIENT: EmbeddingClient | undefined;
 export async function getEmbeddingClient(
-  providerFactory: CopilotProviderFactory,
-  prompt: PromptService
+  moduleRef: ModuleRef
 ): Promise<EmbeddingClient | undefined> {
   if (EMBEDDING_CLIENT) {
     return EMBEDDING_CLIENT;
   }
+  const providerFactory = moduleRef.get(CopilotProviderFactory, {
+    strict: false,
+  });
+  const prompt = moduleRef.get(PromptService, { strict: false });
+
   const client = new ProductionEmbeddingClient(providerFactory, prompt);
   if (await client.configured()) {
     EMBEDDING_CLIENT = client;

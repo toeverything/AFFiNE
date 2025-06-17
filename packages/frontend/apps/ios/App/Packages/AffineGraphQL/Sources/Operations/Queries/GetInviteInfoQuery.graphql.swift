@@ -27,7 +27,7 @@ public class GetInviteInfoQuery: GraphQLQuery {
       .field("getInviteInfo", GetInviteInfo.self, arguments: ["inviteId": .variable("inviteId")]),
     ] }
 
-    /// send workspace invitation
+    /// get workspace invitation info
     public var getInviteInfo: GetInviteInfo { __data["getInviteInfo"] }
 
     /// GetInviteInfo

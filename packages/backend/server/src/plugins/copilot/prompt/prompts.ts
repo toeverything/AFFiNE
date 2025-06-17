@@ -1791,7 +1791,13 @@ Below is the user's query. Please respond in the user's preferred language witho
     },
   ],
   config: {
-    tools: ['webSearch'],
+    tools: [
+      'readDoc',
+      'editDoc',
+      'webSearch',
+      'keywordSearch',
+      'semanticSearch',
+    ],
   },
 };
 
