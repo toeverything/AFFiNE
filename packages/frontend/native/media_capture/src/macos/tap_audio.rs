@@ -24,9 +24,8 @@ use coreaudio::sys::{
   AudioObjectRemovePropertyListenerBlock, AudioTimeStamp, OSStatus,
 };
 use napi::{
-  bindgen_prelude::Float32Array,
+  bindgen_prelude::{Float32Array, Result, Status},
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
-  Result,
 };
 use napi_derive::napi;
 use objc2::runtime::AnyObject;
@@ -242,7 +241,7 @@ impl AggregateDevice {
   /// Implementation for the AggregateDevice to start processing audio
   pub fn start(
     &mut self,
-    audio_stream_callback: Arc<ThreadsafeFunction<Float32Array, (), Float32Array, true>>,
+    audio_stream_callback: Arc<ThreadsafeFunction<Float32Array, (), Float32Array, Status, true>>,
     // Add original_audio_stats to ensure consistent target rate
     original_audio_stats: AudioStats,
   ) -> Result<AudioTapStream> {
@@ -598,7 +597,7 @@ pub struct AggregateDeviceManager {
   app_id: Option<AudioObjectID>,
   excluded_processes: Vec<AudioObjectID>,
   active_stream: Option<Arc<std::sync::Mutex<Option<AudioTapStream>>>>,
-  audio_callback: Option<Arc<ThreadsafeFunction<Float32Array, (), Float32Array, true>>>,
+  audio_callback: Option<Arc<ThreadsafeFunction<Float32Array, (), Float32Array, Status, true>>>,
   original_audio_stats: Option<AudioStats>,
 }
 
@@ -638,7 +637,7 @@ impl AggregateDeviceManager {
   /// This sets up the initial stream and listeners.
   pub fn start_capture(
     &mut self,
-    audio_stream_callback: Arc<ThreadsafeFunction<Float32Array, (), Float32Array, true>>,
+    audio_stream_callback: Arc<ThreadsafeFunction<Float32Array, (), Float32Array, Status, true>>,
   ) -> Result<()> {
     // Store the callback for potential device switch later
     self.audio_callback = Some(audio_stream_callback.clone());
@@ -717,7 +716,7 @@ impl AggregateDeviceManager {
         };
 
         // Create a new device with updated default devices
-        let result: Result<AggregateDevice> = (|| {
+        let result: Result<AggregateDevice> = {
           if is_app_specific {
             if let Some(id) = app_id {
               // For device change listener, we need to create a minimal ApplicationInfo
@@ -730,7 +729,7 @@ impl AggregateDeviceManager {
           } else {
             AggregateDevice::create_global_tap_but_exclude_processes(&excluded_processes)
           }
-        })();
+        };
 
         // If we successfully created a new device, stop the old stream and start a new
         // one

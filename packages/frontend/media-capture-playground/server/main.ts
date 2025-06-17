@@ -638,7 +638,7 @@ async function getAllApps(): Promise<AppInfo[]> {
     if (!bundleGroups.has(bundleId)) {
       bundleGroups.set(bundleId, []);
     }
-    bundleGroups.get(bundleId)!.push(app);
+    bundleGroups.get(bundleId)?.push(app);
   }
 
   console.log(`📦 Found ${bundleGroups.size} unique bundle identifiers`);

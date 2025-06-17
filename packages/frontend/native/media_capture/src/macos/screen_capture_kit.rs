@@ -140,13 +140,12 @@ impl ApplicationInfo {
 
     // If not available, try to get from the audio process property
     if self.object_id > 0 {
-      match get_process_property::<CFStringRef>(&self.object_id, kAudioProcessPropertyBundleID) {
-        Ok(bundle_id) => {
-          // Safely convert CFStringRef to Rust String
-          let cf_string = unsafe { CFString::wrap_under_create_rule(bundle_id) };
-          return cf_string.to_string();
-        }
-        Err(_) => {}
+      if let Ok(bundle_id) =
+        get_process_property::<CFStringRef>(&self.object_id, kAudioProcessPropertyBundleID)
+      {
+        // Safely convert CFStringRef to Rust String
+        let cf_string = unsafe { CFString::wrap_under_create_rule(bundle_id) };
+        return cf_string.to_string();
       }
     }
 
@@ -435,7 +434,7 @@ impl ShareableContent {
       .flatten()
       .filter_map(|id| {
         // Get process ID from object_id
-        let process_id = get_process_property(&id, kAudioProcessPropertyPID).unwrap_or(-1);
+        let process_id = get_process_property(id, kAudioProcessPropertyPID).unwrap_or(-1);
 
         if process_id <= 0 {
           return None;
@@ -529,10 +528,10 @@ impl ShareableContent {
     if let Ok(app_list) = RUNNING_APPLICATIONS.read() {
       if let Ok(app_list) = app_list.as_ref() {
         for object_id in app_list {
-          let pid = get_process_property(&object_id, kAudioProcessPropertyPID).unwrap_or(-1);
+          let pid = get_process_property(object_id, kAudioProcessPropertyPID).unwrap_or(-1);
           if pid == process_id as i32 {
             // Check if the process is actively using input (microphone)
-            match get_process_property(&object_id, kAudioProcessPropertyIsRunningInput) {
+            match get_process_property(object_id, kAudioProcessPropertyIsRunningInput) {
               Ok(is_running) => return Ok(is_running),
               Err(_) => continue,
             }
@@ -549,10 +548,7 @@ impl ShareableContent {
     process_id: u32,
     audio_stream_callback: ThreadsafeFunction<napi::bindgen_prelude::Float32Array, ()>,
   ) -> Result<AudioCaptureSession> {
-    // Find the ApplicationInfo with this process ID
-    let content = ShareableContent::new()?;
-    let app = content
-      .applications()?
+    let app = ShareableContent::applications()?
       .into_iter()
       .find(|app| app.process_id == process_id as i32);
 
