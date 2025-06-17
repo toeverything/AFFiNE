@@ -11,7 +11,7 @@ export const root = style({
   height: '30px',
   userSelect: 'none',
   cursor: 'pointer',
-  padding: '0 12px 0 20px',
+  padding: '0 12px 0 8px',
   position: 'relative',
   whiteSpace: 'nowrap',
   overflow: 'hidden',
@@ -20,7 +20,7 @@ export const root = style({
   },
 });
 export const icon = style({
-  marginRight: '8px',
+  marginRight: '12px',
   color: cssVarV2('icon/primary'),
   fontSize: '20px',
 });

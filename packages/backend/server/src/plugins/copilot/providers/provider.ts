@@ -13,9 +13,9 @@ import { AccessController } from '../../../core/permission';
 import { CopilotContextService } from '../context';
 import {
   buildDocSearchGetter,
+  createDocSemanticSearchTool,
   createExaCrawlTool,
   createExaSearchTool,
-  createSemanticSearchTool,
 } from '../tools';
 import { CopilotProviderFactory } from './factory';
 import {
@@ -131,20 +131,21 @@ export abstract class CopilotProvider<C = any> {
           continue;
         }
         switch (tool) {
-          case 'webSearch': {
-            tools.web_search_exa = createExaSearchTool(this.AFFiNEConfig);
-            tools.web_crawl_exa = createExaCrawlTool(this.AFFiNEConfig);
-            break;
-          }
-          case 'semanticSearch': {
+          case 'docSemanticSearch': {
             const ac = this.moduleRef.get(AccessController, { strict: false });
             const context = this.moduleRef.get(CopilotContextService, {
               strict: false,
             });
             const searchDocs = buildDocSearchGetter(ac, context);
-            tools.semantic_search = createSemanticSearchTool(
+            tools.doc_semantic_search = createDocSemanticSearchTool(
               searchDocs.bind(null, options)
             );
+            break;
+          }
+          case 'webSearch': {
+            tools.web_search_exa = createExaSearchTool(this.AFFiNEConfig);
+            tools.web_crawl_exa = createExaCrawlTool(this.AFFiNEConfig);
+            break;
           }
         }
       }

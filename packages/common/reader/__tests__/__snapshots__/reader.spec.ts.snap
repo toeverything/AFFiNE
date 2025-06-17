@@ -52,6 +52,509 @@ exports[`should get all docs from root doc work 2`] = `
 ]
 `;
 
+exports[`should parse page doc work 1`] = `
+{
+  "md": "AFFiNE is an open source all in one workspace, an operating system for all the building blocks of your team wiki, knowledge management and digital assets and a better alternative to Notion and Miro.
+
+
+
+
+
+# You own your data, with no compromises
+
+
+## Local-first & Real-time collaborative
+
+
+We love the idea proposed by Ink & Switch in the famous article about you owning your data, despite the cloud. Furthermore, AFFiNE is the first all-in-one workspace that keeps your data ownership with no compromises on real-time collaboration and editing experience.
+
+
+AFFiNE is a local-first application upon CRDTs with real-time collaboration support. Your data is always stored locally while multiple nodes remain synced in real-time.
+
+
+
+
+
+### Blocks that assemble your next docs, tasks kanban or whiteboard
+
+
+There is a large overlap of their atomic "building blocks" between these apps. They are neither open source nor have a plugin system like VS Code for contributors to customize. We want to have something that contains all the features we love and goes one step further.
+
+
+We are building AFFiNE to be a fundamental open source platform that contains all the building blocks for docs, task management and visual collaboration, hoping you can shape your next workflow with us that can make your life better and also connect others, too.
+
+
+If you want to learn more about the product design of AFFiNE, here goes the concepts:
+
+
+To Shape, not to adapt. AFFiNE is built for individuals & teams who care about their data, who refuse vendor lock-in, and who want to have control over their essential tools.
+
+
+## A true canvas for blocks in any form
+
+
+[Many editor apps](http://notion.so) claimed to be a canvas for productivity. Since _the Mother of All Demos,_ Douglas Engelbart, a creative and programable digital workspace has been a pursuit and an ultimate mission for generations of tool makers.
+
+
+
+
+
+"We shape our tools and thereafter our tools shape us”. A lot of pioneers have inspired us a long the way, e.g.:
+
+
+* Quip & Notion with their great concept of "everything is a block"
+
+
+* Trello with their Kanban
+
+
+* Airtable & Miro with their no-code programable datasheets
+
+
+* Miro & Whimiscal with their edgeless visual whiteboard
+
+
+* Remnote & Capacities with their object-based tag system
+
+
+For more details, please refer to our [RoadMap](https://docs.affine.pro/docs/core-concepts/roadmap)
+
+
+## Self Host
+
+
+Self host AFFiNE
+
+
+||Title|Tag|
+|---|---|---|
+|Affine Development|Affine Development|<span data-affine-option data-value="AxSe-53xjX" data-option-color="var(--affine-tag-pink)">AFFiNE</span>|
+|For developers or installations guides, please go to AFFiNE Doc|For developers or installations guides, please go to AFFiNE Doc|<span data-affine-option data-value="0jh9gNw4Yl" data-option-color="var(--affine-tag-orange)">Developers</span>|
+|Quip & Notion with their great concept of "everything is a block"|Quip & Notion with their great concept of "everything is a block"|<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>|
+|Trello with their Kanban|Trello with their Kanban|<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>|
+|Airtable & Miro with their no-code programable datasheets|Airtable & Miro with their no-code programable datasheets|<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>|
+|Miro & Whimiscal with their edgeless visual whiteboard|Miro & Whimiscal with their edgeless visual whiteboard|<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>|
+|Remnote & Capacities with their object-based tag system|Remnote & Capacities with their object-based tag system||
+
+
+## Affine Development
+
+
+For developer or installation guides, please go to [AFFiNE Development](https://docs.affine.pro/docs/development/quick-start)
+
+
+
+
+
+",
+  "parsedBlock": {
+    "children": [
+      {
+        "children": [
+          {
+            "children": [],
+            "content": "AFFiNE is an open source all in one workspace, an operating system for all the building blocks of your team wiki, knowledge management and digital assets and a better alternative to Notion and Miro.
+
+",
+            "flavour": "affine:paragraph",
+            "id": "FoPQcAyV_m",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": "
+
+",
+            "flavour": "affine:paragraph",
+            "id": "oz48nn_zp8",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": "# You own your data, with no compromises
+
+",
+            "flavour": "affine:paragraph",
+            "id": "g8a-D9-jXS",
+            "type": "h1",
+          },
+          {
+            "children": [],
+            "content": "## Local-first & Real-time collaborative
+
+",
+            "flavour": "affine:paragraph",
+            "id": "J8lHN1GR_5",
+            "type": "h2",
+          },
+          {
+            "children": [],
+            "content": "We love the idea proposed by Ink & Switch in the famous article about you owning your data, despite the cloud. Furthermore, AFFiNE is the first all-in-one workspace that keeps your data ownership with no compromises on real-time collaboration and editing experience.
+
+",
+            "flavour": "affine:paragraph",
+            "id": "xCuWdM0VLz",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": "AFFiNE is a local-first application upon CRDTs with real-time collaboration support. Your data is always stored locally while multiple nodes remain synced in real-time.
+
+",
+            "flavour": "affine:paragraph",
+            "id": "zElMi0tViK",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": "
+
+",
+            "flavour": "affine:paragraph",
+            "id": "Z4rK0OF9Wk",
+            "type": "text",
+          },
+        ],
+        "content": "",
+        "flavour": "affine:note",
+        "id": "RX4CG2zsBk",
+        "type": undefined,
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "content": "### Blocks that assemble your next docs, tasks kanban or whiteboard
+
+",
+            "flavour": "affine:paragraph",
+            "id": "DQ0Ryb-SpW",
+            "type": "h3",
+          },
+        ],
+        "content": "",
+        "flavour": "affine:note",
+        "id": "S1mkc8zUoU",
+        "type": undefined,
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "content": "There is a large overlap of their atomic "building blocks" between these apps. They are neither open source nor have a plugin system like VS Code for contributors to customize. We want to have something that contains all the features we love and goes one step further.
+
+",
+            "flavour": "affine:paragraph",
+            "id": "HAZC3URZp_",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": "We are building AFFiNE to be a fundamental open source platform that contains all the building blocks for docs, task management and visual collaboration, hoping you can shape your next workflow with us that can make your life better and also connect others, too.
+
+",
+            "flavour": "affine:paragraph",
+            "id": "0H87ypiuv8",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": "If you want to learn more about the product design of AFFiNE, here goes the concepts:
+
+",
+            "flavour": "affine:paragraph",
+            "id": "Sp4G1KD0Wn",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": "To Shape, not to adapt. AFFiNE is built for individuals & teams who care about their data, who refuse vendor lock-in, and who want to have control over their essential tools.
+
+",
+            "flavour": "affine:paragraph",
+            "id": "RsUhDuEqXa",
+            "type": "text",
+          },
+        ],
+        "content": "",
+        "flavour": "affine:note",
+        "id": "yGlBdshAqN",
+        "type": undefined,
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "content": "## A true canvas for blocks in any form
+
+",
+            "flavour": "affine:paragraph",
+            "id": "Z2HibKzAr-",
+            "type": "h2",
+          },
+          {
+            "children": [],
+            "content": "[Many editor apps](http://notion.so) claimed to be a canvas for productivity. Since _the Mother of All Demos,_ Douglas Engelbart, a creative and programable digital workspace has been a pursuit and an ultimate mission for generations of tool makers.
+
+",
+            "flavour": "affine:paragraph",
+            "id": "UwvWddamzM",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": "
+
+",
+            "flavour": "affine:paragraph",
+            "id": "g9xKUjhJj1",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": ""We shape our tools and thereafter our tools shape us”. A lot of pioneers have inspired us a long the way, e.g.:
+
+",
+            "flavour": "affine:paragraph",
+            "id": "wDTn4YJ4pm",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": "* Quip & Notion with their great concept of "everything is a block"
+
+",
+            "flavour": "affine:list",
+            "id": "xFrrdiP3-V",
+            "type": "bulleted",
+          },
+          {
+            "children": [],
+            "content": "* Trello with their Kanban
+
+",
+            "flavour": "affine:list",
+            "id": "Tp9xyN4Okl",
+            "type": "bulleted",
+          },
+          {
+            "children": [],
+            "content": "* Airtable & Miro with their no-code programable datasheets
+
+",
+            "flavour": "affine:list",
+            "id": "K_4hUzKZFQ",
+            "type": "bulleted",
+          },
+          {
+            "children": [],
+            "content": "* Miro & Whimiscal with their edgeless visual whiteboard
+
+",
+            "flavour": "affine:list",
+            "id": "QwMzON2s7x",
+            "type": "bulleted",
+          },
+          {
+            "children": [],
+            "content": "* Remnote & Capacities with their object-based tag system
+
+",
+            "flavour": "affine:list",
+            "id": "FFVmit6u1T",
+            "type": "bulleted",
+          },
+        ],
+        "content": "",
+        "flavour": "affine:note",
+        "id": "6lDiuDqZGL",
+        "type": undefined,
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "content": "For more details, please refer to our [RoadMap](https://docs.affine.pro/docs/core-concepts/roadmap)
+
+",
+            "flavour": "affine:paragraph",
+            "id": "YqnG5O6AE6",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": "## Self Host
+
+",
+            "flavour": "affine:paragraph",
+            "id": "sbDTmZMZcq",
+            "type": "h2",
+          },
+          {
+            "children": [],
+            "content": "Self host AFFiNE
+
+",
+            "flavour": "affine:paragraph",
+            "id": "QVvitesfbj",
+            "type": "text",
+          },
+        ],
+        "content": "",
+        "flavour": "affine:note",
+        "id": "cauvaHOQmh",
+        "type": undefined,
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "content": "||Title|Tag|
+|---|---|---|
+|Affine Development|Affine Development|<span data-affine-option data-value="AxSe-53xjX" data-option-color="var(--affine-tag-pink)">AFFiNE</span>|
+|For developers or installations guides, please go to AFFiNE Doc|For developers or installations guides, please go to AFFiNE Doc|<span data-affine-option data-value="0jh9gNw4Yl" data-option-color="var(--affine-tag-orange)">Developers</span>|
+|Quip & Notion with their great concept of "everything is a block"|Quip & Notion with their great concept of "everything is a block"|<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>|
+|Trello with their Kanban|Trello with their Kanban|<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>|
+|Airtable & Miro with their no-code programable datasheets|Airtable & Miro with their no-code programable datasheets|<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>|
+|Miro & Whimiscal with their edgeless visual whiteboard|Miro & Whimiscal with their edgeless visual whiteboard|<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>|
+|Remnote & Capacities with their object-based tag system|Remnote & Capacities with their object-based tag system||
+
+",
+            "flavour": "affine:database",
+            "id": "U_GoHFD9At",
+            "rows": [
+              {
+                "Tag": "<span data-affine-option data-value="AxSe-53xjX" data-option-color="var(--affine-tag-pink)">AFFiNE</span>",
+                "Title": "Affine Development
+
+
+",
+                "undefined": "Affine Development
+
+
+",
+              },
+              {
+                "Tag": "<span data-affine-option data-value="0jh9gNw4Yl" data-option-color="var(--affine-tag-orange)">Developers</span>",
+                "Title": "For developers or installations guides, please go to AFFiNE Doc
+
+
+",
+                "undefined": "For developers or installations guides, please go to AFFiNE Doc
+
+
+",
+              },
+              {
+                "Tag": "<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>",
+                "Title": "Quip & Notion with their great concept of "everything is a block"
+
+
+",
+                "undefined": "Quip & Notion with their great concept of "everything is a block"
+
+
+",
+              },
+              {
+                "Tag": "<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>",
+                "Title": "Trello with their Kanban
+
+
+",
+                "undefined": "Trello with their Kanban
+
+
+",
+              },
+              {
+                "Tag": "<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>",
+                "Title": "Airtable & Miro with their no-code programable datasheets
+
+
+",
+                "undefined": "Airtable & Miro with their no-code programable datasheets
+
+
+",
+              },
+              {
+                "Tag": "<span data-affine-option data-value="HgHsKOUINZ" data-option-color="var(--affine-tag-blue)">Reference</span>",
+                "Title": "Miro & Whimiscal with their edgeless visual whiteboard
+
+
+",
+                "undefined": "Miro & Whimiscal with their edgeless visual whiteboard
+
+
+",
+              },
+              {
+                "Tag": "",
+                "Title": "Remnote & Capacities with their object-based tag system
+
+
+",
+                "undefined": "Remnote & Capacities with their object-based tag system
+
+
+",
+              },
+            ],
+            "title": "Learning From",
+            "type": undefined,
+          },
+        ],
+        "content": "",
+        "flavour": "affine:note",
+        "id": "2jwCeO8Yot",
+        "type": undefined,
+      },
+      {
+        "children": [
+          {
+            "children": [],
+            "content": "## Affine Development
+
+",
+            "flavour": "affine:paragraph",
+            "id": "NyHXrMX3R1",
+            "type": "h2",
+          },
+          {
+            "children": [],
+            "content": "For developer or installation guides, please go to [AFFiNE Development](https://docs.affine.pro/docs/development/quick-start)
+
+",
+            "flavour": "affine:paragraph",
+            "id": "9-K49otbCv",
+            "type": "text",
+          },
+          {
+            "children": [],
+            "content": "
+
+",
+            "flavour": "affine:paragraph",
+            "id": "faFteK9eG-",
+            "type": "text",
+          },
+        ],
+        "content": "",
+        "flavour": "affine:note",
+        "id": "c9MF_JiRgx",
+        "type": undefined,
+      },
+    ],
+    "content": "",
+    "flavour": "affine:page",
+    "id": "TnUgtVg7Eu",
+    "type": undefined,
+  },
+  "title": "Write, Draw, Plan all at Once.",
+}
+`;
+
 exports[`should read all doc ids from root doc snapshot work 1`] = `
 [
   "5nS9BSp3Px",

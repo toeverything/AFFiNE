@@ -5,6 +5,7 @@ import { expect, test } from 'vitest';
 import { applyUpdate, Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 import {
+  parsePageDoc,
   readAllBlocksFromDoc,
   readAllDocIdsFromRootDoc,
   readAllDocsFromRootDoc,
@@ -99,4 +100,21 @@ test('should read all doc ids from root doc snapshot work', async () => {
   applyUpdate(rootDoc, rootDocSnapshot);
   const docIds = readAllDocIdsFromRootDoc(rootDoc);
   expect(docIds).toMatchSnapshot();
+});
+
+test('should parse page doc work', () => {
+  const doc = new YDoc({
+    guid: 'test-doc',
+  });
+  applyUpdate(doc, docSnapshot);
+
+  const result = parsePageDoc({
+    workspaceId: 'test-space',
+    doc,
+    buildBlobUrl: id => `blob://${id}`,
+    buildDocUrl: id => `doc://${id}`,
+    renderDocTitle: id => `Doc Title ${id}`,
+  });
+
+  expect(result).toMatchSnapshot();
 });
