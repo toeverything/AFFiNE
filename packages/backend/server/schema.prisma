@@ -433,7 +433,7 @@ model AiSession {
   id              String    @id @default(uuid()) @db.VarChar
   userId          String    @map("user_id") @db.VarChar
   workspaceId     String    @map("workspace_id") @db.VarChar
-  docId           String    @map("doc_id") @db.VarChar
+  docId           String?   @map("doc_id") @db.VarChar
   promptName      String    @map("prompt_name") @db.VarChar(32)
   // the session id of the parent session if this session is a forked session
   parentSessionId String?   @map("parent_session_id") @db.VarChar

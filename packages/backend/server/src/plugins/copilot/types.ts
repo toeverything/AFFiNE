@@ -105,7 +105,7 @@ export interface ChatSessionOptions {
   // connect ids
   userId: string;
   workspaceId: string;
-  docId: string;
+  docId: string | null;
   promptName: string;
 }
 
