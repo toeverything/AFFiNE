@@ -250,12 +250,12 @@ export const markdownToMindmap = (
     switch (markdownNode.type) {
       case 'list':
         {
-          const listItems = markdownNode.children
+          const listItem = markdownNode.children
             .map(child => traverse(child))
-            .filter(val => val);
+            .find(val => val);
 
           if (firstLevel) {
-            return listItems[0];
+            return listItem ?? null;
           }
         }
         break;

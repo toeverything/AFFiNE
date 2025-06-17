@@ -1,4 +1,4 @@
-fragment license on License {
+fragment licenseBody on License {
   expiredAt
   installedAt
   quantity

@@ -39,7 +39,7 @@ import { ChatPanelTagChip } from './components/ai-chat-chips/tag-chip';
 import { AIChatComposer } from './components/ai-chat-composer';
 import { AIChatInput } from './components/ai-chat-input';
 import { AIChatEmbeddingStatusTooltip } from './components/ai-chat-input/embedding-status-tooltip';
-import { AIChatModels } from './components/ai-chat-models/ai-chat-models';
+import { ChatInputPreference } from './components/ai-chat-input/preference-popup';
 import { AIHistoryClear } from './components/ai-history-clear';
 import { effects as componentAiItemEffects } from './components/ai-item';
 import { AIScrollableTextRenderer } from './components/ai-scrollable-text-renderer';
@@ -109,6 +109,7 @@ export function registerAIEffects() {
   customElements.define('chat-panel-chips', ChatPanelChips);
   customElements.define('ai-history-clear', AIHistoryClear);
   customElements.define('chat-panel-add-popover', ChatPanelAddPopover);
+  customElements.define('chat-input-preference', ChatInputPreference);
   customElements.define(
     'chat-panel-candidates-popover',
     ChatPanelCandidatesPopover
@@ -118,7 +119,6 @@ export function registerAIEffects() {
   customElements.define('chat-panel-tag-chip', ChatPanelTagChip);
   customElements.define('chat-panel-collection-chip', ChatPanelCollectionChip);
   customElements.define('chat-panel-chip', ChatPanelChip);
-  customElements.define('ai-chat-models', AIChatModels);
   customElements.define('ai-error-wrapper', AIErrorWrapper);
   customElements.define('ai-slides-renderer', AISlidesRenderer);
   customElements.define('ai-answer-wrapper', AIAnswerWrapper);

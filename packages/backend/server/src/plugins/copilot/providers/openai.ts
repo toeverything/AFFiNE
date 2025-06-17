@@ -11,7 +11,7 @@ import {
   generateObject,
   generateText,
   streamText,
-  ToolSet,
+  Tool,
 } from 'ai';
 import { z } from 'zod';
 
@@ -21,10 +21,10 @@ import {
   metrics,
   UserFriendlyError,
 } from '../../../base';
-import { createExaCrawlTool, createExaSearchTool } from '../tools';
 import { CopilotProvider } from './provider';
 import type {
   CopilotChatOptions,
+  CopilotChatTools,
   CopilotEmbeddingOptions,
   CopilotImageOptions,
   CopilotStructuredOptions,
@@ -248,25 +248,14 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     }
   }
 
-  private getTools(options: CopilotChatOptions, model: string): ToolSet {
-    const tools: ToolSet = {};
-    if (options?.tools?.length) {
-      for (const tool of options.tools) {
-        switch (tool) {
-          case 'webSearch': {
-            if (this.isReasoningModel(model)) {
-              tools.web_search_exa = createExaSearchTool(this.AFFiNEConfig);
-              tools.web_crawl_exa = createExaCrawlTool(this.AFFiNEConfig);
-            } else {
-              tools.web_search_preview = openai.tools.webSearchPreview();
-            }
-            break;
-          }
-        }
-      }
-      return tools;
+  override getProviderSpecificTools(
+    toolName: CopilotChatTools,
+    model: string
+  ): [string, Tool] | undefined {
+    if (toolName === 'webSearch' && !this.isReasoningModel(model)) {
+      return ['web_search_preview', openai.tools.webSearchPreview()];
     }
-    return tools;
+    return;
   }
 
   async text(
@@ -297,7 +286,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         providerOptions: {
           openai: this.getOpenAIOptions(options, model.id),
         },
-        tools: this.getTools(options, model.id),
+        tools: await this.getTools(options, model.id),
         maxSteps: this.MAX_STEPS,
         abortSignal: options.signal,
       });
@@ -338,7 +327,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         providerOptions: {
           openai: this.getOpenAIOptions(options, model.id),
         },
-        tools: this.getTools(options, model.id),
+        tools: await this.getTools(options, model.id),
         maxSteps: this.MAX_STEPS,
         abortSignal: options.signal,
       });

@@ -10,7 +10,6 @@ import {
   metrics,
   UserFriendlyError,
 } from '../../../../base';
-import { createExaCrawlTool, createExaSearchTool } from '../../tools';
 import { CopilotProvider } from '../provider';
 import type {
   CopilotChatOptions,
@@ -68,7 +67,7 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
         providerOptions: {
           anthropic: this.getAnthropicOptions(options, model.id),
         },
-        tools: this.getTools(),
+        tools: await this.getTools(options, model.id),
         maxSteps: this.MAX_STEPS,
         experimental_continueSteps: true,
       });
@@ -103,7 +102,7 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
         providerOptions: {
           anthropic: this.getAnthropicOptions(options, model.id),
         },
-        tools: this.getTools(),
+        tools: await this.getTools(options, model.id),
         maxSteps: this.MAX_STEPS,
         experimental_continueSteps: true,
       });
@@ -121,13 +120,6 @@ export abstract class AnthropicProvider<T> extends CopilotProvider<T> {
       metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
       throw this.handleError(e);
     }
-  }
-
-  private getTools() {
-    return {
-      web_search_exa: createExaSearchTool(this.AFFiNEConfig),
-      web_crawl_exa: createExaCrawlTool(this.AFFiNEConfig),
-    };
   }
 
   private getAnthropicOptions(options: CopilotChatOptions, model: string) {
