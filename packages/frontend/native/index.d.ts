@@ -18,17 +18,39 @@ export declare class ApplicationListChangedSubscriber {
 }
 
 export declare class ApplicationStateChangedSubscriber {
-  get processId(): number
   unsubscribe(): void
 }
 
 export declare class AudioCaptureSession {
+  stop(): void
   get sampleRate(): number
   get channels(): number
   get actualSampleRate(): number
-  stop(): void
 }
 
+export declare class RecordingPermissions {
+  audio: boolean
+  screen: boolean
+}
+
+export declare class ShareableContent {
+  static onApplicationListChanged(callback: ((err: Error | null, ) => void)): ApplicationListChangedSubscriber
+  static onAppStateChanged(app: ApplicationInfo, callback: ((err: Error | null, ) => void)): ApplicationStateChangedSubscriber
+  constructor()
+  static applications(): Array<ApplicationInfo>
+  static applicationWithProcessId(processId: number): ApplicationInfo | null
+  static isUsingMicrophone(processId: number): boolean
+  static tapAudio(processId: number, audioStreamCallback: ((err: Error | null, arg: Float32Array) => void)): AudioCaptureSession
+  static tapGlobalAudio(excludedProcesses: Array<ApplicationInfo> | undefined | null, audioStreamCallback: ((err: Error | null, arg: Float32Array) => void)): AudioCaptureSession
+}
+
+export declare function decodeAudio(buf: Uint8Array, destSampleRate?: number | undefined | null, filename?: string | undefined | null, signal?: AbortSignal | undefined | null): Promise<Float32Array>
+
+/** Decode audio file into a Float32Array */
+export declare function decodeAudioSync(buf: Uint8Array, destSampleRate?: number | undefined | null, filename?: string | undefined | null): Float32Array
+export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
+
+export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>
 export declare class DocStorage {
   constructor(path: string)
   validate(): Promise<boolean>
@@ -69,17 +91,43 @@ export declare class DocStoragePool {
   getBlobUploadedAt(universalId: string, peer: string, blobId: string): Promise<Date | null>
 }
 
-export declare class ShareableContent {
-  static onApplicationListChanged(callback: ((err: Error | null, ) => void)): ApplicationListChangedSubscriber
-  static onAppStateChanged(app: ApplicationInfo, callback: ((err: Error | null, ) => void)): ApplicationStateChangedSubscriber
-  constructor()
-  static applications(): Array<ApplicationInfo>
-  static applicationWithProcessId(processId: number): ApplicationInfo | null
-  static tapAudio(processId: number, audioStreamCallback: ((err: Error | null, arg: Float32Array) => void)): AudioCaptureSession
-  static tapGlobalAudio(excludedProcesses: Array<ApplicationInfo> | undefined | null, audioStreamCallback: ((err: Error | null, arg: Float32Array) => void)): AudioCaptureSession
-  static isUsingMicrophone(processId: number): boolean
+export interface Blob {
+  key: string
+  data: Uint8Array
+  mime: string
+  size: number
+  createdAt: Date
 }
 
+export interface DocClock {
+  docId: string
+  timestamp: Date
+}
+
+export interface DocRecord {
+  docId: string
+  bin: Uint8Array
+  timestamp: Date
+}
+
+export interface DocUpdate {
+  docId: string
+  timestamp: Date
+  bin: Uint8Array
+}
+
+export interface ListedBlob {
+  key: string
+  size: number
+  mime: string
+  createdAt: Date
+}
+
+export interface SetBlob {
+  key: string
+  data: Uint8Array
+  mime: string
+}
 export declare class SqliteConnection {
   constructor(path: string)
   connect(): Promise<void>
@@ -118,33 +166,9 @@ export declare class SqliteConnection {
   checkpoint(): Promise<void>
 }
 
-export interface Blob {
-  key: string
-  data: Uint8Array
-  mime: string
-  size: number
-  createdAt: Date
-}
-
 export interface BlobRow {
   key: string
   data: Buffer
-  timestamp: Date
-}
-
-export declare function decodeAudio(buf: Uint8Array, destSampleRate?: number | undefined | null, filename?: string | undefined | null, signal?: AbortSignal | undefined | null): Promise<Float32Array>
-
-/** Decode audio file into a Float32Array */
-export declare function decodeAudioSync(buf: Uint8Array, destSampleRate?: number | undefined | null, filename?: string | undefined | null): Float32Array
-
-export interface DocClock {
-  docId: string
-  timestamp: Date
-}
-
-export interface DocRecord {
-  docId: string
-  bin: Uint8Array
   timestamp: Date
 }
 
@@ -153,30 +177,9 @@ export interface DocTimestampRow {
   timestamp: Date
 }
 
-export interface DocUpdate {
-  docId: string
-  timestamp: Date
-  bin: Uint8Array
-}
-
 export interface InsertRow {
   docId?: string
   data: Uint8Array
-}
-
-export interface ListedBlob {
-  key: string
-  size: number
-  mime: string
-  createdAt: Date
-}
-
-export declare function mintChallengeResponse(resource: string, bits?: number | undefined | null): Promise<string>
-
-export interface SetBlob {
-  key: string
-  data: Uint8Array
-  mime: string
 }
 
 export interface UpdateRow {
@@ -193,5 +196,3 @@ export declare enum ValidationResult {
   GeneralError = 3,
   Valid = 4
 }
-
-export declare function verifyChallengeResponse(response: string, bits: number, resource: string): Promise<boolean>

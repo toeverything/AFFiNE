@@ -5,7 +5,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 
 // Should not load @affine/native for unsupported platforms
-import type { ShareableContent } from '@affine/native';
+import type { ShareableContent as ShareableContentType } from '@affine/native';
 import { app, systemPreferences } from 'electron';
 import fs from 'fs-extra';
 import { debounce } from 'lodash-es';
@@ -65,7 +65,7 @@ export const SAVED_RECORDINGS_DIR = path.join(
   'recordings'
 );
 
-let shareableContent: ShareableContent | null = null;
+let shareableContent: ShareableContentType | null = null;
 
 function cleanup() {
   shareableContent = null;
@@ -96,8 +96,10 @@ const recordings = new Map<number, Recording>();
 export const recordingStatus$ = recordingStateMachine.status$;
 
 function createAppGroup(processGroupId: number): AppGroupInfo | undefined {
-  const groupProcess =
-    shareableContent?.applicationWithProcessId(processGroupId);
+  // MUST require dynamically to avoid loading @affine/native for unsupported platforms
+  const SC: typeof ShareableContentType =
+    require('@affine/native').ShareableContent;
+  const groupProcess = SC?.applicationWithProcessId(processGroupId);
   if (!groupProcess) {
     return;
   }
@@ -289,7 +291,7 @@ export function createRecording(status: RecordingStatus) {
   }
 
   // MUST require dynamically to avoid loading @affine/native for unsupported platforms
-  const SC: typeof ShareableContent =
+  const SC: typeof ShareableContentType =
     require('@affine/native').ShareableContent;
 
   const stream = status.app
@@ -398,9 +400,11 @@ function getAllApps(): TappableAppInfo[] {
   }
 
   // MUST require dynamically to avoid loading @affine/native for unsupported platforms
-  const { ShareableContent } = require('@affine/native');
+  const { ShareableContent } = require('@affine/native') as {
+    ShareableContent: typeof ShareableContentType;
+  };
 
-  const apps = shareableContent.applications().map(app => {
+  const apps = ShareableContent.applications().map(app => {
     try {
       // Check if this process is actively using microphone/audio
       const isRunning = ShareableContent.isUsingMicrophone(app.processId);
