@@ -1,24 +1,18 @@
 import { toast } from '@affine/component';
-import { stopPropagation } from '@affine/core/utils';
 import type { CopilotSessionType } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { openFilesWith } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
-import {
-  CloseIcon,
-  ImageIcon,
-  PublishIcon,
-  ThinkingIcon,
-} from '@blocksuite/icons/lit';
+import { ArrowUpBigIcon, CloseIcon, ImageIcon } from '@blocksuite/icons/lit';
 import { type Signal, signal } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { ChatAbortIcon, ChatSendIcon } from '../../_common/icons';
+import { ChatAbortIcon } from '../../_common/icons';
 import { type AIError, AIProvider } from '../../provider';
 import { reportResponse } from '../../utils/action-reporter';
 import { readBlobAsURL } from '../../utils/image';
@@ -45,20 +39,42 @@ export class AIChatInput extends SignalWatcher(
     :host {
       width: 100%;
     }
+
+    [data-theme='dark'] .chat-panel-input {
+      box-shadow:
+        var(--border-shadow),
+        0px 0px 0px 0px rgba(28, 158, 228, 0),
+        0px 0px 0px 2px transparent;
+    }
+    [data-theme='light'] .chat-panel-input {
+      box-shadow:
+        var(--border-shadow),
+        0px 0px 0px 3px transparent,
+        0px 2px 3px rgba(0, 0, 0, 0.05);
+    }
+    [data-theme='dark'] .chat-panel-input[data-if-focused='true'] {
+      box-shadow:
+        var(--border-shadow),
+        0px 0px 0px 3px rgba(28, 158, 228, 0.3),
+        0px 2px 3px rgba(0, 0, 0, 0.05);
+    }
+
     .chat-panel-input {
+      --input-border-width: 0.5px;
+      --input-border-color: var(--affine-v2-layer-insideBorder-border);
+      --border-shadow: 0px 0px 0px var(--input-border-width)
+        var(--input-border-color);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      gap: 12px;
+      gap: 4px;
       position: relative;
-      margin-top: 12px;
-      border-radius: 4px;
-      padding: 8px;
+      border-radius: 12px;
+      padding: 8px 6px 6px 8px;
       min-height: 94px;
       box-sizing: border-box;
-      border-width: 1px;
-      border-style: solid;
-      border-color: var(--affine-border-color);
+      transition: box-shadow 0.23s ease;
+      background-color: var(--affine-v2-input-background);
 
       .chat-selection-quote {
         padding: 4px 0px 8px 0px;
@@ -207,7 +223,7 @@ export class AIChatInput extends SignalWatcher(
         font-size: 14px;
         font-weight: 400;
         font-family: var(--affine-font-family);
-        color: var(--affine-placeholder-color);
+        color: var(--affine-v2-text-placeholder);
       }
 
       textarea:focus {
@@ -216,8 +232,8 @@ export class AIChatInput extends SignalWatcher(
     }
 
     .chat-panel-input[data-if-focused='true'] {
-      border-color: var(--affine-primary-color);
-      box-shadow: var(--affine-active-shadow);
+      --input-border-width: 1px;
+      --input-border-color: var(--affine-v2-layer-insideBorder-primaryBorder);
       user-select: none;
     }
 
@@ -225,16 +241,32 @@ export class AIChatInput extends SignalWatcher(
       display: flex;
       justify-content: center;
       align-items: center;
-    }
-
-    .chat-panel-send svg rect {
-      fill: var(--affine-primary-color);
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      font-size: 20px;
+      background: var(--affine-v2-icon-activated);
+      color: var(--affine-v2-layer-pureWhite);
     }
     .chat-panel-send[aria-disabled='true'] {
       cursor: not-allowed;
+      background: var(--affine-v2-button-disable);
     }
-    .chat-panel-send[aria-disabled='true'] svg rect {
-      fill: var(--affine-text-disable-color);
+    .chat-panel-stop {
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 50%;
+      font-size: 24px;
+      color: var(--affine-v2-icon-activated);
+    }
+    .chat-input-footer-spacer {
+      flex: 1;
     }
   `;
 
@@ -342,7 +374,6 @@ export class AIChatInput extends SignalWatcher(
     const { images, status } = this.chatContextValue;
     const hasImages = images.length > 0;
     const maxHeight = hasImages ? 272 + 2 : 200 + 2;
-    const showLabel = this.panelWidth.value && this.panelWidth.value > 400;
 
     return html` <div
       class="chat-panel-input"
@@ -404,62 +435,34 @@ export class AIChatInput extends SignalWatcher(
           ${ImageIcon()}
           <affine-tooltip>Upload</affine-tooltip>
         </div>
-        ${this.modelSwitchConfig?.visible.value
-          ? html`
-              <ai-chat-models
-                class="chat-input-icon"
-                .modelId=${this.modelId}
-                .session=${this.session}
-                .onModelChange=${this._handleModelChange}
-              ></ai-chat-models>
-            `
-          : nothing}
-        ${this.networkSearchConfig.visible.value
-          ? html`
-              <div
-                class="chat-input-icon"
-                data-testid="chat-network-search"
-                data-active=${this._isNetworkActive}
-                @click=${this._toggleNetworkSearch}
-                @pointerdown=${stopPropagation}
-              >
-                ${PublishIcon()}
-                ${!showLabel
-                  ? html`<affine-tooltip>Search</affine-tooltip>`
-                  : nothing}
-                ${showLabel
-                  ? html`<span class="chat-input-icon-label">Search</span>`
-                  : nothing}
-              </div>
-            `
-          : nothing}
-        <div
-          class="chat-input-icon"
-          data-testid="chat-reasoning"
-          data-active=${this._isReasoningActive}
-          @click=${this._toggleReasoning}
-          @pointerdown=${stopPropagation}
-        >
-          ${ThinkingIcon()}
-          ${!showLabel
-            ? html`<affine-tooltip>Reason</affine-tooltip>`
-            : nothing}
-          ${showLabel
-            ? html`<span class="chat-input-icon-label">Reason</span>`
-            : nothing}
-        </div>
+        <div class="chat-input-footer-spacer"></div>
+        <chat-input-preference
+          .modelSwitchConfig=${this.modelSwitchConfig}
+          .session=${this.session}
+          .onModelChange=${this._handleModelChange}
+          .modelId=${this.modelId}
+          .extendedThinking=${this._isReasoningActive}
+          .onExtendedThinkingChange=${this._toggleReasoning}
+          .networkSearchVisible=${!!this.networkSearchConfig.visible.value}
+          .isNetworkActive=${this._isNetworkActive}
+          .onNetworkActiveChange=${this._toggleNetworkSearch}
+        ></chat-input-preference>
         ${status === 'transmitting' || status === 'loading'
-          ? html`<div @click=${this._handleAbort} data-testid="chat-panel-stop">
+          ? html`<button
+              class="chat-panel-stop"
+              @click=${this._handleAbort}
+              data-testid="chat-panel-stop"
+            >
               ${ChatAbortIcon}
-            </div>`
-          : html`<div
+            </button>`
+          : html`<button
               @click="${this._onTextareaSend}"
               class="chat-panel-send"
               aria-disabled=${this.isInputEmpty}
               data-testid="chat-panel-send"
             >
-              ${ChatSendIcon}
-            </div>`}
+              ${ArrowUpBigIcon()}
+            </button>`}
       </div>
     </div>`;
   }
@@ -512,20 +515,12 @@ export class AIChatInput extends SignalWatcher(
     reportResponse('aborted:stop');
   };
 
-  private readonly _toggleNetworkSearch = (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const enable = this.networkSearchConfig.enabled.value;
-    this.networkSearchConfig.setEnabled(!enable);
+  private readonly _toggleNetworkSearch = (isNetworkActive: boolean) => {
+    this.networkSearchConfig.setEnabled(isNetworkActive);
   };
 
-  private readonly _toggleReasoning = (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const enable = this.reasoningConfig.enabled.value;
-    this.reasoningConfig.setEnabled(!enable);
+  private readonly _toggleReasoning = (extendedThinking: boolean) => {
+    this.reasoningConfig.setEnabled(extendedThinking);
   };
 
   private readonly _handleImageRemove = (index: number) => {
