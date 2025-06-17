@@ -60,14 +60,14 @@ export const PromptConfigStrictSchema = z.object({
   tools: z
     .enum([
       // work with morph
-      'editDoc',
+      'docEdit',
+      // work with indexer
+      'docRead',
+      'docKeywordSearch',
+      // work with embeddings
+      'docSemanticSearch',
       // work with exa/model internal tools
       'webSearch',
-      // work with indexer
-      'readDoc',
-      'keywordSearch',
-      // work with embeddings
-      'semanticSearch',
     ])
     .array()
     .nullable()
