@@ -26,6 +26,8 @@ let package = Package(
       "Then",
       .product(name: "Apollo", package: "apollo-ios"),
       .product(name: "OrderedCollections", package: "swift-collections"),
+    ], resources: [
+      .process("Interface/View/InputBox/InputBox.xcassets")
     ]),
   ]
 )

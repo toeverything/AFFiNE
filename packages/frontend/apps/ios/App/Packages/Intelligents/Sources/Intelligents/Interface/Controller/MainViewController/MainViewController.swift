@@ -9,6 +9,10 @@ class MainViewController: UIViewController {
     $0.delegate = self
   }
 
+  private lazy var inputBox = InputBox().then {
+    $0.delegate = self
+  }
+
   // MARK: - Lifecycle
 
   override func viewDidLoad() {
@@ -32,10 +36,16 @@ class MainViewController: UIViewController {
     view.backgroundColor = .systemBackground
 
     view.addSubview(headerView)
+    view.addSubview(inputBox)
 
     headerView.snp.makeConstraints { make in
       make.top.equalTo(view.safeAreaLayoutGuide)
       make.leading.trailing.equalToSuperview()
+    }
+
+    inputBox.snp.makeConstraints { make in
+      make.leading.trailing.equalToSuperview()
+      make.bottom.equalTo(view.keyboardLayoutGuide.snp.top)
     }
   }
 }
@@ -56,4 +66,33 @@ extension MainViewController: MainHeaderViewDelegate {
     // TODO: 实现菜单功能
     print("Menu tapped")
   }
+}
+
+// MARK: - InputBoxDelegate
+
+extension MainViewController: InputBoxDelegate {
+  func inputBoxDidTapAddAttachment() {
+    
+  }
+  
+  func inputBoxDidTapTool() {
+    
+  }
+  
+  func inputBoxDidTapNetwork() {
+    
+  }
+  
+  func inputBoxDidTapDeepThinking() {
+    
+  }
+  
+  func inputBoxDidTapSend() {
+    
+  }
+  
+  func inputBoxTextDidChange(_ text: String) {
+    
+  }
+  
 }
