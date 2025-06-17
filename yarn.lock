@@ -782,7 +782,7 @@ __metadata:
     eslint-plugin-simple-import-sort: "npm:^12.1.1"
     eslint-plugin-sonarjs: "npm:^3.0.1"
     eslint-plugin-unicorn: "npm:^59.0.0"
-    happy-dom: "npm:^17.0.0"
+    happy-dom: "npm:^18.0.0"
     husky: "npm:^9.1.7"
     lint-staged: "npm:^16.0.0"
     msw: "npm:^2.6.8"
@@ -15121,6 +15121,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^20.0.0":
+  version: 20.19.1
+  resolution: "@types/node@npm:20.19.1"
+  dependencies:
+    undici-types: "npm:~6.21.0"
+  checksum: 10/2369a96a832a6e8111d2b996c56fb1b78b27fad0879de3e344ae2835697464e001d6fe813a11902348fc7dc63b9510000f3d2cd4bedadf2d3fce7b7bb7903444
+  languageName: node
+  linkType: hard
+
 "@types/nodemailer@npm:^6.4.17":
   version: 6.4.17
   resolution: "@types/nodemailer@npm:6.4.17"
@@ -15432,6 +15441,13 @@ __metadata:
   version: 1.18.8
   resolution: "@types/webpack-env@npm:1.18.8"
   checksum: 10/f3932f3d6c2530f644cfc898eda1ab8182d6ae57f555c2f0179d813549b639078671b71e4041831fc306c5ebe61f5cdac794fe4ceae281fce8bf67e23661a488
+  languageName: node
+  linkType: hard
+
+"@types/whatwg-mimetype@npm:^3.0.2":
+  version: 3.0.2
+  resolution: "@types/whatwg-mimetype@npm:3.0.2"
+  checksum: 10/609607beeaa8b50b9e00541d8f571880d651b26b6b006103370099aba00784037de54433627c9fe775a5558e3d1fc09c2a48f54c8af91988e9bebeaf6a698eeb
   languageName: node
   linkType: hard
 
@@ -22659,13 +22675,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:^17.0.0":
-  version: 17.4.7
-  resolution: "happy-dom@npm:17.4.7"
+"happy-dom@npm:^18.0.0":
+  version: 18.0.1
+  resolution: "happy-dom@npm:18.0.1"
   dependencies:
-    webidl-conversions: "npm:^7.0.0"
+    "@types/node": "npm:^20.0.0"
+    "@types/whatwg-mimetype": "npm:^3.0.2"
     whatwg-mimetype: "npm:^3.0.0"
-  checksum: 10/8f6af6b3cfea459805fc2db7329ecdf9c7760d29cae20dde85983896de02f7bfcf265533850848a501c9813d94211c0737534c54d28b6c5b2c1bb13daa344211
+  checksum: 10/27f6638d7b8bc67f97ddde7f004e47785ae1487e14065d7c6119adbb9ba7d8a53935d5714d37d9f60efef7f9b180a41c2b7fbbdffcea57b6d04060360a1a1d03
   languageName: node
   linkType: hard
 
@@ -34012,13 +34029,6 @@ __metadata:
   version: 3.0.1
   resolution: "webidl-conversions@npm:3.0.1"
   checksum: 10/b65b9f8d6854572a84a5c69615152b63371395f0c5dcd6729c45789052296df54314db2bc3e977df41705eacb8bc79c247cee139a63fa695192f95816ed528ad
-  languageName: node
-  linkType: hard
-
-"webidl-conversions@npm:^7.0.0":
-  version: 7.0.0
-  resolution: "webidl-conversions@npm:7.0.0"
-  checksum: 10/4c4f65472c010eddbe648c11b977d048dd96956a625f7f8b9d64e1b30c3c1f23ea1acfd654648426ce5c743c2108a5a757c0592f02902cf7367adb7d14e67721
   languageName: node
   linkType: hard
 
