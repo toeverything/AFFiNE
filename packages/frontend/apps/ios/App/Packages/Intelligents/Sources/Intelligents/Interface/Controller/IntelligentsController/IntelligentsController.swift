@@ -9,7 +9,7 @@ import UIKit
 
 public class IntelligentsController: UINavigationController {
   public init() {
-    super.init(nibName: nil, bundle: nil)
+    super.init(rootViewController: MainViewController())
     modalPresentationStyle = .custom
     transitioningDelegate = BlurTransitioningDelegate.shared
     setNavigationBarHidden(true, animated: false)
@@ -23,15 +23,5 @@ public class IntelligentsController: UINavigationController {
   override public func viewDidLoad() {
     super.viewDidLoad()
     view.backgroundColor = .systemBackground
-  }
-
-  override public func viewWillAppear(_ animated: Bool) {
-    super.viewWillAppear(animated)
-    setNavigationBarHidden(true, animated: animated)
-  }
-
-  override public func viewWillDisappear(_ animated: Bool) {
-    super.viewWillDisappear(animated)
-    setNavigationBarHidden(false, animated: animated)
   }
 }
