@@ -7,7 +7,7 @@ public class GetCopilotSessionsQuery: GraphQLQuery {
   public static let operationName: String = "getCopilotSessions"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getCopilotSessions($workspaceId: String!, $docId: String, $options: QueryChatSessionsInput) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename sessions(docId: $docId, options: $options) { __typename id parentSessionId promptName } } } }"#
+      #"query getCopilotSessions($workspaceId: String!, $docId: String, $options: QueryChatSessionsInput) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename sessions(docId: $docId, options: $options) { __typename id parentSessionId promptName model optionalModels } } } }"#
     ))
 
   public var workspaceId: String
@@ -89,11 +89,15 @@ public class GetCopilotSessionsQuery: GraphQLQuery {
             .field("id", AffineGraphQL.ID.self),
             .field("parentSessionId", AffineGraphQL.ID?.self),
             .field("promptName", String.self),
+            .field("model", String.self),
+            .field("optionalModels", [String].self),
           ] }
 
           public var id: AffineGraphQL.ID { __data["id"] }
           public var parentSessionId: AffineGraphQL.ID? { __data["parentSessionId"] }
           public var promptName: String { __data["promptName"] }
+          public var model: String { __data["model"] }
+          public var optionalModels: [String] { __data["optionalModels"] }
         }
       }
     }

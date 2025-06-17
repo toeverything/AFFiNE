@@ -4,9 +4,25 @@ import { SCHEMA_NOT_FOUND_MESSAGE } from '../consts.js';
 import { BlockSchema, type BlockSchemaType } from '../model/index.js';
 import { SchemaValidateError } from './error.js';
 
+/**
+ * Represents a schema manager for block flavours and their relationships.
+ * Provides methods to register, validate, and query block schemas.
+ */
 export class Schema {
+  /**
+   * A map storing block flavour names to their corresponding schema definitions.
+   */
   readonly flavourSchemaMap = new Map<string, BlockSchemaType>();
 
+  /**
+   * Safely validates the schema relationship for a given flavour, parent, and children.
+   * Returns true if valid, false otherwise (does not throw).
+   *
+   * @param flavour - The block flavour to validate.
+   * @param parentFlavour - The parent block flavour (optional).
+   * @param childFlavours - The child block flavours (optional).
+   * @returns True if the schema relationship is valid, false otherwise.
+   */
   safeValidate = (
     flavour: string,
     parentFlavour?: string,
@@ -20,10 +36,25 @@ export class Schema {
     }
   };
 
+  /**
+   * Retrieves the schema for a given block flavour.
+   *
+   * @param flavour - The block flavour name.
+   * @returns The corresponding BlockSchemaType or undefined if not found.
+   */
   get(flavour: string) {
     return this.flavourSchemaMap.get(flavour);
   }
 
+  /**
+   * Validates the schema relationship for a given flavour, parent, and children.
+   * Throws SchemaValidateError if invalid.
+   *
+   * @param flavour - The block flavour to validate.
+   * @param parentFlavour - The parent block flavour (optional).
+   * @param childFlavours - The child block flavours (optional).
+   * @throws {SchemaValidateError} If the schema relationship is invalid.
+   */
   validate = (
     flavour: string,
     parentFlavour?: string,
@@ -71,6 +102,9 @@ export class Schema {
     validateChildren();
   };
 
+  /**
+   * Returns an object mapping each registered flavour to its version number.
+   */
   get versions() {
     return Object.fromEntries(
       Array.from(this.flavourSchemaMap.values()).map(
@@ -79,6 +113,13 @@ export class Schema {
     );
   }
 
+  /**
+   * Checks if two flavours match, using minimatch for wildcard support.
+   *
+   * @param childFlavour - The child block flavour.
+   * @param parentFlavour - The parent block flavour.
+   * @returns True if the flavours match, false otherwise.
+   */
   private _matchFlavour(childFlavour: string, parentFlavour: string) {
     return (
       minimatch(childFlavour, parentFlavour) ||
@@ -86,6 +127,15 @@ export class Schema {
     );
   }
 
+  /**
+   * Checks if two values match as either flavours or roles, supporting role syntax (e.g., '@role').
+   *
+   * @param childValue - The child value (flavour or role).
+   * @param parentValue - The parent value (flavour or role).
+   * @param childRole - The actual role of the child.
+   * @param parentRole - The actual role of the parent.
+   * @returns True if the values match as flavours or roles, false otherwise.
+   */
   private _matchFlavourOrRole(
     childValue: string,
     parentValue: string,
@@ -112,6 +162,13 @@ export class Schema {
     return this._matchFlavour(childValue, parentValue);
   }
 
+  /**
+   * Validates if the parent schema is a valid parent for the child schema.
+   *
+   * @param child - The child block schema.
+   * @param parent - The parent block schema.
+   * @returns True if the parent is valid for the child, false otherwise.
+   */
   private _validateParent(
     child: BlockSchemaType,
     parent: BlockSchemaType
@@ -169,6 +226,14 @@ export class Schema {
     });
   }
 
+  /**
+   * Validates the role relationship between child and parent schemas.
+   * Throws if the child is a root block but has a parent.
+   *
+   * @param child - The child block schema.
+   * @param parent - The parent block schema.
+   * @throws {SchemaValidateError} If the child is a root block with a parent.
+   */
   private _validateRole(child: BlockSchemaType, parent: BlockSchemaType) {
     const childRole = child.model.role;
     const childFlavour = child.model.flavour;
@@ -182,6 +247,13 @@ export class Schema {
     }
   }
 
+  /**
+   * Checks if the child flavour is valid under the parent flavour.
+   *
+   * @param child - The child block flavour name.
+   * @param parent - The parent block flavour name.
+   * @returns True if the relationship is valid, false otherwise.
+   */
   isValid(child: string, parent: string) {
     const childSchema = this.flavourSchemaMap.get(child);
     const parentSchema = this.flavourSchemaMap.get(parent);
@@ -196,6 +268,12 @@ export class Schema {
     }
   }
 
+  /**
+   * Registers an array of block schemas into the schema manager.
+   *
+   * @param blockSchema - An array of block schema definitions to register.
+   * @returns The Schema instance (for chaining).
+   */
   register(blockSchema: BlockSchemaType[]) {
     blockSchema.forEach(schema => {
       BlockSchema.parse(schema);
@@ -204,6 +282,11 @@ export class Schema {
     return this;
   }
 
+  /**
+   * Serializes the schema map to a plain object for JSON output.
+   *
+   * @returns An object mapping each flavour to its role, parent, and children.
+   */
   toJSON() {
     return Object.fromEntries(
       Array.from(this.flavourSchemaMap.values()).map(
@@ -219,6 +302,14 @@ export class Schema {
     );
   }
 
+  /**
+   * Validates the relationship between a child and parent schema.
+   * Throws if the relationship is invalid.
+   *
+   * @param child - The child block schema.
+   * @param parent - The parent block schema.
+   * @throws {SchemaValidateError} If the relationship is invalid.
+   */
   validateSchema(child: BlockSchemaType, parent: BlockSchemaType) {
     this._validateRole(child, parent);
 

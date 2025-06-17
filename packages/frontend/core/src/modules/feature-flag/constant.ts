@@ -280,7 +280,7 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-code-block-html-preview.description',
     configurable: isCanaryBuild,
-    defaultState: true,
+    defaultState: isCanaryBuild,
   },
   enable_adapter_panel: {
     category: 'affine',

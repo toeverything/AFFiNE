@@ -102,9 +102,7 @@ export class PlaygroundContent extends SignalWatcher(
         this.doc.id,
         { action: false }
       )) || [];
-    const rootSession = sessions
-      ?.filter(session => !session.parentSessionId)
-      .at(-1);
+    const rootSession = sessions?.findLast(session => !session.parentSessionId);
     if (!rootSession) {
       // Create a new session
       const rootSessionId = await AIProvider.session?.createSession({
