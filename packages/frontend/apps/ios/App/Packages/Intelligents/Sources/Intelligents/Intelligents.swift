@@ -5,8 +5,7 @@ import AffineGraphQL
 import Apollo
 import Foundation
 
-public enum Intelligents {
-}
+public enum Intelligents {}
 
 private extension Intelligents {
   private final class URLSessionCookieClient: URLSessionClient {

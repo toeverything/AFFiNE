@@ -10,12 +10,13 @@ import UIKit
 
 extension AFFiNEViewController: IntelligentsButtonDelegate {
   func onIntelligentsButtonTapped(_ button: IntelligentsButton) {
-    guard let webView else {
-      assertionFailure() // ? wdym ?
-      return
-    }
-
+    IntelligentContext.shared.webView = webView!
     button.beginProgress()
-
+    
+    IntelligentContext.shared.preparePresent() {
+      button.stopProgress()
+      let controller = IntelligentsController()
+      self.present(controller, animated: true)
+    }
   }
 }

@@ -5,6 +5,7 @@
 //  Created by 秋星桥 on 2024/11/18.
 //
 
+import SnapKit
 import UIKit
 
 public extension UIViewController {
@@ -16,15 +17,15 @@ public extension UIViewController {
     let button = IntelligentsButton()
     view.addSubview(button)
     view.bringSubviewToFront(button)
-    button.translatesAutoresizingMaskIntoConstraints = false
-    [
-      button.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -20),
-      button.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20 - 44),
-      button.widthAnchor.constraint(equalToConstant: 50),
-      button.heightAnchor.constraint(equalToConstant: 50),
-    ].forEach { $0.isActive = true }
+    button.snp.makeConstraints { make in
+      make.trailing.equalTo(view.safeAreaLayoutGuide).offset(-20)
+      make.bottom.equalTo(view.safeAreaLayoutGuide).offset(-20 - 44)
+      make.width.height.equalTo(50)
+    }
     button.transform = .init(scaleX: 0, y: 0)
-    view.layoutIfNeeded()
+    if view.frame != .zero {
+      view.layoutIfNeeded()
+    }
     return button
   }
 

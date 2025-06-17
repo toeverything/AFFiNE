@@ -11,7 +11,7 @@ class AFFiNEViewController: CAPBridgeViewController {
     edgesForExtendedLayout = []
     let intelligentsButton = installIntelligentsButton()
     intelligentsButton.delegate = self
-    dismissIntelligentsButton()
+    presentIntelligentsButton() // from v2.0 always visible
   }
   
   override func webViewConfiguration(for instanceConfiguration: InstanceConfiguration) -> WKWebViewConfiguration {
@@ -29,7 +29,7 @@ class AFFiNEViewController: CAPBridgeViewController {
       CookiePlugin(),
       HashcashPlugin(),
       NavigationGesturePlugin(),
-      IntelligentsPlugin(representController: self),
+      // IntelligentsPlugin(representController: self), // no longer put in use
       NbStorePlugin(),
     ]
     plugins.forEach { bridge?.registerPluginInstance($0) }
@@ -39,15 +39,6 @@ class AFFiNEViewController: CAPBridgeViewController {
     super.viewDidAppear(animated)
     navigationController?.setNavigationBarHidden(false, animated: animated)
   }
-  
-#if DEBUG
-  override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
-    super.motionEnded(motion, with: event)
-    if motion == .motionShake {
-      presentIntelligentsButton()
-    }
-  }
-#endif
 }
 
 
