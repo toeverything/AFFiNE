@@ -20,7 +20,16 @@ export const buildDocSearchGetter = (
       .can('Workspace.Read');
     if (!canAccess) return undefined;
     const chunks = await context.matchWorkspaceAll(options.workspace, query);
-    return chunks || undefined;
+    const docChunks = await ac
+      .user(options.user)
+      .workspace(options.workspace)
+      .docs(
+        chunks.filter(c => 'docId' in c),
+        'Doc.Read'
+      );
+    const fileChunks = chunks.filter(c => 'fileId' in c);
+    if (!docChunks.length && !fileChunks.length) return undefined;
+    return [...fileChunks, ...docChunks];
   };
   return searchDocs;
 };
