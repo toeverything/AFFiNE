@@ -10,9 +10,9 @@ import {
 import { ZodType } from 'zod';
 
 import {
+  createDocSemanticSearchTool,
   createExaCrawlTool,
   createExaSearchTool,
-  createSemanticSearchTool,
 } from '../tools';
 import { PromptMessage } from './types';
 
@@ -380,9 +380,9 @@ export class CitationParser {
 }
 
 export interface CustomAITools extends ToolSet {
+  doc_semantic_search: ReturnType<typeof createDocSemanticSearchTool>;
   web_search_exa: ReturnType<typeof createExaSearchTool>;
   web_crawl_exa: ReturnType<typeof createExaCrawlTool>;
-  semantic_search: ReturnType<typeof createSemanticSearchTool>;
 }
 
 type ChunkType = TextStreamPart<CustomAITools>['type'];
@@ -429,7 +429,7 @@ export class TextStreamParser {
       case 'tool-result': {
         result = this.addPrefix(result);
         switch (chunk.toolName) {
-          case 'semantic_search': {
+          case 'doc_semantic_search': {
             if (Array.isArray(chunk.result)) {
               result += `\nFound ${chunk.result.length} document${chunk.result.length !== 1 ? 's' : ''} related to “${chunk.args.query}”.\n`;
             }

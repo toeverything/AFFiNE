@@ -25,7 +25,7 @@ export const buildDocSearchGetter = (
   return searchDocs;
 };
 
-export const createSemanticSearchTool = (
+export const createDocSemanticSearchTool = (
   searchDocs: (query: string) => Promise<ChunkSimilarity[] | undefined>
 ) => {
   return tool({
