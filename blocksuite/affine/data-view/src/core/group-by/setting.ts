@@ -270,7 +270,7 @@ export const selectGroupByProperty = (
   const view = group.view;
   return {
     onClose: ops?.onClose,
-    title: { text: 'Group by', onBack: ops?.onBack },
+    title: { text: 'Group by', onBack: ops?.onBack, onClose: ops?.onClose },
     items: [
       menu.group({
         items: view.propertiesRaw$.value
@@ -590,14 +590,16 @@ export const popGroupSetting = (
 
         menu.group({
           items: [
-            menu.action({
-              name: 'Hide empty groups',
-              isSelected: group.hideEmpty$.value,
-              select: () => {
-                group.setHideEmpty(!group.hideEmpty$.value);
-                return false;
-              },
-            }),
+            menu.dynamic(() => [
+              menu.action({
+                name: 'Hide empty groups',
+                isSelected: group.hideEmpty$.value,
+                select: () => {
+                  group.setHideEmpty(!group.hideEmpty$.value);
+                  return false;
+                },
+              }),
+            ]),
           ],
         }),
         menu.group({

@@ -30,16 +30,16 @@ export type MenuSubMenuData = {
 };
 export const subMenuOffset = offset({
   mainAxis: 16,
-  crossAxis: -8.5,
+  crossAxis: 0,
 });
 export const subMenuPlacements = autoPlacement({
-  allowedPlacements: ['bottom-start', 'bottom-end'],
+  allowedPlacements: ['bottom-end'],
 });
 export const subMenuMiddleware = [subMenuOffset, subMenuPlacements];
 
 export const dropdownSubMenuMiddleware = [
-  autoPlacement({ allowedPlacements: ['bottom-start', 'bottom-end'] }),
-  offset({ mainAxis: 8, crossAxis: -8 }),
+  autoPlacement({ allowedPlacements: ['bottom-end'] }),
+  offset({ mainAxis: 8, crossAxis: 0 }),
   shift({ crossAxis: true }),
 ];
 
@@ -109,6 +109,7 @@ export class MenuSubMenu extends MenuFocusable {
         menu.menuElement.style.minHeight = 'fit-content';
         menu.menuElement.style.maxHeight = 'fit-content';
       }
+      menu.menuElement.style.minWidth = '200px';
       this.menu.openSubMenu(menu);
       return;
     }
@@ -133,6 +134,7 @@ export class MenuSubMenu extends MenuFocusable {
       menu.menuElement.style.minHeight = 'fit-content';
       menu.menuElement.style.maxHeight = 'fit-content';
     }
+    menu.menuElement.style.minWidth = '200px';
     const unsub = autoUpdate(this, menu.menuElement, () => {
       computePosition(this, menu.menuElement, {
         middleware: this.data.middleware ?? subMenuMiddleware,
@@ -199,6 +201,7 @@ export class MobileSubMenu extends MenuFocusable {
       menu.menuElement.style.minHeight = 'fit-content';
       menu.menuElement.style.maxHeight = 'fit-content';
     }
+    menu.menuElement.style.minWidth = '200px';
     this.menu.openSubMenu(menu);
   }
 

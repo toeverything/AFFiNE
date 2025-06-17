@@ -133,8 +133,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
                   // allow submenu height and width to adjust to content
                   subHandler.menu.menuElement.style.minHeight = 'fit-content';
                   subHandler.menu.menuElement.style.maxHeight = 'fit-content';
-                  subHandler.menu.menuElement.style.minWidth = 'fit-content';
-                  subHandler.menu.menuElement.style.maxWidth = 'fit-content';
+                  subHandler.menu.menuElement.style.minWidth = '200px';
                   return false;
                 },
               }),
@@ -161,8 +160,7 @@ export class FilterConditionView extends SignalWatcher(ShadowlessElement) {
     // allow main menu height and width to adjust to calendar size
     handler.menu.menuElement.style.minHeight = 'fit-content';
     handler.menu.menuElement.style.maxHeight = 'fit-content';
-    handler.menu.menuElement.style.minWidth = 'fit-content';
-    handler.menu.menuElement.style.maxWidth = 'fit-content';
+    handler.menu.menuElement.style.minWidth = '200px';
   };
 
   @property({ attribute: false })

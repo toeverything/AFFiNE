@@ -245,6 +245,7 @@ export const popPropertiesSetting = (
       title: {
         text: 'Properties',
         onBack: props.onBack,
+        onClose: props.onClose,
         postfix: () => {
           const items = props.view.propertiesRaw$.value;
           const isAllShowed = items.every(property => !property.hide$.value);
@@ -273,6 +274,7 @@ export const popPropertiesSetting = (
           ],
         }),
       ],
+      onClose: props.onClose,
     },
   });
   handler.menu.menuElement.style.minHeight = '550px';

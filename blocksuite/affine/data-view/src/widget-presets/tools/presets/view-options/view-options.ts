@@ -497,7 +497,7 @@ export const popViewOptions = (
       onClose: onClose,
     },
     middleware: [
-      autoPlacement({ allowedPlacements: ['bottom-start', 'top-start'] }),
+      autoPlacement({ allowedPlacements: ['bottom-start'] }),
       offset({ mainAxis: 15, crossAxis: -162 }),
       shift({ crossAxis: true }),
     ],

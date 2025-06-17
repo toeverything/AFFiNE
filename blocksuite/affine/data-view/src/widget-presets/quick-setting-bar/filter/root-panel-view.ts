@@ -15,7 +15,7 @@ import {
   PlusIcon,
 } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
-import { type Middleware, offset, shift } from '@floating-ui/dom';
+import { type Middleware, offset } from '@floating-ui/dom';
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -209,21 +209,13 @@ export class FilterRootView extends SignalWatcher(ShadowlessElement) {
     }
     const handler = popMenu(popupTargetFromElement(target), {
       placement: 'bottom-end',
-      middleware: [
-        offset({ mainAxis: 12, crossAxis: 0 }),
-        shift({ crossAxis: true }),
-      ],
+      middleware: [offset({ mainAxis: 12, crossAxis: 0 })],
       options: {
         items: [
           menu.action({
             name:
               filter.type === 'filter' ? 'Turn into group' : 'Wrap in group',
             prefix: ConvertIcon(),
-            onHover: hover => {
-              this.containerClass = hover
-                ? { index: i, class: 'hover-style' }
-                : undefined;
-            },
             hide: () => getDepth(filter) > 3,
             select: () => {
               this.onChange({
@@ -236,11 +228,6 @@ export class FilterRootView extends SignalWatcher(ShadowlessElement) {
           menu.action({
             name: 'Duplicate',
             prefix: DuplicateIcon(),
-            onHover: hover => {
-              this.containerClass = hover
-                ? { index: i, class: 'hover-style' }
-                : undefined;
-            },
             select: () => {
               const conditions = [...this.filterGroup.value.conditions];
               conditions.splice(
@@ -261,11 +248,6 @@ export class FilterRootView extends SignalWatcher(ShadowlessElement) {
                 name: 'Delete',
                 prefix: DeleteIcon(),
                 class: { 'delete-item': true },
-                onHover: hover => {
-                  this.containerClass = hover
-                    ? { index: i, class: 'delete-style' }
-                    : undefined;
-                },
                 select: () => {
                   const conditions = [...this.filterGroup.value.conditions];
                   conditions.splice(i, 1);
@@ -280,10 +262,9 @@ export class FilterRootView extends SignalWatcher(ShadowlessElement) {
         ],
       },
     });
-    handler.menu.menuElement.style.minWidth = 'fit-content';
+    handler.menu.menuElement.style.minWidth = '200px';
     handler.menu.menuElement.style.maxWidth = 'fit-content';
     handler.menu.menuElement.style.minHeight = 'fit-content';
-    handler.menu.menuElement.style.maxHeight = 'fit-content';
   }
 
   private deleteFilter(i: number) {

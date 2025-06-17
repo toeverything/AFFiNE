@@ -63,9 +63,12 @@ export class Group<
     return this.config.view;
   }
 
-  hide$ = computed(
-    () => this.manager.groupPropertiesMap$.value[this.key]?.hide ?? false
-  );
+  hide$ = computed(() => {
+    const groupHide =
+      this.manager.groupPropertiesMap$.value[this.key]?.hide ?? false;
+    const emptyHidden = this.manager.hideEmpty$.value && this.rows.length === 0;
+    return groupHide || emptyHidden;
+  });
 
   hideSet(hide: boolean) {
     this.manager.setGroupHide(this.key, hide);
@@ -118,6 +121,14 @@ export class GroupTrait {
       const desc = this.groupBy$.value?.sort?.desc;
       if (desc != null && this.sortAsc$.value === desc) {
         this.sortAsc$.value = !desc;
+      }
+    });
+
+    // Sync hideEmpty state with GroupBy data
+    effect(() => {
+      const hide = this.groupBy$.value?.hideEmpty;
+      if (hide != null && this.hideEmpty$.value !== hide) {
+        this.hideEmpty$.value = hide;
       }
     });
   }
@@ -223,10 +234,10 @@ export class GroupTrait {
       const hidden: Array<Group | undefined> = [];
       orderedKeys
         .map(key => map[key])
-        .filter(g => g != null && (!this.hideEmpty$.value || g.rows.length > 0))
+        .filter(g => g != null)
         .forEach(g => {
           if (g) {
-            if (this.isGroupHidden(g.key)) {
+            if (g.hide$.value) {
               hidden.push(g);
             } else {
               visible.push(g);
@@ -241,8 +252,13 @@ export class GroupTrait {
   /**
    * Toggle hiding of empty groups.
    */
+
   setHideEmpty(value: boolean) {
     this.hideEmpty$.value = value;
+    const gb = this.groupBy$.value;
+    if (gb) {
+      this.ops.groupBySet({ ...gb, hideEmpty: value });
+    }
   }
 
   isGroupHidden(key: string): boolean {
@@ -261,7 +277,11 @@ export class GroupTrait {
 
     const gb = this.groupBy$.value;
     if (gb) {
-      this.ops.groupBySet({ ...gb, sort: { desc: !asc } });
+      this.ops.groupBySet({
+        ...gb,
+        sort: { desc: !asc },
+        hideEmpty: gb.hideEmpty,
+      });
     }
   }
 
@@ -294,6 +314,7 @@ export class GroupTrait {
       columnId: propId,
       name: modeName,
       sort: { desc: !this.sortAsc$.value },
+      hideEmpty: this.hideEmpty$.value,
     });
   }
 
@@ -315,6 +336,7 @@ export class GroupTrait {
       );
       if (gb) {
         gb.sort = { desc: !this.sortAsc$.value };
+        gb.hideEmpty = this.hideEmpty$.value;
       }
       this.ops.groupBySet(gb);
     }
