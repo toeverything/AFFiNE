@@ -282,6 +282,7 @@ export class ChatSessionService {
           await tx.aiSessionMessage.createMany({
             data: state.messages.map(m => ({
               ...m,
+              streamObjects: m.streamObjects || undefined,
               attachments: m.attachments || undefined,
               params: omit(m.params, ['docs']) || undefined,
               sessionId,
@@ -512,6 +513,7 @@ export class ChatSessionService {
               id: true,
               role: true,
               content: true,
+              streamObjects: true,
               attachments: true,
               params: true,
               createdAt: true,

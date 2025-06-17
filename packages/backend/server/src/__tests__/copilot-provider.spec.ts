@@ -1,5 +1,6 @@
 import type { ExecutionContext, TestFn } from 'ava';
 import ava from 'ava';
+import { z } from 'zod';
 
 import { ServerFeature, ServerService } from '../core';
 import { AuthService } from '../core/auth';
@@ -9,6 +10,8 @@ import { prompts, PromptService } from '../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
   CopilotProviderType,
+  StreamObject,
+  StreamObjectSchema,
 } from '../plugins/copilot/providers';
 import { TranscriptionResponseSchema } from '../plugins/copilot/transcript/types';
 import {
@@ -177,6 +180,16 @@ const checkMDList = (text: string) => {
 const checkUrl = (url: string) => {
   try {
     new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const checkStreamObjects = (result: string) => {
+  try {
+    const streamObjects = JSON.parse(result);
+    z.array(StreamObjectSchema).parse(streamObjects);
     return true;
   } catch {
     return false;
@@ -386,6 +399,20 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
       assertCitation(t, result);
     },
     type: 'text' as const,
+  },
+  {
+    name: 'stream objects',
+    promptName: ['Chat With AFFiNE AI'],
+    messages: [
+      {
+        role: 'user' as const,
+        content: 'what is AFFiNE AI',
+      },
+    ],
+    verifier: (t: ExecutionContext<Tester>, result: string) => {
+      t.truthy(checkStreamObjects(result), 'should be valid stream objects');
+    },
+    type: 'object' as const,
   },
   {
     name: 'Should transcribe short audio',
@@ -678,6 +705,27 @@ for (const {
               );
               t.truthy(result, 'should return result');
               verifier?.(t, result);
+              break;
+            }
+            case 'object': {
+              const streamObjects: StreamObject[] = [];
+              for await (const chunk of provider.streamObject(
+                { modelId: prompt.model },
+                [
+                  ...prompt.finish(
+                    messages.reduce(
+                      (acc, m) => Object.assign(acc, (m as any).params || {}),
+                      {}
+                    )
+                  ),
+                  ...messages,
+                ],
+                finalConfig
+              )) {
+                streamObjects.push(chunk);
+              }
+              t.truthy(streamObjects, 'should return result');
+              verifier?.(t, JSON.stringify(streamObjects));
               break;
             }
             case 'image': {

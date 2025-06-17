@@ -14,7 +14,7 @@ import {
   createExaCrawlTool,
   createExaSearchTool,
 } from '../tools';
-import { PromptMessage } from './types';
+import { PromptMessage, StreamObject } from './types';
 
 type ChatMessage = CoreUserMessage | CoreAssistantMessage;
 
@@ -387,6 +387,22 @@ export interface CustomAITools extends ToolSet {
 
 type ChunkType = TextStreamPart<CustomAITools>['type'];
 
+export function parseUnknownError(error: unknown) {
+  if (typeof error === 'string') {
+    throw new Error(error);
+  } else if (error instanceof Error) {
+    throw error;
+  } else if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error
+  ) {
+    throw new Error(String(error.message));
+  } else {
+    throw new Error(JSON.stringify(error));
+  }
+}
+
 export class TextStreamParser {
   private readonly CALLOUT_PREFIX = '\n[!]\n';
 
@@ -446,8 +462,8 @@ export class TextStreamParser {
         break;
       }
       case 'error': {
-        const error = chunk.error as { type: string; message: string };
-        throw new Error(error.message);
+        parseUnknownError(chunk.error);
+        break;
       }
     }
     this.lastType = chunk.type;
@@ -488,5 +504,56 @@ export class TextStreamParser {
       return acc + `\n\n[${result.title ?? result.url}](${result.url})\n\n`;
     }, '');
     return links;
+  }
+}
+
+export class StreamObjectParser {
+  public parse(chunk: TextStreamPart<CustomAITools>) {
+    switch (chunk.type) {
+      case 'reasoning':
+      case 'text-delta':
+      case 'tool-call':
+      case 'tool-result': {
+        return chunk;
+      }
+      case 'error': {
+        parseUnknownError(chunk.error);
+        return null;
+      }
+      default: {
+        return null;
+      }
+    }
+  }
+
+  public mergeTextDelta(chunks: StreamObject[]): StreamObject[] {
+    return chunks.reduce((acc, curr) => {
+      const prev = acc.at(-1);
+      switch (curr.type) {
+        case 'reasoning':
+        case 'text-delta': {
+          if (prev && prev.type === curr.type) {
+            prev.textDelta += curr.textDelta;
+          } else {
+            acc.push(curr);
+          }
+          break;
+        }
+        default: {
+          acc.push(curr);
+          break;
+        }
+      }
+      return acc;
+    }, [] as StreamObject[]);
+  }
+
+  public mergeContent(chunks: StreamObject[]): string {
+    return chunks.reduce((acc, curr) => {
+      if (curr.type === 'text-delta') {
+        acc += curr.textDelta;
+      }
+      return acc;
+    }, '');
   }
 }
