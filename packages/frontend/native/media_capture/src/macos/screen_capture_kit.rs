@@ -514,7 +514,8 @@ impl ShareableContent {
       }
     }
 
-    // Create an ApplicationInfo with the proper name and object_id 0 (since we don't have audio object_id from process_id alone)
+    // Create an ApplicationInfo with the proper name and object_id 0 (since we
+    // don't have audio object_id from process_id alone)
     Some(ApplicationInfo::new(process_id as i32, name, 0))
   }
 
