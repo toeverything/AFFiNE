@@ -249,6 +249,13 @@ export class GroupTrait {
     this.view.isLocked$
   );
 
+  /** Whether all groups are currently hidden */
+  allHidden$ = computed(() => {
+    const map = this.groupDataMap$.value;
+    if (!map) return false;
+    return Object.keys(map).every(key => this.isGroupHidden(key));
+  });
+
   /**
    * Toggle hiding of empty groups.
    */
