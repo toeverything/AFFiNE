@@ -47,6 +47,9 @@ import {
   createCopilotContext,
   createCopilotMessage,
   createCopilotSession,
+  createDocCopilotSession,
+  createPinnedCopilotSession,
+  createWorkspaceCopilotSession,
   forkCopilotSession,
   getHistories,
   listContext,
@@ -301,12 +304,8 @@ test('should fork session correctly', async t => {
 
   // prepare session
   const { id } = await createWorkspace(app);
-  const sessionId = await createCopilotSession(
-    app,
-    id,
-    randomUUID(),
-    textPromptName
-  );
+  const docId = randomUUID();
+  const sessionId = await createCopilotSession(app, id, docId, textPromptName);
 
   let forkedSessionId: string;
   // should be able to fork session
@@ -315,7 +314,7 @@ test('should fork session correctly', async t => {
       const messageId = await createCopilotMessage(app, sessionId);
       await chatWithText(app, sessionId, messageId);
     }
-    const histories = await getHistories(app, { workspaceId: id });
+    const histories = await getHistories(app, { workspaceId: id, docId });
     const latestMessageId = histories[0].messages.findLast(
       m => m.role === 'assistant'
     )?.id;
@@ -374,7 +373,7 @@ test('should fork session correctly', async t => {
     });
 
     await app.switchUser(u1);
-    const histories = await getHistories(app, { workspaceId: id });
+    const histories = await getHistories(app, { workspaceId: id, docId });
     const latestMessageId = histories
       .find(h => h.sessionId === forkedSessionId)
       ?.messages.findLast(m => m.role === 'assistant')?.id;
@@ -589,10 +588,11 @@ test('should be able to retry with api', async t => {
   // normal chat
   {
     const { id } = await createWorkspace(app);
+    const docId = randomUUID();
     const sessionId = await createCopilotSession(
       app,
       id,
-      randomUUID(),
+      docId,
       textPromptName
     );
     const messageId = await createCopilotMessage(app, sessionId);
@@ -600,7 +600,7 @@ test('should be able to retry with api', async t => {
     await chatWithText(app, sessionId, messageId);
     await chatWithText(app, sessionId, messageId);
 
-    const histories = await getHistories(app, { workspaceId: id });
+    const histories = await getHistories(app, { workspaceId: id, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
       [['generate text to text', 'generate text to text']],
@@ -611,10 +611,11 @@ test('should be able to retry with api', async t => {
   // retry chat
   {
     const { id } = await createWorkspace(app);
+    const docId = randomUUID();
     const sessionId = await createCopilotSession(
       app,
       id,
-      randomUUID(),
+      docId,
       textPromptName
     );
     const messageId = await createCopilotMessage(app, sessionId);
@@ -623,7 +624,7 @@ test('should be able to retry with api', async t => {
     await chatWithText(app, sessionId);
 
     // should only have 1 message
-    const histories = await getHistories(app, { workspaceId: id });
+    const histories = await getHistories(app, { workspaceId: id, docId });
     t.snapshot(
       cleanObject(histories),
       'should be able to list history after retry'
@@ -633,10 +634,11 @@ test('should be able to retry with api', async t => {
   // retry chat with new message id
   {
     const { id } = await createWorkspace(app);
+    const docId = randomUUID();
     const sessionId = await createCopilotSession(
       app,
       id,
-      randomUUID(),
+      docId,
       textPromptName
     );
     const messageId = await createCopilotMessage(app, sessionId);
@@ -646,7 +648,7 @@ test('should be able to retry with api', async t => {
     await chatWithText(app, sessionId, newMessageId, '', true);
 
     // should only have 1 message
-    const histories = await getHistories(app, { workspaceId: id });
+    const histories = await getHistories(app, { workspaceId: id, docId });
     t.snapshot(
       cleanObject(histories),
       'should be able to list history after retry'
@@ -723,10 +725,11 @@ test('should be able to list history', async t => {
   const { app } = t.context;
 
   const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
   const sessionId = await createCopilotSession(
     app,
     workspaceId,
-    randomUUID(),
+    docId,
     textPromptName
   );
 
@@ -734,7 +737,7 @@ test('should be able to list history', async t => {
   await chatWithText(app, sessionId, messageId);
 
   {
-    const histories = await getHistories(app, { workspaceId });
+    const histories = await getHistories(app, { workspaceId, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
       [['hello', 'generate text to text']],
@@ -745,6 +748,7 @@ test('should be able to list history', async t => {
   {
     const histories = await getHistories(app, {
       workspaceId,
+      docId,
       options: { messageOrder: 'desc' },
     });
     t.deepEqual(
@@ -786,17 +790,18 @@ test('should reject request that user have not permission', async t => {
   }
 
   {
+    const docId = randomUUID();
     const sessionId = await createCopilotSession(
       app,
       workspaceId,
-      randomUUID(),
+      docId,
       textPromptName
     );
 
     const messageId = await createCopilotMessage(app, sessionId);
     await chatWithText(app, sessionId, messageId);
 
-    const histories = await getHistories(app, { workspaceId });
+    const histories = await getHistories(app, { workspaceId, docId });
     t.deepEqual(
       histories.map(h => h.messages.map(m => m.content)),
       [['generate text to text']],
@@ -1048,4 +1053,82 @@ test('should be able to transcript', async t => {
       );
     }
   }
+});
+
+test('should create different session types and validate prompt constraints', async t => {
+  const { app } = t.context;
+  const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
+
+  const validateSession = async (
+    description: string,
+    createPromise: Promise<string>
+  ) => {
+    const sessionId = await createPromise;
+    t.truthy(sessionId, description);
+    return sessionId;
+  };
+
+  await Promise.all([
+    validateSession(
+      'should create workspace session with text prompt',
+      createWorkspaceCopilotSession(app, workspaceId, textPromptName)
+    ),
+    validateSession(
+      'should create pinned session with text prompt',
+      createPinnedCopilotSession(app, workspaceId, textPromptName)
+    ),
+    validateSession(
+      'should create doc session with text prompt',
+      createDocCopilotSession(app, workspaceId, docId, textPromptName)
+    ),
+  ]);
+});
+
+test('should list histories for different session types correctly', async t => {
+  const { app } = t.context;
+  const { id: workspaceId } = await createWorkspace(app);
+  const docId = randomUUID();
+
+  // create sessions and add messages
+  const [workspaceSessionId, pinnedSessionId, docSessionId] = await Promise.all(
+    [
+      createWorkspaceCopilotSession(app, workspaceId, textPromptName),
+      createPinnedCopilotSession(app, workspaceId, textPromptName),
+      createDocCopilotSession(app, workspaceId, docId, textPromptName),
+    ]
+  );
+
+  await Promise.all([
+    createCopilotMessage(app, workspaceSessionId, 'workspace message'),
+    createCopilotMessage(app, pinnedSessionId, 'pinned message'),
+    createCopilotMessage(app, docSessionId, 'doc message'),
+  ]);
+
+  const testHistoryQuery = async (
+    queryDocId: string | undefined,
+    expectedSessionId: string,
+    description: string
+  ) => {
+    const histories = await getHistories(app, {
+      workspaceId,
+      docId: queryDocId,
+    });
+    t.is(histories.length, 1, `should return ${description}`);
+    t.is(
+      histories[0].sessionId,
+      expectedSessionId,
+      `should return correct ${description}`
+    );
+  };
+
+  await Promise.all([
+    testHistoryQuery(
+      undefined,
+      workspaceSessionId,
+      'workspace session history'
+    ),
+    testHistoryQuery(workspaceId, pinnedSessionId, 'pinned session history'),
+    testHistoryQuery(docId, docSessionId, 'doc session history'),
+  ]);
 });

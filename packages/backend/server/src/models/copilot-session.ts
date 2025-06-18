@@ -10,11 +10,10 @@ import {
 } from '../base';
 import { BaseModel } from './base';
 
-// Session type definitions based on docId and workspaceId relationship
 export enum SessionType {
-  WORKSPACE = 'workspace', // docId is null/undefined
-  PINNED = 'pinned', // docId equals workspaceId
-  DOC = 'doc', // docId differs from workspaceId
+  Workspace = 'workspace', // docId is null/undefined, indicating a workspace session
+  Pinned = 'pinned', // docId equals workspaceId, indicating a pinned session
+  Doc = 'doc', // docId differs from workspaceId, pointing to a specific document
 }
 
 type ChatAttachment = { attachment: string; mimeType: string } | string;
@@ -51,16 +50,10 @@ export type ListSessionOptions = {
 
 @Injectable()
 export class CopilotSessionModel extends BaseModel {
-  /**
-   * Determine session type based on docId and workspaceId relationship
-   * @param docId - Document ID from session
-   * @param workspaceId - Workspace ID from session
-   * @returns SessionType enum value
-   */
   getSessionType(docId?: string | null, workspaceId?: string): SessionType {
-    if (!docId) return SessionType.WORKSPACE;
-    if (docId === workspaceId) return SessionType.PINNED;
-    return SessionType.DOC;
+    if (!docId) return SessionType.Workspace;
+    if (docId === workspaceId) return SessionType.Pinned;
+    return SessionType.Doc;
   }
 
   checkSessionPrompt(
@@ -72,7 +65,7 @@ export class CopilotSessionModel extends BaseModel {
 
     // workspace and pinned sessions cannot use action prompts
     if (
-      [SessionType.WORKSPACE, SessionType.PINNED].includes(sessionType) &&
+      [SessionType.Workspace, SessionType.Pinned].includes(sessionType) &&
       !!promptAction?.trim()
     ) {
       throw new CopilotPromptInvalid(

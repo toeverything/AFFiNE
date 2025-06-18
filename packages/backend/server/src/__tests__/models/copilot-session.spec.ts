@@ -127,20 +127,20 @@ test('should identifies session types correctly', async t => {
 
   testSessionType(
     null,
-    SessionType.WORKSPACE,
+    SessionType.Workspace,
     'null docId should be workspace'
   );
   testSessionType(
     undefined,
-    SessionType.WORKSPACE,
+    SessionType.Workspace,
     'undefined docId should be workspace'
   );
   testSessionType(
     workspace.id,
-    SessionType.PINNED,
+    SessionType.Pinned,
     'docId === workspaceId should be pinned'
   );
-  testSessionType(docId, SessionType.DOC, 'different docId should be doc');
+  testSessionType(docId, SessionType.Doc, 'different docId should be doc');
 });
 
 test('should validates prompt constraints correctly', async t => {
