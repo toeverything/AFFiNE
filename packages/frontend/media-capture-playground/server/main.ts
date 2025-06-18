@@ -336,40 +336,10 @@ async function startRecording(app: ApplicationInfo) {
       `🎙️ Starting recording for ${appName} (Bundle: ${appBundleId}, PID: ${appProcessId})`
     );
 
-    // Find the best app to record from the same bundle group
-    let rootApp: ApplicationInfo | null = null;
-
-    // Get all apps with the same bundle identifier
-    const allApps = ShareableContent.applications();
-    const sameBundle = allApps.filter(
-      a => getAppBundleIdentifier(a) === appBundleId
-    );
-
-    if (sameBundle.length > 1) {
-      // Sort by running status and process ID to find the best representative
-      const sortedApps = sameBundle.sort((a, b) => {
-        // First priority: running apps
-        const aRunning = ShareableContent.isUsingMicrophone(a.processId);
-        const bRunning = ShareableContent.isUsingMicrophone(b.processId);
-        if (aRunning !== bRunning) {
-          return aRunning ? -1 : 1;
-        }
-        // Second priority: lower process ID (usually parent process)
-        return getAppProcessId(a) - getAppProcessId(b);
-      });
-
-      const bestApp = sortedApps[0];
-      console.log(
-        `📦 Selected best app for recording: ${getAppName(bestApp)} (PID: ${getAppProcessId(bestApp)})`
-      );
-
-      rootApp = ShareableContent.applicationWithProcessId(
-        getAppProcessId(bestApp)
-      );
-    } else {
-      // Only one app with this bundle ID, use it directly
-      rootApp = ShareableContent.applicationWithProcessId(appProcessId);
-    }
+    const processGroupId = app.processGroupId;
+    const rootApp =
+      ShareableContent.applicationWithProcessId(processGroupId) ||
+      ShareableContent.applicationWithProcessId(app.processId);
 
     if (!rootApp) {
       console.error(`❌ App group not found for ${appName}`);
@@ -419,7 +389,9 @@ async function stopRecording(processId: number) {
   }
 
   const app = recording.appGroup || recording.app;
-  const appName = getAppName(app);
+  const appName = recording.isGlobal
+    ? 'Global Recording'
+    : getAppName(app) || 'Unknown App';
   const appPid = getAppProcessId(app);
 
   console.log(`⏹️ Stopping recording for ${appName} (PID: ${appPid})`);
