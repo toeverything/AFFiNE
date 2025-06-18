@@ -6,6 +6,7 @@
 //
 
 import SnapKit
+import SwifterSwift
 import Then
 import UIKit
 
@@ -17,7 +18,10 @@ public class IntelligentsButton: UIView {
   }
 
   lazy var background = UIView().then {
-    $0.backgroundColor = .white
+    $0.backgroundColor = .init(
+      light: .systemBackground,
+      dark: .darkGray.withAlphaComponent(0.25)
+    )
   }
 
   lazy var activityIndicator = UIActivityIndicatorView()

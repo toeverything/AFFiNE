@@ -37,7 +37,7 @@ class DeleteButtonView: UIView {
   required init?(coder _: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-  
+
   override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
     if bounds.width < 50 || bounds.height < 50 {
       return bounds.insetBy(dx: -20, dy: -20).contains(point)

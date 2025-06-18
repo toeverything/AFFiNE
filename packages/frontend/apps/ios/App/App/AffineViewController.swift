@@ -11,7 +11,7 @@ class AFFiNEViewController: CAPBridgeViewController {
     edgesForExtendedLayout = []
     let intelligentsButton = installIntelligentsButton()
     intelligentsButton.delegate = self
-    presentIntelligentsButton() // from v2.0 always visible
+    dismissIntelligentsButton()
   }
   
   override func webViewConfiguration(for instanceConfiguration: InstanceConfiguration) -> WKWebViewConfiguration {
@@ -38,7 +38,11 @@ class AFFiNEViewController: CAPBridgeViewController {
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
     navigationController?.setNavigationBarHidden(false, animated: animated)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+      self.presentIntelligentsButton()
+    }
   }
 }
+
 
 
