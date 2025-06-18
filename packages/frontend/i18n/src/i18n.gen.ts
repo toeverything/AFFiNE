@@ -2412,6 +2412,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.import.snapshot.tooltip"](): string;
     /**
+      * `.affine file`
+      */
+    ["com.affine.import.dotaffinefile"](): string;
+    /**
+      * `Import your AFFiNE db file (.affine)`
+      */
+    ["com.affine.import.dotaffinefile.tooltip"](): string;
+    /**
       * `Import failed, please try again.`
       */
     ["com.affine.import.status.failed.message"](): string;
