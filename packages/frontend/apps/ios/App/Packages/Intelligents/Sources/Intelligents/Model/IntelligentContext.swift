@@ -5,6 +5,7 @@
 //  Created by 秋星桥 on 6/17/25.
 //
 
+import Combine
 import Foundation
 import WebKit
 
@@ -21,4 +22,6 @@ public class IntelligentContext {
     // TODO: if needed
     completion()
   }
+
+  // MARK: - Input Processing
 }

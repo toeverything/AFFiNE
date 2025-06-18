@@ -1,3 +1,4 @@
+import Combine
 import SnapKit
 import Then
 import UIKit
@@ -7,12 +8,17 @@ protocol InputBoxDelegate: AnyObject {
   func inputBoxDidTapTool()
   func inputBoxDidTapNetwork()
   func inputBoxDidTapDeepThinking()
-  func inputBoxDidTapSend()
+  func inputBoxDidTapSend(data: InputBoxData)
   func inputBoxTextDidChange(_ text: String)
 }
 
 class InputBox: UIView {
   weak var delegate: InputBoxDelegate?
+
+  // MARK: - ViewModel
+
+  public let viewModel = InputBoxViewModel()
+  private var cancellables = Set<AnyCancellable>()
 
   private lazy var containerView = UIView().then {
     $0.backgroundColor = .systemBackground
@@ -136,6 +142,7 @@ class InputBox: UIView {
     super.init(frame: .zero)
     setupViews()
     setupConstraints()
+    setupBindings()
     updatePlaceholderVisibility()
   }
 
@@ -149,6 +156,56 @@ class InputBox: UIView {
     addSubview(containerView)
     containerView.addSubview(mainStackView)
     containerView.addSubview(placeholderLabel)
+  }
+
+  private func setupBindings() {
+    // 绑定 ViewModel 到 UI
+    viewModel.$inputText
+      .sink { [weak self] text in
+        if self?.textView.text != text {
+          self?.textView.text = text
+          self?.updatePlaceholderVisibility()
+          self?.updateTextViewHeight()
+        }
+      }
+      .store(in: &cancellables)
+
+    viewModel.$isToolEnabled
+      .sink { [weak self] enabled in
+        self?.toolButton.isSelected = enabled
+        self?.toolButton.tintColor = enabled ? .systemBlue : .secondaryLabel
+      }
+      .store(in: &cancellables)
+
+    viewModel.$isNetworkEnabled
+      .sink { [weak self] enabled in
+        self?.webButton.isSelected = enabled
+        self?.webButton.tintColor = enabled ? .systemBlue : .secondaryLabel
+      }
+      .store(in: &cancellables)
+
+    viewModel.$isDeepThinkingEnabled
+      .sink { [weak self] enabled in
+        self?.reactButton.isSelected = enabled
+        self?.reactButton.tintColor = enabled ? .systemBlue : .secondaryLabel
+      }
+      .store(in: &cancellables)
+
+    viewModel.$canSend
+      .sink { [weak self] canSend in
+        self?.sendButton.isEnabled = canSend
+        self?.sendButton.alpha = canSend ? 1.0 : 0.5
+      }
+      .store(in: &cancellables)
+
+    viewModel.$isSending
+      .sink { [weak self] isSending in
+        self?.sendButton.isEnabled = !isSending
+        if isSending {
+          // TODO: 添加加载动画
+        }
+      }
+      .store(in: &cancellables)
   }
 
   private func setupConstraints() {
@@ -212,19 +269,23 @@ class InputBox: UIView {
   }
 
   @objc private func toolButtonTapped() {
+    viewModel.toggleTool()
     delegate?.inputBoxDidTapTool()
   }
 
   @objc private func webButtonTapped() {
+    viewModel.toggleNetwork()
     delegate?.inputBoxDidTapNetwork()
   }
 
   @objc private func reactButtonTapped() {
+    viewModel.toggleDeepThinking()
     delegate?.inputBoxDidTapDeepThinking()
   }
 
   @objc private func sendButtonTapped() {
-    delegate?.inputBoxDidTapSend()
+    let data = viewModel.prepareSendData()
+    delegate?.inputBoxDidTapSend(data: data)
   }
 }
 
@@ -234,6 +295,7 @@ extension InputBox: UITextViewDelegate {
   func textViewDidChange(_ textView: UITextView) {
     updatePlaceholderVisibility()
     updateTextViewHeight()
+    viewModel.updateText(textView.text)
     delegate?.inputBoxTextDidChange(textView.text)
   }
 }

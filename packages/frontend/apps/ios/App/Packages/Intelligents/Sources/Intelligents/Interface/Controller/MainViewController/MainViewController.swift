@@ -1,3 +1,4 @@
+import Combine
 import SnapKit
 import Then
 import UIKit
@@ -12,6 +13,11 @@ class MainViewController: UIViewController {
   private lazy var inputBox = InputBox().then {
     $0.delegate = self
   }
+
+  // MARK: - Properties
+
+  private var cancellables = Set<AnyCancellable>()
+  private let intelligentContext = IntelligentContext.shared
 
   // MARK: - Lifecycle
 
@@ -72,27 +78,30 @@ extension MainViewController: MainHeaderViewDelegate {
 
 extension MainViewController: InputBoxDelegate {
   func inputBoxDidTapAddAttachment() {
-    
+    // TODO: 实现添加附件功能
+    print("Add attachment tapped")
   }
-  
+
   func inputBoxDidTapTool() {
-    
+    print("Tool toggled: \(inputBox.viewModel.isToolEnabled)")
   }
-  
+
   func inputBoxDidTapNetwork() {
-    
+    print("Network toggled: \(inputBox.viewModel.isNetworkEnabled)")
   }
-  
+
   func inputBoxDidTapDeepThinking() {
-    
+    print("Deep thinking toggled: \(inputBox.viewModel.isDeepThinkingEnabled)")
   }
-  
-  func inputBoxDidTapSend() {
-    
+
+  func inputBoxDidTapSend(data: InputBoxData) {
+    // 处理发送逻辑
+    guard !data.text.isEmpty else { return }
+    print("[*] send tapped with text: \(data.text)")
   }
-  
+
   func inputBoxTextDidChange(_ text: String) {
-    
+    // 可以在这里处理文本变化的其他逻辑
+    print("Text changed: \(text)")
   }
-  
 }
