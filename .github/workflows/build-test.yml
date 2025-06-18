@@ -734,7 +734,9 @@ jobs:
           toolchain: nightly
           components: miri
       - name: Install latest nextest release
-        uses: taiki-e/install-action@nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest@0.9.98
 
       - name: Miri Code Check
         continue-on-error: true
@@ -756,7 +758,9 @@ jobs:
         with:
           toolchain: stable
       - name: Install latest nextest release
-        uses: taiki-e/install-action@nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest@0.9.98
 
       - name: Loom Thread Test
         run: |
@@ -855,7 +859,9 @@ jobs:
           no-build: 'true'
 
       - name: Install latest nextest release
-        uses: taiki-e/install-action@nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest@0.9.98
 
       - name: Run tests
         run: cargo nextest run --workspace --exclude affine_server_native --features use-as-lib --release --no-fail-fast
