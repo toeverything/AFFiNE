@@ -385,7 +385,7 @@ input CreateChatMessageInput {
 }
 
 input CreateChatSessionInput {
-  docId: String!
+  docId: String
 
   """The prompt name to use for the session"""
   promptName: String!

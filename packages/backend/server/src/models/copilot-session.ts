@@ -3,7 +3,11 @@ import { Transactional } from '@nestjs-cls/transactional';
 import { AiPromptRole, Prisma } from '@prisma/client';
 import { omit } from 'lodash-es';
 
-import { CopilotSessionDeleted, CopilotSessionNotFound } from '../base';
+import {
+  CopilotPromptInvalid,
+  CopilotSessionDeleted,
+  CopilotSessionNotFound,
+} from '../base';
 import { BaseModel } from './base';
 
 // Session type definitions based on docId and workspaceId relationship
@@ -57,6 +61,26 @@ export class CopilotSessionModel extends BaseModel {
     if (!docId) return SessionType.WORKSPACE;
     if (docId === workspaceId) return SessionType.PINNED;
     return SessionType.DOC;
+  }
+
+  checkSessionPrompt(
+    session: Pick<ChatSession, 'docId' | 'workspaceId'>,
+    promptName: string,
+    promptAction: string | undefined
+  ): boolean {
+    const sessionType = this.getSessionType(session.docId, session.workspaceId);
+
+    // workspace and pinned sessions cannot use action prompts
+    if (
+      [SessionType.WORKSPACE, SessionType.PINNED].includes(sessionType) &&
+      !!promptAction?.trim()
+    ) {
+      throw new CopilotPromptInvalid(
+        `${promptName} are not allowed for ${sessionType} sessions`
+      );
+    }
+
+    return true;
   }
 
   // NOTE: just for test, remove it after copilot prompt model is ready

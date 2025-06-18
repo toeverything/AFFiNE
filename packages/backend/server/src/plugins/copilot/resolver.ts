@@ -57,8 +57,8 @@ class CreateChatSessionInput {
   @Field(() => String)
   workspaceId!: string;
 
-  @Field(() => String)
-  docId!: string;
+  @Field(() => String, { nullable: true })
+  docId?: string;
 
   @Field(() => String, {
     description: 'The prompt name to use for the session',
@@ -435,22 +435,32 @@ export class CopilotResolver {
     @Args({ name: 'options', type: () => CreateChatSessionInput })
     options: CreateChatSessionInput
   ): Promise<string> {
-    await this.ac.user(user.id).doc(options).allowLocal().assert('Doc.Update');
+    // permission check based on session type
+    if (options.docId) {
+      await this.ac
+        .user(user.id)
+        .doc({ workspaceId: options.workspaceId, docId: options.docId })
+        .allowLocal()
+        .assert('Doc.Update');
+    } else {
+      await this.ac
+        .user(user.id)
+        .workspace(options.workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+    }
+
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
       throw new TooManyRequest('Server is busy');
     }
 
-    if (options.workspaceId === options.docId) {
-      // filter out session create request for root doc
-      throw new CopilotDocNotFound({ docId: options.docId });
-    }
-
     await this.chatSession.checkQuota(user.id);
 
     return await this.chatSession.create({
       ...options,
+      docId: options.docId ?? null,
       userId: user.id,
     });
   }
@@ -469,11 +479,19 @@ export class CopilotResolver {
       throw new CopilotSessionNotFound();
     }
     const { workspaceId, docId } = session.config;
-    await this.ac
-      .user(user.id)
-      .doc(workspaceId, docId)
-      .allowLocal()
-      .assert('Doc.Update');
+    if (docId) {
+      await this.ac
+        .user(user.id)
+        .doc(workspaceId, docId)
+        .allowLocal()
+        .assert('Doc.Update');
+    } else {
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+    }
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {

@@ -462,11 +462,19 @@ export class ChatSessionService {
 
   async create(options: ChatSessionOptions): Promise<string> {
     const sessionId = randomUUID();
-    const prompt = await this.prompt.get(options.promptName);
+    const { workspaceId, docId, promptName } = options;
+    const prompt = await this.prompt.get(promptName);
     if (!prompt) {
-      this.logger.error(`Prompt not found: ${options.promptName}`);
-      throw new CopilotPromptNotFound({ name: options.promptName });
+      this.logger.error(`Prompt not found: ${promptName}`);
+      throw new CopilotPromptNotFound({ name: promptName });
     }
+
+    // validate prompt compatibility with session type
+    this.models.copilotSession.checkSessionPrompt(
+      { workspaceId, docId },
+      prompt.name,
+      prompt.action
+    );
 
     return await this.setSession({
       ...options,
@@ -487,6 +495,18 @@ export class ChatSessionService {
       this.logger.error(`Prompt not found: ${options.promptName}`);
       throw new CopilotPromptNotFound({ name: options.promptName });
     }
+
+    const session = await this.getSession(options.sessionId);
+    if (!session) {
+      throw new CopilotSessionNotFound();
+    }
+
+    this.models.copilotSession.checkSessionPrompt(
+      session,
+      prompt.name,
+      prompt.action
+    );
+
     return await this.models.copilotSession.updatePrompt(
       options.userId,
       options.sessionId,

@@ -500,7 +500,7 @@ export interface CreateChatMessageInput {
 }
 
 export interface CreateChatSessionInput {
-  docId: Scalars['String']['input'];
+  docId?: InputMaybe<Scalars['String']['input']>;
   /** The prompt name to use for the session */
   promptName: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];

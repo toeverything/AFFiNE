@@ -20,7 +20,7 @@ export const cleanObject = (
 export async function createCopilotSession(
   app: TestingApp,
   workspaceId: string,
-  docId: string,
+  docId: string | null,
   promptName: string
 ): Promise<string> {
   const res = await app.gql(
@@ -33,6 +33,31 @@ export async function createCopilotSession(
   );
 
   return res.createCopilotSession;
+}
+
+export async function createWorkspaceCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  promptName: string
+): Promise<string> {
+  return createCopilotSession(app, workspaceId, null, promptName);
+}
+
+export async function createPinnedCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  promptName: string
+): Promise<string> {
+  return createCopilotSession(app, workspaceId, workspaceId, promptName);
+}
+
+export async function createDocCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  docId: string,
+  promptName: string
+): Promise<string> {
+  return createCopilotSession(app, workspaceId, docId, promptName);
 }
 
 export async function updateCopilotSession(
