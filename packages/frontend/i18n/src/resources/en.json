@@ -602,6 +602,8 @@
   "com.affine.import.notion.tooltip": "Import your Notion data. Supported import formats: HTML with subpages.",
   "com.affine.import.snapshot": "Snapshot",
   "com.affine.import.snapshot.tooltip": "Import your AFFiNE workspace and page snapshot file.",
+  "com.affine.import.dotaffinefile": ".affine file",
+  "com.affine.import.dotaffinefile.tooltip": "Import your AFFiNE db file (.affine)",
   "com.affine.import.status.failed.message": "Import failed, please try again.",
   "com.affine.import.status.failed.message.no-file-selected": "No file selected",
   "com.affine.import.status.failed.title": "Import failure",
