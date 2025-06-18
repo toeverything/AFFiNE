@@ -8,7 +8,10 @@
 import UIKit
 
 protocol InputBoxDelegate: AnyObject {
-  func inputBoxDidSelectAttachment(_ inputBox: InputBox)
+  func inputBoxDidSelectTakePhoto(_ inputBox: InputBox)
+  func inputBoxDidSelectPhotoLibrary(_ inputBox: InputBox)
+  func inputBoxDidSelectAttachFiles(_ inputBox: InputBox)
+  func inputBoxDidSelectEmbedDocs(_ inputBox: InputBox)
   func inputBoxDidSend(_ inputBox: InputBox)
   func inputBoxTextDidChange(_ text: String)
 }

@@ -8,6 +8,22 @@
 import UIKit
 
 extension MainViewController: InputBoxDelegate {
+  func inputBoxDidSelectTakePhoto(_ inputBox: InputBox) {
+    print(#function, inputBox)
+  }
+
+  func inputBoxDidSelectPhotoLibrary(_ inputBox: InputBox) {
+    print(#function, inputBox)
+  }
+
+  func inputBoxDidSelectAttachFiles(_ inputBox: InputBox) {
+    print(#function, inputBox)
+  }
+
+  func inputBoxDidSelectEmbedDocs(_ inputBox: InputBox) {
+    print(#function, inputBox)
+  }
+
   func inputBoxDidSelectAttachment(_ inputBox: InputBox) {
     print(#function, inputBox)
   }

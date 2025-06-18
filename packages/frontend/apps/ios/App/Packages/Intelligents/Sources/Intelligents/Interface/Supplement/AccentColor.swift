@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  AccentColor.swift
 //  Intelligents
 //
 //  Created by 秋星桥 on 6/19/25.

@@ -18,7 +18,7 @@ let package = Package(
     .package(url: "https://github.com/apple/swift-collections", from: "1.2.0"),
     .package(url: "https://github.com/devxoul/Then", from: "3.0.0"),
     .package(url: "https://github.com/SnapKit/SnapKit.git", from: "5.0.1"),
-    .package(url: "https://github.com/SwifterSwift/SwifterSwift.git", from: "6.0.0")
+    .package(url: "https://github.com/SwifterSwift/SwifterSwift.git", from: "6.0.0"),
   ],
   targets: [
     .target(name: "Intelligents", dependencies: [

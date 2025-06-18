@@ -3,7 +3,10 @@ import Then
 import UIKit
 
 protocol InputBoxFunctionBarDelegate: AnyObject {
-  func functionBarDidTapAttachment(_ functionBar: InputBoxFunctionBar)
+  func functionBarDidTapTakePhoto(_ functionBar: InputBoxFunctionBar)
+  func functionBarDidTapPhotoLibrary(_ functionBar: InputBoxFunctionBar)
+  func functionBarDidTapAttachFiles(_ functionBar: InputBoxFunctionBar)
+  func functionBarDidTapEmbedDocs(_ functionBar: InputBoxFunctionBar)
   func functionBarDidTapTool(_ functionBar: InputBoxFunctionBar)
   func functionBarDidTapNetwork(_ functionBar: InputBoxFunctionBar)
   func functionBarDidTapDeepThinking(_ functionBar: InputBoxFunctionBar)
@@ -20,7 +23,8 @@ class InputBoxFunctionBar: UIView {
     $0.setImage(UIImage(named: "inputbox.add.attachment", in: .module, with: nil), for: .normal)
     $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
-    $0.addTarget(self, action: #selector(attachmentButtonTapped), for: .touchUpInside)
+    $0.showsMenuAsPrimaryAction = true
+    $0.menu = createAttachmentMenu()
   }
 
   lazy var toolButton = UIButton(type: .system).then {
@@ -131,11 +135,48 @@ class InputBoxFunctionBar: UIView {
     sendButton.alpha = canSend ? 1.0 : 0.5
   }
 
-  // MARK: - Actions
+  // MARK: - Private Methods
 
-  @objc private func attachmentButtonTapped() {
-    delegate?.functionBarDidTapAttachment(self)
+  private func createAttachmentMenu() -> UIMenu {
+    let takePhotoAction = UIAction(
+      title: "Take Photo or Video",
+      image: UIImage(systemName: "camera")
+    ) { [weak self] _ in
+      guard let self else { return }
+      delegate?.functionBarDidTapTakePhoto(self)
+    }
+
+    let photoLibraryAction = UIAction(
+      title: "Photo Library",
+      image: UIImage(systemName: "photo.on.rectangle")
+    ) { [weak self] _ in
+      guard let self else { return }
+      delegate?.functionBarDidTapPhotoLibrary(self)
+    }
+
+    let attachFilesAction = UIAction(
+      title: "Attach Files (pdf, txt, csv)",
+      image: UIImage(systemName: "arrow.up.doc")
+    ) { [weak self] _ in
+      guard let self else { return }
+      delegate?.functionBarDidTapAttachFiles(self)
+    }
+
+    let embedDocsAction = UIAction(
+      title: "Embed AFFINE Docs",
+      image: UIImage(systemName: "doc.text")
+    ) { [weak self] _ in
+      guard let self else { return }
+      delegate?.functionBarDidTapEmbedDocs(self)
+    }
+
+    return UIMenu(
+      options: [.displayInline],
+      children: [takePhotoAction, photoLibraryAction, attachFilesAction, embedDocsAction].reversed()
+    )
   }
+
+  // MARK: - Actions
 
   @objc private func toolButtonTapped() {
     delegate?.functionBarDidTapTool(self)

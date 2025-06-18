@@ -70,7 +70,7 @@ class InputBox: UIView {
       updateTextViewHeight()
     }
   }
-  
+
   override init(frame: CGRect = .zero) {
     super.init(frame: frame)
     setupViews()
@@ -164,15 +164,15 @@ class InputBox: UIView {
   func updateTextViewHeight() {
     let size = textView.sizeThatFits(CGSize(width: textView.frame.width, height: CGFloat.greatestFiniteMagnitude))
     let newHeight = max(minTextViewHeight, min(maxTextViewHeight, size.height))
-    
+
     let height = textView.frame.height
     guard height != newHeight else { return }
-    
+
     textViewHeightConstraint?.update(offset: newHeight)
     textView.isScrollEnabled = size.height > maxTextViewHeight
-    
+
     if height == 0 || superview == nil || window == nil || isHidden { return }
-    
+
     UIView.animate(
       withDuration: 0.5,
       delay: 0,
@@ -231,8 +231,20 @@ class InputBox: UIView {
 // MARK: - InputBoxFunctionBarDelegate
 
 extension InputBox: InputBoxFunctionBarDelegate {
-  func functionBarDidTapAttachment(_: InputBoxFunctionBar) {
-    delegate?.inputBoxDidSelectAttachment(self)
+  func functionBarDidTapTakePhoto(_: InputBoxFunctionBar) {
+    delegate?.inputBoxDidSelectTakePhoto(self)
+  }
+
+  func functionBarDidTapPhotoLibrary(_: InputBoxFunctionBar) {
+    delegate?.inputBoxDidSelectPhotoLibrary(self)
+  }
+
+  func functionBarDidTapAttachFiles(_: InputBoxFunctionBar) {
+    delegate?.inputBoxDidSelectAttachFiles(self)
+  }
+
+  func functionBarDidTapEmbedDocs(_: InputBoxFunctionBar) {
+    delegate?.inputBoxDidSelectEmbedDocs(self)
   }
 
   func functionBarDidTapTool(_: InputBoxFunctionBar) {
