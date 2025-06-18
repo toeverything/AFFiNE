@@ -783,6 +783,7 @@ export const getCopilotSessionsQuery = {
       sessions(docId: $docId, options: $options) {
         id
         parentSessionId
+        pinned
         promptName
         model
         optionalModels

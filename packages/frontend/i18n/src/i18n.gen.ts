@@ -8606,6 +8606,10 @@ export function useAFFiNEI18N(): {
       */
     ["error.COPILOT_SESSION_NOT_FOUND"](): string;
     /**
+      * `Copilot session input is invalid.`
+      */
+    ["error.COPILOT_SESSION_INVALID_INPUT"](): string;
+    /**
       * `Copilot session has been deleted.`
       */
     ["error.COPILOT_SESSION_DELETED"](): string;
