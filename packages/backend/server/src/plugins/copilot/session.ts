@@ -359,137 +359,81 @@ export class ChatSessionService {
     docId?: string,
     options?: ListHistoriesOptions
   ): Promise<ChatHistory[]> {
-    const extraCondition = [];
-
-    if (!options?.action && options?.fork) {
-      // only query forked session if fork == true and action == false
-      extraCondition.push({
-        userId: { not: userId },
-        workspaceId: workspaceId,
-        docId: workspaceId === docId ? undefined : docId,
-        id: options?.sessionId ? { equals: options.sessionId } : undefined,
-        // should only find forked session
-        parentSessionId: { not: null },
-        deletedAt: null,
-      });
-    }
-
-    return await this.db.aiSession
-      .findMany({
-        where: {
-          OR: [
-            {
-              userId,
-              workspaceId: workspaceId,
-              docId: workspaceId === docId ? undefined : docId,
-              id: options?.sessionId
-                ? { equals: options.sessionId }
-                : undefined,
-              deletedAt: null,
-            },
-            ...extraCondition,
-          ],
-        },
-        select: {
-          id: true,
-          userId: true,
-          promptName: true,
-          tokenCost: true,
-          createdAt: true,
-          messages: {
-            select: {
-              id: true,
-              role: true,
-              content: true,
-              attachments: true,
-              params: true,
-              createdAt: true,
-            },
-            orderBy: {
-              // message order is asc by default
-              createdAt: options?.messageOrder === 'desc' ? 'desc' : 'asc',
-            },
-          },
-        },
-        take: options?.limit,
-        skip: options?.skip,
-        orderBy: {
-          // session order is desc by default
-          createdAt: options?.sessionOrder === 'asc' ? 'asc' : 'desc',
-        },
-      })
-      .then(sessions =>
-        Promise.all(
-          sessions.map(
-            async ({
-              id,
-              userId: uid,
-              promptName,
-              tokenCost,
-              messages,
-              createdAt,
-            }) => {
-              try {
-                const prompt = await this.prompt.get(promptName);
-                if (!prompt) {
-                  throw new CopilotPromptNotFound({ name: promptName });
-                }
-                if (
-                  // filter out the user's session that not match the action option
-                  (uid === userId && !!options?.action !== !!prompt.action) ||
-                  // filter out the non chat session from other user
-                  (uid !== userId && !!prompt.action)
-                ) {
-                  return undefined;
-                }
-
-                const ret = ChatMessageSchema.array().safeParse(messages);
-                if (ret.success) {
-                  // render system prompt
-                  const preload = (
-                    options?.withPrompt
-                      ? prompt
-                          .finish(ret.data[0]?.params || {}, id)
-                          .filter(({ role }) => role !== 'system')
-                      : []
-                  ) as ChatMessage[];
-
-                  // `createdAt` is required for history sorting in frontend
-                  // let's fake the creating time of prompt messages
-                  preload.forEach((msg, i) => {
-                    msg.createdAt = new Date(
-                      createdAt.getTime() - preload.length - i - 1
-                    );
-                  });
-
-                  return {
-                    sessionId: id,
-                    action: prompt.action || null,
-                    tokens: tokenCost,
-                    createdAt,
-                    messages: preload.concat(ret.data).map(m => ({
-                      ...m,
-                      attachments: m.attachments
-                        ?.map(a => (typeof a === 'string' ? a : a.attachment))
-                        .filter(a => !!a),
-                    })),
-                  };
-                } else {
-                  this.logger.error(
-                    `Unexpected message schema: ${JSON.stringify(ret.error)}`
-                  );
-                }
-              } catch (e) {
-                this.logger.error('Unexpected error in listHistories', e);
-              }
+    const sessions = await this.models.copilotSession.list(
+      userId,
+      workspaceId,
+      docId,
+      options
+    );
+    const histories = await Promise.all(
+      sessions.map(
+        async ({
+          id,
+          userId: uid,
+          promptName,
+          tokenCost,
+          messages,
+          createdAt,
+        }) => {
+          try {
+            const prompt = await this.prompt.get(promptName);
+            if (!prompt) {
+              throw new CopilotPromptNotFound({ name: promptName });
+            }
+            if (
+              // filter out the user's session that not match the action option
+              (uid === userId && !!options?.action !== !!prompt.action) ||
+              // filter out the non chat session from other user
+              (uid !== userId && !!prompt.action)
+            ) {
               return undefined;
             }
-          )
-        )
+
+            const ret = ChatMessageSchema.array().safeParse(messages);
+            if (ret.success) {
+              // render system prompt
+              const preload = (
+                options?.withPrompt
+                  ? prompt
+                      .finish(ret.data[0]?.params || {}, id)
+                      .filter(({ role }) => role !== 'system')
+                  : []
+              ) as ChatMessage[];
+
+              // `createdAt` is required for history sorting in frontend
+              // let's fake the creating time of prompt messages
+              preload.forEach((msg, i) => {
+                msg.createdAt = new Date(
+                  createdAt.getTime() - preload.length - i - 1
+                );
+              });
+
+              return {
+                sessionId: id,
+                action: prompt.action || null,
+                tokens: tokenCost,
+                createdAt,
+                messages: preload.concat(ret.data).map(m => ({
+                  ...m,
+                  attachments: m.attachments
+                    ?.map(a => (typeof a === 'string' ? a : a.attachment))
+                    .filter(a => !!a),
+                })),
+              };
+            } else {
+              this.logger.error(
+                `Unexpected message schema: ${JSON.stringify(ret.error)}`
+              );
+            }
+          } catch (e) {
+            this.logger.error('Unexpected error in listHistories', e);
+          }
+          return undefined;
+        }
       )
-      .then(histories =>
-        histories.filter((v): v is NonNullable<typeof v> => !!v)
-      );
+    );
+
+    return histories.filter((v): v is NonNullable<typeof v> => !!v);
   }
 
   async getQuota(userId: string) {

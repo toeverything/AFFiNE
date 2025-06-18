@@ -6,6 +6,13 @@ import { omit } from 'lodash-es';
 import { CopilotSessionDeleted, CopilotSessionNotFound } from '../base';
 import { BaseModel } from './base';
 
+// Session type definitions based on docId and workspaceId relationship
+export enum SessionType {
+  WORKSPACE = 'workspace', // docId is null/undefined
+  PINNED = 'pinned', // docId equals workspaceId
+  DOC = 'doc', // docId differs from workspaceId
+}
+
 type ChatAttachment = { attachment: string; mimeType: string } | string;
 
 type ChatMessage = {
@@ -28,8 +35,30 @@ type ChatSession = {
   parentSessionId?: string | null;
 };
 
+export type ListSessionOptions = {
+  sessionId: string | undefined;
+  action: boolean | undefined;
+  fork: boolean | undefined;
+  limit: number | undefined;
+  skip: number | undefined;
+  sessionOrder: 'asc' | 'desc' | undefined;
+  messageOrder: 'asc' | 'desc' | undefined;
+};
+
 @Injectable()
 export class CopilotSessionModel extends BaseModel {
+  /**
+   * Determine session type based on docId and workspaceId relationship
+   * @param docId - Document ID from session
+   * @param workspaceId - Workspace ID from session
+   * @returns SessionType enum value
+   */
+  getSessionType(docId?: string | null, workspaceId?: string): SessionType {
+    if (!docId) return SessionType.WORKSPACE;
+    if (docId === workspaceId) return SessionType.PINNED;
+    return SessionType.DOC;
+  }
+
   // NOTE: just for test, remove it after copilot prompt model is ready
   async createPrompt(name: string, model: string) {
     await this.db.aiPrompt.create({
@@ -118,6 +147,71 @@ export class CopilotSessionModel extends BaseModel {
         orderBy: { createdAt: 'asc' },
       },
       promptName: true,
+    });
+  }
+
+  async list(
+    userId: string,
+    workspaceId?: string,
+    docId?: string,
+    options?: ListSessionOptions
+  ) {
+    const extraCondition = [];
+
+    if (!options?.action && options?.fork) {
+      // only query forked session if fork == true and action == false
+      extraCondition.push({
+        userId: { not: userId },
+        workspaceId: workspaceId,
+        docId: docId ?? null,
+        id: options?.sessionId ? { equals: options.sessionId } : undefined,
+        // should only find forked session
+        parentSessionId: { not: null },
+        deletedAt: null,
+      });
+    }
+
+    return await this.db.aiSession.findMany({
+      where: {
+        OR: [
+          {
+            userId,
+            workspaceId: workspaceId,
+            docId: docId ?? null,
+            id: options?.sessionId ? { equals: options.sessionId } : undefined,
+            deletedAt: null,
+          },
+          ...extraCondition,
+        ],
+      },
+      select: {
+        id: true,
+        userId: true,
+        docId: true,
+        promptName: true,
+        tokenCost: true,
+        createdAt: true,
+        messages: {
+          select: {
+            id: true,
+            role: true,
+            content: true,
+            attachments: true,
+            params: true,
+            createdAt: true,
+          },
+          orderBy: {
+            // message order is asc by default
+            createdAt: options?.messageOrder === 'desc' ? 'desc' : 'asc',
+          },
+        },
+      },
+      take: options?.limit,
+      skip: options?.skip,
+      orderBy: {
+        // session order is desc by default
+        createdAt: options?.sessionOrder === 'asc' ? 'asc' : 'desc',
+      },
     });
   }
 

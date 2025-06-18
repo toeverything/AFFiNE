@@ -448,7 +448,7 @@ model AiSession {
   context  AiContext[]
 
   @@index([userId])
-  @@index([userId, workspaceId])
+  @@index([userId, workspaceId, docId])
   @@map("ai_sessions_metadata")
 }
 
