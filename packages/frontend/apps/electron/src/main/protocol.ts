@@ -1,4 +1,5 @@
 import path, { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { app, net, protocol, session } from 'electron';
 import cookieParser from 'set-cookie-parser';
@@ -93,7 +94,7 @@ async function handleFileRequest(request: Request) {
       throw new Error('Invalid filepath');
     }
   }
-  return net.fetch('file://' + filepath, clonedRequest);
+  return net.fetch(pathToFileURL(filepath).toString(), clonedRequest);
 }
 
 export function registerProtocol() {

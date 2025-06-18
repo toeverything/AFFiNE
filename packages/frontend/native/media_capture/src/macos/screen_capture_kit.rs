@@ -160,7 +160,7 @@ impl ApplicationInfo {
         get_process_property::<CFStringRef>(&self.object_id, kAudioProcessPropertyBundleID)
       {
         // Safely convert CFStringRef to Rust String
-        let cf_string = unsafe { CFString::wrap_under_create_rule(bundle_id) };
+        let cf_string = unsafe { CFString::wrap_under_get_rule(bundle_id) };
         return cf_string.to_string();
       }
     }
@@ -397,13 +397,6 @@ impl ApplicationStateChangedSubscriber {
 #[napi]
 pub struct ShareableContent {
   _inner: SCShareableContent,
-}
-
-#[napi]
-#[derive(Default)]
-pub struct RecordingPermissions {
-  pub audio: bool,
-  pub screen: bool,
 }
 
 #[napi]

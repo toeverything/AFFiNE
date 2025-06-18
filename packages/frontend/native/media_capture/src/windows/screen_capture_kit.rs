@@ -125,7 +125,6 @@ pub struct ApplicationStateChangedSubscriber {
 
 #[napi]
 impl ApplicationStateChangedSubscriber {
-  #[napi(getter)]
   pub fn process_id(&self) -> u32 {
     self.process_id
   }
@@ -329,7 +328,11 @@ fn get_process_name(pid: u32) -> Option<String> {
   unsafe {
     let process_handle =
       OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid).ok()?;
-    let mut buffer = [0u16; 260]; // MAX_PATH
+    // Allocate a buffer large enough to hold extended-length paths (up to ~32K
+    // characters) instead of the legacy MAX_PATH (260) limit. 32 768 is the
+    // maximum length supported by the Win32 APIs when the path is prefixed
+    // with "\\?\".
+    let mut buffer: Vec<u16> = std::iter::repeat(0).take(32_768).collect();
 
     let length = GetModuleFileNameExW(Some(process_handle), None, &mut buffer);
     CloseHandle(process_handle).ok()?;
@@ -338,7 +341,10 @@ fn get_process_name(pid: u32) -> Option<String> {
       return None;
     }
 
-    let os_string = OsString::from_wide(&buffer[0..length as usize]);
+    // Truncate the buffer to the length returned by the Windows API before
+    // doing the UTF-16 → UTF-8 conversion.
+    buffer.truncate(length as usize);
+    let os_string = OsString::from_wide(&buffer);
     let path_str = os_string.to_string_lossy().to_string();
     path_str.rsplit('\\').next().map(|s| s.to_string())
   }
@@ -348,7 +354,8 @@ fn get_process_executable_path(pid: u32) -> Option<String> {
   unsafe {
     let process_handle =
       OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid).ok()?;
-    let mut buffer = [0u16; 260]; // MAX_PATH
+    // Use a buffer that can hold extended-length paths. See rationale above.
+    let mut buffer: Vec<u16> = std::iter::repeat(0).take(32_768).collect();
 
     let length = GetProcessImageFileNameW(process_handle, &mut buffer);
     CloseHandle(process_handle).ok()?;
@@ -357,7 +364,8 @@ fn get_process_executable_path(pid: u32) -> Option<String> {
       return None;
     }
 
-    let os_string = OsString::from_wide(&buffer[0..length as usize]);
+    buffer.truncate(length as usize);
+    let os_string = OsString::from_wide(&buffer);
     let path_str = os_string.to_string_lossy().to_string();
     Some(path_str)
   }

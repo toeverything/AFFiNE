@@ -3,7 +3,7 @@ use std::{
   os::windows::ffi::OsStringExt,
   process,
   sync::{
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc, Mutex,
   },
 };
@@ -66,7 +66,8 @@ struct SessionEvents {
   ctrl: IAudioSessionControl,
   events_ref: Arc<Mutex<Option<IAudioSessionEvents>>>,
   is_running: Arc<AtomicBool>,
-  mgr: IAudioSessionManager2,
+  active_sessions: Arc<AtomicUsize>,
+  session_is_active: AtomicBool,
 }
 
 impl IAudioSessionEvents_Impl for SessionEvents_Impl {
@@ -111,6 +112,25 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
     if let Some(events) = self.events_ref.lock().unwrap().take() {
       unsafe { self.ctrl.UnregisterAudioSessionNotification(&events)? };
     }
+
+    // If this session was active, decrement the global counter
+    if self.session_is_active.swap(false, Ordering::SeqCst) {
+      let prev = self.active_sessions.fetch_sub(1, Ordering::SeqCst);
+      if prev == 1 {
+        // Last active session ended
+        self.is_running.store(false, Ordering::Relaxed);
+        // Notify JS side that recording has stopped
+        self.callback.call(
+          Ok((
+            false,
+            self.process_name.clone(),
+            self.device_id.clone(),
+            self.device_name.clone(),
+          )),
+          ThreadsafeFunctionCallMode::NonBlocking,
+        );
+      }
+    }
     Ok(())
   }
 
@@ -124,20 +144,34 @@ impl IAudioSessionEvents_Impl for SessionEvents_Impl {
   }
 
   fn OnStateChanged(&self, newstate: AudioSessionState) -> windows_core::Result<()> {
-    let is_recording = newstate == AudioSessionStateActive;
+    // Determine the new recording state for this session
+    let currently_recording = newstate == AudioSessionStateActive;
 
-    let overall_is_running = if is_recording {
-      // If this session is now active, set is_running to true
-      self.is_running.store(true, Ordering::Relaxed);
-      true
-    } else {
-      // If this session is now inactive, check if any other sessions are still active
-      let (any_active, _) =
-        get_mgr_audio_session_running_status(&self.mgr).unwrap_or((false, String::new()));
-      self.is_running.store(any_active, Ordering::Relaxed);
-      any_active
-    };
+    // Atomically swap the flag tracking this particular session
+    let previously_recording = self
+      .session_is_active
+      .swap(currently_recording, Ordering::SeqCst);
 
+    // Update the global counter accordingly
+    if !previously_recording && currently_recording {
+      // Session started
+      let prev = self.active_sessions.fetch_add(1, Ordering::SeqCst);
+      if prev == 0 {
+        // First active session across the whole system
+        self.is_running.store(true, Ordering::Relaxed);
+      }
+    } else if previously_recording && !currently_recording {
+      // Session stopped
+      let prev = self.active_sessions.fetch_sub(1, Ordering::SeqCst);
+      if prev == 1 {
+        // Last active session just stopped
+        self.is_running.store(false, Ordering::Relaxed);
+      }
+    }
+
+    let overall_is_running = self.active_sessions.load(Ordering::SeqCst) > 0;
+
+    // Notify JS side (non-blocking)
     self.callback.call(
       Ok((
         overall_is_running,
@@ -160,7 +194,8 @@ struct SessionNotifier {
   ctrl: Mutex<Option<(IAudioSessionControl2, IAudioSessionEvents)>>, /* keep the ctrl2 and
                                                                       * events alive */
   callback: Arc<ThreadsafeFunction<(bool, String, String, String)>>,
-  is_running: Arc<AtomicBool>, // Add reference to the shared is_running state
+  is_running: Arc<AtomicBool>,       // Shared is_running flag
+  active_sessions: Arc<AtomicUsize>, // Global counter of active sessions
 }
 
 impl SessionNotifier {
@@ -170,6 +205,7 @@ impl SessionNotifier {
     device_name: String,
     callback: Arc<ThreadsafeFunction<(bool, String, String, String)>>,
     is_running: Arc<AtomicBool>,
+    active_sessions: Arc<AtomicUsize>,
   ) -> Self {
     Self {
       _mgr: mgr.clone(),
@@ -178,6 +214,7 @@ impl SessionNotifier {
       ctrl: Default::default(),
       callback,
       is_running,
+      active_sessions,
     }
   }
 
@@ -202,9 +239,14 @@ impl SessionNotifier {
 
     // Active ⇒ microphone is recording
     if unsafe { ctrl.GetState()? } == AudioSessionStateActive {
+      let mut should_notify = false;
       if let Ok(mut optional_ctrl) = self.ctrl.lock() {
-        // Update the shared is_running state
-        self.is_running.store(true, Ordering::Relaxed);
+        // Increment the active session counter. If this was the first, flip is_running
+        // to true.
+        let prev = self.active_sessions.fetch_add(1, Ordering::SeqCst);
+        if prev == 0 {
+          self.is_running.store(true, Ordering::Relaxed);
+        }
 
         let events_ref = Arc::new(Mutex::new(None));
         let events: IAudioSessionEvents = SessionEvents {
@@ -215,11 +257,20 @@ impl SessionNotifier {
           events_ref: events_ref.clone(),
           ctrl: ctrl.clone(),
           is_running: self.is_running.clone(),
-          mgr: self._mgr.clone(),
+          active_sessions: self.active_sessions.clone(),
+          session_is_active: AtomicBool::new(true),
         }
         .into();
         let mut events_mut_ref = events_ref.lock().unwrap();
         *events_mut_ref = Some(events.clone());
+        unsafe { ctrl.RegisterAudioSessionNotification(&events)? };
+        // keep the ctrl2 alive so that the notification can be called
+        *optional_ctrl = Some((ctrl2, events));
+
+        should_notify = true;
+      }
+
+      if should_notify {
         self.callback.call(
           Ok((
             true,
@@ -229,9 +280,6 @@ impl SessionNotifier {
           )),
           ThreadsafeFunctionCallMode::NonBlocking,
         );
-        unsafe { ctrl.RegisterAudioSessionNotification(&events)? };
-        // keep the ctrl2 alive so that the notification can be called
-        *optional_ctrl = Some((ctrl2, events));
       }
       return Ok(());
     }
@@ -254,6 +302,7 @@ impl IAudioSessionNotification_Impl for SessionNotifier_Impl {
 
 pub fn register_audio_device_status_callback(
   is_running: Arc<AtomicBool>,
+  active_sessions: Arc<AtomicUsize>,
   callback: Arc<ThreadsafeFunction<(bool, String, String, String)>>,
 ) -> windows_core::Result<Vec<IAudioSessionNotification>> {
   unsafe {
@@ -269,41 +318,34 @@ pub fn register_audio_device_status_callback(
     for i in 0..device_count {
       let device: IMMDevice = device_collection.Item(i)?;
 
-      // Get device ID
+      // Device identifiers
       let device_id_pwstr = device.GetId()?;
       let device_id = device_id_pwstr.to_string()?;
-
-      // Use device ID as device name for simplicity
       let device_name = format!("Audio Device {}", i);
 
+      // Activate session manager for this device
       let mgr: IAudioSessionManager2 = device.Activate(CLSCTX_ALL, None)?;
 
+      // Create notifier for this device
       let session_notifier = SessionNotifier::new(
         &mgr,
         device_id.clone(),
         device_name.clone(),
         callback.clone(),
         is_running.clone(),
+        active_sessions.clone(),
       );
 
-      let session_notifier_impl: IAudioSessionNotification = session_notifier.into();
-
-      mgr.RegisterSessionNotification(&session_notifier_impl)?;
-
-      // Check initial state for this device
-      let (is_device_running, process_name) = get_mgr_audio_session_running_status(&mgr)?;
-      if is_device_running {
-        is_running.store(true, Ordering::Relaxed);
-        callback.call(
-          Ok((
-            is_device_running,
-            process_name,
-            device_id.clone(),
-            device_name.clone(),
-          )),
-          ThreadsafeFunctionCallMode::NonBlocking,
-        );
+      // Enumerate existing sessions to update counters and state immediately
+      let list: IAudioSessionEnumerator = mgr.GetSessionEnumerator()?;
+      let sessions = list.GetCount()?;
+      for idx in 0..sessions {
+        let ctrl = list.GetSession(idx)?;
+        session_notifier.refresh_state(&ctrl)?;
       }
+
+      let session_notifier_impl: IAudioSessionNotification = session_notifier.into();
+      mgr.RegisterSessionNotification(&session_notifier_impl)?;
 
       session_notifiers.push(session_notifier_impl);
     }
@@ -330,15 +372,19 @@ impl MicrophoneListener {
     };
 
     let is_running = Arc::new(AtomicBool::new(false));
+    let active_sessions = Arc::new(AtomicUsize::new(0));
 
-    let session_notifiers =
-      match register_audio_device_status_callback(is_running.clone(), Arc::new(callback)) {
-        Ok(notifiers) => notifiers,
-        Err(_) => {
-          // If registration fails, create a listener with empty notifiers
-          Vec::new()
-        }
-      };
+    let session_notifiers = match register_audio_device_status_callback(
+      is_running.clone(),
+      active_sessions.clone(),
+      Arc::new(callback),
+    ) {
+      Ok(notifiers) => notifiers,
+      Err(_) => {
+        // If registration fails, create a listener with empty notifiers
+        Vec::new()
+      }
+    };
 
     Self {
       is_running,
@@ -402,8 +448,9 @@ fn get_process_name(pid: u32) -> Option<String> {
     let process_handle =
       OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid).ok()?;
 
-    // Create buffer for filename
-    let mut buffer = [0u16; 260]; // MAX_PATH
+    // Allocate a buffer large enough to hold extended-length paths (up to ~32K
+    // characters) instead of the legacy MAX_PATH (260) limit.
+    let mut buffer: Vec<u16> = std::iter::repeat(0).take(32_768).collect();
 
     // Try GetModuleFileNameExW first (gives full path with extension)
     let length = GetModuleFileNameExW(
@@ -426,8 +473,9 @@ fn get_process_name(pid: u32) -> Option<String> {
       return None;
     }
 
-    // Convert to OsString then to a regular String
-    let os_string = OsString::from_wide(&buffer[0..length as usize]);
+    // Convert to OsString then to a regular String. Truncate buffer first.
+    buffer.truncate(length as usize);
+    let os_string = OsString::from_wide(&buffer);
 
     // Extract the file name from the path
     let path_str = os_string.to_string_lossy().to_string();
