@@ -9,10 +9,15 @@ import {
   CopilotMessageNotFound,
   CopilotPromptNotFound,
   CopilotQuotaExceeded,
+  CopilotSessionInvalidInput,
   CopilotSessionNotFound,
 } from '../../base';
 import { QuotaService } from '../../core/quota';
-import { Models } from '../../models';
+import {
+  Models,
+  type UpdateChatSession,
+  UpdateChatSessionData,
+} from '../../models';
 import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
 import { PromptMessage, PromptParams } from './providers';
@@ -22,7 +27,6 @@ import {
   ChatMessageSchema,
   type ChatSessionForkOptions,
   type ChatSessionOptions,
-  type ChatSessionPromptUpdateOptions,
   type ChatSessionState,
   getTokenEncoder,
   type ListHistoriesOptions,
@@ -272,6 +276,7 @@ export class ChatSessionService {
       userId: session.userId,
       workspaceId: session.workspaceId,
       docId: session.docId,
+      pinned: session.pinned,
       parentSessionId: session.parentSessionId,
       prompt,
       messages: messages.success ? messages.data : [],
@@ -329,6 +334,7 @@ export class ChatSessionService {
           userId: true,
           workspaceId: true,
           docId: true,
+          pinned: true,
           parentSessionId: true,
           promptName: true,
         },
@@ -345,6 +351,7 @@ export class ChatSessionService {
               userId: session.userId,
               workspaceId: session.workspaceId,
               docId: session.docId,
+              pinned: session.pinned,
               parentSessionId: session.parentSessionId,
               prompt,
             };
@@ -370,6 +377,7 @@ export class ChatSessionService {
         async ({
           id,
           userId: uid,
+          pinned,
           promptName,
           tokenCost,
           messages,
@@ -410,6 +418,7 @@ export class ChatSessionService {
 
               return {
                 sessionId: id,
+                pinned,
                 action: prompt.action || null,
                 tokens: tokenCost,
                 createdAt,
@@ -462,16 +471,19 @@ export class ChatSessionService {
 
   async create(options: ChatSessionOptions): Promise<string> {
     const sessionId = randomUUID();
-    const { workspaceId, docId, promptName } = options;
-    const prompt = await this.prompt.get(promptName);
+    const prompt = await this.prompt.get(options.promptName);
     if (!prompt) {
-      this.logger.error(`Prompt not found: ${promptName}`);
-      throw new CopilotPromptNotFound({ name: promptName });
+      this.logger.error(`Prompt not found: ${options.promptName}`);
+      throw new CopilotPromptNotFound({ name: options.promptName });
+    }
+
+    if (options.pinned) {
+      await this.unpin(options.workspaceId, options.userId);
     }
 
     // validate prompt compatibility with session type
     this.models.copilotSession.checkSessionPrompt(
-      { workspaceId, docId },
+      options,
       prompt.name,
       prompt.action
     );
@@ -487,30 +499,45 @@ export class ChatSessionService {
   }
 
   @Transactional()
-  async updateSessionPrompt(
-    options: ChatSessionPromptUpdateOptions
-  ): Promise<string> {
-    const prompt = await this.prompt.get(options.promptName);
-    if (!prompt) {
-      this.logger.error(`Prompt not found: ${options.promptName}`);
-      throw new CopilotPromptNotFound({ name: options.promptName });
-    }
+  async unpin(workspaceId: string, userId: string) {
+    await this.models.copilotSession.unpin(workspaceId, userId);
+  }
 
+  @Transactional()
+  async updateSession(options: UpdateChatSession): Promise<string> {
     const session = await this.getSession(options.sessionId);
     if (!session) {
       throw new CopilotSessionNotFound();
     }
 
-    this.models.copilotSession.checkSessionPrompt(
-      session,
-      prompt.name,
-      prompt.action
-    );
+    const finalData: UpdateChatSessionData = {};
+    if (options.promptName) {
+      const prompt = await this.prompt.get(options.promptName);
+      if (!prompt) {
+        this.logger.error(`Prompt not found: ${options.promptName}`);
+        throw new CopilotPromptNotFound({ name: options.promptName });
+      }
 
-    return await this.models.copilotSession.updatePrompt(
+      this.models.copilotSession.checkSessionPrompt(
+        session,
+        prompt.name,
+        prompt.action
+      );
+      finalData.promptName = prompt.name;
+    }
+    finalData.pinned = options.pinned;
+    finalData.docId = options.docId;
+
+    if (Object.keys(finalData).length === 0) {
+      throw new CopilotSessionInvalidInput(
+        'No valid fields to update in the session'
+      );
+    }
+
+    return await this.models.copilotSession.update(
       options.userId,
       options.sessionId,
-      prompt.name
+      finalData
     );
   }
 
@@ -519,6 +546,10 @@ export class ChatSessionService {
     if (!state) {
       throw new CopilotSessionNotFound();
     }
+    if (state.pinned) {
+      await this.unpin(options.workspaceId, options.userId);
+    }
+
     let messages = state.messages.map(m => ({ ...m, id: undefined }));
     if (options.latestMessageId) {
       const lastMessageIdx = state.messages.findLastIndex(
@@ -547,7 +578,7 @@ export class ChatSessionService {
   }
 
   async cleanup(
-    options: Omit<ChatSessionOptions, 'promptName'> & {
+    options: Omit<ChatSessionOptions, 'pinned' | 'promptName'> & {
       sessionIds: string[];
     }
   ) {

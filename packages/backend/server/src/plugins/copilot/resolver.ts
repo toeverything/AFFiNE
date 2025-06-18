@@ -33,6 +33,7 @@ import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
 import { AccessController } from '../../core/permission';
 import { UserType } from '../../core/user';
+import type { UpdateChatSession } from '../../models';
 import { PromptService } from './prompt';
 import { PromptMessage } from './providers';
 import { ChatSessionService } from './session';
@@ -64,15 +65,31 @@ class CreateChatSessionInput {
     description: 'The prompt name to use for the session',
   })
   promptName!: string;
+
+  @Field(() => Boolean, { nullable: true })
+  pinned?: boolean;
 }
 
 @InputType()
-class UpdateChatSessionInput {
+class UpdateChatSessionInput implements Omit<UpdateChatSession, 'userId'> {
   @Field(() => String)
   sessionId!: string;
 
   @Field(() => String, {
+    description: 'The workspace id of the session',
+    nullable: true,
+  })
+  docId!: string | null | undefined;
+
+  @Field(() => Boolean, {
+    description: 'Whether to pin the session',
+    nullable: true,
+  })
+  pinned!: boolean | undefined;
+
+  @Field(() => String, {
     description: 'The prompt name to use for the session',
+    nullable: true,
   })
   promptName!: string;
 }
@@ -195,6 +212,9 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
   @Field(() => String)
   sessionId!: string;
 
+  @Field(() => Boolean)
+  pinned!: boolean;
+
   @Field(() => String, {
     description: 'An mark identifying which view to use to display the session',
     nullable: true,
@@ -279,6 +299,9 @@ class CopilotPromptType {
 export class CopilotSessionType {
   @Field(() => ID)
   id!: string;
+
+  @Field(() => Boolean)
+  pinned!: boolean;
 
   @Field(() => ID, { nullable: true })
   parentSessionId!: string | null;
@@ -460,6 +483,7 @@ export class CopilotResolver {
 
     return await this.chatSession.create({
       ...options,
+      pinned: options.pinned ?? false,
       docId: options.docId ?? null,
       userId: user.id,
     });
@@ -499,7 +523,7 @@ export class CopilotResolver {
     }
 
     await this.chatSession.checkQuota(user.id);
-    return await this.chatSession.updateSessionPrompt({
+    return await this.chatSession.updateSession({
       ...options,
       userId: user.id,
     });
@@ -612,6 +636,7 @@ export class CopilotResolver {
   ): CopilotSessionType {
     return {
       id: session.sessionId,
+      pinned: session.pinned,
       parentSessionId: session.parentSessionId,
       promptName: session.prompt.name,
       model: session.prompt.model,

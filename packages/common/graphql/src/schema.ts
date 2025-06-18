@@ -333,6 +333,7 @@ export interface CopilotHistories {
   action: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTime']['output'];
   messages: Array<ChatMessage>;
+  pinned: Scalars['Boolean']['output'];
   sessionId: Scalars['String']['output'];
   /** The number of tokens used in the session */
   tokens: Scalars['Int']['output'];
@@ -437,6 +438,7 @@ export interface CopilotSessionType {
   model: Scalars['String']['output'];
   optionalModels: Array<Scalars['String']['output']>;
   parentSessionId: Maybe<Scalars['ID']['output']>;
+  pinned: Scalars['Boolean']['output'];
   promptName: Scalars['String']['output'];
 }
 
@@ -501,6 +503,7 @@ export interface CreateChatMessageInput {
 
 export interface CreateChatSessionInput {
   docId?: InputMaybe<Scalars['String']['input']>;
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** The prompt name to use for the session */
   promptName: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
@@ -745,6 +748,7 @@ export enum ErrorNames {
   COPILOT_PROVIDER_SIDE_ERROR = 'COPILOT_PROVIDER_SIDE_ERROR',
   COPILOT_QUOTA_EXCEEDED = 'COPILOT_QUOTA_EXCEEDED',
   COPILOT_SESSION_DELETED = 'COPILOT_SESSION_DELETED',
+  COPILOT_SESSION_INVALID_INPUT = 'COPILOT_SESSION_INVALID_INPUT',
   COPILOT_SESSION_NOT_FOUND = 'COPILOT_SESSION_NOT_FOUND',
   COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED = 'COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED',
   COPILOT_TRANSCRIPTION_JOB_EXISTS = 'COPILOT_TRANSCRIPTION_JOB_EXISTS',
@@ -2325,8 +2329,12 @@ export interface UpdateAppConfigInput {
 }
 
 export interface UpdateChatSessionInput {
+  /** The workspace id of the session */
+  docId?: InputMaybe<Scalars['String']['input']>;
+  /** Whether to pin the session */
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** The prompt name to use for the session */
-  promptName: Scalars['String']['input'];
+  promptName?: InputMaybe<Scalars['String']['input']>;
   sessionId: Scalars['String']['input'];
 }
 
@@ -3338,6 +3346,7 @@ export type GetCopilotHistoryIdsQuery = {
       histories: Array<{
         __typename?: 'CopilotHistories';
         sessionId: string;
+        pinned: boolean;
         messages: Array<{
           __typename?: 'ChatMessage';
           id: string | null;
@@ -3364,6 +3373,7 @@ export type GetCopilotHistoriesQuery = {
       histories: Array<{
         __typename?: 'CopilotHistories';
         sessionId: string;
+        pinned: boolean;
         tokens: number;
         action: string | null;
         createdAt: string;
@@ -3532,6 +3542,7 @@ export type GetCopilotSessionQuery = {
       session: {
         __typename?: 'CopilotSessionType';
         id: string;
+        pinned: boolean;
         parentSessionId: string | null;
         promptName: string;
         model: string;

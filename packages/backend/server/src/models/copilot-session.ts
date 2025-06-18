@@ -6,14 +6,15 @@ import { omit } from 'lodash-es';
 import {
   CopilotPromptInvalid,
   CopilotSessionDeleted,
+  CopilotSessionInvalidInput,
   CopilotSessionNotFound,
 } from '../base';
 import { BaseModel } from './base';
 
 export enum SessionType {
-  Workspace = 'workspace', // docId is null/undefined, indicating a workspace session
-  Pinned = 'pinned', // docId equals workspaceId, indicating a pinned session
-  Doc = 'doc', // docId differs from workspaceId, pointing to a specific document
+  Workspace = 'workspace', // docId is null and pinned is false
+  Pinned = 'pinned', // pinned is true
+  Doc = 'doc', // docId points to specific document
 }
 
 type ChatAttachment = { attachment: string; mimeType: string } | string;
@@ -31,12 +32,19 @@ type ChatSession = {
   sessionId: string;
   workspaceId: string;
   docId?: string | null;
+  pinned?: boolean;
   messages?: ChatMessage[];
   // connect ids
   userId: string;
   promptName: string;
   parentSessionId?: string | null;
 };
+
+export type UpdateChatSessionData = Partial<
+  Pick<ChatSession, 'docId' | 'pinned' | 'promptName'>
+>;
+export type UpdateChatSession = Pick<ChatSession, 'userId' | 'sessionId'> &
+  UpdateChatSessionData;
 
 export type ListSessionOptions = {
   sessionId: string | undefined;
@@ -50,18 +58,18 @@ export type ListSessionOptions = {
 
 @Injectable()
 export class CopilotSessionModel extends BaseModel {
-  getSessionType(docId?: string | null, workspaceId?: string): SessionType {
-    if (!docId) return SessionType.Workspace;
-    if (docId === workspaceId) return SessionType.Pinned;
+  getSessionType(session: Pick<ChatSession, 'docId' | 'pinned'>): SessionType {
+    if (session.pinned) return SessionType.Pinned;
+    if (!session.docId) return SessionType.Workspace;
     return SessionType.Doc;
   }
 
   checkSessionPrompt(
-    session: Pick<ChatSession, 'docId' | 'workspaceId'>,
+    session: Pick<ChatSession, 'docId' | 'pinned'>,
     promptName: string,
     promptAction: string | undefined
   ): boolean {
-    const sessionType = this.getSessionType(session.docId, session.workspaceId);
+    const sessionType = this.getSessionType(session);
 
     // workspace and pinned sessions cannot use action prompts
     if (
@@ -83,12 +91,18 @@ export class CopilotSessionModel extends BaseModel {
     });
   }
 
+  @Transactional()
   async create(state: ChatSession) {
+    if (state.pinned) {
+      await this.unpin(state.workspaceId, state.userId);
+    }
+
     const row = await this.db.aiSession.create({
       data: {
         id: state.sessionId,
         workspaceId: state.workspaceId,
         docId: state.docId,
+        pinned: state.pinned ?? false,
         // connect
         userId: state.userId,
         promptName: state.promptName,
@@ -136,10 +150,11 @@ export class CopilotSessionModel extends BaseModel {
   @Transactional()
   async getExists<Select extends Prisma.AiSessionSelect>(
     sessionId: string,
-    select?: Select
+    select?: Select,
+    where?: Omit<Prisma.AiSessionWhereInput, 'id' | 'deletedAt'>
   ) {
     return (await this.db.aiSession.findUnique({
-      where: { id: sessionId, deletedAt: null },
+      where: { ...where, id: sessionId, deletedAt: null },
       select,
     })) as Prisma.AiSessionGetPayload<{ select: Select }>;
   }
@@ -151,6 +166,7 @@ export class CopilotSessionModel extends BaseModel {
       userId: true,
       workspaceId: true,
       docId: true,
+      pinned: true,
       parentSessionId: true,
       messages: {
         select: {
@@ -205,6 +221,7 @@ export class CopilotSessionModel extends BaseModel {
         id: true,
         userId: true,
         docId: true,
+        pinned: true,
         promptName: true,
         tokenCost: true,
         createdAt: true,
@@ -233,20 +250,41 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async updatePrompt(
+  async unpin(workspaceId: string, userId: string): Promise<boolean> {
+    const { count } = await this.db.aiSession.updateMany({
+      where: { userId, workspaceId, pinned: true, deletedAt: null },
+      data: { pinned: false },
+    });
+
+    return count > 0;
+  }
+
+  @Transactional()
+  async update(
     userId: string,
     sessionId: string,
-    promptName: string
+    data: UpdateChatSessionData
   ): Promise<string> {
-    const haveSession = await this.has(sessionId, userId, {
-      prompt: { action: null },
-    });
-    if (haveSession) {
-      await this.db.aiSession.update({
-        where: { id: sessionId },
-        data: { promptName },
-      });
+    const session = await this.getExists(
+      sessionId,
+      { id: true, workspaceId: true, docId: true, pinned: true, prompt: true },
+      { userId }
+    );
+    if (!session) {
+      throw new CopilotSessionNotFound();
     }
+    if (data.promptName && session.prompt.action) {
+      throw new CopilotSessionInvalidInput(
+        `Cannot update prompt for action: ${session.id}`
+      );
+    }
+    if (data.pinned && data.pinned !== session.pinned) {
+      // if pin the session, unpin exists session in the workspace
+      await this.unpin(session.workspaceId, userId);
+    }
+
+    await this.db.aiSession.update({ where: { id: sessionId }, data });
+
     return sessionId;
   }
 
