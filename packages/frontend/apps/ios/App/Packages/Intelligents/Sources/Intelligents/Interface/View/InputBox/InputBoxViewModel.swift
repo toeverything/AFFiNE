@@ -10,41 +10,27 @@ import Foundation
 
 // MARK: - Data Models
 
-public enum AttachmentType: Equatable {
-  case image
-  case document
-  case video
-  case audio
-  case other(String)
+public struct InputAttachment: Identifiable, Equatable, Hashable, Codable {
+  public var id: UUID = .init()
+  public var type: AttachmentType
+  public var data: Data?
+  public var url: URL?
+  public var name: String
+  public var size: Int64
 
-  public var displayName: String {
-    switch self {
-    case .image: "Image"
-    case .document: "Document"
-    case .video: "Video"
-    case .audio: "Audio"
-    case let .other(type): type
-    }
+  public enum AttachmentType: String, Equatable, Hashable, Codable {
+    case image
+    case document
+    case file
   }
-}
-
-public struct InputAttachment {
-  public let id: String
-  public let type: AttachmentType
-  public let data: Data?
-  public let url: URL?
-  public let name: String
-  public let size: Int64
 
   public init(
-    id: String = UUID().uuidString,
     type: AttachmentType,
     data: Data? = nil,
     url: URL? = nil,
     name: String,
     size: Int64 = 0
   ) {
-    self.id = id
     self.type = type
     self.data = data
     self.url = url
@@ -54,11 +40,11 @@ public struct InputAttachment {
 }
 
 public struct InputBoxData {
-  public let text: String
-  public let attachments: [InputAttachment]
-  public let isToolEnabled: Bool
-  public let isNetworkEnabled: Bool
-  public let isDeepThinkingEnabled: Bool
+  public var text: String
+  public var attachments: [InputAttachment]
+  public var isToolEnabled: Bool
+  public var isNetworkEnabled: Bool
+  public var isDeepThinkingEnabled: Bool
 
   public init(
     text: String,
@@ -146,9 +132,8 @@ public extension InputBoxViewModel {
     attachments.append(attachment)
   }
 
-  func removeAttachment(at index: Int) {
-    guard index < attachments.count else { return }
-    attachments.remove(at: index)
+  func removeAttachment(withId id: UUID) {
+    attachments.removeAll { $0.id == id }
   }
 
   func clearAttachments() {

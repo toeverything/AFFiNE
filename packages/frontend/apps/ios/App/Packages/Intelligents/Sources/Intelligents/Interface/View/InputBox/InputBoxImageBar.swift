@@ -10,27 +10,34 @@ import Then
 import UIKit
 
 protocol InputBoxImageBarDelegate: AnyObject {
-  func inputBoxImageBar(_ imageBar: InputBoxImageBar, didRemoveImageAt index: Int)
+  func inputBoxImageBar(_ imageBar: InputBoxImageBar, didRemoveImageWithId id: UUID)
 }
 
-private let constantHeight: CGFloat = 108
+private class AttachmentViewModel {
+  let attachment: InputAttachment
+  let imageCell: InputBoxImageBar.ImageCell
+
+  init(attachment: InputAttachment, imageCell: InputBoxImageBar.ImageCell) {
+    self.attachment = attachment
+    self.imageCell = imageCell
+  }
+}
 
 class InputBoxImageBar: UIScrollView {
   weak var imageBarDelegate: InputBoxImageBarDelegate?
 
-  private lazy var stackView = UIStackView().then {
-    $0.axis = .horizontal
-    $0.spacing = 8
-    $0.alignment = .center
-    $0.distribution = .equalSpacing
-  }
-
-  private var imageCells: [ImageCell] = []
+  private var attachmentViewModels: [AttachmentViewModel] = []
+  private let cellSpacing: CGFloat = 8
+  private let constantHeight: CGFloat = 80
 
   override init(frame: CGRect = .zero) {
     super.init(frame: frame)
-    setupViews()
-    setupConstraints()
+    showsHorizontalScrollIndicator = false
+    showsVerticalScrollIndicator = false
+
+    snp.makeConstraints { make in
+      make.height.equalTo(constantHeight)
+    }
   }
 
   @available(*, unavailable)
@@ -38,111 +45,126 @@ class InputBoxImageBar: UIScrollView {
     fatalError()
   }
 
-  private func setupViews() {
-    showsHorizontalScrollIndicator = false
-    showsVerticalScrollIndicator = false
-    addSubview(stackView)
-  }
+  func updateImageBarContent(_ attachments: [InputAttachment]) {
+    let currentIds = Set(attachmentViewModels.map(\.attachment.id))
+    let imageAttachments = attachments.filter { $0.type == .image }
+    let newIds = Set(imageAttachments.map(\.id))
 
-  private func setupConstraints() {
-    stackView.snp.makeConstraints { make in
-      make.edges.equalToSuperview()
-      make.height.equalTo(constantHeight)
+    // 移除不再存在的附件
+    let idsToRemove = currentIds.subtracting(newIds)
+    for id in idsToRemove {
+      if let index = attachmentViewModels.firstIndex(where: { $0.attachment.id == id }) {
+        let viewModel = attachmentViewModels.remove(at: index)
+        viewModel.imageCell.removeFromSuperview()
+      }
     }
 
-    snp.makeConstraints { make in
-      make.height.equalTo(constantHeight)
-    }
-  }
+    // 添加新的附件
+    let idsToAdd = newIds.subtracting(currentIds)
+    for attachment in imageAttachments {
+      if idsToAdd.contains(attachment.id),
+         let data = attachment.data,
+         let image = UIImage(data: data)
+      {
+        let imageCell = ImageCell(
+          // for animation to work
+          frame: .init(x: 0, y: 0, width: constantHeight, height: constantHeight),
+          image: image,
+          attachmentId: attachment.id
+        )
+        imageCell.onRemove = { [weak self] cell in
+          self?.removeImageCell(cell)
+        }
 
-  func addImage(_ image: UIImage) {
-    let imageCell = ImageCell(image: image)
-    imageCell.onRemove = { [weak self] cell in
-      self?.removeImageCell(cell)
+        let viewModel = AttachmentViewModel(attachment: attachment, imageCell: imageCell)
+        attachmentViewModels.append(viewModel)
+        addSubview(imageCell)
+      }
     }
 
-    imageCells.append(imageCell)
-    stackView.addArrangedSubview(imageCell)
-    updateContentSize()
+    layoutImageCells()
   }
 
   func removeImageCell(_ cell: ImageCell) {
-    if let index = imageCells.firstIndex(of: cell) {
-      imageCells.remove(at: index)
-      stackView.removeArrangedSubview(cell)
-      cell.removeFromSuperview()
-      imageBarDelegate?.inputBoxImageBar(self, didRemoveImageAt: index)
-      updateContentSize()
+    if let index = attachmentViewModels.firstIndex(where: { $0.imageCell === cell }) {
+      let viewModel = attachmentViewModels.remove(at: index)
+      viewModel.imageCell.removeFromSuperviewWithExplodeEffect()
+      imageBarDelegate?.inputBoxImageBar(self, didRemoveImageWithId: cell.attachmentId)
+      layoutImageCells()
     }
   }
 
   func clear() {
-    for cell in imageCells {
-      stackView.removeArrangedSubview(cell)
-      cell.removeFromSuperview()
+    for viewModel in attachmentViewModels {
+      viewModel.imageCell.removeFromSuperview()
     }
-    imageCells.removeAll()
-    updateContentSize()
+    attachmentViewModels.removeAll()
+    contentSize = .zero
   }
 
-  private func updateContentSize() {
-    layoutIfNeeded()
-    contentSize = stackView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
+  private func layoutImageCells() {
+    var xOffset: CGFloat = 0
+
+    for viewModel in attachmentViewModels {
+      viewModel.imageCell.frame = CGRect(x: xOffset, y: 0, width: constantHeight, height: constantHeight)
+      xOffset += constantHeight + cellSpacing
+    }
+
+    // Update content size
+    let totalWidth = max(0, xOffset - cellSpacing)
+    contentSize = CGSize(width: totalWidth, height: constantHeight)
   }
 }
 
 extension InputBoxImageBar {
   class ImageCell: UIView {
+    let attachmentId: UUID
     var onRemove: ((ImageCell) -> Void)?
 
-    private lazy var imageView = UIImageView().then {
+    private lazy var imageView = UIImageView(frame: bounds).then {
       $0.contentMode = .scaleAspectFill
       $0.clipsToBounds = true
       $0.layer.cornerRadius = 12
+      $0.layer.cornerCurve = .continuous
       $0.backgroundColor = .systemGray6
     }
 
-    private lazy var removeButton = UIButton(type: .system).then {
-      $0.backgroundColor = UIColor.black.withAlphaComponent(0.52)
-      $0.layer.cornerRadius = 8.5
-      $0.layer.borderWidth = 1
-      $0.layer.borderColor = UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1).cgColor
-      $0.setImage(UIImage(systemName: "xmark"), for: .normal)
-      $0.tintColor = .white
-      $0.addTarget(self, action: #selector(removeButtonTapped), for: .touchUpInside)
+    private lazy var removeButton = DeleteButtonView(frame: removeButtonFrame).then {
+      $0.onTapped = { [weak self] in
+        self?.removeButtonTapped()
+      }
     }
 
-    init(image: UIImage) {
-      super.init(frame: .zero)
-      setupViews()
-      setupConstraints()
+    init(frame: CGRect, image: UIImage, attachmentId: UUID) {
+      self.attachmentId = attachmentId
+      super.init(frame: frame)
+      addSubview(imageView)
+      addSubview(removeButton)
       imageView.image = image
+    }
+
+    var removeButtonFrame: CGRect {
+      let buttonSize: CGFloat = 18
+      let buttonInset: CGFloat = 6
+      return CGRect(
+        x: bounds.width - buttonSize - buttonInset,
+        y: buttonInset,
+        width: buttonSize,
+        height: buttonSize
+      )
+    }
+
+    override func layoutSubviews() {
+      super.layoutSubviews()
+
+      imageView.frame = bounds
+
+      removeButton.frame = removeButtonFrame
     }
 
     @available(*, unavailable)
     required init?(coder _: NSCoder) {
       fatalError()
-    }
-
-    private func setupViews() {
-      addSubview(imageView)
-      addSubview(removeButton)
-    }
-
-    private func setupConstraints() {
-      // 设置固定高度和1:1宽高比
-      snp.makeConstraints { make in
-        make.width.height.equalTo(constantHeight)
-      }
-
-      imageView.snp.makeConstraints { make in
-        make.edges.equalToSuperview()
-      }
-
-      removeButton.snp.makeConstraints { make in
-        make.top.trailing.equalToSuperview().inset(6.5)
-        make.width.height.equalTo(17)
-      }
     }
 
     @objc private func removeButtonTapped() {

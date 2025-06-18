@@ -48,12 +48,7 @@ public extension UIViewController {
     button.stopProgress()
     view.layoutIfNeeded()
 
-    UIView.animate(
-      withDuration: 0.5,
-      delay: 0,
-      usingSpringWithDamping: 1.0,
-      initialSpringVelocity: 0.8
-    ) {
+    performWithAnimation {
       button.alpha = 1
       button.transform = .identity
       button.setNeedsLayout()
@@ -78,12 +73,7 @@ public extension UIViewController {
     button.stopProgress()
     button.setNeedsLayout()
     view.layoutIfNeeded()
-    UIView.animate(
-      withDuration: 0.5,
-      delay: 0,
-      usingSpringWithDamping: 1.0,
-      initialSpringVelocity: 0.8
-    ) {
+    performWithAnimation {
       button.alpha = 0
       button.transform = .init(scaleX: 0, y: 0)
       button.setNeedsLayout()

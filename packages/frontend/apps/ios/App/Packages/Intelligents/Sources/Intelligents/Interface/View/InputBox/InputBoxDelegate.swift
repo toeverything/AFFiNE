@@ -17,8 +17,11 @@ protocol InputBoxDelegate: AnyObject {
 }
 
 extension InputBox: InputBoxImageBarDelegate {
-  func inputBoxImageBar(_: InputBoxImageBar, didRemoveImageAt index: Int) {
-    viewModel.removeAttachment(at: index)
+  func inputBoxImageBar(_: InputBoxImageBar, didRemoveImageWithId id: InputAttachment.ID) {
+    performWithAnimation { [self] in
+      viewModel.removeAttachment(withId: id)
+      layoutIfNeeded()
+    }
   }
 }
 

@@ -48,12 +48,15 @@ class InputBox: UIView {
     $0.delegate = self
   }
 
-  lazy var imageBar = InputBoxImageBar(frame: bounds)
+  lazy var imageBar = InputBoxImageBar().then {
+    $0.imageBarDelegate = self
+  }
 
   lazy var mainStackView = UIStackView().then {
     $0.axis = .vertical
     $0.spacing = 16
     $0.alignment = .fill
+    $0.addArrangedSubview(imageBar)
     $0.addArrangedSubview(textView)
     $0.addArrangedSubview(functionBar)
   }
@@ -73,82 +76,23 @@ class InputBox: UIView {
 
   override init(frame: CGRect = .zero) {
     super.init(frame: frame)
-    setupViews()
-    setupConstraints()
-    setupBindings()
-    updatePlaceholderVisibility()
-  }
 
-  @available(*, unavailable)
-  required init?(coder _: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-
-  func setupViews() {
     backgroundColor = .clear
     addSubview(containerView)
     containerView.addSubview(mainStackView)
     containerView.addSubview(placeholderLabel)
+    imageBar.isHidden = true
 
-    imageBar.imageBarDelegate = self
-  }
-
-  func setupBindings() {
-    // 绑定 ViewModel 到 UI
-    viewModel.$inputText
-      .sink { [weak self] text in
-        if self?.textView.text != text {
-          self?.textView.text = text
-          self?.updatePlaceholderVisibility()
-          self?.updateTextViewHeight()
-        }
-      }
-      .store(in: &cancellables)
-
-    viewModel.$isToolEnabled
-      .sink { [weak self] enabled in
-        self?.functionBar.updateToolState(isEnabled: enabled)
-      }
-      .store(in: &cancellables)
-
-    viewModel.$isNetworkEnabled
-      .sink { [weak self] enabled in
-        self?.functionBar.updateNetworkState(isEnabled: enabled)
-      }
-      .store(in: &cancellables)
-
-    viewModel.$isDeepThinkingEnabled
-      .sink { [weak self] enabled in
-        self?.functionBar.updateDeepThinkingState(isEnabled: enabled)
-      }
-      .store(in: &cancellables)
-
-    viewModel.$canSend
-      .sink { [weak self] canSend in
-        self?.functionBar.updateSendState(canSend: canSend)
-      }
-      .store(in: &cancellables)
-
-    viewModel.$hasAttachments
-      .sink { [weak self] hasAttachments in
-        self?.updateImageBarVisibility(hasAttachments)
-      }
-      .store(in: &cancellables)
-
-    viewModel.$attachments
-      .sink { [weak self] attachments in
-        self?.updateImageBarContent(attachments)
-      }
-      .store(in: &cancellables)
-  }
-
-  func setupConstraints() {
     containerView.snp.makeConstraints { make in
       make.edges.equalToSuperview().inset(16)
     }
 
     mainStackView.snp.makeConstraints { make in
       make.edges.equalToSuperview().inset(16)
+    }
+
+    imageBar.snp.makeConstraints { make in
+      make.left.right.equalToSuperview()
     }
 
     textView.snp.makeConstraints { make in
@@ -159,6 +103,74 @@ class InputBox: UIView {
       make.left.right.equalTo(textView)
       make.top.equalTo(textView)
     }
+
+    setupBindings()
+    updatePlaceholderVisibility()
+  }
+
+  @available(*, unavailable)
+  required init?(coder _: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  func setupBindings() {
+    // 绑定 ViewModel 到 UI
+    viewModel.$inputText
+      .removeDuplicates()
+      .sink { [weak self] text in
+        if self?.textView.text != text {
+          self?.textView.text = text
+          self?.updatePlaceholderVisibility()
+          self?.updateTextViewHeight()
+        }
+      }
+      .store(in: &cancellables)
+
+    viewModel.$isToolEnabled
+      .removeDuplicates()
+      .sink { [weak self] enabled in
+        self?.functionBar.updateToolState(isEnabled: enabled)
+      }
+      .store(in: &cancellables)
+
+    viewModel.$isNetworkEnabled
+      .removeDuplicates()
+      .sink { [weak self] enabled in
+        self?.functionBar.updateNetworkState(isEnabled: enabled)
+      }
+      .store(in: &cancellables)
+
+    viewModel.$isDeepThinkingEnabled
+      .removeDuplicates()
+      .sink { [weak self] enabled in
+        self?.functionBar.updateDeepThinkingState(isEnabled: enabled)
+      }
+      .store(in: &cancellables)
+
+    viewModel.$canSend
+      .removeDuplicates()
+      .sink { [weak self] canSend in
+        self?.functionBar.updateSendState(canSend: canSend)
+      }
+      .store(in: &cancellables)
+
+    viewModel.$hasAttachments
+      .dropFirst() // for view setup
+      .removeDuplicates()
+      .sink { [weak self] hasAttachments in
+        performWithAnimation {
+          self?.updateImageBarVisibility(hasAttachments)
+          self?.layoutIfNeeded()
+        }
+      }
+      .store(in: &cancellables)
+
+    viewModel.$attachments
+      .removeDuplicates()
+      .sink { [weak self] attachments in
+        self?.updateImageBarContent(attachments)
+      }
+      .store(in: &cancellables)
   }
 
   func updateTextViewHeight() {
@@ -173,13 +185,7 @@ class InputBox: UIView {
 
     if height == 0 || superview == nil || window == nil || isHidden { return }
 
-    UIView.animate(
-      withDuration: 0.5,
-      delay: 0,
-      usingSpringWithDamping: 0.8,
-      initialSpringVelocity: 1.0,
-      options: .curveEaseInOut
-    ) {
+    performWithAnimation {
       self.layoutIfNeeded()
       self.superview?.layoutIfNeeded()
     }
@@ -190,22 +196,11 @@ class InputBox: UIView {
   }
 
   func updateImageBarVisibility(_ hasAttachments: Bool) {
-    if hasAttachments, !mainStackView.arrangedSubviews.contains(imageBar) {
-      mainStackView.insertArrangedSubview(imageBar, at: 1)
-    } else if !hasAttachments, mainStackView.arrangedSubviews.contains(imageBar) {
-      mainStackView.removeArrangedSubview(imageBar)
-      imageBar.removeFromSuperview()
-    }
+    imageBar.isHidden = !hasAttachments
   }
 
   func updateImageBarContent(_ attachments: [InputAttachment]) {
-    imageBar.clear()
-
-    for attachment in attachments {
-      if attachment.type == .image, let data = attachment.data, let image = UIImage(data: data) {
-        imageBar.addImage(image)
-      }
-    }
+    imageBar.updateImageBarContent(attachments)
   }
 
   // MARK: - Public Methods
@@ -220,7 +215,26 @@ class InputBox: UIView {
       size: Int64(imageData.count)
     )
 
-    viewModel.addAttachment(attachment)
+    performWithAnimation { [self] in
+      viewModel.addAttachment(attachment)
+      layoutIfNeeded()
+    }
+  }
+
+  public func addFileAttachment(_ url: URL) {
+    guard let fileData = try? Data(contentsOf: url) else { return }
+
+    let attachment = InputAttachment(
+      type: .file,
+      data: fileData,
+      name: url.lastPathComponent,
+      size: Int64(fileData.count)
+    )
+
+    performWithAnimation { [self] in
+      viewModel.addAttachment(attachment)
+      layoutIfNeeded()
+    }
   }
 
   public var inputBoxData: InputBoxData {

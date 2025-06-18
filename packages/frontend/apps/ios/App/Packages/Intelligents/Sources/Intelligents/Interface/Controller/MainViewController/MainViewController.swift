@@ -6,11 +6,11 @@ import UIKit
 class MainViewController: UIViewController {
   // MARK: - UI Components
 
-  private lazy var headerView = MainHeaderView().then {
+  lazy var headerView = MainHeaderView().then {
     $0.delegate = self
   }
 
-  private lazy var inputBox = InputBox().then {
+  lazy var inputBox = InputBox().then {
     $0.delegate = self
   }
 
@@ -23,25 +23,6 @@ class MainViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    setupUI()
-  }
-
-  override func viewWillAppear(_ animated: Bool) {
-    super.viewWillAppear(animated)
-    navigationController!.setNavigationBarHidden(true, animated: animated)
-    DispatchQueue.main.async {
-      self.inputBox.textView.becomeFirstResponder()
-    }
-  }
-
-  override func viewWillDisappear(_ animated: Bool) {
-    super.viewWillDisappear(animated)
-    navigationController!.setNavigationBarHidden(false, animated: animated)
-  }
-
-  // MARK: - Setup
-
-  private func setupUI() {
     view.backgroundColor = .systemBackground
     let inputBox = InputBox().then {
       $0.delegate = self
@@ -60,5 +41,18 @@ class MainViewController: UIViewController {
       make.leading.trailing.equalToSuperview()
       make.bottom.equalTo(view.keyboardLayoutGuide.snp.top)
     }
+  }
+
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    navigationController!.setNavigationBarHidden(true, animated: animated)
+    DispatchQueue.main.async {
+      self.inputBox.textView.becomeFirstResponder()
+    }
+  }
+
+  override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    navigationController!.setNavigationBarHidden(false, animated: animated)
   }
 }
