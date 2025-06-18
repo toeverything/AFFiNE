@@ -40,7 +40,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       background-color: rgba(0, 0, 0, 0.05);
     }
 
-    .tool-calling-wrapper {
+    .tool-wrapper {
       padding: 12px;
       margin: 8px 0;
       border-radius: 8px;
@@ -130,18 +130,72 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
               </div>
             `;
           case 'tool-call':
-            return html`
-              <div class="tool-calling-wrapper">Tool Calling...</div>
-            `;
+            return this.renderToolCall(data);
           case 'tool-result':
-            return html`
-              <div class="tool-calling-wrapper">Tool Result...</div>
-            `;
+            return this.renderToolResult(data);
           default:
             return nothing;
         }
       })}
     </div>`;
+  }
+
+  private renderToolCall(streamObject: StreamObject) {
+    if (streamObject.type !== 'tool-call') {
+      return nothing;
+    }
+
+    switch (streamObject.toolName) {
+      case 'web_crawl_exa':
+        return html`
+          <web-crawl-tool
+            .data=${streamObject}
+            .host=${this.host}
+          ></web-crawl-tool>
+        `;
+      case 'web_search_exa':
+        return html`
+          <web-search-tool
+            .data=${streamObject}
+            .host=${this.host}
+          ></web-search-tool>
+        `;
+      default:
+        return html`
+          <div class="tool-wrapper">
+            ${streamObject.toolName} tool calling...
+          </div>
+        `;
+    }
+  }
+
+  private renderToolResult(streamObject: StreamObject) {
+    if (streamObject.type !== 'tool-result') {
+      return nothing;
+    }
+
+    switch (streamObject.toolName) {
+      case 'web_crawl_exa':
+        return html`
+          <web-crawl-tool
+            .data=${streamObject}
+            .host=${this.host}
+          ></web-crawl-tool>
+        `;
+      case 'web_search_exa':
+        return html`
+          <web-search-tool
+            .data=${streamObject}
+            .host=${this.host}
+          ></web-search-tool>
+        `;
+      default:
+        return html`
+          <div class="tool-wrapper">
+            ${streamObject.toolName} tool result...
+          </div>
+        `;
+    }
   }
 
   private renderRichText(text: string) {

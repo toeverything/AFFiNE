@@ -28,6 +28,10 @@ import { ChatContentRichText } from './chat-panel/content/rich-text';
 import { ChatMessageAction } from './chat-panel/message/action';
 import { ChatMessageAssistant } from './chat-panel/message/assistant';
 import { ChatMessageUser } from './chat-panel/message/user';
+import { ToolCallCard } from './chat-panel/tools/tool-call-card';
+import { ToolResultCard } from './chat-panel/tools/tool-result-card';
+import { WebCrawlTool } from './chat-panel/tools/web-crawl';
+import { WebSearchTool } from './chat-panel/tools/web-search';
 import { ChatPanelAddPopover } from './components/ai-chat-chips/add-popover';
 import { ChatPanelCandidatesPopover } from './components/ai-chat-chips/candidates-popover';
 import { ChatPanelChips } from './components/ai-chat-chips/chat-panel-chips';
@@ -155,6 +159,11 @@ export function registerAIEffects() {
   customElements.define('chat-message-action', ChatMessageAction);
   customElements.define('chat-message-assistant', ChatMessageAssistant);
   customElements.define('chat-message-user', ChatMessageUser);
+
+  customElements.define('tool-call-card', ToolCallCard);
+  customElements.define('tool-result-card', ToolResultCard);
+  customElements.define('web-crawl-tool', WebCrawlTool);
+  customElements.define('web-search-tool', WebSearchTool);
 
   customElements.define(AFFINE_AI_PANEL_WIDGET, AffineAIPanelWidget);
   customElements.define(AFFINE_EDGELESS_COPILOT_WIDGET, EdgelessCopilotWidget);
