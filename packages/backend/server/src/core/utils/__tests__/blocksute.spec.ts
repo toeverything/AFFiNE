@@ -99,3 +99,14 @@ test('can parse doc to markdown from doc snapshot', async t => {
 
   t.snapshot(result);
 });
+
+test('can parse doc to markdown from doc snapshot with ai editable', async t => {
+  const result = parseDocToMarkdownFromDocSnapshot(
+    workspace.id,
+    docSnapshot.id,
+    docSnapshot.blob,
+    true
+  );
+
+  t.snapshot(result);
+});

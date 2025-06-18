@@ -34,7 +34,9 @@ export const parseBlockToMd = (
 export function parseBlock(
   context: ParserContext,
   yBlock: YBlock | undefined,
-  yBlocks: YBlocks // all blocks
+  yBlocks: YBlocks, // all blocks
+  aiEditable = false,
+  blockLevel = 0
 ): ParsedBlock | null {
   if (!yBlock) {
     return null;
@@ -73,6 +75,8 @@ export function parseBlock(
     return result;
   }
 
+  let placeholder = false;
+
   try {
     switch (flavour) {
       case 'affine:paragraph': {
@@ -100,7 +104,12 @@ export function parseBlock(
         break;
       }
       case 'affine:list': {
-        result.content = (type === 'bulleted' ? '* ' : '1. ') + toMd() + '\n';
+        let prefix = type === 'bulleted' ? '* ' : '1. ';
+        if (type === 'todo') {
+          const checked = yBlock.get('prop:checked') as boolean;
+          prefix = checked ? '- [x] ' : '- [ ] ';
+        }
+        result.content = prefix + toMd() + '\n';
         break;
       }
       case 'affine:code': {
@@ -218,7 +227,9 @@ export function parseBlock(
             const child = parseBlock(
               context,
               yBlocks.get(cid) as YBlock | undefined,
-              yBlocks
+              yBlocks,
+              aiEditable,
+              blockLevel + 1
             );
             if (!child) {
               return [cid, ''];
@@ -375,6 +386,7 @@ export function parseBlock(
       }
       default: {
         // console.warn("Unknown or unsupported flavour", flavour);
+        placeholder = true;
       }
     }
 
@@ -385,7 +397,9 @@ export function parseBlock(
               parseBlock(
                 context,
                 yBlocks.get(cid) as YBlock | undefined,
-                yBlocks
+                yBlocks,
+                aiEditable,
+                blockLevel + 1
               )
             )
             .filter(
@@ -396,6 +410,16 @@ export function parseBlock(
         : [];
   } catch (e) {
     console.warn('Error converting block to md', e);
+  }
+
+  if (result.content && aiEditable && blockLevel === 2) {
+    // add a placeholder comment for the block level 2
+    if (flavour === 'affine:database' || placeholder) {
+      result.content = `<!-- block_id=${id} flavour=${flavour} placeholder -->\n`;
+      result.children = [];
+    } else {
+      result.content = `<!-- block_id=${id} flavour=${flavour} -->\n${result.content}`;
+    }
   }
   return result;
 }
@@ -416,7 +440,7 @@ export const parsePageDoc = (ctx: ParserContext): ParsedDoc => {
   } else {
     const yPage = yBlocks.get(maybePageBlock[0]) as YBlock;
     const title = yPage.get('prop:title') as YText;
-    const rootBlock = parseBlock(ctx, yPage, yBlocks);
+    const rootBlock = parseBlock(ctx, yPage, yBlocks, ctx.aiEditable);
     if (!rootBlock) {
       return {
         title: '',

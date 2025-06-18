@@ -17,6 +17,12 @@ const rootDocSnapshot = readFileSync(
 const docSnapshot = readFileSync(
   path.join(import.meta.dirname, './__fixtures__/test-doc.snapshot.bin')
 );
+const docSnapshotWithAiEditable = readFileSync(
+  path.join(
+    import.meta.dirname,
+    './__fixtures__/test-doc-with-ai-editable.snapshot.bin'
+  )
+);
 
 test('should read doc blocks work', async () => {
   const rootDoc = new YDoc({
@@ -117,4 +123,40 @@ test('should parse page doc work', () => {
   });
 
   expect(result).toMatchSnapshot();
+});
+
+test('should parse page doc work with ai editable', () => {
+  const doc = new YDoc({
+    guid: 'test-doc',
+  });
+  applyUpdate(doc, docSnapshot);
+
+  const result = parsePageDoc({
+    workspaceId: 'test-space',
+    doc,
+    buildBlobUrl: id => `blob://${id}`,
+    buildDocUrl: id => `doc://${id}`,
+    renderDocTitle: id => `Doc Title ${id}`,
+    aiEditable: true,
+  });
+
+  expect(result.md).toMatchSnapshot();
+});
+
+test('should parse page full doc work with ai editable', () => {
+  const doc = new YDoc({
+    guid: 'test-doc',
+  });
+  applyUpdate(doc, docSnapshotWithAiEditable);
+
+  const result = parsePageDoc({
+    workspaceId: 'test-space',
+    doc,
+    buildBlobUrl: id => `blob://${id}`,
+    buildDocUrl: id => `doc://${id}`,
+    renderDocTitle: id => `Doc Title ${id}`,
+    aiEditable: true,
+  });
+
+  expect(result.md).toMatchSnapshot();
 });

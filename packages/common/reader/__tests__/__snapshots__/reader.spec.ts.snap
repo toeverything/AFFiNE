@@ -555,6 +555,450 @@ For developer or installation guides, please go to [AFFiNE Development](https://
 }
 `;
 
+exports[`should parse page doc work with ai editable 1`] = `
+"<!-- block_id=FoPQcAyV_m flavour=affine:paragraph -->
+AFFiNE is an open source all in one workspace, an operating system for all the building blocks of your team wiki, knowledge management and digital assets and a better alternative to Notion and Miro.
+
+
+<!-- block_id=oz48nn_zp8 flavour=affine:paragraph -->
+
+
+
+<!-- block_id=g8a-D9-jXS flavour=affine:paragraph -->
+# You own your data, with no compromises
+
+
+<!-- block_id=J8lHN1GR_5 flavour=affine:paragraph -->
+## Local-first & Real-time collaborative
+
+
+<!-- block_id=xCuWdM0VLz flavour=affine:paragraph -->
+We love the idea proposed by Ink & Switch in the famous article about you owning your data, despite the cloud. Furthermore, AFFiNE is the first all-in-one workspace that keeps your data ownership with no compromises on real-time collaboration and editing experience.
+
+
+<!-- block_id=zElMi0tViK flavour=affine:paragraph -->
+AFFiNE is a local-first application upon CRDTs with real-time collaboration support. Your data is always stored locally while multiple nodes remain synced in real-time.
+
+
+<!-- block_id=Z4rK0OF9Wk flavour=affine:paragraph -->
+
+
+
+<!-- block_id=DQ0Ryb-SpW flavour=affine:paragraph -->
+### Blocks that assemble your next docs, tasks kanban or whiteboard
+
+
+<!-- block_id=HAZC3URZp_ flavour=affine:paragraph -->
+There is a large overlap of their atomic "building blocks" between these apps. They are neither open source nor have a plugin system like VS Code for contributors to customize. We want to have something that contains all the features we love and goes one step further.
+
+
+<!-- block_id=0H87ypiuv8 flavour=affine:paragraph -->
+We are building AFFiNE to be a fundamental open source platform that contains all the building blocks for docs, task management and visual collaboration, hoping you can shape your next workflow with us that can make your life better and also connect others, too.
+
+
+<!-- block_id=Sp4G1KD0Wn flavour=affine:paragraph -->
+If you want to learn more about the product design of AFFiNE, here goes the concepts:
+
+
+<!-- block_id=RsUhDuEqXa flavour=affine:paragraph -->
+To Shape, not to adapt. AFFiNE is built for individuals & teams who care about their data, who refuse vendor lock-in, and who want to have control over their essential tools.
+
+
+<!-- block_id=Z2HibKzAr- flavour=affine:paragraph -->
+## A true canvas for blocks in any form
+
+
+<!-- block_id=UwvWddamzM flavour=affine:paragraph -->
+[Many editor apps](http://notion.so) claimed to be a canvas for productivity. Since _the Mother of All Demos,_ Douglas Engelbart, a creative and programable digital workspace has been a pursuit and an ultimate mission for generations of tool makers.
+
+
+<!-- block_id=g9xKUjhJj1 flavour=affine:paragraph -->
+
+
+
+<!-- block_id=wDTn4YJ4pm flavour=affine:paragraph -->
+"We shape our tools and thereafter our tools shape us”. A lot of pioneers have inspired us a long the way, e.g.:
+
+
+<!-- block_id=xFrrdiP3-V flavour=affine:list -->
+* Quip & Notion with their great concept of "everything is a block"
+
+
+<!-- block_id=Tp9xyN4Okl flavour=affine:list -->
+* Trello with their Kanban
+
+
+<!-- block_id=K_4hUzKZFQ flavour=affine:list -->
+* Airtable & Miro with their no-code programable datasheets
+
+
+<!-- block_id=QwMzON2s7x flavour=affine:list -->
+* Miro & Whimiscal with their edgeless visual whiteboard
+
+
+<!-- block_id=FFVmit6u1T flavour=affine:list -->
+* Remnote & Capacities with their object-based tag system
+
+
+<!-- block_id=YqnG5O6AE6 flavour=affine:paragraph -->
+For more details, please refer to our [RoadMap](https://docs.affine.pro/docs/core-concepts/roadmap)
+
+
+<!-- block_id=sbDTmZMZcq flavour=affine:paragraph -->
+## Self Host
+
+
+<!-- block_id=QVvitesfbj flavour=affine:paragraph -->
+Self host AFFiNE
+
+
+<!-- block_id=U_GoHFD9At flavour=affine:database placeholder -->
+
+<!-- block_id=NyHXrMX3R1 flavour=affine:paragraph -->
+## Affine Development
+
+
+<!-- block_id=9-K49otbCv flavour=affine:paragraph -->
+For developer or installation guides, please go to [AFFiNE Development](https://docs.affine.pro/docs/development/quick-start)
+
+
+<!-- block_id=faFteK9eG- flavour=affine:paragraph -->
+
+
+
+"
+`;
+
+exports[`should parse page full doc work with ai editable 1`] = `
+"<!-- block_id=T4qSXc13wz flavour=affine:paragraph -->
+# H1 text
+
+
+<!-- block_id=F5eByK8Fx_ flavour=affine:paragraph -->
+List all flavours in one document.
+
+
+<!-- block_id=6_-Ta2Hpsg flavour=affine:paragraph -->
+## H2 ~ H6
+
+
+<!-- block_id=QLH8pCeJwr flavour=affine:paragraph -->
+### H3
+
+
+<!-- block_id=eRseB5ilzP flavour=affine:paragraph -->
+#### H4 with emoji 😄
+
+
+<!-- block_id=xSEIo9I5jQ flavour=affine:paragraph -->
+##### H5
+
+
+<!-- block_id=h4Fozi-Mvv flavour=affine:paragraph -->
+###### H6
+
+
+<!-- block_id=U-Hd9O6FEZ flavour=affine:paragraph -->
+max is H6
+
+
+<!-- block_id=z2aCxUDpOc flavour=affine:paragraph -->
+## List
+
+
+<!-- block_id=z5Zw7lMlD7 flavour=affine:list -->
+* item 1
+
+
+<!-- block_id=Opmt3x2Ao0 flavour=affine:list -->
+* item 2
+
+
+  * sub item 1
+  
+  
+  * sub item 2
+  
+  
+    * super sub item 1
+    
+    
+  * sub item 3
+  
+  
+<!-- block_id=_EF3g4194w flavour=affine:list -->
+* item 3
+
+
+<!-- block_id=5u-T48lLVF flavour=affine:paragraph -->
+
+
+
+<!-- block_id=7urxrvhr-p flavour=affine:paragraph -->
+
+
+
+<!-- block_id=U-96XKGGz7 flavour=affine:paragraph -->
+
+
+
+<!-- block_id=hOvvRmDGqN flavour=affine:paragraph -->
+sort list
+
+
+<!-- block_id=hcqkMyvKnx flavour=affine:list -->
+1. item 1
+
+
+<!-- block_id=xUsDktnmuD flavour=affine:list -->
+1. item 2
+
+
+<!-- block_id=xa5tsLHHJN flavour=affine:list -->
+1. item 3
+
+
+  1. sub item 1
+  
+  
+  1. sub item 2
+  
+  
+    1. super item 1
+    
+    
+    1. super item 2
+    
+    
+  1. sub item 3
+  
+  
+<!-- block_id=BX05mQdxJ0 flavour=affine:list -->
+1. item 4
+
+
+<!-- block_id=VYzM3O17th flavour=affine:paragraph -->
+
+
+
+<!-- block_id=epKYpKt5vo flavour=affine:paragraph -->
+
+
+
+<!-- block_id=5Ghem19uGh flavour=affine:paragraph -->
+Table
+
+
+<!-- block_id=OXvH-s1Jx4 flavour=affine:table -->
+|c1|c2|c3|c4|
+|---|---|---|---|
+|v1|v2|v3||
+||||v4|
+||v6||v5|
+
+
+<!-- block_id=j2F2hQ3zy9 flavour=affine:paragraph -->
+
+
+
+<!-- block_id=jLCRD2G_BC flavour=affine:paragraph -->
+
+
+
+<!-- block_id=794ZoPeBJM flavour=affine:paragraph -->
+Database
+
+
+<!-- block_id=xQ7rA57Qxz flavour=affine:database placeholder -->
+
+<!-- block_id=RbMSmluZYK flavour=affine:paragraph -->
+Code
+
+
+<!-- block_id=cJ6CMeUWMg flavour=affine:code -->
+\`\`\`javascript
+console.log('hello world');
+\`\`\`
+
+
+<!-- block_id=y1xVwkxlDm flavour=affine:paragraph -->
+
+
+
+<!-- block_id=BKy3zmm8SE flavour=affine:paragraph -->
+Image
+
+
+<!-- block_id=WFftQ-qXzr flavour=affine:image -->
+
+![-HjsQksaVuEaM0KeTEbBYDgWVOmoVzrAeVK0kn4Jfr0=](blob://-HjsQksaVuEaM0KeTEbBYDgWVOmoVzrAeVK0kn4Jfr0=)
+
+
+<!-- block_id=F-RKpfxL1z flavour=affine:paragraph -->
+
+
+
+<!-- block_id=G3LSqjKv8M flavour=affine:paragraph -->
+File
+
+
+<!-- block_id=pO8JCsiK4z flavour=affine:attachment -->
+
+![IrsiJ9XonFXF8fw9tLQXbSsBbUYFfzLgoFpodeidQOU=](blob://IrsiJ9XonFXF8fw9tLQXbSsBbUYFfzLgoFpodeidQOU=)
+
+
+<!-- block_id=dTKFqQhJuA flavour=affine:paragraph -->
+
+
+
+<!-- block_id=nwld7RMYvp flavour=affine:paragraph -->
+> foo bar quote text
+
+
+<!-- block_id=MwBD3BhRnf flavour=affine:paragraph -->
+
+
+
+<!-- block_id=pakOSAm6EU flavour=affine:paragraph -->
+
+
+
+<!-- block_id=95-NxAyFuo flavour=affine:divider -->
+
+---
+
+
+<!-- block_id=r9EllTNiN1 flavour=affine:paragraph -->
+
+
+
+<!-- block_id=OpxZ1kYM40 flavour=affine:paragraph -->
+TeX
+
+
+<!-- block_id=gjFqI97IRc flavour=affine:paragraph -->
+
+
+
+<!-- block_id=KXBZ1_Pfdw flavour=affine:paragraph -->
+
+
+
+<!-- block_id=VHj5gMaGa7 flavour=affine:paragraph -->
+2025-06-18 13:15
+
+
+<!-- block_id=JwaUwzuQEH flavour=affine:paragraph -->
+
+
+
+<!-- block_id=_zu2kl56FY flavour=affine:database placeholder -->
+
+<!-- block_id=Kcbp6BLA-y flavour=affine:paragraph -->
+Mind Map
+
+
+<!-- block_id=R_g1tzqzAU flavour=affine:paragraph -->
+
+
+
+<!-- block_id=C8G82uLCz1 flavour=affine:paragraph -->
+
+
+
+<!-- block_id=J6gfR8YMGy flavour=affine:paragraph -->
+A Link
+
+
+<!-- block_id=yHky0s_H1v flavour=affine:embed-linked-doc -->
+
+[null](doc://FmHFPAPzp51JjFP89aZ-b)
+
+
+<!-- block_id=P7w3ka4Amo flavour=affine:paragraph -->
+Todo List
+
+
+<!-- block_id=WbeCXu6fcA flavour=affine:list -->
+- [ ] abc
+
+
+<!-- block_id=X_F5fw-MEn flavour=affine:list -->
+- [ ] edf
+
+
+  - [x] done1
+  
+  
+<!-- block_id=sdw-couBVA flavour=affine:list -->
+- [ ] end
+
+
+<!-- block_id=COJiWGOVJu flavour=affine:paragraph -->
+
+
+
+<!-- block_id=shK7TY-Q3F flavour=affine:paragraph -->
+~~delete text~~
+
+
+<!-- block_id=_NIj4pT_Iy flavour=affine:paragraph -->
+
+
+
+<!-- block_id=CaXXPfEt62 flavour=affine:paragraph -->
+**Bold text**
+
+
+<!-- block_id=1WFCwn1708 flavour=affine:paragraph -->
+
+
+
+<!-- block_id=25f19QUjQI flavour=affine:paragraph -->
+Underline
+
+
+<!-- block_id=GrS-y17iiw flavour=affine:paragraph -->
+
+
+
+<!-- block_id=dJm5C8KsEg flavour=affine:paragraph -->
+Youtube
+
+
+<!-- block_id=epfNja2Txk flavour=affine:embed-youtube -->
+
+        <iframe
+          type="text/html"
+          width="100%"
+          height="410px"
+          src="https://www.youtube.com/embed/C-UBrnSjdLg"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+          credentialless>
+        </iframe>
+
+
+<!-- block_id=wNb6ZRJKMt flavour=affine:paragraph -->
+
+
+
+<!-- block_id=HqKjEGWF_s flavour=affine:paragraph -->
+## end
+
+
+<!-- block_id=FOh_TJmcF1 flavour=affine:paragraph -->
+this is end
+
+
+<!-- block_id=ImCJN2Xint flavour=affine:paragraph -->
+
+
+
+"
+`;
+
 exports[`should read all doc ids from root doc snapshot work 1`] = `
 [
   "5nS9BSp3Px",

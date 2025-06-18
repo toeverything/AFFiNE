@@ -201,7 +201,8 @@ export async function readAllBlocksFromDocSnapshot(
 export function parseDocToMarkdownFromDocSnapshot(
   workspaceId: string,
   docId: string,
-  docSnapshot: Uint8Array
+  docSnapshot: Uint8Array,
+  aiEditable = false
 ) {
   const ydoc = new YDoc({
     guid: docId,
@@ -217,6 +218,7 @@ export function parseDocToMarkdownFromDocSnapshot(
     buildDocUrl: (docId: string) => {
       return `/workspace/${workspaceId}/${docId}`;
     },
+    aiEditable,
   });
 
   return {
