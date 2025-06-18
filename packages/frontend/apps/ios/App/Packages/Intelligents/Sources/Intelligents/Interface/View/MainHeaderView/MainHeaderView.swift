@@ -22,7 +22,7 @@ class MainHeaderView: UIView {
   private lazy var titleLabel = UILabel().then {
     $0.text = "AFFiNE"
     $0.font = .systemFont(ofSize: 16, weight: .medium)
-    $0.textColor = .black
+    $0.textColor = .label
     $0.textAlignment = .center
   }
 
@@ -68,7 +68,6 @@ class MainHeaderView: UIView {
   init() {
     super.init(frame: .zero)
 
-    backgroundColor = .white
     addSubview(mainStackView)
 
     mainStackView.snp.makeConstraints { make in

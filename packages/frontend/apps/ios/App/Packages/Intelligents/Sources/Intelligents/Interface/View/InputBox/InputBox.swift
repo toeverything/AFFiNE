@@ -10,14 +10,19 @@ class InputBox: UIView {
   var cancellables = Set<AnyCancellable>()
 
   lazy var containerView = UIView().then {
-    $0.backgroundColor = .systemBackground
-    $0.layer.cornerRadius = 12
-    $0.layer.borderWidth = 0.5
-    $0.layer.borderColor = UIColor.systemGray4.cgColor
+    $0.backgroundColor = UIColor(
+      named: "InputBoxBackground",
+      in: .module,
+      compatibleWith: nil
+    )!
+    $0.layer.cornerRadius = 16
+    $0.layer.cornerCurve = .continuous
+    $0.layer.borderWidth = 1
+    $0.layer.borderColor = UIColor.systemGray.withAlphaComponent(0.1).cgColor
     $0.layer.shadowColor = UIColor.black.cgColor
-    $0.layer.shadowOffset = CGSize(width: 0, height: 2)
-    $0.layer.shadowRadius = 6
-    $0.layer.shadowOpacity = 0.04
+    $0.layer.shadowOffset = CGSize(width: 0, height: 0)
+    $0.layer.shadowRadius = 12
+    $0.layer.shadowOpacity = 0.075
     $0.clipsToBounds = false
   }
 
@@ -29,7 +34,7 @@ class InputBox: UIView {
     $0.textContainer.lineFragmentPadding = 0
     $0.textContainerInset = .zero
     $0.delegate = self
-    $0.text = "This is AFFiNE AI"
+    $0.text = ""
   }
 
   lazy var placeholderLabel = UILabel().then {

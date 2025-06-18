@@ -10,40 +10,41 @@ protocol InputBoxFunctionBarDelegate: AnyObject {
   func functionBarDidTapSend(_ functionBar: InputBoxFunctionBar)
 }
 
+private let unselectedColor: UIColor = .secondaryLabel
+private let selectedColor: UIColor = .accent
+
 class InputBoxFunctionBar: UIView {
   weak var delegate: InputBoxFunctionBarDelegate?
 
   lazy var attachmentButton = UIButton(type: .system).then {
-    $0.backgroundColor = .systemBackground
     $0.setImage(UIImage(named: "inputbox.add.attachment", in: .module, with: nil), for: .normal)
-    $0.tintColor = .secondaryLabel
+    $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(attachmentButtonTapped), for: .touchUpInside)
   }
 
   lazy var toolButton = UIButton(type: .system).then {
     $0.setImage(UIImage(named: "inputbox.tool", in: .module, with: nil), for: .normal)
-    $0.tintColor = .secondaryLabel
+    $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(toolButtonTapped), for: .touchUpInside)
   }
 
   lazy var networkButton = UIButton(type: .system).then {
     $0.setImage(UIImage(named: "inputbox.network", in: .module, with: nil), for: .normal)
-    $0.tintColor = .secondaryLabel
+    $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(networkButtonTapped), for: .touchUpInside)
   }
 
   lazy var deepThinkingButton = UIButton(type: .system).then {
     $0.setImage(UIImage(named: "inputbox.deep.thinking", in: .module, with: nil), for: .normal)
-    $0.tintColor = .secondaryLabel
+    $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(deepThinkingButtonTapped), for: .touchUpInside)
   }
 
   lazy var sendButton = UIButton(type: .system).then {
-    $0.backgroundColor = UIColor.systemBlue
     $0.setImage(UIImage(named: "inputbox.send", in: .module, with: nil), for: .normal)
     $0.tintColor = .white
     $0.imageView?.contentMode = .scaleAspectFit
@@ -103,27 +104,26 @@ class InputBoxFunctionBar: UIView {
     }
   }
 
-
   override func layoutSubviews() {
     super.layoutSubviews()
     sendButton.layer.cornerRadius = sendButton.bounds.height / 2
+    for button in [toolButton, networkButton, deepThinkingButton] {
+      button.layer.cornerRadius = button.bounds.height / 2
+    }
   }
 
   // MARK: - Public Methods
 
   func updateToolState(isEnabled: Bool) {
-    toolButton.isSelected = isEnabled
-    toolButton.tintColor = isEnabled ? .systemBlue : .secondaryLabel
+    toolButton.tintColor = isEnabled ? selectedColor : unselectedColor
   }
 
   func updateNetworkState(isEnabled: Bool) {
-    networkButton.isSelected = isEnabled
-    networkButton.tintColor = isEnabled ? .systemBlue : .secondaryLabel
+    networkButton.tintColor = isEnabled ? selectedColor : unselectedColor
   }
 
   func updateDeepThinkingState(isEnabled: Bool) {
-    deepThinkingButton.isSelected = isEnabled
-    deepThinkingButton.tintColor = isEnabled ? .systemBlue : .secondaryLabel
+    deepThinkingButton.tintColor = isEnabled ? selectedColor : unselectedColor
   }
 
   func updateSendState(canSend: Bool) {
