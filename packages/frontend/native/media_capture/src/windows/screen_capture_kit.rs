@@ -70,21 +70,6 @@ impl ApplicationInfo {
   }
 
   #[napi(getter)]
-  pub fn process_id(&self) -> i32 {
-    self.process_id
-  }
-
-  #[napi(getter)]
-  pub fn name(&self) -> String {
-    self.name.clone()
-  }
-
-  #[napi(getter)]
-  pub fn object_id(&self) -> u32 {
-    self.object_id
-  }
-
-  #[napi(getter)]
   pub fn process_group_id(&self) -> i32 {
     // Windows doesn't have process groups like Unix, return the process ID
     self.process_id

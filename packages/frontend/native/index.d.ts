@@ -5,9 +5,6 @@ export declare class ApplicationInfo {
   name: string
   objectId: number
   constructor(processId: number, name: string, objectId: number)
-  get processId(): number
-  get name(): string
-  get objectId(): number
   get processGroupId(): number
   get bundleIdentifier(): string
   get icon(): Buffer

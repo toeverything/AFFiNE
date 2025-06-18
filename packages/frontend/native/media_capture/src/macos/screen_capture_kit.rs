@@ -109,21 +109,6 @@ impl ApplicationInfo {
   }
 
   #[napi(getter)]
-  pub fn process_id(&self) -> i32 {
-    self.process_id
-  }
-
-  #[napi(getter)]
-  pub fn name(&self) -> String {
-    self.name.clone()
-  }
-
-  #[napi(getter)]
-  pub fn object_id(&self) -> u32 {
-    self.object_id
-  }
-
-  #[napi(getter)]
   pub fn process_group_id(&self) -> i32 {
     if self.process_id > 0 {
       let pgid = unsafe { libc::getpgid(self.process_id) };
@@ -664,7 +649,7 @@ impl ShareableContent {
     match ShareableContent::applications() {
       Ok(apps) => {
         for app in apps {
-          if app.process_id() == process_id as i32 {
+          if app.process_id == process_id as i32 {
             return Some(app);
           }
         }

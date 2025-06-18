@@ -208,10 +208,15 @@ impl AudioCaptureSession {
       .map_err(|e| Error::new(Status::GenericFailure, format!("{e}")))?;
     self.stopped.store(true, Ordering::SeqCst);
     if let Some(jh) = self.jh.take() {
-      // Wait for thread to finish
-      drop(jh);
+      let _ = jh.join(); // ignore poison
     }
     Ok(())
+  }
+}
+
+impl Drop for AudioCaptureSession {
+  fn drop(&mut self) {
+    let _ = self.stop(); // Ensure cleanup even if JS forgets to call stop()
   }
 }
 

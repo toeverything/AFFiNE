@@ -82,11 +82,13 @@ async function handleFileRequest(request: Request) {
       filepath = path.resolve(filepath.replace(/^\//, ''));
     }
     // security check if the filepath is within app.getPath('sessionData')
-    const sessionDataPath = path.resolve(app.getPath('sessionData'));
-    const tempPath = path.resolve(app.getPath('temp'));
+    const sessionDataPath = path
+      .resolve(app.getPath('sessionData'))
+      .toLowerCase();
+    const tempPath = path.resolve(app.getPath('temp')).toLowerCase();
     if (
-      !filepath.startsWith(sessionDataPath) &&
-      !filepath.startsWith(tempPath)
+      !filepath.toLowerCase().startsWith(sessionDataPath) &&
+      !filepath.toLowerCase().startsWith(tempPath)
     ) {
       throw new Error('Invalid filepath');
     }
