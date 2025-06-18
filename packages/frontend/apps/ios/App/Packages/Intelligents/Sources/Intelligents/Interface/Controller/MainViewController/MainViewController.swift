@@ -23,12 +23,19 @@ class MainViewController: UIViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
+    view.layoutIfNeeded()
     setupUI()
+    view.layoutIfNeeded()
   }
 
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     navigationController!.setNavigationBarHidden(true, animated: animated)
+  }
+
+  override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    inputBox.textView.becomeFirstResponder()
   }
 
   override func viewWillDisappear(_ animated: Bool) {
@@ -40,6 +47,19 @@ class MainViewController: UIViewController {
 
   private func setupUI() {
     view.backgroundColor = .systemBackground
+
+    // 计算 InputBox 的初始 frame 以避免布局动画
+    let inputBoxFrame = CGRect(
+      x: 0,
+      y: view.bounds.height - 150, // 预估高度
+      width: view.bounds.width,
+      height: 150
+    )
+    let inputBox = InputBox(frame: inputBoxFrame).then {
+      $0.delegate = self
+    }
+    self.inputBox = inputBox
+    self.inputBox.layoutIfNeeded()
 
     view.addSubview(headerView)
     view.addSubview(inputBox)
@@ -77,31 +97,15 @@ extension MainViewController: MainHeaderViewDelegate {
 // MARK: - InputBoxDelegate
 
 extension MainViewController: InputBoxDelegate {
-  func inputBoxDidTapAddAttachment() {
-    // TODO: 实现添加附件功能
-    print("Add attachment tapped")
+  func inputBoxDidSelectAttachment(_ inputBox: InputBox) {
+    print(#function, inputBox)
   }
 
-  func inputBoxDidTapTool() {
-    print("Tool toggled: \(inputBox.viewModel.isToolEnabled)")
-  }
-
-  func inputBoxDidTapNetwork() {
-    print("Network toggled: \(inputBox.viewModel.isNetworkEnabled)")
-  }
-
-  func inputBoxDidTapDeepThinking() {
-    print("Deep thinking toggled: \(inputBox.viewModel.isDeepThinkingEnabled)")
-  }
-
-  func inputBoxDidTapSend(data: InputBoxData) {
-    // 处理发送逻辑
-    guard !data.text.isEmpty else { return }
-    print("[*] send tapped with text: \(data.text)")
+  func inputBoxDidSend(_ inputBox: InputBox) {
+    print(#function, inputBox, inputBox.viewModel)
   }
 
   func inputBoxTextDidChange(_ text: String) {
-    // 可以在这里处理文本变化的其他逻辑
-    print("Text changed: \(text)")
+    print(#function, text)
   }
 }
