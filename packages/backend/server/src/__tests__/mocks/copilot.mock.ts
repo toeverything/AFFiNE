@@ -94,7 +94,7 @@ export class MockCopilotProvider extends OpenAIProvider {
       ],
     },
     {
-      id: 'gemini-2.5-flash-preview-05-20',
+      id: 'gemini-2.5-flash',
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
