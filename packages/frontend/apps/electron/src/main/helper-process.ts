@@ -108,6 +108,7 @@ class HelperProcessManager {
     const shellMethods = pickAndBind(shell, [
       'openExternal',
       'showItemInFolder',
+      'openPath',
     ]);
     const appMethods = pickAndBind(app, ['getPath']);
 

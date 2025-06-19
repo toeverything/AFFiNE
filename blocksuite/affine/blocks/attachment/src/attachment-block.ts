@@ -114,9 +114,26 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     );
   };
 
-  open = () => {
+  open = async () => {
     const blobUrl = this.blobUrl;
     if (!blobUrl) return;
+
+    if (BUILD_CONFIG.isElectron && (window as any).__apis?.file?.openTempFile) {
+      try {
+        const blob = await this.resourceController.blob();
+        if (blob) {
+          const buffer = new Uint8Array(await blob.arrayBuffer());
+          await (window as any).__apis.file.openTempFile(
+            Array.from(buffer),
+            this.model.props.name
+          );
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     window.open(blobUrl, '_blank');
   };
 
