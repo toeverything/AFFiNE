@@ -9,6 +9,7 @@ import {
 } from '@nestjs/graphql';
 import { GraphQLJSONObject } from 'graphql-scalars';
 
+import { PublicUser } from '../../models';
 import { SearchTable } from './tables';
 
 export enum SearchQueryType {
@@ -39,6 +40,19 @@ registerEnumType(SearchQueryOccur, {
   name: 'SearchQueryOccur',
   description: 'Search query occur',
 });
+
+export interface SearchDoc {
+  docId: string;
+  blockId: string;
+  title: string;
+  highlight: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdByUserId: string;
+  updatedByUserId: string;
+  createdByUser?: PublicUser;
+  updatedByUser?: PublicUser;
+}
 
 @InputType()
 export class SearchQuery {
