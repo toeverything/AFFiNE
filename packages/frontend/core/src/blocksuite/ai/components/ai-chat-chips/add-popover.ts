@@ -93,6 +93,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
       font-size: var(--affine-font-sm);
       color: ${unsafeCSSVarV2('text/primary')};
       flex-grow: 1;
+      background-color: transparent;
     }
     .search-input-wrapper input::placeholder {
       color: ${unsafeCSSVarV2('text/placeholder')};
