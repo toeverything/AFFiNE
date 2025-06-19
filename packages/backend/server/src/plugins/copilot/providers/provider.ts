@@ -33,6 +33,7 @@ import {
   ModelInputType,
   type PromptMessage,
   PromptMessageSchema,
+  StreamObject,
 } from './types';
 
 @Injectable()
@@ -224,6 +225,17 @@ export abstract class CopilotProvider<C = any> {
     messages: PromptMessage[],
     options?: CopilotChatOptions
   ): AsyncIterable<string>;
+
+  streamObject(
+    _model: ModelConditions,
+    _messages: PromptMessage[],
+    _options?: CopilotChatOptions
+  ): AsyncIterable<StreamObject> {
+    throw new CopilotProviderNotSupported({
+      provider: this.type,
+      kind: 'object',
+    });
+  }
 
   structure(
     _cond: ModelConditions,

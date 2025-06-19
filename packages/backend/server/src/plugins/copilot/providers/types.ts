@@ -118,8 +118,33 @@ export const ChatMessageAttachment = z.union([
   }),
 ]);
 
+export const StreamObjectSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('text-delta'),
+    textDelta: z.string(),
+  }),
+  z.object({
+    type: z.literal('reasoning'),
+    textDelta: z.string(),
+  }),
+  z.object({
+    type: z.literal('tool-call'),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.record(z.any()),
+  }),
+  z.object({
+    type: z.literal('tool-result'),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.record(z.any()),
+    result: z.any(),
+  }),
+]);
+
 export const PureMessageSchema = z.object({
   content: z.string(),
+  streamObjects: z.array(StreamObjectSchema).optional().nullable(),
   attachments: z.array(ChatMessageAttachment).optional().nullable(),
   params: z.record(z.any()).optional().nullable(),
 });
@@ -129,6 +154,7 @@ export const PromptMessageSchema = PureMessageSchema.extend({
 }).strict();
 export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 export type PromptParams = NonNullable<PromptMessage['params']>;
+export type StreamObject = z.infer<typeof StreamObjectSchema>;
 
 // ========== options ==========
 
@@ -187,6 +213,7 @@ export enum ModelInputType {
 
 export enum ModelOutputType {
   Text = 'text',
+  Object = 'object',
   Embedding = 'embedding',
   Image = 'image',
   Structured = 'structured',

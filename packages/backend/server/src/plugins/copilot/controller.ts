@@ -51,6 +51,7 @@ import {
   ModelInputType,
   ModelOutputType,
 } from './providers';
+import { StreamObjectParser } from './providers/utils';
 import { ChatSession, ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import { ChatMessage, ChatQuerySchema } from './types';
@@ -189,6 +190,45 @@ export class CopilotController implements BeforeApplicationShutdown {
     return merge(source$.pipe(finalize(() => subject$.next(null))), ping$);
   }
 
+  private async prepareChatSession(
+    user: CurrentUser,
+    sessionId: string,
+    query: Record<string, string | string[]>,
+    outputType: ModelOutputType
+  ) {
+    let { messageId, retry, modelId, params } = ChatQuerySchema.parse(query);
+
+    const { provider, model } = await this.chooseProvider(
+      outputType,
+      user.id,
+      sessionId,
+      messageId,
+      modelId
+    );
+
+    const [latestMessage, session] = await this.appendSessionMessage(
+      sessionId,
+      messageId,
+      retry
+    );
+
+    if (latestMessage) {
+      params = Object.assign({}, params, latestMessage.params, {
+        content: latestMessage.content,
+        attachments: latestMessage.attachments,
+      });
+    }
+
+    const finalMessage = session.finish(params);
+
+    return {
+      provider,
+      model,
+      session,
+      finalMessage,
+    };
+  }
+
   @Get('/chat/:sessionId')
   @CallMetric('ai', 'chat', { timer: true })
   async chat(
@@ -200,36 +240,19 @@ export class CopilotController implements BeforeApplicationShutdown {
     const info: any = { sessionId, params: query };
 
     try {
-      let { messageId, retry, reasoning, webSearch, modelId, params } =
-        ChatQuerySchema.parse(query);
-
-      const { provider, model } = await this.chooseProvider(
-        ModelOutputType.Text,
-        user.id,
-        sessionId,
-        messageId,
-        modelId
-      );
-
-      const [latestMessage, session] = await this.appendSessionMessage(
-        sessionId,
-        messageId,
-        retry
-      );
+      const { provider, model, session, finalMessage } =
+        await this.prepareChatSession(
+          user,
+          sessionId,
+          query,
+          ModelOutputType.Text
+        );
 
       info.model = model;
+      info.finalMessage = finalMessage.filter(m => m.role !== 'system');
       metrics.ai.counter('chat_calls').add(1, { model });
 
-      if (latestMessage) {
-        params = Object.assign({}, params, latestMessage.params, {
-          content: latestMessage.content,
-          attachments: latestMessage.attachments,
-        });
-      }
-
-      const finalMessage = session.finish(params);
-      info.finalMessage = finalMessage.filter(m => m.role !== 'system');
-
+      const { reasoning, webSearch } = ChatQuerySchema.parse(query);
       const content = await provider.text({ modelId: model }, finalMessage, {
         ...session.config.promptConfig,
         signal: this.getSignal(req),
@@ -269,37 +292,20 @@ export class CopilotController implements BeforeApplicationShutdown {
     const info: any = { sessionId, params: query, throwInStream: false };
 
     try {
-      let { messageId, retry, reasoning, webSearch, modelId, params } =
-        ChatQuerySchema.parse(query);
-
-      const { provider, model } = await this.chooseProvider(
-        ModelOutputType.Text,
-        user.id,
-        sessionId,
-        messageId,
-        modelId
-      );
-
-      const [latestMessage, session] = await this.appendSessionMessage(
-        sessionId,
-        messageId,
-        retry
-      );
+      const { provider, model, session, finalMessage } =
+        await this.prepareChatSession(
+          user,
+          sessionId,
+          query,
+          ModelOutputType.Text
+        );
 
       info.model = model;
-      metrics.ai.counter('chat_stream_calls').add(1, { model });
-
-      if (latestMessage) {
-        params = Object.assign({}, params, latestMessage.params, {
-          content: latestMessage.content,
-          attachments: latestMessage.attachments,
-        });
-      }
-
-      this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
-      const finalMessage = session.finish(params);
       info.finalMessage = finalMessage.filter(m => m.role !== 'system');
+      metrics.ai.counter('chat_stream_calls').add(1, { model });
+      this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
 
+      const { messageId, reasoning, webSearch } = ChatQuerySchema.parse(query);
       const source$ = from(
         provider.streamText({ modelId: model }, finalMessage, {
           ...session.config.promptConfig,
@@ -344,6 +350,83 @@ export class CopilotController implements BeforeApplicationShutdown {
       return this.mergePingStream(messageId || '', source$);
     } catch (err) {
       metrics.ai.counter('chat_stream_errors').add(1, info);
+      return mapSseError(err, info);
+    }
+  }
+
+  @Sse('/chat/:sessionId/stream-object')
+  @CallMetric('ai', 'chat_object_stream', { timer: true })
+  async chatStreamObject(
+    @CurrentUser() user: CurrentUser,
+    @Req() req: Request,
+    @Param('sessionId') sessionId: string,
+    @Query() query: Record<string, string>
+  ): Promise<Observable<ChatEvent>> {
+    const info: any = { sessionId, params: query, throwInStream: false };
+
+    try {
+      const { provider, model, session, finalMessage } =
+        await this.prepareChatSession(
+          user,
+          sessionId,
+          query,
+          ModelOutputType.Object
+        );
+
+      info.model = model;
+      info.finalMessage = finalMessage.filter(m => m.role !== 'system');
+      metrics.ai.counter('chat_object_stream_calls').add(1, { model });
+      this.ongoingStreamCount$.next(this.ongoingStreamCount$.value + 1);
+
+      const { messageId, reasoning, webSearch } = ChatQuerySchema.parse(query);
+      const source$ = from(
+        provider.streamObject({ modelId: model }, finalMessage, {
+          ...session.config.promptConfig,
+          signal: this.getSignal(req),
+          user: user.id,
+          workspace: session.config.workspaceId,
+          reasoning,
+          webSearch,
+        })
+      ).pipe(
+        connect(shared$ =>
+          merge(
+            // actual chat event stream
+            shared$.pipe(
+              map(data => ({ type: 'message' as const, id: messageId, data }))
+            ),
+            // save the generated text to the session
+            shared$.pipe(
+              toArray(),
+              concatMap(values => {
+                const parser = new StreamObjectParser();
+                const streamObjects = parser.mergeTextDelta(values);
+                const content = parser.mergeContent(streamObjects);
+                session.push({
+                  role: 'assistant',
+                  content,
+                  streamObjects,
+                  createdAt: new Date(),
+                });
+                return from(session.save());
+              }),
+              mergeMap(() => EMPTY)
+            )
+          )
+        ),
+        catchError(e => {
+          metrics.ai.counter('chat_object_stream_errors').add(1);
+          info.throwInStream = true;
+          return mapSseError(e, info);
+        }),
+        finalize(() => {
+          this.ongoingStreamCount$.next(this.ongoingStreamCount$.value - 1);
+        })
+      );
+
+      return this.mergePingStream(messageId || '', source$);
+    } catch (err) {
+      metrics.ai.counter('chat_object_stream_errors').add(1, info);
       return mapSseError(err, info);
     }
   }
