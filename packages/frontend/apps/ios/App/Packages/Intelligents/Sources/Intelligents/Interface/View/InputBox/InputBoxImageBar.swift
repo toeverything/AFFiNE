@@ -61,19 +61,25 @@ class InputBoxImageBar: UIScrollView {
 
     // 添加新的附件
     let idsToAdd = newIds.subtracting(currentIds)
-    for attachment in imageAttachments {
+    var initialXOffset = attachmentViewModels.reduce(0) { $0 + $1.imageCell.frame.width + cellSpacing }
+     for attachment in imageAttachments {
       if idsToAdd.contains(attachment.id),
          let data = attachment.data,
          let image = UIImage(data: data)
       {
         let imageCell = ImageCell(
           // for animation to work
-          frame: .init(x: 0, y: 0, width: constantHeight, height: constantHeight),
+          frame: .init(x: initialXOffset, y: 0, width: constantHeight, height: constantHeight),
           image: image,
           attachmentId: attachment.id
         )
+        initialXOffset += constantHeight + cellSpacing
         imageCell.onRemove = { [weak self] cell in
           self?.removeImageCell(cell)
+        }
+        imageCell.alpha = 0
+        DispatchQueue.main.async {
+          performWithAnimation { imageCell.alpha = 1 }
         }
 
         let viewModel = AttachmentViewModel(attachment: attachment, imageCell: imageCell)

@@ -7,7 +7,7 @@ public class GetCopilotSessionQuery: GraphQLQuery {
   public static let operationName: String = "getCopilotSession"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getCopilotSession($workspaceId: String!, $sessionId: String!) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename session(sessionId: $sessionId) { __typename id parentSessionId promptName model optionalModels } } } }"#
+      #"query getCopilotSession($workspaceId: String!, $sessionId: String!) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename session(sessionId: $sessionId) { __typename id parentSessionId docId pinned promptName model optionalModels } } } }"#
     ))
 
   public var workspaceId: String
@@ -81,6 +81,8 @@ public class GetCopilotSessionQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("id", AffineGraphQL.ID.self),
             .field("parentSessionId", AffineGraphQL.ID?.self),
+            .field("docId", String?.self),
+            .field("pinned", Bool.self),
             .field("promptName", String.self),
             .field("model", String.self),
             .field("optionalModels", [String].self),
@@ -88,6 +90,8 @@ public class GetCopilotSessionQuery: GraphQLQuery {
 
           public var id: AffineGraphQL.ID { __data["id"] }
           public var parentSessionId: AffineGraphQL.ID? { __data["parentSessionId"] }
+          public var docId: String? { __data["docId"] }
+          public var pinned: Bool { __data["pinned"] }
           public var promptName: String { __data["promptName"] }
           public var model: String { __data["model"] }
           public var optionalModels: [String] { __data["optionalModels"] }

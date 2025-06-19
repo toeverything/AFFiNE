@@ -51,6 +51,7 @@ class InputBox: UIView {
     $0.axis = .vertical
     $0.spacing = 16
     $0.alignment = .fill
+    $0.clipsToBounds = true
     $0.addArrangedSubview(imageBar)
     $0.addArrangedSubview(textView)
     $0.addArrangedSubview(functionBar)
