@@ -3599,6 +3599,7 @@ export type GetCopilotSessionsQuery = {
         __typename?: 'CopilotSessionType';
         id: string;
         parentSessionId: string | null;
+        docId: string | null;
         pinned: boolean;
         promptName: string;
         model: string;
