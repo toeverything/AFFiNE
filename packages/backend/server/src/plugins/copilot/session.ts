@@ -257,6 +257,7 @@ export class ChatSessionService {
         ...state,
         sessionId,
         promptName: state.prompt.name,
+        promptAction: state.prompt.action ?? null,
       });
     }
 
@@ -615,7 +616,7 @@ export class ChatSessionService {
 
       await tx.aiSession.updateMany({
         where: { id: { in: actionIds } },
-        data: { deletedAt: new Date() },
+        data: { pinned: false, deletedAt: new Date() },
       });
 
       return [...sessionIds, ...actionIds];

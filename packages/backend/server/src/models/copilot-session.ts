@@ -47,6 +47,7 @@ type ChatSession = {
   // connect ids
   userId: string;
   promptName: string;
+  promptAction: string | null;
   parentSessionId?: string | null;
 };
 
@@ -116,6 +117,7 @@ export class CopilotSessionModel extends BaseModel {
         // connect
         userId: state.userId,
         promptName: state.promptName,
+        promptAction: state.promptAction,
         parentSessionId: state.parentSessionId,
       },
     });
@@ -134,7 +136,9 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async getChatSessionId(state: Omit<ChatSession, 'promptName'>) {
+  async getChatSessionId(
+    state: Omit<ChatSession, 'promptName' | 'promptAction'>
+  ) {
     const extraCondition: Record<string, any> = {};
     if (state.parentSessionId) {
       // also check session id if provided session is forked session
