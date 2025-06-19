@@ -763,8 +763,9 @@ export const getCopilotSessionQuery = {
     copilot(workspaceId: $workspaceId) {
       session(sessionId: $sessionId) {
         id
-        pinned
         parentSessionId
+        docId
+        pinned
         promptName
         model
         optionalModels

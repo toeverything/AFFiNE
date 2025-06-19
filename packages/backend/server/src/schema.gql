@@ -333,6 +333,7 @@ type CopilotQuota {
 }
 
 type CopilotSessionType {
+  docId: String
   id: ID!
   model: String!
   optionalModels: [String!]!

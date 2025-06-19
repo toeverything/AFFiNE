@@ -435,6 +435,7 @@ export interface CopilotQuota {
 
 export interface CopilotSessionType {
   __typename?: 'CopilotSessionType';
+  docId: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   model: Scalars['String']['output'];
   optionalModels: Array<Scalars['String']['output']>;
@@ -3562,8 +3563,9 @@ export type GetCopilotSessionQuery = {
       session: {
         __typename?: 'CopilotSessionType';
         id: string;
-        pinned: boolean;
         parentSessionId: string | null;
+        docId: string | null;
+        pinned: boolean;
         promptName: string;
         model: string;
         optionalModels: Array<string>;

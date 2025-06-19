@@ -324,6 +324,9 @@ export class CopilotSessionType {
   @Field(() => ID)
   id!: string;
 
+  @Field(() => String, { nullable: true })
+  docId!: string | null;
+
   @Field(() => Boolean)
   pinned!: boolean;
 
@@ -660,8 +663,9 @@ export class CopilotResolver {
   ): CopilotSessionType {
     return {
       id: session.sessionId,
-      pinned: session.pinned,
       parentSessionId: session.parentSessionId,
+      docId: session.docId,
+      pinned: session.pinned,
       promptName: session.prompt.name,
       model: session.prompt.model,
       optionalModels: session.prompt.optionalModels,

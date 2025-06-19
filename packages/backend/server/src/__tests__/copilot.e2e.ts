@@ -52,6 +52,7 @@ import {
   createPinnedCopilotSession,
   createWorkspaceCopilotSession,
   forkCopilotSession,
+  getCopilotSession,
   getHistories,
   listContext,
   listContextDocAndFiles,
@@ -1081,43 +1082,53 @@ test('should be able to transcript', async t => {
 test('should create different session types and validate prompt constraints', async t => {
   const { app } = t.context;
   const { id: workspaceId } = await createWorkspace(app);
-  const docId = randomUUID();
 
   const validateSession = async (
     description: string,
+    workspaceId: string,
     createPromise: Promise<string>
   ) => {
     const sessionId = await createPromise;
+
     t.truthy(sessionId, description);
+    t.snapshot(
+      cleanObject(
+        [await getCopilotSession(app, workspaceId, sessionId)],
+        ['id', 'workspaceId', 'promptName']
+      ),
+      `should create session with ${description}`
+    );
     return sessionId;
   };
 
-  await Promise.all([
-    validateSession(
-      'should create workspace session with text prompt',
-      createWorkspaceCopilotSession(app, workspaceId, textPromptName)
-    ),
-    validateSession(
-      'should create pinned session with text prompt',
-      createPinnedCopilotSession(app, workspaceId, textPromptName)
-    ),
-    validateSession(
-      'should create doc session with text prompt',
-      createDocCopilotSession(app, workspaceId, docId, textPromptName)
-    ),
-  ]);
+  await validateSession(
+    'should create workspace session with text prompt',
+    workspaceId,
+    createWorkspaceCopilotSession(app, workspaceId, textPromptName)
+  );
+  await validateSession(
+    'should create pinned session with text prompt',
+    workspaceId,
+    createPinnedCopilotSession(app, workspaceId, 'pinned-doc', textPromptName)
+  );
+  await validateSession(
+    'should create doc session with text prompt',
+    workspaceId,
+    createDocCopilotSession(app, workspaceId, 'normal-doc', textPromptName)
+  );
 });
 
 test('should list histories for different session types correctly', async t => {
   const { app } = t.context;
   const { id: workspaceId } = await createWorkspace(app);
-  const docId = randomUUID();
+  const pinnedDocId = 'pinned-doc';
+  const docId = 'normal-doc';
 
   // create sessions and add messages
   const [workspaceSessionId, pinnedSessionId, docSessionId] = await Promise.all(
     [
       createWorkspaceCopilotSession(app, workspaceId, textPromptName),
-      createPinnedCopilotSession(app, workspaceId, textPromptName),
+      createPinnedCopilotSession(app, workspaceId, pinnedDocId, textPromptName),
       createDocCopilotSession(app, workspaceId, docId, textPromptName),
     ]
   );
@@ -1145,13 +1156,15 @@ test('should list histories for different session types correctly', async t => {
     );
   };
 
-  await Promise.all([
-    testHistoryQuery(
-      undefined,
-      workspaceSessionId,
-      'workspace session history'
-    ),
-    testHistoryQuery(workspaceId, pinnedSessionId, 'pinned session history'),
-    testHistoryQuery(docId, docSessionId, 'doc session history'),
-  ]);
+  await testHistoryQuery(
+    undefined,
+    workspaceSessionId,
+    'workspace session history'
+  );
+  await testHistoryQuery(
+    pinnedDocId,
+    pinnedSessionId,
+    'pinned session history'
+  );
+  await testHistoryQuery(docId, docSessionId, 'doc session history');
 });

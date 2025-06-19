@@ -21,7 +21,8 @@ export async function createCopilotSession(
   app: TestingApp,
   workspaceId: string,
   docId: string | null,
-  promptName: string
+  promptName: string,
+  pinned: boolean = false
 ): Promise<string> {
   const res = await app.gql(
     `
@@ -29,7 +30,7 @@ export async function createCopilotSession(
       createCopilotSession(options: $options)
     }
   `,
-    { options: { workspaceId, docId, promptName } }
+    { options: { workspaceId, docId, promptName, pinned } }
   );
 
   return res.createCopilotSession;
@@ -46,9 +47,10 @@ export async function createWorkspaceCopilotSession(
 export async function createPinnedCopilotSession(
   app: TestingApp,
   workspaceId: string,
+  docId: string,
   promptName: string
 ): Promise<string> {
-  return createCopilotSession(app, workspaceId, workspaceId, promptName);
+  return createCopilotSession(app, workspaceId, docId, promptName, true);
 }
 
 export async function createDocCopilotSession(
@@ -58,6 +60,41 @@ export async function createDocCopilotSession(
   promptName: string
 ): Promise<string> {
   return createCopilotSession(app, workspaceId, docId, promptName);
+}
+
+export async function getCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  sessionId: string
+): Promise<{
+  id: string;
+  docId: string | null;
+  parentSessionId: string | null;
+  pinned: boolean;
+  promptName: string;
+}> {
+  const res = await app.gql(
+    `
+      query getCopilotSession(
+        $workspaceId: String!
+        $sessionId: String!
+      ) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            session(sessionId: $sessionId) {
+              id
+              docId
+              parentSessionId
+              pinned
+              promptName
+            }
+          }
+        }
+      }`,
+    { workspaceId, sessionId }
+  );
+
+  return res.currentUser?.copilot?.session;
 }
 
 export async function updateCopilotSession(
