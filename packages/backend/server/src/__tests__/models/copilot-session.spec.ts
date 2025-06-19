@@ -11,6 +11,7 @@ import {
   WorkspaceModel,
 } from '../../models';
 import { createTestingModule, type TestingModule } from '../utils';
+import { cleanObject } from '../utils/copilot';
 
 interface Context {
   module: TestingModule;
@@ -65,6 +66,7 @@ const createTestSession = async (
     docId: string | null;
     pinned: boolean;
     promptName: string;
+    promptAction: string | null;
   }> = {}
 ) => {
   const sessionData = {
@@ -74,6 +76,7 @@ const createTestSession = async (
     docId: null,
     pinned: false,
     promptName: 'test-prompt',
+    promptAction: null,
     ...overrides,
   };
 
@@ -98,6 +101,12 @@ test('should list and filter session type', async t => {
   await createTestSession(t, { sessionId: randomUUID() });
   await createTestSession(t, { sessionId: randomUUID(), pinned: true });
   await createTestSession(t, { sessionId: randomUUID(), docId });
+  await createTestSession(t, {
+    sessionId: randomUUID(),
+    docId,
+    promptName: 'action-prompt',
+    promptAction: 'action',
+  });
 
   // should list sessions
   {
@@ -113,7 +122,13 @@ test('should list and filter session type', async t => {
     const docSessions = await copilotSession.list(user.id, workspace.id, docId);
 
     t.snapshot(
-      docSessions.map(s => ({ docId: s.docId, pinned: s.pinned })),
+      cleanObject(docSessions, [
+        'id',
+        'userId',
+        'createdAt',
+        'messages',
+        'tokenCost',
+      ]),
       'doc sessions should only include sessions with matching docId'
     );
   }
@@ -206,6 +221,7 @@ test('should pin and unpin sessions', async t => {
       workspaceId: workspace.id,
       docId: null,
       promptName: 'test-prompt',
+      promptAction: null,
       pinned: true,
     });
 
@@ -220,6 +236,7 @@ test('should pin and unpin sessions', async t => {
       workspaceId: workspace.id,
       docId: null,
       promptName: 'test-prompt',
+      promptAction: null,
       pinned: true,
     });
 
@@ -334,6 +351,15 @@ test('session updates and type conversions', async t => {
         docId: null,
       }); // Pinned → Workspace session
       await convertSession('workspace_to_pinned', { pinned: true }); // Workspace → Pinned session
+    }
+
+    // not allow convert to action prompt
+    {
+      await t.throwsAsync(
+        copilotSession.update(user.id, sessionId, {
+          promptName: 'action-prompt',
+        })
+      );
     }
 
     t.snapshot(conversionSteps, 'session type conversion steps');

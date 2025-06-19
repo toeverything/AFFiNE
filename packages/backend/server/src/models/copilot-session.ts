@@ -96,9 +96,9 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   // NOTE: just for test, remove it after copilot prompt model is ready
-  async createPrompt(name: string, model: string) {
+  async createPrompt(name: string, model: string, action?: string) {
     await this.db.aiPrompt.create({
-      data: { name, model },
+      data: { name, model, action: action ?? null },
     });
   }
 
@@ -288,10 +288,21 @@ export class CopilotSessionModel extends BaseModel {
     if (!session) {
       throw new CopilotSessionNotFound();
     }
-    if (data.promptName && session.prompt.action) {
-      throw new CopilotSessionInvalidInput(
-        `Cannot update prompt for action: ${session.id}`
-      );
+    if (data.promptName) {
+      if (session.prompt.action) {
+        throw new CopilotSessionInvalidInput(
+          `Cannot update prompt for action: ${session.id}`
+        );
+      }
+      const prompt = await this.db.aiPrompt.findFirst({
+        where: { name: data.promptName },
+      });
+      // always not allow to update to action prompt
+      if (!prompt || prompt.action) {
+        throw new CopilotSessionInvalidInput(
+          `Prompt ${data.promptName} not found or not available for session ${sessionId}`
+        );
+      }
     }
     if (data.pinned && data.pinned !== session.pinned) {
       // if pin the session, unpin exists session in the workspace
