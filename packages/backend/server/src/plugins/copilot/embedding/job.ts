@@ -6,7 +6,6 @@ import {
   BlobNotFound,
   CallMetric,
   CopilotContextFileNotSupported,
-  DocNotFound,
   EventBus,
   JobQueue,
   mapAnyError,
@@ -138,7 +137,7 @@ export class CopilotEmbeddingJob {
     if (enableDocEmbedding) {
       const toBeEmbedDocIds =
         await this.models.copilotWorkspace.findDocsToEmbed(workspaceId);
-      this.logger.debug(
+      this.logger.log(
         `Trigger embedding for ${toBeEmbedDocIds.length} docs in workspace ${workspaceId}`
       );
       for (const docId of toBeEmbedDocIds) {
@@ -342,11 +341,16 @@ export class CopilotEmbeddingJob {
           workspaceId,
           docId
         );
-      this.logger.verbose(
+      this.logger.log(
         `Check if doc ${docId} in workspace ${workspaceId} needs embedding: ${needEmbedding}`
       );
       if (needEmbedding) {
-        if (signal.aborted) return;
+        if (signal.aborted) {
+          this.logger.log(
+            `Doc ${docId} in workspace ${workspaceId} is aborted, skipping embedding.`
+          );
+          return;
+        }
         const fragment = await this.getDocFragment(workspaceId, docId);
         if (fragment) {
           // fast fall for empty doc, journal is easily to create a empty doc
@@ -367,12 +371,21 @@ export class CopilotEmbeddingJob {
                 chunks
               );
             }
+            this.logger.log(
+              `Doc ${docId} in workspace ${workspaceId} has summary, embedding done.`
+            );
           } else {
             // for empty doc, insert empty embedding
+            this.logger.warn(
+              `Doc ${docId} in workspace ${workspaceId} has no summary, fulfilling empty embedding.`
+            );
             await this.fulfillEmptyEmbedding(workspaceId, docId);
           }
         } else if (contextId) {
-          throw new DocNotFound({ spaceId: workspaceId, docId });
+          this.logger.warn(
+            `Doc ${docId} in workspace ${workspaceId} has no fragment, fulfilling empty embedding.`
+          );
+          await this.fulfillEmptyEmbedding(workspaceId, docId);
         }
       }
     } catch (error: any) {
@@ -394,8 +407,11 @@ export class CopilotEmbeddingJob {
         return;
       }
 
-      // passthrough error to job queue
-      throw error;
+      // log error and skip the job
+      this.logger.error(
+        `Error embedding doc ${docId} in workspace ${workspaceId}`,
+        error
+      );
     }
   }
 }
