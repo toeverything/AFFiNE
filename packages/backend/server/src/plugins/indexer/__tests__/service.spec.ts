@@ -2113,3 +2113,103 @@ test('should index doc work', async t => {
   t.is(module.event.count('doc.indexer.updated'), count + 1);
 });
 // #endregion
+
+// #region searchBlobNames()
+
+test('should search blob names from doc snapshot work', async t => {
+  const docSnapshot = await module.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user,
+    snapshotFile: 'test-doc-with-blob.snapshot.bin',
+  });
+
+  await indexerService.indexDoc(workspace.id, docSnapshot.id, {
+    refresh: true,
+  });
+
+  const blobNameMap = await indexerService.searchBlobNames(workspace.id, [
+    'ldZMrM4PDlsNG4Q4YvCsz623h6TKu4qI9_FpTqIypfw=',
+  ]);
+
+  t.snapshot(blobNameMap);
+});
+
+test('should search blob names work', async t => {
+  const workspaceId = randomUUID();
+  const blobId1 = 'blob1';
+  const blobId2 = 'blob2';
+  const blobId3 = 'blob3';
+  const blobId4 = 'blob4';
+
+  await indexerService.write(
+    SearchTable.block,
+    [
+      {
+        workspaceId,
+        blob: blobId1,
+        content: 'blob1 name.txt',
+        flavour: 'affine:attachment',
+        docId: randomUUID(),
+        blockId: randomUUID(),
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        workspaceId,
+        blob: blobId2,
+        content: 'blob2 name.md',
+        flavour: 'affine:attachment',
+        docId: randomUUID(),
+        blockId: randomUUID(),
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        workspaceId,
+        blob: blobId3,
+        content: 'blob3 name.docx',
+        flavour: 'affine:attachment',
+        docId: randomUUID(),
+        blockId: randomUUID(),
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      // no attachment
+      {
+        workspaceId,
+        blob: blobId3,
+        content: 'mock blob3 content',
+        flavour: 'affine:page',
+        docId: randomUUID(),
+        blockId: randomUUID(),
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ],
+    {
+      refresh: true,
+    }
+  );
+
+  const blobNameMap = await indexerService.searchBlobNames(workspaceId, [
+    blobId1,
+    blobId2,
+    blobId3,
+    blobId4,
+  ]);
+
+  t.is(blobNameMap.size, 3);
+  t.snapshot(
+    Array.from(blobNameMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+  );
+});
+
+// #endregion

@@ -15,7 +15,7 @@ export const passwordLimitsFragment = `fragment PasswordLimits on PasswordLimits
   minLength
   maxLength
 }`;
-export const licenseFragment = `fragment license on License {
+export const licenseBodyFragment = `fragment licenseBody on License {
   expiredAt
   installedAt
   quantity
@@ -617,6 +617,14 @@ export const getCopilotHistoriesQuery = {
           id
           role
           content
+          streamObjects {
+            type
+            textDelta
+            toolCallId
+            toolName
+            args
+            result
+          }
           attachments
           createdAt
         }
@@ -1443,10 +1451,10 @@ export const activateLicenseMutation = {
   op: 'activateLicense',
   query: `mutation activateLicense($workspaceId: String!, $license: String!) {
   activateLicense(workspaceId: $workspaceId, license: $license) {
-    ...license
+    ...licenseBody
   }
 }
-${licenseFragment}`,
+${licenseBodyFragment}`,
 };
 
 export const deactivateLicenseMutation = {
@@ -1463,11 +1471,11 @@ export const getLicenseQuery = {
   query: `query getLicense($workspaceId: String!) {
   workspace(id: $workspaceId) {
     license {
-      ...license
+      ...licenseBody
     }
   }
 }
-${licenseFragment}`,
+${licenseBodyFragment}`,
 };
 
 export const installLicenseMutation = {
@@ -1475,10 +1483,10 @@ export const installLicenseMutation = {
   op: 'installLicense',
   query: `mutation installLicense($workspaceId: String!, $license: Upload!) {
   installLicense(workspaceId: $workspaceId, license: $license) {
-    ...license
+    ...licenseBody
   }
 }
-${licenseFragment}`,
+${licenseBodyFragment}`,
   file: true,
 };
 

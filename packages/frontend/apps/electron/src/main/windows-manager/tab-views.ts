@@ -925,7 +925,7 @@ export async function handleWebContentsResize(webContents?: WebContents) {
   if (isMacOS()) {
     const window = await getMainWindow();
     const factor = webContents?.getZoomFactor() || 1;
-    window?.setWindowButtonPosition({ x: 16 * factor, y: 24 * factor - 6 });
+    window?.setWindowButtonPosition({ x: 14 * factor, y: 14 * factor - 2 });
   }
 }
 
