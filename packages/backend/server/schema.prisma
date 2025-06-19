@@ -434,8 +434,9 @@ model AiSession {
   id              String    @id @default(uuid()) @db.VarChar
   userId          String    @map("user_id") @db.VarChar
   workspaceId     String    @map("workspace_id") @db.VarChar
-  docId           String    @map("doc_id") @db.VarChar
+  docId           String?   @map("doc_id") @db.VarChar
   promptName      String    @map("prompt_name") @db.VarChar(32)
+  pinned          Boolean   @default(false)
   // the session id of the parent session if this session is a forked session
   parentSessionId String?   @map("parent_session_id") @db.VarChar
   messageCost     Int       @default(0)
@@ -449,7 +450,7 @@ model AiSession {
   context  AiContext[]
 
   @@index([userId])
-  @@index([userId, workspaceId])
+  @@index([userId, workspaceId, docId])
   @@map("ai_sessions_metadata")
 }
 

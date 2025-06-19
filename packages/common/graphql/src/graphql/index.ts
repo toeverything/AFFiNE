@@ -591,6 +591,7 @@ export const getCopilotHistoryIdsQuery = {
     copilot(workspaceId: $workspaceId) {
       histories(docId: $docId, options: $options) {
         sessionId
+        pinned
         messages {
           id
           role
@@ -610,6 +611,7 @@ export const getCopilotHistoriesQuery = {
     copilot(workspaceId: $workspaceId) {
       histories(docId: $docId, options: $options) {
         sessionId
+        pinned
         tokens
         action
         createdAt
@@ -762,6 +764,8 @@ export const getCopilotSessionQuery = {
       session(sessionId: $sessionId) {
         id
         parentSessionId
+        docId
+        pinned
         promptName
         model
         optionalModels
@@ -788,6 +792,8 @@ export const getCopilotSessionsQuery = {
       sessions(docId: $docId, options: $options) {
         id
         parentSessionId
+        docId
+        pinned
         promptName
         model
         optionalModels

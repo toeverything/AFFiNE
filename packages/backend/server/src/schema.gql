@@ -241,6 +241,7 @@ type CopilotHistories {
   action: String
   createdAt: DateTime!
   messages: [ChatMessage!]!
+  pinned: Boolean!
   sessionId: String!
 
   """The number of tokens used in the session"""
@@ -332,10 +333,12 @@ type CopilotQuota {
 }
 
 type CopilotSessionType {
+  docId: String
   id: ID!
   model: String!
   optionalModels: [String!]!
   parentSessionId: ID
+  pinned: Boolean!
   promptName: String!
 }
 
@@ -386,7 +389,8 @@ input CreateChatMessageInput {
 }
 
 input CreateChatSessionInput {
-  docId: String!
+  docId: String
+  pinned: Boolean
 
   """The prompt name to use for the session"""
   promptName: String!
@@ -570,6 +574,7 @@ enum ErrorNames {
   COPILOT_PROVIDER_SIDE_ERROR
   COPILOT_QUOTA_EXCEEDED
   COPILOT_SESSION_DELETED
+  COPILOT_SESSION_INVALID_INPUT
   COPILOT_SESSION_NOT_FOUND
   COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED
   COPILOT_TRANSCRIPTION_JOB_EXISTS
@@ -1751,8 +1756,14 @@ input UpdateAppConfigInput {
 }
 
 input UpdateChatSessionInput {
+  """The workspace id of the session"""
+  docId: String
+
+  """Whether to pin the session"""
+  pinned: Boolean
+
   """The prompt name to use for the session"""
-  promptName: String!
+  promptName: String
   sessionId: String!
 }
 
