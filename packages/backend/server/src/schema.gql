@@ -96,6 +96,7 @@ type ChatMessage {
   id: ID
   params: JSON
   role: String!
+  streamObjects: [StreamObject!]
 }
 
 enum ContextCategories {
@@ -1630,6 +1631,15 @@ type SpaceOwnerNotFoundDataType {
 
 type SpaceShouldHaveOnlyOneOwnerDataType {
   spaceId: String!
+}
+
+type StreamObject {
+  args: JSON
+  result: JSON
+  textDelta: String
+  toolCallId: String
+  toolName: String
+  type: String!
 }
 
 type SubscriptionAlreadyExistsDataType {

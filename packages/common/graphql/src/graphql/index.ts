@@ -619,6 +619,14 @@ export const getCopilotHistoriesQuery = {
           id
           role
           content
+          streamObjects {
+            type
+            textDelta
+            toolCallId
+            toolName
+            args
+            result
+          }
           attachments
           createdAt
         }

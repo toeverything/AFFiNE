@@ -19,12 +19,22 @@ export enum SessionType {
 
 type ChatAttachment = { attachment: string; mimeType: string } | string;
 
+type ChatStreamObject = {
+  type: 'text-delta' | 'reasoning' | 'tool-call' | 'tool-result';
+  textDelta?: string;
+  toolCallId?: string;
+  toolName?: string;
+  args?: Record<string, any>;
+  result?: any;
+};
+
 type ChatMessage = {
   id?: string | undefined;
   role: 'system' | 'assistant' | 'user';
   content: string;
   attachments?: ChatAttachment[] | null;
   params?: Record<string, any> | null;
+  streamObjects?: ChatStreamObject[] | null;
   createdAt: Date;
 };
 
@@ -232,6 +242,7 @@ export class CopilotSessionModel extends BaseModel {
             content: true,
             attachments: true,
             params: true,
+            streamObjects: true,
             createdAt: true,
           },
           orderBy: {
@@ -312,6 +323,7 @@ export class CopilotSessionModel extends BaseModel {
         ...m,
         attachments: m.attachments || undefined,
         params: omit(m.params, ['docs']) || undefined,
+        streamObjects: m.streamObjects || undefined,
         sessionId,
       })),
     });

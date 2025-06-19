@@ -35,7 +35,7 @@ import { AccessController } from '../../core/permission';
 import { UserType } from '../../core/user';
 import type { UpdateChatSession } from '../../models';
 import { PromptService } from './prompt';
-import { PromptMessage } from './providers';
+import { PromptMessage, StreamObject } from './providers';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import {
@@ -185,6 +185,27 @@ class QueryChatHistoriesInput implements Partial<ListHistoriesOptions> {
 
 // ================== Return Types ==================
 
+@ObjectType('StreamObject')
+class StreamObjectType {
+  @Field(() => String)
+  type!: string;
+
+  @Field(() => String, { nullable: true })
+  textDelta?: string;
+
+  @Field(() => String, { nullable: true })
+  toolCallId?: string;
+
+  @Field(() => String, { nullable: true })
+  toolName?: string;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  args?: any;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  result?: any;
+}
+
 @ObjectType('ChatMessage')
 class ChatMessageType implements Partial<ChatMessage> {
   // id will be null if message is a prompt message
@@ -196,6 +217,9 @@ class ChatMessageType implements Partial<ChatMessage> {
 
   @Field(() => String)
   content!: string;
+
+  @Field(() => [StreamObjectType], { nullable: true })
+  streamObjects!: StreamObject[];
 
   @Field(() => [String], { nullable: true })
   attachments!: string[];
