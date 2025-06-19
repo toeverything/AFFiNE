@@ -5,7 +5,7 @@ ALTER TABLE "ai_sessions_metadata" ALTER COLUMN "doc_id" DROP NOT NULL;
 ALTER TABLE "ai_sessions_metadata" ADD COLUMN     "pinned" BOOLEAN NOT NULL DEFAULT false;
 
 -- AlterTable
-ALTER TABLE "ai_sessions_metadata" ADD COLUMN     "prompt_action" VARCHAR(32);
+ALTER TABLE "ai_sessions_metadata" ADD COLUMN     "prompt_action" VARCHAR(32) DEFAULT '';
 
 -- AlterTable
 CREATE UNIQUE INDEX idx_ai_session_unique_pinned 
