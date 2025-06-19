@@ -22,6 +22,7 @@ import {
   FileSizeLimitProvider,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
+import { PeekViewProvider } from '@blocksuite/affine-components/peek';
 import { formatSize } from '@blocksuite/affine-shared/utils';
 import {
   AttachmentIcon,
@@ -114,7 +115,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     );
   };
 
-  open = async () => {
+  openExternal = async () => {
     const blobUrl = this.blobUrl;
     if (!blobUrl) return;
 
@@ -135,6 +136,17 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     }
 
     window.open(blobUrl, '_blank');
+  };
+
+  openPreview = async () => {
+    const peekView = this.std.getOptional(PeekViewProvider);
+    if (!peekView) return;
+    await peekView.peek({
+      docId: this.model.store.id,
+      blockIds: [this.blockId],
+      filetype: this.filetype,
+      target: this,
+    });
   };
 
   // Refreshes data.
@@ -236,7 +248,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
 
   private _handleDoubleClick = (event: MouseEvent) => {
     event.stopPropagation();
-    this.open().catch(console.error);
+    this.openPreview().catch(console.error);
   };
 
   protected renderUpgradeButton = () => {

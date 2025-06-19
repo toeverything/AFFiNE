@@ -1,6 +1,12 @@
 import type { AttachmentBlockModel } from '@blocksuite/affine/model';
 
-export type AttachmentType = 'pdf' | 'image' | 'audio' | 'video' | 'unknown';
+export type AttachmentType =
+  | 'pdf'
+  | 'image'
+  | 'audio'
+  | 'video'
+  | 'text'
+  | 'unknown';
 
 export type AttachmentViewerProps = {
   model: AttachmentBlockModel;
