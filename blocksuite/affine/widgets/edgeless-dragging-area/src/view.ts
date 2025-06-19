@@ -4,6 +4,7 @@ import {
 } from '@blocksuite/affine-ext-loader';
 
 import { edgelessDraggingAreaWidget } from './edgeless-dragging-area-rect';
+import { edgelessLassoDraggingAreaWidget } from './edgeless-lasso-dragging-area';
 import { effects } from './effects';
 
 export class EdgelessDraggingAreaViewExtension extends ViewExtensionProvider {
@@ -18,6 +19,7 @@ export class EdgelessDraggingAreaViewExtension extends ViewExtensionProvider {
     super.setup(context);
     if (this.isEdgeless(context.scope)) {
       context.register(edgelessDraggingAreaWidget);
+      context.register(edgelessLassoDraggingAreaWidget);
     }
   }
 }

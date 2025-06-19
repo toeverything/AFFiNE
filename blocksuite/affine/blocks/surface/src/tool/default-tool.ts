@@ -21,6 +21,8 @@ export enum DefaultModeDragType {
   None = 'none',
   /** Expanding the dragging area, select the content covered inside */
   Selecting = 'selecting',
+  /** Lasso selection mode - select elements by drawing a closed path */
+  LassoSelecting = 'lasso-selecting',
 }
 
 export class DefaultTool extends BaseTool {
@@ -73,6 +75,78 @@ export class DefaultTool extends BaseTool {
 
   private _toBeMoved: GfxModel[] = [];
 
+  lassoPath: IVec[] = [];
+
+  private _getLassoSelectedElements(): GfxModel[] {
+    if (this.lassoPath.length < 3) return [];
+
+    // Create a closed path by connecting the last point to the first point
+    const closedPath = [...this.lassoPath];
+    if (this.lassoPath.length > 0) {
+      const firstPoint = this.lassoPath[0];
+      const lastPoint = this.lassoPath[this.lassoPath.length - 1];
+      // Only close the path if the last point is not already close to the first point
+      if (
+        Math.abs(firstPoint[0] - lastPoint[0]) > 5 ||
+        Math.abs(firstPoint[1] - lastPoint[1]) > 5
+      ) {
+        closedPath.push(firstPoint);
+      }
+    }
+
+    // Get all elements and filter those that are completely inside the lasso
+    const allElements = this.gfx.getElementsByBound(
+      this.gfx.viewport.viewportBounds
+    );
+
+    return allElements
+      .filter(element => {
+        const view = this.gfx.view.get(element);
+        if (!view) return false;
+
+        // Check if the element is completely inside the lasso path
+        return this._isElementCompletelyInLasso(element, closedPath);
+      })
+      .filter(elm => !elm.isLocked());
+  }
+
+  private _isElementCompletelyInLasso(
+    element: GfxModel,
+    lassoPath: IVec[]
+  ): boolean {
+    // Get the element's bounding box points
+    const bound = element.elementBound;
+    const points = [
+      [bound.x, bound.y],
+      [bound.x + bound.w, bound.y],
+      [bound.x + bound.w, bound.y + bound.h],
+      [bound.x, bound.y + bound.h],
+    ] as IVec[];
+
+    // Check if all corner points of the element are inside the lasso path
+    return points.every(point => this._isPointInPolygon(point, lassoPath));
+  }
+
+  private _isPointInPolygon(point: IVec, polygon: IVec[]): boolean {
+    const [x, y] = point;
+    let inside = false;
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [xi, yi] = polygon[i];
+      const [xj, yj] = polygon[j];
+
+      if (
+        yi > y !== yj > y &&
+        yj !== yi &&
+        x < ((xj - xi) * (y - yi)) / (yj - yi) + xi
+      ) {
+        inside = !inside;
+      }
+    }
+
+    return inside;
+  }
+
   private readonly _updateSelection = () => {
     const { gfx } = this;
 
@@ -95,9 +169,17 @@ export class DefaultTool extends BaseTool {
       };
     }
 
-    const elements = this.interactivity?.handleBoxSelection({
-      box: this.controller.draggingArea$.peek(),
-    });
+    let elements: GfxModel[] | undefined;
+
+    if (this.dragType === DefaultModeDragType.LassoSelecting) {
+      // For lasso selection, check if elements are completely inside the lasso path
+      elements = this._getLassoSelectedElements();
+    } else {
+      // For regular box selection
+      elements = this.interactivity?.handleBoxSelection({
+        box: this.controller.draggingArea$.peek(),
+      });
+    }
 
     if (!elements) return;
 
@@ -163,6 +245,10 @@ export class DefaultTool extends BaseTool {
       if (checked) {
         return DefaultModeDragType.ContentMoving;
       } else {
+        // Check if alt key is pressed for lasso selection
+        if (evt.keys.alt) {
+          return DefaultModeDragType.LassoSelecting;
+        }
         return DefaultModeDragType.Selecting;
       }
     }
@@ -177,13 +263,26 @@ export class DefaultTool extends BaseTool {
     this._clearDisposable();
     this._disposables = new DisposableGroup();
 
-    // If the drag type is selecting, set up the dragging area disposable group
+    // If the drag type is selecting or lasso selecting, set up the dragging area disposable group
     // If the viewport updates when dragging, should update the dragging area and selection
-    if (this.dragType === DefaultModeDragType.Selecting) {
+    if (
+      this.dragType === DefaultModeDragType.Selecting ||
+      this.dragType === DefaultModeDragType.LassoSelecting
+    ) {
+      if (this.dragType === DefaultModeDragType.LassoSelecting) {
+        // Initialize lasso path with the starting point
+        const [startX, startY] = this.gfx.viewport.toModelCoord(
+          event.x,
+          event.y
+        );
+        this.lassoPath = [[startX, startY]];
+      }
+
       this._disposables.add(
         this.gfx.viewport.viewportUpdated.subscribe(() => {
           if (
-            this.dragType === DefaultModeDragType.Selecting &&
+            (this.dragType === DefaultModeDragType.Selecting ||
+              this.dragType === DefaultModeDragType.LassoSelecting) &&
             this.controller.dragging$.peek()
           ) {
             this._updateSelection();
@@ -247,6 +346,12 @@ export class DefaultTool extends BaseTool {
 
     this.movementDragging = false;
     this._toBeMoved = [];
+
+    // Clear lasso path when drag ends
+    if (this.dragType === DefaultModeDragType.LassoSelecting) {
+      this.lassoPath = [];
+    }
+
     this._clearSelectingState();
     this.dragType = DefaultModeDragType.None;
   }
@@ -262,6 +367,29 @@ export class DefaultTool extends BaseTool {
     switch (this.dragType) {
       case DefaultModeDragType.Selecting: {
         // Record the last drag pointer position for auto panning and view port updating
+        this._updateSelection();
+        const moveDelta = calPanDelta(viewport, e);
+        if (moveDelta) {
+          this._enableEdgeScrolling(moveDelta);
+        } else {
+          this._stopEdgeScrolling();
+        }
+        break;
+      }
+      case DefaultModeDragType.LassoSelecting: {
+        // Add current point to lasso path
+        const [currentX, currentY] = this.gfx.viewport.toModelCoord(e.x, e.y);
+        const lastPoint = this.lassoPath[this.lassoPath.length - 1];
+
+        // Only add point if it's far enough from the last point to avoid too many points
+        if (
+          !lastPoint ||
+          Math.abs(currentX - lastPoint[0]) > 2 ||
+          Math.abs(currentY - lastPoint[1]) > 2
+        ) {
+          this.lassoPath.push([currentX, currentY]);
+        }
+
         this._updateSelection();
         const moveDelta = calPanDelta(viewport, e);
         if (moveDelta) {
