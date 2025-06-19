@@ -220,6 +220,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
   override firstUpdated() {
     // lazy bindings
     this.disposables.addFromEvent(this, 'click', this.onClick);
+    this.disposables.addFromEvent(this, 'dblclick', this._handleDoubleClick);
   }
 
   protected onClick(event: MouseEvent) {
@@ -232,6 +233,11 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
       this._selectBlock();
     }
   }
+
+  private _handleDoubleClick = (event: MouseEvent) => {
+    event.stopPropagation();
+    this.open().catch(console.error);
+  };
 
   protected renderUpgradeButton = () => {
     if (this.std.store.readonly) return null;

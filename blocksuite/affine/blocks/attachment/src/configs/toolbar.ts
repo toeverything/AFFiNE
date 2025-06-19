@@ -24,6 +24,7 @@ import {
   DownloadIcon,
   DuplicateIcon,
   EditIcon,
+  ExpandFullIcon,
   ResetIcon,
 } from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/std';
@@ -151,6 +152,16 @@ export const attachmentViewDropdownMenu = {
   },
 } as const satisfies ToolbarActionGroup<ToolbarAction>;
 
+const openAction = {
+  id: 'b.open',
+  tooltip: 'Open',
+  icon: ExpandFullIcon(),
+  run(ctx) {
+    const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
+    block?.open();
+  },
+} as const satisfies ToolbarAction;
+
 const downloadAction = {
   id: 'c.download',
   tooltip: 'Download',
@@ -220,6 +231,7 @@ const builtinToolbarConfig = {
         `;
       },
     },
+    openAction,
     attachmentViewDropdownMenu,
     downloadAction,
     captionAction,
@@ -295,6 +307,7 @@ const builtinToolbarConfig = {
 const builtinSurfaceToolbarConfig = {
   actions: [
     attachmentViewDropdownMenu,
+    openAction,
     {
       id: 'c.style',
       actions: [
