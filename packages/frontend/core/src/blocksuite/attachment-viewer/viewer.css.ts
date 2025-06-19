@@ -30,7 +30,8 @@ export const viewer = style({
 });
 
 export const scrollable = style({
-  overflow: 'auto',
+  overflowY: 'auto',
+  overflowX: 'hidden',
 });
 
 globalStyle(`.${scrollable}`, {
@@ -51,6 +52,11 @@ globalStyle(`.${scrollable}::-webkit-scrollbar-thumb`, {
 
 globalStyle(`.${scrollable}::-webkit-scrollbar-corner`, {
   display: 'none',
+});
+
+globalStyle('.shiki', {
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
 });
 
 export const viewerContainer = style({
