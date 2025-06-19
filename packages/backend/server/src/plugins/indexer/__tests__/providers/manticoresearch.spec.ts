@@ -1232,6 +1232,49 @@ test('should not return not exists field:ref_doc_id', async t => {
   t.snapshot(result.nodes.map(node => omit(node, ['_score'])));
 });
 
+test('should created_at and updated_at is date type', async t => {
+  const result = await searchProvider.search(SearchTable.block, {
+    _source: ['workspace_id', 'doc_id', 'created_at', 'updated_at'],
+    sort: [
+      '_score',
+      {
+        updated_at: 'desc',
+      },
+      'doc_id',
+      'block_id',
+    ],
+    query: {
+      match_all: {},
+    },
+    fields: ['created_at', 'updated_at'],
+    size: 2,
+  });
+
+  t.truthy(result.total);
+  t.truthy(result.nodes[0].fields.created_at);
+  t.truthy(result.nodes[0].fields.updated_at);
+  t.true(
+    result.nodes[0].fields.created_at[0] instanceof Date,
+    'created_at should be date type, but got ' +
+      result.nodes[0].fields.created_at[0]
+  );
+  t.true(
+    result.nodes[0].fields.updated_at[0] instanceof Date,
+    'updated_at should be date type, but got ' +
+      result.nodes[0].fields.updated_at[0]
+  );
+  t.true(
+    result.nodes[0]._source.created_at instanceof Date,
+    'created_at should be date type, but got ' +
+      result.nodes[0]._source.created_at
+  );
+  t.true(
+    result.nodes[0]._source.updated_at instanceof Date,
+    'updated_at should be date type, but got ' +
+      result.nodes[0]._source.updated_at
+  );
+});
+
 // #endregion
 
 // #region aggregate
