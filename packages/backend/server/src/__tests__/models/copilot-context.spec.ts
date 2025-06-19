@@ -59,6 +59,7 @@ test.beforeEach(async t => {
     docId,
     userId: user.id,
     promptName: 'prompt-name',
+    promptAction: null,
   });
 });
 
