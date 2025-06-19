@@ -33,8 +33,9 @@ import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
 import { AccessController } from '../../core/permission';
 import { UserType } from '../../core/user';
+import type { UpdateChatSession } from '../../models';
 import { PromptService } from './prompt';
-import { PromptMessage } from './providers';
+import { PromptMessage, StreamObject } from './providers';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import {
@@ -57,22 +58,38 @@ class CreateChatSessionInput {
   @Field(() => String)
   workspaceId!: string;
 
-  @Field(() => String)
-  docId!: string;
+  @Field(() => String, { nullable: true })
+  docId?: string;
 
   @Field(() => String, {
     description: 'The prompt name to use for the session',
   })
   promptName!: string;
+
+  @Field(() => Boolean, { nullable: true })
+  pinned?: boolean;
 }
 
 @InputType()
-class UpdateChatSessionInput {
+class UpdateChatSessionInput implements Omit<UpdateChatSession, 'userId'> {
   @Field(() => String)
   sessionId!: string;
 
   @Field(() => String, {
+    description: 'The workspace id of the session',
+    nullable: true,
+  })
+  docId!: string | null | undefined;
+
+  @Field(() => Boolean, {
+    description: 'Whether to pin the session',
+    nullable: true,
+  })
+  pinned!: boolean | undefined;
+
+  @Field(() => String, {
     description: 'The prompt name to use for the session',
+    nullable: true,
   })
   promptName!: string;
 }
@@ -168,6 +185,27 @@ class QueryChatHistoriesInput implements Partial<ListHistoriesOptions> {
 
 // ================== Return Types ==================
 
+@ObjectType('StreamObject')
+class StreamObjectType {
+  @Field(() => String)
+  type!: string;
+
+  @Field(() => String, { nullable: true })
+  textDelta?: string;
+
+  @Field(() => String, { nullable: true })
+  toolCallId?: string;
+
+  @Field(() => String, { nullable: true })
+  toolName?: string;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  args?: any;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  result?: any;
+}
+
 @ObjectType('ChatMessage')
 class ChatMessageType implements Partial<ChatMessage> {
   // id will be null if message is a prompt message
@@ -179,6 +217,9 @@ class ChatMessageType implements Partial<ChatMessage> {
 
   @Field(() => String)
   content!: string;
+
+  @Field(() => [StreamObjectType], { nullable: true })
+  streamObjects!: StreamObject[];
 
   @Field(() => [String], { nullable: true })
   attachments!: string[];
@@ -194,6 +235,9 @@ class ChatMessageType implements Partial<ChatMessage> {
 class CopilotHistoriesType implements Partial<ChatHistory> {
   @Field(() => String)
   sessionId!: string;
+
+  @Field(() => Boolean)
+  pinned!: boolean;
 
   @Field(() => String, {
     description: 'An mark identifying which view to use to display the session',
@@ -279,6 +323,12 @@ class CopilotPromptType {
 export class CopilotSessionType {
   @Field(() => ID)
   id!: string;
+
+  @Field(() => String, { nullable: true })
+  docId!: string | null;
+
+  @Field(() => Boolean)
+  pinned!: boolean;
 
   @Field(() => ID, { nullable: true })
   parentSessionId!: string | null;
@@ -435,22 +485,33 @@ export class CopilotResolver {
     @Args({ name: 'options', type: () => CreateChatSessionInput })
     options: CreateChatSessionInput
   ): Promise<string> {
-    await this.ac.user(user.id).doc(options).allowLocal().assert('Doc.Update');
+    // permission check based on session type
+    if (options.docId) {
+      await this.ac
+        .user(user.id)
+        .doc({ workspaceId: options.workspaceId, docId: options.docId })
+        .allowLocal()
+        .assert('Doc.Update');
+    } else {
+      await this.ac
+        .user(user.id)
+        .workspace(options.workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+    }
+
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
       throw new TooManyRequest('Server is busy');
     }
 
-    if (options.workspaceId === options.docId) {
-      // filter out session create request for root doc
-      throw new CopilotDocNotFound({ docId: options.docId });
-    }
-
     await this.chatSession.checkQuota(user.id);
 
     return await this.chatSession.create({
       ...options,
+      pinned: options.pinned ?? false,
+      docId: options.docId ?? null,
       userId: user.id,
     });
   }
@@ -469,11 +530,19 @@ export class CopilotResolver {
       throw new CopilotSessionNotFound();
     }
     const { workspaceId, docId } = session.config;
-    await this.ac
-      .user(user.id)
-      .doc(workspaceId, docId)
-      .allowLocal()
-      .assert('Doc.Update');
+    if (docId) {
+      await this.ac
+        .user(user.id)
+        .doc(workspaceId, docId)
+        .allowLocal()
+        .assert('Doc.Update');
+    } else {
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+    }
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
@@ -481,7 +550,7 @@ export class CopilotResolver {
     }
 
     await this.chatSession.checkQuota(user.id);
-    return await this.chatSession.updateSessionPrompt({
+    return await this.chatSession.updateSession({
       ...options,
       userId: user.id,
     });
@@ -595,6 +664,8 @@ export class CopilotResolver {
     return {
       id: session.sessionId,
       parentSessionId: session.parentSessionId,
+      docId: session.docId,
+      pinned: session.pinned,
       promptName: session.prompt.name,
       model: session.prompt.model,
       optionalModels: session.prompt.optionalModels,

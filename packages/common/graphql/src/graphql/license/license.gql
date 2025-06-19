@@ -1,8 +1,0 @@
-fragment license on License {
-  expiredAt
-  installedAt
-  quantity
-  recurring
-  validatedAt
-  variant
-}

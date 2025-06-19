@@ -1,4 +1,5 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 
 import {
   Cache,
@@ -15,8 +16,6 @@ import {
   Models,
 } from '../../../models';
 import { type EmbeddingClient, getEmbeddingClient } from '../embedding';
-import { PromptService } from '../prompt';
-import { CopilotProviderFactory } from '../providers';
 import { ContextSession } from './session';
 
 const CONTEXT_SESSION_KEY = 'context-session';
@@ -27,10 +26,9 @@ export class CopilotContextService implements OnApplicationBootstrap {
   private client: EmbeddingClient | undefined;
 
   constructor(
+    private readonly moduleRef: ModuleRef,
     private readonly cache: Cache,
-    private readonly models: Models,
-    private readonly providerFactory: CopilotProviderFactory,
-    private readonly prompt: PromptService
+    private readonly models: Models
   ) {}
 
   @OnEvent('config.init')
@@ -44,7 +42,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
   }
 
   private async setup() {
-    this.client = await getEmbeddingClient(this.providerFactory, this.prompt);
+    this.client = await getEmbeddingClient(this.moduleRef);
   }
 
   async onApplicationBootstrap() {
@@ -165,7 +163,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
     );
     if (!fileChunks.length) return [];
 
-    return this.embeddingClient.reRank(content, fileChunks, topK, signal);
+    return await this.embeddingClient.reRank(content, fileChunks, topK, signal);
   }
 
   async matchWorkspaceDocs(
@@ -188,7 +186,48 @@ export class CopilotContextService implements OnApplicationBootstrap {
       );
     if (!workspaceChunks.length) return [];
 
-    return this.embeddingClient.reRank(content, workspaceChunks, topK, signal);
+    return await this.embeddingClient.reRank(
+      content,
+      workspaceChunks,
+      topK,
+      signal
+    );
+  }
+
+  async matchWorkspaceAll(
+    workspaceId: string,
+    content: string,
+    topK: number = 5,
+    signal?: AbortSignal,
+    threshold: number = 0.5
+  ) {
+    if (!this.embeddingClient) return [];
+    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    if (!embedding) return [];
+
+    const [fileChunks, workspaceChunks] = await Promise.all([
+      this.models.copilotWorkspace.matchFileEmbedding(
+        workspaceId,
+        embedding,
+        topK * 2,
+        threshold
+      ),
+      this.models.copilotContext.matchWorkspaceEmbedding(
+        embedding,
+        workspaceId,
+        topK * 2,
+        threshold
+      ),
+    ]);
+
+    if (!fileChunks.length && !workspaceChunks.length) return [];
+
+    return await this.embeddingClient.reRank(
+      content,
+      [...fileChunks, ...workspaceChunks],
+      topK,
+      signal
+    );
   }
 
   @OnEvent('workspace.doc.embed.failed')

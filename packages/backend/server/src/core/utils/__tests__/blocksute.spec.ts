@@ -5,6 +5,7 @@ import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
 import { Models } from '../../../models';
 import {
+  parseDocToMarkdownFromDocSnapshot,
   readAllBlocksFromDocSnapshot,
   readAllDocIdsFromWorkspaceSnapshot,
 } from '../blocksuite';
@@ -56,6 +57,23 @@ test('can read all blocks from doc snapshot', async t => {
   });
 });
 
+test('can read blob filename from doc snapshot', async t => {
+  const docSnapshot = await module.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user: owner,
+    snapshotFile: 'test-doc-with-blob.snapshot.bin',
+  });
+
+  const result = await readAllBlocksFromDocSnapshot(
+    workspace.id,
+    'doc-0',
+    docSnapshot.blob
+  );
+
+  // NOTE: avoid snapshot result directly, because it will cause hanging
+  t.snapshot(JSON.parse(JSON.stringify(result)));
+});
+
 test('can read all blocks from doc snapshot without workspace snapshot', async t => {
   const doc = await models.doc.get(workspace.id, docSnapshot.id);
   t.truthy(doc);
@@ -70,4 +88,25 @@ test('can read all blocks from doc snapshot without workspace snapshot', async t
     ...result,
     blocks: result!.blocks.map(block => omit(block, ['yblock'])),
   });
+});
+
+test('can parse doc to markdown from doc snapshot', async t => {
+  const result = parseDocToMarkdownFromDocSnapshot(
+    workspace.id,
+    docSnapshot.id,
+    docSnapshot.blob
+  );
+
+  t.snapshot(result);
+});
+
+test('can parse doc to markdown from doc snapshot with ai editable', async t => {
+  const result = parseDocToMarkdownFromDocSnapshot(
+    workspace.id,
+    docSnapshot.id,
+    docSnapshot.blob,
+    true
+  );
+
+  t.snapshot(result);
 });

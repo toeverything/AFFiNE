@@ -257,3 +257,28 @@ test('should get workspace content with custom avatar', async t => {
     avatarUrl: `http://localhost:3010/api/workspaces/${workspace.id}/blobs/${avatarKey}`,
   });
 });
+
+test('should return doc markdown success', async t => {
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+    name: '',
+  });
+
+  const docSnapshot = await module.create(Mockers.DocSnapshot, {
+    workspaceId: workspace.id,
+    user,
+  });
+
+  const result = await docReader.getDocMarkdown(workspace.id, docSnapshot.id);
+  t.snapshot(result);
+});
+
+test('should read markdown return null when doc not exists', async t => {
+  const workspace = await module.create(Mockers.Workspace, {
+    owner: user,
+    name: '',
+  });
+
+  const result = await docReader.getDocMarkdown(workspace.id, randomUUID());
+  t.is(result, null);
+});

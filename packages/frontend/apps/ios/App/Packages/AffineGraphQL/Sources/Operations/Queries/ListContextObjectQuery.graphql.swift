@@ -7,7 +7,7 @@ public class ListContextObjectQuery: GraphQLQuery {
   public static let operationName: String = "listContextObject"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query listContextObject($workspaceId: String!, $sessionId: String!, $contextId: String!) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename contexts(sessionId: $sessionId, contextId: $contextId) { __typename docs { __typename id status error createdAt } files { __typename id name blobId chunkSize error status createdAt } tags { __typename type id docs { __typename id status createdAt } createdAt } collections { __typename type id docs { __typename id status createdAt } createdAt } } } } }"#
+      #"query listContextObject($workspaceId: String!, $sessionId: String!, $contextId: String!) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename contexts(sessionId: $sessionId, contextId: $contextId) { __typename docs { __typename id status error createdAt } files { __typename id name mimeType blobId chunkSize error status createdAt } tags { __typename type id docs { __typename id status createdAt } createdAt } collections { __typename type id docs { __typename id status createdAt } createdAt } } } } }"#
     ))
 
   public var workspaceId: String
@@ -135,6 +135,7 @@ public class ListContextObjectQuery: GraphQLQuery {
               .field("__typename", String.self),
               .field("id", AffineGraphQL.ID.self),
               .field("name", String.self),
+              .field("mimeType", String.self),
               .field("blobId", String.self),
               .field("chunkSize", AffineGraphQL.SafeInt.self),
               .field("error", String?.self),
@@ -144,6 +145,7 @@ public class ListContextObjectQuery: GraphQLQuery {
 
             public var id: AffineGraphQL.ID { __data["id"] }
             public var name: String { __data["name"] }
+            public var mimeType: String { __data["mimeType"] }
             public var blobId: String { __data["blobId"] }
             public var chunkSize: AffineGraphQL.SafeInt { __data["chunkSize"] }
             public var error: String? { __data["error"] }

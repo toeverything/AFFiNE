@@ -52,16 +52,17 @@ public class GetWorkspacePageMetaByIdQuery: GraphQLQuery {
       ] }
 
       /// Cloud page metadata of workspace
+      @available(*, deprecated, message: "use [WorkspaceType.doc] instead")
       public var pageMeta: PageMeta { __data["pageMeta"] }
 
       /// Workspace.PageMeta
       ///
-      /// Parent Type: `WorkspacePageMeta`
+      /// Parent Type: `WorkspaceDocMeta`
       public struct PageMeta: AffineGraphQL.SelectionSet {
         public let __data: DataDict
         public init(_dataDict: DataDict) { __data = _dataDict }
 
-        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.WorkspacePageMeta }
+        public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.WorkspaceDocMeta }
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("createdAt", AffineGraphQL.DateTime.self),

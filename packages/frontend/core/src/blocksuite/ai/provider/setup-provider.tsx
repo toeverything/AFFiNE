@@ -590,6 +590,7 @@ Could you make a new website based on these notes and send back just the html fi
       return client.updateSession({
         sessionId,
         promptName,
+        // TODO(@yoyoyohamapi): update docId & pinned for chat independence
       });
     },
   });

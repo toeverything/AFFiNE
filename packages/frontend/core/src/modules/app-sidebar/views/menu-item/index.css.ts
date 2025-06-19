@@ -14,20 +14,20 @@ export const root = style({
   minHeight: '30px',
   userSelect: 'none',
   cursor: 'pointer',
-  padding: '0 2px 0 12px',
+  padding: '0 2px 0 0',
   fontSize: cssVar('fontSm'),
   marginTop: '4px',
   position: 'relative',
   selectors: {
     '&:hover': {
-      background: cssVar('hoverColor'),
+      background: cssVarV2.layer.background.hoverOverlay,
     },
     '&[data-active="true"]': {
-      background: cssVar('hoverColor'),
+      background: cssVarV2.layer.background.hoverOverlay,
     },
     '&[data-disabled="true"]': {
       cursor: 'default',
-      color: cssVar('textSecondaryColor'),
+      color: cssVarV2.text.disable,
       pointerEvents: 'none',
     },
     // this is not visible in dark mode
@@ -43,7 +43,7 @@ export const root = style({
     '&[data-collapsible="false"]:is([data-active="true"], :hover)': {
       width: 'calc(100% + 8px + 8px)',
       transform: 'translateX(-8px)',
-      paddingLeft: '20px',
+      paddingLeft: '8px',
       paddingRight: '10px',
     },
     [`${linkItemRoot}:first-of-type &`]: {
@@ -93,7 +93,7 @@ export const collapsedIconContainer = style({
       pointerEvents: 'none',
     },
     '&:hover': {
-      background: cssVar('hoverColor'),
+      background: cssVarV2.layer.background.hoverOverlay,
     },
   },
 });
@@ -101,7 +101,7 @@ export const iconsContainer = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'flex-start',
-  width: '28px',
+  width: '32px',
   flexShrink: 0,
   selectors: {
     '&[data-collapsible="true"]': {

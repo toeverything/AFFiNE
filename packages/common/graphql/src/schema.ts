@@ -137,6 +137,7 @@ export interface ChatMessage {
   id: Maybe<Scalars['ID']['output']>;
   params: Maybe<Scalars['JSON']['output']>;
   role: Scalars['String']['output'];
+  streamObjects: Maybe<Array<StreamObject>>;
 }
 
 export enum ContextCategories {
@@ -333,6 +334,7 @@ export interface CopilotHistories {
   action: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTime']['output'];
   messages: Array<ChatMessage>;
+  pinned: Scalars['Boolean']['output'];
   sessionId: Scalars['String']['output'];
   /** The number of tokens used in the session */
   tokens: Scalars['Int']['output'];
@@ -433,10 +435,12 @@ export interface CopilotQuota {
 
 export interface CopilotSessionType {
   __typename?: 'CopilotSessionType';
+  docId: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   model: Scalars['String']['output'];
   optionalModels: Array<Scalars['String']['output']>;
   parentSessionId: Maybe<Scalars['ID']['output']>;
+  pinned: Scalars['Boolean']['output'];
   promptName: Scalars['String']['output'];
 }
 
@@ -500,7 +504,8 @@ export interface CreateChatMessageInput {
 }
 
 export interface CreateChatSessionInput {
-  docId: Scalars['String']['input'];
+  docId?: InputMaybe<Scalars['String']['input']>;
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** The prompt name to use for the session */
   promptName: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
@@ -745,6 +750,7 @@ export enum ErrorNames {
   COPILOT_PROVIDER_SIDE_ERROR = 'COPILOT_PROVIDER_SIDE_ERROR',
   COPILOT_QUOTA_EXCEEDED = 'COPILOT_QUOTA_EXCEEDED',
   COPILOT_SESSION_DELETED = 'COPILOT_SESSION_DELETED',
+  COPILOT_SESSION_INVALID_INPUT = 'COPILOT_SESSION_INVALID_INPUT',
   COPILOT_SESSION_NOT_FOUND = 'COPILOT_SESSION_NOT_FOUND',
   COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED = 'COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED',
   COPILOT_TRANSCRIPTION_JOB_EXISTS = 'COPILOT_TRANSCRIPTION_JOB_EXISTS',
@@ -2195,6 +2201,16 @@ export interface SpaceShouldHaveOnlyOneOwnerDataType {
   spaceId: Scalars['String']['output'];
 }
 
+export interface StreamObject {
+  __typename?: 'StreamObject';
+  args: Maybe<Scalars['JSON']['output']>;
+  result: Maybe<Scalars['JSON']['output']>;
+  textDelta: Maybe<Scalars['String']['output']>;
+  toolCallId: Maybe<Scalars['String']['output']>;
+  toolName: Maybe<Scalars['String']['output']>;
+  type: Scalars['String']['output'];
+}
+
 export interface SubscriptionAlreadyExistsDataType {
   __typename?: 'SubscriptionAlreadyExistsDataType';
   plan: Scalars['String']['output'];
@@ -2325,8 +2341,12 @@ export interface UpdateAppConfigInput {
 }
 
 export interface UpdateChatSessionInput {
+  /** The workspace id of the session */
+  docId?: InputMaybe<Scalars['String']['input']>;
+  /** Whether to pin the session */
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** The prompt name to use for the session */
-  promptName: Scalars['String']['input'];
+  promptName?: InputMaybe<Scalars['String']['input']>;
   sessionId: Scalars['String']['input'];
 }
 
@@ -3338,6 +3358,7 @@ export type GetCopilotHistoryIdsQuery = {
       histories: Array<{
         __typename?: 'CopilotHistories';
         sessionId: string;
+        pinned: boolean;
         messages: Array<{
           __typename?: 'ChatMessage';
           id: string | null;
@@ -3364,6 +3385,7 @@ export type GetCopilotHistoriesQuery = {
       histories: Array<{
         __typename?: 'CopilotHistories';
         sessionId: string;
+        pinned: boolean;
         tokens: number;
         action: string | null;
         createdAt: string;
@@ -3374,6 +3396,15 @@ export type GetCopilotHistoriesQuery = {
           content: string;
           attachments: Array<string> | null;
           createdAt: string;
+          streamObjects: Array<{
+            __typename?: 'StreamObject';
+            type: string;
+            textDelta: string | null;
+            toolCallId: string | null;
+            toolName: string | null;
+            args: Record<string, string> | null;
+            result: Record<string, string> | null;
+          }> | null;
         }>;
       }>;
     };
@@ -3533,6 +3564,8 @@ export type GetCopilotSessionQuery = {
         __typename?: 'CopilotSessionType';
         id: string;
         parentSessionId: string | null;
+        docId: string | null;
+        pinned: boolean;
         promptName: string;
         model: string;
         optionalModels: Array<string>;
@@ -3566,6 +3599,8 @@ export type GetCopilotSessionsQuery = {
         __typename?: 'CopilotSessionType';
         id: string;
         parentSessionId: string | null;
+        docId: string | null;
+        pinned: boolean;
         promptName: string;
         model: string;
         optionalModels: Array<string>;
@@ -4401,7 +4436,7 @@ export type InstallLicenseMutation = {
   };
 };
 
-export type LicenseFragment = {
+export type LicenseBodyFragment = {
   __typename?: 'License';
   expiredAt: string | null;
   installedAt: string;

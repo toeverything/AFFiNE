@@ -657,6 +657,12 @@ export class CopilotSessionNotFound extends UserFriendlyError {
   }
 }
 
+export class CopilotSessionInvalidInput extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'copilot_session_invalid_input', message);
+  }
+}
+
 export class CopilotSessionDeleted extends UserFriendlyError {
   constructor(message?: string) {
     super('action_forbidden', 'copilot_session_deleted', message);
@@ -1145,6 +1151,7 @@ export enum ErrorNames {
   WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION,
   WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION,
   COPILOT_SESSION_NOT_FOUND,
+  COPILOT_SESSION_INVALID_INPUT,
   COPILOT_SESSION_DELETED,
   NO_COPILOT_PROVIDER_AVAILABLE,
   COPILOT_FAILED_TO_GENERATE_TEXT,
