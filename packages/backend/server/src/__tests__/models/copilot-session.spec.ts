@@ -99,6 +99,7 @@ test('should list and filter session type', async t => {
   await createTestSession(t, { sessionId: randomUUID(), pinned: true });
   await createTestSession(t, { sessionId: randomUUID(), docId });
 
+  // should list sessions
   {
     const workspaceSessions = await copilotSession.list(user.id, workspace.id);
 
@@ -117,6 +118,7 @@ test('should list and filter session type', async t => {
     );
   }
 
+  // should identify session types
   {
     // check get session type
     const testCases = [
@@ -194,7 +196,9 @@ test('should pin and unpin sessions', async t => {
 
   const firstSessionId = 'first-session-id';
   const secondSessionId = 'second-session-id';
+  const thirdSessionId = 'third-session-id';
 
+  // should unpin existing pinned session when creating a new one
   {
     await copilotSession.create({
       sessionId: firstSessionId,
@@ -230,29 +234,36 @@ test('should pin and unpin sessions', async t => {
     );
   }
 
-  const thirdSessionId = 'third-session-id';
-  await createTestSession(t, { sessionId: thirdSessionId, pinned: true });
+  // should can unpin a pinned session
+  {
+    await createTestSession(t, { sessionId: thirdSessionId, pinned: true });
+    const unpinResult = await copilotSession.unpin(workspace.id, user.id);
+    t.is(
+      unpinResult,
+      true,
+      'unpin operation should return true when sessions are unpinned'
+    );
 
-  const unpinResult = await copilotSession.unpin(workspace.id, user.id);
-  t.is(
-    unpinResult,
-    true,
-    'unpin operation should return true when sessions are unpinned'
-  );
+    const unpinResultAgain = await copilotSession.unpin(workspace.id, user.id);
+    t.snapshot(
+      unpinResultAgain,
+      'should return false when no sessions to unpin'
+    );
+  }
 
-  const allSessionsAfterUnpin = await db.aiSession.findMany({
-    where: { id: { in: [firstSessionId, secondSessionId, thirdSessionId] } },
-    select: { pinned: true, id: true },
-    orderBy: { id: 'asc' },
-  });
+  // should unpin all sessions
+  {
+    const allSessionsAfterUnpin = await db.aiSession.findMany({
+      where: { id: { in: [firstSessionId, secondSessionId, thirdSessionId] } },
+      select: { pinned: true, id: true },
+      orderBy: { id: 'asc' },
+    });
 
-  t.snapshot(
-    allSessionsAfterUnpin,
-    'all sessions should be unpinned after unpin operation'
-  );
-
-  const unpinResultAgain = await copilotSession.unpin(workspace.id, user.id);
-  t.snapshot(unpinResultAgain, 'should return false when no sessions to unpin');
+    t.snapshot(
+      allSessionsAfterUnpin,
+      'all sessions should be unpinned after unpin operation'
+    );
+  }
 });
 
 test('session updates and type conversions', async t => {
