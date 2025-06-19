@@ -165,7 +165,7 @@ const openAction = {
 
 const openExternalAction = {
   id: 'b.open-external',
-  label: 'Open externally',
+  tooltip: 'Open externally',
   icon: OpenInNewIcon(),
   run(ctx) {
     const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);

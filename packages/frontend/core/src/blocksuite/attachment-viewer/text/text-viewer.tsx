@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import type { AttachmentViewerProps } from '../types';
 import { getAttachmentBlob } from '../utils';
@@ -17,7 +18,10 @@ export function TextViewer({ model }: AttachmentViewerProps) {
   }, [model]);
 
   return (
-    <pre className={styles.viewer} style={{ padding: '12px', whiteSpace: 'pre-wrap' }}>
+    <pre
+      className={clsx(styles.viewer, styles.scrollable)}
+      style={{ padding: '12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+    >
       {text}
     </pre>
   );

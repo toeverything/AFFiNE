@@ -29,6 +29,10 @@ export const viewer = style({
   },
 });
 
+export const scrollable = style({
+  overflow: 'auto',
+});
+
 export const viewerContainer = style({
   position: 'relative',
   display: 'flex',
