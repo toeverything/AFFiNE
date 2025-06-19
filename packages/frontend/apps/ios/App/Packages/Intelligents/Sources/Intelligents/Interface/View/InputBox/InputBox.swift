@@ -6,19 +6,13 @@ import UIKit
 class InputBox: UIView {
   weak var delegate: InputBoxDelegate?
 
-  public let viewModel = InputBoxViewModel()
-  var cancellables = Set<AnyCancellable>()
 
-  lazy var containerView = UIView().then {
-    $0.backgroundColor = UIColor(
-      named: "InputBoxBackground",
-      in: .module,
-      compatibleWith: nil
-    )!
-    $0.layer.cornerRadius = 16
-    $0.layer.cornerCurve = .continuous
-    $0.layer.borderWidth = 1
-    $0.layer.borderColor = UIColor.systemGray.withAlphaComponent(0.1).cgColor
+  private lazy var containerView = UIView().then {
+    $0.backgroundColor = UIColor.affineLayerBackgroundPrimary
+    $0.layer.cornerRadius = 12
+    $0.layer.borderWidth = 0.5
+    $0.layer.borderColor = UIColor.affineLayerBorder.cgColor
+
     $0.layer.shadowColor = UIColor.black.cgColor
     $0.layer.shadowOffset = CGSize(width: 0, height: 0)
     $0.layer.shadowRadius = 12
@@ -44,8 +38,63 @@ class InputBox: UIView {
     $0.isHidden = true
   }
 
-  lazy var functionBar = InputBoxFunctionBar().then {
-    $0.delegate = self
+  private lazy var addButton = UIButton(type: .system).then {
+    $0.backgroundColor = UIColor.affineLayerBackgroundPrimary
+    $0.layer.cornerRadius = 6
+    $0.layer.borderWidth = 0.5
+    $0.layer.borderColor = UIColor.affineLayerBorder.cgColor
+    $0.setImage(UIImage.affinePlus, for: .normal)
+    $0.tintColor = UIColor.affineIconPrimary
+    $0.imageView?.contentMode = .scaleAspectFit
+    $0.addTarget(self, action: #selector(addButtonTapped), for: .touchUpInside)
+  }
+
+  private lazy var toolButton = UIButton(type: .system).then {
+    $0.setImage(UIImage.affineTools, for: .normal)
+    $0.tintColor = UIColor.affineIconPrimary
+    $0.imageView?.contentMode = .scaleAspectFit
+    $0.addTarget(self, action: #selector(toolButtonTapped), for: .touchUpInside)
+  }
+
+  private lazy var webButton = UIButton(type: .system).then {
+    $0.setImage(UIImage.affineWeb, for: .normal)
+    $0.tintColor = UIColor.affineIconPrimary
+    $0.imageView?.contentMode = .scaleAspectFit
+    $0.addTarget(self, action: #selector(webButtonTapped), for: .touchUpInside)
+  }
+
+  private lazy var reactButton = UIButton(type: .system).then {
+    $0.setImage(UIImage.affineThink, for: .normal)
+    $0.tintColor = UIColor.affineIconPrimary
+    $0.imageView?.contentMode = .scaleAspectFit
+    $0.addTarget(self, action: #selector(reactButtonTapped), for: .touchUpInside)
+  }
+
+  private lazy var sendButton = UIButton(type: .system).then {
+    $0.backgroundColor = UIColor.affineButtonPrimary
+    $0.layer.cornerRadius = 19
+    $0.setImage(UIImage.affineArrowUpBig, for: .normal)
+    $0.tintColor = UIColor.affineLayerPureWhite
+    $0.imageView?.contentMode = .scaleAspectFit
+    $0.addTarget(self, action: #selector(sendButtonTapped), for: .touchUpInside)
+  }
+
+  private lazy var leftButtonsStackView = UIStackView().then {
+    $0.axis = .horizontal
+    $0.spacing = 16
+    $0.alignment = .center
+    $0.addArrangedSubview(addButton)
+  }
+
+  private lazy var rightButtonsStackView = UIStackView().then {
+    $0.axis = .horizontal
+    $0.spacing = 16
+    $0.alignment = .center
+    $0.addArrangedSubview(toolButton)
+    $0.addArrangedSubview(webButton)
+    $0.addArrangedSubview(reactButton)
+    $0.addArrangedSubview(sendButton)
+
   }
 
   lazy var imageBar = InputBoxImageBar().then {
@@ -61,9 +110,11 @@ class InputBox: UIView {
     $0.addArrangedSubview(functionBar)
   }
 
-  var textViewHeightConstraint: Constraint?
-  let minTextViewHeight: CGFloat = 22
-  let maxTextViewHeight: CGFloat = 100
+ 
+  private var textViewHeightConstraint: Constraint?
+  private let minTextViewHeight: CGFloat = 48
+  private let maxTextViewHeight: CGFloat = 140
+ 
 
   var text: String {
     get { textView.text ?? "" }
@@ -84,11 +135,11 @@ class InputBox: UIView {
     imageBar.isHidden = true
 
     containerView.snp.makeConstraints { make in
-      make.edges.equalToSuperview().inset(16)
+      make.edges.equalToSuperview().inset(8)
     }
 
     mainStackView.snp.makeConstraints { make in
-      make.edges.equalToSuperview().inset(16)
+      make.edges.equalToSuperview().inset(8)
     }
 
     imageBar.snp.makeConstraints { make in

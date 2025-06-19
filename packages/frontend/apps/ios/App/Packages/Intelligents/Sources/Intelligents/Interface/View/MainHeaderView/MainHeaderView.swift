@@ -13,23 +13,23 @@ class MainHeaderView: UIView {
 
   private lazy var closeButton = UIButton(type: .system).then {
     $0.imageView?.contentMode = .scaleAspectFit
-    $0.setImage(UIImage(systemName: "xmark"), for: .normal)
-    $0.tintColor = .systemGray
+    $0.setImage(UIImage.affineClose, for: .normal)
+    $0.tintColor = UIColor.affineIconPrimary
     $0.addTarget(self, action: #selector(closeButtonTapped), for: .touchUpInside)
     $0.setContentHuggingPriority(.required, for: .horizontal)
   }
 
   private lazy var titleLabel = UILabel().then {
-    $0.text = "AFFiNE"
+    $0.text = "AFFiNE AI"
     $0.font = .systemFont(ofSize: 16, weight: .medium)
-    $0.textColor = .label
+    $0.textColor = UIColor.affineTextPrimary
     $0.textAlignment = .center
   }
 
   private lazy var dropdownButton = UIButton(type: .system).then {
     $0.imageView?.contentMode = .scaleAspectFit
-    $0.setImage(UIImage(systemName: "chevron.down"), for: .normal)
-    $0.tintColor = .systemGray
+    $0.setImage(UIImage.affineArrowDown, for: .normal)
+    $0.tintColor = UIColor.affineIconPrimary
     $0.addTarget(self, action: #selector(dropdownButtonTapped), for: .touchUpInside)
   }
 
@@ -43,8 +43,8 @@ class MainHeaderView: UIView {
 
   private lazy var menuButton = UIButton(type: .system).then {
     $0.imageView?.contentMode = .scaleAspectFit
-    $0.setImage(UIImage(systemName: "ellipsis"), for: .normal)
-    $0.tintColor = .systemGray
+    $0.setImage(UIImage.affineMore, for: .normal)
+    $0.tintColor = UIColor.affineIconPrimary
     $0.addTarget(self, action: #selector(menuButtonTapped), for: .touchUpInside)
     $0.setContentHuggingPriority(.required, for: .horizontal)
   }
@@ -68,6 +68,9 @@ class MainHeaderView: UIView {
   init() {
     super.init(frame: .zero)
 
+
+    backgroundColor = UIColor.clear
+
     addSubview(mainStackView)
 
     mainStackView.snp.makeConstraints { make in
@@ -76,15 +79,15 @@ class MainHeaderView: UIView {
     }
 
     closeButton.snp.makeConstraints { make in
-      make.size.equalTo(titleLabel.font.pointSize)
+      make.size.equalTo(titleLabel.font.pointSize + 16)
     }
 
     menuButton.snp.makeConstraints { make in
-      make.size.equalTo(titleLabel.font.pointSize)
+      make.size.equalTo(titleLabel.font.pointSize + 16)
     }
 
     dropdownButton.snp.makeConstraints { make in
-      make.size.equalTo(titleLabel.font.pointSize)
+      make.size.equalTo(titleLabel.font.pointSize + 16)
     }
 
     // ensure center stack to be center
