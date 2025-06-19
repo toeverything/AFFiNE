@@ -5,14 +5,17 @@ ALTER TABLE "ai_sessions_metadata" ALTER COLUMN "doc_id" DROP NOT NULL;
 ALTER TABLE "ai_sessions_metadata" ADD COLUMN     "pinned" BOOLEAN NOT NULL DEFAULT false;
 
 -- AlterTable
+ALTER TABLE "ai_sessions_metadata" ADD COLUMN     "prompt_action" VARCHAR(32);
+
+-- AlterTable
 CREATE UNIQUE INDEX idx_ai_session_unique_pinned 
 ON ai_sessions_metadata (user_id, workspace_id) 
 WHERE pinned = true AND deleted_at IS NULL;
 
 -- AlterTable
-CREATE UNIQUE INDEX idx_ai_session_unique_doc_root 
+CREATE UNIQUE INDEX ai_session_unique_doc_session_idx 
 ON ai_sessions_metadata (user_id, workspace_id, doc_id) 
-WHERE parent_session_id IS NULL AND doc_id IS NOT NULL AND deleted_at IS NULL;
+WHERE prompt_action IS NULL AND parent_session_id IS NULL AND doc_id IS NOT NULL AND deleted_at IS NULL;
 
 -- DropIndex
 DROP INDEX "ai_sessions_metadata_user_id_workspace_id_idx";
