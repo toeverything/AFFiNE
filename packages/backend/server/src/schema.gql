@@ -517,6 +517,7 @@ type DocType {
   mode: PublicDocMode!
   permissions: DocPermissions!
   public: Boolean!
+  title: String
   updatedAt: DateTime
   workspaceId: String!
 }
@@ -2061,6 +2062,9 @@ type WorkspaceType {
 
   """quota of workspace"""
   quota: WorkspaceQuotaType!
+
+  """Get recently updated docs of a workspace"""
+  recentlyUpdatedDocs(pagination: PaginationInput!): PaginatedDocType!
 
   """Role of current signed in user in workspace"""
   role: Permission!
