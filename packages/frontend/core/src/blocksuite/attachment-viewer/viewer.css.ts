@@ -1,5 +1,5 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { style } from '@vanilla-extract/css';
+import { style, globalStyle } from '@vanilla-extract/css';
 
 export const viewer = style({
   position: 'relative',
@@ -31,6 +31,26 @@ export const viewer = style({
 
 export const scrollable = style({
   overflow: 'auto',
+});
+
+globalStyle(`.${scrollable}`, {
+  scrollbarGutter: 'stable',
+  scrollbarWidth: 'thin',
+  scrollbarColor: '#b1b1b1 transparent',
+});
+
+globalStyle(`.${scrollable}::-webkit-scrollbar`, {
+  width: 4,
+  height: 4,
+});
+
+globalStyle(`.${scrollable}::-webkit-scrollbar-thumb`, {
+  borderRadius: 2,
+  backgroundColor: '#b1b1b1',
+});
+
+globalStyle(`.${scrollable}::-webkit-scrollbar-corner`, {
+  display: 'none',
 });
 
 export const viewerContainer = style({
