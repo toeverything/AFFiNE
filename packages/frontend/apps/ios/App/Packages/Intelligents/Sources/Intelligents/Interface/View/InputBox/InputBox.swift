@@ -10,15 +10,10 @@ class InputBox: UIView {
   var cancellables = Set<AnyCancellable>()
 
   lazy var containerView = UIView().then {
-    $0.backgroundColor = UIColor(
-      named: "InputBoxBackground",
-      in: .module,
-      compatibleWith: nil
-    )!
+    $0.backgroundColor = UIColor.affineLayerBackgroundPrimary
     $0.layer.cornerRadius = 16
     $0.layer.cornerCurve = .continuous
     $0.layer.borderWidth = 1
-    $0.layer.borderColor = UIColor.systemGray.withAlphaComponent(0.1).cgColor
     $0.layer.shadowColor = UIColor.black.cgColor
     $0.layer.shadowOffset = CGSize(width: 0, height: 0)
     $0.layer.shadowRadius = 12
@@ -29,7 +24,7 @@ class InputBox: UIView {
   lazy var textView = UITextView().then {
     $0.backgroundColor = .clear
     $0.font = .systemFont(ofSize: 16)
-    $0.textColor = .label
+    $0.textColor = UIColor.affineTextPrimary
     $0.isScrollEnabled = false
     $0.textContainer.lineFragmentPadding = 0
     $0.textContainerInset = .zero
@@ -40,7 +35,7 @@ class InputBox: UIView {
   lazy var placeholderLabel = UILabel().then {
     $0.text = "Write your message..."
     $0.font = .systemFont(ofSize: 16)
-    $0.textColor = .systemGray3
+    $0.textColor = UIColor.affineTextPlaceholder
     $0.isHidden = true
   }
 
@@ -106,11 +101,19 @@ class InputBox: UIView {
 
     setupBindings()
     updatePlaceholderVisibility()
+    updateColors()
   }
 
   @available(*, unavailable)
   required init?(coder _: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+
+  override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    super.traitCollectionDidChange(previousTraitCollection)
+    if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+      updateColors()
+    }
   }
 
   func setupBindings() {
@@ -201,6 +204,10 @@ class InputBox: UIView {
 
   func updateImageBarContent(_ attachments: [InputAttachment]) {
     imageBar.updateImageBarContent(attachments)
+  }
+
+  func updateColors() {
+    containerView.layer.borderColor = UIColor.affineLayerBorder.cgColor
   }
 
   // MARK: - Public Methods

@@ -13,44 +13,47 @@ protocol InputBoxFunctionBarDelegate: AnyObject {
   func functionBarDidTapSend(_ functionBar: InputBoxFunctionBar)
 }
 
-private let unselectedColor: UIColor = .secondaryLabel
-private let selectedColor: UIColor = .accent
+private let unselectedColor: UIColor = UIColor.affineIconPrimary
+private let selectedColor: UIColor = UIColor.affineIconActivated
 
 class InputBoxFunctionBar: UIView {
   weak var delegate: InputBoxFunctionBarDelegate?
 
   lazy var attachmentButton = UIButton(type: .system).then {
-    $0.setImage(UIImage(named: "inputbox.add.attachment", in: .module, with: nil), for: .normal)
+    $0.setImage(UIImage.affinePlus, for: .normal)
     $0.tintColor = unselectedColor
+    $0.layer.borderWidth = 1
+    $0.layer.cornerRadius = 4
     $0.imageView?.contentMode = .scaleAspectFit
     $0.showsMenuAsPrimaryAction = true
     $0.menu = createAttachmentMenu()
   }
 
   lazy var toolButton = UIButton(type: .system).then {
-    $0.setImage(UIImage(named: "inputbox.tool", in: .module, with: nil), for: .normal)
+    $0.setImage(UIImage.affineTools, for: .normal)
     $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(toolButtonTapped), for: .touchUpInside)
   }
 
   lazy var networkButton = UIButton(type: .system).then {
-    $0.setImage(UIImage(named: "inputbox.network", in: .module, with: nil), for: .normal)
+    $0.setImage(UIImage.affineWeb, for: .normal)
     $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(networkButtonTapped), for: .touchUpInside)
   }
 
   lazy var deepThinkingButton = UIButton(type: .system).then {
-    $0.setImage(UIImage(named: "inputbox.deep.thinking", in: .module, with: nil), for: .normal)
+    $0.setImage(UIImage.affineThink, for: .normal)
     $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(deepThinkingButtonTapped), for: .touchUpInside)
   }
 
   lazy var sendButton = UIButton(type: .system).then {
-    $0.setImage(UIImage(named: "inputbox.send", in: .module, with: nil), for: .normal)
-    $0.tintColor = .white
+    $0.setImage(UIImage.affineArrowUpBig, for: .normal)
+    $0.tintColor = UIColor.affineTextPureWhite
+    $0.backgroundColor = UIColor.affineButtonPrimary
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(sendButtonTapped), for: .touchUpInside)
   }
@@ -85,6 +88,7 @@ class InputBoxFunctionBar: UIView {
     super.init(frame: frame)
     setupViews()
     setupConstraints()
+    updateColors()
   }
 
   @available(*, unavailable)
@@ -116,6 +120,13 @@ class InputBoxFunctionBar: UIView {
     }
   }
 
+  override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    super.traitCollectionDidChange(previousTraitCollection)
+    if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+      updateColors()
+    }
+  }
+
   // MARK: - Public Methods
 
   func updateToolState(isEnabled: Bool) {
@@ -137,10 +148,14 @@ class InputBoxFunctionBar: UIView {
 
   // MARK: - Private Methods
 
+  private func updateColors() {
+    attachmentButton.layer.borderColor = UIColor.affineLayerBorder.cgColor
+  }
+
   private func createAttachmentMenu() -> UIMenu {
     let takePhotoAction = UIAction(
       title: "Take Photo or Video",
-      image: UIImage(systemName: "camera")
+      image: UIImage.affineCamera
     ) { [weak self] _ in
       guard let self else { return }
       delegate?.functionBarDidTapTakePhoto(self)
@@ -148,7 +163,7 @@ class InputBoxFunctionBar: UIView {
 
     let photoLibraryAction = UIAction(
       title: "Photo Library",
-      image: UIImage(systemName: "photo.on.rectangle")
+      image: UIImage.affineImage
     ) { [weak self] _ in
       guard let self else { return }
       delegate?.functionBarDidTapPhotoLibrary(self)
@@ -156,7 +171,7 @@ class InputBoxFunctionBar: UIView {
 
     let attachFilesAction = UIAction(
       title: "Attach Files (pdf, txt, csv)",
-      image: UIImage(systemName: "arrow.up.doc")
+      image: UIImage.affineUpload
     ) { [weak self] _ in
       guard let self else { return }
       delegate?.functionBarDidTapAttachFiles(self)
@@ -164,7 +179,7 @@ class InputBoxFunctionBar: UIView {
 
     let embedDocsAction = UIAction(
       title: "Embed AFFINE Docs",
-      image: UIImage(systemName: "doc.text")
+      image: UIImage.affinePage
     ) { [weak self] _ in
       guard let self else { return }
       delegate?.functionBarDidTapEmbedDocs(self)
