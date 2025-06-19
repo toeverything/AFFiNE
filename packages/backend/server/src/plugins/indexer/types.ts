@@ -9,6 +9,7 @@ import {
 } from '@nestjs/graphql';
 import { GraphQLJSONObject } from 'graphql-scalars';
 
+import { PublicUserType } from '../../core/user';
 import { PublicUser } from '../../models';
 import { SearchTable } from './tables';
 
@@ -171,6 +172,18 @@ export class AggregateInput {
   options!: AggregateOptions;
 }
 
+@InputType()
+export class SearchDocsInput {
+  @Field(() => String)
+  keyword!: string;
+
+  @Field({
+    nullable: true,
+    description: 'Limit the number of docs to return, default is 20',
+  })
+  limit?: number;
+}
+
 @ObjectType()
 export class BlockObjectType {
   @Field(() => [String], { nullable: true })
@@ -319,4 +332,31 @@ export class AggregateResultObjectType {
 
   @Field(() => SearchResultPagination)
   pagination!: SearchResultPagination;
+}
+
+@ObjectType()
+export class SearchDocObjectType implements Partial<SearchDoc> {
+  @Field(() => String)
+  docId!: string;
+
+  @Field(() => String)
+  title!: string;
+
+  @Field(() => String)
+  blockId!: string;
+
+  @Field(() => String)
+  highlight!: string;
+
+  @Field(() => Date)
+  createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
+
+  @Field(() => PublicUserType, { nullable: true })
+  createdByUser?: PublicUserType;
+
+  @Field(() => PublicUserType, { nullable: true })
+  updatedByUser?: PublicUserType;
 }

@@ -1419,6 +1419,33 @@ export const indexerAggregateQuery = {
 }`,
 };
 
+export const indexerSearchDocsQuery = {
+  id: 'indexerSearchDocsQuery' as const,
+  op: 'indexerSearchDocs',
+  query: `query indexerSearchDocs($id: String!, $input: SearchDocsInput!) {
+  workspace(id: $id) {
+    searchDocs(input: $input) {
+      docId
+      title
+      blockId
+      highlight
+      createdAt
+      updatedAt
+      createdByUser {
+        id
+        name
+        avatarUrl
+      }
+      updatedByUser {
+        id
+        name
+        avatarUrl
+      }
+    }
+  }
+}`,
+};
+
 export const indexerSearchQuery = {
   id: 'indexerSearchQuery' as const,
   op: 'indexerSearch',

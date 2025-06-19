@@ -1502,6 +1502,24 @@ type SameSubscriptionRecurringDataType {
   recurring: String!
 }
 
+type SearchDocObjectType {
+  blockId: String!
+  createdAt: DateTime!
+  createdByUser: PublicUserType
+  docId: String!
+  highlight: String!
+  title: String!
+  updatedAt: DateTime!
+  updatedByUser: PublicUserType
+}
+
+input SearchDocsInput {
+  keyword: String!
+
+  """Limit the number of docs to return, default is 20"""
+  limit: Int
+}
+
 input SearchHighlight {
   before: String!
   end: String!
@@ -2073,6 +2091,9 @@ type WorkspaceType {
 
   """Search a specific table"""
   search(input: SearchInput!): SearchResultObjectType!
+
+  """Search docs by keyword"""
+  searchDocs(input: SearchDocsInput!): [SearchDocObjectType!]!
 
   """The team subscription of the workspace, if exists."""
   subscription: SubscriptionType
