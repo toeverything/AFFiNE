@@ -137,6 +137,7 @@ export interface ChatMessage {
   id: Maybe<Scalars['ID']['output']>;
   params: Maybe<Scalars['JSON']['output']>;
   role: Scalars['String']['output'];
+  streamObjects: Maybe<Array<StreamObject>>;
 }
 
 export enum ContextCategories {
@@ -2195,6 +2196,16 @@ export interface SpaceShouldHaveOnlyOneOwnerDataType {
   spaceId: Scalars['String']['output'];
 }
 
+export interface StreamObject {
+  __typename?: 'StreamObject';
+  args: Maybe<Scalars['JSON']['output']>;
+  result: Maybe<Scalars['JSON']['output']>;
+  textDelta: Maybe<Scalars['String']['output']>;
+  toolCallId: Maybe<Scalars['String']['output']>;
+  toolName: Maybe<Scalars['String']['output']>;
+  type: Scalars['String']['output'];
+}
+
 export interface SubscriptionAlreadyExistsDataType {
   __typename?: 'SubscriptionAlreadyExistsDataType';
   plan: Scalars['String']['output'];
@@ -3374,6 +3385,15 @@ export type GetCopilotHistoriesQuery = {
           content: string;
           attachments: Array<string> | null;
           createdAt: string;
+          streamObjects: Array<{
+            __typename?: 'StreamObject';
+            type: string;
+            textDelta: string | null;
+            toolCallId: string | null;
+            toolName: string | null;
+            args: Record<string, string> | null;
+            result: Record<string, string> | null;
+          }> | null;
         }>;
       }>;
     };

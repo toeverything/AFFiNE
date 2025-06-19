@@ -39,6 +39,7 @@ import {
   array2sse,
   audioTranscription,
   chatWithImages,
+  chatWithStreamObject,
   chatWithText,
   chatWithTextStream,
   chatWithWorkflow,
@@ -509,6 +510,28 @@ test('should be able to chat with api', async t => {
         'attachment'
       ),
       'should be able to chat with images'
+    );
+  }
+
+  {
+    const sessionId = await createCopilotSession(
+      app,
+      id,
+      randomUUID(),
+      textPromptName
+    );
+    const messageId = await createCopilotMessage(app, sessionId);
+
+    const ret4 = await chatWithStreamObject(app, sessionId, messageId);
+
+    const objects = Array.from('generate text to object stream').map(data =>
+      JSON.stringify({ type: 'text-delta', textDelta: data })
+    );
+
+    t.is(
+      ret4,
+      textToEventStream(objects, messageId),
+      'should be able to chat with stream object'
     );
   }
 

@@ -21,11 +21,17 @@ import { CopilotProvider } from '../provider';
 import type {
   CopilotChatOptions,
   CopilotImageOptions,
+  CopilotProviderModel,
   ModelConditions,
   PromptMessage,
+  StreamObject,
 } from '../types';
 import { ModelOutputType } from '../types';
-import { chatToGPTMessage, TextStreamParser } from '../utils';
+import {
+  chatToGPTMessage,
+  StreamObjectParser,
+  TextStreamParser,
+} from '../utils';
 
 export const DEFAULT_DIMENSIONS = 256;
 
@@ -150,21 +156,7 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
 
     try {
       metrics.ai.counter('chat_text_stream_calls').add(1, { model: model.id });
-      const [system, msgs] = await chatToGPTMessage(messages);
-
-      const { fullStream } = streamText({
-        model: this.instance(model.id, {
-          useSearchGrounding: this.useSearchGrounding(options),
-        }),
-        system,
-        messages: msgs,
-        abortSignal: options.signal,
-        maxSteps: this.MAX_STEPS,
-        providerOptions: {
-          google: this.getGeminiOptions(options, model.id),
-        },
-      });
-
+      const fullStream = await this.getFullStream(model, messages, options);
       const parser = new TextStreamParser();
       for await (const chunk of fullStream) {
         const result = parser.parse(chunk);
@@ -178,6 +170,60 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
       metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
       throw this.handleError(e);
     }
+  }
+
+  override async *streamObject(
+    cond: ModelConditions,
+    messages: PromptMessage[],
+    options: CopilotChatOptions = {}
+  ): AsyncIterable<StreamObject> {
+    const fullCond = { ...cond, outputType: ModelOutputType.Object };
+    await this.checkParams({ cond: fullCond, messages, options });
+    const model = this.selectModel(fullCond);
+
+    try {
+      metrics.ai
+        .counter('chat_object_stream_calls')
+        .add(1, { model: model.id });
+      const fullStream = await this.getFullStream(model, messages, options);
+      const parser = new StreamObjectParser();
+      for await (const chunk of fullStream) {
+        const result = parser.parse(chunk);
+        if (result) {
+          yield result;
+        }
+        if (options.signal?.aborted) {
+          await fullStream.cancel();
+          break;
+        }
+      }
+    } catch (e: any) {
+      metrics.ai
+        .counter('chat_object_stream_errors')
+        .add(1, { model: model.id });
+      throw this.handleError(e);
+    }
+  }
+
+  private async getFullStream(
+    model: CopilotProviderModel,
+    messages: PromptMessage[],
+    options: CopilotChatOptions = {}
+  ) {
+    const [system, msgs] = await chatToGPTMessage(messages);
+    const { fullStream } = streamText({
+      model: this.instance(model.id, {
+        useSearchGrounding: this.useSearchGrounding(options),
+      }),
+      system,
+      messages: msgs,
+      abortSignal: options.signal,
+      maxSteps: this.MAX_STEPS,
+      providerOptions: {
+        google: this.getGeminiOptions(options, model.id),
+      },
+    });
+    return fullStream;
   }
 
   private getGeminiOptions(options: CopilotChatOptions, model: string) {

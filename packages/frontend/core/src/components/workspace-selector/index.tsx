@@ -113,7 +113,7 @@ export const WorkspaceSelector = ({
       }
       contentOptions={{
         // hide trigger
-        sideOffset: -58,
+        sideOffset: dense ? -32 : -58,
         onInteractOutside: closeUserWorkspaceList,
         onEscapeKeyDown: closeUserWorkspaceList,
         ...menuContentOptions,

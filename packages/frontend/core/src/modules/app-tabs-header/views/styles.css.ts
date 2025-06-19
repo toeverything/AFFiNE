@@ -8,7 +8,7 @@ export const tabMaxWidth = createVar('200px');
 
 export const root = style({
   width: '100%',
-  height: '52px',
+  height: '40px',
   display: 'flex',
   alignItems: 'center',
   flexDirection: 'row',

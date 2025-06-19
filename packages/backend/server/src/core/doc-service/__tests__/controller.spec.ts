@@ -175,6 +175,7 @@ test('should get doc content in json format', async t => {
   await app
     .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}/content`)
     .set('x-access-token', t.context.crypto.sign(docId))
+    .expect('Content-Type', 'application/json; charset=utf-8')
     .expect({
       title: 'test title',
       summary: 'test summary',
@@ -184,6 +185,7 @@ test('should get doc content in json format', async t => {
   await app
     .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}/content?full=false`)
     .set('x-access-token', t.context.crypto.sign(docId))
+    .expect('Content-Type', 'application/json; charset=utf-8')
     .expect({
       title: 'test title',
       summary: 'test summary',
@@ -205,6 +207,7 @@ test('should get full doc content in json format', async t => {
   await app
     .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}/content?full=true`)
     .set('x-access-token', t.context.crypto.sign(docId))
+    .expect('Content-Type', 'application/json; charset=utf-8')
     .expect({
       title: 'test title',
       summary: 'test summary full',
@@ -249,5 +252,46 @@ test('should get workspace content in json format', async t => {
       name: 'test name',
       avatarKey: 'avatar key',
     });
+  t.pass();
+});
+
+test('should get doc markdown in json format', async t => {
+  const { app } = t.context;
+  mock.method(t.context.databaseDocReader, 'getDocMarkdown', async () => {
+    return {
+      title: 'test title',
+      markdown: 'test markdown',
+    };
+  });
+
+  const docId = randomUUID();
+  await app
+    .GET(`/rpc/workspaces/${workspace.id}/docs/${docId}/markdown`)
+    .set('x-access-token', t.context.crypto.sign(docId))
+    .expect('Content-Type', 'application/json; charset=utf-8')
+    .expect(200)
+    .expect({
+      title: 'test title',
+      markdown: 'test markdown',
+    });
+  t.pass();
+});
+
+test('should 404 when doc markdown not found', async t => {
+  const { app } = t.context;
+
+  const workspaceId = '123';
+  const docId = '123';
+  await app
+    .GET(`/rpc/workspaces/${workspaceId}/docs/${docId}/markdown`)
+    .set('x-access-token', t.context.crypto.sign(docId))
+    .expect({
+      status: 404,
+      code: 'Not Found',
+      type: 'RESOURCE_NOT_FOUND',
+      name: 'NOT_FOUND',
+      message: 'Doc not found',
+    })
+    .expect(404);
   t.pass();
 });

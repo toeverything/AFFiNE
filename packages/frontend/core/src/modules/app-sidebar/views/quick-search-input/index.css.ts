@@ -3,9 +3,8 @@ import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 export const root = style({
   display: 'inline-flex',
-  background: cssVarV2('button/siderbarPrimary/background'),
   alignItems: 'center',
-  borderRadius: '8px',
+  borderRadius: '4px',
   fontSize: cssVar('fontSm'),
   width: '100%',
   height: '30px',

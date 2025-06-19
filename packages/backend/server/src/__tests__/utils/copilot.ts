@@ -582,6 +582,14 @@ export async function chatWithImages(
   return chatWithText(app, sessionId, messageId, '/images');
 }
 
+export async function chatWithStreamObject(
+  app: TestingApp,
+  sessionId: string,
+  messageId?: string
+) {
+  return chatWithText(app, sessionId, messageId, '/stream-object');
+}
+
 export async function unsplashSearch(
   app: TestingApp,
   params: Record<string, string> = {}

@@ -149,4 +149,5 @@ export interface ParserContext {
   buildBlobUrl: (blobId: string) => string;
   buildDocUrl: (docId: string) => string;
   renderDocTitle?: (docId: string) => string;
+  aiEditable?: boolean;
 }

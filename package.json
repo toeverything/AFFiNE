@@ -78,7 +78,7 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-sonarjs": "^3.0.1",
     "eslint-plugin-unicorn": "^59.0.0",
-    "happy-dom": "^17.0.0",
+    "happy-dom": "^18.0.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.0.0",
     "msw": "^2.6.8",

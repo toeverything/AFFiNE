@@ -3,9 +3,9 @@ import { cssVarV2 } from '@toeverything/theme/v2';
 import { style } from '@vanilla-extract/css';
 
 export const root = style({
-  width: 20,
-  height: 20,
-  borderRadius: 4,
+  width: 30,
+  height: 30,
+  borderRadius: 8,
   boxShadow: cssVar('buttonShadow'),
   borderWidth: 0,
   background: cssVarV2('button/siderbarPrimary/background'),
@@ -15,12 +15,12 @@ export const withAskRoot = style([
   root,
   {
     width: 'auto',
-    padding: 4,
+    padding: 7,
   },
 ]);
 
 export const withAskContent = style({
-  fontSize: 20,
+  fontSize: 16,
   display: 'flex',
   alignItems: 'center',
   gap: 4,
