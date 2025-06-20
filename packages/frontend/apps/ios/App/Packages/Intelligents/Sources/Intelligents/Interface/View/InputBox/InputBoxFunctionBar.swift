@@ -97,20 +97,13 @@ class InputBoxFunctionBar: UIView {
         make.width.height.equalTo(32)
       }
     }
+    sendButton.layer.cornerRadius = 16
     updateColors()
   }
 
   @available(*, unavailable)
   required init?(coder _: NSCoder) {
     fatalError("init(coder:) has not been implemented")
-  }
-
-  override func layoutSubviews() {
-    super.layoutSubviews()
-    sendButton.layer.cornerRadius = sendButton.bounds.height / 2
-    for button in [toolButton, networkButton, deepThinkingButton] {
-      button.layer.cornerRadius = button.bounds.height / 2
-    }
   }
 
   override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {

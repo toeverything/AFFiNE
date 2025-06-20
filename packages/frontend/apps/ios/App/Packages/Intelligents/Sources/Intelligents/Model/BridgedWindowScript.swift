@@ -12,7 +12,7 @@ import WebKit
  packages/frontend/apps/ios/src/app.tsx
  */
 
-enum ApplicationBridgedWindowScript: String {
+enum BridgedWindowScript: String {
   case getCurrentDocContentInMarkdown = "return await window.getCurrentDocContentInMarkdown();"
   case getCurrentServerBaseUrl = "window.getCurrentServerBaseUrl()"
   case getCurrentWorkspaceId = "window.getCurrentWorkspaceId();"
@@ -29,7 +29,7 @@ enum ApplicationBridgedWindowScript: String {
 }
 
 extension WKWebView {
-  func evaluateScript(_ script: ApplicationBridgedWindowScript, callback: @escaping (Any?) -> ()) {
+  func evaluateScript(_ script: BridgedWindowScript, callback: @escaping (Any?) -> ()) {
     if script.requiresAsyncContext {
       callAsyncJavaScript(
         script.rawValue,

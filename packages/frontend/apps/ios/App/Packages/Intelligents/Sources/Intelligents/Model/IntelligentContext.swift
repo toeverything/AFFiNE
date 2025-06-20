@@ -15,6 +15,14 @@ public class IntelligentContext {
 
   public var webView: WKWebView!
 
+  public private(set) var metadata: [MetadataKey: Any] = [:]
+  public enum MetadataKey: String {
+    case currentDocId
+    case currentWorkspaceId
+    case currentServerBaseUrl
+    case currentI18nLocale
+  }
+
   public lazy var temporaryDirectory: URL = {
     let tempDir = FileManager.default.temporaryDirectory
     return tempDir.appendingPathComponent("IntelligentContext")
@@ -25,7 +33,27 @@ public class IntelligentContext {
   public func preparePresent(_ completion: @escaping () -> Void) {
     DispatchQueue.global(qos: .userInitiated).async { [self] in
       prepareTemporaryDirectory()
-      // TODO: used to gathering information, populate content from webview, etc.
+
+      let group = DispatchGroup()
+      var newMetadata: [MetadataKey: Any] = [:]
+      let keysAndScripts: [(MetadataKey, BridgedWindowScript)] = [
+        (.currentDocId, .getCurrentDocId),
+        (.currentWorkspaceId, .getCurrentWorkspaceId),
+        (.currentServerBaseUrl, .getCurrentServerBaseUrl),
+        (.currentI18nLocale, .getCurrentI18nLocale)
+      ]
+      for (key, script) in keysAndScripts {
+        DispatchQueue.main.async {
+          self.webView.evaluateScript(script) { value in
+            newMetadata[key] = value // if unable to fetch, clear it
+            group.leave()
+          }
+        }
+        group.enter()
+      }
+      self.metadata = newMetadata
+      group.wait()
+      print("IntelligentContext metadata prepared: \(self.metadata)")
       DispatchQueue.main.async {
         completion()
       }
