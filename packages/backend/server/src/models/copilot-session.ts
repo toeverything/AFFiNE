@@ -282,18 +282,32 @@ export class CopilotSessionModel extends BaseModel {
   ): Promise<string> {
     const session = await this.getExists(
       sessionId,
-      { id: true, workspaceId: true, docId: true, pinned: true, prompt: true },
+      {
+        id: true,
+        workspaceId: true,
+        docId: true,
+        parentSessionId: true,
+        pinned: true,
+        prompt: true,
+      },
       { userId }
     );
     if (!session) {
       throw new CopilotSessionNotFound();
     }
+
+    // not allow to update action session
+    if (session.prompt.action) {
+      throw new CopilotSessionInvalidInput(
+        `Cannot update action: ${session.id}`
+      );
+    } else if (data.docId && session.parentSessionId) {
+      throw new CopilotSessionInvalidInput(
+        `Cannot update docId for forked session: ${session.id}`
+      );
+    }
+
     if (data.promptName) {
-      if (session.prompt.action) {
-        throw new CopilotSessionInvalidInput(
-          `Cannot update prompt for action: ${session.id}`
-        );
-      }
       const prompt = await this.db.aiPrompt.findFirst({
         where: { name: data.promptName },
       });
