@@ -114,7 +114,7 @@ Once the build is complete, you can find the paths to the binaries in the termin
 
 ```
 Finished 2 bundles at:
-  › Artifacts available at: <affine-repo>/packages/frontend/electron/out/make
+  › Artifacts available at: <affine-repo>/packages/frontend/apps/electron/out/canary/make
 ```
 
 ## CI
@@ -126,6 +126,6 @@ Please refer to `.github/workflows/release-desktop-app.yml` for the CI workflow.
 
 #### Linux
 
-```
-sudo apt install ./packages/frontend/apps/electron/out/canary/make/deb/x64/affine-canary_0.21.0_amd64.deb
+```shell
+apt install ./packages/frontend/apps/electron/out/canary/make/deb/x64/affine-canary_0.21.0_amd64.deb
 ```
