@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 
 import {
-  AFFiNELogger,
   BlobNotFound,
   CallMetric,
   CopilotContextFileNotSupported,
@@ -22,6 +21,7 @@ import { EMBEDDING_DIMENSIONS, EmbeddingClient } from './types';
 
 @Injectable()
 export class CopilotEmbeddingJob {
+  private readonly logger = new Logger(CopilotEmbeddingJob.name);
   private readonly workspaceJobAbortController: Map<string, AbortController> =
     new Map();
 
@@ -32,13 +32,10 @@ export class CopilotEmbeddingJob {
     private readonly moduleRef: ModuleRef,
     private readonly doc: DocReader,
     private readonly event: EventBus,
-    private readonly logger: AFFiNELogger,
     private readonly models: Models,
     private readonly queue: JobQueue,
     private readonly storage: CopilotStorage
-  ) {
-    this.logger.setContext(CopilotEmbeddingJob.name);
-  }
+  ) {}
 
   @OnEvent('config.init')
   async onConfigInit() {
