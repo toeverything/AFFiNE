@@ -167,6 +167,7 @@ export const RootAppSidebar = memo((): ReactElement => {
               showSyncStatus
               open={workspaceSelectorOpen}
               onOpenChange={onWorkspaceSelectorOpenChange}
+              dense
             />
           </div>
           <UserInfo />

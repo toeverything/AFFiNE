@@ -14,6 +14,7 @@ export class EdgelessNoteMask extends SignalWatcher(
   protected override firstUpdated() {
     const maskDOM = this.renderRoot!.querySelector('.affine-note-mask');
     const observer = new ResizeObserver(entries => {
+      if (this.model.store.readonly) return;
       for (const entry of entries) {
         if (!this.model.props.edgeless.collapse) {
           const bound = Bound.deserialize(this.model.xywh);

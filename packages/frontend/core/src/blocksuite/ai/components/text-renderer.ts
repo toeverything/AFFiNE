@@ -39,10 +39,7 @@ import React from 'react';
 import { filter } from 'rxjs/operators';
 
 import { markDownToDoc } from '../../utils';
-import type {
-  AffineAIPanelState,
-  AffineAIPanelWidgetConfig,
-} from '../widgets/ai-panel/type';
+import type { AffineAIPanelState } from '../widgets/ai-panel/type';
 
 export const getCustomPageEditorBlockSpecs: () => ExtensionType[] = () => {
   const manager = getViewManager().config.init().value;
@@ -430,11 +427,11 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
   accessor state: AffineAIPanelState | undefined = undefined;
 }
 
-export const createTextRenderer: (
+export const createTextRenderer = (
   host: EditorHost,
   options: TextRendererOptions
-) => AffineAIPanelWidgetConfig['answerRenderer'] = (host, options) => {
-  return (answer, state) => {
+) => {
+  return (answer: string, state?: AffineAIPanelState) => {
     return html`<text-renderer
       contenteditable="false"
       .host=${host}

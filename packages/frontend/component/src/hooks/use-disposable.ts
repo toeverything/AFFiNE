@@ -24,6 +24,7 @@ export function useDisposable<T extends Disposable | AsyncDisposable>(
     error: null,
   });
 
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const abortController = new AbortController();
     let _data: T | null = null;

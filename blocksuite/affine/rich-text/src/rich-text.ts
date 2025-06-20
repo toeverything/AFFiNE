@@ -22,6 +22,7 @@ import * as Y from 'yjs';
 import { z } from 'zod';
 
 import { onVBeforeinput, onVCompositionEnd } from './hooks.js';
+import { getPrefixText } from './utils.js';
 
 interface RichTextStackItem {
   meta: Map<'richtext-v-range', InlineRange | null>;
@@ -186,38 +187,60 @@ export class RichText extends WithDisposable(ShadowlessElement) {
 
     const markdownMatches = this.markdownMatches;
     if (markdownMatches) {
-      inlineEditor.disposables.addFromEvent(
-        this.inlineEventSource ?? this.inlineEditorContainer,
-        'keydown',
-        (e: KeyboardEvent) => {
-          if (e.key !== ' ' && e.key !== 'Enter') return;
+      const markdownTransform = (isEnter: boolean = false) => {
+        let inlineRange = inlineEditor.getInlineRange();
+        if (!inlineRange) return false;
 
-          const inlineRange = inlineEditor.getInlineRange();
-          if (!inlineRange || inlineRange.length > 0) return;
+        let prefixText = getPrefixText(inlineEditor);
+        if (isEnter) prefixText = `${prefixText} `;
 
-          const nearestLineBreakIndex = inlineEditor.yTextString
-            .slice(0, inlineRange.index)
-            .lastIndexOf('\n');
-          const prefixText = inlineEditor.yTextString.slice(
-            nearestLineBreakIndex + 1,
-            inlineRange.index
-          );
-
-          for (const match of markdownMatches) {
-            const { pattern, action } = match;
-            if (prefixText.match(pattern)) {
-              action({
-                inlineEditor,
-                prefixText,
-                inlineRange,
-                pattern,
-                undoManager: this.undoManager,
+        for (const match of markdownMatches) {
+          const { pattern, action } = match;
+          if (prefixText.match(pattern)) {
+            if (isEnter) {
+              inlineEditor.insertText(
+                {
+                  index: inlineRange.index,
+                  length: 0,
+                },
+                ' '
+              );
+              inlineEditor.setInlineRange({
+                index: inlineRange.index + 1,
+                length: 0,
               });
-              e.preventDefault();
-              break;
+              inlineRange = inlineEditor.getInlineRange();
+              if (!inlineRange) return false;
             }
+
+            action({
+              inlineEditor,
+              prefixText,
+              inlineRange,
+              pattern,
+              undoManager: this.undoManager,
+            });
+            return true;
           }
         }
+        return false;
+      };
+
+      inlineEditor.disposables.add(
+        inlineEditor.slots.inputting.subscribe(data => {
+          if (!inlineEditor.isComposing && data === ' ') {
+            markdownTransform();
+          }
+        })
+      );
+
+      inlineEditor.disposables.add(
+        inlineEditor.slots.keydown.subscribe(event => {
+          if (event.key === 'Enter' && markdownTransform(true)) {
+            event.stopPropagation();
+            event.preventDefault();
+          }
+        })
       );
     }
 

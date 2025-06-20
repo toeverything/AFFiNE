@@ -8,6 +8,7 @@
 
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- import from bundle
 import {
+  parsePageDoc as parseDocToMarkdown,
   readAllBlocksFromDoc,
   readAllDocIdsFromRootDoc,
 } from '@affine/reader/dist';
@@ -195,4 +196,33 @@ export async function readAllBlocksFromDocSnapshot(
     spaceId: workspaceId,
     maxSummaryLength,
   });
+}
+
+export function parseDocToMarkdownFromDocSnapshot(
+  workspaceId: string,
+  docId: string,
+  docSnapshot: Uint8Array,
+  aiEditable = false
+) {
+  const ydoc = new YDoc({
+    guid: docId,
+  });
+  applyUpdate(ydoc, docSnapshot);
+
+  const parsed = parseDocToMarkdown({
+    workspaceId,
+    doc: ydoc,
+    buildBlobUrl: (blobId: string) => {
+      return `/${workspaceId}/blobs/${blobId}`;
+    },
+    buildDocUrl: (docId: string) => {
+      return `/workspace/${workspaceId}/${docId}`;
+    },
+    aiEditable,
+  });
+
+  return {
+    title: parsed.title,
+    markdown: parsed.md,
+  };
 }

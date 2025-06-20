@@ -96,6 +96,7 @@ type ChatMessage {
   id: ID
   params: JSON
   role: String!
+  streamObjects: [StreamObject!]
 }
 
 enum ContextCategories {
@@ -143,9 +144,6 @@ type Copilot {
 
   """Get the session by id"""
   session(sessionId: String!): CopilotSessionType!
-
-  """Get the session id list in the workspace"""
-  sessionIds(docId: String, options: QueryChatSessionsInput): [String!]! @deprecated(reason: "Use `sessions` instead")
 
   """Get the session list in the workspace"""
   sessions(docId: String, options: QueryChatSessionsInput): [CopilotSessionType!]!
@@ -240,6 +238,7 @@ type CopilotHistories {
   action: String
   createdAt: DateTime!
   messages: [ChatMessage!]!
+  pinned: Boolean!
   sessionId: String!
 
   """The number of tokens used in the session"""
@@ -331,10 +330,12 @@ type CopilotQuota {
 }
 
 type CopilotSessionType {
+  docId: String
   id: ID!
   model: String!
   optionalModels: [String!]!
   parentSessionId: ID
+  pinned: Boolean!
   promptName: String!
 }
 
@@ -385,7 +386,8 @@ input CreateChatMessageInput {
 }
 
 input CreateChatSessionInput {
-  docId: String!
+  docId: String
+  pinned: Boolean
 
   """The prompt name to use for the session"""
   promptName: String!
@@ -512,6 +514,7 @@ type DocType {
   mode: PublicDocMode!
   permissions: DocPermissions!
   public: Boolean!
+  title: String
   updatedAt: DateTime
   workspaceId: String!
 }
@@ -569,6 +572,7 @@ enum ErrorNames {
   COPILOT_PROVIDER_SIDE_ERROR
   COPILOT_QUOTA_EXCEEDED
   COPILOT_SESSION_DELETED
+  COPILOT_SESSION_INVALID_INPUT
   COPILOT_SESSION_NOT_FOUND
   COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED
   COPILOT_TRANSCRIPTION_JOB_EXISTS
@@ -1433,6 +1437,7 @@ input QueryChatHistoriesInput {
   fork: Boolean
   limit: Int
   messageOrder: ChatHistoryOrder
+  pinned: Boolean
   sessionId: String
   sessionOrder: ChatHistoryOrder
   skip: Int
@@ -1441,6 +1446,10 @@ input QueryChatHistoriesInput {
 
 input QueryChatSessionsInput {
   action: Boolean
+  fork: Boolean
+  limit: Int
+  pinned: Boolean
+  skip: Int
 }
 
 type QueryTooLongDataType {
@@ -1491,6 +1500,24 @@ scalar SafeInt @specifiedBy(url: "https://www.ecma-international.org/ecma-262/#s
 
 type SameSubscriptionRecurringDataType {
   recurring: String!
+}
+
+type SearchDocObjectType {
+  blockId: String!
+  createdAt: DateTime!
+  createdByUser: PublicUserType
+  docId: String!
+  highlight: String!
+  title: String!
+  updatedAt: DateTime!
+  updatedByUser: PublicUserType
+}
+
+input SearchDocsInput {
+  keyword: String!
+
+  """Limit the number of docs to return, default is 20"""
+  limit: Int
 }
 
 input SearchHighlight {
@@ -1628,6 +1655,15 @@ type SpaceShouldHaveOnlyOneOwnerDataType {
   spaceId: String!
 }
 
+type StreamObject {
+  args: JSON
+  result: JSON
+  textDelta: String
+  toolCallId: String
+  toolName: String
+  type: String!
+}
+
 type SubscriptionAlreadyExistsDataType {
   plan: String!
 }
@@ -1741,8 +1777,14 @@ input UpdateAppConfigInput {
 }
 
 input UpdateChatSessionInput {
+  """The workspace id of the session"""
+  docId: String
+
+  """Whether to pin the session"""
+  pinned: Boolean
+
   """The prompt name to use for the session"""
-  promptName: String!
+  promptName: String
   sessionId: String!
 }
 
@@ -2041,11 +2083,17 @@ type WorkspaceType {
   """quota of workspace"""
   quota: WorkspaceQuotaType!
 
+  """Get recently updated docs of a workspace"""
+  recentlyUpdatedDocs(pagination: PaginationInput!): PaginatedDocType!
+
   """Role of current signed in user in workspace"""
   role: Permission!
 
   """Search a specific table"""
   search(input: SearchInput!): SearchResultObjectType!
+
+  """Search docs by keyword"""
+  searchDocs(input: SearchDocsInput!): [SearchDocObjectType!]!
 
   """The team subscription of the workspace, if exists."""
   subscription: SubscriptionType

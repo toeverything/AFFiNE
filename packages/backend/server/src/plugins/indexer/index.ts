@@ -26,6 +26,7 @@ import { IndexerService } from './service';
 export class IndexerModule {}
 
 export { IndexerService };
+export type { SearchDoc } from './types';
 
 declare global {
   interface Events {

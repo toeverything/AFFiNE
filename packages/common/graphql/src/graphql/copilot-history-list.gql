@@ -7,6 +7,7 @@ query getCopilotHistories(
     copilot(workspaceId: $workspaceId) {
       histories(docId: $docId, options: $options) {
         sessionId
+        pinned
         tokens
         action
         createdAt
@@ -14,6 +15,14 @@ query getCopilotHistories(
           id
           role
           content
+          streamObjects {
+            type
+            textDelta
+            toolCallId
+            toolName
+            args
+            result
+          }
           attachments
           createdAt
         }

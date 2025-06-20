@@ -740,9 +740,9 @@ export class Store {
    *
    * @category Block CRUD
    */
-  addBlock(
+  addBlock<T extends BlockModel = BlockModel>(
     flavour: string,
-    blockProps: Partial<BlockProps & Omit<BlockProps, 'flavour'>> = {},
+    blockProps: Partial<(PropsOfModel<T> & BlockSysProps) | BlockProps> = {},
     parent?: BlockModel | string | null,
     parentIndex?: number
   ): string {

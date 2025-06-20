@@ -79,11 +79,11 @@ public class ListContextQuery: GraphQLQuery {
           public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.CopilotContext }
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
-            .field("id", AffineGraphQL.ID.self),
+            .field("id", AffineGraphQL.ID?.self),
             .field("workspaceId", String.self),
           ] }
 
-          public var id: AffineGraphQL.ID { __data["id"] }
+          public var id: AffineGraphQL.ID? { __data["id"] }
           public var workspaceId: String { __data["workspaceId"] }
         }
       }

@@ -95,7 +95,10 @@ export const useGeneralSettingList = (): GeneralSettingList => {
       });
     }
 
-    if (environment.isMacOs && BUILD_CONFIG.isElectron) {
+    if (
+      (environment.isMacOs || environment.isWindows) &&
+      BUILD_CONFIG.isElectron
+    ) {
       settings.push({
         key: 'meetings',
         title: t['com.affine.settings.meetings'](),

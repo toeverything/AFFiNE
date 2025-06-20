@@ -60,6 +60,7 @@ export const TrashPage = () => {
       quickFavorite: false,
       quickDeletePermanently: true,
       quickRestore: true,
+      quickSelect: true,
       groupBy: undefined,
       orderBy: undefined,
     })

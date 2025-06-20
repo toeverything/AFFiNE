@@ -35,7 +35,7 @@ export const selectPropertyModelConfig = selectPropertyType.modelConfig({
       const name = oldValue
         .split(',')
         .map(v => v.trim())
-        .filter(v => v)[0];
+        .find(v => v);
       if (!name) {
         return { value: null, data: data };
       }

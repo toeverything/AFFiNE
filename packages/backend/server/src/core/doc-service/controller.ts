@@ -4,10 +4,10 @@ import {
   Logger,
   Param,
   Post,
+  Query,
   RawBody,
   Res,
 } from '@nestjs/common';
-import { Args } from '@nestjs/graphql';
 import type { Response } from 'express';
 
 import { NotFound, SkipThrottle } from '../../base';
@@ -40,6 +40,20 @@ export class DocRpcController {
       res.setHeader('x-doc-editor-id', doc.editor);
     }
     res.send(doc.bin);
+  }
+
+  @SkipThrottle()
+  @Internal()
+  @Get('/workspaces/:workspaceId/docs/:docId/markdown')
+  async getDocMarkdown(
+    @Param('workspaceId') workspaceId: string,
+    @Param('docId') docId: string
+  ) {
+    const result = await this.docReader.getDocMarkdown(workspaceId, docId);
+    if (!result) {
+      throw new NotFound('Doc not found');
+    }
+    return result;
   }
 
   @SkipThrottle()
@@ -78,11 +92,12 @@ export class DocRpcController {
   async getDocContent(
     @Param('workspaceId') workspaceId: string,
     @Param('docId') docId: string,
-    @Args('full', { nullable: true }) fullContent?: boolean
+    @Query('full') fullContent?: string
   ) {
-    const content = fullContent
-      ? await this.docReader.getFullDocContent(workspaceId, docId)
-      : await this.docReader.getDocContent(workspaceId, docId);
+    const content =
+      fullContent === 'true'
+        ? await this.docReader.getFullDocContent(workspaceId, docId)
+        : await this.docReader.getDocContent(workspaceId, docId);
     if (!content) {
       throw new NotFound('Doc not found');
     }

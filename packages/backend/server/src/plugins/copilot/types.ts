@@ -84,6 +84,7 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export const ChatHistorySchema = z
   .object({
     sessionId: z.string(),
+    pinned: z.boolean(),
     action: z.string().nullable(),
     tokens: z.number(),
     messages: z.array(ChatMessageSchema),
@@ -105,17 +106,13 @@ export interface ChatSessionOptions {
   // connect ids
   userId: string;
   workspaceId: string;
-  docId: string;
+  docId: string | null;
   promptName: string;
-}
-
-export interface ChatSessionPromptUpdateOptions
-  extends Pick<ChatSessionState, 'sessionId' | 'userId'> {
-  promptName: string;
+  pinned: boolean;
 }
 
 export interface ChatSessionForkOptions
-  extends Omit<ChatSessionOptions, 'promptName'> {
+  extends Omit<ChatSessionOptions, 'pinned' | 'promptName'> {
   sessionId: string;
   latestMessageId?: string;
 }
@@ -129,17 +126,6 @@ export interface ChatSessionState
   prompt: ChatPrompt;
   messages: ChatMessage[];
 }
-
-export type ListHistoriesOptions = {
-  action: boolean | undefined;
-  fork: boolean | undefined;
-  limit: number | undefined;
-  skip: number | undefined;
-  sessionOrder: 'asc' | 'desc' | undefined;
-  messageOrder: 'asc' | 'desc' | undefined;
-  sessionId: string | undefined;
-  withPrompt: boolean | undefined;
-};
 
 export type CopilotContextFile = {
   id: string; // fileId

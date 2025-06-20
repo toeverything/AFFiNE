@@ -1004,6 +1004,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.appearanceSettings.translucentUI.title"](): string;
     /**
+      * `Show linked doc in sidebar`
+      */
+    ["com.affine.appearanceSettings.showLinkedDocInSidebar.title"](): string;
+    /**
+      * `Control whether to show the structure of linked docs in the sidebar.`
+      */
+    ["com.affine.appearanceSettings.showLinkedDocInSidebar.description"](): string;
+    /**
       * `Your current email is {{email}}. We'll send a temporary verification link to this email.`
       */
     ["com.affine.auth.change.email.message"](options: {
@@ -2403,6 +2411,14 @@ export function useAFFiNEI18N(): {
       * `Import your AFFiNE workspace and page snapshot file.`
       */
     ["com.affine.import.snapshot.tooltip"](): string;
+    /**
+      * `.affine file`
+      */
+    ["com.affine.import.dotaffinefile"](): string;
+    /**
+      * `Import your AFFiNE db file (.affine)`
+      */
+    ["com.affine.import.dotaffinefile.tooltip"](): string;
     /**
       * `Import failed, please try again.`
       */
@@ -8597,6 +8613,10 @@ export function useAFFiNEI18N(): {
       * `Copilot session not found.`
       */
     ["error.COPILOT_SESSION_NOT_FOUND"](): string;
+    /**
+      * `Copilot session input is invalid.`
+      */
+    ["error.COPILOT_SESSION_INVALID_INPUT"](): string;
     /**
       * `Copilot session has been deleted.`
       */

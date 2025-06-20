@@ -180,7 +180,7 @@ export class FalProvider extends CopilotProvider<FalConfig> {
               ? v.attachment
               : undefined
         )
-        .filter(v => !!v)[0],
+        .find(v => !!v),
       prompt: content.trim(),
       loras: lora.length ? lora : undefined,
       controlnets: controlnets.length ? controlnets : undefined,

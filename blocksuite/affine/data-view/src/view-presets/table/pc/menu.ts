@@ -71,6 +71,7 @@ export const popRowMenu = (
             prefix: DeleteIcon(),
             select: () => {
               selectionController.view.rowsDelete(rows);
+              selectionController.logic.ui$.value?.requestUpdate();
             },
           }),
         ],
