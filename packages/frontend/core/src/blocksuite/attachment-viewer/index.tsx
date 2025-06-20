@@ -2,8 +2,9 @@ import { ViewBody, ViewHeader } from '@affine/core/modules/workbench';
 
 import { AttachmentFallback, AttachmentPreviewErrorBoundary } from './error';
 import { PDFViewer } from './pdf/pdf-viewer';
+import { TextViewer } from './text/text-viewer';
 import type { AttachmentViewerBaseProps, AttachmentViewerProps } from './types';
-import { buildAttachmentProps } from './utils';
+import { buildAttachmentProps, getAttachmentType } from './utils';
 import { Titlebar } from './viewer';
 import * as styles from './viewer.css';
 
@@ -36,14 +37,18 @@ export const AttachmentViewerView = ({ model }: AttachmentViewerProps) => {
 };
 
 const AttachmentViewerInner = (props: AttachmentViewerBaseProps) => {
-  const isPDF = props.model.props.type.endsWith('pdf');
+  const type = getAttachmentType(props.model);
 
-  if (isPDF) {
+  if (type === 'pdf') {
     return (
       <AttachmentPreviewErrorBoundary>
         <PDFViewer {...props} />
       </AttachmentPreviewErrorBoundary>
     );
+  }
+
+  if (type === 'text') {
+    return <TextViewer model={props.model} />;
   }
 
   return <AttachmentFallback {...props} />;

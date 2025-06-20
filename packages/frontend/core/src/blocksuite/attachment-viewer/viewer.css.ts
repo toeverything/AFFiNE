@@ -1,5 +1,5 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { style } from '@vanilla-extract/css';
+import { style, globalStyle } from '@vanilla-extract/css';
 
 export const viewer = style({
   position: 'relative',
@@ -27,6 +27,36 @@ export const viewer = style({
       backgroundImage: `linear-gradient(${cssVarV2('button/grabber/default')} 1px, transparent 1px), linear-gradient(to right, ${cssVarV2('button/grabber/default')} 1px, transparent 1px)`,
     },
   },
+});
+
+export const scrollable = style({
+  overflowY: 'auto',
+  overflowX: 'hidden',
+});
+
+globalStyle(`.${scrollable}`, {
+  scrollbarGutter: 'stable',
+  scrollbarWidth: 'thin',
+  scrollbarColor: '#b1b1b1 transparent',
+});
+
+globalStyle(`.${scrollable}::-webkit-scrollbar`, {
+  width: 4,
+  height: 4,
+});
+
+globalStyle(`.${scrollable}::-webkit-scrollbar-thumb`, {
+  borderRadius: 2,
+  backgroundColor: '#b1b1b1',
+});
+
+globalStyle(`.${scrollable}::-webkit-scrollbar-corner`, {
+  display: 'none',
+});
+
+globalStyle('.shiki', {
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
 });
 
 export const viewerContainer = style({

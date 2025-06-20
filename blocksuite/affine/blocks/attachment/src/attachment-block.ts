@@ -22,6 +22,7 @@ import {
   FileSizeLimitProvider,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
+import { PeekViewProvider } from '@blocksuite/affine-components/peek';
 import { formatSize } from '@blocksuite/affine-shared/utils';
 import {
   AttachmentIcon,
@@ -114,10 +115,38 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     );
   };
 
-  open = () => {
+  openExternal = async () => {
     const blobUrl = this.blobUrl;
     if (!blobUrl) return;
+
+    if (BUILD_CONFIG.isElectron && (window as any).__apis?.file?.openTempFile) {
+      try {
+        const blob = await this.resourceController.blob();
+        if (blob) {
+          const buffer = new Uint8Array(await blob.arrayBuffer());
+          await (window as any).__apis.file.openTempFile(
+            Array.from(buffer),
+            this.model.props.name
+          );
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     window.open(blobUrl, '_blank');
+  };
+
+  openPreview = async () => {
+    const peekView = this.std.getOptional(PeekViewProvider);
+    if (!peekView) return;
+    await peekView.peek({
+      docId: this.model.store.id,
+      blockIds: [this.blockId],
+      filetype: this.filetype,
+      target: this,
+    });
   };
 
   // Refreshes data.
@@ -203,6 +232,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
   override firstUpdated() {
     // lazy bindings
     this.disposables.addFromEvent(this, 'click', this.onClick);
+    this.disposables.addFromEvent(this, 'dblclick', this._handleDoubleClick);
   }
 
   protected onClick(event: MouseEvent) {
@@ -215,6 +245,11 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
       this._selectBlock();
     }
   }
+
+  private _handleDoubleClick = (event: MouseEvent) => {
+    event.stopPropagation();
+    this.openPreview().catch(console.error);
+  };
 
   protected renderUpgradeButton = () => {
     if (this.std.store.readonly) return null;

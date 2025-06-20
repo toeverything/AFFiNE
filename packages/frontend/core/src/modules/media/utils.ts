@@ -25,6 +25,15 @@ const videoExts = new Set([
   '3gp',
 ]);
 
+const textExts = new Set([
+  'txt',
+  'md',
+  'eml',
+  'log',
+  'json',
+  'csv',
+]);
+
 export function getAttachmentType(model: AttachmentBlockModel) {
   const type = model.props.type;
 
@@ -39,6 +48,10 @@ export function getAttachmentType(model: AttachmentBlockModel) {
 
   if (type.startsWith('video/')) {
     return 'video';
+  }
+
+  if (type.startsWith('text/') || type.startsWith('message/')) {
+    return 'text';
   }
 
   if (type === 'application/pdf') {
@@ -58,6 +71,10 @@ export function getAttachmentType(model: AttachmentBlockModel) {
 
   if (videoExts.has(ext)) {
     return 'video';
+  }
+
+  if (textExts.has(ext)) {
+    return 'text';
   }
 
   if (ext === 'pdf') {
