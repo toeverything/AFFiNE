@@ -14,7 +14,7 @@ let package = Package(
   ],
   dependencies: [
     .package(path: "../AffineGraphQL"),
-    .package(url: "https://github.com/apollographql/apollo-ios.git", from: "1.18.0"),
+    .package(url: "https://github.com/apollographql/apollo-ios.git", from: "1.22.0"),
     .package(url: "https://github.com/apple/swift-collections", from: "1.2.0"),
     .package(url: "https://github.com/devxoul/Then", from: "3.0.0"),
     .package(url: "https://github.com/SnapKit/SnapKit.git", from: "5.7.1"),
