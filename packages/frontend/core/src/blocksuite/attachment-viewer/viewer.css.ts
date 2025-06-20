@@ -1,5 +1,5 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { style, globalStyle } from '@vanilla-extract/css';
+import { globalStyle,style } from '@vanilla-extract/css';
 
 export const viewer = style({
   position: 'relative',
@@ -57,6 +57,11 @@ globalStyle(`.${scrollable}::-webkit-scrollbar-corner`, {
 globalStyle('.shiki', {
   whiteSpace: 'pre-wrap',
   wordBreak: 'break-word',
+  fontFamily:
+    'var(--affine-font-code, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace)',
+  fontSize: '13px',
+  lineHeight: 1.5,
+  backgroundColor: 'transparent !important',
 });
 
 export const viewerContainer = style({

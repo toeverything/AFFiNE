@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { getSingletonHighlighter } from 'shiki';
 
@@ -7,6 +8,7 @@ import { getAttachmentBlob } from '../utils';
 import * as styles from '../viewer.css';
 
 export function TextViewer({ model }: AttachmentViewerProps) {
+  const { resolvedTheme } = useTheme();
   const [html, setHtml] = useState('');
 
   useEffect(() => {
@@ -33,13 +35,11 @@ export function TextViewer({ model }: AttachmentViewerProps) {
         themes: ['light-plus', 'dark-plus'],
         langs: [lang],
       });
-      const theme = document.documentElement.classList.contains('dark')
-        ? 'dark-plus'
-        : 'light-plus';
+      const theme = resolvedTheme === 'dark' ? 'dark-plus' : 'light-plus';
       const highlighted = highlighter.codeToHtml(content, { lang, theme });
       setHtml(highlighted);
     })().catch(console.error);
-  }, [model]);
+  }, [model, resolvedTheme]);
 
   return (
     <div
