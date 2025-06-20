@@ -67,11 +67,6 @@ export class HTMLPreview extends SignalWatcher(WithDisposable(LitElement)) {
   override firstUpdated(_changedProperties: PropertyValues): void {
     const result = super.firstUpdated(_changedProperties);
 
-    if (!window.crossOriginIsolated) {
-      this.state = 'fallback';
-      return;
-    }
-
     this._link();
 
     this.disposables.add(
