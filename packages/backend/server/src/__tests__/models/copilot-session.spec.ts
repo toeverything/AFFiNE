@@ -110,7 +110,10 @@ test('should list and filter session type', async t => {
 
   // should list sessions
   {
-    const workspaceSessions = await copilotSession.list(user.id, workspace.id);
+    const workspaceSessions = await copilotSession.list({
+      userId: user.id,
+      workspaceId: workspace.id,
+    });
 
     t.snapshot(
       workspaceSessions.map(s => ({ docId: s.docId, pinned: s.pinned })),
@@ -119,16 +122,19 @@ test('should list and filter session type', async t => {
   }
 
   {
-    const docSessions = await copilotSession.list(user.id, workspace.id, docId);
+    const docSessions = await copilotSession.list({
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId,
+    });
 
     t.snapshot(
-      cleanObject(docSessions, [
-        'id',
-        'userId',
-        'createdAt',
-        'messages',
-        'tokenCost',
-      ]),
+      cleanObject(
+        docSessions.toSorted(s =>
+          s.docId!.localeCompare(s.docId!, undefined, { numeric: true })
+        ),
+        ['id', 'userId', 'workspaceId', 'createdAt', 'tokenCost']
+      ),
       'doc sessions should only include sessions with matching docId'
     );
   }

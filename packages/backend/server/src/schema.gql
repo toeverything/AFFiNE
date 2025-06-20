@@ -145,9 +145,6 @@ type Copilot {
   """Get the session by id"""
   session(sessionId: String!): CopilotSessionType!
 
-  """Get the session id list in the workspace"""
-  sessionIds(docId: String, options: QueryChatSessionsInput): [String!]! @deprecated(reason: "Use `sessions` instead")
-
   """Get the session list in the workspace"""
   sessions(docId: String, options: QueryChatSessionsInput): [CopilotSessionType!]!
   workspaceId: ID
@@ -1440,6 +1437,7 @@ input QueryChatHistoriesInput {
   fork: Boolean
   limit: Int
   messageOrder: ChatHistoryOrder
+  pinned: Boolean
   sessionId: String
   sessionOrder: ChatHistoryOrder
   skip: Int
@@ -1448,6 +1446,10 @@ input QueryChatHistoriesInput {
 
 input QueryChatSessionsInput {
   action: Boolean
+  fork: Boolean
+  limit: Int
+  pinned: Boolean
+  skip: Int
 }
 
 type QueryTooLongDataType {

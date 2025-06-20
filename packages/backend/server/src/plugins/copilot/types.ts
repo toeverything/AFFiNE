@@ -127,17 +127,6 @@ export interface ChatSessionState
   messages: ChatMessage[];
 }
 
-export type ListHistoriesOptions = {
-  action: boolean | undefined;
-  fork: boolean | undefined;
-  limit: number | undefined;
-  skip: number | undefined;
-  sessionOrder: 'asc' | 'desc' | undefined;
-  messageOrder: 'asc' | 'desc' | undefined;
-  sessionId: string | undefined;
-  withPrompt: boolean | undefined;
-};
-
 export type CopilotContextFile = {
   id: string; // fileId
   created_at: number;

@@ -58,13 +58,20 @@ export type UpdateChatSession = Pick<ChatSession, 'userId' | 'sessionId'> &
   UpdateChatSessionData;
 
 export type ListSessionOptions = {
-  sessionId: string | undefined;
-  action: boolean | undefined;
-  fork: boolean | undefined;
-  limit: number | undefined;
-  skip: number | undefined;
-  sessionOrder: 'asc' | 'desc' | undefined;
-  messageOrder: 'asc' | 'desc' | undefined;
+  userId: string;
+  sessionId?: string;
+  workspaceId?: string;
+  docId?: string;
+  action?: boolean;
+  fork?: boolean;
+  limit?: number;
+  skip?: number;
+  sessionOrder?: 'asc' | 'desc';
+  messageOrder?: 'asc' | 'desc';
+
+  // extra condition
+  withPrompt?: boolean;
+  withMessages?: boolean;
 };
 
 @Injectable()
@@ -197,12 +204,9 @@ export class CopilotSessionModel extends BaseModel {
     });
   }
 
-  async list(
-    userId: string,
-    workspaceId?: string,
-    docId?: string,
-    options?: ListSessionOptions
-  ) {
+  async list(options: ListSessionOptions) {
+    const { userId, sessionId, workspaceId, docId } = options;
+
     const extraCondition = [];
 
     if (!options?.action && options?.fork) {
@@ -211,7 +215,10 @@ export class CopilotSessionModel extends BaseModel {
         userId: { not: userId },
         workspaceId: workspaceId,
         docId: docId ?? null,
-        id: options?.sessionId ? { equals: options.sessionId } : undefined,
+        id: sessionId ? { equals: sessionId } : undefined,
+        prompt: {
+          action: options.action ? { not: null } : null,
+        },
         // should only find forked session
         parentSessionId: { not: null },
         deletedAt: null,
@@ -223,9 +230,9 @@ export class CopilotSessionModel extends BaseModel {
         OR: [
           {
             userId,
-            workspaceId: workspaceId,
+            workspaceId,
             docId: docId ?? null,
-            id: options?.sessionId ? { equals: options.sessionId } : undefined,
+            id: sessionId ? { equals: sessionId } : undefined,
             deletedAt: null,
           },
           ...extraCondition,
@@ -234,26 +241,30 @@ export class CopilotSessionModel extends BaseModel {
       select: {
         id: true,
         userId: true,
+        workspaceId: true,
         docId: true,
+        parentSessionId: true,
         pinned: true,
         promptName: true,
         tokenCost: true,
         createdAt: true,
-        messages: {
-          select: {
-            id: true,
-            role: true,
-            content: true,
-            attachments: true,
-            params: true,
-            streamObjects: true,
-            createdAt: true,
-          },
-          orderBy: {
-            // message order is asc by default
-            createdAt: options?.messageOrder === 'desc' ? 'desc' : 'asc',
-          },
-        },
+        messages: options.withMessages
+          ? {
+              select: {
+                id: true,
+                role: true,
+                content: true,
+                attachments: true,
+                params: true,
+                streamObjects: true,
+                createdAt: true,
+              },
+              orderBy: {
+                // message order is asc by default
+                createdAt: options?.messageOrder === 'desc' ? 'desc' : 'asc',
+              },
+            }
+          : false,
       },
       take: options?.limit,
       skip: options?.skip,

@@ -14,6 +14,7 @@ import {
 } from '../../base';
 import { QuotaService } from '../../core/quota';
 import {
+  ListSessionOptions,
   Models,
   type UpdateChatSession,
   UpdateChatSessionData,
@@ -29,7 +30,6 @@ import {
   type ChatSessionOptions,
   type ChatSessionState,
   getTokenEncoder,
-  type ListHistoriesOptions,
   type SubmittedMessage,
 } from './types';
 
@@ -314,65 +314,38 @@ export class ChatSessionService {
   }
 
   async listSessions(
-    userId: string,
-    workspaceId: string,
-    docId?: string,
-    options?: { action?: boolean }
+    options: ListSessionOptions
   ): Promise<Omit<ChatSessionState, 'messages'>[]> {
-    return await this.db.aiSession
-      .findMany({
-        where: {
-          userId,
-          workspaceId,
-          docId,
-          prompt: {
-            action: options?.action ? { not: null } : null,
-          },
-          deletedAt: null,
-        },
-        select: {
-          id: true,
-          userId: true,
-          workspaceId: true,
-          docId: true,
-          pinned: true,
-          parentSessionId: true,
-          promptName: true,
-        },
-      })
-      .then(sessions => {
-        return Promise.all(
-          sessions.map(async session => {
-            const prompt = await this.prompt.get(session.promptName);
-            if (!prompt)
-              throw new CopilotPromptNotFound({ name: session.promptName });
+    const sessions = await this.models.copilotSession.list({
+      ...options,
+      withMessages: false,
+    });
 
-            return {
-              sessionId: session.id,
-              userId: session.userId,
-              workspaceId: session.workspaceId,
-              docId: session.docId,
-              pinned: session.pinned,
-              parentSessionId: session.parentSessionId,
-              prompt,
-            };
-          })
-        );
-      });
+    return Promise.all(
+      sessions.map(async session => {
+        const prompt = await this.prompt.get(session.promptName);
+        if (!prompt)
+          throw new CopilotPromptNotFound({ name: session.promptName });
+
+        return {
+          sessionId: session.id,
+          userId: session.userId,
+          workspaceId: session.workspaceId,
+          docId: session.docId,
+          pinned: session.pinned,
+          parentSessionId: session.parentSessionId,
+          prompt,
+        };
+      })
+    );
   }
 
-  async listHistories(
-    userId: string,
-    workspaceId?: string,
-    docId?: string,
-    options?: ListHistoriesOptions
-  ): Promise<ChatHistory[]> {
-    const sessions = await this.models.copilotSession.list(
-      userId,
-      workspaceId,
-      docId,
-      options
-    );
+  async listHistories(options: ListSessionOptions): Promise<ChatHistory[]> {
+    const { userId } = options;
+    const sessions = await this.models.copilotSession.list({
+      ...options,
+      withMessages: true,
+    });
     const histories = await Promise.all(
       sessions.map(
         async ({

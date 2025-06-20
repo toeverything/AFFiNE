@@ -186,11 +186,6 @@ export interface Copilot {
   quota: CopilotQuota;
   /** Get the session by id */
   session: CopilotSessionType;
-  /**
-   * Get the session id list in the workspace
-   * @deprecated Use `sessions` instead
-   */
-  sessionIds: Array<Scalars['String']['output']>;
   /** Get the session list in the workspace */
   sessions: Array<CopilotSessionType>;
   workspaceId: Maybe<Scalars['ID']['output']>;
@@ -213,11 +208,6 @@ export interface CopilotHistoriesArgs {
 
 export interface CopilotSessionArgs {
   sessionId: Scalars['String']['input'];
-}
-
-export interface CopilotSessionIdsArgs {
-  docId?: InputMaybe<Scalars['String']['input']>;
-  options?: InputMaybe<QueryChatSessionsInput>;
 }
 
 export interface CopilotSessionsArgs {
@@ -2008,6 +1998,7 @@ export interface QueryChatHistoriesInput {
   fork?: InputMaybe<Scalars['Boolean']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
   messageOrder?: InputMaybe<ChatHistoryOrder>;
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   sessionId?: InputMaybe<Scalars['String']['input']>;
   sessionOrder?: InputMaybe<ChatHistoryOrder>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -2016,6 +2007,10 @@ export interface QueryChatHistoriesInput {
 
 export interface QueryChatSessionsInput {
   action?: InputMaybe<Scalars['Boolean']['input']>;
+  fork?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
 }
 
 export interface QueryTooLongDataType {
