@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
-import { getHighlighter } from 'shiki';
+import { getSingletonHighlighter } from 'shiki';
+
 import type { AttachmentViewerProps } from '../types';
 import { getAttachmentBlob } from '../utils';
 import * as styles from '../viewer.css';
@@ -28,7 +29,7 @@ export function TextViewer({ model }: AttachmentViewerProps) {
         // ignore
       }
 
-      const highlighter = await getHighlighter({
+      const highlighter = await getSingletonHighlighter({
         themes: ['light-plus', 'dark-plus'],
         langs: [lang],
       });
@@ -43,7 +44,11 @@ export function TextViewer({ model }: AttachmentViewerProps) {
   return (
     <div
       className={clsx(styles.viewer, styles.scrollable)}
-      style={{ padding: '12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+      style={{
+        padding: '12px',
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-word',
+      }}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

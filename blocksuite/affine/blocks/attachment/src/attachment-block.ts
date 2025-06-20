@@ -6,7 +6,7 @@ import {
   getAttachmentFileIcon,
   LoadingIcon,
 } from '@blocksuite/affine-components/icons';
-import { Peekable } from '@blocksuite/affine-components/peek';
+import { Peekable, PeekViewProvider } from '@blocksuite/affine-components/peek';
 import {
   type ResolvedStateInfo,
   ResourceController,
@@ -22,7 +22,6 @@ import {
   FileSizeLimitProvider,
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
-import { PeekViewProvider } from '@blocksuite/affine-components/peek';
 import { formatSize } from '@blocksuite/affine-shared/utils';
 import {
   AttachmentIcon,
@@ -246,7 +245,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
     }
   }
 
-  private _handleDoubleClick = (event: MouseEvent) => {
+  private readonly _handleDoubleClick = (event: MouseEvent) => {
     event.stopPropagation();
     this.openPreview().catch(console.error);
   };
