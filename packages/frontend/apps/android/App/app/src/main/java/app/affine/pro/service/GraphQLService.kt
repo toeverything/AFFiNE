@@ -44,7 +44,7 @@ class GraphQLService @Inject constructor() {
     ) = mutation(
         CreateCopilotSessionMutation(
             CreateChatSessionInput(
-                docId = docId,
+                docId = Optional.present(docId),
                 workspaceId = workspaceId,
                 promptName = prompt.value
             )

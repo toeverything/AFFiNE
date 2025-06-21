@@ -11,6 +11,7 @@ on:
     paths-ignore:
       - README.md
   pull_request:
+  merge_group:
 
 env:
   DEBUG: napi:*

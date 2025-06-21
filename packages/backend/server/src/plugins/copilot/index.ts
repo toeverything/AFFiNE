@@ -8,6 +8,7 @@ import { FeatureModule } from '../../core/features';
 import { PermissionModule } from '../../core/permission';
 import { QuotaModule } from '../../core/quota';
 import { WorkspaceModule } from '../../core/workspaces';
+import { IndexerModule } from '../indexer';
 import {
   CopilotContextResolver,
   CopilotContextRootResolver,
@@ -44,6 +45,7 @@ import {
     PermissionModule,
     ServerConfigModule,
     WorkspaceModule,
+    IndexerModule,
   ],
   providers: [
     // providers

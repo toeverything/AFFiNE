@@ -141,8 +141,12 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       nodes: data.hits.hits.map(hit => ({
         _id: hit._id,
         _score: hit._score,
-        _source: this.#formatSource(dsl._source, hit._source),
-        fields: this.#formatFieldsFromSource(dsl.fields, hit._source),
+        _source: this.formatDateFields(
+          this.#formatSource(dsl._source, hit._source)
+        ),
+        fields: this.formatDateFields(
+          this.#formatFieldsFromSource(dsl.fields, hit._source)
+        ),
         highlights: this.#formatHighlights(
           dsl.highlight?.fields,
           hit.highlight
@@ -176,8 +180,12 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       const node = {
         _id: hit._id,
         _score: hit._score,
-        _source: this.#formatSource(topHits._source, hit._source),
-        fields: this.#formatFieldsFromSource(topHits.fields, hit._source),
+        _source: this.formatDateFields(
+          this.#formatSource(topHits._source, hit._source)
+        ),
+        fields: this.formatDateFields(
+          this.#formatFieldsFromSource(topHits.fields, hit._source)
+        ),
         highlights: this.#formatHighlights(
           topHits.highlight?.fields,
           hit.highlight
@@ -234,6 +242,17 @@ export class ManticoresearchProvider extends ElasticsearchProvider {
       data.highlight = firstOptions;
     }
     return data;
+  }
+
+  /**
+   * manticoresearch return date value as timestamp, we need to convert it to Date object
+   */
+  protected override formatDateValue(value: unknown) {
+    if (value && typeof value === 'number') {
+      // 1750389254 => new Date(1750389254 * 1000)
+      return new Date(value * 1000);
+    }
+    return value;
   }
 
   private parseESQuery(

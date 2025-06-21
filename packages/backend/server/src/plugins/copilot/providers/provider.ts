@@ -10,9 +10,12 @@ import {
   OnEvent,
 } from '../../../base';
 import { AccessController } from '../../../core/permission';
+import { IndexerService } from '../../indexer';
 import { CopilotContextService } from '../context';
 import {
+  buildDocKeywordSearchGetter,
   buildDocSearchGetter,
+  createDocKeywordSearchTool,
   createDocSemanticSearchTool,
   createExaCrawlTool,
   createExaSearchTool,
@@ -125,6 +128,7 @@ export abstract class CopilotProvider<C = any> {
   ): Promise<ToolSet> {
     const tools: ToolSet = {};
     if (options?.tools?.length) {
+      this.logger.debug(`getTools: ${JSON.stringify(options.tools)}`);
       for (const tool of options.tools) {
         const toolDef = this.getProviderSpecificTools(tool, model);
         if (toolDef) {
@@ -141,6 +145,24 @@ export abstract class CopilotProvider<C = any> {
             tools.doc_semantic_search = createDocSemanticSearchTool(
               searchDocs.bind(null, options)
             );
+            break;
+          }
+          case 'docKeywordSearch': {
+            if (this.AFFiNEConfig.indexer.enabled) {
+              const ac = this.moduleRef.get(AccessController, {
+                strict: false,
+              });
+              const indexerService = this.moduleRef.get(IndexerService, {
+                strict: false,
+              });
+              const searchDocs = buildDocKeywordSearchGetter(
+                ac,
+                indexerService
+              );
+              tools.doc_keyword_search = createDocKeywordSearchTool(
+                searchDocs.bind(null, options)
+              );
+            }
             break;
           }
           case 'webSearch': {

@@ -1880,5 +1880,14 @@ export async function refreshPrompts(db: PrismaClient) {
         },
       },
     });
+
+    await db.aiSession.updateMany({
+      where: {
+        promptName: prompt.name,
+      },
+      data: {
+        promptAction: prompt.action ?? null,
+      },
+    });
   }
 }

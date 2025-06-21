@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   CoreAssistantMessage,
   CoreUserMessage,
@@ -10,6 +11,7 @@ import {
 import { ZodType } from 'zod';
 
 import {
+  createDocKeywordSearchTool,
   createDocSemanticSearchTool,
   createExaCrawlTool,
   createExaSearchTool,
@@ -381,6 +383,7 @@ export class CitationParser {
 
 export interface CustomAITools extends ToolSet {
   doc_semantic_search: ReturnType<typeof createDocSemanticSearchTool>;
+  doc_keyword_search: ReturnType<typeof createDocKeywordSearchTool>;
   web_search_exa: ReturnType<typeof createExaSearchTool>;
   web_crawl_exa: ReturnType<typeof createExaCrawlTool>;
 }
@@ -404,6 +407,7 @@ export function parseUnknownError(error: unknown) {
 }
 
 export class TextStreamParser {
+  private readonly logger = new Logger(TextStreamParser.name);
   private readonly CALLOUT_PREFIX = '\n[!]\n';
 
   private lastType: ChunkType | undefined;
@@ -428,6 +432,9 @@ export class TextStreamParser {
         break;
       }
       case 'tool-call': {
+        this.logger.debug(
+          `[tool-call] toolName: ${chunk.toolName}, toolCallId: ${chunk.toolCallId}`
+        );
         result = this.addPrefix(result);
         switch (chunk.toolName) {
           case 'web_search_exa': {
@@ -438,16 +445,30 @@ export class TextStreamParser {
             result += `\nCrawling the web "${chunk.args.url}"\n`;
             break;
           }
+          case 'doc_keyword_search': {
+            result += `\nSearching the keyword "${chunk.args.query}"\n`;
+            break;
+          }
         }
         result = this.markAsCallout(result);
         break;
       }
       case 'tool-result': {
+        this.logger.debug(
+          `[tool-result] toolName: ${chunk.toolName}, toolCallId: ${chunk.toolCallId}`
+        );
         result = this.addPrefix(result);
         switch (chunk.toolName) {
           case 'doc_semantic_search': {
             if (Array.isArray(chunk.result)) {
               result += `\nFound ${chunk.result.length} document${chunk.result.length !== 1 ? 's' : ''} related to “${chunk.args.query}”.\n`;
+            }
+            break;
+          }
+          case 'doc_keyword_search': {
+            if (Array.isArray(chunk.result)) {
+              result += `\nFound ${chunk.result.length} document${chunk.result.length !== 1 ? 's' : ''} related to “${chunk.args.query}”.\n`;
+              result += `\n${this.getKeywordSearchLinks(chunk.result)}\n`;
             }
             break;
           }
@@ -505,6 +526,18 @@ export class TextStreamParser {
     }, '');
     return links;
   }
+
+  private getKeywordSearchLinks(
+    list: {
+      docId: string;
+      title: string;
+    }[]
+  ): string {
+    const links = list.reduce((acc, result) => {
+      return acc + `\n\n[${result.title}](${result.docId})\n\n`;
+    }, '');
+    return links;
+  }
 }
 
 export class StreamObjectParser {
@@ -534,6 +567,20 @@ export class StreamObjectParser {
         case 'text-delta': {
           if (prev && prev.type === curr.type) {
             prev.textDelta += curr.textDelta;
+          } else {
+            acc.push(curr);
+          }
+          break;
+        }
+        case 'tool-result': {
+          const index = acc.findIndex(
+            item =>
+              item.type === 'tool-call' &&
+              item.toolCallId === curr.toolCallId &&
+              item.toolName === curr.toolName
+          );
+          if (index !== -1) {
+            acc[index] = curr;
           } else {
             acc.push(curr);
           }

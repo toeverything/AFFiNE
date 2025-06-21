@@ -2213,3 +2213,101 @@ test('should search blob names work', async t => {
 });
 
 // #endregion
+
+// #region searchDocsByKeyword()
+
+test('should search docs by keyword work', async t => {
+  const workspaceId = workspace.id;
+  const docId1 = randomUUID();
+  const docId2 = randomUUID();
+  const docId3 = randomUUID();
+  const docId4 = randomUUID();
+
+  await module.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: docId1,
+    title: 'hello world 1',
+  });
+  await module.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: docId2,
+    title: 'hello world 2',
+  });
+  await module.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: docId3,
+    title: 'hello world 3',
+  });
+
+  await indexerService.write(
+    SearchTable.block,
+    [
+      {
+        workspaceId,
+        docId: docId1,
+        blockId: 'block1',
+        content: 'hello world',
+        flavour: 'affine:page',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:00.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:00.000Z'),
+      },
+      {
+        workspaceId,
+        docId: docId2,
+        blockId: 'block2',
+        content: 'hello world 2',
+        flavour: 'affine:text',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:01.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:01.000Z'),
+      },
+      {
+        workspaceId,
+        docId: docId3,
+        blockId: 'block3',
+        content: 'hello world 3',
+        flavour: 'affine:text',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:02.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:02.000Z'),
+      },
+      {
+        workspaceId,
+        docId: docId4,
+        blockId: 'block4',
+        content: 'hello world 4',
+        flavour: 'affine:text',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:03.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:03.000Z'),
+      },
+    ],
+    {
+      refresh: true,
+    }
+  );
+
+  const rows = await indexerService.searchDocsByKeyword(workspaceId, 'hello');
+
+  t.is(rows.length, 4);
+  t.snapshot(
+    rows
+      .map(row =>
+        omit(row, [
+          'docId',
+          'createdByUserId',
+          'updatedByUserId',
+          'createdByUser',
+          'updatedByUser',
+        ])
+      )
+      .sort((a, b) => a.blockId.localeCompare(b.blockId))
+  );
+});
+
+// #endregion

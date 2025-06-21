@@ -186,11 +186,6 @@ export interface Copilot {
   quota: CopilotQuota;
   /** Get the session by id */
   session: CopilotSessionType;
-  /**
-   * Get the session id list in the workspace
-   * @deprecated Use `sessions` instead
-   */
-  sessionIds: Array<Scalars['String']['output']>;
   /** Get the session list in the workspace */
   sessions: Array<CopilotSessionType>;
   workspaceId: Maybe<Scalars['ID']['output']>;
@@ -213,11 +208,6 @@ export interface CopilotHistoriesArgs {
 
 export interface CopilotSessionArgs {
   sessionId: Scalars['String']['input'];
-}
-
-export interface CopilotSessionIdsArgs {
-  docId?: InputMaybe<Scalars['String']['input']>;
-  options?: InputMaybe<QueryChatSessionsInput>;
 }
 
 export interface CopilotSessionsArgs {
@@ -334,6 +324,7 @@ export interface CopilotHistories {
   action: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTime']['output'];
   messages: Array<ChatMessage>;
+  pinned: Scalars['Boolean']['output'];
   sessionId: Scalars['String']['output'];
   /** The number of tokens used in the session */
   tokens: Scalars['Int']['output'];
@@ -434,10 +425,12 @@ export interface CopilotQuota {
 
 export interface CopilotSessionType {
   __typename?: 'CopilotSessionType';
+  docId: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   model: Scalars['String']['output'];
   optionalModels: Array<Scalars['String']['output']>;
   parentSessionId: Maybe<Scalars['ID']['output']>;
+  pinned: Scalars['Boolean']['output'];
   promptName: Scalars['String']['output'];
 }
 
@@ -501,7 +494,8 @@ export interface CreateChatMessageInput {
 }
 
 export interface CreateChatSessionInput {
-  docId: Scalars['String']['input'];
+  docId?: InputMaybe<Scalars['String']['input']>;
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** The prompt name to use for the session */
   promptName: Scalars['String']['input'];
   workspaceId: Scalars['String']['input'];
@@ -626,6 +620,7 @@ export interface DocType {
   mode: PublicDocMode;
   permissions: DocPermissions;
   public: Scalars['Boolean']['output'];
+  title: Maybe<Scalars['String']['output']>;
   updatedAt: Maybe<Scalars['DateTime']['output']>;
   workspaceId: Scalars['String']['output'];
 }
@@ -746,6 +741,7 @@ export enum ErrorNames {
   COPILOT_PROVIDER_SIDE_ERROR = 'COPILOT_PROVIDER_SIDE_ERROR',
   COPILOT_QUOTA_EXCEEDED = 'COPILOT_QUOTA_EXCEEDED',
   COPILOT_SESSION_DELETED = 'COPILOT_SESSION_DELETED',
+  COPILOT_SESSION_INVALID_INPUT = 'COPILOT_SESSION_INVALID_INPUT',
   COPILOT_SESSION_NOT_FOUND = 'COPILOT_SESSION_NOT_FOUND',
   COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED = 'COPILOT_TRANSCRIPTION_AUDIO_NOT_PROVIDED',
   COPILOT_TRANSCRIPTION_JOB_EXISTS = 'COPILOT_TRANSCRIPTION_JOB_EXISTS',
@@ -2002,6 +1998,7 @@ export interface QueryChatHistoriesInput {
   fork?: InputMaybe<Scalars['Boolean']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
   messageOrder?: InputMaybe<ChatHistoryOrder>;
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   sessionId?: InputMaybe<Scalars['String']['input']>;
   sessionOrder?: InputMaybe<ChatHistoryOrder>;
   skip?: InputMaybe<Scalars['Int']['input']>;
@@ -2010,6 +2007,10 @@ export interface QueryChatHistoriesInput {
 
 export interface QueryChatSessionsInput {
   action?: InputMaybe<Scalars['Boolean']['input']>;
+  fork?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
 }
 
 export interface QueryTooLongDataType {
@@ -2060,6 +2061,24 @@ export interface RuntimeConfigNotFoundDataType {
 export interface SameSubscriptionRecurringDataType {
   __typename?: 'SameSubscriptionRecurringDataType';
   recurring: Scalars['String']['output'];
+}
+
+export interface SearchDocObjectType {
+  __typename?: 'SearchDocObjectType';
+  blockId: Scalars['String']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdByUser: Maybe<PublicUserType>;
+  docId: Scalars['String']['output'];
+  highlight: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  updatedByUser: Maybe<PublicUserType>;
+}
+
+export interface SearchDocsInput {
+  keyword: Scalars['String']['input'];
+  /** Limit the number of docs to return, default is 20 */
+  limit?: InputMaybe<Scalars['Int']['input']>;
 }
 
 export interface SearchHighlight {
@@ -2336,8 +2355,12 @@ export interface UpdateAppConfigInput {
 }
 
 export interface UpdateChatSessionInput {
+  /** The workspace id of the session */
+  docId?: InputMaybe<Scalars['String']['input']>;
+  /** Whether to pin the session */
+  pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** The prompt name to use for the session */
-  promptName: Scalars['String']['input'];
+  promptName?: InputMaybe<Scalars['String']['input']>;
   sessionId: Scalars['String']['input'];
 }
 
@@ -2638,10 +2661,14 @@ export interface WorkspaceType {
   publicPages: Array<DocType>;
   /** quota of workspace */
   quota: WorkspaceQuotaType;
+  /** Get recently updated docs of a workspace */
+  recentlyUpdatedDocs: PaginatedDocType;
   /** Role of current signed in user in workspace */
   role: Permission;
   /** Search a specific table */
   search: SearchResultObjectType;
+  /** Search docs by keyword */
+  searchDocs: Array<SearchDocObjectType>;
   /** The team subscription of the workspace, if exists. */
   subscription: Maybe<SubscriptionType>;
   /** if workspace is team workspace */
@@ -2685,8 +2712,16 @@ export interface WorkspaceTypePublicPageArgs {
   pageId: Scalars['String']['input'];
 }
 
+export interface WorkspaceTypeRecentlyUpdatedDocsArgs {
+  pagination: PaginationInput;
+}
+
 export interface WorkspaceTypeSearchArgs {
   input: SearchInput;
+}
+
+export interface WorkspaceTypeSearchDocsArgs {
+  input: SearchDocsInput;
 }
 
 export interface WorkspaceUserType {
@@ -3349,6 +3384,7 @@ export type GetCopilotHistoryIdsQuery = {
       histories: Array<{
         __typename?: 'CopilotHistories';
         sessionId: string;
+        pinned: boolean;
         messages: Array<{
           __typename?: 'ChatMessage';
           id: string | null;
@@ -3375,6 +3411,7 @@ export type GetCopilotHistoriesQuery = {
       histories: Array<{
         __typename?: 'CopilotHistories';
         sessionId: string;
+        pinned: boolean;
         tokens: number;
         action: string | null;
         createdAt: string;
@@ -3553,6 +3590,8 @@ export type GetCopilotSessionQuery = {
         __typename?: 'CopilotSessionType';
         id: string;
         parentSessionId: string | null;
+        docId: string | null;
+        pinned: boolean;
         promptName: string;
         model: string;
         optionalModels: Array<string>;
@@ -3586,6 +3625,8 @@ export type GetCopilotSessionsQuery = {
         __typename?: 'CopilotSessionType';
         id: string;
         parentSessionId: string | null;
+        docId: string | null;
+        pinned: boolean;
         promptName: string;
         model: string;
         optionalModels: Array<string>;
@@ -4049,6 +4090,39 @@ export type GetPublicUserByIdQuery = {
   } | null;
 };
 
+export type GetRecentlyUpdatedDocsQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  pagination: PaginationInput;
+}>;
+
+export type GetRecentlyUpdatedDocsQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    recentlyUpdatedDocs: {
+      __typename?: 'PaginatedDocType';
+      totalCount: number;
+      pageInfo: {
+        __typename?: 'PageInfo';
+        endCursor: string | null;
+        hasNextPage: boolean;
+      };
+      edges: Array<{
+        __typename?: 'DocTypeEdge';
+        node: {
+          __typename?: 'DocType';
+          id: string;
+          title: string | null;
+          createdAt: string | null;
+          updatedAt: string | null;
+          creatorId: string | null;
+          lastUpdaterId: string | null;
+        };
+      }>;
+    };
+  };
+};
+
 export type GetUserFeaturesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetUserFeaturesQuery = {
@@ -4286,6 +4360,39 @@ export type IndexerAggregateQuery = {
         nextCursor: string | null;
       };
     };
+  };
+};
+
+export type IndexerSearchDocsQueryVariables = Exact<{
+  id: Scalars['String']['input'];
+  input: SearchDocsInput;
+}>;
+
+export type IndexerSearchDocsQuery = {
+  __typename?: 'Query';
+  workspace: {
+    __typename?: 'WorkspaceType';
+    searchDocs: Array<{
+      __typename?: 'SearchDocObjectType';
+      docId: string;
+      title: string;
+      blockId: string;
+      highlight: string;
+      createdAt: string;
+      updatedAt: string;
+      createdByUser: {
+        __typename?: 'PublicUserType';
+        id: string;
+        name: string;
+        avatarUrl: string | null;
+      } | null;
+      updatedByUser: {
+        __typename?: 'PublicUserType';
+        id: string;
+        name: string;
+        avatarUrl: string | null;
+      } | null;
+    }>;
   };
 };
 
@@ -5183,6 +5290,11 @@ export type Queries =
       response: GetPublicUserByIdQuery;
     }
   | {
+      name: 'getRecentlyUpdatedDocsQuery';
+      variables: GetRecentlyUpdatedDocsQueryVariables;
+      response: GetRecentlyUpdatedDocsQuery;
+    }
+  | {
       name: 'getUserFeaturesQuery';
       variables: GetUserFeaturesQueryVariables;
       response: GetUserFeaturesQuery;
@@ -5246,6 +5358,11 @@ export type Queries =
       name: 'indexerAggregateQuery';
       variables: IndexerAggregateQueryVariables;
       response: IndexerAggregateQuery;
+    }
+  | {
+      name: 'indexerSearchDocsQuery';
+      variables: IndexerSearchDocsQueryVariables;
+      response: IndexerSearchDocsQuery;
     }
   | {
       name: 'indexerSearchQuery';

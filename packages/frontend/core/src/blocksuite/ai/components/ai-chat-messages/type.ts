@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const StreamObjectSchema = z.discriminatedUnion('type', [
+export const StreamObjectSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('text-delta'),
     textDelta: z.string(),

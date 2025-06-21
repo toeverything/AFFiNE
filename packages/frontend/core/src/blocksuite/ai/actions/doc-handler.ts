@@ -10,6 +10,7 @@ import {
   buildFinishConfig,
   buildGeneratingConfig,
 } from '../ai-panel';
+import { StreamObjectSchema } from '../components/ai-chat-messages';
 import { type AIItemGroupConfig } from '../components/ai-item/types';
 import { type AIError, AIProvider } from '../provider';
 import { reportResponse } from '../utils/action-reporter';
@@ -21,8 +22,12 @@ import {
   getSelections,
   selectAboveBlocks,
 } from '../utils/selection-utils';
+import { mergeStreamObjects } from '../utils/stream-objects';
 import type { AffineAIPanelWidget } from '../widgets/ai-panel/ai-panel';
-import type { AINetworkSearchConfig } from '../widgets/ai-panel/type';
+import type {
+  AIActionAnswer,
+  AINetworkSearchConfig,
+} from '../widgets/ai-panel/type';
 import { actionToAnswerRenderer } from './answer-renderer';
 
 export function bindTextStream(
@@ -32,13 +37,15 @@ export function bindTextStream(
     finish,
     signal,
   }: {
-    update: (text: string) => void;
+    update: (answer: AIActionAnswer) => void;
     finish: (state: 'success' | 'error' | 'aborted', err?: AIError) => void;
     signal?: AbortSignal;
   }
 ) {
   (async () => {
-    let answer = '';
+    const answer: AIActionAnswer = {
+      content: '',
+    };
     signal?.addEventListener('abort', () => {
       finish('aborted');
       reportResponse('aborted:stop');
@@ -47,7 +54,19 @@ export function bindTextStream(
       if (signal?.aborted) {
         return;
       }
-      answer += data;
+      try {
+        const parsed = StreamObjectSchema.safeParse(JSON.parse(data));
+        if (parsed.success) {
+          answer.streamObjects = mergeStreamObjects([
+            ...(answer.streamObjects ?? []),
+            parsed.data,
+          ]);
+        } else {
+          answer.content += data;
+        }
+      } catch {
+        answer.content += data;
+      }
       update(answer);
     }
     finish('success');
@@ -137,7 +156,7 @@ function actionToGenerateAnswer<T extends keyof BlockSuitePresets.AIActions>(
   }: {
     input: string;
     signal?: AbortSignal;
-    update: (text: string) => void;
+    update: (answer: AIActionAnswer) => void;
     finish: (state: 'success' | 'error' | 'aborted', err?: AIError) => void;
   }) => {
     const { selectedBlocks: blocks } = getSelections(host);

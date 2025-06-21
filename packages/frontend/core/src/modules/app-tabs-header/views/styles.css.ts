@@ -78,7 +78,7 @@ export const tabWrapper = style({
 });
 
 export const tab = style({
-  height: 32,
+  height: 26,
   minWidth: 32,
   maxWidth: tabMaxWidth,
   width: 200,
@@ -243,7 +243,7 @@ export const spacer = style({
 });
 
 export const windowsAppControlsPlaceholder = style({
-  width: '160px',
+  width: '120px',
   height: '100%',
   flexShrink: 0,
 });

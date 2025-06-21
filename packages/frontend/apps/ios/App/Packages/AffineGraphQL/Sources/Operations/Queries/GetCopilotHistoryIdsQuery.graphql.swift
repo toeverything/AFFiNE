@@ -7,7 +7,7 @@ public class GetCopilotHistoryIdsQuery: GraphQLQuery {
   public static let operationName: String = "getCopilotHistoryIds"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getCopilotHistoryIds($workspaceId: String!, $docId: String, $options: QueryChatHistoriesInput) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename histories(docId: $docId, options: $options) { __typename sessionId messages { __typename id role createdAt } } } } }"#
+      #"query getCopilotHistoryIds($workspaceId: String!, $docId: String, $options: QueryChatHistoriesInput) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename histories(docId: $docId, options: $options) { __typename sessionId pinned messages { __typename id role createdAt } } } } }"#
     ))
 
   public var workspaceId: String
@@ -86,10 +86,12 @@ public class GetCopilotHistoryIdsQuery: GraphQLQuery {
           public static var __selections: [ApolloAPI.Selection] { [
             .field("__typename", String.self),
             .field("sessionId", String.self),
+            .field("pinned", Bool.self),
             .field("messages", [Message].self),
           ] }
 
           public var sessionId: String { __data["sessionId"] }
+          public var pinned: Bool { __data["pinned"] }
           public var messages: [Message] { __data["messages"] }
 
           /// CurrentUser.Copilot.History.Message

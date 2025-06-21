@@ -33,6 +33,7 @@ import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
 import { AccessController } from '../../core/permission';
 import { UserType } from '../../core/user';
+import type { ListSessionOptions, UpdateChatSession } from '../../models';
 import { PromptService } from './prompt';
 import { PromptMessage, StreamObject } from './providers';
 import { ChatSessionService } from './session';
@@ -42,7 +43,6 @@ import {
   type ChatHistory,
   type ChatMessage,
   type ChatSessionState,
-  type ListHistoriesOptions,
   SubmittedMessage,
 } from './types';
 
@@ -57,22 +57,38 @@ class CreateChatSessionInput {
   @Field(() => String)
   workspaceId!: string;
 
-  @Field(() => String)
-  docId!: string;
+  @Field(() => String, { nullable: true })
+  docId?: string;
 
   @Field(() => String, {
     description: 'The prompt name to use for the session',
   })
   promptName!: string;
+
+  @Field(() => Boolean, { nullable: true })
+  pinned?: boolean;
 }
 
 @InputType()
-class UpdateChatSessionInput {
+class UpdateChatSessionInput implements Omit<UpdateChatSession, 'userId'> {
   @Field(() => String)
   sessionId!: string;
 
   @Field(() => String, {
+    description: 'The workspace id of the session',
+    nullable: true,
+  })
+  docId!: string | null | undefined;
+
+  @Field(() => Boolean, {
+    description: 'Whether to pin the session',
+    nullable: true,
+  })
+  pinned!: boolean | undefined;
+
+  @Field(() => String, {
     description: 'The prompt name to use for the session',
+    nullable: true,
   })
   promptName!: string;
 }
@@ -134,25 +150,28 @@ enum ChatHistoryOrder {
 registerEnumType(ChatHistoryOrder, { name: 'ChatHistoryOrder' });
 
 @InputType()
-class QueryChatSessionsInput {
-  @Field(() => Boolean, { nullable: true })
-  action: boolean | undefined;
-}
-
-@InputType()
-class QueryChatHistoriesInput implements Partial<ListHistoriesOptions> {
+class QueryChatSessionsInput implements Partial<ListSessionOptions> {
   @Field(() => Boolean, { nullable: true })
   action: boolean | undefined;
 
   @Field(() => Boolean, { nullable: true })
   fork: boolean | undefined;
 
+  @Field(() => Boolean, { nullable: true })
+  pinned: boolean | undefined;
+
   @Field(() => Number, { nullable: true })
   limit: number | undefined;
 
   @Field(() => Number, { nullable: true })
   skip: number | undefined;
+}
 
+@InputType()
+class QueryChatHistoriesInput
+  extends QueryChatSessionsInput
+  implements Partial<ListSessionOptions>
+{
   @Field(() => ChatHistoryOrder, { nullable: true })
   messageOrder: 'asc' | 'desc' | undefined;
 
@@ -218,6 +237,9 @@ class ChatMessageType implements Partial<ChatMessage> {
 class CopilotHistoriesType implements Partial<ChatHistory> {
   @Field(() => String)
   sessionId!: string;
+
+  @Field(() => Boolean)
+  pinned!: boolean;
 
   @Field(() => String, {
     description: 'An mark identifying which view to use to display the session',
@@ -304,6 +326,12 @@ export class CopilotSessionType {
   @Field(() => ID)
   id!: string;
 
+  @Field(() => String, { nullable: true })
+  docId!: string | null;
+
+  @Field(() => Boolean)
+  pinned!: boolean;
+
   @Field(() => ID, { nullable: true })
   parentSessionId!: string | null;
 
@@ -342,20 +370,6 @@ export class CopilotResolver {
   })
   async getQuota(@CurrentUser() user: CurrentUser): Promise<CopilotQuotaType> {
     return await this.chatSession.getQuota(user.id);
-  }
-
-  @ResolveField(() => [String], {
-    description: 'Get the session id list in the workspace',
-    complexity: 2,
-    deprecationReason: 'Use `sessions` instead',
-  })
-  async sessionIds(
-    @Parent() copilot: CopilotType,
-    @CurrentUser() user: CurrentUser,
-    @Args('docId', { nullable: true }) docId?: string,
-    @Args('options', { nullable: true }) options?: QueryChatSessionsInput
-  ): Promise<string[]> {
-    return (await this.sessions(copilot, user, docId, options)).map(s => s.id);
   }
 
   @ResolveField(() => CopilotSessionType, {
@@ -400,12 +414,15 @@ export class CopilotResolver {
       .workspace(copilot.workspaceId)
       .allowLocal()
       .assert('Workspace.Copilot');
+
     const sessions = await this.chatSession.listSessions(
-      user.id,
-      copilot.workspaceId,
-      docId,
-      options
+      Object.assign({}, options, {
+        userId: user.id,
+        workspaceId: copilot.workspaceId,
+        docId,
+      })
     );
+
     return sessions.map(this.transformToSessionType);
   }
 
@@ -435,10 +452,7 @@ export class CopilotResolver {
     }
 
     const histories = await this.chatSession.listHistories(
-      user.id,
-      workspaceId,
-      docId,
-      options
+      Object.assign({}, options, { userId: user.id, workspaceId, docId })
     );
 
     return histories.map(h => ({
@@ -459,22 +473,33 @@ export class CopilotResolver {
     @Args({ name: 'options', type: () => CreateChatSessionInput })
     options: CreateChatSessionInput
   ): Promise<string> {
-    await this.ac.user(user.id).doc(options).allowLocal().assert('Doc.Update');
+    // permission check based on session type
+    if (options.docId) {
+      await this.ac
+        .user(user.id)
+        .doc({ workspaceId: options.workspaceId, docId: options.docId })
+        .allowLocal()
+        .assert('Doc.Update');
+    } else {
+      await this.ac
+        .user(user.id)
+        .workspace(options.workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+    }
+
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
       throw new TooManyRequest('Server is busy');
     }
 
-    if (options.workspaceId === options.docId) {
-      // filter out session create request for root doc
-      throw new CopilotDocNotFound({ docId: options.docId });
-    }
-
     await this.chatSession.checkQuota(user.id);
 
     return await this.chatSession.create({
       ...options,
+      pinned: options.pinned ?? false,
+      docId: options.docId ?? null,
       userId: user.id,
     });
   }
@@ -493,11 +518,19 @@ export class CopilotResolver {
       throw new CopilotSessionNotFound();
     }
     const { workspaceId, docId } = session.config;
-    await this.ac
-      .user(user.id)
-      .doc(workspaceId, docId)
-      .allowLocal()
-      .assert('Doc.Update');
+    if (docId) {
+      await this.ac
+        .user(user.id)
+        .doc(workspaceId, docId)
+        .allowLocal()
+        .assert('Doc.Update');
+    } else {
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+    }
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
@@ -505,7 +538,7 @@ export class CopilotResolver {
     }
 
     await this.chatSession.checkQuota(user.id);
-    return await this.chatSession.updateSessionPrompt({
+    return await this.chatSession.updateSession({
       ...options,
       userId: user.id,
     });
@@ -619,6 +652,8 @@ export class CopilotResolver {
     return {
       id: session.sessionId,
       parentSessionId: session.parentSessionId,
+      docId: session.docId,
+      pinned: session.pinned,
       promptName: session.prompt.name,
       model: session.prompt.model,
       optionalModels: session.prompt.optionalModels,

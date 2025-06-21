@@ -11,5 +11,7 @@ export const SearchTableUniqueId = {
   [SearchTable.doc]: getDocUniqueId,
 };
 
+export const DateFieldNames = ['created_at', 'updated_at'];
+
 export * from './block';
 export * from './doc';
