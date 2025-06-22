@@ -7,6 +7,7 @@ import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { BaseSelection, ExtensionType } from '@blocksuite/affine/store';
 import { ArrowDownBigIcon as ArrowDownIcon } from '@blocksuite/icons/lit';
+import type { Signal } from '@preact/signals-core';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -173,6 +174,9 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
 
+  @property({ attribute: false })
+  accessor panelWidth!: Signal<number | undefined>;
+
   @query('.chat-panel-messages-container')
   accessor messagesContainer: HTMLDivElement | null = null;
 
@@ -300,6 +304,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                     .affineFeatureFlagService=${this.affineFeatureFlagService}
                     .getSessionId=${this.getSessionId}
                     .retry=${() => this.retry()}
+                    .panelWidth=${this.panelWidth}
                   ></chat-message-assistant>`;
                 } else if (isChatAction(item)) {
                   return html`<chat-message-action
