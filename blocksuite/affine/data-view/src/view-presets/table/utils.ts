@@ -1,5 +1,5 @@
-import { TableViewRowSelection } from './selection';
 import type { TableViewSelectionWithType } from './selection';
+import { TableViewRowSelection } from './selection';
 
 export interface TableCell {
   rowId: string;

@@ -3,8 +3,8 @@ import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { ReactiveController } from 'lit';
 
 import { TableViewAreaSelection, TableViewRowSelection } from '../../selection';
-import type { DatabaseCellContainer } from '../row/cell.js';
 import { handleCharStartEdit } from '../../utils.js';
+import type { DatabaseCellContainer } from '../row/cell.js';
 import { popRowMenu } from '../row/menu';
 import type { VirtualTableViewUILogic } from '../table-view-ui-logic';
 

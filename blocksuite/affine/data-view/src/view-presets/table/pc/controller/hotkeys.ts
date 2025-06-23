@@ -2,8 +2,8 @@ import { popupTargetFromElement } from '@blocksuite/affine-components/context-me
 import type { ReactiveController } from 'lit';
 
 import { TableViewAreaSelection, TableViewRowSelection } from '../../selection';
-import type { TableViewCellContainer } from '../cell.js';
 import { handleCharStartEdit } from '../../utils.js';
+import type { TableViewCellContainer } from '../cell.js';
 import { popRowMenu } from '../menu.js';
 import type { TableViewUILogic } from '../table-view-ui-logic';
 
