@@ -77,6 +77,7 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "Query": return AffineGraphQL.Objects.Query
     case "ReleaseVersionType": return AffineGraphQL.Objects.ReleaseVersionType
     case "RemoveAvatar": return AffineGraphQL.Objects.RemoveAvatar
+    case "SearchDocObjectType": return AffineGraphQL.Objects.SearchDocObjectType
     case "SearchNodeObjectType": return AffineGraphQL.Objects.SearchNodeObjectType
     case "SearchResultObjectType": return AffineGraphQL.Objects.SearchResultObjectType
     case "SearchResultPagination": return AffineGraphQL.Objects.SearchResultPagination
