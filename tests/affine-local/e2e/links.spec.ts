@@ -7,6 +7,7 @@ import {
 } from '@affine-test/kit/utils/editor';
 import {
   pasteByKeyboard,
+  pressArrowUp,
   pressBackspace,
   pressEnter,
   selectAllByKeyboard,
@@ -1219,6 +1220,26 @@ test('should open link in new tab when middle clicking on link', async ({
     const newTab = await newTabPromise;
     // there is a refreshKey in the url
     expect(newTab.url()).toContain(url);
+    await newTab.close();
+  }
+
+  await selectAllByKeyboard(page);
+  await pressBackspace(page);
+
+  // reference doc
+  {
+    await pressArrowUp(page);
+    await type(page, 'ThisPage');
+    await pressEnter(page);
+    await type(page, '@ThisPage');
+    await pressEnter(page);
+
+    const newTabPromise = context.waitForEvent('page');
+
+    await page.locator('affine-reference').click({ button: 'middle' });
+
+    const newTab = await newTabPromise;
+    expect(newTab.url()).toContain(page.url());
     await newTab.close();
   }
 });
