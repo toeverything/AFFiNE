@@ -4,7 +4,11 @@ import {
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { PlusIcon, ToggleDownIcon, ToggleRightIcon } from '@blocksuite/icons/lit';
+import {
+  PlusIcon,
+  ToggleDownIcon,
+  ToggleRightIcon,
+} from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { signal } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
