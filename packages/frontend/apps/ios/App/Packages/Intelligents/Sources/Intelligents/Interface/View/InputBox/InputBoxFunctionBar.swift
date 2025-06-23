@@ -13,8 +13,8 @@ protocol InputBoxFunctionBarDelegate: AnyObject {
   func functionBarDidTapSend(_ functionBar: InputBoxFunctionBar)
 }
 
-private let unselectedColor: UIColor = UIColor.affineIconPrimary
-private let selectedColor: UIColor = UIColor.affineIconActivated
+private let unselectedColor: UIColor = .affineIconPrimary
+private let selectedColor: UIColor = .affineIconActivated
 
 class InputBoxFunctionBar: UIView {
   weak var delegate: InputBoxFunctionBarDelegate?

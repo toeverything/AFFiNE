@@ -13,7 +13,7 @@ extension AFFiNEViewController: IntelligentsButtonDelegate {
     IntelligentContext.shared.webView = webView!
     button.beginProgress()
     
-    IntelligentContext.shared.preparePresent() {
+    IntelligentContext.shared.preparePresent() { _ in
       button.stopProgress()
       let controller = IntelligentsController()
       self.present(controller, animated: true)

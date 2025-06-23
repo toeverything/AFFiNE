@@ -62,7 +62,7 @@ class InputBoxImageBar: UIScrollView {
     // 添加新的附件
     let idsToAdd = newIds.subtracting(currentIds)
     var initialXOffset = attachmentViewModels.reduce(0) { $0 + $1.imageCell.frame.width + cellSpacing }
-     for attachment in imageAttachments {
+    for attachment in imageAttachments {
       if idsToAdd.contains(attachment.id),
          let data = attachment.data,
          let image = UIImage(data: data)

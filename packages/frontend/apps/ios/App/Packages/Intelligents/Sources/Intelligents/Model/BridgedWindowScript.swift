@@ -1,5 +1,5 @@
 //
-//  ApplicationBridgedWindowScript.swift
+//  BridgedWindowScript.swift
 //  App
 //
 //  Created by 秋星桥 on 2025/1/8.
@@ -22,14 +22,14 @@ enum BridgedWindowScript: String {
 
   var requiresAsyncContext: Bool {
     switch self {
-    case .getCurrentDocContentInMarkdown, .createNewDocByMarkdownInCurrentWorkspace: return true
-    default: return false
+    case .getCurrentDocContentInMarkdown, .createNewDocByMarkdownInCurrentWorkspace: true
+    default: false
     }
   }
 }
 
 extension WKWebView {
-  func evaluateScript(_ script: BridgedWindowScript, callback: @escaping (Any?) -> ()) {
+  func evaluateScript(_ script: BridgedWindowScript, callback: @escaping (Any?) -> Void) {
     if script.requiresAsyncContext {
       callAsyncJavaScript(
         script.rawValue,
@@ -38,7 +38,7 @@ extension WKWebView {
         in: .page
       ) { result in
         switch result {
-        case .success(let input):
+        case let .success(input):
           callback(input)
         case .failure:
           callback(nil)
@@ -49,5 +49,3 @@ extension WKWebView {
     }
   }
 }
-
-
