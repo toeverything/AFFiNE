@@ -14,7 +14,7 @@ export default defineConfig({
       reportsDirectory: '../../.coverage/data-view',
     },
     onConsoleLog(log, type) {
-      if (log.includes('https://lit.dev/msg/dev-mode')) {
+      if (log.includes('lit.dev/msg/dev-mode')) {
         return false;
       }
       console.warn(`Unexpected ${type} log`, log);
