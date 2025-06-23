@@ -77,6 +77,7 @@ abstract class PopupWindow {
       closable: false,
       alwaysOnTop: true,
       hiddenInMissionControl: true,
+      skipTaskbar: true,
       movable: false,
       titleBarStyle: 'hidden',
       show: false, // hide by default,
@@ -243,6 +244,8 @@ export class PopupManager {
           return new NotificationPopupWindow() as PopupWindowTypeMap[T];
         case 'recording':
           return new RecordingPopupWindow() as PopupWindowTypeMap[T];
+        default:
+          throw new Error(`Unknown popup type: ${type}`);
       }
     })();
 

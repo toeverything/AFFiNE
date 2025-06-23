@@ -210,9 +210,11 @@ export const QuickSelect = memo(function QuickSelect({
 
   const onChange = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
+      contextValue.selectMode$?.next(true);
       onClick?.(e);
       e.stopPropagation();
       e.preventDefault();
+      contextValue.selectMode$?.next(true);
       contextValue.selectedDocIds$?.next(
         selected
           ? selectedDocIds.filter(id => id !== doc.id)

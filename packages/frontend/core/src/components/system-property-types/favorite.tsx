@@ -1,6 +1,7 @@
-import { Menu, MenuItem, type MenuRef } from '@affine/component';
+import { MenuItem } from '@affine/component';
 import type { FilterParams } from '@affine/core/modules/collection-rules';
-import { useEffect, useRef } from 'react';
+
+import { FilterValueMenu } from '../filter/filter-value-menu';
 
 export const FavoriteFilterValue = ({
   filter,
@@ -13,20 +14,10 @@ export const FavoriteFilterValue = ({
   onDraftCompleted?: () => void;
   onChange?: (filter: FilterParams) => void;
 }) => {
-  const menuRef = useRef<MenuRef>(null);
-
-  useEffect(() => {
-    if (isDraft) {
-      menuRef.current?.changeOpen(true);
-    }
-  }, [isDraft]);
-
   return (
-    <Menu
-      ref={menuRef}
-      rootOptions={{
-        onClose: onDraftCompleted,
-      }}
+    <FilterValueMenu
+      isDraft={isDraft}
+      onDraftCompleted={onDraftCompleted}
       items={
         <>
           <MenuItem
@@ -55,6 +46,6 @@ export const FavoriteFilterValue = ({
       }
     >
       <span>{filter.value === 'true' ? 'True' : 'False'}</span>
-    </Menu>
+    </FilterValueMenu>
   );
 };

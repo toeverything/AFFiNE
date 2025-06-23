@@ -864,22 +864,6 @@
         }
       }
     },
-    "customerIo": {
-      "type": "object",
-      "description": "Configuration for customerIo module",
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "description": "Enable customer.io integration\n@default false",
-          "default": false
-        },
-        "token": {
-          "type": "string",
-          "description": "Customer.io token\n@default \"\"",
-          "default": ""
-        }
-      }
-    },
     "indexer": {
       "type": "object",
       "description": "Configuration for indexer module",
@@ -918,6 +902,22 @@
           "type": "number",
           "description": "Number of workspaces automatically indexed per batch\n@default 10",
           "default": 10
+        }
+      }
+    },
+    "customerIo": {
+      "type": "object",
+      "description": "Configuration for customerIo module",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable customer.io integration\n@default false",
+          "default": false
+        },
+        "token": {
+          "type": "string",
+          "description": "Customer.io token\n@default \"\"",
+          "default": ""
         }
       }
     },

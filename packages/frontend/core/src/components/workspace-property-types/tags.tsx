@@ -118,6 +118,7 @@ export const TagsFilterValue = ({
       selectedTags={selectedTags}
       onSelectTag={handleSelectTag}
       onDeselectTag={handleDeselectTag}
+      menuClassName={styles.filterValueMenu}
       tagMode="inline-tag"
       ref={menuRef}
       onEditorClose={onDraftCompleted}

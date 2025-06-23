@@ -1,0 +1,21 @@
+query getRecentlyUpdatedDocs($workspaceId: String!, $pagination: PaginationInput!) {
+  workspace(id: $workspaceId) {
+    recentlyUpdatedDocs(pagination: $pagination) {
+      totalCount
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+      edges {
+        node {
+          id
+          title
+          createdAt
+          updatedAt
+          creatorId
+          lastUpdaterId
+        }
+      }
+    }
+  }
+}

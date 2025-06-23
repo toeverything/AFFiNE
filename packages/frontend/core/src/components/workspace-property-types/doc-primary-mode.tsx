@@ -1,7 +1,5 @@
 import {
-  Menu,
   MenuItem,
-  type MenuRef,
   notify,
   PropertyValue,
   type RadioItem,
@@ -12,11 +10,12 @@ import { useI18n } from '@affine/i18n';
 import type { DocMode } from '@blocksuite/affine/model';
 import { EdgelessIcon, PageIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { PlainTextDocGroupHeader } from '../explorer/docs-view/group-header';
 import { StackProperty } from '../explorer/docs-view/stack-property';
 import type { DocListPropertyProps, GroupHeaderProps } from '../explorer/types';
+import { FilterValueMenu } from '../filter/filter-value-menu';
 import type { PropertyValueProps } from '../properties/types';
 import { PropertyRadioGroup } from '../properties/widgets/radio-group';
 import * as styles from './doc-primary-mode.css';
@@ -89,20 +88,11 @@ export const DocPrimaryModeFilterValue = ({
   onChange?: (filter: FilterParams) => void;
 }) => {
   const t = useI18n();
-  const menuRef = useRef<MenuRef>(null);
-
-  useEffect(() => {
-    if (isDraft) {
-      menuRef.current?.changeOpen(true);
-    }
-  }, [isDraft]);
 
   return (
-    <Menu
-      ref={menuRef}
-      rootOptions={{
-        onClose: onDraftCompleted,
-      }}
+    <FilterValueMenu
+      isDraft={isDraft}
+      onDraftCompleted={onDraftCompleted}
       items={
         <>
           <MenuItem
@@ -131,7 +121,7 @@ export const DocPrimaryModeFilterValue = ({
       }
     >
       <span>{filter.value === 'edgeless' ? t['Edgeless']() : t['Page']()}</span>
-    </Menu>
+    </FilterValueMenu>
   );
 };
 

@@ -62,13 +62,11 @@ const builtinSurfaceToolbarConfig = {
         if (!rootModel) return;
 
         const { id: frameId, xywh } = model;
-        let lastNoteId = rootModel.children
-          .filter(
-            note =>
-              matchModels(note, [NoteBlockModel]) &&
-              note.props.displayMode !== NoteDisplayMode.EdgelessOnly
-          )
-          .pop()?.id;
+        let lastNoteId = rootModel.children.findLast(
+          note =>
+            matchModels(note, [NoteBlockModel]) &&
+            note.props.displayMode !== NoteDisplayMode.EdgelessOnly
+        )?.id;
 
         if (!lastNoteId) {
           const bounds = Bound.deserialize(xywh);

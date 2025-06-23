@@ -128,6 +128,7 @@ export class KanbanSelectionController implements ReactiveController {
     if (selection.selectionType === 'card') {
       this.view.rowsDelete(selection.cards.map(v => v.cardId));
       this.selection = undefined;
+      this.logic.ui$.value?.requestUpdate();
     }
   }
 

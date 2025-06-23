@@ -73,6 +73,7 @@ export class KanbanViewUILogic extends DataViewUILogicBase<
         rowId,
       });
     }
+    this.ui$.value?.requestUpdate();
     return rowId;
   };
 

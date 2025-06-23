@@ -295,28 +295,31 @@ const MeetingsSettingsMain = () => {
               />
             </SettingRow>
           </SettingWrapper>
-          <SettingWrapper
-            title={t['com.affine.settings.meetings.privacy.header']()}
-          >
-            <PermissionSettingRow
-              nameKey="com.affine.settings.meetings.privacy.screen-system-audio-recording"
-              descriptionKey="com.affine.settings.meetings.privacy.screen-system-audio-recording.description"
-              permissionSettingKey="com.affine.settings.meetings.privacy.screen-system-audio-recording.permission-setting"
-              hasPermission={permissions?.screen || false}
-              onOpenPermissionSetting={() =>
-                handleOpenPermissionSetting('screen')
-              }
-            />
-            <PermissionSettingRow
-              nameKey="com.affine.settings.meetings.privacy.microphone"
-              descriptionKey="com.affine.settings.meetings.privacy.microphone.description"
-              permissionSettingKey="com.affine.settings.meetings.privacy.microphone.permission-setting"
-              hasPermission={permissions?.microphone || false}
-              onOpenPermissionSetting={() =>
-                handleOpenPermissionSetting('microphone')
-              }
-            />
-          </SettingWrapper>
+          {environment.isMacOs && (
+            <SettingWrapper
+              title={t['com.affine.settings.meetings.privacy.header']()}
+            >
+              <PermissionSettingRow
+                nameKey="com.affine.settings.meetings.privacy.screen-system-audio-recording"
+                descriptionKey="com.affine.settings.meetings.privacy.screen-system-audio-recording.description"
+                permissionSettingKey="com.affine.settings.meetings.privacy.screen-system-audio-recording.permission-setting"
+                hasPermission={permissions?.screen || false}
+                onOpenPermissionSetting={() =>
+                  handleOpenPermissionSetting('screen')
+                }
+              />
+              <PermissionSettingRow
+                nameKey="com.affine.settings.meetings.privacy.microphone"
+                descriptionKey="com.affine.settings.meetings.privacy.microphone.description"
+                permissionSettingKey="com.affine.settings.meetings.privacy.microphone.permission-setting"
+                hasPermission={permissions?.microphone || false}
+                onOpenPermissionSetting={() =>
+                  handleOpenPermissionSetting('microphone')
+                }
+              />
+            </SettingWrapper>
+          )}
+
           <SettingWrapper>
             <SettingRow
               name={t['com.affine.settings.meetings.privacy.issues']()}

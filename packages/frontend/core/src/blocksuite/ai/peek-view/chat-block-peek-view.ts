@@ -34,10 +34,14 @@ import type {
   AIReasoningConfig,
 } from '../components/ai-chat-input';
 import type { ChatMessage } from '../components/ai-chat-messages';
-import { ChatMessagesSchema } from '../components/ai-chat-messages';
+import {
+  ChatMessagesSchema,
+  StreamObjectSchema,
+} from '../components/ai-chat-messages';
 import type { TextRendererOptions } from '../components/text-renderer';
 import { AIChatErrorRenderer } from '../messages/error';
 import { type AIError, AIProvider } from '../provider';
+import { mergeStreamObjects } from '../utils/stream-objects';
 import { PeekViewStyles } from './styles';
 import type { ChatContext } from './types';
 import { calcChildBound } from './utils';
@@ -345,7 +349,12 @@ export class AIChatBlockPeekView extends LitElement {
         last.id = '';
         last.createdAt = new Date().toISOString();
       }
-      this.updateContext({ messages, status: 'loading', error: null });
+      this.updateContext({
+        messages,
+        status: 'loading',
+        error: null,
+        abortController,
+      });
 
       const { store } = this.host;
       const stream = await AIProvider.actions.chat({
@@ -362,11 +371,22 @@ export class AIChatBlockPeekView extends LitElement {
         webSearch: this._isNetworkActive,
       });
 
-      this.updateContext({ abortController });
       for await (const text of stream) {
         const messages = [...this.chatContext.messages];
         const last = messages[messages.length - 1] as ChatMessage;
-        last.content += text;
+        try {
+          const parsed = StreamObjectSchema.safeParse(JSON.parse(text));
+          if (parsed.success) {
+            last.streamObjects = mergeStreamObjects([
+              ...(last.streamObjects ?? []),
+              parsed.data,
+            ]);
+          } else {
+            last.content += text;
+          }
+        } catch {
+          last.content += text;
+        }
         this.updateContext({ messages, status: 'transmitting' });
       }
 

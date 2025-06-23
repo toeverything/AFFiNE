@@ -275,7 +275,7 @@ export class DndService extends Service {
     // only deal with the first url
     const url = urls
       ?.split('\n')
-      .filter(u => u.trim() && !u.trim().startsWith('#'))[0];
+      .find(u => u.trim() && !u.trim().startsWith('#'));
 
     if (url) {
       const maybeDocLink = resolveLinkToDoc(url);

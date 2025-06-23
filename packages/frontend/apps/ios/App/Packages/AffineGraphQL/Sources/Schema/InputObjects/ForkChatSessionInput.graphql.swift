@@ -12,7 +12,7 @@ public struct ForkChatSessionInput: InputObject {
 
   public init(
     docId: String,
-    latestMessageId: String,
+    latestMessageId: GraphQLNullable<String> = nil,
     sessionId: String,
     workspaceId: String
   ) {
@@ -30,7 +30,7 @@ public struct ForkChatSessionInput: InputObject {
   }
 
   /// Identify a message in the array and keep it with all previous messages into a forked session.
-  public var latestMessageId: String {
+  public var latestMessageId: GraphQLNullable<String> {
     get { __data["latestMessageId"] }
     set { __data["latestMessageId"] = newValue }
   }

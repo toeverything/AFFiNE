@@ -18,7 +18,7 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -27,7 +27,7 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -36,7 +36,7 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -45,7 +45,7 @@ export class AnthropicVertexProvider extends AnthropicProvider<AnthropicVertexCo
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
           defaultForOutputType: true,
         },
       ],

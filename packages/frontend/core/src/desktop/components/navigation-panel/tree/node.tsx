@@ -66,6 +66,7 @@ export interface BaseNavigationPanelTreeNodeProps {
   extractEmojiAsIcon?: boolean;
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
+  collapsible?: boolean;
   disabled?: boolean;
   onClick?: () => void;
   to?: To;
@@ -140,6 +141,7 @@ export const NavigationPanelTreeNode = ({
   collapsed,
   extractEmojiAsIcon,
   setCollapsed,
+  collapsible = true,
   canDrop,
   reorderable = true,
   operations = [],
@@ -226,7 +228,7 @@ export const NavigationPanelTreeNode = ({
           return;
         }
         onDrop?.(data);
-        if (data.treeInstruction?.type === 'make-child') {
+        if (data.treeInstruction?.type === 'make-child' && collapsible) {
           setCollapsed(false);
         }
       },
@@ -242,6 +244,7 @@ export const NavigationPanelTreeNode = ({
       handleCanDrop,
       cid,
       onDrop,
+      collapsible,
       setCollapsed,
     ]
   );
@@ -253,6 +256,7 @@ export const NavigationPanelTreeNode = ({
       treeInstruction?.type === 'make-child' &&
       !isSelfDraggedOver
     ) {
+      if (!collapsible) return;
       // auto expand when dragged over
       const timeout = setTimeout(() => {
         setCollapsed(false);
@@ -260,7 +264,13 @@ export const NavigationPanelTreeNode = ({
       return () => clearTimeout(timeout);
     }
     return;
-  }, [draggedOver, isSelfDraggedOver, setCollapsed, treeInstruction?.type]);
+  }, [
+    collapsible,
+    draggedOver,
+    isSelfDraggedOver,
+    setCollapsed,
+    treeInstruction?.type,
+  ]);
 
   useEffect(() => {
     if (rootRef.current) {
@@ -346,9 +356,10 @@ export const NavigationPanelTreeNode = ({
     (e: React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault(); // for links
+      if (!collapsible) return;
       setCollapsed(!collapsed);
     },
-    [collapsed, setCollapsed]
+    [collapsed, collapsible, setCollapsed]
   );
 
   const handleRename = useCallback(
@@ -365,11 +376,11 @@ export const NavigationPanelTreeNode = ({
       }
       if (!clickForCollapse) {
         onClick?.();
-      } else {
+      } else if (collapsible) {
         setCollapsed(!collapsed);
       }
     },
-    [clickForCollapse, collapsed, onClick, setCollapsed]
+    [clickForCollapse, collapsed, collapsible, onClick, setCollapsed]
   );
 
   const content = (
@@ -378,20 +389,20 @@ export const NavigationPanelTreeNode = ({
       className={styles.itemRoot}
       data-active={active}
       data-disabled={disabled}
+      data-collapsible={collapsible}
     >
-      <div
-        data-disabled={disabled}
-        onClick={handleCollapsedChange}
-        data-testid="navigation-panel-collapsed-button"
-        className={styles.collapsedIconContainer}
-      >
-        <ArrowDownSmallIcon
-          className={styles.collapsedIcon}
-          data-collapsed={collapsed !== false}
-        />
-      </div>
-
-      <div className={styles.itemMain}>
+      <div className={styles.toggleIcon}>
+        <div
+          data-disabled={disabled}
+          onClick={handleCollapsedChange}
+          data-testid="navigation-panel-collapsed-button"
+          className={styles.collapsedIconContainer}
+        >
+          <ArrowDownSmallIcon
+            className={styles.collapsedIcon}
+            data-collapsed={collapsed !== false}
+          />
+        </div>
         <div className={styles.iconContainer}>
           {emoji ??
             (Icon && (
@@ -402,6 +413,9 @@ export const NavigationPanelTreeNode = ({
               />
             ))}
         </div>
+      </div>
+
+      <div className={styles.itemMain}>
         <div className={styles.itemContent}>{name}</div>
         {postfix}
         <div

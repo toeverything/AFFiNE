@@ -5,13 +5,18 @@ export const workspaceAndUserWrapper = style({
   alignItems: 'center',
   justifyContent: 'space-between',
   gap: 8,
+  width: 'calc(100% + 12px)',
+  height: 42,
+  paddingRight: 6,
+  alignSelf: 'center',
 });
 export const quickSearchAndNewPage = style({
   display: 'flex',
   alignItems: 'center',
   gap: 8,
-  padding: '8px 0',
+  padding: '4px 0',
   marginLeft: -8,
+  marginRight: -6,
 });
 export const quickSearch = style({
   width: 0,

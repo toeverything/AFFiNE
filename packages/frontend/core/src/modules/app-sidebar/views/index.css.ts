@@ -67,7 +67,7 @@ export const navStyle = style({
 export const navHeaderStyle = style({
   flex: '0 0 auto',
   height: '52px',
-  padding: '0px 16px',
+  padding: '0px 8px',
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',

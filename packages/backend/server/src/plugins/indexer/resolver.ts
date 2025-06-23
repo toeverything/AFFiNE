@@ -10,6 +10,8 @@ import { IndexerService, SearchNodeWithMeta } from './service';
 import {
   AggregateInput,
   AggregateResultObjectType,
+  SearchDocObjectType,
+  SearchDocsInput,
   SearchInput,
   SearchQueryOccur,
   SearchQueryType,
@@ -84,6 +86,29 @@ export class IndexerResolver {
         nextCursor: result.nextCursor,
       },
     };
+  }
+
+  @ResolveField(() => [SearchDocObjectType], {
+    description: 'Search docs by keyword',
+  })
+  async searchDocs(
+    @CurrentUser() me: UserType,
+    @Parent() workspace: WorkspaceType,
+    @Args('input') input: SearchDocsInput
+  ): Promise<SearchDocObjectType[]> {
+    const docs = await this.indexer.searchDocsByKeyword(
+      workspace.id,
+      input.keyword,
+      {
+        limit: input.limit,
+      }
+    );
+
+    const needs = await this.ac
+      .user(me.id)
+      .workspace(workspace.id)
+      .docs(docs, 'Doc.Read');
+    return needs;
   }
 
   #addWorkspaceFilter(

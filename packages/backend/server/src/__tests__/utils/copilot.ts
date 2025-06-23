@@ -20,8 +20,9 @@ export const cleanObject = (
 export async function createCopilotSession(
   app: TestingApp,
   workspaceId: string,
-  docId: string,
-  promptName: string
+  docId: string | null,
+  promptName: string,
+  pinned: boolean = false
 ): Promise<string> {
   const res = await app.gql(
     `
@@ -29,10 +30,71 @@ export async function createCopilotSession(
       createCopilotSession(options: $options)
     }
   `,
-    { options: { workspaceId, docId, promptName } }
+    { options: { workspaceId, docId, promptName, pinned } }
   );
 
   return res.createCopilotSession;
+}
+
+export async function createWorkspaceCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  promptName: string
+): Promise<string> {
+  return createCopilotSession(app, workspaceId, null, promptName);
+}
+
+export async function createPinnedCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  docId: string,
+  promptName: string
+): Promise<string> {
+  return createCopilotSession(app, workspaceId, docId, promptName, true);
+}
+
+export async function createDocCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  docId: string,
+  promptName: string
+): Promise<string> {
+  return createCopilotSession(app, workspaceId, docId, promptName);
+}
+
+export async function getCopilotSession(
+  app: TestingApp,
+  workspaceId: string,
+  sessionId: string
+): Promise<{
+  id: string;
+  docId: string | null;
+  parentSessionId: string | null;
+  pinned: boolean;
+  promptName: string;
+}> {
+  const res = await app.gql(
+    `
+      query getCopilotSession(
+        $workspaceId: String!
+        $sessionId: String!
+      ) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            session(sessionId: $sessionId) {
+              id
+              docId
+              parentSessionId
+              pinned
+              promptName
+            }
+          }
+        }
+      }`,
+    { workspaceId, sessionId }
+  );
+
+  return res.currentUser?.copilot?.session;
 }
 
 export async function updateCopilotSession(
@@ -580,6 +642,14 @@ export async function chatWithImages(
   messageId?: string
 ) {
   return chatWithText(app, sessionId, messageId, '/images');
+}
+
+export async function chatWithStreamObject(
+  app: TestingApp,
+  sessionId: string,
+  messageId?: string
+) {
+  return chatWithText(app, sessionId, messageId, '/stream-object');
 }
 
 export async function unsplashSearch(
