@@ -102,6 +102,8 @@ export class ChatPanel extends SignalWatcher(
   private isSidebarOpen: Signal<boolean | undefined> = signal(false);
 
   private sidebarWidth: Signal<number | undefined> = signal(undefined);
+  @state()
+  accessor showPreviewPanel = false;
 
   private readonly initSession = async () => {
     if (this.session) {
@@ -244,7 +246,7 @@ export class ChatPanel extends SignalWatcher(
         : nothing}
     `;
 
-    return html`<div class="chat-panel-container" style=${style}>
+    const left = html`<div class="chat-panel-container" style=${style}>
       ${keyed(
         this.doc.id,
         html`<ai-chat-content
@@ -266,6 +268,15 @@ export class ChatPanel extends SignalWatcher(
         ></ai-chat-content>`
       )}
     </div>`;
+
+    const right = html`<div>Preview Panel</div>`;
+
+    return html`<chat-panel-split-view
+      .left=${left}
+      .right=${right}
+      .open=${this.showPreviewPanel}
+    >
+    </chat-panel-split-view>`;
   }
 }
 

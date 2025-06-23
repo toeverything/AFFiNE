@@ -23,6 +23,7 @@ import { AILoading } from './chat-panel/ai-loading';
 import { ChatMessageAction } from './chat-panel/message/action';
 import { ChatMessageAssistant } from './chat-panel/message/assistant';
 import { ChatMessageUser } from './chat-panel/message/user';
+import { ChatPanelSplitView } from './chat-panel/split-view';
 import { ChatPanelAddPopover } from './components/ai-chat-chips/add-popover';
 import { ChatPanelCandidatesPopover } from './components/ai-chat-chips/candidates-popover';
 import { ChatPanelChips } from './components/ai-chat-chips/chat-panel-chips';
@@ -184,4 +185,5 @@ export function registerAIEffects() {
   );
 
   customElements.define('transcription-block', LitTranscriptionBlock);
+  customElements.define('chat-panel-split-view', ChatPanelSplitView);
 }
