@@ -179,7 +179,14 @@ const BlockSuiteEditorImpl = ({
     const editorContainer = rootRef.current;
     if (editorContainer) {
       const handleMiddleClick = (e: MouseEvent) => {
-        if (!enableMiddleClickPaste && e.button === 1 && IS_LINUX) {
+        if (
+          e.target instanceof HTMLElement &&
+          (e.target.closest('affine-reference') ||
+            e.target.closest('affine-link'))
+        ) {
+          return;
+        }
+        if (!enableMiddleClickPaste && IS_LINUX && e.button === 1) {
           e.preventDefault();
         }
       };
