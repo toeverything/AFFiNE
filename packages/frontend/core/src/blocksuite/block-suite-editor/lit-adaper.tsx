@@ -80,6 +80,8 @@ const usePatchSpecs = (mode: DocMode) => {
     featureFlagService.flags.enable_pdf_embed_preview.$
   );
 
+  const enableComment = useLiveData(featureFlagService.flags.enable_comment.$);
+
   const patchedSpecs = useMemo(() => {
     const manager = getViewManager()
       .config.init()
@@ -106,7 +108,8 @@ const usePatchSpecs = (mode: DocMode) => {
       .mobile(framework)
       .electron(framework)
       .linkPreview(framework)
-      .codeBlockHtmlPreview(framework).value;
+      .codeBlockHtmlPreview(framework)
+      .comment(enableComment).value;
 
     if (BUILD_CONFIG.isMobileEdition) {
       if (mode === 'page') {
@@ -122,6 +125,7 @@ const usePatchSpecs = (mode: DocMode) => {
     enableAI,
     enablePDFEmbedPreview,
     enableTurboRenderer,
+    enableComment,
     framework,
     isInPeekView,
     isCloud,
