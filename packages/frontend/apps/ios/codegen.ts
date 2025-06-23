@@ -10,10 +10,7 @@ const PackageRoot = iosPackage.path;
 console.log('[*] PackageRoot', PackageRoot);
 
 console.log('[*] graphql...');
-execSync(
-  `${PackageRoot}/App/Packages/AffineGraphQL/apollo-ios-cli generate --path ${PackageRoot}/apollo-codegen-config.json`,
-  { stdio: 'inherit' }
-);
+execSync(`${PackageRoot}/apollo-codegen-chore.sh`, { stdio: 'inherit' });
 
 console.log('[*] rust...');
 execSync(

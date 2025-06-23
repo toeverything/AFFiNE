@@ -6,6 +6,7 @@ import {
   Tooltip,
 } from '@affine/component';
 import { Guard } from '@affine/core/components/guard';
+import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { DocsService } from '@affine/core/modules/doc';
@@ -66,10 +67,12 @@ export const NavigationPanelDocNode = ({
     FeatureFlagService,
     GuardService,
   });
+  const { appSettings } = useAppSettingHelper();
 
   const active =
     useLiveData(globalContextService.globalContext.docId.$) === docId;
   const [collapsed, setCollapsed] = useState(true);
+  const isCollapsed = appSettings.showLinkedDocInSidebar ? collapsed : true;
 
   const docRecord = useLiveData(docsService.list.doc$(docId));
   const DocIcon = useLiveData(
@@ -94,10 +97,10 @@ export const NavigationPanelDocNode = ({
     useMemo(
       () =>
         LiveData.from(
-          !collapsed ? docsSearchService.watchRefsFrom(docId) : NEVER,
+          !isCollapsed ? docsSearchService.watchRefsFrom(docId) : NEVER,
           null
         ),
-      [docsSearchService, docId, collapsed]
+      [docsSearchService, docId, isCollapsed]
     )
   );
   const searching = children === null;
@@ -247,8 +250,9 @@ export const NavigationPanelDocNode = ({
       onDrop={handleDropOnDoc}
       renameable
       extractEmojiAsIcon={enableEmojiIcon}
-      collapsed={collapsed}
+      collapsed={isCollapsed}
       setCollapsed={setCollapsed}
+      collapsible={appSettings.showLinkedDocInSidebar}
       canDrop={handleCanDrop}
       to={`/${docId}`}
       onClick={() => {
@@ -257,7 +261,7 @@ export const NavigationPanelDocNode = ({
       active={active}
       postfix={
         referencesLoading &&
-        !collapsed && (
+        !isCollapsed && (
           <Tooltip
             content={t['com.affine.rootAppSidebar.docs.references-loading']()}
           >
@@ -285,24 +289,26 @@ export const NavigationPanelDocNode = ({
       dropEffect={handleDropEffectOnDoc}
       data-testid={`navigation-panel-doc-${docId}`}
     >
-      <Guard docId={docId} permission="Doc_Read">
-        {canRead =>
-          canRead
-            ? children?.map((child, index) => (
-                <NavigationPanelDocNode
-                  key={`${child.docId}-${index}`}
-                  docId={child.docId}
-                  reorderable={false}
-                  location={{
-                    at: 'navigation-panel:doc:linked-docs',
-                    docId,
-                  }}
-                  isLinked
-                />
-              ))
-            : null
-        }
-      </Guard>
+      {appSettings.showLinkedDocInSidebar ? (
+        <Guard docId={docId} permission="Doc_Read">
+          {canRead =>
+            canRead
+              ? children?.map((child, index) => (
+                  <NavigationPanelDocNode
+                    key={`${child.docId}-${index}`}
+                    docId={child.docId}
+                    reorderable={false}
+                    location={{
+                      at: 'navigation-panel:doc:linked-docs',
+                      docId,
+                    }}
+                    isLinked
+                  />
+                ))
+              : null
+          }
+        </Guard>
+      ) : null}
     </NavigationPanelTreeNode>
   );
 };

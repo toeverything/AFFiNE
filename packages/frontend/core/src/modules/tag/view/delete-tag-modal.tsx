@@ -19,8 +19,8 @@ export const useDeleteTagConfirmModal = () => {
     (tagIdsToDelete: string[]) => {
       let closed = false;
       const { resolve, promise } = Promise.withResolvers<boolean>();
-      const tagsToDelete = tags.filter(tag => tagIdsToDelete.includes(tag.id));
-      const tagName = tagsToDelete[0]?.value$.value;
+      const tagToDelete = tags.find(tag => tagIdsToDelete.includes(tag.id));
+      const tagName = tagToDelete?.value$.value;
       const handleClose = (state: boolean) => {
         if (!closed) {
           closed = true;

@@ -5,12 +5,14 @@ import ava, { TestFn } from 'ava';
 import Sinon from 'sinon';
 
 import { Config } from '../../base';
-import { ContextEmbedStatus } from '../../models/common/copilot';
-import { CopilotContextModel } from '../../models/copilot-context';
-import { CopilotSessionModel } from '../../models/copilot-session';
-import { CopilotWorkspaceConfigModel } from '../../models/copilot-workspace';
-import { UserModel } from '../../models/user';
-import { WorkspaceModel } from '../../models/workspace';
+import {
+  ContextEmbedStatus,
+  CopilotContextModel,
+  CopilotSessionModel,
+  CopilotWorkspaceConfigModel,
+  UserModel,
+  WorkspaceModel,
+} from '../../models';
 import { createTestingModule, type TestingModule } from '../utils';
 import { cleanObject } from '../utils/copilot';
 
@@ -46,7 +48,7 @@ let docId = 'doc1';
 
 test.beforeEach(async t => {
   await t.context.module.initTestingDB();
-  await t.context.copilotSession.createPrompt('prompt-name', 'gpt-4o');
+  await t.context.copilotSession.createPrompt('prompt-name', 'gpt-4.1');
   user = await t.context.user.create({
     email: 'test@affine.pro',
   });
@@ -57,6 +59,7 @@ test.beforeEach(async t => {
     docId,
     userId: user.id,
     promptName: 'prompt-name',
+    promptAction: null,
   });
 });
 

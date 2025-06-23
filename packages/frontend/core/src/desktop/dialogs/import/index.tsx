@@ -1,13 +1,16 @@
 import { Button, IconButton, Modal } from '@affine/component';
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
-import type {
-  DialogComponentProps,
-  WORKSPACE_DIALOG_SCHEMA,
+import { useNavigateHelper } from '@affine/core/components/hooks/use-navigate-helper';
+import {
+  type DialogComponentProps,
+  GlobalDialogService,
+  type WORKSPACE_DIALOG_SCHEMA,
 } from '@affine/core/modules/dialogs';
 import { UrlService } from '@affine/core/modules/url';
 import {
   getAFFiNEWorkspaceSchema,
+  type WorkspaceMetadata,
   WorkspaceService,
 } from '@affine/core/modules/workspace';
 import { DebugLogger } from '@affine/debug';
@@ -27,6 +30,7 @@ import {
   HelpIcon,
   NotionIcon,
   PageIcon,
+  SaveIcon,
   ZipIcon,
 } from '@blocksuite/icons/rc';
 import { useService } from '@toeverything/infra';
@@ -36,6 +40,7 @@ import {
   type ReactElement,
   type SVGAttributes,
   useCallback,
+  useMemo,
   useState,
 } from 'react';
 
@@ -43,8 +48,14 @@ import * as style from './styles.css';
 
 const logger = new DebugLogger('import');
 
-type ImportType = 'markdown' | 'markdownZip' | 'notion' | 'snapshot' | 'html';
-type AcceptType = 'Markdown' | 'Zip' | 'Html';
+type ImportType =
+  | 'markdown'
+  | 'markdownZip'
+  | 'notion'
+  | 'snapshot'
+  | 'html'
+  | 'dotaffinefile';
+type AcceptType = 'Markdown' | 'Zip' | 'Html' | 'Skip'; // Skip is used for dotaffinefile
 type Status = 'idle' | 'importing' | 'success' | 'error';
 type ImportResult = {
   docIds: string[];
@@ -56,7 +67,8 @@ type ImportConfig = {
   fileOptions: { acceptType: AcceptType; multiple: boolean };
   importFunction: (
     docCollection: Workspace,
-    files: File[]
+    files: File[],
+    handleImportAffineFile: () => Promise<WorkspaceMetadata | undefined>
   ) => Promise<ImportResult>;
 };
 
@@ -128,7 +140,22 @@ const importOptions = [
     testId: 'editor-option-menu-import-snapshot',
     type: 'snapshot' as ImportType,
   },
-];
+  BUILD_CONFIG.isElectron
+    ? {
+        key: 'dotaffinefile',
+        label: 'com.affine.import.dotaffinefile',
+        prefixIcon: (
+          <SaveIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+        ),
+        suffixIcon: (
+          <HelpIcon color={cssVarV2('icon/primary')} width={20} height={20} />
+        ),
+        suffixTooltip: 'com.affine.import.dotaffinefile.tooltip',
+        testId: 'editor-option-menu-import-dotaffinefile',
+        type: 'dotaffinefile' as ImportType,
+      }
+    : null,
+].filter(v => v !== null);
 
 const importConfigs: Record<ImportType, ImportConfig> = {
   markdown: {
@@ -231,6 +258,17 @@ const importConfigs: Record<ImportType, ImportConfig> = {
 
       return {
         docIds,
+      };
+    },
+  },
+  dotaffinefile: {
+    fileOptions: { acceptType: 'Skip', multiple: false },
+    importFunction: async (_, __, handleImportAffineFile) => {
+      await handleImportAffineFile();
+      return {
+        docIds: [],
+        entryId: undefined,
+        isWorkspaceFile: true,
       };
     },
   },
@@ -404,28 +442,84 @@ export const ImportDialog = ({
   const workspace = useService(WorkspaceService).workspace;
   const docCollection = workspace.docCollection;
 
+  const globalDialogService = useService(GlobalDialogService);
+
+  const { jumpToPage } = useNavigateHelper();
+  const handleCreatedWorkspace = useCallback(
+    (payload: { metadata: WorkspaceMetadata; defaultDocId?: string }) => {
+      if (document.startViewTransition) {
+        document.startViewTransition(() => {
+          if (payload.defaultDocId) {
+            jumpToPage(payload.metadata.id, payload.defaultDocId);
+          } else {
+            jumpToPage(payload.metadata.id, 'all');
+          }
+          return new Promise(resolve =>
+            setTimeout(resolve, 150)
+          ); /* start transition after 150ms */
+        });
+      } else {
+        if (payload.defaultDocId) {
+          jumpToPage(payload.metadata.id, payload.defaultDocId);
+        } else {
+          jumpToPage(payload.metadata.id, 'all');
+        }
+      }
+    },
+    [jumpToPage]
+  );
+
+  const handleImportAffineFile = useMemo(() => {
+    return async () => {
+      track.$.navigationPanel.workspaceList.createWorkspace({
+        control: 'import',
+      });
+
+      return new Promise<WorkspaceMetadata | undefined>((resolve, reject) => {
+        globalDialogService.open('import-workspace', undefined, payload => {
+          if (payload) {
+            handleCreatedWorkspace({ metadata: payload.workspace });
+            resolve(payload.workspace);
+          } else {
+            reject(new Error('No workspace imported'));
+          }
+        });
+      });
+    };
+  }, [globalDialogService, handleCreatedWorkspace]);
+
   const handleImport = useAsyncCallback(
     async (type: ImportType) => {
       setImportError(null);
       try {
         const importConfig = importConfigs[type];
         const { acceptType, multiple } = importConfig.fileOptions;
-        const files = await openFilesWith(acceptType, multiple);
 
-        if (!files || files.length === 0) {
+        const files =
+          acceptType === 'Skip'
+            ? []
+            : await openFilesWith(acceptType, multiple);
+
+        if (!files || (files.length === 0 && acceptType !== 'Skip')) {
           throw new Error(
             t['com.affine.import.status.failed.message.no-file-selected']()
           );
         }
 
-        setStatus('importing');
-        track.$.importModal.$.import({
-          type,
-          status: 'importing',
-        });
+        if (acceptType !== 'Skip') {
+          setStatus('importing');
+          track.$.importModal.$.import({
+            type,
+            status: 'importing',
+          });
+        }
 
         const { docIds, entryId, isWorkspaceFile } =
-          await importConfig.importFunction(docCollection, files);
+          await importConfig.importFunction(
+            docCollection,
+            files,
+            handleImportAffineFile
+          );
 
         setImportResult({ docIds, entryId, isWorkspaceFile });
         setStatus('success');
@@ -452,7 +546,7 @@ export const ImportDialog = ({
         logger.error('Failed to import', error);
       }
     },
-    [docCollection, t]
+    [docCollection, handleImportAffineFile, t]
   );
 
   const handleComplete = useCallback(() => {

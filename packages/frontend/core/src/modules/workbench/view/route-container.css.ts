@@ -19,7 +19,7 @@ export const header = style({
   alignItems: 'center',
   flexShrink: 0,
   background: cssVar('backgroundPrimaryColor'),
-  padding: '0 16px',
+  padding: '0 16px 0px 8px',
   contain: 'strict',
   '@media': {
     print: {

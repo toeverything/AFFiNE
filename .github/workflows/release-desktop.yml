@@ -1,27 +1,17 @@
-name: Release Desktop App
+name: Release Desktop
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       build-type:
-        description: 'Build Type'
-        type: choice
         required: true
-        default: canary
-        options:
-          - canary
-          - beta
-          - stable
-      is-draft:
-        description: 'Draft Release?'
-        type: boolean
+        type: string
+      app-version:
         required: true
-        default: true
-      is-pre-release:
-        description: 'Pre Release? (labeled as "PreRelease")'
-        type: boolean
+        type: string
+      git-short-hash:
         required: true
-        default: true
+        type: string
 
 permissions:
   actions: write
@@ -31,7 +21,8 @@ permissions:
   attestations: write
 
 env:
-  BUILD_TYPE: ${{ github.event.inputs.build-type }}
+  BUILD_TYPE: ${{ inputs.build-type }}
+  RELEASE_VERSION: ${{ inputs.app-version }}
   DEBUG: 'affine:*,napi:*'
   APP_NAME: affine
   MACOSX_DEPLOYMENT_TARGET: '10.13'
@@ -39,14 +30,13 @@ env:
 jobs:
   before-make:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.build-type }}
-    outputs:
-      RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
+    environment: ${{ inputs.build-type }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Setup @sentry/cli
@@ -58,14 +48,14 @@ jobs:
           SENTRY_PROJECT: 'affine'
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          SENTRY_RELEASE: ${{ steps.version.outputs.APP_VERSION }}
-          RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
+          SENTRY_RELEASE: ${{ inputs.app-version }}
+          RELEASE_VERSION: ${{ inputs.app-version }}
           MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
 
       - name: Upload web artifact
         uses: actions/upload-artifact@v4
         with:
-          name: web
+          name: desktop-web
           path: packages/frontend/apps/electron/resources/web-static
 
   make-distribution:
@@ -87,7 +77,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
     runs-on: ${{ matrix.spec.runner }}
     needs: before-make
-    environment: ${{ github.event.inputs.build-type }}
+    environment: ${{ inputs.build-type }}
     env:
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
@@ -97,13 +87,14 @@ jobs:
       SENTRY_PROJECT: 'affine'
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      SENTRY_RELEASE: ${{ needs.before-make.outputs.RELEASE_VERSION }}
+      SENTRY_RELEASE: ${{ inputs.app-version }}
       MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
@@ -119,7 +110,7 @@ jobs:
           package: '@affine/native'
       - uses: actions/download-artifact@v4
         with:
-          name: web
+          name: desktop-web
           path: packages/frontend/apps/electron/resources/web-static
 
       - name: Build Desktop Layers
@@ -165,31 +156,31 @@ jobs:
         if: ${{ matrix.spec.platform == 'darwin' }}
         run: |
           mkdir -p builds
-          mv packages/frontend/apps/electron/out/*/make/*.dmg ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
-          mv packages/frontend/apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
+          mv packages/frontend/apps/electron/out/*/make/*.dmg ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
+          mv packages/frontend/apps/electron/out/*/make/zip/darwin/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
       - name: Save artifacts (linux)
         if: ${{ matrix.spec.platform == 'linux' }}
         run: |
           mkdir -p builds
-          mv packages/frontend/apps/electron/out/*/make/zip/linux/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.zip
-          mv packages/frontend/apps/electron/out/*/make/*.AppImage ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.appimage
-          mv packages/frontend/apps/electron/out/*/make/deb/${{ matrix.spec.arch }}/*.deb ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.deb
-          mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.flatpak
+          mv packages/frontend/apps/electron/out/*/make/zip/linux/${{ matrix.spec.arch }}/*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.zip
+          mv packages/frontend/apps/electron/out/*/make/*.AppImage ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.appimage
+          mv packages/frontend/apps/electron/out/*/make/deb/${{ matrix.spec.arch }}/*.deb ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.deb
+          mv packages/frontend/apps/electron/out/*/make/flatpak/*/*.flatpak ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-${{ matrix.spec.arch }}.flatpak
 
       - uses: actions/attest-build-provenance@v2
         if: ${{ matrix.spec.platform == 'darwin' }}
         with:
           subject-path: |
-            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
-            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.zip
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-macos-${{ matrix.spec.arch }}.dmg
 
       - uses: actions/attest-build-provenance@v2
         if: ${{ matrix.spec.platform == 'linux' }}
         with:
           subject-path: |
-            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
-            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
-            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.deb
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.zip
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.appimage
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-linux-x64.deb
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -197,7 +188,7 @@ jobs:
           path: builds
 
   package-distribution-windows:
-    environment: ${{ github.event.inputs.build-type }}
+    environment: ${{ inputs.build-type }}
     strategy:
       fail-fast: false
       matrix:
@@ -221,13 +212,14 @@ jobs:
       SENTRY_PROJECT: 'affine'
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-      SENTRY_RELEASE: ${{ needs.before-make.outputs.RELEASE_VERSION }}
+      SENTRY_RELEASE: ${{ inputs.app-version }}
       MIXPANEL_TOKEN: ${{ secrets.MIXPANEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
@@ -242,7 +234,7 @@ jobs:
           package: '@affine/native'
       - uses: actions/download-artifact@v4
         with:
-          name: web
+          name: desktop-web
           path: packages/frontend/apps/electron/resources/web-static
 
       - name: Build Desktop Layers
@@ -314,8 +306,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Setup Node.js
         timeout-minutes: 10
         uses: ./.github/actions/setup-node
@@ -399,16 +392,16 @@ jobs:
       - name: Save artifacts
         run: |
           mkdir -p builds
-          mv packages/frontend/apps/electron/out/*/make/zip/win32/${{ matrix.spec.arch }}/AFFiNE*-win32-${{ matrix.spec.arch }}-*.zip ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.zip
-          mv packages/frontend/apps/electron/out/*/make/squirrel.windows/${{ matrix.spec.arch }}/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.exe
-          mv packages/frontend/apps/electron/out/*/make/nsis.windows/${{ matrix.spec.arch }}/*.exe ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.nsis.exe
+          mv packages/frontend/apps/electron/out/*/make/zip/win32/${{ matrix.spec.arch }}/AFFiNE*-win32-${{ matrix.spec.arch }}-*.zip ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.zip
+          mv packages/frontend/apps/electron/out/*/make/squirrel.windows/${{ matrix.spec.arch }}/*.exe ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.exe
+          mv packages/frontend/apps/electron/out/*/make/nsis.windows/${{ matrix.spec.arch }}/*.exe ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.nsis.exe
 
       - uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
-            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.zip
-            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.exe
-            ./builds/affine-${{ needs.before-make.outputs.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.nsis.exe
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.zip
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.exe
+            ./builds/affine-${{ env.RELEASE_VERSION }}-${{ env.BUILD_TYPE }}-windows-${{ matrix.spec.arch }}.nsis.exe
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -424,7 +417,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: web
+          name: desktop-web
           path: web-static
       - name: Zip web-static
         run: zip -r web-static.zip web-static
@@ -465,32 +458,14 @@ jobs:
         run: |
           node ./scripts/generate-release-yml.mjs
         env:
-          RELEASE_VERSION: ${{ needs.before-make.outputs.RELEASE_VERSION }}
-      - name: Create Release Draft
-        if: ${{ github.ref_type == 'tag' }}
+          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
-          body: ''
-          draft: ${{ github.event.inputs.is-draft }}
-          prerelease: ${{ github.event.inputs.is-pre-release }}
-          files: |
-            ./release/*
-            ./release/.env.example
-      - name: Create Nightly Release Draft
-        if: ${{ github.ref_type == 'branch' }}
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          # Temporarily, treat release from branch as nightly release, artifact saved to AFFiNE-Releases.
-          # Need to improve internal build and nightly release logic.
-          repository: 'toeverything/AFFiNE-Releases'
-          name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
-          tag_name: ${{ needs.before-make.outputs.RELEASE_VERSION }}
-          body: ''
-          draft: false
-          prerelease: true
+          name: ${{ env.RELEASE_VERSION }}
+          draft: ${{ inputs.build-type == 'stable' }}
+          prerelease: ${{ inputs.build-type != 'stable' }}
+          tag_name: ${{ env.RELEASE_VERSION}}
           files: |
             ./release/*
             ./release/.env.example

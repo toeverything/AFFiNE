@@ -262,16 +262,6 @@
       "desc": "The config for the storage provider."
     }
   },
-  "customerIo": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Enable customer.io integration"
-    },
-    "token": {
-      "type": "String",
-      "desc": "Customer.io token"
-    }
-  },
   "indexer": {
     "enabled": {
       "type": "Boolean",
@@ -308,6 +298,16 @@
     "autoIndex.batchSize": {
       "type": "Number",
       "desc": "Number of workspaces automatically indexed per batch"
+    }
+  },
+  "customerIo": {
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Enable customer.io integration"
+    },
+    "token": {
+      "type": "String",
+      "desc": "Customer.io token"
     }
   },
   "oauth": {

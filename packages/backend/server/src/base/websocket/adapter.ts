@@ -20,6 +20,12 @@ export class SocketIoAdapter extends IoAdapter {
     const server: Server = super.createIOServer(port, {
       ...config,
       ...options,
+      // Enable CORS for Socket.IO
+      cors: {
+        origin: true, // Allow all origins
+        credentials: true, // Allow credentials (cookies, auth headers)
+        methods: ['GET', 'POST'],
+      },
     });
 
     if (config.canActivate) {

@@ -11,20 +11,27 @@ public struct CreateChatSessionInput: InputObject {
   }
 
   public init(
-    docId: String,
+    docId: GraphQLNullable<String> = nil,
+    pinned: GraphQLNullable<Bool> = nil,
     promptName: String,
     workspaceId: String
   ) {
     __data = InputDict([
       "docId": docId,
+      "pinned": pinned,
       "promptName": promptName,
       "workspaceId": workspaceId
     ])
   }
 
-  public var docId: String {
+  public var docId: GraphQLNullable<String> {
     get { __data["docId"] }
     set { __data["docId"] = newValue }
+  }
+
+  public var pinned: GraphQLNullable<Bool> {
+    get { __data["pinned"] }
+    set { __data["pinned"] = newValue }
   }
 
   /// The prompt name to use for the session

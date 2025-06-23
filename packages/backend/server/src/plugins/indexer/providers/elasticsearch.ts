@@ -5,7 +5,7 @@ import {
   InvalidSearchProviderRequest,
 } from '../../../base';
 import { SearchProviderType } from '../config';
-import { SearchTable, SearchTableUniqueId } from '../tables';
+import { DateFieldNames, SearchTable, SearchTableUniqueId } from '../tables';
 import {
   AggregateQueryDSL,
   AggregateResult,
@@ -161,8 +161,8 @@ export class ElasticsearchProvider extends SearchProvider {
       nodes: data.hits.hits.map(hit => ({
         _id: hit._id,
         _score: hit._score,
-        _source: hit._source,
-        fields: hit.fields,
+        _source: this.formatDateFields(hit._source),
+        fields: this.formatDateFields(hit.fields),
         highlights: hit.highlight,
       })),
     };
@@ -187,13 +187,44 @@ export class ElasticsearchProvider extends SearchProvider {
           nodes: bucket.result.hits.hits.map(hit => ({
             _id: hit._id,
             _score: hit._score,
-            _source: hit._source,
-            fields: hit.fields,
+            _source: this.formatDateFields(hit._source),
+            fields: this.formatDateFields(hit.fields),
             highlights: hit.highlight,
           })),
         },
       })),
     };
+  }
+
+  protected formatDateFields<T extends Record<string, unknown[] | unknown>>(
+    fieldsOrSource: T
+  ): T {
+    for (const fieldName of DateFieldNames) {
+      let values = fieldsOrSource[fieldName];
+      if (!values) {
+        continue;
+      }
+      if (Array.isArray(values)) {
+        // { created_at: ['2025-06-20T03:02:43.442Z'] } => { created_at: [new Date('2025-06-20T03:02:43.442Z')] }
+        values = values.map(this.formatDateValue);
+      } else {
+        // { created_at: '2025-06-20T03:02:43.442Z' } => { created_at: new Date('2025-06-20T03:02:43.442Z') }
+        values = this.formatDateValue(values);
+      }
+      // @ts-expect-error ignore type check
+      fieldsOrSource[fieldName] = values;
+    }
+    return fieldsOrSource;
+  }
+
+  /**
+   * elasticsearch return date value as string, we need to convert it to Date object
+   */
+  protected formatDateValue(value: unknown) {
+    if (value && typeof value === 'string') {
+      return new Date(value);
+    }
+    return value;
   }
 
   protected async requestSearch(table: SearchTable, body: Record<string, any>) {

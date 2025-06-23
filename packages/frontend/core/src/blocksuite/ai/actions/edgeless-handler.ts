@@ -37,7 +37,10 @@ import {
   getSelections,
 } from '../utils/selection-utils';
 import type { AffineAIPanelWidget } from '../widgets/ai-panel/ai-panel';
-import type { AINetworkSearchConfig } from '../widgets/ai-panel/type';
+import type {
+  AIActionAnswer,
+  AINetworkSearchConfig,
+} from '../widgets/ai-panel/type';
 import type { EdgelessCopilotWidget } from '../widgets/edgeless-copilot';
 import { actionToAnswerRenderer } from './answer-renderer';
 import { EXCLUDING_COPY_ACTIONS } from './consts';
@@ -282,7 +285,7 @@ function actionToGeneration<T extends keyof BlockSuitePresets.AIActions>(
     }: {
       input: string;
       signal?: AbortSignal;
-      update: (text: string) => void;
+      update: (answer: AIActionAnswer) => void;
       finish: (state: 'success' | 'error' | 'aborted', err?: AIError) => void;
     }) => {
       if (!extract) {

@@ -18,16 +18,15 @@ export class ImagePreviewGrid extends LitElement {
     .images-container {
       display: flex;
       flex-direction: row;
-      gap: 4px;
+      gap: 8px;
       flex-wrap: nowrap;
       position: relative;
     }
 
     .image-container {
-      width: 58px;
-      height: 58px;
+      width: 68px;
+      height: 68px;
       border-radius: 4px;
-      border: 1px solid var(--affine-border-color);
       cursor: pointer;
       overflow: hidden;
       position: relative;

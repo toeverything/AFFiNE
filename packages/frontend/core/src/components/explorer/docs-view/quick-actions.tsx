@@ -210,6 +210,7 @@ export const QuickSelect = memo(function QuickSelect({
 
   const onChange = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
+      contextValue.selectMode$?.next(true);
       onClick?.(e);
       e.stopPropagation();
       e.preventDefault();
