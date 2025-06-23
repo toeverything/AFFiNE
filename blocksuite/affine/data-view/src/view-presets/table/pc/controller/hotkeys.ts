@@ -2,6 +2,8 @@ import { popupTargetFromElement } from '@blocksuite/affine-components/context-me
 import type { ReactiveController } from 'lit';
 
 import { TableViewAreaSelection, TableViewRowSelection } from '../../selection';
+import type { TableViewCellContainer } from '../cell.js';
+import { handleCharStartEdit } from '../../utils.js';
 import { popRowMenu } from '../menu.js';
 import type { TableViewUILogic } from '../table-view-ui-logic';
 
@@ -399,41 +401,15 @@ export class TableHotkeysController implements ReactiveController {
     this.host?.disposables.add(
       this.logic.handleEvent('keyDown', ctx => {
         const event = ctx.get('keyboardState').raw;
-
-        const target = event.target as HTMLElement | null;
-        if (
-          target &&
-          (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
-        ) {
-          return false;
-        }
-
-        const selection = this.selectionController.selection;
-        if (
-          selection &&
-          !TableViewRowSelection.is(selection) &&
-          !selection.isEditing &&
-          !event.metaKey &&
-          !event.ctrlKey &&
-          !event.altKey &&
-          event.key.length === 1
-        ) {
-          const cell = this.selectionController.getCellContainer(
-            selection.groupKey,
-            selection.focus.rowIndex,
-            selection.focus.columnIndex
-          );
-          if (cell) {
-            cell.column.valueSetFromString(cell.rowId, event.key);
-            this.selectionController.selection = {
-              ...selection,
-              isEditing: true,
-            };
-            event.preventDefault();
-            return true;
-          }
-        }
-        return false;
+        return handleCharStartEdit<TableViewCellContainer>({
+          event,
+          selection: this.selectionController.selection,
+          getCellContainer: this.selectionController.getCellContainer.bind(
+            this.selectionController
+          ),
+          updateSelection: sel => (this.selectionController.selection = sel),
+          getColumn: cell => cell.column,
+        });
       })
     );
   }

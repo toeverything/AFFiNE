@@ -3,6 +3,8 @@ import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { ReactiveController } from 'lit';
 
 import { TableViewAreaSelection, TableViewRowSelection } from '../../selection';
+import type { DatabaseCellContainer } from '../row/cell.js';
+import { handleCharStartEdit } from '../../utils.js';
 import { popRowMenu } from '../row/menu';
 import type { VirtualTableViewUILogic } from '../table-view-ui-logic';
 
@@ -401,41 +403,15 @@ export class TableHotkeysController implements ReactiveController {
     this.disposables.add(
       this.logic.handleEvent('keyDown', ctx => {
         const event = ctx.get('keyboardState').raw;
-
-        const target = event.target as HTMLElement | null;
-        if (
-          target &&
-          (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')
-        ) {
-          return false;
-        }
-
-        const selection = this.selectionController.selection;
-        if (
-          selection &&
-          !TableViewRowSelection.is(selection) &&
-          !selection.isEditing &&
-          !event.metaKey &&
-          !event.ctrlKey &&
-          !event.altKey &&
-          event.key.length === 1
-        ) {
-          const cell = this.selectionController.getCellContainer(
-            selection.groupKey,
-            selection.focus.rowIndex,
-            selection.focus.columnIndex
-          );
-          if (cell) {
-            cell.column$.value?.valueSetFromString(cell.rowId, event.key);
-            this.selectionController.selection = {
-              ...selection,
-              isEditing: true,
-            };
-            event.preventDefault();
-            return true;
-          }
-        }
-        return false;
+        return handleCharStartEdit<DatabaseCellContainer>({
+          event,
+          selection: this.selectionController.selection,
+          getCellContainer: this.selectionController.getCellContainer.bind(
+            this.selectionController
+          ),
+          updateSelection: sel => (this.selectionController.selection = sel),
+          getColumn: cell => cell.column$.value,
+        });
       })
     );
   }
