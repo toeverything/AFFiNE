@@ -97,6 +97,13 @@ async function handleFileRequest(request: Request) {
   return net.fetch(pathToFileURL(filepath).toString(), clonedRequest);
 }
 
+// whitelist for cors
+// url patterns that are allowed to have cors headers
+const corsWhitelist = [
+  /^(?:[a-zA-Z0-9-]+\.)*googlevideo\.com$/,
+  /^(?:[a-zA-Z0-9-]+\.)*youtube\.com$/,
+];
+
 export function registerProtocol() {
   protocol.handle('file', request => {
     return handleFileRequest(request);
@@ -108,7 +115,7 @@ export function registerProtocol() {
 
   session.defaultSession.webRequest.onHeadersReceived(
     (responseDetails, callback) => {
-      const { responseHeaders } = responseDetails;
+      const { responseHeaders, url } = responseDetails;
       (async () => {
         if (responseHeaders) {
           const originalCookie =
@@ -146,10 +153,13 @@ export function registerProtocol() {
             }
           }
 
-          delete responseHeaders['access-control-allow-origin'];
-          delete responseHeaders['access-control-allow-headers'];
-          delete responseHeaders['Access-Control-Allow-Origin'];
-          delete responseHeaders['Access-Control-Allow-Headers'];
+          const hostname = new URL(url).hostname;
+          if (!corsWhitelist.some(domainRegex => domainRegex.test(hostname))) {
+            delete responseHeaders['access-control-allow-origin'];
+            delete responseHeaders['access-control-allow-headers'];
+            delete responseHeaders['Access-Control-Allow-Origin'];
+            delete responseHeaders['Access-Control-Allow-Headers'];
+          }
         }
       })()
         .catch(err => {
