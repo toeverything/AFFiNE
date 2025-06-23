@@ -1195,7 +1195,7 @@ test('should open link in new tab when middle clicking on link', async ({
     await page.locator('affine-link').click({ button: 'middle' });
 
     const newTab = await newTabPromise;
-    expect(newTab.url()).toBe(externalUrl);
+    await expect(newTab).toHaveURL(externalUrl);
     await newTab.close();
   }
 
