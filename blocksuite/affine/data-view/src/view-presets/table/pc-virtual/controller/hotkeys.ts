@@ -3,6 +3,7 @@ import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { ReactiveController } from 'lit';
 
 import { TableViewAreaSelection, TableViewRowSelection } from '../../selection';
+import type { DatabaseCellContainer } from '../row/cell.js';
 import { handleCharStartEdit } from '../../utils.js';
 import { popRowMenu } from '../row/menu';
 import type { VirtualTableViewUILogic } from '../table-view-ui-logic';
@@ -402,7 +403,7 @@ export class TableHotkeysController implements ReactiveController {
     this.disposables.add(
       this.logic.handleEvent('keyDown', ctx => {
         const event = ctx.get('keyboardState').raw;
-        return handleCharStartEdit({
+        return handleCharStartEdit<DatabaseCellContainer>({
           event,
           selection: this.selectionController.selection,
           getCellContainer: this.selectionController.getCellContainer.bind(

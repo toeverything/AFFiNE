@@ -2,6 +2,7 @@ import { popupTargetFromElement } from '@blocksuite/affine-components/context-me
 import type { ReactiveController } from 'lit';
 
 import { TableViewAreaSelection, TableViewRowSelection } from '../../selection';
+import type { TableViewCellContainer } from '../cell.js';
 import { handleCharStartEdit } from '../../utils.js';
 import { popRowMenu } from '../menu.js';
 import type { TableViewUILogic } from '../table-view-ui-logic';
@@ -400,7 +401,7 @@ export class TableHotkeysController implements ReactiveController {
     this.host?.disposables.add(
       this.logic.handleEvent('keyDown', ctx => {
         const event = ctx.get('keyboardState').raw;
-        return handleCharStartEdit({
+        return handleCharStartEdit<TableViewCellContainer>({
           event,
           selection: this.selectionController.selection,
           getCellContainer: this.selectionController.getCellContainer.bind(
