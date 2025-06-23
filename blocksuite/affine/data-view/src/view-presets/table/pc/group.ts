@@ -3,9 +3,8 @@ import {
   popFilterableSimpleMenu,
   popupTargetFromElement,
 } from '@blocksuite/affine-components/context-menu';
-import { GroupToggleArrowIcon } from '@blocksuite/affine-components/icons';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
-import { PlusIcon } from '@blocksuite/icons/lit';
+import { PlusIcon, ToggleDownIcon, ToggleRightIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { effect, signal } from '@preact/signals-core';
 import { cssVarV2 } from '@toeverything/theme/v2';
@@ -113,14 +112,8 @@ const styles = css`
   .group-toggle-btn svg {
     width: 16px;
     height: 16px;
-    transition: transform 120ms cubic-bezier(0.42, 0, 1, 1);
     flex-shrink: 0;
     user-select: none;
-    transform: rotate(-90deg);
-  }
-
-  .group-toggle-btn.expanded svg {
-    transform: rotate(0deg);
   }
 `;
 
@@ -243,7 +236,9 @@ export class TableGroup extends SignalWatcher(
             }
           }}
         >
-          ${GroupToggleArrowIcon}
+          ${this.collapsed$.value
+            ? ToggleRightIcon({ width: '16px', height: '16px' })
+            : ToggleDownIcon({ width: '16px', height: '16px' })}
         </div>
 
         ${GroupTitle(this.group, {
