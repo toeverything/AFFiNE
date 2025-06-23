@@ -402,7 +402,7 @@ export class TableGroup extends SignalWatcher(
 
   override render() {
     return html`
-      ${this.renderGroupHeader()}
+      ${this.collapsed$.value ? this.renderGroupHeader() : nothing}
       ${this.collapsed$.value ? nothing : this.renderRows(this.rows)}
     `;
   }
