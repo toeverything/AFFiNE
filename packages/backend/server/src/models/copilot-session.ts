@@ -47,6 +47,7 @@ type ChatSession = {
   // connect ids
   userId: string;
   promptName: string;
+  promptAction: string | null;
   parentSessionId?: string | null;
 };
 
@@ -57,13 +58,20 @@ export type UpdateChatSession = Pick<ChatSession, 'userId' | 'sessionId'> &
   UpdateChatSessionData;
 
 export type ListSessionOptions = {
-  sessionId: string | undefined;
-  action: boolean | undefined;
-  fork: boolean | undefined;
-  limit: number | undefined;
-  skip: number | undefined;
-  sessionOrder: 'asc' | 'desc' | undefined;
-  messageOrder: 'asc' | 'desc' | undefined;
+  userId: string;
+  sessionId?: string;
+  workspaceId?: string;
+  docId?: string;
+  action?: boolean;
+  fork?: boolean;
+  limit?: number;
+  skip?: number;
+  sessionOrder?: 'asc' | 'desc';
+  messageOrder?: 'asc' | 'desc';
+
+  // extra condition
+  withPrompt?: boolean;
+  withMessages?: boolean;
 };
 
 @Injectable()
@@ -95,9 +103,9 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   // NOTE: just for test, remove it after copilot prompt model is ready
-  async createPrompt(name: string, model: string) {
+  async createPrompt(name: string, model: string, action?: string) {
     await this.db.aiPrompt.create({
-      data: { name, model },
+      data: { name, model, action: action ?? null },
     });
   }
 
@@ -116,6 +124,7 @@ export class CopilotSessionModel extends BaseModel {
         // connect
         userId: state.userId,
         promptName: state.promptName,
+        promptAction: state.promptAction,
         parentSessionId: state.parentSessionId,
       },
     });
@@ -134,7 +143,9 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async getChatSessionId(state: Omit<ChatSession, 'promptName'>) {
+  async getChatSessionId(
+    state: Omit<ChatSession, 'promptName' | 'promptAction'>
+  ) {
     const extraCondition: Record<string, any> = {};
     if (state.parentSessionId) {
       // also check session id if provided session is forked session
@@ -193,12 +204,9 @@ export class CopilotSessionModel extends BaseModel {
     });
   }
 
-  async list(
-    userId: string,
-    workspaceId?: string,
-    docId?: string,
-    options?: ListSessionOptions
-  ) {
+  async list(options: ListSessionOptions) {
+    const { userId, sessionId, workspaceId, docId } = options;
+
     const extraCondition = [];
 
     if (!options?.action && options?.fork) {
@@ -207,7 +215,10 @@ export class CopilotSessionModel extends BaseModel {
         userId: { not: userId },
         workspaceId: workspaceId,
         docId: docId ?? null,
-        id: options?.sessionId ? { equals: options.sessionId } : undefined,
+        id: sessionId ? { equals: sessionId } : undefined,
+        prompt: {
+          action: options.action ? { not: null } : null,
+        },
         // should only find forked session
         parentSessionId: { not: null },
         deletedAt: null,
@@ -219,9 +230,9 @@ export class CopilotSessionModel extends BaseModel {
         OR: [
           {
             userId,
-            workspaceId: workspaceId,
+            workspaceId,
             docId: docId ?? null,
-            id: options?.sessionId ? { equals: options.sessionId } : undefined,
+            id: sessionId ? { equals: sessionId } : undefined,
             deletedAt: null,
           },
           ...extraCondition,
@@ -230,26 +241,30 @@ export class CopilotSessionModel extends BaseModel {
       select: {
         id: true,
         userId: true,
+        workspaceId: true,
         docId: true,
+        parentSessionId: true,
         pinned: true,
         promptName: true,
         tokenCost: true,
         createdAt: true,
-        messages: {
-          select: {
-            id: true,
-            role: true,
-            content: true,
-            attachments: true,
-            params: true,
-            streamObjects: true,
-            createdAt: true,
-          },
-          orderBy: {
-            // message order is asc by default
-            createdAt: options?.messageOrder === 'desc' ? 'desc' : 'asc',
-          },
-        },
+        messages: options.withMessages
+          ? {
+              select: {
+                id: true,
+                role: true,
+                content: true,
+                attachments: true,
+                params: true,
+                streamObjects: true,
+                createdAt: true,
+              },
+              orderBy: {
+                // message order is asc by default
+                createdAt: options?.messageOrder === 'desc' ? 'desc' : 'asc',
+              },
+            }
+          : false,
       },
       take: options?.limit,
       skip: options?.skip,
@@ -278,16 +293,41 @@ export class CopilotSessionModel extends BaseModel {
   ): Promise<string> {
     const session = await this.getExists(
       sessionId,
-      { id: true, workspaceId: true, docId: true, pinned: true, prompt: true },
+      {
+        id: true,
+        workspaceId: true,
+        docId: true,
+        parentSessionId: true,
+        pinned: true,
+        prompt: true,
+      },
       { userId }
     );
     if (!session) {
       throw new CopilotSessionNotFound();
     }
-    if (data.promptName && session.prompt.action) {
+
+    // not allow to update action session
+    if (session.prompt.action) {
       throw new CopilotSessionInvalidInput(
-        `Cannot update prompt for action: ${session.id}`
+        `Cannot update action: ${session.id}`
       );
+    } else if (data.docId && session.parentSessionId) {
+      throw new CopilotSessionInvalidInput(
+        `Cannot update docId for forked session: ${session.id}`
+      );
+    }
+
+    if (data.promptName) {
+      const prompt = await this.db.aiPrompt.findFirst({
+        where: { name: data.promptName },
+      });
+      // always not allow to update to action prompt
+      if (!prompt || prompt.action) {
+        throw new CopilotSessionInvalidInput(
+          `Prompt ${data.promptName} not found or not available for session ${sessionId}`
+        );
+      }
     }
     if (data.pinned && data.pinned !== session.pinned) {
       // if pin the session, unpin exists session in the workspace

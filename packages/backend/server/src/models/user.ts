@@ -45,6 +45,10 @@ interface UserFilter {
   withDisabled?: boolean;
 }
 
+export interface ItemWithUserId {
+  userId: string;
+}
+
 export type PublicUser = Pick<User, keyof typeof publicUserSelect>;
 export type WorkspaceUser = Pick<User, keyof typeof workspaceUserSelect>;
 export type { ConnectedAccount, User };
@@ -76,6 +80,19 @@ export class UserModel extends BaseModel {
       select: publicUserSelect,
       where: { id: { in: ids }, disabled: false },
     });
+  }
+
+  async getPublicUsersMap<T extends ItemWithUserId>(
+    items: T[]
+  ): Promise<Map<string, PublicUser>> {
+    const userIds: string[] = [];
+    for (const item of items) {
+      if (item.userId) {
+        userIds.push(item.userId);
+      }
+    }
+    const users = await this.getPublicUsers(userIds);
+    return new Map(users.map(user => [user.id, user]));
   }
 
   async getWorkspaceUser(id: string): Promise<WorkspaceUser | null> {

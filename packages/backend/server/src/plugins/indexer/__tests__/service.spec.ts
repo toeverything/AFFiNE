@@ -1884,12 +1884,12 @@ test('should delete doc work', async t => {
   t.is(result4.nodes.length, 1);
   t.deepEqual(result4.nodes[0].fields.docId, [docId2]);
 
-  const count = module.event.count('doc.indexer.deleted');
+  const count = module.queue.count('copilot.embedding.deleteDoc');
 
   await indexerService.deleteDoc(workspaceId, docId1, {
     refresh: true,
   });
-  t.is(module.event.count('doc.indexer.deleted'), count + 1);
+  t.is(module.queue.count('copilot.embedding.deleteDoc'), count + 1);
 
   // make sure the docId1 is deleted
   result1 = await indexerService.search({
@@ -2044,7 +2044,7 @@ test('should list doc ids work', async t => {
 // #region indexDoc()
 
 test('should index doc work', async t => {
-  const count = module.event.count('doc.indexer.updated');
+  const count = module.queue.count('copilot.embedding.updateDoc');
   const docSnapshot = await module.create(Mockers.DocSnapshot, {
     workspaceId: workspace.id,
     user,
@@ -2110,7 +2110,7 @@ test('should index doc work', async t => {
   t.snapshot(
     result2.nodes.map(node => omit(node.fields, ['workspaceId', 'docId']))
   );
-  t.is(module.event.count('doc.indexer.updated'), count + 1);
+  t.is(module.queue.count('copilot.embedding.updateDoc'), count + 1);
 });
 // #endregion
 
@@ -2209,6 +2209,104 @@ test('should search blob names work', async t => {
   t.is(blobNameMap.size, 3);
   t.snapshot(
     Array.from(blobNameMap.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+  );
+});
+
+// #endregion
+
+// #region searchDocsByKeyword()
+
+test('should search docs by keyword work', async t => {
+  const workspaceId = workspace.id;
+  const docId1 = randomUUID();
+  const docId2 = randomUUID();
+  const docId3 = randomUUID();
+  const docId4 = randomUUID();
+
+  await module.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: docId1,
+    title: 'hello world 1',
+  });
+  await module.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: docId2,
+    title: 'hello world 2',
+  });
+  await module.create(Mockers.DocMeta, {
+    workspaceId,
+    docId: docId3,
+    title: 'hello world 3',
+  });
+
+  await indexerService.write(
+    SearchTable.block,
+    [
+      {
+        workspaceId,
+        docId: docId1,
+        blockId: 'block1',
+        content: 'hello world',
+        flavour: 'affine:page',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:00.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:00.000Z'),
+      },
+      {
+        workspaceId,
+        docId: docId2,
+        blockId: 'block2',
+        content: 'hello world 2',
+        flavour: 'affine:text',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:01.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:01.000Z'),
+      },
+      {
+        workspaceId,
+        docId: docId3,
+        blockId: 'block3',
+        content: 'hello world 3',
+        flavour: 'affine:text',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:02.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:02.000Z'),
+      },
+      {
+        workspaceId,
+        docId: docId4,
+        blockId: 'block4',
+        content: 'hello world 4',
+        flavour: 'affine:text',
+        createdByUserId: user.id,
+        updatedByUserId: user.id,
+        createdAt: new Date('2025-06-20T00:00:03.000Z'),
+        updatedAt: new Date('2025-06-20T00:00:03.000Z'),
+      },
+    ],
+    {
+      refresh: true,
+    }
+  );
+
+  const rows = await indexerService.searchDocsByKeyword(workspaceId, 'hello');
+
+  t.is(rows.length, 4);
+  t.snapshot(
+    rows
+      .map(row =>
+        omit(row, [
+          'docId',
+          'createdByUserId',
+          'updatedByUserId',
+          'createdByUser',
+          'updatedByUser',
+        ])
+      )
+      .sort((a, b) => a.blockId.localeCompare(b.blockId))
   );
 });
 

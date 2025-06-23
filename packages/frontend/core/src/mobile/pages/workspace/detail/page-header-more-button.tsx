@@ -1,4 +1,4 @@
-import { IconButton, notify } from '@affine/component';
+import { IconButton, notify, toast, useConfirmModal } from '@affine/component';
 import {
   MenuSeparator,
   MenuSub,
@@ -6,7 +6,7 @@ import {
   MobileMenuItem,
 } from '@affine/component/ui/menu';
 import { useFavorite } from '@affine/core/blocksuite/block-suite-header/favorite';
-import { useGuard } from '@affine/core/components/guard';
+import { Guard, useGuard } from '@affine/core/components/guard';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import { DocInfoSheet } from '@affine/core/mobile/components';
 import { MobileTocMenu } from '@affine/core/mobile/components/toc-menu';
@@ -17,6 +17,7 @@ import { preventDefault } from '@affine/core/utils';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import {
+  DeleteIcon,
   EdgelessIcon,
   InformationIcon,
   MoreHorizontalIcon,
@@ -34,7 +35,8 @@ import * as styles from './page-header-more-button.css';
 export const PageHeaderMenuButton = () => {
   const t = useI18n();
 
-  const docId = useService(DocService).doc.id;
+  const doc = useService(DocService).doc;
+  const docId = doc?.id;
   const canEdit = useGuard('Doc_Update', docId);
 
   const editorService = useService(EditorService);
@@ -50,6 +52,7 @@ export const PageHeaderMenuButton = () => {
   const title = useLiveData(editorService.editor.doc.title$);
 
   const { favorite, toggleFavorite } = useFavorite(docId);
+  const { openConfirmModal } = useConfirmModal();
 
   const handleSwitchMode = useCallback(() => {
     const mode = primaryMode === 'page' ? 'edgeless' : 'page';
@@ -87,6 +90,32 @@ export const PageHeaderMenuButton = () => {
     track.$.header.docOptions.toggleFavorite();
     toggleFavorite();
   }, [toggleFavorite]);
+
+  const handleMoveToTrash = useCallback(() => {
+    if (!doc) {
+      return;
+    }
+    openConfirmModal({
+      title: t['com.affine.moveToTrash.title'](),
+      description: t['com.affine.moveToTrash.confirmModal.description']({
+        title: doc.title$.value,
+      }),
+      confirmText: t['com.affine.moveToTrash.confirmModal.confirm'](),
+      cancelText: t['com.affine.moveToTrash.confirmModal.cancel'](),
+      confirmButtonOptions: {
+        variant: 'error',
+      },
+      onConfirm() {
+        doc.moveToTrash();
+        track.$.navigationPanel.docs.deleteDoc({
+          control: 'button',
+        });
+        toast(t['com.affine.toastMessage.movedTrash']());
+        // navigate back
+        history.back();
+      },
+    });
+  }, [doc, openConfirmModal, t]);
 
   const EditMenu = (
     <>
@@ -135,6 +164,18 @@ export const PageHeaderMenuButton = () => {
         </MobileMenuItem>
       </MobileMenu>
       <JournalConflictsMenuItem />
+      <Guard docId={docId} permission="Doc_Trash">
+        {canMoveToTrash => (
+          <MobileMenuItem
+            prefixIcon={<DeleteIcon />}
+            type="danger"
+            disabled={!canMoveToTrash}
+            onSelect={handleMoveToTrash}
+          >
+            {t['com.affine.moveToTrash.title']()}
+          </MobileMenuItem>
+        )}
+      </Guard>
     </>
   );
   if (isInTrash) {

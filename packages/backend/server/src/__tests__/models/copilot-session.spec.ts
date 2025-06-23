@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaClient, User, Workspace } from '@prisma/client';
 import ava, { ExecutionContext, TestFn } from 'ava';
 
-import { CopilotPromptInvalid } from '../../base';
+import { CopilotPromptInvalid, CopilotSessionInvalidInput } from '../../base';
 import {
   CopilotSessionModel,
   UpdateChatSessionData,
@@ -11,6 +11,7 @@ import {
   WorkspaceModel,
 } from '../../models';
 import { createTestingModule, type TestingModule } from '../utils';
+import { cleanObject } from '../utils/copilot';
 
 interface Context {
   module: TestingModule;
@@ -65,6 +66,7 @@ const createTestSession = async (
     docId: string | null;
     pinned: boolean;
     promptName: string;
+    promptAction: string | null;
   }> = {}
 ) => {
   const sessionData = {
@@ -74,6 +76,7 @@ const createTestSession = async (
     docId: null,
     pinned: false,
     promptName: 'test-prompt',
+    promptAction: null,
     ...overrides,
   };
 
@@ -98,10 +101,19 @@ test('should list and filter session type', async t => {
   await createTestSession(t, { sessionId: randomUUID() });
   await createTestSession(t, { sessionId: randomUUID(), pinned: true });
   await createTestSession(t, { sessionId: randomUUID(), docId });
+  await createTestSession(t, {
+    sessionId: randomUUID(),
+    docId,
+    promptName: 'action-prompt',
+    promptAction: 'action',
+  });
 
   // should list sessions
   {
-    const workspaceSessions = await copilotSession.list(user.id, workspace.id);
+    const workspaceSessions = await copilotSession.list({
+      userId: user.id,
+      workspaceId: workspace.id,
+    });
 
     t.snapshot(
       workspaceSessions.map(s => ({ docId: s.docId, pinned: s.pinned })),
@@ -110,10 +122,19 @@ test('should list and filter session type', async t => {
   }
 
   {
-    const docSessions = await copilotSession.list(user.id, workspace.id, docId);
+    const docSessions = await copilotSession.list({
+      userId: user.id,
+      workspaceId: workspace.id,
+      docId,
+    });
 
     t.snapshot(
-      docSessions.map(s => ({ docId: s.docId, pinned: s.pinned })),
+      cleanObject(
+        docSessions.toSorted(s =>
+          s.docId!.localeCompare(s.docId!, undefined, { numeric: true })
+        ),
+        ['id', 'userId', 'workspaceId', 'createdAt', 'tokenCost']
+      ),
       'doc sessions should only include sessions with matching docId'
     );
   }
@@ -206,6 +227,7 @@ test('should pin and unpin sessions', async t => {
       workspaceId: workspace.id,
       docId: null,
       promptName: 'test-prompt',
+      promptAction: null,
       pinned: true,
     });
 
@@ -220,6 +242,7 @@ test('should pin and unpin sessions', async t => {
       workspaceId: workspace.id,
       docId: null,
       promptName: 'test-prompt',
+      promptAction: null,
       pinned: true,
     });
 
@@ -266,56 +289,153 @@ test('should pin and unpin sessions', async t => {
   }
 });
 
-test('session updates and type conversions', async t => {
+test('should handle session updates and validations', async t => {
   const { copilotSession, db } = t.context;
-
   await createTestPrompts(copilotSession, db);
 
   const sessionId = 'session-update-id';
+  const actionSessionId = 'action-session-id';
+  const parentSessionId = 'parent-session-id';
+  const forkedSessionId = 'forked-session-id';
   const docId = 'doc-update-id';
 
   await createTestSession(t, { sessionId });
+  await createTestSession(t, {
+    sessionId: actionSessionId,
+    promptName: 'action-prompt',
+    promptAction: 'edit',
+    docId: 'some-doc',
+  });
+  await createTestSession(t, {
+    sessionId: parentSessionId,
+    docId: 'parent-doc',
+  });
+  await db.aiSession.create({
+    data: {
+      id: forkedSessionId,
+      workspaceId: workspace.id,
+      userId: user.id,
+      docId: 'forked-doc',
+      pinned: false,
+      promptName: 'test-prompt',
+      promptAction: null,
+      parentSessionId: parentSessionId,
+    },
+  });
 
-  // should unpin existing pinned session
+  const assertUpdateThrows = async (
+    t: ExecutionContext<Context>,
+    sessionId: string,
+    updateData: UpdateChatSessionData,
+    message: string
+  ) => {
+    await t.throwsAsync(
+      t.context.copilotSession.update(user.id, sessionId, updateData),
+      { instanceOf: CopilotSessionInvalidInput },
+      message
+    );
+  };
+
+  const assertUpdate = async (
+    t: ExecutionContext<Context>,
+    sessionId: string,
+    updateData: UpdateChatSessionData,
+    message: string
+  ) => {
+    await t.notThrowsAsync(
+      t.context.copilotSession.update(user.id, sessionId, updateData),
+      message
+    );
+  };
+
+  // case 1: action sessions should reject all updates
+  {
+    const actionUpdates = [
+      { docId: 'new-doc' },
+      { pinned: true },
+      { promptName: 'test-prompt' },
+    ];
+    for (const data of actionUpdates) {
+      await assertUpdateThrows(
+        t,
+        actionSessionId,
+        data,
+        `action session should reject update: ${JSON.stringify(data)}`
+      );
+    }
+  }
+
+  // case 2: forked sessions should reject docId updates but allow others
+  {
+    await assertUpdate(
+      t,
+      forkedSessionId,
+      { pinned: true },
+      'forked session should allow pinned update'
+    );
+    await assertUpdate(
+      t,
+      forkedSessionId,
+      { promptName: 'test-prompt' },
+      'forked session should allow promptName update'
+    );
+    await assertUpdateThrows(
+      t,
+      forkedSessionId,
+      { docId: 'new-doc' },
+      'forked session should reject docId update'
+    );
+  }
+
+  {
+    // case 3: prompt update validation
+    await assertUpdate(
+      t,
+      sessionId,
+      { promptName: 'test-prompt' },
+      'should allow valid non-action prompt'
+    );
+    await assertUpdateThrows(
+      t,
+      sessionId,
+      { promptName: 'action-prompt' },
+      'should reject action prompt'
+    );
+    await assertUpdateThrows(
+      t,
+      sessionId,
+      { promptName: 'non-existent-prompt' },
+      'should reject non-existent prompt'
+    );
+  }
+
+  // cest 4: session type conversions and pinning behavior
   {
     const existingPinnedId = 'existing-pinned-session-id';
     await createTestSession(t, { sessionId: existingPinnedId, pinned: true });
 
+    // should unpin existing when pinning new session
     await copilotSession.update(user.id, sessionId, { pinned: true });
 
     const sessionStatesAfterPin = await Promise.all([
       getSessionState(db, sessionId),
       getSessionState(db, existingPinnedId),
     ]);
-
     t.snapshot(
       sessionStatesAfterPin,
-      'session states after pinning - should unpin existing'
+      'should unpin existing when pinning new session'
     );
   }
 
-  // should unpin the session
-  {
-    await copilotSession.update(user.id, sessionId, { pinned: false });
-    const sessionStateAfterUnpin = await getSessionState(db, sessionId);
-    t.snapshot(sessionStateAfterUnpin, 'session state after unpinning');
-  }
-
-  // should convert session types
+  // test type conversions
   {
     const conversionSteps: any[] = [];
-
-    let session = await db.aiSession.findUnique({
-      where: { id: sessionId },
-      select: { docId: true, pinned: true },
-    });
-
     const convertSession = async (
       step: string,
       data: UpdateChatSessionData
     ) => {
       await copilotSession.update(user.id, sessionId, data);
-      session = await db.aiSession.findUnique({
+      const session = await db.aiSession.findUnique({
         where: { id: sessionId },
         select: { docId: true, pinned: true },
       });
@@ -326,14 +446,14 @@ test('session updates and type conversions', async t => {
       });
     };
 
-    {
-      await convertSession('workspace_to_doc', { docId }); // Workspace → Doc session
-      await convertSession('doc_to_pinned', { pinned: true }); // Doc → Pinned session
-      await convertSession('pinned_to_workspace', {
-        pinned: false,
-        docId: null,
-      }); // Pinned → Workspace session
-      await convertSession('workspace_to_pinned', { pinned: true }); // Workspace → Pinned session
+    const conversions = [
+      ['pinned_to_doc', { docId, pinned: false }],
+      ['doc_to_workspace', { docId: null }],
+      ['workspace_to_pinned', { pinned: true }],
+    ] as const;
+
+    for (const [step, data] of conversions) {
+      await convertSession(step, data);
     }
 
     t.snapshot(conversionSteps, 'session type conversion steps');

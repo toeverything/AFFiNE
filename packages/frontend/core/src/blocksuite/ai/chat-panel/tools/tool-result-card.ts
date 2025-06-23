@@ -1,18 +1,21 @@
-import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { ImageProxyService } from '@blocksuite/affine/shared/adapters';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
 import { ToggleDownIcon } from '@blocksuite/icons/lit';
+import { type Signal, signal } from '@preact/signals-core';
 import { css, html, nothing, type TemplateResult } from 'lit';
-import { property } from 'lit/decorators.js';
+import { property, state } from 'lit/decorators.js';
 
 interface ToolResult {
-  title?: string;
+  title: string;
   icon?: string | TemplateResult<1>;
   content?: string;
 }
 
-export class ToolResultCard extends WithDisposable(ShadowlessElement) {
+export class ToolResultCard extends SignalWatcher(
+  WithDisposable(ShadowlessElement)
+) {
   static override styles = css`
     .ai-tool-wrapper {
       padding: 12px;
@@ -25,6 +28,8 @@ export class ToolResultCard extends WithDisposable(ShadowlessElement) {
         justify-content: space-between;
         align-items: center;
         gap: 8px;
+        margin-right: 3px;
+        cursor: pointer;
       }
 
       .ai-icon {
@@ -54,9 +59,21 @@ export class ToolResultCard extends WithDisposable(ShadowlessElement) {
         display: flex;
         flex-direction: column;
         gap: 4px;
-        margin: 4px 2px 4px 12px;
+        margin: 8px 2px 4px 12px;
         padding-left: 20px;
         border-left: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+      }
+
+      .ai-tool-results[data-collapsed='true'] {
+        display: none;
+      }
+
+      .result-item {
+        margin-top: 12px;
+      }
+
+      .result-item:first-child {
+        margin-top: 0;
       }
 
       .result-header {
@@ -86,18 +103,53 @@ export class ToolResultCard extends WithDisposable(ShadowlessElement) {
           border-radius: 100%;
           border: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
         }
+
+        svg {
+          width: 24px;
+          height: 24px;
+          color: ${unsafeCSSVarV2('icon/primary')};
+        }
       }
 
       .result-content {
         font-size: 12px;
         line-height: 20px;
         color: ${unsafeCSSVarV2('text/secondary')};
-        margin-top: 8px;
+        margin-top: 4px;
         display: -webkit-box;
         -webkit-line-clamp: 4;
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+
+      .footer-icons {
+        display: flex;
+        position: relative;
+        height: 24px;
+        align-items: center;
+      }
+
+      .footer-icon {
+        width: 18px;
+        height: 18px;
+
+        img {
+          width: 18px;
+          height: 18px;
+          border-radius: 100%;
+          border: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+        }
+
+        svg {
+          width: 18px;
+          height: 18px;
+          color: ${unsafeCSSVarV2('icon/primary')};
+        }
+      }
+
+      .footer-icon:not(:first-child) {
+        margin-left: -8px;
       }
     }
   `;
@@ -112,40 +164,34 @@ export class ToolResultCard extends WithDisposable(ShadowlessElement) {
   accessor icon!: TemplateResult<1> | string;
 
   @property({ attribute: false })
+  accessor footerIcons: TemplateResult<1>[] | string[] = [];
+
+  @property({ attribute: false })
   accessor results!: ToolResult[];
 
-  protected override render() {
-    const imageProxyService = this.host.store.get(ImageProxyService);
+  @property({ attribute: false })
+  accessor width: Signal<number | undefined> = signal(undefined);
 
+  @state()
+  private accessor isCollapsed = true;
+
+  protected override render() {
     return html`
       <div class="ai-tool-wrapper">
-        <div class="ai-tool-header" data-type="result">
-          <div class="ai-icon">${this.icon}</div>
+        <div class="ai-tool-header" @click=${this.toggleCard}>
+          <div class="ai-icon">${this.renderIcon(this.icon)}</div>
           <div class="ai-tool-name">${this.name}</div>
-          <div class="ai-icon">${ToggleDownIcon()}</div>
+          ${this.isCollapsed
+            ? this.renderFooterIcons()
+            : html` <div class="ai-icon">${ToggleDownIcon()}</div> `}
         </div>
-        <div class="ai-tool-results">
+        <div class="ai-tool-results" data-collapsed=${this.isCollapsed}>
           ${this.results.map(
             result => html`
-              <div>
+              <div class="result-item">
                 <div class="result-header">
-                  <div class="result-title">${result.title || 'Untitled'}</div>
-                  ${result.icon
-                    ? html`
-                        <div class="result-icon">
-                          ${typeof result.icon === 'string'
-                            ? html`<img
-                                src=${imageProxyService.buildUrl(result.icon)}
-                                alt="icon"
-                                @error=${(e: Event) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                }}
-                              />`
-                            : result.icon}
-                        </div>
-                      `
-                    : nothing}
+                  <div class="result-title">${result.title}</div>
+                  <div class="result-icon">${this.renderIcon(result.icon)}</div>
                 </div>
                 ${result.content
                   ? html` <div class="result-content">${result.content}</div> `
@@ -156,5 +202,44 @@ export class ToolResultCard extends WithDisposable(ShadowlessElement) {
         </div>
       </div>
     `;
+  }
+
+  private renderFooterIcons() {
+    if (!this.footerIcons || this.footerIcons.length === 0) {
+      return nothing;
+    }
+
+    const maxIcons = Number(this.width.value) <= 400 ? 1 : 3;
+    const visibleIcons = this.footerIcons.slice(0, maxIcons);
+
+    return html`
+      <div class="footer-icons">
+        ${visibleIcons.map(
+          (icon, index) => html`
+            <div
+              class="footer-icon"
+              style="z-index: ${visibleIcons.length - index}"
+            >
+              ${this.renderIcon(icon)}
+            </div>
+          `
+        )}
+      </div>
+    `;
+  }
+
+  private renderIcon(icon: string | TemplateResult<1> | undefined) {
+    if (!icon) {
+      return nothing;
+    }
+    const imageProxyService = this.host.store.get(ImageProxyService);
+    if (typeof icon === 'string') {
+      return html` <img src=${imageProxyService.buildUrl(icon)} /> `;
+    }
+    return html`${icon}`;
+  }
+
+  private toggleCard() {
+    this.isCollapsed = !this.isCollapsed;
   }
 }

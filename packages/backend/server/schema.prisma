@@ -436,6 +436,7 @@ model AiSession {
   workspaceId     String    @map("workspace_id") @db.VarChar
   docId           String?   @map("doc_id") @db.VarChar
   promptName      String    @map("prompt_name") @db.VarChar(32)
+  promptAction    String?   @default("") @map("prompt_action") @db.VarChar(32)
   pinned          Boolean   @default(false)
   // the session id of the parent session if this session is a forked session
   parentSessionId String?   @map("parent_session_id") @db.VarChar
@@ -449,6 +450,12 @@ model AiSession {
   messages AiSessionMessage[]
   context  AiContext[]
 
+  //NOTE:
+  // unrecorded index:
+  // @@index([userId, workspaceId]) where pinned = true and deleted_at is null
+  // @@index([userId, workspaceId, docId]) where prompt_action is null and parent_session_id is null and doc_id is not null and deleted_at is null
+  // since prisma does not support partial indexes, those indexes are only exists in migration files.
+  @@index([promptName])
   @@index([userId])
   @@index([userId, workspaceId, docId])
   @@map("ai_sessions_metadata")

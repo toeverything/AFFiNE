@@ -33,7 +33,7 @@ import { CurrentUser } from '../../core/auth';
 import { Admin } from '../../core/common';
 import { AccessController } from '../../core/permission';
 import { UserType } from '../../core/user';
-import type { UpdateChatSession } from '../../models';
+import type { ListSessionOptions, UpdateChatSession } from '../../models';
 import { PromptService } from './prompt';
 import { PromptMessage, StreamObject } from './providers';
 import { ChatSessionService } from './session';
@@ -43,7 +43,6 @@ import {
   type ChatHistory,
   type ChatMessage,
   type ChatSessionState,
-  type ListHistoriesOptions,
   SubmittedMessage,
 } from './types';
 
@@ -151,25 +150,28 @@ enum ChatHistoryOrder {
 registerEnumType(ChatHistoryOrder, { name: 'ChatHistoryOrder' });
 
 @InputType()
-class QueryChatSessionsInput {
-  @Field(() => Boolean, { nullable: true })
-  action: boolean | undefined;
-}
-
-@InputType()
-class QueryChatHistoriesInput implements Partial<ListHistoriesOptions> {
+class QueryChatSessionsInput implements Partial<ListSessionOptions> {
   @Field(() => Boolean, { nullable: true })
   action: boolean | undefined;
 
   @Field(() => Boolean, { nullable: true })
   fork: boolean | undefined;
 
+  @Field(() => Boolean, { nullable: true })
+  pinned: boolean | undefined;
+
   @Field(() => Number, { nullable: true })
   limit: number | undefined;
 
   @Field(() => Number, { nullable: true })
   skip: number | undefined;
+}
 
+@InputType()
+class QueryChatHistoriesInput
+  extends QueryChatSessionsInput
+  implements Partial<ListSessionOptions>
+{
   @Field(() => ChatHistoryOrder, { nullable: true })
   messageOrder: 'asc' | 'desc' | undefined;
 
@@ -370,20 +372,6 @@ export class CopilotResolver {
     return await this.chatSession.getQuota(user.id);
   }
 
-  @ResolveField(() => [String], {
-    description: 'Get the session id list in the workspace',
-    complexity: 2,
-    deprecationReason: 'Use `sessions` instead',
-  })
-  async sessionIds(
-    @Parent() copilot: CopilotType,
-    @CurrentUser() user: CurrentUser,
-    @Args('docId', { nullable: true }) docId?: string,
-    @Args('options', { nullable: true }) options?: QueryChatSessionsInput
-  ): Promise<string[]> {
-    return (await this.sessions(copilot, user, docId, options)).map(s => s.id);
-  }
-
   @ResolveField(() => CopilotSessionType, {
     description: 'Get the session by id',
     complexity: 2,
@@ -426,12 +414,15 @@ export class CopilotResolver {
       .workspace(copilot.workspaceId)
       .allowLocal()
       .assert('Workspace.Copilot');
+
     const sessions = await this.chatSession.listSessions(
-      user.id,
-      copilot.workspaceId,
-      docId,
-      options
+      Object.assign({}, options, {
+        userId: user.id,
+        workspaceId: copilot.workspaceId,
+        docId,
+      })
     );
+
     return sessions.map(this.transformToSessionType);
   }
 
@@ -461,10 +452,7 @@ export class CopilotResolver {
     }
 
     const histories = await this.chatSession.listHistories(
-      user.id,
-      workspaceId,
-      docId,
-      options
+      Object.assign({}, options, { userId: user.id, workspaceId, docId })
     );
 
     return histories.map(h => ({

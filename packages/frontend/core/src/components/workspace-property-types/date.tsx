@@ -19,6 +19,7 @@ import {
 import { PlainTextDocGroupHeader } from '../explorer/docs-view/group-header';
 import { StackProperty } from '../explorer/docs-view/stack-property';
 import type { DocListPropertyProps, GroupHeaderProps } from '../explorer/types';
+import { FilterValueMenu } from '../filter/filter-value-menu';
 import { FilterOptionsGroup } from '../filter/options';
 import type { PropertyValueProps } from '../properties/types';
 import * as styles from './date.css';
@@ -123,10 +124,13 @@ const DateSelectorMenu = ({
   );
 
   return (
-    <Menu
+    <FilterValueMenu
       rootOptions={{
         open,
         onOpenChange: handleOpenChange,
+      }}
+      contentOptions={{
+        style: { padding: '12px 16px' },
       }}
       items={<DatePicker value={value || undefined} onChange={handleChange} />}
     >
@@ -137,7 +141,7 @@ const DateSelectorMenu = ({
           {t['com.affine.filter.empty']()}
         </span>
       )}
-    </Menu>
+    </FilterValueMenu>
   );
 };
 

@@ -81,6 +81,7 @@ public enum SchemaMetadata: ApolloAPI.SchemaMetadata {
     case "SearchResultObjectType": return AffineGraphQL.Objects.SearchResultObjectType
     case "SearchResultPagination": return AffineGraphQL.Objects.SearchResultPagination
     case "ServerConfigType": return AffineGraphQL.Objects.ServerConfigType
+    case "StreamObject": return AffineGraphQL.Objects.StreamObject
     case "SubscriptionPrice": return AffineGraphQL.Objects.SubscriptionPrice
     case "SubscriptionType": return AffineGraphQL.Objects.SubscriptionType
     case "TranscriptionItemType": return AffineGraphQL.Objects.TranscriptionItemType

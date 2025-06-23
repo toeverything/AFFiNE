@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { camelCase, chunk, mapKeys, snakeCase } from 'lodash-es';
 
 import {
-  EventBus,
   InvalidIndexerInput,
+  JobQueue,
   SearchProviderNotFound,
 } from '../../base';
 import { readAllBlocksFromDocSnapshot } from '../../core/utils/blocksuite';
@@ -33,6 +33,7 @@ import {
 } from './tables';
 import {
   AggregateInput,
+  SearchDoc,
   SearchHighlight,
   SearchInput,
   SearchQuery,
@@ -109,7 +110,7 @@ export class IndexerService {
   constructor(
     private readonly models: Models,
     private readonly factory: SearchProviderFactory,
-    private readonly event: EventBus
+    private readonly queue: JobQueue
   ) {}
 
   async createTables() {
@@ -284,11 +285,12 @@ export class IndexerService {
       })),
       options
     );
-    this.event.emit('doc.indexer.updated', {
+
+    await this.queue.add('copilot.embedding.updateDoc', {
       workspaceId,
       docId,
     });
-    this.logger.debug(
+    this.logger.log(
       `synced doc ${workspaceId}/${docId} with ${result.blocks.length} blocks`
     );
   }
@@ -318,12 +320,13 @@ export class IndexerService {
       },
       options
     );
-    this.logger.debug(`deleted doc ${workspaceId}/${docId}`);
+
     await this.deleteBlocksByDocId(workspaceId, docId, options);
-    this.event.emit('doc.indexer.deleted', {
+    await this.queue.add('copilot.embedding.deleteDoc', {
       workspaceId,
       docId,
     });
+    this.logger.log(`deleted doc ${workspaceId}/${docId}`);
   }
 
   async deleteBlocksByDocId(
@@ -431,6 +434,155 @@ export class IndexerService {
       }
     }
     return blobNameMap;
+  }
+
+  async searchDocsByKeyword(
+    workspaceId: string,
+    keyword: string,
+    options?: {
+      limit?: number;
+    }
+  ): Promise<SearchDoc[]> {
+    const limit = options?.limit ?? 20;
+    const result = await this.aggregate({
+      table: SearchTable.block,
+      field: 'docId',
+      query: {
+        type: SearchQueryType.boolean,
+        occur: SearchQueryOccur.must,
+        queries: [
+          {
+            type: SearchQueryType.match,
+            field: 'workspaceId',
+            match: workspaceId,
+          },
+          {
+            type: SearchQueryType.boolean,
+            occur: SearchQueryOccur.must,
+            queries: [
+              {
+                type: SearchQueryType.match,
+                field: 'content',
+                match: keyword,
+              },
+              {
+                type: SearchQueryType.boolean,
+                occur: SearchQueryOccur.should,
+                queries: [
+                  {
+                    type: SearchQueryType.match,
+                    field: 'content',
+                    match: keyword,
+                  },
+                  {
+                    type: SearchQueryType.boost,
+                    boost: 1.5,
+                    query: {
+                      type: SearchQueryType.match,
+                      field: 'flavour',
+                      match: 'affine:page',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      options: {
+        hits: {
+          fields: [
+            'blockId',
+            'flavour',
+            'content',
+            'createdAt',
+            'updatedAt',
+            'createdByUserId',
+            'updatedByUserId',
+          ],
+          highlights: [
+            {
+              field: 'content',
+              before: '<b>',
+              end: '</b>',
+            },
+          ],
+          pagination: {
+            limit: 2,
+          },
+        },
+        pagination: {
+          limit,
+        },
+      },
+    });
+
+    const docs: SearchDoc[] = [];
+    const missingTitles: { workspaceId: string; docId: string }[] = [];
+    const userIds: { userId: string }[] = [];
+
+    for (const bucket of result.buckets) {
+      const docId = bucket.key;
+      const blockId = bucket.hits.nodes[0].fields.blockId[0] as string;
+      const flavour = bucket.hits.nodes[0].fields.flavour[0] as string;
+      const content = bucket.hits.nodes[0].fields.content[0] as string;
+      const createdAt = bucket.hits.nodes[0].fields.createdAt[0] as Date;
+      const updatedAt = bucket.hits.nodes[0].fields.updatedAt[0] as Date;
+      const createdByUserId = bucket.hits.nodes[0].fields
+        .createdByUserId[0] as string;
+      const updatedByUserId = bucket.hits.nodes[0].fields
+        .updatedByUserId[0] as string;
+      const highlight = bucket.hits.nodes[0].highlights?.content?.[0] as string;
+      let title = '';
+
+      // hit title block
+      if (flavour === 'affine:page') {
+        title = content;
+      } else {
+        // hit content block, missing title
+        missingTitles.push({ workspaceId, docId });
+      }
+
+      docs.push({
+        docId,
+        blockId,
+        title,
+        highlight,
+        createdAt,
+        updatedAt,
+        createdByUserId,
+        updatedByUserId,
+      });
+      userIds.push({ userId: createdByUserId }, { userId: updatedByUserId });
+    }
+
+    if (missingTitles.length > 0) {
+      const metas = await this.models.doc.findMetas(missingTitles, {
+        select: {
+          title: true,
+        },
+      });
+      const titleMap = new Map<string, string>();
+      for (const meta of metas) {
+        if (meta?.title) {
+          titleMap.set(meta.docId, meta.title);
+        }
+      }
+      for (const doc of docs) {
+        if (!doc.title) {
+          doc.title = titleMap.get(doc.docId) ?? '';
+        }
+      }
+    }
+
+    const userMap = await this.models.user.getPublicUsersMap(userIds);
+
+    for (const doc of docs) {
+      doc.createdByUser = userMap.get(doc.createdByUserId);
+      doc.updatedByUser = userMap.get(doc.updatedByUserId);
+    }
+
+    return docs;
   }
 
   #formatSearchNodes(nodes: SearchNode[]) {

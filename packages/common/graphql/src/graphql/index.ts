@@ -1180,6 +1180,32 @@ export const getPublicUserByIdQuery = {
 }`,
 };
 
+export const getRecentlyUpdatedDocsQuery = {
+  id: 'getRecentlyUpdatedDocsQuery' as const,
+  op: 'getRecentlyUpdatedDocs',
+  query: `query getRecentlyUpdatedDocs($workspaceId: String!, $pagination: PaginationInput!) {
+  workspace(id: $workspaceId) {
+    recentlyUpdatedDocs(pagination: $pagination) {
+      totalCount
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+      edges {
+        node {
+          id
+          title
+          createdAt
+          updatedAt
+          creatorId
+          lastUpdaterId
+        }
+      }
+    }
+  }
+}`,
+};
+
 export const getUserFeaturesQuery = {
   id: 'getUserFeaturesQuery' as const,
   op: 'getUserFeatures',
@@ -1387,6 +1413,33 @@ export const indexerAggregateQuery = {
         count
         hasMore
         nextCursor
+      }
+    }
+  }
+}`,
+};
+
+export const indexerSearchDocsQuery = {
+  id: 'indexerSearchDocsQuery' as const,
+  op: 'indexerSearchDocs',
+  query: `query indexerSearchDocs($id: String!, $input: SearchDocsInput!) {
+  workspace(id: $id) {
+    searchDocs(input: $input) {
+      docId
+      title
+      blockId
+      highlight
+      createdAt
+      updatedAt
+      createdByUser {
+        id
+        name
+        avatarUrl
+      }
+      updatedByUser {
+        id
+        name
+        avatarUrl
       }
     }
   }

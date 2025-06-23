@@ -1,6 +1,7 @@
 import type { DomRenderer } from '@blocksuite/affine-block-surface';
 import type { ShapeElementModel } from '@blocksuite/affine-model';
 import { DefaultTheme } from '@blocksuite/affine-model';
+import { SVGShapeBuilder } from '@blocksuite/global/gfx';
 
 import { manageClassNames, setStyles } from './utils';
 
@@ -122,25 +123,22 @@ export const shapeDomRenderer = (
     element.style.backgroundColor = 'transparent'; // Host element is transparent
 
     const strokeW = model.strokeWidth;
-    const halfStroke = strokeW / 2; // Calculate half stroke width for point adjustment
 
     let svgPoints = '';
     if (model.shapeType === 'diamond') {
-      // Adjusted points for diamond
-      svgPoints = [
-        `${unscaledWidth / 2},${halfStroke}`,
-        `${unscaledWidth - halfStroke},${unscaledHeight / 2}`,
-        `${unscaledWidth / 2},${unscaledHeight - halfStroke}`,
-        `${halfStroke},${unscaledHeight / 2}`,
-      ].join(' ');
+      // Generate diamond points using shared utility
+      svgPoints = SVGShapeBuilder.diamond(
+        unscaledWidth,
+        unscaledHeight,
+        strokeW
+      );
     } else {
-      // triangle
-      // Adjusted points for triangle
-      svgPoints = [
-        `${unscaledWidth / 2},${halfStroke}`,
-        `${unscaledWidth - halfStroke},${unscaledHeight - halfStroke}`,
-        `${halfStroke},${unscaledHeight - halfStroke}`,
-      ].join(' ');
+      // triangle - generate triangle points using shared utility
+      svgPoints = SVGShapeBuilder.triangle(
+        unscaledWidth,
+        unscaledHeight,
+        strokeW
+      );
     }
 
     // Determine if stroke should be visible and its color
