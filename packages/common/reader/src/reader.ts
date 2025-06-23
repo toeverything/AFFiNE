@@ -915,3 +915,5 @@ export function readAllDocIdsFromRootDoc(
   }
   return Array.from(docIds);
 }
+
+export { parseBlock, parseBlockToMd, parsePageDoc } from './doc-parser/parser';

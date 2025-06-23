@@ -8,15 +8,21 @@
 import Foundation
 import WebKit
 
+/*
+ packages/frontend/apps/ios/src/app.tsx
+ */
+
 enum ApplicationBridgedWindowScript: String {
   case getCurrentDocContentInMarkdown = "return await window.getCurrentDocContentInMarkdown();"
   case getCurrentServerBaseUrl = "window.getCurrentServerBaseUrl()"
   case getCurrentWorkspaceId = "window.getCurrentWorkspaceId();"
   case getCurrentDocId = "window.getCurrentDocId();"
-  
+  case getCurrentI18nLocale = "window.getCurrentI18nLocale();"
+  case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title);"
+
   var requiresAsyncContext: Bool {
     switch self {
-    case .getCurrentDocContentInMarkdown: return true
+    case .getCurrentDocContentInMarkdown, .createNewDocByMarkdownInCurrentWorkspace: return true
     default: return false
     }
   }

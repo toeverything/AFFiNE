@@ -458,6 +458,7 @@ export class ChatPanel extends SignalWatcher(
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
+        .panelWidth=${this._sidebarWidth}
       ></chat-panel-messages>
       <ai-chat-composer
         .host=${this.host}

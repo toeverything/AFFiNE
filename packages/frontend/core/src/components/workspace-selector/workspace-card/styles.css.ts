@@ -9,11 +9,10 @@ const wsSlideAnim = {
 };
 
 export const container = style({
-  height: '50px',
   display: 'flex',
   alignItems: 'center',
   gap: 8,
-  padding: '0 6px',
+  padding: '4px 6px',
   borderRadius: 4,
   outline: 'none',
   width: '100%',
@@ -48,8 +47,16 @@ export const disable = style({
 });
 
 export const workspaceInfoSlider = style({
-  height: 42,
+  vars: {
+    '--h': '42px',
+  },
+  height: 'var(--h)',
   overflow: 'hidden',
+  selectors: {
+    '&[data-dense="true"]': {
+      vars: { '--h': '22px' },
+    },
+  },
 });
 export const workspaceInfoSlide = style({
   display: 'flex',
@@ -59,15 +66,18 @@ export const workspaceInfoSlide = style({
   transition: `transform ${wsSlideAnim.duration} ${wsSlideAnim.ease} ${wsSlideAnim.delay}`,
   selectors: {
     [`.${workspaceInfoSlider}[data-active="true"] &`]: {
-      transform: 'translateY(-42px)',
+      transform: 'translateY(calc(var(--h) * -1))',
     },
   },
+});
+export const avatar = style({
+  border: `0.5px solid ${cssVarV2.layer.insideBorder.border}`,
 });
 export const workspaceInfo = style({
   width: '100%',
   flexGrow: 1,
   overflow: 'hidden',
-  height: 42,
+  height: 'var(--h)',
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',

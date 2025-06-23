@@ -38,8 +38,14 @@ const menuContentOptions: MenuProps['contentOptions'] = {
 const AuthorizedUserInfo = ({ account }: { account: AuthAccountInfo }) => {
   return (
     <Menu items={<OperationMenu />} contentOptions={menuContentOptions}>
-      <IconButton data-testid="sidebar-user-avatar" variant="plain" size="24">
-        <Avatar size={24} name={account.label} url={account.avatar} />
+      <IconButton
+        data-testid="sidebar-user-avatar"
+        variant="plain"
+        size="20"
+        style={{ padding: 0 }}
+        withoutHover
+      >
+        <Avatar size={20} name={account.label} url={account.avatar} />
       </IconButton>
     </Menu>
   );
@@ -57,7 +63,7 @@ const UnauthorizedUserInfo = () => {
       onClick={openSignInModal}
       data-testid="sidebar-user-avatar"
       variant="plain"
-      size="24"
+      size="20"
     >
       <UnknownUserIcon />
     </IconButton>

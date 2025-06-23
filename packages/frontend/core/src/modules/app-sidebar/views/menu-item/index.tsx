@@ -27,6 +27,10 @@ const stopPropagation: React.MouseEventHandler = e => {
   e.stopPropagation();
 };
 
+/**
+ * This component is not a generic component.
+ * It is used for the app sidebar.
+ */
 export const MenuItem = React.forwardRef<HTMLDivElement, MenuItemProps>(
   (
     {

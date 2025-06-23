@@ -22,7 +22,7 @@ use coreaudio::sys::{
 };
 use libc;
 use napi::{
-  bindgen_prelude::{Buffer, Error, Float32Array, Result, Status},
+  bindgen_prelude::{Buffer, Error, Result, Status},
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
 };
 use napi_derive::napi;
@@ -90,59 +90,22 @@ static NSRUNNING_APPLICATION_CLASS: LazyLock<Option<&'static AnyClass>> =
   LazyLock::new(|| AnyClass::get(c"NSRunningApplication"));
 
 #[napi]
-pub struct Application {
-  pub(crate) process_id: i32,
-  pub(crate) name: String,
+#[derive(Clone)]
+pub struct ApplicationInfo {
+  pub process_id: i32,
+  pub name: String,
+  pub object_id: u32,
 }
 
 #[napi]
-impl Application {
+impl ApplicationInfo {
   #[napi(constructor)]
-  pub fn new(process_id: i32) -> Result<Self> {
-    // Default values for when we can't get information
-    let mut app = Self {
+  pub fn new(process_id: i32, name: String, object_id: u32) -> Self {
+    Self {
       process_id,
-      name: String::new(),
-    };
-
-    // Try to populate fields using NSRunningApplication
-    if process_id > 0 {
-      // Get NSRunningApplication class
-      if let Some(running_app_class) = NSRUNNING_APPLICATION_CLASS.as_ref() {
-        // Get running application with PID
-        let running_app: *mut AnyObject = unsafe {
-          msg_send![
-            *running_app_class,
-            runningApplicationWithProcessIdentifier: process_id
-          ]
-        };
-
-        if !running_app.is_null() {
-          // Get name
-          unsafe {
-            let name_ptr: *mut NSString = msg_send![running_app, localizedName];
-            if !name_ptr.is_null() {
-              let length: usize = msg_send![name_ptr, length];
-              let utf8_ptr: *const u8 = msg_send![name_ptr, UTF8String];
-
-              if !utf8_ptr.is_null() {
-                let bytes = std::slice::from_raw_parts(utf8_ptr, length);
-                if let Ok(s) = std::str::from_utf8(bytes) {
-                  app.name = s.to_string();
-                }
-              }
-            }
-          }
-        }
-      }
+      name,
+      object_id,
     }
-
-    Ok(app)
-  }
-
-  #[napi(getter)]
-  pub fn process_id(&self) -> i32 {
-    self.process_id
   }
 
   #[napi(getter)]
@@ -191,12 +154,18 @@ impl Application {
       }
     }
 
-    String::new()
-  }
+    // If not available, try to get from the audio process property
+    if self.object_id > 0 {
+      if let Ok(bundle_id) =
+        get_process_property::<CFStringRef>(&self.object_id, kAudioProcessPropertyBundleID)
+      {
+        // Safely convert CFStringRef to Rust String
+        let cf_string = unsafe { CFString::wrap_under_get_rule(bundle_id) };
+        return cf_string.to_string();
+      }
+    }
 
-  #[napi(getter)]
-  pub fn name(&self) -> &str {
-    &self.name
+    String::new()
   }
 
   #[napi(getter)]
@@ -342,114 +311,6 @@ impl Application {
 }
 
 #[napi]
-pub struct TappableApplication {
-  pub(crate) app: Application,
-  pub(crate) object_id: AudioObjectID,
-}
-
-#[napi]
-impl TappableApplication {
-  #[napi(constructor)]
-  pub fn new(object_id: AudioObjectID) -> Result<Self> {
-    // Get process ID from object_id
-    let process_id = get_process_property(&object_id, kAudioProcessPropertyPID).unwrap_or(-1);
-
-    // Create base Application
-    let app = Application::new(process_id)?;
-
-    Ok(Self { app, object_id })
-  }
-
-  #[napi(factory)]
-  pub fn from_application(app: &Application, object_id: AudioObjectID) -> Self {
-    Self {
-      app: Application {
-        process_id: app.process_id,
-        name: app.name.clone(),
-      },
-      object_id,
-    }
-  }
-
-  #[napi(getter)]
-  pub fn process_id(&self) -> i32 {
-    self.app.process_id
-  }
-
-  #[napi(getter)]
-  pub fn process_group_id(&self) -> i32 {
-    self.app.process_group_id()
-  }
-
-  #[napi(getter)]
-  pub fn bundle_identifier(&self) -> String {
-    // First try to get from the Application
-    let app_bundle_id = self.app.bundle_identifier();
-    if !app_bundle_id.is_empty() {
-      return app_bundle_id;
-    }
-
-    // If not available, try to get from the audio process property
-    match get_process_property::<CFStringRef>(&self.object_id, kAudioProcessPropertyBundleID) {
-      Ok(bundle_id) => {
-        // Safely convert CFStringRef to Rust String
-        let cf_string = unsafe { CFString::wrap_under_create_rule(bundle_id) };
-        cf_string.to_string()
-      }
-      Err(_) => {
-        // Return empty string if we couldn't get the bundle ID
-        String::new()
-      }
-    }
-  }
-
-  #[napi(getter)]
-  pub fn name(&self) -> String {
-    self.app.name.clone()
-  }
-
-  #[napi(getter)]
-  pub fn object_id(&self) -> u32 {
-    self.object_id
-  }
-
-  #[napi(getter)]
-  pub fn icon(&self) -> Result<Buffer> {
-    self.app.icon()
-  }
-
-  #[napi(getter)]
-  pub fn get_is_running(&self) -> Result<bool> {
-    // Use catch_unwind to prevent any panics
-    let result = std::panic::catch_unwind(|| {
-      match get_process_property(&self.object_id, kAudioProcessPropertyIsRunningInput) {
-        Ok(is_running) => Ok(is_running),
-        Err(_) => Ok(false),
-      }
-    });
-
-    // Handle any panics
-    match result {
-      Ok(result) => result,
-      Err(_) => Ok(false),
-    }
-  }
-
-  #[napi]
-  pub fn tap_audio(
-    &self,
-    audio_stream_callback: Arc<ThreadsafeFunction<Float32Array, (), Float32Array, true>>,
-  ) -> Result<AudioCaptureSession> {
-    // Use AggregateDeviceManager instead of AggregateDevice directly
-    // This provides automatic default device change detection
-    let mut device_manager = AggregateDeviceManager::new(self)?;
-    device_manager.start_capture(audio_stream_callback)?;
-    let boxed_manager = Box::new(device_manager);
-    Ok(AudioCaptureSession::new(boxed_manager))
-  }
-}
-
-#[napi]
 pub struct ApplicationListChangedSubscriber {
   listener_block: RcBlock<dyn Fn(u32, *mut c_void)>,
 }
@@ -539,18 +400,13 @@ pub struct ShareableContent {
 }
 
 #[napi]
-#[derive(Default)]
-pub struct RecordingPermissions {
-  pub audio: bool,
-  pub screen: bool,
-}
-
-#[napi]
 impl ShareableContent {
   #[napi]
   pub fn on_application_list_changed(
-    callback: Arc<ThreadsafeFunction<(), ()>>,
+    callback: ThreadsafeFunction<(), ()>,
   ) -> Result<ApplicationListChangedSubscriber> {
+    let callback_arc = Arc::new(callback);
+    let callback_clone = callback_arc.clone();
     let callback_block: RcBlock<dyn Fn(u32, *mut c_void)> =
       RcBlock::new(move |_in_number_addresses, _in_addresses: *mut c_void| {
         if let Err(err) = RUNNING_APPLICATIONS
@@ -565,9 +421,9 @@ impl ShareableContent {
             *running_applications = audio_process_list();
           })
         {
-          callback.call(Err(err), ThreadsafeFunctionCallMode::NonBlocking);
+          callback_clone.call(Err(err), ThreadsafeFunctionCallMode::NonBlocking);
         } else {
-          callback.call(Ok(()), ThreadsafeFunctionCallMode::NonBlocking);
+          callback_clone.call(Ok(()), ThreadsafeFunctionCallMode::NonBlocking);
         }
       });
 
@@ -598,11 +454,12 @@ impl ShareableContent {
 
   #[napi]
   pub fn on_app_state_changed(
-    app: &TappableApplication,
-    callback: Arc<ThreadsafeFunction<(), ()>>,
+    app: &ApplicationInfo,
+    callback: ThreadsafeFunction<(), ()>,
   ) -> Result<ApplicationStateChangedSubscriber> {
     let id = Uuid::new_v4();
     let object_id = app.object_id;
+    let callback_arc = Arc::new(callback);
 
     let mut lock = APPLICATION_STATE_CHANGED_SUBSCRIBERS.write().map_err(|_| {
       Error::new(
@@ -612,7 +469,7 @@ impl ShareableContent {
     })?;
 
     if let Some(subscribers) = lock.get_mut(&object_id) {
-      subscribers.insert(id, callback);
+      subscribers.insert(id, callback_arc.clone());
     } else {
       let list_change: RcBlock<dyn Fn(u32, *mut c_void)> =
         RcBlock::new(move |in_number_addresses, in_addresses: *mut c_void| {
@@ -659,7 +516,7 @@ impl ShareableContent {
       }
       let subscribers = {
         let mut map = HashMap::new();
-        map.insert(id, callback);
+        map.insert(id, callback_arc.clone());
         map
       };
       lock.insert(object_id, subscribers);
@@ -675,7 +532,7 @@ impl ShareableContent {
   }
 
   #[napi]
-  pub fn applications(&self) -> Result<Vec<TappableApplication>> {
+  pub fn applications() -> Result<Vec<ApplicationInfo>> {
     let app_list = RUNNING_APPLICATIONS
       .read()
       .map_err(|_| {
@@ -687,13 +544,44 @@ impl ShareableContent {
       .iter()
       .flatten()
       .filter_map(|id| {
-        let tappable_app = match TappableApplication::new(*id) {
-          Ok(app) => app,
-          Err(_) => return None,
-        };
+        // Get process ID from object_id
+        let process_id = get_process_property(id, kAudioProcessPropertyPID).unwrap_or(-1);
 
-        if !tappable_app.bundle_identifier().is_empty() {
-          Some(tappable_app)
+        if process_id <= 0 {
+          return None;
+        }
+
+        // Get application name using NSRunningApplication
+        let mut name = String::new();
+        if let Some(running_app_class) = NSRUNNING_APPLICATION_CLASS.as_ref() {
+          let running_app: *mut AnyObject = unsafe {
+            msg_send![
+              *running_app_class,
+              runningApplicationWithProcessIdentifier: process_id
+            ]
+          };
+
+          if !running_app.is_null() {
+            unsafe {
+              let name_ptr: *mut NSString = msg_send![running_app, localizedName];
+              if !name_ptr.is_null() {
+                let length: usize = msg_send![name_ptr, length];
+                let utf8_ptr: *const u8 = msg_send![name_ptr, UTF8String];
+
+                if !utf8_ptr.is_null() {
+                  let bytes = std::slice::from_raw_parts(utf8_ptr, length);
+                  if let Ok(s) = std::str::from_utf8(bytes) {
+                    name = s.to_string();
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        let app = ApplicationInfo::new(process_id, name, *id);
+        if !app.bundle_identifier().is_empty() {
+          Some(app)
         } else {
           None
         }
@@ -704,7 +592,13 @@ impl ShareableContent {
   }
 
   #[napi]
-  pub fn application_with_process_id(&self, process_id: u32) -> Option<Application> {
+  pub fn application_with_process_id(process_id: u32) -> Option<ApplicationInfo> {
+    // check if the process is tappable
+    let tappable = ShareableContent::tappable_application_with_process_id(process_id);
+    if let Some(tappable) = tappable {
+      return Some(tappable);
+    }
+
     // Get NSRunningApplication class
     let running_app_class = NSRUNNING_APPLICATION_CLASS.as_ref()?;
 
@@ -720,40 +614,107 @@ impl ShareableContent {
       return None;
     }
 
-    // Create an Application directly
-    Application::new(process_id as i32).ok()
+    // Get application name
+    let mut name = String::new();
+    unsafe {
+      let name_ptr: *mut NSString = msg_send![running_app, localizedName];
+      if !name_ptr.is_null() {
+        let length: usize = msg_send![name_ptr, length];
+        let utf8_ptr: *const u8 = msg_send![name_ptr, UTF8String];
+
+        if !utf8_ptr.is_null() {
+          let bytes = std::slice::from_raw_parts(utf8_ptr, length);
+          if let Ok(s) = std::str::from_utf8(bytes) {
+            name = s.to_string();
+          }
+        }
+      }
+    }
+
+    // Create an ApplicationInfo with the proper name and object_id 0 (since we
+    // don't have audio object_id from process_id alone)
+    Some(ApplicationInfo::new(process_id as i32, name, 0))
   }
 
-  #[napi]
-  pub fn tappable_application_with_process_id(
-    &self,
-    process_id: u32,
-  ) -> Option<TappableApplication> {
+  pub fn tappable_application_with_process_id(process_id: u32) -> Option<ApplicationInfo> {
     // Find the TappableApplication with this process ID in the list of running
     // applications
-    match self.applications() {
+    match ShareableContent::applications() {
       Ok(apps) => {
         for app in apps {
-          if app.process_id() == process_id as i32 {
+          if app.process_id == process_id as i32 {
             return Some(app);
           }
         }
-
-        // If we couldn't find a TappableApplication with this process ID, create a new
-        // one with a default object_id of 0 (which won't be able to tap audio)
-        match Application::new(process_id as i32) {
-          Ok(app) => Some(TappableApplication::from_application(&app, 0)),
-          Err(_) => None,
-        }
+        None
       }
       Err(_) => None,
     }
   }
 
   #[napi]
+  pub fn is_using_microphone(process_id: u32) -> Result<bool> {
+    if process_id == 0 {
+      return Ok(false);
+    }
+
+    // Find the audio object ID for this process
+    if let Ok(app_list) = RUNNING_APPLICATIONS.read() {
+      if let Ok(app_list) = app_list.as_ref() {
+        for object_id in app_list {
+          let pid = get_process_property(object_id, kAudioProcessPropertyPID).unwrap_or(-1);
+          if pid == process_id as i32 {
+            // Check if the process is actively using input (microphone)
+            match get_process_property(object_id, kAudioProcessPropertyIsRunningInput) {
+              Ok(is_running) => return Ok(is_running),
+              Err(_) => continue,
+            }
+          }
+        }
+      }
+    }
+
+    Ok(false)
+  }
+
+  #[napi]
+  pub fn tap_audio(
+    process_id: u32,
+    audio_stream_callback: ThreadsafeFunction<napi::bindgen_prelude::Float32Array, ()>,
+  ) -> Result<AudioCaptureSession> {
+    let app = ShareableContent::applications()?
+      .into_iter()
+      .find(|app| app.process_id == process_id as i32);
+
+    if let Some(app) = app {
+      if app.object_id == 0 {
+        return Err(Error::new(
+          Status::GenericFailure,
+          "Cannot tap audio: invalid object_id",
+        ));
+      }
+
+      // Convert ThreadsafeFunction to Arc<ThreadsafeFunction>
+      let callback_arc = Arc::new(audio_stream_callback);
+
+      // Use AggregateDeviceManager instead of AggregateDevice directly
+      // This provides automatic default device change detection
+      let mut device_manager = AggregateDeviceManager::new(&app)?;
+      device_manager.start_capture(callback_arc)?;
+      let boxed_manager = Box::new(device_manager);
+      Ok(AudioCaptureSession::new(boxed_manager))
+    } else {
+      Err(Error::new(
+        Status::GenericFailure,
+        "Application not found or not available for audio tapping",
+      ))
+    }
+  }
+
+  #[napi]
   pub fn tap_global_audio(
-    excluded_processes: Option<Vec<&TappableApplication>>,
-    audio_stream_callback: Arc<ThreadsafeFunction<Float32Array, (), Float32Array, true>>,
+    excluded_processes: Option<Vec<&ApplicationInfo>>,
+    audio_stream_callback: ThreadsafeFunction<napi::bindgen_prelude::Float32Array, ()>,
   ) -> Result<AudioCaptureSession> {
     let excluded_object_ids = excluded_processes
       .unwrap_or_default()
@@ -761,9 +722,12 @@ impl ShareableContent {
       .map(|app| app.object_id)
       .collect::<Vec<_>>();
 
+    // Convert ThreadsafeFunction to Arc<ThreadsafeFunction>
+    let callback_arc = Arc::new(audio_stream_callback);
+
     // Use the new AggregateDeviceManager for automatic device adaptation
     let mut device_manager = AggregateDeviceManager::new_global(&excluded_object_ids)?;
-    device_manager.start_capture(audio_stream_callback)?;
+    device_manager.start_capture(callback_arc)?;
     let boxed_manager = Box::new(device_manager);
     Ok(AudioCaptureSession::new(boxed_manager))
   }

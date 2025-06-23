@@ -1035,13 +1035,13 @@ Get the Doc instance for current store.
 
 #### Get Signature
 
-> **get** **schema**(): `Schema`
+> **get** **schema**(): [`Schema`](Schema.md)
 
-Get the Schema instance of the store.
+Get the [Schema](Schema.md) instance of the store.
 
 ##### Returns
 
-`Schema`
+[`Schema`](Schema.md)
 
 ***
 

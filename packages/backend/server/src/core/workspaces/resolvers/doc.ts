@@ -76,6 +76,9 @@ class DocType {
 
   @Field(() => String, { nullable: true })
   lastUpdaterId?: string;
+
+  @Field(() => String, { nullable: true })
+  title?: string | null;
 }
 
 @InputType()
@@ -264,6 +267,26 @@ export class WorkspaceDocResolver {
     );
 
     return paginate(rows, 'createdAt', pagination, count);
+  }
+
+  @ResolveField(() => PaginatedDocType, {
+    description: 'Get recently updated docs of a workspace',
+  })
+  async recentlyUpdatedDocs(
+    @CurrentUser() me: CurrentUser,
+    @Parent() workspace: WorkspaceType,
+    @Args('pagination', PaginationInput.decode) pagination: PaginationInput
+  ): Promise<PaginatedDocType> {
+    const [count, rows] = await this.models.doc.paginateDocInfoByUpdatedAt(
+      workspace.id,
+      pagination
+    );
+    const needs = await this.ac
+      .user(me.id)
+      .workspace(workspace.id)
+      .docs(rows, 'Doc.Read');
+
+    return paginate(needs, 'updatedAt', pagination, count);
   }
 
   @ResolveField(() => DocType, {

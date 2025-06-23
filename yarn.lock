@@ -782,11 +782,11 @@ __metadata:
     eslint-plugin-simple-import-sort: "npm:^12.1.1"
     eslint-plugin-sonarjs: "npm:^3.0.1"
     eslint-plugin-unicorn: "npm:^59.0.0"
-    happy-dom: "npm:^17.0.0"
+    happy-dom: "npm:^18.0.0"
     husky: "npm:^9.1.7"
     lint-staged: "npm:^16.0.0"
     msw: "npm:^2.6.8"
-    oxlint: "npm:0.16.11"
+    oxlint: "npm:^1.1.0"
     prettier: "npm:^3.4.2"
     semver: "npm:^7.6.3"
     serve: "npm:^14.2.4"
@@ -802,7 +802,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/native@workspace:packages/frontend/native"
   dependencies:
-    "@napi-rs/cli": "npm:3.0.0-alpha.81"
+    "@napi-rs/cli": "npm:3.0.0-alpha.89"
     "@napi-rs/whisper": "npm:^0.0.4"
     "@types/node": "npm:^22.0.0"
     ava: "npm:^6.2.0"
@@ -887,7 +887,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@affine/server-native@workspace:packages/backend/native"
   dependencies:
-    "@napi-rs/cli": "npm:3.0.0-alpha.81"
+    "@napi-rs/cli": "npm:3.0.0-alpha.89"
     lib0: "npm:^0.2.99"
     tiktoken: "npm:^1.0.17"
     tinybench: "npm:^4.0.0"
@@ -1010,7 +1010,7 @@ __metadata:
     rxjs: "npm:^7.8.1"
     semver: "npm:^7.6.3"
     ses: "npm:^1.10.0"
-    sinon: "npm:^20.0.0"
+    sinon: "npm:^21.0.0"
     socket.io: "npm:^4.8.1"
     stripe: "npm:^17.4.0"
     supertest: "npm:^7.0.0"
@@ -7942,9 +7942,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/cli@npm:3.0.0-alpha.81":
-  version: 3.0.0-alpha.81
-  resolution: "@napi-rs/cli@npm:3.0.0-alpha.81"
+"@napi-rs/cli@npm:3.0.0-alpha.89":
+  version: 3.0.0-alpha.89
+  resolution: "@napi-rs/cli@npm:3.0.0-alpha.89"
   dependencies:
     "@inquirer/prompts": "npm:^7.4.0"
     "@napi-rs/cross-toolchain": "npm:^0.0.19"
@@ -7971,7 +7971,7 @@ __metadata:
   bin:
     napi: ./dist/cli.js
     napi-raw: ./cli.mjs
-  checksum: 10/1b086706f753141d3632dd49bfeb2539c1e67af7c362da937cbd0cbad1c8578cf088d2afedc3a86302fb77e3dc7784c096081dc1b4b9e1d1a3c6bffe6308a5ff
+  checksum: 10/8ba4122d1bf42bf844c8304e374aa6f08a7a2804cf0d45d9a0007820076b1560cb9c8d78a91c5c3c0b8a10e474f9277fc5faab78bbe87643a2ff2027f2129b11
   languageName: node
   linkType: hard
 
@@ -8954,14 +8954,14 @@ __metadata:
   linkType: hard
 
 "@nestjs-cls/transactional-adapter-prisma@npm:^1.2.19":
-  version: 1.2.23
-  resolution: "@nestjs-cls/transactional-adapter-prisma@npm:1.2.23"
+  version: 1.2.24
+  resolution: "@nestjs-cls/transactional-adapter-prisma@npm:1.2.24"
   peerDependencies:
-    "@nestjs-cls/transactional": ^3.0.2
+    "@nestjs-cls/transactional": ^3.0.3
     "@prisma/client": "> 4 < 7"
     nestjs-cls: ^6.0.1
     prisma: "> 4 < 7"
-  checksum: 10/98228a8fe132951095082b1657d73889ecbf564c4426bfc1b1daf6b0cdcfd29a9f243a77f1c9021edff5484e44664bc224b4337b6db3da188a6a969640a65a15
+  checksum: 10/feeb8fa365dc6442280d98fce627e4316d724da22c60530e712553e9c9b0a8a6ecce84b27459cfe18aab7e93f05a89fc6a3a8f298f463abe4a774984b88e86f0
   languageName: node
   linkType: hard
 
@@ -10594,58 +10594,58 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@oxlint/darwin-arm64@npm:0.16.11":
-  version: 0.16.11
-  resolution: "@oxlint/darwin-arm64@npm:0.16.11"
+"@oxlint/darwin-arm64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@oxlint/darwin-arm64@npm:1.1.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint/darwin-x64@npm:0.16.11":
-  version: 0.16.11
-  resolution: "@oxlint/darwin-x64@npm:0.16.11"
+"@oxlint/darwin-x64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@oxlint/darwin-x64@npm:1.1.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@oxlint/linux-arm64-gnu@npm:0.16.11":
-  version: 0.16.11
-  resolution: "@oxlint/linux-arm64-gnu@npm:0.16.11"
+"@oxlint/linux-arm64-gnu@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@oxlint/linux-arm64-gnu@npm:1.1.0"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxlint/linux-arm64-musl@npm:0.16.11":
-  version: 0.16.11
-  resolution: "@oxlint/linux-arm64-musl@npm:0.16.11"
+"@oxlint/linux-arm64-musl@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@oxlint/linux-arm64-musl@npm:1.1.0"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@oxlint/linux-x64-gnu@npm:0.16.11":
-  version: 0.16.11
-  resolution: "@oxlint/linux-x64-gnu@npm:0.16.11"
+"@oxlint/linux-x64-gnu@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@oxlint/linux-x64-gnu@npm:1.1.0"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@oxlint/linux-x64-musl@npm:0.16.11":
-  version: 0.16.11
-  resolution: "@oxlint/linux-x64-musl@npm:0.16.11"
+"@oxlint/linux-x64-musl@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@oxlint/linux-x64-musl@npm:1.1.0"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@oxlint/win32-arm64@npm:0.16.11":
-  version: 0.16.11
-  resolution: "@oxlint/win32-arm64@npm:0.16.11"
+"@oxlint/win32-arm64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@oxlint/win32-arm64@npm:1.1.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@oxlint/win32-x64@npm:0.16.11":
-  version: 0.16.11
-  resolution: "@oxlint/win32-x64@npm:0.16.11"
+"@oxlint/win32-x64@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@oxlint/win32-x64@npm:1.1.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -15138,6 +15138,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^20.0.0":
+  version: 20.19.1
+  resolution: "@types/node@npm:20.19.1"
+  dependencies:
+    undici-types: "npm:~6.21.0"
+  checksum: 10/2369a96a832a6e8111d2b996c56fb1b78b27fad0879de3e344ae2835697464e001d6fe813a11902348fc7dc63b9510000f3d2cd4bedadf2d3fce7b7bb7903444
+  languageName: node
+  linkType: hard
+
 "@types/nodemailer@npm:^6.4.17":
   version: 6.4.17
   resolution: "@types/nodemailer@npm:6.4.17"
@@ -15449,6 +15458,13 @@ __metadata:
   version: 1.18.8
   resolution: "@types/webpack-env@npm:1.18.8"
   checksum: 10/f3932f3d6c2530f644cfc898eda1ab8182d6ae57f555c2f0179d813549b639078671b71e4041831fc306c5ebe61f5cdac794fe4ceae281fce8bf67e23661a488
+  languageName: node
+  linkType: hard
+
+"@types/whatwg-mimetype@npm:^3.0.2":
+  version: 3.0.2
+  resolution: "@types/whatwg-mimetype@npm:3.0.2"
+  checksum: 10/609607beeaa8b50b9e00541d8f571880d651b26b6b006103370099aba00784037de54433627c9fe775a5558e3d1fc09c2a48f54c8af91988e9bebeaf6a698eeb
   languageName: node
   linkType: hard
 
@@ -16366,7 +16382,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@y-octo/node@workspace:packages/common/y-octo/node"
   dependencies:
-    "@napi-rs/cli": "npm:3.0.0-alpha.81"
+    "@napi-rs/cli": "npm:3.0.0-alpha.89"
     "@types/node": "npm:^22.14.1"
     "@types/prompts": "npm:^2.4.9"
     c8: "npm:^10.1.3"
@@ -22678,13 +22694,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:^17.0.0":
-  version: 17.4.7
-  resolution: "happy-dom@npm:17.4.7"
+"happy-dom@npm:^18.0.0":
+  version: 18.0.1
+  resolution: "happy-dom@npm:18.0.1"
   dependencies:
-    webidl-conversions: "npm:^7.0.0"
+    "@types/node": "npm:^20.0.0"
+    "@types/whatwg-mimetype": "npm:^3.0.2"
     whatwg-mimetype: "npm:^3.0.0"
-  checksum: 10/8f6af6b3cfea459805fc2db7329ecdf9c7760d29cae20dde85983896de02f7bfcf265533850848a501c9813d94211c0737534c54d28b6c5b2c1bb13daa344211
+  checksum: 10/27f6638d7b8bc67f97ddde7f004e47785ae1487e14065d7c6119adbb9ba7d8a53935d5714d37d9f60efef7f9b180a41c2b7fbbdffcea57b6d04060360a1a1d03
   languageName: node
   linkType: hard
 
@@ -27760,18 +27777,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"oxlint@npm:0.16.11":
-  version: 0.16.11
-  resolution: "oxlint@npm:0.16.11"
+"oxlint@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "oxlint@npm:1.1.0"
   dependencies:
-    "@oxlint/darwin-arm64": "npm:0.16.11"
-    "@oxlint/darwin-x64": "npm:0.16.11"
-    "@oxlint/linux-arm64-gnu": "npm:0.16.11"
-    "@oxlint/linux-arm64-musl": "npm:0.16.11"
-    "@oxlint/linux-x64-gnu": "npm:0.16.11"
-    "@oxlint/linux-x64-musl": "npm:0.16.11"
-    "@oxlint/win32-arm64": "npm:0.16.11"
-    "@oxlint/win32-x64": "npm:0.16.11"
+    "@oxlint/darwin-arm64": "npm:1.1.0"
+    "@oxlint/darwin-x64": "npm:1.1.0"
+    "@oxlint/linux-arm64-gnu": "npm:1.1.0"
+    "@oxlint/linux-arm64-musl": "npm:1.1.0"
+    "@oxlint/linux-x64-gnu": "npm:1.1.0"
+    "@oxlint/linux-x64-musl": "npm:1.1.0"
+    "@oxlint/win32-arm64": "npm:1.1.0"
+    "@oxlint/win32-x64": "npm:1.1.0"
   dependenciesMeta:
     "@oxlint/darwin-arm64":
       optional: true
@@ -27792,7 +27809,7 @@ __metadata:
   bin:
     oxc_language_server: bin/oxc_language_server
     oxlint: bin/oxlint
-  checksum: 10/cd4f6a9e0682006f0e0dc33ce3b8b03b358d90b70d16eddc10f73bbca56efe466dcacfa9c063981b30a4098cf85cae251b3f60ef3813642914a7ff373726f909
+  checksum: 10/1cd94bc8f7114ad56a22ea8dcb06c505511307bad6dc92283d8fc6c1d408254ccb116ecde7b21dfab0c4bfae7806f7efb2f76560aa6fa42eb1d892c84473c0cb
   languageName: node
   linkType: hard
 
@@ -31257,16 +31274,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sinon@npm:^20.0.0":
-  version: 20.0.0
-  resolution: "sinon@npm:20.0.0"
+"sinon@npm:^21.0.0":
+  version: 21.0.0
+  resolution: "sinon@npm:21.0.0"
   dependencies:
     "@sinonjs/commons": "npm:^3.0.1"
     "@sinonjs/fake-timers": "npm:^13.0.5"
     "@sinonjs/samsam": "npm:^8.0.1"
     diff: "npm:^7.0.0"
     supports-color: "npm:^7.2.0"
-  checksum: 10/825cb36a58c0510cec03d9bef4fe66a12baf0e0cfdf1600423e3da1e6d57a03fe8161f4859340ea13d4c42e63da1724a260ef4c5ce119dc9ee075ad93b6e8bdd
+  checksum: 10/b460e1cde56fa34ecbebc216522667fa3985444020dc70508177f85d127e6b9a27184c4b3146c575b30ec3091bde508b1373fad306b1e808037a37035e62065d
   languageName: node
   linkType: hard
 
@@ -34111,13 +34128,6 @@ __metadata:
   version: 3.0.1
   resolution: "webidl-conversions@npm:3.0.1"
   checksum: 10/b65b9f8d6854572a84a5c69615152b63371395f0c5dcd6729c45789052296df54314db2bc3e977df41705eacb8bc79c247cee139a63fa695192f95816ed528ad
-  languageName: node
-  linkType: hard
-
-"webidl-conversions@npm:^7.0.0":
-  version: 7.0.0
-  resolution: "webidl-conversions@npm:7.0.0"
-  checksum: 10/4c4f65472c010eddbe648c11b977d048dd96956a625f7f8b9d64e1b30c3c1f23ea1acfd654648426ce5c743c2108a5a757c0592f02902cf7367adb7d14e67721
   languageName: node
   linkType: hard
 

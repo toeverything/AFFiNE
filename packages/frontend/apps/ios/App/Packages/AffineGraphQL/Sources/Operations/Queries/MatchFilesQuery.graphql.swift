@@ -7,27 +7,39 @@ public class MatchFilesQuery: GraphQLQuery {
   public static let operationName: String = "matchFiles"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query matchFiles($contextId: String!, $content: String!, $limit: SafeInt) { currentUser { __typename copilot { __typename contexts(contextId: $contextId) { __typename matchFiles(content: $content, limit: $limit) { __typename fileId chunk content distance } } } } }"#
+      #"query matchFiles($contextId: String, $workspaceId: String, $content: String!, $limit: SafeInt, $scopedThreshold: Float, $threshold: Float) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename contexts(contextId: $contextId) { __typename matchFiles( content: $content limit: $limit scopedThreshold: $scopedThreshold threshold: $threshold ) { __typename fileId blobId chunk content distance } } } } }"#
     ))
 
-  public var contextId: String
+  public var contextId: GraphQLNullable<String>
+  public var workspaceId: GraphQLNullable<String>
   public var content: String
   public var limit: GraphQLNullable<SafeInt>
+  public var scopedThreshold: GraphQLNullable<Double>
+  public var threshold: GraphQLNullable<Double>
 
   public init(
-    contextId: String,
+    contextId: GraphQLNullable<String>,
+    workspaceId: GraphQLNullable<String>,
     content: String,
-    limit: GraphQLNullable<SafeInt>
+    limit: GraphQLNullable<SafeInt>,
+    scopedThreshold: GraphQLNullable<Double>,
+    threshold: GraphQLNullable<Double>
   ) {
     self.contextId = contextId
+    self.workspaceId = workspaceId
     self.content = content
     self.limit = limit
+    self.scopedThreshold = scopedThreshold
+    self.threshold = threshold
   }
 
   public var __variables: Variables? { [
     "contextId": contextId,
+    "workspaceId": workspaceId,
     "content": content,
-    "limit": limit
+    "limit": limit,
+    "scopedThreshold": scopedThreshold,
+    "threshold": threshold
   ] }
 
   public struct Data: AffineGraphQL.SelectionSet {
@@ -52,7 +64,7 @@ public class MatchFilesQuery: GraphQLQuery {
       public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.UserType }
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
-        .field("copilot", Copilot.self),
+        .field("copilot", Copilot.self, arguments: ["workspaceId": .variable("workspaceId")]),
       ] }
 
       public var copilot: Copilot { __data["copilot"] }
@@ -85,7 +97,9 @@ public class MatchFilesQuery: GraphQLQuery {
             .field("__typename", String.self),
             .field("matchFiles", [MatchFile].self, arguments: [
               "content": .variable("content"),
-              "limit": .variable("limit")
+              "limit": .variable("limit"),
+              "scopedThreshold": .variable("scopedThreshold"),
+              "threshold": .variable("threshold")
             ]),
           ] }
 
@@ -103,12 +117,14 @@ public class MatchFilesQuery: GraphQLQuery {
             public static var __selections: [ApolloAPI.Selection] { [
               .field("__typename", String.self),
               .field("fileId", String.self),
+              .field("blobId", String.self),
               .field("chunk", AffineGraphQL.SafeInt.self),
               .field("content", String.self),
               .field("distance", Double?.self),
             ] }
 
             public var fileId: String { __data["fileId"] }
+            public var blobId: String { __data["blobId"] }
             public var chunk: AffineGraphQL.SafeInt { __data["chunk"] }
             public var content: String { __data["content"] }
             public var distance: Double? { __data["distance"] }

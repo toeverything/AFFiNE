@@ -174,9 +174,11 @@ const usePauseAnimation = (timeToResume = 5000) => {
 const WorkspaceSyncInfo = ({
   workspaceMetadata,
   workspaceProfile,
+  dense,
 }: {
   workspaceMetadata: WorkspaceMetadata;
   workspaceProfile: WorkspaceProfileInfo;
+  dense?: boolean;
 }) => {
   const syncStatus = useSyncEngineSyncProgress(workspaceMetadata);
   const isCloud = workspaceMetadata.flavour !== 'local';
@@ -209,15 +211,21 @@ const WorkspaceSyncInfo = ({
   }
 
   return (
-    <div className={styles.workspaceInfoSlider} data-active={delayActive}>
+    <div
+      className={styles.workspaceInfoSlider}
+      data-active={delayActive}
+      data-dense={dense}
+    >
       <div className={styles.workspaceInfoSlide}>
         <div className={styles.workspaceInfo} data-type="normal">
           <div className={styles.workspaceName} data-testid="workspace-name">
             {workspaceProfile.name}
           </div>
-          <div className={styles.workspaceStatus}>
-            {isCloud ? <CloudWorkspaceStatus /> : <LocalWorkspaceStatus />}
-          </div>
+          {!dense ? (
+            <div className={styles.workspaceStatus}>
+              {isCloud ? <CloudWorkspaceStatus /> : <LocalWorkspaceStatus />}
+            </div>
+          ) : null}
         </div>
 
         {/* when syncing/offline/... */}
@@ -250,6 +258,7 @@ export const WorkspaceCard = forwardRef<
     hideTeamWorkspaceIcon?: boolean;
     active?: boolean;
     infoClassName?: string;
+    dense?: boolean;
     onClickOpenSettings?: (workspaceMetadata: WorkspaceMetadata) => void;
     onClickEnableCloud?: (workspaceMetadata: WorkspaceMetadata) => void;
   }
@@ -259,7 +268,6 @@ export const WorkspaceCard = forwardRef<
       workspaceMetadata,
       showSyncStatus,
       showArrowDownIcon,
-      avatarSize = 32,
       onClickOpenSettings,
       onClickEnableCloud,
       className,
@@ -268,6 +276,8 @@ export const WorkspaceCard = forwardRef<
       hideCollaborationIcon,
       hideTeamWorkspaceIcon,
       active,
+      dense,
+      avatarSize = dense ? 20 : 32,
       ...props
     },
     ref
@@ -301,6 +311,7 @@ export const WorkspaceCard = forwardRef<
         <div className={clsx(styles.infoContainer, infoClassName)}>
           {information ? (
             <WorkspaceAvatar
+              className={styles.avatar}
               meta={workspaceMetadata}
               rounded={3}
               data-testid="workspace-avatar"
@@ -317,6 +328,7 @@ export const WorkspaceCard = forwardRef<
                 <WorkspaceSyncInfo
                   workspaceProfile={information}
                   workspaceMetadata={workspaceMetadata}
+                  dense={dense}
                 />
               ) : (
                 <span className={styles.workspaceName}>{information.name}</span>

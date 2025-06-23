@@ -365,28 +365,27 @@ if (!nativeBinding || process.env.NAPI_RS_FORCE_WASI) {
 
 if (!nativeBinding) {
   if (loadErrors.length > 0) {
-    // TODO Link to documentation with potential fixes
-    //  - The package owner could build/publish bindings for this arch
-    //  - The user may need to bundle the correct files
-    //  - The user may need to re-install node_modules to get new packages
-    throw new Error('Failed to load native binding', { cause: loadErrors })
+    throw new Error(
+      `Cannot find native binding. ` +
+        `npm has a bug related to optional dependencies (https://github.com/npm/cli/issues/4828). ` +
+        'Please try `npm i` again after removing both package-lock.json and node_modules directory.',
+      { cause: loadErrors }
+    )
   }
   throw new Error(`Failed to load native binding`)
 }
 
 module.exports = nativeBinding
-module.exports.Application = nativeBinding.Application
+module.exports.ApplicationInfo = nativeBinding.ApplicationInfo
 module.exports.ApplicationListChangedSubscriber = nativeBinding.ApplicationListChangedSubscriber
 module.exports.ApplicationStateChangedSubscriber = nativeBinding.ApplicationStateChangedSubscriber
 module.exports.AudioCaptureSession = nativeBinding.AudioCaptureSession
-module.exports.DocStorage = nativeBinding.DocStorage
-module.exports.DocStoragePool = nativeBinding.DocStoragePool
-module.exports.RecordingPermissions = nativeBinding.RecordingPermissions
 module.exports.ShareableContent = nativeBinding.ShareableContent
-module.exports.SqliteConnection = nativeBinding.SqliteConnection
-module.exports.TappableApplication = nativeBinding.TappableApplication
 module.exports.decodeAudio = nativeBinding.decodeAudio
 module.exports.decodeAudioSync = nativeBinding.decodeAudioSync
 module.exports.mintChallengeResponse = nativeBinding.mintChallengeResponse
-module.exports.ValidationResult = nativeBinding.ValidationResult
 module.exports.verifyChallengeResponse = nativeBinding.verifyChallengeResponse
+module.exports.DocStorage = nativeBinding.DocStorage
+module.exports.DocStoragePool = nativeBinding.DocStoragePool
+module.exports.SqliteConnection = nativeBinding.SqliteConnection
+module.exports.ValidationResult = nativeBinding.ValidationResult

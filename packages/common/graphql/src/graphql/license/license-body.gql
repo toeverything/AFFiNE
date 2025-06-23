@@ -1,0 +1,8 @@
+fragment licenseBody on License {
+  expiredAt
+  installedAt
+  quantity
+  recurring
+  validatedAt
+  variant
+}

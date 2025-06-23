@@ -7,6 +7,7 @@ import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { BaseSelection, ExtensionType } from '@blocksuite/affine/store';
 import { ArrowDownBigIcon as ArrowDownIcon } from '@blocksuite/icons/lit';
+import type { Signal } from '@preact/signals-core';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -21,8 +22,10 @@ import {
   type ChatMessage,
   isChatAction,
   isChatMessage,
+  StreamObjectSchema,
 } from '../components/ai-chat-messages';
 import { type AIError, AIProvider, UnauthorizedError } from '../provider';
+import { mergeStreamObjects } from '../utils/stream-objects';
 import { type ChatContextValue } from './chat-context';
 import { HISTORY_IMAGE_ACTIONS } from './const';
 import { AIPreloadConfig } from './preload-config';
@@ -171,6 +174,9 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
 
+  @property({ attribute: false })
+  accessor panelWidth!: Signal<number | undefined>;
+
   @query('.chat-panel-messages-container')
   accessor messagesContainer: HTMLDivElement | null = null;
 
@@ -298,6 +304,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                     .affineFeatureFlagService=${this.affineFeatureFlagService}
                     .getSessionId=${this.getSessionId}
                     .retry=${() => this.retry()}
+                    .panelWidth=${this.panelWidth}
                   ></chat-message-assistant>`;
                 } else if (isChatAction(item)) {
                   return html`<chat-message-action
@@ -387,7 +394,12 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         last.content = '';
         last.createdAt = new Date().toISOString();
       }
-      this.updateContext({ messages, status: 'loading', error: null });
+      this.updateContext({
+        messages,
+        status: 'loading',
+        error: null,
+        abortController,
+      });
 
       const { store } = this.host;
       const stream = await AIProvider.actions.chat({
@@ -404,11 +416,23 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         reasoning: this._isReasoningActive,
         webSearch: this._isNetworkActive,
       });
-      this.updateContext({ abortController });
+
       for await (const text of stream) {
         const messages = [...this.chatContextValue.messages];
         const last = messages[messages.length - 1] as ChatMessage;
-        last.content += text;
+        try {
+          const parsed = StreamObjectSchema.safeParse(JSON.parse(text));
+          if (parsed.success) {
+            last.streamObjects = mergeStreamObjects([
+              ...(last.streamObjects ?? []),
+              parsed.data,
+            ]);
+          } else {
+            last.content += text;
+          }
+        } catch {
+          last.content += text;
+        }
         this.updateContext({ messages, status: 'transmitting' });
       }
 
