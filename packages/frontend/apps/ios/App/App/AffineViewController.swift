@@ -3,13 +3,6 @@ import Intelligents
 import UIKit
 
 class AFFiNEViewController: CAPBridgeViewController {
-  var baseUrl: String? {
-    didSet { Intelligents.setUpstreamEndpoint(baseUrl ?? "") }
-  }
-  var documentID: String?
-  var workspaceID: String?
-  var documentContent: String?
-
   override func viewDidLoad() {
     super.viewDidLoad()
     webView?.allowsBackForwardNavigationGestures = true
@@ -36,7 +29,7 @@ class AFFiNEViewController: CAPBridgeViewController {
       CookiePlugin(),
       HashcashPlugin(),
       NavigationGesturePlugin(),
-      IntelligentsPlugin(representController: self),
+      // IntelligentsPlugin(representController: self), // no longer put in use
       NbStorePlugin(),
     ]
     plugins.forEach { bridge?.registerPluginInstance($0) }
@@ -45,16 +38,11 @@ class AFFiNEViewController: CAPBridgeViewController {
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
     navigationController?.setNavigationBarHidden(false, animated: animated)
-  }
-  
-#if DEBUG
-  override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
-    super.motionEnded(motion, with: event)
-    if motion == .motionShake {
-      presentIntelligentsButton()
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+      self.presentIntelligentsButton()
     }
   }
-#endif
 }
+
 
 

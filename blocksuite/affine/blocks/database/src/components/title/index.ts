@@ -1,15 +1,19 @@
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
-import { WithDisposable } from '@blocksuite/global/lit';
+import type { DataViewUILogicBase } from '@blocksuite/data-view';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import type { Text } from '@blocksuite/store';
+import { signal } from '@preact/signals-core';
 import { css, html } from 'lit';
-import { property, query, state } from 'lit/decorators.js';
+import { property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import type { DatabaseBlockComponent } from '../../database-block.js';
 
-export class DatabaseTitle extends WithDisposable(ShadowlessElement) {
+export class DatabaseTitle extends SignalWatcher(
+  WithDisposable(ShadowlessElement)
+) {
   static override styles = css`
     .affine-database-title {
       position: relative;
@@ -71,22 +75,23 @@ export class DatabaseTitle extends WithDisposable(ShadowlessElement) {
   `;
 
   private readonly compositionEnd = () => {
+    this.isComposing$.value = false;
     this.titleText.replace(0, this.titleText.length, this.input.value);
   };
 
   private readonly onBlur = () => {
-    this.isFocus = false;
+    this.isFocus$.value = false;
   };
 
   private readonly onFocus = () => {
-    this.isFocus = true;
-    if (this.database?.viewSelection$?.value) {
-      this.database?.setSelection(undefined);
+    this.isFocus$.value = true;
+    if (this.dataViewLogic.selection$.value) {
+      this.dataViewLogic.setSelection(undefined);
     }
   };
 
   private readonly onInput = (e: InputEvent) => {
-    this.text = this.input.value;
+    this.text$.value = this.input.value;
     if (!e.isComposing) {
       this.titleText.replace(0, this.titleText.length, this.input.value);
     }
@@ -102,9 +107,9 @@ export class DatabaseTitle extends WithDisposable(ShadowlessElement) {
   };
 
   updateText = () => {
-    if (!this.isFocus) {
+    if (!this.isFocus$.value) {
       this.input.value = this.titleText.toString();
-      this.text = this.input.value;
+      this.text$.value = this.input.value;
     }
   };
 
@@ -124,25 +129,25 @@ export class DatabaseTitle extends WithDisposable(ShadowlessElement) {
   }
 
   override render() {
-    const isEmpty = !this.text;
+    const isEmpty = !this.text$.value;
 
     const classList = classMap({
       'affine-database-title': true,
-      ellipsis: !this.isFocus,
+      ellipsis: !this.isFocus$.value,
     });
     const untitledStyle = styleMap({
       height: isEmpty ? 'auto' : 0,
-      opacity: isEmpty && !this.isFocus ? 1 : 0,
+      opacity: isEmpty && !this.isFocus$.value ? 1 : 0,
     });
     return html` <div
       class="${classList}"
       data-title-empty="${isEmpty}"
-      data-title-focus="${this.isFocus}"
+      data-title-focus="${this.isFocus$.value}"
     >
       <div class="text" style="${untitledStyle}">Untitled</div>
-      <div class="text">${this.text}</div>
+      <div class="text">${this.text$.value}</div>
       <textarea
-        .disabled="${this.readonly}"
+        .disabled="${this.readonly$.value}"
         @input="${this.onInput}"
         @keydown="${this.onKeyDown}"
         @copy="${stopPropagation}"
@@ -159,23 +164,24 @@ export class DatabaseTitle extends WithDisposable(ShadowlessElement) {
   @query('textarea')
   private accessor input!: HTMLTextAreaElement;
 
-  @state()
-  accessor isComposing = false;
+  private readonly isComposing$ = signal(false);
+  private readonly isFocus$ = signal(false);
 
-  @state()
-  private accessor isFocus = false;
+  private onPressEnterKey() {
+    this.dataViewLogic.addRow?.('start');
+  }
 
-  @property({ attribute: false })
-  accessor onPressEnterKey: (() => void) | undefined = undefined;
+  get readonly$() {
+    return this.dataViewLogic.view.readonly$;
+  }
 
-  @property({ attribute: false })
-  accessor readonly!: boolean;
-
-  @state()
-  private accessor text = '';
+  private readonly text$ = signal('');
 
   @property({ attribute: false })
   accessor titleText!: Text;
+
+  @property({ attribute: false })
+  accessor dataViewLogic!: DataViewUILogicBase;
 }
 
 declare global {

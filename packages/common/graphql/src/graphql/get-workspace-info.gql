@@ -1,7 +1,6 @@
 query getWorkspaceInfo($workspaceId: String!) {
-  isAdmin(workspaceId: $workspaceId)
-  isOwner(workspaceId: $workspaceId)
   workspace(id: $workspaceId) {
+    role
     team
   }
 }

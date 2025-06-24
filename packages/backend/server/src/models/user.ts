@@ -4,9 +4,11 @@ import { type ConnectedAccount, Prisma, type User } from '@prisma/client';
 import { omit } from 'lodash-es';
 
 import {
+  CannotDeleteAccountWithOwnedTeamWorkspace,
   CryptoHelper,
   EmailAlreadyUsed,
   EventBus,
+  UserNotFound,
   WrongSignInCredentials,
   WrongSignInMethod,
 } from '../base';
@@ -43,6 +45,10 @@ interface UserFilter {
   withDisabled?: boolean;
 }
 
+export interface ItemWithUserId {
+  userId: string;
+}
+
 export type PublicUser = Pick<User, keyof typeof publicUserSelect>;
 export type WorkspaceUser = Pick<User, keyof typeof workspaceUserSelect>;
 export type { ConnectedAccount, User };
@@ -74,6 +80,19 @@ export class UserModel extends BaseModel {
       select: publicUserSelect,
       where: { id: { in: ids }, disabled: false },
     });
+  }
+
+  async getPublicUsersMap<T extends ItemWithUserId>(
+    items: T[]
+  ): Promise<Map<string, PublicUser>> {
+    const userIds: string[] = [];
+    for (const item of items) {
+      if (item.userId) {
+        userIds.push(item.userId);
+      }
+    }
+    const users = await this.getPublicUsers(userIds);
+    return new Map(users.map(user => [user.id, user]));
   }
 
   async getWorkspaceUser(id: string): Promise<WorkspaceUser | null> {
@@ -217,6 +236,10 @@ export class UserModel extends BaseModel {
         ...data,
       });
     } else {
+      if (user.disabled) {
+        throw new UserNotFound();
+      }
+
       if (user.registered) {
         delete data.registered;
       } else {
@@ -237,13 +260,25 @@ export class UserModel extends BaseModel {
     return user;
   }
 
+  async ownedWorkspaces(id: string) {
+    return await this.models.workspaceUser.getUserActiveRoles(id, {
+      role: WorkspaceRole.Owner,
+    });
+  }
+
   async delete(id: string) {
-    const ownedWorkspaces = await this.models.workspaceUser.getUserActiveRoles(
-      id,
-      {
-        role: WorkspaceRole.Owner,
+    const ownedWorkspaces = await this.ownedWorkspaces(id);
+
+    for (const ws of ownedWorkspaces) {
+      const isTeamWorkspace = await this.models.workspace.isTeamWorkspace(
+        ws.workspaceId
+      );
+
+      if (isTeamWorkspace) {
+        throw new CannotDeleteAccountWithOwnedTeamWorkspace();
       }
-    );
+    }
+
     const user = await this.db.user.delete({ where: { id } });
 
     this.event.emit('user.deleted', {

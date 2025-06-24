@@ -1,5 +1,8 @@
+import { DocModeProvider } from '@blocksuite/affine-shared/services';
 import { isInsideEdgelessEditor } from '@blocksuite/affine-shared/utils';
 import type { Constructor } from '@blocksuite/global/utils';
+import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
+import type { BlockModel } from '@blocksuite/store';
 import type { LitElement, TemplateResult } from 'lit';
 
 import { PeekableController } from './controller.js';
@@ -47,6 +50,34 @@ export const Peekable =
     const derivedClass = class extends Class {
       [symbol] = new PeekableController(this as unknown as T, options.enableOn);
 
+      /**
+       * In edgeless mode, we need to check if the click target is not covered by
+       * other elements. If it is, we should not show the peek view.
+       */
+      private _peekableInEdgeless(e: MouseEvent) {
+        const docModeService = this.std.getOptional(DocModeProvider);
+
+        if (
+          !('model' in this) ||
+          !docModeService ||
+          docModeService.getEditorMode() !== 'edgeless'
+        ) {
+          return true;
+        }
+
+        const model = this['model'] as BlockModel;
+        const gfx = this.std.get(GfxControllerIdentifier);
+        const hitTarget = gfx.getElementByPoint(
+          ...gfx.viewport.toModelCoordFromClientCoord([e.clientX, e.clientY])
+        );
+
+        if (hitTarget && hitTarget !== model) {
+          return false;
+        }
+
+        return true;
+      }
+
       override connectedCallback() {
         super.connectedCallback();
 
@@ -56,7 +87,7 @@ export const Peekable =
 
         if (actions.includes('double-click')) {
           this.disposables.addFromEvent(target, 'dblclick', e => {
-            if (this[symbol].peekable) {
+            if (this[symbol].peekable && this._peekableInEdgeless(e)) {
               e.stopPropagation();
               this[symbol].peek().catch(console.error);
             }
@@ -68,7 +99,11 @@ export const Peekable =
           !isInsideEdgelessEditor(this.std.host)
         ) {
           this.disposables.addFromEvent(target, 'click', e => {
-            if (e.shiftKey && this[symbol].peekable) {
+            if (
+              e.shiftKey &&
+              this[symbol].peekable &&
+              this._peekableInEdgeless(e)
+            ) {
               e.stopPropagation();
               e.stopImmediatePropagation();
               this[symbol].peek().catch(console.error);

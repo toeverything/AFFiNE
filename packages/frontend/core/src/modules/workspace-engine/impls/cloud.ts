@@ -1,9 +1,11 @@
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { DebugLogger } from '@affine/debug';
 import {
   createWorkspaceMutation,
   deleteWorkspaceMutation,
   getWorkspaceInfoQuery,
   getWorkspacesQuery,
+  Permission,
   ServerDeploymentType,
 } from '@affine/graphql';
 import type {
@@ -46,7 +48,13 @@ import {
 } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
 import { map, Observable, switchMap, tap } from 'rxjs';
-import { type Doc as YDoc, encodeStateAsUpdate } from 'yjs';
+import {
+  applyUpdate,
+  type Array as YArray,
+  Doc as YDoc,
+  encodeStateAsUpdate,
+  type Map as YMap,
+} from 'yjs';
 
 import type { Server, ServersService } from '../../cloud';
 import {
@@ -78,6 +86,7 @@ const logger = new DebugLogger('affine:cloud-workspace-flavour-provider');
 class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   private readonly authService: AuthService;
   private readonly graphqlService: GraphQLService;
+  private readonly featureFlagService: FeatureFlagService;
   private readonly unsubscribeAccountChanged: () => void;
 
   constructor(
@@ -86,6 +95,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
   ) {
     this.authService = server.scope.get(AuthService);
     this.graphqlService = server.scope.get(GraphQLService);
+    this.featureFlagService = server.scope.get(FeatureFlagService);
     this.unsubscribeAccountChanged = this.server.scope.eventBus.on(
       AccountChanged,
       () => {
@@ -169,6 +179,7 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
     const docCollection = new WorkspaceImpl({
       id: workspaceId,
+      rootDoc: new YDoc({ guid: workspaceId }),
       blobSource: {
         get: async key => {
           const record = await blobStorage.get(key);
@@ -207,6 +218,13 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
           bin: encodeStateAsUpdate(subdocs),
         });
       }
+
+      const accountId = this.authService.session.account$.value?.id;
+      await this.writeInitialDocProperties(
+        workspaceId,
+        docStorage,
+        accountId ?? ''
+      );
 
       docStorage.connection.disconnect();
       blobStorage.connection.disconnect();
@@ -325,8 +343,8 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
     if (!cloudData && !localData) {
       return {
-        isOwner: info.isOwner,
-        isAdmin: info.isAdmin,
+        isOwner: info.workspace.role === Permission.Owner,
+        isAdmin: info.workspace.role === Permission.Admin,
         isTeam: info.workspace.team,
       };
     }
@@ -341,8 +359,8 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
     return {
       name: result.name,
       avatar: result.avatar,
-      isOwner: info.isOwner,
-      isAdmin: info.isAdmin,
+      isOwner: info.workspace.role === Permission.Owner,
+      isAdmin: info.workspace.role === Permission.Admin,
       isTeam: info.workspace.team,
     };
   }
@@ -459,14 +477,24 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
             id: `${this.flavour}:${workspaceId}`,
           },
         },
-        indexer: {
-          name: 'IndexedDBIndexerStorage',
-          opts: {
-            flavour: this.flavour,
-            type: 'workspace',
-            id: workspaceId,
-          },
-        },
+        indexer: this.featureFlagService.flags.enable_cloud_indexer.value
+          ? {
+              name: 'CloudIndexerStorage',
+              opts: {
+                flavour: this.flavour,
+                type: 'workspace',
+                id: workspaceId,
+                serverBaseUrl: this.server.serverMetadata.baseUrl,
+              },
+            }
+          : {
+              name: 'IndexedDBIndexerStorage',
+              opts: {
+                flavour: this.flavour,
+                type: 'workspace',
+                id: workspaceId,
+              },
+            },
         indexerSync: {
           name: 'IndexedDBIndexerSyncStorage',
           opts: {
@@ -530,6 +558,45 @@ class CloudWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
         },
       },
     };
+  }
+
+  async writeInitialDocProperties(
+    workspaceId: string,
+    docStorage: DocStorage,
+    creatorId: string
+  ) {
+    try {
+      const rootDocBuffer = await docStorage.getDoc(workspaceId);
+      const rootDoc = new YDoc({ guid: workspaceId });
+      if (rootDocBuffer) {
+        applyUpdate(rootDoc, rootDocBuffer.bin);
+      }
+
+      const docIds = (
+        rootDoc.getMap('meta').get('pages') as YArray<YMap<string>>
+      )
+        ?.map(page => page.get('id'))
+        .filter(Boolean) as string[];
+
+      const propertiesDBBuffer = await docStorage.getDoc('db$docProperties');
+      const propertiesDB = new YDoc({ guid: 'db$docProperties' });
+      if (propertiesDBBuffer) {
+        applyUpdate(propertiesDB, propertiesDBBuffer.bin);
+      }
+
+      for (const docId of docIds) {
+        const docProperties = propertiesDB.getMap(docId);
+        docProperties.set('id', docId);
+        docProperties.set('createdBy', creatorId);
+      }
+
+      await docStorage.pushDocUpdate({
+        docId: 'db$docProperties',
+        bin: encodeStateAsUpdate(propertiesDB),
+      });
+    } catch (error) {
+      logger.error('error to write initial doc properties', error);
+    }
   }
 
   private waitForLoaded() {

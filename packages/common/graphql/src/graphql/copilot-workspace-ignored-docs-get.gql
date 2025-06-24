@@ -11,6 +11,12 @@ query getWorkspaceEmbeddingIgnoredDocs($workspaceId: String!, $pagination: Pagin
           node {
             docId
             createdAt
+            docCreatedAt
+            docUpdatedAt
+            title
+            createdBy
+            createdByAvatar
+            updatedBy
           }
         }
       }

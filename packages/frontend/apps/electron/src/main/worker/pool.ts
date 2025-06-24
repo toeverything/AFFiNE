@@ -23,7 +23,12 @@ export class WorkerManager {
 
   workers = new Map<
     string,
-    { browserWindow: BrowserWindow; ports: Set<string>; key: string }
+    {
+      browserWindow: BrowserWindow;
+      ports: Set<string>;
+      key: string;
+      loaded: PromiseWithResolvers<void>;
+    }
   >();
 
   private async getOrCreateWorker(key: string) {
@@ -42,6 +47,14 @@ export class WorkerManager {
         },
         show: false,
       });
+
+      const record = {
+        browserWindow: worker,
+        ports: new Set<string>(),
+        key,
+        loaded: Promise.withResolvers<void>(),
+      };
+
       let disconnectHelperProcess: (() => void) | null = null;
       worker.on('closed', () => {
         this.workers.delete(key);
@@ -54,8 +67,9 @@ export class WorkerManager {
         disconnectHelperProcess = helperProcessManager.connectRenderer(
           worker.webContents
         );
+        record.loaded.resolve();
       });
-      const record = { browserWindow: worker, ports: new Set<string>(), key };
+
       this.workers.set(key, record);
       return record;
     }
@@ -73,6 +87,8 @@ export class WorkerManager {
     worker.ports.add(portId);
     const { port1: portForWorker, port2: portForRenderer } =
       new MessageChannelMain();
+
+    await worker.loaded.promise;
 
     worker.browserWindow.webContents.postMessage('worker-connect', { portId }, [
       portForWorker,

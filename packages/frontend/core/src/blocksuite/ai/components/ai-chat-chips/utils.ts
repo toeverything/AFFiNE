@@ -1,4 +1,4 @@
-import { LoadingIcon } from '@blocksuite/affine/blocks/image';
+import { LoadingIcon } from '@blocksuite/affine/components/icons';
 import { WarningIcon } from '@blocksuite/icons/lit';
 import { type TemplateResult } from 'lit';
 
@@ -41,7 +41,7 @@ export function getChipIcon(
     return WarningIcon();
   }
   if (isLoading) {
-    return LoadingIcon;
+    return LoadingIcon();
   }
   return icon;
 }

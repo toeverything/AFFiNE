@@ -166,6 +166,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
           'nextBillAt',
           'canceledAt',
           'quantity',
+          'end',
         ]),
       },
       create: {
@@ -274,18 +275,21 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
   }
 
   @OnEvent('workspace.members.updated')
-  async onMembersUpdated({
-    workspaceId,
-    count,
-  }: Events['workspace.members.updated']) {
+  async onMembersUpdated({ workspaceId }: Events['workspace.members.updated']) {
+    const count = await this.models.workspaceUser.chargedCount(workspaceId);
     const subscription = await this.getSubscription({
       plan: SubscriptionPlan.Team,
       workspaceId,
     });
 
-    if (!subscription || !subscription.stripeSubscriptionId) {
+    if (
+      !subscription ||
+      !subscription.stripeSubscriptionId ||
+      count === subscription.quantity
+    ) {
       return;
     }
+
     const stripeSubscription = await this.stripe.subscriptions.retrieve(
       subscription.stripeSubscriptionId
     );

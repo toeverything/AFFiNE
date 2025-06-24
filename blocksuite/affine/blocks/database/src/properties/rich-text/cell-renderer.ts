@@ -24,12 +24,12 @@ import { computed, effect, signal } from '@preact/signals-core';
 import { ref } from 'lit/directives/ref.js';
 import { html } from 'lit/static-html.js';
 
-import { HostContextKey } from '../../context/host-context.js';
+import { EditorHostKey } from '../../context/host-context.js';
 import type { DatabaseBlockComponent } from '../../database-block.js';
 import {
   richTextCellStyle,
   richTextContainerStyle,
-} from './cell-renderer.css.js';
+} from './cell-renderer-css.js';
 import { richTextPropertyModelConfig } from './define.js';
 
 function toggleStyle(
@@ -87,7 +87,7 @@ export class RichTextCell extends BaseCellRenderer<Text, string> {
 
   get inlineManager() {
     return this.view
-      .contextGet(HostContextKey)
+      .serviceGet(EditorHostKey)
       ?.std.get(DefaultInlineManagerExtension.identifier);
   }
 
@@ -98,7 +98,7 @@ export class RichTextCell extends BaseCellRenderer<Text, string> {
   }
 
   get host() {
-    return this.view.contextGet(HostContextKey);
+    return this.view.serviceGet(EditorHostKey);
   }
 
   private readonly richText$ = signal<RichText>();
@@ -310,7 +310,6 @@ export class RichTextCell extends BaseCellRenderer<Text, string> {
         });
       }
     } else {
-      console.log(text);
       inlineEditor.insertText(inlineRange, text);
       inlineEditor.setInlineRange({
         index: inlineRange.index + text.length,
@@ -332,7 +331,6 @@ export class RichTextCell extends BaseCellRenderer<Text, string> {
         this.inlineEditor$.value?.selectAll();
       }
     };
-    this.addEventListener('keydown', selectAll);
     this.disposables.addFromEvent(this, 'keydown', selectAll);
     this.disposables.add(
       effect(() => {
@@ -399,7 +397,7 @@ export class RichTextCell extends BaseCellRenderer<Text, string> {
   }
 
   private get std() {
-    return this.view.contextGet(HostContextKey)?.std;
+    return this.view.serviceGet(EditorHostKey)?.std;
   }
 
   insertDelta = (delta: DeltaInsert<AffineTextAttributes>) => {

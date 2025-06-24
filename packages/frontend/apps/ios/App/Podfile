@@ -15,6 +15,7 @@ def capacitor_pods
   pod 'CapacitorBrowser', :path => '../../../../../node_modules/@capacitor/browser'
   pod 'CapacitorHaptics', :path => '../../../../../node_modules/@capacitor/haptics'
   pod 'CapacitorKeyboard', :path => '../../../../../node_modules/@capacitor/keyboard'
+  pod 'CapacitorPluginAppTrackingTransparency', :path => '../../../../../node_modules/capacitor-plugin-app-tracking-transparency'
 end
 
 target 'AFFiNE' do

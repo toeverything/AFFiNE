@@ -1,5 +1,6 @@
 export * from './auto-clear-selection-service';
 export * from './block-meta-service';
+export * from './citation-service';
 export * from './doc-display-meta-service';
 export * from './doc-mode-service';
 export * from './drag-handle-config';
@@ -11,7 +12,7 @@ export * from './feature-flag-service';
 export * from './file-size-limit-service';
 export * from './font-loader';
 export * from './generate-url-service';
-export * from './link-previewer-service';
+export * from './link-preview-service';
 export * from './native-clipboard-service';
 export * from './notification-service';
 export * from './open-doc-config';

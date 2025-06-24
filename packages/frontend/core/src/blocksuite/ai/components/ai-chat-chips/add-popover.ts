@@ -1,17 +1,16 @@
 import { toast } from '@affine/component';
-import type {
-  CollectionMeta,
-  TagMeta,
-} from '@affine/core/components/page-list';
+import type { TagMeta } from '@affine/core/components/page-list';
+import type { CollectionMeta } from '@affine/core/modules/collection';
 import track from '@affine/track';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { scrollbarStyle } from '@blocksuite/affine/shared/styles';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import { openFileOrFiles } from '@blocksuite/affine/shared/utils';
+import { openFilesWith } from '@blocksuite/affine/shared/utils';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { DocMeta } from '@blocksuite/affine/store';
 import {
   CollectionsIcon,
+  ImageIcon,
   MoreHorizontalIcon,
   SearchIcon,
   TagsIcon,
@@ -22,6 +21,7 @@ import { css, html, type TemplateResult } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
+import { MAX_IMAGE_COUNT } from '../ai-chat-input';
 import type { ChatChip, DocDisplayConfig, SearchMenuConfig } from './type';
 
 enum AddPopoverMode {
@@ -93,6 +93,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
       font-size: var(--affine-font-sm);
       color: ${unsafeCSSVarV2('text/primary')};
       flex-grow: 1;
+      background-color: transparent;
     }
     .search-input-wrapper input::placeholder {
       color: ${unsafeCSSVarV2('text/placeholder')};
@@ -161,9 +162,7 @@ export class ChatPanelAddPopover extends SignalWatcher(
   };
 
   private readonly _addFileChip = async () => {
-    const files = await openFileOrFiles({
-      multiple: true,
-    });
+    const files = await openFilesWith();
     if (!files || files.length === 0) return;
 
     const images = files.filter(file => file.type.startsWith('image/'));
@@ -186,9 +185,28 @@ export class ChatPanelAddPopover extends SignalWatcher(
     this.abortController.abort();
   };
 
+  private readonly _addImageChip = async () => {
+    if (this.isImageUploadDisabled) return;
+
+    const images = await openFilesWith('Images');
+    if (!images) return;
+    if (this.uploadImageCount + images.length > MAX_IMAGE_COUNT) {
+      toast(`You can only upload up to ${MAX_IMAGE_COUNT} images`);
+      return;
+    }
+    this.addImages(images);
+  };
+
   private readonly uploadGroup: MenuGroup = {
     name: 'Upload',
     items: [
+      {
+        key: 'images',
+        name: 'Upload images',
+        testId: 'ai-chat-with-images',
+        icon: ImageIcon(),
+        action: this._addImageChip,
+      },
       {
         key: 'files',
         name: 'Upload files (pdf, txt, csv)',
@@ -270,6 +288,12 @@ export class ChatPanelAddPopover extends SignalWatcher(
 
   @property({ attribute: 'data-testid', reflect: true })
   accessor testId: string = 'ai-search-input';
+
+  @property({ attribute: false })
+  accessor isImageUploadDisabled!: boolean;
+
+  @property({ attribute: false })
+  accessor uploadImageCount!: number;
 
   @query('.search-input')
   accessor searchInput!: HTMLInputElement;

@@ -63,7 +63,7 @@ export class RecordingStateMachine {
    * @param event The event to dispatch
    * @returns The new recording status after the event is processed
    */
-  dispatch(event: RecordingEvent): RecordingStatus | null {
+  dispatch(event: RecordingEvent, emit = true): RecordingStatus | null {
     const currentStatus = this.recordingStatus$.value;
     let newStatus: RecordingStatus | null = null;
 
@@ -105,7 +105,9 @@ export class RecordingStateMachine {
       return currentStatus;
     }
 
-    this.recordingStatus$.next(newStatus);
+    if (emit) {
+      this.recordingStatus$.next(newStatus);
+    }
 
     return newStatus;
   }

@@ -2,7 +2,10 @@ import {
   AuthPageContainer,
   type User,
 } from '@affine/component/auth-components';
-import type { GetInviteInfoQuery } from '@affine/graphql';
+import {
+  type GetInviteInfoQuery,
+  WorkspaceMemberStatus,
+} from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { SignOutIcon } from '@blocksuite/icons/rc';
 
@@ -51,7 +54,9 @@ export const RequestToJoinPage = ({
       }
     >
       <Button variant="primary" size="large" onClick={requestToJoin}>
-        {t['com.affine.request-to-join-workspace.button']()}
+        {inviteInfo?.status === WorkspaceMemberStatus.Pending
+          ? t['com.affine.notification.invitation.accept']()
+          : t['com.affine.request-to-join-workspace.button']()}
       </Button>
       {user ? (
         <div className={styles.userInfoWrapper}>

@@ -7,7 +7,6 @@
   },
   "include": ["./src"],
   "references": [
-    { "path": "../embed" },
     { "path": "../surface" },
     { "path": "../../components" },
     { "path": "../../ext-loader" },

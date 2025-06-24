@@ -12,18 +12,17 @@ import { css, html, unsafeCSS } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
 import { GroupTitle } from '../../../core/group-by/group-title.js';
-import type { GroupData } from '../../../core/group-by/trait.js';
+import type { Group } from '../../../core/group-by/trait.js';
+import type { Row } from '../../../core/index.js';
 import { createDndContext } from '../../../core/utils/wc-dnd/dnd-context.js';
 import { defaultActivators } from '../../../core/utils/wc-dnd/sensors/index.js';
 import { linearMove } from '../../../core/utils/wc-dnd/utils/linear-move.js';
 import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
 import { TableViewAreaSelection } from '../selection';
-import type { TableSingleView } from '../table-view-manager.js';
 import { DataViewColumnPreview } from './header/column-renderer.js';
 import { getVerticalIndicator } from './header/vertical-indicator.js';
-import type { DataViewTable } from './table-view.js';
+import type { TableViewUILogic } from './table-view-ui-logic.js';
 
 const styles = css`
   affine-data-view-table-group:hover .group-header-op {
@@ -70,7 +69,7 @@ export class TableGroup extends SignalWatcher(
 
   private readonly clickAddRow = () => {
     this.view.rowAdd('end', this.group?.key);
-    const selectionController = this.viewEle.selectionController;
+    const selectionController = this.tableViewLogic.selectionController;
     selectionController.selection = undefined;
     requestAnimationFrame(() => {
       const index = this.view.properties$.value.findIndex(
@@ -84,12 +83,13 @@ export class TableGroup extends SignalWatcher(
         },
         isEditing: true,
       });
+      this.requestUpdate();
     });
   };
 
   private readonly clickAddRowInStart = () => {
     this.view.rowAdd('start', this.group?.key);
-    const selectionController = this.viewEle.selectionController;
+    const selectionController = this.tableViewLogic.selectionController;
     selectionController.selection = undefined;
     requestAnimationFrame(() => {
       const index = this.view.properties$.value.findIndex(
@@ -103,6 +103,7 @@ export class TableGroup extends SignalWatcher(
         },
         isEditing: true,
       });
+      this.requestUpdate();
     });
   };
 
@@ -117,15 +118,16 @@ export class TableGroup extends SignalWatcher(
         name: 'Ungroup',
         hide: () => group.value == null,
         select: () => {
-          group.rows.forEach(id => {
-            group.manager.removeFromGroup(id, group.key);
+          group.rows.forEach(row => {
+            group.manager.removeFromGroup(row.rowId, group.key);
           });
         },
       }),
       menu.action({
         name: 'Delete Cards',
         select: () => {
-          this.view.rowDelete(group.rows);
+          this.view.rowsDelete(group.rows.map(row => row.rowId));
+          this.requestUpdate();
         },
       }),
     ]);
@@ -149,10 +151,7 @@ export class TableGroup extends SignalWatcher(
   };
 
   @property({ attribute: false })
-  accessor group: GroupData | undefined = undefined;
-
-  @property({ attribute: false })
-  accessor view!: TableSingleView;
+  accessor group: Group | undefined = undefined;
 
   dndContext = createDndContext({
     activators: defaultActivators,
@@ -173,7 +172,7 @@ export class TableGroup extends SignalWatcher(
         const overIndex = this.view.properties$.value.findIndex(
           data => data.id === over.id
         );
-        this.view.propertyMove(active.id, {
+        this.view.propertyGetOrCreate(active.id).move({
           before: activeIndex > overIndex,
           id: over.id,
         });
@@ -181,11 +180,12 @@ export class TableGroup extends SignalWatcher(
     },
     collisionDetection: linearMove(true),
     createOverlay: active => {
-      const column = this.view.propertyGet(active.id);
+      const column = this.view.propertyGetOrCreate(active.id);
       const preview = new DataViewColumnPreview();
       preview.column = column;
       preview.group = this.group;
       preview.container = this;
+      preview.tableViewLogic = this.tableViewLogic;
       preview.style.position = 'absolute';
       preview.style.zIndex = '999';
       const scale = this.dndContext.scale$.value;
@@ -241,23 +241,22 @@ export class TableGroup extends SignalWatcher(
     return this.group?.rows ?? this.view.rows$.value;
   }
 
-  private renderRows(ids: string[]) {
+  private renderRows(rows: Row[]) {
     return html`
       <affine-database-column-header
         .renderGroupHeader="${this.renderGroupHeader}"
-        .tableViewManager="${this.view}"
+        .tableViewLogic="${this.tableViewLogic}"
       ></affine-database-column-header>
       <div class="affine-database-block-rows">
         ${repeat(
-          ids,
-          id => id,
-          (id, idx) => {
+          rows,
+          row => row.rowId,
+          (row, idx) => {
             return html` <data-view-table-row
               data-row-index="${idx}"
-              data-row-id="${id}"
-              .dataViewEle="${this.dataViewEle}"
-              .view="${this.view}"
-              .rowId="${id}"
+              data-row-id="${row.rowId}"
+              .tableViewLogic="${this.tableViewLogic}"
+              .rowId="${row.rowId}"
               .rowIndex="${idx}"
             ></data-view-table-row>`;
           }
@@ -277,7 +276,10 @@ export class TableGroup extends SignalWatcher(
               ${PlusIcon()}<span style="font-size: 12px">New Record</span>
             </div>
           </div>`}
-      <affine-database-column-stats .view="${this.view}" .group="${this.group}">
+      <affine-database-column-stats
+        .tableViewLogic="${this.tableViewLogic}"
+        .group="${this.group}"
+      >
       </affine-database-column-stats>
     `;
   }
@@ -291,14 +293,15 @@ export class TableGroup extends SignalWatcher(
     return this.renderRows(this.rows);
   }
 
-  @property({ attribute: false })
-  accessor dataViewEle!: DataViewRenderer;
-
   @query('.affine-database-block-rows')
   accessor rowsContainer: HTMLElement | null = null;
 
   @property({ attribute: false })
-  accessor viewEle!: DataViewTable;
+  accessor tableViewLogic!: TableViewUILogic;
+
+  get view() {
+    return this.tableViewLogic.view;
+  }
 }
 
 declare global {

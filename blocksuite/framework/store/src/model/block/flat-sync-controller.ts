@@ -63,7 +63,7 @@ export class FlatSyncController {
     model.stash = this.stash;
     model.pop = this.pop;
     if (this.doc) {
-      model.doc = this.doc;
+      model.store = this.doc;
     }
 
     const defaultProps = schema.model.props?.(internalPrimitives);

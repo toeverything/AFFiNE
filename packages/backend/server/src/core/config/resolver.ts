@@ -182,6 +182,24 @@ class UpdateAppConfigInput {
   value!: any;
 }
 
+@ObjectType()
+class AppConfigValidateResult {
+  @Field()
+  module!: string;
+
+  @Field()
+  key!: string;
+
+  @Field(() => GraphQLJSON)
+  value!: any;
+
+  @Field()
+  valid!: boolean;
+
+  @Field(() => String, { nullable: true })
+  error?: string;
+}
+
 @Admin()
 @Resolver(() => GraphQLJSONObject)
 export class AppConfigResolver {
@@ -203,5 +221,29 @@ export class AppConfigResolver {
     updates: UpdateAppConfigInput[]
   ): Promise<DeepPartial<AppConfig>> {
     return await this.service.updateConfig(me.id, updates);
+  }
+
+  @Mutation(() => [AppConfigValidateResult], {
+    description: 'validate app configuration',
+  })
+  async validateAppConfig(
+    @Args('updates', { type: () => [UpdateAppConfigInput] })
+    updates: UpdateAppConfigInput[]
+  ): Promise<AppConfigValidateResult[]> {
+    const errors = this.service.validateConfig(updates);
+
+    return updates.map(update => {
+      const error = errors?.find(
+        error =>
+          error.data.module === update.module && error.data.key === update.key
+      );
+      return {
+        module: update.module,
+        key: update.key,
+        value: update.value,
+        valid: !error,
+        error: error?.data.hint,
+      };
+    });
   }
 }

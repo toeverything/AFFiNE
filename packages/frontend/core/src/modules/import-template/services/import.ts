@@ -54,7 +54,7 @@ export class ImportTemplateService extends Service {
       flavour,
       async (docCollection, _, docStorage) => {
         docCollection.meta.initialize();
-        docCollection.meta.setName(workspaceName);
+        docCollection.doc.getMap('meta').set('name', workspaceName);
         const doc = docCollection.createDoc();
         docId = doc.id;
         await docStorage.pushDocUpdate({

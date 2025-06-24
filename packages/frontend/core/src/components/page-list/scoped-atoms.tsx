@@ -136,12 +136,7 @@ const defaultSortingFn: SorterConfig<MetaRecord<ListItem>>['sortingFn'] = (
   return 0;
 };
 
-const validKeys: Set<keyof MetaRecord<ListItem>> = new Set([
-  'id',
-  'title',
-  'createDate',
-  'updatedDate',
-]);
+const validKeys = new Set(['id', 'title', 'name', 'createDate', 'updatedDate']);
 
 const sorterStateAtom = atom<SorterConfig<MetaRecord<ListItem>>>({
   key: DEFAULT_SORT_KEY,

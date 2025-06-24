@@ -2,6 +2,86 @@ import type { Element, ElementContent, Text } from 'hast';
 
 import type { HtmlAST } from '../types/hast.js';
 
+// Block elements that html adapter supports
+const blockElements = [
+  'div',
+  'p',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'ul',
+  'ol',
+  'li',
+  'blockquote',
+  'pre',
+];
+
+const blockElementsSet = new Set(blockElements);
+
+// Phrasing content
+const inlineElements = [
+  'a',
+  'abbr',
+  'audio',
+  'b',
+  'bdi',
+  'bdo',
+  'br',
+  'button',
+  'canvas',
+  'cite',
+  'code',
+  'data',
+  'datalist',
+  'del',
+  'dfn',
+  'em',
+  'embed',
+  'i',
+  // 'iframe' is not included because it needs special handling
+  // 'img' is not included because it needs special handling
+  'input',
+  'ins',
+  'kbd',
+  'label',
+  'link',
+  'map',
+  'mark',
+  'math',
+  'meta',
+  'meter',
+  'noscript',
+  'object',
+  'output',
+  'picture',
+  'progress',
+  'q',
+  'ruby',
+  's',
+  'samp',
+  'script',
+  'select',
+  'slot',
+  'small',
+  'span',
+  'strong',
+  'sub',
+  'sup',
+  'svg',
+  'template',
+  'textarea',
+  'time',
+  'u',
+  'var',
+  'video',
+  'wbr',
+];
+
+const inlineElementsSet = new Set(inlineElements);
+
 const isElement = (ast: HtmlAST): ast is Element => {
   return ast.type === 'element';
 };
@@ -53,66 +133,12 @@ const getTextChildrenOnlyAst = (ast: Element): Element => {
   };
 };
 
+const isTagBlock = (tagName: string): boolean => {
+  return blockElementsSet.has(tagName);
+};
+
 const isTagInline = (tagName: string): boolean => {
-  // Phrasing content
-  const inlineElements = [
-    'a',
-    'abbr',
-    'audio',
-    'b',
-    'bdi',
-    'bdo',
-    'br',
-    'button',
-    'canvas',
-    'cite',
-    'code',
-    'data',
-    'datalist',
-    'del',
-    'dfn',
-    'em',
-    'embed',
-    'i',
-    // 'iframe' is not included because it needs special handling
-    // 'img' is not included because it needs special handling
-    'input',
-    'ins',
-    'kbd',
-    'label',
-    'link',
-    'map',
-    'mark',
-    'math',
-    'meta',
-    'meter',
-    'noscript',
-    'object',
-    'output',
-    'picture',
-    'progress',
-    'q',
-    'ruby',
-    's',
-    'samp',
-    'script',
-    'select',
-    'slot',
-    'small',
-    'span',
-    'strong',
-    'sub',
-    'sup',
-    'svg',
-    'template',
-    'textarea',
-    'time',
-    'u',
-    'var',
-    'video',
-    'wbr',
-  ];
-  return inlineElements.includes(tagName);
+  return inlineElementsSet.has(tagName);
 };
 
 const isElementInline = (element: Element): boolean => {
@@ -263,4 +289,7 @@ export const HastUtils = {
   querySelector,
   flatNodes,
   isParagraphLike,
+  isTagBlock,
+  isTagInline,
+  isElementInline,
 };

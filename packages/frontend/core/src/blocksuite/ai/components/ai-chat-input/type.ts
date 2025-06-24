@@ -14,6 +14,10 @@ export interface AIReasoningConfig {
   setEnabled: (state: boolean) => void;
 }
 
+export interface AIModelSwitchConfig {
+  visible: Signal<boolean | undefined>;
+}
+
 // TODO: remove this type
 export type AIChatInputContext = {
   messages: HistoryMessage[];

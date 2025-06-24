@@ -208,21 +208,21 @@ it('should effect only run once', () => {
 
   const manager = new ViewExtensionManager([ViewExt1]);
 
-  expect(ViewExt1.effectRunned).toBe(false);
-  expect(ViewExt2.effectRunned).toBe(false);
+  expect(ViewExt1.effectRan).toBe(false);
+  expect(ViewExt2.effectRan).toBe(false);
 
   manager.get('page');
 
-  expect(ViewExt1.effectRunned).toBe(true);
-  expect(ViewExt2.effectRunned).toBe(false);
+  expect(ViewExt1.effectRan).toBe(true);
+  expect(ViewExt2.effectRan).toBe(false);
 
   expect(effect1).toHaveBeenCalledTimes(1);
   expect(effect2).toHaveBeenCalledTimes(0);
 
   manager.get('edgeless');
 
-  expect(ViewExt1.effectRunned).toBe(true);
-  expect(ViewExt2.effectRunned).toBe(false);
+  expect(ViewExt1.effectRan).toBe(true);
+  expect(ViewExt2.effectRan).toBe(false);
 
   expect(effect1).toHaveBeenCalledTimes(1);
   expect(effect2).toHaveBeenCalledTimes(0);

@@ -35,13 +35,13 @@ export class PreviewHelper {
         if (!selectedIds.includes(parent)) {
           ids.push({ viewType: 'bypass', id: parent });
         }
-        parent = this.widget.doc.getParent(parent)?.id ?? null;
+        parent = this.widget.store.getParent(parent)?.id ?? null;
       } while (parent && !ids.map(({ id }) => id).includes(parent));
     });
 
     // The children of the selected blocks should be rendered as Display
     const addChildren = (id: string) => {
-      const model = this.widget.doc.getBlock(id)?.model;
+      const model = this.widget.store.getBlock(id)?.model;
       if (!model) {
         return;
       }
@@ -68,7 +68,7 @@ export class PreviewHelper {
     const docModeService = std.get(DocModeProvider);
     const editorSetting = std.get(EditorSettingProvider);
     const query = this._calculateQuery(blockIds as string[]);
-    const store = widget.doc.doc.getStore({ query });
+    const store = widget.store.doc.getStore({ query });
     let previewSpec = widget.std
       .get(ViewExtensionManagerIdentifier)
       .get('preview-page');
@@ -88,7 +88,7 @@ export class PreviewHelper {
         setup(di) {
           di.override(BlockViewIdentifier('affine:image'), () => {
             return (model: BlockModel) => {
-              const parent = model.doc.getParent(model.id);
+              const parent = model.store.getParent(model.id);
 
               if (parent?.flavour === 'affine:surface') {
                 return literal`affine-edgeless-placeholder-preview-image`;

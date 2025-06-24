@@ -1,3 +1,4 @@
+import { IS_MAC } from '@blocksuite/global/env';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
@@ -17,6 +18,21 @@ test.describe('AIChatWith/Text', () => {
     await expect(page.getByTestId('ai-generating')).toBeVisible();
     const stop = await page.getByTestId('ai-stop');
     await stop.click();
+    await expect(page.getByTestId('ai-generating')).not.toBeVisible();
+  });
+
+  test('should support stop generating when click outside', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    await utils.editor.askAIWithText(page, 'Panda');
+    await page.getByTestId('action-generate-image').click();
+    await expect(page.getByTestId('ai-generating')).toBeVisible();
+    await page.mouse.click(0, 0);
+    await expect(
+      page.getByText('AI is generating content. Do you want to stop generating')
+    ).toBeVisible();
+    await page.getByTestId('confirm-modal-confirm').click();
     await expect(page.getByTestId('ai-generating')).not.toBeVisible();
   });
 
@@ -62,13 +78,22 @@ test.describe('AIChatWith/Text', () => {
     loggedInPage: page,
     utils,
   }) => {
-    const { translate } = await utils.editor.askAIWithText(page, 'Apple');
-    const { answer } = await translate('German');
-    await expect(answer).toHaveText(/Apfel/, { timeout: 10000 });
+    await utils.editor.focusToEditor(page);
+    await page.keyboard.insertText('I Loev Apple');
+
+    // Select the word "Loev"
+    const SHORT_KEY = IS_MAC ? 'Alt' : 'Control';
+    await page.keyboard.press(`${SHORT_KEY}+ArrowLeft`);
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press(`Shift+${SHORT_KEY}+ArrowLeft`);
+
+    const { fixSpelling } = await utils.editor.showAIMenu(page);
+    const { answer } = await fixSpelling();
+    await expect(answer).toHaveText(/Love/, { timeout: 10000 });
     const replace = answer.getByTestId('answer-replace');
     await replace.click();
     const content = await utils.editor.getEditorContent(page);
-    expect(content).toBe('Apfel');
+    expect(content).toBe('I Love Apple');
   });
 
   test('should support continue in chat', async ({

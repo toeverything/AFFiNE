@@ -12,6 +12,7 @@ import {
   EditPropsMiddlewareBuilder,
 } from './extensions';
 import { ExportManagerExtension } from './extensions/export-manager/export-manager';
+import { DefaultTool } from './tool/default-tool';
 
 export class SurfaceViewExtension extends ViewExtensionProvider {
   override name = 'affine-surface-block';
@@ -30,6 +31,7 @@ export class SurfaceViewExtension extends ViewExtensionProvider {
       ExportManagerExtension,
     ]);
     if (this.isEdgeless(context.scope)) {
+      context.register(DefaultTool);
       context.register(
         BlockViewExtension('affine:surface', literal`affine-surface`)
       );

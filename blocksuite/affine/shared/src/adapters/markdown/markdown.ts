@@ -38,6 +38,7 @@ import {
 } from './delta-converter';
 import { remarkGfm } from './gfm';
 import { MarkdownPreprocessorManager } from './preprocessor';
+import { remarkCallout } from './remark-plugins/remark-callout';
 import type { Markdown, MarkdownAST } from './type';
 
 type MarkdownToSliceSnapshotPayload = {
@@ -204,11 +205,13 @@ export class MarkdownAdapter extends BaseAdapter<Markdown> {
   }
 
   private _markdownToAst(markdown: Markdown) {
-    return unified()
+    const processor = unified()
       .use(remarkParse)
       .use(remarkGfm)
       .use(remarkMath)
-      .parse(markdown);
+      .use(remarkCallout);
+    const ast = processor.parse(markdown);
+    return processor.runSync(ast);
   }
 
   async fromBlockSnapshot({

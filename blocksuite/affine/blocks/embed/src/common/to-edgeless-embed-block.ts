@@ -68,7 +68,6 @@ export function toEdgelessEmbedBlock<
       this.blockContainerStyles = {
         width: `${bound.w}px`,
       };
-      this._scale = bound.w / this._cardWidth;
 
       return this.renderPageContent();
     }

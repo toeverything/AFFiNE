@@ -10,6 +10,8 @@ import {
 import { computed } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 
+import { ConnectorTool } from '../connector-tool';
+
 const IcomMap = {
   [ConnectorMode.Straight]: ConnectorLIcon(),
   [ConnectorMode.Orthogonal]: ConnectorEIcon(),
@@ -30,7 +32,7 @@ export class EdgelessConnectorToolButton extends QuickToolMixin(
       .mode;
   });
 
-  override type = 'connector' as const;
+  override type = ConnectorTool;
 
   private _toggleMenu() {
     if (this.tryDisposePopper()) return;
@@ -64,7 +66,7 @@ export class EdgelessConnectorToolButton extends QuickToolMixin(
         @click=${() => {
           // don't update tool before toggling menu
           this._toggleMenu();
-          this.gfx.tool.setTool('connector', {
+          this.gfx.tool.setTool(ConnectorTool, {
             mode,
           });
         }}

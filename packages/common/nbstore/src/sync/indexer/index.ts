@@ -1,18 +1,15 @@
+import { readAllDocsFromRootDoc } from '@affine/reader';
 import {
   filter,
   first,
+  lastValueFrom,
   Observable,
   ReplaySubject,
   share,
   Subject,
   throttleTime,
 } from 'rxjs';
-import {
-  applyUpdate,
-  type Array as YArray,
-  Doc as YDoc,
-  type Map as YMap,
-} from 'yjs';
+import { applyUpdate, Doc as YDoc } from 'yjs';
 
 import {
   type DocStorage,
@@ -75,60 +72,37 @@ export class IndexerSyncImpl implements IndexerSync {
 
   state$ = this.status.state$.pipe(
     // throttle the state to 1 second to avoid spamming the UI
-    throttleTime(1000)
+    throttleTime(1000, undefined, {
+      leading: true,
+      trailing: true,
+    })
   );
   docState$(docId: string) {
     return this.status.docState$(docId).pipe(
       // throttle the state to 1 second to avoid spamming the UI
-      throttleTime(1000)
+      throttleTime(1000, undefined, { leading: true, trailing: true })
     );
   }
 
-  waitForCompleted(signal?: AbortSignal) {
-    return new Promise<void>((resolve, reject) => {
-      this.status.state$
-        .pipe(
-          filter(state => state.completed),
-          takeUntilAbort(signal),
-          first()
-        )
-        .subscribe({
-          next: () => {
-            resolve();
-          },
-          error: err => {
-            reject(err);
-          },
-        });
-    });
-  }
-
-  waitForDocCompleted(docId: string, signal?: AbortSignal) {
-    return new Promise<void>((resolve, reject) => {
-      this.status
-        .docState$(docId)
-        .pipe(
-          filter(state => state.completed),
-          takeUntilAbort(signal),
-          first()
-        )
-        .subscribe({
-          next: () => {
-            resolve();
-          },
-          error: err => {
-            reject(err);
-          },
-        });
-    });
-  }
-
-  readonly interval = () =>
-    new Promise<void>(resolve =>
-      requestIdleCallback(() => resolve(), {
-        timeout: 200,
-      })
+  async waitForCompleted(signal?: AbortSignal) {
+    await lastValueFrom(
+      this.status.state$.pipe(
+        filter(state => state.completed),
+        takeUntilAbort(signal),
+        first()
+      )
     );
+  }
+
+  async waitForDocCompleted(docId: string, signal?: AbortSignal) {
+    await lastValueFrom(
+      this.status.docState$(docId).pipe(
+        filter(state => state.completed),
+        takeUntilAbort(signal),
+        first()
+      )
+    );
+  }
 
   constructor(
     readonly doc: DocStorage,
@@ -163,6 +137,8 @@ export class IndexerSyncImpl implements IndexerSync {
 
   private async mainLoop(signal?: AbortSignal) {
     if (this.indexer.isReadonly) {
+      this.status.isReadonly = true;
+      this.status.statusUpdatedSubject$.next(true);
       return;
     }
 
@@ -432,29 +408,9 @@ export class IndexerSyncImpl implements IndexerSync {
    * Get all docs from the root doc, without deleted docs
    */
   private getAllDocsFromRootDoc() {
-    const docs = this.status.rootDoc.getMap('meta').get('pages') as
-      | YArray<YMap<any>>
-      | undefined;
-    const availableDocs = new Map<string, { title: string | undefined }>();
-
-    if (docs) {
-      for (const page of docs) {
-        const docId = page.get('id');
-
-        if (typeof docId !== 'string') {
-          continue;
-        }
-
-        const inTrash = page.get('trash') ?? false;
-        const title = page.get('title');
-
-        if (!inTrash) {
-          availableDocs.set(docId, { title });
-        }
-      }
-    }
-
-    return availableDocs;
+    return readAllDocsFromRootDoc(this.status.rootDoc, {
+      includeTrash: false,
+    });
   }
 
   private async getAllDocsFromIndexer() {
@@ -486,6 +442,7 @@ export class IndexerSyncImpl implements IndexerSync {
 }
 
 class IndexerSyncStatus {
+  isReadonly = false;
   prioritySettings = new Map<string, number>();
   jobs = new AsyncPriorityQueue();
   rootDoc = new YDoc({ guid: this.rootDocId });
@@ -498,12 +455,21 @@ class IndexerSyncStatus {
 
   state$ = new Observable<IndexerSyncState>(subscribe => {
     const next = () => {
-      subscribe.next({
-        indexing: this.jobs.length() + (this.currentJob ? 1 : 0),
-        total: this.docsInRootDoc.size + 1,
-        errorMessage: this.errorMessage,
-        completed: this.rootDocReady && this.jobs.length() === 0,
-      });
+      if (this.isReadonly) {
+        subscribe.next({
+          indexing: 0,
+          total: 0,
+          errorMessage: this.errorMessage,
+          completed: true,
+        });
+      } else {
+        subscribe.next({
+          indexing: this.jobs.length() + (this.currentJob ? 1 : 0),
+          total: this.docsInRootDoc.size + 1,
+          errorMessage: this.errorMessage,
+          completed: this.rootDocReady && this.jobs.length() === 0,
+        });
+      }
     };
     next();
     const dispose = this.statusUpdatedSubject$.subscribe(() => {
@@ -521,10 +487,17 @@ class IndexerSyncStatus {
   docState$(docId: string) {
     return new Observable<IndexerDocSyncState>(subscribe => {
       const next = () => {
-        subscribe.next({
-          indexing: this.jobs.has(docId),
-          completed: this.docsInIndexer.has(docId) && !this.jobs.has(docId),
-        });
+        if (this.isReadonly) {
+          subscribe.next({
+            indexing: false,
+            completed: true,
+          });
+        } else {
+          subscribe.next({
+            indexing: this.jobs.has(docId),
+            completed: this.docsInIndexer.has(docId) && !this.jobs.has(docId),
+          });
+        }
       };
       next();
       const dispose = this.statusUpdatedSubject$.subscribe(updatedDocId => {
@@ -579,6 +552,7 @@ class IndexerSyncStatus {
 
   reset() {
     // reset all state, except prioritySettings
+    this.isReadonly = false;
     this.jobs.clear();
     this.docsInRootDoc.clear();
     this.docsInIndexer.clear();

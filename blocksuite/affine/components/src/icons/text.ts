@@ -340,11 +340,6 @@ export const FontFamilyIcon = icons.FontIcon({
   height: '20',
 });
 
-export const AttachmentIcon16 = icons.AttachmentIcon({
-  width: '16',
-  height: '16',
-});
-
 export const TextBackgroundDuotoneIcon = html` <svg
   xmlns="http://www.w3.org/2000/svg"
   width="20"
@@ -447,41 +442,6 @@ export const PaletteIcon = icons.PaletteIcon({
   width: '20',
   height: '20',
 });
-
-const LoadingIcon = (color: string) => {
-  return html`<svg
-    width="16"
-    height="16"
-    viewBox="0 0 16 16"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <style xmlns="http://www.w3.org/2000/svg">
-      .spinner {
-        transform-origin: center;
-        animation: spinner_animate 0.75s infinite linear;
-      }
-      @keyframes spinner_animate {
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-    </style>
-    <path
-      d="M14.6666 8.00004C14.6666 11.6819 11.6818 14.6667 7.99992 14.6667C4.31802 14.6667 1.33325 11.6819 1.33325 8.00004C1.33325 4.31814 4.31802 1.33337 7.99992 1.33337C11.6818 1.33337 14.6666 4.31814 14.6666 8.00004ZM3.30003 8.00004C3.30003 10.5957 5.40424 12.6999 7.99992 12.6999C10.5956 12.6999 12.6998 10.5957 12.6998 8.00004C12.6998 5.40436 10.5956 3.30015 7.99992 3.30015C5.40424 3.30015 3.30003 5.40436 3.30003 8.00004Z"
-      fill=${color}
-      fill-opacity="0.1"
-    />
-    <path
-      d="M13.6833 8.00004C14.2263 8.00004 14.674 7.55745 14.5942 7.02026C14.5142 6.48183 14.3684 5.954 14.1591 5.44882C13.8241 4.63998 13.333 3.90505 12.714 3.286C12.0949 2.66694 11.36 2.17588 10.5511 1.84084C10.046 1.63159 9.51812 1.48576 8.9797 1.40576C8.44251 1.32595 7.99992 1.77363 7.99992 2.31671C7.99992 2.85979 8.44486 3.28974 8.9761 3.40253C9.25681 3.46214 9.53214 3.54746 9.79853 3.65781C10.3688 3.894 10.8869 4.2402 11.3233 4.67664C11.7598 5.11307 12.106 5.6312 12.3422 6.20143C12.4525 6.46782 12.5378 6.74315 12.5974 7.02386C12.7102 7.5551 13.1402 8.00004 13.6833 8.00004Z"
-      fill="#1C9EE4"
-      class="spinner"
-    />
-  </svg>`;
-};
-
-export const LightLoadingIcon = LoadingIcon('white');
-
-export const DarkLoadingIcon = LoadingIcon('black');
 
 export const EmbedCardLightBannerIcon = html`<svg
   width="340"
@@ -879,28 +839,6 @@ export const EmbedCardDarkCubeIcon = html`
     <rect x="4" y="20" width="30" height="3" rx="1.5" fill="#4A4A4A" />
   </svg>
 `;
-
-export const ReloadIcon = html`<svg
-  width="12"
-  height="12"
-  viewBox="0 0 12 12"
-  fill="none"
-  xmlns="http://www.w3.org/2000/svg"
->
-  <g clip-path="url(#clip0_6505_24239)">
-    <path
-      fill-rule="evenodd"
-      clip-rule="evenodd"
-      d="M1.625 6C1.625 3.58375 3.58375 1.625 6 1.625C7.12028 1.625 8.14299 2.04656 8.91676 2.7391L8.91796 2.74017L9.625 3.37847V2C9.625 1.79289 9.79289 1.625 10 1.625C10.2071 1.625 10.375 1.79289 10.375 2V4.22222C10.375 4.42933 10.2071 4.59722 10 4.59722H7.77778C7.57067 4.59722 7.40278 4.42933 7.40278 4.22222C7.40278 4.01512 7.57067 3.84722 7.77778 3.84722H9.025L8.41657 3.29795C8.41637 3.29777 8.41617 3.29759 8.41597 3.29741C7.77447 2.7235 6.92838 2.375 6 2.375C3.99797 2.375 2.375 3.99797 2.375 6C2.375 8.00203 3.99797 9.625 6 9.625C7.72469 9.625 9.16888 8.42017 9.53518 6.80591C9.58101 6.60393 9.78189 6.47736 9.98386 6.52319C10.1858 6.56902 10.3124 6.7699 10.2666 6.97187C9.82447 8.92025 8.08257 10.375 6 10.375C3.58375 10.375 1.625 8.41625 1.625 6Z"
-      fill="#1E96EB"
-    />
-  </g>
-  <defs>
-    <clipPath id="clip0_6505_24239">
-      <rect width="12" height="12" fill="white" />
-    </clipPath>
-  </defs>
-</svg>`;
 
 export const EmbedPageIcon = icons.LinkedPageIcon({
   width: '16',

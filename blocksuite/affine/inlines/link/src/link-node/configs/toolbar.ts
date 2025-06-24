@@ -38,6 +38,7 @@ export const builtinInlineLinkToolbarConfig = {
         if (!(target instanceof AffineLink)) return null;
 
         const { link } = target;
+        if (!link) return null;
 
         return html`<affine-link-preview .url=${link}></affine-link-preview>`;
       },
@@ -115,6 +116,9 @@ export const builtinInlineLinkToolbarConfig = {
             if (!(target instanceof AffineLink)) return;
             if (!target.block) return;
 
+            const url = target.link;
+            if (!url) return;
+
             const {
               block: { model },
               inlineEditor,
@@ -123,9 +127,6 @@ export const builtinInlineLinkToolbarConfig = {
             const { parent } = model;
 
             if (!inlineEditor || !selfInlineRange || !parent) return;
-
-            const url = inlineEditor.getFormat(selfInlineRange).link;
-            if (!url) return;
 
             // Clears
             ctx.reset();
@@ -182,6 +183,9 @@ export const builtinInlineLinkToolbarConfig = {
             if (!(target instanceof AffineLink)) return false;
             if (!target.block) return false;
 
+            const url = target.link;
+            if (!url) return false;
+
             const {
               block: { model },
               inlineEditor,
@@ -190,9 +194,6 @@ export const builtinInlineLinkToolbarConfig = {
             const { parent } = model;
 
             if (!inlineEditor || !selfInlineRange || !parent) return false;
-
-            const url = inlineEditor.getFormat(selfInlineRange).link;
-            if (!url) return false;
 
             // check if the url can be embedded as iframe block
             const embedIframeService = ctx.std.get(EmbedIframeService);
@@ -208,6 +209,9 @@ export const builtinInlineLinkToolbarConfig = {
             if (!(target instanceof AffineLink)) return;
             if (!target.block) return;
 
+            const url = target.link;
+            if (!url) return;
+
             const {
               block: { model },
               inlineEditor,
@@ -216,9 +220,6 @@ export const builtinInlineLinkToolbarConfig = {
             const { parent } = model;
 
             if (!inlineEditor || !selfInlineRange || !parent) return;
-
-            const url = inlineEditor.getFormat(selfInlineRange).link;
-            if (!url) return;
 
             // Clears
             ctx.reset();
@@ -306,16 +307,7 @@ export const builtinInlineLinkToolbarConfig = {
         )
           return false;
 
-        const { link } = target;
-        try {
-          const url = new URL(link);
-          if (!url.protocol.startsWith('http')) {
-            return false;
-          }
-        } catch (err) {
-          console.error(err);
-          return false;
-        }
+        if (!target.link.startsWith('http')) return false;
 
         const { model } = target.block;
         const parent = model.parent;

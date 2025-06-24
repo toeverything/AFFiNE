@@ -95,6 +95,5 @@ export async function initStarterDocCollection(collection: TestWorkspace) {
     if (!doc?.loaded) {
       doc?.load();
     }
-    doc?.resetHistory();
   }
 }

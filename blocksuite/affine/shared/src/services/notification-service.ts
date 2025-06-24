@@ -89,14 +89,14 @@ function notifyWithUndoActionImpl(
   options.abort?.addEventListener('abort', abort);
 
   const clearOnClose = () => {
-    store.history.off('stack-item-added', addHandler);
-    store.history.off('stack-item-popped', popHandler);
+    store.history.undoManager.off('stack-item-added', addHandler);
+    store.history.undoManager.off('stack-item-popped', popHandler);
     disposable.unsubscribe();
     options.abort?.removeEventListener('abort', abort);
   };
 
-  const addHandler = store.history.on('stack-item-added', abort);
-  const popHandler = store.history.on('stack-item-popped', abort);
+  const addHandler = store.history.undoManager.on('stack-item-added', abort);
+  const popHandler = store.history.undoManager.on('stack-item-popped', abort);
   const disposable = provider
     .get(EditorLifeCycleExtension)
     .slots.unmounted.subscribe(() => abort());

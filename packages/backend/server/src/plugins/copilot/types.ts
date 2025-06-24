@@ -6,6 +6,38 @@ import { fromModelName } from '../../native';
 import type { ChatPrompt } from './prompt';
 import { PromptMessageSchema, PureMessageSchema } from './providers';
 
+const takeFirst = (v: unknown) => (Array.isArray(v) ? v[0] : v);
+
+const zBool = z.preprocess(val => {
+  const s = String(takeFirst(val)).toLowerCase();
+  return ['true', '1', 'yes'].includes(s);
+}, z.boolean().default(false));
+
+const zMaybeString = z.preprocess(val => {
+  const s = takeFirst(val);
+  return s === '' || s == null ? undefined : s;
+}, z.string().min(1).optional());
+
+export const ChatQuerySchema = z
+  .object({
+    messageId: zMaybeString,
+    modelId: zMaybeString,
+    retry: zBool,
+    reasoning: zBool,
+    webSearch: zBool,
+  })
+  .catchall(z.string())
+  .transform(
+    ({ messageId, modelId, retry, reasoning, webSearch, ...params }) => ({
+      messageId,
+      modelId,
+      retry,
+      reasoning,
+      webSearch,
+      params,
+    })
+  );
+
 export enum AvailableModels {
   // text to text
   Gpt4Omni = 'gpt-4o',
@@ -15,26 +47,24 @@ export enum AvailableModels {
   Gpt41 = 'gpt-4.1',
   Gpt410414 = 'gpt-4.1-2025-04-14',
   Gpt41Mini = 'gpt-4.1-mini',
+  Gpt41Nano = 'gpt-4.1-nano',
   // embeddings
   TextEmbedding3Large = 'text-embedding-3-large',
   TextEmbedding3Small = 'text-embedding-3-small',
   TextEmbeddingAda002 = 'text-embedding-ada-002',
-  // moderation
-  TextModerationLatest = 'text-moderation-latest',
-  TextModerationStable = 'text-moderation-stable',
   // text to image
   DallE3 = 'dall-e-3',
+  GptImage = 'gpt-image-1',
 }
 
-export type AvailableModel = keyof typeof AvailableModels;
+const availableModels = Object.values(AvailableModels);
 
 export function getTokenEncoder(model?: string | null): Tokenizer | null {
   if (!model) return null;
-  const modelStr = AvailableModels[model as AvailableModel];
-  if (!modelStr) return null;
-  if (modelStr.startsWith('gpt')) {
-    return fromModelName(modelStr);
-  } else if (modelStr.startsWith('dall')) {
+  if (!availableModels.includes(model as AvailableModels)) return null;
+  if (model.startsWith('gpt')) {
+    return fromModelName(model);
+  } else if (model.startsWith('dall')) {
     // dalle don't need to calc the token
     return null;
   } else {
@@ -54,6 +84,7 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export const ChatHistorySchema = z
   .object({
     sessionId: z.string(),
+    pinned: z.boolean(),
     action: z.string().nullable(),
     tokens: z.number(),
     messages: z.array(ChatMessageSchema),
@@ -75,19 +106,15 @@ export interface ChatSessionOptions {
   // connect ids
   userId: string;
   workspaceId: string;
-  docId: string;
+  docId: string | null;
   promptName: string;
-}
-
-export interface ChatSessionPromptUpdateOptions
-  extends Pick<ChatSessionState, 'sessionId' | 'userId'> {
-  promptName: string;
+  pinned: boolean;
 }
 
 export interface ChatSessionForkOptions
-  extends Omit<ChatSessionOptions, 'promptName'> {
+  extends Omit<ChatSessionOptions, 'pinned' | 'promptName'> {
   sessionId: string;
-  latestMessageId: string;
+  latestMessageId?: string;
 }
 
 export interface ChatSessionState
@@ -99,17 +126,6 @@ export interface ChatSessionState
   prompt: ChatPrompt;
   messages: ChatMessage[];
 }
-
-export type ListHistoriesOptions = {
-  action: boolean | undefined;
-  fork: boolean | undefined;
-  limit: number | undefined;
-  skip: number | undefined;
-  sessionOrder: 'asc' | 'desc' | undefined;
-  messageOrder: 'asc' | 'desc' | undefined;
-  sessionId: string | undefined;
-  withPrompt: boolean | undefined;
-};
 
 export type CopilotContextFile = {
   id: string; // fileId

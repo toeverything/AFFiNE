@@ -48,6 +48,18 @@
           }
         }
       }
+    },
+    "NSUserTrackingUsageDescription" : {
+      "comment" : "Privacy - Tracking Usage Description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rest assured, enabling this permission won't access your private info on other sites. It's only used to identify your device and improve security and product experience."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

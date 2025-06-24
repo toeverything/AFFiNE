@@ -140,4 +140,16 @@ Some text in between
     `.trim();
     expect(footnoteUrlPreprocessor(input)).toBe(expected);
   });
+
+  it('should encode partial encoded URLs in footnote definitions', () => {
+    const input = `
+[^ref]: {"type":"url","url":"https://zh.wikipedia.org/zh-hans/%E5%B0%8F%E7%B1%B3SU7"}
+[^ref2]: {"type":"url","url":"https://www.dw.com/zh/%E5%B0%8F%E7%B1%B3%E9%A6%96%E6%AC%BE%E6%B1%BD%E8%BD%A6%E5%8F%91%E5%B8%83-su7%E8%B5%B7%E4%BB%B72159%E4%B8%87%E5%85%83/a-68693432"}
+  `.trim();
+    const expected = `
+[^ref]: {"type":"url","url":"https%3A%2F%2Fzh.wikipedia.org%2Fzh-hans%2F%25E5%25B0%258F%25E7%25B1%25B3SU7"}
+[^ref2]: {"type":"url","url":"https%3A%2F%2Fwww.dw.com%2Fzh%2F%25E5%25B0%258F%25E7%25B1%25B3%25E9%25A6%2596%25E6%25AC%25BE%25E6%25B1%25BD%25E8%25BD%25A6%25E5%258F%2591%25E5%25B8%2583-su7%25E8%25B5%25B7%25E4%25BB%25B72159%25E4%25B8%2587%25E5%2585%2583%2Fa-68693432"}
+    `.trim();
+    expect(footnoteUrlPreprocessor(input)).toBe(expected);
+  });
 });

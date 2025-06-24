@@ -20,7 +20,7 @@ import {
   addRowButtonStyle,
   addRowColumnButtonStyle,
   cellCountTipsStyle,
-} from './add-button.css';
+} from './add-button-css';
 import { DefaultColumnWidth, DefaultRowHeight } from './consts';
 import type { TableDataManager } from './table-data-manager';
 

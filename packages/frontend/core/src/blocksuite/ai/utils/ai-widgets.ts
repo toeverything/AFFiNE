@@ -6,7 +6,7 @@ import {
 } from '../widgets/ai-panel/ai-panel';
 
 export const getAIPanelWidget = (host: EditorHost): AffineAIPanelWidget => {
-  const rootBlockId = host.doc.root?.id;
+  const rootBlockId = host.store.root?.id;
   if (!rootBlockId) {
     throw new Error('rootBlockId is not found');
   }

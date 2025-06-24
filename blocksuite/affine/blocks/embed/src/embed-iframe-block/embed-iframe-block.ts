@@ -9,7 +9,7 @@ import {
   type EmbedIframeData,
   EmbedIframeService,
   type IframeOptions,
-  LinkPreviewerService,
+  LinkPreviewServiceIdentifier,
   NotificationProvider,
 } from '@blocksuite/affine-shared/services';
 import { matchModels } from '@blocksuite/affine-shared/utils';
@@ -94,7 +94,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
   }
 
   get linkPreviewService() {
-    return this.std.get(LinkPreviewerService);
+    return this.std.get(LinkPreviewServiceIdentifier);
   }
 
   get notificationService() {
@@ -156,7 +156,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
       if (!embedIframeService || !linkPreviewService) {
         throw new BlockSuiteError(
           ErrorCode.ValueNotExists,
-          'EmbedIframeService or LinkPreviewerService not found'
+          'EmbedIframeService or LinkPreviewService not found'
         );
       }
 
@@ -177,7 +177,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
 
       // update model
       const iframeUrl = this._getIframeUrl(embedData) ?? currentIframeUrl;
-      this.doc.updateBlock(this.model, {
+      this.store.updateBlock(this.model, {
         iframeUrl,
         title: embedData?.title || previewData?.title,
         description: embedData?.description || previewData?.description,
@@ -311,6 +311,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
         ?allowfullscreen=${allowFullscreen}
         loading="lazy"
         frameborder="0"
+        credentialless
         src=${ifDefined(iframeUrl)}
         allow=${ifDefined(allow)}
         referrerpolicy=${ifDefined(referrerpolicy)}
@@ -372,7 +373,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
 
     // if the iframe url is not set, refresh the data to get the iframe url
     if (!this.model.props.iframeUrl) {
-      this.doc.withoutTransact(() => {
+      this.store.withoutTransact(() => {
         this.refreshData().catch(console.error);
       });
     } else {
@@ -451,7 +452,7 @@ export class EmbedIframeBlockComponent extends CaptionedBlockComponent<EmbedIfra
   };
 
   get readonly() {
-    return this.doc.readonly;
+    return this.store.readonly;
   }
 
   get selectionManager() {

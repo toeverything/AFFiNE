@@ -12,8 +12,10 @@ const MEETING_SETTINGS_KEY: typeof MeetingSettingsKey = 'meetingSettings';
 
 const defaultMeetingSettings: MeetingSettingsSchema = {
   enabled: false,
+  betaDisclaimerAccepted: false,
   recordingSavingMode: 'new-doc',
-  autoTranscription: true,
+  autoTranscriptionSummary: true,
+  autoTranscriptionTodo: true,
   recordingMode: 'prompt',
 };
 
@@ -39,6 +41,13 @@ export class MeetingSettingsService extends Service {
 
   get settings() {
     return this.settings$.value;
+  }
+
+  setBetaDisclaimerAccepted(accepted: boolean) {
+    this.globalStateService.globalState.set(MEETING_SETTINGS_KEY, {
+      ...this.settings$.value,
+      betaDisclaimerAccepted: accepted,
+    });
   }
 
   // we do not want the caller to directly set the settings,
@@ -91,10 +100,17 @@ export class MeetingSettingsService extends Service {
     });
   }
 
-  setAutoTranscription(autoTranscription: boolean) {
+  setAutoSummary(autoSummary: boolean) {
     this.globalStateService.globalState.set(MEETING_SETTINGS_KEY, {
       ...this.settings$.value,
-      autoTranscription,
+      autoTranscriptionSummary: autoSummary,
+    });
+  }
+
+  setAutoTodo(autoTodo: boolean) {
+    this.globalStateService.globalState.set(MEETING_SETTINGS_KEY, {
+      ...this.settings$.value,
+      autoTranscriptionTodo: autoTodo,
     });
   }
 
@@ -114,7 +130,7 @@ export class MeetingSettingsService extends Service {
     );
   }
 
-  async askForMeetingPermission(type: 'microphone') {
+  async askForMeetingPermission(type: 'microphone' | 'screen') {
     return this.desktopApiService?.handler.recording.askForMeetingPermission(
       type
     );

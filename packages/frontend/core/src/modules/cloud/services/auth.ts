@@ -5,6 +5,7 @@ import { OnEvent, Service } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 import { distinctUntilChanged, map, skip } from 'rxjs';
 
+import type { GlobalDialogService } from '../../dialogs';
 import { ApplicationFocused } from '../../lifecycle';
 import type { UrlService } from '../../url';
 import { AuthSession } from '../entities/session';
@@ -23,7 +24,8 @@ export class AuthService extends Service {
   constructor(
     private readonly fetchService: FetchService,
     private readonly store: AuthStore,
-    private readonly urlService: UrlService
+    private readonly urlService: UrlService,
+    private readonly dialogService: GlobalDialogService
   ) {
     super();
 
@@ -114,7 +116,7 @@ export class AuthService extends Service {
     provider: OAuthProviderType,
     client: string,
     /** @deprecated*/ redirectUrl?: string
-  ) {
+  ): Promise<Record<string, string>> {
     this.setClientNonce();
     try {
       const res = await this.fetchService.fetch('/api/oauth/preflight', {
@@ -130,9 +132,7 @@ export class AuthService extends Service {
         },
       });
 
-      let { url } = await res.json();
-
-      return url as string;
+      return await res.json();
     } catch (e) {
       track.$.$.auth.signInFail({
         method: 'oauth',
@@ -189,6 +189,14 @@ export class AuthService extends Service {
     await this.store.signOut();
     this.store.setCachedAuthSession(null);
     this.session.revalidate();
+  }
+
+  async deleteAccount() {
+    const res = await this.store.deleteAccount();
+    this.store.setCachedAuthSession(null);
+    this.session.revalidate();
+    this.dialogService.open('deleted-account', {});
+    return res;
   }
 
   checkUserByEmail(email: string) {

@@ -27,7 +27,6 @@ import {
   customImageProxyMiddleware,
   ImageProxyService,
 } from '@blocksuite/affine/shared/adapters';
-import { LinkPreviewerService } from '@blocksuite/affine/shared/services';
 import {
   FrameworkScope,
   useLiveData,
@@ -139,20 +138,12 @@ const DetailPageImpl = () => {
         server.baseUrl
       ).toString();
 
-      const linkPreviewUrl = new URL(
-        BUILD_CONFIG.linkPreviewUrl,
-        server.baseUrl
-      ).toString();
-
       editorContainer.std.clipboard.use(
         customImageProxyMiddleware(imageProxyUrl)
       );
       editorContainer.doc
         .get(ImageProxyService)
         .setImageProxyURL(imageProxyUrl);
-
-      // provide link preview endpoint to blocksuite
-      editorContainer.doc.get(LinkPreviewerService).setEndpoint(linkPreviewUrl);
 
       // provide page mode and updated date to blocksuite
       const refNodeService =

@@ -1,5 +1,6 @@
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 
+import type { BlockProps } from '../model';
 import type { BlobCRUD } from './type';
 
 type AssetsManagerConfig = {
@@ -18,6 +19,16 @@ function makeNewNameWhenConflict(names: Set<string>, name: string) {
 }
 
 export class AssetsManager {
+  // `blockId` is the key.
+  readonly uploadingAssetsMap = new Map<
+    string,
+    {
+      blob: Blob;
+      abortController?: AbortController;
+      mapInto: (blobId: string) => Partial<BlockProps>;
+    }
+  >();
+
   private readonly _assetsMap = new Map<string, Blob>();
 
   private readonly _blob: BlobCRUD;

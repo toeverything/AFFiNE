@@ -32,7 +32,9 @@ function getBaseWorkerConfigs(pkg: Package) {
     ),
     createWorkerTargetConfig(
       pkg,
-      core.srcPath.join('blocksuite/extensions/turbo-painter.worker.ts').value
+      core.srcPath.join(
+        'blocksuite/view-extensions/turbo-renderer/turbo-painter.worker.ts'
+      ).value
     ),
   ];
 }
@@ -104,9 +106,12 @@ const defaultDevServerConfig: DevServerConfiguration = {
   hot: false,
   liveReload: true,
   compress: !process.env.CI,
+  setupExitSignals: true,
   client: {
     overlay: process.env.DISABLE_DEV_OVERLAY === 'true' ? false : undefined,
     logging: process.env.CI ? 'none' : 'error',
+    // see: https://webpack.js.org/configuration/dev-server/#websocketurl
+    webSocketURL: 'auto://0.0.0.0:8080/ws',
   },
   historyApiFallback: {
     rewrites: [

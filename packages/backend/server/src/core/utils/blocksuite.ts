@@ -1,12 +1,18 @@
 // TODO(@forehalo):
 //   Because of the `@affine/server` package can't import directly from workspace packages,
-//   this is a temprory solution to get the block suite data(title, description) from given yjs binary or yjs doc.
+//   this is a temporary solution to get the block suite data(title, description) from given yjs binary or yjs doc.
 //   The logic is mainly copied from
 //     - packages/frontend/core/src/modules/docs-search/worker/in-worker.ts
 //     - packages/frontend/core/src/components/page-list/use-block-suite-page-preview.ts
 //   and it's better to be provided by blocksuite
 
-import { Array, Doc, Map } from 'yjs';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- import from bundle
+import {
+  parsePageDoc as parseDocToMarkdown,
+  readAllBlocksFromDoc,
+  readAllDocIdsFromRootDoc,
+} from '@affine/reader/dist';
+import { applyUpdate, Array as YArray, Doc as YDoc, Map as YMap } from 'yjs';
 
 export interface PageDocContent {
   title: string;
@@ -31,7 +37,7 @@ type KnownFlavour =
   | 'affine:callout'
   | 'affine:table';
 
-export function parseWorkspaceDoc(doc: Doc): WorkspaceDocContent | null {
+export function parseWorkspaceDoc(doc: YDoc): WorkspaceDocContent | null {
   // not a workspace doc
   if (!doc.share.has('meta')) {
     return null;
@@ -50,7 +56,7 @@ export interface ParsePageOptions {
 }
 
 export function parsePageDoc(
-  doc: Doc,
+  doc: YDoc,
   opts: ParsePageOptions = { maxSummaryLength: 150 }
 ): PageDocContent | null {
   // not a page doc
@@ -58,7 +64,7 @@ export function parsePageDoc(
     return null;
   }
 
-  const blocks = doc.getMap<Map<any>>('blocks');
+  const blocks = doc.getMap<YMap<any>>('blocks');
 
   if (!blocks.size) {
     return null;
@@ -71,7 +77,7 @@ export function parsePageDoc(
 
   let summaryLenNeeded = opts.maxSummaryLength;
 
-  let root: Map<any> | null = null;
+  let root: YMap<any> | null = null;
   for (const block of blocks.values()) {
     const flavour = block.get('sys:flavour') as KnownFlavour;
     if (flavour === 'affine:page') {
@@ -86,8 +92,8 @@ export function parsePageDoc(
 
   const queue: string[] = [root.get('sys:id')];
 
-  function pushChildren(block: Map<any>) {
-    const children = block.get('sys:children') as Array<string> | undefined;
+  function pushChildren(block: YMap<any>) {
+    const children = block.get('sys:children') as YArray<string> | undefined;
     if (children?.length) {
       for (let i = children.length - 1; i >= 0; i--) {
         queue.push(children.get(i));
@@ -156,4 +162,67 @@ export function parsePageDoc(
   }
 
   return content;
+}
+
+export function readAllDocIdsFromWorkspaceSnapshot(snapshot: Uint8Array) {
+  const rootDoc = new YDoc();
+  applyUpdate(rootDoc, snapshot);
+  return readAllDocIdsFromRootDoc(rootDoc, {
+    includeTrash: false,
+  });
+}
+
+export async function readAllBlocksFromDocSnapshot(
+  workspaceId: string,
+  docId: string,
+  docSnapshot: Uint8Array,
+  workspaceSnapshot?: Uint8Array,
+  maxSummaryLength?: number
+) {
+  let rootYDoc: YDoc | undefined;
+  if (workspaceSnapshot) {
+    rootYDoc = new YDoc({
+      guid: workspaceId,
+    });
+    applyUpdate(rootYDoc, workspaceSnapshot);
+  }
+  const ydoc = new YDoc({
+    guid: docId,
+  });
+  applyUpdate(ydoc, docSnapshot);
+  return await readAllBlocksFromDoc({
+    ydoc,
+    rootYDoc,
+    spaceId: workspaceId,
+    maxSummaryLength,
+  });
+}
+
+export function parseDocToMarkdownFromDocSnapshot(
+  workspaceId: string,
+  docId: string,
+  docSnapshot: Uint8Array,
+  aiEditable = false
+) {
+  const ydoc = new YDoc({
+    guid: docId,
+  });
+  applyUpdate(ydoc, docSnapshot);
+
+  const parsed = parseDocToMarkdown({
+    workspaceId,
+    doc: ydoc,
+    buildBlobUrl: (blobId: string) => {
+      return `/${workspaceId}/blobs/${blobId}`;
+    },
+    buildDocUrl: (docId: string) => {
+      return `/workspace/${workspaceId}/${docId}`;
+    },
+    aiEditable,
+  });
+
+  return {
+    title: parsed.title,
+    markdown: parsed.md,
+  };
 }

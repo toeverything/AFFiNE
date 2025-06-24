@@ -25,7 +25,7 @@ export const databaseSlashMenuConfig: SlashMenuConfig = {
       },
       group: '7_Database@0',
       when: ({ model }) =>
-        !isInsideBlockByFlavour(model.doc, model, 'affine:edgeless-text'),
+        !isInsideBlockByFlavour(model.store, model, 'affine:edgeless-text'),
       action: ({ std }) => {
         std.command
           .chain()
@@ -58,7 +58,7 @@ export const databaseSlashMenuConfig: SlashMenuConfig = {
       },
       group: '7_Database@2',
       when: ({ model }) =>
-        !isInsideBlockByFlavour(model.doc, model, 'affine:edgeless-text'),
+        !isInsideBlockByFlavour(model.store, model, 'affine:edgeless-text'),
       action: ({ std }) => {
         std.command
           .chain()

@@ -15,6 +15,7 @@ public struct QueryChatHistoriesInput: InputObject {
     fork: GraphQLNullable<Bool> = nil,
     limit: GraphQLNullable<Int> = nil,
     messageOrder: GraphQLNullable<GraphQLEnum<ChatHistoryOrder>> = nil,
+    pinned: GraphQLNullable<Bool> = nil,
     sessionId: GraphQLNullable<String> = nil,
     sessionOrder: GraphQLNullable<GraphQLEnum<ChatHistoryOrder>> = nil,
     skip: GraphQLNullable<Int> = nil,
@@ -25,6 +26,7 @@ public struct QueryChatHistoriesInput: InputObject {
       "fork": fork,
       "limit": limit,
       "messageOrder": messageOrder,
+      "pinned": pinned,
       "sessionId": sessionId,
       "sessionOrder": sessionOrder,
       "skip": skip,
@@ -50,6 +52,11 @@ public struct QueryChatHistoriesInput: InputObject {
   public var messageOrder: GraphQLNullable<GraphQLEnum<ChatHistoryOrder>> {
     get { __data["messageOrder"] }
     set { __data["messageOrder"] = newValue }
+  }
+
+  public var pinned: GraphQLNullable<Bool> {
+    get { __data["pinned"] }
+    set { __data["pinned"] = newValue }
   }
 
   public var sessionId: GraphQLNullable<String> {

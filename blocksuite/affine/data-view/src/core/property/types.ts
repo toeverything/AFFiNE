@@ -76,7 +76,7 @@ export type PropertyConfig<Data, RawValue = unknown, JsonValue = unknown> = {
   };
   fixed?: {
     defaultData: Data;
-    defaultOrder?: string;
+    defaultOrder?: 'start' | 'end';
     defaultShow?: boolean;
   };
   minWidth?: number;

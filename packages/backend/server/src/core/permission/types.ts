@@ -150,6 +150,8 @@ type ResourceActionName<T extends keyof typeof Actions> =
 export type WorkspaceAction = ResourceActionName<'Workspace'>;
 export type DocAction = ResourceActionName<'Doc'>;
 export type Action = WorkspaceAction | DocAction;
+export type WorkspaceActionPermissions = Record<WorkspaceAction, boolean>;
+export type DocActionPermissions = Record<DocAction, boolean>;
 
 const cache = new WeakMap<object, any>();
 const buildPathReader = (
@@ -194,13 +196,10 @@ export const DOC_ACTIONS = RoleActionsMap.DocRole[DocRole.Owner];
 export function mapWorkspaceRoleToPermissions(
   workspaceRole: WorkspaceRole | null
 ) {
-  const permissions = WORKSPACE_ACTIONS.reduce(
-    (map, action) => {
-      map[action] = false;
-      return map;
-    },
-    {} as Record<WorkspaceAction, boolean>
-  );
+  const permissions = WORKSPACE_ACTIONS.reduce((map, action) => {
+    map[action] = false;
+    return map;
+  }, {} as WorkspaceActionPermissions);
 
   if (workspaceRole === null) {
     return permissions;
@@ -214,13 +213,10 @@ export function mapWorkspaceRoleToPermissions(
 }
 
 export function mapDocRoleToPermissions(docRole: DocRole | null) {
-  const permissions = DOC_ACTIONS.reduce(
-    (map, action) => {
-      map[action] = false;
-      return map;
-    },
-    {} as Record<DocAction, boolean>
-  );
+  const permissions = DOC_ACTIONS.reduce((map, action) => {
+    map[action] = false;
+    return map;
+  }, {} as DocActionPermissions);
 
   if (docRole === null || docRole === DocRole.None) {
     return permissions;

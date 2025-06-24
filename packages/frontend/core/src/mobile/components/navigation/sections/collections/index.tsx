@@ -1,5 +1,4 @@
 import { usePromptModal } from '@affine/component';
-import { createEmptyCollection } from '@affine/core/components/page-list/use-collection-manager';
 import { NavigationPanelTreeRoot } from '@affine/core/desktop/components/navigation-panel';
 import { CollectionService } from '@affine/core/modules/collection';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
@@ -8,7 +7,6 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { AddCollectionIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
 import { AddItemPlaceholder } from '../../layouts/add-item-placeholder';
@@ -25,7 +23,7 @@ export const NavigationPanelCollections = () => {
       NavigationPanelService,
     });
   const navigationPanelSection = navigationPanelService.sections.collections;
-  const collections = useLiveData(collectionService.collections$);
+  const collectionMetas = useLiveData(collectionService.collectionMetas$);
   const { openPromptModal } = usePromptModal();
 
   const handleCreateCollection = useCallback(() => {
@@ -46,8 +44,7 @@ export const NavigationPanelCollections = () => {
         variant: 'primary',
       },
       onConfirm(name) {
-        const id = nanoid();
-        collectionService.addCollection(createEmptyCollection(id, { name }));
+        const id = collectionService.createCollection({ name });
         track.$.navigationPanel.organize.createOrganizeItem({
           type: 'collection',
         });
@@ -70,7 +67,7 @@ export const NavigationPanelCollections = () => {
       title={t['com.affine.rootAppSidebar.collections']()}
     >
       <NavigationPanelTreeRoot>
-        {collections.map(collection => (
+        {collectionMetas.map(collection => (
           <NavigationPanelCollectionNode
             key={collection.id}
             collectionId={collection.id}

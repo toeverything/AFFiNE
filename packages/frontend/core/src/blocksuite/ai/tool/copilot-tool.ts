@@ -1,4 +1,5 @@
 /* oxlint-disable @typescript-eslint/no-non-null-assertion */
+import { DefaultTool } from '@blocksuite/affine/blocks/surface';
 import { IS_MAC } from '@blocksuite/affine/global/env';
 import {
   Bound,
@@ -67,7 +68,7 @@ export class CopilotTool extends BaseTool {
     this._dragging = false;
     this.dragStartPoint = [0, 0];
     this.dragLastPoint = [0, 0];
-    this.gfx.tool.setTool('default');
+    this.gfx.tool.setTool(DefaultTool);
   }
 
   override activate(): void {
@@ -129,7 +130,7 @@ export class CopilotTool extends BaseTool {
           : evt.raw.ctrlKey);
 
       if (useCopilot) {
-        this.controller.setTool('copilot');
+        this.controller.setTool(CopilotTool);
         return false;
       }
 
@@ -143,7 +144,7 @@ export class CopilotTool extends BaseTool {
       return;
     }
 
-    this.gfx.tool.setTool('default');
+    this.gfx.tool.setTool(DefaultTool);
   }
 
   updateDragPointsWith(selectedElements: GfxModel[], padding = 0) {
@@ -169,11 +170,5 @@ export class CopilotTool extends BaseTool {
     });
 
     this.draggingAreaUpdated.next(true);
-  }
-}
-
-declare module '@blocksuite/std/gfx' {
-  interface GfxToolsMap {
-    copilot: CopilotTool;
   }
 }

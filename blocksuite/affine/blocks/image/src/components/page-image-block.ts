@@ -1,3 +1,4 @@
+import type { ResolvedStateInfo } from '@blocksuite/affine-components/resource';
 import {
   focusBlockEnd,
   focusBlockStart,
@@ -5,7 +6,8 @@ import {
   getPrevBlockCommand,
 } from '@blocksuite/affine-shared/commands';
 import { ImageSelection } from '@blocksuite/affine-shared/selection';
-import { WithDisposable } from '@blocksuite/global/lit';
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
+import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import type { BlockComponent, UIEventStateContext } from '@blocksuite/std';
 import {
   BlockSelection,
@@ -13,24 +15,56 @@ import {
   TextSelection,
 } from '@blocksuite/std';
 import type { BaseSelection } from '@blocksuite/store';
+import { computed } from '@preact/signals-core';
 import { css, html, type PropertyValues } from 'lit';
-import { property, query, state } from 'lit/decorators.js';
+import { property, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
+import { when } from 'lit/directives/when.js';
 
-import type { ImageBlockComponent } from '../image-block.js';
-import { ImageResizeManager } from '../image-resize-manager.js';
-import { shouldResizeImage } from '../utils.js';
-import { ImageSelectedRect } from './image-selected-rect.js';
+import type { ImageBlockComponent } from '../image-block';
+import { ImageResizeManager } from '../image-resize-manager';
+import { shouldResizeImage } from '../utils';
+import { ImageSelectedRect } from './image-selected-rect';
 
-export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
+export class ImageBlockPageComponent extends SignalWatcher(
+  WithDisposable(ShadowlessElement)
+) {
   static override styles = css`
     affine-page-image {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       line-height: 0;
       cursor: pointer;
+    }
+
+    affine-page-image .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 36px;
+      height: 36px;
+      padding: 5px;
+      border-radius: 8px;
+      background: ${unsafeCSSVarV2(
+        'loading/imageLoadingBackground',
+        '#92929238'
+      )};
+
+      & > svg {
+        font-size: 25.71px;
+      }
+    }
+
+    affine-page-image .affine-image-status {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
     }
 
     affine-page-image .resizable-img {
@@ -44,10 +78,12 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
     }
   `;
 
+  resizeable$ = computed(() => this.block.resizeable$.value);
+
   private _isDragging = false;
 
   private get _doc() {
-    return this.block.doc;
+    return this.block.store;
   }
 
   private get _host() {
@@ -110,21 +146,21 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
         return true;
       },
       Delete: ctx => {
-        if (this._host.doc.readonly || !this._isSelected) return;
+        if (this._host.store.readonly || !this.resizeable$.peek()) return;
 
         addParagraph(ctx);
         this._doc.deleteBlock(this._model);
         return true;
       },
       Backspace: ctx => {
-        if (this._host.doc.readonly || !this._isSelected) return;
+        if (this._host.store.readonly || !this.resizeable$.peek()) return;
 
         addParagraph(ctx);
         this._doc.deleteBlock(this._model);
         return true;
       },
       Enter: ctx => {
-        if (this._host.doc.readonly || !this._isSelected) return;
+        if (this._host.store.readonly || !this.resizeable$.peek()) return;
 
         addParagraph(ctx);
         return true;
@@ -182,24 +218,13 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
   }
 
   private _handleError() {
-    this.block.error = true;
+    this.block.resourceController.updateState({
+      errorMessage: 'Failed to download image!',
+    });
   }
 
   private _handleSelection() {
     const selection = this._host.selection;
-    this._disposables.add(
-      selection.slots.changed.subscribe(selList => {
-        this._isSelected = selList.some(
-          sel => sel.blockId === this.block.blockId && sel.is(ImageSelection)
-        );
-      })
-    );
-
-    this._disposables.add(
-      this._model.propsUpdated.subscribe(() => {
-        this.requestUpdate();
-      })
-    );
 
     this._disposables.addFromEvent(
       this.resizeImg,
@@ -223,7 +248,7 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
     this.block.handleEvent(
       'click',
       () => {
-        if (!this._isSelected) return;
+        if (!this.resizeable$.peek()) return;
 
         selection.update(selList =>
           selList.filter(
@@ -330,30 +355,50 @@ export class ImageBlockPageComponent extends WithDisposable(ShadowlessElement) {
   override render() {
     const imageSize = this._normalizeImageSize();
 
-    const imageSelectedRect = this._isSelected
+    const imageSelectedRect = this.resizeable$.value
       ? ImageSelectedRect(this._doc.readonly)
       : null;
+
+    const blobUrl = this.block.blobUrl;
+    const caption = this.block.model.props.caption$.value ?? 'Image';
+    const { loading, error, icon, description, needUpload } = this.state;
 
     return html`
       <div class="resizable-img" style=${styleMap(imageSize)}>
         <img
           class="drag-target"
-          src=${this.block.blobUrl ?? ''}
           draggable="false"
-          @error=${this._handleError}
           loading="lazy"
+          src=${blobUrl}
+          alt=${caption}
+          @error=${this._handleError}
         />
 
         ${imageSelectedRect}
       </div>
+
+      ${when(loading, () => html`<div class="loading">${icon}</div>`)}
+      ${when(
+        Boolean(error && description),
+        () =>
+          html`<affine-resource-status
+            class="affine-image-status"
+            .message=${description}
+            .needUpload=${needUpload}
+            .action=${() =>
+              needUpload
+                ? this.block.resourceController.upload()
+                : this.block.refreshData()}
+          ></affine-resource-status>`
+      )}
     `;
   }
 
-  @state()
-  accessor _isSelected = false;
-
   @property({ attribute: false })
   accessor block!: ImageBlockComponent;
+
+  @property({ attribute: false })
+  accessor state!: ResolvedStateInfo;
 
   @query('.resizable-img')
   accessor resizeImg!: HTMLElement;

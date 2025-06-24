@@ -1,6 +1,8 @@
 import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
-import { Bound } from '@blocksuite/global/gfx';
+import { EmbedIframeBlockSchema } from '@blocksuite/affine-model';
+import { Bound, clamp } from '@blocksuite/global/gfx';
 import { toGfxBlockComponent } from '@blocksuite/std';
+import { GfxViewInteractionExtension } from '@blocksuite/std/gfx';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
 
@@ -53,3 +55,65 @@ export class EmbedEdgelessIframeBlockComponent extends toGfxBlockComponent(
     `;
   }
 }
+
+export const EmbedIframeInteraction =
+  GfxViewInteractionExtension<EmbedEdgelessIframeBlockComponent>(
+    EmbedIframeBlockSchema.model.flavour,
+    {
+      resizeConstraint: {
+        minWidth: 218,
+        minHeight: 44,
+        maxWidth: 3400,
+        maxHeight: 2200,
+      },
+
+      handleResize: context => {
+        const { model } = context;
+        const initialScale = model.props.scale$.peek();
+
+        return {
+          onResizeStart(context) {
+            context.default(context);
+            model.stash('scale');
+          },
+          onResizeMove(context) {
+            const { newBound, originalBound, lockRatio, constraint } = context;
+            const { minWidth, maxWidth, minHeight, maxHeight } = constraint;
+
+            let scale = initialScale;
+            const originalRealWidth = originalBound.w / scale;
+
+            // update scale if resize is proportional
+            if (lockRatio) {
+              scale = newBound.w / originalRealWidth;
+            }
+
+            let newRealWidth = clamp(newBound.w / scale, minWidth, maxWidth);
+            let newRealHeight = clamp(newBound.h / scale, minHeight, maxHeight);
+
+            newBound.w = newRealWidth * scale;
+            newBound.h = newRealHeight * scale;
+
+            model.props.xywh = newBound.serialize();
+            if (scale !== initialScale) {
+              model.props.scale = scale;
+            }
+          },
+          onResizeEnd(context) {
+            context.default(context);
+            model.pop('scale');
+          },
+        };
+      },
+
+      handleRotate: () => {
+        return {
+          beforeRotate(context) {
+            context.set({
+              rotatable: false,
+            });
+          },
+        };
+      },
+    }
+  );

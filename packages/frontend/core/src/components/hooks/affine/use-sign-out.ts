@@ -3,11 +3,10 @@ import {
   notify,
   useConfirmModal,
 } from '@affine/component';
-import { AuthService, ServerService } from '@affine/core/modules/cloud';
-import { GlobalContextService } from '@affine/core/modules/global-context';
-import { WorkspacesService } from '@affine/core/modules/workspace';
+import { AuthService } from '@affine/core/modules/cloud';
+import { UserFriendlyError } from '@affine/error';
 import { useI18n } from '@affine/i18n';
-import { useLiveData, useService } from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
 import { useNavigateHelper } from '../use-navigate-helper';
@@ -26,47 +25,21 @@ export const useSignOut = ({
 }: ConfirmModalProps = {}) => {
   const t = useI18n();
   const { openConfirmModal } = useConfirmModal();
-  const { openPage } = useNavigateHelper();
+  const { jumpToIndex } = useNavigateHelper();
 
-  const serverService = useService(ServerService);
   const authService = useService(AuthService);
-  const workspacesService = useService(WorkspacesService);
-  const globalContextService = useService(GlobalContextService);
-
-  const workspaces = useLiveData(workspacesService.list.workspaces$);
-  const currentWorkspaceFlavour = useLiveData(
-    globalContextService.globalContext.workspaceFlavour.$
-  );
 
   const signOut = useCallback(async () => {
     onConfirm?.()?.catch(console.error);
     try {
       await authService.signOut();
+      jumpToIndex();
     } catch (err) {
       console.error(err);
-      // TODO(@eyhn): i18n
-      notify.error({
-        title: 'Failed to sign out',
-      });
+      const error = UserFriendlyError.fromAny(err);
+      notify.error(error);
     }
-
-    // if current workspace is sign out, switch to other workspace
-    if (currentWorkspaceFlavour === serverService.server.id) {
-      const localWorkspace = workspaces.find(
-        w => w.flavour !== serverService.server.id
-      );
-      if (localWorkspace) {
-        openPage(localWorkspace.id, 'all');
-      }
-    }
-  }, [
-    authService,
-    currentWorkspaceFlavour,
-    onConfirm,
-    openPage,
-    serverService.server.id,
-    workspaces,
-  ]);
+  }, [authService, jumpToIndex, onConfirm]);
 
   const getDefaultText = useCallback(
     (key: SignOutConfirmModalI18NKeys) => {

@@ -81,6 +81,7 @@ function getHTMLPluginOptions(BUILD_CONFIG: BUILD_CONFIG_TYPE) {
     minify: false,
     templateParameters: templateParams,
     chunks: ['app'],
+    scriptLoading: 'blocking',
   } satisfies HTMLPlugin.Options;
 }
 
@@ -154,6 +155,27 @@ const GlobalErrorHandlerPlugin = {
   },
 };
 
+const CorsPlugin = {
+  apply(compiler: Compiler) {
+    compiler.hooks.compilation.tap('html-js-cors-plugin', compilation => {
+      HTMLPlugin.getHooks(compilation).alterAssetTags.tap(
+        'html-js-cors-plugin',
+        options => {
+          if (options.publicPath !== '/') {
+            options.assetTags.scripts.forEach(script => {
+              script.attributes.crossorigin = true;
+            });
+            options.assetTags.styles.forEach(style => {
+              style.attributes.crossorigin = true;
+            });
+          }
+          return options;
+        }
+      );
+    });
+  },
+};
+
 export function createHTMLPlugins(
   BUILD_CONFIG: BUILD_CONFIG_TYPE,
   config: CreateHTMLPluginConfig
@@ -204,6 +226,10 @@ export function createHTMLPlugins(
         },
       })
     );
+  }
+
+  if (!BUILD_CONFIG.isElectron) {
+    plugins.push(CorsPlugin);
   }
 
   if (config.emitAssetsManifest) {

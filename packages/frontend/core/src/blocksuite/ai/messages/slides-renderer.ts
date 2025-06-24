@@ -6,6 +6,7 @@ import type { Store } from '@blocksuite/affine/store';
 import { css, html, LitElement, nothing } from 'lit';
 import { property, query } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
+import { Doc as YDoc } from 'yjs';
 
 import { PPTBuilder } from '../slides/index';
 import { getAIPanelWidget } from '../utils/ai-widgets';
@@ -223,6 +224,7 @@ export class AISlidesRenderer extends WithDisposable(LitElement) {
 
     const collection = new WorkspaceImpl({
       id: 'SLIDES_PREVIEW',
+      rootDoc: new YDoc({ guid: 'SLIDES_PREVIEW' }),
     });
     collection.meta.initialize();
     const doc = collection.createDoc().getStore();

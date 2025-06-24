@@ -1,3 +1,0 @@
-query getUsersCount {
-  usersCount
-}

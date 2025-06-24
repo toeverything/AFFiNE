@@ -24,8 +24,78 @@ services:
       - 1025:1025
       - 8025:8025
 
+  # https://manual.manticoresearch.com/Starting_the_server/Docker
+  manticoresearch:
+    image: manticoresearch/manticore:${MANTICORE_VERSION:-9.3.2}
+    ports:
+      - 9308:9308
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - manticoresearch_data:/var/lib/manticore
+  
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-9.0.1}${ELASTIC_VERSION_ARM64}
+  #   platform: ${ELASTIC_PLATFORM}
+  #   labels:
+  #     co.elastic.logs/module: elasticsearch
+  #   volumes:
+  #     - elasticsearch_data:/usr/share/elasticsearch/data
+  #   ports:
+  #     - ${ES_PORT:-9200}:9200
+  #   environment:
+  #     - node.name=es01
+  #     - cluster.name=affine-dev
+  #     - discovery.type=single-node
+  #     - bootstrap.memory_lock=true
+  #     - xpack.security.enabled=false
+  #     - xpack.security.http.ssl.enabled=false
+  #     - xpack.security.transport.ssl.enabled=false
+  #     - xpack.license.self_generated.type=basic
+  #   mem_limit: ${ES_MEM_LIMIT:-1073741824}
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #   healthcheck:
+  #     test:
+  #       [
+  #         "CMD-SHELL",
+  #         "curl -s http://localhost:9200 | grep -q 'affine-dev'",
+  #       ]
+  #     interval: 10s
+  #     timeout: 10s
+  #     retries: 120
+
+  # dns:
+  #   image: strm/dnsmasq
+  #   volumes:
+  #     - ./dnsmasq.conf:/etc/dnsmasq.d/local.conf
+  #   ports:
+  #     - "53:53/udp"
+  #   cap_add:
+  #     - NET_ADMIN
+  #   depends_on:
+  #     - nginx
+
+  # nginx:
+  #   image: nginx:alpine
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./nginx/conf.d:/etc/nginx/conf.d:ro
+  #     - ./certs:/etc/nginx/certs:ro
+  #   network_mode: host
+
 networks:
   dev:
 
 volumes:
   postgres_data:
+  manticoresearch_data:
+  elasticsearch_data:

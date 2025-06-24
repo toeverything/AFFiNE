@@ -16,6 +16,7 @@ export class ToolbarViewExtension extends ViewExtensionProvider {
 
   override setup(context: ViewExtensionContext) {
     super.setup(context);
+    if (this.isMobile(context.scope)) return;
     context.register(toolbarWidget);
   }
 }

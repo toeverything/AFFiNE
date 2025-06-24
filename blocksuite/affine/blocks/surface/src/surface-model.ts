@@ -44,7 +44,7 @@ export class SurfaceBlockModel extends BaseSurfaceModel {
   override _init() {
     this._extendElement(elementsCtorMap);
     super._init();
-    this.doc.provider
+    this.store.provider
       .getAll(surfaceMiddlewareIdentifier)
       .forEach(({ middleware }) => {
         this._disposables.add(middleware(this));

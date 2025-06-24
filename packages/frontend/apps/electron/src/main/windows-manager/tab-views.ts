@@ -818,6 +818,7 @@ export class WebContentViewsManager {
         preload: join(__dirname, './preload.js'), // this points to the bundled preload module
         // serialize exposed meta that to be used in preload
         additionalArguments: additionalArguments,
+        backgroundThrottling: false,
       },
     });
 
@@ -864,6 +865,7 @@ export class WebContentViewsManager {
     // shell process do not need to connect to helper process
     if (type !== 'shell') {
       view.webContents.on('did-finish-load', () => {
+        unsub();
         unsub = helperProcessManager.connectRenderer(view.webContents);
       });
     } else {
@@ -878,7 +880,6 @@ export class WebContentViewsManager {
     }
 
     view.webContents.on('destroyed', () => {
-      unsub();
       this.webViewsMap$.next(
         new Map(
           [...this.tabViewsMap.entries()].filter(([key]) => key !== viewId)
@@ -924,7 +925,7 @@ export async function handleWebContentsResize(webContents?: WebContents) {
   if (isMacOS()) {
     const window = await getMainWindow();
     const factor = webContents?.getZoomFactor() || 1;
-    window?.setWindowButtonPosition({ x: 16 * factor, y: 24 * factor - 6 });
+    window?.setWindowButtonPosition({ x: 14 * factor, y: 14 * factor - 2 });
   }
 }
 

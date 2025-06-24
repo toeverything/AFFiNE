@@ -5,6 +5,7 @@ import type { DocMode } from '@blocksuite/affine/model';
 import { AffineSchemas } from '@blocksuite/affine/schemas';
 import {
   CommunityCanvasTextFonts,
+  FeatureFlagService,
   FontConfigExtension,
 } from '@blocksuite/affine/shared/services';
 import {
@@ -47,11 +48,6 @@ function createCollectionOptions() {
     id: room,
     schema,
     idGenerator,
-    defaultFlags: {
-      readonly: {
-        'doc:home': false,
-      },
-    },
   };
 }
 
@@ -115,10 +111,20 @@ export function createPainterWorker() {
   return worker;
 }
 
+type SetupEditorOptions = {
+  extensions?: ExtensionType[];
+  enableDomRenderer?: boolean;
+};
+
 export async function setupEditor(
   mode: DocMode = 'page',
-  extensions: ExtensionType[] = []
+  extensionsInput?: ExtensionType[],
+  optionsInput?: SetupEditorOptions
 ) {
+  const extensions: ExtensionType[] = extensionsInput ?? [];
+  const options: SetupEditorOptions = optionsInput ?? {};
+  const enableDomRenderer = options?.enableDomRenderer ?? false;
+
   const collection = new TestWorkspace(createCollectionOptions());
   collection.storeExtensions = storeExtensions;
   collection.meta.initialize();
@@ -126,6 +132,13 @@ export async function setupEditor(
   window.collection = collection;
 
   initCollection(collection);
+
+  if (enableDomRenderer) {
+    const docStore = window.collection.docs.get('doc:home')?.getStore();
+    const featureFlagService = docStore?.get(FeatureFlagService);
+    featureFlagService?.setFlag('enable_dom_renderer', true);
+  }
+
   const appElement = await createEditor(collection, mode, extensions);
 
   return () => {
@@ -141,7 +154,7 @@ export function cleanup() {
 
   delete (window as any).editor;
 
-  delete (window as any).doc;
+  delete (window as any).store;
 }
 
 declare global {

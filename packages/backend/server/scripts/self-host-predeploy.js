@@ -47,5 +47,42 @@ function runPredeployScript() {
   });
 }
 
+function fixFailedMigrations() {
+  console.log('fixing failed migrations.');
+  const maybeFailedMigrations = [
+    '20250521083048_fix_workspace_embedding_chunk_primary_key',
+  ];
+  for (const migration of maybeFailedMigrations) {
+    try {
+      execSync(`yarn prisma migrate resolve --rolled-back ${migration}`, {
+        encoding: 'utf-8',
+        env: process.env,
+        stdio: 'pipe',
+      });
+      console.log(`migration [${migration}] has been rolled back.`);
+    } catch (err) {
+      if (
+        err.message.includes(
+          'cannot be rolled back because it is not in a failed state'
+        ) ||
+        err.message.includes(
+          'cannot be rolled back because it was never applied'
+        ) ||
+        err.message.includes(
+          'called markMigrationRolledBack on a database without migrations table'
+        )
+      ) {
+        // migration has been rolled back, skip it
+        continue;
+      }
+      // ignore other errors
+      console.log(
+        `migration [${migration}] rolled back failed. ${err.message}`
+      );
+    }
+  }
+}
+
 prepare();
+fixFailedMigrations();
 runPredeployScript();

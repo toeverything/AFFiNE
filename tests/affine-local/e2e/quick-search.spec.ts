@@ -484,21 +484,21 @@ test('can use @ to open quick search to search for doc and insert into canvas', 
   // press enter to insert the page to canvas
   await page.keyboard.press('Enter');
   await expect(
-    page.locator('affine-embed-edgeless-linked-doc-block')
+    page.locator('affine-embed-edgeless-synced-doc-block')
   ).toBeVisible();
   await expect(
-    page.locator('.affine-embed-linked-doc-content-title')
+    page.getByTestId('edgeless-embed-synced-doc-title')
   ).toContainText(docTitle);
 
   // focus on the note block
   await page.waitForTimeout(500);
   await page
-    .locator('affine-embed-edgeless-linked-doc-block')
+    .locator('affine-embed-edgeless-synced-doc-block')
     .click({ force: true });
   await page.waitForTimeout(500);
   // double clock to show peek view
   await page
-    .locator('affine-embed-edgeless-linked-doc-block')
+    .locator('affine-embed-edgeless-synced-doc-block')
     .dblclick({ force: true });
   await expect(page.getByTestId('peek-view-modal')).toBeVisible();
 });

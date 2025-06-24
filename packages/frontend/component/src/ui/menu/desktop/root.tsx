@@ -1,6 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import clsx from 'clsx';
-import React from 'react';
+import React, { useCallback, useImperativeHandle, useState } from 'react';
 
 import type { MenuProps } from '../menu.types';
 import * as styles from '../styles.css';
@@ -11,18 +11,52 @@ export const DesktopMenu = ({
   items,
   noPortal,
   portalOptions,
-  rootOptions: { defaultOpen, modal, ...rootOptions } = {},
+  rootOptions: {
+    defaultOpen,
+    modal,
+    open,
+    onOpenChange,
+    onClose,
+    ...rootOptions
+  } = {},
   contentOptions: {
     className = '',
     style: contentStyle = {},
     ...otherContentOptions
   } = {},
+  ref,
 }: MenuProps) => {
+  const [innerOpen, setInnerOpen] = useState(defaultOpen);
+  const finalOpen = open ?? innerOpen;
+
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      setInnerOpen(open);
+      onOpenChange?.(open);
+      if (!open) {
+        onClose?.();
+      }
+    },
+    [onOpenChange, onClose]
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      changeOpen: (open: boolean) => {
+        setInnerOpen(open);
+        onOpenChange?.(open);
+      },
+    }),
+    [onOpenChange]
+  );
+
   const ContentWrapper = noPortal ? React.Fragment : DropdownMenu.Portal;
   return (
     <DropdownMenu.Root
-      defaultOpen={defaultOpen}
       modal={modal ?? false}
+      open={finalOpen}
+      onOpenChange={handleOpenChange}
       {...rootOptions}
     >
       <DropdownMenu.Trigger

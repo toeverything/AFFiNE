@@ -205,7 +205,7 @@ impl<T> Somr<T> {
 
   #[inline]
   pub fn ptr_eq(&self, other: &Self) -> bool {
-    self.ptr().as_ptr() as usize == other.ptr().as_ptr() as usize
+    std::ptr::eq(self.ptr().as_ptr(), other.ptr().as_ptr())
   }
 
   #[inline]
@@ -272,10 +272,7 @@ impl<T> From<T> for Somr<T> {
 
 impl<T> From<Option<Somr<T>>> for Somr<T> {
   fn from(value: Option<Somr<T>>) -> Self {
-    match value {
-      Some(somr) => somr,
-      None => Somr::none(),
-    }
+    value.unwrap_or_default()
   }
 }
 

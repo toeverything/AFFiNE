@@ -50,7 +50,6 @@ const WorkspaceServerInfo = ({
   accountStatus,
   onDeleteServer,
   onSignOut,
-  onSignIn,
 }: {
   server: string;
   name: string;
@@ -58,7 +57,6 @@ const WorkspaceServerInfo = ({
   accountStatus?: 'authenticated' | 'unauthenticated';
   onDeleteServer?: () => void;
   onSignOut?: () => void;
-  onSignIn?: () => void;
 }) => {
   const t = useI18n();
   const isCloud = server !== 'local';
@@ -92,17 +90,8 @@ const WorkspaceServerInfo = ({
             {t['Sign out']()}
           </MenuItem>
         ),
-        accountStatus === 'unauthenticated' && (
-          <MenuItem
-            prefixIcon={<AccountIcon />}
-            key="sign-in"
-            onClick={onSignIn}
-          >
-            {t['Sign in']()}
-          </MenuItem>
-        ),
       ].filter(Boolean),
-    [accountStatus, onDeleteServer, onSignIn, onSignOut, server, t]
+    [accountStatus, onDeleteServer, onSignOut, server, t]
   );
 
   return (
@@ -141,6 +130,7 @@ const CloudWorkSpaceList = ({
   onClickWorkspace: (workspaceMetadata: WorkspaceMetadata) => void;
   onClickEnableCloud?: (meta: WorkspaceMetadata) => void;
 }) => {
+  const t = useI18n();
   const globalContextService = useService(GlobalContextService);
   const globalDialogService = useService(GlobalDialogService);
   const serverName = useLiveData(server.config$.selector(c => c.serverName));
@@ -190,8 +180,17 @@ const CloudWorkSpaceList = ({
         accountStatus={accountStatus}
         onDeleteServer={handleDeleteServer}
         onSignOut={handleSignOut}
-        onSignIn={handleSignIn}
       />
+      {accountStatus === 'unauthenticated' ? (
+        <MenuItem key="sign-in" onClick={handleSignIn}>
+          <div className={styles.signInMenuItemContent}>
+            <div className={styles.signInIconWrapper}>
+              <AccountIcon />
+            </div>
+            <div className={styles.signInText}>{t['Sign in']()}</div>
+          </div>
+        </MenuItem>
+      ) : null}
       <WorkspaceList
         items={workspaces}
         onClick={onClickWorkspace}

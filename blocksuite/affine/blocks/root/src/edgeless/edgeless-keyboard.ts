@@ -1,8 +1,24 @@
 import { insertLinkByQuickSearchCommand } from '@blocksuite/affine-block-bookmark';
 import { EdgelessTextBlockComponent } from '@blocksuite/affine-block-edgeless-text';
-import { isNoteBlock } from '@blocksuite/affine-block-surface';
+import {
+  FrameTool,
+  type PresentToolOption,
+} from '@blocksuite/affine-block-frame';
+import {
+  DefaultTool,
+  EdgelessLegacySlotIdentifier,
+  isNoteBlock,
+} from '@blocksuite/affine-block-surface';
 import { toast } from '@blocksuite/affine-components/toast';
-import { mountConnectorLabelEditor } from '@blocksuite/affine-gfx-connector';
+import {
+  BrushTool,
+  EraserTool,
+  HighlighterTool,
+} from '@blocksuite/affine-gfx-brush';
+import {
+  ConnectorTool,
+  mountConnectorLabelEditor,
+} from '@blocksuite/affine-gfx-connector';
 import {
   createGroupFromSelectedCommand,
   ungroupCommand,
@@ -12,10 +28,13 @@ import {
   isElementOutsideViewport,
   isSingleMindMapNode,
 } from '@blocksuite/affine-gfx-mindmap';
+import { NoteTool } from '@blocksuite/affine-gfx-note';
+import { PanTool } from '@blocksuite/affine-gfx-pointer';
 import { mountShapeTextEditor, ShapeTool } from '@blocksuite/affine-gfx-shape';
+import { TextTool } from '@blocksuite/affine-gfx-text';
 import {
   ConnectorElementModel,
-  ConnectorMode,
+  type ConnectorMode,
   EdgelessTextBlockModel,
   GroupElementModel,
   LayoutType,
@@ -33,11 +52,13 @@ import { IS_MAC } from '@blocksuite/global/env';
 import { Bound, getCommonBound } from '@blocksuite/global/gfx';
 import { SurfaceSelection, TextSelection } from '@blocksuite/std';
 import {
+  type BaseTool,
   GfxBlockElementModel,
+  GfxControllerIdentifier,
   type GfxPrimitiveElementModel,
-  type GfxToolsMap,
-  type GfxToolsOption,
   isGfxGroupCompatibleModel,
+  type ToolOptions,
+  type ToolType,
 } from '@blocksuite/std/gfx';
 
 import { PageKeyboardManager } from '../keyboard/keyboard-manager.js';
@@ -48,12 +69,19 @@ import {
   DEFAULT_NOTE_TIP,
 } from './utils/consts.js';
 import { deleteElements } from './utils/crud.js';
-import { getNextShapeType } from './utils/hotkey-utils.js';
 import { isCanvasElement } from './utils/query.js';
 
 export class EdgelessPageKeyboardManager extends PageKeyboardManager {
   get gfx() {
-    return this.rootComponent.gfx;
+    return this.std.get(GfxControllerIdentifier);
+  }
+
+  get slots() {
+    return this.std.get(EdgelessLegacySlotIdentifier);
+  }
+
+  get std() {
+    return this.rootComponent.std;
   }
 
   constructor(override rootComponent: EdgelessRootBlockComponent) {
@@ -61,38 +89,46 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
     this.rootComponent.bindHotKey(
       {
         v: () => {
-          this._setEdgelessTool('default');
+          this._setEdgelessTool(DefaultTool);
         },
         t: () => {
-          this._setEdgelessTool('text');
+          this._setEdgelessTool(TextTool);
         },
         c: () => {
-          const mode = ConnectorMode.Curve;
-          rootComponent.std.get(EditPropsStore).recordLastProps('connector', {
-            mode,
-          });
-          this._setEdgelessTool('connector', { mode });
+          const editPropsStore = this.std.get(EditPropsStore);
+
+          let mode: ConnectorMode;
+          if (
+            this.gfx.tool.currentToolName$.peek() === ConnectorTool.toolName
+          ) {
+            mode = this.gfx.tool.get(ConnectorTool).getNextMode();
+            editPropsStore.recordLastProps('connector', { mode });
+          } else {
+            mode = editPropsStore.lastProps$.peek().connector.mode;
+          }
+
+          this._setEdgelessTool(ConnectorTool, { mode });
         },
         h: () => {
-          this._setEdgelessTool('pan', {
+          this._setEdgelessTool(PanTool, {
             panning: false,
           });
         },
         n: () => {
-          this._setEdgelessTool('affine:note', {
+          this._setEdgelessTool(NoteTool, {
             childFlavour: DEFAULT_NOTE_CHILD_FLAVOUR,
             childType: DEFAULT_NOTE_CHILD_TYPE,
             tip: DEFAULT_NOTE_TIP,
           });
         },
         p: () => {
-          this._setEdgelessTool('brush');
+          this._setEdgelessTool(BrushTool);
         },
         'Shift-p': () => {
-          this._setEdgelessTool('highlighter');
+          this._setEdgelessTool(HighlighterTool);
         },
         e: () => {
-          this._setEdgelessTool('eraser');
+          this._setEdgelessTool(EraserTool);
         },
         k: () => {
           if (this.rootComponent.service.locked) return;
@@ -105,7 +141,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
               NoteBlockModel,
             ])
           ) {
-            rootComponent.slots.toggleNoteSlicer.next();
+            this.slots.toggleNoteSlicer.next();
           }
         },
         f: () => {
@@ -128,7 +164,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
               });
             rootComponent.surface.fitToViewport(Bound.deserialize(frame.xywh));
           } else if (!this.rootComponent.service.selection.editing) {
-            this._setEdgelessTool('frame');
+            this._setEdgelessTool(FrameTool);
           }
         },
         '-': () => {
@@ -140,7 +176,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
             elements.length === 1 &&
             isNoteBlock(elements[0])
           ) {
-            rootComponent.slots.toggleNoteSlicer.next();
+            this.slots.toggleNoteSlicer.next();
           }
         },
         '@': () => {
@@ -182,10 +218,8 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
           ) {
             return;
           }
-          const { shapeName } = controller.activatedOption;
-          const nextShapeName = getNextShapeType(shapeName);
-          this._setEdgelessTool('shape', {
-            shapeName: nextShapeName,
+          this._setEdgelessTool(ShapeTool, {
+            shapeName: controller.cycleShapeName('prev'),
           });
 
           controller.createOverlay();
@@ -452,7 +486,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
           !event.metaKey
         ) {
           const elements = selection.selectedElements;
-          const doc = this.rootComponent.doc;
+          const doc = this.rootComponent.store;
 
           if (isSingleMindMapNode(elements)) {
             const target = gfx.getElementById(
@@ -480,6 +514,7 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
         if (event.code === 'Space' && !event.repeat) {
           this._space(event);
         }
+        return false;
       },
       { global: true }
     );
@@ -633,11 +668,9 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
     });
   }
 
-  private _setEdgelessTool<K extends keyof GfxToolsMap>(
-    toolName: K,
-    ...options: K extends keyof GfxToolsOption
-      ? [option: GfxToolsOption[K], ignoreActiveState?: boolean]
-      : [option: void, ignoreActiveState?: boolean]
+  private _setEdgelessTool<T extends BaseTool>(
+    toolType: ToolType<T>,
+    ...options: [options?: ToolOptions<T>, ignoreActiveState?: boolean]
   ) {
     const ignoreActiveState =
       typeof options === 'boolean'
@@ -651,9 +684,8 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
       return;
     }
 
-    this.rootComponent.gfx.tool.setTool<K>(
-      toolName,
-      // @ts-expect-error FIXME: ts error
+    this.rootComponent.gfx.tool.setTool(
+      toolType,
       options[0] !== undefined && typeof options[0] !== 'boolean'
         ? options[0]
         : undefined
@@ -677,11 +709,18 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
 
     const revertToPrevTool = (ev: KeyboardEvent) => {
       if (ev.code === 'Space') {
-        this._setEdgelessTool(
-          // @ts-expect-error FIXME: ts error
-          currentTool.toolName,
-          currentTool?.activatedOption
-        );
+        const toolConstructor = currentTool.constructor as typeof DefaultTool;
+        let finalOptions = currentTool?.activatedOption;
+
+        // Handle frameNavigator (PresentTool) restoration after space pan
+        if (currentTool.toolName === 'frameNavigator') {
+          finalOptions = {
+            ...currentTool?.activatedOption,
+            restoredAfterPan: true,
+          } as PresentToolOption;
+        }
+
+        this._setEdgelessTool(toolConstructor, finalOptions);
         selection.set(currentSel);
         document.removeEventListener('keyup', revertToPrevTool, false);
       }
@@ -694,9 +733,17 @@ export class EdgelessPageKeyboardManager extends PageKeyboardManager {
       ) {
         return;
       }
-      this._setEdgelessTool('pan', { panning: false });
 
-      edgeless.dispatcher.disposables.addFromEvent(
+      // If in presentation mode, disable black background during space drag
+      if (currentTool.toolName === 'frameNavigator') {
+        this.slots.navigatorSettingUpdated.next({
+          blackBackground: false,
+        });
+      }
+
+      this._setEdgelessTool(PanTool, { panning: false });
+
+      this.std.event.disposables.addFromEvent(
         document,
         'keyup',
         revertToPrevTool

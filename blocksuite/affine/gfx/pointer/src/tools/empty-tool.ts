@@ -6,9 +6,3 @@ import { BaseTool } from '@blocksuite/std/gfx';
 export class EmptyTool extends BaseTool {
   static override toolName: string = 'empty';
 }
-
-declare module '@blocksuite/std/gfx' {
-  interface GfxToolsMap {
-    empty: EmptyTool;
-  }
-}

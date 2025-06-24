@@ -7,7 +7,6 @@ mutation updatePrompt(
     model
     action
     config {
-      jsonMode
       frequencyPenalty
       presencePenalty
       temperature

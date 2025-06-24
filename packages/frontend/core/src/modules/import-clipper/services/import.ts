@@ -1,4 +1,4 @@
-import { getStoreManager } from '@affine/core/blocksuite/manager/migrating-store';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { Service } from '@toeverything/infra';
 
@@ -35,7 +35,7 @@ export class ImportClipperService extends Service {
       collection: workspace.docCollection,
       schema: getAFFiNEWorkspaceSchema(),
       markdown: clipperInput.contentMarkdown,
-      extensions: getStoreManager().get('store'),
+      extensions: getStoreManager().config.init().value.get('store'),
     });
     const docsService = workspace.scope.get(DocsService);
     if (docId) {
@@ -44,8 +44,8 @@ export class ImportClipperService extends Service {
       docsService.list.setPrimaryMode(docId, 'page');
       workspace.engine.doc.addPriority(workspace.id, 100);
       workspace.engine.doc.addPriority(docId, 100);
-      await workspace.engine.doc.waitForDocSynced(workspace.id);
-      await workspace.engine.doc.waitForDocSynced(docId);
+      await workspace.engine.doc.waitForSynced(workspace.id);
+      await workspace.engine.doc.waitForSynced(docId);
       disposeWorkspace();
       return docId;
     } else {
@@ -64,15 +64,16 @@ export class ImportClipperService extends Service {
       flavour,
       async docCollection => {
         docCollection.meta.initialize();
-        docCollection.meta.setName(workspaceName);
+        docCollection.doc.getMap('meta').set('name', workspaceName);
         docId = await MarkdownTransformer.importMarkdownToDoc({
           collection: docCollection,
           schema: getAFFiNEWorkspaceSchema(),
           markdown: clipperInput.contentMarkdown,
-          extensions: getStoreManager().get('store'),
+          extensions: getStoreManager().config.init().value.get('store'),
         });
       }
     );
+
     if (!docId) {
       throw new Error('Failed to import doc');
     }

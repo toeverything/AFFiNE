@@ -1,19 +1,5 @@
-import {
-  EdgelessCRUDIdentifier,
-  EdgelessLegacySlotIdentifier,
-} from '@blocksuite/affine-block-surface';
-import {
-  packColor,
-  type PickColorEvent,
-} from '@blocksuite/affine-components/color-picker';
-import type { LineDetailType } from '@blocksuite/affine-components/edgeless-line-styles-panel';
-import {
-  DefaultTheme,
-  NoteBlockModel,
-  NoteDisplayMode,
-  type NoteShadow,
-  resolveColor,
-} from '@blocksuite/affine-model';
+import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
+import { NoteBlockModel, NoteDisplayMode } from '@blocksuite/affine-model';
 import {
   NotificationProvider,
   SidebarExtensionIdentifier,
@@ -22,20 +8,17 @@ import {
   type ToolbarModuleConfig,
   ToolbarModuleExtension,
 } from '@blocksuite/affine-shared/services';
-import { getMostCommonResolvedValue } from '@blocksuite/affine-shared/utils';
 import { Bound } from '@blocksuite/global/gfx';
 import {
   AutoHeightIcon,
-  CornerIcon,
   CustomizedHeightIcon,
-  LinkedPageIcon,
+  InsertIntoPageIcon,
   ScissorsIcon,
 } from '@blocksuite/icons/lit';
 import { BlockFlavourIdentifier } from '@blocksuite/std';
 import type { ExtensionType } from '@blocksuite/store';
 import { computed } from '@preact/signals-core';
 import { html } from 'lit';
-import { keyed } from 'lit/directives/keyed.js';
 
 import { changeNoteDisplayMode } from '../commands';
 import { NoteConfigExtension } from '../config';
@@ -43,14 +26,6 @@ import { NoteConfigExtension } from '../config';
 const trackBaseProps = {
   category: 'note',
 };
-
-const CORNER_LIST = [
-  { key: 'None', value: 0 },
-  { key: 'Small', value: 8 },
-  { key: 'Medium', value: 16 },
-  { key: 'Large', value: 24 },
-  { key: 'Huge', value: 32 },
-] as const;
 
 const builtinSurfaceToolbarConfig = {
   actions: [
@@ -115,6 +90,15 @@ const builtinSurfaceToolbarConfig = {
               ? NoteDisplayMode.DocAndEdgeless
               : NoteDisplayMode.EdgelessOnly;
           setDisplayMode(ctx, firstModel, newMode);
+
+          ctx.track('BlockCreated', {
+            page: 'whiteboard editor',
+            module: 'toolbar',
+            segment: 'toolbar',
+            blockType: 'affine:note',
+            control: 'toolbar:general',
+            other: `display in page: ${newMode === NoteDisplayMode.EdgelessOnly ? 'off' : 'on'}`,
+          });
         };
 
         return {
@@ -125,68 +109,10 @@ const builtinSurfaceToolbarConfig = {
             data-testid="display-in-page"
             @click=${() => onSelect()}
           >
-            ${LinkedPageIcon()}
+            ${InsertIntoPageIcon()}
             <span class="label">${label$.value}</span>
           </editor-icon-button>`,
         };
-      },
-    },
-    {
-      id: 'c.color-picker',
-      when(ctx) {
-        const elements = ctx.getSurfaceModelsByType(NoteBlockModel);
-        return (
-          elements.length > 0 &&
-          elements[0].props.displayMode !== NoteDisplayMode.DocOnly
-        );
-      },
-      content(ctx) {
-        const models = ctx.getSurfaceModelsByType(NoteBlockModel);
-        if (!models.length) return null;
-
-        const enableCustomColor = ctx.features.getFlag('enable_color_picker');
-        const theme = ctx.theme.edgeless$.value;
-
-        const firstModel = models[0];
-        const background =
-          getMostCommonResolvedValue(
-            models.map(model => model.props),
-            'background',
-            background => resolveColor(background, theme)
-          ) ?? resolveColor(DefaultTheme.noteBackgrounColor, theme);
-        const onPick = (e: PickColorEvent) => {
-          const field = 'background';
-
-          if (e.type === 'pick') {
-            const color = e.detail.value;
-            for (const model of models) {
-              const props = packColor(field, color);
-              ctx.std
-                .get(EdgelessCRUDIdentifier)
-                .updateElement(model.id, props);
-            }
-            return;
-          }
-
-          for (const model of models) {
-            model[e.type === 'start' ? 'stash' : 'pop'](field);
-          }
-        };
-
-        return html`
-          <edgeless-color-picker-button
-            class="background"
-            .label="${'Background'}"
-            .pick=${onPick}
-            .color=${background}
-            .colorPanelClass="${'small'}"
-            .theme=${theme}
-            .palettes=${DefaultTheme.NoteBackgroundColorPalettes}
-            .originalColor=${firstModel.props.background}
-            .enableCustomColor=${enableCustomColor}
-          >
-          </edgeless-color-picker-button>
-        `;
       },
     },
     {
@@ -200,147 +126,20 @@ const builtinSurfaceToolbarConfig = {
       },
       actions: [
         {
-          id: 'a.shadow-style',
-          content(ctx) {
-            const models = ctx.getSurfaceModelsByType(NoteBlockModel);
-            if (!models.length) return null;
-
-            const theme = ctx.theme.edgeless$.value;
-
-            const firstModel = models[0];
-            const { shadowType } = firstModel.props.edgeless.style;
-            const background =
-              getMostCommonResolvedValue(
-                models.map(model => model.props),
-                'background',
-                background => resolveColor(background, theme)
-              ) ?? resolveColor(DefaultTheme.noteBackgrounColor, theme);
-            const onSelect = (e: CustomEvent<NoteShadow>) => {
-              e.stopPropagation();
-
-              const shadowType = e.detail;
-              for (const model of models) {
-                const edgeless = model.props.edgeless;
-                ctx.std.get(EdgelessCRUDIdentifier).updateElement(model.id, {
-                  edgeless: {
-                    ...edgeless,
-                    style: {
-                      ...edgeless.style,
-                      shadowType,
-                    },
-                  },
-                });
-              }
-            };
-
-            return html`${keyed(
-              firstModel,
-              html`<edgeless-note-shadow-dropdown-menu
-                @select=${onSelect}
-                .value="${shadowType}"
-                .background="${background}"
-                .theme="${theme}"
-              ></edgeless-note-shadow-dropdown-menu>`
-            )}`;
-          },
-        } satisfies ToolbarAction,
-        {
-          id: 'b.border-style',
-          content(ctx) {
-            const models = ctx.getSurfaceModelsByType(NoteBlockModel);
-            if (!models.length) return null;
-
-            const firstModel = models[0];
-            const { borderSize, borderStyle } = firstModel.props.edgeless.style;
-            const onSelect = (e: CustomEvent<LineDetailType>) => {
-              e.stopPropagation();
-
-              const { type, value } = e.detail;
-
-              if (type === 'size') {
-                const borderSize = value;
-                for (const model of models) {
-                  const edgeless = model.props.edgeless;
-                  ctx.std.get(EdgelessCRUDIdentifier).updateElement(model.id, {
-                    edgeless: {
-                      ...edgeless,
-                      style: {
-                        ...edgeless.style,
-                        borderSize,
-                      },
-                    },
-                  });
-                }
-                return;
-              }
-
-              const borderStyle = value;
-              for (const model of models) {
-                const edgeless = model.props.edgeless;
-                ctx.std.get(EdgelessCRUDIdentifier).updateElement(model.id, {
-                  edgeless: {
-                    ...edgeless,
-                    style: {
-                      ...edgeless.style,
-                      borderStyle,
-                    },
-                  },
-                });
-              }
-            };
-
-            return html`${keyed(
-              firstModel,
-              html`
-                <edgeless-note-border-dropdown-menu
-                  @select=${onSelect}
-                  .lineSize=${borderSize}
-                  .lineStyle=${borderStyle}
-                ></edgeless-note-border-dropdown-menu>
-              `
-            )}`;
-          },
-        } satisfies ToolbarAction,
-        {
-          id: 'c.corners',
-          label: 'Corners',
-          content(ctx) {
-            const models = ctx.getSurfaceModelsByType(NoteBlockModel);
-            if (!models.length) return null;
-
-            const label = this.label;
-            const firstModel = models[0];
-            const borderRadius$ = computed(
-              () => firstModel.props.edgeless$.value.style.borderRadius
+          id: 'b.style',
+          when: ctx => {
+            const models = ctx.getSurfaceModels();
+            return (
+              models.length > 0 &&
+              models.every(model => model instanceof NoteBlockModel)
             );
-            const onSelect = (e: CustomEvent<number>) => {
-              e.stopPropagation();
-
-              const borderRadius = e.detail;
-              for (const model of models) {
-                const edgeless = model.props.edgeless;
-                ctx.std.get(EdgelessCRUDIdentifier).updateElement(model.id, {
-                  edgeless: {
-                    ...edgeless,
-                    style: {
-                      ...edgeless.style,
-                      borderRadius,
-                    },
-                  },
-                });
-              }
-            };
-
-            return html`${keyed(
-              firstModel,
-              html`<affine-size-dropdown-menu
-                @select=${onSelect}
-                .label="${label}"
-                .icon=${CornerIcon()}
-                .sizes=${CORNER_LIST}
-                .size$=${borderRadius$}
-              ></affine-size-dropdown-menu>`
-            )}`;
+          },
+          content(ctx) {
+            const notes = ctx.getSurfaceModelsByType(NoteBlockModel);
+            return html`<edgeless-note-style-panel
+              .notes=${notes}
+              .std=${ctx.std}
+            ></edgeless-note-style-panel>`;
           },
         } satisfies ToolbarAction,
       ],

@@ -49,6 +49,7 @@ import { CaptchaModule } from './plugins/captcha';
 import { CopilotModule } from './plugins/copilot';
 import { CustomerIoModule } from './plugins/customerio';
 import { GCloudModule } from './plugins/gcloud';
+import { IndexerModule } from './plugins/indexer';
 import { LicenseModule } from './plugins/license';
 import { OAuthModule } from './plugins/oauth';
 import { PaymentModule } from './plugins/payment';
@@ -146,7 +147,8 @@ export function buildAppModule(env: Env) {
     // enable schedule module on graphql server and doc service
     .useIf(
       () => env.flavors.graphql || env.flavors.doc,
-      ScheduleModule.forRoot()
+      ScheduleModule.forRoot(),
+      IndexerModule
     )
 
     // auth

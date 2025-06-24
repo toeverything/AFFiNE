@@ -12,17 +12,17 @@ import {
 } from '@blocksuite/icons/lit';
 import { html } from 'lit';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
 import type { KanbanSelectionController } from './controller/selection.js';
+import type { KanbanViewUILogic } from './kanban-view-ui-logic.js';
 
 export const openDetail = (
-  dataViewEle: DataViewRenderer,
+  kanbanViewLogic: KanbanViewUILogic,
   rowId: string,
   selection: KanbanSelectionController
 ) => {
   const old = selection.selection;
   selection.selection = undefined;
-  dataViewEle.openDetailPanel({
+  kanbanViewLogic.root.openDetailPanel({
     view: selection.view,
     rowId: rowId,
     onClose: () => {
@@ -32,7 +32,7 @@ export const openDetail = (
 };
 
 export const popCardMenu = (
-  dataViewEle: DataViewRenderer,
+  kanbanViewLogic: KanbanViewUILogic,
   ele: PopupTarget,
   rowId: string,
   selection: KanbanSelectionController
@@ -42,7 +42,7 @@ export const popCardMenu = (
       name: 'Expand Card',
       prefix: ExpandFullIcon(),
       select: () => {
-        openDetail(dataViewEle, rowId, selection);
+        openDetail(kanbanViewLogic, rowId, selection);
       },
     }),
     menu.subMenu({
@@ -60,7 +60,7 @@ export const popCardMenu = (
             })
             .map(group => {
               return menu.action({
-                name: group.value != null ? group.name : 'Ungroup',
+                name: group.value != null ? group.name$.value : 'Ungroup',
                 select: () => {
                   selection.moveCard(rowId, group.key);
                 },

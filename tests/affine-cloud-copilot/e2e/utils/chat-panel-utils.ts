@@ -32,9 +32,6 @@ export class ChatPanelUtils {
       });
       await page.waitForTimeout(500); // wait the sidebar stable
     }
-    if (await page.getByTestId('notification-close-button').isVisible()) {
-      await page.getByTestId('notification-close-button').click();
-    }
     await page.getByTestId('sidebar-tab-chat').click();
     await expect(page.getByTestId('sidebar-tab-content-chat')).toBeVisible();
   }
@@ -239,10 +236,9 @@ export class ChatPanelUtils {
     await this.makeChat(page, text);
   }
 
-  public static async chatWithImages(
+  public static async uploadImages(
     page: Page,
-    images: { name: string; mimeType: string; buffer: Buffer }[],
-    text: string
+    images: { name: string; mimeType: string; buffer: Buffer }[]
   ) {
     await page.evaluate(() => {
       delete window.showOpenFilePicker;
@@ -254,6 +250,14 @@ export class ChatPanelUtils {
 
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(images);
+  }
+
+  public static async chatWithImages(
+    page: Page,
+    images: { name: string; mimeType: string; buffer: Buffer }[],
+    text: string
+  ) {
+    await this.uploadImages(page, images);
 
     await page.waitForSelector('ai-chat-input img');
     await this.makeChat(page, text);
@@ -267,8 +271,11 @@ export class ChatPanelUtils {
       await withMenu.getByTestId('ai-chat-with-tags').click();
       await withMenu.getByText(tag).click();
       await page.getByTestId('chat-panel-chips').getByText(tag);
+      await this.waitForEmbeddingProgress(page);
+      await withMenu.waitFor({
+        state: 'hidden',
+      });
     }
-    await this.waitForEmbeddingProgress(page);
   }
 
   public static async chatWithCollections(page: Page, collections: string[]) {
@@ -279,20 +286,36 @@ export class ChatPanelUtils {
       await withMenu.getByTestId('ai-chat-with-collections').click();
       await withMenu.getByText(collection).click();
       await page.getByTestId('chat-panel-chips').getByText(collection);
+      await this.waitForEmbeddingProgress(page);
+      await withMenu.waitFor({
+        state: 'hidden',
+      });
     }
-    await this.waitForEmbeddingProgress(page);
   }
 
   public static async waitForEmbeddingProgress(page: Page) {
-    await page.getByTestId('chat-panel-embedding-progress').waitFor({
+    try {
+      await page.getByTestId('chat-panel-embedding-progress').waitFor({
+        state: 'visible',
+      });
+      await page.getByTestId('chat-panel-embedding-progress').waitFor({
+        state: 'hidden',
+      });
+    } catch {
+      // do nothing
+    }
+  }
+
+  public static async openChatInputPreference(page: Page) {
+    const trigger = page.getByTestId('chat-input-preference-trigger');
+    await trigger.click();
+    await page.getByTestId('chat-input-preference').waitFor({
       state: 'visible',
-    });
-    await page.getByTestId('chat-panel-embedding-progress').waitFor({
-      state: 'hidden',
     });
   }
 
   public static async enableNetworkSearch(page: Page) {
+    await this.openChatInputPreference(page);
     const networkSearch = page.getByTestId('chat-network-search');
     if ((await networkSearch.getAttribute('data-active')) === 'false') {
       await networkSearch.click();
@@ -300,6 +323,7 @@ export class ChatPanelUtils {
   }
 
   public static async disableNetworkSearch(page: Page) {
+    await this.openChatInputPreference(page);
     const networkSearch = page.getByTestId('chat-network-search');
     if ((await networkSearch.getAttribute('data-active')) === 'true') {
       await networkSearch.click();
@@ -307,6 +331,7 @@ export class ChatPanelUtils {
   }
 
   public static async enableReasoning(page: Page) {
+    await this.openChatInputPreference(page);
     const reasoning = page.getByTestId('chat-reasoning');
     if ((await reasoning.getAttribute('data-active')) === 'false') {
       await reasoning.click();
@@ -314,6 +339,7 @@ export class ChatPanelUtils {
   }
 
   public static async disableReasoning(page: Page) {
+    await this.openChatInputPreference(page);
     const reasoning = page.getByTestId('chat-reasoning');
     if ((await reasoning.getAttribute('data-active')) === 'true') {
       await reasoning.click();

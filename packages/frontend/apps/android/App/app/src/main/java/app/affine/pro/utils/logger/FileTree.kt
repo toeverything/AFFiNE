@@ -12,6 +12,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl
 import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
@@ -41,19 +42,19 @@ class FileTree(context: Context) : Timber.Tree() {
         }
     }
 
-    suspend fun checkAndUploadOldLogs() {
+    suspend fun checkAndUploadOldLogs(server: HttpUrl) {
         val today = dateFormat.format(Date())
         logDirectory.listFiles()?.forEach { file ->
             val fileName = file.name
             if (fileName.endsWith(".log") && !fileName.startsWith(today)) {
-                uploadLogToFirebase(file)
+                uploadLogToFirebase(server, file)
             }
         }
     }
 
-    private suspend fun uploadLogToFirebase(file: File) =
+    private suspend fun uploadLogToFirebase(server: HttpUrl, file: File) =
         suspendCancellableCoroutine { continuation ->
-            val user = CookieStore.getCookie(BuildConfig.BASE_URL, CookieStore.AFFINE_USER_ID)
+            val user = CookieStore.getCookie(server, CookieStore.AFFINE_USER_ID)
                 ?: return@suspendCancellableCoroutine
             val storageRef = Firebase.storage.reference
             val logFileRef = storageRef.child("android_log/$user/${file.name}")

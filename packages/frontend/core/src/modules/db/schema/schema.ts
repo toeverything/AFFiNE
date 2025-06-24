@@ -1,12 +1,15 @@
 import {
   type DBSchemaBuilder,
   f,
+  type FieldSchemaBuilder,
   type ORMEntity,
   t,
 } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
 
-const integrationType = f.enum('readwise', 'zotero');
+import type { WorkspacePropertyType } from '../../workspace-property';
+
+const integrationType = f.enum('readwise');
 
 export const AFFiNE_WORKSPACE_DB_SCHEMA = {
   folders: {
@@ -25,17 +28,23 @@ export const AFFiNE_WORKSPACE_DB_SCHEMA = {
     pageWidth: f.string().optional(),
     isTemplate: f.boolean().optional(),
     integrationType: integrationType.optional(),
+    createdBy: f.string().optional(),
+    updatedBy: f.string().optional(),
   }),
   docCustomPropertyInfo: {
     id: f.string().primaryKey().optional().default(nanoid),
     name: f.string().optional(),
-    type: f.string(),
+    type: f.string() as FieldSchemaBuilder<WorkspacePropertyType, false, false>,
     show: f.enum('always-show', 'always-hide', 'hide-when-empty').optional(),
     index: f.string().optional(),
     icon: f.string().optional(),
     additionalData: f.json().optional(),
     isDeleted: f.boolean().optional(),
     // we will keep deleted properties in the database, for override legacy data
+  },
+  pinnedCollections: {
+    collectionId: f.string().primaryKey(),
+    index: f.string(),
   },
 } as const satisfies DBSchemaBuilder;
 export type AFFiNEWorkspaceDbSchema = typeof AFFiNE_WORKSPACE_DB_SCHEMA;

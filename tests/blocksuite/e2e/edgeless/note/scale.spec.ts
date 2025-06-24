@@ -137,7 +137,10 @@ test.describe('note scale', () => {
     await page.mouse.down();
     await page.mouse.move(
       noteRect.x + noteRect.width * 2,
-      noteRect.y + noteRect.height * 2
+      noteRect.y + noteRect.height * 2,
+      {
+        steps: 10,
+      }
     );
     await page.mouse.up();
 

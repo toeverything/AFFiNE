@@ -183,7 +183,6 @@ export class TypeSystem {
       // eslint-disable-next-line sonarjs/no-collapsible-if
       if (realArg != null) {
         if (!this._unify(newCtx, realArg, arg)) {
-          console.log('arg', realArg, arg);
           return;
         }
       }

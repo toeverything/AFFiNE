@@ -458,7 +458,7 @@ test('share page should support copying content', async ({ page, browser }) => {
   }
 });
 
-test('should disable opening peek view with pdf viewer in readonly and sharing modes', async ({
+test('should enable opening peek view with pdf viewer in readonly and sharing modes', async ({
   page,
   browser,
 }) => {
@@ -486,7 +486,7 @@ test('should disable opening peek view with pdf viewer in readonly and sharing m
   await switchViewButton.click();
   await embedViewButton.click();
 
-  await expect(attachment.locator('iframe')).toBeVisible();
+  await expect(attachment.locator('lit-react-portal')).toBeVisible();
 
   // enable share page and copy page link
   await enableShare(page);
@@ -506,7 +506,7 @@ test('should disable opening peek view with pdf viewer in readonly and sharing m
 
     const attachment = page2.locator('affine-attachment');
 
-    await expect(attachment.locator('iframe')).toBeVisible();
+    await expect(attachment.locator('lit-react-portal')).toBeVisible();
 
     await attachment.dblclick();
 

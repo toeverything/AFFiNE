@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 
 import { SpaceAccessDenied } from '../../base';
-import { Models } from '../../models';
+import { DocRole, Models } from '../../models';
 import { AccessController } from './controller';
 import type { Resource } from './resource';
 import {
+  fixupDocRole,
+  mapDocRoleToPermissions,
   mapWorkspaceRoleToPermissions,
   WorkspaceAction,
   workspaceActionRequiredRole,
@@ -72,6 +74,104 @@ export class WorkspaceAccessController extends AccessController<'ws'> {
     }
 
     return role;
+  }
+
+  async docRoles(payload: Resource<'ws'>, docIds: string[]) {
+    const docRoles = await this.getDocRoles(payload, docIds);
+    return docRoles.map(role => ({
+      role,
+      permissions: mapDocRoleToPermissions(role),
+    }));
+  }
+
+  async getDocRoles(payload: Resource<'ws'>, docIds: string[]) {
+    const docRoles: (DocRole | null)[] = [];
+
+    if (docIds.length === 0) {
+      return docRoles;
+    }
+
+    const workspaceRole = await this.getRole(payload);
+
+    const userRoles = await this.models.docUser.findMany(
+      payload.workspaceId,
+      docIds,
+      payload.userId
+    );
+    const userRolesMap = new Map(userRoles.map(role => [role.docId, role]));
+
+    const noUserRoleDocIds = docIds.filter(docId => {
+      const userRole = userRolesMap.get(docId);
+      return (userRole?.type ?? null) === null;
+    });
+    const defaultDocRoles =
+      noUserRoleDocIds.length > 0
+        ? await this.getDocDefaultRoles(
+            payload,
+            noUserRoleDocIds,
+            workspaceRole
+          )
+        : [];
+    const defaultDocRolesMap = new Map(
+      defaultDocRoles.map((role, index) => [noUserRoleDocIds[index], role])
+    );
+
+    for (const docId of docIds) {
+      const userRole = userRolesMap.get(docId);
+
+      let docRole: DocRole | null = userRole?.type ?? null;
+
+      // fallback logic
+      if (docRole === null) {
+        docRole = defaultDocRolesMap.get(docId) ?? null;
+      }
+
+      // we need to fixup doc role to make sure it's not miss set
+      // for example: workspace owner will have doc owner role
+      //              workspace external will not have role higher than editor
+      const role = fixupDocRole(workspaceRole, docRole);
+
+      // never return [None]
+      docRoles.push(role === DocRole.None ? null : role);
+    }
+
+    return docRoles;
+  }
+
+  private async getDocDefaultRoles(
+    payload: Resource<'ws'>,
+    docIds: string[],
+    workspaceRole: WorkspaceRole | null
+  ) {
+    const fallbackDocRoles: (DocRole | null)[] = [];
+
+    if (docIds.length === 0) {
+      return fallbackDocRoles;
+    }
+
+    const defaultDocRoles = await this.models.doc.findDefaultRoles(
+      payload.workspaceId,
+      docIds
+    );
+
+    for (const defaultDocRole of defaultDocRoles) {
+      let docRole: DocRole | null;
+      // if user is in workspace but doc role is not set, fallback to default doc role
+      if (workspaceRole !== null && workspaceRole !== WorkspaceRole.External) {
+        docRole =
+          defaultDocRole.external !== null
+            ? // edgecase: when doc role set to [None] for workspace member, but doc is public, we should fallback to external role
+              Math.max(defaultDocRole.workspace, defaultDocRole.external)
+            : defaultDocRole.workspace;
+      } else {
+        // else fallback to external doc role
+        docRole = defaultDocRole.external;
+      }
+
+      fallbackDocRoles.push(docRole);
+    }
+
+    return fallbackDocRoles;
   }
 
   private async defaultWorkspaceRole(payload: Resource<'ws'>) {

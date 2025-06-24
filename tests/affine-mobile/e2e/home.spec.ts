@@ -47,6 +47,6 @@ test('all tab', async ({ page }) => {
 
   await docsTab.click();
 
-  const todayDocs = page.getByTestId('doc-card');
+  const todayDocs = page.getByTestId('doc-list-item');
   expect(await todayDocs.count()).toBeGreaterThan(0);
 });

@@ -17,7 +17,7 @@ import {
   dateCellStyle,
   datePickerContainerStyle,
   dateValueContainerStyle,
-} from './cell-renderer.css.js';
+} from './cell-renderer-css.js';
 import { datePropertyModelConfig } from './define.js';
 
 export class DateCell extends BaseCellRenderer<number, number> {

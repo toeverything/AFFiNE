@@ -1,5 +1,5 @@
 import { Skeleton } from '@affine/component';
-import { getViewManager } from '@affine/core/blocksuite/manager/migrating-view';
+import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import type { EditorSettingSchema } from '@affine/core/modules/editor-setting';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine/blocks/surface';
@@ -56,7 +56,13 @@ export const EdgelessSnapshot = (props: Props) => {
   const { editorSetting } = framework.get(EditorSettingService);
 
   const extensions = useMemo(() => {
-    const manager = getViewManager(framework, false);
+    const manager = getViewManager()
+      .config.init()
+      .foundation(framework)
+      .theme(framework)
+      .database(framework)
+      .linkedDoc(framework)
+      .codeBlockHtmlPreview(framework).value;
     return manager
       .get('preview-edgeless')
       .concat([ViewportElementExtension('.ref-viewport')]);

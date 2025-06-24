@@ -69,6 +69,15 @@ spec:
                 key: redis-password
           - name: REDIS_SERVER_DATABASE
             value: "{{ .Values.global.redis.database }}"
+          - name: AFFINE_INDEXER_SEARCH_PROVIDER
+            value: "{{ .Values.global.indexer.provider }}"
+          - name: AFFINE_INDEXER_SEARCH_ENDPOINT
+            value: "{{ .Values.global.indexer.endpoint }}"
+          - name: AFFINE_INDEXER_SEARCH_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: indexer
+                key: indexer-apiKey
           - name: AFFINE_SERVER_PORT
             value: "{{ .Values.global.docService.port }}"
           - name: AFFINE_SERVER_SUB_PATH
@@ -86,11 +95,13 @@ spec:
               path: /info
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.probe.timeoutSeconds }}
           readinessProbe:
             httpGet:
               path: /info
               port: http
             initialDelaySeconds: {{ .Values.probe.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.probe.timeoutSeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

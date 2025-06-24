@@ -1,6 +1,3 @@
-import '../content/images';
-import '../content/pure-text';
-
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { css, html, nothing } from 'lit';
@@ -47,7 +44,11 @@ export class ChatMessageUser extends WithDisposable(ShadowlessElement) {
             .images=${item.attachments}
           ></chat-content-images>`
         : nothing}
-      <div class="text-content-wrapper" data-test-id="chat-content-user-text">
+      <div
+        class="text-content-wrapper"
+        data-test-id="chat-content-user-text"
+        style="max-width: 100%;"
+      >
         <chat-content-pure-text .text=${item.content}></chat-content-pure-text>
       </div>
     `;

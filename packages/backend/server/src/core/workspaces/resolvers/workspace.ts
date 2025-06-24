@@ -1,7 +1,6 @@
 import {
   Args,
   Field,
-  Int,
   Mutation,
   ObjectType,
   Parent,
@@ -9,33 +8,17 @@ import {
   ResolveField,
   Resolver,
 } from '@nestjs/graphql';
-import { WorkspaceMemberStatus } from '@prisma/client';
 import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';
 
 import type { FileUpload } from '../../../base';
 import {
   AFFiNELogger,
-  AlreadyInSpace,
-  Cache,
-  CanNotRevokeYourself,
-  DocNotFound,
-  EventBus,
-  MemberNotFoundInSpace,
-  MemberQuotaExceeded,
-  OwnerCanNotLeaveWorkspace,
-  QueryTooLong,
   registerObjectType,
-  RequestMutex,
   SpaceAccessDenied,
   SpaceNotFound,
-  Throttle,
-  TooManyRequest,
-  UserFriendlyError,
-  UserNotFound,
 } from '../../../base';
 import { Models } from '../../../models';
-import { CurrentUser, Public } from '../../auth';
-import { type Editor } from '../../doc';
+import { CurrentUser } from '../../auth';
 import {
   AccessController,
   WORKSPACE_ACTIONS,
@@ -43,14 +26,8 @@ import {
   WorkspaceRole,
 } from '../../permission';
 import { QuotaService, WorkspaceQuotaType } from '../../quota';
-import { UserType } from '../../user';
-import {
-  InvitationType,
-  InviteUserType,
-  UpdateWorkspaceInput,
-  WorkspaceType,
-} from '../types';
-import { WorkspaceService } from './service';
+import { WorkspaceService } from '../service';
+import { UpdateWorkspaceInput, WorkspaceType } from '../types';
 
 export type DotToUnderline<T extends string> =
   T extends `${infer Prefix}.${infer Suffix}`
@@ -66,30 +43,6 @@ export function mapPermissionsToGraphqlPermissions<A extends string>(
       value,
     ])
   ) as Record<DotToUnderline<A>, boolean>;
-}
-
-@ObjectType()
-export class EditorType implements Partial<Editor> {
-  @Field()
-  name!: string;
-
-  @Field(() => String, { nullable: true })
-  avatarUrl!: string | null;
-}
-
-@ObjectType()
-class WorkspacePageMeta {
-  @Field(() => Date)
-  createdAt!: Date;
-
-  @Field(() => Date)
-  updatedAt!: Date;
-
-  @Field(() => EditorType, { nullable: true })
-  createdBy!: EditorType | null;
-
-  @Field(() => EditorType, { nullable: true })
-  updatedBy!: EditorType | null;
 }
 
 const WorkspacePermissions = registerObjectType<
@@ -126,16 +79,30 @@ export class WorkspaceRolePermissions {
 @Resolver(() => WorkspaceType)
 export class WorkspaceResolver {
   constructor(
-    private readonly cache: Cache,
     private readonly ac: AccessController,
     private readonly quota: QuotaService,
     private readonly models: Models,
-    private readonly event: EventBus,
-    private readonly mutex: RequestMutex,
     private readonly workspaceService: WorkspaceService,
     private readonly logger: AFFiNELogger
   ) {
     logger.setContext(WorkspaceResolver.name);
+  }
+
+  @ResolveField(() => Boolean, {
+    description: 'is current workspace initialized',
+    complexity: 2,
+  })
+  async initialized(@Parent() workspace: WorkspaceType) {
+    return this.models.doc.exists(workspace.id, workspace.id);
+  }
+
+  @ResolveField(() => Boolean, {
+    name: 'team',
+    description: 'if workspace is team workspace',
+    complexity: 2,
+  })
+  team(@Parent() workspace: WorkspaceType) {
+    return this.workspaceService.isTeamWorkspace(workspace.id);
   }
 
   @ResolveField(() => WorkspaceRole, {
@@ -172,100 +139,6 @@ export class WorkspaceResolver {
       .permissions();
 
     return mapPermissionsToGraphqlPermissions(permissions);
-  }
-
-  @ResolveField(() => Int, {
-    description: 'member count of workspace',
-    complexity: 2,
-  })
-  memberCount(@Parent() workspace: WorkspaceType) {
-    return this.models.workspaceUser.count(workspace.id);
-  }
-
-  @ResolveField(() => Boolean, {
-    description: 'is current workspace initialized',
-    complexity: 2,
-  })
-  async initialized(@Parent() workspace: WorkspaceType) {
-    return this.models.doc.exists(workspace.id, workspace.id);
-  }
-
-  @ResolveField(() => UserType, {
-    description: 'Owner of workspace',
-    complexity: 2,
-  })
-  async owner(@Parent() workspace: WorkspaceType) {
-    return this.models.workspaceUser.getOwner(workspace.id);
-  }
-
-  @ResolveField(() => [InviteUserType], {
-    description: 'Members of workspace',
-    complexity: 2,
-  })
-  async members(
-    @CurrentUser() user: CurrentUser,
-    @Parent() workspace: WorkspaceType,
-    @Args('skip', { type: () => Int, nullable: true }) skip?: number,
-    @Args('take', { type: () => Int, nullable: true }) take?: number,
-    @Args('query', { type: () => String, nullable: true }) query?: string
-  ) {
-    await this.ac
-      .user(user.id)
-      .workspace(workspace.id)
-      .assert('Workspace.Users.Read');
-
-    if (query) {
-      if (query.length > 255) {
-        throw new QueryTooLong({ max: 255 });
-      }
-
-      const list = await this.models.workspaceUser.search(workspace.id, query, {
-        offset: skip ?? 0,
-        first: take ?? 8,
-      });
-
-      return list.map(({ id, accepted, status, type, user }) => ({
-        ...user,
-        permission: type,
-        inviteId: id,
-        accepted,
-        status,
-      }));
-    } else {
-      const [list] = await this.models.workspaceUser.paginate(workspace.id, {
-        offset: skip ?? 0,
-        first: take ?? 8,
-      });
-
-      return list.map(({ id, accepted, status, type, user }) => ({
-        ...user,
-        permission: type,
-        inviteId: id,
-        accepted,
-        status,
-      }));
-    }
-  }
-
-  @ResolveField(() => WorkspacePageMeta, {
-    description: 'Cloud page metadata of workspace',
-    complexity: 2,
-  })
-  async pageMeta(
-    @Parent() workspace: WorkspaceType,
-    @Args('pageId') pageId: string
-  ) {
-    const metadata = await this.models.doc.getAuthors(workspace.id, pageId);
-    if (!metadata) {
-      throw new DocNotFound({ spaceId: workspace.id, docId: pageId });
-    }
-
-    return {
-      createdAt: metadata.createdAt,
-      updatedAt: metadata.updatedAt,
-      createdBy: metadata.createdByUser || null,
-      updatedBy: metadata.updatedByUser || null,
-    };
   }
 
   @ResolveField(() => WorkspaceQuotaType, {
@@ -439,276 +312,6 @@ export class WorkspaceResolver {
     await this.ac.user(user.id).workspace(id).assert('Workspace.Delete');
 
     await this.models.workspace.delete(id);
-
-    return true;
-  }
-
-  @Mutation(() => String)
-  async invite(
-    @CurrentUser() me: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args('email') email: string,
-    @Args('sendInviteMail', {
-      nullable: true,
-      deprecationReason: 'never used',
-    })
-    _sendInviteMail: boolean,
-    @Args('permission', {
-      type: () => WorkspaceRole,
-      nullable: true,
-      deprecationReason: 'never used',
-    })
-    _permission?: WorkspaceRole
-  ) {
-    await this.ac
-      .user(me.id)
-      .workspace(workspaceId)
-      .assert('Workspace.Users.Manage');
-
-    try {
-      // lock to prevent concurrent invite and grant
-      const lockFlag = `invite:${workspaceId}`;
-      await using lock = await this.mutex.acquire(lockFlag);
-      if (!lock) {
-        throw new TooManyRequest();
-      }
-
-      // member limit check
-      await this.quota.checkSeat(workspaceId);
-
-      let user = await this.models.user.getUserByEmail(email);
-      if (user) {
-        const role = await this.models.workspaceUser.get(workspaceId, user.id);
-        // only invite if the user is not already in the workspace
-        if (role) return role.id;
-      } else {
-        user = await this.models.user.create({
-          email,
-          registered: false,
-        });
-      }
-
-      const role = await this.models.workspaceUser.set(
-        workspaceId,
-        user.id,
-        WorkspaceRole.Collaborator
-      );
-
-      await this.workspaceService.sendInvitationNotification(me.id, role.id);
-      return role.id;
-    } catch (e) {
-      // pass through user friendly error
-      if (e instanceof UserFriendlyError) {
-        throw e;
-      }
-      this.logger.error('failed to invite user', e);
-      throw new TooManyRequest();
-    }
-  }
-
-  @Throttle('strict')
-  @Public()
-  @Query(() => InvitationType, {
-    description: 'send workspace invitation',
-  })
-  async getInviteInfo(
-    @CurrentUser() user: UserType | undefined,
-    @Args('inviteId') inviteId: string
-  ): Promise<InvitationType> {
-    const { workspaceId, inviteeUserId, isLink } =
-      await this.workspaceService.getInviteInfo(inviteId);
-    const workspace = await this.workspaceService.getWorkspaceInfo(workspaceId);
-    const owner = await this.models.workspaceUser.getOwner(workspaceId);
-
-    const inviteeId = inviteeUserId || user?.id;
-    if (!inviteeId) throw new UserNotFound();
-    const invitee = await this.models.user.getWorkspaceUser(inviteeId);
-    if (!invitee) throw new UserNotFound();
-
-    let status: WorkspaceMemberStatus | undefined;
-    if (isLink) {
-      const invitation = await this.models.workspaceUser.get(
-        workspaceId,
-        inviteeId
-      );
-      status = invitation?.status;
-    } else {
-      const invitation = await this.models.workspaceUser.getById(inviteId);
-      status = invitation?.status;
-    }
-
-    return { workspace, user: owner, invitee, status };
-  }
-
-  @Mutation(() => Boolean)
-  async revoke(
-    @CurrentUser() me: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args('userId') userId: string
-  ) {
-    if (userId === me.id) {
-      throw new CanNotRevokeYourself();
-    }
-
-    const role = await this.models.workspaceUser.get(workspaceId, userId);
-
-    if (!role) {
-      throw new MemberNotFoundInSpace({ spaceId: workspaceId });
-    }
-
-    await this.ac
-      .user(me.id)
-      .workspace(workspaceId)
-      .assert(
-        role.type === WorkspaceRole.Admin
-          ? 'Workspace.Administrators.Manage'
-          : 'Workspace.Users.Manage'
-      );
-
-    await this.models.workspaceUser.delete(workspaceId, userId);
-
-    const count = await this.models.workspaceUser.count(workspaceId);
-
-    this.event.emit('workspace.members.updated', {
-      workspaceId,
-      count,
-    });
-
-    if (role.status === WorkspaceMemberStatus.UnderReview) {
-      await this.workspaceService.sendReviewDeclinedNotification(
-        userId,
-        workspaceId,
-        me.id
-      );
-    } else if (role.status === WorkspaceMemberStatus.Accepted) {
-      this.event.emit('workspace.members.removed', {
-        userId,
-        workspaceId,
-      });
-    }
-
-    return true;
-  }
-
-  @Mutation(() => Boolean)
-  @Public()
-  async acceptInviteById(
-    @CurrentUser() user: CurrentUser | undefined,
-    @Args('workspaceId') workspaceId: string,
-    @Args('inviteId') inviteId: string,
-    @Args('sendAcceptMail', {
-      nullable: true,
-      deprecationReason: 'never used',
-    })
-    _sendAcceptMail: boolean
-  ) {
-    const lockFlag = `invite:${workspaceId}`;
-    await using lock = await this.mutex.acquire(lockFlag);
-    if (!lock) {
-      throw new TooManyRequest();
-    }
-
-    if (user) {
-      const role = await this.models.workspaceUser.getActive(
-        workspaceId,
-        user.id
-      );
-
-      if (role) {
-        throw new AlreadyInSpace({ spaceId: workspaceId });
-      }
-
-      // invite link
-      const invite = await this.cache.get<{ inviteId: string }>(
-        `workspace:inviteLink:${workspaceId}`
-      );
-      if (invite?.inviteId === inviteId) {
-        await this.acceptInviteByLink(user, workspaceId);
-        return true;
-      }
-    }
-
-    await this.acceptInviteByInviteId(inviteId);
-    return true;
-  }
-
-  private async acceptInviteByInviteId(inviteId: string) {
-    await this.models.workspaceUser.accept(inviteId);
-    await this.workspaceService.sendInvitationAcceptedNotification(inviteId);
-  }
-
-  private async acceptInviteByLink(user: CurrentUser, workspaceId: string) {
-    const seatAvailable = await this.quota.tryCheckSeat(workspaceId);
-    if (seatAvailable) {
-      const role = await this.models.workspaceUser.set(
-        workspaceId,
-        user.id,
-        WorkspaceRole.Collaborator,
-        WorkspaceMemberStatus.UnderReview
-      );
-      // if status is pending, should accept the invite directly
-      if (role.status === WorkspaceMemberStatus.Pending) {
-        await this.acceptInviteByInviteId(role.id);
-        return;
-      }
-      await this.workspaceService.sendReviewRequestNotification(role.id);
-      return;
-    }
-
-    const isTeam = await this.workspaceService.isTeamWorkspace(workspaceId);
-    // only team workspace allow over limit
-    if (isTeam) {
-      const role = await this.models.workspaceUser.set(
-        workspaceId,
-        user.id,
-        WorkspaceRole.Collaborator,
-        WorkspaceMemberStatus.NeedMoreSeatAndReview
-      );
-      // if status is pending, should accept the invite directly
-      if (role.status === WorkspaceMemberStatus.Pending) {
-        await this.acceptInviteByInviteId(role.id);
-        return;
-      }
-      await this.workspaceService.sendReviewRequestNotification(role.id);
-      const memberCount = await this.models.workspaceUser.count(workspaceId);
-      this.event.emit('workspace.members.updated', {
-        workspaceId,
-        count: memberCount,
-      });
-      return;
-    }
-
-    throw new MemberQuotaExceeded();
-  }
-
-  @Mutation(() => Boolean)
-  async leaveWorkspace(
-    @CurrentUser() user: CurrentUser,
-    @Args('workspaceId') workspaceId: string,
-    @Args('sendLeaveMail', { nullable: true }) sendLeaveMail?: boolean,
-    @Args('workspaceName', {
-      nullable: true,
-      deprecationReason: 'no longer used',
-    })
-    _workspaceName?: string
-  ) {
-    const role = await this.models.workspaceUser.getActive(
-      workspaceId,
-      user.id
-    );
-    if (!role) {
-      throw new SpaceAccessDenied({ spaceId: workspaceId });
-    }
-
-    if (role.type === WorkspaceRole.Owner) {
-      throw new OwnerCanNotLeaveWorkspace();
-    }
-
-    await this.models.workspaceUser.delete(workspaceId, user.id);
-
-    if (sendLeaveMail) {
-      await this.workspaceService.sendLeaveEmail(workspaceId, user.id);
-    }
 
     return true;
   }

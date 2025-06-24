@@ -229,10 +229,11 @@ export function createTestHost(doc: Store): EditorHost {
   };
 
   const host = {
-    doc: doc,
+    store: doc,
     std: std as any,
+    selection: undefined as any,
   };
-  host.doc = doc;
+  host.store = doc;
   host.std = std as any;
 
   std.host = host;
@@ -241,6 +242,7 @@ export function createTestHost(doc: Store): EditorHost {
   std.command = new CommandManager(std as any);
   // @ts-expect-error
   host.command = std.command;
+  host.selection = std.selection;
 
   return host as EditorHost;
 }

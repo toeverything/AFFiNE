@@ -2,7 +2,7 @@
   "name": "@affine-test/kit",
   "private": true,
   "type": "module",
-  "version": "0.21.0",
+  "version": "0.22.4",
   "exports": {
     "./electron": "./src/electron.ts",
     "./mobile": "./src/mobile.ts",
@@ -14,7 +14,7 @@
     "@affine-tools/utils": "workspace:*",
     "@blocksuite/affine": "workspace:*",
     "@node-rs/argon2": "^2.0.2",
-    "@playwright/test": "=1.51.1",
+    "@playwright/test": "=1.52.0",
     "@toeverything/infra": "workspace:*",
     "express": "^5.0.0",
     "http-proxy-middleware": "^3.0.3"

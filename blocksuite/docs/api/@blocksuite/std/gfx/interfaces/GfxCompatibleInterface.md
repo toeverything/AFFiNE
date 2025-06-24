@@ -26,6 +26,15 @@ The bound of the element without considering the response extension.
 
 ***
 
+### forceFullRender?
+
+> `optional` **forceFullRender**: `boolean`
+
+Whether to disable fallback rendering for this element, e.g., during zooming.
+Defaults to false (fallback to placeholder rendering is enabled).
+
+***
+
 ### lockedBySelf?
 
 > `optional` **lockedBySelf**: `boolean`

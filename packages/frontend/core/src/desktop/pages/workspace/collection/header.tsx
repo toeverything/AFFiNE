@@ -1,37 +1,36 @@
-import { IconButton } from '@affine/component';
-import { PageDisplayMenu } from '@affine/core/components/page-list';
+import { FlexWrapper } from '@affine/component';
+import { ExplorerDisplayMenuButton } from '@affine/core/components/explorer/display-menu';
+import { ViewToggle } from '@affine/core/components/explorer/display-menu/view-toggle';
+import { ExplorerNavigation } from '@affine/core/components/explorer/header/navigation';
+import type { ExplorerDisplayPreference } from '@affine/core/components/explorer/types';
 import { Header } from '@affine/core/components/pure/header';
-import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
-import { PlusIcon } from '@blocksuite/icons/rc';
-import clsx from 'clsx';
-
-import * as styles from './collection.css';
 
 export const CollectionDetailHeader = ({
-  showCreateNew,
-  onCreate,
+  displayPreference,
+  onDisplayPreferenceChange,
 }: {
-  showCreateNew: boolean;
-  onCreate: () => void;
+  displayPreference: ExplorerDisplayPreference;
+  onDisplayPreferenceChange: (
+    displayPreference: ExplorerDisplayPreference
+  ) => void;
 }) => {
   return (
     <Header
       right={
-        <>
-          <IconButton
-            size="16"
-            icon={<PlusIcon />}
-            onClick={onCreate}
-            className={clsx(
-              styles.headerCreateNewButton,
-              styles.headerCreateNewCollectionIconButton,
-              !showCreateNew && styles.headerCreateNewButtonHidden
-            )}
+        <FlexWrapper gap={16}>
+          <ViewToggle
+            view={displayPreference.view ?? 'list'}
+            onViewChange={view => {
+              onDisplayPreferenceChange({ ...displayPreference, view });
+            }}
           />
-          <PageDisplayMenu />
-        </>
+          <ExplorerDisplayMenuButton
+            displayPreference={displayPreference}
+            onDisplayPreferenceChange={onDisplayPreferenceChange}
+          />
+        </FlexWrapper>
       }
-      center={<WorkspaceModeFilterTab activeFilter={'collections'} />}
+      left={<ExplorerNavigation active="collections" />}
     />
   );
 };

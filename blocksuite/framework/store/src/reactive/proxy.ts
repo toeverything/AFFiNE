@@ -92,6 +92,69 @@ export class ReactiveYArray extends BaseReactiveYData<
         return Reflect.set(target, p, data, receiver);
       },
       get: (target, p, receiver) => {
+        if (p === 'splice') {
+          return (start: number, deleteCount?: number, ...items: unknown[]) => {
+            const doc = this._ySource.doc;
+            if (!doc) {
+              throw new BlockSuiteError(
+                ErrorCode.ReactiveProxyError,
+                'YData is not bound to a Y.Doc'
+              );
+            }
+            const count = deleteCount ?? target.length - start;
+            const yItems = items.map(item => native2Y(item));
+            this._transact(doc, () => {
+              this._ySource.delete(start, count);
+              this._ySource.insert(start, yItems);
+            });
+
+            const result = Array.prototype.splice.apply(target, [
+              start,
+              count,
+              ...yItems.map(yItem => createYProxy(yItem, this._options)),
+            ]);
+
+            return result;
+          };
+        }
+        if (p === 'shift') {
+          return () => {
+            const doc = this._ySource.doc;
+            if (!doc) {
+              throw new BlockSuiteError(
+                ErrorCode.ReactiveProxyError,
+                'YData is not bound to a Y.Doc'
+              );
+            }
+            if (target.length === 0) {
+              return undefined;
+            }
+            const result = Array.prototype.shift.call(target);
+            this._transact(doc, () => {
+              this._ySource.delete(0, 1);
+            });
+            return result;
+          };
+        }
+        if (p === 'unshift') {
+          return (...items: unknown[]) => {
+            const doc = this._ySource.doc;
+            if (!doc) {
+              throw new BlockSuiteError(
+                ErrorCode.ReactiveProxyError,
+                'YData is not bound to a Y.Doc'
+              );
+            }
+            const yItems = items.map(item => native2Y(item));
+            this._transact(doc, () => {
+              this._ySource.insert(0, yItems);
+            });
+            return Array.prototype.unshift.apply(
+              target,
+              yItems.map(yItem => createYProxy(yItem, this._options))
+            );
+          };
+        }
         return Reflect.get(target, p, receiver);
       },
       deleteProperty: (target, p): boolean => {

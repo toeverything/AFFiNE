@@ -120,7 +120,7 @@ test.describe('rotation', () => {
       { x: 100, y: 100 },
       { x: 200, y: 200 }
     );
-    await rotateElementByHandle(page, 90, 'bottom-left');
+    await rotateElementByHandle(page, 90, 'bottom-left', 10);
     await assertEdgelessSelectedRectRotation(page, 90);
 
     await resizeElementByHandle(page, { x: 10, y: -10 }, 'bottom-right');

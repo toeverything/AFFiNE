@@ -9,15 +9,15 @@ import type { BlockModel, Store } from '@blocksuite/store';
 
 import { headingKeys } from '../config.js';
 
-export function getNotesFromDoc(
-  doc: Store,
+export function getNotesFromStore(
+  store: Store,
   modes: NoteDisplayMode[] = [
     NoteDisplayMode.DocAndEdgeless,
     NoteDisplayMode.DocOnly,
     NoteDisplayMode.EdgelessOnly,
   ]
 ) {
-  const rootModel = doc.root;
+  const rootModel = store.root;
   if (!rootModel) return [];
 
   const notes: NoteBlockModel[] = [];
@@ -59,7 +59,7 @@ export function getHeadingBlocksFromNote(
 }
 
 export function getHeadingBlocksFromDoc(
-  doc: Store,
+  store: Store,
   modes: NoteDisplayMode[] = [
     NoteDisplayMode.DocAndEdgeless,
     NoteDisplayMode.DocOnly,
@@ -67,6 +67,6 @@ export function getHeadingBlocksFromDoc(
   ],
   ignoreEmpty = false
 ) {
-  const notes = getNotesFromDoc(doc, modes);
+  const notes = getNotesFromStore(store, modes);
   return notes.map(note => getHeadingBlocksFromNote(note, ignoreEmpty)).flat();
 }

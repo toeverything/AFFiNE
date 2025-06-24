@@ -7,7 +7,7 @@ import type { UserType } from './schema';
 import { useUserList } from './use-user-list';
 
 export function AccountPage() {
-  const { users, pagination, setPagination } = useUserList();
+  const { users, pagination, setPagination, usersCount } = useUserList();
   // Remember the user temporarily, because userList is paginated on the server side,can't get all users at once.
   const [memoUsers, setMemoUsers] = useState<UserType[]>([]);
 
@@ -32,8 +32,10 @@ export function AccountPage() {
         data={users}
         columns={columns}
         pagination={pagination}
+        usersCount={usersCount}
         onPaginationChange={setPagination}
         selectedUsers={selectedUsers}
+        setMemoUsers={setMemoUsers}
       />
     </div>
   );

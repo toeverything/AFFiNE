@@ -31,6 +31,10 @@
       "type": "Object",
       "desc": "The config for doc job queue"
     },
+    "queues.indexer": {
+      "type": "Object",
+      "desc": "The config for indexer job queue"
+    },
     "queues.notification": {
       "type": "Object",
       "desc": "The config for notification job queue"
@@ -52,17 +56,6 @@
     "throttlers.strict": {
       "type": "Object",
       "desc": "The config for the strict throttler."
-    }
-  },
-  "websocket": {
-    "transports": {
-      "type": "Array",
-      "desc": "The enabled transports for accepting websocket traffics.",
-      "link": "https://docs.nestjs.com/websockets/gateways#transports"
-    },
-    "maxHttpBufferSize": {
-      "type": "Number",
-      "desc": "How many bytes or characters a message can be, before closing the session (to avoid DoS)."
     }
   },
   "auth": {
@@ -147,6 +140,17 @@
       "desc": "The config of storage for all uploaded blobs(images, videos, etc.)."
     }
   },
+  "websocket": {
+    "transports": {
+      "type": "Array",
+      "desc": "The enabled transports for accepting websocket traffics.",
+      "link": "https://docs.nestjs.com/websockets/gateways#transports"
+    },
+    "maxHttpBufferSize": {
+      "type": "Number",
+      "desc": "How many bytes or characters a message can be, before closing the session (to avoid DoS)."
+    }
+  },
   "server": {
     "name": {
       "type": "String",
@@ -229,6 +233,10 @@
       "type": "Object",
       "desc": "The config for the gemini provider."
     },
+    "providers.geminiVertex": {
+      "type": "Object",
+      "desc": "The config for the gemini provider in Google Vertex AI."
+    },
     "providers.perplexity": {
       "type": "Object",
       "desc": "The config for the perplexity provider."
@@ -236,6 +244,10 @@
     "providers.anthropic": {
       "type": "Object",
       "desc": "The config for the anthropic provider."
+    },
+    "providers.anthropicVertex": {
+      "type": "Object",
+      "desc": "The config for the anthropic provider in Google Vertex AI."
     },
     "unsplash": {
       "type": "Object",
@@ -248,6 +260,44 @@
     "storage": {
       "type": "Object",
       "desc": "The config for the storage provider."
+    }
+  },
+  "indexer": {
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Enable indexer plugin",
+      "env": "AFFINE_INDEXER_ENABLED"
+    },
+    "provider.type": {
+      "type": "String",
+      "desc": "Indexer search service provider name",
+      "env": "AFFINE_INDEXER_SEARCH_PROVIDER"
+    },
+    "provider.endpoint": {
+      "type": "String",
+      "desc": "Indexer search service endpoint",
+      "env": "AFFINE_INDEXER_SEARCH_ENDPOINT"
+    },
+    "provider.apiKey": {
+      "type": "String",
+      "desc": "Indexer search service api key. Optional for elasticsearch",
+      "link": "https://www.elastic.co/guide/server/current/api-key.html",
+      "env": "AFFINE_INDEXER_SEARCH_API_KEY"
+    },
+    "provider.username": {
+      "type": "String",
+      "desc": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for elasticsearch",
+      "link": "https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
+      "env": "AFFINE_INDEXER_SEARCH_USERNAME"
+    },
+    "provider.password": {
+      "type": "String",
+      "desc": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for elasticsearch",
+      "env": "AFFINE_INDEXER_SEARCH_PASSWORD"
+    },
+    "autoIndex.batchSize": {
+      "type": "Number",
+      "desc": "Number of workspaces automatically indexed per batch"
     }
   },
   "customerIo": {
@@ -273,7 +323,13 @@
     },
     "providers.oidc": {
       "type": "Object",
-      "desc": "OIDC OAuth provider config"
+      "desc": "OIDC OAuth provider config",
+      "link": "https://openid.net/specs/openid-connect-core-1_0.html"
+    },
+    "providers.apple": {
+      "type": "Object",
+      "desc": "Apple OAuth provider config",
+      "link": "https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_js/implementing_sign_in_with_apple_in_your_app"
     }
   },
   "payment": {

@@ -286,7 +286,7 @@ export class WorkerController {
       // fix favicon
       {
         // head default path of favicon
-        const faviconUrl = new URL('/favicon.ico', response.url);
+        const faviconUrl = new URL('/favicon.ico?v=2', response.url);
         const faviconResponse = await fetch(faviconUrl, { method: 'HEAD' });
         if (faviconResponse.ok) {
           appendUrl(faviconUrl.toString(), res.favicons);

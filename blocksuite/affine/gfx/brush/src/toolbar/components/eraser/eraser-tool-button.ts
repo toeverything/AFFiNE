@@ -1,8 +1,9 @@
+import { DefaultTool } from '@blocksuite/affine-block-surface';
 import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
-import type { GfxToolsFullOptionValue } from '@blocksuite/std/gfx';
 import { css, html, LitElement } from 'lit';
 
+import { EraserTool } from '../../../eraser-tool';
 import { EdgelessEraserDarkIcon, EdgelessEraserLightIcon } from './icons.js';
 
 export class EdgelessEraserToolButton extends EdgelessToolbarToolMixin(
@@ -33,16 +34,15 @@ export class EdgelessEraserToolButton extends EdgelessToolbarToolMixin(
 
   override enableActiveBackground = true;
 
-  override type: GfxToolsFullOptionValue['type'] = 'eraser';
+  override type = EraserTool;
 
   override firstUpdated() {
     this.disposables.add(
       this.edgeless.bindHotKey(
         {
           Escape: () => {
-            if (this.edgelessTool.type === 'eraser') {
-              // @ts-expect-error FIXME: resolve after gfx tool refactor
-              this.setEdgelessTool({ type: 'default' });
+            if (this.edgelessTool.toolType === EraserTool) {
+              this.setEdgelessTool(DefaultTool);
             }
           },
         },
@@ -52,7 +52,7 @@ export class EdgelessEraserToolButton extends EdgelessToolbarToolMixin(
   }
 
   override render() {
-    const type = this.edgelessTool?.type;
+    const type = this.edgelessTool?.toolType;
     const appTheme = this.edgeless.std.get(ThemeProvider).app$.value;
     const icon =
       appTheme === 'dark' ? EdgelessEraserDarkIcon : EdgelessEraserLightIcon;
@@ -65,8 +65,8 @@ export class EdgelessEraserToolButton extends EdgelessToolbarToolMixin(
           data-shortcut="${'E'}"
         ></affine-tooltip-content-with-shortcut>`}
         .tooltipOffset=${4}
-        .active=${type === 'eraser'}
-        @click=${() => this.setEdgelessTool({ type: 'eraser' })}
+        .active=${type === EraserTool}
+        @click=${() => this.setEdgelessTool(EraserTool)}
       >
         <div class="eraser-button">${icon}</div>
       </edgeless-toolbar-button>

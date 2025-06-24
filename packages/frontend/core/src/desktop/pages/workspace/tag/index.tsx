@@ -1,8 +1,10 @@
-import { useBlockSuiteDocMeta } from '@affine/core/components/hooks/use-block-suite-page-meta';
 import {
-  TagPageListHeader,
-  VirtualizedPageList,
-} from '@affine/core/components/page-list';
+  createDocExplorerContext,
+  DocExplorerContext,
+} from '@affine/core/components/explorer/context';
+import { DocsExplorer } from '@affine/core/components/explorer/docs-view/docs-list';
+import type { ExplorerDisplayPreference } from '@affine/core/components/explorer/types';
+import { CollectionRulesService } from '@affine/core/modules/collection-rules';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { WorkspacePermissionService } from '@affine/core/modules/permissions';
 import { TagService } from '@affine/core/modules/tag';
@@ -13,9 +15,8 @@ import {
   ViewIcon,
   ViewTitle,
 } from '@affine/core/modules/workbench';
-import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useLiveData, useService } from '@toeverything/infra';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { PageNotFound } from '../../404';
@@ -23,11 +24,12 @@ import { AllDocSidebarTabs } from '../layouts/all-doc-sidebar-tabs';
 import { EmptyPageList } from '../page-list-empty';
 import { TagDetailHeader } from './header';
 import * as styles from './index.css';
+import { TagListHeader } from './list-header';
 
 export const TagDetail = ({ tagId }: { tagId?: string }) => {
+  const [explorerContextValue] = useState(createDocExplorerContext);
+  const collectionRulesService = useService(CollectionRulesService);
   const globalContext = useService(GlobalContextService).globalContext;
-  const currentWorkspace = useService(WorkspaceService).workspace;
-  const pageMetas = useBlockSuiteDocMeta(currentWorkspace.docCollection);
   const permissionService = useService(WorkspacePermissionService);
   const isAdmin = useLiveData(permissionService.permission.isAdmin$);
   const isOwner = useLiveData(permissionService.permission.isOwner$);
@@ -35,14 +37,16 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
   const tagList = useService(TagService).tagList;
   const currentTag = useLiveData(tagList.tagByTagId$(tagId));
 
-  const pageIds = useLiveData(currentTag?.pageIds$);
+  const displayPreference = useLiveData(
+    explorerContextValue.displayPreference$
+  );
+  const groupBy = useLiveData(explorerContextValue.groupBy$);
+  const orderBy = useLiveData(explorerContextValue.orderBy$);
+  const groups = useLiveData(explorerContextValue.groups$);
 
-  const filteredPageMetas = useMemo(() => {
-    const pageIdsSet = new Set(pageIds);
-    return pageMetas
-      .filter(page => pageIdsSet.has(page.id))
-      .filter(page => !page.trash);
-  }, [pageIds, pageMetas]);
+  const isEmpty =
+    groups.length === 0 ||
+    (groups.length && groups.every(group => group.items.length === 0));
 
   const isActiveView = useIsActiveView();
   const tagName = useLiveData(currentTag?.value$);
@@ -60,40 +64,86 @@ export const TagDetail = ({ tagId }: { tagId?: string }) => {
     return;
   }, [currentTag, globalContext, isActiveView]);
 
-  if (!currentTag) {
+  useEffect(() => {
+    const subscription = collectionRulesService
+      .watch({
+        filters: [
+          {
+            type: 'system',
+            key: 'empty-journal',
+            method: 'is',
+            value: 'false',
+          },
+          {
+            type: 'system',
+            key: 'trash',
+            method: 'is',
+            value: 'false',
+          },
+          {
+            type: 'property',
+            key: 'tags',
+            method: 'include-all',
+            value: tagId,
+          },
+        ],
+        groupBy,
+        orderBy,
+      })
+      .subscribe({
+        next: result => {
+          explorerContextValue.groups$.next(result.groups);
+        },
+        error: error => {
+          console.error(error);
+        },
+      });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [
+    collectionRulesService,
+    explorerContextValue.groups$,
+    groupBy,
+    orderBy,
+    tagId,
+  ]);
+
+  if (!currentTag || !tagId) {
     return <PageNotFound />;
   }
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const handleDisplayPreferenceChange = useCallback(
+    (displayPreference: ExplorerDisplayPreference) => {
+      explorerContextValue.displayPreference$.next(displayPreference);
+    },
+    [explorerContextValue]
+  );
+
   return (
-    <>
+    <DocExplorerContext.Provider value={explorerContextValue}>
       <ViewTitle title={tagName ?? 'Untitled'} />
       <ViewIcon icon="tag" />
       <ViewHeader>
-        <TagDetailHeader />
+        <TagDetailHeader
+          displayPreference={displayPreference}
+          onDisplayPreferenceChange={handleDisplayPreferenceChange}
+        />
       </ViewHeader>
       <ViewBody>
         <div className={styles.body}>
-          {filteredPageMetas.length > 0 ? (
-            <VirtualizedPageList
-              tag={currentTag}
-              listItem={filteredPageMetas}
-              disableMultiDelete={!isAdmin && !isOwner}
-            />
-          ) : (
-            <EmptyPageList
-              type="all"
-              tagId={tagId}
-              heading={
-                <TagPageListHeader
-                  tag={currentTag}
-                  workspaceId={currentWorkspace.id}
-                />
-              }
-            />
-          )}
+          <TagListHeader tag={currentTag} />
+          <div className={styles.scrollArea}>
+            {isEmpty ? (
+              <EmptyPageList type="all" tagId={tagId} />
+            ) : (
+              <DocsExplorer disableMultiDelete={!isAdmin && !isOwner} />
+            )}
+          </div>
         </div>
       </ViewBody>
-    </>
+    </DocExplorerContext.Provider>
   );
 };
 

@@ -18,7 +18,7 @@ import {
   table,
   tableContainer,
   tableWrapper,
-} from './table-block.css';
+} from './table-block-css';
 import { TableDataManager } from './table-data-manager';
 
 export const TableBlockComponentName = 'affine-table';

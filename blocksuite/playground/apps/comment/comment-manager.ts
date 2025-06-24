@@ -30,7 +30,7 @@ export class CommentManager {
   }
 
   get commentsMap() {
-    return this.host.doc.spaceDoc.getMap<Y.Map<unknown>>('comments');
+    return this.host.store.spaceDoc.getMap<Y.Map<unknown>>('comments');
   }
 
   constructor(readonly host: EditorHost) {}
@@ -45,7 +45,7 @@ export class CommentManager {
     }
 
     const { quote, range } = parseResult;
-    const id = this.host.doc.workspace.idGenerator();
+    const id = this.host.store.workspace.idGenerator();
     const comment: Comment = {
       id,
       date: Date.now(),
@@ -66,12 +66,12 @@ export class CommentManager {
 
       const startIndex = Y.createAbsolutePositionFromRelativePosition(
         start.index,
-        this.host.doc.spaceDoc
+        this.host.store.spaceDoc
       );
       const startBlock = this.host.view.getBlock(start.id);
       const endIndex = Y.createAbsolutePositionFromRelativePosition(
         end.index,
-        this.host.doc.spaceDoc
+        this.host.store.spaceDoc
       );
       const endBlock = this.host.view.getBlock(end.id);
 

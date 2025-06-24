@@ -116,7 +116,19 @@ export class GfxBlockElementModel<
    */
   responseExtension: [number, number] = [0, 0];
 
-  rotate = 0;
+  get rotate() {
+    if ('rotate' in this.props) {
+      return this.props.rotate as number;
+    }
+
+    return 0;
+  }
+
+  set rotate(rotate: number) {
+    if ('rotate' in this.props) {
+      this.props.rotate = rotate;
+    }
+  }
 
   get deserializedXYWH() {
     if (this._cacheDeserKey !== this.xywh || !this._cacheDeserXYWH) {
@@ -164,7 +176,7 @@ export class GfxBlockElementModel<
   }
 
   get surface(): SurfaceBlockModel | null {
-    const result = this.doc.getBlocksByFlavour('affine:surface');
+    const result = this.store.getBlocksByFlavour('affine:surface');
     if (result.length === 0) return null;
     return result[0].model as SurfaceBlockModel;
   }
@@ -257,11 +269,11 @@ export class GfxBlockElementModel<
   }
 
   lock() {
-    lockElementImpl(this.doc, this);
+    lockElementImpl(this.store, this);
   }
 
   unlock() {
-    unlockElementImpl(this.doc, this);
+    unlockElementImpl(this.store, this);
   }
 }
 

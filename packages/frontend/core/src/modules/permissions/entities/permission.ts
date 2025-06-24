@@ -1,3 +1,4 @@
+import { Permission } from '@affine/graphql';
 import {
   backoffRetry,
   effect,
@@ -20,6 +21,9 @@ export class WorkspacePermission extends Entity {
   );
   isOwner$ = this.cache$.map(cache => cache?.isOwner ?? null);
   isAdmin$ = this.cache$.map(cache => cache?.isAdmin ?? null);
+  isOwnerOrAdmin$ = this.cache$.map(
+    cache => (cache?.isOwner ?? null) || (cache?.isAdmin ?? null)
+  );
   isTeam$ = this.cache$.map(cache => cache?.isTeam ?? null);
   isRevalidating$ = new LiveData(false);
 
@@ -40,8 +44,8 @@ export class WorkspacePermission extends Entity {
           );
 
           return {
-            isOwner: info.isOwner,
-            isAdmin: info.isAdmin,
+            isOwner: info.workspace.role === Permission.Owner,
+            isAdmin: info.workspace.role === Permission.Admin,
             isTeam: info.workspace.team,
           };
         } else {

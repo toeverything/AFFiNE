@@ -2,7 +2,7 @@ import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 
 import type { GroupBy, GroupProperty } from '../../core/common/types.js';
 import type { FilterGroup } from '../../core/filter/types.js';
-import { defaultGroupBy, groupByMatcher, t } from '../../core/index.js';
+import { defaultGroupBy, getGroupByService, t } from '../../core/index.js';
 import type { Sort } from '../../core/sort/types.js';
 import { type BasicViewDataType, viewType } from '../../core/view/data-view.js';
 import { KanbanSingleView } from './kanban-view-manager.js';
@@ -34,10 +34,11 @@ export const kanbanViewModel = kanbanViewType.createModel<KanbanViewData>({
   defaultName: 'Kanban View',
   dataViewManager: KanbanSingleView,
   defaultData: viewManager => {
+    const groupByService = getGroupByService(viewManager.dataSource);
     const columns = viewManager.dataSource.properties$.value;
     const allowList = columns.filter(columnId => {
       const dataType = viewManager.dataSource.propertyDataTypeGet(columnId);
-      return dataType && !!groupByMatcher.match(dataType);
+      return dataType && !!groupByService?.matcher.match(dataType);
     });
     const getWeight = (columnId: string) => {
       const dataType = viewManager.dataSource.propertyDataTypeGet(columnId);
@@ -71,7 +72,6 @@ export const kanbanViewModel = kanbanViewType.createModel<KanbanViewData>({
     return {
       columns: columns.map(id => ({
         id: id,
-        hide: false,
       })),
       filter: {
         type: 'group',

@@ -23,12 +23,17 @@ type FootnoteDefinition = {
   content: FootNoteReferenceParams;
 };
 
-// Check if a URL is already encoded with encodeURIComponent
-function isEncoded(uri: string): boolean {
+/**
+ * Check if a URL is already encoded with encodeURIComponent to avoid markdown link parsing
+ * @example
+ * https://example.com/path%20with%20spaces should return false
+ * https://example.com/ should return false
+ * https%3A%2F%2Fexample.com%2F should return true
+ */
+function isFullyEncoded(uri: string): boolean {
   try {
-    // If decoding produces a different result than the original,
-    // then the URI contains encoded characters
-    return uri !== decodeURIComponent(uri);
+    // Should check if the components of the URI are fully encoded
+    return uri === encodeURIComponent(decodeURIComponent(uri));
   } catch {
     // If decoding fails, the URI contains invalid percent-encoding
     return true;
@@ -194,10 +199,10 @@ class FootnoteParser {
   // Process URLs in footnote content
   private processUrls(footnote: FootnoteDefinition): FootnoteDefinition {
     const content = footnote.content;
-    if (content.url && !isEncoded(content.url)) {
+    if (content.url && !isFullyEncoded(content.url)) {
       content.url = encodeURIComponent(content.url);
     }
-    if (content.favicon && !isEncoded(content.favicon)) {
+    if (content.favicon && !isFullyEncoded(content.favicon)) {
       content.favicon = encodeURIComponent(content.favicon);
     }
     return footnote;

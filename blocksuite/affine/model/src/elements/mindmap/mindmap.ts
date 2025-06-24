@@ -118,7 +118,7 @@ function watchLayoutType(
     return;
   }
 
-  instance.surface.doc.transact(() => {
+  instance.surface.store.transact(() => {
     instance['_tree']?.children.forEach(child => {
       if (!instance.children.has(child.id)) {
         return;
@@ -285,7 +285,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
 
     const type = (props.type as string) ?? 'shape';
     let id: string;
-    this.surface.doc.transact(() => {
+    this.surface.store.transact(() => {
       const parentNode = parent ? this._nodeMap.get(parent)! : null;
 
       if (parentNode) {
@@ -433,7 +433,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
     const loops = findInfiniteLoop(rootNode, mindmapNodeMap);
 
     if (loops.length) {
-      this.surface.doc.withoutTransact(() => {
+      this.surface.store.withoutTransact(() => {
         loops.forEach(loop => {
           if (loop.detached) {
             loop.chain.forEach(node => {
@@ -745,7 +745,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
     const offsetX = targetPos[0] - x;
     const offsetY = targetPos[1] - y;
 
-    this.surface.doc.transact(() => {
+    this.surface.store.transact(() => {
       this.childElements.forEach(el => {
         const deserializedXYWH = deserializeXYWH(el.xywh);
 
@@ -775,7 +775,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
       removedDescendants.push(node.id);
     };
 
-    surface.doc.transact(() => {
+    surface.store.transact(() => {
       remove(this._nodeMap.get(element.id)!);
     });
 
@@ -877,7 +877,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
       };
 
       node.children.forEach(changeNodesVisibility);
-      this.surface.doc.transact(() => {
+      this.surface.store.transact(() => {
         this.children.set(node.id, {
           ...node.detail,
           collapsed,
@@ -921,7 +921,7 @@ export class MindmapElementModel extends GfxGroupLikeElementModel<MindmapElement
 
       const map: Y.Map<NodeDetail> = new Y.Map();
       const surface = instance.surface;
-      const doc = surface.doc;
+      const doc = surface.store;
       const recursive = (
         node: NodeType,
         parent: string | null = null,

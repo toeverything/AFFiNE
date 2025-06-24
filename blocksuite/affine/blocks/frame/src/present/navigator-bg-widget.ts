@@ -9,6 +9,8 @@ import { css, html, nothing } from 'lit';
 import { state } from 'lit/decorators.js';
 import { literal, unsafeStatic } from 'lit/static-html.js';
 
+import { PresentTool } from '../present-tool';
+
 export const EDGELESS_NAVIGATOR_BLACK_BACKGROUND_WIDGET =
   'edgeless-navigator-black-background';
 export class EdgelessNavigatorBlackBackgroundWidget extends WidgetComponent<RootBlockModel> {
@@ -59,7 +61,7 @@ export class EdgelessNavigatorBlackBackgroundWidget extends WidgetComponent<Root
 
           this.show =
             blackBackground &&
-            this.gfx.tool.currentToolOption$.peek().type === 'frameNavigator';
+            this.gfx.tool.currentToolOption$.peek().toolType === PresentTool;
         }
       })
     );

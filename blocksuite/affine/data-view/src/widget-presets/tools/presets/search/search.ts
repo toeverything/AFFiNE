@@ -9,10 +9,8 @@ import { styleMap } from 'lit/directives/style-map.js';
 
 import { stopPropagation } from '../../../../core/utils/event.js';
 import { WidgetBase } from '../../../../core/widget/widget-base.js';
-import type {
-  KanbanSingleView,
-  TableSingleView,
-} from '../../../../view-presets/index.js';
+import type { KanbanViewUILogic } from '../../../../view-presets/kanban/pc/kanban-view-ui-logic.js';
+import type { VirtualTableViewUILogic } from '../../../../view-presets/table/pc-virtual/table-view-ui-logic.js';
 
 const styles = css`
   .affine-database-search-container {
@@ -89,13 +87,13 @@ const styles = css`
 `;
 
 export class DataViewHeaderToolsSearch extends WidgetBase<
-  TableSingleView | KanbanSingleView
+  VirtualTableViewUILogic | KanbanViewUILogic
 > {
   static override styles = styles;
 
   private readonly _clearSearch = () => {
     this._searchInput.value = '';
-    this.view.setSearch('');
+    this.dataViewLogic.view.setSearch('');
     this.preventBlur = true;
     setTimeout(() => {
       this.preventBlur = false;
@@ -110,7 +108,7 @@ export class DataViewHeaderToolsSearch extends WidgetBase<
   private readonly _onSearch = (event: InputEvent) => {
     const el = event.target as HTMLInputElement;
     const inputValue = el.value.trim();
-    this.view.setSearch(inputValue);
+    this.dataViewLogic.view.setSearch(inputValue);
   };
 
   private readonly _onSearchBlur = () => {
@@ -124,7 +122,7 @@ export class DataViewHeaderToolsSearch extends WidgetBase<
     if (event.key === 'Escape') {
       if (this._searchInput.value) {
         this._searchInput.value = '';
-        this.view.setSearch('');
+        this.dataViewLogic.view.setSearch('');
       } else {
         this.showSearch = false;
       }

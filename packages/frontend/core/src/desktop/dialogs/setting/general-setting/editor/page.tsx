@@ -3,7 +3,6 @@ import {
   SettingRow,
   SettingWrapper,
 } from '@affine/component/setting-components';
-import type { PageLayoutMode } from '@affine/core/components/doc-properties/types/types';
 import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { useI18n } from '@affine/i18n';
 import { useLiveData, useService } from '@toeverything/infra';
@@ -19,7 +18,7 @@ export const Page = () => {
   const radioItems = useMemo<RadioItem[]>(
     () => [
       {
-        value: 'standard' as PageLayoutMode,
+        value: 'standard',
         label:
           t[
             'com.affine.settings.editorSettings.page.default-page-width.standard'
@@ -27,7 +26,7 @@ export const Page = () => {
         testId: 'standard-width-trigger',
       },
       {
-        value: 'fullWidth' as PageLayoutMode,
+        value: 'fullWidth',
         label:
           t[
             'com.affine.settings.editorSettings.page.default-page-width.full-width'
@@ -39,7 +38,7 @@ export const Page = () => {
   );
 
   const handleFullWidthLayoutChange = useCallback(
-    (value: PageLayoutMode) => {
+    (value: string) => {
       const checked = value === 'fullWidth';
       editorSetting.set('fullWidthLayout', checked);
     },

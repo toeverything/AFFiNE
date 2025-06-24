@@ -216,14 +216,14 @@ export function createApplicationMenu() {
         }),
         {
           label: 'Switch to next tab',
-          accelerator: 'CommandOrControl+Tab',
+          accelerator: 'Control+Tab',
           click: () => {
             switchToNextTab();
           },
         },
         {
           label: 'Switch to previous tab',
-          accelerator: 'CommandOrControl+Shift+Tab',
+          accelerator: 'Control+Shift+Tab',
           click: () => {
             switchToPreviousTab();
           },

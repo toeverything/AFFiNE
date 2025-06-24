@@ -1,3 +1,4 @@
+import { skipOnboarding } from '@affine-test/kit/playwright';
 import { createRandomAIUser } from '@affine-test/kit/utils/cloud';
 import { openHomePage, setCoreUrl } from '@affine-test/kit/utils/load-page';
 import {
@@ -58,6 +59,7 @@ export class TestUtils {
   }
 
   public async setupTestEnvironment(page: Page) {
+    await skipOnboarding(page.context());
     await openHomePage(page);
     await this.createNewPage(page);
   }

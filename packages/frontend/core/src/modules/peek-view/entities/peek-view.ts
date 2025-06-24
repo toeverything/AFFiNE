@@ -165,7 +165,7 @@ function resolvePeekInfoFromPeekTarget(
         // refModel can be null if the reference is invalid
         if (refModel) {
           const docId =
-            'doc' in refModel ? refModel.doc.id : refModel.surface.doc.id;
+            'store' in refModel ? refModel.store.id : refModel.surface.store.id;
           return {
             type: 'doc',
             docRef: {
@@ -179,7 +179,7 @@ function resolvePeekInfoFromPeekTarget(
         return {
           type: 'attachment',
           docRef: {
-            docId: blockModel.doc.id,
+            docId: blockModel.store.id,
             blockIds: [blockModel.id],
             filetype: blockModel.props.type,
           },
@@ -188,7 +188,7 @@ function resolvePeekInfoFromPeekTarget(
         return {
           type: 'image',
           docRef: {
-            docId: blockModel.doc.id,
+            docId: blockModel.store.id,
             blockIds: [blockModel.id],
           },
         };
@@ -196,7 +196,7 @@ function resolvePeekInfoFromPeekTarget(
         return {
           type: 'ai-chat-block',
           docRef: {
-            docId: blockModel.doc.id,
+            docId: blockModel.store.id,
             blockIds: [blockModel.id],
           },
           model: blockModel,

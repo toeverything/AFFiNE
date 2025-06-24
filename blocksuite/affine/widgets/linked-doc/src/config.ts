@@ -27,62 +27,12 @@ import type { InlineRange } from '@blocksuite/std/inline';
 import type { TemplateResult } from 'lit';
 
 import { showImportModal } from './import-doc/index.js';
+import type { LinkedDocViewExtensionOptions } from './view';
 
-export interface LinkedWidgetConfig {
-  /**
-   * The first item of the trigger keys will be the primary key
-   * e.g. @, [[
-   */
-  triggerKeys: [string, ...string[]];
-  /**
-   * Convert trigger key to primary key (the first item of the trigger keys)
-   * [[ -> @
-   */
-  convertTriggerKey: boolean;
-  ignoreBlockTypes: string[];
-  ignoreSelector: string;
-  getMenus: (
-    query: string,
-    abort: () => void,
-    editorHost: EditorHost,
-    inlineEditor: AffineInlineEditor,
-    abortSignal: AbortSignal
-  ) => Promise<LinkedMenuGroup[]> | LinkedMenuGroup[];
-
-  /**
-   * Auto focused item
-   *
-   * Will be called when the menu is
-   * - opened
-   * - query changed
-   * - menu group or its items changed
-   *
-   * If the return value is not null, no action will be taken.
-   */
-  autoFocusedItemKey?: (
-    menus: LinkedMenuGroup[],
-    query: string,
-    currentActiveKey: string | null,
-    editorHost: EditorHost,
-    inlineEditor: AffineInlineEditor
-  ) => string | null;
-
-  mobile: {
-    /**
-     * The linked doc menu widget will scroll the container to make sure the input cursor is visible in viewport.
-     * It accepts a selector string, HTMLElement or Window
-     *
-     * @default getViewportElement(editorHost) this is the scrollable container in playground
-     */
-    scrollContainer?: string | HTMLElement | Window;
-    /**
-     * The offset between the top of viewport and the input cursor
-     *
-     * @default 46 The height of header in playground
-     */
-    scrollTopOffset?: number | (() => number);
-  };
-}
+export type LinkedWidgetConfig = Required<
+  Omit<LinkedDocViewExtensionOptions, 'autoFocusedItemKey'>
+> &
+  Pick<LinkedDocViewExtensionOptions, 'autoFocusedItemKey'>;
 
 export type LinkedMenuItem = {
   key: string;
@@ -128,7 +78,7 @@ export function createLinkedDocMenuGroup(
   editorHost: EditorHost,
   inlineEditor: AffineInlineEditor
 ) {
-  const doc = editorHost.doc;
+  const doc = editorHost.store;
   const { docMetas } = doc.workspace.meta;
   const filteredDocList = docMetas
     .filter(({ id }) => id !== doc.id)
@@ -172,7 +122,7 @@ export function createNewDocMenuGroup(
   editorHost: EditorHost,
   inlineEditor: AffineInlineEditor
 ): LinkedMenuGroup {
-  const doc = editorHost.doc;
+  const doc = editorHost.store;
   const docName = query || DEFAULT_DOC_NAME;
   const displayDocName =
     docName.slice(0, DISPLAY_NAME_LENGTH) +
@@ -269,7 +219,6 @@ export function getMenus(
 }
 
 export const LinkedWidgetUtils = {
-  createLinkedDocMenuGroup,
   createNewDocMenuGroup,
   insertLinkedNode,
 };

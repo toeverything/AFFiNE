@@ -7,6 +7,7 @@
   },
   "include": ["./src"],
   "references": [
+    { "path": "../../blocks/surface" },
     { "path": "../../components" },
     { "path": "../../ext-loader" },
     { "path": "../../model" },

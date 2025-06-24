@@ -1,5 +1,5 @@
 use napi::{
-  bindgen_prelude::{Buffer, Uint8Array},
+  bindgen_prelude::Uint8Array,
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
 };
 use y_octo::{CrdtRead, Doc as YDoc, History, RawDecoder, StateVector};
@@ -120,7 +120,7 @@ impl Doc {
   }
 
   #[napi(ts_args_type = "callback: (result: Uint8Array) => void")]
-  pub fn on_update(&mut self, callback: ThreadsafeFunction<Buffer>) -> Result<()> {
+  pub fn on_update(&mut self, callback: ThreadsafeFunction<Uint8Array>) -> Result<()> {
     let callback = move |update: &[u8], _h: &[History]| {
       callback.call(
         Ok(update.to_vec().into()),

@@ -2,7 +2,7 @@ import { Button } from '@affine/admin/components/ui/button';
 import { ScrollArea } from '@affine/admin/components/ui/scroll-area';
 import { get } from 'lodash-es';
 import { CheckIcon } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
 import { Header } from '../header';
 import { useNav } from '../nav/context';
@@ -12,14 +12,10 @@ import {
   type AppConfig,
 } from './config';
 import { type ConfigInputProps, ConfigRow } from './config-input-row';
-import { ConfirmChanges } from './confirm-changes';
 import { useAppConfig } from './use-app-config';
 
 export function SettingsPage() {
   const { appConfig, update, save, patchedAppConfig, updates } = useAppConfig();
-  const [open, setOpen] = useState(false);
-  const onOpen = useCallback(() => setOpen(true), [setOpen]);
-
   const disableSave = Object.keys(updates).length === 0;
 
   const saveChanges = useCallback(() => {
@@ -27,7 +23,6 @@ export function SettingsPage() {
       return;
     }
     save();
-    setOpen(false);
   }, [save, disableSave]);
 
   return (
@@ -40,7 +35,7 @@ export function SettingsPage() {
             size="icon"
             className="w-7 h-7"
             variant="ghost"
-            onClick={onOpen}
+            onClick={saveChanges}
             disabled={disableSave}
           >
             <CheckIcon size={20} />
@@ -51,12 +46,6 @@ export function SettingsPage() {
         onUpdate={update}
         appConfig={appConfig}
         patchedAppConfig={patchedAppConfig}
-      />
-      <ConfirmChanges
-        updates={updates}
-        open={open}
-        onOpenChange={setOpen}
-        onConfirm={saveChanges}
       />
     </div>
   );
@@ -94,17 +83,18 @@ const AdminPanel = ({
               const descriptor = ALL_CONFIG_DESCRIPTORS[module][field];
               desc = descriptor.desc;
               props = {
-                type: descriptor.type,
-                defaultValue: get(appConfig[module], field),
                 field: `${module}/${field}`,
                 desc,
-                onChange: onUpdate,
+                type: descriptor.type,
                 options: [],
+                defaultValue: get(appConfig[module], field),
+                onChange: onUpdate,
               };
             } else {
               const descriptor = ALL_CONFIG_DESCRIPTORS[module][field.key];
 
               props = {
+                field: `${module}/${field.key}${field.sub ? `/${field.sub}` : ''}`,
                 desc: field.desc ?? descriptor.desc,
                 type: field.type ?? descriptor.type,
                 // @ts-expect-error for enum type
@@ -113,7 +103,6 @@ const AdminPanel = ({
                   appConfig[module],
                   field.key + (field.sub ? '.' + field.sub : '')
                 ),
-                field: `${module}/${field.key}${field.sub ? `/${field.sub}` : ''}`,
                 onChange: onUpdate,
               };
             }
@@ -128,5 +117,3 @@ const AdminPanel = ({
     </ScrollArea>
   );
 };
-
-export { SettingsPage as Component };

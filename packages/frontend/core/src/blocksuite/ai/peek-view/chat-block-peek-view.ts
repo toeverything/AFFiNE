@@ -1,3 +1,4 @@
+import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { ContextEmbedStatus } from '@affine/graphql';
 import {
   CanvasElementType,
@@ -13,10 +14,11 @@ import {
 import type { Signal } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { signal } from '@preact/signals-core';
-import { html, LitElement, nothing } from 'lit';
+import { html, LitElement, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
+import { throttle } from 'lodash-es';
 
 import {
   ChatBlockPeekViewActions,
@@ -33,10 +35,18 @@ import type {
   AIReasoningConfig,
 } from '../components/ai-chat-input';
 import type { ChatMessage } from '../components/ai-chat-messages';
-import { ChatMessagesSchema } from '../components/ai-chat-messages';
+import {
+  ChatMessagesSchema,
+  isChatMessage,
+  StreamObjectSchema,
+} from '../components/ai-chat-messages';
 import type { TextRendererOptions } from '../components/text-renderer';
 import { AIChatErrorRenderer } from '../messages/error';
 import { type AIError, AIProvider } from '../provider';
+import {
+  mergeStreamContent,
+  mergeStreamObjects,
+} from '../utils/stream-objects';
 import { PeekViewStyles } from './styles';
 import type { ChatContext } from './types';
 import { calcChildBound } from './utils';
@@ -66,6 +76,17 @@ export class AIChatBlockPeekView extends LitElement {
 
   private get rootWorkspaceId() {
     return this.blockModel.props.rootWorkspaceId;
+  }
+
+  private get _isNetworkActive() {
+    return (
+      !!this.networkSearchConfig.visible.value &&
+      !!this.networkSearchConfig.enabled.value
+    );
+  }
+
+  private get _isReasoningActive() {
+    return !!this.reasoningConfig.enabled.value;
   }
 
   private _textRendererOptions: TextRendererOptions = {};
@@ -99,11 +120,11 @@ export class AIChatBlockPeekView extends LitElement {
     forkSessionId: string
   ) => {
     const currentUserInfo = await AIProvider.userInfo;
-    const forkMessages = await queryHistoryMessages(
+    const forkMessages = (await queryHistoryMessages(
       rootWorkspaceId,
       rootDocId,
       forkSessionId
-    );
+    )) as ChatMessage[];
     const forkLength = forkMessages.length;
     const historyLength = this._historyMessages.length;
 
@@ -156,10 +177,10 @@ export class AIChatBlockPeekView extends LitElement {
     const lastMessage = this._historyMessages.at(-1);
     if (!lastMessage) return;
 
-    const { doc } = this.host;
+    const { store } = this.host;
     const forkSessionId = await AIProvider.forkChat?.({
-      workspaceId: doc.workspace.id,
-      docId: doc.id,
+      workspaceId: store.workspace.id,
+      docId: store.id,
       sessionId: this._sessionId,
       latestMessageId: lastMessage.id,
     });
@@ -195,9 +216,9 @@ export class AIChatBlockPeekView extends LitElement {
       return;
     }
 
-    const { doc } = this.host;
+    const { store } = this.host;
     // create a new AI chat block
-    const surfaceBlock = doc
+    const surfaceBlock = store
       .getAllModels()
       .find(block => block.flavour === 'affine:surface');
     if (!surfaceBlock) {
@@ -262,8 +283,8 @@ export class AIChatBlockPeekView extends LitElement {
       return;
     }
 
-    const { doc } = this.host;
-    const chatBlock = doc.getBlock(this._forkBlockId);
+    const { store } = this.host;
+    const chatBlock = store.getBlock(this._forkBlockId);
     if (!chatBlock) return;
 
     // Get fork session messages
@@ -276,7 +297,7 @@ export class AIChatBlockPeekView extends LitElement {
     if (!messages.length) {
       return;
     }
-    doc.updateBlock(chatBlock.model, {
+    store.updateBlock(chatBlock.model, {
       messages: JSON.stringify(messages),
     });
   };
@@ -298,12 +319,12 @@ export class AIChatBlockPeekView extends LitElement {
   private readonly _onHistoryCleared = async () => {
     const { _forkBlockId, host } = this;
     if (_forkBlockId) {
-      const surface = getSurfaceBlock(host.doc);
+      const surface = getSurfaceBlock(host.store);
       const crud = host.std.get(EdgelessCRUDIdentifier);
-      const chatBlock = host.doc.getBlock(_forkBlockId)?.model;
+      const chatBlock = host.store.getBlock(_forkBlockId)?.model;
       if (chatBlock) {
         const connectors = surface?.getConnectors(chatBlock.id);
-        host.doc.transact(() => {
+        host.store.transact(() => {
           // Delete the AI chat block
           crud.removeElement(_forkBlockId);
           // Delete the connectors
@@ -315,6 +336,18 @@ export class AIChatBlockPeekView extends LitElement {
     }
     this._resetContext();
   };
+
+  private readonly _scrollToEnd = () => {
+    requestAnimationFrame(() => {
+      if (!this._chatMessagesContainer) return;
+      this._chatMessagesContainer.scrollTo({
+        top: this._chatMessagesContainer.scrollHeight,
+        behavior: 'smooth',
+      });
+    });
+  };
+
+  private readonly _throttledScrollToEnd = throttle(this._scrollToEnd, 600);
 
   /**
    * Retry the last chat message
@@ -333,27 +366,50 @@ export class AIChatBlockPeekView extends LitElement {
         last.id = '';
         last.createdAt = new Date().toISOString();
       }
-      this.updateContext({ messages, status: 'loading', error: null });
+      this.updateContext({
+        messages,
+        status: 'loading',
+        error: null,
+        abortController,
+      });
 
-      const { doc } = this.host;
+      const { store } = this.host;
       const stream = await AIProvider.actions.chat({
         sessionId: _forkSessionId,
         retry: true,
-        docId: doc.id,
-        workspaceId: doc.workspace.id,
+        docId: store.id,
+        workspaceId: store.workspace.id,
         host: this.host,
         stream: true,
         signal: abortController.signal,
         where: 'ai-chat-block',
         control: 'chat-send',
+        reasoning: this._isReasoningActive,
+        webSearch: this._isNetworkActive,
       });
 
-      this.updateContext({ abortController });
       for await (const text of stream) {
-        const messages = [...this.chatContext.messages];
-        const last = messages[messages.length - 1] as ChatMessage;
-        last.content += text;
-        this.updateContext({ messages, status: 'transmitting' });
+        const messages = this.chatContext.messages.slice(0);
+        const last = messages.at(-1);
+        if (last && isChatMessage(last)) {
+          try {
+            const parsed = StreamObjectSchema.parse(JSON.parse(text));
+            const streamObjects = mergeStreamObjects([
+              ...(last.streamObjects ?? []),
+              parsed,
+            ]);
+            messages[messages.length - 1] = {
+              ...last,
+              streamObjects,
+            };
+          } catch {
+            messages[messages.length - 1] = {
+              ...last,
+              content: last.content + text,
+            };
+          }
+          this.updateContext({ messages, status: 'transmitting' });
+        }
       }
 
       this.updateContext({ status: 'success' });
@@ -376,7 +432,7 @@ export class AIChatBlockPeekView extends LitElement {
 
     return html`${repeat(
       currentMessages,
-      message => message.id || message.createdAt,
+      (_, index) => index,
       (message, idx) => {
         const { status, error } = this.chatContext;
         const isAssistantMessage = message.role === 'assistant';
@@ -390,26 +446,24 @@ export class AIChatBlockPeekView extends LitElement {
         const isNotReady = status === 'transmitting' || status === 'loading';
         const shouldRenderCopyMore =
           isAssistantMessage && !(isLastReply && isNotReady);
-        const shouldRenderActions =
-          isLastReply && !!message.content && !isNotReady;
+        const markdown = message.streamObjects?.length
+          ? mergeStreamContent(message.streamObjects)
+          : message.content;
+        const shouldRenderActions = isLastReply && !!markdown && !isNotReady;
 
         const messageClasses = classMap({
           'assistant-message-container': isAssistantMessage,
         });
 
-        const { attachments, role, content, userId, userName, avatarUrl } =
-          message;
+        if (status === 'loading' && isLastReply) {
+          return html`<ai-loading></ai-loading>`;
+        }
 
         return html`<div class=${messageClasses}>
           <ai-chat-message
             .host=${host}
             .state=${messageState}
-            .content=${content}
-            .attachments=${attachments}
-            .messageRole=${role}
-            .userId=${userId}
-            .userName=${userName}
-            .avatarUrl=${avatarUrl}
+            .message=${message}
             .textRendererOptions=${this._textRendererOptions}
           ></ai-chat-message>
           ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
@@ -417,7 +471,7 @@ export class AIChatBlockPeekView extends LitElement {
             ? html` <chat-copy-more
                 .host=${host}
                 .actions=${actions}
-                .content=${message.content}
+                .content=${markdown}
                 .isLast=${isLastReply}
                 .getSessionId=${this._getSessionId}
                 .messageId=${message.id ?? undefined}
@@ -428,7 +482,7 @@ export class AIChatBlockPeekView extends LitElement {
             ? html`<chat-action-list
                 .host=${host}
                 .actions=${actions}
-                .content=${message.content}
+                .content=${markdown}
                 .getSessionId=${this._getSessionId}
                 .messageId=${message.id ?? undefined}
                 .layoutDirection=${'horizontal'}
@@ -445,7 +499,10 @@ export class AIChatBlockPeekView extends LitElement {
       .get(ViewExtensionManagerIdentifier)
       .get('preview-page');
 
-    this._textRendererOptions = { extensions };
+    this._textRendererOptions = {
+      extensions,
+      affineFeatureFlagService: this.affineFeatureFlagService,
+    };
     this._historyMessages = this._deserializeHistoryChatMessages(
       this.historyMessagesString
     );
@@ -465,13 +522,25 @@ export class AIChatBlockPeekView extends LitElement {
   }
 
   override firstUpdated() {
-    // first time render, scroll ai-chat-messages-container to bottom
-    requestAnimationFrame(() => {
-      if (this._chatMessagesContainer) {
-        this._chatMessagesContainer.scrollTop =
-          this._chatMessagesContainer.scrollHeight;
-      }
-    });
+    this._scrollToEnd();
+  }
+
+  protected override updated(changedProperties: PropertyValues) {
+    if (
+      changedProperties.has('chatContext') &&
+      (this.chatContext.status === 'loading' ||
+        this.chatContext.status === 'error' ||
+        this.chatContext.status === 'success')
+    ) {
+      setTimeout(this._scrollToEnd, 500);
+    }
+
+    if (
+      changedProperties.has('chatContext') &&
+      this.chatContext.status === 'transmitting'
+    ) {
+      this._throttledScrollToEnd();
+    }
   }
 
   override render() {
@@ -492,6 +561,15 @@ export class AIChatBlockPeekView extends LitElement {
     const { messages: currentChatMessages } = chatContext;
 
     return html`<div class="ai-chat-block-peek-view-container">
+      <div class="history-clear-container">
+        <ai-history-clear
+          .host=${this.host}
+          .doc=${this.host.store}
+          .getSessionId=${this._getSessionId}
+          .onHistoryCleared=${this._onHistoryCleared}
+          .chatContextValue=${chatContext}
+        ></ai-history-clear>
+      </div>
       <div class="ai-chat-messages-container">
         <ai-chat-messages
           .host=${host}
@@ -502,19 +580,10 @@ export class AIChatBlockPeekView extends LitElement {
         <div class="new-chat-messages-container">
           ${this.CurrentMessages(currentChatMessages)}
         </div>
-        <div class="history-clear-container">
-          <ai-history-clear
-            .host=${this.host}
-            .doc=${this.host.doc}
-            .getSessionId=${this._getSessionId}
-            .onHistoryCleared=${this._onHistoryCleared}
-            .chatContextValue=${chatContext}
-          ></ai-history-clear>
-        </div>
       </div>
       <ai-chat-composer
         .host=${host}
-        .doc=${this.host.doc}
+        .doc=${this.host.store}
         .getSessionId=${this._getSessionId}
         .createSessionId=${this._createSessionId}
         .chatContextValue=${chatContext}
@@ -556,6 +625,9 @@ export class AIChatBlockPeekView extends LitElement {
   @property({ attribute: false })
   accessor searchMenuConfig!: SearchMenuConfig;
 
+  @property({ attribute: false })
+  accessor affineFeatureFlagService!: FeatureFlagService;
+
   @state()
   accessor _historyMessages: ChatMessage[] = [];
 
@@ -584,7 +656,8 @@ export const AIChatBlockPeekViewTemplate = (
   docDisplayConfig: DocDisplayConfig,
   searchMenuConfig: SearchMenuConfig,
   networkSearchConfig: AINetworkSearchConfig,
-  reasoningConfig: AIReasoningConfig
+  reasoningConfig: AIReasoningConfig,
+  affineFeatureFlagService: FeatureFlagService
 ) => {
   return html`<ai-chat-block-peek-view
     .blockModel=${blockModel}
@@ -593,5 +666,6 @@ export const AIChatBlockPeekViewTemplate = (
     .docDisplayConfig=${docDisplayConfig}
     .searchMenuConfig=${searchMenuConfig}
     .reasoningConfig=${reasoningConfig}
+    .affineFeatureFlagService=${affineFeatureFlagService}
   ></ai-chat-block-peek-view>`;
 };

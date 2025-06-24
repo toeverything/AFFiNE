@@ -1,4 +1,5 @@
-import { uploadBlobForImage } from '@blocksuite/affine/blocks/image';
+import { CodeBlockPreviewIdentifier } from '@blocksuite/affine/blocks/code';
+import { addSiblingImageBlocks } from '@blocksuite/affine/blocks/image';
 import {
   getSurfaceBlock,
   SurfaceBlockModel,
@@ -66,10 +67,10 @@ function responseToBrainstormMindmap(
   ctx: AIContext,
   place: Place
 ) {
-  const surface = getSurfaceBlock(host.doc);
+  const surface = getSurfaceBlock(host.store);
   if (!surface) return;
 
-  host.doc.transact(() => {
+  host.store.transact(() => {
     const { node, style } = ctx.get();
     if (!node) return;
     const bound = getEdgelessContentBound(host);
@@ -106,7 +107,7 @@ function responseToBrainstormMindmap(
 }
 
 function responseToMakeItReal(host: EditorHost, ctx: AIContext, place: Place) {
-  const surface = getSurfaceBlock(host.doc);
+  const surface = getSurfaceBlock(host.store);
   const aiPanel = getAIPanelWidget(host);
   if (!aiPanel.answer || !surface) return;
 
@@ -116,18 +117,38 @@ function responseToMakeItReal(host: EditorHost, ctx: AIContext, place: Place) {
   const y = bound ? bound.y : 0;
   const htmlBound = new Bound(x, y + PADDING, width || 800, height || 600);
   const html = preprocessHtml(aiPanel.answer);
-  host.doc.transact(() => {
-    host.doc.addBlock(
-      'affine:embed-html',
-      {
-        html,
-        design: 'ai:makeItReal', // as tag
-        xywh: htmlBound.serialize(),
-      },
-      surface.id
+  host.store.transact(() => {
+    const ifUseCodeBlock = host.std.getOptional(
+      CodeBlockPreviewIdentifier('html')
     );
-    const frameBound = expandBound(htmlBound, PADDING);
-    addSurfaceRefBlock(host, frameBound, place);
+    if (ifUseCodeBlock) {
+      const note = host.store.addBlock(
+        'affine:note',
+        {
+          xywh: htmlBound.serialize(),
+        },
+        host.store.root
+      );
+      host.store.addBlock(
+        'affine:code',
+        { text: new Text(html), language: 'html', preview: true },
+        note
+      );
+      const frameBound = expandBound(htmlBound, PADDING);
+      addSurfaceRefBlock(host, frameBound, place);
+    } else {
+      host.store.addBlock(
+        'affine:embed-html',
+        {
+          html,
+          design: 'ai:makeItReal', // as tag
+          xywh: htmlBound.serialize(),
+        },
+        surface.id
+      );
+      const frameBound = expandBound(htmlBound, PADDING);
+      addSurfaceRefBlock(host, frameBound, place);
+    }
   });
 }
 
@@ -137,7 +158,7 @@ async function responseToCreateSlides(
   place: Place
 ) {
   const { contents, images = [] } = ctx.get();
-  const surface = getSurfaceBlock(host.doc);
+  const surface = getSurfaceBlock(host.store);
   if (!contents || !surface) return;
 
   try {
@@ -178,14 +199,11 @@ export function responseToCreateImage(host: EditorHost, place: Place) {
   fetchImageToFile(answer, filename, imageProxy)
     .then(file => {
       if (!file) return;
-      host.doc.transact(() => {
-        const props = {
-          flavour: 'affine:image',
-          size: file.size,
-        };
-        const blockId = addSiblingBlocks(host, [props], place)?.[0];
-        blockId && uploadBlobForImage(host, blockId, file).catch(console.error);
-      });
+
+      const targetModel = getTargetModel(host, place);
+      if (!targetModel) return;
+
+      return addSiblingImageBlocks(host.std, [file], targetModel, place);
     })
     .catch(console.error);
 }
@@ -238,11 +256,11 @@ function getSelection(host: EditorHost) {
 }
 
 function getEdgelessContentBound(host: EditorHost) {
-  const surface = getSurfaceBlock(host.doc);
+  const surface = getSurfaceBlock(host.store);
   if (!surface) return;
 
   const elements = (
-    host.doc
+    host.store
       .getAllModels()
       .filter(
         model =>
@@ -265,9 +283,9 @@ function expandBound(bound: Bound, margin: number) {
 }
 
 function addSurfaceRefBlock(host: EditorHost, bound: Bound, place: Place) {
-  const surface = getSurfaceBlock(host.doc);
+  const surface = getSurfaceBlock(host.store);
   if (!surface) return;
-  const frame = host.doc.addBlock(
+  const frame = host.store.addBlock(
     'affine:frame',
     {
       title: new Text(new Y.Text('Frame')),
@@ -284,19 +302,22 @@ function addSurfaceRefBlock(host: EditorHost, bound: Bound, place: Place) {
   return addSiblingBlocks(host, [props], place);
 }
 
+function getTargetModel(host: EditorHost, place: Place) {
+  const { selectedModels } = getSelection(host) || {};
+  if (!selectedModels) return;
+  return place === 'before'
+    ? selectedModels[0]
+    : selectedModels[selectedModels.length - 1];
+}
+
 function addSiblingBlocks(
   host: EditorHost,
   props: Array<Partial<BlockProps>>,
   place: Place
 ) {
-  const { selectedModels } = getSelection(host) || {};
-  if (!selectedModels) return;
-  const targetModel =
-    place === 'before'
-      ? selectedModels[0]
-      : selectedModels[selectedModels.length - 1];
-
-  return host.doc.addSiblingBlocks(targetModel, props, place);
+  const targetModel = getTargetModel(host, place);
+  if (!targetModel) return;
+  return host.store.addSiblingBlocks(targetModel, props, place);
 }
 
 function findFrameObject(obj: AffineNode): AffineNode | null {

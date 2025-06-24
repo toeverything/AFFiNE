@@ -16,7 +16,6 @@ import {
   type EditorHost,
 } from '@blocksuite/affine/std';
 import type { DocMeta } from '@blocksuite/affine/store';
-import { Text } from '@blocksuite/affine/store';
 import {
   type LinkedMenuGroup,
   type LinkedMenuItem,
@@ -32,8 +31,11 @@ import {
 import { computed, Signal } from '@preact/signals-core';
 import { Service } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
+import type { FuseResultMatch } from 'fuse.js';
+import Fuse from 'fuse.js';
 import { html } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import {
   createAbsolutePositionFromRelativePosition,
   createRelativePositionFromTypeIndex,
@@ -43,11 +45,11 @@ import { AuthService, type WorkspaceServerService } from '../../cloud';
 import type { WorkspaceDialogService } from '../../dialogs';
 import type { DocsService } from '../../doc';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
-import type { EditorSettingService } from '../../editor-setting';
 import { type JournalService, suggestJournalDate } from '../../journal';
 import { NotificationService } from '../../notification';
 import type { GuardService, MemberSearchService } from '../../permissions';
 import type { DocGrantedUsersService } from '../../permissions/services/doc-granted-users';
+import { highlighter } from '../../quicksearch/utils/highlighter';
 import type { SearchMenuService } from '../../search-menu/services';
 
 function resolveSignal<T>(data: T | Signal<T>): T {
@@ -65,7 +67,6 @@ export class AtMenuConfigService extends Service {
     private readonly journalService: JournalService,
     private readonly docDisplayMetaService: DocDisplayMetaService,
     private readonly dialogService: WorkspaceDialogService,
-    private readonly editorSettingService: EditorSettingService,
     private readonly docsService: DocsService,
     private readonly searchMenuService: SearchMenuService,
     private readonly workspaceServerService: WorkspaceServerService,
@@ -141,10 +142,7 @@ export class AtMenuConfigService extends Service {
 
     const createPage = (mode: DocMode) => {
       const page = this.docsService.createDoc({
-        docProps: {
-          note: this.editorSettingService.editorSetting.get('affine:note'),
-          page: { title: new Text(query) },
-        },
+        title: query,
         primaryMode: mode,
       });
 
@@ -333,6 +331,32 @@ export class AtMenuConfigService extends Service {
     return result;
   }
 
+  private highlightFuseTitle(
+    matches: readonly FuseResultMatch[] | undefined,
+    title: string,
+    key: string
+  ): string {
+    if (!matches) {
+      return title;
+    }
+    const normalizedRange = ([start, end]: [number, number]) =>
+      [
+        start,
+        end + 1 /* in fuse, the `end` is different from the `substring` */,
+      ] as [number, number];
+    const titleMatches = matches
+      ?.filter(match => match.key === key)
+      .flatMap(match => match.indices.map(normalizedRange));
+    return (
+      highlighter(
+        title,
+        `<span style="color: ${cssVarV2('text/emphasis')}">`,
+        '</span>',
+        titleMatches ?? []
+      ) ?? title
+    );
+  }
+
   private memberGroup(
     query: string,
     close: () => void,
@@ -356,9 +380,10 @@ export class AtMenuConfigService extends Service {
         ? html`<img style=${avatarStyle} src="${avatar}" />`
         : UserIcon();
 
+      let displayName = name ?? 'Unknown';
       return {
         key: id,
-        name: name ?? 'Unknown',
+        name: html`${unsafeHTML(displayName)}`,
         icon,
         action: () => {
           const root = inlineEditor.rootElement;
@@ -369,7 +394,7 @@ export class AtMenuConfigService extends Service {
             this.workspaceServerService.server?.scope.get(NotificationService);
           if (!notificationService) return;
 
-          const doc = block.doc;
+          const doc = block.store;
           const workspaceId = doc.workspace.id;
           const docId = doc.id;
           const mode = block.std.get(DocModeProvider).getEditorMode() ?? 'page';
@@ -573,15 +598,34 @@ export class AtMenuConfigService extends Service {
         ];
       }
 
+      // Create a single Fuse instance for all members
+      const fuse = new Fuse(members, {
+        keys: ['name'],
+        includeMatches: true,
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.0,
+      });
+      const searchResults = fuse.search(query);
+
       return [
-        ...members.map(member =>
-          getMenuItem(
-            member.id,
-            member.name,
-            member.avatarUrl,
-            member.id !== currentUser?.id
-          )
-        ),
+        ...searchResults.map(result => {
+          const member = result.item;
+          const displayName = this.highlightFuseTitle(
+            result.matches,
+            member.name ?? 'Unknown',
+            'name'
+          );
+          return {
+            ...getMenuItem(
+              member.id,
+              member.name,
+              member.avatarUrl,
+              member.id !== currentUser?.id
+            ),
+            name: html`${unsafeHTML(displayName)}`,
+          };
+        }),
         ...(canUserManage ? [inviteItem] : []),
       ];
     });
@@ -600,6 +644,14 @@ export class AtMenuConfigService extends Service {
       items,
       loading: this.memberSearchService.isLoading$.signal,
       hidden,
+      maxDisplay: 3,
+      overflowText: computed(() => {
+        const totalCount = this.memberSearchService.result$.signal.value.length;
+        const remainingCount = totalCount - 3;
+        return I18n.t('com.affine.editor.at-menu.more-members-hint', {
+          count: remainingCount,
+        });
+      }),
     };
   }
 

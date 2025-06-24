@@ -30,11 +30,12 @@ import { AttachmentBlockTransformer } from './attachment-transformer.js';
  */
 type BackwardCompatibleUndefined = undefined;
 
-export const AttachmentBlockStyles: EmbedCardStyle[] = [
+export const AttachmentBlockStyles = [
   'cubeThick',
   'horizontalThin',
   'pdf',
-] as const;
+  'citation',
+] as const satisfies EmbedCardStyle[];
 
 export type AttachmentBlockProps = {
   name: string;
@@ -55,6 +56,8 @@ export type AttachmentBlockProps = {
   embed: boolean | BackwardCompatibleUndefined;
 
   style?: (typeof AttachmentBlockStyles)[number];
+
+  footnoteIdentifier: string | null;
 } & Omit<GfxCommonBlockProps, 'scale'> &
   BlockMeta;
 
@@ -74,6 +77,7 @@ export const defaultAttachmentProps: AttachmentBlockProps = {
   'meta:updatedAt': undefined,
   'meta:createdBy': undefined,
   'meta:updatedBy': undefined,
+  footnoteIdentifier: null,
 };
 
 export const AttachmentBlockSchema = defineBlockSchema({

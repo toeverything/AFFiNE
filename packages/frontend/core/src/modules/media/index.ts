@@ -22,7 +22,11 @@ export function configureMediaModule(framework: Framework) {
     .service(MeetingSettingsService, [GlobalStateService])
     .scope(WorkspaceScope)
     .entity(AudioMedia, [WorkspaceService])
-    .entity(AudioAttachmentBlock, [AudioMediaManagerService, WorkspaceService])
+    .entity(AudioAttachmentBlock, [
+      AudioMediaManagerService,
+      WorkspaceService,
+      MeetingSettingsService,
+    ])
     .entity(AudioTranscriptionJob, [
       WorkspaceServerService,
       DefaultServerService,

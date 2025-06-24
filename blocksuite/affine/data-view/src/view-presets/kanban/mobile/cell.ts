@@ -14,7 +14,7 @@ import type {
 } from '../../../core/property/index.js';
 import { renderUniLit } from '../../../core/utils/uni-component/uni-component.js';
 import type { Property } from '../../../core/view-manager/property.js';
-import type { KanbanSingleView } from '../kanban-view-manager.js';
+import type { MobileKanbanViewUILogic } from './kanban-view-ui-logic.js';
 
 const styles = css`
   mobile-kanban-cell {
@@ -53,7 +53,7 @@ export class MobileKanbanCell extends SignalWatcher(
   private readonly _cell = signal<DataViewCellLifeCycle>();
 
   isSelectionEditing$ = computed(() => {
-    const selection = this.kanban?.props.selection$.value;
+    const selection = this.kanbanViewLogic.selection$.value;
     if (selection?.selectionType !== 'cell') {
       return false;
     }
@@ -73,8 +73,8 @@ export class MobileKanbanCell extends SignalWatcher(
     if (this.view.readonly$.value) {
       return;
     }
-    const setSelection = this.kanban?.props.setSelection;
-    const viewId = this.kanban?.props.view.id;
+    const setSelection = this.kanbanViewLogic.setSelection;
+    const viewId = this.kanbanViewLogic.view.id;
     if (setSelection && viewId) {
       if (editing && this.cell?.beforeEnterEditMode() === false) {
         return;
@@ -93,14 +93,6 @@ export class MobileKanbanCell extends SignalWatcher(
 
   get cell(): DataViewCellLifeCycle | undefined {
     return this._cell.value;
-  }
-
-  get kanban() {
-    return this.closest('mobile-data-view-kanban');
-  }
-
-  get selection() {
-    return this.closest('mobile-data-view-kanban')?.props.selection$.value;
   }
 
   override connectedCallback() {
@@ -130,7 +122,7 @@ export class MobileKanbanCell extends SignalWatcher(
 
   override render() {
     const props: CellRenderProps = {
-      cell: this.column.cellGet(this.cardId),
+      cell: this.column.cellGetOrCreate(this.cardId),
       isEditing$: this.isEditing$,
       selectCurrentCell: this.selectCurrentCell,
     };
@@ -172,7 +164,11 @@ export class MobileKanbanCell extends SignalWatcher(
   isEditing$ = signal(false);
 
   @property({ attribute: false })
-  accessor view!: KanbanSingleView;
+  accessor kanbanViewLogic!: MobileKanbanViewUILogic;
+
+  get view() {
+    return this.kanbanViewLogic.view;
+  }
 }
 
 declare global {

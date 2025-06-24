@@ -29,6 +29,11 @@ export interface AISendParams {
   context?: Partial<ChatContextValue | null>;
 }
 
+export interface AIEmbeddingStatus {
+  embedded: number;
+  total: number;
+}
+
 export type ActionEventType =
   | 'started'
   | 'finished'
@@ -96,6 +101,10 @@ export class AIProvider {
     return AIProvider.instance.forkChat;
   }
 
+  static get embedding() {
+    return AIProvider.instance.embedding;
+  }
+
   private static readonly instance = new AIProvider();
 
   static LAST_ACTION_SESSIONID = '';
@@ -151,6 +160,8 @@ export class AIProvider {
 
   private userInfoFn: () => AIUserInfo | Promise<AIUserInfo> | null = () =>
     null;
+
+  private embedding: BlockSuitePresets.AIEmbeddingService | null = null;
 
   private provideAction<T extends keyof BlockSuitePresets.AIActions>(
     id: T,
@@ -307,6 +318,11 @@ export class AIProvider {
 
   static provide(id: 'onboarding', fn: (value: boolean) => void): void;
 
+  static provide(
+    id: 'embedding',
+    service: BlockSuitePresets.AIEmbeddingService
+  ): void;
+
   // actions:
   static provide<T extends keyof BlockSuitePresets.AIActions>(
     id: T,
@@ -338,6 +354,9 @@ export class AIProvider {
       AIProvider.instance.forkChat = action as (
         options: BlockSuitePresets.AIForkChatSessionOptions
       ) => string | Promise<string>;
+    } else if (id === 'embedding') {
+      AIProvider.instance.embedding =
+        action as BlockSuitePresets.AIEmbeddingService;
     } else {
       AIProvider.instance.provideAction(id as any, action as any);
     }

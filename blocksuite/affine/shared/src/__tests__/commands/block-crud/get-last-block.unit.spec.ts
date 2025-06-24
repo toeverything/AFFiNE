@@ -73,7 +73,7 @@ describe('commands/block-crud', () => {
         </affine-page>
       `;
 
-      const note = host.doc.getBlock('note-1')?.model;
+      const note = host.store.getBlock('note-1')?.model;
 
       const [_, { lastBlock }] = host.command.exec(getLastBlockCommand, {
         flavour: 'affine:list',
@@ -93,7 +93,7 @@ describe('commands/block-crud', () => {
         </affine-page>
       `;
 
-      const note = host.doc.getBlock('note-1')?.model;
+      const note = host.store.getBlock('note-1')?.model;
 
       const [_, { lastBlock }] = host.command.exec(getLastBlockCommand, {
         flavour: ['affine:list', 'affine:code'],
@@ -114,7 +114,7 @@ describe('commands/block-crud', () => {
         </affine-page>
       `;
 
-      const note = host.doc.getBlock('note-1')?.model;
+      const note = host.store.getBlock('note-1')?.model;
       const [_, { lastBlock }] = host.command.exec(getLastBlockCommand, {
         role: 'content',
         flavour: 'affine:list',
@@ -153,7 +153,7 @@ describe('commands/block-crud', () => {
         </affine-page>
       `;
 
-      const note = host.doc.getBlock('note-1')?.model;
+      const note = host.store.getBlock('note-1')?.model;
 
       const [_, { lastBlock }] = host.command.exec(getLastBlockCommand, {
         role: 'hub',
@@ -173,7 +173,7 @@ describe('commands/block-crud', () => {
         </affine-page>
       `;
 
-      const note = host.doc.getBlock('note-1')?.model;
+      const note = host.store.getBlock('note-1')?.model;
 
       const [_, { lastBlock }] = host.command.exec(getLastBlockCommand, {
         role: 'hub',
@@ -193,7 +193,7 @@ describe('commands/block-crud', () => {
         </affine-page>
       `;
 
-      const note = host.doc.getBlock('note-1')?.model;
+      const note = host.store.getBlock('note-1')?.model;
 
       const [_, { lastBlock }] = host.command.exec(getLastBlockCommand, {
         flavour: 'affine:list',
@@ -217,7 +217,7 @@ describe('commands/block-crud', () => {
         </affine-page>
       `;
 
-      const note = host.doc.getBlock('note-2')?.model;
+      const note = host.store.getBlock('note-2')?.model;
 
       const [_, { lastBlock }] = host.command.exec(getLastBlockCommand, {
         role: 'content',

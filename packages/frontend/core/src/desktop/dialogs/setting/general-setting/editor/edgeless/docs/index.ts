@@ -2,14 +2,17 @@ import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace';
 import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace';
 import type { DocSnapshot, Store } from '@blocksuite/affine/store';
 import { Transformer } from '@blocksuite/affine/store';
-
+import { Doc as YDoc } from 'yjs';
 const getCollection = (() => {
   let collection: WorkspaceImpl | null = null;
   return async function () {
     if (collection) {
       return collection;
     }
-    collection = new WorkspaceImpl({});
+    collection = new WorkspaceImpl({
+      id: 'edgeless-settings',
+      rootDoc: new YDoc({ guid: 'edgeless-settings' }),
+    });
     collection.meta.initialize();
     return collection;
   };

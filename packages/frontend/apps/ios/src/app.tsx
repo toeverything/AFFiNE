@@ -1,4 +1,4 @@
-import { getStoreManager } from '@affine/core/blocksuite/manager/migrating-store';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AffineContext } from '@affine/core/components/context';
 import { AppFallback } from '@affine/core/mobile/components/app-fallback';
 import { configureMobileModules } from '@affine/core/mobile/modules';
@@ -53,6 +53,7 @@ import { Keyboard, KeyboardStyle } from '@capacitor/keyboard';
 import { Framework, FrameworkRoot, getCurrentStore } from '@toeverything/infra';
 import { OpClient } from '@toeverything/infra/op';
 import { AsyncCall } from 'async-call-rpc';
+import { AppTrackingTransparency } from 'capacitor-plugin-app-tracking-transparency';
 import { useTheme } from 'next-themes';
 import { Suspense, useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
@@ -263,7 +264,8 @@ const frameworkProvider = framework.provider();
 
     const container = new Container();
     getStoreManager()
-      .get('store')
+      .config.init()
+      .value.get('store')
       .forEach(ext => {
         ext.setup(container);
       });
@@ -308,7 +310,7 @@ const frameworkProvider = framework.provider();
       collection: workspace.docCollection,
       schema: getAFFiNEWorkspaceSchema(),
       markdown,
-      extensions: getStoreManager().get('store'),
+      extensions: getStoreManager().config.init().value.get('store'),
     });
     const docsService = workspace.scope.get(DocsService);
     if (docId) {
@@ -375,6 +377,10 @@ CapacitorApp.addListener('appUrlOpen', ({ url }) => {
   }
 }).catch(e => {
   console.error(e);
+});
+
+AppTrackingTransparency.requestPermission().catch(e => {
+  console.error('Failed to request app tracking transparency permission', e);
 });
 
 const KeyboardThemeProvider = () => {

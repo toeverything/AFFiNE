@@ -1,28 +1,83 @@
 import { AiPromptRole } from '@prisma/client';
 import { z } from 'zod';
 
-import { type CopilotProvider } from './provider';
+import { JSONSchema } from '../../../base';
+
+// ========== provider ==========
 
 export enum CopilotProviderType {
   Anthropic = 'anthropic',
+  AnthropicVertex = 'anthropicVertex',
   FAL = 'fal',
   Gemini = 'gemini',
+  GeminiVertex = 'geminiVertex',
   OpenAI = 'openai',
   Perplexity = 'perplexity',
 }
 
-export enum CopilotCapability {
-  TextToText = 'text-to-text',
-  TextToEmbedding = 'text-to-embedding',
-  TextToImage = 'text-to-image',
-  ImageToImage = 'image-to-image',
-  ImageToText = 'image-to-text',
-}
+export const CopilotProviderSchema = z.object({
+  type: z.nativeEnum(CopilotProviderType),
+});
+
+export const VertexSchema: JSONSchema = {
+  type: 'object',
+  description: 'The config for the google vertex provider.',
+  properties: {
+    location: {
+      type: 'string',
+      description: 'The location of the google vertex provider.',
+    },
+    project: {
+      type: 'string',
+      description: 'The project name of the google vertex provider.',
+    },
+    googleAuthOptions: {
+      type: 'object',
+      description: 'The google auth options for the google vertex provider.',
+      properties: {
+        credentials: {
+          type: 'object',
+          description: 'The credentials for the google vertex provider.',
+          properties: {
+            client_email: {
+              type: 'string',
+              description: 'The client email for the google vertex provider.',
+            },
+            private_key: {
+              type: 'string',
+              description: 'The private key for the google vertex provider.',
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+// ========== prompt ==========
 
 export const PromptConfigStrictSchema = z.object({
+  tools: z
+    .enum([
+      // work with morph
+      'docEdit',
+      // work with indexer
+      'docRead',
+      'docKeywordSearch',
+      // work with embeddings
+      'docSemanticSearch',
+      // work with exa/model internal tools
+      'webSearch',
+    ])
+    .array()
+    .nullable()
+    .optional(),
+  // params requirements
+  requireContent: z.boolean().nullable().optional(),
+  requireAttachment: z.boolean().nullable().optional(),
+  // structure output
+  maxRetries: z.number().nullable().optional(),
   // openai
-  jsonMode: z.boolean().nullable().optional(),
-  webSearch: z.boolean().nullable().optional(),
   frequencyPenalty: z.number().nullable().optional(),
   presencePenalty: z.number().nullable().optional(),
   temperature: z.number().nullable().optional(),
@@ -45,23 +100,52 @@ export const PromptConfigSchema =
 
 export type PromptConfig = z.infer<typeof PromptConfigSchema>;
 
+// ========== message ==========
+
+export const EmbeddingMessage = z.array(z.string().trim().min(1)).min(1);
+
 export const ChatMessageRole = Object.values(AiPromptRole) as [
   'system',
   'assistant',
   'user',
 ];
 
+export const ChatMessageAttachment = z.union([
+  z.string().url(),
+  z.object({
+    attachment: z.string(),
+    mimeType: z.string(),
+  }),
+]);
+
+export const StreamObjectSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('text-delta'),
+    textDelta: z.string(),
+  }),
+  z.object({
+    type: z.literal('reasoning'),
+    textDelta: z.string(),
+  }),
+  z.object({
+    type: z.literal('tool-call'),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.record(z.any()),
+  }),
+  z.object({
+    type: z.literal('tool-result'),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.record(z.any()),
+    result: z.any(),
+  }),
+]);
+
 export const PureMessageSchema = z.object({
   content: z.string(),
-  attachments: z
-    .array(
-      z.union([
-        z.string(),
-        z.object({ attachment: z.string(), mimeType: z.string() }),
-      ])
-    )
-    .optional()
-    .nullable(),
+  streamObjects: z.array(StreamObjectSchema).optional().nullable(),
+  attachments: z.array(ChatMessageAttachment).optional().nullable(),
   params: z.record(z.any()).optional().nullable(),
 });
 
@@ -70,115 +154,87 @@ export const PromptMessageSchema = PureMessageSchema.extend({
 }).strict();
 export type PromptMessage = z.infer<typeof PromptMessageSchema>;
 export type PromptParams = NonNullable<PromptMessage['params']>;
+export type StreamObject = z.infer<typeof StreamObjectSchema>;
+
+// ========== options ==========
 
 const CopilotProviderOptionsSchema = z.object({
   signal: z.instanceof(AbortSignal).optional(),
   user: z.string().optional(),
+  workspace: z.string().optional(),
 });
 
-const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.merge(
+export const CopilotChatOptionsSchema = CopilotProviderOptionsSchema.merge(
   PromptConfigStrictSchema
 )
   .extend({
     reasoning: z.boolean().optional(),
+    webSearch: z.boolean().optional(),
   })
   .optional();
 
 export type CopilotChatOptions = z.infer<typeof CopilotChatOptionsSchema>;
+export type CopilotChatTools = NonNullable<
+  NonNullable<CopilotChatOptions>['tools']
+>[number];
 
-const CopilotEmbeddingOptionsSchema = CopilotProviderOptionsSchema.extend({
-  dimensions: z.number(),
-}).optional();
+export const CopilotStructuredOptionsSchema =
+  CopilotProviderOptionsSchema.merge(PromptConfigStrictSchema).optional();
 
-export type CopilotEmbeddingOptions = z.infer<
-  typeof CopilotEmbeddingOptionsSchema
+export type CopilotStructuredOptions = z.infer<
+  typeof CopilotStructuredOptionsSchema
 >;
 
-const CopilotImageOptionsSchema = CopilotProviderOptionsSchema.merge(
+export const CopilotImageOptionsSchema = CopilotProviderOptionsSchema.merge(
   PromptConfigStrictSchema
 )
   .extend({
+    quality: z.string().optional(),
     seed: z.number().optional(),
   })
   .optional();
 
 export type CopilotImageOptions = z.infer<typeof CopilotImageOptionsSchema>;
 
-export interface CopilotTextToTextProvider extends CopilotProvider {
-  generateText(
-    messages: PromptMessage[],
-    model?: string,
-    options?: CopilotChatOptions
-  ): Promise<string>;
-  generateTextStream(
-    messages: PromptMessage[],
-    model?: string,
-    options?: CopilotChatOptions
-  ): AsyncIterable<string>;
+export const CopilotEmbeddingOptionsSchema =
+  CopilotProviderOptionsSchema.extend({
+    dimensions: z.number(),
+  }).optional();
+
+export type CopilotEmbeddingOptions = z.infer<
+  typeof CopilotEmbeddingOptionsSchema
+>;
+
+export enum ModelInputType {
+  Text = 'text',
+  Image = 'image',
+  Audio = 'audio',
 }
 
-export interface CopilotTextToEmbeddingProvider extends CopilotProvider {
-  generateEmbedding(
-    messages: string[] | string,
-    model: string,
-    options?: CopilotEmbeddingOptions
-  ): Promise<number[][]>;
+export enum ModelOutputType {
+  Text = 'text',
+  Object = 'object',
+  Embedding = 'embedding',
+  Image = 'image',
+  Structured = 'structured',
 }
 
-export interface CopilotTextToImageProvider extends CopilotProvider {
-  generateImages(
-    messages: PromptMessage[],
-    model: string,
-    options?: CopilotImageOptions
-  ): Promise<Array<string>>;
-  generateImagesStream(
-    messages: PromptMessage[],
-    model?: string,
-    options?: CopilotImageOptions
-  ): AsyncIterable<string>;
+export interface ModelCapability {
+  input: ModelInputType[];
+  output: ModelOutputType[];
+  defaultForOutputType?: boolean;
 }
 
-export interface CopilotImageToTextProvider extends CopilotProvider {
-  generateText(
-    messages: PromptMessage[],
-    model: string,
-    options?: CopilotChatOptions
-  ): Promise<string>;
-  generateTextStream(
-    messages: PromptMessage[],
-    model: string,
-    options?: CopilotChatOptions
-  ): AsyncIterable<string>;
+export interface CopilotProviderModel {
+  id: string;
+  capabilities: ModelCapability[];
 }
 
-export interface CopilotImageToImageProvider extends CopilotProvider {
-  generateImages(
-    messages: PromptMessage[],
-    model: string,
-    options?: CopilotImageOptions
-  ): Promise<Array<string>>;
-  generateImagesStream(
-    messages: PromptMessage[],
-    model?: string,
-    options?: CopilotImageOptions
-  ): AsyncIterable<string>;
-}
-
-export type CapabilityToCopilotProvider = {
-  [CopilotCapability.TextToText]: CopilotTextToTextProvider;
-  [CopilotCapability.TextToEmbedding]: CopilotTextToEmbeddingProvider;
-  [CopilotCapability.TextToImage]: CopilotTextToImageProvider;
-  [CopilotCapability.ImageToText]: CopilotImageToTextProvider;
-  [CopilotCapability.ImageToImage]: CopilotImageToImageProvider;
+export type ModelConditions = {
+  inputTypes?: ModelInputType[];
+  modelId?: string;
 };
 
-export type CopilotTextProvider =
-  | CopilotTextToTextProvider
-  | CopilotImageToTextProvider;
-export type CopilotImageProvider =
-  | CopilotTextToImageProvider
-  | CopilotImageToImageProvider;
-export type CopilotAllProvider =
-  | CopilotTextProvider
-  | CopilotImageProvider
-  | CopilotTextToEmbeddingProvider;
+export type ModelFullConditions = ModelConditions & {
+  outputType?: ModelOutputType;
+};

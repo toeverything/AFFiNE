@@ -12,15 +12,13 @@ import {
   UserFriendlyError,
 } from '../../../base';
 import { CopilotProvider } from './provider';
-import {
-  CopilotCapability,
+import type {
   CopilotChatOptions,
   CopilotImageOptions,
-  CopilotImageToImageProvider,
-  CopilotProviderType,
-  CopilotTextToImageProvider,
+  ModelConditions,
   PromptMessage,
 } from './types';
+import { CopilotProviderType, ModelInputType, ModelOutputType } from './types';
 
 export type FalConfig = {
   apiKey: string;
@@ -72,30 +70,66 @@ type FalPrompt = {
 };
 
 @Injectable()
-export class FalProvider
-  extends CopilotProvider<FalConfig>
-  implements CopilotTextToImageProvider, CopilotImageToImageProvider
-{
+export class FalProvider extends CopilotProvider<FalConfig> {
   override type = CopilotProviderType.FAL;
-  override readonly capabilities = [
-    CopilotCapability.TextToImage,
-    CopilotCapability.ImageToImage,
-    CopilotCapability.ImageToText,
-  ];
 
   override readonly models = [
-    // text to image
-    'fast-turbo-diffusion',
-    // image to image
-    'lcm-sd15-i2i',
-    'clarity-upscaler',
-    'face-to-sticker',
-    'imageutils/rembg',
-    'fast-sdxl/image-to-image',
-    'workflowutils/teed',
-    'lora/image-to-image',
-    // image to text
-    'llava-next',
+    // image to image models
+    {
+      id: 'lcm-sd15-i2i',
+      capabilities: [
+        {
+          input: [ModelInputType.Image],
+          output: [ModelOutputType.Image],
+          defaultForOutputType: true,
+        },
+      ],
+    },
+    {
+      id: 'clarity-upscaler',
+      capabilities: [
+        {
+          input: [ModelInputType.Image],
+          output: [ModelOutputType.Image],
+        },
+      ],
+    },
+    {
+      id: 'face-to-sticker',
+      capabilities: [
+        {
+          input: [ModelInputType.Image],
+          output: [ModelOutputType.Image],
+        },
+      ],
+    },
+    {
+      id: 'imageutils/rembg',
+      capabilities: [
+        {
+          input: [ModelInputType.Image],
+          output: [ModelOutputType.Image],
+        },
+      ],
+    },
+    {
+      id: 'workflowutils/teed',
+      capabilities: [
+        {
+          input: [ModelInputType.Image],
+          output: [ModelOutputType.Image],
+        },
+      ],
+    },
+    {
+      id: 'lora/image-to-image',
+      capabilities: [
+        {
+          input: [ModelInputType.Image],
+          output: [ModelOutputType.Image],
+        },
+      ],
+    },
   ];
 
   override configured(): boolean {
@@ -146,7 +180,7 @@ export class FalProvider
               ? v.attachment
               : undefined
         )
-        .filter(v => !!v)[0],
+        .find(v => !!v),
       prompt: content.trim(),
       loras: lora.length ? lora : undefined,
       controlnets: controlnets.length ? controlnets : undefined,
@@ -204,20 +238,20 @@ export class FalProvider
     });
   }
 
-  async generateText(
+  async text(
+    cond: ModelConditions,
     messages: PromptMessage[],
-    model: string = 'llava-next',
     options: CopilotChatOptions = {}
   ): Promise<string> {
-    if (!(await this.isModelAvailable(model))) {
-      throw new CopilotPromptInvalid(`Invalid model: ${model}`);
-    }
+    const model = this.selectModel(cond);
 
-    // by default, image prompt assumes there is only one message
-    const prompt = this.extractPrompt(messages.pop());
     try {
-      metrics.ai.counter('chat_text_calls').add(1, { model });
-      const response = await fetch(`https://fal.run/fal-ai/${model}`, {
+      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
+
+      // by default, image prompt assumes there is only one message
+      const prompt = this.extractPrompt(messages[messages.length - 1]);
+
+      const response = await fetch(`https://fal.run/fal-ai/${model.id}`, {
         method: 'POST',
         headers: {
           Authorization: `key ${this.config.apiKey}`,
@@ -237,112 +271,101 @@ export class FalProvider
       }
       return data.output;
     } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model });
+      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
       throw this.handleError(e);
     }
   }
 
-  async *generateTextStream(
+  async *streamText(
+    cond: ModelConditions,
     messages: PromptMessage[],
-    model: string = 'llava-next',
-    options: CopilotChatOptions = {}
+    options: CopilotChatOptions | CopilotImageOptions = {}
   ): AsyncIterable<string> {
-    try {
-      metrics.ai.counter('chat_text_stream_calls').add(1, { model });
-      const result = await this.generateText(messages, model, options);
+    const model = this.selectModel(cond);
 
-      for (const content of result) {
-        if (content) {
-          yield content;
-          if (options.signal?.aborted) {
-            break;
-          }
-        }
-      }
+    try {
+      metrics.ai.counter('chat_text_stream_calls').add(1, { model: model.id });
+      const result = await this.text(cond, messages, options);
+
+      yield result;
     } catch (e) {
-      metrics.ai.counter('chat_text_stream_errors').add(1, { model });
+      metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
       throw e;
     }
   }
 
-  private async buildResponse(
+  override async *streamImages(
+    cond: ModelConditions,
     messages: PromptMessage[],
-    model: string = this.models[0],
     options: CopilotImageOptions = {}
-  ) {
-    // by default, image prompt assumes there is only one message
-    const prompt = this.extractPrompt(messages.pop(), options);
-    if (model.startsWith('workflows/')) {
-      const stream = await falStream(model, { input: prompt });
-      return this.parseSchema(FalStreamOutputSchema, await stream.done())
-        .output;
-    } else {
-      const response = await fetch(`https://fal.run/fal-ai/${model}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `key ${this.config.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...prompt,
-          sync_mode: true,
-          seed: options.seed || 42,
-          enable_safety_checks: false,
-        }),
-        signal: options.signal,
-      });
-      return this.parseSchema(FalResponseSchema, await response.json());
-    }
-  }
-
-  // ====== image to image ======
-  async generateImages(
-    messages: PromptMessage[],
-    model: string = this.models[0],
-    options: CopilotImageOptions = {}
-  ): Promise<Array<string>> {
-    if (!(await this.isModelAvailable(model))) {
-      throw new CopilotPromptInvalid(`Invalid model: ${model}`);
-    }
+  ): AsyncIterable<string> {
+    const model = this.selectModel({
+      ...cond,
+      outputType: ModelOutputType.Image,
+    });
 
     try {
-      metrics.ai.counter('generate_images_calls').add(1, { model });
+      metrics.ai
+        .counter('generate_images_stream_calls')
+        .add(1, { model: model.id });
 
-      const data = await this.buildResponse(messages, model, options);
+      // by default, image prompt assumes there is only one message
+      const prompt = this.extractPrompt(
+        messages[messages.length - 1],
+        options as CopilotImageOptions
+      );
+
+      let data: FalResponse;
+      if (model.id.startsWith('workflows/')) {
+        const stream = await falStream(model.id, { input: prompt });
+        data = this.parseSchema(
+          FalStreamOutputSchema,
+          await stream.done()
+        ).output;
+      } else {
+        const response = await fetch(`https://fal.run/fal-ai/${model.id}`, {
+          method: 'POST',
+          headers: {
+            Authorization: `key ${this.config.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ...prompt,
+            sync_mode: true,
+            seed: (options as CopilotImageOptions)?.seed || 42,
+            enable_safety_checks: false,
+          }),
+          signal: options.signal,
+        });
+        data = this.parseSchema(FalResponseSchema, await response.json());
+      }
 
       if (!data.images?.length && !data.image?.url) {
         throw this.extractFalError(data, 'Failed to generate images');
       }
 
       if (data.image?.url) {
-        return [data.image.url];
+        yield data.image.url;
+        return;
       }
 
-      return (
+      const imageUrls =
         data.images
           ?.filter((image): image is NonNullable<FalImage> => !!image)
-          .map(image => image.url) || []
-      );
-    } catch (e: any) {
-      metrics.ai.counter('generate_images_errors').add(1, { model });
-      throw this.handleError(e);
-    }
-  }
+          .map(image => image.url) || [];
 
-  async *generateImagesStream(
-    messages: PromptMessage[],
-    model: string = this.models[0],
-    options: CopilotImageOptions = {}
-  ): AsyncIterable<string> {
-    try {
-      metrics.ai.counter('generate_images_stream_calls').add(1, { model });
-      const ret = await this.generateImages(messages, model, options);
-      for (const url of ret) {
+      for (const url of imageUrls) {
         yield url;
+        if (options.signal?.aborted) {
+          break;
+        }
       }
+      return;
     } catch (e) {
-      metrics.ai.counter('generate_images_stream_errors').add(1, { model });
-      throw e;
+      metrics.ai
+        .counter('generate_images_stream_errors')
+        .add(1, { model: model.id });
+      throw this.handleError(e);
     }
   }
 }

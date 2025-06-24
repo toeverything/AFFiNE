@@ -61,20 +61,24 @@ export const DesktopNotificationCard = ({
             </IconButton>
           </div>
         </header>
-        <main data-align={alignMessage} className={styles.main}>
-          {notification.message}
-        </main>
-        <footer>
-          <FlexWrapper marginTop={8} justifyContent="flex-end" gap="12px">
-            {actions?.map(action => (
-              <NotificationCardAction
-                key={action.key}
-                action={action}
-                onDismiss={onDismiss}
-              />
-            ))}
-          </FlexWrapper>
-        </footer>
+        {notification.message ? (
+          <main data-align={alignMessage} className={styles.main}>
+            {notification.message}
+          </main>
+        ) : null}
+        {actions?.length ? (
+          <footer>
+            <FlexWrapper marginTop={8} justifyContent="flex-end" gap="12px">
+              {actions?.map(action => (
+                <NotificationCardAction
+                  key={action.key}
+                  action={action}
+                  onDismiss={onDismiss}
+                />
+              ))}
+            </FlexWrapper>
+          </footer>
+        ) : null}
       </div>
     </div>
   );

@@ -17,6 +17,29 @@ test.describe('AIBasic/Chat', () => {
     await expect(page.getByTestId('ai-onboarding')).toBeVisible();
   });
 
+  test('should display embedding status tooltip', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    await utils.editor.createDoc(page, 'Doc 1', 'doc1');
+    await utils.editor.createDoc(page, 'Doc 2', 'doc2');
+    await utils.editor.createDoc(page, 'Doc 3', 'doc3');
+    await utils.editor.createDoc(page, 'Doc 4', 'doc4');
+    await utils.editor.createDoc(page, 'Doc 5', 'doc5');
+
+    const check = await page.getByTestId(
+      'ai-chat-embedding-status-tooltip-check'
+    );
+    await expect(check).toBeVisible({ timeout: 50 * 1000 });
+
+    await check.hover();
+    const tooltip = await page.getByTestId('ai-chat-embedding-status-tooltip');
+    await expect(tooltip).toBeVisible();
+    await expect(tooltip).toHaveText(
+      /Results will improve after embedding|Embedding finished/
+    );
+  });
+
   test(`should send message and receive AI response:
         - send message
         - AI is loading
@@ -24,13 +47,16 @@ test.describe('AIBasic/Chat', () => {
         - AI success
     `, async ({ loggedInPage: page, utils }) => {
     // Type and send a message
-    await utils.chatPanel.makeChat(page, 'Introduce AFFiNE to me');
+    await utils.chatPanel.makeChat(
+      page,
+      'Introduce AFFiNE to me. Answer in 50 words.'
+    );
 
     // AI is loading
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce AFFiNE to me',
+        content: 'Introduce AFFiNE to me. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -44,7 +70,7 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce AFFiNE to me',
+        content: 'Introduce AFFiNE to me. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -57,7 +83,7 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce AFFiNE to me',
+        content: 'Introduce AFFiNE to me. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -70,13 +96,16 @@ test.describe('AIBasic/Chat', () => {
     loggedInPage: page,
     utils,
   }) => {
-    await utils.chatPanel.makeChat(page, 'Introduce AFFiNE to me');
+    await utils.chatPanel.makeChat(
+      page,
+      'Introduce AFFiNE to me. Answer in 50 words.'
+    );
 
     // AI Generating
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce AFFiNE to me',
+        content: 'Introduce AFFiNE to me. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -88,7 +117,7 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce AFFiNE to me',
+        content: 'Introduce AFFiNE to me. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -101,11 +130,14 @@ test.describe('AIBasic/Chat', () => {
     loggedInPage: page,
     utils,
   }) => {
-    await utils.chatPanel.makeChat(page, 'Hello, how can you help me?');
+    await utils.chatPanel.makeChat(
+      page,
+      'Hello, how can you help me? Answer in 50 words.'
+    );
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello, how can you help me?',
+        content: 'Hello, how can you help me? Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -114,11 +146,14 @@ test.describe('AIBasic/Chat', () => {
     ]);
 
     await expect(page.getByTestId('chat-action-list')).toBeVisible();
-    await utils.chatPanel.makeChat(page, 'Nice to meet you');
+    await utils.chatPanel.makeChat(
+      page,
+      'Nice to meet you. Answer in 50 words.'
+    );
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello, how can you help me?',
+        content: 'Hello, how can you help me? Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -126,7 +161,7 @@ test.describe('AIBasic/Chat', () => {
       },
       {
         role: 'user',
-        content: 'Nice to meet you',
+        content: 'Nice to meet you. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -152,13 +187,13 @@ test.describe('AIBasic/Chat', () => {
     // Type and send a message
     await utils.chatPanel.makeChat(
       page,
-      'Hello, write a poem about the moon with 50 words.'
+      'Hello, write a poem about the moon. Answer in 50 words.'
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello, write a poem about the moon with 50 words.',
+        content: 'Hello, write a poem about the moon. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -199,7 +234,7 @@ test.describe('AIBasic/Chat', () => {
     await page.route('**/graphql', route => route.abort('failed'));
 
     // Send a message that will fail
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     await expect(page.getByTestId('ai-error')).toBeVisible();
     await expect(page.getByTestId('action-retry-button')).toBeVisible();
@@ -213,7 +248,7 @@ test.describe('AIBasic/Chat', () => {
     await page.route('**/graphql', route => route.abort('failed'));
 
     // Send a message that will fail
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
 
     // Verify error state
     await expect(page.getByTestId('ai-error')).toBeVisible();
@@ -221,7 +256,7 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -238,7 +273,7 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -253,13 +288,13 @@ test.describe('AIBasic/Chat', () => {
   }) => {
     await utils.chatPanel.makeChat(
       page,
-      'Introduce Large Language Model in under 500 words'
+      'Introduce Large Language Model. Answer in 50 words.'
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce Large Language Model in under 500 words',
+        content: 'Introduce Large Language Model. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -273,7 +308,7 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce Large Language Model in under 500 words',
+        content: 'Introduce Large Language Model. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -284,7 +319,7 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce Large Language Model in under 500 words',
+        content: 'Introduce Large Language Model. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -317,11 +352,11 @@ test.describe('AIBasic/Chat', () => {
     utils,
   }) => {
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -336,11 +371,11 @@ test.describe('AIBasic/Chat', () => {
     utils,
   }) => {
     await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello');
+    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello',
+        content: 'Hello. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -367,13 +402,12 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.openChatPanel(page);
     await utils.chatPanel.makeChat(
       page,
-      'Help me write a two-line love poem, return two paragraphs for me.'
+      'Help me write a two-line love poem. Answer in 50 words.'
     );
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content:
-          'Help me write a two-line love poem, return two paragraphs for me.',
+        content: 'Help me write a two-line love poem. Answer in 50 words.',
       },
       {
         role: 'assistant',
@@ -421,7 +455,7 @@ test.describe('AIBasic/Chat', () => {
       page,
       'AFFiNE is an open source all in one workspace.'
     );
-    await page.keyboard.type('Translate to chinese');
+    await page.keyboard.type('Translate to chinese.');
 
     const sendButton = await page.getByTestId('ai-panel-input-send');
     await expect(sendButton).toHaveAttribute('data-active', 'true');
@@ -432,7 +466,7 @@ test.describe('AIBasic/Chat', () => {
       {
         role: 'user',
         content:
-          'AFFiNE is an open source all in one workspace.\nTranslate to chinese',
+          'AFFiNE is an open source all in one workspace.\nTranslate to chinese.',
       },
       {
         role: 'assistant',
@@ -450,7 +484,7 @@ test.describe('AIBasic/Chat', () => {
       await utils.editor.createShape(page, 'HelloWorld');
     });
     await page.waitForTimeout(1000);
-    await page.keyboard.type('What color is it?');
+    await page.keyboard.type('What color is it? Answer in 50 words.');
 
     await page.waitForTimeout(1000);
     const sendButton = await page.getByTestId('ai-panel-input-send');
@@ -462,7 +496,34 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'What color is it?',
+        content: 'What color is it? Answer in 50 words.',
+      },
+      {
+        role: 'assistant',
+        status: 'success',
+      },
+    ]);
+  });
+
+  test('should support chat with ask ai input in edgeless mode when nothing selected', async ({
+    loggedInPage: page,
+    utils,
+  }) => {
+    await utils.chatPanel.closeChatPanel(page);
+    await utils.editor.switchToEdgelessMode(page);
+    await utils.editor.removeAll(page);
+
+    await page.mouse.move(300, 300);
+    await page.mouse.down({ button: 'right' });
+    await page.mouse.move(350, 350);
+    await page.mouse.up({ button: 'right' });
+
+    await utils.chatPanel.openChatPanel(page);
+    await utils.chatPanel.makeChat(page, 'Who are you? Answer in 50 words.');
+    await utils.chatPanel.waitForHistory(page, [
+      {
+        role: 'user',
+        content: 'Who are you? Answer in 50 words.',
       },
       {
         role: 'assistant',

@@ -10,7 +10,6 @@
   "author": "toeverything",
   "license": "MIT",
   "dependencies": {
-    "@blocksuite/affine-block-embed": "workspace:*",
     "@blocksuite/affine-block-surface": "workspace:*",
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",
@@ -24,8 +23,8 @@
     "@floating-ui/dom": "^1.6.13",
     "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
-    "@toeverything/theme": "^1.1.12",
-    "file-type": "^20.0.0",
+    "@toeverything/theme": "^1.1.15",
+    "file-type": "^21.0.0",
     "lit": "^3.2.0",
     "minimatch": "^10.0.1",
     "rxjs": "^7.8.1",
@@ -33,7 +32,6 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./effects": "./src/effects.ts",
     "./store": "./src/store.ts",
     "./view": "./src/view.ts"
   },
@@ -43,5 +41,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.21.0"
+  "version": "0.22.4"
 }

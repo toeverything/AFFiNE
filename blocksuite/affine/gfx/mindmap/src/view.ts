@@ -12,7 +12,7 @@ import {
   shapeMindmapToolbarExtension,
 } from './toolbar/config';
 import { mindMapSeniorTool } from './toolbar/senior-tool';
-import { MindMapView } from './view/view';
+import { MindMapInteraction, MindMapView } from './view/view';
 
 export class MindmapViewExtension extends ViewExtensionProvider {
   override name = 'affine-mindmap-gfx';
@@ -31,5 +31,6 @@ export class MindmapViewExtension extends ViewExtensionProvider {
     context.register(MindMapView);
     context.register(MindMapDragExtension);
     context.register(MindMapIndicatorOverlay);
+    context.register(MindMapInteraction);
   }
 }

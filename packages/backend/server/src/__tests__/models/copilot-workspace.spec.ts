@@ -1,8 +1,12 @@
+import { randomUUID } from 'node:crypto';
+
 import { PrismaClient, User, Workspace } from '@prisma/client';
 import ava, { TestFn } from 'ava';
 
 import { Config } from '../../base';
+import { CopilotContextModel } from '../../models/copilot-context';
 import { CopilotWorkspaceConfigModel } from '../../models/copilot-workspace';
+import { DocModel } from '../../models/doc';
 import { UserModel } from '../../models/user';
 import { WorkspaceModel } from '../../models/workspace';
 import { createTestingModule, type TestingModule } from '../utils';
@@ -12,8 +16,10 @@ interface Context {
   config: Config;
   module: TestingModule;
   db: PrismaClient;
+  doc: DocModel;
   user: UserModel;
   workspace: WorkspaceModel;
+  copilotContext: CopilotContextModel;
   copilotWorkspace: CopilotWorkspaceConfigModel;
 }
 
@@ -23,8 +29,10 @@ test.before(async t => {
   const module = await createTestingModule();
   t.context.user = module.get(UserModel);
   t.context.workspace = module.get(WorkspaceModel);
+  t.context.copilotContext = module.get(CopilotContextModel);
   t.context.copilotWorkspace = module.get(CopilotWorkspaceConfigModel);
   t.context.db = module.get(PrismaClient);
+  t.context.doc = module.get(DocModel);
   t.context.config = module.get(Config);
   t.context.module = module;
 });
@@ -74,7 +82,7 @@ test('should manage copilot workspace ignored docs', async t => {
       workspace.id,
       [docId]
     );
-    t.is(count, 1, 'should not add ignored doc again');
+    t.snapshot(count, 'should not change if ignored doc exists');
 
     const ret = await t.context.copilotWorkspace.listIgnoredDocs(workspace.id);
     t.snapshot(cleanObject(ret), 'should not add ignored doc again');
@@ -107,6 +115,7 @@ test('should insert and search embedding', async t => {
   {
     const { fileId } = await t.context.copilotWorkspace.addFile(workspace.id, {
       fileName: 'file1',
+      blobId: 'blob1',
       mimeType: 'text/plain',
       size: 1,
     });
@@ -129,9 +138,143 @@ test('should insert and search embedding', async t => {
         1,
         1
       );
-      t.is(ret.length, 1);
-      t.is(ret[0].content, 'content');
+      t.snapshot(
+        cleanObject(ret, ['fileId']),
+        'should match workspace file embedding'
+      );
     }
+  }
+
+  {
+    const docId = randomUUID();
+    await t.context.doc.upsert({
+      spaceId: workspace.id,
+      docId,
+      blob: Uint8Array.from([1, 2, 3]),
+      timestamp: Date.now(),
+      editorId: user.id,
+    });
+
+    const toBeEmbedDocIds = await t.context.copilotWorkspace.findDocsToEmbed(
+      workspace.id
+    );
+    t.snapshot(toBeEmbedDocIds.length, 'should find docs to embed');
+
+    await t.context.copilotContext.insertWorkspaceEmbedding(
+      workspace.id,
+      docId,
+      [
+        {
+          index: 0,
+          content: 'content',
+          embedding: Array.from({ length: 1024 }, () => 1),
+        },
+      ]
+    );
+
+    const afterInsertEmbedding =
+      await t.context.copilotWorkspace.findDocsToEmbed(workspace.id);
+    t.snapshot(afterInsertEmbedding.length, 'should not find docs to embed');
+  }
+
+  {
+    const docId = randomUUID();
+    await t.context.doc.upsert({
+      spaceId: workspace.id,
+      docId,
+      blob: Uint8Array.from([1, 2, 3]),
+      timestamp: Date.now(),
+      editorId: user.id,
+    });
+
+    const toBeEmbedDocIds = await t.context.copilotWorkspace.findDocsToEmbed(
+      workspace.id
+    );
+    t.snapshot(toBeEmbedDocIds.length, 'should find docs to embed');
+
+    await t.context.copilotWorkspace.updateIgnoredDocs(workspace.id, [docId]);
+
+    const afterAddIgnoreDocs = await t.context.copilotWorkspace.findDocsToEmbed(
+      workspace.id
+    );
+    t.snapshot(afterAddIgnoreDocs.length, 'should not find docs to embed');
+  }
+
+  {
+    const docId = `foo$bar`;
+    await t.context.doc.upsert({
+      spaceId: workspace.id,
+      docId: docId,
+      blob: Uint8Array.from([1, 2, 3]),
+      timestamp: Date.now(),
+      editorId: user.id,
+    });
+    const results = await t.context.copilotWorkspace.findDocsToEmbed(
+      workspace.id
+    );
+    t.false(results.includes(docId), 'docs containing `$` should be excluded');
+  }
+});
+
+test('should check need to be embedded', async t => {
+  const docId = randomUUID();
+
+  await t.context.doc.upsert({
+    spaceId: workspace.id,
+    docId,
+    blob: Uint8Array.from([1, 2, 3]),
+    timestamp: Date.now(),
+    editorId: user.id,
+  });
+
+  {
+    let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
+      workspace.id,
+      docId
+    );
+    t.true(needsEmbedding, 'document with no embedding should need embedding');
+  }
+
+  {
+    await t.context.copilotContext.insertWorkspaceEmbedding(
+      workspace.id,
+      docId,
+      [
+        {
+          index: 0,
+          content: 'content',
+          embedding: Array.from({ length: 1024 }, () => 1),
+        },
+      ]
+    );
+
+    let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
+      workspace.id,
+      docId
+    );
+    t.false(
+      needsEmbedding,
+      'document with recent embedding should not need embedding'
+    );
+  }
+
+  {
+    await t.context.doc.upsert({
+      spaceId: workspace.id,
+      docId,
+      blob: Uint8Array.from([4, 5, 6]),
+      timestamp: Date.now() + 1000, // Ensure timestamp is later
+      editorId: user.id,
+    });
+
+    let needsEmbedding = await t.context.copilotWorkspace.checkDocNeedEmbedded(
+      workspace.id,
+      docId
+    );
+    t.true(
+      needsEmbedding,
+      'document updated after embedding should need embedding'
+    );
   }
 });
 

@@ -85,6 +85,9 @@ export class WorkspaceQuotaHumanReadableType {
 
   @Field()
   memberCount!: string;
+
+  @Field()
+  overcapacityMemberCount!: string;
 }
 
 @ObjectType()
@@ -109,6 +112,9 @@ export class WorkspaceQuotaType implements Partial<WorkspaceQuota> {
 
   @Field()
   memberCount!: number;
+
+  @Field()
+  overcapacityMemberCount!: number;
 
   @Field()
   humanReadable!: WorkspaceQuotaHumanReadableType;

@@ -4,6 +4,7 @@ import Sinon from 'sinon';
 
 import { createModule } from '../../../__tests__/create-module';
 import { Mockers } from '../../../__tests__/mocks';
+import { InvalidAppConfigInput } from '../../../base';
 import { Models } from '../../../models';
 import { ServerService } from '../service';
 
@@ -47,9 +48,7 @@ test('should validate config before update', async t => {
       },
     ]),
     {
-      message: `Invalid config for module [server] with key [externalUrl]
-Value: "invalid-url@some-domain.com"
-Error: Invalid url`,
+      instanceOf: InvalidAppConfigInput,
     }
   );
 
@@ -64,7 +63,7 @@ Error: Invalid url`,
       },
     ]),
     {
-      message: `Invalid config for module [auth] with unknown key [unknown-key]`,
+      instanceOf: InvalidAppConfigInput,
     }
   );
 

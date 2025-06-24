@@ -5,10 +5,10 @@ import { nothing } from 'lit';
 import { html } from 'lit/static-html.js';
 
 import { renderUniLit } from '../utils/uni-component/uni-component.js';
-import type { GroupData } from './trait.js';
+import type { Group } from './trait.js';
 import type { GroupRenderProps } from './types.js';
 
-function GroupHeaderCount(group: GroupData) {
+function GroupHeaderCount(group: Group) {
   const cards = group.rows;
   if (!cards.length) {
     return;
@@ -16,28 +16,25 @@ function GroupHeaderCount(group: GroupData) {
   return html` <div class="group-header-count">${cards.length}</div>`;
 }
 const GroupTitleMobile = (
-  groupData: GroupData,
+  groupData: Group,
   ops: {
     readonly: boolean;
     clickAdd: (evt: MouseEvent) => void;
     clickOps: (evt: MouseEvent) => void;
   }
 ) => {
-  const data = groupData.manager.config$.value;
-  if (!data) return nothing;
+  const type = groupData.tType;
+  if (!type) return nothing;
 
   const icon =
     groupData.value == null
       ? ''
       : html` <uni-lit
           class="group-header-icon"
-          .uni="${groupData.manager.property$.value?.icon}"
+          .uni="${groupData.property.icon}"
         ></uni-lit>`;
   const props: GroupRenderProps = {
-    value: groupData.value,
-    data: groupData.property.data$.value,
-    updateData: groupData.manager.updateData,
-    updateValue: value => groupData.manager.updateValue(groupData.rows, value),
+    group: groupData,
     readonly: ops.readonly,
   };
 
@@ -99,7 +96,7 @@ const GroupTitleMobile = (
     <div
       style="display:flex;align-items:center;gap: 8px;overflow: hidden;height: 22px;"
     >
-      ${icon} ${renderUniLit(data.view, props)} ${columnName}
+      ${icon} ${renderUniLit(groupData.view, props)} ${columnName}
       ${GroupHeaderCount(groupData)}
     </div>
     ${ops.readonly
@@ -116,7 +113,7 @@ const GroupTitleMobile = (
 };
 
 export const GroupTitle = (
-  groupData: GroupData,
+  groupData: Group,
   ops: {
     readonly: boolean;
     clickAdd: (evt: MouseEvent) => void;
@@ -126,21 +123,18 @@ export const GroupTitle = (
   if (IS_MOBILE) {
     return GroupTitleMobile(groupData, ops);
   }
-  const data = groupData.manager.config$.value;
-  if (!data) return nothing;
+  const type = groupData.tType;
+  if (!type) return nothing;
 
   const icon =
     groupData.value == null
       ? ''
       : html` <uni-lit
           class="group-header-icon"
-          .uni="${groupData.manager.property$.value?.icon}"
+          .uni="${groupData.property.icon}"
         ></uni-lit>`;
   const props: GroupRenderProps = {
-    value: groupData.value,
-    data: groupData.property.data$.value,
-    updateData: groupData.manager.updateData,
-    updateValue: value => groupData.manager.updateValue(groupData.rows, value),
+    group: groupData,
     readonly: ops.readonly,
   };
 
@@ -220,7 +214,7 @@ export const GroupTitle = (
     <div
       style="display:flex;align-items:center;gap: 8px;overflow: hidden;height: 22px;"
     >
-      ${icon} ${renderUniLit(data.view, props)} ${columnName}
+      ${icon} ${renderUniLit(groupData.view, props)} ${columnName}
       ${GroupHeaderCount(groupData)}
     </div>
     ${ops.readonly

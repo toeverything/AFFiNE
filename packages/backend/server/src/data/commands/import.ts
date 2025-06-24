@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { Logger } from '@nestjs/common';
 import { Command, CommandRunner } from 'nest-commander';
 
-import { ConfigFactory } from '../../base';
+import { ConfigFactory, InvalidAppConfigInput } from '../../base';
 import { Models } from '../../models';
 
 @Command({
@@ -50,7 +50,13 @@ export class ImportConfigCommand extends CommandRunner {
       });
     });
 
-    this.configFactory.validate(forValidation);
+    const errors = this.configFactory.validate(forValidation);
+
+    if (errors?.length) {
+      throw new InvalidAppConfigInput({
+        message: errors.map(error => error.message).join('\n '),
+      });
+    }
 
     // @ts-expect-error null as user id
     await this.models.appConfig.save(null, forSaving);

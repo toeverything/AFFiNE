@@ -18,7 +18,6 @@ import { Service } from '@toeverything/infra';
 
 import type { DocsService } from '../../doc';
 import type { EditorSettingService } from '../../editor-setting';
-import type { FeatureFlagService } from '../../feature-flag';
 import { resolveLinkToDoc } from '../../navigation';
 import type { WorkspaceService } from '../../workspace';
 
@@ -35,8 +34,7 @@ export class DndService extends Service {
   constructor(
     private readonly docsService: DocsService,
     private readonly workspaceService: WorkspaceService,
-    private readonly editorSettingService: EditorSettingService,
-    private readonly featureFlagService: FeatureFlagService
+    private readonly editorSettingService: EditorSettingService
   ) {
     super();
 
@@ -153,8 +151,7 @@ export class DndService extends Service {
 
       const flavour =
         dropTarget === 'canvas'
-          ? this.editorSettingService.editorSetting.docDropCanvasPreferView
-              .value
+          ? this.editorSettingService.editorSetting.docCanvasPreferView.value
           : 'affine:embed-linked-doc';
 
       const { entity, bsEntity } = args.source.data;
@@ -187,9 +184,7 @@ export class DndService extends Service {
           return false;
         },
         onDropTargetChange: (args: MonitorDragEvent<MixedDNDData>) => {
-          if (this.featureFlagService.flags.enable_embed_doc_with_alias.value) {
-            changeDocCardView(args);
-          }
+          changeDocCardView(args);
         },
       })
     );
@@ -280,7 +275,7 @@ export class DndService extends Service {
     // only deal with the first url
     const url = urls
       ?.split('\n')
-      .filter(u => u.trim() && !u.trim().startsWith('#'))[0];
+      .find(u => u.trim() && !u.trim().startsWith('#'));
 
     if (url) {
       const maybeDocLink = resolveLinkToDoc(url);

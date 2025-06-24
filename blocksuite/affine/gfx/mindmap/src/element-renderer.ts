@@ -34,7 +34,7 @@ export const mindmap: ElementRenderer<MindmapElementModel> = (
       const { connector, outdated } = result;
       const elementGetter = (id: string) =>
         model.surface.getElementById(id) ??
-        (model.surface.doc.getModelById(id) as GfxModel);
+        (model.surface.store.getModelById(id) as GfxModel);
 
       if (outdated) {
         ConnectorPathGenerator.updatePath(connector, null, elementGetter);

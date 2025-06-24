@@ -2,12 +2,14 @@ import type { DocMode } from '@blocksuite/affine/model';
 import type { DocMeta } from '@blocksuite/affine/store';
 import {
   Store,
+  yjsGetPath,
   yjsObserve,
-  yjsObserveByPath,
   yjsObserveDeep,
+  yjsObservePath,
 } from '@toeverything/infra';
+import { nanoid } from 'nanoid';
 import { distinctUntilChanged, map, switchMap } from 'rxjs';
-import { Array as YArray, Map as YMap } from 'yjs';
+import { Array as YArray, Map as YMap, transact } from 'yjs';
 
 import type { WorkspaceService } from '../../workspace';
 import type { DocPropertiesStore } from './doc-properties';
@@ -32,13 +34,37 @@ export class DocsStore extends Store {
     return this.workspaceService.workspace.docCollection;
   }
 
-  createBlockSuiteDoc() {
-    const doc = this.workspaceService.workspace.docCollection.createDoc();
-    return doc.getStore({ id: doc.id });
+  createDoc(docId?: string) {
+    const id = docId ?? nanoid();
+
+    transact(
+      this.workspaceService.workspace.rootYDoc,
+      () => {
+        const docs = this.workspaceService.workspace.rootYDoc
+          .getMap('meta')
+          .get('pages');
+
+        if (!docs || !(docs instanceof YArray)) {
+          return;
+        }
+
+        docs.push([
+          new YMap([
+            ['id', id],
+            ['title', ''],
+            ['createDate', Date.now()],
+            ['tags', new YArray()],
+          ]),
+        ]);
+      },
+      { force: true }
+    );
+
+    return id;
   }
 
   watchDocIds() {
-    return yjsObserveByPath(
+    return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
     ).pipe(
@@ -53,12 +79,94 @@ export class DocsStore extends Store {
     );
   }
 
-  watchNonTrashDocIds() {
-    return yjsObserveByPath(
+  watchAllDocUpdatedDate() {
+    return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
     ).pipe(
-      switchMap(yjsObserveDeep),
+      switchMap(pages => yjsObservePath(pages, '*.updatedDate')),
+      map(pages => {
+        if (pages instanceof YArray) {
+          return pages.map(v => ({
+            id: v.get('id') as string,
+            updatedDate: v.get('updatedDate') as number | undefined,
+          }));
+        } else {
+          return [];
+        }
+      })
+    );
+  }
+
+  watchAllDocTagIds() {
+    return yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(pages => yjsObservePath(pages, '*.tags')),
+      map(pages => {
+        if (pages instanceof YArray) {
+          return pages.map(v => ({
+            id: v.get('id') as string,
+            tags: (() => {
+              const tags = v.get('tags');
+              if (tags instanceof YArray) {
+                return tags.toJSON() as string[];
+              }
+              return (tags ?? []) as string[];
+            })(),
+          }));
+        } else {
+          return [];
+        }
+      })
+    );
+  }
+
+  watchAllDocCreateDate() {
+    return yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(pages => yjsObservePath(pages, '*.createDate')),
+      map(pages => {
+        if (pages instanceof YArray) {
+          return pages.map(v => ({
+            id: v.get('id') as string,
+            createDate: (v.get('createDate') ?? 0) as number,
+          }));
+        } else {
+          return [];
+        }
+      })
+    );
+  }
+
+  watchAllDocTitle() {
+    return yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(pages => yjsObservePath(pages, '*.title')),
+      map(pages => {
+        if (pages instanceof YArray) {
+          return pages.map(v => ({
+            id: v.get('id') as string,
+            title: (v.get('title') ?? '') as string,
+          }));
+        } else {
+          return [];
+        }
+      })
+    );
+  }
+
+  watchNonTrashDocIds() {
+    return yjsGetPath(
+      this.workspaceService.workspace.rootYDoc.getMap('meta'),
+      'pages'
+    ).pipe(
+      switchMap(pages => yjsObservePath(pages, '*.trash')),
       map(meta => {
         if (meta instanceof YArray) {
           return meta
@@ -72,11 +180,11 @@ export class DocsStore extends Store {
   }
 
   watchTrashDocIds() {
-    return yjsObserveByPath(
+    return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
     ).pipe(
-      switchMap(yjsObserveDeep),
+      switchMap(pages => yjsObservePath(pages, '*.trash')),
       map(meta => {
         if (meta instanceof YArray) {
           return meta
@@ -91,7 +199,7 @@ export class DocsStore extends Store {
 
   watchDocMeta(id: string) {
     let docMetaIndexCache = -1;
-    return yjsObserveByPath(
+    return yjsGetPath(
       this.workspaceService.workspace.rootYDoc.getMap('meta'),
       'pages'
     ).pipe(

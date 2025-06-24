@@ -10,7 +10,7 @@ import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import type { AIItemGroupConfig } from '../../components/ai-item/types';
-import type { CopilotTool } from '../../tool/copilot-tool';
+import { CopilotTool } from '../../tool/copilot-tool';
 
 export class EdgelessCopilotToolbarEntry extends WithDisposable(LitElement) {
   static override styles = css`
@@ -51,7 +51,7 @@ export class EdgelessCopilotToolbarEntry extends WithDisposable(LitElement) {
       }
     });
 
-    this._gfx.tool.setTool('copilot');
+    this._gfx.tool.setTool(CopilotTool);
     (this._gfx.tool.currentTool$.peek() as CopilotTool).updateSelectionWith(
       Array.from(toBeSelected),
       10

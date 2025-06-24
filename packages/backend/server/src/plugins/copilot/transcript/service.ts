@@ -16,9 +16,10 @@ import {
 import { Models } from '../../../models';
 import { PromptService } from '../prompt';
 import {
-  CopilotCapability,
+  CopilotProvider,
   CopilotProviderFactory,
-  CopilotTextProvider,
+  CopilotProviderType,
+  ModelOutputType,
   PromptMessage,
 } from '../providers';
 import { CopilotStorage } from '../storage';
@@ -154,10 +155,19 @@ export class CopilotTranscriptionService {
     return ret;
   }
 
-  private async getProvider(model: string): Promise<CopilotTextProvider> {
-    let provider = await this.providerFactory.getProviderByCapability(
-      CopilotCapability.TextToText,
-      { model }
+  private async getProvider(
+    modelId: string,
+    structured: boolean,
+    prefer?: CopilotProviderType
+  ): Promise<CopilotProvider> {
+    let provider = await this.providerFactory.getProvider(
+      {
+        outputType: structured
+          ? ModelOutputType.Structured
+          : ModelOutputType.Text,
+        modelId,
+      },
+      { prefer }
     );
 
     if (!provider) {
@@ -170,19 +180,28 @@ export class CopilotTranscriptionService {
   private async chatWithPrompt(
     promptName: string,
     message: Partial<PromptMessage>,
-    schema?: ZodType<any>
+    schema?: ZodType<any>,
+    prefer?: CopilotProviderType
   ): Promise<string> {
     const prompt = await this.prompt.get(promptName);
     if (!prompt) {
       throw new CopilotPromptNotFound({ name: promptName });
     }
 
-    const provider = await this.getProvider(prompt.model);
-    return provider.generateText(
-      [...prompt.finish({ schema }), { role: 'user', content: '', ...message }],
-      prompt.model,
-      Object.assign({}, prompt.config)
-    );
+    const cond = { modelId: prompt.model };
+    const msg = { role: 'user' as const, content: '', ...message };
+    const config = Object.assign({}, prompt.config);
+    if (schema) {
+      const provider = await this.getProvider(prompt.model, true, prefer);
+      return provider.structure(
+        cond,
+        [...prompt.finish({ schema }), msg],
+        config
+      );
+    } else {
+      const provider = await this.getProvider(prompt.model, false);
+      return provider.text(cond, [...prompt.finish({}), msg], config);
+    }
   }
 
   // TODO(@darkskygit): remove after old server down
@@ -213,13 +232,12 @@ export class CopilotTranscriptionService {
   }
 
   private async callTranscript(url: string, mimeType: string, offset: number) {
+    // NOTE: Vertex provider not support transcription yet, we always use Gemini here
     const result = await this.chatWithPrompt(
       'Transcript audio',
-      {
-        attachments: [url],
-        params: { mimetype: mimeType },
-      },
-      TranscriptionResponseSchema
+      { attachments: [url], params: { mimetype: mimeType } },
+      TranscriptionResponseSchema,
+      CopilotProviderType.Gemini
     );
 
     const transcription = TranscriptionResponseSchema.parse(

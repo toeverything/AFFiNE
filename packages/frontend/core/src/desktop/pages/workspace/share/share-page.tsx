@@ -1,4 +1,4 @@
-import { Scrollable } from '@affine/component';
+import { Scrollable, uniReactRoot } from '@affine/component';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
 import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
@@ -269,6 +269,7 @@ const SharePageInner = ({
             </div>
           </div>
           <PeekViewManagerModal />
+          <uniReactRoot.Root />
         </FrameworkScope>
       </FrameworkScope>
     </FrameworkScope>

@@ -23,12 +23,16 @@ import {
   ImageBlockModel,
   isExternalEmbedModel,
   NoteBlockModel,
+  ParagraphBlockModel,
 } from '@blocksuite/affine-model';
 import type {
   ToolbarActions,
   ToolbarContext,
 } from '@blocksuite/affine-shared/services';
-import { type ReorderingType } from '@blocksuite/affine-shared/utils';
+import {
+  matchModels,
+  type ReorderingType,
+} from '@blocksuite/affine-shared/utils';
 import { Bound, getCommonBoundWithRotation } from '@blocksuite/global/gfx';
 import {
   ArrowDownBigBottomIcon,
@@ -219,8 +223,18 @@ export const moreActions = [
           const model = ctx.getCurrentModelByType(NoteBlockModel);
           if (!model) return;
 
+          let placeholder = '';
+          for (const child of model.children) {
+            if (matchModels(child, [ParagraphBlockModel])) {
+              if (child.props.text.length === 0) continue;
+              placeholder = child.props.text.toString();
+              break;
+            }
+            break;
+          }
+
           const create = async () => {
-            const title = await promptDocTitle(ctx.std);
+            const title = await promptDocTitle(ctx.std, placeholder);
             if (title === null) return;
 
             const edgeless = getEdgelessWith(ctx);

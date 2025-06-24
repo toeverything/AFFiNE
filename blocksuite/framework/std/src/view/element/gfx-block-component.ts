@@ -9,9 +9,8 @@ import type {
   BoxSelectionContext,
   DragMoveContext,
   GfxViewTransformInterface,
-  SelectedContext,
 } from '../../gfx/interactivity/index.js';
-import { type GfxBlockElementModel } from '../../gfx/model/gfx-block-model.js';
+import type { GfxBlockElementModel } from '../../gfx/model/gfx-block-model.js';
 import { SurfaceSelection } from '../../selection/index.js';
 import { BlockComponent } from './block-component.js';
 
@@ -56,7 +55,7 @@ function handleGfxConnection(instance: GfxBlockComponent) {
   );
 
   instance.disposables.add(
-    instance.doc.slots.blockUpdated.subscribe(({ type, id }) => {
+    instance.store.slots.blockUpdated.subscribe(({ type, id }) => {
       if (id === instance.model.id && type === 'update') {
         updateTransform(instance);
       }
@@ -104,21 +103,7 @@ export abstract class GfxBlockComponent<
     this.model.pop('xywh');
   }
 
-  onSelected(context: SelectedContext): void | boolean {
-    if (context.multiSelect) {
-      this.gfx.selection.toggle(this.model);
-    } else {
-      this.gfx.selection.set({ elements: [this.model.id] });
-    }
-
-    return true;
-  }
-
   onBoxSelected(_: BoxSelectionContext) {}
-
-  onRotate() {}
-
-  onResize() {}
 
   getCSSTransform() {
     const viewport = this.gfx.viewport;
@@ -223,22 +208,7 @@ export function toGfxBlockComponent<
       this.model.pop('xywh');
     }
 
-    // eslint-disable-next-line sonarjs/no-identical-functions
-    onSelected(context: SelectedContext): void | boolean {
-      if (context.multiSelect) {
-        this.gfx.selection.toggle(this.model);
-      } else {
-        this.gfx.selection.set({ elements: [this.model.id] });
-      }
-
-      return true;
-    }
-
     onBoxSelected(_: BoxSelectionContext) {}
-
-    onRotate() {}
-
-    onResize() {}
 
     get gfx() {
       return this.std.get(GfxControllerIdentifier);

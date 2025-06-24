@@ -256,7 +256,7 @@ export abstract class GfxPrimitiveElementModel<
   }
 
   lock() {
-    lockElementImpl(this.surface.doc, this);
+    lockElementImpl(this.surface.store, this);
   }
 
   onCreated() {}
@@ -278,9 +278,7 @@ export abstract class GfxPrimitiveElementModel<
 
     if (getFieldPropsSet(this).has(prop as string)) {
       if (!isEqual(value, this.yMap.get(prop as string))) {
-        this.surface.doc.transact(() => {
-          this.yMap.set(prop as string, value);
-        });
+        this.yMap.set(prop as string, value);
       }
     } else {
       console.warn('pop a prop that is not field or local:', prop);
@@ -339,7 +337,7 @@ export abstract class GfxPrimitiveElementModel<
   }
 
   unlock() {
-    unlockElementImpl(this.surface.doc, this);
+    unlockElementImpl(this.surface.store, this);
   }
 
   @local()
@@ -396,7 +394,7 @@ export abstract class GfxGroupLikeElementModel<
     for (const key of this.childIds) {
       const element =
         this.surface.getElementById(key) ||
-        (this.surface.doc.getModelById(key) as GfxBlockElementModel);
+        (this.surface.store.getModelById(key) as GfxBlockElementModel);
 
       element && elements.push(element);
     }

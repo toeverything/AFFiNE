@@ -1,8 +1,8 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 
 import {
   Cache,
-  Config,
   CopilotInvalidContext,
   NoCopilotProviderAvailable,
   OnEvent,
@@ -15,9 +15,8 @@ import {
   ContextFile,
   Models,
 } from '../../../models';
-import { OpenAIEmbeddingClient } from './embedding';
+import { type EmbeddingClient, getEmbeddingClient } from '../embedding';
 import { ContextSession } from './session';
-import { EmbeddingClient } from './types';
 
 const CONTEXT_SESSION_KEY = 'context-session';
 
@@ -27,26 +26,23 @@ export class CopilotContextService implements OnApplicationBootstrap {
   private client: EmbeddingClient | undefined;
 
   constructor(
-    private readonly config: Config,
+    private readonly moduleRef: ModuleRef,
     private readonly cache: Cache,
     private readonly models: Models
   ) {}
 
   @OnEvent('config.init')
-  onConfigInit() {
-    this.setup();
+  async onConfigInit() {
+    await this.setup();
   }
 
   @OnEvent('config.changed')
-  onConfigChanged() {
-    this.setup();
+  async onConfigChanged() {
+    await this.setup();
   }
 
-  private setup() {
-    const configure = this.config.copilot.providers.openai;
-    if (configure.apiKey) {
-      this.client = new OpenAIEmbeddingClient(configure);
-    }
+  private async setup() {
+    this.client = await getEmbeddingClient(this.moduleRef);
   }
 
   async onApplicationBootstrap() {
@@ -146,6 +142,92 @@ export class CopilotContextService implements OnApplicationBootstrap {
       await this.models.copilotContext.getBySessionId(sessionId);
     if (existsContext) return this.get(existsContext.id);
     return null;
+  }
+
+  async matchWorkspaceFiles(
+    workspaceId: string,
+    content: string,
+    topK: number = 5,
+    signal?: AbortSignal,
+    threshold: number = 0.5
+  ) {
+    if (!this.embeddingClient) return [];
+    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    if (!embedding) return [];
+
+    const fileChunks = await this.models.copilotWorkspace.matchFileEmbedding(
+      workspaceId,
+      embedding,
+      topK * 2,
+      threshold
+    );
+    if (!fileChunks.length) return [];
+
+    return await this.embeddingClient.reRank(content, fileChunks, topK, signal);
+  }
+
+  async matchWorkspaceDocs(
+    workspaceId: string,
+    content: string,
+    topK: number = 5,
+    signal?: AbortSignal,
+    threshold: number = 0.5
+  ) {
+    if (!this.embeddingClient) return [];
+    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    if (!embedding) return [];
+
+    const workspaceChunks =
+      await this.models.copilotContext.matchWorkspaceEmbedding(
+        embedding,
+        workspaceId,
+        topK * 2,
+        threshold
+      );
+    if (!workspaceChunks.length) return [];
+
+    return await this.embeddingClient.reRank(
+      content,
+      workspaceChunks,
+      topK,
+      signal
+    );
+  }
+
+  async matchWorkspaceAll(
+    workspaceId: string,
+    content: string,
+    topK: number = 5,
+    signal?: AbortSignal,
+    threshold: number = 0.5
+  ) {
+    if (!this.embeddingClient) return [];
+    const embedding = await this.embeddingClient.getEmbedding(content, signal);
+    if (!embedding) return [];
+
+    const [fileChunks, workspaceChunks] = await Promise.all([
+      this.models.copilotWorkspace.matchFileEmbedding(
+        workspaceId,
+        embedding,
+        topK * 2,
+        threshold
+      ),
+      this.models.copilotContext.matchWorkspaceEmbedding(
+        embedding,
+        workspaceId,
+        topK * 2,
+        threshold
+      ),
+    ]);
+
+    if (!fileChunks.length && !workspaceChunks.length) return [];
+
+    return await this.embeddingClient.reRank(
+      content,
+      [...fileChunks, ...workspaceChunks],
+      topK,
+      signal
+    );
   }
 
   @OnEvent('workspace.doc.embed.failed')

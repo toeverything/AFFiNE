@@ -10,11 +10,13 @@ export { ServerScope } from './scopes/server';
 export { AuthService } from './services/auth';
 export { CaptchaService } from './services/captcha';
 export { DefaultServerService } from './services/default-server';
+export { DocCreatedByUpdatedBySyncService } from './services/doc-created-by-updated-by-sync';
 export { EventSourceService } from './services/eventsource';
 export { FetchService } from './services/fetch';
 export { GraphQLService } from './services/graphql';
 export { InvitationService } from './services/invitation';
 export { InvoicesService } from './services/invoices';
+export type { PublicUserInfo } from './services/public-user';
 export { PublicUserService } from './services/public-user';
 export { SelfhostGenerateLicenseService } from './services/selfhost-generate-license';
 export { SelfhostLicenseService } from './services/selfhost-license';
@@ -36,8 +38,6 @@ export type { ServerConfig } from './types';
 // eslint-disable-next-line simple-import-sort/imports
 import { type Framework } from '@toeverything/infra';
 
-import { DocScope } from '../doc/scopes/doc';
-import { DocService } from '../doc/services/doc';
 import { GlobalCache, GlobalState } from '../storage/providers/global';
 import { GlobalStateService } from '../storage/services/global';
 import { UrlService } from '../url';
@@ -95,6 +95,13 @@ import { UserCopilotQuotaStore } from './stores/user-copilot-quota';
 import { UserFeatureStore } from './stores/user-feature';
 import { UserQuotaStore } from './stores/user-quota';
 import { UserSettingsStore } from './stores/user-settings';
+import { DocCreatedByService } from './services/doc-created-by';
+import { DocUpdatedByService } from './services/doc-updated-by';
+import { DocCreatedByUpdatedBySyncService } from './services/doc-created-by-updated-by-sync';
+import { WorkspacePermissionService } from '../permissions';
+import { DocScope, DocService, DocsService } from '../doc';
+import { DocCreatedByUpdatedBySyncStore } from './stores/doc-created-by-updated-by-sync';
+import { GlobalDialogService } from '../dialogs';
 
 export function configureCloudModule(framework: Framework) {
   configureDefaultAuthProvider(framework);
@@ -117,7 +124,12 @@ export function configureCloudModule(framework: Framework) {
         f.getOptional(ValidatorProvider)
       );
     })
-    .service(AuthService, [FetchService, AuthStore, UrlService])
+    .service(AuthService, [
+      FetchService,
+      AuthStore,
+      UrlService,
+      GlobalDialogService,
+    ])
     .store(AuthStore, [
       FetchService,
       GraphQLService,
@@ -164,7 +176,9 @@ export function configureCloudModule(framework: Framework) {
   framework
     .scope(WorkspaceScope)
     .service(WorkspaceServerService)
+    .service(DocCreatedByService, [WorkspaceServerService])
     .scope(DocScope)
+    .service(DocUpdatedByService, [WorkspaceServerService])
     .service(CloudDocMetaService)
     .entity(CloudDocMeta, [CloudDocMetaStore, DocService, GlobalCache])
     .store(CloudDocMetaStore, [WorkspaceServerService]);
@@ -176,5 +190,15 @@ export function configureCloudModule(framework: Framework) {
     .entity(WorkspaceInvoices, [WorkspaceService, WorkspaceServerService])
     .service(SelfhostLicenseService, [SelfhostLicenseStore, WorkspaceService])
     .store(SelfhostLicenseStore, [WorkspaceServerService])
-    .service(BlocksuiteWriterInfoService, [WorkspaceServerService]);
+    .service(BlocksuiteWriterInfoService, [WorkspaceServerService])
+    .service(DocCreatedByUpdatedBySyncService, [
+      WorkspaceService,
+      DocsService,
+      WorkspacePermissionService,
+      DocCreatedByUpdatedBySyncStore,
+    ])
+    .store(DocCreatedByUpdatedBySyncStore, [
+      WorkspaceServerService,
+      WorkspaceService,
+    ]);
 }

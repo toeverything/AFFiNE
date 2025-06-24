@@ -2,6 +2,7 @@ import '@toeverything/theme/style.css';
 import '@blocksuite/affine/gfx/pointer';
 
 import type { EdgelessRootBlockComponent } from '@blocksuite/affine/blocks/root';
+import { DefaultTool } from '@blocksuite/affine/blocks/surface';
 import { ColorScheme } from '@blocksuite/affine/model';
 import { ThemeProvider } from '@blocksuite/affine/shared/services';
 import { beforeEach, describe, expect, test } from 'vitest';
@@ -17,7 +18,7 @@ describe('theme service', () => {
 
     edgeless = getDocRootBlock(doc, editor, 'edgeless');
 
-    edgeless.gfx.tool.setTool('default');
+    edgeless.gfx.tool.setTool(DefaultTool);
 
     const themeService = edgeless.gfx.std.get(ThemeProvider);
     themeService.theme$.value = ColorScheme.Light;

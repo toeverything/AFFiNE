@@ -2,17 +2,20 @@ import type {
   ChatHistoryOrder,
   ContextMatchedDocChunk,
   ContextMatchedFileChunk,
+  ContextWorkspaceEmbeddingStatus,
   CopilotContextCategory,
   CopilotContextDoc,
   CopilotContextFile,
   CopilotSessionType,
   getCopilotHistoriesQuery,
   RequestOptions,
+  StreamObject,
 } from '@affine/graphql';
 import type { EditorHost } from '@blocksuite/affine/std';
 import type { GfxModel } from '@blocksuite/affine/std/gfx';
 import type { BlockModel } from '@blocksuite/affine/store';
 
+import type { AIEmbeddingStatus } from '../provider';
 import type { PromptKey } from '../provider/prompt';
 
 export const translateLangs = [
@@ -84,15 +87,15 @@ declare global {
       // internal context
       host: EditorHost;
       models?: (BlockModel | GfxModel)[];
-      control: TrackerControl;
-      where: TrackerWhere;
+      control?: TrackerControl;
+      where?: TrackerWhere;
     }
 
     interface AIForkChatSessionOptions {
       docId: string;
       workspaceId: string;
       sessionId: string;
-      latestMessageId: string;
+      latestMessageId?: string;
     }
 
     interface AIImageActionOptions extends AITextActionOptions {
@@ -133,8 +136,9 @@ declare global {
     interface ChatOptions extends AITextActionOptions {
       sessionId?: string;
       isRootSession?: boolean;
-      mustSearch?: boolean;
+      webSearch?: boolean;
       reasoning?: boolean;
+      modelId?: string;
       contexts?: {
         docs: AIDocContextOption[];
         files: AIFileContextOption[];
@@ -327,10 +331,18 @@ declare global {
         onPoll: (result: AIDocsAndFilesContext | undefined) => void,
         abortSignal: AbortSignal
       ) => Promise<void>;
+      pollEmbeddingStatus: (
+        workspaceId: string,
+        onPoll: (result: ContextWorkspaceEmbeddingStatus) => void,
+        abortSignal: AbortSignal
+      ) => Promise<void>;
       matchContext: (
-        contextId: string,
         content: string,
-        limit?: number
+        contextId?: string,
+        workspaceId?: string,
+        limit?: number,
+        scopedThreshold?: number,
+        threshold?: number
       ) => Promise<{
         files?: ContextMatchedFileChunk[];
         docs?: ContextMatchedDocChunk[];
@@ -348,7 +360,8 @@ declare global {
         content: string;
         createdAt: string;
         role: MessageRole;
-        attachments?: string[];
+        attachments?: string[] | null;
+        streamObjects?: StreamObject[] | null;
       }[];
     }
 
@@ -376,6 +389,10 @@ declare global {
         docId?: string,
         options?: { action?: boolean }
       ) => Promise<CopilotSessionType[] | undefined>;
+      getSession: (
+        workspaceId: string,
+        sessionId: string
+      ) => Promise<CopilotSessionType | undefined>;
       updateSession: (sessionId: string, promptName: string) => Promise<string>;
     }
 
@@ -413,6 +430,10 @@ declare global {
         height: number;
         query: string;
       }): Promise<string[]>;
+    }
+
+    interface AIEmbeddingService {
+      getEmbeddingStatus(workspaceId: string): Promise<AIEmbeddingStatus>;
     }
   }
 }

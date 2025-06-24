@@ -20,6 +20,8 @@ export type TextToTextOptions = {
   isRootSession?: boolean;
   postfix?: (text: string) => string;
   reasoning?: boolean;
+  webSearch?: boolean;
+  modelId?: string;
 };
 
 export type ToImageOptions = TextToTextOptions & {
@@ -115,6 +117,8 @@ export function textToText({
   workflow = false,
   postfix,
   reasoning,
+  webSearch,
+  modelId,
 }: TextToTextOptions) {
   let messageId: string | undefined;
 
@@ -135,8 +139,10 @@ export function textToText({
             sessionId,
             messageId,
             reasoning,
+            webSearch,
+            modelId,
           },
-          workflow ? 'workflow' : undefined
+          workflow ? 'workflow' : 'stream-object'
         );
         AIProvider.LAST_ACTION_SESSIONID = sessionId;
 
@@ -195,6 +201,8 @@ export function textToText({
           sessionId,
           messageId,
           reasoning,
+          webSearch,
+          modelId,
         });
       })(),
     ]);

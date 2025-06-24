@@ -11,6 +11,7 @@ import {
 import { literal, unsafeStatic } from 'lit/static-html.js';
 
 import { getCodeClipboardExtensions } from './clipboard/index.js';
+import { CodeBlockConfigExtension } from './code-block-config';
 import {
   CodeBlockInlineManagerExtension,
   CodeBlockUnitSpecExtension,
@@ -20,8 +21,9 @@ import { CodeKeymapExtension } from './code-keymap.js';
 import { AFFINE_CODE_TOOLBAR_WIDGET } from './code-toolbar/index.js';
 import { codeSlashMenuConfig } from './configs/slash-menu.js';
 import { effects } from './effects.js';
+import { CodeBlockMarkdownExtension } from './markdown.js';
 
-export const codeToolbarWidget = WidgetViewExtension(
+const codeToolbarWidget = WidgetViewExtension(
   'affine:code',
   AFFINE_CODE_TOOLBAR_WIDGET,
   literal`${unsafeStatic(AFFINE_CODE_TOOLBAR_WIDGET)}`
@@ -41,14 +43,23 @@ export class CodeBlockViewExtension extends ViewExtensionProvider {
       FlavourExtension('affine:code'),
       CodeBlockHighlighter,
       BlockViewExtension('affine:code', literal`affine-code`),
-      codeToolbarWidget,
       SlashMenuConfigExtension('affine:code', codeSlashMenuConfig),
       CodeKeymapExtension,
+      CodeBlockMarkdownExtension,
       ...getCodeClipboardExtensions(),
     ]);
     context.register([
       CodeBlockInlineManagerExtension,
       CodeBlockUnitSpecExtension,
     ]);
+    if (!this.isMobile(context.scope)) {
+      context.register(codeToolbarWidget);
+    } else {
+      context.register(
+        CodeBlockConfigExtension({
+          showLineNumbers: false,
+        })
+      );
+    }
   }
 }

@@ -1,13 +1,8 @@
-import { MetricExporter } from '@google-cloud/opentelemetry-cloud-monitoring-exporter';
 import { TraceExporter } from '@google-cloud/opentelemetry-cloud-trace-exporter';
 import { GcpDetectorSync } from '@google-cloud/opentelemetry-resource-util';
 import { Global, Injectable, Module, Provider } from '@nestjs/common';
 import { getEnv } from '@opentelemetry/core';
 import { Resource } from '@opentelemetry/resources';
-import {
-  MetricReader,
-  PeriodicExportingMetricReader,
-} from '@opentelemetry/sdk-metrics';
 import { SpanExporter } from '@opentelemetry/sdk-trace-node';
 import {
   SEMRESATTRS_CONTAINER_NAME,
@@ -29,17 +24,6 @@ export class GCloudOpentelemetryOptionsFactory extends OpentelemetryOptionsFacto
         })
       )
       .merge(new GcpDetectorSync().detect());
-  }
-
-  override getMetricReader(): MetricReader {
-    return new PeriodicExportingMetricReader({
-      exportIntervalMillis: 30000,
-      exportTimeoutMillis: 10000,
-      exporter: new MetricExporter({
-        prefix: 'custom.googleapis.com',
-      }),
-      metricProducers: this.getMetricsProducers(),
-    });
   }
 
   override getSpanExporter(): SpanExporter {

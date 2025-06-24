@@ -13,7 +13,7 @@ import { computed } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { state } from 'lit/decorators.js';
 
-import type { NoteToolOption } from '../note-tool.js';
+import { NoteTool, type NoteToolOption } from '../note-tool.js';
 import { toShapeNotToAdapt } from './icon.js';
 
 export class EdgelessNoteSeniorButton extends EdgelessToolbarToolMixin(
@@ -138,15 +138,14 @@ export class EdgelessNoteSeniorButton extends EdgelessToolbarToolMixin(
 
   override enableActiveBackground = true;
 
-  override type = 'affine:note' as const;
+  override type = NoteTool;
 
   private _toggleNoteMenu() {
     if (this.tryDisposePopper()) return;
 
     const { edgeless, childFlavour, childType, tip } = this;
 
-    this.setEdgelessTool({
-      type: 'affine:note',
+    this.setEdgelessTool(NoteTool, {
       childFlavour,
       childType,
       tip,
@@ -171,8 +170,7 @@ export class EdgelessNoteSeniorButton extends EdgelessToolbarToolMixin(
             Object.assign(this, { [key]: props[key] });
           }
         });
-        this.setEdgelessTool({
-          type: 'affine:note',
+        this.setEdgelessTool(NoteTool, {
           childFlavour: this.childFlavour,
           childType: this.childType,
           tip: this.tip,

@@ -1,5 +1,8 @@
 import type { EdgelessRootBlockComponent } from '@blocksuite/affine/blocks/root';
-import type { SurfaceElementModel } from '@blocksuite/affine/blocks/surface';
+import type {
+  CanvasRenderer,
+  SurfaceElementModel,
+} from '@blocksuite/affine/blocks/surface';
 import { ungroupCommand } from '@blocksuite/affine/gfx/group';
 import type {
   GroupElementModel,
@@ -789,8 +792,12 @@ test('indexed canvas should be inserted into edgeless portal when switch to edge
     '.indexable-canvas'
   )[0] as HTMLCanvasElement;
 
-  expect(indexedCanvas.width).toBe(surface.renderer.canvas.width);
-  expect(indexedCanvas.height).toBe(surface.renderer.canvas.height);
+  expect(indexedCanvas.width).toBe(
+    (surface.renderer as CanvasRenderer).canvas.width
+  );
+  expect(indexedCanvas.height).toBe(
+    (surface.renderer as CanvasRenderer).canvas.height
+  );
   expect(indexedCanvas.width).not.toBe(0);
   expect(indexedCanvas.height).not.toBe(0);
 });

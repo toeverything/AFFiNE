@@ -16,7 +16,6 @@ export class ChatPanelChip extends SignalWatcher(
       height: 24px;
       align-items: center;
       justify-content: center;
-      margin: 4px;
       padding: 0 4px;
       border-radius: 4px;
       border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};

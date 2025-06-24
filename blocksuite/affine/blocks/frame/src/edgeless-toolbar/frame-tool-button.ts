@@ -1,7 +1,8 @@
 import { QuickToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { FrameIcon } from '@blocksuite/icons/lit';
-import type { GfxToolsFullOptionValue } from '@blocksuite/std/gfx';
 import { css, html, LitElement } from 'lit';
+
+import { FrameTool } from '../frame-tool';
 
 export class EdgelessFrameToolButton extends QuickToolMixin(LitElement) {
   static override styles = css`
@@ -10,7 +11,7 @@ export class EdgelessFrameToolButton extends QuickToolMixin(LitElement) {
     }
   `;
 
-  override type: GfxToolsFullOptionValue['type'] = 'frame';
+  override type = FrameTool;
 
   private _toggleFrameMenu() {
     if (this.tryDisposePopper()) return;
@@ -20,7 +21,7 @@ export class EdgelessFrameToolButton extends QuickToolMixin(LitElement) {
   }
 
   override render() {
-    const type = this.edgelessTool?.type;
+    const type = this.edgelessTool?.toolType?.toolName;
     return html`
       <edgeless-tool-icon-button
         class="edgeless-frame-button"
@@ -37,7 +38,7 @@ export class EdgelessFrameToolButton extends QuickToolMixin(LitElement) {
         @click=${() => {
           // don't update tool before toggling menu
           this._toggleFrameMenu();
-          this.setEdgelessTool({ type: 'frame' });
+          this.setEdgelessTool(FrameTool);
         }}
       >
         ${FrameIcon()}

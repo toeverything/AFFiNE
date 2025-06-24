@@ -3,6 +3,7 @@ import { type Framework } from '@toeverything/infra';
 
 import {
   configureAIButtonModule,
+  configureAIModelSwitchModule,
   configureAINetworkSearchModule,
   configureAIReasoningModule,
 } from './ai-button';
@@ -11,6 +12,7 @@ import { configAtMenuConfigModule } from './at-menu-config';
 import { configureBlobManagementModule } from './blob-management';
 import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
+import { configureCollectionRulesModule } from './collection-rules';
 import { configureWorkspaceDBModule } from './db';
 import { configureDialogModule } from './dialogs';
 import { configureDndModule } from './dnd';
@@ -56,6 +58,8 @@ import { configureThemeEditorModule } from './theme-editor';
 import { configureUrlModule } from './url';
 import { configureUserspaceModule } from './userspace';
 import { configureWorkspaceModule } from './workspace';
+import { configureIndexerEmbeddingModule } from './workspace-indexer-embedding';
+import { configureWorkspacePropertyModule } from './workspace-property';
 
 export function configureCommonModules(framework: Framework) {
   configureI18nModule(framework);
@@ -103,6 +107,7 @@ export function configureCommonModules(framework: Framework) {
   configureCommonGlobalStorageImpls(framework);
   configureAINetworkSearchModule(framework);
   configureAIReasoningModule(framework);
+  configureAIModelSwitchModule(framework);
   configureAIButtonModule(framework);
   configureTemplateDocModule(framework);
   configureBlobManagementModule(framework);
@@ -110,4 +115,7 @@ export function configureCommonModules(framework: Framework) {
   configureImportClipperModule(framework);
   configureNotificationModule(framework);
   configureIntegrationModule(framework);
+  configureWorkspacePropertyModule(framework);
+  configureCollectionRulesModule(framework);
+  configureIndexerEmbeddingModule(framework);
 }

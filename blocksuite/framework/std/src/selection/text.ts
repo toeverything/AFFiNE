@@ -36,6 +36,8 @@ export class TextSelection extends BaseSelection {
 
   static override type = 'text';
 
+  static override recoverable = true;
+
   from: TextRangePoint;
 
   reverse: boolean;

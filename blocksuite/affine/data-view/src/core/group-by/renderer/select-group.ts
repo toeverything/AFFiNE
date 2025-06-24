@@ -12,10 +12,10 @@ import type { SelectTag } from '../../logical/index.js';
 import { BaseGroup } from './base.js';
 
 export class SelectGroupView extends BaseGroup<
+  string,
   {
     options: SelectTag[];
-  },
-  string
+  }
 > {
   static override styles = css`
     data-view-group-title-select-view {

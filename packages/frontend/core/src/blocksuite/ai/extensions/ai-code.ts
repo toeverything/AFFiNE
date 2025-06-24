@@ -1,9 +1,5 @@
-import {
-  AffineCodeToolbarWidget,
-  CodeBlockSpec,
-} from '@blocksuite/affine/blocks/code';
+import { AffineCodeToolbarWidget } from '@blocksuite/affine/blocks/code';
 import { LifeCycleWatcher } from '@blocksuite/affine/std';
-import type { ExtensionType } from '@blocksuite/affine/store';
 
 import { setupCodeToolbarAIEntry } from '../entries/code-toolbar/setup-code-toolbar';
 
@@ -24,8 +20,3 @@ export class AICodeBlockWatcher extends LifeCycleWatcher {
     });
   }
 }
-
-export const AICodeBlockSpec: ExtensionType[] = [
-  ...CodeBlockSpec,
-  AICodeBlockWatcher,
-];

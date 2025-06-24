@@ -307,7 +307,7 @@ export class AffineLinkedDocWidget extends WidgetComponent<RootBlockModel> {
 
     this._updateInputRects();
 
-    const enableMobile = this.doc
+    const enableMobile = this.store
       .get(FeatureFlagService)
       .getFlag('enable_mobile_linked_doc_menu');
     this._mode$.value = enableMobile ? mode : 'desktop';

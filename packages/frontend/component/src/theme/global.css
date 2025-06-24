@@ -298,3 +298,11 @@ input {
 [contenteditable]:focus-visible {
   outline: none;
 }
+
+/* Math font may not being loaded in Electron */
+math {
+  font-family:
+    'Cambria Math' /* windows */,
+    'STIX Two Math' /* mac */,
+    math;
+}

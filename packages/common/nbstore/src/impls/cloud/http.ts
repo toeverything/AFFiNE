@@ -4,19 +4,23 @@ import { gqlFetcherFactory } from '@affine/graphql';
 import { DummyConnection } from '../../connection';
 
 export class HttpConnection extends DummyConnection {
-  readonly fetch = async (input: string, init?: RequestInit) => {
+  readonly fetch = async (
+    input: string,
+    init?: RequestInit & { timeout?: number }
+  ) => {
     const externalSignal = init?.signal;
     if (externalSignal?.aborted) {
       throw externalSignal.reason;
     }
+
     const abortController = new AbortController();
     externalSignal?.addEventListener('abort', reason => {
       abortController.abort(reason);
     });
 
-    const timeout = 15000;
+    const timeout = init?.timeout ?? 15000;
     const timeoutId = setTimeout(() => {
-      abortController.abort('timeout');
+      abortController.abort(new Error('request timeout'));
     }, timeout);
 
     const res = await globalThis

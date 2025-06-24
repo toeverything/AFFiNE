@@ -1,4 +1,7 @@
-import { EdgelessCRUDIdentifier } from '@blocksuite/affine-block-surface';
+import {
+  DefaultTool,
+  EdgelessCRUDIdentifier,
+} from '@blocksuite/affine-block-surface';
 import { getLineHeight } from '@blocksuite/affine-gfx-text';
 import type { ConnectorElementModel } from '@blocksuite/affine-model';
 import type { RichText } from '@blocksuite/affine-rich-text';
@@ -40,8 +43,7 @@ export function mountConnectorLabelEditor(
 
   const gfx = edgeless.std.get(GfxControllerIdentifier);
 
-  // @ts-expect-error default tool should be migrated to std
-  gfx.tool.setTool('default');
+  gfx.tool.setTool(DefaultTool);
   gfx.selection.set({
     elements: [connector.id],
     editing: true,
@@ -186,6 +188,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
     });
     this._resizeObserver.observe(this.richText);
 
+    this.connector.stash('labelXYWH');
+
     this.updateComplete
       .then(() => {
         if (!this.inlineEditor) return;
@@ -255,7 +259,8 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
             }
           }
 
-          connector.lableEditing = false;
+          connector.labelEditing = false;
+          connector.pop('labelXYWH');
 
           selection.set({
             elements: [],
@@ -291,7 +296,7 @@ export class EdgelessConnectorLabelEditor extends WithDisposable(
           }
         );
 
-        connector.lableEditing = true;
+        connector.labelEditing = true;
       })
       .catch(console.error);
   }

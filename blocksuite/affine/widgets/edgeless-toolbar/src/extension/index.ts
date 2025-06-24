@@ -1,12 +1,12 @@
 import type { MenuConfig } from '@blocksuite/affine-components/context-menu';
 import { createIdentifier } from '@blocksuite/global/di';
 import type { BlockComponent } from '@blocksuite/std';
-import type { GfxController, GfxToolsMap } from '@blocksuite/std/gfx';
+import type { GfxController } from '@blocksuite/std/gfx';
 import type { ExtensionType } from '@blocksuite/store';
 import { type TemplateResult } from 'lit';
 
 export interface QuickTool {
-  type?: keyof GfxToolsMap;
+  type?: string;
   enable?: boolean;
   content: TemplateResult;
   /**

@@ -32,13 +32,9 @@ declare global {
       docId: string;
       blob: Buffer;
     };
-    'doc.created': {
-      workspaceId: string;
-      docId: string;
-      editor?: string;
-    };
   }
 }
+
 @Injectable()
 export class PgWorkspaceDocStorageAdapter extends DocStorageAdapter {
   protected override readonly logger = new Logger(

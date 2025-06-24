@@ -29,7 +29,7 @@ test('should read NODE_ENV', t => {
     },
     {
       message:
-        'Invalid value "unknown" for environment variable NODE_ENV, expected one of ["development","test","production"]',
+        'Invalid NODE_ENV environment. `unknown` is not a valid NODE_ENV value.',
     }
   );
 });

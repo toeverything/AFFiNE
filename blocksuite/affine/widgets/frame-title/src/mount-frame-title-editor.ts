@@ -1,3 +1,4 @@
+import { DefaultTool } from '@blocksuite/affine-block-surface';
 import type { FrameBlockModel } from '@blocksuite/affine-model';
 import { BlockSuiteError } from '@blocksuite/global/exceptions';
 import type { BlockComponent } from '@blocksuite/std';
@@ -19,8 +20,7 @@ export function mountFrameTitleEditor(
 
   const gfx = edgeless.std.get(GfxControllerIdentifier);
 
-  // @ts-expect-error TODO: refactor gfx tool
-  gfx.tool.setTool('default');
+  gfx.tool.setTool(DefaultTool);
   gfx.selection.set({
     elements: [frame.id],
     editing: true,

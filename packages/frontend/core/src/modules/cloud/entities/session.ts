@@ -141,7 +141,6 @@ export class AuthSession extends Entity {
 
   async updateLabel(label: string) {
     await this.store.updateLabel(label);
-    console.log('updateLabel');
     await this.waitForRevalidation();
   }
 

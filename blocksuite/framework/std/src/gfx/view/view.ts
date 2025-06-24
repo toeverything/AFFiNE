@@ -13,7 +13,6 @@ import type {
   DragMoveContext,
   DragStartContext,
   GfxViewTransformInterface,
-  SelectedContext,
 } from '../interactivity/index.js';
 import type { GfxElementGeometry, PointTestOptions } from '../model/base.js';
 import { GfxPrimitiveElementModel } from '../model/surface/element-model.js';
@@ -210,23 +209,7 @@ export class GfxElementModelView<
     this.model.xywh = currentBound.moveDelta(dx, dy).serialize();
   }
 
-  onSelected(context: SelectedContext): void | boolean {
-    if (this.model instanceof GfxPrimitiveElementModel) {
-      if (context.multiSelect) {
-        this.gfx.selection.toggle(this.model);
-      } else {
-        this.gfx.selection.set({ elements: [this.model.id] });
-      }
-
-      return true;
-    }
-  }
-
   onBoxSelected(_: BoxSelectionContext): boolean | void {}
-
-  onResize = () => {};
-
-  onRotate = () => {};
 
   /**
    * Called when the view is destroyed.

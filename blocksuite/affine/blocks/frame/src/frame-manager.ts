@@ -241,20 +241,35 @@ export class EdgelessFrameManager extends GfxExtension {
       surfaceModel.elementAdded.subscribe(({ id, local }) => {
         const element = surfaceModel.getElementById(id);
         if (element && local) {
-          const frame = this.getFrameFromPoint(element.elementBound.center);
-
-          // if the container created with a frame, skip it.
-          if (
-            isGfxGroupCompatibleModel(element) &&
-            frame &&
-            element.hasChild(frame)
-          ) {
-            return;
-          }
-
-          // new element may intended to be added to other group
-          // so we need to wait for the next microtask to check if the element can be added to the frame
+          // The entire frame detection logic must be in microtask for timing reasons:
+          //
+          // 1. For connectors: When elementAdded fires, connectors have invalid bounds [0,0,0,0]
+          //    because their path/bounds are calculated in a separate microtask of updateConnectorPath by connector-watcher.
+          //    We need to wait for that calculation to complete before frame detection.
+          //
+          // 2. For shapes: Although they have valid bounds immediately, processing them in microtask
+          //    ensures consistent timing and allows other initialization to complete first.
+          //
+          // 3. Group compatibility: Some elements may need to establish their group relationships
+          //    before being considered for frame membership.
+          //
+          // By embedding the entire logic in microtask, we ensure:
+          // - Connectors have proper bounds calculated (not [0,0,0,0])
+          // - getFrameFromPoint() works correctly with valid element centers
+          // - All element initialization is complete before frame detection
           queueMicrotask(() => {
+            const frame = this.getFrameFromPoint(element.elementBound.center);
+
+            // if the container created with a frame, skip it.
+            if (
+              isGfxGroupCompatibleModel(element) &&
+              frame &&
+              element.hasChild(frame)
+            ) {
+              return;
+            }
+
+            // Only add elements that aren't already grouped and have a valid frame
             if (!element.group && frame) {
               this.addElementsToFrame(frame, [element]);
             }

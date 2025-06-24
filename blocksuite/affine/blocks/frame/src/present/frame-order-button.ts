@@ -38,7 +38,7 @@ export class EdgelessFrameOrderButton extends WithDisposable(LitElement) {
   }
 
   protected override render() {
-    const { readonly } = this.edgeless.doc;
+    const { readonly } = this.edgeless.store;
     return html`
       <style>
         .edgeless-frame-order-button svg {

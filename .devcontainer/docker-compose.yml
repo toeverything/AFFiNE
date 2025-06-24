@@ -10,6 +10,7 @@ services:
     environment:
       DATABASE_URL: postgresql://affine:affine@db:5432/affine
       REDIS_SERVER_HOST: redis
+      AFFINE_INDEXER_SEARCH_ENDPOINT: http://indexer:9308
 
   db:
     image: pgvector/pgvector:pg16
@@ -23,5 +24,19 @@ services:
   redis:
     image: redis
 
+  indexer:
+    image: manticoresearch/manticore:${MANTICORE_VERSION:-9.3.2}
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - manticoresearch_data:/var/lib/manticore
+
 volumes:
   postgres-data:
+  manticoresearch_data:

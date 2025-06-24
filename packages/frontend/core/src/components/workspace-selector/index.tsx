@@ -19,6 +19,7 @@ import { WorkspaceCard } from './workspace-card';
 
 interface WorkspaceSelectorProps {
   open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   workspaceMetadata?: WorkspaceMetadata;
   onSelectWorkspace?: (workspaceMetadata: WorkspaceMetadata) => void;
   onCreatedWorkspace?: (payload: {
@@ -31,6 +32,8 @@ interface WorkspaceSelectorProps {
   disable?: boolean;
   menuContentOptions?: MenuProps['contentOptions'];
   className?: string;
+  /** if true, will hide cloud/local, and scale the avatar */
+  dense?: boolean;
 }
 
 export const WorkspaceSelector = ({
@@ -40,10 +43,12 @@ export const WorkspaceSelector = ({
   showArrowDownIcon,
   disable,
   open: outerOpen,
+  onOpenChange: outerOnOpenChange,
   showEnableCloudButton,
   showSyncStatus,
   className,
   menuContentOptions,
+  dense,
 }: WorkspaceSelectorProps) => {
   const { workspacesService, globalContextService } = useServices({
     GlobalContextService,
@@ -51,13 +56,29 @@ export const WorkspaceSelector = ({
   });
   const [innerOpen, setOpened] = useState(false);
   const open = outerOpen ?? innerOpen;
+  const onOpenChange = useCallback(
+    (open: boolean) => {
+      outerOnOpenChange !== undefined
+        ? outerOnOpenChange?.(open)
+        : setOpened(open);
+    },
+    [outerOnOpenChange]
+  );
   const closeUserWorkspaceList = useCallback(() => {
-    setOpened(false);
-  }, []);
+    if (outerOnOpenChange) {
+      outerOnOpenChange(false);
+    } else {
+      setOpened(false);
+    }
+  }, [outerOnOpenChange]);
   const openUserWorkspaceList = useCallback(() => {
     track.$.navigationPanel.workspaceList.open();
-    setOpened(true);
-  }, []);
+    if (outerOnOpenChange) {
+      outerOnOpenChange(true);
+    } else {
+      setOpened(true);
+    }
+  }, [outerOnOpenChange]);
 
   const currentWorkspaceId = useLiveData(
     globalContextService.globalContext.workspaceId.$
@@ -80,6 +101,7 @@ export const WorkspaceSelector = ({
     <Menu
       rootOptions={{
         open,
+        onOpenChange,
       }}
       items={
         <UserWithWorkspaceList
@@ -91,7 +113,7 @@ export const WorkspaceSelector = ({
       }
       contentOptions={{
         // hide trigger
-        sideOffset: -58,
+        sideOffset: dense ? -32 : -58,
         onInteractOutside: closeUserWorkspaceList,
         onEscapeKeyDown: closeUserWorkspaceList,
         ...menuContentOptions,
@@ -114,6 +136,7 @@ export const WorkspaceSelector = ({
           hideCollaborationIcon={true}
           hideTeamWorkspaceIcon={true}
           data-testid="current-workspace-card"
+          dense={dense}
         />
       ) : (
         <span></span>

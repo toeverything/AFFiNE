@@ -13,7 +13,7 @@ export function scrollToBlock(host: EditorHost, blockId: string) {
   const mode = docModeService.getEditorMode();
   if (mode === 'edgeless') return;
 
-  if (host.doc.root?.id === blockId) {
+  if (host.store.root?.id === blockId) {
     const docTitle = getDocTitleByEditorHost(host);
     if (!docTitle) return;
 
@@ -60,12 +60,12 @@ export const observeActiveHeadingDuringScroll = (
     const host = getEditor();
 
     const headings = getHeadingBlocksFromDoc(
-      host.doc,
+      host.store,
       [NoteDisplayMode.DocAndEdgeless, NoteDisplayMode.DocOnly],
       true
     );
 
-    let activeHeadingId = host.doc.root?.id ?? null;
+    let activeHeadingId = host.store.root?.id ?? null;
     headings.forEach(heading => {
       if (isBlockBeforeViewportCenter(heading.id, host)) {
         activeHeadingId = heading.id;
@@ -87,7 +87,7 @@ let highlightTimeoutId: ReturnType<typeof setTimeout> | null = null;
 function highlightBlock(host: EditorHost, blockId: string) {
   const emptyClear = () => {};
 
-  if (host.doc.root?.id === blockId) return emptyClear;
+  if (host.store.root?.id === blockId) return emptyClear;
 
   const rootComponent = host.querySelector<
     HTMLElement & { viewport: Viewport }

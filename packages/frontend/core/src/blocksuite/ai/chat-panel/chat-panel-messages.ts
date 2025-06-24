@@ -7,18 +7,24 @@ import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { BaseSelection, ExtensionType } from '@blocksuite/affine/store';
 import { ArrowDownBigIcon as ArrowDownIcon } from '@blocksuite/icons/lit';
+import type { Signal } from '@preact/signals-core';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { debounce } from 'lodash-es';
 
 import { AffineIcon } from '../_common/icons';
+import type {
+  AINetworkSearchConfig,
+  AIReasoningConfig,
+} from '../components/ai-chat-input';
 import {
-  type ChatMessage,
   isChatAction,
   isChatMessage,
+  StreamObjectSchema,
 } from '../components/ai-chat-messages';
 import { type AIError, AIProvider, UnauthorizedError } from '../provider';
+import { mergeStreamObjects } from '../utils/stream-objects';
 import { type ChatContextValue } from './chat-context';
 import { HISTORY_IMAGE_ACTIONS } from './const';
 import { AIPreloadConfig } from './preload-config';
@@ -158,6 +164,18 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor extensions!: ExtensionType[];
 
+  @property({ attribute: false })
+  accessor affineFeatureFlagService!: FeatureFlagService;
+
+  @property({ attribute: false })
+  accessor networkSearchConfig!: AINetworkSearchConfig;
+
+  @property({ attribute: false })
+  accessor reasoningConfig!: AIReasoningConfig;
+
+  @property({ attribute: false })
+  accessor panelWidth!: Signal<number | undefined>;
+
   @query('.chat-panel-messages-container')
   accessor messagesContainer: HTMLDivElement | null = null;
 
@@ -172,9 +190,20 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
     return this.messagesContainer;
   }
 
+  private get _isNetworkActive() {
+    return (
+      !!this.networkSearchConfig.visible.value &&
+      !!this.networkSearchConfig.enabled.value
+    );
+  }
+
+  private get _isReasoningActive() {
+    return !!this.reasoningConfig.enabled.value;
+  }
+
   private _renderAIOnboarding() {
     return this.isLoading ||
-      !this.host?.doc.get(FeatureFlagService).getFlag('enable_ai_onboarding')
+      !this.host?.store.get(FeatureFlagService).getFlag('enable_ai_onboarding')
       ? nothing
       : html`<div class="onboarding-wrapper" data-testid="ai-onboarding">
           ${repeat(
@@ -271,8 +300,10 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                     .status=${isLast ? status : 'idle'}
                     .error=${isLast ? error : null}
                     .extensions=${this.extensions}
+                    .affineFeatureFlagService=${this.affineFeatureFlagService}
                     .getSessionId=${this.getSessionId}
                     .retry=${() => this.retry()}
+                    .panelWidth=${this.panelWidth}
                   ></chat-message-assistant>`;
                 } else if (isChatAction(item)) {
                   return html`<chat-message-action
@@ -328,7 +359,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
     disposables.add(
       docModeService.onPrimaryModeChange(
         () => this.requestUpdate(),
-        this.host.doc.id
+        this.host.store.id
       )
     );
   }
@@ -362,27 +393,51 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
         last.content = '';
         last.createdAt = new Date().toISOString();
       }
-      this.updateContext({ messages, status: 'loading', error: null });
+      this.updateContext({
+        messages,
+        status: 'loading',
+        error: null,
+        abortController,
+      });
 
-      const { doc } = this.host;
+      const { store } = this.host;
       const stream = await AIProvider.actions.chat({
         sessionId,
         retry: true,
-        docId: doc.id,
-        workspaceId: doc.workspace.id,
+        docId: store.id,
+        workspaceId: store.workspace.id,
         host: this.host,
         stream: true,
         signal: abortController.signal,
         where: 'chat-panel',
         control: 'chat-send',
         isRootSession: true,
+        reasoning: this._isReasoningActive,
+        webSearch: this._isNetworkActive,
       });
-      this.updateContext({ abortController });
+
       for await (const text of stream) {
-        const messages = [...this.chatContextValue.messages];
-        const last = messages[messages.length - 1] as ChatMessage;
-        last.content += text;
-        this.updateContext({ messages, status: 'transmitting' });
+        const messages = this.chatContextValue.messages.slice(0);
+        const last = messages.at(-1);
+        if (last && isChatMessage(last)) {
+          try {
+            const parsed = StreamObjectSchema.parse(JSON.parse(text));
+            const streamObjects = mergeStreamObjects([
+              ...(last.streamObjects ?? []),
+              parsed,
+            ]);
+            messages[messages.length - 1] = {
+              ...last,
+              streamObjects,
+            };
+          } catch {
+            messages[messages.length - 1] = {
+              ...last,
+              content: last.content + text,
+            };
+          }
+          this.updateContext({ messages, status: 'transmitting' });
+        }
       }
 
       this.updateContext({ status: 'success' });

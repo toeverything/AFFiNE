@@ -1,5 +1,4 @@
 import { IconButton, usePromptModal } from '@affine/component';
-import { createEmptyCollection } from '@affine/core/components/page-list/use-collection-manager';
 import { CollectionService } from '@affine/core/modules/collection';
 import { NavigationPanelService } from '@affine/core/modules/navigation-panel';
 import { WorkbenchService } from '@affine/core/modules/workbench';
@@ -7,7 +6,6 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { AddCollectionIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useServices } from '@toeverything/infra';
-import { nanoid } from 'nanoid';
 import { useCallback } from 'react';
 
 import { CollapsibleSection } from '../../layouts/collapsible-section';
@@ -46,8 +44,7 @@ export const NavigationPanelCollections = () => {
         variant: 'primary',
       },
       onConfirm(name) {
-        const id = nanoid();
-        collectionService.addCollection(createEmptyCollection(id, { name }));
+        const id = collectionService.createCollection({ name });
         track.$.navigationPanel.organize.createOrganizeItem({
           type: 'collection',
         });
@@ -84,7 +81,7 @@ export const NavigationPanelCollections = () => {
       <NavigationPanelTreeRoot
         placeholder={<RootEmpty onClickCreate={handleCreateCollection} />}
       >
-        {collections.map(collection => (
+        {Array.from(collections.values()).map(collection => (
           <NavigationPanelCollectionNode
             key={collection.id}
             collectionId={collection.id}

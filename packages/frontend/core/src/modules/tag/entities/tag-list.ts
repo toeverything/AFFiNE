@@ -58,7 +58,7 @@ export class TagList extends Entity {
     return get(this.tags$).map(tag => {
       return {
         id: tag.id,
-        title: get(tag.value$),
+        name: get(tag.value$),
         color: get(tag.color$),
         createDate: get(tag.createDate$),
         updatedDate: get(tag.updateDate$),

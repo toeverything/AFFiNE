@@ -1,4 +1,4 @@
-import { NumberValue } from '@affine/core/components/doc-properties/types/number';
+import { NumberValue } from '@affine/core/components/workspace-property-types/number';
 import { useLiveData } from '@toeverything/infra';
 
 import type { DatabaseCellRendererProps } from '../../../types';

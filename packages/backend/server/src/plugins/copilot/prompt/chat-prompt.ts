@@ -41,6 +41,7 @@ export class ChatPrompt {
       options.name,
       options.action || undefined,
       options.model,
+      options.optionalModels,
       options.config,
       options.messages
     );
@@ -50,6 +51,7 @@ export class ChatPrompt {
     public readonly name: string,
     public readonly action: string | undefined,
     public readonly model: string,
+    public readonly optionalModels: string[],
     public readonly config: PromptConfig | undefined,
     private readonly messages: PromptMessage[]
   ) {
@@ -120,7 +122,8 @@ export class ChatPrompt {
   private preDefinedParams(params: PromptParams) {
     return {
       'affine::date': new Date().toLocaleDateString(),
-      'affine::language': params.language || 'English',
+      'affine::language': params.language || 'same language as the user query',
+      'affine::timezone': params.timezone || 'no preference',
     };
   }
 

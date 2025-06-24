@@ -308,8 +308,8 @@ export class AudioMediaManagerService extends Service {
         key: attachmentBlockAudioMediaKey({
           blobId: input.props.sourceId,
           blockId: input.id,
-          docId: input.doc.id,
-          workspaceId: input.doc.rootDoc.guid,
+          docId: input.store.id,
+          workspaceId: input.store.rootDoc.guid,
         }),
         name: input.props.name,
         size: input.props.size,

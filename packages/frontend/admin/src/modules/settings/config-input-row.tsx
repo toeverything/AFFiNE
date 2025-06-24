@@ -7,16 +7,16 @@ import {
   SelectValue,
 } from '@affine/admin/components/ui/select';
 import { Switch } from '@affine/admin/components/ui/switch';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 
 import { Textarea } from '../../components/ui/textarea';
-import { isEqual } from './utils';
 
 export type ConfigInputProps = {
   field: string;
   desc: string;
   defaultValue: any;
-  onChange: (key: string, value: any) => void;
+  onChange: (field: string, value: any) => void;
+  error?: string;
 } & (
   | {
       type: 'String' | 'Number' | 'Boolean' | 'JSON';
@@ -33,6 +33,7 @@ const Inputs: Record<
     defaultValue: any;
     onChange: (value?: any) => void;
     options?: string[];
+    error?: string;
   }>
 > = {
   Boolean: function SwitchInput({ defaultValue, onChange }) {
@@ -114,21 +115,17 @@ export const ConfigRow = ({
   type,
   defaultValue,
   onChange,
+  error,
   ...props
 }: ConfigInputProps) => {
-  const [value, setValue] = useState(defaultValue);
-
-  const isValueChanged = !isEqual(value, defaultValue);
+  const Input = Inputs[type] ?? Inputs.JSON;
 
   const onValueChange = useCallback(
     (value?: any) => {
       onChange(field, value);
-      setValue(value);
     },
     [field, onChange]
   );
-
-  const Input = Inputs[type] ?? Inputs.JSON;
 
   return (
     <div
@@ -140,28 +137,12 @@ export const ConfigRow = ({
         <Input
           defaultValue={defaultValue}
           onChange={onValueChange}
+          error={error}
           {...props}
         />
-        {isValueChanged && (
-          <div className="absolute bottom-[-25px] text-sm right-0 break-words">
-            <span
-              className="line-through"
-              style={{
-                color: 'rgba(198, 34, 34, 1)',
-                backgroundColor: 'rgba(254, 213, 213, 1)',
-              }}
-            >
-              {JSON.stringify(defaultValue)}
-            </span>{' '}
-            =&gt;{' '}
-            <span
-              style={{
-                color: 'rgba(20, 147, 67, 1)',
-                backgroundColor: 'rgba(225, 250, 177, 1)',
-              }}
-            >
-              {JSON.stringify(value)}
-            </span>
+        {error && (
+          <div className="absolute bottom-[-25px] text-sm right-0 break-words text-red-500">
+            {error}
           </div>
         )}
       </div>

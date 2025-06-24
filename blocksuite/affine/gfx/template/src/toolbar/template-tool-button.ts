@@ -1,7 +1,8 @@
+import { DefaultTool } from '@blocksuite/affine-block-surface';
 import { ArrowDownSmallIcon } from '@blocksuite/affine-components/icons';
 import { once } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
-import type { GfxToolsFullOptionValue } from '@blocksuite/std/gfx';
+import type { ToolOptionWithType } from '@blocksuite/std/gfx';
 import {
   arrow,
   autoUpdate,
@@ -14,6 +15,7 @@ import { state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 
+import { TemplateTool } from '../template-tool';
 import { TemplateCard1, TemplateCard2, TemplateCard3 } from './cards.js';
 import type { EdgelessTemplatePanel } from './template-panel.js';
 
@@ -115,11 +117,11 @@ export class EdgelessTemplateButton extends EdgelessToolbarToolMixin(
 
   private _cleanup: (() => void) | null = null;
 
-  private _prevTool: GfxToolsFullOptionValue | null = null;
+  private _prevTool: ToolOptionWithType | null = null;
 
   override enableActiveBackground = true;
 
-  override type: GfxToolsFullOptionValue['type'] = 'template';
+  override type = TemplateTool;
 
   get cards() {
     const { theme } = this;
@@ -134,12 +136,15 @@ export class EdgelessTemplateButton extends EdgelessToolbarToolMixin(
       this._cleanup = null;
       this.requestUpdate();
 
-      if (this._prevTool && this._prevTool.type !== 'template') {
-        this.setEdgelessTool(this._prevTool);
+      if (
+        this._prevTool &&
+        this._prevTool.toolType &&
+        this._prevTool.toolType !== TemplateTool
+      ) {
+        this.setEdgelessTool(this._prevTool.toolType, this._prevTool.options);
         this._prevTool = null;
       } else {
-        // @ts-expect-error FIXME: resolve after gfx tool refactor
-        this.setEdgelessTool('default');
+        this.setEdgelessTool(DefaultTool);
       }
     }
   }
@@ -147,8 +152,8 @@ export class EdgelessTemplateButton extends EdgelessToolbarToolMixin(
   private _togglePanel() {
     if (this._openedPanel) {
       this._closePanel();
-      if (this._prevTool) {
-        this.setEdgelessTool(this._prevTool);
+      if (this._prevTool && this._prevTool.toolType) {
+        this.setEdgelessTool(this._prevTool.toolType, this._prevTool.options);
         this._prevTool = null;
       }
       return;
@@ -156,7 +161,7 @@ export class EdgelessTemplateButton extends EdgelessToolbarToolMixin(
 
     this._prevTool = this.edgelessTool ? { ...this.edgelessTool } : null;
 
-    this.setEdgelessTool('template');
+    this.setEdgelessTool(TemplateTool);
 
     const panel = document.createElement('edgeless-templates-panel');
     panel.edgeless = this.edgeless;

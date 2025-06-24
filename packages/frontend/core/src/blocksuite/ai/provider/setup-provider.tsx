@@ -4,6 +4,7 @@ import type { GlobalDialogService } from '@affine/core/modules/dialogs';
 import {
   type ChatHistoryOrder,
   ContextCategories,
+  type ContextWorkspaceEmbeddingStatus,
   type getCopilotHistoriesQuery,
   type RequestOptions,
 } from '@affine/graphql';
@@ -27,18 +28,18 @@ function toAIUserInfo(account: AuthAccountInfo | null) {
 
 const filterStyleToPromptName = new Map<string, PromptKey>(
   Object.entries({
-    'Clay style': 'workflow:image-clay',
-    'Pixel style': 'workflow:image-pixel',
-    'Sketch style': 'workflow:image-sketch',
-    'Anime style': 'workflow:image-anime',
+    'Clay style': 'Convert to Clay style',
+    'Pixel style': 'Convert to Pixel style',
+    'Sketch style': 'Convert to Sketch style',
+    'Anime style': 'Convert to Anime style',
   })
 );
 
 const processTypeToPromptName = new Map<string, PromptKey>(
   Object.entries({
-    Clearer: 'debug:action:fal-upscaler',
-    'Remove background': 'debug:action:fal-remove-bg',
-    'Convert to sticker': 'debug:action:fal-face-to-sticker',
+    Clearer: 'Upscale image',
+    'Remove background': 'Remove background',
+    'Convert to sticker': 'Convert to sticker',
   })
 );
 
@@ -82,7 +83,7 @@ export function setupAIProvider(
 
   //#region actions
   AIProvider.provide('chat', async options => {
-    const { input, contexts, mustSearch } = options;
+    const { input, contexts, webSearch } = options;
 
     const sessionId = await createSession({
       promptName: 'Chat With AFFiNE AI',
@@ -90,13 +91,14 @@ export function setupAIProvider(
     });
     return textToText({
       ...options,
+      modelId: options.modelId,
       client,
       sessionId,
       content: input,
       params: {
         docs: contexts?.docs,
         files: contexts?.files,
-        searchMode: mustSearch ? 'MUST' : 'CAN',
+        searchMode: webSearch ? 'MUST' : 'AUTO',
       },
     });
   });
@@ -485,22 +487,18 @@ Could you make a new website based on these notes and send back just the html fi
   });
 
   AIProvider.provide('createImage', async options => {
-    // test to image
-    let promptName: PromptKey = 'debug:action:gpt-image-1';
-    // image to image
-    if (options.attachments?.length) {
-      promptName = 'debug:action:fal-sd15';
-    }
-
     const sessionId = await createSession({
-      promptName,
+      promptName: 'Generate image',
       ...options,
     });
     return toImage({
       ...options,
       client,
       sessionId,
-      content: options.input,
+      content:
+        !options.input && options.attachments
+          ? 'Make the image more detailed.'
+          : options.input,
       // 5 minutes
       timeout: 300000,
     });
@@ -578,6 +576,9 @@ Could you make a new website based on these notes and send back just the html fi
 
   AIProvider.provide('session', {
     createSession,
+    getSession: async (workspaceId: string, sessionId: string) => {
+      return client.getSession(workspaceId, sessionId);
+    },
     getSessions: async (
       workspaceId: string,
       docId?: string,
@@ -589,6 +590,7 @@ Could you make a new website based on these notes and send back just the html fi
       return client.updateSession({
         sessionId,
         promptName,
+        // TODO(@yoyoyohamapi): update docId & pinned for chat independence
       });
     },
   });
@@ -698,12 +700,39 @@ Could you make a new website based on these notes and send back just the html fi
         await new Promise(resolve => setTimeout(resolve, interval));
       }
     },
-    matchContext: async (
-      contextId: string,
-      content: string,
-      limit?: number
+    pollEmbeddingStatus: async (
+      workspaceId: string,
+      onPoll: (result: ContextWorkspaceEmbeddingStatus) => void,
+      abortSignal: AbortSignal
     ) => {
-      return client.matchContext(contextId, content, limit);
+      const poll = async () => {
+        const result = await client.getEmbeddingStatus(workspaceId);
+        onPoll(result);
+      };
+
+      const INTERVAL = 10 * 1000;
+
+      while (!abortSignal.aborted) {
+        await poll();
+        await new Promise(resolve => setTimeout(resolve, INTERVAL));
+      }
+    },
+    matchContext: async (
+      content: string,
+      contextId?: string,
+      workspaceId?: string,
+      limit?: number,
+      scopedThreshold?: number,
+      threshold?: number
+    ) => {
+      return client.matchContext(
+        content,
+        contextId,
+        workspaceId,
+        limit,
+        scopedThreshold,
+        threshold
+      );
     },
   });
 

@@ -1,4 +1,5 @@
 import { html } from 'lit';
+import { when } from 'lit/directives/when.js';
 
 const styles = html`<style>
   .affine-page-selected-embed-rects-container {
@@ -57,27 +58,26 @@ const styles = html`<style>
 </style>`;
 
 export function ImageSelectedRect(readonly: boolean) {
-  if (readonly) {
-    return html`${styles}
-      <div
-        class="affine-page-selected-embed-rects-container resizable resizes"
-      ></div> `;
-  }
   return html`
     ${styles}
     <div class="affine-page-selected-embed-rects-container resizable resizes">
-      <div class="resize top-left">
-        <div class="resize-inner"></div>
-      </div>
-      <div class="resize top-right">
-        <div class="resize-inner"></div>
-      </div>
-      <div class="resize bottom-left">
-        <div class="resize-inner"></div>
-      </div>
-      <div class="resize bottom-right">
-        <div class="resize-inner"></div>
-      </div>
+      ${when(
+        !readonly,
+        () => html`
+          <div class="resize top-left">
+            <div class="resize-inner"></div>
+          </div>
+          <div class="resize top-right">
+            <div class="resize-inner"></div>
+          </div>
+          <div class="resize bottom-left">
+            <div class="resize-inner"></div>
+          </div>
+          <div class="resize bottom-right">
+            <div class="resize-inner"></div>
+          </div>
+        `
+      )}
     </div>
   `;
 }

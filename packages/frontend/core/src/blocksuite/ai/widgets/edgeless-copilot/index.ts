@@ -1,3 +1,4 @@
+import { CopilotTool } from '@affine/core/blocksuite/ai/tool/copilot-tool';
 import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine/blocks/surface';
 import {
   Bound,
@@ -26,13 +27,14 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { literal, unsafeStatic } from 'lit/static-html.js';
 
 import type { AIItemGroupConfig } from '../../components/ai-item/types.js';
+import { AIProvider } from '../../provider/index.js';
+import { extractSelectedContent } from '../../utils/extract.js';
 import {
   AFFINE_AI_PANEL_WIDGET,
   AffineAIPanelWidget,
 } from '../ai-panel/ai-panel.js';
 import { EdgelessCopilotPanel } from '../edgeless-copilot-panel/index.js';
-
-export const AFFINE_EDGELESS_COPILOT_WIDGET = 'affine-edgeless-copilot-widget';
+import { AFFINE_EDGELESS_COPILOT_WIDGET } from './constant.js';
 
 export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
   static override styles = css`
@@ -84,7 +86,7 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
       if (!referenceElement || !referenceElement.isConnected) return;
 
       // show ai input
-      const rootBlockId = this.host.doc.root?.id;
+      const rootBlockId = this.host.store.root?.id;
       if (!rootBlockId) return;
 
       const input = this.host.view.getWidget(
@@ -94,6 +96,31 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
 
       if (input instanceof AffineAIPanelWidget) {
         input.setState('input', referenceElement);
+        const aiPanel = input;
+        // TODO: @xiaojun refactor these scattered config overrides
+        if (aiPanel.config && !aiPanel.config.generateAnswer) {
+          aiPanel.config.generateAnswer = ({ finish, input }) => {
+            finish('success');
+            aiPanel.hide();
+            extractSelectedContent(this.host)
+              .then(context => {
+                AIProvider.slots.requestSendWithChat.next({
+                  input,
+                  context,
+                  host: this.host,
+                });
+              })
+              .catch(console.error);
+          };
+          aiPanel.config.inputCallback = text => {
+            const panel = this.shadowRoot?.querySelector(
+              'edgeless-copilot-panel'
+            );
+            if (panel instanceof HTMLElement) {
+              panel.style.visibility = text ? 'hidden' : 'visible';
+            }
+          };
+        }
         requestAnimationFrame(() => {
           this._createCopilotPanel();
           this._updateCopilotPanel(input);
@@ -205,7 +232,7 @@ export class EdgelessCopilotWidget extends WidgetComponent<RootBlockModel> {
   override connectedCallback(): void {
     super.connectedCallback();
 
-    const CopilotSelectionTool = this.gfx.tool.get('copilot');
+    const CopilotSelectionTool = this.gfx.tool.get(CopilotTool);
 
     this._disposables.add(
       CopilotSelectionTool.draggingAreaUpdated.subscribe(shouldShowPanel => {
@@ -313,3 +340,5 @@ declare global {
     [AFFINE_EDGELESS_COPILOT_WIDGET]: EdgelessCopilotWidget;
   }
 }
+
+export * from './constant';

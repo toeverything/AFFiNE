@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { lightThemeV2 } from '@toeverything/theme/v2';
 
 import {
+  assertEdgelessShapeType,
   assertEdgelessTool,
   changeShapeFillColor,
   changeShapeFillColorToTransparent,
@@ -787,4 +788,22 @@ test('shape should be editable when re-enter canvas', async ({ page }) => {
 
   await dblclickView(page, [50, 50]);
   await expect(page.locator('edgeless-shape-text-editor')).toBeAttached();
+});
+
+test('shape tool should not be changed after adding new shape', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyEdgelessState(page);
+  await switchEditorMode(page);
+
+  await setEdgelessTool(page, 'shape');
+  await page.keyboard.press('s');
+  await waitNextFrame(page);
+  await assertEdgelessShapeType(page, 'ellipse');
+  await clickView(page, [0, 0]);
+
+  await page.keyboard.press('s');
+  await waitNextFrame(page);
+  await assertEdgelessShapeType(page, 'ellipse');
 });

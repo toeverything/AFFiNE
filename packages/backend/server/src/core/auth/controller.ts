@@ -27,6 +27,7 @@ import {
   Throttle,
   URLHelper,
   UseNamedGuard,
+  WrongSignInCredentials,
 } from '../../base';
 import { Models, TokenType } from '../../models';
 import { validators } from '../utils/validators';
@@ -162,7 +163,10 @@ export class AuthController {
     clientNonce?: string
   ) {
     // send email magic link
-    const user = await this.models.user.getUserByEmail(email);
+    const user = await this.models.user.getUserByEmail(email, {
+      withDisabled: true,
+    });
+
     if (!user) {
       if (!this.config.auth.allowSignup) {
         throw new SignUpForbidden();
@@ -191,6 +195,8 @@ export class AuthController {
           throw new InvalidEmail({ email });
         }
       }
+    } else if (user.disabled) {
+      throw new WrongSignInCredentials({ email });
     }
 
     const ttlInSec = 30 * 60;

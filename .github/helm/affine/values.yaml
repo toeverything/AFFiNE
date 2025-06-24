@@ -21,6 +21,11 @@ global:
     username: ''
     password: ''
     database: 0
+  indexer:
+    provider: ''
+    endpoint: ''
+    username: ''
+    password: ''
   docService:
     name: 'affine-doc'
     port: 3020

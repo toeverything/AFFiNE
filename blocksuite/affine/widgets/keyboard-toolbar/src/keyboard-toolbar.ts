@@ -8,7 +8,7 @@ import {
   requiredProperties,
   ShadowlessElement,
 } from '@blocksuite/std';
-import { effect, type Signal, signal } from '@preact/signals-core';
+import { effect, type Signal, signal, untracked } from '@preact/signals-core';
 import { html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -260,6 +260,11 @@ export class AffineKeyboardToolbar extends SignalWatcher(
         if (this.keyboard.visible$.value) {
           this._closeToolPanel();
         }
+        // when keyboard is closed and the panel is not opened, we need to close the toolbar,
+        // this usually happens when user close keyboard from system side
+        else if (this.hasUpdated && untracked(() => !this.panelOpened)) {
+          this.close(true);
+        }
       })
     );
 
@@ -308,9 +313,12 @@ export class AffineKeyboardToolbar extends SignalWatcher(
 
   override firstUpdated() {
     // workaround for the virtual keyboard showing transition animation
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       this._scrollCurrentBlockIntoView();
     }, 700);
+    this.disposables.add(() => {
+      clearTimeout(timeoutId);
+    });
   }
 
   override render() {

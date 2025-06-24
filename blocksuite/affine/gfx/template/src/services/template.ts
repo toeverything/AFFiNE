@@ -97,7 +97,7 @@ export class TemplateJob {
   type: TemplateType;
 
   constructor({ model, type, middlewares }: TemplateJobConfig) {
-    this.job = model.doc.getTransformer();
+    this.job = model.store.getTransformer();
     this.model = model;
     this.type = TEMPLATE_TYPES.includes(type as TemplateType)
       ? (type as TemplateType)
@@ -118,7 +118,7 @@ export class TemplateJob {
   private _getMergeBlockId(modelData: BlockSnapshot) {
     switch (modelData.flavour as MergeBlockFlavour) {
       case 'affine:page':
-        return this.model.doc.root!.id;
+        return this.model.store.root!.id;
       case 'affine:surface':
         return this.model.id;
     }
@@ -174,7 +174,7 @@ export class TemplateJob {
       index?: number;
     }[]
   ) {
-    const doc = this.model.doc;
+    const doc = this.model.store;
     const mergeIdMapping = new Map<string, string>();
     const deferInserting: typeof modelDataList = [];
 
@@ -199,7 +199,7 @@ export class TemplateJob {
         if (isMergeBlock) {
           this._mergeProps(
             json,
-            this.model.doc.getModelById(
+            this.model.store.getModelById(
               this._getMergeBlockId(json)
             ) as BlockModel
           );
@@ -320,12 +320,12 @@ export class TemplateJob {
     from: Record<string, Record<string, unknown>>,
     to: Y.Map<Y.Map<unknown>>
   ) {
-    const schema = this.model.doc.schema.get('affine:surface');
+    const schema = this.model.store.schema.get('affine:surface');
     const surfaceTransformer = schema?.transformer?.(
       new Map()
     ) as SurfaceBlockTransformer;
 
-    this.model.doc.transact(() => {
+    this.model.store.transact(() => {
       const defered: [string, Record<string, unknown>][] = [];
 
       Object.entries(from).forEach(([id, val]) => {

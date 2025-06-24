@@ -374,6 +374,10 @@ export function useAFFiNEI18N(): {
       */
     ["Need-More-Seats"](): string;
     /**
+      * `Allocating Seat`
+      */
+    ["Allocating Seat"](): string;
+    /**
       * `Admin`
       */
     Admin(): string;
@@ -589,6 +593,18 @@ export function useAFFiNEI18N(): {
       * `current`
       */
     current(): string;
+    /**
+      * `created at {{time}}`
+      */
+    ["created at"](options: {
+        readonly time: string;
+    }): string;
+    /**
+      * `last updated at {{time}}`
+      */
+    ["updated at"](options: {
+        readonly time: string;
+    }): string;
     /**
       * `Automatically check for new updates periodically.`
       */
@@ -987,6 +1003,14 @@ export function useAFFiNEI18N(): {
       * `Translucent UI on the sidebar`
       */
     ["com.affine.appearanceSettings.translucentUI.title"](): string;
+    /**
+      * `Show linked doc in sidebar`
+      */
+    ["com.affine.appearanceSettings.showLinkedDocInSidebar.title"](): string;
+    /**
+      * `Control whether to show the structure of linked docs in the sidebar.`
+      */
+    ["com.affine.appearanceSettings.showLinkedDocInSidebar.description"](): string;
     /**
       * `Your current email is {{email}}. We'll send a temporary verification link to this email.`
       */
@@ -1840,6 +1864,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.editCollection.rules.include.is"](): string;
     /**
+      * `is-not`
+      */
+    ["com.affine.editCollection.rules.include.is-not"](): string;
+    /**
       * `Doc`
       */
     ["com.affine.editCollection.rules.include.page"](): string;
@@ -2054,6 +2082,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.filter"](): string;
     /**
+      * `Add Filter Rule`
+      */
+    ["com.affine.filter.add-filter"](): string;
+    /**
       * `after`
       */
     ["com.affine.filter.after"](): string;
@@ -2082,6 +2114,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.filter.empty-tag"](): string;
     /**
+      * `Empty`
+      */
+    ["com.affine.filter.empty"](): string;
+    /**
       * `false`
       */
     ["com.affine.filter.false"](): string;
@@ -2106,6 +2142,42 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.filter.is-public"](): string;
     /**
+      * `between`
+      */
+    ["com.affine.filter.between"](): string;
+    /**
+      * `last 3 days`
+      */
+    ["com.affine.filter.last 3 days"](): string;
+    /**
+      * `last 7 days`
+      */
+    ["com.affine.filter.last 7 days"](): string;
+    /**
+      * `last 15 days`
+      */
+    ["com.affine.filter.last 15 days"](): string;
+    /**
+      * `last 30 days`
+      */
+    ["com.affine.filter.last 30 days"](): string;
+    /**
+      * `this week`
+      */
+    ["com.affine.filter.this week"](): string;
+    /**
+      * `this month`
+      */
+    ["com.affine.filter.this month"](): string;
+    /**
+      * `this quarter`
+      */
+    ["com.affine.filter.this quarter"](): string;
+    /**
+      * `this year`
+      */
+    ["com.affine.filter.this year"](): string;
+    /**
       * `last`
       */
     ["com.affine.filter.last"](): string;
@@ -2121,6 +2193,22 @@ export function useAFFiNEI18N(): {
       * `Add filter`
       */
     ["com.affine.filterList.button.add"](): string;
+    /**
+      * `Display`
+      */
+    ["com.affine.explorer.display-menu.button"](): string;
+    /**
+      * `Grouping`
+      */
+    ["com.affine.explorer.display-menu.grouping"](): string;
+    /**
+      * `Remove group`
+      */
+    ["com.affine.explorer.display-menu.grouping.remove"](): string;
+    /**
+      * `Ordering`
+      */
+    ["com.affine.explorer.display-menu.ordering"](): string;
     /**
       * `View in Page mode`
       */
@@ -2323,6 +2411,14 @@ export function useAFFiNEI18N(): {
       * `Import your AFFiNE workspace and page snapshot file.`
       */
     ["com.affine.import.snapshot.tooltip"](): string;
+    /**
+      * `.affine file`
+      */
+    ["com.affine.import.dotaffinefile"](): string;
+    /**
+      * `Import your AFFiNE db file (.affine)`
+      */
+    ["com.affine.import.dotaffinefile.tooltip"](): string;
     /**
       * `Import failed, please try again.`
       */
@@ -2667,6 +2763,10 @@ export function useAFFiNEI18N(): {
       * `Official website`
       */
     ["com.affine.mobile.setting.others.website"](): string;
+    /**
+      * `Delete my account`
+      */
+    ["com.affine.mobile.setting.others.delete-account"](): string;
     /**
       * `Want to keep data local?`
       */
@@ -3069,6 +3169,18 @@ export function useAFFiNEI18N(): {
       * `Mark this doc as a template, which can be used to create new docs.`
       */
     ["com.affine.page-properties.property.template.tooltips"](): string;
+    /**
+      * `Created by {{userName}}`
+      */
+    ["com.affine.page-properties.property.createdBy.tip"](options: {
+        readonly userName: string;
+    }): string;
+    /**
+      * `Last edited by {{userName}}`
+      */
+    ["com.affine.page-properties.property.updatedBy.tip"](options: {
+        readonly userName: string;
+    }): string;
     /**
       * `Properties`
       */
@@ -3530,36 +3642,6 @@ export function useAFFiNEI18N(): {
       * `Tell us your use case`
       */
     ["com.affine.payment.billing-type-form.title"](): string;
-    /**
-      * `The maximum file upload size for local workspaces is {{quota}}.`
-      */
-    ["com.affine.payment.blob-limit.description.local"](options: {
-        readonly quota: string;
-    }): string;
-    /**
-      * `The maximum file upload size for this joined workspace is {{quota}}. You can contact the owner of this workspace.`
-      */
-    ["com.affine.payment.blob-limit.description.member"](options: {
-        readonly quota: string;
-    }): string;
-    /**
-      * `The maximum file upload size for this workspace is {{quota}}. To proceed, you can:`
-      */
-    ["com.affine.payment.blob-limit.description.owner"](options: {
-        readonly quota: string;
-    }): string;
-    /**
-      * `Upgrade your account for larger file upload limits`
-      */
-    ["com.affine.payment.blob-limit.description.owner.tips-1"](): string;
-    /**
-      * `Upgrade the workspace plan to increase storage for all member`
-      */
-    ["com.affine.payment.blob-limit.description.owner.tips-2"](): string;
-    /**
-      * `Compress your file and upload again`
-      */
-    ["com.affine.payment.blob-limit.description.owner.tips-3"](): string;
     /**
       * `You have reached the limit`
       */
@@ -4366,7 +4448,7 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.payment.license-success.text-1"](): string;
     /**
-      * `You can use this key to upgrade in Settings > Workspace > Billing > Upgrade`
+      * `You can use this key to upgrade in Settings > Workspace > License > Use purchased key`
       */
     ["com.affine.payment.license-success.hint"](): string;
     /**
@@ -4606,6 +4688,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.rootAppSidebar.organize.folder.new-doc"](): string;
     /**
+      * `Add docs`
+      */
+    ["com.affine.rootAppSidebar.organize.folder.add-docs"](): string;
+    /**
       * `Add others`
       */
     ["com.affine.rootAppSidebar.organize.folder.add-others"](): string;
@@ -4734,13 +4820,49 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.setting.account"](): string;
     /**
-      * `Delete account`
+      * `Delete your account`
       */
     ["com.affine.setting.account.delete"](): string;
     /**
-      * `Permanently delete this account and the Workspace data backup in AFFiNE Cloud. This action can not be undone.`
+      * `Once deleted, your account will no longer be accessible, and all data in your personal cloud space will be permanently deleted.`
       */
     ["com.affine.setting.account.delete.message"](): string;
+    /**
+      * `Cannot delete account`
+      */
+    ["com.affine.setting.account.delete.team-warning-title"](): string;
+    /**
+      * `You’re the owner of a team workspace. To delete your account, please delete the workspace or transfer ownership first.`
+      */
+    ["com.affine.setting.account.delete.team-warning-description"](): string;
+    /**
+      * `Delete your account?`
+      */
+    ["com.affine.setting.account.delete.confirm-title"](): string;
+    /**
+      * `Are you sure you want to delete your account?`
+      */
+    ["com.affine.setting.account.delete.confirm-description-1"](): string;
+    /**
+      * `Please type your email to confirm`
+      */
+    ["com.affine.setting.account.delete.input-placeholder"](): string;
+    /**
+      * `Delete`
+      */
+    ["com.affine.setting.account.delete.confirm-button"](): string;
+    /**
+      * `Account deleted`
+      */
+    ["com.affine.setting.account.delete.success-title"](): string;
+    /**
+      * `Your account and cloud data have been deleted.`
+      */
+    ["com.affine.setting.account.delete.success-description-1"](): string;
+    /**
+      * `Local data can be deleted by uninstalling app and clearing browser data.`
+      */
+    ["com.affine.setting.account.delete.success-description-2"](): string;
     /**
       * `Your personal information`
       */
@@ -5382,6 +5504,19 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.meetings"](): string;
     /**
+      * `Beyond Recording
+    Your AI Meeting Assistant is Here`
+      */
+    ["com.affine.settings.meetings.setting.welcome"](): string;
+    /**
+      * `Native Audio Capture, No Bots Required - Direct from Your Mac to Meeting Intelligence.`
+      */
+    ["com.affine.settings.meetings.setting.prompt"](): string;
+    /**
+      * `Learn more`
+      */
+    ["com.affine.settings.meetings.setting.welcome.learn-more"](): string;
+    /**
       * `Enable meeting notes`
       */
     ["com.affine.settings.meetings.enable.title"](): string;
@@ -5410,13 +5545,21 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.meetings.transcription.header"](): string;
     /**
-      * `Auto transcription`
+      * `AI auto summary`
       */
-    ["com.affine.settings.meetings.transcription.auto-transcription"](): string;
+    ["com.affine.settings.meetings.transcription.auto-summary"](): string;
     /**
-      * `Automatically transcribe the meeting notes.`
+      * `Automatically generate a summary of the meeting notes.`
       */
-    ["com.affine.settings.meetings.transcription.auto-transcription.description"](): string;
+    ["com.affine.settings.meetings.transcription.auto-summary.description"](): string;
+    /**
+      * `AI auto todo list`
+      */
+    ["com.affine.settings.meetings.transcription.auto-todo"](): string;
+    /**
+      * `Automatically generate a todo list of the meeting notes.`
+      */
+    ["com.affine.settings.meetings.transcription.auto-todo.description"](): string;
     /**
       * `Privacy & Security`
       */
@@ -5445,6 +5588,18 @@ export function useAFFiNEI18N(): {
       * `Click to allow`
       */
     ["com.affine.settings.meetings.privacy.microphone.permission-setting"](): string;
+    /**
+      * `Permission issues`
+      */
+    ["com.affine.settings.meetings.privacy.issues"](): string;
+    /**
+      * `Permissions are granted but the status isn't updated? Restart the app to refresh permissions.`
+      */
+    ["com.affine.settings.meetings.privacy.issues.description"](): string;
+    /**
+      * `Restart App`
+      */
+    ["com.affine.settings.meetings.privacy.issues.restart"](): string;
     /**
       * `Do nothing`
       */
@@ -5529,6 +5684,14 @@ export function useAFFiNEI18N(): {
       * `Enable or disable AI Network Search feature.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-ai-network-search.description"](): string;
+    /**
+      * `Enable AI Model Switch`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-model-switch.name"](): string;
+    /**
+      * `Enable or disable AI model switch feature.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-model-switch.description"](): string;
     /**
       * `Database Full Width`
       */
@@ -5698,14 +5861,6 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-snapshot-import-export.description"](): string;
     /**
-      * `Multiple Cloud Servers`
-      */
-    ["com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.name"](): string;
-    /**
-      * `Once enabled, users can connect to selfhosted cloud servers.`
-      */
-    ["com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.description"](): string;
-    /**
       * `Enable Edgeless Editing`
       */
     ["com.affine.settings.workspace.experimental-features.enable-mobile-edgeless-editing.name"](): string;
@@ -5753,6 +5908,30 @@ export function useAFFiNEI18N(): {
       * `Once enabled, you can use scribbled style in edgeless mode.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-edgeless-scribbled-style.description"](): string;
+    /**
+      * `Database block table view virtual scroll`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.name"](): string;
+    /**
+      * `Once enabled, switch table view to virtual scroll mode in Database Block.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.description"](): string;
+    /**
+      * `Code block HTML preview`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-code-block-html-preview.name"](): string;
+    /**
+      * `Once enabled, you can preview HTML in code block.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-code-block-html-preview.description"](): string;
+    /**
+      * `Adapter Panel`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-adapter-panel.name"](): string;
+    /**
+      * `Once enabled, you can preview adapter export content in the right side bar.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-adapter-panel.description"](): string;
     /**
       * `Only an owner can edit the workspace avatar and name. Changes will be shown for everyone.`
       */
@@ -5872,13 +6051,61 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.license.self-host-team.seats"](): string;
     /**
-      * `Active key`
+      * `Use purchased key`
       */
-    ["com.affine.settings.workspace.license.self-host-team.active-key"](): string;
+    ["com.affine.settings.workspace.license.self-host-team.use-purchased-key"](): string;
+    /**
+      * `Upload license file`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.upload-license-file"](): string;
+    /**
+      * `Upload license file locally and verify the license information.`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.upload-license-file.description"](): string;
+    /**
+      * `To purchase a license:`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.upload-license-file.tips.title"](): string;
+    /**
+      * `Workspace id`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.upload-license-file.tips.workspace-id"](): string;
+    /**
+      * `Click to upload`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.upload-license-file.click-to-upload"](): string;
+    /**
+      * `Activation failed`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.upload-license-file.failed"](): string;
+    /**
+      * `Activation Success`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.upload-license-file.success.title"](): string;
+    /**
+      * `License has been successfully applied`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.upload-license-file.success.description"](): string;
+    /**
+      * `If you encounter any issues, contact support@toeverything.info.`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.upload-license-file.help"](): string;
     /**
       * `Deactivate`
       */
     ["com.affine.settings.workspace.license.self-host-team.deactivate-license"](): string;
+    /**
+      * `Replace your license file`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.replace-license.title"](): string;
+    /**
+      * `Replace the existing license file with a new, updated version.`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.replace-license.description"](): string;
+    /**
+      * `Upload license file`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.replace-license.upload"](): string;
     /**
       * `Buy more seat`
       */
@@ -5896,13 +6123,17 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.license.activate-success"](): string;
     /**
-      * `Deactivate License`
+      * `Confirm deactivation?`
       */
     ["com.affine.settings.workspace.license.deactivate-modal.title"](): string;
     /**
-      * `Are you sure you want to deactivate this license?`
+      * `After deactivation, you will need to upload a new license to continue using team feature`
       */
-    ["com.affine.settings.workspace.license.deactivate-modal.description"](): string;
+    ["com.affine.settings.workspace.license.deactivate-modal.description-license"](): string;
+    /**
+      * `Manage Payment`
+      */
+    ["com.affine.settings.workspace.license.deactivate-modal.manage-payment"](): string;
     /**
       * `License deactivated successfully.`
       */
@@ -6058,6 +6289,98 @@ export function useAFFiNEI18N(): {
         date: string;
         time: string;
     }>): string;
+    /**
+      * `Indexer & Embedding`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.title"](): string;
+    /**
+      * `Manage AFFiNE indexing and AFFiNE AI Embedding for local content processing`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.description"](): string;
+    /**
+      * `Embedding`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.title"](): string;
+    /**
+      * `Embedding allows AI to retrieve your content. If the indexer uses local settings, it may affect some of the results of the Embedding.`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.description"](): string;
+    /**
+      * `Only the workspace owner can enable Workspace Embedding.`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.disabled-tooltip"](): string;
+    /**
+      * `Select doc`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.select-doc"](): string;
+    /**
+      * `Upload file`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.upload-file"](): string;
+    /**
+      * `Workspace Embedding`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.switch.title"](): string;
+    /**
+      * `AI can call files embedded in the workspace.`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.switch.description"](): string;
+    /**
+      * `Failed to update workspace doc embedding enabled`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.switch.error"](): string;
+    /**
+      * `Failed to remove attachment from embedding`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.remove-attachment.error"](): string;
+    /**
+      * `Failed to update ignored docs`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.update-ignored-docs.error"](): string;
+    /**
+      * `Embedding progress`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.progress.title"](): string;
+    /**
+      * `Syncing`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.progress.syncing"](): string;
+    /**
+      * `Synced`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.progress.synced"](): string;
+    /**
+      * `Loading sync status...`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.progress.loading-sync-status"](): string;
+    /**
+      * `Ignore Docs`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.ignore-docs.title"](): string;
+    /**
+      * `The Ignored docs will not be embedded into the current workspace.`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.ignore-docs.description"](): string;
+    /**
+      * `Additional attachments`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.title"](): string;
+    /**
+      * `The uploaded file will be embedded in the current workspace.`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.description"](): string;
+    /**
+      * `Remove the attachment from embedding?`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.remove-attachment.title"](): string;
+    /**
+      * `Attachment will be removed. AI will not continue to extract content from this attachment.`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.remove-attachment.description"](): string;
+    /**
+      * `Delete File`
+      */
+    ["com.affine.settings.workspace.indexer-embedding.embedding.additional-attachments.remove-attachment.tooltip"](): string;
     /**
       * `Sharing doc requires AFFiNE Cloud.`
       */
@@ -6712,6 +7035,26 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.workspace.cloud.account.admin"](): string;
     /**
+      * `Team owner`
+      */
+    ["com.affine.workspace.cloud.account.team.owner"](): string;
+    /**
+      * `Team member`
+      */
+    ["com.affine.workspace.cloud.account.team.member"](): string;
+    /**
+      * `Multiple teams`
+      */
+    ["com.affine.workspace.cloud.account.team.multi"](): string;
+    /**
+      * `Click to open workspace`
+      */
+    ["com.affine.workspace.cloud.account.team.tips-1"](): string;
+    /**
+      * `Click to open workspace list`
+      */
+    ["com.affine.workspace.cloud.account.team.tips-2"](): string;
+    /**
       * `Sign up/ Sign in`
       */
     ["com.affine.workspace.cloud.auth"](): string;
@@ -6807,6 +7150,90 @@ export function useAFFiNEI18N(): {
       * `Inactive workspace`
       */
     ["com.affine.inactive-workspace"](): string;
+    /**
+      * `Display Properties`
+      */
+    ["com.affine.all-docs.display.properties"](): string;
+    /**
+      * `List view options`
+      */
+    ["com.affine.all-docs.display.list-view"](): string;
+    /**
+      * `Icon`
+      */
+    ["com.affine.all-docs.display.list-view.icon"](): string;
+    /**
+      * `Body`
+      */
+    ["com.affine.all-docs.display.list-view.body"](): string;
+    /**
+      * `Quick actions`
+      */
+    ["com.affine.all-docs.quick-actions"](): string;
+    /**
+      * `Favorite`
+      */
+    ["com.affine.all-docs.quick-action.favorite"](): string;
+    /**
+      * `Move to trash`
+      */
+    ["com.affine.all-docs.quick-action.trash"](): string;
+    /**
+      * `Open in split view`
+      */
+    ["com.affine.all-docs.quick-action.split"](): string;
+    /**
+      * `Open in new tab`
+      */
+    ["com.affine.all-docs.quick-action.tab"](): string;
+    /**
+      * `Select checkbox`
+      */
+    ["com.affine.all-docs.quick-action.select"](): string;
+    /**
+      * `Delete permanently`
+      */
+    ["com.affine.all-docs.quick-action.delete-permanently"](): string;
+    /**
+      * `Restore`
+      */
+    ["com.affine.all-docs.quick-action.restore"](): string;
+    /**
+      * `All`
+      */
+    ["com.affine.all-docs.pinned-collection.all"](): string;
+    /**
+      * `Edit collection rules`
+      */
+    ["com.affine.all-docs.pinned-collection.edit"](): string;
+    /**
+      * `Template`
+      */
+    ["com.affine.all-docs.group.is-template"](): string;
+    /**
+      * `Not Template`
+      */
+    ["com.affine.all-docs.group.is-not-template"](): string;
+    /**
+      * `Journal`
+      */
+    ["com.affine.all-docs.group.is-journal"](): string;
+    /**
+      * `Not Journal`
+      */
+    ["com.affine.all-docs.group.is-not-journal"](): string;
+    /**
+      * `Checked`
+      */
+    ["com.affine.all-docs.group.is-checked"](): string;
+    /**
+      * `Unchecked`
+      */
+    ["com.affine.all-docs.group.is-not-checked"](): string;
+    /**
+      * `Never updated`
+      */
+    ["com.affine.all-docs.group.updated-at.never-updated"](): string;
     /**
       * `core`
       */
@@ -7078,6 +7505,12 @@ export function useAFFiNEI18N(): {
         readonly count: string;
     }): string;
     /**
+      * `{{count}} more members`
+      */
+    ["com.affine.editor.at-menu.more-members-hint"](options: {
+        readonly count: string;
+    }): string;
+    /**
       * `Journal`
       */
     ["com.affine.editor.at-menu.journal"](): string;
@@ -7124,9 +7557,21 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.editor.edgeless-note-header.fold-page-block"](): string;
     /**
-      * `View in page`
+      * `Open in Page`
       */
-    ["com.affine.editor.edgeless-note-header.view-in-page"](): string;
+    ["com.affine.editor.edgeless-note-header.open-in-page"](): string;
+    /**
+      * `Fold`
+      */
+    ["com.affine.editor.edgeless-embed-synced-doc-header.fold"](): string;
+    /**
+      * `Unfold`
+      */
+    ["com.affine.editor.edgeless-embed-synced-doc-header.unfold"](): string;
+    /**
+      * `Open`
+      */
+    ["com.affine.editor.edgeless-embed-synced-doc-header.open"](): string;
     /**
       * `Empower Your Team with Seamless Collaboration`
       */
@@ -7650,6 +8095,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.integration.calendar.new-url-label"](): string;
     /**
+      * `This is a duplicate calendar`
+      */
+    ["com.affine.integration.calendar.new-duplicate-error-title"](): string;
+    /**
+      * `This subscription calendar already exists in the account of subscribed calendars.`
+      */
+    ["com.affine.integration.calendar.new-duplicate-error-content"](): string;
+    /**
       * `An error occurred while adding the calendar`
       */
     ["com.affine.integration.calendar.new-error"](): string;
@@ -7733,6 +8186,24 @@ export function useAFFiNEI18N(): {
       * `Stop`
       */
     ["com.affine.recording.stop"](): string;
+    /**
+      * `Migrate Data to Enhance User Experience`
+      */
+    ["com.affine.migration-all-docs-notification.header"](): string;
+    /**
+      * `We are updating the local data to facilitate the recording and filtering of created by and Last edited by information. Please click the “Migrate Data” button and ensure a stable network connection during the process.`
+      */
+    ["com.affine.migration-all-docs-notification.desc"](): string;
+    /**
+      * `Migration failed: {{errorMessage}}`
+      */
+    ["com.affine.migration-all-docs-notification.error"](options: {
+        readonly errorMessage: string;
+    }): string;
+    /**
+      * `Migrate data`
+      */
+    ["com.affine.migration-all-docs-notification.button"](): string;
     /**
       * `An internal error occurred.`
       */
@@ -7839,6 +8310,12 @@ export function useAFFiNEI18N(): {
       * `The third-party account has already been connected to another user.`
       */
     ["error.OAUTH_ACCOUNT_ALREADY_CONNECTED"](): string;
+    /**
+      * `Invalid OAuth response: {{reason}}.`
+      */
+    ["error.INVALID_OAUTH_RESPONSE"](options: {
+        readonly reason: string;
+    }): string;
     /**
       * `An invalid email provided: {{email}}`
       */
@@ -8051,6 +8528,20 @@ export function useAFFiNEI18N(): {
       */
     ["error.CAN_NOT_BATCH_GRANT_DOC_OWNER_PERMISSIONS"](): string;
     /**
+      * `Can not set a non-active member as owner.`
+      */
+    ["error.NEW_OWNER_IS_NOT_ACTIVE_MEMBER"](): string;
+    /**
+      * `Invalid invitation provided.`
+      */
+    ["error.INVALID_INVITATION"](): string;
+    /**
+      * `No more seat available in the Space {{spaceId}}.`
+      */
+    ["error.NO_MORE_SEAT"](options: {
+        readonly spaceId: string;
+    }): string;
+    /**
       * `Unsupported subscription plan: {{plan}}.`
       */
     ["error.UNSUPPORTED_SUBSCRIPTION_PLAN"](options: {
@@ -8123,6 +8614,10 @@ export function useAFFiNEI18N(): {
       */
     ["error.COPILOT_SESSION_NOT_FOUND"](): string;
     /**
+      * `Copilot session input is invalid.`
+      */
+    ["error.COPILOT_SESSION_INVALID_INPUT"](): string;
+    /**
       * `Copilot session has been deleted.`
       */
     ["error.COPILOT_SESSION_DELETED"](): string;
@@ -8173,6 +8668,13 @@ export function useAFFiNEI18N(): {
       */
     ["error.COPILOT_PROMPT_INVALID"](): string;
     /**
+      * `Copilot provider {{provider}} does not support output type {{kind}}`
+      */
+    ["error.COPILOT_PROVIDER_NOT_SUPPORTED"](options: Readonly<{
+        provider: string;
+        kind: string;
+    }>): string;
+    /**
       * `Provider {{provider}} failed with {{kind}} error: {{message}}`
       */
     ["error.COPILOT_PROVIDER_SIDE_ERROR"](options: Readonly<{
@@ -8205,6 +8707,13 @@ export function useAFFiNEI18N(): {
       */
     ["error.COPILOT_FAILED_TO_MATCH_CONTEXT"](options: Readonly<{
         contextId: string;
+        message: string;
+    }>): string;
+    /**
+      * `Failed to match context in workspace {{workspaceId}} with "%7B%7Bcontent%7D%7D": {{message}}`
+      */
+    ["error.COPILOT_FAILED_TO_MATCH_GLOBAL_CONTEXT"](options: Readonly<{
+        workspaceId: string;
         message: string;
     }>): string;
     /**
@@ -8276,6 +8785,10 @@ export function useAFFiNEI18N(): {
       */
     ["error.CANNOT_DELETE_OWN_ACCOUNT"](): string;
     /**
+      * `Cannot delete account. You are the owner of one or more team workspaces. Please transfer ownership or delete them first.`
+      */
+    ["error.CANNOT_DELETE_ACCOUNT_WITH_OWNED_TEAM_WORKSPACE"](): string;
+    /**
       * `Captcha verification failed.`
       */
     ["error.CAPTCHA_VERIFICATION_FAILED"](): string;
@@ -8296,9 +8809,11 @@ export function useAFFiNEI18N(): {
       */
     ["error.LICENSE_NOT_FOUND"](): string;
     /**
-      * `Invalid license to activate.`
+      * `Invalid license to activate. {{reason}}`
       */
-    ["error.INVALID_LICENSE_TO_ACTIVATE"](): string;
+    ["error.INVALID_LICENSE_TO_ACTIVATE"](options: {
+        readonly reason: string;
+    }): string;
     /**
       * `Invalid license update params. {{reason}}`
       */
@@ -8306,11 +8821,9 @@ export function useAFFiNEI18N(): {
         readonly reason: string;
     }): string;
     /**
-      * `You cannot downgrade the workspace from team workspace because there are more than {{limit}} members that are currently active.`
+      * `License has expired.`
       */
-    ["error.WORKSPACE_MEMBERS_EXCEED_LIMIT_TO_DOWNGRADE"](options: {
-        readonly limit: string;
-    }): string;
+    ["error.LICENSE_EXPIRED"](): string;
     /**
       * `Unsupported client with version [{{clientVersion}}], required version is [{{requiredVersion}}].`
       */
@@ -8333,9 +8846,35 @@ export function useAFFiNEI18N(): {
       */
     ["error.MENTION_USER_ONESELF_DENIED"](): string;
     /**
-      * `Invalid app config.`
+      * `Invalid app config for module `{{module}}` with key `{{key}}`. {{hint}}.`
       */
-    ["error.INVALID_APP_CONFIG"](): string;
+    ["error.INVALID_APP_CONFIG"](options: Readonly<{
+        module: string;
+        key: string;
+        hint: string;
+    }>): string;
+    /**
+      * `Invalid app config input: {{message}}`
+      */
+    ["error.INVALID_APP_CONFIG_INPUT"](options: {
+        readonly message: string;
+    }): string;
+    /**
+      * `Search provider not found.`
+      */
+    ["error.SEARCH_PROVIDER_NOT_FOUND"](): string;
+    /**
+      * `Invalid request argument to search provider: {{reason}}`
+      */
+    ["error.INVALID_SEARCH_PROVIDER_REQUEST"](options: {
+        readonly reason: string;
+    }): string;
+    /**
+      * `Invalid indexer input: {{reason}}`
+      */
+    ["error.INVALID_INDEXER_INPUT"](options: {
+        readonly reason: string;
+    }): string;
 } { const { t } = useTranslation(); return useMemo(() => createProxy((key) => t.bind(null, key)), [t]); }
 function createComponent(i18nKey: string) {
     return (props) => createElement(Trans, { i18nKey, shouldUnescape: true, ...props });
@@ -8644,6 +9183,12 @@ export const TypedTrans: {
         ["1"]: JSX.Element;
     }>>;
     /**
+      * `Your account will be inaccessible, and your personal cloud space will be permanently deleted. You can remove local data by uninstalling the app or clearing your browser storage. <1>This action is irreversible.</1>`
+      */
+    ["com.affine.setting.account.delete.confirm-description-2"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
       * `Don't have the app? <1>Click to download</1>.`
       */
     ["com.affine.open-in-app.card.subtitle"]: ComponentType<TypedTransProps<Readonly<{}>, {
@@ -8663,17 +9208,49 @@ export const TypedTrans: {
         ["2"]: JSX.Element;
     }>>;
     /**
+      * `Meeting Features Available <strong>Free</strong> in Beta Phase`
+      */
+    ["com.affine.settings.meetings.setting.prompt.2"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        strong: JSX.Element;
+    }>>;
+    /**
+      * `<strong>Where AI meets your meetings - affine your collaboration.</strong>
+    <ul><li>Extract Action Items & Key Insights Instantly</li><li>Smart Auto-Capture Starts With Your Meeting</li><li>Seamless Integration Across All Meeting Platforms</li><li>One Unified Space for All Your Meeting's Context</li><li>Your AI Assistant with Every Meeting Context Preserved</li></ul>`
+      */
+    ["com.affine.settings.meetings.setting.welcome.hints"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        strong: JSX.Element;
+        ul: JSX.Element;
+        li: JSX.Element;
+    }>>;
+    /**
       * `Utilize the meeting notes and AI summarization features provided by AFFiNE. <1>Discuss more in the community</1>.`
       */
     ["com.affine.settings.meetings.enable.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
     }>>;
     /**
-      * `If you encounter any issues, please contact our <1>customer support</1>. No license yet? <2>Click to purchase</2>.`
+      * `Activate using the local key from <1>Toeverything.Inc</1>`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.team.license"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `Copy your workspace id and <1>reach out to us</1>.`
+      */
+    ["com.affine.settings.workspace.license.self-host-team.upload-license-file.tips.content"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
+    }>>;
+    /**
+      * `If you encounter any issues, contact support@toeverything.info. No license yet? <1>Click to purchase</1>.`
       */
     ["com.affine.settings.workspace.license.activate-modal.tips"]: ComponentType<TypedTransProps<Readonly<{}>, {
         ["1"]: JSX.Element;
-        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `This will make the workspace read-only. Your key remains usable elsewhere. Deactivation doesn't cancel your Team plan. To cancel, go to <1>Manage Payment</1>.`
+      */
+    ["com.affine.settings.workspace.license.deactivate-modal.description"]: ComponentType<TypedTransProps<Readonly<{}>, {
+        ["1"]: JSX.Element;
     }>>;
     /**
       * `The "<1>{{ name }}</1>" property will be removed. This action cannot be undone.`

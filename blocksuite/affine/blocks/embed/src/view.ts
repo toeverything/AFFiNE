@@ -8,34 +8,32 @@ import {
   EdgelessClipboardEmbedFigmaConfig,
   EmbedFigmaViewExtensions,
 } from './embed-figma-block';
+import { EmbedFigmaBlockInteraction } from './embed-figma-block/embed-edgeless-figma-block';
 import {
   EdgelessClipboardEmbedGithubConfig,
   EmbedGithubViewExtensions,
 } from './embed-github-block';
+import { EmbedGithubBlockInteraction } from './embed-github-block/embed-edgeless-github-block';
 import {
   EdgelessClipboardEmbedHtmlConfig,
   EmbedHtmlViewExtensions,
 } from './embed-html-block';
+import { EmbedEdgelessHtmlBlockInteraction } from './embed-html-block/embed-edgeless-html-block';
 import {
   EdgelessClipboardEmbedIframeConfig,
   EmbedIframeViewExtensions,
 } from './embed-iframe-block';
-import {
-  EdgelessClipboardEmbedLinkedDocConfig,
-  EmbedLinkedDocViewExtensions,
-} from './embed-linked-doc-block';
+import { EmbedIframeInteraction } from './embed-iframe-block/embed-edgeless-iframe-block';
 import {
   EdgelessClipboardEmbedLoomConfig,
   EmbedLoomViewExtensions,
 } from './embed-loom-block';
-import {
-  EdgelessClipboardEmbedSyncedDocConfig,
-  EmbedSyncedDocViewExtensions,
-} from './embed-synced-doc-block';
+import { EmbedLoomBlockInteraction } from './embed-loom-block/embed-edgeless-loom-bock';
 import {
   EdgelessClipboardEmbedYoutubeConfig,
   EmbedYoutubeViewExtensions,
 } from './embed-youtube-block';
+import { EmbedYoutubeBlockInteraction } from './embed-youtube-block/embed-edgeless-youtube-block';
 
 export class EmbedViewExtension extends ViewExtensionProvider {
   override name = 'affine-embed-block';
@@ -52,8 +50,6 @@ export class EmbedViewExtension extends ViewExtensionProvider {
     context.register(EmbedLoomViewExtensions);
     context.register(EmbedYoutubeViewExtensions);
     context.register(EmbedHtmlViewExtensions);
-    context.register(EmbedLinkedDocViewExtensions);
-    context.register(EmbedSyncedDocViewExtensions);
     context.register(EmbedIframeViewExtensions);
     const isEdgeless = this.isEdgeless(context.scope);
     if (isEdgeless) {
@@ -64,8 +60,12 @@ export class EmbedViewExtension extends ViewExtensionProvider {
         EdgelessClipboardEmbedLoomConfig,
         EdgelessClipboardEmbedYoutubeConfig,
         EdgelessClipboardEmbedIframeConfig,
-        EdgelessClipboardEmbedLinkedDocConfig,
-        EdgelessClipboardEmbedSyncedDocConfig,
+        EmbedFigmaBlockInteraction,
+        EmbedGithubBlockInteraction,
+        EmbedEdgelessHtmlBlockInteraction,
+        EmbedLoomBlockInteraction,
+        EmbedYoutubeBlockInteraction,
+        EmbedIframeInteraction,
       ]);
     }
   }

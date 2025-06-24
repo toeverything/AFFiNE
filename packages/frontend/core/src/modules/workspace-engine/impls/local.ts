@@ -31,7 +31,7 @@ import { LiveData, Service } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
 import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
-import { type Doc as YDoc, encodeStateAsUpdate } from 'yjs';
+import { Doc as YDoc, encodeStateAsUpdate } from 'yjs';
 
 import { DesktopApiService } from '../../desktop-api';
 import type {
@@ -150,6 +150,7 @@ class LocalWorkspaceFlavourProvider implements WorkspaceFlavourProvider {
 
     const docCollection = new WorkspaceImpl({
       id: id,
+      rootDoc: new YDoc({ guid: id }),
       blobSource: {
         get: async key => {
           const record = await blobStorage.get(key);

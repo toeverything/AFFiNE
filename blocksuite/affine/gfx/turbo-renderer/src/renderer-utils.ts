@@ -47,7 +47,8 @@ export function getViewportLayoutTree(
   // Recursive function to build the tree structure
   const buildLayoutTreeNode = (
     model: BlockModel,
-    ancestorViewportState?: string | null
+    ancestorViewportState?: string | null,
+    root = false
   ): BlockLayoutTreeNode | null => {
     const baseLayout: BlockLayout = {
       blockId: model.id,
@@ -92,6 +93,29 @@ export function getViewportLayoutTree(
       layoutMinY = Math.min(layoutMinY, calculatedRect.y);
       layoutMaxX = Math.max(layoutMaxX, calculatedRect.x + calculatedRect.w);
       layoutMaxY = Math.max(layoutMaxY, calculatedRect.y + calculatedRect.h);
+    } else if (component && !root) {
+      const clientRect = component.getBoundingClientRect();
+      const [modelX, modelY] = viewport.toModelCoordFromClientCoord([
+        clientRect.x,
+        clientRect.y,
+      ]);
+
+      const rect = {
+        x: modelX,
+        y: modelY,
+        w: clientRect.width / zoom / viewport.viewScale,
+        h: clientRect.height / zoom / viewport.viewScale,
+      };
+
+      layout = {
+        ...baseLayout,
+        rect,
+      };
+
+      layoutMinX = Math.min(layoutMinX, rect.x);
+      layoutMinY = Math.min(layoutMinY, rect.y);
+      layoutMaxX = Math.max(layoutMaxX, rect.x + rect.w);
+      layoutMaxY = Math.max(layoutMaxY, rect.y + rect.h);
     } else {
       layoutMinX = Math.min(layoutMinX, baseLayout.rect.x);
       layoutMinY = Math.min(layoutMinY, baseLayout.rect.y);
@@ -116,7 +140,7 @@ export function getViewportLayoutTree(
   };
 
   const roots: BlockLayoutTreeNode[] = [];
-  const rootNode = buildLayoutTreeNode(rootModel);
+  const rootNode = buildLayoutTreeNode(rootModel, null, true);
   if (rootNode) {
     roots.push(rootNode);
   }
@@ -155,7 +179,6 @@ export function debugLog(message: string, state: RenderingState) {
 }
 
 export function paintPlaceholder(
-  host: EditorHost,
   canvas: HTMLCanvasElement,
   layout: ViewportLayoutTree | null,
   viewport: Viewport
@@ -175,27 +198,19 @@ export function paintPlaceholder(
     'rgba(160, 160, 160, 0.7)',
   ];
 
-  const layoutHandlers = host.std.provider.getAll(
-    BlockLayoutHandlersIdentifier
-  );
-  const handlersArray = Array.from(layoutHandlers.values());
-
   const paintNode = (node: BlockLayoutTreeNode, depth: number = 0) => {
-    const { layout: nodeLayout, type } = node;
-    const handler = handlersArray.find(h => h.blockType === type);
-    if (handler) {
-      ctx.fillStyle = colors[depth % colors.length];
-      const rect = nodeLayout.rect;
-      const x = ((rect.x - overallRect.x) * viewport.zoom + offsetX) * dpr;
-      const y = ((rect.y - overallRect.y) * viewport.zoom + offsetY) * dpr;
-      const width = rect.w * viewport.zoom * dpr;
-      const height = rect.h * viewport.zoom * dpr;
+    const { layout: nodeLayout } = node;
+    ctx.fillStyle = colors[depth % colors.length];
+    const rect = nodeLayout.rect;
+    const x = ((rect.x - overallRect.x) * viewport.zoom + offsetX) * dpr;
+    const y = ((rect.y - overallRect.y) * viewport.zoom + offsetY) * dpr;
+    const width = rect.w * viewport.zoom * dpr;
+    const height = rect.h * viewport.zoom * dpr;
 
-      ctx.fillRect(x, y, width, height);
-      if (width > 10 && height > 5) {
-        ctx.strokeStyle = 'rgba(150, 150, 150, 0.3)';
-        ctx.strokeRect(x, y, width, height);
-      }
+    ctx.fillRect(x, y, width, height);
+    if (width > 10 && height > 5) {
+      ctx.strokeStyle = 'rgba(150, 150, 150, 0.3)';
+      ctx.strokeRect(x, y, width, height);
     }
 
     if (node.children.length > 0) {

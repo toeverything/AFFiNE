@@ -174,6 +174,18 @@ export class DocUserModel extends BaseModel {
     });
   }
 
+  async findMany(workspaceId: string, docIds: string[], userId: string) {
+    return await this.db.workspaceDocUserRole.findMany({
+      where: {
+        workspaceId,
+        docId: {
+          in: docIds,
+        },
+        userId,
+      },
+    });
+  }
+
   count(workspaceId: string, docId: string) {
     return this.db.workspaceDocUserRole.count({
       where: {

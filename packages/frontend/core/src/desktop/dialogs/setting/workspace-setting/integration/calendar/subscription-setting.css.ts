@@ -80,6 +80,9 @@ export const name = style({
   textOverflow: 'ellipsis',
   overflow: 'hidden',
   whiteSpace: 'nowrap',
+  padding: '0px 4px',
+  display: 'inline-flex',
+  alignItems: 'center',
 });
 
 export const allDayEventsContainer = style({

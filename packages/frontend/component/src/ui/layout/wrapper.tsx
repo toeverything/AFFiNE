@@ -16,6 +16,8 @@ export type WrapperProps = {
   marginLeft?: CSSProperties['marginLeft'];
   marginRight?: CSSProperties['marginRight'];
   marginBottom?: CSSProperties['marginBottom'];
+  flexGrow?: CSSProperties['flexGrow'];
+  flexShrink?: CSSProperties['flexShrink'];
 };
 
 export type FlexWrapperProps = {
@@ -46,6 +48,8 @@ export const Wrapper = styled('div', {
       'marginLeft',
       'marginRight',
       'marginBottom',
+      'flexGrow',
+      'flexShrink',
     ].includes(prop as string);
   },
 })<WrapperProps>(({
@@ -62,6 +66,8 @@ export const Wrapper = styled('div', {
   marginLeft,
   marginRight,
   marginBottom,
+  flexGrow,
+  flexShrink,
 }) => {
   return {
     display,
@@ -77,6 +83,8 @@ export const Wrapper = styled('div', {
     marginLeft,
     marginRight,
     marginBottom,
+    flexGrow,
+    flexShrink,
   };
 });
 

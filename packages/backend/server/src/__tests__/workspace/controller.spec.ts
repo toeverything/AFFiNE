@@ -164,7 +164,7 @@ test('should be able to get permission granted workspace', async t => {
     'totally-private',
     t.context.u1.id,
     WorkspaceRole.Collaborator,
-    WorkspaceMemberStatus.Accepted
+    { status: WorkspaceMemberStatus.Accepted }
   );
 
   storage.get.resolves(blob());

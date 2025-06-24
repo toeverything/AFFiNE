@@ -301,12 +301,12 @@ test('should focus on input of popover on toolbar', async ({ page }) => {
   const scaleValue = await scaleInput.inputValue();
   expect(scaleValue).toBe('150');
 
-  const cornersMenu = toolbar.locator('.corners-menu');
-  const cornersInput = cornersMenu.locator('input');
-  const cornersButton = cornersMenu.getByLabel('Corners');
+  const stylePanelButton = toolbar.locator('edgeless-note-style-panel');
+  const cornersInput = stylePanelButton.locator(
+    '.edgeless-note-corner-radius-panel input'
+  );
 
-  await expect(cornersInput).toBeHidden();
-  await cornersButton.click();
+  await stylePanelButton.click();
 
   await cornersInput.click();
   await expect(cornersInput).toBeFocused();
@@ -342,7 +342,7 @@ test('Dropdown menus should be closed automatically when toolbar is displayed', 
 
   await expect(moreMenu).toBeVisible();
 
-  await page.mouse.move(0, 0);
+  await page.keyboard.press('Escape');
 
   await expect(toolbar).toBeHidden();
 

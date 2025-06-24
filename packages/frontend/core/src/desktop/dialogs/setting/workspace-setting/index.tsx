@@ -2,9 +2,11 @@ import { useWorkspaceInfo } from '@affine/core/components/hooks/use-workspace-in
 import { ServerService } from '@affine/core/modules/cloud';
 import type { SettingTab } from '@affine/core/modules/dialogs/constant';
 import { WorkspaceService } from '@affine/core/modules/workspace';
+import { EmbeddingSettings } from '@affine/core/modules/workspace-indexer-embedding';
 import { ServerDeploymentType } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import {
+  AiEmbeddingIcon,
   CollaborationIcon,
   IntegrationsIcon,
   PaymentIcon,
@@ -53,6 +55,8 @@ export const WorkspaceSetting = ({
       return <WorkspaceSettingLicense onCloseSetting={onCloseSetting} />;
     case 'workspace:integrations':
       return <IntegrationSetting />;
+    case 'workspace:embedding':
+      return <EmbeddingSettings />;
     default:
       return null;
   }
@@ -105,6 +109,15 @@ export const useWorkspaceSettingList = (): SettingSidebarItem[] => {
         title: t['Storage'](),
         icon: <SaveIcon />,
         testId: 'workspace-setting:storage',
+      },
+      {
+        key: 'workspace:embedding',
+        title:
+          t[
+            'com.affine.settings.workspace.indexer-embedding.embedding.title'
+          ](),
+        icon: <AiEmbeddingIcon />,
+        testId: 'workspace-setting:embedding',
       },
       showBilling && {
         key: 'workspace:billing' as SettingTab,

@@ -23,9 +23,9 @@ import {
   createRecordDetail,
   createUniComponentFromWebComponent,
   type DataSource,
-  DataView,
   dataViewCommonStyle,
   type DataViewProps,
+  DataViewRootUILogic,
   type DataViewSelection,
   type DataViewWidget,
   type DataViewWidgetProps,
@@ -104,7 +104,7 @@ export class DataViewBlockComponent extends CaptionedBlockComponent<DataViewBloc
             prefix: CopyIcon,
             name: 'Copy',
             select: () => {
-              const slice = Slice.fromModels(this.doc, [this.model]);
+              const slice = Slice.fromModels(this.store, [this.model]);
               this.std.clipboard.copySlice(slice).catch(console.error);
             },
           }),
@@ -119,9 +119,9 @@ export class DataViewBlockComponent extends CaptionedBlockComponent<DataViewBloc
                 name: 'Delete Database',
                 select: () => {
                   this.model.children.slice().forEach(block => {
-                    this.doc.deleteBlock(block);
+                    this.store.deleteBlock(block);
                   });
-                  this.doc.deleteBlock(this.model);
+                  this.store.deleteBlock(this.model);
                 },
               }),
             ],
@@ -132,8 +132,6 @@ export class DataViewBlockComponent extends CaptionedBlockComponent<DataViewBloc
   };
 
   private _dataSource?: DataSource;
-
-  private readonly dataView = new DataView();
 
   _bindHotkey: DataViewProps['bindHotkey'] = hotkeys => {
     return {
@@ -232,12 +230,8 @@ export class DataViewBlockComponent extends CaptionedBlockComponent<DataViewBloc
     return this.rootComponent;
   }
 
-  get view() {
-    return this.dataView.expose;
-  }
-
   private renderDatabaseOps() {
-    if (this.doc.readonly) {
+    if (this.store.readonly) {
       return nothing;
     }
     return html` <div class="database-ops" @click="${this._clickDatabaseOps}">
@@ -250,68 +244,68 @@ export class DataViewBlockComponent extends CaptionedBlockComponent<DataViewBloc
 
     this.setAttribute(RANGE_SYNC_EXCLUDE_ATTR, 'true');
   }
-
+  private readonly dataViewRootLogic = new DataViewRootUILogic({
+    virtualPadding$: signal(0),
+    bindHotkey: this._bindHotkey,
+    handleEvent: this._handleEvent,
+    selection$: this.selection$,
+    setSelection: this.setSelection,
+    dataSource: this.dataSource,
+    headerWidget: this.headerWidget,
+    clipboard: this.std.clipboard,
+    notification: {
+      toast: message => {
+        const notification = this.std.getOptional(NotificationProvider);
+        if (notification) {
+          notification.toast(message);
+        } else {
+          toast(this.host, message);
+        }
+      },
+    },
+    eventTrace: (key, params) => {
+      const telemetryService = this.std.getOptional(TelemetryProvider);
+      telemetryService?.track(key, {
+        ...(params as TelemetryEventMap[typeof key]),
+        blockId: this.blockId,
+      });
+    },
+    detailPanelConfig: {
+      openDetailPanel: (target, data) => {
+        const peekViewService = this.std.getOptional(PeekViewProvider);
+        if (peekViewService) {
+          const template = createRecordDetail({
+            ...data,
+            openDoc: () => {},
+            detail: {
+              header: uniMap(
+                createUniComponentFromWebComponent(BlockRenderer),
+                props => ({
+                  ...props,
+                  host: this.host,
+                })
+              ),
+              note: uniMap(
+                createUniComponentFromWebComponent(NoteRenderer),
+                props => ({
+                  ...props,
+                  model: this.model,
+                  host: this.host,
+                })
+              ),
+            },
+          });
+          return peekViewService.peek({ target, template });
+        } else {
+          return Promise.resolve();
+        }
+      },
+    },
+  });
   override renderBlock() {
-    const peekViewService = this.std.getOptional(PeekViewProvider);
-    const telemetryService = this.std.getOptional(TelemetryProvider);
     return html`
       <div contenteditable="false" style="position: relative">
-        ${this.dataView.render({
-          virtualPadding$: signal(0),
-          bindHotkey: this._bindHotkey,
-          handleEvent: this._handleEvent,
-          selection$: this.selection$,
-          setSelection: this.setSelection,
-          dataSource: this.dataSource,
-          headerWidget: this.headerWidget,
-          clipboard: this.std.clipboard,
-          notification: {
-            toast: message => {
-              const notification = this.std.getOptional(NotificationProvider);
-              if (notification) {
-                notification.toast(message);
-              } else {
-                toast(this.host, message);
-              }
-            },
-          },
-          eventTrace: (key, params) => {
-            telemetryService?.track(key, {
-              ...(params as TelemetryEventMap[typeof key]),
-              blockId: this.blockId,
-            });
-          },
-          detailPanelConfig: {
-            openDetailPanel: (target, data) => {
-              if (peekViewService) {
-                const template = createRecordDetail({
-                  ...data,
-                  openDoc: () => {},
-                  detail: {
-                    header: uniMap(
-                      createUniComponentFromWebComponent(BlockRenderer),
-                      props => ({
-                        ...props,
-                        host: this.host,
-                      })
-                    ),
-                    note: uniMap(
-                      createUniComponentFromWebComponent(NoteRenderer),
-                      props => ({
-                        ...props,
-                        model: this.model,
-                        host: this.host,
-                      })
-                    ),
-                  },
-                });
-                return peekViewService.peek({ target, template });
-              } else {
-                return Promise.resolve();
-              }
-            },
-          },
-        })}
+        ${this.dataViewRootLogic.render()}
       </div>
     `;
   }

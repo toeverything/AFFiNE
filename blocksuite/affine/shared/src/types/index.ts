@@ -1,17 +1,7 @@
-import type {
-  EmbedCardStyle,
-  FootNote,
-  ReferenceInfo,
-} from '@blocksuite/affine-model';
-import type { BlockComponent } from '@blocksuite/std';
+import type { FootNote, ReferenceInfo } from '@blocksuite/affine-model';
 import type { InlineEditor } from '@blocksuite/std/inline';
 import type { BlockModel } from '@blocksuite/store';
 export * from './uni-component';
-export interface EditingState {
-  element: BlockComponent;
-  model: BlockModel;
-  rect: DOMRect;
-}
 
 export type NoteChildrenFlavour =
   | 'affine:paragraph'
@@ -37,13 +27,6 @@ export interface Viewport {
 }
 
 export type ExtendedModel = BlockModel & Record<string, any>;
-
-export type EmbedOptions = {
-  flavour: string;
-  urlRegex: RegExp;
-  styles: EmbedCardStyle[];
-  viewType: 'card' | 'embed';
-};
 
 export type IndentContext = {
   blockId: string;
@@ -75,3 +58,13 @@ export interface AffineTextAttributes {
 }
 
 export type AffineInlineEditor = InlineEditor<AffineTextAttributes>;
+
+export type SelectedRect = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  borderWidth: number;
+  borderStyle: string;
+  rotate: number;
+};

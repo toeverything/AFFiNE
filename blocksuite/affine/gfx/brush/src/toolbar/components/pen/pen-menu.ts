@@ -1,5 +1,9 @@
 import { adjustColorAlpha } from '@blocksuite/affine-components/color-picker';
-import { DefaultTheme } from '@blocksuite/affine-model';
+import {
+  BRUSH_LINE_WIDTHS,
+  DefaultTheme,
+  HIGHLIGHTER_LINE_WIDTHS,
+} from '@blocksuite/affine-model';
 import {
   FeatureFlagService,
   ThemeProvider,
@@ -16,6 +20,8 @@ import { css, html, LitElement, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
+import { BrushTool } from '../../../brush-tool';
+import { HighlighterTool } from '../../../highlighter-tool';
 import { penInfoMap } from './consts';
 import type { Pen, PenMap } from './types';
 
@@ -80,7 +86,11 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
 
   private readonly _onPickPen = (tool: Pen) => {
     this.pen$.value = tool;
-    this.setEdgelessTool(tool);
+    if (tool === 'brush') {
+      this.setEdgelessTool(BrushTool);
+    } else {
+      this.setEdgelessTool(HighlighterTool);
+    }
   };
 
   private readonly _onPickColor = (e: ColorEvent) => {
@@ -91,7 +101,12 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
     this.onChange({ color });
   };
 
-  override type: Pen[] = ['brush', 'highlighter'];
+  private readonly _onPickLineWidth = (e: CustomEvent<number>) => {
+    e.stopPropagation();
+    this.onChange({ lineWidth: e.detail });
+  };
+
+  override type = [BrushTool, HighlighterTool];
 
   override render() {
     const {
@@ -103,9 +118,12 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
         value: { brush: brushIcon, highlighter: highlighterIcon },
       },
       penInfo$: {
-        value: { type, color },
+        value: { type, color, lineWidth },
       },
     } = this;
+
+    const lineWidths =
+      type === 'brush' ? BRUSH_LINE_WIDTHS : HIGHLIGHTER_LINE_WIDTHS;
 
     return html`
       <edgeless-slide-menu>
@@ -150,6 +168,13 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
           <menu-divider .vertical=${true}></menu-divider>
         </div>
         <div class="menu-content">
+          <edgeless-line-width-panel
+            .selectedSize=${lineWidth}
+            .lineWidths=${lineWidths}
+            @select=${this._onPickLineWidth}
+          >
+          </edgeless-line-width-panel>
+          <menu-divider .vertical=${true}></menu-divider>
           <edgeless-color-panel
             class="one-way"
             @select=${this._onPickColor}
@@ -157,7 +182,7 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
             .theme=${theme}
             .palettes=${DefaultTheme.StrokeColorShortPalettes}
             .shouldKeepColor=${true}
-            .hasTransparent=${!this.edgeless.doc
+            .hasTransparent=${!this.edgeless.store
               .get(FeatureFlagService)
               .getFlag('enable_color_picker')}
           ></edgeless-color-panel>
@@ -183,6 +208,7 @@ export class EdgelessPenMenu extends EdgelessToolbarToolMixin(
     type: Pen;
     color: string;
     icon: TemplateResult<1>;
+    lineWidth: number;
     tip: string;
     shortcut: string;
   }>;

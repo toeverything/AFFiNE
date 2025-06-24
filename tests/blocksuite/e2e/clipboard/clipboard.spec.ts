@@ -227,7 +227,7 @@ test(scoped`auto identify url`, async ({ page }, testInfo) => {
 
   // set up clipboard data using html
   const clipData = {
-    'text/plain': `test https://www.google.com`,
+    'text/plain': 'test https://www.google.com',
   };
   await waitNextFrame(page);
   await page.evaluate(

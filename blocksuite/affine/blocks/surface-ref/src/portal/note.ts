@@ -43,7 +43,7 @@ export class SurfaceRefNotePortal extends WithDisposable(ShadowlessElement) {
     let parent: BlockModel | null = this.model;
     while (parent) {
       this.ancestors.add(parent.id);
-      parent = this.model.doc.getParent(parent.id);
+      parent = this.model.store.getParent(parent.id);
     }
     const query: Query = {
       mode: 'include',
@@ -54,9 +54,9 @@ export class SurfaceRefNotePortal extends WithDisposable(ShadowlessElement) {
     };
     this.query = query;
 
-    const doc = this.model.doc;
+    const doc = this.model.store;
     this._disposables.add(() => {
-      doc.doc.clearQuery(query, true);
+      doc.doc.removeStore({ query, readonly: true });
     });
   }
 
@@ -118,7 +118,7 @@ export class SurfaceRefNotePortal extends WithDisposable(ShadowlessElement) {
       console.error('Query is not set before rendering note preview');
       return nothing;
     }
-    const doc = this.model.doc.doc.getStore({
+    const doc = this.model.store.doc.getStore({
       query: this.query,
       readonly: true,
     });

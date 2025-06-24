@@ -24,7 +24,7 @@
     "@floating-ui/dom": "^1.6.13",
     "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
-    "@toeverything/theme": "^1.1.12",
+    "@toeverything/theme": "^1.1.15",
     "@types/mdast": "^4.0.4",
     "lit": "^3.2.0",
     "minimatch": "^10.0.1",
@@ -32,11 +32,10 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "vitest": "3.1.1"
+    "vitest": "3.1.3"
   },
   "exports": {
     ".": "./src/index.ts",
-    "./effects": "./src/effects.ts",
     "./turbo-painter": "./src/turbo/list-painter.worker.ts",
     "./view": "./src/view.ts",
     "./store": "./src/store.ts"
@@ -47,5 +46,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.21.0"
+  "version": "0.22.4"
 }

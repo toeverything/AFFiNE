@@ -1,13 +1,13 @@
 import type { Store } from '@blocksuite/store';
 
-import type { GfxLocalElementModel } from '../gfx/index.js';
 import type { Layer } from '../gfx/layer.js';
 import {
   type GfxGroupCompatibleInterface,
   isGfxGroupCompatibleModel,
 } from '../gfx/model/base.js';
-import type { GfxBlockElementModel } from '../gfx/model/gfx-block-model.js';
+import { type GfxBlockElementModel } from '../gfx/model/gfx-block-model.js';
 import type { GfxModel } from '../gfx/model/model.js';
+import { GfxLocalElementModel } from '../gfx/model/surface/local-element-model.js';
 import type { SurfaceBlockModel } from '../gfx/model/surface/surface-model.js';
 
 export function getLayerEndZIndex(layers: Layer[], layerIndex: number) {
@@ -90,6 +90,39 @@ export function renderableInEdgeless(
   return parent === doc.root || parent === surface;
 }
 
+export function compareIndex(aIndex: string, bIndex: string) {
+  return aIndex === bIndex
+    ? SortOrder.SAME
+    : aIndex < bIndex
+      ? SortOrder.BEFORE
+      : SortOrder.AFTER;
+}
+
+function compareLocal(
+  a: GfxModel | GfxLocalElementModel,
+  b: GfxModel | GfxLocalElementModel
+) {
+  const isALocal = a instanceof GfxLocalElementModel;
+  const isBLocal = b instanceof GfxLocalElementModel;
+
+  if (isALocal && a.creator && a.creator === b) {
+    return SortOrder.AFTER;
+  }
+
+  if (isBLocal && b.creator && b.creator === a) {
+    return SortOrder.BEFORE;
+  }
+
+  if (isALocal && isBLocal && a.creator && a.creator === b.creator) {
+    return compareIndex(a.index, b.index);
+  }
+
+  return {
+    a: isALocal && a.creator ? a.creator : a,
+    b: isBLocal && b.creator ? b.creator : b,
+  };
+}
+
 /**
  * A comparator function for sorting elements in the surface.
  * SortOrder.AFTER means a should be rendered after b and so on.
@@ -99,6 +132,15 @@ export function compare(
   a: GfxModel | GfxLocalElementModel,
   b: GfxModel | GfxLocalElementModel
 ) {
+  const result = compareLocal(a, b);
+
+  if (typeof result === 'number') {
+    return result;
+  }
+
+  a = result.a;
+  b = result.b;
+
   if (isGfxGroupCompatibleModel(a) && b.groups.includes(a)) {
     return SortOrder.BEFORE;
   } else if (isGfxGroupCompatibleModel(b) && a.groups.includes(b)) {
@@ -128,10 +170,6 @@ export function compare(
     aGroup = aGroup ?? a;
     bGroup = bGroup ?? b;
 
-    return aGroup.index === bGroup.index
-      ? SortOrder.SAME
-      : aGroup.index < bGroup.index
-        ? SortOrder.BEFORE
-        : SortOrder.AFTER;
+    return compareIndex(aGroup.index, bGroup.index);
   }
 }

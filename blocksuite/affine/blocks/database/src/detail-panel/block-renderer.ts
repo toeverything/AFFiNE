@@ -74,7 +74,7 @@ export class BlockRenderer
   }
 
   get model() {
-    return this.host?.doc.getBlock(this.rowId)?.model;
+    return this.host?.store.getBlock(this.rowId)?.model;
   }
 
   override connectedCallback() {
@@ -140,7 +140,7 @@ export class BlockRenderer
       return;
     }
     return html` <div class="database-block-detail-header-icon">
-      ${this.view.cellValueGet(this.rowId, iconColumn)}
+      ${this.view.cellGetOrCreate(this.rowId, iconColumn).value$.value}
     </div>`;
   }
 

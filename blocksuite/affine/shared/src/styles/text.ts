@@ -23,7 +23,8 @@ export function affineTextStyles(
       'border-radius': '4px',
       color: 'var(--affine-text-primary-color)',
       'font-variant-ligatures': 'none',
-      'line-height': 'auto',
+      'vertical-align': 'bottom',
+      'line-height': 'inherit',
     };
   }
 

@@ -6,7 +6,10 @@ import {
   NewIcon,
   NotionIcon,
 } from '@blocksuite/affine-components/icons';
-import { openFileOrFiles } from '@blocksuite/affine-shared/utils';
+import {
+  openFilesWith,
+  openSingleFileWith,
+} from '@blocksuite/affine-shared/utils';
 import { WithDisposable } from '@blocksuite/global/lit';
 import type { ExtensionType, Schema, Workspace } from '@blocksuite/store';
 import { html, LitElement, type PropertyValues } from 'lit';
@@ -50,7 +53,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
   }
 
   private async _importHtml() {
-    const files = await openFileOrFiles({ acceptType: 'Html', multiple: true });
+    const files = await openFilesWith('Html');
     if (!files) return;
     const pageIds: string[] = [];
     for (const file of files) {
@@ -79,10 +82,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
   }
 
   private async _importMarkDown() {
-    const files = await openFileOrFiles({
-      acceptType: 'Markdown',
-      multiple: true,
-    });
+    const files = await openFilesWith('Markdown');
     if (!files) return;
     const pageIds: string[] = [];
     for (const file of files) {
@@ -111,7 +111,7 @@ export class ImportDoc extends WithDisposable(LitElement) {
   }
 
   private async _importNotion() {
-    const file = await openFileOrFiles({ acceptType: 'Zip' });
+    const file = await openSingleFileWith('Zip');
     if (!file) return;
     const needLoading = file.size > SHOW_LOADING_SIZE;
     if (needLoading) {

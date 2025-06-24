@@ -41,7 +41,7 @@ const RecentList = () => {
     TagService,
   });
   const recentDocsList = useLiveData(mobileSearchService.recentDocs.items$);
-  const collections = useLiveData(collectionService.collections$);
+  const collectionMetas = useLiveData(collectionService.collectionMetas$);
   const tags = useLiveData(
     LiveData.computed(get =>
       get(tagService.tagList.tags$).map(tag => ({
@@ -63,7 +63,7 @@ const RecentList = () => {
   );
 
   const collectionList = useMemo(() => {
-    return collections.slice(0, 3).map(item => {
+    return collectionMetas.slice(0, 3).map(item => {
       return {
         id: 'collection:' + item.id,
         source: 'collection',
@@ -72,7 +72,7 @@ const RecentList = () => {
         payload: { collectionId: item.id },
       } satisfies QuickSearchItem<'collection', { collectionId: string }>;
     });
-  }, [collections]);
+  }, [collectionMetas]);
 
   const tagList = useMemo(() => {
     return tags

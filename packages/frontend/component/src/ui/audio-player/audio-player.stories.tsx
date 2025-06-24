@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import bytes from 'bytes';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AudioPlayer, MiniAudioPlayer } from './audio-player';
 
@@ -159,6 +160,10 @@ const AudioWrapper = () => {
     }
   }, []);
 
+  const description = useMemo(() => {
+    return audioFile ? <>{bytes(audioFile.size)}</> : null;
+  }, [audioFile]);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !audioFile) return;
@@ -296,7 +301,7 @@ const AudioWrapper = () => {
           />
           <MiniAudioPlayer
             name={audioFile.name}
-            size={audioFile.size}
+            description={description}
             waveform={waveform}
             playbackState={playbackState}
             seekTime={seekTime}
@@ -311,7 +316,7 @@ const AudioWrapper = () => {
           />
           <AudioPlayer
             name={audioFile.name}
-            size={audioFile.size}
+            description={description}
             waveform={waveform}
             playbackState={playbackState}
             seekTime={seekTime}

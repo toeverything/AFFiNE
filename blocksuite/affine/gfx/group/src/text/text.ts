@@ -1,3 +1,4 @@
+import { DefaultTool } from '@blocksuite/affine-block-surface';
 import type { GroupElementModel } from '@blocksuite/affine-model';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { BlockComponent } from '@blocksuite/std';
@@ -19,8 +20,7 @@ export function mountGroupTitleEditor(
 
   const gfx = edgeless.std.get(GfxControllerIdentifier);
 
-  // @ts-expect-error FIXME: resolve after gfx tool refactor
-  gfx.tool.setTool('default');
+  gfx.tool.setTool(DefaultTool);
   gfx.selection.set({
     elements: [group.id],
     editing: true,

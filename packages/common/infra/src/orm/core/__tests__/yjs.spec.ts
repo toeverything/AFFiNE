@@ -102,6 +102,102 @@ describe('ORM entity CRUD', () => {
     expect(user2).toEqual(user);
   });
 
+  test('should be able to select', t => {
+    const { client } = t;
+
+    client.users.create({
+      name: 'u1',
+      email: 'e1@example.com',
+    });
+
+    client.users.create({
+      name: 'u2',
+    });
+
+    const users = client.users.select('name');
+
+    expect(users).toStrictEqual([
+      { id: expect.any(Number), name: 'u1' },
+      { id: expect.any(Number), name: 'u2' },
+    ]);
+
+    const user2 = client.users.select('email');
+
+    expect(user2).toStrictEqual([
+      { id: expect.any(Number), email: 'e1@example.com' },
+      { id: expect.any(Number), email: undefined },
+    ]);
+
+    const user3 = client.users.select('name', {
+      email: null,
+    });
+
+    expect(user3).toStrictEqual([{ id: expect.any(Number), name: 'u2' }]);
+  });
+
+  test('should be able to observe select', t => {
+    const { client } = t;
+
+    const t1 = client.tags.create({
+      name: 't1',
+      color: 'red',
+    });
+
+    const t2 = client.tags.create({
+      name: 't2',
+      color: 'blue',
+    });
+
+    let currentValue: any;
+    let callbackCount = 0;
+
+    client.tags.select$('name', { color: 'red' }).subscribe(data => {
+      currentValue = data;
+      callbackCount++;
+    });
+
+    expect(currentValue).toStrictEqual([
+      { id: expect.any(String), name: 't1' },
+    ]);
+    expect(callbackCount).toBe(1);
+
+    const t3 = client.tags.create({
+      name: 't3',
+      color: 'blue',
+    });
+
+    expect(currentValue).toStrictEqual([
+      { id: expect.any(String), name: 't1' },
+    ]);
+    expect(callbackCount).toBe(1);
+
+    client.tags.update(t1.id, {
+      name: 't1-updated',
+    });
+    expect(currentValue).toStrictEqual([
+      { id: expect.any(String), name: 't1-updated' },
+    ]);
+    expect(callbackCount).toBe(2);
+
+    client.tags.update(t2.id, {
+      color: 'red',
+    });
+    expect(currentValue).toStrictEqual([
+      { id: expect.any(String), name: 't1-updated' },
+      { id: expect.any(String), name: 't2' },
+    ]);
+    expect(callbackCount).toBe(3);
+
+    client.tags.delete(t1.id);
+    expect(currentValue).toStrictEqual([
+      { id: expect.any(String), name: 't2' },
+    ]);
+    expect(callbackCount).toBe(4);
+
+    client.tags.delete(t3.id);
+    expect(callbackCount).toBe(4);
+  });
+
   test('should be able to filter with nullable condition', t => {
     const { client } = t;
 

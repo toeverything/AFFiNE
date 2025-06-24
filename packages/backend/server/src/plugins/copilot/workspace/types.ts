@@ -2,7 +2,7 @@ import { Field, ObjectType } from '@nestjs/graphql';
 import { SafeIntResolver } from 'graphql-scalars';
 
 import { Paginated } from '../../../base';
-import { CopilotWorkspaceFile } from '../../../models';
+import { CopilotWorkspaceFile, IgnoredDoc } from '../../../models';
 
 declare global {
   interface Events {
@@ -16,12 +16,30 @@ declare global {
 }
 
 @ObjectType('CopilotWorkspaceIgnoredDoc')
-export class CopilotWorkspaceIgnoredDocType {
+export class CopilotWorkspaceIgnoredDocType implements IgnoredDoc {
   @Field(() => String)
   docId!: string;
 
   @Field(() => Date)
   createdAt!: Date;
+
+  @Field(() => Date, { nullable: true })
+  docCreatedAt!: Date | undefined;
+
+  @Field(() => Date, { nullable: true })
+  docUpdatedAt!: Date | undefined;
+
+  @Field(() => String, { nullable: true })
+  title!: string | undefined;
+
+  @Field(() => String, { nullable: true })
+  createdBy!: string | undefined;
+
+  @Field(() => String, { nullable: true })
+  createdByAvatar!: string | undefined;
+
+  @Field(() => String, { nullable: true })
+  updatedBy!: string | undefined;
 }
 
 @ObjectType()
@@ -36,6 +54,9 @@ export class CopilotWorkspaceFileType implements CopilotWorkspaceFile {
 
   @Field(() => String)
   fileId!: string;
+
+  @Field(() => String)
+  blobId!: string;
 
   @Field(() => String)
   fileName!: string;

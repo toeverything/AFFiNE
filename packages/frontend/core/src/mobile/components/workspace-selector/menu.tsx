@@ -10,7 +10,6 @@ import {
   ServersService,
 } from '@affine/core/modules/cloud';
 import { GlobalDialogService } from '@affine/core/modules/dialogs';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import {
   type WorkspaceMetadata,
@@ -78,6 +77,20 @@ export const WorkspaceList = (props: WorkspaceListProps) => {
   ));
 };
 
+const CloudSignIn = ({ onClick }: { onClick: () => void }) => {
+  const t = useI18n();
+  return (
+    <li className={styles.wsItem}>
+      <button className={styles.wsCard} onClick={onClick}>
+        <div className={styles.signInIcon}>
+          <AccountIcon />
+        </div>
+        <div className={styles.wsName}>{t['Sign in']()}</div>
+      </button>
+    </li>
+  );
+};
+
 const WorkspaceServerInfo = ({
   server,
   name,
@@ -85,7 +98,6 @@ const WorkspaceServerInfo = ({
   accountStatus,
   onDeleteServer,
   onSignOut,
-  onSignIn,
 }: {
   server: string;
   name: string;
@@ -93,7 +105,6 @@ const WorkspaceServerInfo = ({
   accountStatus?: 'authenticated' | 'unauthenticated';
   onDeleteServer?: () => void;
   onSignOut?: () => void;
-  onSignIn?: () => void;
 }) => {
   const t = useI18n();
   const isCloud = server !== 'local';
@@ -121,17 +132,8 @@ const WorkspaceServerInfo = ({
             {t['Sign out']()}
           </MenuItem>
         ),
-        accountStatus === 'unauthenticated' && (
-          <MenuItem
-            prefixIcon={<AccountIcon />}
-            key="sign-in"
-            onClick={onSignIn}
-          >
-            {t['Sign in']()}
-          </MenuItem>
-        ),
       ].filter(Boolean),
-    [accountStatus, onDeleteServer, onSignIn, onSignOut, server, t]
+    [accountStatus, onDeleteServer, onSignOut, server, t]
   );
 
   return (
@@ -243,31 +245,31 @@ const CloudWorkSpaceList = ({
         accountStatus={accountStatus}
         onDeleteServer={handleDeleteServer}
         onSignOut={handleSignOut}
-        onSignIn={handleSignIn}
       />
-      <WorkspaceList
-        items={workspaces}
-        onClick={onClickWorkspace}
-        onEnableCloudClick={onClickEnableCloud}
-      />
+      {accountStatus === 'unauthenticated' ? (
+        <CloudSignIn onClick={handleSignIn} />
+      ) : (
+        <WorkspaceList
+          items={workspaces}
+          onClick={onClickWorkspace}
+          onEnableCloudClick={onClickEnableCloud}
+        />
+      )}
     </>
   );
 };
 
 const AddServer = () => {
   const globalDialogService = useService(GlobalDialogService);
-  const featureFlagService = useService(FeatureFlagService);
-  const enableMultipleServer = useLiveData(
-    featureFlagService.flags.enable_multiple_cloud_servers.$
-  );
 
   const onAddServer = useCallback(() => {
     globalDialogService.open('sign-in', { step: 'addSelfhosted' });
   }, [globalDialogService]);
 
-  if (!enableMultipleServer) {
+  if (!BUILD_CONFIG.isNative) {
     return null;
   }
+
   return <IconButton onClick={onAddServer} size="24" icon={<SelfhostIcon />} />;
 };
 

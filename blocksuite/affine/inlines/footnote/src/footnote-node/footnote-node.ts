@@ -1,6 +1,7 @@
 import { HoverController } from '@blocksuite/affine-components/hover';
 import { PeekViewProvider } from '@blocksuite/affine-components/peek';
 import type { FootNote } from '@blocksuite/affine-model';
+import { CitationProvider } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
 import { WithDisposable } from '@blocksuite/global/lit';
@@ -54,6 +55,7 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
         text-overflow: ellipsis;
         font-family: ${unsafeCSS(baseTheme.fontSansFamily)};
         transition: background 0.3s ease-in-out;
+        transform: translateY(-0.2em);
       }
     }
 
@@ -116,6 +118,10 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
     return this.std.store.readonly;
   }
 
+  get citationService() {
+    return this.std.get(CitationProvider);
+  }
+
   onFootnoteClick = () => {
     if (!this.footnote) {
       return;
@@ -137,10 +143,6 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
   };
 
   private readonly _handleDocReference = (docId: string) => {
-    if (this.readonly) {
-      return;
-    }
-
     this.std
       .getOptional(PeekViewProvider)
       ?.peek({
@@ -151,6 +153,20 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
 
   private readonly _handleUrlReference = (url: string) => {
     window.open(url, '_blank');
+  };
+
+  private readonly _updateFootnoteAttributes = (footnote: FootNote) => {
+    if (!this.footnote || this.readonly) {
+      return;
+    }
+
+    if (!this.inlineEditor || !this.selfInlineRange) {
+      return;
+    }
+
+    this.inlineEditor.formatText(this.selfInlineRange, {
+      footnote: footnote,
+    });
   };
 
   private readonly _FootNoteDefaultContent = (footnote: FootNote) => {
@@ -172,6 +188,7 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
           .std=${this.std}
           .abortController=${abortController}
           .onPopupClick=${this.onPopupClick ?? this.onFootnoteClick}
+          .updateFootnoteAttributes=${this._updateFootnoteAttributes}
         ></footnote-popup>`;
   };
 
@@ -202,6 +219,10 @@ export class AffineFootnoteNode extends WithDisposable(ShadowlessElement) {
       if (blockSelections.length) {
         return null;
       }
+
+      this.citationService.trackEvent('Hover', {
+        control: 'Source Footnote',
+      });
 
       return {
         template: this._FootNotePopup(footnote, abortController),

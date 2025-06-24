@@ -110,9 +110,9 @@ export class AffineKeyboardToolbarWidget extends WidgetComponent<RootBlockModel>
 
   override render() {
     if (
-      this.doc.readonly ||
+      this.store.readonly ||
       !IS_MOBILE ||
-      !this.doc
+      !this.store
         .get(FeatureFlagService)
         .getFlag('enable_mobile_keyboard_toolbar')
     )

@@ -192,10 +192,14 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
       this._updateTitleInMeta();
       this.requestUpdate();
     };
-    this._rootModel?.props.title.yText.observe(updateMetaTitle);
-    this._disposables.add(() => {
-      this._rootModel?.props.title.yText.unobserve(updateMetaTitle);
-    });
+
+    if (this._rootModel) {
+      const rootModel = this._rootModel;
+      rootModel.props.title.yText.observe(updateMetaTitle);
+      this._disposables.add(() => {
+        rootModel.props.title.yText.unobserve(updateMetaTitle);
+      });
+    }
   }
 
   override render() {
@@ -210,7 +214,7 @@ export class DocTitle extends WithDisposable(ShadowlessElement) {
       >
         <rich-text
           .yText=${this._rootModel?.props.title.yText}
-          .undoManager=${this.doc.history}
+          .undoManager=${this.doc.history.undoManager}
           .verticalScrollContainerGetter=${() => this._viewport}
           .readonly=${this.doc.readonly}
           .enableFormat=${false}

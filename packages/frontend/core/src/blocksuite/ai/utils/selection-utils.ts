@@ -1,17 +1,12 @@
 import {
   EdgelessClipboardController,
-  isCanvasElement,
   splitElements,
 } from '@blocksuite/affine/blocks/root';
 import {
   getSurfaceBlock,
   type SurfaceBlockComponent,
 } from '@blocksuite/affine/blocks/surface';
-import {
-  DatabaseBlockModel,
-  type FrameBlockModel,
-  ImageBlockModel,
-} from '@blocksuite/affine/model';
+import { DatabaseBlockModel, ImageBlockModel } from '@blocksuite/affine/model';
 import {
   getBlockSelectionsCommand,
   getImageSelectionsCommand,
@@ -34,32 +29,19 @@ import {
 
 import { getContentFromSlice } from '../../utils';
 import type { CopilotTool } from '../tool/copilot-tool';
-import { getEdgelessCopilotWidget } from './edgeless';
-
-export function getEdgelessRootFromEditor(editor: EditorHost) {
-  const edgelessRoot = editor.getElementsByTagName('affine-edgeless-root')[0];
-  if (!edgelessRoot) {
-    alert('Please switch to edgeless mode');
-    throw new Error('Please open switch to edgeless mode');
-  }
-  return edgelessRoot;
-}
+import { getEdgelessCopilotWidget } from './get-edgeless-copilot-widget';
 
 export async function selectedToCanvas(host: EditorHost) {
-  const edgelessRoot = getEdgelessRootFromEditor(host);
-  return elementsToCanvas(
-    host,
-    edgelessRoot.service.selection.selectedElements
-  );
+  const gfx = host.std.get(GfxControllerIdentifier);
+  return elementsToCanvas(host, gfx.selection.selectedElements);
 }
 
 export async function allToCanvas(host: EditorHost) {
-  const edgelessRoot = getEdgelessRootFromEditor(host);
-  return elementsToCanvas(host, edgelessRoot.gfx.gfxElements);
+  const gfx = host.std.get(GfxControllerIdentifier);
+  return elementsToCanvas(host, gfx.gfxElements);
 }
 
 export async function elementsToCanvas(host: EditorHost, elements: GfxModel[]) {
-  const edgelessRoot = getEdgelessRootFromEditor(host);
   const { notes, frames, shapes, images, edgelessTexts, embedSyncedDocs } =
     splitElements(elements);
 
@@ -77,7 +59,7 @@ export async function elementsToCanvas(host: EditorHost, elements: GfxModel[]) {
   }
 
   try {
-    const canvas = await edgelessRoot.std
+    const canvas = await host.std
       .get(EdgelessClipboardController)
       .toCanvas(blockElements, shapes);
     if (!canvas) {
@@ -88,10 +70,6 @@ export async function elementsToCanvas(host: EditorHost, elements: GfxModel[]) {
     console.error('elementsToCanvas error', e);
     return;
   }
-}
-
-export async function selectedToPng(editor: EditorHost) {
-  return (await selectedToCanvas(editor))?.toDataURL('image/png');
 }
 
 export function getSelectedModels(editorHost: EditorHost) {
@@ -155,7 +133,7 @@ export async function selectAboveBlocks(editorHost: EditorHost, num = 10) {
   let lastRootModel: BlockModel | null = null;
   while (noteModel && noteModel.flavour !== 'affine:note') {
     lastRootModel = noteModel;
-    noteModel = editorHost.doc.getParent(noteModel);
+    noteModel = editorHost.store.getParent(noteModel);
   }
   if (!noteModel || !lastRootModel) return '';
 
@@ -198,13 +176,9 @@ export async function selectAboveBlocks(editorHost: EditorHost, num = 10) {
   return getTextContentFromBlockModels(editorHost, selectedModels);
 }
 
-export const stopPropagation = (e: Event) => {
-  e.stopPropagation();
-};
-
 export function getSurfaceElementFromEditor(editor: EditorHost) {
-  const { doc } = editor;
-  const surfaceModel = getSurfaceBlock(doc);
+  const { store } = editor;
+  const surfaceModel = getSurfaceBlock(store);
   if (!surfaceModel) return null;
 
   const surfaceId = surfaceModel.id;
@@ -215,24 +189,6 @@ export function getSurfaceElementFromEditor(editor: EditorHost) {
 
   return surfaceElement;
 }
-
-export const getFirstImageInFrame = (
-  frame: FrameBlockModel,
-  editor: EditorHost
-) => {
-  const edgelessRoot = getEdgelessRootFromEditor(editor);
-  const elements = edgelessRoot.service.frame.getElementsInFrameBound(
-    frame,
-    false
-  );
-  const image = elements.find(ele => {
-    if (!isCanvasElement(ele)) {
-      return ele.flavour === 'affine:image';
-    }
-    return false;
-  }) as ImageBlockModel | undefined;
-  return image?.id;
-};
 
 export const getSelections = (
   host: EditorHost,
@@ -268,7 +224,7 @@ export const getSelectedImagesAsBlobs = async (host: EditorHost) => {
     data.selectedBlocks?.map(async b => {
       const sourceId = (b.model as ImageBlockModel).props.sourceId;
       if (!sourceId) return null;
-      const blob = await host.doc.blobSync.get(sourceId);
+      const blob = await host.store.blobSync.get(sourceId);
       if (!blob) return null;
       return new File([blob], sourceId);
     }) ?? []
@@ -300,7 +256,7 @@ export const imageCustomInput = async (host: EditorHost) => {
   if (!(imageBlock instanceof ImageBlockModel)) return;
   if (!imageBlock.props.sourceId) return;
 
-  const blob = await host.doc.blobSync.get(imageBlock.props.sourceId);
+  const blob = await host.store.blobSync.get(imageBlock.props.sourceId);
   if (!blob) return;
 
   return {

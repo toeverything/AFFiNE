@@ -13,6 +13,7 @@ export {
   draftSelectedModelsCommand,
   duplicateSelectedModelsCommand,
   getSelectedModelsCommand,
+  replaceSelectedTextWithBlocksCommand,
   retainFirstModelCommand,
 } from './model-crud/index.js';
 export {

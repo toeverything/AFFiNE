@@ -1,0 +1,9 @@
+#import './license-body.gql'
+
+query getLicense($workspaceId: String!) {
+  workspace(id: $workspaceId) {
+    license {
+      ...licenseBody
+    }
+  }
+}

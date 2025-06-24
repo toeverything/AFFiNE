@@ -13,19 +13,23 @@ import { AuthService } from '../core/auth';
 import { QuotaModule } from '../core/quota';
 import { ContextCategories, WorkspaceModel } from '../models';
 import { CopilotModule } from '../plugins/copilot';
+import { CopilotContextService } from '../plugins/copilot/context';
 import {
-  CopilotContextDocJob,
-  CopilotContextService,
-} from '../plugins/copilot/context';
-import { MockEmbeddingClient } from '../plugins/copilot/context/embedding';
+  CopilotEmbeddingJob,
+  MockEmbeddingClient,
+} from '../plugins/copilot/embedding';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
 import {
-  CopilotCapability,
   CopilotProviderFactory,
   CopilotProviderType,
+  ModelInputType,
+  ModelOutputType,
   OpenAIProvider,
 } from '../plugins/copilot/providers';
-import { CitationParser } from '../plugins/copilot/providers/utils';
+import {
+  CitationParser,
+  TextStreamParser,
+} from '../plugins/copilot/providers/utils';
 import { ChatSessionService } from '../plugins/copilot/session';
 import { CopilotStorage } from '../plugins/copilot/storage';
 import { CopilotTranscriptionService } from '../plugins/copilot/transcript';
@@ -65,7 +69,7 @@ const test = ava as TestFn<{
   workspaceEmbedding: CopilotWorkspaceService;
   factory: CopilotProviderFactory;
   session: ChatSessionService;
-  jobs: CopilotContextDocJob;
+  jobs: CopilotEmbeddingJob;
   storage: CopilotStorage;
   workflow: CopilotWorkflowService;
   executors: {
@@ -92,6 +96,12 @@ test.before(async t => {
             perplexity: {
               apiKey: process.env.COPILOT_PERPLEXITY_API_KEY ?? '1',
             },
+            anthropic: {
+              apiKey: process.env.COPILOT_ANTHROPIC_API_KEY ?? '1',
+            },
+          },
+          exa: {
+            key: process.env.COPILOT_EXA_API_KEY ?? '1',
           },
         },
       }),
@@ -117,7 +127,7 @@ test.before(async t => {
   const storage = module.get(CopilotStorage);
 
   const context = module.get(CopilotContextService);
-  const jobs = module.get(CopilotContextDocJob);
+  const jobs = module.get(CopilotEmbeddingJob);
   const transcript = module.get(CopilotTranscriptionService);
   const workspaceEmbedding = module.get(CopilotWorkspaceService);
 
@@ -265,7 +275,7 @@ test('should be able to manage chat session', async t => {
   ]);
 
   const params = { word: 'world' };
-  const commonParams = { docId: 'test', workspaceId: 'test' };
+  const commonParams = { docId: 'test', workspaceId: 'test', pinned: false };
 
   const sessionId = await session.create({
     userId,
@@ -332,11 +342,12 @@ test('should be able to update chat session prompt', async t => {
     docId: 'test',
     workspaceId: 'test',
     userId,
+    pinned: false,
   });
   t.truthy(sessionId, 'should create session');
 
   // Update the session
-  const updatedSessionId = await session.updateSessionPrompt({
+  const updatedSessionId = await session.updateSession({
     sessionId,
     promptName: 'Search With AFFiNE AI',
     userId,
@@ -361,7 +372,7 @@ test('should be able to fork chat session', async t => {
   ]);
 
   const params = { word: 'world' };
-  const commonParams = { docId: 'test', workspaceId: 'test' };
+  const commonParams = { docId: 'test', workspaceId: 'test', pinned: false };
   // create session
   const sessionId = await session.create({
     userId,
@@ -400,6 +411,27 @@ test('should be able to fork chat session', async t => {
     'should fork new session with same params'
   );
 
+  // fork session without latestMessageId
+  const forkedSessionId3 = await session.fork({
+    userId,
+    sessionId,
+    ...commonParams,
+  });
+
+  // fork session with wrong latestMessageId
+  await t.throwsAsync(
+    session.fork({
+      userId,
+      sessionId,
+      latestMessageId: 'wrong-message-id',
+      ...commonParams,
+    }),
+    {
+      instanceOf: Error,
+    },
+    'should not able to fork new session with wrong latestMessageId'
+  );
+
   const cleanObject = (obj: any[]) =>
     JSON.parse(
       JSON.stringify(obj, (k, v) =>
@@ -426,11 +458,17 @@ test('should be able to fork chat session', async t => {
     t.snapshot(cleanObject(finalMessages), 'should generate the final message');
   }
 
+  // check third times forked session
+  {
+    const s3 = (await session.get(forkedSessionId3))!;
+    const finalMessages = s3.finish(params);
+    t.snapshot(cleanObject(finalMessages), 'should generate the final message');
+  }
+
   // check original session messages
   {
-    const s3 = (await session.get(sessionId))!;
-
-    const finalMessages = s3.finish(params);
+    const s4 = (await session.get(sessionId))!;
+    const finalMessages = s4.finish(params);
     t.snapshot(cleanObject(finalMessages), 'should generate the final message');
   }
 
@@ -457,6 +495,7 @@ test('should be able to process message id', async t => {
     workspaceId: 'test',
     userId,
     promptName: 'prompt',
+    pinned: false,
   });
   const s = (await session.get(sessionId))!;
 
@@ -500,6 +539,7 @@ test('should be able to generate with message id', async t => {
       workspaceId: 'test',
       userId,
       promptName: 'prompt',
+      pinned: false,
     });
     const s = (await session.get(sessionId))!;
 
@@ -522,6 +562,7 @@ test('should be able to generate with message id', async t => {
       workspaceId: 'test',
       userId,
       promptName: 'prompt',
+      pinned: false,
     });
     const s = (await session.get(sessionId))!;
 
@@ -549,6 +590,7 @@ test('should be able to generate with message id', async t => {
       workspaceId: 'test',
       userId,
       promptName: 'prompt',
+      pinned: false,
     });
     const s = (await session.get(sessionId))!;
 
@@ -577,6 +619,7 @@ test('should save message correctly', async t => {
     workspaceId: 'test',
     userId,
     promptName: 'prompt',
+    pinned: false,
   });
   const s = (await session.get(sessionId))!;
 
@@ -606,6 +649,7 @@ test('should revert message correctly', async t => {
       workspaceId: 'test',
       userId,
       promptName: 'prompt',
+      pinned: false,
     });
     const s = (await session.get(sessionId))!;
 
@@ -705,6 +749,7 @@ test('should handle params correctly in chat session', async t => {
     workspaceId: 'test',
     userId,
     promptName: 'prompt',
+    pinned: false,
   });
 
   const s = (await session.get(sessionId))!;
@@ -750,9 +795,7 @@ test('should be able to get provider', async t => {
   const { factory } = t.context;
 
   {
-    const p = await factory.getProviderByCapability(
-      CopilotCapability.TextToText
-    );
+    const p = await factory.getProvider({ outputType: ModelOutputType.Text });
     t.is(
       p?.type.toString(),
       'openai',
@@ -761,36 +804,41 @@ test('should be able to get provider', async t => {
   }
 
   {
-    const p = await factory.getProviderByCapability(
-      CopilotCapability.ImageToImage,
-      { model: 'lora/image-to-image' }
-    );
+    const p = await factory.getProvider({
+      outputType: ModelOutputType.Image,
+      inputTypes: [ModelInputType.Image],
+      modelId: 'lora/image-to-image',
+    });
     t.is(
       p?.type.toString(),
       'fal',
-      'should get provider support text-to-embedding'
+      'should get provider supporting image output'
     );
   }
 
   {
-    const p = await factory.getProviderByCapability(
-      CopilotCapability.ImageToText,
+    const p = await factory.getProvider(
+      {
+        outputType: ModelOutputType.Image,
+        inputTypes: [ModelInputType.Image],
+      },
       { prefer: CopilotProviderType.FAL }
     );
     t.is(
       p?.type.toString(),
       'fal',
-      'should get provider support text-to-embedding'
+      'should get provider supporting text output with image input'
     );
   }
 
   // if a model is not defined and not available in online api
   // it should return null
   {
-    const p = await factory.getProviderByCapability(
-      CopilotCapability.ImageToText,
-      { model: 'gpt-4-not-exist' }
-    );
+    const p = await factory.getProvider({
+      outputType: ModelOutputType.Text,
+      inputTypes: [ModelInputType.Text],
+      modelId: 'gpt-4-not-exist',
+    });
     t.falsy(p, 'should not get provider');
   }
 });
@@ -981,10 +1029,9 @@ test('should be able to run text executor', async t => {
     { role: 'system', content: 'hello {{word}}' },
   ]);
   // mock provider
-  const testProvider =
-    (await factory.getProviderByModel<CopilotCapability.TextToText>('test'))!;
-  const text = Sinon.spy(testProvider, 'generateText');
-  const textStream = Sinon.spy(testProvider, 'generateTextStream');
+  const testProvider = (await factory.getProviderByModel('test'))!;
+  const text = Sinon.spy(testProvider, 'text');
+  const textStream = Sinon.spy(testProvider, 'streamText');
 
   const nodeData: WorkflowNodeData = {
     id: 'basic',
@@ -1007,7 +1054,7 @@ test('should be able to run text executor', async t => {
       },
     ]);
     t.deepEqual(
-      text.lastCall.args[0][0].content,
+      text.lastCall.args[1][0].content,
       'hello world',
       'should render the prompt with params'
     );
@@ -1030,7 +1077,7 @@ test('should be able to run text executor', async t => {
       }))
     );
     t.deepEqual(
-      textStream.lastCall.args[0][0].params?.attachments,
+      textStream.lastCall.args[1][0].params?.attachments,
       ['https://affine.pro/example.jpg'],
       'should pass attachments to provider'
     );
@@ -1044,14 +1091,13 @@ test('should be able to run image executor', async t => {
 
   executors.image.register();
   const executor = getWorkflowExecutor(executors.image.type);
-  await prompt.set('test', 'test', [
+  await prompt.set('test', 'test-image', [
     { role: 'user', content: 'tag1, tag2, tag3, {{#tags}}{{.}}, {{/tags}}' },
   ]);
   // mock provider
-  const testProvider =
-    (await factory.getProviderByModel<CopilotCapability.TextToImage>('test'))!;
-  const image = Sinon.spy(testProvider, 'generateImages');
-  const imageStream = Sinon.spy(testProvider, 'generateImagesStream');
+  const testProvider = (await factory.getProviderByModel('test'))!;
+
+  const imageStream = Sinon.spy(testProvider, 'streamImages');
 
   const nodeData: WorkflowNodeData = {
     id: 'basic',
@@ -1070,20 +1116,9 @@ test('should be able to run image executor', async t => {
       )
     );
 
-    t.deepEqual(ret, [
-      {
-        type: NodeExecuteState.Params,
-        params: {
-          key: [
-            'https://example.com/test.jpg',
-            'tag1, tag2, tag3, tag4, tag5, ',
-          ],
-        },
-      },
-    ]);
-    t.deepEqual(
-      image.lastCall.args[0][0].content,
-      'tag1, tag2, tag3, tag4, tag5, ',
+    t.snapshot(ret, 'should generate image stream');
+    t.snapshot(
+      imageStream.lastCall.args,
       'should render the prompt with params array'
     );
   }
@@ -1098,16 +1133,17 @@ test('should be able to run image executor', async t => {
 
     t.deepEqual(
       ret,
-      Array.from(['https://example.com/test.jpg', 'tag1, tag2, tag3, ']).map(
-        t => ({
-          attachment: t,
-          nodeId: 'basic',
-          type: NodeExecuteState.Attachment,
-        })
-      )
+      Array.from([
+        'https://example.com/test-image.jpg',
+        'tag1, tag2, tag3, ',
+      ]).map(t => ({
+        attachment: t,
+        nodeId: 'basic',
+        type: NodeExecuteState.Attachment,
+      }))
     );
     t.deepEqual(
-      imageStream.lastCall.args[0][0].params?.attachments,
+      imageStream.lastCall.args[1][0].params?.attachments,
       ['https://affine.pro/example.jpg'],
       'should pass attachments to provider'
     );
@@ -1259,6 +1295,213 @@ test('CitationParser should replace openai style reference chunks', t => {
   t.is(result, expected);
 });
 
+test('TextStreamParser should format different types of chunks correctly', t => {
+  // Define interfaces for fixtures
+  interface BaseFixture {
+    chunk: any;
+    description: string;
+  }
+
+  interface ContentFixture extends BaseFixture {
+    expected: string;
+  }
+
+  interface ErrorFixture extends BaseFixture {
+    errorMessage: string;
+  }
+
+  type ChunkFixture = ContentFixture | ErrorFixture;
+
+  // Define test fixtures for different chunk types
+  const fixtures: Record<string, ChunkFixture> = {
+    textDelta: {
+      chunk: {
+        type: 'text-delta' as const,
+        textDelta: 'Hello world',
+      } as any,
+      expected: 'Hello world',
+      description: 'should format text-delta correctly',
+    },
+    reasoning: {
+      chunk: {
+        type: 'reasoning' as const,
+        textDelta: 'I need to think about this',
+      } as any,
+      expected: '\n> [!]\n> I need to think about this',
+      description: 'should format reasoning as callout',
+    },
+    webSearch: {
+      chunk: {
+        type: 'tool-call' as const,
+        toolName: 'web_search_exa' as const,
+        toolCallId: 'test-id-1',
+        args: { query: 'test query', mode: 'AUTO' as const },
+      } as any,
+      expected: '\n> [!]\n> \n> Searching the web "test query"\n> ',
+      description: 'should format web search tool call correctly',
+    },
+    webCrawl: {
+      chunk: {
+        type: 'tool-call' as const,
+        toolName: 'web_crawl_exa' as const,
+        toolCallId: 'test-id-2',
+        args: { url: 'https://example.com' },
+      } as any,
+      expected: '\n> [!]\n> \n> Crawling the web "https://example.com"\n> ',
+      description: 'should format web crawl tool call correctly',
+    },
+    toolResult: {
+      chunk: {
+        type: 'tool-result' as const,
+        toolName: 'web_search_exa' as const,
+        toolCallId: 'test-id-1',
+        args: { query: 'test query', mode: 'AUTO' as const },
+        result: [
+          {
+            title: 'Test Title',
+            url: 'https://test.com',
+            content: 'Test content',
+            favicon: undefined,
+            publishedDate: undefined,
+            author: undefined,
+          },
+          {
+            title: null,
+            url: 'https://example.com',
+            content: 'Example content',
+            favicon: undefined,
+            publishedDate: undefined,
+            author: undefined,
+          },
+        ],
+      } as any,
+      expected:
+        '\n> [!]\n> \n> \n> \n> [Test Title](https://test.com)\n> \n> \n> \n> [https://example.com](https://example.com)\n> \n> \n> ',
+      description: 'should format tool result correctly',
+    },
+    error: {
+      chunk: {
+        type: 'error' as const,
+        error: { type: 'testError', message: 'Test error message' },
+      } as any,
+      errorMessage: 'Test error message',
+      description: 'should throw error for error chunks',
+    },
+  };
+
+  // Test each chunk type individually
+  Object.entries(fixtures).forEach(([_name, fixture]) => {
+    const parser = new TextStreamParser();
+    if ('errorMessage' in fixture) {
+      t.throws(
+        () => parser.parse(fixture.chunk),
+        { message: fixture.errorMessage },
+        fixture.description
+      );
+    } else {
+      const result = parser.parse(fixture.chunk);
+      t.is(result, fixture.expected, fixture.description);
+    }
+  });
+});
+
+test('TextStreamParser should process a sequence of message chunks', t => {
+  const parser = new TextStreamParser();
+
+  // Define test fixtures for mixed chunks sequence
+  const mixedChunksFixture = {
+    chunks: [
+      // Reasoning chunks
+      {
+        type: 'reasoning' as const,
+        textDelta: 'The user is asking about',
+      } as any,
+      {
+        type: 'reasoning' as const,
+        textDelta: ' recent advances in quantum computing',
+      } as any,
+      {
+        type: 'reasoning' as const,
+        textDelta: ' and how it might impact',
+      } as any,
+      {
+        type: 'reasoning' as const,
+        textDelta: ' cryptography and data security.',
+      } as any,
+      {
+        type: 'reasoning' as const,
+        textDelta:
+          ' I should provide information on quantum supremacy achievements',
+      } as any,
+
+      // Text delta
+      {
+        type: 'text-delta' as const,
+        textDelta:
+          'Let me search for the latest breakthroughs in quantum computing and their ',
+      } as any,
+
+      // Tool call
+      {
+        type: 'tool-call' as const,
+        toolCallId: 'toolu_01ABCxyz123456789',
+        toolName: 'web_search_exa' as const,
+        args: {
+          query: 'latest quantum computing breakthroughs cryptography impact',
+        },
+      } as any,
+
+      // Tool result
+      {
+        type: 'tool-result' as const,
+        toolCallId: 'toolu_01ABCxyz123456789',
+        toolName: 'web_search_exa' as const,
+        args: {
+          query: 'latest quantum computing breakthroughs cryptography impact',
+        },
+        result: [
+          {
+            title: 'IBM Unveils 1000-Qubit Quantum Processor',
+            url: 'https://example.com/tech/quantum-computing-milestone',
+          },
+        ],
+      } as any,
+
+      // More text deltas
+      {
+        type: 'text-delta' as const,
+        textDelta: 'implications for security.',
+      } as any,
+      {
+        type: 'text-delta' as const,
+        textDelta: '\n\nQuantum computing has made ',
+      } as any,
+      {
+        type: 'text-delta' as const,
+        textDelta: 'remarkable progress in the past year. ',
+      } as any,
+      {
+        type: 'text-delta' as const,
+        textDelta:
+          'The development of more stable qubits has accelerated research significantly.',
+      } as any,
+    ],
+    expected:
+      '\n> [!]\n> The user is asking about recent advances in quantum computing and how it might impact cryptography and data security. I should provide information on quantum supremacy achievements\n\nLet me search for the latest breakthroughs in quantum computing and their \n> [!]\n> \n> Searching the web "latest quantum computing breakthroughs cryptography impact"\n> \n> \n> \n> [IBM Unveils 1000-Qubit Quantum Processor](https://example.com/tech/quantum-computing-milestone)\n> \n> \n> \n\nimplications for security.\n\nQuantum computing has made remarkable progress in the past year. The development of more stable qubits has accelerated research significantly.',
+    description:
+      'should format the entire stream correctly with proper sequence',
+  };
+
+  // Process all chunks sequentially
+  let result = '';
+  for (const chunk of mixedChunksFixture.chunks) {
+    result += parser.parse(chunk);
+  }
+
+  // Check final processed output
+  t.is(result, mixedChunksFixture.expected, mixedChunksFixture.description);
+});
+
 // ==================== context ====================
 test('should be able to manage context', async t => {
   const { context, prompt, session, event, jobs, storage } = t.context;
@@ -1271,6 +1514,7 @@ test('should be able to manage context', async t => {
     workspaceId: 'test',
     userId,
     promptName: 'prompt',
+    pinned: false,
   });
 
   // use mocked embedding client
@@ -1310,7 +1554,11 @@ test('should be able to manage context', async t => {
     // file record
     {
       await storage.put(userId, session.workspaceId, 'blob', buffer);
-      const file = await session.addFile('blob', 'sample.pdf');
+      const file = await session.addFile(
+        'blob',
+        'sample.pdf',
+        'application/pdf'
+      );
 
       const handler = Sinon.spy(event, 'emit');
 
@@ -1339,7 +1587,7 @@ test('should be able to manage context', async t => {
         'should list file id'
       );
 
-      const result = await session.matchFileChunks('test', 1, undefined, 1);
+      const result = await session.matchFiles('test', 1, undefined, 1);
       t.is(result.length, 1, 'should match context');
       t.is(result[0].fileId, file.id, 'should match file id');
     }
@@ -1490,16 +1738,17 @@ test('should be able to manage workspace embedding', async t => {
       workspaceId: ws.id,
       userId,
       promptName: 'prompt',
+      pinned: false,
     });
     const contextSession = await context.create(sessionId);
 
-    const ret = await contextSession.matchFileChunks('test', 1, undefined, 1);
+    const ret = await contextSession.matchFiles('test', 1, undefined, 1);
     t.is(ret.length, 1, 'should match workspace context');
     t.is(ret[0].content, 'content', 'should match content');
 
     await workspace.update(ws.id, { enableDocEmbedding: false });
 
-    const ret2 = await contextSession.matchFileChunks('test', 1, undefined, 1);
+    const ret2 = await contextSession.matchFiles('test', 1, undefined, 1);
     t.is(ret2.length, 0, 'should not match workspace context');
   }
 });

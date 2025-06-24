@@ -5,8 +5,8 @@ import type { ExtensionType } from '@blocksuite/store';
 import { literal } from 'lit/static-html.js';
 
 import { createBuiltinToolbarConfigExtension } from '../configs/toolbar';
-import { EmbedYoutubeBlockAdapterExtensions } from './adapters/extension';
 import { embedYoutubeSlashMenuConfig } from './configs/slash-menu';
+import { EmbedYoutubeBlockInteraction } from './embed-edgeless-youtube-block';
 import { EmbedYoutubeBlockComponent } from './embed-youtube-block';
 import {
   EmbedYoutubeBlockOptionConfig,
@@ -14,20 +14,6 @@ import {
 } from './embed-youtube-service';
 
 const flavour = EmbedYoutubeBlockSchema.model.flavour;
-
-export const EmbedYoutubeBlockSpec: ExtensionType[] = [
-  FlavourExtension(flavour),
-  EmbedYoutubeBlockService,
-  BlockViewExtension(flavour, model => {
-    return model.parent?.flavour === 'affine:surface'
-      ? literal`affine-embed-edgeless-youtube-block`
-      : literal`affine-embed-youtube-block`;
-  }),
-  EmbedYoutubeBlockAdapterExtensions,
-  EmbedYoutubeBlockOptionConfig,
-  createBuiltinToolbarConfigExtension(flavour, EmbedYoutubeBlockComponent),
-  SlashMenuConfigExtension('affine:embed-youtube', embedYoutubeSlashMenuConfig),
-].flat();
 
 export const EmbedYoutubeViewExtensions: ExtensionType[] = [
   FlavourExtension(flavour),
@@ -40,4 +26,5 @@ export const EmbedYoutubeViewExtensions: ExtensionType[] = [
   EmbedYoutubeBlockOptionConfig,
   createBuiltinToolbarConfigExtension(flavour, EmbedYoutubeBlockComponent),
   SlashMenuConfigExtension('affine:embed-youtube', embedYoutubeSlashMenuConfig),
+  EmbedYoutubeBlockInteraction,
 ].flat();

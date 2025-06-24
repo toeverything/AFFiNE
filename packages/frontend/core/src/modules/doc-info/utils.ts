@@ -1,11 +1,5 @@
-import { getViewManager } from '@affine/core/blocksuite/manager/migrating-view';
-import { DebugLogger } from '@affine/debug';
-import { BlockStdScope } from '@blocksuite/affine/std';
-import type { Store } from '@blocksuite/affine/store';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Observable } from 'rxjs';
-
-const logger = new DebugLogger('doc-info');
 
 interface ReadonlySignal<T> {
   value: T;
@@ -37,18 +31,4 @@ export function useSignalValue<T>(signal?: ReadonlySignal<T>): T | undefined {
     });
   }, [signal]);
   return value;
-}
-
-// todo(pengx17): use rc pool?
-export function createBlockStdScope(doc: Store) {
-  logger.debug('createBlockStdScope', doc.id);
-  const std = new BlockStdScope({
-    store: doc,
-    extensions: getViewManager().get('page'),
-  });
-  return std;
-}
-
-export function useBlockStdScope(doc: Store) {
-  return useMemo(() => createBlockStdScope(doc), [doc]);
 }

@@ -1,25 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { ServerFeature, ServerService } from '../../../core';
-import type { AnthropicProvider } from './anthropic';
-import type { FalProvider } from './fal';
-import type { GeminiProvider } from './gemini';
-import type { OpenAIProvider } from './openai';
-import type { PerplexityProvider } from './perplexity';
 import type { CopilotProvider } from './provider';
-import {
-  CapabilityToCopilotProvider,
-  CopilotCapability,
-  CopilotProviderType,
-} from './types';
-
-type TypedProvider = {
-  [CopilotProviderType.Anthropic]: AnthropicProvider;
-  [CopilotProviderType.Gemini]: GeminiProvider;
-  [CopilotProviderType.OpenAI]: OpenAIProvider;
-  [CopilotProviderType.Perplexity]: PerplexityProvider;
-  [CopilotProviderType.FAL]: FalProvider;
-};
+import { CopilotProviderType, ModelFullConditions } from './types';
 
 @Injectable()
 export class CopilotProviderFactory {
@@ -29,68 +12,54 @@ export class CopilotProviderFactory {
 
   readonly #providers = new Map<CopilotProviderType, CopilotProvider>();
 
-  getProvider<P extends CopilotProviderType>(provider: P): TypedProvider[P] {
-    return this.#providers.get(provider) as TypedProvider[P];
-  }
-
-  async getProviderByCapability<C extends CopilotCapability>(
-    capability: C,
+  async getProvider(
+    cond: ModelFullConditions,
     filter: {
-      model?: string;
       prefer?: CopilotProviderType;
     } = {}
-  ): Promise<CapabilityToCopilotProvider[C] | null> {
+  ): Promise<CopilotProvider | null> {
     this.logger.debug(
-      `Resolving copilot provider for capability: ${capability}`
+      `Resolving copilot provider for output type: ${cond.outputType}`
     );
     let candidate: CopilotProvider | null = null;
     for (const [type, provider] of this.#providers.entries()) {
-      // we firstly match by capability
-      if (provider.capabilities.includes(capability)) {
-        // use the first match if no filter provided
-        if (!filter.model && !filter.prefer) {
-          candidate = provider;
-          this.logger.debug(`Copilot provider candidate found: ${type}`);
-          break;
-        }
+      if (filter.prefer && filter.prefer !== type) {
+        continue;
+      }
 
-        if (
-          (!filter.model || (await provider.isModelAvailable(filter.model))) &&
-          (!filter.prefer || filter.prefer === type)
-        ) {
-          candidate = provider;
-          this.logger.debug(`Copilot provider candidate found: ${type}`);
-          break;
-        }
+      const isMatched = await provider.match(cond);
+
+      if (isMatched) {
+        candidate = provider;
+        this.logger.debug(`Copilot provider candidate found: ${type}`);
+        break;
       }
     }
 
-    return candidate as CapabilityToCopilotProvider[C] | null;
+    return candidate;
   }
 
-  async getProviderByModel<C extends CopilotCapability>(
-    model: string,
+  async getProviderByModel(
+    modelId: string,
     filter: {
       prefer?: CopilotProviderType;
     } = {}
-  ): Promise<CapabilityToCopilotProvider[C] | null> {
-    this.logger.debug(`Resolving copilot provider for model: ${model}`);
+  ): Promise<CopilotProvider | null> {
+    this.logger.debug(`Resolving copilot provider for model: ${modelId}`);
 
     let candidate: CopilotProvider | null = null;
     for (const [type, provider] of this.#providers.entries()) {
-      // we firstly match by model
-      if (await provider.isModelAvailable(model)) {
+      if (filter.prefer && filter.prefer !== type) {
+        continue;
+      }
+
+      if (await provider.match({ modelId })) {
         candidate = provider;
         this.logger.debug(`Copilot provider candidate found: ${type}`);
-
-        // then we match by prefer filter
-        if (!filter.prefer || filter.prefer === type) {
-          candidate = provider;
-        }
       }
     }
 
-    return candidate as CapabilityToCopilotProvider[C] | null;
+    return candidate;
   }
 
   register(provider: CopilotProvider) {

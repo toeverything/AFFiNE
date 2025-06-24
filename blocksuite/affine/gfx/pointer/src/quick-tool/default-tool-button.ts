@@ -1,9 +1,11 @@
+import { DefaultTool } from '@blocksuite/affine-block-surface';
 import { QuickToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { HandIcon, SelectIcon } from '@blocksuite/icons/lit';
-import type { GfxToolsFullOptionValue } from '@blocksuite/std/gfx';
 import { effect } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { query } from 'lit/decorators.js';
+
+import { PanTool } from '../tools';
 
 export class EdgelessDefaultToolButton extends QuickToolMixin(LitElement) {
   static override styles = css`
@@ -17,19 +19,19 @@ export class EdgelessDefaultToolButton extends QuickToolMixin(LitElement) {
     }
   `;
 
-  override type: GfxToolsFullOptionValue['type'][] = ['default', 'pan'];
+  override type = [DefaultTool, PanTool];
 
   private _changeTool() {
     if (this.toolbar.activePopper) {
       // click manually always closes the popper
       this.toolbar.activePopper.dispose();
     }
-    const type = this.edgelessTool?.type;
+    const type = this.edgelessTool?.toolType?.toolName;
     if (type !== 'default' && type !== 'pan') {
       if (localStorage.defaultTool === 'default') {
-        this.setEdgelessTool('default');
+        this.setEdgelessTool(DefaultTool);
       } else if (localStorage.defaultTool === 'pan') {
-        this.setEdgelessTool('pan', { panning: false });
+        this.setEdgelessTool(PanTool, { panning: false });
       }
       return;
     }
@@ -37,9 +39,9 @@ export class EdgelessDefaultToolButton extends QuickToolMixin(LitElement) {
     // wait for animation to finish
     setTimeout(() => {
       if (type === 'default') {
-        this.setEdgelessTool('pan', { panning: false });
+        this.setEdgelessTool(PanTool, { panning: false });
       } else if (type === 'pan') {
-        this.setEdgelessTool('default');
+        this.setEdgelessTool(DefaultTool);
       }
       this._fadeIn();
     }, 100);
@@ -71,7 +73,7 @@ export class EdgelessDefaultToolButton extends QuickToolMixin(LitElement) {
   }
 
   override render() {
-    const type = this.edgelessTool?.type;
+    const type = this.edgelessTool?.toolType?.toolName;
     const { active } = this;
     const tipInfo =
       type === 'pan'

@@ -3,17 +3,17 @@ import { DisposableGroup } from '@blocksuite/global/disposable';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { IBound, IPoint } from '@blocksuite/global/gfx';
 import { computed, Signal } from '@preact/signals-core';
-import { Subject } from 'rxjs';
+import { Subject, type Subscription } from 'rxjs';
 
 import type { PointerEventState } from '../../event/index.js';
 import type { GfxController } from '../controller.js';
 import { GfxExtension, GfxExtensionIdentifier } from '../extension.js';
 import {
   type BaseTool,
-  type GfxToolsFullOptionValue,
-  type GfxToolsMap,
-  type GfxToolsOption,
   ToolIdentifier,
+  type ToolOptions,
+  type ToolOptionWithType,
+  type ToolType,
 } from './tool.js';
 
 type BuiltInHookEvent<T> = {
@@ -23,9 +23,9 @@ type BuiltInHookEvent<T> = {
 
 type BuiltInEventMap = {
   beforeToolUpdate: BuiltInHookEvent<{
-    toolName: keyof GfxToolsMap;
+    toolName: string;
   }>;
-  toolUpdate: BuiltInHookEvent<{ toolName: keyof GfxToolsMap }>;
+  toolUpdate: BuiltInHookEvent<{ toolName: string }>;
 };
 
 type BuiltInSlotContext = {
@@ -75,7 +75,12 @@ export interface ToolEventTarget {
   ): void;
 }
 
-export const eventTarget = Symbol('eventTarget');
+type AreaBound = IBound & {
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+};
 
 export class ToolController extends GfxExtension {
   static override key = 'ToolController';
@@ -84,19 +89,48 @@ export class ToolController extends GfxExtension {
 
   private readonly _disposableGroup = new DisposableGroup();
 
-  private readonly _toolOption$ = new Signal<GfxToolsFullOptionValue>(
-    {} as GfxToolsFullOptionValue
-  );
+  private readonly _toolOption$ = new Signal<ToolOptionWithType>({});
 
   private readonly _tools = new Map<string, BaseTool>();
 
-  readonly currentToolName$ = new Signal<keyof GfxToolsMap>();
+  readonly currentToolName$ = new Signal<string>();
 
   readonly dragging$ = new Signal<boolean>(false);
 
   /**
-   * The area that is being dragged.
-   * The coordinates are in browser space.
+   * The dragging area in browser coordinates space.
+   *
+   * This is similar to `draggingViewArea$`, but if the viewport is changed during dragging,
+   * it will be reflected in this area.
+   */
+  readonly draggingViewportArea$ = computed(() => {
+    const compute = (modelArea: AreaBound) => {
+      const [viewStartX, viewStartY] = this.gfx.viewport.toViewCoord(
+        modelArea.x,
+        modelArea.y
+      );
+      const [viewEndX, viewEndY] = this.gfx.viewport.toViewCoord(
+        modelArea.x + modelArea.w,
+        modelArea.y + modelArea.h
+      );
+
+      return {
+        startX: viewStartX,
+        startY: viewStartY,
+        endX: viewEndX,
+        endY: viewEndY,
+        x: Math.min(viewStartX, viewEndX),
+        y: Math.min(viewStartY, viewEndY),
+        w: Math.abs(viewStartX - viewEndX),
+        h: Math.abs(viewStartY - viewEndY),
+      };
+    };
+
+    return compute(this.draggingArea$.value);
+  });
+
+  /**
+   * The dragging area in browser coordinates space.
    */
   readonly draggingViewArea$ = new Signal<
     IBound & {
@@ -117,18 +151,20 @@ export class ToolController extends GfxExtension {
   });
 
   /**
-   * The last mouse move position
-   * The coordinates are in browser space
+   * The last mouse move position in browser coordinates space.
    */
-  readonly lastMousePos$ = new Signal<IPoint>({
+  readonly lastMouseViewPos$ = new Signal<IPoint>({
     x: 0,
     y: 0,
   });
 
-  readonly lastMouseModelPos$ = computed(() => {
+  /**
+   * The last mouse position in model coordinates space.
+   */
+  readonly lastMousePos$ = computed(() => {
     const [x, y] = this.gfx.viewport.toModelCoord(
-      this.lastMousePos$.value.x,
-      this.lastMousePos$.value.y
+      this.lastMouseViewPos$.value.x,
+      this.lastMouseViewPos$.value.y
     );
 
     return {
@@ -157,23 +193,11 @@ export class ToolController extends GfxExtension {
 
     return {
       peek() {
-        const option = self._toolOption$.peek() as unknown as { type: string };
-
-        if (!option.type) {
-          option.type = '';
-        }
-
-        return option as GfxToolsFullOptionValue;
+        return self._toolOption$.peek();
       },
 
-      get value(): GfxToolsFullOptionValue {
-        const option = self._toolOption$.value as unknown as { type: string };
-
-        if (!option.type) {
-          option.type = '';
-        }
-
-        return option as GfxToolsFullOptionValue;
+      get value() {
+        return self._toolOption$.value;
       },
     };
   }
@@ -182,38 +206,23 @@ export class ToolController extends GfxExtension {
    * The area that is being dragged.
    * The coordinates are in model space.
    */
-  get draggingArea$() {
-    const compute = (peek: boolean) => {
-      const area = peek
-        ? this.draggingViewArea$.peek()
-        : this.draggingViewArea$.value;
-      const [startX, startY] = this.gfx.viewport.toModelCoord(
-        area.startX,
-        area.startY
-      );
-      const [endX, endY] = this.gfx.viewport.toModelCoord(area.endX, area.endY);
-
-      return {
-        x: Math.min(startX, endX),
-        y: Math.min(startY, endY),
-        w: Math.abs(endX - startX),
-        h: Math.abs(endY - startY),
-        startX,
-        startY,
-        endX,
-        endY,
-      };
-    };
-
-    return {
-      value() {
-        return compute(false);
-      },
-      peek() {
-        return compute(true);
-      },
-    };
-  }
+  readonly draggingArea$ = new Signal<
+    IBound & {
+      startX: number;
+      startY: number;
+      endX: number;
+      endY: number;
+    }
+  >({
+    startX: 0,
+    startY: 0,
+    endX: 0,
+    endY: 0,
+    x: 0,
+    y: 0,
+    w: 0,
+    h: 0,
+  });
 
   static override extendGfx(gfx: GfxController) {
     Object.defineProperty(gfx, 'tool', {
@@ -315,6 +324,7 @@ export class ToolController extends GfxExtension {
     let dragContext: {
       tool: BaseTool;
     } | null = null;
+    let viewportSub: Subscription | null = null;
 
     this._disposableGroup.add(
       this.std.event.add('dragStart', ctx => {
@@ -331,6 +341,8 @@ export class ToolController extends GfxExtension {
           evt.raw.preventDefault();
         }
 
+        const [modelX, modelY] = this.gfx.viewport.toModelCoord(evt.x, evt.y);
+
         this.dragging$.value = true;
         this.draggingViewArea$.value = {
           startX: evt.x,
@@ -342,10 +354,41 @@ export class ToolController extends GfxExtension {
           w: 0,
           h: 0,
         };
-        this.lastMousePos$.value = {
+        this.draggingArea$.value = {
+          startX: modelX,
+          startY: modelY,
+          endX: modelX,
+          endY: modelY,
+          x: modelX,
+          y: modelY,
+          w: 0,
+          h: 0,
+        };
+        this.lastMouseViewPos$.value = {
           x: evt.x,
           y: evt.y,
         };
+
+        viewportSub?.unsubscribe();
+        viewportSub = this.gfx.viewport.viewportUpdated.subscribe(() => {
+          const lastPost = this.lastMouseViewPos$.peek();
+          const [modelX, modelY] = this.gfx.viewport.toModelCoord(
+            lastPost.x,
+            lastPost.y
+          );
+
+          const original = this.draggingArea$.peek();
+
+          this.draggingArea$.value = {
+            ...this.draggingArea$.peek(),
+            x: Math.min(modelX, original.startX),
+            y: Math.min(modelY, original.startY),
+            w: Math.abs(modelX - original.startX),
+            h: Math.abs(modelY - original.startY),
+            endX: modelX,
+            endY: modelY,
+          };
+        });
 
         // this means the dragEnd event is not even fired
         // so we need to manually call the dragEnd method
@@ -377,6 +420,7 @@ export class ToolController extends GfxExtension {
           originX: this.draggingViewArea$.peek().startX,
           originY: this.draggingViewArea$.peek().startY,
         };
+        const [modelX, modelY] = this.gfx.viewport.toModelCoord(evt.x, evt.y);
 
         this.draggingViewArea$.value = {
           ...this.draggingViewArea$.peek(),
@@ -388,7 +432,17 @@ export class ToolController extends GfxExtension {
           endY: evt.y,
         };
 
-        this.lastMousePos$.value = {
+        this.draggingArea$.value = {
+          ...this.draggingArea$.peek(),
+          w: Math.abs(modelX - draggingStart.x),
+          h: Math.abs(modelY - draggingStart.y),
+          x: Math.min(modelX, draggingStart.x),
+          y: Math.min(modelY, draggingStart.y),
+          endX: modelX,
+          endY: modelY,
+        };
+
+        this.lastMouseViewPos$.value = {
           x: evt.x,
           y: evt.y,
         };
@@ -415,8 +469,20 @@ export class ToolController extends GfxExtension {
           dragContext.tool.dragEnd(evt);
         }
 
+        viewportSub?.unsubscribe();
+        viewportSub = null;
         dragContext = null;
         this.draggingViewArea$.value = {
+          x: 0,
+          y: 0,
+          startX: 0,
+          startY: 0,
+          endX: 0,
+          endY: 0,
+          w: 0,
+          h: 0,
+        };
+        this.draggingArea$.value = {
           x: 0,
           y: 0,
           startX: 0,
@@ -433,7 +499,7 @@ export class ToolController extends GfxExtension {
       this.std.event.add('pointerMove', ctx => {
         const evt = ctx.get('pointerState');
 
-        this.lastMousePos$.value = {
+        this.lastMouseViewPos$.value = {
           x: evt.x,
           y: evt.y,
         };
@@ -481,9 +547,16 @@ export class ToolController extends GfxExtension {
     tools.mounted();
   }
 
-  get<K extends keyof GfxToolsMap>(key: K): GfxToolsMap[K] {
-    return this._tools.get(key) as GfxToolsMap[K];
-  }
+  get = <T extends BaseTool>(type: ToolType<T>): T => {
+    const instance = this._tools.get(type.toolName) as T | undefined;
+    if (!instance) {
+      throw new BlockSuiteError(
+        BlockSuiteError.ErrorCode.ValueNotExists,
+        `Trying to get tool "${type.toolName}" is not registered`
+      );
+    }
+    return instance;
+  };
 
   override mounted(): void {
     const { addHook } = this._initializeEvents();
@@ -499,24 +572,11 @@ export class ToolController extends GfxExtension {
     });
   }
 
-  setTool(toolName: GfxToolsFullOptionValue, ...args: [void]): void;
-  setTool<K extends keyof GfxToolsMap>(
-    toolName: K,
-    ...args: K extends keyof GfxToolsOption
-      ? [option: GfxToolsOption[K]]
-      : [void]
-  ): void;
-  setTool<K extends keyof GfxToolsMap>(
-    toolName: K | GfxToolsFullOptionValue,
-    ...args: K extends keyof GfxToolsOption
-      ? [option: GfxToolsOption[K]]
-      : [void]
-  ): void {
-    const option = typeof toolName === 'string' ? args[0] : toolName;
-    const toolNameStr =
-      typeof toolName === 'string'
-        ? toolName
-        : ((toolName as { type: string }).type as K);
+  setTool = <T extends BaseTool>(
+    toolType: ToolType<T>,
+    options?: ToolOptions<T>
+  ): void => {
+    const toolNameStr = toolType.toolName;
 
     const beforeUpdateCtx = this._createBuiltInHookCtx('beforeToolUpdate', {
       toolName: toolNameStr,
@@ -541,18 +601,18 @@ export class ToolController extends GfxExtension {
       );
     }
 
-    currentTool.activatedOption = option ?? {};
+    currentTool.activatedOption = options ?? {};
     this._toolOption$.value = {
-      ...currentTool.activatedOption,
-      type: toolNameStr,
-    } as GfxToolsFullOptionValue;
+      toolType,
+      options: currentTool.activatedOption,
+    };
     currentTool.activate(currentTool.activatedOption);
 
     const afterUpdateCtx = this._createBuiltInHookCtx('toolUpdate', {
       toolName: toolNameStr,
     });
     this._builtInHookSlot.next(afterUpdateCtx.slotCtx);
-  }
+  };
 
   override unmounted(): void {
     this.currentTool$.peek()?.deactivate();

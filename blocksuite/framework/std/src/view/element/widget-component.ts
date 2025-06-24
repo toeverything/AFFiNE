@@ -8,7 +8,7 @@ import type { BlockService } from '../../extension/index.js';
 import type { BlockStdScope } from '../../scope/index.js';
 import type { BlockComponent } from './block-component.js';
 import { modelContext, serviceContext } from './consts.js';
-import { docContext, stdContext } from './lit-host.js';
+import { stdContext, storeContext } from './lit-host.js';
 
 export class WidgetComponent<
   Model extends BlockModel = BlockModel,
@@ -31,8 +31,8 @@ export class WidgetComponent<
     return this.std.view.getBlock(this.model.id) as B | null;
   }
 
-  get doc() {
-    return this._doc;
+  get store() {
+    return this._store;
   }
 
   get flavour(): string {
@@ -84,8 +84,8 @@ export class WidgetComponent<
     return null;
   }
 
-  @consume({ context: docContext })
-  private accessor _doc!: Store;
+  @consume({ context: storeContext })
+  private accessor _store!: Store;
 
   @consume({ context: modelContext })
   private accessor _model!: Model;

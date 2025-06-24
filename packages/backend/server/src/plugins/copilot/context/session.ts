@@ -11,11 +11,11 @@ import {
   FileChunkSimilarity,
   Models,
 } from '../../../models';
-import { EmbeddingClient } from './types';
+import { EmbeddingClient } from '../embedding';
 
 export class ContextSession implements AsyncDisposable {
   constructor(
-    private readonly client: EmbeddingClient,
+    private readonly client: EmbeddingClient | undefined,
     private readonly contextId: string,
     private readonly config: ContextConfig,
     private readonly models: Models,
@@ -52,7 +52,17 @@ export class ContextSession implements AsyncDisposable {
   }
 
   get files() {
-    return this.config.files.map(f => ({ ...f }));
+    return this.config.files.map(f => this.fulfillFile(f));
+  }
+
+  get docIds() {
+    return Array.from(
+      new Set(
+        [this.config.docs, this.config.categories.flatMap(c => c.docs)]
+          .flat()
+          .map(d => d.id)
+      )
+    );
   }
 
   get sortedList(): ContextList {
@@ -130,14 +140,25 @@ export class ContextSession implements AsyncDisposable {
     return true;
   }
 
-  async addFile(blobId: string, name: string): Promise<ContextFile> {
+  private fulfillFile(file: ContextFile): Required<ContextFile> {
+    return {
+      ...file,
+      mimeType: file.mimeType || 'application/octet-stream',
+    };
+  }
+
+  async addFile(
+    blobId: string,
+    name: string,
+    mimeType: string
+  ): Promise<Required<ContextFile>> {
     let fileId = nanoid();
     const existsBlob = this.config.files.find(f => f.blobId === blobId);
     if (existsBlob) {
       // use exists file id if the blob exists
       // we assume that the file content pointed to by the same blobId is consistent.
       if (existsBlob.status === ContextEmbedStatus.finished) {
-        return existsBlob;
+        return this.fulfillFile(existsBlob);
       }
       fileId = existsBlob.id;
     } else {
@@ -146,11 +167,12 @@ export class ContextSession implements AsyncDisposable {
         blobId,
         chunkSize: 0,
         name,
+        mimeType,
         error: null,
         createdAt: Date.now(),
       }));
     }
-    return this.getFile(fileId) as ContextFile;
+    return this.fulfillFile(this.getFile(fileId) as ContextFile);
   }
 
   getFile(fileId: string): ContextFile | undefined {
@@ -158,7 +180,10 @@ export class ContextSession implements AsyncDisposable {
   }
 
   async removeFile(fileId: string): Promise<boolean> {
-    await this.models.copilotContext.deleteEmbedding(this.contextId, fileId);
+    await this.models.copilotContext.deleteFileEmbedding(
+      this.contextId,
+      fileId
+    );
     this.config.files = this.config.files.filter(f => f.id !== fileId);
     await this.save();
     return true;
@@ -172,33 +197,49 @@ export class ContextSession implements AsyncDisposable {
    * @param threshold relevance threshold for the similarity score, higher threshold means more similar chunks, default 0.7, good enough based on prior experiments
    * @returns list of similar chunks
    */
-  async matchFileChunks(
+  async matchFiles(
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.7
+    scopedThreshold: number = 0.85,
+    threshold: number = 0.5
   ): Promise<FileChunkSimilarity[]> {
-    const embedding = await this.client
-      .getEmbeddings([content], signal)
-      .then(r => r?.[0]?.embedding);
+    if (!this.client) return [];
+    const embedding = await this.client.getEmbedding(content, signal);
     if (!embedding) return [];
 
     const [context, workspace] = await Promise.all([
       this.models.copilotContext.matchFileEmbedding(
         embedding,
         this.id,
-        topK,
-        threshold
+        topK * 2,
+        scopedThreshold
       ),
       this.models.copilotWorkspace.matchFileEmbedding(
         this.workspaceId,
         embedding,
-        topK,
+        topK * 2,
         threshold
       ),
     ]);
+    const files = new Map(this.files.map(f => [f.id, f]));
 
-    return this.client.reRank([...context, ...workspace]);
+    return this.client.reRank(
+      content,
+      [
+        ...context
+          .filter(f => files.has(f.fileId))
+          .map(c => {
+            const { blobId, name, mimeType } = files.get(
+              c.fileId
+            ) as Required<ContextFile>;
+            return { ...c, blobId, name, mimeType };
+          }),
+        ...workspace,
+      ],
+      topK,
+      signal
+    );
   }
 
   /**
@@ -209,22 +250,47 @@ export class ContextSession implements AsyncDisposable {
    * @param threshold relevance threshold for the similarity score, higher threshold means more similar chunks, default 0.7, good enough based on prior experiments
    * @returns list of similar chunks
    */
-  async matchWorkspaceChunks(
+  async matchWorkspaceDocs(
     content: string,
     topK: number = 5,
     signal?: AbortSignal,
-    threshold: number = 0.7
+    scopedThreshold: number = 0.85,
+    threshold: number = 0.5
   ) {
-    const embedding = await this.client
-      .getEmbeddings([content], signal)
-      .then(r => r?.[0]?.embedding);
+    if (!this.client) return [];
+    const embedding = await this.client.getEmbedding(content, signal);
     if (!embedding) return [];
 
-    return this.models.copilotContext.matchWorkspaceEmbedding(
-      embedding,
-      this.workspaceId,
+    const docIds = this.docIds;
+    const [inContext, workspace] = await Promise.all([
+      this.models.copilotContext.matchWorkspaceEmbedding(
+        embedding,
+        this.workspaceId,
+        topK * 2,
+        scopedThreshold,
+        docIds
+      ),
+      this.models.copilotContext.matchWorkspaceEmbedding(
+        embedding,
+        this.workspaceId,
+        topK * 2,
+        threshold
+      ),
+    ]);
+
+    const result = await this.client.reRank(
+      content,
+      [...inContext, ...workspace],
       topK,
-      threshold
+      signal
+    );
+
+    // sort result, doc recorded in context first
+    const docIdSet = new Set(docIds);
+    return result.toSorted(
+      (a, b) =>
+        (docIdSet.has(a.docId) ? -1 : 1) - (docIdSet.has(b.docId) ? -1 : 1) ||
+        (a.distance || Infinity) - (b.distance || Infinity)
     );
   }
 

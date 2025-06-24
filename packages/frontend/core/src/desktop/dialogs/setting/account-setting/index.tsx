@@ -2,6 +2,7 @@ import { FlexWrapper, Input, notify } from '@affine/component';
 import {
   SettingHeader,
   SettingRow,
+  SettingWrapper,
 } from '@affine/component/setting-components';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Button } from '@affine/component/ui/button';
@@ -20,6 +21,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AuthService, ServerService } from '../../../../modules/cloud';
 import type { SettingState } from '../types';
 import { AIUsagePanel } from './ai-usage-panel';
+import { DeleteAccount } from './delete-account';
 import { StorageProgress } from './storage-progress';
 import * as styles from './style.css';
 
@@ -214,51 +216,42 @@ export const AccountSetting = ({
         data-testid="account-title"
       />
       <AvatarAndName />
-      <SettingRow name={t['com.affine.settings.email']()} desc={account.email}>
-        <Button onClick={onChangeEmail}>
-          {account.info?.emailVerified
-            ? t['com.affine.settings.email.action.change']()
-            : t['com.affine.settings.email.action.verify']()}
-        </Button>
-      </SettingRow>
-      <SettingRow
-        name={t['com.affine.settings.password']()}
-        desc={t['com.affine.settings.password.message']()}
-      >
-        <Button onClick={onPasswordButtonClick}>
-          {account.info?.hasPassword
-            ? t['com.affine.settings.password.action.change']()
-            : t['com.affine.settings.password.action.set']()}
-        </Button>
-      </SettingRow>
-      <StoragePanel onChangeSettingState={onChangeSettingState} />
-      {serverFeatures?.copilot && (
-        <AIUsagePanel onChangeSettingState={onChangeSettingState} />
-      )}
-      <SettingRow
-        name={t[`Sign out`]()}
-        desc={t['com.affine.setting.sign.out.message']()}
-        style={{ cursor: 'pointer' }}
-        data-testid="sign-out-button"
-        onClick={openSignOutModal}
-      >
-        <ArrowRightSmallIcon />
-      </SettingRow>
-      {/*<SettingRow*/}
-      {/*  name={*/}
-      {/*    <span style={{ color: 'var(--affine-warning-color)' }}>*/}
-      {/*      {t['com.affine.setting.account.delete']()}*/}
-      {/*    </span>*/}
-      {/*  }*/}
-      {/*  desc={t['com.affine.setting.account.delete.message']()}*/}
-      {/*  style={{ cursor: 'pointer' }}*/}
-      {/*  onClick={useCallback(() => {*/}
-      {/*    toast('Function coming soon');*/}
-      {/*  }, [])}*/}
-      {/*  testId="delete-account-button"*/}
-      {/*>*/}
-      {/*  <ArrowRightSmallIcon />*/}
-      {/*</SettingRow>*/}
+      <SettingWrapper>
+        <SettingRow
+          name={t['com.affine.settings.email']()}
+          desc={account.email}
+        >
+          <Button onClick={onChangeEmail}>
+            {account.info?.emailVerified
+              ? t['com.affine.settings.email.action.change']()
+              : t['com.affine.settings.email.action.verify']()}
+          </Button>
+        </SettingRow>
+        <SettingRow
+          name={t['com.affine.settings.password']()}
+          desc={t['com.affine.settings.password.message']()}
+        >
+          <Button onClick={onPasswordButtonClick}>
+            {account.info?.hasPassword
+              ? t['com.affine.settings.password.action.change']()
+              : t['com.affine.settings.password.action.set']()}
+          </Button>
+        </SettingRow>
+        <StoragePanel onChangeSettingState={onChangeSettingState} />
+        {serverFeatures?.copilot && (
+          <AIUsagePanel onChangeSettingState={onChangeSettingState} />
+        )}
+        <SettingRow
+          name={t[`Sign out`]()}
+          desc={t['com.affine.setting.sign.out.message']()}
+          style={{ cursor: 'pointer' }}
+          data-testid="sign-out-button"
+          onClick={openSignOutModal}
+        >
+          <ArrowRightSmallIcon />
+        </SettingRow>
+      </SettingWrapper>
+      <DeleteAccount />
     </>
   );
 };

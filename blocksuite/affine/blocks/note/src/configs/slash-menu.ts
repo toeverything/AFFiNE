@@ -45,8 +45,12 @@ const noteSlashMenuConfig: SlashMenuConfig = {
           ({
             ...createConversionItem(config, `0_Basic@${basicIndex++}`),
             when: ({ model }) =>
-              model.doc.schema.flavourSchemaMap.has(config.flavour) &&
-              !isInsideBlockByFlavour(model.doc, model, 'affine:edgeless-text'),
+              model.store.schema.flavourSchemaMap.has(config.flavour) &&
+              !isInsideBlockByFlavour(
+                model.store,
+                model,
+                'affine:edgeless-text'
+              ),
           }) satisfies SlashMenuActionItem
       ),
 
@@ -75,7 +79,7 @@ function createConversionItem(
     description,
     icon,
     tooltip: tooltips[name],
-    when: ({ model }) => model.doc.schema.flavourSchemaMap.has(flavour),
+    when: ({ model }) => model.store.schema.flavourSchemaMap.has(flavour),
     action: ({ std }) => {
       std.command.exec(updateBlockType, {
         flavour,

@@ -16,17 +16,19 @@
     "@blocksuite/icons": "^2.2.12",
     "@blocksuite/std": "workspace:*",
     "@blocksuite/store": "workspace:*",
+    "@emotion/css": "^11.13.5",
     "@emotion/hash": "^0.9.2",
     "@floating-ui/dom": "^1.6.13",
     "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
-    "@toeverything/theme": "^1.1.12",
+    "@toeverything/theme": "^1.1.15",
     "@types/lodash-es": "^4.17.12",
-    "@vanilla-extract/css": "^1.17.0",
+    "clsx": "^2.1.1",
     "date-fns": "^4.0.0",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.21",
     "rxjs": "^7.8.1",
+    "vitest": "^3.2.3",
     "yjs": "^13.6.21",
     "zod": "^3.23.8"
   },
@@ -44,5 +46,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.21.0"
+  "version": "0.22.4"
 }

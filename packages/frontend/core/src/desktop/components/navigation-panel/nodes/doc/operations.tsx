@@ -105,6 +105,7 @@ export const useNavigationPanelDocNodeOperations = (
     workbenchService.workbench.openDoc(docId, {
       at: 'new-tab',
     });
+    track.$.navigationPanel.docs.openDoc();
     track.$.navigationPanel.organize.openInNewTab({
       type: 'doc',
     });
@@ -114,6 +115,7 @@ export const useNavigationPanelDocNodeOperations = (
     workbenchService.workbench.openDoc(docId, {
       at: 'beside',
     });
+    track.$.navigationPanel.docs.openDoc();
     track.$.navigationPanel.organize.openInSplitView({
       type: 'doc',
     });

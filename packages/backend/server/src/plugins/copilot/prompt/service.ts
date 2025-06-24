@@ -64,6 +64,7 @@ export class PromptService implements OnApplicationBootstrap {
         name: true,
         action: true,
         model: true,
+        optionalModels: true,
         config: true,
         messages: {
           select: {

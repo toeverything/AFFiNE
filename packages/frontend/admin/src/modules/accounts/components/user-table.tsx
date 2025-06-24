@@ -11,15 +11,18 @@ export const UserTable: React.FC<UserTableProps> = ({ users }) => {
   return (
     <div className="max-h-[300px] overflow-y-auto border rounded-md">
       <table className="w-full border-collapse">
-        <thead className="bg-gray-50 sticky top-0">
+        <thead className="bg-white sticky top-0">
           <tr>
-            <th className="py-2 px-4 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Username
+            <th className="py-2 px-4 border-b text-left text-xs font-medium text-gray-500 tracking-wider ">
+              Name
             </th>
-            <th className="py-2 px-4 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="py-2 px-4 border-b text-left text-xs font-medium text-gray-500 tracking-wider">
               Email
             </th>
-            <th className="py-2 px-4 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="py-2 px-4 border-b text-left text-xs font-medium text-gray-500 tracking-wider">
+              Password
+            </th>
+            <th className="py-2 px-4 border-b text-left text-xs font-medium text-gray-500 tracking-wider">
               Status
             </th>
           </tr>
@@ -37,9 +40,25 @@ export const UserTable: React.FC<UserTableProps> = ({ users }) => {
                 {user.name || '-'}
               </td>
               <td
-                className={`py-2 px-4 text-sm truncate max-w-[200px] ${user.valid === false ? 'text-red-500' : 'text-gray-900'}`}
+                className={`py-2 px-4 text-sm truncate max-w-[200px] ${
+                  user.valid === false &&
+                  (user.error?.toLowerCase().includes('email') ||
+                    !user.error?.toLowerCase().includes('password'))
+                    ? 'text-red-500'
+                    : 'text-gray-900'
+                }`}
               >
                 {user.email}
+              </td>
+              <td
+                className={`py-2 px-4 text-sm truncate max-w-[150px] ${
+                  user.valid === false &&
+                  user.error?.toLowerCase().includes('password')
+                    ? 'text-red-500'
+                    : 'text-gray-900'
+                }`}
+              >
+                {user.password || '-'}
               </td>
               <td className="py-2 px-4 text-sm">
                 {user.importStatus === ImportStatus.Success ? (

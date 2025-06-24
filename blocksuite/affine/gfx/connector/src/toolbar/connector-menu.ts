@@ -16,10 +16,11 @@ import {
   ConnectorEIcon,
   ConnectorLIcon,
 } from '@blocksuite/icons/lit';
-import type { GfxToolsFullOptionValue } from '@blocksuite/std/gfx';
 import { computed } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
+
+import { ConnectorTool } from '../connector-tool';
 
 function ConnectorModeButtonGroup(
   mode: ConnectorMode,
@@ -110,7 +111,7 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
     return this.edgeless.std.get(ThemeProvider).theme$.value;
   });
 
-  override type: GfxToolsFullOptionValue['type'] = 'connector';
+  override type = ConnectorTool;
 
   override render() {
     const { stroke, strokeWidth, mode } = this._props$.value;
@@ -136,7 +137,7 @@ export class EdgelessConnectorMenu extends EdgelessToolbarToolMixin(
             .value=${stroke}
             .theme=${this._theme$.value}
             .palettes=${DefaultTheme.StrokeColorShortPalettes}
-            .hasTransparent=${!this.edgeless.doc
+            .hasTransparent=${!this.edgeless.store
               .get(FeatureFlagService)
               .getFlag('enable_color_picker')}
             @select=${(e: ColorEvent) =>

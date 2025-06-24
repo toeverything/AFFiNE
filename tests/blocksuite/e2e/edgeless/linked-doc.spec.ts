@@ -7,7 +7,6 @@ import {
   createShapeElement,
   edgelessCommonSetup,
   getConnectorPath,
-  locatorComponentToolbarMoreButton,
   selectNoteInEdgeless,
   Shape,
   triggerComponentToolbarAction,
@@ -36,20 +35,15 @@ test.describe('note to linked doc', () => {
     await selectNoteInEdgeless(page, noteId);
     await triggerComponentToolbarAction(page, 'turnIntoLinkedDoc');
 
-    await waitNextFrame(page, 200);
-    const embedSyncedBlock = page.locator('affine-embed-synced-doc-block');
-    if (!embedSyncedBlock) {
-      throw new Error('embedSyncedBlock is not found');
-    }
-
-    await triggerComponentToolbarAction(page, 'openLinkedDoc');
-    await waitNextFrame(page, 200);
-    const noteBlock = page.locator('affine-edgeless-note');
-    if (!noteBlock) {
-      throw new Error('noteBlock is not found');
-    }
-    const noteContent = await noteBlock.innerText();
-    expect(noteContent).toBe('Hello\nWorld');
+    const embedSyncedBlock = page.locator(
+      'affine-embed-edgeless-synced-doc-block'
+    );
+    await expect(embedSyncedBlock).toBeVisible();
+    const paragraph = embedSyncedBlock.locator(
+      'affine-paragraph [data-v-text="true"]'
+    );
+    await expect(paragraph.nth(0)).toHaveText('Hello');
+    await expect(paragraph.nth(1)).toHaveText('World');
   });
 
   test('turn note into a linked doc, connector keeps', async ({ page }) => {
@@ -70,47 +64,6 @@ test.describe('note to linked doc', () => {
     }
 
     await assertConnectorPath(page, [connectorPath[0], connectorPath[1]], 0);
-  });
-
-  // TODO FIX ME
-  test.skip('embed-synced-doc card can not turn into linked doc', async ({
-    page,
-  }) => {
-    await edgelessCommonSetup(page);
-    const noteId = await createNote(page, [100, 0]);
-    await activeNoteInEdgeless(page, noteId);
-    await waitNextFrame(page, 200);
-    await type(page, 'Hello World');
-
-    await page.mouse.click(10, 50);
-    await selectNoteInEdgeless(page, noteId);
-    await triggerComponentToolbarAction(page, 'turnIntoLinkedDoc');
-
-    const moreButton = locatorComponentToolbarMoreButton(page);
-    await moreButton.click();
-    const turnButton = page.locator('.turn-into-linked-doc');
-    await expect(turnButton).toBeHidden();
-  });
-
-  // TODO FIX ME
-  test.skip('embed-linked-doc card can not turn into linked doc', async ({
-    page,
-  }) => {
-    await edgelessCommonSetup(page);
-    const noteId = await createNote(page, [100, 0]);
-    await activeNoteInEdgeless(page, noteId);
-    await waitNextFrame(page, 200);
-    await type(page, 'Hello World');
-
-    await page.mouse.click(10, 50);
-    await selectNoteInEdgeless(page, noteId);
-    await triggerComponentToolbarAction(page, 'turnIntoLinkedDoc');
-
-    await triggerComponentToolbarAction(page, 'toCardView');
-    const moreButton = locatorComponentToolbarMoreButton(page);
-    await moreButton.click();
-    const turnButton = page.locator('.turn-into-linked-doc');
-    await expect(turnButton).toBeHidden();
   });
 });
 

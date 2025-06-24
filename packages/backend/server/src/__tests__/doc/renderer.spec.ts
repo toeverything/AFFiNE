@@ -64,7 +64,7 @@ test('should render correct html', async t => {
 
   t.true(
     res.text.includes(
-      `<script src="https://app.affine.pro/main.a.js"></script>`
+      `<script src="https://app.affine.pro/main.a.js" crossorigin></script>`
     )
   );
 });
@@ -78,7 +78,7 @@ test.skip('should render correct mobile html', async t => {
 
   t.true(
     res.text.includes(
-      `<script src="https://app.affine.pro/main.c.js"></script>`
+      `<script src="https://app.affine.pro/main.c.js" crossorigin></script>`
     )
   );
 });

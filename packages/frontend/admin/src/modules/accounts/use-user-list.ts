@@ -8,7 +8,7 @@ export const useUserList = () => {
     pageSize: 10,
   });
   const {
-    data: { users },
+    data: { users, usersCount },
   } = useQuery({
     query: listUsersQuery,
     variables: {
@@ -23,5 +23,6 @@ export const useUserList = () => {
     users,
     pagination,
     setPagination,
+    usersCount,
   };
 };

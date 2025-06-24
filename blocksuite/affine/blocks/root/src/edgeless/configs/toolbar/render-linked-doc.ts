@@ -52,8 +52,8 @@ export function createLinkedDocFromEdgelessElements(
   elements: GfxModel[],
   docTitle?: string
 ) {
-  const _doc = host.doc.workspace.createDoc();
-  const transformer = host.doc.getTransformer();
+  const _doc = host.store.workspace.createDoc();
+  const transformer = host.store.getTransformer();
   const linkedDoc = _doc.getStore();
   linkedDoc.load(() => {
     const rootId = linkedDoc.addBlock('affine:page', {

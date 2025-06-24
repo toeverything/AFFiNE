@@ -39,22 +39,22 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
     e.preventDefault();
 
     if (this.model.props.type === 'toggle') {
-      if (this.doc.readonly) {
+      if (this.store.readonly) {
         this._readonlyCollapsed = !this._readonlyCollapsed;
       } else {
-        this.doc.captureSync();
-        this.doc.updateBlock(this.model, {
+        this.store.captureSync();
+        this.store.updateBlock(this.model, {
           collapsed: !this.model.props.collapsed,
         });
       }
 
       return;
     } else if (this.model.props.type === 'todo') {
-      if (this.doc.readonly) return;
+      if (this.store.readonly) return;
 
-      this.doc.captureSync();
+      this.store.captureSync();
       const checkedPropObj = { checked: !this.model.props.checked };
-      this.doc.updateBlock(this.model, checkedPropObj);
+      this.store.updateBlock(this.model, checkedPropObj);
       if (this.model.props.checked) {
         const checkEl = this.querySelector('.affine-list-block__todo-prefix');
         if (checkEl) {
@@ -120,7 +120,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
         const order = this.model.props.order$.value;
         // old numbered list has no order
         if (type === 'numbered' && !Number.isInteger(order)) {
-          correctNumberedListsOrderToPrev(this.doc, this.model, false);
+          correctNumberedListsOrderToPrev(this.store, this.model, false);
         }
         // if list is not numbered, order should be null
         if (type !== 'numbered' && order !== null) {
@@ -138,7 +138,7 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
 
   override renderBlock(): TemplateResult<1> {
     const { model, _onClickIcon } = this;
-    const collapsed = this.doc.readonly
+    const collapsed = this.store.readonly
       ? this._readonlyCollapsed
       : model.props.collapsed;
 
@@ -169,11 +169,11 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
                 <blocksuite-toggle-button
                   .collapsed=${collapsed}
                   .updateCollapsed=${(value: boolean) => {
-                    if (this.doc.readonly) {
+                    if (this.store.readonly) {
                       this._readonlyCollapsed = value;
                     } else {
-                      this.doc.captureSync();
-                      this.doc.updateBlock(this.model, {
+                      this.store.captureSync();
+                      this.store.updateBlock(this.model, {
                         collapsed: value,
                       });
                     }
@@ -185,12 +185,12 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
           <rich-text
             .yText=${this.model.props.text.yText}
             .inlineEventSource=${this.topContenteditableElement ?? nothing}
-            .undoManager=${this.doc.history}
+            .undoManager=${this.store.history.undoManager}
             .attributeRenderer=${this.attributeRenderer}
             .attributesSchema=${this.attributesSchema}
             .markdownMatches=${this.inlineManager?.markdownMatches}
             .embedChecker=${this.embedChecker}
-            .readonly=${this.doc.readonly}
+            .readonly=${this.store.readonly}
             .inlineRangeProvider=${this._inlineRangeProvider}
             .enableClipboard=${false}
             .enableUndoRedo=${false}

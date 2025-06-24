@@ -1,9 +1,9 @@
 import type { WriteStream } from 'node:fs';
 
-import type { AudioCaptureSession, TappableApplication } from '@affine/native';
+import type { ApplicationInfo, AudioCaptureSession } from '@affine/native';
 
 export interface TappableAppInfo {
-  rawInstance: TappableApplication;
+  info: ApplicationInfo;
   isRunning: boolean;
   processId: number;
   processGroupId: number;

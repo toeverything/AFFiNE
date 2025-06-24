@@ -1,22 +1,23 @@
 import { addAttachments } from '@blocksuite/affine-block-attachment';
 import { insertLinkByQuickSearchCommand } from '@blocksuite/affine-block-bookmark';
 import { addImages } from '@blocksuite/affine-block-image';
+import { DefaultTool } from '@blocksuite/affine-block-surface';
 import { MAX_IMAGE_WIDTH } from '@blocksuite/affine-model';
 import { TelemetryProvider } from '@blocksuite/affine-shared/services';
 import type { NoteChildrenFlavour } from '@blocksuite/affine-shared/types';
 import {
   getImageFilesFromLocal,
-  openFileOrFiles,
+  openSingleFileWith,
 } from '@blocksuite/affine-shared/utils';
 import { EdgelessToolbarToolMixin } from '@blocksuite/affine-widget-edgeless-toolbar';
 import { AttachmentIcon, ImageIcon, LinkIcon } from '@blocksuite/icons/lit';
-import type { GfxToolsFullOptionValue } from '@blocksuite/std/gfx';
+import type { ToolOptions } from '@blocksuite/std/gfx';
 import { effect } from '@preact/signals-core';
 import { css, html, LitElement } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import type { NoteToolOption } from '../note-tool.js';
+import { NoteTool, type NoteToolOption } from '../note-tool.js';
 import { NOTE_MENU_ITEMS } from './note-menu-config.js';
 
 export class EdgelessNoteMenu extends EdgelessToolbarToolMixin(LitElement) {
@@ -51,7 +52,7 @@ export class EdgelessNoteMenu extends EdgelessToolbarToolMixin(LitElement) {
     }
   `;
 
-  override type: GfxToolsFullOptionValue['type'] = 'affine:note';
+  override type = NoteTool;
 
   private async _addImages() {
     this._imageLoading = true;
@@ -60,8 +61,7 @@ export class EdgelessNoteMenu extends EdgelessToolbarToolMixin(LitElement) {
       maxWidth: MAX_IMAGE_WIDTH,
     });
     this._imageLoading = false;
-    // @ts-expect-error FIXME: resolve after gfx tool refactor
-    this.gfx.tool.setTool('default');
+    this.gfx.tool.setTool(DefaultTool);
     this.gfx.selection.set({ elements: ids });
   }
 
@@ -96,10 +96,11 @@ export class EdgelessNoteMenu extends EdgelessToolbarToolMixin(LitElement) {
       effect(() => {
         const tool = this.gfx.tool.currentToolOption$.value;
 
-        if (tool?.type !== 'affine:note') return;
-        this.childFlavour = tool.childFlavour;
-        this.childType = tool.childType;
-        this.tip = tool.tip;
+        if (tool?.toolType !== NoteTool) return;
+        const options = tool.options as ToolOptions<NoteTool>;
+        this.childFlavour = options.childFlavour;
+        this.childType = options.childType;
+        this.tip = options.tip;
       })
     );
   }
@@ -138,11 +139,10 @@ export class EdgelessNoteMenu extends EdgelessToolbarToolMixin(LitElement) {
               .activeMode=${'background'}
               .tooltip=${'File'}
               @click=${async () => {
-                const file = await openFileOrFiles();
+                const file = await openSingleFileWith();
                 if (!file) return;
                 await addAttachments(this.edgeless.std, [file]);
-                // @ts-expect-error FIXME: resolve after gfx tool refactor
-                this.gfx.tool.setTool('default');
+                this.gfx.tool.setTool(DefaultTool);
                 this.edgeless.std
                   .getOptional(TelemetryProvider)
                   ?.track('CanvasElementAdded', {

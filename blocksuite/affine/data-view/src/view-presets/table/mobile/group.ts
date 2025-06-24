@@ -8,16 +8,14 @@ import { PlusIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { css, html, unsafeCSS } from 'lit';
-import { property, query } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
 import { GroupTitle } from '../../../core/group-by/group-title.js';
-import type { GroupData } from '../../../core/group-by/trait.js';
+import type { Group } from '../../../core/group-by/trait.js';
+import type { Row } from '../../../core/index.js';
 import { LEFT_TOOL_BAR_WIDTH } from '../consts.js';
-import type { DataViewTable } from '../pc/table-view.js';
-import { TableViewAreaSelection } from '../selection';
-import type { TableSingleView } from '../table-view-manager.js';
+import type { MobileTableViewUILogic } from './table-view-ui-logic.js';
 
 const styles = css`
   .data-view-table-group-add-row {
@@ -53,40 +51,12 @@ export class MobileTableGroup extends SignalWatcher(
 
   private readonly clickAddRow = () => {
     this.view.rowAdd('end', this.group?.key);
-    const selectionController = this.viewEle.selectionController;
-    selectionController.selection = undefined;
-    requestAnimationFrame(() => {
-      const index = this.view.properties$.value.findIndex(
-        v => v.type$.value === 'title'
-      );
-      selectionController.selection = TableViewAreaSelection.create({
-        groupKey: this.group?.key,
-        focus: {
-          rowIndex: this.rows.length - 1,
-          columnIndex: index,
-        },
-        isEditing: true,
-      });
-    });
+    this.requestUpdate();
   };
 
   private readonly clickAddRowInStart = () => {
     this.view.rowAdd('start', this.group?.key);
-    const selectionController = this.viewEle.selectionController;
-    selectionController.selection = undefined;
-    requestAnimationFrame(() => {
-      const index = this.view.properties$.value.findIndex(
-        v => v.type$.value === 'title'
-      );
-      selectionController.selection = TableViewAreaSelection.create({
-        groupKey: this.group?.key,
-        focus: {
-          rowIndex: 0,
-          columnIndex: index,
-        },
-        isEditing: true,
-      });
-    });
+    this.requestUpdate();
   };
 
   private readonly clickGroupOptions = (e: MouseEvent) => {
@@ -100,15 +70,16 @@ export class MobileTableGroup extends SignalWatcher(
         name: 'Ungroup',
         hide: () => group.value == null,
         select: () => {
-          group.rows.forEach(id => {
-            group.manager.removeFromGroup(id, group.key);
+          group.rows.forEach(row => {
+            group.manager.removeFromGroup(row.rowId, group.key);
           });
         },
       }),
       menu.action({
         name: 'Delete Cards',
         select: () => {
-          this.view.rowDelete(group.rows);
+          this.view.rowsDelete(group.rows.map(row => row.rowId));
+          this.requestUpdate();
         },
       }),
     ]);
@@ -135,7 +106,7 @@ export class MobileTableGroup extends SignalWatcher(
     return this.group?.rows ?? this.view.rows$.value;
   }
 
-  private renderRows(ids: string[]) {
+  private renderRows(rows: Row[]) {
     return html`
       <mobile-table-header
         .renderGroupHeader="${this.renderGroupHeader}"
@@ -143,15 +114,14 @@ export class MobileTableGroup extends SignalWatcher(
       ></mobile-table-header>
       <div class="mobile-affine-table-body">
         ${repeat(
-          ids,
-          id => id,
-          (id, idx) => {
+          rows,
+          row => row.rowId,
+          (row, idx) => {
             return html` <mobile-table-row
               data-row-index="${idx}"
-              data-row-id="${id}"
-              .dataViewEle="${this.dataViewEle}"
-              .view="${this.view}"
-              .rowId="${id}"
+              data-row-id="${row.rowId}"
+              .tableViewLogic="${this.tableViewLogic}"
+              .rowId="${row.rowId}"
               .rowIndex="${idx}"
             ></mobile-table-row>`;
           }
@@ -171,8 +141,6 @@ export class MobileTableGroup extends SignalWatcher(
               ${PlusIcon()}<span style="font-size: 12px">New Record</span>
             </div>
           </div>`}
-      <affine-database-column-stats .view="${this.view}" .group="${this.group}">
-      </affine-database-column-stats>
     `;
   }
 
@@ -181,19 +149,14 @@ export class MobileTableGroup extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor dataViewEle!: DataViewRenderer;
+  accessor group: Group | undefined = undefined;
 
   @property({ attribute: false })
-  accessor group: GroupData | undefined = undefined;
+  accessor tableViewLogic!: MobileTableViewUILogic;
 
-  @query('.affine-database-block-rows')
-  accessor rowsContainer: HTMLElement | null = null;
-
-  @property({ attribute: false })
-  accessor view!: TableSingleView;
-
-  @property({ attribute: false })
-  accessor viewEle!: DataViewTable;
+  get view() {
+    return this.tableViewLogic.view;
+  }
 }
 
 declare global {

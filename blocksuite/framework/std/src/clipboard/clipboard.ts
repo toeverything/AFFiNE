@@ -124,18 +124,23 @@ export class Clipboard extends LifeCycleWatcher {
   copySlice = async (slice: Slice) => {
     const adapterKeys = this._adapters.map(adapter => adapter.mimeType);
 
-    await this.writeToClipboard(async _items => {
-      const items = { ..._items };
+    await this.writeToClipboard(async items => {
+      const filtered = (
+        await Promise.all(
+          adapterKeys.map(async type => {
+            const item = await this._getClipboardItem(slice, type);
+            if (typeof item === 'string') {
+              return [type, item];
+            }
+            return null;
+          })
+        )
+      ).filter((adapter): adapter is string[] => Boolean(adapter));
 
-      await Promise.all(
-        adapterKeys.map(async type => {
-          const item = await this._getClipboardItem(slice, type);
-          if (typeof item === 'string') {
-            items[type] = item;
-          }
-        })
-      );
-      return items;
+      return {
+        ...items,
+        ...Object.fromEntries(filtered),
+      };
     });
   };
 
@@ -263,49 +268,56 @@ export class Clipboard extends LifeCycleWatcher {
   }
 
   async writeToClipboard(
-    updateItems: (
-      items: Record<string, unknown>
-    ) => Promise<Record<string, unknown>> | Record<string, unknown>
+    updateItems: <T extends Record<string, unknown>>(items: T) => Promise<T> | T
   ) {
-    const _items = {
+    const items = await updateItems<
+      Partial<{
+        'text/plain': string;
+        'text/html': string;
+        'image/png': string | Blob;
+      }>
+    >({
       'text/plain': '',
       'text/html': '',
       'image/png': '',
-    };
-
-    const items = await updateItems(_items);
-
-    const text = items['text/plain'] as string;
-    const innerHTML = items['text/html'] as string;
-    const png = items['image/png'] as string | Blob;
+    });
+    const text = items['text/plain'] ?? '';
+    const innerHTML = items['text/html'] ?? '';
+    const image = items['image/png'];
 
     delete items['text/plain'];
     delete items['text/html'];
-    delete items['image/png'];
 
-    const snapshot = lz.compressToEncodedURIComponent(JSON.stringify(items));
-    const html = `<div data-blocksuite-snapshot='${snapshot}'>${innerHTML}</div>`;
-    const htmlBlob = new Blob([html], {
-      type: 'text/html',
-    });
-    const clipboardItems: Record<string, Blob> = {
-      'text/html': htmlBlob,
-    };
+    const clipboardItems: Record<string, Blob> = {};
+
+    if (image) {
+      const type = 'image/png';
+
+      delete items[type];
+
+      if (typeof image === 'string') {
+        clipboardItems[type] = new Blob([image], { type });
+      } else if (image instanceof Blob) {
+        clipboardItems[type] = image;
+      }
+    }
+
     if (text.length > 0) {
-      const textBlob = new Blob([text], {
-        type: 'text/plain',
-      });
-      clipboardItems['text/plain'] = textBlob;
+      const type = 'text/plain';
+      clipboardItems[type] = new Blob([text], { type });
     }
 
-    if (png instanceof Blob) {
-      clipboardItems['image/png'] = png;
-    } else if (png.length > 0) {
-      const pngBlob = new Blob([png], {
-        type: 'image/png',
-      });
-      clipboardItems['image/png'] = pngBlob;
+    const hasInnerHTML = Boolean(innerHTML.length);
+    const isEmpty = Object.keys(clipboardItems).length === 0;
+
+    // If there are no items, fall back to snapshot.
+    if (hasInnerHTML || isEmpty) {
+      const type = 'text/html';
+      const snapshot = lz.compressToEncodedURIComponent(JSON.stringify(items));
+      const html = `<div data-blocksuite-snapshot='${snapshot}'>${innerHTML}</div>`;
+      clipboardItems[type] = new Blob([html], { type });
     }
+
     await navigator.clipboard.write([new ClipboardItem(clipboardItems)]);
   }
 }

@@ -524,20 +524,27 @@ test.describe('advanced visibility control', () => {
     await type(page, 'hello');
     await pressEnter(page);
     await type(page, 'world');
+    await pressEscape(page, 3);
+    await createEdgelessNoteBlock(page, [200, 400]);
 
     const toc = await openTocPanel(page);
 
     const bothCard = locateCards(toc, 'both');
-    const edgelessCard = locateCards(toc, 'edgeless');
+    const edgelessCards = locateCards(toc, 'edgeless');
 
     await expect(bothCard).toHaveCount(1);
-    await expect(edgelessCard).toHaveCount(1);
+    await expect(edgelessCards).toHaveCount(2);
 
-    await edgelessCard.hover();
-    await edgelessCard.getByTestId('display-mode-button').click();
-    await edgelessCard.locator('note-display-mode-panel .item.both').click();
+    while ((await edgelessCards.count()) > 0) {
+      await edgelessCards.first().hover();
+      await edgelessCards.first().getByTestId('display-mode-button').click();
+      await edgelessCards
+        .first()
+        .locator('note-display-mode-panel .item.both')
+        .click();
+    }
 
-    await expect(bothCard).toHaveCount(2);
+    await expect(bothCard).toHaveCount(3);
 
     await clickView(page, [200, 100]);
     const toolbar = locateToolbar(page);
@@ -545,6 +552,14 @@ test.describe('advanced visibility control', () => {
     await expect(page.locator('.note-slicer-button')).toBeVisible();
     await page.locator('.note-slicer-button').click();
 
-    await expect(bothCard).toHaveCount(3);
+    await expect(bothCard).toHaveCount(4);
+    await expect(
+      bothCard.nth(1),
+      'the sliced note card should keep the order in its parent'
+    ).toContainText('hello');
+    await expect(
+      bothCard.nth(2),
+      'the sliced note card should keep the order in its parent'
+    ).toContainText('world');
   });
 });

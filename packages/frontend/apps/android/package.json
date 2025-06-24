@@ -1,6 +1,6 @@
 {
   "name": "@affine/android",
-  "version": "0.21.0",
+  "version": "0.22.4",
   "description": "AFFiNE Desktop Web application",
   "private": true,
   "scripts": {
@@ -23,7 +23,6 @@
     "@capacitor/core": "^7.0.0",
     "@capacitor/keyboard": "^7.0.0",
     "@capacitor/status-bar": "^7.0.0",
-    "@capawesome/capacitor-android-edge-to-edge-support": "^7.0.0",
     "@capgo/inappbrowser": "^7.1.0",
     "@sentry/react": "^9.2.0",
     "@toeverything/infra": "workspace:*",

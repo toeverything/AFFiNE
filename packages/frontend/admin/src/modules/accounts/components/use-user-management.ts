@@ -2,7 +2,6 @@ import {
   useMutateQueryResource,
   useMutation,
 } from '@affine/admin/use-mutation';
-import { useQuery } from '@affine/admin/use-query';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import {
   createChangePasswordUrlMutation,
@@ -10,7 +9,6 @@ import {
   deleteUserMutation,
   disableUserMutation,
   enableUserMutation,
-  getUsersCountQuery,
   type ImportUsersInput,
   type ImportUsersMutation,
   importUsersMutation,
@@ -47,12 +45,13 @@ export const useCreateUser = () => {
   const revalidate = useMutateQueryResource();
 
   const create = useAsyncCallback(
-    async ({ name, email, features }: UserInput) => {
+    async ({ name, email, password, features }: UserInput) => {
       try {
         const account = await createAccount({
           input: {
             name,
             email,
+            password: password === '' ? undefined : password,
           },
         });
 
@@ -222,15 +221,6 @@ export const useDisableUser = () => {
   );
 
   return disableById;
-};
-
-export const useUserCount = () => {
-  const {
-    data: { usersCount },
-  } = useQuery({
-    query: getUsersCountQuery,
-  });
-  return usersCount;
 };
 
 export const useImportUsers = () => {

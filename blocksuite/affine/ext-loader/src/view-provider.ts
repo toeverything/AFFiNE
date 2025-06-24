@@ -64,7 +64,7 @@ export class ViewExtensionProvider<
    * Static flag to ensure effect is only run once per provider class
    * @internal
    */
-  static effectRunned = false;
+  static effectRan = false;
 
   /**
    * Override this method to implement one-time initialization logic for the provider.
@@ -94,11 +94,29 @@ export class ViewExtensionProvider<
     );
   };
 
+  /**
+   * Check if the scope is preview
+   * @param scope - The scope to check
+   * @returns True if the scope is preview, false otherwise
+   */
+  isPreview = (scope: ViewScope) => {
+    return scope === 'preview-page' || scope === 'preview-edgeless';
+  };
+
+  /**
+   * Check if the scope is mobile
+   * @param scope - The scope to check
+   * @returns True if the scope is mobile, false otherwise
+   */
+  isMobile = (scope: ViewScope) => {
+    return scope === 'mobile-page' || scope === 'mobile-edgeless';
+  };
+
   override setup(context: ViewExtensionContext, options?: Options) {
     super.setup(context, options);
-    const constructer = this.constructor as typeof ViewExtensionProvider;
-    if (!constructer.effectRunned) {
-      constructer.effectRunned = true;
+    const constructor = this.constructor as typeof ViewExtensionProvider;
+    if (!constructor.effectRan) {
+      constructor.effectRan = true;
       this.effect();
     }
   }

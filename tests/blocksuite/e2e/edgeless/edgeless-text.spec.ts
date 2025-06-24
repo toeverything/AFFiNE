@@ -6,9 +6,13 @@ import {
   autoFit,
   captureHistory,
   cutByKeyboard,
+  dblclickView,
   dragBetweenIndices,
+  edgelessCommonSetup,
   enterPlaygroundRoom,
   getEdgelessSelectedRect,
+  getIds,
+  getInlineSelectionIndex,
   getPageSnapshot,
   initEmptyEdgelessState,
   pasteByKeyboard,
@@ -19,6 +23,9 @@ import {
   pressBackspace,
   pressEnter,
   pressEscape,
+  pressShiftTab,
+  pressTab,
+  redoByKeyboard,
   selectAllByKeyboard,
   setEdgelessTool,
   switchEditorMode,
@@ -441,9 +448,11 @@ test.describe('edgeless text block', () => {
     );
     await page.mouse.up();
 
-    expect(await getPageSnapshot(page, true)).toMatchSnapshot(
-      `${testInfo.title}_drag.json`
-    );
+    const selectedRect2 = await getEdgelessSelectedRect(page);
+    expect(selectedRect2.width).toBeCloseTo(selectedRect1.width + 45);
+    expect(selectedRect2.height).toBeCloseTo(selectedRect1.height);
+    expect(selectedRect2.x).toBeCloseTo(selectedRect1.x);
+    expect(selectedRect2.y).toBeCloseTo(selectedRect1.y);
   });
 
   test('cut edgeless text', async ({ page }) => {
@@ -547,6 +556,52 @@ test.describe('edgeless text block', () => {
       1
     );
   });
+
+  test('edgeless text should be able to delete line', async ({ page }) => {
+    await dblclickView(page, [100, -100]);
+    // 5: aaa
+    // 6:     bbb
+    // 7: ccc|
+    {
+      await type(page, 'aaa');
+      await pressEnter(page);
+      await pressTab(page);
+      await type(page, 'bbb');
+      await pressEnter(page);
+      await pressShiftTab(page);
+      await type(page, 'ccc');
+    }
+
+    // 5: aaa
+    // 6:     bbb|
+    await pressBackspace(page, 4);
+    expect(await getIds(page)).not.toContain(7);
+    await assertBlockTextContent(page, 5, 'aaa');
+    await assertBlockTextContent(page, 6, 'bbb');
+    expect(await getInlineSelectionIndex(page)).toBe(3);
+
+    // 5: |aaa
+    // 6:     bbb
+    {
+      await pressArrowUp(page);
+      await pressArrowLeft(page, 3);
+      await pressBackspace(page);
+    }
+
+    await assertBlockTextContent(page, 5, 'aaa');
+    await assertBlockTextContent(page, 6, 'bbb');
+    expect(await getInlineSelectionIndex(page)).toBe(0);
+
+    // 6: |bbb
+    {
+      await pressArrowRight(page, 3);
+      await pressBackspace(page, 4);
+    }
+
+    expect(await getIds(page)).not.toContain(7);
+    await assertBlockTextContent(page, 6, 'bbb');
+    expect(await getInlineSelectionIndex(page)).toBe(0);
+  });
 });
 
 test('press backspace at the start of first line when edgeless text exist', async ({
@@ -595,4 +650,63 @@ test('press backspace at the start of first line when edgeless text exist', asyn
   expect(await getPageSnapshot(page, true)).toMatchSnapshot(
     `${testInfo.title}_finial.json`
   );
+});
+
+test('undo/redo should work when changing text color', async ({ page }) => {
+  await edgelessCommonSetup(page);
+  await dblclickView(page, [100, 100]);
+  await type(page, 'abc');
+  await pressEscape(page, 3);
+  await waitNextFrame(page);
+
+  const edgelessText = page.locator('affine-edgeless-text');
+  await edgelessText.click();
+
+  const getTextColor = async () => {
+    return edgelessText.locator('span[data-v-text="true"]').evaluate(el => {
+      return getComputedStyle(el).color;
+    });
+  };
+  const colorPanel = page.locator('edgeless-color-picker-button');
+
+  let prevTextColor = await getTextColor();
+
+  // preset color
+  {
+    await colorPanel.click();
+    await colorPanel.getByLabel('LightRed').click();
+    expect(await getTextColor()).not.toBe(prevTextColor);
+
+    await undoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getTextColor()).toBe(prevTextColor);
+
+    await redoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getTextColor()).not.toBe(prevTextColor);
+  }
+
+  prevTextColor = await getTextColor();
+
+  // custom color
+  {
+    await colorPanel.click();
+    await colorPanel.locator('edgeless-color-custom-button').click();
+    await page.locator('.color-palette').click({
+      position: {
+        x: 100,
+        y: 100,
+      },
+    });
+    await pressEscape(page);
+
+    expect(await getTextColor()).not.toBe(prevTextColor);
+    await undoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getTextColor()).toBe(prevTextColor);
+
+    await redoByKeyboard(page);
+    await waitNextFrame(page);
+    expect(await getTextColor()).not.toBe(prevTextColor);
+  }
 });

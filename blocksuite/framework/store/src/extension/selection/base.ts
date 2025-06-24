@@ -11,6 +11,8 @@ export abstract class BaseSelection {
 
   static readonly type: string;
 
+  static readonly recoverable: boolean = false;
+
   readonly blockId: string;
 
   get group(): string {

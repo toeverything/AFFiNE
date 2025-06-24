@@ -8,6 +8,7 @@ import type { WorkspaceService } from '../../workspace';
 
 export interface CalendarSubscriptionConfig {
   color: string;
+  name?: string;
   showEvents?: boolean;
   showAllDayEvents?: boolean;
 }
@@ -96,6 +97,10 @@ export class CalendarStore extends Store {
         return subscriptionMap[url] ?? null;
       })
     );
+  }
+
+  getSubscription(url: string) {
+    return this.getSubscriptionMap()[url];
   }
 
   watchSubscriptionCache(url: string) {

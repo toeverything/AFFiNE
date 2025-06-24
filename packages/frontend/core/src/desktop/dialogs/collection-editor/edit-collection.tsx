@@ -1,7 +1,6 @@
 import { Button, RadioGroup } from '@affine/component';
-import { useAllPageListConfig } from '@affine/core/components/hooks/affine/use-all-page-list-config';
 import { SelectPage } from '@affine/core/components/page-list/docs/select-page';
-import type { Collection } from '@affine/env/filter';
+import type { CollectionInfo } from '@affine/core/modules/collection';
 import { useI18n } from '@affine/i18n';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -12,10 +11,10 @@ export type EditCollectionMode = 'page' | 'rule';
 
 export interface EditCollectionProps {
   onConfirmText?: string;
-  init: Collection;
+  init: CollectionInfo;
   mode?: EditCollectionMode;
   onCancel: () => void;
-  onConfirm: (collection: Collection) => void;
+  onConfirm: (collection: CollectionInfo) => void;
 }
 
 export const EditCollection = ({
@@ -26,10 +25,9 @@ export const EditCollection = ({
   mode: initMode,
 }: EditCollectionProps) => {
   const t = useI18n();
-  const config = useAllPageListConfig();
-  const [value, onChange] = useState<Collection>(init);
+  const [value, onChange] = useState<CollectionInfo>(init);
   const [mode, setMode] = useState<'page' | 'rule'>(
-    initMode ?? (init.filterList.length === 0 ? 'page' : 'rule')
+    initMode ?? (init.rules.filters.length === 0 ? 'page' : 'rule')
   );
   const isNameEmpty = useMemo(() => value.name.trim().length === 0, [value]);
   const onSaveCollection = useCallback(() => {
@@ -40,16 +38,13 @@ export const EditCollection = ({
   const reset = useCallback(() => {
     onChange({
       ...value,
-      filterList: init.filterList,
+      rules: init.rules,
       allowList: init.allowList,
     });
-  }, [init.allowList, init.filterList, value]);
-  const onIdsChange = useCallback(
-    (ids: string[]) => {
-      onChange({ ...value, allowList: ids });
-    },
-    [value]
-  );
+  }, [init, value]);
+  const onIdsChange = useCallback((ids: string[]) => {
+    onChange(prev => ({ ...prev, allowList: ids }));
+  }, []);
   const buttons = useMemo(
     () => (
       <>
@@ -104,14 +99,13 @@ export const EditCollection = ({
     >
       {mode === 'page' ? (
         <SelectPage
-          init={value.allowList}
+          init={init.allowList}
           onChange={onIdsChange}
           header={switchMode}
           buttons={buttons}
         />
       ) : (
         <RulesMode
-          allPageListConfig={config}
           collection={value}
           switchMode={switchMode}
           reset={reset}

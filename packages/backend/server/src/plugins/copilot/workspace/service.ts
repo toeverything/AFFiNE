@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 
 import { FileUpload, JobQueue, PaginationInput } from '../../../base';
+import { ServerFeature, ServerService } from '../../../core';
 import { Models } from '../../../models';
 import { CopilotStorage } from '../storage';
 import { readStream } from '../utils';
@@ -12,6 +13,7 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
   private supportEmbedding = false;
 
   constructor(
+    private readonly server: ServerService,
     private readonly models: Models,
     private readonly queue: JobQueue,
     private readonly storage: CopilotStorage
@@ -19,8 +21,9 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     const supportEmbedding =
-      await this.models.copilotContext.checkEmbeddingAvailable();
+      await this.models.copilotWorkspace.checkEmbeddingAvailable();
     if (supportEmbedding) {
+      this.server.enableFeature(ServerFeature.CopilotEmbedding);
       this.supportEmbedding = true;
     }
   }
@@ -60,6 +63,7 @@ export class CopilotWorkspaceService implements OnApplicationBootstrap {
     await this.storage.put(userId, workspaceId, blobId, buffer);
     const file = await this.models.copilotWorkspace.addFile(workspaceId, {
       fileName,
+      blobId,
       mimeType: content.mimetype,
       size: buffer.length,
     });

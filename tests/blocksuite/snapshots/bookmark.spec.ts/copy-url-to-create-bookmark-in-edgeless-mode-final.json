@@ -42,6 +42,7 @@
           "props": {
             "caption": null,
             "description": null,
+            "footnoteIdentifier": null,
             "icon": null,
             "image": null,
             "index": "a0",
@@ -60,7 +61,7 @@
       "id": "2",
       "props": {
         "background": {
-          "dark": "#000000",
+          "dark": "#252525",
           "light": "#ffffff"
         },
         "displayMode": "both",

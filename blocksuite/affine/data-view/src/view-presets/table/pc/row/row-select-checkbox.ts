@@ -1,15 +1,13 @@
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { CheckBoxCheckSolidIcon, CheckBoxUnIcon } from '@blocksuite/icons/lit';
 import { ShadowlessElement } from '@blocksuite/std';
-import { computed, type ReadonlySignal } from '@preact/signals-core';
+import { computed } from '@preact/signals-core';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
-import {
-  TableViewRowSelection,
-  type TableViewSelectionWithType,
-} from '../../selection';
+import { TableViewRowSelection } from '../../selection';
+import type { TableViewUILogic } from '../table-view-ui-logic';
 
 export class RowSelectCheckbox extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -42,10 +40,10 @@ export class RowSelectCheckbox extends SignalWatcher(
   accessor rowId!: string;
 
   @property({ attribute: false })
-  accessor selection!: ReadonlySignal<TableViewSelectionWithType | undefined>;
+  accessor tableViewLogic!: TableViewUILogic;
 
   isSelected$ = computed(() => {
-    const selection = this.selection.value;
+    const selection = this.tableViewLogic.selection$.value;
     if (!selection || selection.selectionType !== 'row') {
       return false;
     }
@@ -58,7 +56,7 @@ export class RowSelectCheckbox extends SignalWatcher(
   override connectedCallback() {
     super.connectedCallback();
     this.disposables.addFromEvent(this, 'click', () => {
-      this.closest('affine-database-table')?.selectionController.toggleRow(
+      this.tableViewLogic.selectionController.toggleRow(
         this.rowId,
         this.groupKey
       );

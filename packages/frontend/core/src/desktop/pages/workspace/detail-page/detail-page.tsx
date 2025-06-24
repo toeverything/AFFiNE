@@ -5,19 +5,20 @@ import { AIProvider } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
-import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
+// import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { GlobalPageHistoryModal } from '@affine/core/components/affine/page-history-modal';
-import { DocPropertySidebar } from '@affine/core/components/doc-properties/sidebar';
 import { useGuard } from '@affine/core/components/guard';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
 import { useRegisterBlocksuiteEditorCommands } from '@affine/core/components/hooks/affine/use-register-blocksuite-editor-commands';
 import { useActiveBlocksuiteEditor } from '@affine/core/components/hooks/use-block-suite-editor';
 import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
+import { WorkspacePropertySidebar } from '@affine/core/components/properties/sidebar';
 import { TrashPageFooter } from '@affine/core/components/pure/trash-page-footer';
 import { TopTip } from '@affine/core/components/top-tip';
 import { DocService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
+import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { GlobalContextService } from '@affine/core/modules/global-context';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { RecentDocsService } from '@affine/core/modules/quicksearch';
@@ -36,6 +37,7 @@ import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   AiIcon,
+  ExportIcon,
   FrameIcon,
   PropertyIcon,
   TocIcon,
@@ -57,6 +59,7 @@ import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader } from './detail-page-header';
 import { DetailPageWrapper } from './detail-page-wrapper';
+import { EditorAdapterPanel } from './tabs/adapter';
 import { EditorChatPanel } from './tabs/chat';
 import { EditorFramePanel } from './tabs/frame';
 import { EditorJournalPanel } from './tabs/journal';
@@ -102,6 +105,11 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const [_, setActiveBlockSuiteEditor] = useActiveBlocksuiteEditor();
 
   const enableAI = useEnableAI();
+
+  const featureFlagService = useService(FeatureFlagService);
+  const enableAdapterPanel = useLiveData(
+    featureFlagService.flags.enable_adapter_panel.$
+  );
 
   useEffect(() => {
     if (isActiveView) {
@@ -327,7 +335,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
       <ViewSidebarTab tabId="properties" icon={<PropertyIcon />}>
         <Scrollable.Root className={styles.sidebarScrollArea}>
           <Scrollable.Viewport>
-            <DocPropertySidebar />
+            <WorkspacePropertySidebar />
           </Scrollable.Viewport>
           <Scrollable.Scrollbar />
         </Scrollable.Root>
@@ -360,8 +368,18 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         </Scrollable.Root>
       </ViewSidebarTab>
 
+      {enableAdapterPanel && (
+        <ViewSidebarTab tabId="adapter" icon={<ExportIcon />}>
+          <Scrollable.Root className={styles.sidebarScrollArea}>
+            <Scrollable.Viewport>
+              <EditorAdapterPanel host={editorContainer?.host ?? null} />
+            </Scrollable.Viewport>
+          </Scrollable.Root>
+        </ViewSidebarTab>
+      )}
+
       <GlobalPageHistoryModal />
-      <PageAIOnboarding />
+      {/* FIXME: wait for better ai, <PageAIOnboarding /> */}
     </FrameworkScope>
   );
 });

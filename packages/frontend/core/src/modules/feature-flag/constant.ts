@@ -3,6 +3,7 @@ import type { FlagInfo } from './types';
 // const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
 const isDesktopEnvironment = BUILD_CONFIG.isElectron;
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
+const isBetaBuild = BUILD_CONFIG.appBuildType === 'beta';
 const isMobile = BUILD_CONFIG.isMobileEdition;
 
 export const AFFINE_FLAGS = {
@@ -26,14 +27,14 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: true,
   },
-  enable_block_query: {
-    category: 'blocksuite',
-    bsFlag: 'enable_block_query',
+  enable_ai_model_switch: {
+    category: 'affine',
     displayName:
-      'com.affine.settings.workspace.experimental-features.enable-block-query.name',
+      'com.affine.settings.workspace.experimental-features.enable-ai-model-switch.name',
     description:
-      'com.affine.settings.workspace.experimental-features.enable-block-query.description',
+      'com.affine.settings.workspace.experimental-features.enable-ai-model-switch.description',
     configurable: isCanaryBuild,
+    defaultState: isCanaryBuild,
   },
   enable_edgeless_text: {
     category: 'blocksuite',
@@ -188,15 +189,6 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: isMobile,
   },
-  enable_multiple_cloud_servers: {
-    category: 'affine',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-multiple-cloud-servers.description',
-    configurable: false,
-    defaultState: isDesktopEnvironment || BUILD_CONFIG.isIOS,
-  },
   enable_mobile_edgeless_editing: {
     category: 'affine',
     displayName:
@@ -213,7 +205,7 @@ export const AFFINE_FLAGS = {
     description:
       'com.affine.settings.workspace.experimental-features.enable-pdf-embed-preview.description',
     configurable: !isMobile,
-    defaultState: false,
+    defaultState: true,
   },
   enable_editor_rtl: {
     category: 'affine',
@@ -228,13 +220,22 @@ export const AFFINE_FLAGS = {
     category: 'affine',
     displayName: 'Enable AI Button',
     description: 'Enable AI Button on mobile',
-    configurable: BUILD_CONFIG.isMobileEdition,
+    configurable: BUILD_CONFIG.isMobileEdition && isCanaryBuild,
     defaultState: false,
   },
   enable_turbo_renderer: {
-    category: 'affine',
+    category: 'blocksuite',
+    bsFlag: 'enable_turbo_renderer',
     displayName: 'Enable Turbo Renderer',
     description: 'Enable experimental edgeless turbo renderer',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_dom_renderer: {
+    category: 'blocksuite',
+    bsFlag: 'enable_dom_renderer',
+    displayName: 'Enable DOM Renderer',
+    description: 'Enable DOM renderer for graphics elements',
     configurable: isCanaryBuild,
     defaultState: false,
   },
@@ -248,26 +249,15 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
-  enable_meetings: {
-    category: 'affine',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-meetings.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-meetings.description',
-    configurable: !isMobile && environment.isMacOs && BUILD_CONFIG.isElectron,
-    feedbackType: 'discord',
-    feedbackLink:
-      'https://discord.com/channels/959027316334407691/1358384103925350542',
-    defaultState: false,
-  },
-  // TODO(@L-Sun): remove this flag after the feature is released
-  enable_embed_doc_with_alias: {
+  enable_table_virtual_scroll: {
     category: 'blocksuite',
-    bsFlag: 'enable_embed_doc_with_alias',
-    displayName: 'Embed doc with alias',
-    description: 'Embed doc with alias',
+    bsFlag: 'enable_table_virtual_scroll',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-table-virtual-scroll.description',
     configurable: isCanaryBuild,
-    defaultState: isCanaryBuild,
+    defaultState: false,
   },
   enable_setting_subpage_animation: {
     category: 'affine',
@@ -276,12 +266,29 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
-  enable_calendar_integration: {
+  enable_cloud_indexer: {
     category: 'affine',
-    displayName: 'Enable Calendar Integration',
-    description: 'Enable calendar integration',
-    configurable: false,
-    defaultState: isCanaryBuild,
+    displayName: 'Enable Cloud Indexer',
+    description: 'Use cloud indexer to search docs',
+    configurable: isBetaBuild || isCanaryBuild,
+    defaultState: false,
+  },
+  enable_adapter_panel: {
+    category: 'affine',
+    displayName:
+      'com.affine.settings.workspace.experimental-features.enable-adapter-panel.name',
+    description:
+      'com.affine.settings.workspace.experimental-features.enable-adapter-panel.description',
+    configurable: isCanaryBuild,
+    defaultState: false,
+  },
+  enable_web_container: {
+    category: 'blocksuite',
+    bsFlag: 'enable_web_container',
+    displayName: 'Enable Web Container',
+    description: 'Enable web container for code block preview',
+    defaultState: false,
+    configurable: true,
   },
 } satisfies { [key in string]: FlagInfo };
 

@@ -2,21 +2,25 @@ import { popupTargetFromElement } from '@blocksuite/affine-components/context-me
 import type { ReactiveController } from 'lit';
 
 import { TableViewAreaSelection, TableViewRowSelection } from '../../selection';
+import { handleCharStartEdit } from '../../utils.js';
+import type { TableViewCellContainer } from '../cell.js';
 import { popRowMenu } from '../menu.js';
-import type { DataViewTable } from '../table-view.js';
+import type { TableViewUILogic } from '../table-view-ui-logic';
 
 export class TableHotkeysController implements ReactiveController {
   get selectionController() {
-    return this.host.selectionController;
+    return this.logic.selectionController;
   }
 
-  constructor(private readonly host: DataViewTable) {
-    this.host.addController(this);
+  constructor(private readonly logic: TableViewUILogic) {}
+
+  get host() {
+    return this.logic.ui$.value;
   }
 
   hostConnected() {
-    this.host.disposables.add(
-      this.host.props.bindHotkey({
+    this.host?.disposables.add(
+      this.logic.bindHotkey({
         Backspace: () => {
           const selection = this.selectionController.selection;
           if (!selection) {
@@ -25,7 +29,8 @@ export class TableHotkeysController implements ReactiveController {
           if (TableViewRowSelection.is(selection)) {
             const rows = TableViewRowSelection.rowsIds(selection);
             this.selectionController.selection = undefined;
-            this.host.props.view.rowDelete(rows);
+            this.logic.view.rowsDelete(rows);
+            this.logic.ui$.value?.requestUpdate();
             return;
           }
           const {
@@ -133,7 +138,11 @@ export class TableHotkeysController implements ReactiveController {
                 });
             }
           } else if (selection.isEditing) {
-            return false;
+            this.selectionController.selection = {
+              ...selection,
+              isEditing: false,
+            };
+            this.selectionController.focusToCell('down');
           } else {
             this.selectionController.selection = {
               ...selection,
@@ -167,27 +176,31 @@ export class TableHotkeysController implements ReactiveController {
         },
         Tab: ctx => {
           const selection = this.selectionController.selection;
-          if (
-            !selection ||
-            TableViewRowSelection.is(selection) ||
-            selection.isEditing
-          ) {
+          if (!selection || TableViewRowSelection.is(selection)) {
             return false;
           }
           ctx.get('keyboardState').raw.preventDefault();
+          if (selection.isEditing) {
+            this.selectionController.selection = {
+              ...selection,
+              isEditing: false,
+            };
+          }
           this.selectionController.focusToCell('right');
           return true;
         },
         'Shift-Tab': ctx => {
           const selection = this.selectionController.selection;
-          if (
-            !selection ||
-            TableViewRowSelection.is(selection) ||
-            selection.isEditing
-          ) {
+          if (!selection || TableViewRowSelection.is(selection)) {
             return false;
           }
           ctx.get('keyboardState').raw.preventDefault();
+          if (selection.isEditing) {
+            this.selectionController.selection = {
+              ...selection,
+              isEditing: false,
+            };
+          }
           this.selectionController.focusToCell('left');
           return true;
         },
@@ -334,13 +347,16 @@ export class TableHotkeysController implements ReactiveController {
             context.get('keyboardState').raw.preventDefault();
             this.selectionController.selection = TableViewRowSelection.create({
               rows:
-                this.host.props.view.groupTrait.groupsDataList$.value?.flatMap(
+                this.logic.view.groupTrait.groupsDataList$.value?.flatMap(
                   group =>
-                    group?.rows.map(id => ({ groupKey: group.key, id })) ?? []
+                    group?.rows.map(row => ({
+                      groupKey: group.key,
+                      id: row.rowId,
+                    })) ?? []
                 ) ??
-                this.host.props.view.rows$.value.map(id => ({
+                this.logic.view.rows$.value.map(row => ({
                   groupKey: undefined,
-                  id,
+                  id: row.rowId,
                 })),
             });
             return true;
@@ -374,12 +390,26 @@ export class TableHotkeysController implements ReactiveController {
               rows: [row],
             });
             popRowMenu(
-              this.host.props.dataViewEle,
+              this.logic,
               popupTargetFromElement(cell),
               this.selectionController
             );
           }
         },
+      })
+    );
+    this.host?.disposables.add(
+      this.logic.handleEvent('keyDown', ctx => {
+        const event = ctx.get('keyboardState').raw;
+        return handleCharStartEdit<TableViewCellContainer>({
+          event,
+          selection: this.selectionController.selection,
+          getCellContainer: this.selectionController.getCellContainer.bind(
+            this.selectionController
+          ),
+          updateSelection: sel => (this.selectionController.selection = sel),
+          getColumn: cell => cell.column,
+        });
       })
     );
   }

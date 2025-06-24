@@ -102,6 +102,7 @@ interface GroupedWorkerOps {
   docSync: {
     state: [void, DocSyncState];
     docState: [string, DocSyncDocState];
+    waitForSynced: [string | null, void];
     addPriority: [{ docId: string; priority: number }, boolean];
     resetSync: [void, void];
   };
@@ -110,7 +111,7 @@ interface GroupedWorkerOps {
     state: [void, BlobSyncState];
     blobState: [string, BlobSyncBlobState];
     downloadBlob: [string, boolean];
-    uploadBlob: [BlobRecord, true];
+    uploadBlob: [{ blob: BlobRecord; force?: boolean }, true];
     fullDownload: [string | null, void];
   };
 

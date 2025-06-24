@@ -56,7 +56,7 @@ export const PPTBuilder = (host: EditorHost) => {
   return {
     process: async (text: string) => {
       try {
-        const snapshot = await markdownToSnapshot(text, host.doc, host);
+        const snapshot = await markdownToSnapshot(text, host.store, host);
 
         const block = snapshot.snapshot?.content[0];
         if (!block) {
@@ -73,7 +73,7 @@ export const PPTBuilder = (host: EditorHost) => {
       return { contents, images: allImages };
     },
     done: async (text: string) => {
-      const snapshot = await markdownToSnapshot(text, host.doc, host);
+      const snapshot = await markdownToSnapshot(text, host.store, host);
       const block = snapshot.snapshot?.content[0];
       if (!block) {
         return;

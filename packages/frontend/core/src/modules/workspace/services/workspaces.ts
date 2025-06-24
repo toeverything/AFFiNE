@@ -61,4 +61,10 @@ export class WorkspacesService extends Service {
       x => x.flavour === meta.flavour
     );
   }
+
+  getAllWorkspaceProfile() {
+    const list = this.listService.list.workspaces$.value;
+    const profiles = list.map(meta => this.getProfile(meta));
+    return profiles;
+  }
 }

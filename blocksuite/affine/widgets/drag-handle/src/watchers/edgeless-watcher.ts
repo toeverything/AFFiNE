@@ -3,7 +3,7 @@ import { getSelectedRect } from '@blocksuite/affine-shared/utils';
 import { type IVec, Rect } from '@blocksuite/global/gfx';
 import {
   GfxControllerIdentifier,
-  type GfxToolsFullOptionValue,
+  type ToolOptionWithType,
 } from '@blocksuite/std/gfx';
 import { effect } from '@preact/signals-core';
 
@@ -22,10 +22,9 @@ import type { AffineDragHandleWidget } from '../drag-handle.js';
  */
 export class EdgelessWatcher {
   private readonly _handleEdgelessToolUpdated = (
-    newTool: GfxToolsFullOptionValue
+    newTool: ToolOptionWithType
   ) => {
-    // @ts-expect-error GfxToolsFullOptionValue is extended in other packages
-    if (newTool.type === 'default') {
+    if (newTool.toolType?.toolName === 'default') {
       this.updateAnchorElement();
     } else {
       this.widget.hide();
@@ -92,7 +91,7 @@ export class EdgelessWatcher {
 
   updateAnchorElement = () => {
     if (!this.widget.isConnected) return;
-    if (this.widget.doc.readonly || this.widget.mode === 'page') {
+    if (this.widget.store.readonly || this.widget.mode === 'page') {
       this.widget.hide();
       return;
     }
@@ -101,7 +100,11 @@ export class EdgelessWatcher {
     const editing = selection.editing;
     const selectedElements = selection.selectedElements;
 
-    if (editing || selectedElements.length !== 1 || this.widget.doc.readonly) {
+    if (
+      editing ||
+      selectedElements.length !== 1 ||
+      this.widget.store.readonly
+    ) {
       this.widget.hide();
       return;
     }

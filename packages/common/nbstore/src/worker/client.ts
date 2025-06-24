@@ -242,6 +242,10 @@ class WorkerDocSync implements DocSync {
     return this.client.ob$('docSync.docState', docId);
   }
 
+  async waitForSynced(docId?: string, abort?: AbortSignal): Promise<void> {
+    await this.client.call('docSync.waitForSynced', docId ?? null, abort);
+  }
+
   addPriority(docId: string, priority: number) {
     const subscription = this.client
       .ob$('docSync.addPriority', { docId, priority })
@@ -268,8 +272,8 @@ class WorkerBlobSync implements BlobSync {
   downloadBlob(blobId: string): Promise<boolean> {
     return this.client.call('blobSync.downloadBlob', blobId);
   }
-  uploadBlob(blob: BlobRecord): Promise<true> {
-    return this.client.call('blobSync.uploadBlob', blob);
+  uploadBlob(blob: BlobRecord, force?: boolean): Promise<true> {
+    return this.client.call('blobSync.uploadBlob', { blob, force });
   }
   fullDownload(peerId?: string, signal?: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {

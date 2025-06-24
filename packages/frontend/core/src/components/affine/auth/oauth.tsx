@@ -3,13 +3,17 @@ import { notify } from '@affine/component/ui/notification';
 import { useAsyncCallback } from '@affine/core/components/hooks/affine-async-hooks';
 import { AuthService, ServerService } from '@affine/core/modules/cloud';
 import { UrlService } from '@affine/core/modules/url';
-import { type UserFriendlyError } from '@affine/error';
+import { UserFriendlyError } from '@affine/error';
 import { OAuthProviderType } from '@affine/graphql';
-import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
-import { GithubIcon, GoogleIcon, LockIcon } from '@blocksuite/icons/rc';
+import {
+  AppleIcon,
+  GithubIcon,
+  GoogleIcon,
+  LockIcon,
+} from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { type ReactElement, type SVGAttributes } from 'react';
+import { type ReactElement, type SVGAttributes, useCallback } from 'react';
 
 const OAuthProviderMap: Record<
   OAuthProviderType,
@@ -28,6 +32,10 @@ const OAuthProviderMap: Record<
   [OAuthProviderType.OIDC]: {
     icon: <LockIcon />,
   },
+
+  [OAuthProviderType.Apple]: {
+    icon: <AppleIcon />,
+  },
 };
 
 export function OAuth({ redirectUrl }: { redirectUrl?: string }) {
@@ -37,85 +45,80 @@ export function OAuth({ redirectUrl }: { redirectUrl?: string }) {
   const oauthProviders = useLiveData(
     serverService.server.config$.map(r => r?.oauthProviders)
   );
-  const scheme = urlService.getClientScheme();
+  const auth = useService(AuthService);
+
+  const onContinue = useAsyncCallback(
+    async (provider: OAuthProviderType) => {
+      track.$.$.auth.signIn({ method: 'oauth', provider });
+
+      const open: () => Promise<void> | void = BUILD_CONFIG.isNative
+        ? async () => {
+            try {
+              const scheme = urlService.getClientScheme();
+              const options = await auth.oauthPreflight(
+                provider,
+                scheme ?? 'web'
+              );
+              urlService.openPopupWindow(options.url);
+            } catch (e) {
+              notify.error(UserFriendlyError.fromAny(e));
+            }
+          }
+        : () => {
+            const params = new URLSearchParams();
+
+            params.set('provider', provider);
+
+            if (redirectUrl) {
+              params.set('redirect_uri', redirectUrl);
+            }
+
+            const oauthUrl =
+              serverService.server.baseUrl +
+              `/oauth/login?${params.toString()}`;
+
+            urlService.openPopupWindow(oauthUrl);
+          };
+
+      const ret = open();
+
+      if (ret instanceof Promise) {
+        await ret;
+      }
+    },
+    [urlService, redirectUrl, serverService, auth]
+  );
 
   if (!oauth) {
     return null;
   }
 
-  return oauthProviders?.map(provider => (
-    <OAuthProvider
-      key={provider}
-      provider={provider}
-      redirectUrl={redirectUrl}
-      scheme={scheme}
-      popupWindow={url => {
-        urlService.openPopupWindow(url);
-      }}
-    />
-  ));
+  return oauthProviders?.map(provider => {
+    return (
+      <OAuthProvider
+        key={provider}
+        provider={provider}
+        onContinue={onContinue}
+      />
+    );
+  });
 }
 
-function OAuthProvider({
-  provider,
-  redirectUrl,
-  scheme,
-  popupWindow,
-}: {
+interface OauthProviderProps {
   provider: OAuthProviderType;
-  redirectUrl?: string;
-  scheme?: string;
-  popupWindow: (url: string) => void;
-}) {
-  const serverService = useService(ServerService);
-  const auth = useService(AuthService);
+  onContinue: (provider: OAuthProviderType) => void;
+}
+
+function OAuthProvider({ onContinue, provider }: OauthProviderProps) {
   const { icon } = OAuthProviderMap[provider];
-  const t = useI18n();
 
-  const onClick = useAsyncCallback(async () => {
-    if (scheme && BUILD_CONFIG.isNative) {
-      let oauthUrl = '';
-      try {
-        oauthUrl = await auth.oauthPreflight(provider, scheme);
-      } catch (e) {
-        console.error(e);
-        const err = e as UserFriendlyError;
-        notify.error({
-          title: t[`error.${err.name}`](err.data),
-        });
-        return;
-      }
-      popupWindow(oauthUrl);
-      return;
-    }
-
-    const params = new URLSearchParams();
-
-    params.set('provider', provider);
-
-    if (redirectUrl) {
-      params.set('redirect_uri', redirectUrl);
-    }
-
-    if (scheme) {
-      params.set('client', scheme);
-    }
-
-    // TODO: Android app scheme not implemented
-    // if (BUILD_CONFIG.isAndroid) {}
-
-    const oauthUrl =
-      serverService.server.baseUrl + `/oauth/login?${params.toString()}`;
-
-    track.$.$.auth.signIn({ method: 'oauth', provider });
-
-    popupWindow(oauthUrl);
-  }, [popupWindow, provider, redirectUrl, scheme, serverService, auth, t]);
+  const onClick = useCallback(() => {
+    onContinue(provider);
+  }, [onContinue, provider]);
 
   return (
     <Button
-      key={provider}
-      variant="primary"
+      variant={provider === OAuthProviderType.Apple ? 'custom' : 'primary'}
       block
       size="extraLarge"
       style={{ width: '100%' }}

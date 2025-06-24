@@ -177,9 +177,3 @@ export class HighlighterTool extends BaseTool {
     });
   }
 }
-
-declare module '@blocksuite/std/gfx' {
-  interface GfxToolsMap {
-    highlighter: HighlighterTool;
-  }
-}

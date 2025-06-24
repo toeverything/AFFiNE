@@ -30,6 +30,7 @@ declare interface BUILD_CONFIG_TYPE {
   pricingUrl: string;
   downloadUrl: string;
   discordUrl: string;
+  requestLicenseUrl: string;
   // see: tools/workers
   imageProxyUrl: string;
   linkPreviewUrl: string;

@@ -1,4 +1,5 @@
 // packages/frontend/core/src/blocksuite/ai/hooks/useChatPanelConfig.ts
+import { AIModelSwitchService } from '@affine/core/modules/ai-button/services/model-switch';
 import { AINetworkSearchService } from '@affine/core/modules/ai-button/services/network-search';
 import { AIReasoningService } from '@affine/core/modules/ai-button/services/reasoning';
 import { CollectionService } from '@affine/core/modules/collection';
@@ -21,6 +22,7 @@ export function useAIChatConfig() {
 
   const searchService = framework.get(AINetworkSearchService);
   const reasoningService = framework.get(AIReasoningService);
+  const modelSwitchService = framework.get(AIModelSwitchService);
   const docDisplayMetaService = framework.get(DocDisplayMetaService);
   const workspaceService = framework.get(WorkspaceService);
   const searchMenuService = framework.get(SearchMenuService);
@@ -38,6 +40,10 @@ export function useAIChatConfig() {
   const reasoningConfig = {
     enabled: reasoningService.enabled,
     setEnabled: reasoningService.setEnabled,
+  };
+
+  const modelSwitchConfig = {
+    visible: modelSwitchService.visible,
   };
 
   const docDisplayConfig = {
@@ -81,13 +87,13 @@ export function useAIChatConfig() {
       return tag$.value?.pageIds$.value ?? [];
     },
     getCollections: () => {
-      const collections$ = collectionService.collections$;
-      return createSignalFromObservable(collections$, []);
+      const collectionMetas$ = collectionService.collectionMetas$;
+      return createSignalFromObservable(collectionMetas$, []);
     },
     getCollectionPageIds: (collectionId: string) => {
       const collection$ = collectionService.collection$(collectionId);
       // TODO: lack of documents that meet the collection rules
-      return collection$?.value?.allowList ?? [];
+      return collection$?.value?.info$.value.allowList ?? [];
     },
   };
 
@@ -124,5 +130,6 @@ export function useAIChatConfig() {
     reasoningConfig,
     docDisplayConfig,
     searchMenuConfig,
+    modelSwitchConfig,
   };
 }

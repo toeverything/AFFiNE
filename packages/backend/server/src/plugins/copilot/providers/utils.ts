@@ -1,12 +1,22 @@
+import { Logger } from '@nestjs/common';
 import {
   CoreAssistantMessage,
   CoreUserMessage,
   FilePart,
   ImagePart,
   TextPart,
+  TextStreamPart,
+  ToolSet,
 } from 'ai';
+import { ZodType } from 'zod';
 
-import { PromptMessage } from './types';
+import {
+  createDocKeywordSearchTool,
+  createDocSemanticSearchTool,
+  createExaCrawlTool,
+  createExaSearchTool,
+} from '../tools';
+import { PromptMessage, StreamObject } from './types';
 
 type ChatMessage = CoreUserMessage | CoreAssistantMessage;
 
@@ -35,7 +45,7 @@ const FORMAT_INFER_MAP: Record<string, string> = {
   flv: 'video/flv',
 };
 
-async function inferMimeType(url: string) {
+export async function inferMimeType(url: string) {
   if (url.startsWith('data:')) {
     return url.split(';')[0].split(':')[1];
   }
@@ -60,10 +70,16 @@ async function inferMimeType(url: string) {
 export async function chatToGPTMessage(
   messages: PromptMessage[],
   // TODO(@darkskygit): move this logic in interface refactoring
-  withAttachment: boolean = true
-): Promise<[string | undefined, ChatMessage[], any]> {
+  withAttachment: boolean = true,
+  // NOTE: some providers in vercel ai sdk are not able to handle url attachments yet
+  //       so we need to use base64 encoded attachments instead
+  useBase64Attachment: boolean = false
+): Promise<[string | undefined, ChatMessage[], ZodType?]> {
   const system = messages[0]?.role === 'system' ? messages.shift() : undefined;
-  const schema = system?.params?.schema;
+  const schema =
+    system?.params?.schema && system.params.schema instanceof ZodType
+      ? system.params.schema
+      : undefined;
 
   // filter redundant fields
   const msgs: ChatMessage[] = [];
@@ -91,12 +107,13 @@ export async function chatToGPTMessage(
             ({ attachment, mimeType } = attachment);
           }
           if (SIMPLE_IMAGE_URL_REGEX.test(attachment)) {
-            if (mimeType.startsWith('image/')) {
-              contents.push({ type: 'image', image: attachment, mimeType });
-            } else {
-              const data = attachment.startsWith('data:')
+            const data =
+              attachment.startsWith('data:') || useBase64Attachment
                 ? await fetch(attachment).then(r => r.arrayBuffer())
                 : new URL(attachment);
+            if (mimeType.startsWith('image/')) {
+              contents.push({ type: 'image', image: data, mimeType });
+            } else {
               contents.push({ type: 'file' as const, data, mimeType });
             }
           }
@@ -361,5 +378,229 @@ export class CitationParser {
       )}"}`;
     });
     return footnotes.join('\n');
+  }
+}
+
+export interface CustomAITools extends ToolSet {
+  doc_semantic_search: ReturnType<typeof createDocSemanticSearchTool>;
+  doc_keyword_search: ReturnType<typeof createDocKeywordSearchTool>;
+  web_search_exa: ReturnType<typeof createExaSearchTool>;
+  web_crawl_exa: ReturnType<typeof createExaCrawlTool>;
+}
+
+type ChunkType = TextStreamPart<CustomAITools>['type'];
+
+export function parseUnknownError(error: unknown) {
+  if (typeof error === 'string') {
+    throw new Error(error);
+  } else if (error instanceof Error) {
+    throw error;
+  } else if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error
+  ) {
+    throw new Error(String(error.message));
+  } else {
+    throw new Error(JSON.stringify(error));
+  }
+}
+
+export class TextStreamParser {
+  private readonly logger = new Logger(TextStreamParser.name);
+  private readonly CALLOUT_PREFIX = '\n[!]\n';
+
+  private lastType: ChunkType | undefined;
+
+  private prefix: string | null = this.CALLOUT_PREFIX;
+
+  public parse(chunk: TextStreamPart<CustomAITools>) {
+    let result = '';
+    switch (chunk.type) {
+      case 'text-delta': {
+        if (!this.prefix) {
+          this.resetPrefix();
+        }
+        result = chunk.textDelta;
+        result = this.addNewline(chunk.type, result);
+        break;
+      }
+      case 'reasoning': {
+        result = chunk.textDelta;
+        result = this.addPrefix(result);
+        result = this.markAsCallout(result);
+        break;
+      }
+      case 'tool-call': {
+        this.logger.debug(
+          `[tool-call] toolName: ${chunk.toolName}, toolCallId: ${chunk.toolCallId}`
+        );
+        result = this.addPrefix(result);
+        switch (chunk.toolName) {
+          case 'web_search_exa': {
+            result += `\nSearching the web "${chunk.args.query}"\n`;
+            break;
+          }
+          case 'web_crawl_exa': {
+            result += `\nCrawling the web "${chunk.args.url}"\n`;
+            break;
+          }
+          case 'doc_keyword_search': {
+            result += `\nSearching the keyword "${chunk.args.query}"\n`;
+            break;
+          }
+        }
+        result = this.markAsCallout(result);
+        break;
+      }
+      case 'tool-result': {
+        this.logger.debug(
+          `[tool-result] toolName: ${chunk.toolName}, toolCallId: ${chunk.toolCallId}`
+        );
+        result = this.addPrefix(result);
+        switch (chunk.toolName) {
+          case 'doc_semantic_search': {
+            if (Array.isArray(chunk.result)) {
+              result += `\nFound ${chunk.result.length} document${chunk.result.length !== 1 ? 's' : ''} related to “${chunk.args.query}”.\n`;
+            }
+            break;
+          }
+          case 'doc_keyword_search': {
+            if (Array.isArray(chunk.result)) {
+              result += `\nFound ${chunk.result.length} document${chunk.result.length !== 1 ? 's' : ''} related to “${chunk.args.query}”.\n`;
+              result += `\n${this.getKeywordSearchLinks(chunk.result)}\n`;
+            }
+            break;
+          }
+          case 'web_search_exa': {
+            if (Array.isArray(chunk.result)) {
+              result += `\n${this.getWebSearchLinks(chunk.result)}\n`;
+            }
+            break;
+          }
+        }
+        result = this.markAsCallout(result);
+        break;
+      }
+      case 'error': {
+        parseUnknownError(chunk.error);
+        break;
+      }
+    }
+    this.lastType = chunk.type;
+    return result;
+  }
+
+  private addPrefix(text: string) {
+    if (this.prefix) {
+      const result = this.prefix + text;
+      this.prefix = null;
+      return result;
+    }
+    return text;
+  }
+
+  private resetPrefix() {
+    this.prefix = this.CALLOUT_PREFIX;
+  }
+
+  private addNewline(chunkType: ChunkType, result: string) {
+    if (this.lastType && this.lastType !== chunkType) {
+      return '\n\n' + result;
+    }
+    return result;
+  }
+
+  private markAsCallout(text: string) {
+    return text.replaceAll('\n', '\n> ');
+  }
+
+  private getWebSearchLinks(
+    list: {
+      title: string | null;
+      url: string;
+    }[]
+  ): string {
+    const links = list.reduce((acc, result) => {
+      return acc + `\n\n[${result.title ?? result.url}](${result.url})\n\n`;
+    }, '');
+    return links;
+  }
+
+  private getKeywordSearchLinks(
+    list: {
+      docId: string;
+      title: string;
+    }[]
+  ): string {
+    const links = list.reduce((acc, result) => {
+      return acc + `\n\n[${result.title}](${result.docId})\n\n`;
+    }, '');
+    return links;
+  }
+}
+
+export class StreamObjectParser {
+  public parse(chunk: TextStreamPart<CustomAITools>) {
+    switch (chunk.type) {
+      case 'reasoning':
+      case 'text-delta':
+      case 'tool-call':
+      case 'tool-result': {
+        return chunk;
+      }
+      case 'error': {
+        parseUnknownError(chunk.error);
+        return null;
+      }
+      default: {
+        return null;
+      }
+    }
+  }
+
+  public mergeTextDelta(chunks: StreamObject[]): StreamObject[] {
+    return chunks.reduce((acc, curr) => {
+      const prev = acc.at(-1);
+      switch (curr.type) {
+        case 'reasoning':
+        case 'text-delta': {
+          if (prev && prev.type === curr.type) {
+            prev.textDelta += curr.textDelta;
+          } else {
+            acc.push(curr);
+          }
+          break;
+        }
+        case 'tool-result': {
+          const index = acc.findIndex(
+            item =>
+              item.type === 'tool-call' &&
+              item.toolCallId === curr.toolCallId &&
+              item.toolName === curr.toolName
+          );
+          if (index !== -1) {
+            acc[index] = curr;
+          } else {
+            acc.push(curr);
+          }
+          break;
+        }
+        default: {
+          acc.push(curr);
+          break;
+        }
+      }
+      return acc;
+    }, [] as StreamObject[]);
+  }
+
+  public mergeContent(chunks: StreamObject[]): string {
+    return chunks.reduce((acc, curr) => {
+      if (curr.type === 'text-delta') {
+        acc += curr.textDelta;
+      }
+      return acc;
+    }, '');
   }
 }

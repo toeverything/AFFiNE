@@ -1,31 +1,18 @@
 import { toast } from '@affine/component';
-import type { DocProps } from '@affine/core/blocksuite/initialization';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { AppSidebarService } from '@affine/core/modules/app-sidebar';
 import { DocsService } from '@affine/core/modules/doc';
-import { EditorSettingService } from '@affine/core/modules/editor-setting';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace';
-import {
-  DEFAULT_PAGE_BLOCK_HEIGHT,
-  DEFAULT_PAGE_BLOCK_WIDTH,
-  type DocMode,
-} from '@blocksuite/affine/model';
+import { type DocMode } from '@blocksuite/affine/model';
 import type { Workspace } from '@blocksuite/affine/store';
 import { useServices } from '@toeverything/infra';
 import { useCallback, useMemo } from 'react';
 
-import { getStoreManager } from '../manager/migrating-store';
-
 export const usePageHelper = (docCollection: Workspace) => {
-  const {
-    docsService,
-    workbenchService,
-    editorSettingService,
-    appSidebarService,
-  } = useServices({
+  const { docsService, workbenchService, appSidebarService } = useServices({
     DocsService,
     WorkbenchService,
-    EditorSettingService,
     AppSidebarService,
   });
   const workbench = workbenchService.workbench;
@@ -44,13 +31,7 @@ export const usePageHelper = (docCollection: Workspace) => {
       }
     ) => {
       appSidebar.setHovering(false);
-      const docProps: DocProps = {
-        note: {
-          ...editorSettingService.editorSetting.get('affine:note'),
-          xywh: `[0, 0, ${DEFAULT_PAGE_BLOCK_WIDTH}, ${DEFAULT_PAGE_BLOCK_HEIGHT}]`,
-        },
-      };
-      const page = docsService.createDoc({ docProps });
+      const page = docsService.createDoc();
 
       if (mode) {
         docRecordList.doc$(page.id).value?.setPrimaryMode(mode);
@@ -64,13 +45,7 @@ export const usePageHelper = (docCollection: Workspace) => {
       }
       return page;
     },
-    [
-      appSidebar,
-      docRecordList,
-      docsService,
-      editorSettingService.editorSetting,
-      workbench,
-    ]
+    [appSidebar, docRecordList, docsService, workbench]
   );
 
   const createEdgelessAndOpen = useCallback(
@@ -123,7 +98,7 @@ export const usePageHelper = (docCollection: Workspace) => {
       showImportModal({
         collection: docCollection,
         schema: getAFFiNEWorkspaceSchema(),
-        extensions: getStoreManager().get('store'),
+        extensions: getStoreManager().config.init().value.get('store'),
         onSuccess,
         onFail: message => {
           reject(new Error(message));

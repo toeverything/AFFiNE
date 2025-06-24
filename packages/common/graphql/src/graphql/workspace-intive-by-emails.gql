@@ -1,12 +1,10 @@
 mutation inviteByEmails(
   $workspaceId: String!
   $emails: [String!]!
-  $sendInviteMail: Boolean
 ) {
-  inviteBatch(
+  inviteMembers(
     workspaceId: $workspaceId
     emails: $emails
-    sendInviteMail: $sendInviteMail
   ) {
     email
     inviteId

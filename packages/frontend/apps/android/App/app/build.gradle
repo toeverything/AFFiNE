@@ -53,14 +53,10 @@ android {
     }
     flavorDimensions = ['chanel']
     productFlavors {
-        stable {
-            buildConfigField 'String', 'BASE_URL', '"https://app.affine.pro"'
-            resValue 'string', 'host', '"app.affine.pro"'
-        }
-        canary {
-            buildConfigField 'String', 'BASE_URL', '"https://affine.fail"'
-            resValue 'string', 'host', '"affine.fail"'
-        }
+        stable
+        beta
+        internal
+        canary
     }
 
     compileOptions {
@@ -132,6 +128,9 @@ dependencies {
     implementation libs.okhttp.logging
     implementation libs.okhttp.sse
 
+    implementation libs.richtext.commonmark
+    implementation libs.richtext.ui
+
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit
     androidTestImplementation libs.androidx.espresso.core
@@ -140,6 +139,9 @@ dependencies {
 cargo {
     module = "../../../../mobile-native"
     libname = "affine_mobile_native"
+    features {
+        defaultAnd("use-as-lib")
+    }
     targets = ["arm64"]
     pythonCommand = "python3"
     targetDirectory = "../../../../../../target"

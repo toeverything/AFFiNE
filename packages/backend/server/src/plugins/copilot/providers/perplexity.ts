@@ -5,17 +5,14 @@ import {
 import { generateText, streamText } from 'ai';
 import { z } from 'zod';
 
-import {
-  CopilotPromptInvalid,
-  CopilotProviderSideError,
-  metrics,
-} from '../../../base';
+import { CopilotProviderSideError, metrics } from '../../../base';
 import { CopilotProvider } from './provider';
 import {
-  CopilotCapability,
   CopilotChatOptions,
   CopilotProviderType,
-  CopilotTextToTextProvider,
+  ModelConditions,
+  ModelInputType,
+  ModelOutputType,
   PromptMessage,
 } from './types';
 import { chatToGPTMessage, CitationParser } from './utils';
@@ -46,17 +43,51 @@ const PerplexityErrorSchema = z.union([
 
 type PerplexityError = z.infer<typeof PerplexityErrorSchema>;
 
-export class PerplexityProvider
-  extends CopilotProvider<PerplexityConfig>
-  implements CopilotTextToTextProvider
-{
+export class PerplexityProvider extends CopilotProvider<PerplexityConfig> {
   readonly type = CopilotProviderType.Perplexity;
-  readonly capabilities = [CopilotCapability.TextToText];
+
   readonly models = [
-    'sonar',
-    'sonar-pro',
-    'sonar-reasoning',
-    'sonar-reasoning-pro',
+    {
+      name: 'Sonar',
+      id: 'sonar',
+      capabilities: [
+        {
+          input: [ModelInputType.Text],
+          output: [ModelOutputType.Text],
+          defaultForOutputType: true,
+        },
+      ],
+    },
+    {
+      name: 'Sonar Pro',
+      id: 'sonar-pro',
+      capabilities: [
+        {
+          input: [ModelInputType.Text],
+          output: [ModelOutputType.Text],
+        },
+      ],
+    },
+    {
+      name: 'Sonar Reasoning',
+      id: 'sonar-reasoning',
+      capabilities: [
+        {
+          input: [ModelInputType.Text],
+          output: [ModelOutputType.Text],
+        },
+      ],
+    },
+    {
+      name: 'Sonar Reasoning Pro',
+      id: 'sonar-reasoning-pro',
+      capabilities: [
+        {
+          input: [ModelInputType.Text],
+          output: [ModelOutputType.Text],
+        },
+      ],
+    },
   ];
 
   #instance!: VercelPerplexityProvider;
@@ -73,25 +104,28 @@ export class PerplexityProvider
     });
   }
 
-  async generateText(
+  async text(
+    cond: ModelConditions,
     messages: PromptMessage[],
-    model: string = 'sonar',
     options: CopilotChatOptions = {}
   ): Promise<string> {
-    await this.checkParams({ messages, model, options });
+    const fullCond = { ...cond, outputType: ModelOutputType.Text };
+    await this.checkParams({ cond: fullCond, messages, options });
+    const model = this.selectModel(fullCond);
+
     try {
-      metrics.ai.counter('chat_text_calls').add(1, { model });
+      metrics.ai.counter('chat_text_calls').add(1, { model: model.id });
 
       const [system, msgs] = await chatToGPTMessage(messages, false);
 
-      const modelInstance = this.#instance(model);
+      const modelInstance = this.#instance(model.id);
 
       const { text, sources } = await generateText({
         model: modelInstance,
         system,
         messages: msgs,
-        temperature: options.temperature || 0,
-        maxTokens: options.maxTokens || 4096,
+        temperature: options.temperature ?? 0,
+        maxTokens: options.maxTokens ?? 4096,
         abortSignal: options.signal,
       });
 
@@ -105,30 +139,33 @@ export class PerplexityProvider
       result += parser.end();
       return result;
     } catch (e: any) {
-      metrics.ai.counter('chat_text_errors').add(1, { model });
+      metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
       throw this.handleError(e);
     }
   }
 
-  async *generateTextStream(
+  async *streamText(
+    cond: ModelConditions,
     messages: PromptMessage[],
-    model: string = 'sonar',
     options: CopilotChatOptions = {}
   ): AsyncIterable<string> {
-    await this.checkParams({ messages, model, options });
+    const fullCond = { ...cond, outputType: ModelOutputType.Text };
+    await this.checkParams({ cond: fullCond, messages, options });
+    const model = this.selectModel(fullCond);
+
     try {
-      metrics.ai.counter('chat_text_stream_calls').add(1, { model });
+      metrics.ai.counter('chat_text_stream_calls').add(1, { model: model.id });
 
       const [system, msgs] = await chatToGPTMessage(messages, false);
 
-      const modelInstance = this.#instance(model);
+      const modelInstance = this.#instance(model.id);
 
       const stream = streamText({
         model: modelInstance,
         system,
         messages: msgs,
-        temperature: options.temperature || 0,
-        maxTokens: options.maxTokens || 4096,
+        temperature: options.temperature ?? 0,
+        maxTokens: options.maxTokens ?? 4096,
         abortSignal: options.signal,
       });
 
@@ -168,21 +205,8 @@ export class PerplexityProvider
         }
       }
     } catch (e) {
-      metrics.ai.counter('chat_text_stream_errors').add(1, { model });
+      metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
       throw e;
-    }
-  }
-
-  protected async checkParams({
-    model,
-  }: {
-    messages?: PromptMessage[];
-    embeddings?: string[];
-    model: string;
-    options: CopilotChatOptions;
-  }) {
-    if (!(await this.isModelAvailable(model))) {
-      throw new CopilotPromptInvalid(`Invalid model: ${model}`);
     }
   }
 

@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { JobQueue, OnEvent, OnJob } from '../../base';
+import { JobQueue, OnJob } from '../../base';
 import { Models } from '../../models';
-import { PgWorkspaceDocStorageAdapter } from './adapters/workspace';
 
 declare global {
   interface Jobs {
@@ -15,7 +14,6 @@ declare global {
 export class DocStorageCronJob {
   constructor(
     private readonly models: Models,
-    private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly queue: JobQueue
   ) {}
 
@@ -33,12 +31,5 @@ export class DocStorageCronJob {
   @OnJob('nightly.cleanExpiredHistories')
   async cleanExpiredHistories() {
     await this.models.history.cleanExpired();
-  }
-
-  @OnEvent('user.deleted')
-  async clearUserWorkspaces(payload: Events['user.deleted']) {
-    for (const workspace of payload.ownedWorkspaces) {
-      await this.workspace.deleteSpace(workspace);
-    }
   }
 }

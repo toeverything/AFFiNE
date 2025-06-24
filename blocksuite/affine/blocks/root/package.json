@@ -21,7 +21,7 @@
     "@blocksuite/affine-block-paragraph": "workspace:*",
     "@blocksuite/affine-block-surface": "workspace:*",
     "@blocksuite/affine-components": "workspace:*",
-    "@blocksuite/affine-fragment-doc-title": "workspace:*",
+    "@blocksuite/affine-ext-loader": "workspace:*",
     "@blocksuite/affine-gfx-brush": "workspace:*",
     "@blocksuite/affine-gfx-connector": "workspace:*",
     "@blocksuite/affine-gfx-group": "workspace:*",
@@ -34,9 +34,8 @@
     "@blocksuite/affine-model": "workspace:*",
     "@blocksuite/affine-rich-text": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
+    "@blocksuite/affine-widget-edgeless-selected-rect": "workspace:*",
     "@blocksuite/affine-widget-edgeless-toolbar": "workspace:*",
-    "@blocksuite/affine-widget-slash-menu": "workspace:*",
-    "@blocksuite/affine-widget-toolbar": "workspace:*",
     "@blocksuite/data-view": "workspace:*",
     "@blocksuite/global": "workspace:*",
     "@blocksuite/icons": "^2.2.12",
@@ -45,24 +44,22 @@
     "@floating-ui/dom": "^1.6.13",
     "@lit/context": "^1.1.2",
     "@preact/signals-core": "^1.8.0",
-    "@toeverything/theme": "^1.1.12",
+    "@toeverything/theme": "^1.1.15",
     "@types/lodash-es": "^4.17.12",
-    "@types/mdast": "^4.0.4",
-    "@vanilla-extract/css": "^1.17.0",
     "dompurify": "^3.2.4",
-    "fflate": "^0.8.2",
     "html2canvas": "^1.4.1",
     "lit": "^3.2.0",
     "lodash-es": "^4.17.21",
     "minimatch": "^10.0.1",
     "rxjs": "^7.8.1",
-    "simple-xml-to-json": "^1.2.2",
     "yjs": "^13.6.21",
     "zod": "^3.23.8"
   },
   "exports": {
     ".": "./src/index.ts",
-    "./effects": "./src/effects.ts"
+    "./effects": "./src/effects.ts",
+    "./store": "./src/store.ts",
+    "./view": "./src/view.ts"
   },
   "files": [
     "src",
@@ -70,5 +67,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.21.0"
+  "version": "0.22.4"
 }

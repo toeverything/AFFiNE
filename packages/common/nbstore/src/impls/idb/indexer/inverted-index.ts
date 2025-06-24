@@ -227,10 +227,10 @@ export class FullTextInvertedIndex implements InvertedIndex {
       const key = InvertedIndexKey.forString(this.fieldKey, token.term);
       const objs = [
         // match exact
-        await trx
+        ...(await trx
           .objectStore('invertedIndex')
           .index('key')
-          .get([this.table, key.buffer()]),
+          .getAll([this.table, key.buffer()])),
         // match prefix
         ...(await trx
           .objectStore('invertedIndex')

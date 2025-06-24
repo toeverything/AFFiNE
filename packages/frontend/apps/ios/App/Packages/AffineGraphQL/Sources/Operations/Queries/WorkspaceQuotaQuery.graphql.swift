@@ -7,7 +7,7 @@ public class WorkspaceQuotaQuery: GraphQLQuery {
   public static let operationName: String = "workspaceQuota"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query workspaceQuota($id: String!) { workspace(id: $id) { __typename quota { __typename name blobLimit storageQuota usedStorageQuota historyPeriod memberLimit memberCount humanReadable { __typename name blobLimit storageQuota historyPeriod memberLimit } } } }"#
+      #"query workspaceQuota($id: String!) { workspace(id: $id) { __typename quota { __typename name blobLimit storageQuota usedStorageQuota historyPeriod memberLimit memberCount overcapacityMemberCount humanReadable { __typename name blobLimit storageQuota historyPeriod memberLimit memberCount overcapacityMemberCount } } } }"#
     ))
 
   public var id: String
@@ -63,6 +63,7 @@ public class WorkspaceQuotaQuery: GraphQLQuery {
           .field("historyPeriod", AffineGraphQL.SafeInt.self),
           .field("memberLimit", Int.self),
           .field("memberCount", Int.self),
+          .field("overcapacityMemberCount", Int.self),
           .field("humanReadable", HumanReadable.self),
         ] }
 
@@ -73,6 +74,7 @@ public class WorkspaceQuotaQuery: GraphQLQuery {
         public var historyPeriod: AffineGraphQL.SafeInt { __data["historyPeriod"] }
         public var memberLimit: Int { __data["memberLimit"] }
         public var memberCount: Int { __data["memberCount"] }
+        public var overcapacityMemberCount: Int { __data["overcapacityMemberCount"] }
         public var humanReadable: HumanReadable { __data["humanReadable"] }
 
         /// Workspace.Quota.HumanReadable
@@ -90,6 +92,8 @@ public class WorkspaceQuotaQuery: GraphQLQuery {
             .field("storageQuota", String.self),
             .field("historyPeriod", String.self),
             .field("memberLimit", String.self),
+            .field("memberCount", String.self),
+            .field("overcapacityMemberCount", String.self),
           ] }
 
           public var name: String { __data["name"] }
@@ -97,6 +101,8 @@ public class WorkspaceQuotaQuery: GraphQLQuery {
           public var storageQuota: String { __data["storageQuota"] }
           public var historyPeriod: String { __data["historyPeriod"] }
           public var memberLimit: String { __data["memberLimit"] }
+          public var memberCount: String { __data["memberCount"] }
+          public var overcapacityMemberCount: String { __data["overcapacityMemberCount"] }
         }
       }
     }

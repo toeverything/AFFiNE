@@ -43,7 +43,7 @@ _Special thanks to [Blaze](https://runblaze.dev) for their support of this proje
     <a href="https://affine.pro/redirect/discord">Discord</a> |
     <a href="https://app.affine.pro">Live Demo</a> |
     <a href="https://affine.pro/blog/">Blog</a> |
-    <a href="https://docs.affine.pro/docs/">Documentation</a>
+    <a href="https://docs.affine.pro/">Documentation</a>
 </div>
 <br/>
 
@@ -89,7 +89,7 @@ Star us, and you will receive all release notifications from GitHub without any 
 
 **Self-host & Shape your own AFFiNE**
 
-- You have the freedom to manage, self-host, fork and build your own AFFiNE. Plugin community and third-party blocks are coming soon. More tractions on [Blocksuite](https://blocksuite.io). Check there to learn how to [self-host AFFiNE](https://docs.affine.pro/docs/self-host-affine).
+- You have the freedom to manage, self-host, fork and build your own AFFiNE. Plugin community and third-party blocks are coming soon. More tractions on [Blocksuite](https://blocksuite.io). Check there to learn how to [self-host AFFiNE](https://docs.affine.pro/self-host-affine).
 
 ## Acknowledgement
 
@@ -191,7 +191,9 @@ We would like to express our gratitude to all the individuals who have already c
 
 ## Self-Host
 
-Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiNE. Our team is diligently updating to the latest version. For more information on how to self-host AFFiNE, please refer to our [documentation](https://docs.affine.pro/docs/self-host-affine).
+Begin with Docker to deploy your own feature-rich, unrestricted version of AFFiNE. Our team is diligently updating to the latest version. For more information on how to self-host AFFiNE, please refer to our [documentation](https://docs.affine.pro/self-host-affine).
+
+[![Run on ClawCloud](https://raw.githubusercontent.com/ClawCloud/Run-Template/refs/heads/main/Run-on-ClawCloud.svg)](https://template.run.claw.cloud/?openapp=system-fastdeploy%3FtemplateName%3Daffine)
 
 ## Hiring
 

@@ -1,9 +1,10 @@
-import { Button, Menu, useConfirmModal } from '@affine/component';
+import { Button, InlineEdit, Menu, useConfirmModal } from '@affine/component';
 import {
   type CalendarSubscription,
   IntegrationService,
 } from '@affine/core/modules/integration';
 import { useI18n } from '@affine/i18n';
+import track from '@affine/track';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -41,6 +42,13 @@ export const SubscriptionSetting = ({
     });
   }, [calendar, subscription.url, config?.showAllDayEvents]);
 
+  const handleNameChange = useCallback(
+    (value: string) => {
+      calendar.updateSubscription(subscription.url, { name: value });
+    },
+    [calendar, subscription.url]
+  );
+
   if (!config) return null;
 
   return (
@@ -61,7 +69,13 @@ export const SubscriptionSetting = ({
             style={{ color: config.color }}
           />
         </Menu>
-        <div className={styles.name}>{name}</div>
+        <InlineEdit
+          className={styles.name}
+          editable
+          trigger="click"
+          value={name}
+          onChange={handleNameChange}
+        />
         <UnsubscribeButton url={subscription.url} name={name} />
       </div>
       <div className={styles.divider} />
@@ -101,6 +115,10 @@ const UnsubscribeButton = ({ url, name }: { url: string; name: string }) => {
       }),
       onConfirm: () => {
         calendar.deleteSubscription(url);
+        track.$.settingsPanel.integrationList.disconnectIntegration({
+          type: 'calendar',
+          control: 'Calendar Setting',
+        });
       },
       confirmText: t['com.affine.integration.calendar.unsubscribe'](),
       confirmButtonOptions: {

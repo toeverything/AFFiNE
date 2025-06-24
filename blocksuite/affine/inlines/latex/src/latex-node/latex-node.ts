@@ -139,8 +139,7 @@ export class AffineLatexNode extends SignalWatcher(
             } else {
               try {
                 katex.render(latex, latexContainer, {
-                  displayMode: true,
-                  output: 'mathml',
+                  displayMode: false,
                 });
               } catch {
                 latexContainer.replaceChildren();
@@ -188,6 +187,8 @@ export class AffineLatexNode extends SignalWatcher(
 
     this._editorAbortController?.abort();
     this._editorAbortController = new AbortController();
+
+    blockComponent.selection.setGroup('note', []);
 
     const portal = createLitPortal({
       template: html`<latex-editor-menu

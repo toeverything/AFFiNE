@@ -134,7 +134,7 @@ export class DataViewPropertiesSettingView extends SignalWatcher(
   accessor view!: SingleView;
 
   items$ = computed(() => {
-    return this.view.propertiesWithoutFilter$.value;
+    return this.view.propertiesRaw$.value.map(property => property.id);
   });
 
   renderProperty = (property: Property) => {
@@ -171,8 +171,7 @@ export class DataViewPropertiesSettingView extends SignalWatcher(
         const activeIndex = properties.findIndex(id => id === activeId);
         const overIndex = properties.findIndex(id => id === over.id);
 
-        this.view.propertyMove(
-          activeId,
+        this.view.propertyGetOrCreate(activeId).move(
           activeIndex > overIndex
             ? {
                 before: true,
@@ -198,9 +197,7 @@ export class DataViewPropertiesSettingView extends SignalWatcher(
   });
 
   private itemsGroup() {
-    return this.view.propertiesWithoutFilter$.value.map(id =>
-      this.view.propertyGet(id)
-    );
+    return this.view.propertiesRaw$.value;
   }
 
   override connectedCallback() {
@@ -246,14 +243,12 @@ export const popPropertiesSetting = (
         text: 'Properties',
         onBack: props.onBack,
         postfix: () => {
-          const items = props.view.propertiesWithoutFilter$.value.map(id =>
-            props.view.propertyGet(id)
-          );
-          const isAllShowed = items.every(v => !v.hide$.value);
+          const items = props.view.propertiesRaw$.value;
+          const isAllShowed = items.every(property => !property.hide$.value);
           const clickChangeAll = () => {
-            props.view.propertiesWithoutFilter$.value.forEach(id => {
-              if (props.view.propertyCanHide(id)) {
-                props.view.propertyHideSet(id, isAllShowed);
+            items.forEach(property => {
+              if (property.hideCanSet) {
+                property.hideSet(isAllShowed);
               }
             });
           };

@@ -7,7 +7,7 @@ public class AddContextFileMutation: GraphQLMutation {
   public static let operationName: String = "addContextFile"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation addContextFile($content: Upload!, $options: AddContextFileInput!) { addContextFile(content: $content, options: $options) { __typename id createdAt name chunkSize error status blobId } }"#
+      #"mutation addContextFile($content: Upload!, $options: AddContextFileInput!) { addContextFile(content: $content, options: $options) { __typename id createdAt name mimeType chunkSize error status blobId } }"#
     ))
 
   public var content: Upload
@@ -54,6 +54,7 @@ public class AddContextFileMutation: GraphQLMutation {
         .field("id", AffineGraphQL.ID.self),
         .field("createdAt", AffineGraphQL.SafeInt.self),
         .field("name", String.self),
+        .field("mimeType", String.self),
         .field("chunkSize", AffineGraphQL.SafeInt.self),
         .field("error", String?.self),
         .field("status", GraphQLEnum<AffineGraphQL.ContextEmbedStatus>.self),
@@ -63,6 +64,7 @@ public class AddContextFileMutation: GraphQLMutation {
       public var id: AffineGraphQL.ID { __data["id"] }
       public var createdAt: AffineGraphQL.SafeInt { __data["createdAt"] }
       public var name: String { __data["name"] }
+      public var mimeType: String { __data["mimeType"] }
       public var chunkSize: AffineGraphQL.SafeInt { __data["chunkSize"] }
       public var error: String? { __data["error"] }
       public var status: GraphQLEnum<AffineGraphQL.ContextEmbedStatus> { __data["status"] }

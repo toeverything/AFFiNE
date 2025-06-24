@@ -1,12 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { omit } from 'lodash-es';
 import { z } from 'zod';
 
-import { URLHelper } from '../../../base';
 import {
-  OAuthOIDCProviderConfig,
-  OAuthProviderName,
-  OIDCArgs,
-} from '../config';
+  InvalidOauthCallbackCode,
+  InvalidOauthResponse,
+  URLHelper,
+} from '../../../base';
+import { OAuthOIDCProviderConfig, OAuthProviderName } from '../config';
 import { OAuthAccount, OAuthProvider, Tokens } from './def';
 
 const OIDCTokenSchema = z.object({
@@ -27,8 +28,6 @@ const OIDCUserInfoSchema = z
   })
   .passthrough();
 
-type OIDCUserInfo = z.infer<typeof OIDCUserInfoSchema>;
-
 const OIDCConfigurationSchema = z.object({
   authorization_endpoint: z.string().url(),
   token_endpoint: z.string().url(),
@@ -37,173 +36,143 @@ const OIDCConfigurationSchema = z.object({
 
 type OIDCConfiguration = z.infer<typeof OIDCConfigurationSchema>;
 
-const logger = new Logger('OIDCClient');
-
-class OIDCClient {
-  private static async fetch<T = any>(
-    url: string,
-    options: RequestInit,
-    verifier: z.Schema<T>
-  ): Promise<T> {
-    const response = await fetch(url, options);
-
-    if (!response.ok) {
-      logger.error('Failed to fetch OIDC configuration', await response.json());
-      throw new Error(`Failed to configure client`);
-    }
-    const data = await response.json();
-    return verifier.parse(data);
-  }
-
-  static async create(config: OAuthOIDCProviderConfig, url: URLHelper) {
-    const { args, clientId, clientSecret, issuer } = config;
-    if (!url.verify(issuer)) {
-      throw new Error('OIDC Issuer is invalid.');
-    }
-    const oidcConfig = await OIDCClient.fetch(
-      `${issuer}/.well-known/openid-configuration`,
-      {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-      },
-      OIDCConfigurationSchema
-    );
-
-    return new OIDCClient(clientId, clientSecret, args, oidcConfig, url);
-  }
-
-  private constructor(
-    private readonly clientId: string,
-    private readonly clientSecret: string,
-    private readonly args: OIDCArgs | undefined,
-    private readonly config: OIDCConfiguration,
-    private readonly url: URLHelper
-  ) {}
-
-  authorize(state: string): string {
-    const args = Object.assign({}, this.args);
-    if ('claim_id' in args) delete args.claim_id;
-    if ('claim_email' in args) delete args.claim_email;
-    if ('claim_name' in args) delete args.claim_name;
-
-    return `${this.config.authorization_endpoint}?${this.url.stringify({
-      client_id: this.clientId,
-      redirect_uri: this.url.link('/oauth/callback'),
-      response_type: 'code',
-      ...args,
-      scope: this.args?.scope || 'openid profile email',
-      state,
-    })}`;
-  }
-
-  async token(code: string): Promise<Tokens> {
-    const token = await OIDCClient.fetch(
-      this.config.token_endpoint,
-      {
-        method: 'POST',
-        body: this.url.stringify({
-          code,
-          client_id: this.clientId,
-          client_secret: this.clientSecret,
-          redirect_uri: this.url.link('/oauth/callback'),
-          grant_type: 'authorization_code',
-        }),
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      },
-      OIDCTokenSchema
-    );
-
-    return {
-      accessToken: token.access_token,
-      refreshToken: token.refresh_token,
-      expiresAt: new Date(Date.now() + token.expires_in * 1000),
-      scope: token.scope,
-    };
-  }
-
-  private mapUserInfo(
-    user: OIDCUserInfo,
-    claimsMap: Record<string, string>
-  ): OAuthAccount {
-    const mappedUser: Partial<OAuthAccount> = {};
-    for (const [key, value] of Object.entries(claimsMap)) {
-      const claimValue = user[value];
-      if (claimValue !== undefined) {
-        mappedUser[key as keyof OAuthAccount] = claimValue as string;
-      }
-    }
-    return mappedUser as OAuthAccount;
-  }
-
-  async userinfo(token: string) {
-    const user = await OIDCClient.fetch(
-      this.config.userinfo_endpoint,
-      {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      },
-      OIDCUserInfoSchema
-    );
-
-    const claimsMap = {
-      id: this.args?.claim_id || 'preferred_username',
-      email: this.args?.claim_email || 'email',
-      name: this.args?.claim_name || 'name',
-    };
-    const userinfo = this.mapUserInfo(user, claimsMap);
-    return { id: userinfo.id, email: userinfo.email };
-  }
-}
-
 @Injectable()
 export class OIDCProvider extends OAuthProvider {
   override provider = OAuthProviderName.OIDC;
-  private client: OIDCClient | null = null;
+  #endpoints: OIDCConfiguration | null = null;
 
   constructor(private readonly url: URLHelper) {
     super();
   }
 
-  protected override setup() {
-    super.setup();
-    if (this.configured) {
-      OIDCClient.create(this.config as OAuthOIDCProviderConfig, this.url)
-        .then(client => {
-          this.client = client;
-        })
-        .catch(e => {
-          this.logger.error('Failed to create OIDC client', e);
-        });
-    } else {
-      this.client = null;
+  private get endpoints() {
+    if (!this.#endpoints) {
+      throw new Error('OIDC provider is not configured');
     }
+    return this.#endpoints;
   }
 
-  private checkOIDCClient(
-    client: OIDCClient | null
-  ): asserts client is OIDCClient {
-    if (!client) {
-      throw new Error('OIDC client has not been loaded yet.');
-    }
+  override get configured() {
+    return this.#endpoints !== null;
+  }
+
+  protected override setup() {
+    const validate = async () => {
+      this.#endpoints = null;
+
+      if (super.configured) {
+        const config = this.config as OAuthOIDCProviderConfig;
+        try {
+          const res = await fetch(
+            `${config.issuer}/.well-known/openid-configuration`,
+            {
+              method: 'GET',
+              headers: { Accept: 'application/json' },
+            }
+          );
+
+          if (res.ok) {
+            this.#endpoints = OIDCConfigurationSchema.parse(await res.json());
+          } else {
+            this.logger.error(`Invalid OIDC issuer ${config.issuer}`);
+          }
+        } catch (e) {
+          this.logger.error('Failed to validate OIDC configuration', e);
+        }
+      }
+
+      super.setup();
+    };
+
+    validate().catch(() => {
+      /* noop */
+    });
   }
 
   getAuthUrl(state: string): string {
-    this.checkOIDCClient(this.client);
-    return this.client.authorize(state);
+    return `${this.endpoints.authorization_endpoint}?${this.url.stringify({
+      client_id: this.config.clientId,
+      redirect_uri: this.url.link('/oauth/callback'),
+      scope: this.config.args?.scope || 'openid profile email',
+      response_type: 'code',
+      ...omit(this.config.args, 'claim_id', 'claim_email', 'claim_name'),
+      state,
+    })}`;
   }
 
   async getToken(code: string): Promise<Tokens> {
-    this.checkOIDCClient(this.client);
-    return await this.client.token(code);
+    const res = await fetch(this.endpoints.token_endpoint, {
+      method: 'POST',
+      body: this.url.stringify({
+        code,
+        client_id: this.config.clientId,
+        client_secret: this.config.clientSecret,
+        redirect_uri: this.url.link('/oauth/callback'),
+        grant_type: 'authorization_code',
+      }),
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const tokens = OIDCTokenSchema.parse(data);
+      return {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+        scope: tokens.scope,
+      };
+    }
+
+    throw new InvalidOauthCallbackCode({
+      status: res.status,
+      body: await res.text(),
+    });
   }
-  async getUser(token: string): Promise<OAuthAccount> {
-    this.checkOIDCClient(this.client);
-    return await this.client.userinfo(token);
+
+  async getUser(tokens: Tokens): Promise<OAuthAccount> {
+    const res = await fetch(this.endpoints.userinfo_endpoint, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${tokens.accessToken}`,
+      },
+    });
+
+    if (res.ok) {
+      const body = await res.json();
+      const user = OIDCUserInfoSchema.parse(body);
+
+      const args = this.config.args ?? {};
+
+      const claimsMap = {
+        id: args.claim_id || 'preferred_username',
+        email: args.claim_email || 'email',
+        name: args.claim_name || 'name',
+      };
+
+      const identities = {
+        id: user[claimsMap.id] as string,
+        email: user[claimsMap.email] as string,
+      };
+
+      if (!identities.id || !identities.email) {
+        throw new InvalidOauthResponse({
+          reason: `Missing required claims: ${Object.keys(identities)
+            .filter(key => !identities[key as keyof typeof identities])
+            .join(', ')}`,
+        });
+      }
+
+      return identities;
+    }
+
+    throw new InvalidOauthCallbackCode({
+      status: res.status,
+      body: await res.text(),
+    });
   }
 }

@@ -422,12 +422,7 @@ export class ViewportTurboRendererExtension extends GfxExtension {
   }
 
   private paintPlaceholder() {
-    paintPlaceholder(
-      this.std.host,
-      this.canvas,
-      this.layoutCache,
-      this.viewport
-    );
+    paintPlaceholder(this.canvas, this.layoutCache, this.viewport);
   }
 }
 

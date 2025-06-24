@@ -16,16 +16,11 @@ export function useDocCollectionPage(
   useEffect(() => {
     const group = new DisposableGroup();
     group.add(
-      docCollection.slots.docCreated.subscribe(id => {
-        if (pageId === id) {
-          setPage(docCollection.getDoc(id)?.getStore() ?? null);
-        }
-      })
-    );
-    group.add(
-      docCollection.slots.docRemoved.subscribe(id => {
-        if (pageId === id) {
+      docCollection.slots.docListUpdated.subscribe(() => {
+        if (!pageId) {
           setPage(null);
+        } else {
+          setPage(docCollection.getDoc(pageId)?.getStore() ?? null);
         }
       })
     );

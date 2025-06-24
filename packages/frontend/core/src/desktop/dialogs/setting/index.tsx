@@ -277,7 +277,7 @@ export const SettingDialog = ({
         ['data-testid' as string]: 'setting-modal',
         style: {
           maxHeight: '85vh',
-          maxWidth: '70vw',
+          maxWidth: 'calc(100dvw - 100px)',
           padding: 0,
           overflow: 'hidden',
           display: 'flex',

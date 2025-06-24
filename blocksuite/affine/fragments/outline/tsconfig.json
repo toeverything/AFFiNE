@@ -9,6 +9,7 @@
   "references": [
     { "path": "../../blocks/note" },
     { "path": "../../components" },
+    { "path": "../../ext-loader" },
     { "path": "../doc-title" },
     { "path": "../../model" },
     { "path": "../../rich-text" },

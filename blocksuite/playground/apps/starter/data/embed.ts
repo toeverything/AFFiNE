@@ -47,7 +47,7 @@ export const embed: InitFn = (collection: Workspace, id: string) => {
     store.addBlock('affine:paragraph', {}, noteId);
   });
 
-  doc.resetHistory();
+  store.resetHistory();
 };
 
 embed.id = 'embed';

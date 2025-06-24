@@ -1,4 +1,6 @@
+import { DefaultTool } from '@blocksuite/affine-block-surface';
 import { toast } from '@blocksuite/affine-components/toast';
+import { EmptyTool } from '@blocksuite/affine-gfx-pointer';
 import type { MindmapStyle } from '@blocksuite/affine-model';
 import {
   EditPropsStore,
@@ -123,8 +125,7 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
     ToolbarMindmapItem | TextItem | ImportItem | MediaItem
   >;
 
-  // @ts-expect-error FIXME: resolve after gfx tool refactor
-  override type = 'empty' as const;
+  override type = EmptyTool;
 
   get mindMaps() {
     return getMindMaps(this.theme);
@@ -223,8 +224,7 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
           this.onActiveStyleChange?.(element.data.style);
         }
         // a workaround to active mindmap, so that menu cannot be closed by `Escape`
-        // @ts-expect-error FIXME: resolve after gfx tool refactor
-        this.setEdgelessTool({ type: 'empty' });
+        this.setEdgelessTool(EmptyTool);
       },
       onDrop: (element, bound) => {
         if ('render' in element.data) {
@@ -234,8 +234,7 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
               if (!id) return;
               if (element.data.type === 'mindmap') {
                 this.onActiveStyleChange?.(element.data.style);
-                // @ts-expect-error FIXME: resolve after gfx tool refactor
-                this.setEdgelessTool({ type: 'default' });
+                this.setEdgelessTool(DefaultTool);
                 this.gfx.selection.set({
                   elements: [id],
                   editing: false,
@@ -244,8 +243,7 @@ export class EdgelessMindmapMenu extends EdgelessToolbarToolMixin(
                 element.data.type === 'text' ||
                 element.data.type === 'media'
               ) {
-                // @ts-expect-error FIXME: resolve after gfx tool refactor
-                this.setEdgelessTool({ type: 'default' });
+                this.setEdgelessTool(DefaultTool);
               }
             })
             .catch(console.error);

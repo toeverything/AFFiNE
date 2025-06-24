@@ -12,6 +12,7 @@ import { faker } from '@faker-js/faker';
 import { hash } from '@node-rs/argon2';
 import type { BrowserContext, Cookie, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import { type PrismaClient } from '@prisma/client';
 import type { Assertions } from 'ava';
 import { z } from 'zod';
 
@@ -57,12 +58,7 @@ const server = new Package('@affine/server');
 const require = createRequire(server.srcPath.join('index.ts').toFileUrl());
 
 export const runPrisma = async <T>(
-  cb: (
-    prisma: InstanceType<
-      // oxlint-disable-next-line @typescript-eslint/consistent-type-imports
-      typeof import('../../../../packages/backend/server/node_modules/@prisma/client').PrismaClient
-    >
-  ) => Promise<T>
+  cb: (prisma: PrismaClient) => Promise<T>
 ): Promise<T> => {
   const { PrismaClient } = require('@prisma/client');
   const client = new PrismaClient({

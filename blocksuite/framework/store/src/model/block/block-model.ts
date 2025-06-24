@@ -97,16 +97,16 @@ export class BlockModel<Props extends object = object> {
     return this._childModels.value;
   }
 
-  get doc() {
+  get store() {
     return this._store;
   }
 
-  set doc(doc: Store) {
+  set store(doc: Store) {
     this._store = doc;
   }
 
   get parent() {
-    return this.doc.getParent(this);
+    return this.store.getParent(this);
   }
 
   get role() {

@@ -20,6 +20,7 @@ import { property, query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import type { Root } from 'mdast';
+import { Doc as YDoc } from 'yjs';
 
 import { MiniMindmapSchema, MiniMindmapSpecs } from './spec.js';
 
@@ -101,6 +102,7 @@ export class MiniMindmapPreview extends WithDisposable(LitElement) {
 
     const collection = new WorkspaceImpl({
       id: 'MINI_MINDMAP_TEMPORARY',
+      rootDoc: new YDoc({ guid: 'MINI_MINDMAP_TEMPORARY' }),
     });
     collection.meta.initialize();
     const doc = collection.createDoc('doc:home').getStore();
@@ -248,12 +250,12 @@ export const markdownToMindmap = (
     switch (markdownNode.type) {
       case 'list':
         {
-          const listItems = markdownNode.children
+          const listItem = markdownNode.children
             .map(child => traverse(child))
-            .filter(val => val);
+            .find(val => val);
 
           if (firstLevel) {
-            return listItems[0];
+            return listItem ?? null;
           }
         }
         break;

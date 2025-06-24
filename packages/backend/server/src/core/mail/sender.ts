@@ -43,6 +43,10 @@ export class MailSender {
     return createTransport(configToSMTPOptions(config));
   }
 
+  get configured() {
+    return this.smtp !== null;
+  }
+
   @OnEvent('config.init')
   onConfigInit() {
     this.setup();

@@ -1,5 +1,5 @@
 import { Button } from '@affine/component';
-import { type TagLike, TagsInlineEditor } from '@affine/core/components/tags';
+import { WorkspaceTagsInlineEditor } from '@affine/core/components/tags';
 import {
   IntegrationService,
   IntegrationTypeIcon,
@@ -8,7 +8,7 @@ import type { ReadwiseConfig } from '@affine/core/modules/integration/type';
 import { TagService } from '@affine/core/modules/tag';
 import { useI18n } from '@affine/i18n';
 import { PlusIcon } from '@blocksuite/icons/rc';
-import { LiveData, useLiveData, useService } from '@toeverything/infra';
+import { useLiveData, useService } from '@toeverything/infra';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
 import {
@@ -245,47 +245,21 @@ const TagsSetting = () => {
   const t = useI18n();
   const tagService = useService(TagService);
   const readwise = useService(IntegrationService).readwise;
-  const allTags = useLiveData(tagService.tagList.tags$);
-  const tagColors = tagService.tagColors;
+  const tagMetas = useLiveData(tagService.tagList.tagMetas$);
   const tagIds = useLiveData(
     useMemo(() => readwise.setting$('tags'), [readwise])
   );
-  const adaptedTags = useLiveData(
-    useMemo(() => {
-      return LiveData.computed(get => {
-        return allTags.map(tag => ({
-          id: tag.id,
-          value: get(tag.value$),
-          color: get(tag.color$),
-        }));
-      });
-    }, [allTags])
-  );
-  const adaptedTagColors = useMemo(() => {
-    return tagColors.map(color => ({
-      id: color[0],
-      value: color[1],
-      name: color[0],
-    }));
-  }, [tagColors]);
 
   const updateReadwiseTags = useCallback(
     (tagIds: string[]) => {
       readwise.updateSetting(
         'tags',
-        tagIds.filter(id => !!allTags.some(tag => tag.id === id))
+        tagIds.filter(id => !!tagMetas.some(tag => tag.id === id))
       );
     },
-    [allTags, readwise]
+    [tagMetas, readwise]
   );
 
-  const onCreateTag = useCallback(
-    (name: string, color: string) => {
-      const tag = tagService.tagList.createTag(name, color);
-      return { id: tag.id, value: tag.value$.value, color: tag.color$.value };
-    },
-    [tagService.tagList]
-  );
   const onSelectTag = useCallback(
     (tagId: string) => {
       trackModifySetting('Tag', 'on');
@@ -300,32 +274,12 @@ const TagsSetting = () => {
     },
     [tagIds, updateReadwiseTags]
   );
-  const onDeleteTag = useCallback(
-    (tagId: string) => {
-      if (tagIds?.includes(tagId)) {
-        trackModifySetting('Tag', 'off');
-      }
-      tagService.tagList.deleteTag(tagId);
-      updateReadwiseTags(tagIds ?? []);
-    },
-    [tagIds, updateReadwiseTags, tagService.tagList]
-  );
-  const onTagChange = useCallback(
-    (id: string, property: keyof TagLike, value: string) => {
-      if (property === 'value') {
-        tagService.tagList.tagByTagId$(id).value?.rename(value);
-      } else if (property === 'color') {
-        tagService.tagList.tagByTagId$(id).value?.changeColor(value);
-      }
-    },
-    [tagService.tagList]
-  );
   return (
     <li>
       <h6 className={styles.tagsLabel}>
         {t['com.affine.integration.readwise.setting.tags-label']()}
       </h6>
-      <TagsInlineEditor
+      <WorkspaceTagsInlineEditor
         placeholder={
           <span className={styles.tagsPlaceholder}>
             {t['com.affine.integration.readwise.setting.tags-placeholder']()}
@@ -333,14 +287,9 @@ const TagsSetting = () => {
         }
         className={styles.tagsEditor}
         tagMode="inline-tag"
-        tags={adaptedTags}
         selectedTags={tagIds ?? []}
-        onCreateTag={onCreateTag}
         onSelectTag={onSelectTag}
         onDeselectTag={onDeselectTag}
-        tagColors={adaptedTagColors}
-        onTagChange={onTagChange}
-        onDeleteTag={onDeleteTag}
         modalMenu={true}
         menuClassName={styles.tagsMenu}
       />

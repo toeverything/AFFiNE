@@ -58,7 +58,6 @@ export class LatexBlockComponent extends CaptionedBlockComponent<LatexBlockModel
           try {
             katex.render(latex, katexContainer, {
               displayMode: true,
-              output: 'mathml',
             });
           } catch {
             katexContainer.replaceChildren();
@@ -74,19 +73,16 @@ export class LatexBlockComponent extends CaptionedBlockComponent<LatexBlockModel
         }
       })
     );
+  }
 
-    this.disposables.addFromEvent(this, 'click', () => {
-      // should not open editor or select block in readonly mode
-      if (this.doc.readonly) {
-        return;
-      }
+  private _handleClick() {
+    if (this.store.readonly) return;
 
-      if (this.isBlockSelected) {
-        this.toggleEditor();
-      } else {
-        this.selectBlock();
-      }
-    });
+    if (this.isBlockSelected) {
+      this.toggleEditor();
+    } else {
+      this.selectBlock();
+    }
   }
 
   removeEditor(portal: HTMLDivElement) {
@@ -95,7 +91,11 @@ export class LatexBlockComponent extends CaptionedBlockComponent<LatexBlockModel
 
   override renderBlock() {
     return html`
-      <div contenteditable="false" class="latex-block-container">
+      <div
+        contenteditable="false"
+        class="latex-block-container"
+        @click=${this._handleClick}
+      >
         <div class="katex"></div>
       </div>
     `;

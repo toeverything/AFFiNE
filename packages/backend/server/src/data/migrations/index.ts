@@ -5,3 +5,4 @@ export * from './1721299086340-refresh-unnamed-user';
 export * from './1732861452428-migrate-invite-status';
 export * from './1733125339942-universal-subscription';
 export * from './1738590347632-feature-redundant';
+export * from './1745211351719-create-indexer-tables';

@@ -3,7 +3,7 @@ import type { TransformerMiddleware } from '@blocksuite/store';
 export const fileNameMiddleware =
   (fileName?: string): TransformerMiddleware =>
   ({ slots }) => {
-    slots.beforeImport.subscribe(payload => {
+    const beforeImportSubscription = slots.beforeImport.subscribe(payload => {
       if (payload.type !== 'page') {
         return;
       }
@@ -20,4 +20,8 @@ export const fileNameMiddleware =
         ],
       };
     });
+
+    return () => {
+      beforeImportSubscription.unsubscribe();
+    };
   };

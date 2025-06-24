@@ -7,7 +7,7 @@ import type { SelectTag } from '../../core/index.js';
 import { BaseCellRenderer } from '../../core/property/index.js';
 import { createFromBaseCellRenderer } from '../../core/property/renderer.js';
 import { createIcon } from '../../core/utils/uni-icon.js';
-import { selectStyle } from './cell-renderer.css.js';
+import { selectStyle } from './cell-renderer-css.js';
 import {
   type SelectPropertyData,
   selectPropertyModelConfig,

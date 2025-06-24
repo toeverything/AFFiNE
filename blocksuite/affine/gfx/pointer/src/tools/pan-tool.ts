@@ -1,7 +1,13 @@
+import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
 import { on } from '@blocksuite/affine-shared/utils';
 import type { PointerEventState } from '@blocksuite/std';
-import { BaseTool, MouseButton } from '@blocksuite/std/gfx';
+import { BaseTool, MouseButton, type ToolOptions } from '@blocksuite/std/gfx';
 import { Signal } from '@preact/signals-core';
+
+interface RestorablePresentToolOptions {
+  mode?: string; // 'fit' | 'fill', simplified to string for local use
+  restoredAfterPan?: boolean;
+}
 
 export type PanToolOption = {
   panning: boolean;
@@ -53,14 +59,41 @@ export class PanTool extends BaseTool<PanToolOption> {
 
       evt.raw.preventDefault();
 
-      const selection = this.gfx.selection.surfaceSelections;
       const currentTool = this.controller.currentToolOption$.peek();
       const restoreToPrevious = () => {
-        this.controller.setTool(currentTool);
-        this.gfx.selection.set(selection);
+        const { toolType, options: originalToolOptions } = currentTool;
+        const selectionToRestore = this.gfx.selection.surfaceSelections;
+        if (!toolType) return;
+
+        let finalOptions: ToolOptions<BaseTool<any>> | undefined =
+          originalToolOptions;
+        const PRESENT_TOOL_NAME = 'frameNavigator';
+
+        if (toolType.toolName === PRESENT_TOOL_NAME) {
+          // When restoring PresentTool (frameNavigator) after a temporary pan (e.g., via middle mouse button),
+          // set 'restoredAfterPan' to true. This allows PresentTool to avoid an unwanted viewport reset
+          // and maintain the panned position.
+          const currentPresentOptions = originalToolOptions as
+            | RestorablePresentToolOptions
+            | undefined;
+          finalOptions = {
+            ...currentPresentOptions,
+            restoredAfterPan: true,
+          } as RestorablePresentToolOptions;
+        }
+        this.controller.setTool(toolType, finalOptions);
+        this.gfx.selection.set(selectionToRestore);
       };
 
-      this.controller.setTool('pan', {
+      // If in presentation mode, disable black background after middle mouse drag
+      if (currentTool.toolType?.toolName === 'frameNavigator') {
+        const slots = this.std.get(EdgelessLegacySlotIdentifier);
+        slots.navigatorSettingUpdated.next({
+          blackBackground: false,
+        });
+      }
+
+      this.controller.setTool(PanTool, {
         panning: true,
       });
 
@@ -73,15 +106,5 @@ export class PanTool extends BaseTool<PanToolOption> {
 
       return false;
     });
-  }
-}
-
-declare module '@blocksuite/std/gfx' {
-  interface GfxToolsMap {
-    pan: PanTool;
-  }
-
-  interface GfxToolsOption {
-    pan: PanToolOption;
   }
 }

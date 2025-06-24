@@ -1,4 +1,5 @@
 import {
+  CodeBlockSchemaExtension,
   DatabaseBlockSchemaExtension,
   ImageBlockSchemaExtension,
   ListBlockSchemaExtension,
@@ -6,6 +7,7 @@ import {
   ParagraphBlockSchemaExtension,
   RootBlockSchemaExtension,
 } from '@blocksuite/affine-model';
+import { TextSelection } from '@blocksuite/std';
 import { type Block, type Store } from '@blocksuite/store';
 import { Text } from '@blocksuite/store';
 import { TestWorkspace } from '@blocksuite/store/test';
@@ -20,6 +22,7 @@ const extensions = [
   ListBlockSchemaExtension,
   ImageBlockSchemaExtension,
   DatabaseBlockSchemaExtension,
+  CodeBlockSchemaExtension,
 ];
 
 // Mapping from tag names to flavours
@@ -30,7 +33,17 @@ const tagToFlavour: Record<string, string> = {
   'affine-list': 'affine:list',
   'affine-image': 'affine:image',
   'affine-database': 'affine:database',
+  'affine-code': 'affine:code',
 };
+
+interface SelectionInfo {
+  anchorBlockId?: string;
+  anchorOffset?: number;
+  focusBlockId?: string;
+  focusOffset?: number;
+  cursorBlockId?: string;
+  cursorOffset?: number;
+}
 
 /**
  * Parse template strings and build BlockSuite document structure,
@@ -41,7 +54,8 @@ const tagToFlavour: Record<string, string> = {
  * const host = affine`
  *   <affine-page id="page">
  *     <affine-note id="note">
- *       <affine-paragraph id="paragraph-1">Hello, world</affine-paragraph>
+ *       <affine-paragraph id="paragraph-1">Hello, world<anchor /></affine-paragraph>
+ *       <affine-paragraph id="paragraph-2">Hello, world<focus /></affine-paragraph>
  *     </affine-note>
  *   </affine-page>
  * `;
@@ -63,6 +77,8 @@ export function affine(strings: TemplateStringsArray, ...values: any[]) {
   const doc = workspace.createDoc('test-doc');
   const store = doc.getStore({ extensions });
 
+  let selectionInfo: SelectionInfo = {};
+
   // Use DOMParser to parse HTML string
   doc.load(() => {
     const parser = new DOMParser();
@@ -73,11 +89,57 @@ export function affine(strings: TemplateStringsArray, ...values: any[]) {
       throw new Error('Template must contain a root element');
     }
 
-    buildDocFromElement(store, root, null);
+    buildDocFromElement(store, root, null, selectionInfo);
   });
 
-  // Create and return a host object with the document
-  return createTestHost(store);
+  // Create host object
+  const host = createTestHost(store);
+
+  // Set selection if needed
+  if (selectionInfo.anchorBlockId && selectionInfo.focusBlockId) {
+    const anchorBlock = store.getBlock(selectionInfo.anchorBlockId);
+    const anchorTextLength = anchorBlock?.model?.text?.length ?? 0;
+    const focusOffset = selectionInfo.focusOffset ?? 0;
+    const anchorOffset = selectionInfo.anchorOffset ?? 0;
+
+    if (selectionInfo.anchorBlockId === selectionInfo.focusBlockId) {
+      const selection = host.selection.create(TextSelection, {
+        from: {
+          blockId: selectionInfo.anchorBlockId,
+          index: anchorOffset,
+          length: focusOffset,
+        },
+        to: null,
+      });
+      host.selection.setGroup('note', [selection]);
+    } else {
+      const selection = host.selection.create(TextSelection, {
+        from: {
+          blockId: selectionInfo.anchorBlockId,
+          index: anchorOffset,
+          length: anchorTextLength - anchorOffset,
+        },
+        to: {
+          blockId: selectionInfo.focusBlockId,
+          index: 0,
+          length: focusOffset,
+        },
+      });
+      host.selection.setGroup('note', [selection]);
+    }
+  } else if (selectionInfo.cursorBlockId) {
+    const selection = host.selection.create(TextSelection, {
+      from: {
+        blockId: selectionInfo.cursorBlockId,
+        index: selectionInfo.cursorOffset ?? 0,
+        length: 0,
+      },
+      to: null,
+    });
+    host.selection.setGroup('note', [selection]);
+  }
+
+  return host;
 }
 
 /**
@@ -108,6 +170,7 @@ export function block(
   const store = doc.getStore({ extensions });
 
   let blockId: string | null = null;
+  const selectionInfo: SelectionInfo = {};
 
   // Use DOMParser to parse HTML string
   doc.load(() => {
@@ -119,7 +182,19 @@ export function block(
       throw new Error('Template must contain a root element');
     }
 
-    blockId = buildDocFromElement(store, root, null);
+    // Create a root block if needed
+    const flavour = tagToFlavour[root.tagName.toLowerCase()];
+    if (
+      flavour === 'affine:paragraph' ||
+      flavour === 'affine:list' ||
+      flavour === 'affine:code'
+    ) {
+      const pageId = store.addBlock('affine:page', {});
+      const noteId = store.addBlock('affine:note', {}, pageId);
+      blockId = buildDocFromElement(store, root, noteId, selectionInfo);
+    } else {
+      blockId = buildDocFromElement(store, root, null, selectionInfo);
+    }
   });
 
   // Return the created block
@@ -131,14 +206,47 @@ export function block(
  * @param doc
  * @param element
  * @param parentId
+ * @param selectionInfo
  * @returns
  */
 function buildDocFromElement(
   doc: Store,
   element: Element,
-  parentId: string | null
+  parentId: string | null,
+  selectionInfo: SelectionInfo
 ): string {
   const tagName = element.tagName.toLowerCase();
+
+  // Handle selection tags
+  if (tagName === 'anchor') {
+    if (!parentId) return '';
+    const parentBlock = doc.getBlock(parentId);
+    if (parentBlock) {
+      const textBeforeCursor = element.previousSibling?.textContent ?? '';
+      selectionInfo.anchorBlockId = parentId;
+      selectionInfo.anchorOffset = textBeforeCursor.length;
+    }
+    return parentId;
+  } else if (tagName === 'focus') {
+    if (!parentId) return '';
+    const parentBlock = doc.getBlock(parentId);
+    if (parentBlock) {
+      const textBeforeCursor = element.previousSibling?.textContent ?? '';
+      selectionInfo.focusBlockId = parentId;
+      selectionInfo.focusOffset = textBeforeCursor.length;
+    }
+    return parentId;
+  } else if (tagName === 'cursor') {
+    if (!parentId) return '';
+    const parentBlock = doc.getBlock(parentId);
+    if (parentBlock) {
+      const textBeforeCursor = element.previousSibling?.textContent ?? '';
+      selectionInfo.cursorBlockId = parentId;
+      selectionInfo.cursorOffset = textBeforeCursor.length;
+    }
+    return parentId;
+  }
+
   const flavour = tagToFlavour[tagName];
 
   if (!flavour) {
@@ -175,9 +283,15 @@ function buildDocFromElement(
   // Create block
   const blockId = doc.addBlock(flavour, props, parentId);
 
-  // Recursively process child elements
+  // Process all child nodes, including text nodes
   Array.from(element.children).forEach(child => {
-    buildDocFromElement(doc, child, blockId);
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      // Handle element nodes
+      buildDocFromElement(doc, child as Element, blockId, selectionInfo);
+    } else if (child.nodeType === Node.TEXT_NODE) {
+      // Handle text nodes
+      console.log('buildDocFromElement text node:', child.textContent);
+    }
   });
 
   return blockId;

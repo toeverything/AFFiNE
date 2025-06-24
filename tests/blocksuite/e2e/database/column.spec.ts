@@ -65,7 +65,7 @@ test.describe('column operations', () => {
     await initDatabaseDynamicRowWithData(page, '123', true);
     await pressEscape(page);
     const { text: title1 } = await getDatabaseHeaderColumn(page, 1);
-    expect(title1).toBe('Column 1');
+    expect(title1).toBe('Column');
 
     const selected = getDatabaseCell(page, {
       rowIndex: 0,

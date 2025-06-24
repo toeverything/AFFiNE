@@ -1,6 +1,7 @@
 import test from 'ava';
 
 import { createModule } from '../../../__tests__/create-module';
+import { InvalidAppConfig } from '../../error';
 import { ConfigFactory, ConfigModule } from '..';
 import { Config } from '../config';
 import { override } from '../register';
@@ -64,30 +65,29 @@ test('should override config', async t => {
 test('should validate config', t => {
   const config = module.get(ConfigFactory);
 
-  t.notThrows(() =>
+  t.is(
     config.validate([
       {
         module: 'auth',
         key: 'passwordRequirements',
         value: { max: 10, min: 6 },
       },
-    ])
+    ]),
+    null
   );
 
-  t.throws(
-    () =>
-      config.validate([
-        {
-          module: 'auth',
-          key: 'passwordRequirements',
-          value: { max: 10, min: 10 },
-        },
-      ]),
+  const [error] = config.validate([
     {
-      message: `Invalid config for module [auth] with key [passwordRequirements]
-Value: {"max":10,"min":10}
-Error: Minimum length of password must be less than maximum length`,
-    }
+      module: 'auth',
+      key: 'passwordRequirements',
+      value: { max: 10, min: 10 },
+    },
+  ])!;
+
+  t.true(error instanceof InvalidAppConfig);
+  t.is(
+    error.message,
+    'Invalid app config for module `auth` with key `passwordRequirements`. Minimum length of password must be less than maximum length.'
   );
 });
 

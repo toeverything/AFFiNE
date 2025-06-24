@@ -82,13 +82,18 @@ export const defaultSlashMenuConfig: SlashMenuConfig = {
         group: '8_Actions@0',
         action: ({ std, model }) => {
           const { host } = std;
-          const previousSiblingModel = host.doc.getPrev(model);
+          const previousSiblingModel = host.store.getPrev(model);
           if (!previousSiblingModel) return;
 
-          const parentModel = host.doc.getParent(previousSiblingModel);
+          const parentModel = host.store.getParent(previousSiblingModel);
           if (!parentModel) return;
 
-          host.doc.moveBlocks([model], parentModel, previousSiblingModel, true);
+          host.store.moveBlocks(
+            [model],
+            parentModel,
+            previousSiblingModel,
+            true
+          );
         },
       },
       {
@@ -99,13 +104,13 @@ export const defaultSlashMenuConfig: SlashMenuConfig = {
         group: '8_Actions@1',
         action: ({ std, model }) => {
           const { host } = std;
-          const nextSiblingModel = host.doc.getNext(model);
+          const nextSiblingModel = host.store.getNext(model);
           if (!nextSiblingModel) return;
 
-          const parentModel = host.doc.getParent(nextSiblingModel);
+          const parentModel = host.store.getParent(nextSiblingModel);
           if (!parentModel) return;
 
-          host.doc.moveBlocks([model], parentModel, nextSiblingModel, false);
+          host.store.moveBlocks([model], parentModel, nextSiblingModel, false);
         },
       },
       {
@@ -139,7 +144,7 @@ export const defaultSlashMenuConfig: SlashMenuConfig = {
             return;
           }
           const { host } = std;
-          const parent = host.doc.getParent(model);
+          const parent = host.store.getParent(model);
           if (!parent) {
             console.error(
               'Failed to duplicate block! Parent not found: ' +
@@ -152,7 +157,7 @@ export const defaultSlashMenuConfig: SlashMenuConfig = {
           const index = parent.children.indexOf(model);
 
           // FIXME: this clone is not correct
-          host.doc.addBlock(
+          host.store.addBlock(
             model.flavour,
             {
               type: (model as ParagraphBlockModel).props.type,
@@ -163,7 +168,7 @@ export const defaultSlashMenuConfig: SlashMenuConfig = {
               ),
               checked: (model as ListBlockModel).props.checked,
             },
-            host.doc.getParent(model),
+            host.store.getParent(model),
             index
           );
         },
@@ -176,7 +181,7 @@ export const defaultSlashMenuConfig: SlashMenuConfig = {
         tooltip: slashMenuToolTips['Delete'],
         group: '8_Actions@4',
         action: ({ std, model }) => {
-          std.host.doc.deleteBlock(model);
+          std.host.store.deleteBlock(model);
         },
       },
     ];

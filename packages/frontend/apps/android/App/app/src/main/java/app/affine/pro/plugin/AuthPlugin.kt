@@ -1,7 +1,6 @@
 package app.affine.pro.plugin
 
 import android.annotation.SuppressLint
-import app.affine.pro.CapacitorConfig
 import app.affine.pro.service.CookieStore
 import app.affine.pro.service.OkHttp
 import com.getcapacitor.JSObject
@@ -11,6 +10,7 @@ import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -45,7 +45,6 @@ class AuthPlugin : Plugin() {
                 val endpoint = call.getStringEnsure("endpoint")
                 val request = Request.Builder()
                     .url("$endpoint/api/auth/sign-out")
-                    .header("x-affine-version", CapacitorConfig.getAffineVersion())
                     .get()
                     .build()
                 OkHttp.client.newCall(request).executeAsync().use { response ->
@@ -87,7 +86,6 @@ class AuthPlugin : Plugin() {
 
                         val requestBuilder = Request.Builder()
                             .url("$endpoint/api/auth/sign-in")
-                            .header("x-affine-version", CapacitorConfig.getAffineVersion())
                             .post(body)
                         if (verifyToken != null) {
                             requestBuilder.addHeader("x-captcha-token", verifyToken)
@@ -113,7 +111,6 @@ class AuthPlugin : Plugin() {
 
                         Request.Builder()
                             .url("$endpoint/api/oauth/callback")
-                            .header("x-affine-version", CapacitorConfig.getAffineVersion())
                             .post(body)
                             .build()
                     }
@@ -133,7 +130,6 @@ class AuthPlugin : Plugin() {
 
                         Request.Builder()
                             .url("$endpoint/api/auth/magic-link")
-                            .header("x-affine-version", CapacitorConfig.getAffineVersion())
                             .post(body)
                             .build()
                     }
@@ -144,7 +140,7 @@ class AuthPlugin : Plugin() {
                         call.reject(response.body.string())
                         return@launch
                     }
-                    CookieStore.getCookie(endpoint, CookieStore.AFFINE_SESSION)?.let {
+                    CookieStore.getCookie(endpoint.toHttpUrl(), CookieStore.AFFINE_SESSION)?.let {
                         Timber.i("$method sign in success.")
                         Timber.d("Update session [$it]")
                         call.resolve(JSObject().put("token", it))

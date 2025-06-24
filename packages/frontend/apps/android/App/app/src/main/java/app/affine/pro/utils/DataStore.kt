@@ -20,11 +20,3 @@ suspend fun DataStore<Preferences>.set(key: String, value: String) {
 suspend fun DataStore<Preferences>.get(key: String) = data.map {
     it[stringPreferencesKey(key)] ?: ""
 }.first()
-
-suspend fun DataStore<Preferences>.clear(vararg keys: String) {
-    edit { prefs ->
-        keys.forEach { key ->
-            prefs[stringPreferencesKey(key)] = ""
-        }
-    }
-}

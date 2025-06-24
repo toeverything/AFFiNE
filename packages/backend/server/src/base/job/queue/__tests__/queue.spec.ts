@@ -168,7 +168,7 @@ test('should be able to record job metrics', async t => {
   timerStub.reset();
 
   await t.throwsAsync(
-    executor.run('nightly.__test__throw', { name: 'test executor' }),
+    executor.run('nightly.__test__throw', { name: 'test executor' }, 'test-id'),
     {
       message: 'Throw in job handler',
     }

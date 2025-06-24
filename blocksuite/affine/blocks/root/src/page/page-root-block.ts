@@ -28,7 +28,6 @@ import { query } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 
 import { PageKeyboardManager } from '../keyboard/keyboard-manager.js';
-import type { PageRootService } from './page-root-service.js';
 
 const DOC_BLOCK_CHILD_PADDING = 24;
 const DOC_BOTTOM_PADDING = 32;
@@ -49,10 +48,7 @@ function testClickOnBlankArea(
   return state.raw.clientX < blankLeft || state.raw.clientX > blankRight;
 }
 
-export class PageRootBlockComponent extends BlockComponent<
-  RootBlockModel,
-  PageRootService
-> {
+export class PageRootBlockComponent extends BlockComponent<RootBlockModel> {
   static override styles = css`
     editor-host:has(> affine-page-root, * > affine-page-root) {
       display: block;
@@ -121,7 +117,7 @@ export class PageRootBlockComponent extends BlockComponent<
       focusTextModel(this.std, firstText.id);
       return { id: firstText.id, created: false };
     } else {
-      const newFirstParagraphId = this.doc.addBlock(
+      const newFirstParagraphId = this.store.addBlock(
         'affine:paragraph',
         {},
         defaultNote,
@@ -135,7 +131,7 @@ export class PageRootBlockComponent extends BlockComponent<
   keyboardManager: PageKeyboardManager | null = null;
 
   prependParagraphWithText = (text: Text) => {
-    const newFirstParagraphId = this.doc.addBlock(
+    const newFirstParagraphId = this.store.addBlock(
       'affine:paragraph',
       { text },
       this._getDefaultNoteBlock(),
@@ -161,16 +157,17 @@ export class PageRootBlockComponent extends BlockComponent<
   }
 
   private _createDefaultNoteBlock() {
-    const { doc } = this;
+    const { store } = this;
 
-    const noteId = doc.addBlock('affine:note', {}, doc.root?.id);
-    return doc.getModelById(noteId) as NoteBlockModel;
+    const noteId = store.addBlock('affine:note', {}, store.root?.id);
+    return store.getModelById(noteId) as NoteBlockModel;
   }
 
   private _getDefaultNoteBlock() {
     return (
-      this.doc.root?.children.find(child => child.flavour === 'affine:note') ??
-      this._createDefaultNoteBlock()
+      this.store.root?.children.find(
+        child => child.flavour === 'affine:note'
+      ) ?? this._createDefaultNoteBlock()
     );
   }
 
@@ -234,16 +231,16 @@ export class PageRootBlockComponent extends BlockComponent<
         );
         if (!sel) return;
         let model: BlockModel | null = null;
-        let current = this.doc.getModelById(sel.blockId);
+        let current = this.store.getModelById(sel.blockId);
         while (current && !model) {
           if (current.flavour === 'affine:note') {
             model = current;
           } else {
-            current = this.doc.getParent(current);
+            current = this.store.getParent(current);
           }
         }
         if (!model) return;
-        const prevNote = this.doc.getPrev(model);
+        const prevNote = this.store.getPrev(model);
         if (!prevNote || prevNote.flavour !== 'affine:note') {
           const isFirstText = sel.is(TextSelection) && sel.start.index === 0;
           const isBlock = sel.is(BlockSelection);
@@ -252,7 +249,7 @@ export class PageRootBlockComponent extends BlockComponent<
           }
           return;
         }
-        const notes = this.doc.getModelsByFlavour('affine:note');
+        const notes = this.store.getModelsByFlavour('affine:note');
         const index = notes.indexOf(prevNote);
         if (index !== 0) return;
 
@@ -413,7 +410,7 @@ export class PageRootBlockComponent extends BlockComponent<
       return !(isNote && displayOnEdgeless);
     });
 
-    this.contentEditable = String(!this.doc.readonly$.value);
+    this.contentEditable = String(!this.store.readonly$.value);
 
     return html`
       <div class="affine-page-root-block-container">${children} ${widgets}</div>

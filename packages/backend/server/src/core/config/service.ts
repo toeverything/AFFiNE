@@ -1,7 +1,12 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { set } from 'lodash-es';
 
-import { ConfigFactory, EventBus, OnEvent } from '../../base';
+import {
+  ConfigFactory,
+  EventBus,
+  InvalidAppConfigInput,
+  OnEvent,
+} from '../../base';
 import { Models } from '../../models';
 import { ServerFeature } from './types';
 
@@ -60,11 +65,21 @@ export class ServerService implements OnApplicationBootstrap {
     return this.configFactory.clone();
   }
 
+  validateConfig(updates: Array<{ module: string; key: string; value: any }>) {
+    return this.configFactory.validate(updates);
+  }
+
   async updateConfig(
     user: string,
     updates: Array<{ module: string; key: string; value: any }>
   ): Promise<DeepPartial<AppConfig>> {
-    this.configFactory.validate(updates);
+    const errors = this.configFactory.validate(updates);
+
+    if (errors?.length) {
+      throw new InvalidAppConfigInput({
+        message: errors.map(error => error.message).join('\n'),
+      });
+    }
 
     const promises = await this.models.appConfig.save(
       user,

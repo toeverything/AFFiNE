@@ -193,7 +193,7 @@ export class EdgelessFrameOrderMenu extends SignalWatcher(
           this.crud.updateElement(frame.id, {
             presentationIndex: generateKeyBetweenV2(before, after),
           });
-          this.edgeless.doc.captureSync();
+          this.edgeless.store.captureSync();
 
           this.requestUpdate();
         }

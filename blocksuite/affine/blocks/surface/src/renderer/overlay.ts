@@ -35,7 +35,9 @@ export abstract class Overlay extends Extension {
     ]);
   }
 
-  clear() {}
+  clear() {
+    this.refresh();
+  }
 
   dispose() {}
 

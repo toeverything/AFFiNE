@@ -91,7 +91,9 @@ export class CopilotContextModel extends BaseModel {
       const status = finishedDoc.has(doc.id)
         ? ContextEmbedStatus.finished
         : undefined;
-      doc.status = status || doc.status;
+      // NOTE: when the document has not been synchronized to the server or is in the embedding queue
+      // the status will be empty, fallback to processing if no status is provided
+      doc.status = status || doc.status || ContextEmbedStatus.processing;
     }
 
     return docs;
@@ -119,6 +121,11 @@ export class CopilotContextModel extends BaseModel {
   }
 
   async hasWorkspaceEmbedding(workspaceId: string, docIds: string[]) {
+    const canEmbedding = await this.checkEmbeddingAvailable();
+    if (!canEmbedding) {
+      return new Set();
+    }
+
     const existsIds = await this.db.aiWorkspaceEmbedding
       .findMany({
         where: {
@@ -168,14 +175,20 @@ export class CopilotContextModel extends BaseModel {
   `;
   }
 
+  async deleteFileEmbedding(contextId: string, fileId: string) {
+    await this.db.aiContextEmbedding.deleteMany({
+      where: { contextId, fileId },
+    });
+  }
+
   async matchFileEmbedding(
     embedding: number[],
     contextId: string,
     topK: number,
     threshold: number
-  ): Promise<FileChunkSimilarity[]> {
+  ): Promise<Omit<FileChunkSimilarity, 'blobId' | 'name' | 'mimeType'>[]> {
     const similarityChunks = await this.db.$queryRaw<
-      Array<FileChunkSimilarity>
+      Array<Omit<FileChunkSimilarity, 'blobId' | 'name' | 'mimeType'>>
     >`
       SELECT "file_id" as "fileId", "chunk", "content", "embedding" <=> ${embedding}::vector as "distance" 
       FROM "ai_context_embeddings"
@@ -199,31 +212,47 @@ export class CopilotContextModel extends BaseModel {
     );
     await this.db.$executeRaw`
       INSERT INTO "ai_workspace_embeddings"
-      ("workspace_id", "doc_id", "chunk", "content", "embedding", "updated_at") VALUES ${values}
-      ON CONFLICT (workspace_id, doc_id, chunk) DO UPDATE SET
-      embedding = EXCLUDED.embedding, updated_at = excluded.updated_at;
+        ("workspace_id", "doc_id", "chunk", "content", "embedding", "updated_at")
+      VALUES ${values}
+      ON CONFLICT (workspace_id, doc_id, chunk)
+      DO UPDATE SET
+        embedding = EXCLUDED.embedding,
+        updated_at = excluded.updated_at;
     `;
+  }
+
+  async deleteWorkspaceEmbedding(workspaceId: string, docId: string) {
+    await this.db.aiWorkspaceEmbedding.deleteMany({
+      where: { workspaceId, docId },
+    });
   }
 
   async matchWorkspaceEmbedding(
     embedding: number[],
     workspaceId: string,
     topK: number,
-    threshold: number
+    threshold: number,
+    matchDocIds?: string[]
   ): Promise<DocChunkSimilarity[]> {
     const similarityChunks = await this.db.$queryRaw<Array<DocChunkSimilarity>>`
-      SELECT "doc_id" as "docId", "chunk", "content", "embedding" <=> ${embedding}::vector as "distance"
-      FROM "ai_workspace_embeddings"
-      WHERE "workspace_id" = ${workspaceId}
+      SELECT
+        w."doc_id" as "docId",
+        w."chunk",
+        w."content",
+        w."embedding" <=> ${embedding}::vector as "distance"
+      FROM "ai_workspace_embeddings" w
+      LEFT JOIN "ai_workspace_ignored_docs" i
+        ON i."workspace_id" = w."workspace_id"
+          AND i."doc_id" = w."doc_id"
+          ${matchDocIds?.length ? Prisma.sql`AND w."doc_id" NOT IN (${Prisma.join(matchDocIds)})` : Prisma.empty}
+      WHERE
+        w."workspace_id" = ${workspaceId}
+        AND i."doc_id" IS NULL
+        AND (w."embedding" <=> ${embedding}::vector) <= ${threshold}
       ORDER BY "distance" ASC
       LIMIT ${topK};
     `;
-    return similarityChunks.filter(c => Number(c.distance) <= threshold);
-  }
 
-  async deleteEmbedding(contextId: string, fileId: string) {
-    await this.db.aiContextEmbedding.deleteMany({
-      where: { contextId, fileId },
-    });
+    return similarityChunks;
   }
 }

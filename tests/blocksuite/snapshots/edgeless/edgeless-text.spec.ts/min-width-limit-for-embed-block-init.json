@@ -25,7 +25,10 @@
           "flavour": "affine:edgeless-text",
           "id": "4",
           "props": {
-            "color": "#84cfff",
+            "color": {
+              "dark": "#ffffff",
+              "light": "#000000"
+            },
             "fontFamily": "blocksuite:surface:Inter",
             "fontStyle": "normal",
             "fontWeight": "400",
@@ -74,7 +77,7 @@
       "id": "2",
       "props": {
         "background": {
-          "dark": "#000000",
+          "dark": "#252525",
           "light": "#ffffff"
         },
         "displayMode": "both",

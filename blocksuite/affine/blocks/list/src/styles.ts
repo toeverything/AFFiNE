@@ -40,6 +40,11 @@ export const listBlockStyles = css`
     font-size: var(--affine-font-base);
   }
 
+  affine-list code {
+    font-size: calc(var(--affine-font-base) - 3px);
+    padding: 0px 4px 2px;
+  }
+
   .affine-list-block-container {
     box-sizing: border-box;
     border-radius: 4px;

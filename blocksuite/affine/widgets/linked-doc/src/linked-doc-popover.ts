@@ -1,5 +1,5 @@
-import { LoadingIcon } from '@blocksuite/affine-block-image';
 import type { IconButton } from '@blocksuite/affine-components/icon-button';
+import { LoadingIcon } from '@blocksuite/affine-components/icons';
 import {
   cleanSpecifiedTail,
   getTextContentFromInlineRange,
@@ -286,7 +286,7 @@ export class LinkedDocPopover extends SignalWatcher(
             <div class="group-title">
               <div class="group-title-text">${group.name}</div>
               ${group.isLoading
-                ? html`<span class="loading-icon">${LoadingIcon}</span>`
+                ? html`<span class="loading-icon">${LoadingIcon()}</span>`
                 : nothing}
             </div>
             <div class="group" style=${group.styles ?? ''}>
@@ -381,7 +381,7 @@ export class LinkedDocPopover extends SignalWatcher(
     }
 
     const ele = shadowRoot.querySelector(
-      `icon-button[data-id="${this._activatedItemKey}"]`
+      `icon-button[data-id=${CSS.escape(this._activatedItemKey)}]`
     );
 
     // If the element doesn't exist, don't log a warning

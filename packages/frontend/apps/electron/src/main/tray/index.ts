@@ -220,15 +220,17 @@ class TrayState implements Disposable {
           );
         }
       }
-      items.push({
-        label: `Meetings Settings...`,
-        click: () => {
-          showMainWindow();
-          applicationMenuSubjects.openInSettingModal$.next({
-            activeTab: 'meetings',
-          });
-        },
-      });
+      if (checkRecordingAvailable()) {
+        items.push({
+          label: `Meetings Settings...`,
+          click: () => {
+            showMainWindow();
+            applicationMenuSubjects.openInSettingModal$.next({
+              activeTab: 'meetings',
+            });
+          },
+        });
+      }
 
       return items;
     };

@@ -8,11 +8,8 @@ import {
   MailWarningIcon,
   UploadCloudIcon,
 } from 'lucide-react';
-import { z } from 'zod';
 
-const appChannelSchema = z.enum(['stable', 'canary', 'beta', 'internal']);
-
-type Channel = z.infer<typeof appChannelSchema>;
+type Channel = 'stable' | 'canary' | 'beta' | 'internal';
 
 const appNames = {
   stable: 'AFFiNE',
@@ -39,9 +36,9 @@ const links = [
     label: 'Self-host Document',
   },
   {
-    href: 'https://affine.pro/pricing',
+    href: 'https://affine.pro/pricing/?type=selfhost#table',
     icon: <UploadCloudIcon size={20} />,
-    label: 'Upgrade to Pro',
+    label: 'Upgrade to Team',
   },
 ];
 

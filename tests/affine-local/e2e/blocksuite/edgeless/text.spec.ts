@@ -61,7 +61,7 @@ test('should update color of edgeless text when switching theme', async ({
   let pickedColor = await pickedColorButton.locator('svg').getAttribute('fill');
   let textColor = await getEdgelessTextColor(text);
 
-  await expect(pickedColorButton.getByLabel('MediumBlue')).toHaveCount(1);
+  await expect(pickedColorButton.getByLabel('Black')).toHaveCount(1);
   expect(pickedColor).toBe(textColor);
 
   const blackColorButton = colorPicker

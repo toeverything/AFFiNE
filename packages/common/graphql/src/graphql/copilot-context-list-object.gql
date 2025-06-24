@@ -15,6 +15,7 @@ query listContextObject(
         files {
           id
           name
+          mimeType
           blobId
           chunkSize
           error

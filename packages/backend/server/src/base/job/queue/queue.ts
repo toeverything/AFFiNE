@@ -48,7 +48,7 @@ export class JobQueue {
 
     const removed = await queue.remove(jobId);
     if (removed) {
-      this.logger.log(`Job ${jobName} removed from queue ${ns}`);
+      this.logger.log(`Job ${jobName}(id=${jobId}) removed from queue ${ns}`);
       return job.data.payload;
     }
 

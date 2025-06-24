@@ -1,0 +1,70 @@
+import { BlockSelection } from '@blocksuite/affine-components/block-selection';
+import { BlockZeroWidth } from '@blocksuite/affine-components/block-zero-width';
+import { effects as componentCaptionEffects } from '@blocksuite/affine-components/caption';
+import { effects as componentCardStyleDropdownMenuEffects } from '@blocksuite/affine-components/card-style-dropdown-menu';
+import { effects as componentCitationEffects } from '@blocksuite/affine-components/citation';
+import { effects as componentColorPickerEffects } from '@blocksuite/affine-components/color-picker';
+import { effects as componentContextMenuEffects } from '@blocksuite/affine-components/context-menu';
+import { effects as componentDatePickerEffects } from '@blocksuite/affine-components/date-picker';
+import { effects as componentDropIndicatorEffects } from '@blocksuite/affine-components/drop-indicator';
+import { effects as componentEdgelessLineStylesEffects } from '@blocksuite/affine-components/edgeless-line-styles-panel';
+import { effects as componentEdgelessLineWidthEffects } from '@blocksuite/affine-components/edgeless-line-width-panel';
+import { effects as componentEdgelessShapeColorPickerEffects } from '@blocksuite/affine-components/edgeless-shape-color-picker';
+import { effects as componentEmbedCardModalEffects } from '@blocksuite/affine-components/embed-card-modal';
+import { FilterableListComponent } from '@blocksuite/affine-components/filterable-list';
+import { effects as componentHighlightDropdownMenuEffects } from '@blocksuite/affine-components/highlight-dropdown-menu';
+import { IconButton } from '@blocksuite/affine-components/icon-button';
+import { effects as componentLinkPreviewEffects } from '@blocksuite/affine-components/link-preview';
+import { effects as componentLinkedDocTitleEffects } from '@blocksuite/affine-components/linked-doc-title';
+import { effects as componentOpenDocDropdownMenuEffects } from '@blocksuite/affine-components/open-doc-dropdown-menu';
+import { effects as componentPortalEffects } from '@blocksuite/affine-components/portal';
+import { effects as componentResourceEffects } from '@blocksuite/affine-components/resource';
+import { effects as componentSizeDropdownMenuEffects } from '@blocksuite/affine-components/size-dropdown-menu';
+import { effects as componentSliderEffects } from '@blocksuite/affine-components/slider';
+import { SmoothCorner } from '@blocksuite/affine-components/smooth-corner';
+import { effects as componentToggleButtonEffects } from '@blocksuite/affine-components/toggle-button';
+import { ToggleSwitch } from '@blocksuite/affine-components/toggle-switch';
+import { effects as componentToolbarEffects } from '@blocksuite/affine-components/toolbar';
+import { effects as componentTooltipContentWithShortcutEffects } from '@blocksuite/affine-components/tooltip-content-with-shortcut';
+import { effects as componentViewDropdownMenuEffects } from '@blocksuite/affine-components/view-dropdown-menu';
+import { effects as richTextEffects } from '@blocksuite/affine-rich-text/effects';
+import { effects as dataViewEffects } from '@blocksuite/data-view/effects';
+import { effects as stdEffects } from '@blocksuite/std/effects';
+
+export function effects() {
+  stdEffects();
+
+  dataViewEffects();
+  richTextEffects();
+
+  componentCaptionEffects();
+  componentContextMenuEffects();
+  componentDatePickerEffects();
+  componentPortalEffects();
+  componentToolbarEffects();
+  componentDropIndicatorEffects();
+  componentToggleButtonEffects();
+  componentColorPickerEffects();
+  componentEmbedCardModalEffects();
+  componentLinkPreviewEffects();
+  componentLinkedDocTitleEffects();
+  componentCardStyleDropdownMenuEffects();
+  componentCitationEffects();
+  componentHighlightDropdownMenuEffects();
+  componentViewDropdownMenuEffects();
+  componentTooltipContentWithShortcutEffects();
+  componentSizeDropdownMenuEffects();
+  componentSliderEffects();
+  componentEdgelessLineWidthEffects();
+  componentEdgelessLineStylesEffects();
+  componentEdgelessShapeColorPickerEffects();
+  componentOpenDocDropdownMenuEffects();
+  componentResourceEffects();
+
+  customElements.define('icon-button', IconButton);
+  customElements.define('smooth-corner', SmoothCorner);
+  customElements.define('toggle-switch', ToggleSwitch);
+  customElements.define('affine-filterable-list', FilterableListComponent);
+  customElements.define('block-zero-width', BlockZeroWidth);
+  customElements.define('affine-block-selection', BlockSelection);
+}

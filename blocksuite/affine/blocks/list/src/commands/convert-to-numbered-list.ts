@@ -13,12 +13,12 @@ export const convertToNumberedListCommand: Command<
 > = (ctx, next) => {
   const { std, id, order, stopCapturing = true } = ctx;
   const host = std.host as EditorHost;
-  const doc = host.doc;
+  const doc = host.store;
 
   const model = doc.getBlock(id)?.model;
   if (!model || !model.text) return;
 
-  if (stopCapturing) host.doc.captureSync();
+  if (stopCapturing) host.store.captureSync();
 
   const listConvertedId = toNumberedList(std, model, order);
 

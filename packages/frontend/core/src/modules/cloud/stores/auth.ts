@@ -1,4 +1,5 @@
 import {
+  deleteAccountMutation,
   removeAvatarMutation,
   updateUserProfileMutation,
   uploadAvatarMutation,
@@ -149,5 +150,12 @@ export class AuthStore extends Store {
     };
 
     return data;
+  }
+
+  async deleteAccount() {
+    const res = await this.gqlService.gql({
+      query: deleteAccountMutation,
+    });
+    return res.deleteAccount;
   }
 }

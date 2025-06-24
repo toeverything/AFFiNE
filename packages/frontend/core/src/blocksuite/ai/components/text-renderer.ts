@@ -1,15 +1,17 @@
 import { createReactComponentFromLit } from '@affine/component';
+import { getStoreManager } from '@affine/core/blocksuite/manager/store';
+import { getViewManager } from '@affine/core/blocksuite/manager/view';
+import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { PeekViewProvider } from '@blocksuite/affine/components/peek';
 import { Container, type ServiceProvider } from '@blocksuite/affine/global/di';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   codeBlockWrapMiddleware,
   defaultImageProxyMiddleware,
   ImageProxyService,
 } from '@blocksuite/affine/shared/adapters';
-import {
-  LinkPreviewerService,
-  ThemeProvider,
-} from '@blocksuite/affine/shared/services';
+import { ThemeProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import {
   BlockStdScope,
@@ -34,26 +36,25 @@ import { classMap } from 'lit/directives/class-map.js';
 import { keyed } from 'lit/directives/keyed.js';
 import { literal } from 'lit/static-html.js';
 import React from 'react';
+import { filter } from 'rxjs/operators';
 
-import { getStoreManager } from '../../manager/migrating-store';
-import { getViewManager } from '../../manager/migrating-view';
 import { markDownToDoc } from '../../utils';
-import type {
-  AffineAIPanelState,
-  AffineAIPanelWidgetConfig,
-} from '../widgets/ai-panel/type';
+import type { AffineAIPanelState } from '../widgets/ai-panel/type';
 
-export const getCustomPageEditorBlockSpecs: () => ExtensionType[] = () => [
-  ...getViewManager().get('page'),
-  {
-    setup: di => {
-      di.override(
-        BlockViewIdentifier('affine:page'),
-        () => literal`affine-page-root`
-      );
+export const getCustomPageEditorBlockSpecs: () => ExtensionType[] = () => {
+  const manager = getViewManager().config.init().value;
+  return [
+    ...manager.get('page'),
+    {
+      setup: di => {
+        di.override(
+          BlockViewIdentifier('affine:page'),
+          () => literal`affine-page-root`
+        );
+      },
     },
-  },
-];
+  ];
+};
 
 const customHeadingStyles = css`
   .custom-heading {
@@ -101,6 +102,7 @@ export type TextRendererOptions = {
   extensions?: ExtensionType[];
   additionalMiddlewares?: TransformerMiddleware[];
   testId?: string;
+  affineFeatureFlagService?: FeatureFlagService;
 };
 
 // todo: refactor it for more general purpose usage instead of AI only?
@@ -121,20 +123,33 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
       font-weight: 400;
     }
 
-    .affine-paragraph-block-container {
-      line-height: 22px;
-    }
-
     .ai-answer-text-editor {
       .affine-note-block-container {
         > .affine-block-children-container {
-          > :first-child,
-          > :first-child * {
+          > :first-child:not(affine-callout),
+          > :first-child:not(affine-callout) * {
             margin-top: 0 !important;
           }
           > :last-child,
           > :last-child * {
             margin-bottom: 0 !important;
+          }
+        }
+      }
+
+      .affine-paragraph-block-container {
+        line-height: 22px;
+
+        .h6 {
+          padding-left: 16px;
+          color: ${unsafeCSSVarV2('text/link')};
+          font-size: var(--affine-font-base);
+
+          .toggle-icon {
+            transform: translateX(0);
+            svg {
+              color: ${unsafeCSSVarV2('text/link')};
+            }
           }
         }
       }
@@ -212,14 +227,40 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
       'affine:table',
       'affine:surface',
       'affine:paragraph',
+      'affine:callout',
       'affine:code',
       'affine:list',
       'affine:divider',
       'affine:latex',
+      'affine:bookmark',
+      'affine:attachment',
+      'affine:embed-linked-doc',
     ].map(flavour => ({ flavour, viewType: 'display' })),
   };
 
   private _timer?: ReturnType<typeof setInterval> | null = null;
+
+  private readonly _subscribeDocLinkClicked = () => {
+    const refNodeSlots = this.host?.std.getOptional(RefNodeSlotsProvider);
+    if (!refNodeSlots) return;
+    this.disposables.add(
+      refNodeSlots.docLinkClicked
+        .pipe(
+          filter(
+            options => !!this._previewHost && options.host === this._previewHost
+          )
+        )
+        .subscribe(options => {
+          // Open the doc in center peek
+          this.host?.std
+            .getOptional(PeekViewProvider)
+            ?.peek({
+              docId: options.pageId,
+            })
+            .catch(console.error);
+        })
+    );
+  };
 
   private readonly _updateDoc = () => {
     if (this._answers.length > 0) {
@@ -232,7 +273,8 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
       } else {
         const container = new Container();
         getStoreManager()
-          .get('store')
+          .config.init()
+          .value.get('store')
           .forEach(ext => {
             ext.setup(container);
           });
@@ -245,18 +287,34 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
           codeBlockWrapMiddleware(true),
           ...(this.options.additionalMiddlewares ?? []),
         ];
-        markDownToDoc(provider, schema, latestAnswer, middlewares)
+        const affineFeatureFlagService = this.options.affineFeatureFlagService;
+        markDownToDoc(
+          provider,
+          schema,
+          latestAnswer,
+          middlewares,
+          affineFeatureFlagService
+        )
           .then(doc => {
             this.disposeDoc();
             this._doc = doc.doc.getStore({
               query: this._query,
             });
             this.disposables.add(() => {
-              doc.doc.clearQuery(this._query);
+              doc.doc.removeStore({ query: this._query });
             });
             this._doc.readonly = true;
             this.requestUpdate();
             if (this.state !== 'generating') {
+              this._doc.load();
+              // LinkPreviewService & ImageProxyService config should read from host settings
+              const imageProxyService =
+                this.host?.std.store.get(ImageProxyService);
+              if (imageProxyService) {
+                this._doc
+                  ?.get(ImageProxyService)
+                  .setImageProxyURL(imageProxyService.imageProxyURL);
+              }
               this._clearTimer();
             }
           })
@@ -273,20 +331,10 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
     if (this.state === 'generating') {
       this._timer = setInterval(this._updateDoc, 600);
     }
+  }
 
-    // LinkPreviewerService & ImageProxyService config should read from host settings
-    const linkPreviewerService = this.host?.std.store.get(LinkPreviewerService);
-    const imageProxyService = this.host?.std.store.get(ImageProxyService);
-    if (linkPreviewerService) {
-      this._doc
-        ?.get(LinkPreviewerService)
-        .setEndpoint(linkPreviewerService.endpoint);
-    }
-    if (imageProxyService) {
-      this._doc
-        ?.get(ImageProxyService)
-        .setImageProxyURL(imageProxyService.imageProxyURL);
-    }
+  override firstUpdated() {
+    this._subscribeDocLinkClicked();
   }
 
   private disposeDoc() {
@@ -360,6 +408,9 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
   @query('.text-renderer-container')
   private accessor _container!: HTMLDivElement;
 
+  @query('.text-renderer-container editor-host')
+  private accessor _previewHost: EditorHost | null = null;
+
   @property({ attribute: false })
   accessor answer!: string;
 
@@ -376,11 +427,11 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
   accessor state: AffineAIPanelState | undefined = undefined;
 }
 
-export const createTextRenderer: (
+export const createTextRenderer = (
   host: EditorHost,
   options: TextRendererOptions
-) => AffineAIPanelWidgetConfig['answerRenderer'] = (host, options) => {
-  return (answer, state) => {
+) => {
+  return (answer: string, state?: AffineAIPanelState) => {
     return html`<text-renderer
       contenteditable="false"
       .host=${host}

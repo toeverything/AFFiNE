@@ -31,9 +31,13 @@
       "properties": {
         "queue": {
           "type": "object",
-          "description": "The config for job queues\n@default {\"attempts\":5,\"removeOnComplete\":true,\"removeOnFail\":{\"age\":86400,\"count\":500}}\n@link https://api.docs.bullmq.io/interfaces/v5.QueueOptions.html",
+          "description": "The config for job queues\n@default {\"attempts\":5,\"backoff\":{\"type\":\"exponential\",\"delay\":1000},\"removeOnComplete\":true,\"removeOnFail\":{\"age\":86400,\"count\":500}}\n@link https://api.docs.bullmq.io/interfaces/v5.QueueOptions.html",
           "default": {
             "attempts": 5,
+            "backoff": {
+              "type": "exponential",
+              "delay": 1000
+            },
             "removeOnComplete": true,
             "removeOnFail": {
               "age": 86400,
@@ -48,7 +52,19 @@
         },
         "queues.copilot": {
           "type": "object",
-          "description": "The config for copilot job queue\n@default {\"concurrency\":1}",
+          "description": "The config for copilot job queue\n@default {\"concurrency\":10}",
+          "properties": {
+            "concurrency": {
+              "type": "number"
+            }
+          },
+          "default": {
+            "concurrency": 10
+          }
+        },
+        "queues.doc": {
+          "type": "object",
+          "description": "The config for doc job queue\n@default {\"concurrency\":1}",
           "properties": {
             "concurrency": {
               "type": "number"
@@ -58,9 +74,9 @@
             "concurrency": 1
           }
         },
-        "queues.doc": {
+        "queues.indexer": {
           "type": "object",
-          "description": "The config for doc job queue\n@default {\"concurrency\":1}",
+          "description": "The config for indexer job queue\n@default {\"concurrency\":1}",
           "properties": {
             "concurrency": {
               "type": "number"
@@ -120,32 +136,6 @@
             "ttl": 60,
             "limit": 20
           }
-        }
-      }
-    },
-    "websocket": {
-      "type": "object",
-      "description": "Configuration for websocket module",
-      "properties": {
-        "transports": {
-          "type": "array",
-          "description": "The enabled transports for accepting websocket traffics.\n@default [\"websocket\",\"polling\"]\n@link https://docs.nestjs.com/websockets/gateways#transports",
-          "items": {
-            "type": "string",
-            "enum": [
-              "websocket",
-              "polling"
-            ]
-          },
-          "default": [
-            "websocket",
-            "polling"
-          ]
-        },
-        "maxHttpBufferSize": {
-          "type": "number",
-          "description": "How many bytes or characters a message can be, before closing the session (to avoid DoS).\n@default 100000000",
-          "default": 100000000
         }
       }
     },
@@ -501,6 +491,32 @@
         }
       }
     },
+    "websocket": {
+      "type": "object",
+      "description": "Configuration for websocket module",
+      "properties": {
+        "transports": {
+          "type": "array",
+          "description": "The enabled transports for accepting websocket traffics.\n@default [\"websocket\",\"polling\"]\n@link https://docs.nestjs.com/websockets/gateways#transports",
+          "items": {
+            "type": "string",
+            "enum": [
+              "websocket",
+              "polling"
+            ]
+          },
+          "default": [
+            "websocket",
+            "polling"
+          ]
+        },
+        "maxHttpBufferSize": {
+          "type": "number",
+          "description": "How many bytes or characters a message can be, before closing the session (to avoid DoS).\n@default 100000000",
+          "default": 100000000
+        }
+      }
+    },
     "server": {
       "type": "object",
       "description": "Configuration for server module",
@@ -627,6 +643,41 @@
             "apiKey": ""
           }
         },
+        "providers.geminiVertex": {
+          "type": "object",
+          "description": "The config for the google vertex provider.\n@default {}",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "The location of the google vertex provider."
+            },
+            "project": {
+              "type": "string",
+              "description": "The project name of the google vertex provider."
+            },
+            "googleAuthOptions": {
+              "type": "object",
+              "description": "The google auth options for the google vertex provider.",
+              "properties": {
+                "credentials": {
+                  "type": "object",
+                  "description": "The credentials for the google vertex provider.",
+                  "properties": {
+                    "client_email": {
+                      "type": "string",
+                      "description": "The client email for the google vertex provider."
+                    },
+                    "private_key": {
+                      "type": "string",
+                      "description": "The private key for the google vertex provider."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {}
+        },
         "providers.perplexity": {
           "type": "object",
           "description": "The config for the perplexity provider.\n@default {\"apiKey\":\"\"}",
@@ -634,9 +685,58 @@
             "apiKey": ""
           }
         },
+        "providers.anthropic": {
+          "type": "object",
+          "description": "The config for the anthropic provider.\n@default {\"apiKey\":\"\"}",
+          "default": {
+            "apiKey": ""
+          }
+        },
+        "providers.anthropicVertex": {
+          "type": "object",
+          "description": "The config for the google vertex provider.\n@default {}",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "The location of the google vertex provider."
+            },
+            "project": {
+              "type": "string",
+              "description": "The project name of the google vertex provider."
+            },
+            "googleAuthOptions": {
+              "type": "object",
+              "description": "The google auth options for the google vertex provider.",
+              "properties": {
+                "credentials": {
+                  "type": "object",
+                  "description": "The credentials for the google vertex provider.",
+                  "properties": {
+                    "client_email": {
+                      "type": "string",
+                      "description": "The client email for the google vertex provider."
+                    },
+                    "private_key": {
+                      "type": "string",
+                      "description": "The private key for the google vertex provider."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {}
+        },
         "unsplash": {
           "type": "object",
           "description": "The config for the unsplash key.\n@default {\"key\":\"\"}",
+          "default": {
+            "key": ""
+          }
+        },
+        "exa": {
+          "type": "object",
+          "description": "The config for the exa web search key.\n@default {\"key\":\"\"}",
           "default": {
             "key": ""
           }
@@ -764,6 +864,47 @@
         }
       }
     },
+    "indexer": {
+      "type": "object",
+      "description": "Configuration for indexer module",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable indexer plugin\n@default false\n@environment `AFFINE_INDEXER_ENABLED`",
+          "default": false
+        },
+        "provider.type": {
+          "type": "string",
+          "description": "Indexer search service provider name\n@default \"manticoresearch\"\n@environment `AFFINE_INDEXER_SEARCH_PROVIDER`",
+          "default": "manticoresearch"
+        },
+        "provider.endpoint": {
+          "type": "string",
+          "description": "Indexer search service endpoint\n@default \"http://localhost:9308\"\n@environment `AFFINE_INDEXER_SEARCH_ENDPOINT`",
+          "default": "http://localhost:9308"
+        },
+        "provider.apiKey": {
+          "type": "string",
+          "description": "Indexer search service api key. Optional for elasticsearch\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_API_KEY`\n@link https://www.elastic.co/guide/server/current/api-key.html",
+          "default": ""
+        },
+        "provider.username": {
+          "type": "string",
+          "description": "Indexer search service auth username, if not set, basic auth will be disabled. Optional for elasticsearch\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_USERNAME`\n@link https://www.elastic.co/guide/en/elasticsearch/reference/current/http-clients.html",
+          "default": ""
+        },
+        "provider.password": {
+          "type": "string",
+          "description": "Indexer search service auth password, if not set, basic auth will be disabled. Optional for elasticsearch\n@default \"\"\n@environment `AFFINE_INDEXER_SEARCH_PASSWORD`",
+          "default": ""
+        },
+        "autoIndex.batchSize": {
+          "type": "number",
+          "description": "Number of workspaces automatically indexed per batch\n@default 10",
+          "default": 10
+        }
+      }
+    },
     "customerIo": {
       "type": "object",
       "description": "Configuration for customerIo module",
@@ -824,12 +965,42 @@
         },
         "providers.oidc": {
           "type": "object",
-          "description": "OIDC OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\",\"args\":{}}",
+          "description": "OIDC OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\",\"issuer\":\"\",\"args\":{}}\n@link https://openid.net/specs/openid-connect-core-1_0.html",
+          "properties": {
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "args": {
+              "type": "object"
+            }
+          },
           "default": {
             "clientId": "",
             "clientSecret": "",
             "issuer": "",
             "args": {}
+          }
+        },
+        "providers.apple": {
+          "type": "object",
+          "description": "Apple OAuth provider config\n@default {\"clientId\":\"\",\"clientSecret\":\"\"}\n@link https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_js/implementing_sign_in_with_apple_in_your_app",
+          "properties": {
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "args": {
+              "type": "object"
+            }
+          },
+          "default": {
+            "clientId": "",
+            "clientSecret": ""
           }
         }
       }

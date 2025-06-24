@@ -6,7 +6,6 @@ import {
   useConfirmModal,
 } from '@affine/component';
 import { usePageHelper } from '@affine/core/blocksuite/block-suite-page-list/utils';
-import { useDeleteCollectionInfo } from '@affine/core/components/hooks/affine/use-delete-collection-info';
 import { IsFavoriteIcon } from '@affine/core/components/pure/icons';
 import type { NodeOperation } from '@affine/core/desktop/components/navigation-panel';
 import { CollectionService } from '@affine/core/modules/collection';
@@ -44,7 +43,6 @@ export const useNavigationPanelCollectionNodeOperations = (
     CollectionService,
     CompatibleFavoriteItemsAdapter,
   });
-  const deleteInfo = useDeleteCollectionInfo();
 
   const { createPage } = usePageHelper(
     workspaceService.workspace.docCollection
@@ -61,7 +59,7 @@ export const useNavigationPanelCollectionNodeOperations = (
 
   const createAndAddDocument = useCallback(() => {
     const newDoc = createPage();
-    collectionService.addPageToCollection(collectionId, newDoc.id);
+    collectionService.addDocToCollection(collectionId, newDoc.id);
     track.$.navigationPanel.collections.createDoc();
     track.$.navigationPanel.collections.addDocToCollection({
       control: 'button',
@@ -102,11 +100,11 @@ export const useNavigationPanelCollectionNodeOperations = (
   }, [collectionId, workbenchService.workbench]);
 
   const handleDeleteCollection = useCallback(() => {
-    collectionService.deleteCollection(deleteInfo, collectionId);
+    collectionService.deleteCollection(collectionId);
     track.$.navigationPanel.organize.deleteOrganizeItem({
       type: 'collection',
     });
-  }, [collectionId, collectionService, deleteInfo]);
+  }, [collectionId, collectionService]);
 
   const handleShowEdit = useCallback(() => {
     onOpenEdit();
@@ -115,11 +113,10 @@ export const useNavigationPanelCollectionNodeOperations = (
   const handleRename = useCallback(
     (name: string) => {
       const collection = collectionService.collection$(collectionId).value;
-      if (collection && collection.name !== name) {
-        collectionService.updateCollection(collectionId, () => ({
-          ...collection,
+      if (collection && collection.name$.value !== name) {
+        collectionService.updateCollection(collectionId, {
           name,
-        }));
+        });
 
         track.$.navigationPanel.organize.renameOrganizeItem({
           type: 'collection',

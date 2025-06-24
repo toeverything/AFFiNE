@@ -89,7 +89,7 @@ const builtinToolbarConfig = {
             if (!supported) return false;
 
             const block = ctx.getCurrentBlockByType(ImageBlockComponent);
-            return Boolean(block?.blob);
+            return Boolean(block?.blobUrl);
           },
           run(ctx) {
             const block = ctx.getCurrentBlockByType(ImageBlockComponent);

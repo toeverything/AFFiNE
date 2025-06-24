@@ -1,4 +1,4 @@
-import { ThemeProvider } from '@blocksuite/affine-shared/services';
+import { LoadingIcon } from '@blocksuite/affine-components/icons';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { EmbedIcon } from '@blocksuite/icons/lit';
 import { type BlockStdScope } from '@blocksuite/std';
@@ -7,7 +7,6 @@ import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { getEmbedCardIcons } from '../../common/utils';
 import { LOADING_CARD_DEFAULT_HEIGHT } from '../consts';
 import type { EmbedIframeStatusCardOptions } from '../types';
 
@@ -156,9 +155,6 @@ export class EmbedIframeLoadingCard extends LitElement {
   `;
 
   override render() {
-    const theme = this.std.get(ThemeProvider).theme;
-    const { LoadingIcon } = getEmbedCardIcons(theme);
-
     const { layout, width, height } = this.options;
     const cardClasses = classMap({
       'affine-embed-iframe-loading-card': true,
@@ -176,7 +172,7 @@ export class EmbedIframeLoadingCard extends LitElement {
     return html`
       <div class=${cardClasses} style=${cardStyle}>
         <div class="loading-content">
-          <div class="loading-spinner">${LoadingIcon}</div>
+          <div class="loading-spinner">${LoadingIcon()}</div>
           <div class="loading-text">Loading...</div>
         </div>
         <div class="loading-banner">

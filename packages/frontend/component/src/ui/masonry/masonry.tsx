@@ -1,20 +1,46 @@
 import clsx from 'clsx';
+import { debounce } from 'lodash-es';
 import throttle from 'lodash-es/throttle';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { observeResize } from '../../utils';
 import { Scrollable } from '../scrollbar';
 import * as styles from './styles.css';
-import type { MasonryItem, MasonryItemXYWH } from './type';
-import { calcColumns, calcLayout, calcSleep } from './utils';
+import type {
+  MasonryGroup,
+  MasonryItem,
+  MasonryItemXYWH,
+  MasonryPX,
+} from './type';
+import {
+  calcActive,
+  calcColumns,
+  calcLayout,
+  calcPX,
+  calcSticky,
+} from './utils';
 
 export interface MasonryProps extends React.HTMLAttributes<HTMLDivElement> {
-  items: MasonryItem[];
+  items: MasonryItem[] | MasonryGroup[];
 
   gapX?: number;
   gapY?: number;
-  paddingX?: number;
+  paddingX?: MasonryPX;
   paddingY?: number;
+
+  groupsGap?: number;
+  groupHeaderGapWithItems?: number;
+  stickyGroupHeader?: boolean;
+  collapsedGroups?: string[];
+  onGroupCollapse?: (groupId: string, collapsed: boolean) => void;
   /**
    * Specify the width of the item.
    * - `number`: The width of the item in pixels.
@@ -29,6 +55,12 @@ export interface MasonryProps extends React.HTMLAttributes<HTMLDivElement> {
   itemWidthMin?: number;
   virtualScroll?: boolean;
   locateMode?: 'transform' | 'leftTop' | 'transform3d';
+  /**
+   * Specify the number of columns, will override the calculated
+   */
+  columns?: number;
+  resizeDebounce?: number;
+  preloadHeight?: number;
 }
 
 export const Masonry = ({
@@ -42,6 +74,14 @@ export const Masonry = ({
   className,
   virtualScroll = false,
   locateMode = 'leftTop',
+  groupsGap = 0,
+  groupHeaderGapWithItems = 0,
+  stickyGroupHeader = true,
+  collapsedGroups,
+  columns,
+  preloadHeight = 50,
+  resizeDebounce = 20,
+  onGroupCollapse,
   ...props
 }: MasonryProps) => {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -49,11 +89,36 @@ export const Masonry = ({
   const [layoutMap, setLayoutMap] = useState<
     Map<MasonryItem['id'], MasonryItemXYWH>
   >(new Map());
-  const [sleepMap, setSleepMap] = useState<Map<MasonryItem['id'], boolean>>(
+  /**
+   * Record active items, to ensure all items won't be rendered when initialized.
+   */
+  const [activeMap, setActiveMap] = useState<Map<MasonryItem['id'], boolean>>(
     new Map()
   );
+  const [stickyGroupId, setStickyGroupId] = useState<string | undefined>(
+    undefined
+  );
+  const [totalWidth, setTotalWidth] = useState(0);
+  const stickyGroupCollapsed = !!(
+    collapsedGroups &&
+    stickyGroupId &&
+    collapsedGroups.includes(stickyGroupId)
+  );
 
-  const updateSleepMap = useCallback(
+  const groups = useMemo(() => {
+    if (items.length === 0) {
+      return [];
+    }
+    if (items[0] && 'items' in items[0]) return items as MasonryGroup[];
+    return [{ id: '', height: 0, items: items as MasonryItem[] }];
+  }, [items]);
+
+  const stickyGroup = useMemo(() => {
+    if (!stickyGroupId) return undefined;
+    return groups.find(group => group.id === stickyGroupId);
+  }, [groups, stickyGroupId]);
+
+  const updateActiveMap = useCallback(
     (layoutMap: Map<MasonryItem['id'], MasonryItemXYWH>, _scrollY?: number) => {
       if (!virtualScroll) return;
 
@@ -62,16 +127,16 @@ export const Masonry = ({
 
       requestAnimationFrame(() => {
         const scrollY = _scrollY ?? rootEl.scrollTop;
-        const sleepMap = calcSleep({
+        const activeMap = calcActive({
           viewportHeight: rootEl.clientHeight,
           scrollY,
           layoutMap,
-          preloadHeight: 50,
+          preloadHeight,
         });
-        setSleepMap(sleepMap);
+        setActiveMap(activeMap);
       });
     },
-    [virtualScroll]
+    [preloadHeight, virtualScroll]
   );
 
   const calculateLayout = useCallback(() => {
@@ -79,44 +144,63 @@ export const Masonry = ({
     if (!rootEl) return;
 
     const totalWidth = rootEl.clientWidth;
-    const { columns, width } = calcColumns(
+    const { columns: calculatedColumns, width } = calcColumns(
       totalWidth,
       itemWidth,
       itemWidthMin,
       gapX,
-      paddingX
+      paddingX,
+      columns
     );
 
-    const { layout, height } = calcLayout(items, {
-      columns,
+    const { layout, height } = calcLayout(groups, {
+      totalWidth,
+      columns: calculatedColumns,
       width,
       gapX,
       gapY,
       paddingX,
       paddingY,
+      groupsGap,
+      groupHeaderGapWithItems,
+      collapsedGroups: collapsedGroups ?? [],
     });
     setLayoutMap(layout);
     setHeight(height);
-    updateSleepMap(layout);
+    setTotalWidth(totalWidth);
+    updateActiveMap(layout);
+    if (stickyGroupHeader && rootRef.current) {
+      setStickyGroupId(
+        calcSticky({ scrollY: rootRef.current.scrollTop, layoutMap: layout })
+      );
+    }
   }, [
+    collapsedGroups,
+    columns,
     gapX,
     gapY,
+    groupHeaderGapWithItems,
+    groups,
+    groupsGap,
     itemWidth,
     itemWidthMin,
-    items,
     paddingX,
     paddingY,
-    updateSleepMap,
+    stickyGroupHeader,
+    updateActiveMap,
   ]);
 
   // handle resize
   useEffect(() => {
     calculateLayout();
     if (rootRef.current) {
-      return observeResize(rootRef.current, calculateLayout);
+      return observeResize(
+        rootRef.current,
+        debounce(calculateLayout, resizeDebounce)
+      );
     }
     return;
-  }, [calculateLayout]);
+  }, [calculateLayout, resizeDebounce]);
 
   // handle scroll
   useEffect(() => {
@@ -126,7 +210,10 @@ export const Masonry = ({
     if (virtualScroll) {
       const handler = throttle((e: Event) => {
         const scrollY = (e.target as HTMLElement).scrollTop;
-        updateSleepMap(layoutMap, scrollY);
+        updateActiveMap(layoutMap, scrollY);
+        if (stickyGroupHeader) {
+          setStickyGroupId(calcSticky({ scrollY, layoutMap }));
+        }
       }, 50);
       rootEl.addEventListener('scroll', handler);
       return () => {
@@ -134,7 +221,7 @@ export const Masonry = ({
       };
     }
     return;
-  }, [layoutMap, updateSleepMap, virtualScroll]);
+  }, [layoutMap, stickyGroupHeader, updateActiveMap, virtualScroll]);
 
   return (
     <Scrollable.Root>
@@ -144,44 +231,177 @@ export const Masonry = ({
         className={clsx('scrollable', styles.root, className)}
         {...props}
       >
-        {items.map(item => {
+        {groups.map(group => {
+          // sleep is not calculated, do not render
+          const {
+            id: groupId,
+            items,
+            className,
+            Component,
+            ...groupProps
+          } = group;
+          const collapsed =
+            collapsedGroups && collapsedGroups.includes(groupId);
+
           return (
-            <MasonryItem
-              key={item.id}
-              {...item}
-              locateMode={locateMode}
-              xywh={layoutMap.get(item.id)}
-              sleep={sleepMap.get(item.id)}
-            >
-              {item.children}
-            </MasonryItem>
+            <Fragment key={groupId}>
+              {/* group header */}
+              {virtualScroll && !activeMap.get(group.id) ? null : (
+                <MasonryGroupHeader
+                  className={clsx(styles.groupHeader, className)}
+                  key={`header-${groupId}`}
+                  id={groupId}
+                  locateMode={locateMode}
+                  xywh={layoutMap.get(groupId)}
+                  {...groupProps}
+                  onClick={() => onGroupCollapse?.(groupId, !collapsed)}
+                  Component={Component}
+                  itemCount={items.length}
+                  collapsed={!!collapsed}
+                  groupId={groupId}
+                  paddingX={calcPX(paddingX, totalWidth)}
+                />
+              )}
+              {/* group items */}
+              {collapsed
+                ? null
+                : items.map(({ id: itemId, Component, ...item }) => {
+                    const mixId = groupId ? `${groupId}:${itemId}` : itemId;
+                    if (virtualScroll && !activeMap.get(mixId)) return null;
+                    return (
+                      <MasonryGroupItem
+                        key={mixId}
+                        id={mixId}
+                        {...item}
+                        locateMode={locateMode}
+                        xywh={layoutMap.get(mixId)}
+                        groupId={groupId}
+                        itemId={itemId}
+                        Component={Component}
+                      />
+                    );
+                  })}
+            </Fragment>
           );
         })}
         <div data-masonry-placeholder style={{ height }} />
       </Scrollable.Viewport>
-      <Scrollable.Scrollbar />
+      {stickyGroup ? (
+        <div
+          className={clsx(styles.stickyGroupHeader, stickyGroup.className)}
+          style={{
+            padding: `0 ${calcPX(paddingX, totalWidth)}px`,
+            height: stickyGroup.height,
+            ...stickyGroup.style,
+          }}
+          onClick={() =>
+            onGroupCollapse?.(stickyGroup.id, !stickyGroupCollapsed)
+          }
+        >
+          {stickyGroup.Component ? (
+            <stickyGroup.Component
+              groupId={stickyGroup.id}
+              itemCount={stickyGroup.items.length}
+              collapsed={stickyGroupCollapsed}
+            />
+          ) : (
+            stickyGroup.children
+          )}
+        </div>
+      ) : null}
+      <Scrollable.Scrollbar className={styles.scrollbar} />
     </Scrollable.Root>
   );
 };
 
-interface MasonryItemProps
-  extends MasonryItem,
-    Omit<React.HTMLAttributes<HTMLDivElement>, 'id' | 'height'> {
-  locateMode?: 'transform' | 'leftTop' | 'transform3d';
-  sleep?: boolean;
-  xywh?: MasonryItemXYWH;
-}
+type MasonryItemProps = MasonryItem &
+  Omit<React.HTMLAttributes<HTMLDivElement>, 'id' | 'height'> & {
+    locateMode?: 'transform' | 'leftTop' | 'transform3d';
+    xywh?: MasonryItemXYWH;
+  };
+
+const MasonryGroupHeader = memo(function MasonryGroupHeader({
+  id,
+  children,
+  style,
+  className,
+  Component,
+  groupId,
+  itemCount,
+  collapsed,
+  paddingX,
+  ...props
+}: Omit<MasonryItemProps, 'Component'> & {
+  Component?: MasonryGroup['Component'];
+  groupId: string;
+  itemCount: number;
+  collapsed: boolean;
+  paddingX?: number;
+}) {
+  const content = useMemo(() => {
+    if (Component) {
+      return (
+        <Component
+          groupId={groupId}
+          itemCount={itemCount}
+          collapsed={collapsed}
+        />
+      );
+    }
+    return children;
+  }, [Component, children, collapsed, groupId, itemCount]);
+
+  return (
+    <MasonryItem
+      id={id}
+      style={{
+        padding: `0 ${paddingX}px`,
+        height: '100%',
+        ...style,
+      }}
+      className={className}
+      {...props}
+    >
+      {content}
+    </MasonryItem>
+  );
+});
+
+const MasonryGroupItem = memo(function MasonryGroupItem({
+  id,
+  children,
+  className,
+  Component,
+  groupId,
+  itemId,
+  ...props
+}: MasonryItemProps & {
+  groupId: string;
+  itemId: string;
+}) {
+  const content = useMemo(() => {
+    if (Component) {
+      return <Component groupId={groupId} itemId={itemId} />;
+    }
+    return children;
+  }, [Component, children, groupId, itemId]);
+
+  return (
+    <MasonryItem id={id} className={className} {...props}>
+      {content}
+    </MasonryItem>
+  );
+});
 
 const MasonryItem = memo(function MasonryItem({
   id,
   xywh,
   locateMode = 'leftTop',
-  sleep = false,
-  className,
   children,
+  className,
   style: styleProp,
   ...props
-}: MasonryItemProps) {
+}: Omit<MasonryItemProps, 'height' | 'ratio'>) {
   const style = useMemo(() => {
     if (!xywh) return { display: 'none' };
 
@@ -204,14 +424,14 @@ const MasonryItem = memo(function MasonryItem({
     };
   }, [locateMode, styleProp, xywh]);
 
-  if (sleep || !xywh) return null;
+  if (!xywh) return null;
 
   return (
     <div
       data-masonry-item
       data-masonry-item-id={id}
-      className={clsx(styles.item, className)}
       style={style}
+      className={clsx(styles.item, className)}
       {...props}
     >
       {children}

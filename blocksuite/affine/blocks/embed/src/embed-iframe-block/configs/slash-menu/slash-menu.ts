@@ -17,7 +17,7 @@ export const embedIframeSlashMenuConfig: SlashMenuConfig = {
       },
       group: '4_Content & Media@5',
       when: ({ model }) => {
-        return model.doc.schema.flavourSchemaMap.has('affine:embed-iframe');
+        return model.store.schema.flavourSchemaMap.has('affine:embed-iframe');
       },
       action: ({ std }) => {
         std.command

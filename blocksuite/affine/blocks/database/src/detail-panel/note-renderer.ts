@@ -36,7 +36,7 @@ export class NoteRenderer
   accessor rowId!: string;
 
   rowText$ = computed(() => {
-    return this.databaseBlock.doc.getBlock(this.rowId)?.model?.text;
+    return this.databaseBlock.store.getBlock(this.rowId)?.model?.text;
   });
 
   allowCreateDoc$ = computed(() => {

@@ -120,6 +120,8 @@ export class OutlineNoteCard extends SignalWatcher(
           setOffset({ x: clientX - left, y: clientY - top });
 
           container.style.width = `${this.parentElement?.clientWidth ?? 0}px`;
+          container.style.maxHeight = '500px';
+          container.style.overflow = 'hidden';
           container.style.backgroundColor = cssVarV2(
             'layer/background/primary'
           );

@@ -178,7 +178,7 @@ export class DocRendererController {
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" sizes="192x192" href="/favicon-192.png" />
-    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="shortcut icon" href="/favicon.ico?v=2" />
     <meta name="emotion-insertion-point" content="" />
     ${!opts ? '<meta name="robots" content="noindex, nofollow" />' : ''}
     <meta
@@ -194,11 +194,11 @@ export class DocRendererController {
     ${Object.entries(envMeta)
       .map(([key, val]) => `<meta name="env:${key}" content="${val}" />`)
       .join('\n')}
-    ${assets.css.map(url => `<link rel="stylesheet" href="${url}" />`).join('\n')}
+    ${assets.css.map(url => `<link rel="stylesheet" href="${url}" crossorigin />`).join('\n')}
   </head>
   <body>
     <div id="app" data-version="${assets.gitHash}"></div>
-    ${assets.js.map(url => `<script src="${url}"></script>`).join('\n')}
+    ${assets.js.map(url => `<script src="${url}" crossorigin></script>`).join('\n')}
   </body>
 </html>
     `;

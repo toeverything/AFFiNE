@@ -7,6 +7,7 @@ import { BaseModel } from './base';
 
 declare global {
   interface Events {
+    'workspace.updated': Workspace;
     'workspace.deleted': {
       id: string;
     };
@@ -22,6 +23,7 @@ export type UpdateWorkspaceInput = Pick<
   | 'enableDocEmbedding'
   | 'name'
   | 'avatarKey'
+  | 'indexed'
 >;
 
 @Injectable()
@@ -54,9 +56,12 @@ export class WorkspaceModel extends BaseModel {
       },
       data,
     });
-    this.logger.log(
+    this.logger.debug(
       `Updated workspace ${workspaceId} with data ${JSON.stringify(data)}`
     );
+
+    this.event.emit('workspace.updated', workspace);
+
     return workspace;
   }
 
@@ -72,6 +77,18 @@ export class WorkspaceModel extends BaseModel {
     return await this.db.workspace.findMany({
       where: {
         id: { in: ids },
+      },
+    });
+  }
+
+  async listAfterSid(sid: number, limit: number) {
+    return await this.db.workspace.findMany({
+      where: {
+        sid: { gt: sid },
+      },
+      take: limit,
+      orderBy: {
+        sid: 'asc',
       },
     });
   }
@@ -97,6 +114,10 @@ export class WorkspaceModel extends BaseModel {
   async allowEmbedding(workspaceId: string) {
     const workspace = await this.get(workspaceId);
     return workspace?.enableDocEmbedding ?? false;
+  }
+
+  async isTeamWorkspace(workspaceId: string) {
+    return this.models.workspaceFeature.has(workspaceId, 'team_plan_v1');
   }
   // #endregion
 }

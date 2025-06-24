@@ -1,5 +1,6 @@
 import { computed, type ReadonlySignal } from '@preact/signals-core';
 
+import { fromJson } from '../property/utils.js';
 import type { Property } from './property.js';
 import type { Row } from './row.js';
 import type { SingleView } from './single-view.js';
@@ -9,18 +10,19 @@ export interface Cell<
   JsonValue = unknown,
   Data extends Record<string, unknown> = Record<string, unknown>,
 > {
-  readonly rowId: string;
   readonly view: SingleView;
+  readonly rowId: string;
   readonly row: Row;
   readonly propertyId: string;
   readonly property: Property<RawValue, JsonValue, Data>;
-  readonly isEmpty$: ReadonlySignal<boolean>;
-  readonly stringValue$: ReadonlySignal<string>;
-  readonly jsonValue$: ReadonlySignal<JsonValue>;
 
+  readonly isEmpty$: ReadonlySignal<boolean>;
   readonly value$: ReadonlySignal<RawValue | undefined>;
+  readonly jsonValue$: ReadonlySignal<JsonValue | undefined>;
+  readonly stringValue$: ReadonlySignal<string | undefined>;
 
   valueSet(value: RawValue | undefined): void;
+  jsonValueSet(value: JsonValue | undefined): void;
 }
 
 export class CellBase<
@@ -29,10 +31,12 @@ export class CellBase<
   Data extends Record<string, unknown> = Record<string, unknown>,
 > implements Cell<RawValue, JsonValue, Data>
 {
+  get dataSource() {
+    return this.view.manager.dataSource;
+  }
+
   meta$ = computed(() => {
-    return this.view.manager.dataSource.propertyMetaGet(
-      this.property.type$.value
-    );
+    return this.dataSource.propertyMetaGet(this.property.type$.value);
   });
 
   value$ = computed(() => {
@@ -51,20 +55,37 @@ export class CellBase<
     );
   });
 
-  jsonValue$: ReadonlySignal<JsonValue> = computed(() => {
-    return this.view.cellJsonValueGet(this.rowId, this.propertyId) as JsonValue;
+  jsonValue$: ReadonlySignal<JsonValue | undefined> = computed(() => {
+    const toJson = this.property.meta$.value?.config.rawValue.toJson;
+    if (!toJson) {
+      return undefined;
+    }
+    return (
+      (toJson({
+        value: this.value$.value,
+        data: this.property.data$.value,
+        dataSource: this.dataSource,
+      }) as JsonValue) ?? undefined
+    );
   });
 
   property$ = computed(() => {
-    return this.view.propertyGet(this.propertyId) as Property<
+    return this.view.propertyGetOrCreate(this.propertyId) as Property<
       RawValue,
       JsonValue,
       Data
     >;
   });
 
-  stringValue$: ReadonlySignal<string> = computed(() => {
-    return this.view.cellStringValueGet(this.rowId, this.propertyId)!;
+  stringValue$: ReadonlySignal<string | undefined> = computed(() => {
+    const toString = this.property.meta$.value?.config.rawValue.toString;
+    if (!toString) {
+      return;
+    }
+    return toString({
+      value: this.value$.value,
+      data: this.property.data$.value,
+    });
   });
 
   get property(): Property<RawValue, JsonValue, Data> {
@@ -72,7 +93,7 @@ export class CellBase<
   }
 
   get row(): Row {
-    return this.view.rowGet(this.rowId);
+    return this.view.rowGetOrCreate(this.rowId);
   }
 
   constructor(
@@ -87,5 +108,18 @@ export class CellBase<
       this.propertyId,
       value
     );
+  }
+
+  jsonValueSet(value: JsonValue | undefined): void {
+    const meta = this.property.meta$.value;
+    if (!meta) {
+      return;
+    }
+    const rawValue = fromJson(meta.config, {
+      value: value,
+      data: this.property.data$.value,
+      dataSource: this.view.manager.dataSource,
+    });
+    this.dataSource.cellValueChange(this.rowId, this.propertyId, rawValue);
   }
 }

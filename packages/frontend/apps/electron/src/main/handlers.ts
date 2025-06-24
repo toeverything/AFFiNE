@@ -80,7 +80,12 @@ export const registerHandlers = () => {
   };
 
   ipcMain.handle(AFFINE_API_CHANNEL_NAME, async (e, ...args: any[]) => {
-    return handleIpcMessage(e, ...args);
+    try {
+      return await handleIpcMessage(e, ...args);
+    } catch (error) {
+      logger.error(`error in ipc handler when calling ${args[0]}`, error);
+      return null;
+    }
   });
 
   ipcMain.on(AFFINE_API_CHANNEL_NAME, (e, ...args: any[]) => {

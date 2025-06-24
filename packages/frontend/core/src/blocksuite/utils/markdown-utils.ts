@@ -1,3 +1,4 @@
+import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace';
 import type { ServiceProvider } from '@blocksuite/affine/global/di';
 import {
@@ -25,7 +26,7 @@ import type {
   TransformerMiddleware,
 } from '@blocksuite/affine/store';
 import { toDraftModel, Transformer } from '@blocksuite/affine/store';
-
+import { Doc as YDoc } from 'yjs';
 const updateSnapshotText = (
   point: TextRangePoint,
   snapshot: BlockSnapshot,
@@ -44,7 +45,7 @@ function processSnapshot(
   text: TextSelection,
   host: EditorHost
 ) {
-  const model = host.doc.getModelById(snapshot.id);
+  const model = host.store.getModelById(snapshot.id);
   if (!model) {
     return;
   }
@@ -161,10 +162,14 @@ export async function markDownToDoc(
   provider: ServiceProvider,
   schema: Schema,
   answer: string,
-  middlewares?: TransformerMiddleware[]
+  middlewares?: TransformerMiddleware[],
+  affineFeatureFlagService?: FeatureFlagService
 ) {
   // Should not create a new doc in the original collection
-  const collection = new WorkspaceImpl();
+  const collection = new WorkspaceImpl({
+    rootDoc: new YDoc({ guid: 'markdownToDoc' }),
+    featureFlagService: affineFeatureFlagService,
+  });
   collection.meta.initialize();
   const transformer = new Transformer({
     schema,

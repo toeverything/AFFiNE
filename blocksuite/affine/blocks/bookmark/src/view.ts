@@ -6,6 +6,7 @@ import { BookmarkBlockSchema } from '@blocksuite/affine-model';
 import { BlockViewExtension, FlavourExtension } from '@blocksuite/std';
 import { literal } from 'lit/static-html.js';
 
+import { BookmarkBlockInteraction } from './bookmark-edgeless-block';
 import { BookmarkSlashMenuConfigExtension } from './configs/slash-menu';
 import { createBuiltinToolbarConfigExtension } from './configs/toolbar';
 import { EdgelessClipboardBookmarkConfig } from './edgeless-clipboard-config';
@@ -36,6 +37,7 @@ export class BookmarkViewExtension extends ViewExtensionProvider {
     const isEdgeless = this.isEdgeless(context.scope);
     if (isEdgeless) {
       context.register(EdgelessClipboardBookmarkConfig);
+      context.register(BookmarkBlockInteraction);
     }
   }
 }

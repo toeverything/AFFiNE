@@ -4,13 +4,16 @@ import { Label } from '@affine/admin/components/ui/label';
 import { Separator } from '@affine/admin/components/ui/separator';
 import { Switch } from '@affine/admin/components/ui/switch';
 import type { FeatureType } from '@affine/graphql';
+import { cssVarV2 } from '@toeverything/theme/v2';
 import { ChevronRightIcon } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 import { useServerConfig } from '../../common';
 import { RightPanelHeader } from '../../header';
 import type { UserInput, UserType } from '../schema';
+import { validateEmails, validatePassword } from '../utils/csv-utils';
 import { useCreateUser, useUpdateUser } from './use-user-management';
 
 type UserFormProps = {
@@ -20,6 +23,7 @@ type UserFormProps = {
   onConfirm: (user: UserInput) => void;
   onValidate: (user: Partial<UserInput>) => boolean;
   actions?: React.ReactNode;
+  showOption?: boolean;
 };
 
 function UserForm({
@@ -29,6 +33,7 @@ function UserForm({
   onConfirm,
   onValidate,
   actions,
+  showOption,
 }: UserFormProps) {
   const serverConfig = useServerConfig();
 
@@ -36,9 +41,10 @@ function UserForm({
     () => ({
       name: defaultValue?.name ?? '',
       email: defaultValue?.email ?? '',
+      password: defaultValue?.password ?? '',
       features: defaultValue?.features ?? [],
     }),
-    [defaultValue?.email, defaultValue?.features, defaultValue?.name]
+    [defaultValue]
   );
 
   const [changes, setChanges] = useState<Partial<UserInput>>(defaultUser);
@@ -68,7 +74,8 @@ function UserForm({
 
     // @ts-expect-error checked
     onConfirm(changes);
-  }, [canSave, changes, onConfirm]);
+    setChanges(defaultUser);
+  }, [canSave, changes, defaultUser, onConfirm]);
 
   const onFeatureChanged = useCallback(
     (feature: FeatureType, checked: boolean) => {
@@ -116,6 +123,19 @@ function UserForm({
             onChange={setField}
             placeholder="Enter email address"
           />
+          {showOption && (
+            <>
+              <Separator />
+              <InputItem
+                label="Password"
+                field="password"
+                value={changes.password}
+                onChange={setField}
+                optional
+                placeholder="Enter password"
+              />
+            </>
+          )}
         </div>
 
         <div className="border rounded-md">
@@ -167,12 +187,14 @@ function ToggleItem({
 function InputItem({
   label,
   field,
+  optional,
   value,
   onChange,
   placeholder,
 }: {
   label: string;
   field: keyof UserInput;
+  optional?: boolean;
   value?: string;
   onChange: (field: keyof UserInput, value: string) => void;
   placeholder?: string;
@@ -185,9 +207,20 @@ function InputItem({
   );
 
   return (
-    <div className="p-3">
-      <Label className="text-[15px] leading-6 font-medium mb-1.5">
+    <div className="flex flex-col gap-1.5 p-3">
+      <Label
+        className="text-[15px] font-medium flex-wrap flex"
+        style={{ lineHeight: '1.6rem' }}
+      >
         {label}
+        {optional && (
+          <span
+            className="font-normal ml-1"
+            style={{ color: cssVarV2('text/secondary') }}
+          >
+            (optional)
+          </span>
+        )}
       </Label>
       <Input
         type="text"
@@ -210,6 +243,8 @@ const validateUpdateUser = (user: Partial<UserInput>) => {
 
 export function CreateUserForm({ onComplete }: { onComplete: () => void }) {
   const { create, creating } = useCreateUser();
+  const serverConfig = useServerConfig();
+  const passwordLimits = serverConfig.credentialsRequirement.password;
   useEffect(() => {
     if (creating) {
       return () => {
@@ -219,12 +254,30 @@ export function CreateUserForm({ onComplete }: { onComplete: () => void }) {
 
     return;
   }, [creating, onComplete]);
+
+  const handleCreateUser = useCallback(
+    (user: UserInput) => {
+      const emailValidation = validateEmails([user]);
+      const passwordValidation = validatePassword(
+        user.password,
+        passwordLimits
+      );
+      if (!passwordValidation.valid || !emailValidation[0].valid) {
+        toast.error(passwordValidation.error || emailValidation[0].error);
+        return;
+      }
+      create(user);
+    },
+    [create, passwordLimits]
+  );
+
   return (
     <UserForm
       title="Create User"
       onClose={onComplete}
-      onConfirm={create}
+      onConfirm={handleCreateUser}
       onValidate={validateCreateUser}
+      showOption={true}
     />
   );
 }

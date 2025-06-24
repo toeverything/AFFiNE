@@ -17,6 +17,7 @@
     { "path": "../../common/nbstore" },
     { "path": "../track" },
     { "path": "../../../blocksuite/affine/all" },
+    { "path": "../../../blocksuite/framework/std" },
     { "path": "../../common/infra" }
   ]
 }

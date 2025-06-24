@@ -32,7 +32,7 @@ export function createDefaultDoc(
   store.addBlock('affine:paragraph', {}, noteId);
   // To make sure the content of new doc would not be clear
   // By undo operation for the first time
-  doc.resetHistory();
+  store.resetHistory();
 
   return store;
 }

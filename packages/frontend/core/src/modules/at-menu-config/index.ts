@@ -4,7 +4,6 @@ import { WorkspaceServerService } from '../cloud';
 import { WorkspaceDialogService } from '../dialogs';
 import { DocScope, DocsService } from '../doc';
 import { DocDisplayMetaService } from '../doc-display-meta';
-import { EditorSettingService } from '../editor-setting';
 import { JournalService } from '../journal';
 import { GuardService, MemberSearchService } from '../permissions';
 import { DocGrantedUsersService } from '../permissions/services/doc-granted-users';
@@ -20,7 +19,6 @@ export function configAtMenuConfigModule(framework: Framework) {
       JournalService,
       DocDisplayMetaService,
       WorkspaceDialogService,
-      EditorSettingService,
       DocsService,
       SearchMenuService,
       WorkspaceServerService,

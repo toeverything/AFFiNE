@@ -7,7 +7,7 @@ public class ClaimAudioTranscriptionMutation: GraphQLMutation {
   public static let operationName: String = "claimAudioTranscription"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation claimAudioTranscription($jobId: String!) { claimAudioTranscription(jobId: $jobId) { __typename id status title summary transcription { __typename speaker start end transcription } } }"#
+      #"mutation claimAudioTranscription($jobId: String!) { claimAudioTranscription(jobId: $jobId) { __typename id status title summary actions transcription { __typename speaker start end transcription } } }"#
     ))
 
   public var jobId: String
@@ -43,6 +43,7 @@ public class ClaimAudioTranscriptionMutation: GraphQLMutation {
         .field("status", GraphQLEnum<AffineGraphQL.AiJobStatus>.self),
         .field("title", String?.self),
         .field("summary", String?.self),
+        .field("actions", String?.self),
         .field("transcription", [Transcription]?.self),
       ] }
 
@@ -50,6 +51,7 @@ public class ClaimAudioTranscriptionMutation: GraphQLMutation {
       public var status: GraphQLEnum<AffineGraphQL.AiJobStatus> { __data["status"] }
       public var title: String? { __data["title"] }
       public var summary: String? { __data["summary"] }
+      public var actions: String? { __data["actions"] }
       public var transcription: [Transcription]? { __data["transcription"] }
 
       /// ClaimAudioTranscription.Transcription

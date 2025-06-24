@@ -13,4 +13,5 @@ export type PropertyDataUpdater<
 
 export interface DatabaseFlags {
   enable_number_formatting: boolean;
+  enable_table_virtual_scroll: boolean;
 }

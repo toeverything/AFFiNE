@@ -51,6 +51,11 @@ export class DocRecordList extends Entity {
     []
   );
 
+  public readonly nonTrashDocsIds$ = LiveData.from<string[]>(
+    this.store.watchNonTrashDocIds(),
+    []
+  );
+
   public readonly isReady$ = LiveData.from(
     this.store.watchDocListReady(),
     false

@@ -11,13 +11,13 @@ import { UserModule } from '../../core/user';
 import { WorkspaceModule } from '../../core/workspaces';
 import { StripeWebhookController } from './controller';
 import { SubscriptionCronJobs } from './cron';
+import { PaymentEventHandlers } from './event';
 import { LicenseController } from './license/controller';
 import {
   SelfhostTeamSubscriptionManager,
   UserSubscriptionManager,
   WorkspaceSubscriptionManager,
 } from './manager';
-import { QuotaOverride } from './quota';
 import {
   SubscriptionResolver,
   UserSubscriptionResolver,
@@ -49,7 +49,7 @@ import { StripeWebhook } from './webhook';
     SelfhostTeamSubscriptionManager,
     SubscriptionCronJobs,
     WorkspaceSubscriptionResolver,
-    QuotaOverride,
+    PaymentEventHandlers,
   ],
   controllers: [StripeWebhookController, LicenseController],
 })

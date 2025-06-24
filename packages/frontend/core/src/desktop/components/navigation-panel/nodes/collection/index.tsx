@@ -5,26 +5,17 @@ import {
   MenuItem,
   toast,
 } from '@affine/component';
-import { filterPage } from '@affine/core/components/page-list';
-import { CollectionService } from '@affine/core/modules/collection';
+import {
+  type Collection,
+  CollectionService,
+} from '@affine/core/modules/collection';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
-import { DocsService } from '@affine/core/modules/doc';
-import { CompatibleFavoriteItemsAdapter } from '@affine/core/modules/favorite';
 import { GlobalContextService } from '@affine/core/modules/global-context';
-import { ShareDocsListService } from '@affine/core/modules/share-doc';
 import type { AffineDNDData } from '@affine/core/types/dnd';
-import type { Collection } from '@affine/env/filter';
-import { PublicDocMode } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
-import type { DocMeta } from '@blocksuite/affine/store';
 import { FilterMinusIcon } from '@blocksuite/icons/rc';
-import {
-  LiveData,
-  useLiveData,
-  useService,
-  useServices,
-} from '@toeverything/infra';
+import { useLiveData, useService, useServices } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -71,6 +62,7 @@ export const NavigationPanelCollectionNode = ({
 
   const collectionService = useService(CollectionService);
   const collection = useLiveData(collectionService.collection$(collectionId));
+  const name = useLiveData(collection?.name$);
 
   const dndData = useMemo(() => {
     return {
@@ -89,11 +81,10 @@ export const NavigationPanelCollectionNode = ({
 
   const handleRename = useCallback(
     (name: string) => {
-      if (collection && collection.name !== name) {
-        collectionService.updateCollection(collectionId, () => ({
-          ...collection,
+      if (collection && collection.name$.value !== name) {
+        collectionService.updateCollection(collectionId, {
           name,
-        }));
+        });
 
         track.$.navigationPanel.organize.renameOrganizeItem({
           type: 'collection',
@@ -109,10 +100,10 @@ export const NavigationPanelCollectionNode = ({
       if (!collection) {
         return;
       }
-      if (collection.allowList.includes(docId)) {
+      if (collection.allowList$.value.includes(docId)) {
         toast(t['com.affine.collection.addPage.alreadyExists']());
       } else {
-        collectionService.addPageToCollection(collection.id, docId);
+        collectionService.addDocToCollection(collection.id, docId);
       }
     },
     [collection, collectionService, t]
@@ -210,7 +201,7 @@ export const NavigationPanelCollectionNode = ({
   return (
     <NavigationPanelTreeNode
       icon={CollectionIcon}
-      name={collection.name || t['Untitled']()}
+      name={name || t['Untitled']()}
       dndData={dndData}
       onDrop={handleDropOnCollection}
       renameable
@@ -237,84 +228,51 @@ const NavigationPanelCollectionNodeChildren = ({
   collection: Collection;
 }) => {
   const t = useI18n();
-  const {
-    docsService,
-    compatibleFavoriteItemsAdapter,
-    shareDocsListService,
-    collectionService,
-  } = useServices({
-    DocsService,
-    CompatibleFavoriteItemsAdapter,
-    ShareDocsListService,
+  const { collectionService } = useServices({
     CollectionService,
   });
 
-  useEffect(() => {
-    // TODO(@eyhn): loading & error UI
-    shareDocsListService.shareDocs?.revalidate();
-  }, [shareDocsListService]);
-
-  const docMetas = useLiveData(
-    useMemo(
-      () =>
-        LiveData.computed(get => {
-          return get(docsService.list.docs$).map(
-            doc => get(doc.meta$) as DocMeta
-          );
-        }),
-      [docsService]
-    )
+  const allowList = useLiveData(
+    collection.allowList$.map(list => new Set(list))
   );
-  const favourites = useLiveData(compatibleFavoriteItemsAdapter.favorites$);
-  const allowList = useMemo(
-    () => new Set(collection.allowList),
-    [collection.allowList]
-  );
-  const shareDocs = useLiveData(shareDocsListService.shareDocs?.list$);
 
   const handleRemoveFromAllowList = useCallback(
     (id: string) => {
       track.$.navigationPanel.collections.removeOrganizeItem({ type: 'doc' });
-      collectionService.deletePageFromCollection(collection.id, id);
+      collectionService.removeDocFromCollection(collection.id, id);
       toast(t['com.affine.collection.removePage.success']());
     },
     [collection.id, collectionService, t]
   );
 
-  const filtered = docMetas.filter(meta => {
-    if (meta.trash) return false;
-    const publicMode = shareDocs?.find(d => d.id === meta.id)?.mode;
-    const pageData = {
-      meta: meta as DocMeta,
-      publicMode:
-        publicMode === PublicDocMode.Edgeless
-          ? ('edgeless' as const)
-          : publicMode === PublicDocMode.Page
-            ? ('page' as const)
-            : undefined,
-      favorite: favourites.some(fav => fav.id === meta.id),
-    };
-    return filterPage(collection, pageData);
-  });
+  const [filteredDocIds, setFilteredDocIds] = useState<string[]>([]);
 
-  return filtered.map(doc => (
+  useEffect(() => {
+    const subscription = collection.watch().subscribe(docIds => {
+      setFilteredDocIds(docIds);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [collection]);
+
+  return filteredDocIds.map(docId => (
     <NavigationPanelDocNode
-      key={doc.id}
-      docId={doc.id}
+      key={docId}
+      docId={docId}
       reorderable={false}
       location={{
         at: 'navigation-panel:collection:filtered-docs',
         collectionId: collection.id,
       }}
       operations={
-        allowList
+        allowList.has(docId)
           ? [
               {
                 index: 99,
                 view: (
                   <MenuItem
                     prefixIcon={<FilterMinusIcon />}
-                    onClick={() => handleRemoveFromAllowList(doc.id)}
+                    onClick={() => handleRemoveFromAllowList(docId)}
                   >
                     {t['Remove special filter']()}
                   </MenuItem>

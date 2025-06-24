@@ -1,46 +1,13 @@
-import { Scrollable, useHasScrollTop } from '@affine/component';
-import clsx from 'clsx';
 import type { ForwardedRef, PropsWithChildren } from 'react';
-import {
-  forwardRef,
-  memo,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-} from 'react';
+import { memo, useEffect, useImperativeHandle } from 'react';
 
-import { usePageHeaderColsDef } from './header-col-def';
-import * as styles from './list.css';
-import { ItemGroup } from './page-group';
-import { ListTableHeader } from './page-header';
 import {
-  groupsAtom,
   listPropsAtom,
-  ListProvider,
   selectionStateAtom,
   useAtom,
-  useAtomValue,
   useSetAtom,
 } from './scoped-atoms';
 import type { ItemListHandle, ListItem, ListProps } from './types';
-
-/**
- * Given a list of pages, render a list of pages
- */
-export const List = forwardRef<ItemListHandle, ListProps<ListItem>>(
-  function List(props, ref) {
-    return (
-      // push pageListProps to the atom so that downstream components can consume it
-      // this makes sure pageListPropsAtom is always populated
-      // @ts-expect-error jotai-scope is not well typed, AnyWritableAtom is should be any rather than unknown
-      <ListProvider initialValues={[[listPropsAtom, props]]}>
-        <ListInnerWrapper {...props} handleRef={ref}>
-          <ListInner {...props} />
-        </ListInnerWrapper>
-      </ListProvider>
-    );
-  }
-);
 
 // when pressing ESC or double clicking outside of the page list, close the selection mode
 // TODO(@Peng): use jotai-effect instead but it seems it does not work with jotai-scope?
@@ -132,58 +99,3 @@ export const ListInnerWrapper = memo(
 );
 
 ListInnerWrapper.displayName = 'ListInnerWrapper';
-
-const ListInner = (props: ListProps<ListItem>) => {
-  const groups = useAtomValue(groupsAtom);
-  const pageHeaderColsDef = usePageHeaderColsDef();
-  const hideHeader = props.hideHeader;
-  return (
-    <div className={clsx(props.className, styles.root)}>
-      {!hideHeader ? <ListTableHeader headerCols={pageHeaderColsDef} /> : null}
-      <div className={styles.groupsContainer}>
-        {groups.map(group => (
-          <ItemGroup key={group.id} {...group} />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-interface ListScrollContainerProps {
-  className?: string;
-  style?: React.CSSProperties;
-}
-
-export const ListScrollContainer = forwardRef<
-  HTMLDivElement,
-  PropsWithChildren<ListScrollContainerProps>
->(({ className, children, style }, ref) => {
-  const [setContainer, hasScrollTop] = useHasScrollTop();
-
-  const setNodeRef = useCallback(
-    (r: HTMLDivElement) => {
-      if (ref) {
-        if (typeof ref === 'function') {
-          ref(r);
-        } else {
-          ref.current = r;
-        }
-      }
-      return setContainer(r);
-    },
-    [ref, setContainer]
-  );
-
-  return (
-    <Scrollable.Root
-      style={style}
-      data-has-scroll-top={hasScrollTop}
-      className={clsx(styles.pageListScrollContainer, className)}
-    >
-      <Scrollable.Viewport ref={setNodeRef}>{children}</Scrollable.Viewport>
-      <Scrollable.Scrollbar />
-    </Scrollable.Root>
-  );
-});
-
-ListScrollContainer.displayName = 'ListScrollContainer';

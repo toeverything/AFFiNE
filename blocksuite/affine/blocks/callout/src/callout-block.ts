@@ -12,6 +12,7 @@ import type { BlockComponent } from '@blocksuite/std';
 import { flip, offset } from '@floating-ui/dom';
 import { css, html } from 'lit';
 import { query } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockModel> {
   static override styles = css`
     :host {
@@ -109,14 +110,18 @@ export class CalloutBlockComponent extends CaptionedBlockComponent<CalloutBlockM
   }
 
   override renderBlock() {
+    const emoji = this.model.props.emoji$.value;
     return html`
       <div class="affine-callout-block-container">
         <div
           @click=${this._toggleEmojiMenu}
           contenteditable="false"
           class="affine-callout-emoji-container"
+          style=${styleMap({
+            display: emoji.length === 0 ? 'none' : undefined,
+          })}
         >
-          <span class="affine-callout-emoji">${this.model.props.emoji$}</span>
+          <span class="affine-callout-emoji">${emoji}</span>
         </div>
         <div class="affine-callout-children">
           ${this.renderChildren(this.model)}

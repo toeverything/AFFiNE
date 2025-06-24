@@ -133,7 +133,7 @@ export class EmbedIframeLinkInputBase extends WithDisposable(LitElement) {
   }
 
   get store() {
-    return this.model.doc;
+    return this.model.store;
   }
 
   get notificationService() {

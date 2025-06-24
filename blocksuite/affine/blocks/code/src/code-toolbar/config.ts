@@ -9,10 +9,12 @@ import {
 import type { MenuItemGroup } from '@blocksuite/affine-components/toolbar';
 import { isInsidePageEditor } from '@blocksuite/affine-shared/utils';
 import { noop, sleep } from '@blocksuite/global/utils';
+import { NumberedListIcon } from '@blocksuite/icons/lit';
 import { BlockSelection } from '@blocksuite/std';
 import { html } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
 
+import { CodeBlockConfigExtension } from '../code-block-config.js';
 import type { CodeBlockToolbarContext } from './context.js';
 import { duplicateCodeBlock } from './utils.js';
 
@@ -39,6 +41,18 @@ export const PRIMARY_GROUPS: MenuItemGroup<CodeBlockToolbarContext>[] = [
                 }}
               >
               </language-list-button>`,
+          };
+        },
+      },
+      {
+        type: 'preview',
+        generate: ({ blockComponent }) => {
+          return {
+            action: noop,
+            render: () => html`
+              <preview-button .blockComponent=${blockComponent}>
+              </preview-button>
+            `,
           };
         },
       },
@@ -103,27 +117,76 @@ export const PRIMARY_GROUPS: MenuItemGroup<CodeBlockToolbarContext>[] = [
   },
 ];
 
-// Clipboard Group
-export const clipboardGroup: MenuItemGroup<CodeBlockToolbarContext> = {
-  type: 'clipboard',
+export const toggleGroup: MenuItemGroup<CodeBlockToolbarContext> = {
+  type: 'toggle',
   items: [
     {
       type: 'wrap',
-      generate: ({ blockComponent, close }) => {
-        const wrapped = blockComponent.model.props.wrap;
-        const label = wrapped ? 'Cancel wrap' : 'Wrap';
-        const icon = wrapped ? CancelWrapIcon : WrapIcon;
-
+      generate: ({ blockComponent }) => {
         return {
-          label,
-          icon,
-          action: () => {
-            blockComponent.setWrap(!wrapped);
-            close();
+          action: () => {},
+          render: () => {
+            const wrapped = blockComponent.model.props.wrap;
+            const label = wrapped ? 'Cancel wrap' : 'Wrap';
+            const icon = wrapped ? CancelWrapIcon : WrapIcon;
+            return html`
+              <editor-menu-action
+                @click=${() => {
+                  blockComponent.setWrap(!wrapped);
+                }}
+                aria-label=${label}
+              >
+                ${icon}
+                <span class="label">${label}</span>
+                <toggle-switch
+                  style="margin-left: auto;"
+                  .on="${wrapped}"
+                ></toggle-switch>
+              </editor-menu-action>
+            `;
           },
         };
       },
     },
+    {
+      type: 'line-number',
+      when: ({ std }) =>
+        std.getOptional(CodeBlockConfigExtension.identifier)?.showLineNumbers ??
+        true,
+      generate: ({ blockComponent }) => {
+        return {
+          action: () => {},
+          render: () => {
+            const lineNumber = blockComponent.model.props.lineNumber ?? true;
+            const label = lineNumber ? 'Cancel line number' : 'Line number';
+            return html`
+              <editor-menu-action
+                @click=${() => {
+                  blockComponent.store.updateBlock(blockComponent.model, {
+                    lineNumber: !lineNumber,
+                  });
+                }}
+                aria-label=${label}
+              >
+                ${NumberedListIcon()}
+                <span class="label">${label}</span>
+                <toggle-switch
+                  style="margin-left: auto;"
+                  .on="${lineNumber}"
+                ></toggle-switch>
+              </editor-menu-action>
+            `;
+          },
+        };
+      },
+    },
+  ],
+};
+
+// Clipboard Group
+export const clipboardGroup: MenuItemGroup<CodeBlockToolbarContext> = {
+  type: 'clipboard',
+  items: [
     {
       type: 'duplicate',
       label: 'Duplicate',
@@ -173,6 +236,7 @@ export const deleteGroup: MenuItemGroup<CodeBlockToolbarContext> = {
 };
 
 export const MORE_GROUPS: MenuItemGroup<CodeBlockToolbarContext>[] = [
+  toggleGroup,
   clipboardGroup,
   deleteGroup,
 ];

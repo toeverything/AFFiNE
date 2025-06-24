@@ -77,18 +77,16 @@ export class EdgelessNavigatorSettingButton extends WithDisposable(LitElement) {
     slots.navigatorSettingUpdated.next({
       blackBackground: this.blackBackground,
     });
+    this.edgeless.std
+      .get(EditPropsStore)
+      .setStorage('presentBlackBackground', checked);
   };
 
   private _tryRestoreSettings() {
     const blackBackground = this.edgeless.std
       .get(EditPropsStore)
       .getStorage('presentBlackBackground');
-    this.blackBackground = blackBackground ?? true;
-  }
-
-  override connectedCallback() {
-    super.connectedCallback();
-    this._tryRestoreSettings();
+    this.blackBackground = blackBackground ?? false;
   }
 
   override disconnectedCallback(): void {
@@ -97,6 +95,7 @@ export class EdgelessNavigatorSettingButton extends WithDisposable(LitElement) {
   }
 
   override firstUpdated() {
+    if (this.edgeless) this._tryRestoreSettings();
     this._navigatorSettingPopper = createButtonPopper({
       reference: this._navigatorSettingButton,
       popperElement: this._navigatorSettingMenu,
@@ -133,7 +132,7 @@ export class EdgelessNavigatorSettingButton extends WithDisposable(LitElement) {
           <div class="text">Black background</div>
 
           <toggle-switch
-            .subscribe=${this.blackBackground}
+            .on=${this.blackBackground}
             .onChange=${this._onBlackBackgroundChange}
           >
           </toggle-switch>
@@ -143,7 +142,7 @@ export class EdgelessNavigatorSettingButton extends WithDisposable(LitElement) {
           <div class="text">Hide toolbar</div>
 
           <toggle-switch
-            .subscribe=${this.hideToolbar}
+            .on=${this.hideToolbar}
             .onChange=${(checked: boolean) => {
               this.onHideToolbarChange && this.onHideToolbarChange(checked);
             }}
@@ -173,7 +172,7 @@ export class EdgelessNavigatorSettingButton extends WithDisposable(LitElement) {
   private accessor _navigatorSettingMenu!: HTMLElement;
 
   @state()
-  accessor blackBackground = true;
+  accessor blackBackground = false;
 
   @property({ attribute: false })
   accessor edgeless!: BlockComponent;

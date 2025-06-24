@@ -70,7 +70,7 @@ function asCaption<T extends keyof BlockSuitePresets.AIActions>(
       const imageBlock = selectedBlocks[0].model;
       if (!(imageBlock instanceof ImageBlockModel)) return;
 
-      host.doc.updateBlock(imageBlock, { caption });
+      host.store.updateBlock(imageBlock, { caption });
       panel.hide();
     },
   };
@@ -97,7 +97,7 @@ function createNewNote(host: EditorHost): AIItemConfig {
       // create a new note block at the left of the current note block
       const bound = Bound.deserialize(noteModel.xywh);
       const newBound = new Bound(bound.x - bound.w - 20, bound.y, bound.w, 72);
-      const doc = host.doc;
+      const doc = host.store;
       const panel = getAIPanelWidget(host);
       const gfx = host.std.get(GfxControllerIdentifier);
       doc.transact(() => {

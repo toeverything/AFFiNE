@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -18,8 +19,7 @@ const styles = css`
     text-indent: -9999px;
     width: 38px;
     height: 20px;
-    background: var(--affine-icon-color);
-    border: 1px solid var(--affine-black-10);
+    background: ${unsafeCSSVarV2('toggle/backgroundOff')};
     display: block;
     border-radius: 20px;
     position: relative;
@@ -28,22 +28,21 @@ const styles = css`
   label:after {
     content: '';
     position: absolute;
-    top: 1px;
-    left: 1px;
+    top: 2px;
+    left: 2px;
     width: 16px;
     height: 16px;
-    background: var(--affine-white);
-    border: 1px solid var(--affine-black-10);
+    background: ${unsafeCSSVarV2('toggle/foreground')};
     border-radius: 16px;
     transition: 0.1s;
   }
 
   label.on {
-    background: var(--affine-primary-color);
+    background: ${unsafeCSSVarV2('toggle/background')};
   }
 
   label.on:after {
-    left: calc(100% - 1px);
+    left: calc(100% - 2px);
     transform: translateX(-100%);
   }
 

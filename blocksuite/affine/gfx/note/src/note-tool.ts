@@ -1,18 +1,35 @@
-import type { SurfaceBlockComponent } from '@blocksuite/affine-block-surface';
 import {
-  addNote,
+  DEFAULT_NOTE_OFFSET_X,
+  DEFAULT_NOTE_OFFSET_Y,
+  DefaultTool,
+  EdgelessCRUDIdentifier,
   EXCLUDING_MOUSE_OUT_CLASS_LIST,
+  type SurfaceBlockComponent,
 } from '@blocksuite/affine-block-surface';
 import {
   DEFAULT_NOTE_HEIGHT,
   DEFAULT_NOTE_WIDTH,
+  NOTE_MIN_HEIGHT,
+  type NoteBlockModel,
+  NoteDisplayMode,
 } from '@blocksuite/affine-model';
-import { EditPropsStore } from '@blocksuite/affine-shared/services';
+import { focusTextModel } from '@blocksuite/affine-rich-text';
+import {
+  EditPropsStore,
+  TelemetryProvider,
+} from '@blocksuite/affine-shared/services';
 import type { NoteChildrenFlavour } from '@blocksuite/affine-shared/types';
-import { hasClassNameInList } from '@blocksuite/affine-shared/utils';
-import { Point } from '@blocksuite/global/gfx';
-import type { PointerEventState } from '@blocksuite/std';
-import { BaseTool } from '@blocksuite/std/gfx';
+import {
+  handleNativeRangeAtPoint,
+  hasClassNameInList,
+} from '@blocksuite/affine-shared/utils';
+import { type IPoint, Point, serializeXYWH } from '@blocksuite/global/gfx';
+import type { BlockStdScope, PointerEventState } from '@blocksuite/std';
+import {
+  BaseTool,
+  type GfxBlockElementModel,
+  GfxControllerIdentifier,
+} from '@blocksuite/std/gfx';
 import { effect } from '@preact/signals-core';
 
 import { DraggingNoteOverlay, NoteOverlay } from './overlay';
@@ -30,20 +47,22 @@ export class NoteTool extends BaseTool<NoteToolOption> {
 
   private _noteOverlay: NoteOverlay | null = null;
 
+  private get _surfaceComponent() {
+    return this.gfx.surfaceComponent as SurfaceBlockComponent | null;
+  }
+
   // Ensure clear overlay before adding a new note
   private _clearOverlay() {
     this._noteOverlay = this._disposeOverlay(this._noteOverlay);
     this._draggingNoteOverlay = this._disposeOverlay(this._draggingNoteOverlay);
-    (this.gfx.surfaceComponent as SurfaceBlockComponent).refresh();
+    this._surfaceComponent?.refresh();
   }
 
   private _disposeOverlay(overlay: NoteOverlay | null) {
     if (!overlay) return null;
 
     overlay.dispose();
-    (
-      this.gfx.surfaceComponent as SurfaceBlockComponent
-    )?.renderer.removeOverlay(overlay);
+    this._surfaceComponent?.renderer.removeOverlay(overlay);
     return null;
   }
 
@@ -52,7 +71,7 @@ export class NoteTool extends BaseTool<NoteToolOption> {
     if (!this._noteOverlay) return;
 
     this._noteOverlay.globalAlpha = 0;
-    (this.gfx.surfaceComponent as SurfaceBlockComponent)?.refresh();
+    this._surfaceComponent?.refresh();
   }
 
   private _resize(shift = false) {
@@ -85,7 +104,7 @@ export class NoteTool extends BaseTool<NoteToolOption> {
     if (!this._noteOverlay) return;
     this._noteOverlay.x = x;
     this._noteOverlay.y = y;
-    (this.gfx.surfaceComponent as SurfaceBlockComponent).refresh();
+    this._surfaceComponent?.refresh();
   }
 
   override activate() {
@@ -94,9 +113,7 @@ export class NoteTool extends BaseTool<NoteToolOption> {
     const background = attributes.background;
     this._noteOverlay = new NoteOverlay(this.gfx, background);
     this._noteOverlay.text = this.activatedOption.tip;
-    (this.gfx.surfaceComponent as SurfaceBlockComponent).renderer.addOverlay(
-      this._noteOverlay
-    );
+    this._surfaceComponent?.renderer.addOverlay(this._noteOverlay);
   }
 
   override click(e: PointerEventState): void {
@@ -159,9 +176,7 @@ export class NoteTool extends BaseTool<NoteToolOption> {
       this.std.get(EditPropsStore).lastProps$.value['affine:note'];
     const background = attributes.background;
     this._draggingNoteOverlay = new DraggingNoteOverlay(this.gfx, background);
-    (this.gfx.surfaceComponent as SurfaceBlockComponent).renderer.addOverlay(
-      this._draggingNoteOverlay
-    );
+    this._surfaceComponent?.renderer.addOverlay(this._draggingNoteOverlay);
   }
 
   override mounted() {
@@ -201,12 +216,115 @@ export class NoteTool extends BaseTool<NoteToolOption> {
   }
 }
 
-declare module '@blocksuite/std/gfx' {
-  interface GfxToolsMap {
-    'affine:note': NoteTool;
-  }
+type NoteOptions = {
+  childFlavour: NoteChildrenFlavour;
+  childType: string | null;
+  collapse: boolean;
+};
+function addNote(
+  std: BlockStdScope,
+  point: Point,
+  options: NoteOptions,
+  width = DEFAULT_NOTE_WIDTH,
+  height = DEFAULT_NOTE_HEIGHT
+) {
+  const noteId = addNoteAtPoint(std, point, {
+    width,
+    height,
+  });
 
-  interface GfxToolsOption {
-    'affine:note': NoteToolOption;
+  const gfx = std.get(GfxControllerIdentifier);
+  const doc = std.store;
+
+  const blockId = doc.addBlock(
+    options.childFlavour,
+    { type: options.childType },
+    noteId
+  );
+  if (options.collapse && height > NOTE_MIN_HEIGHT) {
+    const note = doc.getModelById(noteId) as NoteBlockModel;
+    doc.updateBlock(note, () => {
+      note.props.edgeless.collapse = true;
+      note.props.edgeless.collapsedHeight = height;
+    });
   }
+  gfx.tool.setTool(DefaultTool);
+
+  // Wait for edgelessTool updated
+  requestAnimationFrame(() => {
+    const blocks =
+      (doc.root?.children.filter(
+        child => child.flavour === 'affine:note'
+      ) as GfxBlockElementModel[]) ?? [];
+    const element = blocks.find(b => b.id === noteId);
+    if (element) {
+      gfx.selection.set({
+        elements: [element.id],
+        editing: true,
+      });
+
+      // Waiting dom updated, `note mask` is removed
+      if (blockId) {
+        focusTextModel(gfx.std, blockId);
+      } else {
+        // Cannot reuse `handleNativeRangeClick` directly here,
+        // since `retargetClick` will re-target to pervious editor
+        handleNativeRangeAtPoint(point.x, point.y);
+      }
+    }
+  });
+}
+
+function addNoteAtPoint(
+  std: BlockStdScope,
+  /**
+   * The point is in browser coordinate
+   */
+  point: IPoint,
+  options: {
+    width?: number;
+    height?: number;
+    parentId?: string;
+    noteIndex?: number;
+    offsetX?: number;
+    offsetY?: number;
+    scale?: number;
+  } = {}
+) {
+  const gfx = std.get(GfxControllerIdentifier);
+  const crud = std.get(EdgelessCRUDIdentifier);
+  const {
+    width = DEFAULT_NOTE_WIDTH,
+    height = DEFAULT_NOTE_HEIGHT,
+    offsetX = DEFAULT_NOTE_OFFSET_X,
+    offsetY = DEFAULT_NOTE_OFFSET_Y,
+    parentId = gfx.doc.root?.id,
+    noteIndex,
+    scale = 1,
+  } = options;
+  const [x, y] = gfx.viewport.toModelCoord(point.x, point.y);
+  const blockId = crud.addBlock(
+    'affine:note',
+    {
+      xywh: serializeXYWH(
+        x - offsetX * scale,
+        y - offsetY * scale,
+        width,
+        height
+      ),
+      displayMode: NoteDisplayMode.EdgelessOnly,
+    },
+    parentId,
+    noteIndex
+  );
+
+  std.getOptional(TelemetryProvider)?.track('CanvasElementAdded', {
+    control: 'canvas:draw',
+    page: 'whiteboard editor',
+    module: 'toolbar',
+    segment: 'toolbar',
+    type: 'note',
+  });
+
+  return blockId;
 }

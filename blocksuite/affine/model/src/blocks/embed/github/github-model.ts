@@ -13,12 +13,12 @@ export type EmbedGithubBlockUrlData = {
   assignees: string[] | null;
 };
 
-export const EmbedGithubStyles: EmbedCardStyle[] = [
+export const EmbedGithubStyles = [
   'vertical',
   'horizontal',
   'list',
   'cube',
-] as const;
+] as const satisfies EmbedCardStyle[];
 
 export type EmbedGithubBlockProps = {
   style: (typeof EmbedGithubStyles)[number];

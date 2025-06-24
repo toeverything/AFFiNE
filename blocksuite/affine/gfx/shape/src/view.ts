@@ -8,7 +8,8 @@ import {
   HighlighterElementRendererExtension,
   ShapeElementRendererExtension,
 } from './element-renderer';
-import { ShapeElementView } from './element-view';
+import { ShapeDomRendererExtension } from './element-renderer/shape-dom';
+import { ShapeElementView, ShapeViewInteraction } from './element-view';
 import { ShapeTool } from './shape-tool';
 import { shapeSeniorTool, shapeToolbarExtension } from './toolbar';
 
@@ -25,10 +26,12 @@ export class ShapeViewExtension extends ViewExtensionProvider {
     if (this.isEdgeless(context.scope)) {
       context.register(HighlighterElementRendererExtension);
       context.register(ShapeElementRendererExtension);
+      context.register(ShapeDomRendererExtension);
       context.register(ShapeElementView);
       context.register(ShapeTool);
       context.register(shapeSeniorTool);
       context.register(shapeToolbarExtension);
+      context.register(ShapeViewInteraction);
     }
   }
 }

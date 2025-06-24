@@ -16,6 +16,7 @@ import {
 
 import { useSignalValue } from '../../../../../modules/doc-info/utils';
 import { Spinner } from '../../../components/loading';
+import { useMemberInfo } from '../../../hooks/use-member-info';
 import * as styles from './style.css';
 
 type BaseOptions = {
@@ -172,13 +173,6 @@ class MemberManager {
   };
 }
 
-export const useMemberInfo = (id: string, memberManager: MemberManager) => {
-  useEffect(() => {
-    memberManager.userService?.revalidateUserInfo(id);
-  }, [id, memberManager.userService]);
-  return useSignalValue(memberManager.userService?.userInfo$(id));
-};
-
 export const MemberListItem = (props: {
   member: ExistedUserInfo;
   memberManager: MemberManager;
@@ -205,7 +199,11 @@ export const MemberListItem = (props: {
       data-selected={isSelected ? 'true' : 'false'}
     >
       <div className={styles.avatar}>
-        <Avatar url={member.avatar} size={24} />
+        <Avatar
+          name={member.removed ? undefined : (member.name ?? undefined)}
+          url={member.avatar}
+          size={24}
+        />
       </div>
       <div className={styles.memberName}>{member.name}</div>
     </div>
@@ -221,13 +219,14 @@ export const MemberPreview = ({
   memberManager: MemberManager;
   onDelete?: () => void;
 }) => {
-  const userInfo = useMemberInfo(memberId, memberManager);
+  const userInfo = useMemberInfo(memberId, memberManager.userService);
   if (!userInfo) {
     return null;
   }
   return (
     <div className={styles.memberPreviewContainer}>
       <Avatar
+        name={userInfo.removed ? undefined : (userInfo.name ?? undefined)}
         className={styles.avatar}
         url={!userInfo.removed ? userInfo.avatar : undefined}
         size={16}

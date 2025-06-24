@@ -13,7 +13,7 @@ export type EmbedYoutubeBlockUrlData = {
   creatorImage: string | null;
 };
 
-export const EmbedYoutubeStyles: EmbedCardStyle[] = ['video'] as const;
+export const EmbedYoutubeStyles = ['video'] as const satisfies EmbedCardStyle[];
 
 export type EmbedYoutubeBlockProps = {
   style: (typeof EmbedYoutubeStyles)[number];

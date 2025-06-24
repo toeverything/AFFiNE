@@ -10,9 +10,9 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { html } from 'lit/static-html.js';
 
-import type { DataViewRenderer } from '../../../core/data-view.js';
-import type { TableSingleView } from '../table-view-manager.js';
+import { cellDivider } from '../styles.js';
 import { popMobileRowMenu } from './menu.js';
+import type { MobileTableViewUILogic } from './table-view-ui-logic.js';
 
 export class MobileTableRow extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -73,7 +73,7 @@ export class MobileTableRow extends SignalWatcher(
         v => v.id,
         (column, i) => {
           const clickDetail = () => {
-            this.dataViewEle.openDetailPanel({
+            this.tableViewLogic.root.openDetailPanel({
               view: this.view,
               rowId: this.rowId,
             });
@@ -83,7 +83,7 @@ export class MobileTableRow extends SignalWatcher(
             popMobileRowMenu(
               popupTargetFromElement(ele),
               this.rowId,
-              this.dataViewEle,
+              this.tableViewLogic,
               this.view
             );
           };
@@ -95,7 +95,7 @@ export class MobileTableRow extends SignalWatcher(
                   width: `${column.width$.value}px`,
                   border: i === 0 ? 'none' : undefined,
                 })}
-                .view="${view}"
+                .tableViewLogic="${this.tableViewLogic}"
                 .column="${column}"
                 .rowId="${this.rowId}"
                 data-row-id="${this.rowId}"
@@ -107,7 +107,7 @@ export class MobileTableRow extends SignalWatcher(
                 data-column-index="${i}"
               >
               </mobile-table-cell>
-              <div class="cell-divider"></div>
+              <div class="${cellDivider}"></div>
             </div>
             ${!column.readonly$.value &&
             column.view.mainProperties$.value.titleColumn === column.id
@@ -130,7 +130,7 @@ export class MobileTableRow extends SignalWatcher(
   }
 
   @property({ attribute: false })
-  accessor dataViewEle!: DataViewRenderer;
+  accessor tableViewLogic!: MobileTableViewUILogic;
 
   @property({ attribute: false })
   accessor rowId!: string;
@@ -138,8 +138,9 @@ export class MobileTableRow extends SignalWatcher(
   @property({ attribute: false })
   accessor rowIndex!: number;
 
-  @property({ attribute: false })
-  accessor view!: TableSingleView;
+  get view() {
+    return this.tableViewLogic.view;
+  }
 }
 
 declare global {

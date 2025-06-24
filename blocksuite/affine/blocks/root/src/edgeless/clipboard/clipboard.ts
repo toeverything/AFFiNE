@@ -2,12 +2,17 @@ import { addAttachments } from '@blocksuite/affine-block-attachment';
 import { EdgelessFrameManagerIdentifier } from '@blocksuite/affine-block-frame';
 import { addImages } from '@blocksuite/affine-block-image';
 import {
+  CanvasRenderer,
+  DefaultTool,
   EdgelessCRUDIdentifier,
   ExportManager,
   getSurfaceComponent,
 } from '@blocksuite/affine-block-surface';
 import { splitIntoLines } from '@blocksuite/affine-gfx-text';
-import type { ShapeElementModel } from '@blocksuite/affine-model';
+import type {
+  EmbedCardStyle,
+  ShapeElementModel,
+} from '@blocksuite/affine-model';
 import {
   BookmarkStyles,
   DEFAULT_NOTE_HEIGHT,
@@ -30,6 +35,7 @@ import {
   TelemetryProvider,
 } from '@blocksuite/affine-shared/services';
 import {
+  convertToPng,
   isInsidePageEditor,
   isTopLevelBlock,
   isUrlInClipboard,
@@ -62,7 +68,7 @@ import * as Y from 'yjs';
 
 import { PageClipboard } from '../../clipboard/index.js';
 import { getSortedCloneElements } from '../utils/clone-utils.js';
-import { isCanvasElementWithText } from '../utils/query.js';
+import { isCanvasElementWithText, isImageBlock } from '../utils/query.js';
 import { createElementsFromClipboardDataCommand } from './command.js';
 import {
   isPureFileInClipboard,
@@ -118,6 +124,49 @@ export class EdgelessClipboardController extends PageClipboard {
       // use build-in copy handler in rich-text when copy in surface text element
       if (isCanvasElementWithText(elements[0])) return;
       this.onPageCopy(_context);
+      return;
+    }
+
+    // Only when an image is selected, it can be pasted normally to page mode.
+    if (elements.length === 1 && isImageBlock(elements[0])) {
+      const element = elements[0];
+      const sourceId = element.props.sourceId$.peek();
+      if (!sourceId) return;
+
+      await this.std.clipboard.writeToClipboard(async items => {
+        const job = this.std.store.getTransformer();
+        await job.assetsManager.readFromBlob(sourceId);
+
+        let blob = job.assetsManager.getAssets().get(sourceId) ?? null;
+        if (!blob) {
+          return items;
+        }
+
+        let type = blob.type;
+        let supported = false;
+
+        try {
+          supported = ClipboardItem?.supports(type) ?? false;
+        } catch (err) {
+          console.error(err);
+        }
+
+        // TODO(@fundon): when converting jpeg to png, image may become larger and exceed the limit.
+        if (!supported) {
+          type = 'image/png';
+          blob = await convertToPng(blob);
+        }
+
+        if (blob) {
+          return {
+            ...items,
+            [`${type}`]: blob,
+          };
+        }
+
+        return items;
+      });
+
       return;
     }
 
@@ -207,9 +256,10 @@ export class EdgelessClipboardController extends PageClipboard {
         await addImages(this.std, imageFiles, {
           point,
           maxWidth: MAX_IMAGE_WIDTH,
+          shouldTransformPoint: false,
         });
       } else {
-        await addAttachments(this.std, [...files], point);
+        await addAttachments(this.std, [...files], point, false);
       }
 
       this.std.getOptional(TelemetryProvider)?.track('CanvasElementAdded', {
@@ -225,11 +275,7 @@ export class EdgelessClipboardController extends PageClipboard {
 
     if (isUrlInClipboard(data)) {
       const url = data.getData('text/plain');
-      const lastMousePos = this.toolManager.lastMousePos$.peek();
-      const [x, y] = this.gfx.viewport.toModelCoord(
-        lastMousePos.x,
-        lastMousePos.y
-      );
+      const { x, y } = this.toolManager.lastMousePos$.peek();
 
       // try to interpret url as affine doc url
       const parseDocUrlService = this.std.getOptional(ParseDocUrlProvider);
@@ -237,7 +283,7 @@ export class EdgelessClipboardController extends PageClipboard {
       const options: Record<string, unknown> = {};
 
       let flavour = 'affine:bookmark';
-      let style = BookmarkStyles[0];
+      let style: EmbedCardStyle = BookmarkStyles[0];
       let isInternalLink = false;
       let isLinkedBlock = false;
 
@@ -508,6 +554,14 @@ export class EdgelessClipboardController extends PageClipboard {
       this._checkCanContinueToCanvas(host, pathname, editorMode);
     }
 
+    // TODO: handle DOM renderer case for clipboard image generation
+    if (!(this.surface.renderer instanceof CanvasRenderer)) {
+      console.warn(
+        'Skipping canvas generation for clipboard: DOM renderer active.'
+      );
+      return canvas; // Return the empty canvas or handle error
+    }
+
     const surfaceCanvas = this.surface.renderer.getCanvasByBound(
       bound,
       canvasElements
@@ -552,11 +606,11 @@ export class EdgelessClipboardController extends PageClipboard {
   }
 
   private async _pasteTextContentAsNote(content: BlockSnapshot[] | string) {
-    const lastMousePos = this.toolManager.lastMousePos$.peek();
-    const [x, y] = this.gfx.viewport.toModelCoord(
-      lastMousePos.x,
-      lastMousePos.y
-    );
+    if (content === '') {
+      return;
+    }
+
+    const { x, y } = this.toolManager.lastMousePos$.peek();
 
     const noteProps = {
       xywh: new Bound(
@@ -608,7 +662,7 @@ export class EdgelessClipboardController extends PageClipboard {
       elements: [noteId],
       editing: false,
     });
-    this.gfx.tool.setTool('default');
+    this.gfx.tool.setTool(DefaultTool);
   }
 
   copy() {

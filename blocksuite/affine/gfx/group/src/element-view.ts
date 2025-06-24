@@ -1,5 +1,8 @@
-import type { GroupElementModel } from '@blocksuite/affine-model';
-import { GfxElementModelView } from '@blocksuite/std/gfx';
+import { GroupElementModel } from '@blocksuite/affine-model';
+import {
+  GfxElementModelView,
+  GfxViewInteractionExtension,
+} from '@blocksuite/std/gfx';
 
 import { mountGroupTitleEditor } from './text/edgeless-group-title-editor';
 
@@ -29,3 +32,26 @@ export class GroupElementView extends GfxElementModelView<GroupElementModel> {
     });
   }
 }
+
+export const GroupInteraction = GfxViewInteractionExtension<GroupElementView>(
+  GroupElementView.type,
+  {
+    handleResize(context) {
+      const empty = () => {};
+      context.model.descendantElements.forEach(elm => {
+        if (elm instanceof GroupElementModel) {
+          return;
+        }
+
+        context.add(elm);
+      });
+      context.delete(context.model);
+
+      return {
+        onResizeStart: empty,
+        onResizeMove: empty,
+        onResizeEnd: empty,
+      };
+    },
+  }
+);

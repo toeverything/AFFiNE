@@ -4,7 +4,6 @@ import type {
   SearchDocMenuAction,
   SearchTagMenuAction,
 } from '@affine/core/modules/search-menu/services';
-import type { Collection } from '@affine/env/filter';
 import type { DocMeta, Store } from '@blocksuite/affine/store';
 import type { LinkedMenuGroup } from '@blocksuite/affine/widgets/linked-doc';
 import type { Signal } from '@preact/signals-core';
@@ -71,7 +70,7 @@ export interface DocDisplayConfig {
   getTagTitle: (tagId: string) => string;
   getTagPageIds: (tagId: string) => string[];
   getCollections: () => {
-    signal: Signal<Collection[]>;
+    signal: Signal<{ id: string; name: string }[]>;
     cleanup: () => void;
   };
   getCollectionPageIds: (collectionId: string) => string[];

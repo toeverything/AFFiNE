@@ -65,7 +65,7 @@ export class NotificationService {
         elementId: input.body.doc.elementId,
       })
     );
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'Mention',
       to: receiver.email,
       props: {
@@ -110,7 +110,7 @@ export class NotificationService {
     if (!receiver) {
       return;
     }
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'MemberInvitation',
       to: receiver.email,
       props: {
@@ -161,7 +161,7 @@ export class NotificationService {
     if (!inviter) {
       return;
     }
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'MemberAccepted',
       to: inviter.email,
       props: {
@@ -226,7 +226,7 @@ export class NotificationService {
     if (!reviewer) {
       return;
     }
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'LinkInvitationReviewRequest',
       to: reviewer.email,
       props: {
@@ -273,7 +273,7 @@ export class NotificationService {
     if (!receiver) {
       return;
     }
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'LinkInvitationApprove',
       to: receiver.email,
       props: {
@@ -312,7 +312,7 @@ export class NotificationService {
     if (!receiver) {
       return;
     }
-    await this.mailer.send({
+    await this.mailer.trySend({
       name: 'LinkInvitationDecline',
       to: receiver.email,
       props: {

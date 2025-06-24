@@ -12,19 +12,19 @@ import { BaseCellRenderer } from '@blocksuite/data-view';
 import { IS_MAC } from '@blocksuite/global/env';
 import { LinkedPageIcon } from '@blocksuite/icons/lit';
 import type { BlockSnapshot, DeltaInsert, Text } from '@blocksuite/store';
-import { signal } from '@preact/signals-core';
+import { computed, signal } from '@preact/signals-core';
 import { property } from 'lit/decorators.js';
 import { createRef, ref } from 'lit/directives/ref.js';
 import { html } from 'lit/static-html.js';
 
-import { HostContextKey } from '../../context/host-context.js';
+import { EditorHostKey } from '../../context/host-context.js';
 import type { DatabaseBlockComponent } from '../../database-block.js';
 import { getSingleDocIdFromText } from '../../utils/title-doc.js';
 import {
   headerAreaIconStyle,
   titleCellStyle,
   titleRichTextStyle,
-} from './cell-renderer.css.js';
+} from './cell-renderer-css.js';
 
 export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
   activity = true;
@@ -32,7 +32,7 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
   docId$ = signal<string>();
 
   get host() {
-    return this.view.contextGet(HostContextKey);
+    return this.view.serviceGet(EditorHostKey);
   }
 
   get inlineEditor() {
@@ -50,7 +50,7 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
   }
 
   get std() {
-    return this.view.contextGet(HostContextKey)?.std;
+    return this.view.serviceGet(EditorHostKey)?.std;
   }
 
   private readonly _onCopy = (e: ClipboardEvent) => {
@@ -209,25 +209,46 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
       }
     };
 
-    this.addEventListener('keydown', selectAll);
     this.disposables.addFromEvent(this, 'keydown', selectAll);
   }
+
+  private readonly _handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') {
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        return;
+      }
+      event.stopPropagation();
+    }
+  };
 
   override firstUpdated(props: Map<string, unknown>) {
     super.firstUpdated(props);
     this.richText.value?.updateComplete
       .then(() => {
-        this.disposables.addFromEvent(
-          this.richText.value,
-          'copy',
-          this._onCopy
-        );
-        this.disposables.addFromEvent(this.richText.value, 'cut', this._onCut);
-        this.disposables.addFromEvent(
-          this.richText.value,
-          'paste',
-          this._onPaste
-        );
+        if (this.richText.value) {
+          this.disposables.addFromEvent(
+            this.richText.value,
+            'copy',
+            this._onCopy
+          );
+          this.disposables.addFromEvent(
+            this.richText.value,
+            'cut',
+            this._onCut
+          );
+          this.disposables.addFromEvent(
+            this.richText.value,
+            'paste',
+            this._onPaste
+          );
+          const inlineEditor = this.inlineEditor;
+          if (inlineEditor) {
+            this.disposables.add(
+              inlineEditor.slots.keydown.subscribe(this._handleKeyDown)
+            );
+          }
+        }
       })
       .catch(console.error);
   }
@@ -261,7 +282,15 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
       class="${titleRichTextStyle}"
     ></rich-text>`;
   }
+  icon$ = computed(() => {
+    const iconColumn = this.view.mainProperties$.value.iconColumn;
+    if (!iconColumn) return;
 
+    const icon = this.view.cellGetOrCreate(this.cell.rowId, iconColumn).value$
+      .value;
+    if (!icon) return;
+    return icon;
+  });
   renderIcon() {
     if (!this.showIcon) {
       return;
@@ -271,10 +300,7 @@ export class HeaderAreaTextCell extends BaseCellRenderer<Text, string> {
         ${LinkedPageIcon({})}
       </div>`;
     }
-    const iconColumn = this.view.mainProperties$.value.iconColumn;
-    if (!iconColumn) return;
-
-    const icon = this.view.cellValueGet(this.cell.rowId, iconColumn) as string;
+    const icon = this.icon$.value;
     if (!icon) return;
 
     return html` <div class="${headerAreaIconStyle}">${icon}</div>`;

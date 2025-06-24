@@ -1,5 +1,4 @@
 import type { TagMeta } from '@affine/core/components/page-list';
-import type { Collection } from '@affine/env/filter';
 import { createLitPortal } from '@blocksuite/affine/components/portal';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
@@ -42,23 +41,27 @@ export class ChatPanelChips extends SignalWatcher(
   static override styles = css`
     .chips-wrapper {
       display: flex;
+      gap: 8px;
+      align-items: center;
       flex-wrap: wrap;
-      margin: 0 -4px 0 -4px;
+      padding: 4px 12px;
     }
     .add-button,
     .collapse-button,
     .more-candidate-button {
       display: flex;
+      flex-shrink: 0;
+      flex-grow: 0;
       align-items: center;
       justify-content: center;
       width: 24px;
       height: 24px;
       border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
       border-radius: 4px;
-      margin: 4px;
       box-sizing: border-box;
       cursor: pointer;
       font-size: 12px;
+      color: ${unsafeCSSVarV2('icon/primary')};
     }
     .add-button:hover,
     .collapse-button:hover,
@@ -128,7 +131,7 @@ export class ChatPanelChips extends SignalWatcher(
 
   private _tags: Signal<TagMeta[]> = signal([]);
 
-  private _collections: Signal<Collection[]> = signal([]);
+  private _collections: Signal<{ id: string; name: string }[]> = signal([]);
 
   private _cleanup: (() => void) | null = null;
 
@@ -404,7 +407,7 @@ export class ChatPanelChips extends SignalWatcher(
       if (!contextId || !AIProvider.context) {
         throw new Error('Context not found');
       }
-      const blobId = await this.host.doc.blobSync.set(chip.file);
+      const blobId = await this.host.store.blobSync.set(chip.file);
       const contextFile = await AIProvider.context.addContextFile(chip.file, {
         contextId,
         blobId,

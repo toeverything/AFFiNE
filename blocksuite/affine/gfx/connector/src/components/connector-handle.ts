@@ -9,8 +9,8 @@ import { WithDisposable } from '@blocksuite/global/lit';
 import {
   type BlockComponent,
   type BlockStdScope,
-  docContext,
   stdContext,
+  storeContext,
 } from '@blocksuite/std';
 import { GfxControllerIdentifier } from '@blocksuite/std/gfx';
 import type { Store } from '@blocksuite/store';
@@ -154,7 +154,7 @@ export class EdgelessConnectorHandle extends WithDisposable(LitElement) {
   accessor connector!: ConnectorElementModel;
 
   @consume({
-    context: docContext,
+    context: storeContext,
   })
   accessor doc!: Store;
 

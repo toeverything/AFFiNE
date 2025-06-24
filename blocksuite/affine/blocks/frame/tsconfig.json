@@ -10,6 +10,7 @@
     { "path": "../surface" },
     { "path": "../../components" },
     { "path": "../../ext-loader" },
+    { "path": "../../gfx/pointer" },
     { "path": "../../model" },
     { "path": "../../shared" },
     { "path": "../../widgets/edgeless-toolbar" },

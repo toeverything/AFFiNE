@@ -111,6 +111,7 @@ type SettingSidebarItemProps = {
   title: string;
   key: string;
   testId?: string;
+  beta?: boolean;
 } & HTMLAttributes<HTMLDivElement>;
 
 const SettingSidebarItem = ({
@@ -118,6 +119,7 @@ const SettingSidebarItem = ({
   icon,
   title,
   testId,
+  beta,
   ...props
 }: SettingSidebarItemProps) => {
   return (
@@ -131,6 +133,7 @@ const SettingSidebarItem = ({
     >
       <div className={style.sidebarSelectItemIcon}>{icon}</div>
       <div className={style.sidebarSelectItemName}>{title}</div>
+      {beta ? <div className={style.sidebarSelectItemBeta}>Beta</div> : null}
     </div>
   );
 };

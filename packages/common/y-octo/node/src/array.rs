@@ -1,4 +1,7 @@
-use napi::{bindgen_prelude::Array as JsArray, Env, JsUnknown, ValueType};
+use napi::{
+  bindgen_prelude::{Array as JsArray, Env, JsObjectValue, JsValue, Null, ToNapiValue, Unknown},
+  ValueType,
+};
 use y_octo::{Any, Array, Value};
 
 use super::*;
@@ -31,18 +34,18 @@ impl YArray {
   }
 
   #[napi(ts_generic_types = "T = unknown", ts_return_type = "T")]
-  pub fn get(&self, env: Env, index: i64) -> Result<MixedYType> {
+  pub fn get<'a>(&'a self, env: &'a Env, index: i64) -> Result<MixedYType<'a>> {
     if let Some(value) = self.array.get(index as u64) {
       match value {
         Value::Any(any) => get_js_unknown_from_any(env, any).map(MixedYType::D),
         Value::Array(array) => Ok(MixedYType::A(YArray::inner_new(array))),
         Value::Map(map) => Ok(MixedYType::B(YMap::inner_new(map))),
         Value::Text(text) => Ok(MixedYType::C(YText::inner_new(text))),
-        _ => env.get_null().map(|v| v.into_unknown()).map(MixedYType::D),
+        _ => Null.into_unknown(env).map(MixedYType::D),
       }
       .map_err(anyhow::Error::from)
     } else {
-      Ok(MixedYType::D(env.get_null()?.into_unknown()))
+      Ok(MixedYType::D(Null.into_unknown(env)?))
     }
   }
 
@@ -70,7 +73,7 @@ impl YArray {
             .array
             .insert(index as u64, Any::Null)
             .map_err(anyhow::Error::from),
-          ValueType::Boolean => match unknown.coerce_to_bool().and_then(|v| v.get_value()) {
+          ValueType::Boolean => match unsafe { unknown.cast::<bool>() } {
             Ok(boolean) => self
               .array
               .insert(index as u64, boolean)
@@ -104,7 +107,7 @@ impl YArray {
             Ok((object, length)) => {
               for i in 0..length {
                 if let Ok(any) = object
-                  .get_element::<JsUnknown>(i)
+                  .get_element::<Unknown>(i)
                   .and_then(get_any_from_js_unknown)
                 {
                   self
@@ -137,7 +140,7 @@ impl YArray {
   }
 
   #[napi]
-  pub fn to_json(&self, env: Env) -> Result<JsArray> {
+  pub fn to_json<'env>(&'env self, env: &'env Env) -> Result<JsArray<'env>> {
     let mut js_array = env.create_array(0)?;
     for value in self.array.iter() {
       js_array.insert(get_js_unknown_from_value(env, value)?)?;

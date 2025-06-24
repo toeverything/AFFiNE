@@ -1,6 +1,6 @@
 import hash from '@emotion/hash';
 
-import { MatcherCreator } from '../logical/matcher.js';
+import type { TypeInstance } from '../logical/type.js';
 import { t } from '../logical/type-presets.js';
 import { createUniComponentFromWebComponent } from '../utils/uni-component/uni-component.js';
 import { BooleanGroupView } from './renderer/boolean-group.js';
@@ -9,15 +9,24 @@ import { SelectGroupView } from './renderer/select-group.js';
 import { StringGroupView } from './renderer/string-group.js';
 import type { GroupByConfig } from './types.js';
 
-const groupByMatcherCreator = new MatcherCreator<GroupByConfig>();
-const ungroups = {
+export const createGroupByConfig = <
+  Data extends Record<string, unknown>,
+  MatchType extends TypeInstance,
+  GroupValue = unknown,
+>(
+  config: GroupByConfig<Data, MatchType, GroupValue>
+): GroupByConfig => {
+  return config as never as GroupByConfig;
+};
+export const ungroups = {
   key: 'Ungroups',
   value: null,
 };
 export const groupByMatchers = [
-  groupByMatcherCreator.createMatcher(t.tag.instance(), {
+  createGroupByConfig({
     name: 'select',
-    groupName: (type, value) => {
+    matchType: t.tag.instance(),
+    groupName: (type, value: string | null) => {
       if (t.tag.is(type) && type.data) {
         return type.data.find(v => v.id === value)?.value ?? '';
       }
@@ -46,13 +55,15 @@ export const groupByMatchers = [
         },
       ];
     },
+    addToGroup: v => v,
     view: createUniComponentFromWebComponent(SelectGroupView),
   }),
-  groupByMatcherCreator.createMatcher(t.array.instance(t.tag.instance()), {
+  createGroupByConfig({
     name: 'multi-select',
-    groupName: (type, value) => {
-      if (t.tag.is(type) && type.data) {
-        return type.data.find(v => v.id === value)?.value ?? '';
+    matchType: t.array.instance(t.tag.instance()),
+    groupName: (type, value: string | null) => {
+      if (t.array.is(type) && t.tag.is(type.element) && type.element.data) {
+        return type.element.data.find(v => v.id === value)?.value ?? '';
       }
       return '';
     },
@@ -94,9 +105,10 @@ export const groupByMatchers = [
     },
     view: createUniComponentFromWebComponent(SelectGroupView),
   }),
-  groupByMatcherCreator.createMatcher(t.string.instance(), {
+  createGroupByConfig({
     name: 'text',
-    groupName: (_type, value) => {
+    matchType: t.string.instance(),
+    groupName: (_type, value: string | null) => {
       return `${value ?? ''}`;
     },
     defaultKeys: _type => {
@@ -113,17 +125,19 @@ export const groupByMatchers = [
         },
       ];
     },
+    addToGroup: v => v,
     view: createUniComponentFromWebComponent(StringGroupView),
   }),
-  groupByMatcherCreator.createMatcher(t.number.instance(), {
+  createGroupByConfig({
     name: 'number',
-    groupName: (_type, value) => {
+    matchType: t.number.instance(),
+    groupName: (_type, value: number | null) => {
       return `${value ?? ''}`;
     },
     defaultKeys: _type => {
       return [ungroups];
     },
-    valuesGroup: (value, _type) => {
+    valuesGroup: (value: number | null, _type) => {
       if (typeof value !== 'number') {
         return [ungroups];
       }
@@ -137,9 +151,10 @@ export const groupByMatchers = [
     addToGroup: value => (typeof value === 'number' ? value * 10 : null),
     view: createUniComponentFromWebComponent(NumberGroupView),
   }),
-  groupByMatcherCreator.createMatcher(t.boolean.instance(), {
+  createGroupByConfig({
     name: 'boolean',
-    groupName: (_type, value) => {
+    matchType: t.boolean.instance(),
+    groupName: (_type, value: boolean | null) => {
       return `${value?.toString() ?? ''}`;
     },
     defaultKeys: _type => {
@@ -164,6 +179,7 @@ export const groupByMatchers = [
         },
       ];
     },
+    addToGroup: v => v,
     view: createUniComponentFromWebComponent(BooleanGroupView),
   }),
 ];

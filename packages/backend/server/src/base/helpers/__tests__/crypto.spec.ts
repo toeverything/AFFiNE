@@ -50,7 +50,7 @@ test('should be able to encrypt and decrypt', t => {
 
   // we are using a stub to make sure the iv is always 0,
   // the encrypted result will always be the same
-  t.is(encrypted, 'AAAAAAAAAAAAAAAAWUDlJRhzP+SZ3avvmLcgnou+q4E11w==');
+  t.is(encrypted, 'AAAAAAAAAAAAAAAAOXbR/9glITL3BcO3kPd6fGOMasSkPQ==');
   t.is(decrypted, data);
 
   stub.restore();

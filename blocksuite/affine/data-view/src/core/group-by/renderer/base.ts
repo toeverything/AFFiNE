@@ -2,24 +2,39 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
 import { ShadowlessElement } from '@blocksuite/std';
 import { property } from 'lit/decorators.js';
 
+import type { Group } from '../trait.js';
 import type { GroupRenderProps } from '../types.js';
 
-export class BaseGroup<Data extends NonNullable<unknown>, Value>
+export class BaseGroup<JsonValue, Data extends Record<string, unknown>>
   extends SignalWatcher(WithDisposable(ShadowlessElement))
-  implements GroupRenderProps<Data, Value>
+  implements GroupRenderProps<JsonValue, Data>
 {
   @property({ attribute: false })
-  accessor data!: Data;
+  accessor group!: Group<unknown, JsonValue, Data>;
 
   @property({ attribute: false })
   accessor readonly!: boolean;
 
-  @property({ attribute: false })
-  accessor updateData: ((data: Data) => void) | undefined = undefined;
+  updateData(data: Data) {
+    this.group.manager.updateData(data);
+  }
 
-  @property({ attribute: false })
-  accessor updateValue: ((value: Value) => void) | undefined = undefined;
+  updateValue(value: JsonValue) {
+    this.group.manager.updateValue(
+      this.group.rows.map(row => row.rowId),
+      value
+    );
+  }
 
-  @property({ attribute: false })
-  accessor value!: Value;
+  get value(): JsonValue {
+    return this.group.value as JsonValue;
+  }
+
+  get type() {
+    return this.group.tType;
+  }
+
+  get data() {
+    return this.group.property.data$.value;
+  }
 }

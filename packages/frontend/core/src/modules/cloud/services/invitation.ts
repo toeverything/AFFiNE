@@ -63,8 +63,7 @@ export class InvitationService extends Service {
     }
     return await this.acceptInviteStore.acceptInvite(
       this.inviteInfo$.value.workspace.id,
-      inviteId,
-      true
+      inviteId
     );
   }
 

@@ -10,20 +10,16 @@ textarea
   -webkit-app-region: no-drag;
 }
 
-html[data-active='true'] {
-  opacity: 1;
-}
-
 html:is([data-active='false'], [data-dragging='true']) * {
   -webkit-app-region: no-drag !important;
 }
 
-html[data-active='false'] {
+html[data-active='false']:has([data-translucent='true']) {
   opacity: 0;
   transition: opacity 0.2s 0.1s;
 }
 
-html[data-active='true']:has([data-blur-background='true']) {
+html[data-active='true']:has([data-translucent='true']) {
   opacity: 1;
   transition: opacity 0.2s;
 }

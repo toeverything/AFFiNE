@@ -25,11 +25,11 @@ import type { ViewStore } from '../view-store.js';
 import { BLOCK_ID_ATTR, WIDGET_ID_ATTR } from './consts.js';
 import { ShadowlessElement } from './shadowless-element.js';
 
-export const docContext = createContext<Store>('doc');
+export const storeContext = createContext<Store>('store');
 export const stdContext = createContext<BlockStdScope>('std');
 
 @requiredProperties({
-  doc: PropTypes.instanceOf(Store),
+  store: PropTypes.instanceOf(Store),
   std: PropTypes.object,
 })
 export class EditorHost extends SignalWatcher(
@@ -46,11 +46,11 @@ export class EditorHost extends SignalWatcher(
 
   private readonly _renderModel = (model: BlockModel): TemplateResult => {
     const { flavour } = model;
-    const block = this.doc.getBlock(model.id);
+    const block = this.store.getBlock(model.id);
     if (!block || block.blockViewType === 'hidden') {
       return html`${nothing}`;
     }
-    const schema = this.doc.schema.flavourSchemaMap.get(flavour);
+    const schema = this.store.schema.flavourSchemaMap.get(flavour);
     const view = this.std.getView(flavour);
     if (!schema || !view) {
       console.warn(`Cannot find render flavour ${flavour}.`);
@@ -112,7 +112,7 @@ export class EditorHost extends SignalWatcher(
   override connectedCallback() {
     super.connectedCallback();
 
-    if (!this.doc.root) {
+    if (!this.store.root) {
       throw new BlockSuiteError(
         ErrorCode.NoRootModelError,
         'This doc is missing root block. Please initialize the default block structure before connecting the editor to DOM.'
@@ -131,7 +131,7 @@ export class EditorHost extends SignalWatcher(
   override async getUpdateComplete(): Promise<boolean> {
     try {
       const result = await super.getUpdateComplete();
-      const rootModel = this.doc.root;
+      const rootModel = this.store.root;
       if (!rootModel) return result;
 
       const view = this.std.getView(rootModel.flavour);
@@ -175,15 +175,15 @@ export class EditorHost extends SignalWatcher(
   }
 
   override render() {
-    const { root } = this.doc;
+    const { root } = this.store;
     if (!root) return nothing;
 
     return this._renderModel(root);
   }
 
-  @provide({ context: docContext })
+  @provide({ context: storeContext })
   @property({ attribute: false })
-  accessor doc!: Store;
+  accessor store!: Store;
 
   @provide({ context: stdContext })
   @property({ attribute: false })
