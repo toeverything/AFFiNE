@@ -10,13 +10,13 @@ import Foundation
 public struct FileAttachment: Identifiable, Equatable, Hashable, Codable {
   public var id: UUID = .init()
   public var data: Data?
-  public var url: URL?
+  public var url: URL
   public var name: String
   public var size: Int64
 
   public init(
     data: Data? = nil,
-    url: URL? = nil,
+    url: URL,
     name: String,
     size: Int64 = 0
   ) {

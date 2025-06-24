@@ -3,8 +3,8 @@ import Then
 import UIKit
 
 protocol FileAttachmentHeaderViewDelegate: AnyObject {
-  func headerViewDidTapIconButton(_ headerView: FileAttachmentHeaderView)
-  func headerViewDidTapArrow(_ headerView: FileAttachmentHeaderView)
+  func headerViewDidPickMore(_ headerView: FileAttachmentHeaderView)
+  func headerViewDidTapManagement(_ headerView: FileAttachmentHeaderView)
 }
 
 final class FileAttachmentHeaderView: UIView {
@@ -18,7 +18,9 @@ final class FileAttachmentHeaderView: UIView {
     $0.contentMode = .scaleAspectFit
     $0.image = UIImage(systemName: "doc.fill")
     $0.tintColor = UIColor.systemBlue
-    $0.isUserInteractionEnabled = false
+    $0.isUserInteractionEnabled = true
+    let tap = UITapGestureRecognizer(target: self, action: #selector(iconTapped))
+    $0.addGestureRecognizer(tap)
   }
 
   private lazy var textStackView = UIStackView().then {
@@ -42,10 +44,10 @@ final class FileAttachmentHeaderView: UIView {
     $0.numberOfLines = 1
   }
 
-  private lazy var arrowButton = UIButton(type: .custom).then {
-    $0.setImage(UIImage(systemName: "chevron.down"), for: .normal)
+  private lazy var arrowButton = UIImageView().then {
+    $0.image = UIImage(systemName: "chevron.down")
+    $0.contentMode = .scaleAspectFit
     $0.tintColor = .affineIconPrimary
-    $0.addTarget(self, action: #selector(arrowButtonTapped), for: .touchUpInside)
   }
 
   // MARK: - Initialization
@@ -119,11 +121,11 @@ final class FileAttachmentHeaderView: UIView {
   // MARK: - Actions
 
   @objc private func viewTapped() {
-    delegate?.headerViewDidTapIconButton(self)
+    delegate?.headerViewDidTapManagement(self)
   }
 
-  @objc private func arrowButtonTapped() {
-    delegate?.headerViewDidTapArrow(self)
+  @objc private func iconTapped() {
+    delegate?.headerViewDidPickMore(self)
   }
 
   // MARK: - Public Methods

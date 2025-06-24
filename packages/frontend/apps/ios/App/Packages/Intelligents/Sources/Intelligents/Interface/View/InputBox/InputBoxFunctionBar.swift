@@ -156,7 +156,7 @@ class InputBoxFunctionBar: UIView {
     }
 
     let attachFilesAction = UIAction(
-      title: "Attach Files (pdf, txt, csv)",
+      title: "Attach Files (.pdf, .txt, .csv only)",
       image: UIImage.affineUpload
     ) { [weak self] _ in
       guard let self else { return }

@@ -265,11 +265,22 @@ class InputBox: UIView {
     }
   }
 
-  public func addFileAttachment(_ url: URL) {
-    guard let fileData = try? Data(contentsOf: url) else { return }
+  public func addFileAttachment(_ url: URL) throws {
+    // check less then 15mb
+    let fileSizeLimit: Int64 = 15 * 1024 * 1024 // 15 MB
+    let fileAttributes = try FileManager.default.attributesOfItem(atPath: url.path)
+    guard let fileSize = fileAttributes[.size] as? Int64, fileSize <= fileSizeLimit else {
+      throw NSError(
+        domain: "FileAttachmentErrorDomain",
+        code: 1,
+        userInfo: [NSLocalizedDescriptionKey: "File size exceeds 15 MB limit."]
+      )
+    }
+    let fileData = try Data(contentsOf: url)
 
     let attachment = FileAttachment(
       data: fileData,
+      url: url,
       name: url.lastPathComponent,
       size: Int64(fileData.count)
     )
@@ -282,60 +293,5 @@ class InputBox: UIView {
 
   public var inputBoxData: InputBoxData {
     viewModel.prepareSendData()
-  }
-}
-
-// MARK: - InputBoxFunctionBarDelegate
-
-extension InputBox: InputBoxFunctionBarDelegate {
-  func functionBarDidTapTakePhoto(_: InputBoxFunctionBar) {
-    delegate?.inputBoxDidSelectTakePhoto(self)
-  }
-
-  func functionBarDidTapPhotoLibrary(_: InputBoxFunctionBar) {
-    delegate?.inputBoxDidSelectPhotoLibrary(self)
-  }
-
-  func functionBarDidTapAttachFiles(_: InputBoxFunctionBar) {
-    delegate?.inputBoxDidSelectAttachFiles(self)
-  }
-
-  func functionBarDidTapEmbedDocs(_: InputBoxFunctionBar) {
-    delegate?.inputBoxDidSelectEmbedDocs(self)
-  }
-
-  func functionBarDidTapTool(_: InputBoxFunctionBar) {
-    viewModel.toggleTool()
-  }
-
-  func functionBarDidTapNetwork(_: InputBoxFunctionBar) {
-    viewModel.toggleNetwork()
-  }
-
-  func functionBarDidTapDeepThinking(_: InputBoxFunctionBar) {
-    viewModel.toggleDeepThinking()
-  }
-
-  func functionBarDidTapSend(_: InputBoxFunctionBar) {
-    delegate?.inputBoxDidSend(self)
-  }
-}
-
-extension InputBox: UITextViewDelegate {
-  func textViewDidChange(_ textView: UITextView) {
-    viewModel.updateText(textView.text ?? "")
-    delegate?.inputBoxTextDidChange(textView.text ?? "")
-    updatePlaceholderVisibility()
-    updateTextViewHeight()
-  }
-}
-
-extension InputBox: FileAttachmentHeaderViewDelegate {
-  func headerViewDidTapIconButton(_: FileAttachmentHeaderView) {
-    delegate?.inputBoxDidSelectAttachFiles(self)
-  }
-
-  func headerViewDidTapArrow(_: FileAttachmentHeaderView) {
-    // TODO: pop sheet
   }
 }
