@@ -1,20 +1,15 @@
-import {
-  Checkbox,
-  Menu,
-  MenuItem,
-  type MenuRef,
-  PropertyValue,
-} from '@affine/component';
+import { Checkbox, MenuItem, PropertyValue } from '@affine/component';
 import type { FilterParams } from '@affine/core/modules/collection-rules';
 import { type DocRecord, DocService } from '@affine/core/modules/doc';
 import { useI18n } from '@affine/i18n';
 import { TemplateIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
-import { type ChangeEvent, useCallback, useEffect, useRef } from 'react';
+import { type ChangeEvent, useCallback } from 'react';
 
 import { PlainTextDocGroupHeader } from '../explorer/docs-view/group-header';
 import { StackProperty } from '../explorer/docs-view/stack-property';
 import type { GroupHeaderProps } from '../explorer/types';
+import { FilterValueMenu } from '../filter/filter-value-menu';
 import type { PropertyValueProps } from '../properties/types';
 import * as styles from './template.css';
 
@@ -95,20 +90,10 @@ export const TemplateFilterValue = ({
   onDraftCompleted?: () => void;
   onChange?: (filter: FilterParams) => void;
 }) => {
-  const menuRef = useRef<MenuRef>(null);
-
-  useEffect(() => {
-    if (isDraft) {
-      menuRef.current?.changeOpen(true);
-    }
-  }, [isDraft]);
-
   return (
-    <Menu
-      ref={menuRef}
-      rootOptions={{
-        onClose: onDraftCompleted,
-      }}
+    <FilterValueMenu
+      isDraft={isDraft}
+      onDraftCompleted={onDraftCompleted}
       items={
         <>
           <MenuItem
@@ -137,6 +122,6 @@ export const TemplateFilterValue = ({
       }
     >
       <span>{filter.value === 'true' ? 'True' : 'False'}</span>
-    </Menu>
+    </FilterValueMenu>
   );
 };

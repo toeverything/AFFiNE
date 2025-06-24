@@ -8,6 +8,7 @@ import { isInsidePageEditor } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
+import type { Signal } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -77,6 +78,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: 'data-testid', reflect: true })
   accessor testId = 'chat-message-assistant';
+
+  @property({ attribute: false })
+  accessor panelWidth!: Signal<number | undefined>;
 
   renderHeader() {
     const isWithDocs =
@@ -151,6 +155,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
           <web-crawl-tool
             .data=${streamObject}
             .host=${this.host}
+            .width=${this.panelWidth}
           ></web-crawl-tool>
         `;
       case 'web_search_exa':
@@ -158,6 +163,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
           <web-search-tool
             .data=${streamObject}
             .host=${this.host}
+            .width=${this.panelWidth}
           ></web-search-tool>
         `;
       default:
@@ -180,6 +186,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
           <web-crawl-tool
             .data=${streamObject}
             .host=${this.host}
+            .width=${this.panelWidth}
           ></web-crawl-tool>
         `;
       case 'web_search_exa':
@@ -187,6 +194,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
           <web-search-tool
             .data=${streamObject}
             .host=${this.host}
+            .width=${this.panelWidth}
           ></web-search-tool>
         `;
       default:

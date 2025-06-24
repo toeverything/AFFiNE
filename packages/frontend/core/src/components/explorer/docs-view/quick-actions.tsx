@@ -214,6 +214,7 @@ export const QuickSelect = memo(function QuickSelect({
       onClick?.(e);
       e.stopPropagation();
       e.preventDefault();
+      contextValue.selectMode$?.next(true);
       contextValue.selectedDocIds$?.next(
         selected
           ? selectedDocIds.filter(id => id !== doc.id)

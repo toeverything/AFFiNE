@@ -1884,12 +1884,12 @@ test('should delete doc work', async t => {
   t.is(result4.nodes.length, 1);
   t.deepEqual(result4.nodes[0].fields.docId, [docId2]);
 
-  const count = module.event.count('doc.indexer.deleted');
+  const count = module.queue.count('copilot.embedding.deleteDoc');
 
   await indexerService.deleteDoc(workspaceId, docId1, {
     refresh: true,
   });
-  t.is(module.event.count('doc.indexer.deleted'), count + 1);
+  t.is(module.queue.count('copilot.embedding.deleteDoc'), count + 1);
 
   // make sure the docId1 is deleted
   result1 = await indexerService.search({
@@ -2044,7 +2044,7 @@ test('should list doc ids work', async t => {
 // #region indexDoc()
 
 test('should index doc work', async t => {
-  const count = module.event.count('doc.indexer.updated');
+  const count = module.queue.count('copilot.embedding.updateDoc');
   const docSnapshot = await module.create(Mockers.DocSnapshot, {
     workspaceId: workspace.id,
     user,
@@ -2110,7 +2110,7 @@ test('should index doc work', async t => {
   t.snapshot(
     result2.nodes.map(node => omit(node.fields, ['workspaceId', 'docId']))
   );
-  t.is(module.event.count('doc.indexer.updated'), count + 1);
+  t.is(module.queue.count('copilot.embedding.updateDoc'), count + 1);
 });
 // #endregion
 

@@ -1,6 +1,7 @@
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
 import { WebIcon } from '@blocksuite/icons/lit';
+import type { Signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
@@ -33,6 +34,9 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor host!: EditorHost;
 
+  @property({ attribute: false })
+  accessor width!: Signal<number | undefined>;
+
   renderToolCall() {
     return html`
       <tool-call-card
@@ -50,17 +54,22 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
       const { favicon, title, content } = item;
       return {
         title: title,
-        icon: favicon,
+        icon: favicon || WebIcon(),
         content: content,
       };
     });
+    const footerIcons = this.data.result
+      .map(item => item.favicon)
+      .filter(Boolean);
 
     return html`
       <tool-result-card
         .host=${this.host}
         .name=${'The search is complete, and these webpages have been searched'}
         .icon=${WebIcon()}
+        .footerIcons=${footerIcons}
         .results=${results}
+        .width=${this.width}
       ></tool-result-card>
     `;
   }

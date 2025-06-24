@@ -1,4 +1,4 @@
-import { Input, Menu, type MenuRef, PropertyValue } from '@affine/component';
+import { Input, PropertyValue } from '@affine/component';
 import type { FilterParams } from '@affine/core/modules/collection-rules';
 import { useI18n } from '@affine/i18n';
 import { TextIcon, TextTypeIcon } from '@blocksuite/icons/rc';
@@ -15,6 +15,7 @@ import {
 import { PlainTextDocGroupHeader } from '../explorer/docs-view/group-header';
 import { StackProperty } from '../explorer/docs-view/stack-property';
 import type { GroupHeaderProps } from '../explorer/types';
+import { FilterValueMenu } from '../filter/filter-value-menu';
 import { ConfigModal } from '../mobile';
 import type { PropertyValueProps } from '../properties/types';
 import * as styles from './text.css';
@@ -188,14 +189,7 @@ export const TextFilterValue = ({
 }) => {
   const [tempValue, setTempValue] = useState(filter.value || '');
   const [valueMenuOpen, setValueMenuOpen] = useState(false);
-  const menuRef = useRef<MenuRef>(null);
   const t = useI18n();
-
-  useEffect(() => {
-    if (isDraft) {
-      menuRef.current?.changeOpen(true);
-    }
-  }, [isDraft]);
 
   useEffect(() => {
     // update temp value with new filter value
@@ -237,8 +231,8 @@ export const TextFilterValue = ({
   }, [isDraft, filter.method, onDraftCompleted]);
 
   return filter.method !== 'is-not-empty' && filter.method !== 'is-empty' ? (
-    <Menu
-      ref={menuRef}
+    <FilterValueMenu
+      isDraft={isDraft}
       rootOptions={{
         open: valueMenuOpen,
         onOpenChange: setValueMenuOpen,
@@ -246,7 +240,6 @@ export const TextFilterValue = ({
       }}
       contentOptions={{
         onPointerDownOutside: submitTempValue,
-        sideOffset: -28,
       }}
       items={
         <Input
@@ -272,7 +265,7 @@ export const TextFilterValue = ({
           {t['com.affine.filter.empty']()}
         </span>
       )}
-    </Menu>
+    </FilterValueMenu>
   ) : null;
 };
 

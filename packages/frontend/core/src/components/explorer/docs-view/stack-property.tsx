@@ -10,7 +10,7 @@ export const StackProperty = ({
   return (
     <div className={styles.stackItem}>
       <div className={styles.stackItemContent}>
-        <div className={styles.stackItemIcon}>{icon}</div>
+        {icon ? <div className={styles.stackItemIcon}>{icon}</div> : null}
         <div className={styles.stackItemLabel}>{children}</div>
       </div>
     </div>

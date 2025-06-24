@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { camelCase, chunk, mapKeys, snakeCase } from 'lodash-es';
 
 import {
-  EventBus,
   InvalidIndexerInput,
+  JobQueue,
   SearchProviderNotFound,
 } from '../../base';
 import { readAllBlocksFromDocSnapshot } from '../../core/utils/blocksuite';
@@ -110,7 +110,7 @@ export class IndexerService {
   constructor(
     private readonly models: Models,
     private readonly factory: SearchProviderFactory,
-    private readonly event: EventBus
+    private readonly queue: JobQueue
   ) {}
 
   async createTables() {
@@ -285,11 +285,12 @@ export class IndexerService {
       })),
       options
     );
-    this.event.emit('doc.indexer.updated', {
+
+    await this.queue.add('copilot.embedding.updateDoc', {
       workspaceId,
       docId,
     });
-    this.logger.debug(
+    this.logger.log(
       `synced doc ${workspaceId}/${docId} with ${result.blocks.length} blocks`
     );
   }
@@ -319,12 +320,13 @@ export class IndexerService {
       },
       options
     );
-    this.logger.debug(`deleted doc ${workspaceId}/${docId}`);
+
     await this.deleteBlocksByDocId(workspaceId, docId, options);
-    this.event.emit('doc.indexer.deleted', {
+    await this.queue.add('copilot.embedding.deleteDoc', {
       workspaceId,
       docId,
     });
+    this.logger.log(`deleted doc ${workspaceId}/${docId}`);
   }
 
   async deleteBlocksByDocId(

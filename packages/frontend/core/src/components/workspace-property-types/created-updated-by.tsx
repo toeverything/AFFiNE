@@ -160,6 +160,7 @@ export const CreatedByUpdatedByFilterValue = ({
       onChange={handleChange}
       ref={menuRef}
       onEditorClose={onDraftCompleted}
+      menuClassName={styles.filterValueMenu}
     />
   );
 };
