@@ -194,6 +194,7 @@ export class CopilotSessionModel extends BaseModel {
           id: true,
           role: true,
           content: true,
+          streamObjects: true,
           attachments: true,
           params: true,
           createdAt: true,

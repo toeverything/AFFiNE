@@ -91,7 +91,7 @@ export function constructUserInfoWithMessages(
   userInfo: AIUserInfo | null
 ) {
   return messages.map(message => {
-    const { role, id, content, createdAt } = message;
+    const { role, streamObjects } = message;
     const isUser = role === 'user';
     const userInfoProps = isUser
       ? {
@@ -101,12 +101,10 @@ export function constructUserInfoWithMessages(
         }
       : {};
     return {
-      id,
-      role,
-      content,
-      createdAt,
-      attachments: [],
+      ...message,
       ...userInfoProps,
+      attachments: [],
+      streamObjects: streamObjects || [],
     };
   });
 }
@@ -117,11 +115,11 @@ export async function constructRootChatBlockMessages(
 ) {
   // Convert chat messages to AI chat block messages
   const userInfo = await AIProvider.userInfo;
-  const forkMessages = await queryHistoryMessages(
+  const forkMessages = (await queryHistoryMessages(
     doc.workspace.id,
     doc.id,
     forkSessionId
-  );
+  )) as ChatMessage[];
   return constructUserInfoWithMessages(forkMessages, userInfo);
 }
 

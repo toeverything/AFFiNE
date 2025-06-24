@@ -21,17 +21,9 @@ import { ActionSlides } from './chat-panel/actions/slides';
 import { ActionText } from './chat-panel/actions/text';
 import { AILoading } from './chat-panel/ai-loading';
 import { ChatPanelMessages } from './chat-panel/chat-panel-messages';
-import { AssistantAvatar } from './chat-panel/content/assistant-avatar';
-import { ChatContentImages } from './chat-panel/content/images';
-import { ChatContentPureText } from './chat-panel/content/pure-text';
-import { ChatContentRichText } from './chat-panel/content/rich-text';
 import { ChatMessageAction } from './chat-panel/message/action';
 import { ChatMessageAssistant } from './chat-panel/message/assistant';
 import { ChatMessageUser } from './chat-panel/message/user';
-import { ToolCallCard } from './chat-panel/tools/tool-call-card';
-import { ToolResultCard } from './chat-panel/tools/tool-result-card';
-import { WebCrawlTool } from './chat-panel/tools/web-crawl';
-import { WebSearchTool } from './chat-panel/tools/web-search';
 import { ChatPanelAddPopover } from './components/ai-chat-chips/add-popover';
 import { ChatPanelCandidatesPopover } from './components/ai-chat-chips/candidates-popover';
 import { ChatPanelChips } from './components/ai-chat-chips/chat-panel-chips';
@@ -46,7 +38,16 @@ import { AIChatEmbeddingStatusTooltip } from './components/ai-chat-input/embeddi
 import { ChatInputPreference } from './components/ai-chat-input/preference-popup';
 import { AIHistoryClear } from './components/ai-history-clear';
 import { effects as componentAiItemEffects } from './components/ai-item';
+import { AssistantAvatar } from './components/ai-message-content/assistant-avatar';
+import { ChatContentImages } from './components/ai-message-content/images';
+import { ChatContentPureText } from './components/ai-message-content/pure-text';
+import { ChatContentRichText } from './components/ai-message-content/rich-text';
+import { ChatContentStreamObjects } from './components/ai-message-content/stream-objects';
 import { AIScrollableTextRenderer } from './components/ai-scrollable-text-renderer';
+import { ToolCallCard } from './components/ai-tools/tool-call-card';
+import { ToolResultCard } from './components/ai-tools/tool-result-card';
+import { WebCrawlTool } from './components/ai-tools/web-crawl';
+import { WebSearchTool } from './components/ai-tools/web-search';
 import { AskAIButton } from './components/ask-ai-button';
 import { AskAIIcon } from './components/ask-ai-icon';
 import { AskAIPanel } from './components/ask-ai-panel';
@@ -156,6 +157,10 @@ export function registerAIEffects() {
   customElements.define('chat-content-images', ChatContentImages);
   customElements.define('chat-content-pure-text', ChatContentPureText);
   customElements.define('chat-content-rich-text', ChatContentRichText);
+  customElements.define(
+    'chat-content-stream-objects',
+    ChatContentStreamObjects
+  );
   customElements.define('chat-message-action', ChatMessageAction);
   customElements.define('chat-message-assistant', ChatMessageAssistant);
   customElements.define('chat-message-user', ChatMessageUser);

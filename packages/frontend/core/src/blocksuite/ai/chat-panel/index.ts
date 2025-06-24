@@ -24,7 +24,11 @@ import type {
   AINetworkSearchConfig,
   AIReasoningConfig,
 } from '../components/ai-chat-input';
-import { type HistoryMessage } from '../components/ai-chat-messages';
+import {
+  type ChatAction,
+  type ChatMessage,
+  type HistoryMessage,
+} from '../components/ai-chat-messages';
 import { createPlaygroundModal } from '../components/playground/modal';
 import { AIProvider } from '../provider';
 import { extractSelectedContent } from '../utils/extract';
@@ -146,12 +150,14 @@ export class ChatPanel extends SignalWatcher(
       return;
     }
 
-    const messages: HistoryMessage[] = actions ? [...actions] : [];
+    const chatActions = (actions || []) as ChatAction[];
+    const messages: HistoryMessage[] = chatActions;
 
     const sessionId = await this._getSessionId();
     const history = histories?.find(history => history.sessionId === sessionId);
     if (history) {
-      messages.push(...history.messages);
+      const chatMessages = (history.messages || []) as ChatMessage[];
+      messages.push(...chatMessages);
     }
 
     this.chatContextValue = {

@@ -35,7 +35,7 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
   accessor host!: EditorHost;
 
   @property({ attribute: false })
-  accessor width!: Signal<number | undefined>;
+  accessor width: Signal<number | undefined> | undefined;
 
   renderToolCall() {
     return html`

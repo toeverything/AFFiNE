@@ -1,14 +1,13 @@
 import type { TextRendererOptions } from '@affine/core/blocksuite/ai/components/text-renderer';
-import type { AffineAIPanelState } from '@affine/core/blocksuite/ai/widgets/ai-panel/type';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { css, html, LitElement } from 'lit';
 import { property } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 
-import type {
-  ChatMessage,
-  MessageRole,
+import {
+  type ChatMessage,
+  type StreamObject,
 } from '../../../components/ai-chat-messages';
 import { UserInfoTemplate } from './user-info';
 
@@ -36,16 +35,14 @@ export class AIChatMessage extends LitElement {
 
   override render() {
     const {
-      host,
-      textRendererOptions,
-      state,
       content,
       attachments,
-      messageRole,
-      userId,
       userName,
+      userId,
       avatarUrl,
-    } = this;
+      role,
+      streamObjects,
+    } = this.message;
     const withAttachments = !!attachments && attachments.length > 0;
 
     const messageClasses = classMap({
@@ -54,48 +51,52 @@ export class AIChatMessage extends LitElement {
 
     return html`
       <div class="ai-chat-message">
-        ${UserInfoTemplate({ userId, userName, avatarUrl }, messageRole)}
+        ${UserInfoTemplate({ userId, userName, avatarUrl }, role)}
         <div class="ai-chat-content">
           <chat-images .attachments=${attachments}></chat-images>
           <div class=${messageClasses}>
-            <text-renderer
-              .host=${host}
-              .answer=${content}
-              .options=${textRendererOptions}
-              .state=${state}
-            ></text-renderer>
+            ${streamObjects?.length
+              ? this.renderStreamObjects(streamObjects)
+              : this.renderRichText(content)}
           </div>
         </div>
       </div>
     `;
   }
 
-  @property({ attribute: false })
-  accessor attachments: string[] | undefined = undefined;
+  private renderStreamObjects(answer: StreamObject[]) {
+    return html`<chat-content-stream-objects
+      .answer=${answer}
+      .host=${this.host}
+      .state=${this.state}
+      .extensions=${this.textRendererOptions.extensions}
+      .affineFeatureFlagService=${this.textRendererOptions
+        .affineFeatureFlagService}
+    ></chat-content-stream-objects>`;
+  }
+
+  private renderRichText(text: string) {
+    return html`<chat-content-rich-text
+      .host=${this.host}
+      .text=${text}
+      .state=${this.state}
+      .extensions=${this.textRendererOptions.extensions}
+      .affineFeatureFlagService=${this.textRendererOptions
+        .affineFeatureFlagService}
+    ></chat-content-rich-text>`;
+  }
 
   @property({ attribute: false })
-  accessor content: string = '';
+  accessor message!: ChatMessage;
 
   @property({ attribute: false })
   accessor host!: EditorHost;
 
   @property({ attribute: false })
-  accessor messageRole: MessageRole | undefined = undefined;
-
-  @property({ attribute: false })
-  accessor state: AffineAIPanelState = 'finished';
+  accessor state: 'finished' | 'generating' = 'finished';
 
   @property({ attribute: false })
   accessor textRendererOptions: TextRendererOptions = {};
-
-  @property({ attribute: false })
-  accessor userId: string | undefined = undefined;
-
-  @property({ attribute: false })
-  accessor userName: string | undefined = undefined;
-
-  @property({ attribute: false })
-  accessor avatarUrl: string | undefined = undefined;
 }
 
 export class AIChatMessages extends LitElement {
@@ -121,18 +122,11 @@ export class AIChatMessages extends LitElement {
         this.messages,
         message => message.id || message.createdAt,
         message => {
-          const { attachments, role, content, userId, userName, avatarUrl } =
-            message;
           return html`
             <ai-chat-message
               .host=${this.host}
               .textRendererOptions=${this.textRendererOptions}
-              .content=${content}
-              .attachments=${attachments}
-              .messageRole=${role}
-              .userId=${userId}
-              .userName=${userName}
-              .avatarUrl=${avatarUrl}
+              .message=${message}
             ></ai-chat-message>
           `;
         }
