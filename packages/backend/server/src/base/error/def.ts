@@ -917,4 +917,8 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'resource_not_found',
     message: 'Reply not found.',
   },
+  comment_attachment_not_found: {
+    type: 'resource_not_found',
+    message: 'Comment attachment not found.',
+  },
 } satisfies Record<string, UserFriendlyErrorOptions>;

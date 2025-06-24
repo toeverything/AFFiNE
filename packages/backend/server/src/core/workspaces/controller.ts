@@ -4,6 +4,7 @@ import type { Response } from 'express';
 import {
   BlobNotFound,
   CallMetric,
+  CommentAttachmentNotFound,
   DocHistoryNotFound,
   DocNotFound,
   InvalidHistoryTimestamp,
@@ -13,7 +14,7 @@ import { CurrentUser, Public } from '../auth';
 import { PgWorkspaceDocStorageAdapter } from '../doc';
 import { DocReader } from '../doc/reader';
 import { AccessController } from '../permission';
-import { WorkspaceBlobStorage } from '../storage';
+import { CommentAttachmentStorage, WorkspaceBlobStorage } from '../storage';
 import { DocID } from '../utils/doc';
 
 @Controller('/api/workspaces')
@@ -21,6 +22,7 @@ export class WorkspacesController {
   logger = new Logger(WorkspacesController.name);
   constructor(
     private readonly storage: WorkspaceBlobStorage,
+    private readonly commentAttachmentStorage: CommentAttachmentStorage,
     private readonly ac: AccessController,
     private readonly workspace: PgWorkspaceDocStorageAdapter,
     private readonly docReader: DocReader,
@@ -179,5 +181,42 @@ export class WorkspacesController {
         timestamp: ts.getTime(),
       });
     }
+  }
+
+  @Get('/:id/docs/:docId/comment-attachments/:key')
+  @CallMetric('controllers', 'workspace_get_comment_attachment')
+  async commentAttachment(
+    @CurrentUser() user: CurrentUser,
+    @Param('id') workspaceId: string,
+    @Param('docId') docId: string,
+    @Param('key') key: string,
+    @Res() res: Response
+  ) {
+    await this.ac.user(user.id).doc(workspaceId, docId).assert('Doc.Read');
+
+    const { body, metadata, redirectUrl } =
+      await this.commentAttachmentStorage.get(workspaceId, docId, key);
+
+    if (redirectUrl) {
+      return res.redirect(redirectUrl);
+    }
+
+    if (!body) {
+      throw new CommentAttachmentNotFound();
+    }
+
+    // metadata should always exists if body is not null
+    if (metadata) {
+      res.setHeader('content-type', metadata.contentType);
+      res.setHeader('last-modified', metadata.lastModified.toUTCString());
+      res.setHeader('content-length', metadata.contentLength);
+    } else {
+      this.logger.warn(
+        `Comment attachment ${workspaceId}/${docId}/${key} has no metadata`
+      );
+    }
+
+    res.setHeader('cache-control', 'private, max-age=2592000, immutable');
+    body.pipe(res);
   }
 }

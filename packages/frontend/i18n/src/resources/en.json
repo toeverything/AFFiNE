@@ -2195,5 +2195,6 @@
   "error.INVALID_SEARCH_PROVIDER_REQUEST": "Invalid request argument to search provider: {{reason}}",
   "error.INVALID_INDEXER_INPUT": "Invalid indexer input: {{reason}}",
   "error.COMMENT_NOT_FOUND": "Comment not found.",
-  "error.REPLY_NOT_FOUND": "Reply not found."
+  "error.REPLY_NOT_FOUND": "Reply not found.",
+  "error.COMMENT_ATTACHMENT_NOT_FOUND": "Comment attachment not found."
 }

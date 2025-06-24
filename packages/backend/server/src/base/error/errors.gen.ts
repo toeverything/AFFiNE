@@ -1079,6 +1079,12 @@ export class ReplyNotFound extends UserFriendlyError {
     super('resource_not_found', 'reply_not_found', message);
   }
 }
+
+export class CommentAttachmentNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'comment_attachment_not_found', message);
+  }
+}
 export enum ErrorNames {
   INTERNAL_SERVER_ERROR,
   NETWORK_ERROR,
@@ -1216,7 +1222,8 @@ export enum ErrorNames {
   INVALID_SEARCH_PROVIDER_REQUEST,
   INVALID_INDEXER_INPUT,
   COMMENT_NOT_FOUND,
-  REPLY_NOT_FOUND
+  REPLY_NOT_FOUND,
+  COMMENT_ATTACHMENT_NOT_FOUND
 }
 registerEnumType(ErrorNames, {
   name: 'ErrorNames'
