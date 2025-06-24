@@ -1,6 +1,6 @@
 replicaCount: 1
 image:
-  repository: ghcr.io/toeverything/affine-graphql
+  repository: ghcr.io/toeverything/affine
   pullPolicy: IfNotPresent
   tag: ''
 

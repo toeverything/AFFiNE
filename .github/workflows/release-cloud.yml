@@ -1,0 +1,66 @@
+name: Release Cloud
+
+on:
+  workflow_call:
+    inputs:
+      build-type:
+        required: true
+        type: string
+      app-version:
+        required: true
+        type: string
+      git-short-hash:
+        required: true
+        type: string
+
+permissions:
+  contents: 'write'
+  id-token: 'write'
+  packages: 'write'
+
+jobs:
+  build-images:
+    name: Build Images
+    uses: ./.github/workflows/build-images.yml
+    secrets: inherit
+    with:
+      build-type: ${{ inputs.build-type }}
+      app-version: ${{ inputs.app-version }}
+      git-short-hash: ${{ inputs.git-short-hash }}
+
+  deploy:
+    name: Deploy to cluster
+    environment: ${{ inputs.build-type }}
+    needs:
+      - build-images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy to ${{ inputs.build-type }}
+        uses: ./.github/actions/deploy
+        with:
+          gcp-project-number: ${{ secrets.GCP_PROJECT_NUMBER }}
+          gcp-project-id: ${{ secrets.GCP_PROJECT_ID }}
+          service-account: ${{ secrets.GCP_HELM_DEPLOY_SERVICE_ACCOUNT }}
+          cluster-name: ${{ secrets.GCP_CLUSTER_NAME }}
+          cluster-location: ${{ secrets.GCP_CLUSTER_LOCATION }}
+        env:
+          BUILD_TYPE: ${{ inputs.build-type }}
+          APP_VERSION: ${{ inputs.app-version }}
+          GIT_SHORT_HASH: ${{ inputs.git-short-hash }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          CANARY_DEPLOY_HOST: ${{ secrets.CANARY_DEPLOY_HOST }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          GCLOUD_CONNECTION_NAME: ${{ secrets.GCLOUD_CONNECTION_NAME }}
+          REDIS_SERVER_HOST: ${{ secrets.REDIS_SERVER_HOST }}
+          REDIS_SERVER_PASSWORD: ${{ secrets.REDIS_SERVER_PASSWORD }}
+          CLOUD_SQL_IAM_ACCOUNT: ${{ secrets.CLOUD_SQL_IAM_ACCOUNT }}
+          APP_IAM_ACCOUNT: ${{ secrets.APP_IAM_ACCOUNT }}
+          STATIC_IP_NAME: ${{ secrets.STATIC_IP_NAME }}
+          AFFINE_INDEXER_SEARCH_PROVIDER: ${{ secrets.AFFINE_INDEXER_SEARCH_PROVIDER }}
+          AFFINE_INDEXER_SEARCH_ENDPOINT: ${{ secrets.AFFINE_INDEXER_SEARCH_ENDPOINT }}
+          AFFINE_INDEXER_SEARCH_API_KEY: ${{ secrets.AFFINE_INDEXER_SEARCH_API_KEY }}

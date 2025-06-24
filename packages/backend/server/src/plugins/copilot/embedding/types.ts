@@ -43,6 +43,16 @@ declare global {
       docId: string;
     };
 
+    'copilot.embedding.updateDoc': {
+      workspaceId: string;
+      docId: string;
+    };
+
+    'copilot.embedding.deleteDoc': {
+      workspaceId: string;
+      docId: string;
+    };
+
     'copilot.embedding.files': {
       contextId?: string;
       userId: string;

@@ -118,6 +118,7 @@ export const TagsFilterValue = ({
       selectedTags={selectedTags}
       onSelectTag={handleSelectTag}
       onDeselectTag={handleDeselectTag}
+      menuClassName={styles.filterValueMenu}
       tagMode="inline-tag"
       ref={menuRef}
       onEditorClose={onDraftCompleted}
@@ -208,19 +209,31 @@ const TagIcon = ({ tag, size = 8 }: { tag: Tag; size?: number }) => {
     />
   );
 };
+
 export const TagsDocListProperty = ({ doc }: { doc: DocRecord }) => {
+  const max = 3;
+  const t = useI18n();
   const tagList = useService(TagService).tagList;
   const tags = useLiveData(tagList.tagsByPageId$(doc.id));
 
+  const showRest = tags.length > max + 1;
+  const visibleTags = tags.length === max + 1 ? max + 1 : max;
+
   return (
     <>
-      {tags.map(tag => {
+      {tags.slice(0, visibleTags).map(tag => {
         return (
           <StackProperty icon={<TagIcon tag={tag} />} key={tag.id}>
             <TagName tag={tag} />
           </StackProperty>
         );
       })}
+      {showRest ? (
+        <StackProperty icon={null}>
+          <span>+{tags.length - max}</span>
+          <span className={styles.moreTagsLabel}>{t['Tags']()}</span>
+        </StackProperty>
+      ) : null}
     </>
   );
 };

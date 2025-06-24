@@ -1,68 +1,33 @@
-name: Release Mobile App
+name: Release Mobile
 
 on:
   workflow_call:
     inputs:
-      build-target:
-        description: 'Build Target'
+      app-version:
+        type: string
+        required: true
+      git-short-hash:
         type: string
         required: true
       build-type:
-        description: 'Build Type'
         type: string
         required: true
-  workflow_dispatch:
-    inputs:
-      build-target:
-        description: 'Build Target'
-        type: choice
-        required: true
-        default: distribution
-        options:
-          - development
-          - distribution
-      build-type:
-        description: 'Build Type'
-        type: choice
-        required: true
-        default: canary
-        options:
-          - canary
-          - beta
-          - stable
+
 env:
-  BUILD_TYPE: ${{ inputs.build-type || github.event.inputs.build-type }}
-  BUILD_TARGET: ${{ inputs.build-target || github.event.inputs.build-target }}
+  BUILD_TYPE: ${{ inputs.build-type }}
   DEBUG: napi:*
   KEYCHAIN_NAME: ${{ github.workspace }}/signing_temp
 
 jobs:
-  output-env:
-    runs-on: ubuntu-latest
-    outputs:
-      ENVIRONMENT: ${{ steps.env.outputs.ENVIRONMENT }}
-    steps:
-      - name: Output Environment
-        id: env
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "ENVIRONMENT=${{ github.event.inputs.build-type }}" >> $GITHUB_OUTPUT
-          else
-            echo "ENVIRONMENT=" >> $GITHUB_OUTPUT
-          fi
-
   build-ios-web:
-    needs:
-      - output-env
-    runs-on: ubuntu-24.04-arm
-    environment: ${{ needs.output-env.outputs.ENVIRONMENT }}
-    outputs:
-      RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.build-type }}
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Setup @sentry/cli
@@ -76,8 +41,8 @@ jobs:
           SENTRY_PROJECT: 'affine'
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          SENTRY_RELEASE: ${{ steps.version.outputs.APP_VERSION }}
-          RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
+          SENTRY_RELEASE: ${{ inputs.app-version }}
+          RELEASE_VERSION: ${{ inputs.app-version }}
       - name: Upload ios artifact
         uses: actions/upload-artifact@v4
         with:
@@ -85,17 +50,13 @@ jobs:
           path: packages/frontend/apps/ios/dist
 
   build-android-web:
-    runs-on: ubuntu-24.04-arm
-    needs:
-      - output-env
-    environment: ${{ needs.output-env.outputs.ENVIRONMENT }}
-    outputs:
-      RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Setup Node.js
         uses: ./.github/actions/setup-node
       - name: Setup @sentry/cli
@@ -109,8 +70,7 @@ jobs:
           SENTRY_PROJECT: 'affine'
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-          SENTRY_RELEASE: ${{ steps.version.outputs.APP_VERSION }}
-          RELEASE_VERSION: ${{ steps.version.outputs.APP_VERSION }}
+          SENTRY_RELEASE: ${{ inputs.app-version }}
       - name: Upload android artifact
         uses: actions/upload-artifact@v4
         with:
@@ -180,8 +140,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup Version
-        id: version
         uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
       - name: Download mobile artifact
         uses: actions/download-artifact@v4
         with:
@@ -214,7 +175,6 @@ jobs:
       - name: Auth gcloud
         id: auth
         uses: google-github-actions/auth@v2
-        if: ${{ env.BUILD_TARGET == 'distribution' }}
         with:
           workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions-helm-deploy'
           service_account: '${{ secrets.GCP_HELM_DEPLOY_SERVICE_ACCOUNT }}'
@@ -228,7 +188,6 @@ jobs:
           cache: 'gradle'
       - name: Auto increment version code
         id: bump
-        if: ${{ env.BUILD_TARGET == 'distribution' }}
         run: yarn affine @affine/playstore-auto-bump bump
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
@@ -240,14 +199,13 @@ jobs:
           AFFINE_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.AFFINE_ANDROID_KEYSTORE_PASSWORD }}
           AFFINE_ANDROID_KEYSTORE_ALIAS_PASSWORD: ${{ secrets.AFFINE_ANDROID_KEYSTORE_ALIAS_PASSWORD }}
           AFFINE_ANDROID_SIGN_KEYSTORE: ${{ secrets.AFFINE_ANDROID_SIGN_KEYSTORE }}
-          VERSION_NAME: ${{ steps.version.outputs.APP_VERSION }}
+          VERSION_NAME: ${{ inputs.app-version }}
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
-        if: ${{ env.BUILD_TARGET == 'distribution' }}
         with:
           serviceAccountJson: ${{ steps.auth.outputs.credentials_file_path }}
           packageName: app.affine.pro
-          releaseName: ${{ steps.version.outputs.APP_VERSION }}
+          releaseName: ${{ inputs.app-version }}
           releaseFiles: packages/frontend/apps/android/App/app/build/outputs/bundle/${{ env.BUILD_TYPE }}Release/app-${{ env.BUILD_TYPE }}-release-signed.aab
           track: internal
           status: draft
