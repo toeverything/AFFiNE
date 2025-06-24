@@ -48,6 +48,7 @@ model User {
   settings                     UserSettings?
   comments                     Comment[]
   replies                      Reply[]
+  commentAttachments           CommentAttachment[]            @relation("createdCommentAttachments")
 
   @@index([email])
   @@map("users")
@@ -129,6 +130,7 @@ model Workspace {
   ignoredDocs    AiWorkspaceIgnoredDocs[]
   embedFiles     AiWorkspaceFiles[]
   comments       Comment[]
+  commentAttachments    CommentAttachment[]
 
   @@map("workspaces")
 }
@@ -905,4 +907,24 @@ model Reply {
   @@index([workspaceId, docId, updatedAt])
   @@index([userId])
   @@map("replies")
+}
+
+model CommentAttachment {
+  // NOTE: manually set this column type to identity in migration file
+  sid         Int       @unique @default(autoincrement())
+  workspaceId String    @map("workspace_id") @db.VarChar
+  docId       String    @map("doc_id") @db.VarChar
+  key         String    @db.VarChar
+  size        Int       @db.Integer
+  mime        String    @db.VarChar
+  name        String    @db.VarChar
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy   String?   @map("created_by") @db.VarChar
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  // will delete creator record if creator's account is deleted
+  createdByUser User? @relation(name: "createdCommentAttachments", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@id([workspaceId, docId, key])
+  @@map("comment_attachments")
 }
