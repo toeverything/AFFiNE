@@ -1,4 +1,5 @@
 import EventEmitter2 from 'eventemitter2';
+import { pick } from 'lodash-es';
 import { defer, from, fromEvent, Observable, of, take, takeUntil } from 'rxjs';
 
 import { MANUALLY_STOP } from '../utils';
@@ -70,7 +71,15 @@ export class OpConsumer<Ops extends OpSchema> extends AutoMessageHandler {
           this.port.postMessage({
             type: 'return',
             id: msg.id,
-            error: error as Error,
+            error: pick(error, [
+              'name',
+              'message',
+              'code',
+              'type',
+              'status',
+              'data',
+              'stacktrace',
+            ]),
           } satisfies ReturnMessage);
         },
         complete: () => {
@@ -100,7 +109,15 @@ export class OpConsumer<Ops extends OpSchema> extends AutoMessageHandler {
           this.port.postMessage({
             type: 'error',
             id: msg.id,
-            error: error as Error,
+            error: pick(error, [
+              'name',
+              'message',
+              'code',
+              'type',
+              'status',
+              'data',
+              'stacktrace',
+            ]),
           } satisfies SubscriptionErrorMessage);
         },
         complete: () => {
