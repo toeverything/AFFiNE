@@ -135,7 +135,7 @@ export const useAppUpdater = () => {
     setCheckingForUpdates(true);
     try {
       const updateInfo = await apis?.updater.checkForUpdates();
-      return updateInfo?.version ?? false;
+      return updateInfo?.isUpdateAvailable ?? false;
     } catch (err) {
       console.error('Error checking for updates:', err);
       return null;

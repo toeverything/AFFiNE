@@ -198,7 +198,10 @@
       }
     },
     {
-      "files": ["packages/backend/**/*.ts"],
+      "files": [
+        "packages/backend/**/*.ts",
+        "packages/frontend/apps/electron/**/*.ts"
+      ],
       "rules": {
         "typescript/consistent-type-imports": "off"
       }

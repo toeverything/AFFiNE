@@ -5,13 +5,12 @@
   "private": true,
   "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./web-worker": "./src/web-worker.ts"
-  },
-  "dependencies": {
-    "async-call-rpc": "^6.4.2"
+    ".": "./src/index.ts"
   },
   "devDependencies": {
     "@affine/electron": "workspace:*"
+  },
+  "dependencies": {
+    "zod": "^3.24.4"
   }
 }

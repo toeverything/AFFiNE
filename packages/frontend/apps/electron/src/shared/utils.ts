@@ -1,22 +1,4 @@
-import { join } from 'node:path';
-
 import type { EventBasedChannel } from 'async-call-rpc';
-
-export function getTime() {
-  return Date.now();
-}
-
-export const isMacOS = () => {
-  return process.platform === 'darwin';
-};
-
-export const isWindows = () => {
-  return process.platform === 'win32';
-};
-
-export const isLinux = () => {
-  return process.platform === 'linux';
-};
 
 interface MessagePortLike {
   postMessage: (data: unknown) => void;
@@ -44,8 +26,6 @@ export class MessageEventChannel implements EventBasedChannel {
     this.worker.postMessage(data);
   }
 }
-
-export const resourcesPath = join(__dirname, `../resources`);
 
 // credit: https://github.com/facebook/fbjs/blob/main/packages/fbjs/src/core/shallowEqual.js
 export function shallowEqual<T>(objA: T, objB: T) {

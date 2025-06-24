@@ -39,7 +39,7 @@ export const PageNotFound = ({
   );
 
   useEffect(() => {
-    desktopApi?.handler.ui.pingAppLayoutReady().catch(console.error);
+    desktopApi?.handler.ui.pingAppLayoutReady(true).catch(console.error);
   }, [desktopApi]);
 
   // not using workbench location or router location deliberately

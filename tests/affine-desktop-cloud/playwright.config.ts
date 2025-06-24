@@ -21,15 +21,14 @@ const config: PlaywrightTestConfig = {
   },
   reporter: process.env.CI ? 'github' : 'list',
   webServer: [
-    // Intentionally not building the web, reminds you to run it by yourself.
     {
-      command: 'yarn run -T affine dev -p @affine/electron-renderer',
+      command: 'yarn run -T affine bundle -p @affine/electron-renderer --dev',
+      port: 8080,
       timeout: 120 * 1000,
       reuseExistingServer: !process.env.CI,
       stdout: 'pipe',
       env: {
         COVERAGE: process.env.COVERAGE || 'false',
-        DISTRIBUTION: 'desktop',
       },
       url: 'http://localhost:8080',
     },
@@ -57,7 +56,7 @@ const config: PlaywrightTestConfig = {
 
 if (process.env.CI) {
   config.retries = 3;
-  config.workers = '50%';
+  config.workers = 1;
 }
 
 export default config;

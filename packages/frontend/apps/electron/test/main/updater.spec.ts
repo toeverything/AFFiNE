@@ -20,7 +20,7 @@ import {
 import {
   AFFiNEUpdateProvider,
   availableForMyPlatformAndInstaller,
-} from '../../src/main/updater/affine-update-provider';
+} from '../../src/entries/main/updater/affine-update-provider';
 import { MockedAppAdapter, MockedUpdater } from './mocks';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));

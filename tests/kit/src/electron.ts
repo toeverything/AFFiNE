@@ -72,7 +72,7 @@ export const test = base.extend<{
           return electronApp.windows().length > 1;
         },
         {
-          timeout: 10000,
+          timeout: 30000,
         }
       )
       .toBeTruthy();

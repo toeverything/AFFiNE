@@ -124,7 +124,7 @@ export const Component = ({
   const desktopApi = useServiceOptional(DesktopApiService);
 
   useEffect(() => {
-    desktopApi?.handler.ui.pingAppLayoutReady().catch(console.error);
+    desktopApi?.handler.ui.pingAppLayoutReady(true).catch(console.error);
   }, [desktopApi]);
 
   useEffect(() => {

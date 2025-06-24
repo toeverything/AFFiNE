@@ -1,7 +1,7 @@
 import type {
   MeetingSettingsKey,
   MeetingSettingsSchema,
-} from '@affine/electron/main/shared-state-schema';
+} from '@affine/electron-api';
 import { LiveData, Service } from '@toeverything/infra';
 import { defaults } from 'lodash-es';
 
@@ -126,7 +126,7 @@ export class MeetingSettingsService extends Service {
   // the following methods are only available on MacOS right?
   async showRecordingPermissionSetting(type: 'screen' | 'microphone') {
     return this.desktopApiService?.handler.recording.showRecordingPermissionSetting(
-      type
+      { type }
     );
   }
 

@@ -1,11 +1,14 @@
 {
   "extends": "../../../../tsconfig.node.json",
   "compilerOptions": {
-    "rootDir": "./src",
+    "rootDir": "src",
     "outDir": "./dist",
-    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": true
   },
-  "include": ["./src"],
+  "include": ["src"],
   "references": [
     { "path": "../../../../tools/utils" },
     { "path": "../../native" },

@@ -1,7 +1,4 @@
-import type {
-  MenubarStateKey,
-  MenubarStateSchema,
-} from '@affine/electron/main/shared-state-schema';
+import type { MenubarStateKey, MenubarStateSchema } from '@affine/electron-api';
 import { LiveData, Service } from '@toeverything/infra';
 
 import type { GlobalStateService } from '../../storage';

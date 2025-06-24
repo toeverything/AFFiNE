@@ -24,7 +24,7 @@ export function setupEvents(frameworkProvider: FrameworkProvider) {
       .catch(console.error);
   });
 
-  events?.applicationMenu.openInSettingModal(({ activeTab, scrollAnchor }) => {
+  events?.menu.onOpenInSettingModal(({ activeTab, scrollAnchor }) => {
     using currentWorkspace = getCurrentWorkspace(frameworkProvider);
     if (!currentWorkspace) {
       return;
@@ -39,7 +39,7 @@ export function setupEvents(frameworkProvider: FrameworkProvider) {
     });
   });
 
-  events?.applicationMenu.onNewPageAction(type => {
+  events?.menu.onNewPageAction(type => {
     apis?.ui
       .isActiveTab()
       .then(isActive => {
@@ -61,7 +61,7 @@ export function setupEvents(frameworkProvider: FrameworkProvider) {
       });
   });
 
-  events?.applicationMenu.onOpenJournal(() => {
+  events?.menu.onOpenJournal(() => {
     using currentWorkspace = getCurrentWorkspace(frameworkProvider);
     if (!currentWorkspace) {
       return;

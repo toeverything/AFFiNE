@@ -405,7 +405,7 @@ export const AppTabsHeader = ({
 
   useEffect(() => {
     if (mode === 'app') {
-      desktopApi.handler.ui.pingAppLayoutReady().catch(console.error);
+      desktopApi.handler.ui.pingAppLayoutReady(true).catch(console.error);
     }
   }, [mode, desktopApi]);
 

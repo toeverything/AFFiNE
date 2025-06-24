@@ -12,8 +12,8 @@ export class ElectronApiImpl extends Service implements DesktopApiProvider {
       throw new Error('Failed to initialize DesktopApiImpl');
     }
   }
-  handler = apis;
-  events = events;
-  sharedStorage = sharedStorage;
-  appInfo = appInfo!;
+  handler: typeof apis = apis;
+  events: typeof events = events;
+  sharedStorage: typeof sharedStorage = sharedStorage;
+  appInfo: NonNullable<typeof appInfo> = appInfo!;
 }

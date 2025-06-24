@@ -503,7 +503,7 @@ __metadata:
   resolution: "@affine/electron-api@workspace:packages/frontend/electron-api"
   dependencies:
     "@affine/electron": "workspace:*"
-    async-call-rpc: "npm:^6.4.2"
+    zod: "npm:^3.24.4"
   languageName: unknown
   linkType: soft
 
@@ -556,6 +556,9 @@ __metadata:
     "@electron-forge/maker-zip": "npm:^7.6.0"
     "@electron-forge/plugin-auto-unpack-natives": "npm:^7.6.0"
     "@electron-forge/shared-types": "npm:^7.6.0"
+    "@nestjs/common": "npm:^11.1.0"
+    "@nestjs/core": "npm:^11.1.0"
+    "@nestjs/event-emitter": "npm:^3.0.1"
     "@pengx17/electron-forge-maker-appimage": "npm:^1.2.1"
     "@sentry/electron": "npm:^6.1.0"
     "@sentry/esbuild-plugin": "npm:^3.0.0"
@@ -575,6 +578,7 @@ __metadata:
     electron-updater: "npm:^6.3.9"
     electron-window-state: "npm:^5.0.3"
     esbuild: "npm:^0.25.0"
+    esbuild-plugin-tsc: "npm:^0.5.0"
     fs-extra: "npm:^11.2.0"
     glob: "npm:^11.0.0"
     link-preview-js: "npm:^3.0.12"
@@ -582,11 +586,14 @@ __metadata:
     msw: "npm:^2.6.8"
     nanoid: "npm:^5.0.9"
     next-themes: "npm:^0.4.4"
+    reflect-metadata: "npm:^0.2.2"
     rxjs: "npm:^7.8.1"
     semver: "npm:^7.6.3"
     set-cookie-parser: "npm:^2.7.1"
     tree-kill: "npm:^1.2.2"
+    ts-morph: "npm:^25.0.1"
     ts-node: "npm:^10.9.2"
+    typescript: "npm:^5.8.3"
     uuid: "npm:^11.0.3"
     vitest: "npm:3.1.3"
     yjs: "npm:^13.6.21"
@@ -9032,7 +9039,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/common@npm:^11.0.12":
+"@nestjs/common@npm:^11.0.12, @nestjs/common@npm:^11.1.0":
   version: 11.1.3
   resolution: "@nestjs/common@npm:11.1.3"
   dependencies:
@@ -9055,7 +9062,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nestjs/core@npm:^11.0.12":
+"@nestjs/core@npm:^11.0.12, @nestjs/core@npm:^11.1.0":
   version: 11.1.3
   resolution: "@nestjs/core@npm:11.1.3"
   dependencies:
@@ -9080,6 +9087,18 @@ __metadata:
     "@nestjs/websockets":
       optional: true
   checksum: 10/b46a9f877170f7e96429da5970684525277bcb341f3a24032b6748ad503b5c7164b77410daf9c0f3ca99b5f6b99985d5eb739501cfc01c941218397f32f2d095
+  languageName: node
+  linkType: hard
+
+"@nestjs/event-emitter@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "@nestjs/event-emitter@npm:3.0.1"
+  dependencies:
+    eventemitter2: "npm:6.4.9"
+  peerDependencies:
+    "@nestjs/common": ^10.0.0 || ^11.0.0
+    "@nestjs/core": ^10.0.0 || ^11.0.0
+  checksum: 10/6050c615aefada991da136f854dd3a2344aa69286886a53093897d4c2e2158142ad9e1b7b1a55b0a0cbc6a7b43a4916cb1988ff01d766c97bfc7e1dca862c93a
   languageName: node
   linkType: hard
 
@@ -14383,6 +14402,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ts-morph/common@npm:~0.26.0":
+  version: 0.26.1
+  resolution: "@ts-morph/common@npm:0.26.1"
+  dependencies:
+    fast-glob: "npm:^3.3.2"
+    minimatch: "npm:^9.0.4"
+    path-browserify: "npm:^1.0.1"
+  checksum: 10/40df291ec8f53f32845ddf3de73f6288ccc08ebf1876d2778763dd45e343b718924826deb5453262d8b58dbe4d4bfbf884a573e8fae045df984548a35cf68d50
+  languageName: node
+  linkType: hard
+
 "@tsconfig/node10@npm:^1.0.7":
   version: 1.0.11
   resolution: "@tsconfig/node10@npm:1.0.11"
@@ -18501,6 +18531,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"code-block-writer@npm:^13.0.3":
+  version: 13.0.3
+  resolution: "code-block-writer@npm:13.0.3"
+  checksum: 10/771546224f38610eecee0598e83c9e0f86dcd600ea316dbf27c2cfebaab4fed51b042325aa460b8e0f131fac5c1de208f6610a1ddbffe4b22e76f9b5256707cb
+  languageName: node
+  linkType: hard
+
 "code-excerpt@npm:^4.0.0":
   version: 4.0.0
   resolution: "code-excerpt@npm:4.0.0"
@@ -20558,6 +20595,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"esbuild-plugin-tsc@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "esbuild-plugin-tsc@npm:0.5.0"
+  dependencies:
+    strip-comments: "npm:^2.0.1"
+  peerDependencies:
+    typescript: ^4.0.0 || ^5.0.0
+  checksum: 10/a26b6a3fde50325df9f5978748c92ec9bfa5f91bf292bd367c8c6402db5a8655677b7fa33b9505f5cd706e7d34a5a419a8d69626be8e2159b8d88dcc8dc5b2c0
+  languageName: node
+  linkType: hard
+
 "esbuild-register@npm:^3.5.0":
   version: 3.6.0
   resolution: "esbuild-register@npm:3.6.0"
@@ -21041,7 +21089,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eventemitter2@npm:^6.4.9":
+"eventemitter2@npm:6.4.9, eventemitter2@npm:^6.4.9":
   version: 6.4.9
   resolution: "eventemitter2@npm:6.4.9"
   checksum: 10/b829b1c6b11e15926b635092b5ad62b4463d1c928859831dcae606e988cf41893059e3541f5a8209d21d2f15314422ddd4d84d20830b4bf44978608d15b06b08
@@ -28151,6 +28199,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"path-browserify@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "path-browserify@npm:1.0.1"
+  checksum: 10/7e7368a5207e7c6b9051ef045711d0dc3c2b6203e96057e408e6e74d09f383061010d2be95cb8593fe6258a767c3e9fc6b2bfc7ce8d48ae8c3d9f6994cca9ad8
+  languageName: node
+  linkType: hard
+
 "path-case@npm:^3.0.4":
   version: 3.0.4
   resolution: "path-case@npm:3.0.4"
@@ -31946,6 +32001,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"strip-comments@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "strip-comments@npm:2.0.1"
+  checksum: 10/43ea36189e4ba543c6ffb0384831e9e23c3b57ede5592c6edcbfc883f489f91d00328fe2670b4e467f61c7886eff68deae3e946f0f092346b2b3cb058b9cfdba
+  languageName: node
+  linkType: hard
+
 "strip-eof@npm:^1.0.0":
   version: 1.0.0
   resolution: "strip-eof@npm:1.0.0"
@@ -32846,6 +32908,16 @@ __metadata:
   version: 2.2.7
   resolution: "ts-log@npm:2.2.7"
   checksum: 10/e6d52866608373d1dc429f74158e28fe3f842b8ab2b12f113e786c581f011664efbfa6cea0089f7165d3a1ac3e019747919bbd214f6c7d723193c98353628198
+  languageName: node
+  linkType: hard
+
+"ts-morph@npm:^25.0.1":
+  version: 25.0.1
+  resolution: "ts-morph@npm:25.0.1"
+  dependencies:
+    "@ts-morph/common": "npm:~0.26.0"
+    code-block-writer: "npm:^13.0.3"
+  checksum: 10/caeec1532dfb2d9338a797a7c7f0c52517c65f757538f0931db9f9a95b0e4be173ca62c28efa59f4e018db4458d07af403baf6cccd2c467eadc69144a01c0d19
   languageName: node
   linkType: hard
 
@@ -34817,6 +34889,13 @@ __metadata:
   version: 3.25.20
   resolution: "zod@npm:3.25.20"
   checksum: 10/530819cc55a4f5c1e9ce1e0507b8ca12dda1a30ef6f08272d99eb918112f840aec8404832326faab36e6838efc35c5a376302843a1b5ddced073ff6cd80ea601
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.24.4":
+  version: 3.25.67
+  resolution: "zod@npm:3.25.67"
+  checksum: 10/0e35432dcca7f053e63f5dd491a87c78abe0d981817547252c3b6d05f0f58788695d1a69724759c6501dff3fd62929be24c9f314a3625179bee889150f7a61fa
   languageName: node
   linkType: hard
 

@@ -5,6 +5,6 @@ import type { FrameworkProvider } from '@toeverything/infra';
 export function patchForClipboardInElectron(framework: FrameworkProvider) {
   const desktopApi = framework.get(DesktopApiService);
   return NativeClipboardExtension({
-    copyAsPNG: desktopApi.handler.clipboard.copyAsPNG,
+    copyAsPNG: desktopApi.handler.ui.writeImageToClipboard,
   });
 }
