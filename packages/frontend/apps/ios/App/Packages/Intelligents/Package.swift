@@ -10,7 +10,7 @@ let package = Package(
     .iOS(.v16),
   ],
   products: [
-    .library(name: "Intelligents", targets: ["Intelligents"]),
+    .library(name: "Intelligents", type: .dynamic, targets: ["Intelligents"]),
   ],
   dependencies: [
     .package(path: "../AffineGraphQL"),
