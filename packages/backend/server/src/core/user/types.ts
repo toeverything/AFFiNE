@@ -121,6 +121,9 @@ export class UserSettingsType implements UserSettings {
 
   @Field({ description: 'Receive mention email' })
   receiveMentionEmail!: boolean;
+
+  @Field({ description: 'Receive comment email' })
+  receiveCommentEmail!: boolean;
 }
 
 @InputType()
@@ -145,4 +148,7 @@ export class UpdateUserSettingsInput implements UserSettingsInput {
 
   @Field({ description: 'Receive mention email', nullable: true })
   receiveMentionEmail?: boolean;
+
+  @Field({ description: 'Receive comment email', nullable: true })
+  receiveCommentEmail?: boolean;
 }

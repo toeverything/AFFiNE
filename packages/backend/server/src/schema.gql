@@ -1361,6 +1361,8 @@ type NotificationObjectTypeEdge {
 
 """Notification type"""
 enum NotificationType {
+  Comment
+  CommentMention
   Invitation
   InvitationAccepted
   InvitationBlocked
@@ -1933,6 +1935,9 @@ input UpdateUserInput {
 }
 
 input UpdateUserSettingsInput {
+  """Receive comment email"""
+  receiveCommentEmail: Boolean
+
   """Receive invitation email"""
   receiveInvitationEmail: Boolean
 
@@ -1993,6 +1998,9 @@ type UserQuotaUsageType {
 }
 
 type UserSettingsType {
+  """Receive comment email"""
+  receiveCommentEmail: Boolean!
+
   """Receive invitation email"""
   receiveInvitationEmail: Boolean!
 

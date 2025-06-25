@@ -1896,6 +1896,8 @@ export interface NotificationObjectTypeEdge {
 
 /** Notification type */
 export enum NotificationType {
+  Comment = 'Comment',
+  CommentMention = 'CommentMention',
   Invitation = 'Invitation',
   InvitationAccepted = 'InvitationAccepted',
   InvitationBlocked = 'InvitationBlocked',
@@ -2530,6 +2532,8 @@ export interface UpdateUserInput {
 }
 
 export interface UpdateUserSettingsInput {
+  /** Receive comment email */
+  receiveCommentEmail?: InputMaybe<Scalars['Boolean']['input']>;
   /** Receive invitation email */
   receiveInvitationEmail?: InputMaybe<Scalars['Boolean']['input']>;
   /** Receive mention email */
@@ -2589,6 +2593,8 @@ export interface UserQuotaUsageType {
 
 export interface UserSettingsType {
   __typename?: 'UserSettingsType';
+  /** Receive comment email */
+  receiveCommentEmail: Scalars['Boolean']['output'];
   /** Receive invitation email */
   receiveInvitationEmail: Scalars['Boolean']['output'];
   /** Receive mention email */

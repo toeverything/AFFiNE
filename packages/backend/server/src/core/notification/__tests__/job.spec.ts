@@ -8,6 +8,7 @@ import {
   type TestingModule,
 } from '../../../__tests__/utils';
 import {
+  DocMode,
   Models,
   User,
   Workspace,
@@ -203,4 +204,25 @@ test('should create invitation review declined notification', async t => {
   t.is(spy.firstCall.args[0].userId, member.id);
   t.is(spy.firstCall.args[0].body.workspaceId, workspace.id);
   t.is(spy.firstCall.args[0].body.createdByUserId, owner.id);
+});
+
+test('should create comment notification', async t => {
+  const { notificationJob, notificationService } = t.context;
+  const spy = Sinon.spy(notificationService, 'createComment');
+
+  await notificationJob.sendComment({
+    userId: member.id,
+    body: {
+      workspaceId: workspace.id,
+      createdByUserId: owner.id,
+      doc: {
+        id: randomUUID(),
+        title: 'doc-title-1',
+        mode: DocMode.page,
+      },
+      commentId: randomUUID(),
+    },
+  });
+
+  t.is(spy.callCount, 1);
 });
