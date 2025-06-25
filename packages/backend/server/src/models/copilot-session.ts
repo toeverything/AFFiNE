@@ -9,6 +9,7 @@ import {
   CopilotSessionInvalidInput,
   CopilotSessionNotFound,
 } from '../base';
+import { getTokenEncoder } from '../native';
 import { BaseModel } from './base';
 
 export enum SessionType {
@@ -52,6 +53,7 @@ type ChatSession = {
 };
 
 type ChatSessionState = Pick<ChatSession, 'sessionId' | 'userId'> & {
+  prompt: { model: string };
   messages: ChatMessage[];
 };
 
@@ -365,8 +367,14 @@ export class CopilotSessionModel extends BaseModel {
     });
   }
 
+  private calculateTokenSize(messages: any[], model: string): number {
+    const encoder = getTokenEncoder(model);
+    const content = messages.map(m => m.content).join('');
+    return encoder?.count(content) || 0;
+  }
+
   @Transactional()
-  async updateMessages(state: ChatSessionState, tokenCost: number) {
+  async updateMessages(state: ChatSessionState) {
     const { sessionId, userId, messages } = state;
     const haveSession = await this.has(sessionId, userId);
     if (!haveSession) {
@@ -374,6 +382,7 @@ export class CopilotSessionModel extends BaseModel {
     }
 
     if (messages.length) {
+      const tokenCost = this.calculateTokenSize(messages, state.prompt.model);
       await this.db.aiSessionMessage.createMany({
         data: messages.map(m => ({
           ...m,

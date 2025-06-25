@@ -39,14 +39,11 @@ import { PromptMessage, StreamObject } from './providers';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
 import {
-  AvailableModels,
   type ChatHistory,
   type ChatMessage,
   type ChatSessionState,
   SubmittedMessage,
 } from './types';
-
-registerEnumType(AvailableModels, { name: 'CopilotModel' });
 
 export const COPILOT_LOCKER = 'copilot';
 
@@ -300,8 +297,6 @@ class CopilotPromptMessageType {
   @Field(() => GraphQLJSON, { nullable: true })
   params!: Record<string, string> | null;
 }
-
-registerEnumType(AvailableModels, { name: 'CopilotModels' });
 
 @ObjectType()
 class CopilotPromptType {
@@ -687,8 +682,8 @@ class CreateCopilotPromptInput {
   @Field(() => String)
   name!: string;
 
-  @Field(() => AvailableModels)
-  model!: AvailableModels;
+  @Field(() => String)
+  model!: string;
 
   @Field(() => String, { nullable: true })
   action!: string | null;

@@ -29,7 +29,6 @@ import {
   type ChatSessionForkOptions,
   type ChatSessionOptions,
   type ChatSessionState,
-  getTokenEncoder,
   type SubmittedMessage,
 } from './types';
 
@@ -240,15 +239,6 @@ export class ChatSessionService {
     });
   }
 
-  @Transactional()
-  private async updateMessages(state: ChatSessionState): Promise<string> {
-    const model = state.prompt.model;
-    const tokenCost = this.calculateTokenSize(state.messages, model);
-    await this.models.copilotSession.updateMessages(state, tokenCost);
-
-    return state.sessionId;
-  }
-
   async getSession(sessionId: string): Promise<ChatSessionState | undefined> {
     const session = await this.models.copilotSession.get(sessionId);
     if (!session) return;
@@ -279,13 +269,6 @@ export class ChatSessionService {
       sessionId,
       removeLatestUserMessage
     );
-  }
-
-  private calculateTokenSize(messages: PromptMessage[], model: string): number {
-    const encoder = getTokenEncoder(model);
-    return messages
-      .map(m => encoder?.count(m.content) ?? 0)
-      .reduce((total, length) => total + length, 0);
   }
 
   private async countUserMessages(userId: string): Promise<number> {
@@ -533,7 +516,11 @@ export class ChatSessionService {
     // create session
     await this.createSession(forkedState);
     // save message
-    return await this.updateMessages({ ...forkedState, messages });
+    await this.models.copilotSession.updateMessages({
+      ...forkedState,
+      messages,
+    });
+    return forkedState.sessionId;
   }
 
   async cleanup(
@@ -602,7 +589,7 @@ export class ChatSessionService {
     const state = await this.getSession(sessionId);
     if (state) {
       return new ChatSession(this.messageCache, state, async state => {
-        await this.updateMessages(state);
+        await this.models.copilotSession.updateMessages(state);
       });
     }
     return null;
