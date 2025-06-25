@@ -533,7 +533,7 @@ export class CopilotResolver {
     }
 
     await this.chatSession.checkQuota(user.id);
-    return await this.chatSession.updateSession({
+    return await this.chatSession.update({
       ...options,
       userId: user.id,
     });

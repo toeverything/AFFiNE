@@ -440,7 +440,7 @@ export class ChatSessionService {
   }
 
   @Transactional()
-  async updateSession(options: UpdateChatSession): Promise<string> {
+  async update(options: UpdateChatSession): Promise<string> {
     const session = await this.getSession(options.sessionId);
     if (!session) {
       throw new CopilotSessionNotFound();
@@ -482,9 +482,6 @@ export class ChatSessionService {
     if (!state) {
       throw new CopilotSessionNotFound();
     }
-    if (state.pinned) {
-      await this.unpin(options.workspaceId, options.userId);
-    }
 
     let messages = state.messages.map(m => ({ ...m, id: undefined }));
     if (options.latestMessageId) {
@@ -500,21 +497,13 @@ export class ChatSessionService {
       messages = messages.slice(0, lastMessageIdx + 1);
     }
 
-    const forkedState = {
+    return await this.models.copilotSession.fork({
       ...state,
       userId: options.userId,
       sessionId: randomUUID(),
-      messages: [],
       parentSessionId: options.sessionId,
-    };
-    // create session
-    await this.createSession(forkedState);
-    // save message
-    await this.models.copilotSession.updateMessages({
-      ...forkedState,
       messages,
     });
-    return forkedState.sessionId;
   }
 
   async cleanup(options: CleanupSessionOptions) {

@@ -18,6 +18,12 @@ export enum SessionType {
   Doc = 'doc', // docId points to specific document
 }
 
+type ChatPrompt = {
+  name: string;
+  action?: string | null;
+  model: string;
+};
+
 type ChatAttachment = { attachment: string; mimeType: string } | string;
 
 type ChatStreamObject = {
@@ -39,12 +45,15 @@ type ChatMessage = {
   createdAt: Date;
 };
 
-type ChatSession = {
+type PureChatSession = {
   sessionId: string;
   workspaceId: string;
   docId?: string | null;
   pinned?: boolean;
   messages?: ChatMessage[];
+};
+
+type ChatSession = PureChatSession & {
   // connect ids
   userId: string;
   promptName: string;
@@ -52,7 +61,22 @@ type ChatSession = {
   parentSessionId?: string | null;
 };
 
+type ChatSessionWithPrompt = PureChatSession & {
+  prompt: ChatPrompt;
+  // connect ids
+  userId: string;
+  parentSessionId?: string | null;
+};
+
 type ChatSessionBaseState = Pick<ChatSession, 'userId' | 'sessionId'>;
+
+export type ForkSessionOptions = Omit<
+  ChatSession,
+  'messages' | 'promptName' | 'promptAction'
+> & {
+  prompt: { name: string; action: string | null | undefined; model: string };
+  messages: ChatMessage[];
+};
 
 type UpdateChatSessionMessage = ChatSessionBaseState & {
   prompt: { model: string };
@@ -81,10 +105,12 @@ export type ListSessionOptions = Pick<
   withMessages?: boolean;
 };
 
-export type CleanupSessionOptions = ChatSessionBaseState &
-  Pick<ChatSession, 'workspaceId' | 'docId'> & {
-    sessionIds: string[];
-  };
+export type CleanupSessionOptions = Pick<
+  ChatSession,
+  'userId' | 'workspaceId' | 'docId'
+> & {
+  sessionIds: string[];
+};
 
 @Injectable()
 export class CopilotSessionModel extends BaseModel {
@@ -148,6 +174,43 @@ export class CopilotSessionModel extends BaseModel {
         parentSessionId: state.parentSessionId,
       },
     });
+  }
+
+  @Transactional()
+  private async createWithPrompt(
+    state: ChatSessionWithPrompt,
+    reuseChat = false
+  ) {
+    const { prompt, ...rest } = state;
+    return await this.models.copilotSession.create(
+      { ...rest, promptName: prompt.name, promptAction: prompt.action ?? null },
+      reuseChat
+    );
+  }
+
+  @Transactional()
+  async fork(options: ForkSessionOptions): Promise<string> {
+    if (!options.messages?.length) {
+      throw new CopilotSessionInvalidInput(
+        'Cannot fork session without messages'
+      );
+    }
+    if (options.pinned) {
+      await this.unpin(options.workspaceId, options.userId);
+    }
+    const { messages, ...forkedState } = options;
+
+    // create session
+    const { id } = await this.createWithPrompt({
+      ...forkedState,
+      messages: [],
+    });
+    // save message
+    await this.models.copilotSession.updateMessages({
+      ...forkedState,
+      messages,
+    });
+    return id;
   }
 
   @Transactional()
