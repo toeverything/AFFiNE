@@ -14,10 +14,11 @@ import {
 import type { Signal } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { signal } from '@preact/signals-core';
-import { html, LitElement, nothing } from 'lit';
+import { html, LitElement, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
+import { throttle } from 'lodash-es';
 
 import {
   ChatBlockPeekViewActions,
@@ -36,12 +37,16 @@ import type {
 import type { ChatMessage } from '../components/ai-chat-messages';
 import {
   ChatMessagesSchema,
+  isChatMessage,
   StreamObjectSchema,
 } from '../components/ai-chat-messages';
 import type { TextRendererOptions } from '../components/text-renderer';
 import { AIChatErrorRenderer } from '../messages/error';
 import { type AIError, AIProvider } from '../provider';
-import { mergeStreamObjects } from '../utils/stream-objects';
+import {
+  mergeStreamContent,
+  mergeStreamObjects,
+} from '../utils/stream-objects';
 import { PeekViewStyles } from './styles';
 import type { ChatContext } from './types';
 import { calcChildBound } from './utils';
@@ -115,11 +120,11 @@ export class AIChatBlockPeekView extends LitElement {
     forkSessionId: string
   ) => {
     const currentUserInfo = await AIProvider.userInfo;
-    const forkMessages = await queryHistoryMessages(
+    const forkMessages = (await queryHistoryMessages(
       rootWorkspaceId,
       rootDocId,
       forkSessionId
-    );
+    )) as ChatMessage[];
     const forkLength = forkMessages.length;
     const historyLength = this._historyMessages.length;
 
@@ -332,6 +337,18 @@ export class AIChatBlockPeekView extends LitElement {
     this._resetContext();
   };
 
+  private readonly _scrollToEnd = () => {
+    requestAnimationFrame(() => {
+      if (!this._chatMessagesContainer) return;
+      this._chatMessagesContainer.scrollTo({
+        top: this._chatMessagesContainer.scrollHeight,
+        behavior: 'smooth',
+      });
+    });
+  };
+
+  private readonly _throttledScrollToEnd = throttle(this._scrollToEnd, 600);
+
   /**
    * Retry the last chat message
    */
@@ -372,22 +389,27 @@ export class AIChatBlockPeekView extends LitElement {
       });
 
       for await (const text of stream) {
-        const messages = [...this.chatContext.messages];
-        const last = messages[messages.length - 1] as ChatMessage;
-        try {
-          const parsed = StreamObjectSchema.safeParse(JSON.parse(text));
-          if (parsed.success) {
-            last.streamObjects = mergeStreamObjects([
+        const messages = this.chatContext.messages.slice(0);
+        const last = messages.at(-1);
+        if (last && isChatMessage(last)) {
+          try {
+            const parsed = StreamObjectSchema.parse(JSON.parse(text));
+            const streamObjects = mergeStreamObjects([
               ...(last.streamObjects ?? []),
-              parsed.data,
+              parsed,
             ]);
-          } else {
-            last.content += text;
+            messages[messages.length - 1] = {
+              ...last,
+              streamObjects,
+            };
+          } catch {
+            messages[messages.length - 1] = {
+              ...last,
+              content: last.content + text,
+            };
           }
-        } catch {
-          last.content += text;
+          this.updateContext({ messages, status: 'transmitting' });
         }
-        this.updateContext({ messages, status: 'transmitting' });
       }
 
       this.updateContext({ status: 'success' });
@@ -410,7 +432,7 @@ export class AIChatBlockPeekView extends LitElement {
 
     return html`${repeat(
       currentMessages,
-      message => message.id || message.createdAt,
+      (_, index) => index,
       (message, idx) => {
         const { status, error } = this.chatContext;
         const isAssistantMessage = message.role === 'assistant';
@@ -424,26 +446,24 @@ export class AIChatBlockPeekView extends LitElement {
         const isNotReady = status === 'transmitting' || status === 'loading';
         const shouldRenderCopyMore =
           isAssistantMessage && !(isLastReply && isNotReady);
-        const shouldRenderActions =
-          isLastReply && !!message.content && !isNotReady;
+        const markdown = message.streamObjects?.length
+          ? mergeStreamContent(message.streamObjects)
+          : message.content;
+        const shouldRenderActions = isLastReply && !!markdown && !isNotReady;
 
         const messageClasses = classMap({
           'assistant-message-container': isAssistantMessage,
         });
 
-        const { attachments, role, content, userId, userName, avatarUrl } =
-          message;
+        if (status === 'loading' && isLastReply) {
+          return html`<ai-loading></ai-loading>`;
+        }
 
         return html`<div class=${messageClasses}>
           <ai-chat-message
             .host=${host}
             .state=${messageState}
-            .content=${content}
-            .attachments=${attachments}
-            .messageRole=${role}
-            .userId=${userId}
-            .userName=${userName}
-            .avatarUrl=${avatarUrl}
+            .message=${message}
             .textRendererOptions=${this._textRendererOptions}
           ></ai-chat-message>
           ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
@@ -451,7 +471,7 @@ export class AIChatBlockPeekView extends LitElement {
             ? html` <chat-copy-more
                 .host=${host}
                 .actions=${actions}
-                .content=${message.content}
+                .content=${markdown}
                 .isLast=${isLastReply}
                 .getSessionId=${this._getSessionId}
                 .messageId=${message.id ?? undefined}
@@ -462,7 +482,7 @@ export class AIChatBlockPeekView extends LitElement {
             ? html`<chat-action-list
                 .host=${host}
                 .actions=${actions}
-                .content=${message.content}
+                .content=${markdown}
                 .getSessionId=${this._getSessionId}
                 .messageId=${message.id ?? undefined}
                 .layoutDirection=${'horizontal'}
@@ -502,13 +522,25 @@ export class AIChatBlockPeekView extends LitElement {
   }
 
   override firstUpdated() {
-    // first time render, scroll ai-chat-messages-container to bottom
-    requestAnimationFrame(() => {
-      if (this._chatMessagesContainer) {
-        this._chatMessagesContainer.scrollTop =
-          this._chatMessagesContainer.scrollHeight;
-      }
-    });
+    this._scrollToEnd();
+  }
+
+  protected override updated(changedProperties: PropertyValues) {
+    if (
+      changedProperties.has('chatContext') &&
+      (this.chatContext.status === 'loading' ||
+        this.chatContext.status === 'error' ||
+        this.chatContext.status === 'success')
+    ) {
+      setTimeout(this._scrollToEnd, 500);
+    }
+
+    if (
+      changedProperties.has('chatContext') &&
+      this.chatContext.status === 'transmitting'
+    ) {
+      this._throttledScrollToEnd();
+    }
   }
 
   override render() {
@@ -529,6 +561,15 @@ export class AIChatBlockPeekView extends LitElement {
     const { messages: currentChatMessages } = chatContext;
 
     return html`<div class="ai-chat-block-peek-view-container">
+      <div class="history-clear-container">
+        <ai-history-clear
+          .host=${this.host}
+          .doc=${this.host.store}
+          .getSessionId=${this._getSessionId}
+          .onHistoryCleared=${this._onHistoryCleared}
+          .chatContextValue=${chatContext}
+        ></ai-history-clear>
+      </div>
       <div class="ai-chat-messages-container">
         <ai-chat-messages
           .host=${host}
@@ -538,15 +579,6 @@ export class AIChatBlockPeekView extends LitElement {
         <date-time .date=${latestMessageCreatedAt}></date-time>
         <div class="new-chat-messages-container">
           ${this.CurrentMessages(currentChatMessages)}
-        </div>
-        <div class="history-clear-container">
-          <ai-history-clear
-            .host=${this.host}
-            .doc=${this.host.store}
-            .getSessionId=${this._getSessionId}
-            .onHistoryCleared=${this._onHistoryCleared}
-            .chatContextValue=${chatContext}
-          ></ai-history-clear>
         </div>
       </div>
       <ai-chat-composer

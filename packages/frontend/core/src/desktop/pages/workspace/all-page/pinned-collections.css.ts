@@ -45,4 +45,5 @@ export const container = style({
   display: 'flex',
   flexDirection: 'row',
   gap: 4,
+  alignItems: 'center',
 });

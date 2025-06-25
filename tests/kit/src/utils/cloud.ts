@@ -308,5 +308,7 @@ export async function enableCloudWorkspaceFromShareButton(page: Page) {
 export async function enableShare(page: Page) {
   await page.getByTestId('cloud-share-menu-button').click();
   await page.getByTestId('share-link-menu-trigger').click();
+  // wait for the menu to be visible
+  await page.waitForTimeout(500);
   await page.getByTestId('share-link-menu-enable-share').click();
 }

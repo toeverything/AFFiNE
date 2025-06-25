@@ -8,8 +8,8 @@ import track from '@affine/track';
 import { EditIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 
-import type { AppTabCustomFCProps } from './data';
 import { TabItem } from './tab-item';
+import type { AppTabCustomFCProps } from './type';
 
 export const AppTabCreate = ({ tab }: AppTabCustomFCProps) => {
   const workbench = useService(WorkbenchService).workbench;

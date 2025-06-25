@@ -27,16 +27,3 @@ export class IndexerModule {}
 
 export { IndexerService };
 export type { SearchDoc } from './types';
-
-declare global {
-  interface Events {
-    'doc.indexer.updated': {
-      workspaceId: string;
-      docId: string;
-    };
-    'doc.indexer.deleted': {
-      workspaceId: string;
-      docId: string;
-    };
-  }
-}

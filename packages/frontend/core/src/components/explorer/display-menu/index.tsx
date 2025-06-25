@@ -81,12 +81,13 @@ const ExplorerDisplayMenu = ({
           </span>
         </div>
       </MenuSub>
-      <Divider size="thinner" />
+      <Divider space={4} size="thinner" />
       <DisplayProperties
         displayPreference={displayPreference}
         onDisplayPreferenceChange={onDisplayPreferenceChange}
       />
-      <Divider size="thinner" />
+
+      <Divider space={4} size="thinner" />
       <QuickActionsConfig
         displayPreference={displayPreference}
         onDisplayPreferenceChange={onDisplayPreferenceChange}

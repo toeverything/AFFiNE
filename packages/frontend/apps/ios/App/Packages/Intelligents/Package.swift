@@ -10,7 +10,7 @@ let package = Package(
     .iOS(.v16),
   ],
   products: [
-    .library(name: "Intelligents", targets: ["Intelligents"]),
+    .library(name: "Intelligents", type: .dynamic, targets: ["Intelligents"]),
   ],
   dependencies: [
     .package(path: "../AffineGraphQL"),
@@ -29,8 +29,8 @@ let package = Package(
       .product(name: "Apollo", package: "apollo-ios"),
       .product(name: "OrderedCollections", package: "swift-collections"),
     ], resources: [
-      .process("Resources/main.metal"),
       .process("Interface/View/InputBox/InputBox.xcassets"),
+      .process("Interface/Controller/AttachmentManagementController/AttachmentIcon.xcassets"),
     ]),
   ]
 )

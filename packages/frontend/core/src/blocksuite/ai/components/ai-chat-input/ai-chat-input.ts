@@ -19,7 +19,11 @@ import { readBlobAsURL } from '../../utils/image';
 import { mergeStreamObjects } from '../../utils/stream-objects';
 import type { ChatChip, DocDisplayConfig } from '../ai-chat-chips/type';
 import { isDocChip } from '../ai-chat-chips/utils';
-import { type ChatMessage, StreamObjectSchema } from '../ai-chat-messages';
+import {
+  type ChatMessage,
+  isChatMessage,
+  StreamObjectSchema,
+} from '../ai-chat-messages';
 import { MAX_IMAGE_COUNT } from './const';
 import type {
   AIChatInputContext,
@@ -609,22 +613,27 @@ export class AIChatInput extends SignalWatcher(
       });
 
       for await (const text of stream) {
-        const messages = [...this.chatContextValue.messages];
-        const last = messages[messages.length - 1] as ChatMessage;
-        try {
-          const parsed = StreamObjectSchema.safeParse(JSON.parse(text));
-          if (parsed.success) {
-            last.streamObjects = mergeStreamObjects([
+        const messages = this.chatContextValue.messages.slice(0);
+        const last = messages.at(-1);
+        if (last && isChatMessage(last)) {
+          try {
+            const parsed = StreamObjectSchema.parse(JSON.parse(text));
+            const streamObjects = mergeStreamObjects([
               ...(last.streamObjects ?? []),
-              parsed.data,
+              parsed,
             ]);
-          } else {
-            last.content += text;
+            messages[messages.length - 1] = {
+              ...last,
+              streamObjects,
+            };
+          } catch {
+            messages[messages.length - 1] = {
+              ...last,
+              content: last.content + text,
+            };
           }
-        } catch {
-          last.content += text;
+          this.updateContext({ messages, status: 'transmitting' });
         }
-        this.updateContext({ messages, status: 'transmitting' });
       }
 
       this.updateContext({ status: 'success' });

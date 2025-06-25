@@ -3,16 +3,17 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		2E0DD47B57B994A104B25EED /* Pods_AFFiNE.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF48636D7DB5BEE00770FD9A /* Pods_AFFiNE.framework */; };
 		5075136A2D1924C600AD60C0 /* RootViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507513692D1924C600AD60C0 /* RootViewController.swift */; };
 		5075136E2D1925BC00AD60C0 /* IntelligentsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5075136D2D1925BC00AD60C0 /* IntelligentsPlugin.swift */; };
-		50802D612D112F8700694021 /* Intelligents in Frameworks */ = {isa = PBXBuildFile; productRef = 50802D602D112F8700694021 /* Intelligents */; };
+		50802D612D112F8700694021 /* Intelligents in Frameworks */ = {isa = PBXBuildFile; productRef = 50802D602D112F8700694021 /* Intelligents */; settings = {ATTRIBUTES = (Required, ); }; };
 		50A285D72D112A5E000D5A6D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D62D112A5E000D5A6D /* Localizable.xcstrings */; };
 		50A285D82D112A5E000D5A6D /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D52D112A5E000D5A6D /* InfoPlist.xcstrings */; };
+		50E218302E0BE1A700EA4C6E /* Intelligents in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 50802D602D112F8700694021 /* Intelligents */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		50FF428A2D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF42892D2E757E0050AA83 /* ApplicationBridgedWindowScript.swift */; };
 		50FF428C2D2E77CC0050AA83 /* AffineViewController+AIButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FF428B2D2E77CC0050AA83 /* AffineViewController+AIButton.swift */; };
 		9D52FC432D26CDBF00105D0A /* JSValueContainerExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D52FC422D26CDB600105D0A /* JSValueContainerExt.swift */; };
@@ -35,6 +36,20 @@
 		C4C97C7E2D030BE000BC2AD1 /* affine_mobile_nativeFFI.modulemap in Sources */ = {isa = PBXBuildFile; fileRef = C4C97C712D0307B700BC2AD1 /* affine_mobile_nativeFFI.modulemap */; };
 		E93B276C2CED92B1001409B8 /* NavigationGesturePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93B276B2CED92B1001409B8 /* NavigationGesturePlugin.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		50E218312E0BE1A700EA4C6E /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				50E218302E0BE1A700EA4C6E /* Intelligents in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		3256F4410D881A03FE77D092 /* Pods-AFFiNE.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AFFiNE.debug.xcconfig"; path = "Pods/Target Support Files/Pods-AFFiNE/Pods-AFFiNE.debug.xcconfig"; sourceTree = "<group>"; };
@@ -77,8 +92,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C45499AB2D140B5000E21978 /* NBStore */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = NBStore;
 			sourceTree = "<group>";
 		};
@@ -236,6 +249,7 @@
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
 				9592DBEFFC6D2A0C8D5DEB22 /* [CP] Embed Pods Frameworks */,
+				50E218312E0BE1A700EA4C6E /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -326,8 +340,12 @@
 			);
 			inputFileListPaths = (
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -514,11 +532,10 @@
 			baseConfigurationReference = 3256F4410D881A03FE77D092 /* Pods-AFFiNE.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "Apple Distribution: TOEVERYTHING PTE. LTD. (73YMMDVT2M)";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
-				DEVELOPMENT_TEAM = 73YMMDVT2M;
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 73YMMDVT2M;
+				DEVELOPMENT_TEAM = 964G86XT2P;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -534,8 +551,7 @@
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = app.affine.pro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "AppStore app.affine.pro";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "AppStore app.affine.pro";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -552,11 +568,10 @@
 			baseConfigurationReference = E5E5070D1CA1200D4964D91F /* Pods-AFFiNE.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "Apple Distribution: TOEVERYTHING PTE. LTD. (73YMMDVT2M)";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
-				DEVELOPMENT_TEAM = 73YMMDVT2M;
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = 73YMMDVT2M;
+				DEVELOPMENT_TEAM = 964G86XT2P;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -572,8 +587,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = app.affine.pro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "AppStore app.affine.pro";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "AppStore app.affine.pro";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;

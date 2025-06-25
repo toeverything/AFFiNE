@@ -6,7 +6,7 @@ import ava, { ExecutionContext, TestFn } from 'ava';
 import { CopilotPromptInvalid, CopilotSessionInvalidInput } from '../../base';
 import {
   CopilotSessionModel,
-  UpdateChatSessionData,
+  UpdateChatSessionOptions,
   UserModel,
   WorkspaceModel,
 } from '../../models';
@@ -174,7 +174,10 @@ test('should check session validation for prompts', async t => {
   sessionTypes.forEach(({ name, session }) => {
     t.notThrows(
       () =>
-        copilotSession.checkSessionPrompt(session, 'test-prompt', undefined),
+        copilotSession.checkSessionPrompt(session, {
+          name: 'test-prompt',
+          action: undefined,
+        }),
       `${name} session should allow non-action prompts`
     );
   });
@@ -195,14 +198,20 @@ test('should check session validation for prompts', async t => {
       if (shouldThrow) {
         t.throws(
           () =>
-            copilotSession.checkSessionPrompt(session, 'action-prompt', 'edit'),
+            copilotSession.checkSessionPrompt(session, {
+              name: 'action-prompt',
+              action: 'edit',
+            }),
           { instanceOf: CopilotPromptInvalid },
           `${name} session should reject action prompts`
         );
       } else {
         t.notThrows(
           () =>
-            copilotSession.checkSessionPrompt(session, 'action-prompt', 'edit'),
+            copilotSession.checkSessionPrompt(session, {
+              name: 'action-prompt',
+              action: 'edit',
+            }),
           `${name} session should allow action prompts`
         );
       }
@@ -323,14 +332,19 @@ test('should handle session updates and validations', async t => {
     },
   });
 
+  type UpdateData = Omit<UpdateChatSessionOptions, 'userId' | 'sessionId'>;
   const assertUpdateThrows = async (
     t: ExecutionContext<Context>,
     sessionId: string,
-    updateData: UpdateChatSessionData,
+    updateData: UpdateData,
     message: string
   ) => {
     await t.throwsAsync(
-      t.context.copilotSession.update(user.id, sessionId, updateData),
+      t.context.copilotSession.update({
+        ...updateData,
+        userId: user.id,
+        sessionId,
+      }),
       { instanceOf: CopilotSessionInvalidInput },
       message
     );
@@ -339,11 +353,15 @@ test('should handle session updates and validations', async t => {
   const assertUpdate = async (
     t: ExecutionContext<Context>,
     sessionId: string,
-    updateData: UpdateChatSessionData,
+    updateData: UpdateData,
     message: string
   ) => {
     await t.notThrowsAsync(
-      t.context.copilotSession.update(user.id, sessionId, updateData),
+      t.context.copilotSession.update({
+        ...updateData,
+        userId: user.id,
+        sessionId,
+      }),
       message
     );
   };
@@ -386,7 +404,6 @@ test('should handle session updates and validations', async t => {
       'forked session should reject docId update'
     );
   }
-
   {
     // case 3: prompt update validation
     await assertUpdate(
@@ -415,14 +432,13 @@ test('should handle session updates and validations', async t => {
     await createTestSession(t, { sessionId: existingPinnedId, pinned: true });
 
     // should unpin existing when pinning new session
-    await copilotSession.update(user.id, sessionId, { pinned: true });
+    await copilotSession.update({ userId: user.id, sessionId, pinned: true });
 
-    const sessionStatesAfterPin = await Promise.all([
-      getSessionState(db, sessionId),
-      getSessionState(db, existingPinnedId),
-    ]);
     t.snapshot(
-      sessionStatesAfterPin,
+      [
+        await getSessionState(db, sessionId),
+        await getSessionState(db, existingPinnedId),
+      ],
       'should unpin existing when pinning new session'
     );
   }
@@ -430,11 +446,8 @@ test('should handle session updates and validations', async t => {
   // test type conversions
   {
     const conversionSteps: any[] = [];
-    const convertSession = async (
-      step: string,
-      data: UpdateChatSessionData
-    ) => {
-      await copilotSession.update(user.id, sessionId, data);
+    const convertSession = async (step: string, data: UpdateData) => {
+      await copilotSession.update({ ...data, userId: user.id, sessionId });
       const session = await db.aiSession.findUnique({
         where: { id: sessionId },
         select: { docId: true, pinned: true },

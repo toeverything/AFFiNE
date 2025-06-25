@@ -42,5 +42,5 @@
     "!dist/__tests__",
     "shim.d.ts"
   ],
-  "version": "0.21.0"
+  "version": "0.22.4"
 }

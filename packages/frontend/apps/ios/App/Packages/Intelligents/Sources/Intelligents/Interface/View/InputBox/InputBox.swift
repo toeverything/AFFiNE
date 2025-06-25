@@ -43,7 +43,7 @@ class InputBox: UIView {
     $0.delegate = self
   }
 
-  lazy var imageBar = InputBoxImageBar().then {
+  lazy var imageBar = ImageAttachmentBar().then {
     $0.imageBarDelegate = self
   }
 
@@ -55,6 +55,10 @@ class InputBox: UIView {
     $0.addArrangedSubview(imageBar)
     $0.addArrangedSubview(textView)
     $0.addArrangedSubview(functionBar)
+  }
+
+  lazy var fileAttachmentHeader = FileAttachmentHeaderView().then {
+    $0.delegate = self
   }
 
   var textViewHeightConstraint: Constraint?
@@ -74,13 +78,15 @@ class InputBox: UIView {
     super.init(frame: frame)
 
     backgroundColor = .clear
+    addSubview(fileAttachmentHeader)
     addSubview(containerView)
     containerView.addSubview(mainStackView)
     containerView.addSubview(placeholderLabel)
     imageBar.isHidden = true
 
     containerView.snp.makeConstraints { make in
-      make.edges.equalToSuperview().inset(16)
+      make.left.bottom.right.equalToSuperview().inset(16)
+      make.top.greaterThanOrEqualToSuperview().offset(16)
     }
 
     mainStackView.snp.makeConstraints { make in
@@ -98,6 +104,11 @@ class InputBox: UIView {
     placeholderLabel.snp.makeConstraints { make in
       make.left.right.equalTo(textView)
       make.top.equalTo(textView)
+    }
+
+    // for initial status
+    fileAttachmentHeader.snp.makeConstraints { make in
+      make.edges.equalToSuperview().inset(32).priority(.high)
     }
 
     setupBindings()
@@ -118,7 +129,6 @@ class InputBox: UIView {
   }
 
   func setupBindings() {
-    // 绑定 ViewModel 到 UI
     viewModel.$inputText
       .removeDuplicates()
       .sink { [weak self] text in
@@ -158,8 +168,9 @@ class InputBox: UIView {
       }
       .store(in: &cancellables)
 
-    viewModel.$hasAttachments
-      .dropFirst() // for view setup
+    viewModel.$imageAttachments
+      .dropFirst() // for view setup to remove animation
+      .map { !$0.isEmpty /* -> hasAttachments */ }
       .removeDuplicates()
       .sink { [weak self] hasAttachments in
         performWithAnimation {
@@ -169,10 +180,18 @@ class InputBox: UIView {
       }
       .store(in: &cancellables)
 
-    viewModel.$attachments
+    viewModel.$imageAttachments
       .removeDuplicates()
       .sink { [weak self] attachments in
         self?.updateImageBarContent(attachments)
+      }
+      .store(in: &cancellables)
+
+    Publishers.CombineLatest(viewModel.$fileAttachments, viewModel.$documentAttachments)
+      .dropFirst() // for view setup to remove animation
+      .removeDuplicates { $0.0 == $1.0 && $0.1 == $1.1 }
+      .sink { [weak self] fileAttachments, documentAttachments in
+        self?.updateFileAttachmentHeader(fileCount: fileAttachments.count, documentCount: documentAttachments.count)
       }
       .store(in: &cancellables)
   }
@@ -203,8 +222,32 @@ class InputBox: UIView {
     imageBar.isHidden = !hasAttachments
   }
 
-  func updateImageBarContent(_ attachments: [InputAttachment]) {
+  func updateImageBarContent(_ attachments: [ImageAttachment]) {
     imageBar.updateImageBarContent(attachments)
+  }
+
+  func updateFileAttachmentHeader(fileCount: Int, documentCount: Int) {
+    let hasAttachments = fileCount > 0 || documentCount > 0
+
+    fileAttachmentHeader.snp.remakeConstraints { make in
+      if hasAttachments {
+        make.leading.trailing.equalToSuperview().inset(32)
+        make.bottom.equalTo(self.containerView.snp.top).offset(8)
+        make.top.equalToSuperview().offset(8)
+      } else {
+        make.edges.equalToSuperview().inset(32).priority(.high)
+      }
+    }
+
+    performWithAnimation {
+      self.fileAttachmentHeader.isHidden = !hasAttachments
+      if hasAttachments {
+        self.fileAttachmentHeader.updateContent(attachmentCount: fileCount, docsCount: documentCount)
+        self.fileAttachmentHeader.setIconImage(UIImage(systemName: "doc"))
+      }
+      self.layoutIfNeeded()
+      self.superview?.layoutIfNeeded()
+    }
   }
 
   func updateColors() {
@@ -214,74 +257,48 @@ class InputBox: UIView {
   // MARK: - Public Methods
 
   public func addImageAttachment(_ image: UIImage) {
-    guard let imageData = image.jpegData(compressionQuality: 0.8) else { return }
-
-    let attachment = InputAttachment(
-      type: .image,
-      data: imageData,
-      name: "image.jpg",
-      size: Int64(imageData.count)
-    )
+    let attachment = ImageAttachment(image: image)
 
     performWithAnimation { [self] in
-      viewModel.addAttachment(attachment)
+      viewModel.addImageAttachment(attachment)
       layoutIfNeeded()
     }
   }
 
-  public func addFileAttachment(_ url: URL) {
-    guard let fileData = try? Data(contentsOf: url) else { return }
+  public func addFileAttachment(_ url: URL) throws {
+    // check less then 15mb
+    let fileSizeLimit: Int64 = 15 * 1024 * 1024 // 15 MB
+    let fileAttributes = try FileManager.default.attributesOfItem(atPath: url.path)
+    guard let fileSize = fileAttributes[.size] as? Int64, fileSize <= fileSizeLimit else {
+      throw NSError(
+        domain: "FileAttachmentErrorDomain",
+        code: 1,
+        userInfo: [NSLocalizedDescriptionKey: "File size exceeds 15 MB limit."]
+      )
+    }
+    let fileData = try Data(contentsOf: url)
 
-    let attachment = InputAttachment(
-      type: .file,
+    let attachment = FileAttachment(
       data: fileData,
+      url: url,
       name: url.lastPathComponent,
       size: Int64(fileData.count)
     )
 
     performWithAnimation { [self] in
-      viewModel.addAttachment(attachment)
+      viewModel.addFileAttachment(attachment)
+      layoutIfNeeded()
+    }
+  }
+
+  public func addDocumentAttachment(_ documentAttachment: DocumentAttachment) {
+    performWithAnimation { [self] in
+      viewModel.addDocumentAttachment(documentAttachment)
       layoutIfNeeded()
     }
   }
 
   public var inputBoxData: InputBoxData {
     viewModel.prepareSendData()
-  }
-}
-
-// MARK: - InputBoxFunctionBarDelegate
-
-extension InputBox: InputBoxFunctionBarDelegate {
-  func functionBarDidTapTakePhoto(_: InputBoxFunctionBar) {
-    delegate?.inputBoxDidSelectTakePhoto(self)
-  }
-
-  func functionBarDidTapPhotoLibrary(_: InputBoxFunctionBar) {
-    delegate?.inputBoxDidSelectPhotoLibrary(self)
-  }
-
-  func functionBarDidTapAttachFiles(_: InputBoxFunctionBar) {
-    delegate?.inputBoxDidSelectAttachFiles(self)
-  }
-
-  func functionBarDidTapEmbedDocs(_: InputBoxFunctionBar) {
-    delegate?.inputBoxDidSelectEmbedDocs(self)
-  }
-
-  func functionBarDidTapTool(_: InputBoxFunctionBar) {
-    viewModel.toggleTool()
-  }
-
-  func functionBarDidTapNetwork(_: InputBoxFunctionBar) {
-    viewModel.toggleNetwork()
-  }
-
-  func functionBarDidTapDeepThinking(_: InputBoxFunctionBar) {
-    viewModel.toggleDeepThinking()
-  }
-
-  func functionBarDidTapSend(_: InputBoxFunctionBar) {
-    delegate?.inputBoxDidSend(self)
   }
 }

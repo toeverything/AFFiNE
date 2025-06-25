@@ -1,6 +1,6 @@
 {
   "name": "@affine-tools/cli",
-  "version": "0.21.0",
+  "version": "0.22.4",
   "type": "module",
   "private": true,
   "bin": {

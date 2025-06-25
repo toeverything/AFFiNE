@@ -11,6 +11,7 @@ import { useLiveData, useService } from '@toeverything/infra';
 import { cssVarV2 } from '@toeverything/theme/v2';
 import { memo, useCallback, useContext, useEffect, useMemo } from 'react';
 
+import { EmptyDocs } from '../../affine/empty';
 import { ListFloatingToolbar } from '../../page-list/components/list-floating-toolbar';
 import { SystemPropertyTypes } from '../../system-property-types';
 import { WorkspacePropertyTypes } from '../../workspace-property-types';
@@ -227,6 +228,12 @@ export const DocsExplorer = ({
     (w: number) => (w > 500 ? 24 : w > 393 ? 20 : 16),
     []
   );
+
+  const isEmpty = masonryItems.length === 0;
+
+  if (isEmpty) {
+    return <EmptyDocs allowCreate={false} style={{ height: '100%' }} />;
+  }
 
   return (
     <>
