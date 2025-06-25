@@ -26,4 +26,6 @@ export const IS_IPAD =
 
 export const IS_WINDOWS = /Win/.test(platform) || /win32/.test(platform);
 
+export const IS_LINUX = /Linux/.test(platform);
+
 export const IS_MOBILE = IS_IOS || IS_IPAD || IS_ANDROID;

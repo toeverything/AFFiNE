@@ -7,7 +7,10 @@ export function mergeStreamObjects(chunks: StreamObject[] = []) {
       case 'reasoning':
       case 'text-delta': {
         if (prev && prev.type === curr.type) {
-          prev.textDelta += curr.textDelta;
+          acc[acc.length - 1] = {
+            ...prev,
+            textDelta: prev.textDelta + curr.textDelta,
+          };
         } else {
           acc.push(curr);
         }

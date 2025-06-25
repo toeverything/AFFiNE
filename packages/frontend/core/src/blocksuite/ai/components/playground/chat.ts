@@ -22,7 +22,11 @@ import type {
   AINetworkSearchConfig,
   AIReasoningConfig,
 } from '../ai-chat-input';
-import { type HistoryMessage } from '../ai-chat-messages';
+import {
+  type ChatAction,
+  type ChatMessage,
+  type HistoryMessage,
+} from '../ai-chat-messages';
 
 const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
   quote: '',
@@ -204,12 +208,14 @@ export class PlaygroundChat extends SignalWatcher(
       return;
     }
 
-    const messages: HistoryMessage[] = actions ? [...actions] : [];
+    const chatActions = (actions || []) as ChatAction[];
+    const messages: HistoryMessage[] = chatActions;
 
     const sessionId = await this._getSessionId();
     const history = histories?.find(history => history.sessionId === sessionId);
     if (history) {
-      messages.push(...history.messages);
+      const chatMessages = (history.messages || []) as ChatMessage[];
+      messages.push(...chatMessages);
     }
 
     this.chatContextValue = {

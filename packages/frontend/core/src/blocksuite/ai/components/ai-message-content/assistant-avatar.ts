@@ -4,7 +4,7 @@ import { AiIcon } from '@blocksuite/icons/lit';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import type { ChatStatus } from '../../components/ai-chat-messages';
+import type { ChatStatus } from '../ai-chat-messages';
 
 const AffineAvatarIcon = AiIcon({
   width: '20px',

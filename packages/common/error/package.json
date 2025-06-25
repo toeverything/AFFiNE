@@ -1,6 +1,6 @@
 {
   "name": "@affine/error",
-  "version": "0.21.0",
+  "version": "0.22.4",
   "private": true,
   "type": "module",
   "exports": {

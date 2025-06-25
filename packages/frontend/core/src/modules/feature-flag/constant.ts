@@ -3,7 +3,6 @@ import type { FlagInfo } from './types';
 // const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
 const isDesktopEnvironment = BUILD_CONFIG.isElectron;
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
-const isBetaBuild = BUILD_CONFIG.appBuildType === 'beta';
 const isMobile = BUILD_CONFIG.isMobileEdition;
 
 export const AFFINE_FLAGS = {
@@ -264,13 +263,6 @@ export const AFFINE_FLAGS = {
     displayName: 'Enable Setting Subpage Animation',
     description: 'Apply animation for setting subpage open/close',
     configurable: isCanaryBuild,
-    defaultState: false,
-  },
-  enable_cloud_indexer: {
-    category: 'affine',
-    displayName: 'Enable Cloud Indexer',
-    description: 'Use cloud indexer to search docs',
-    configurable: isBetaBuild || isCanaryBuild,
     defaultState: false,
   },
   enable_adapter_panel: {

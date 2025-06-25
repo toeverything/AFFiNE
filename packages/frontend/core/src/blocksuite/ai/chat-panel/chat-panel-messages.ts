@@ -19,7 +19,6 @@ import type {
   AIReasoningConfig,
 } from '../components/ai-chat-input';
 import {
-  type ChatMessage,
   isChatAction,
   isChatMessage,
   StreamObjectSchema,
@@ -418,22 +417,27 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       });
 
       for await (const text of stream) {
-        const messages = [...this.chatContextValue.messages];
-        const last = messages[messages.length - 1] as ChatMessage;
-        try {
-          const parsed = StreamObjectSchema.safeParse(JSON.parse(text));
-          if (parsed.success) {
-            last.streamObjects = mergeStreamObjects([
+        const messages = this.chatContextValue.messages.slice(0);
+        const last = messages.at(-1);
+        if (last && isChatMessage(last)) {
+          try {
+            const parsed = StreamObjectSchema.parse(JSON.parse(text));
+            const streamObjects = mergeStreamObjects([
               ...(last.streamObjects ?? []),
-              parsed.data,
+              parsed,
             ]);
-          } else {
-            last.content += text;
+            messages[messages.length - 1] = {
+              ...last,
+              streamObjects,
+            };
+          } catch {
+            messages[messages.length - 1] = {
+              ...last,
+              content: last.content + text,
+            };
           }
-        } catch {
-          last.content += text;
+          this.updateContext({ messages, status: 'transmitting' });
         }
-        this.updateContext({ messages, status: 'transmitting' });
       }
 
       this.updateContext({ status: 'success' });

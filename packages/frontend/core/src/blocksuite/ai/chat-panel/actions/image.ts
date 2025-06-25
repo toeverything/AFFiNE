@@ -1,6 +1,3 @@
-import './action-wrapper';
-import '../content/images';
-
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';

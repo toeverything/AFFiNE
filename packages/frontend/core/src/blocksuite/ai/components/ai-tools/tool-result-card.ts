@@ -3,7 +3,7 @@ import { ImageProxyService } from '@blocksuite/affine/shared/adapters';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
 import { ToggleDownIcon } from '@blocksuite/icons/lit';
-import { type Signal, signal } from '@preact/signals-core';
+import { type Signal } from '@preact/signals-core';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
@@ -170,7 +170,7 @@ export class ToolResultCard extends SignalWatcher(
   accessor results!: ToolResult[];
 
   @property({ attribute: false })
-  accessor width: Signal<number | undefined> = signal(undefined);
+  accessor width: Signal<number | undefined> | undefined;
 
   @state()
   private accessor isCollapsed = true;
@@ -209,7 +209,10 @@ export class ToolResultCard extends SignalWatcher(
       return nothing;
     }
 
-    const maxIcons = Number(this.width.value) <= 400 ? 1 : 3;
+    let maxIcons = 3;
+    if (this.width && this.width.value !== undefined) {
+      maxIcons = this.width.value <= 400 ? 1 : 3;
+    }
     const visibleIcons = this.footerIcons.slice(0, maxIcons);
 
     return html`

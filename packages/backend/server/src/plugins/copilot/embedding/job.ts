@@ -159,8 +159,10 @@ export class CopilotEmbeddingJob {
     }
   }
 
-  @OnEvent('doc.indexer.updated')
-  async addDocEmbeddingQueueFromEvent(doc: Events['doc.indexer.updated']) {
+  @OnJob('copilot.embedding.updateDoc')
+  async addDocEmbeddingQueueFromEvent(
+    doc: Jobs['copilot.embedding.updateDoc']
+  ) {
     if (!this.supportEmbedding || !this.embeddingClient) return;
 
     await this.queue.add(
@@ -176,8 +178,10 @@ export class CopilotEmbeddingJob {
     );
   }
 
-  @OnEvent('doc.indexer.deleted')
-  async deleteDocEmbeddingQueueFromEvent(doc: Events['doc.indexer.deleted']) {
+  @OnJob('copilot.embedding.deleteDoc')
+  async deleteDocEmbeddingQueueFromEvent(
+    doc: Jobs['copilot.embedding.deleteDoc']
+  ) {
     await this.queue.remove(
       `workspace:embedding:${doc.workspaceId}:${doc.docId}`,
       'copilot.embedding.docs'

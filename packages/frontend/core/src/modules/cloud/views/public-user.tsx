@@ -2,7 +2,12 @@ import { Avatar, Tooltip } from '@affine/component';
 import { useCurrentServerService } from '@affine/core/components/providers/current-server-scope';
 import { useI18n } from '@affine/i18n';
 import { useLiveData } from '@toeverything/infra';
-import { type ComponentType, useLayoutEffect, useMemo } from 'react';
+import {
+  type ComponentType,
+  type CSSProperties,
+  useLayoutEffect,
+  useMemo,
+} from 'react';
 
 import { PublicUserService } from '../services/public-user';
 import * as styles from './public-user.css';
@@ -12,11 +17,13 @@ export const PublicUserLabel = ({
   size = 20,
   showName = true,
   tooltip: NameTip,
+  align = 'baseline',
 }: {
   id: string;
   size?: number;
   showName?: boolean;
   tooltip?: ComponentType<{ userName: string }>;
+  align?: CSSProperties['alignItems'];
 }) => {
   const serverService = useCurrentServerService();
   const publicUser = useMemo(() => {
@@ -59,7 +66,7 @@ export const PublicUserLabel = ({
         ) : null
       }
     >
-      <span className={styles.publicUserLabel}>
+      <span className={styles.publicUserLabel} style={{ alignItems: align }}>
         <Avatar
           url={user?.avatar}
           name={user?.name ?? ''}

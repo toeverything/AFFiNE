@@ -1,9 +1,5 @@
-import '../content/assistant-avatar';
-import '../content/rich-text';
-
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { isInsidePageEditor } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -32,20 +28,6 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       color: var(--affine-placeholder-color);
       font-size: var(--affine-font-xs);
       font-weight: 400;
-    }
-
-    .reasoning-wrapper {
-      padding: 16px 20px;
-      margin: 8px 0;
-      border-radius: 8px;
-      background-color: rgba(0, 0, 0, 0.05);
-    }
-
-    .tool-wrapper {
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
     }
   `;
 
@@ -81,6 +63,15 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor panelWidth!: Signal<number | undefined>;
+
+  get state() {
+    const { isLast, status } = this;
+    return isLast
+      ? status !== 'loading' && status !== 'transmitting'
+        ? 'finished'
+        : 'generating'
+      : 'finished';
+  }
 
   renderHeader() {
     const isWithDocs =
@@ -122,102 +113,21 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   }
 
   private renderStreamObjects(answer: StreamObject[]) {
-    return html`<div>
-      ${answer.map(data => {
-        switch (data.type) {
-          case 'text-delta':
-            return this.renderRichText(data.textDelta);
-          case 'reasoning':
-            return html`
-              <div class="reasoning-wrapper">
-                ${this.renderRichText(data.textDelta)}
-              </div>
-            `;
-          case 'tool-call':
-            return this.renderToolCall(data);
-          case 'tool-result':
-            return this.renderToolResult(data);
-          default:
-            return nothing;
-        }
-      })}
-    </div>`;
-  }
-
-  private renderToolCall(streamObject: StreamObject) {
-    if (streamObject.type !== 'tool-call') {
-      return nothing;
-    }
-
-    switch (streamObject.toolName) {
-      case 'web_crawl_exa':
-        return html`
-          <web-crawl-tool
-            .data=${streamObject}
-            .host=${this.host}
-            .width=${this.panelWidth}
-          ></web-crawl-tool>
-        `;
-      case 'web_search_exa':
-        return html`
-          <web-search-tool
-            .data=${streamObject}
-            .host=${this.host}
-            .width=${this.panelWidth}
-          ></web-search-tool>
-        `;
-      default:
-        return html`
-          <div class="tool-wrapper">
-            ${streamObject.toolName} tool calling...
-          </div>
-        `;
-    }
-  }
-
-  private renderToolResult(streamObject: StreamObject) {
-    if (streamObject.type !== 'tool-result') {
-      return nothing;
-    }
-
-    switch (streamObject.toolName) {
-      case 'web_crawl_exa':
-        return html`
-          <web-crawl-tool
-            .data=${streamObject}
-            .host=${this.host}
-            .width=${this.panelWidth}
-          ></web-crawl-tool>
-        `;
-      case 'web_search_exa':
-        return html`
-          <web-search-tool
-            .data=${streamObject}
-            .host=${this.host}
-            .width=${this.panelWidth}
-          ></web-search-tool>
-        `;
-      default:
-        return html`
-          <div class="tool-wrapper">
-            ${streamObject.toolName} tool result...
-          </div>
-        `;
-    }
+    return html`<chat-content-stream-objects
+      .answer=${answer}
+      .host=${this.host}
+      .state=${this.state}
+      .width=${this.panelWidth}
+      .extensions=${this.extensions}
+      .affineFeatureFlagService=${this.affineFeatureFlagService}
+    ></chat-content-stream-objects>`;
   }
 
   private renderRichText(text: string) {
-    const { host, isLast, status } = this;
-    const state = isLast
-      ? status !== 'loading' && status !== 'transmitting'
-        ? 'finished'
-        : 'generating'
-      : 'finished';
-
     return html`<chat-content-rich-text
-      .host=${host}
+      .host=${this.host}
       .text=${text}
-      .state=${state}
+      .state=${this.state}
       .extensions=${this.extensions}
       .affineFeatureFlagService=${this.affineFeatureFlagService}
     ></chat-content-rich-text>`;

@@ -1,4 +1,5 @@
 import { readAllDocsFromRootDoc } from '@affine/reader';
+import { omit } from 'lodash-es';
 import {
   filter,
   first,
@@ -7,20 +8,32 @@ import {
   ReplaySubject,
   share,
   Subject,
+  switchMap,
   throttleTime,
 } from 'rxjs';
 import { applyUpdate, Doc as YDoc } from 'yjs';
 
 import {
+  type AggregateOptions,
+  type AggregateResult,
   type DocStorage,
   IndexerDocument,
+  type IndexerSchema,
   type IndexerStorage,
+  type Query,
+  type SearchOptions,
+  type SearchResult,
 } from '../../storage';
+import { DummyIndexerStorage } from '../../storage/dummy/indexer';
 import type { IndexerSyncStorage } from '../../storage/indexer-sync';
 import { AsyncPriorityQueue } from '../../utils/async-priority-queue';
+import { fromPromise } from '../../utils/from-promise';
 import { takeUntilAbort } from '../../utils/take-until-abort';
 import { MANUALLY_STOP, throwIfAborted } from '../../utils/throw-if-aborted';
+import type { PeerStorageOptions } from '../types';
 import { crawlingDocData } from './crawler';
+
+export type IndexerPreferOptions = 'local' | 'remote';
 
 export interface IndexerSyncState {
   /**
@@ -59,6 +72,35 @@ export interface IndexerSync {
   addPriority(docId: string, priority: number): () => void;
   waitForCompleted(signal?: AbortSignal): Promise<void>;
   waitForDocCompleted(docId: string, signal?: AbortSignal): Promise<void>;
+
+  search<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Promise<SearchResult<T, O>>;
+
+  aggregate<T extends keyof IndexerSchema, const O extends AggregateOptions<T>>(
+    table: T,
+    query: Query<T>,
+    field: keyof IndexerSchema[T],
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Promise<AggregateResult<T, O>>;
+
+  search$<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Observable<SearchResult<T, O>>;
+
+  aggregate$<
+    T extends keyof IndexerSchema,
+    const O extends AggregateOptions<T>,
+  >(
+    table: T,
+    query: Query<T>,
+    field: keyof IndexerSchema[T],
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Observable<AggregateResult<T, O>>;
 }
 
 export class IndexerSyncImpl implements IndexerSync {
@@ -69,6 +111,9 @@ export class IndexerSyncImpl implements IndexerSync {
   private abort: AbortController | null = null;
   private readonly rootDocId = this.doc.spaceId;
   private readonly status = new IndexerSyncStatus(this.rootDocId);
+
+  private readonly indexer: IndexerStorage;
+  private readonly remote?: IndexerStorage;
 
   state$ = this.status.state$.pipe(
     // throttle the state to 1 second to avoid spamming the UI
@@ -106,9 +151,13 @@ export class IndexerSyncImpl implements IndexerSync {
 
   constructor(
     readonly doc: DocStorage,
-    readonly indexer: IndexerStorage,
+    readonly peers: PeerStorageOptions<IndexerStorage>,
     readonly indexerSync: IndexerSyncStorage
-  ) {}
+  ) {
+    // sync feature only works on local indexer
+    this.indexer = this.peers.local;
+    this.remote = Object.values(this.peers.remotes).find(remote => !!remote);
+  }
 
   start() {
     if (this.abort) {
@@ -438,6 +487,116 @@ export class IndexerSyncImpl implements IndexerSync {
         ];
       })
     );
+  }
+
+  async search<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Promise<SearchResult<T, O>> {
+    if (
+      options?.prefer === 'remote' &&
+      this.remote &&
+      !(this.remote instanceof DummyIndexerStorage)
+    ) {
+      await this.remote.connection.waitForConnected();
+      return await this.remote.search(table, query, omit(options, 'prefer'));
+    } else {
+      await this.indexer.connection.waitForConnected();
+      return await this.indexer.search(table, query, omit(options, 'prefer'));
+    }
+  }
+
+  async aggregate<
+    T extends keyof IndexerSchema,
+    const O extends AggregateOptions<T>,
+  >(
+    table: T,
+    query: Query<T>,
+    field: keyof IndexerSchema[T],
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Promise<AggregateResult<T, O>> {
+    if (
+      options?.prefer === 'remote' &&
+      this.remote &&
+      !(this.remote instanceof DummyIndexerStorage)
+    ) {
+      await this.remote.connection.waitForConnected();
+      return await this.remote.aggregate(
+        table,
+        query,
+        field,
+        omit(options, 'prefer')
+      );
+    } else {
+      await this.indexer.connection.waitForConnected();
+      return await this.indexer.aggregate(
+        table,
+        query,
+        field,
+        omit(options, 'prefer')
+      );
+    }
+  }
+
+  search$<T extends keyof IndexerSchema, const O extends SearchOptions<T>>(
+    table: T,
+    query: Query<T>,
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Observable<SearchResult<T, O>> {
+    if (
+      options?.prefer === 'remote' &&
+      this.remote &&
+      !(this.remote instanceof DummyIndexerStorage)
+    ) {
+      const remote = this.remote;
+      return fromPromise(signal =>
+        remote.connection.waitForConnected(signal)
+      ).pipe(
+        switchMap(() => remote.search$(table, query, omit(options, 'prefer')))
+      );
+    } else {
+      return fromPromise(signal =>
+        this.indexer.connection.waitForConnected(signal)
+      ).pipe(
+        switchMap(() =>
+          this.indexer.search$(table, query, omit(options, 'prefer'))
+        )
+      );
+    }
+  }
+
+  aggregate$<
+    T extends keyof IndexerSchema,
+    const O extends AggregateOptions<T>,
+  >(
+    table: T,
+    query: Query<T>,
+    field: keyof IndexerSchema[T],
+    options?: O & { prefer?: IndexerPreferOptions }
+  ): Observable<AggregateResult<T, O>> {
+    if (
+      options?.prefer === 'remote' &&
+      this.remote &&
+      !(this.remote instanceof DummyIndexerStorage)
+    ) {
+      const remote = this.remote;
+      return fromPromise(signal =>
+        remote.connection.waitForConnected(signal)
+      ).pipe(
+        switchMap(() =>
+          remote.aggregate$(table, query, field, omit(options, 'prefer'))
+        )
+      );
+    } else {
+      return fromPromise(signal =>
+        this.indexer.connection.waitForConnected(signal)
+      ).pipe(
+        switchMap(() =>
+          this.indexer.aggregate$(table, query, field, omit(options, 'prefer'))
+        )
+      );
+    }
   }
 }
 
