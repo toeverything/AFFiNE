@@ -423,6 +423,10 @@ export class CopilotResolver {
     @Args('docId', { nullable: true }) maybeDocId?: string,
     @Args('options', { nullable: true }) options?: QueryChatSessionsInput
   ): Promise<CopilotSessionType[]> {
+    if (!copilot.workspaceId) {
+      return [];
+    }
+
     const appendOptions = await this.assertPermission(
       user,
       Object.assign({}, copilot, { docId: maybeDocId })
@@ -431,8 +435,16 @@ export class CopilotResolver {
     const sessions = await this.chatSession.listSessions(
       Object.assign({}, options, appendOptions)
     );
-
-    return sessions.map(this.transformToSessionType);
+    if (appendOptions.docId) {
+      type Session = Omit<ChatSessionState, 'messages'> & { docId: string };
+      const filteredSessions = await this.ac
+        .user(user.id)
+        .workspace(copilot.workspaceId)
+        .docs(sessions.filter(s => s.docId) as Session[], 'Doc.Update');
+      return filteredSessions.map(this.transformToSessionType);
+    } else {
+      return sessions.map(this.transformToSessionType);
+    }
   }
 
   @ResolveField(() => [CopilotHistoriesType], {})
