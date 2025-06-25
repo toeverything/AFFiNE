@@ -165,6 +165,10 @@ export interface CommentChangeObjectTypeEdge {
 export interface CommentCreateInput {
   content: Scalars['JSONObject']['input'];
   docId: Scalars['ID']['input'];
+  docMode: DocMode;
+  docTitle: Scalars['String']['input'];
+  /** The mention user ids, if not provided, the comment will not be mentioned */
+  mentions?: InputMaybe<Array<Scalars['String']['input']>>;
   workspaceId: Scalars['ID']['input'];
 }
 
@@ -2173,6 +2177,10 @@ export interface RemoveContextFileInput {
 export interface ReplyCreateInput {
   commentId: Scalars['ID']['input'];
   content: Scalars['JSONObject']['input'];
+  docMode: DocMode;
+  docTitle: Scalars['String']['input'];
+  /** The mention user ids, if not provided, the comment reply will not be mentioned */
+  mentions?: InputMaybe<Array<Scalars['String']['input']>>;
 }
 
 export interface ReplyObjectType {

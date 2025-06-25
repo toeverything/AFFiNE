@@ -6,6 +6,7 @@ import {
   createReplyMutation,
   deleteCommentMutation,
   deleteReplyMutation,
+  DocMode,
   listCommentChangesQuery,
   listCommentsQuery,
   resolveCommentMutation,
@@ -64,6 +65,8 @@ e2e('should create comment work', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -82,6 +85,8 @@ e2e('should create comment work', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -92,6 +97,52 @@ e2e('should create comment work', async t => {
   t.truthy(result2.createComment.id);
   t.false(result2.createComment.resolved);
   t.is(result2.createComment.replies.length, 0);
+});
+
+e2e('should create comment with mentions work', async t => {
+  const docId = randomUUID();
+  await app.create(Mockers.DocUser, {
+    workspaceId: teamWorkspace.id,
+    docId,
+    userId: member.id,
+    type: DocRole.Owner,
+  });
+
+  await app.login(member);
+
+  const count = app.queue.count('notification.sendComment');
+  const result = await app.gql({
+    query: createCommentMutation,
+    variables: {
+      input: {
+        workspaceId: teamWorkspace.id,
+        docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test' }],
+        },
+        mentions: [
+          // send
+          owner.id,
+          // ignore doc owner himself
+          member.id,
+          // ignore not workspace member
+          other.id,
+        ],
+      },
+    },
+  });
+
+  t.truthy(result.createComment.id);
+  t.false(result.createComment.resolved);
+  t.is(result.createComment.replies.length, 0);
+  // only send one notification to owner
+  t.is(app.queue.count('notification.sendComment'), count + 1);
+  const notification = app.queue.last('notification.sendComment');
+  t.is(notification.name, 'notification.sendComment');
+  t.is(notification.payload.userId, owner.id);
 });
 
 e2e('should create comment work when user is Commenter', async t => {
@@ -110,6 +161,8 @@ e2e('should create comment work when user is Commenter', async t => {
       input: {
         workspaceId: teamWorkspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -134,6 +187,8 @@ e2e('should create comment failed when user is not member', async t => {
         input: {
           workspaceId: workspace.id,
           docId,
+          docMode: DocMode.page,
+          docTitle: 'test',
           content: {
             type: 'paragraph',
             content: [{ type: 'text', text: 'test' }],
@@ -166,6 +221,8 @@ e2e('should create comment failed when user is Reader', async t => {
         input: {
           workspaceId: teamWorkspace.id,
           docId,
+          docMode: DocMode.page,
+          docTitle: 'test',
           content: {
             type: 'paragraph',
             content: [{ type: 'text', text: 'test' }],
@@ -190,6 +247,8 @@ e2e('should update comment work', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -225,6 +284,8 @@ e2e('should update comment failed by another user', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -286,6 +347,8 @@ e2e('should resolve comment work', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -350,6 +413,8 @@ e2e('should resolve comment work by doc Commenter himself', async t => {
       input: {
         workspaceId: teamWorkspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -387,6 +452,8 @@ e2e('should resolve comment failed by doc Reader user', async t => {
       input: {
         workspaceId: teamWorkspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -441,6 +508,8 @@ e2e('should delete comment work', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -473,6 +542,8 @@ e2e('should create reply work', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -486,6 +557,8 @@ e2e('should create reply work', async t => {
     variables: {
       input: {
         commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -497,6 +570,122 @@ e2e('should create reply work', async t => {
   t.truthy(result.createReply.id);
   t.is(result.createReply.commentId, createResult.createComment.id);
 });
+
+e2e('should create reply with mentions work', async t => {
+  const docId = randomUUID();
+  await app.create(Mockers.DocUser, {
+    workspaceId: teamWorkspace.id,
+    docId,
+    userId: member.id,
+    type: DocRole.Owner,
+  });
+
+  await app.login(member);
+  const createResult = await app.gql({
+    query: createCommentMutation,
+    variables: {
+      input: {
+        workspaceId: teamWorkspace.id,
+        docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test' }],
+        },
+      },
+    },
+  });
+
+  const count = app.queue.count('notification.sendComment');
+  const result = await app.gql({
+    query: createReplyMutation,
+    variables: {
+      input: {
+        commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test' }],
+        },
+        mentions: [
+          // send
+          owner.id,
+          // ignore doc owner himself
+          member.id,
+          // ignore not workspace member
+          other.id,
+        ],
+      },
+    },
+  });
+
+  t.truthy(result.createReply.id);
+  t.is(result.createReply.commentId, createResult.createComment.id);
+  // only send one notification to owner
+  t.is(app.queue.count('notification.sendComment'), count + 1);
+  const notification = app.queue.last('notification.sendComment');
+  t.is(notification.name, 'notification.sendComment');
+  t.is(notification.payload.userId, owner.id);
+  t.is(notification.payload.body.replyId, result.createReply.id);
+  t.is(notification.payload.isMention, true);
+});
+
+e2e(
+  'should create reply and send comment notification to doc owner',
+  async t => {
+    const docId = randomUUID();
+    await app.create(Mockers.DocUser, {
+      workspaceId: teamWorkspace.id,
+      docId,
+      userId: member.id,
+      type: DocRole.Owner,
+    });
+
+    await app.login(owner);
+    const createResult = await app.gql({
+      query: createCommentMutation,
+      variables: {
+        input: {
+          workspaceId: teamWorkspace.id,
+          docId,
+          docMode: DocMode.page,
+          docTitle: 'test',
+          content: {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'test' }],
+          },
+        },
+      },
+    });
+
+    const count = app.queue.count('notification.sendComment');
+    const result = await app.gql({
+      query: createReplyMutation,
+      variables: {
+        input: {
+          commentId: createResult.createComment.id,
+          docMode: DocMode.page,
+          docTitle: 'test',
+          content: {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'test' }],
+          },
+        },
+      },
+    });
+
+    t.truthy(result.createReply.id);
+    t.is(result.createReply.commentId, createResult.createComment.id);
+    t.is(app.queue.count('notification.sendComment'), count + 1);
+    const notification = app.queue.last('notification.sendComment');
+    t.is(notification.name, 'notification.sendComment');
+    t.is(notification.payload.userId, member.id);
+    t.is(notification.payload.body.replyId, result.createReply.id);
+    t.is(notification.payload.isMention, undefined);
+  }
+);
 
 e2e('should create reply work when user is Commenter', async t => {
   const docId = randomUUID();
@@ -514,6 +703,8 @@ e2e('should create reply work when user is Commenter', async t => {
       input: {
         workspaceId: teamWorkspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -527,6 +718,8 @@ e2e('should create reply work when user is Commenter', async t => {
     variables: {
       input: {
         commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -547,6 +740,8 @@ e2e('should create reply failed when comment not found', async t => {
       variables: {
         input: {
           commentId: 'not-found',
+          docMode: DocMode.page,
+          docTitle: 'test',
           content: {
             type: 'paragraph',
             content: [{ type: 'text', text: 'test' }],
@@ -570,6 +765,8 @@ e2e('should create reply failed when user is not member', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -585,6 +782,8 @@ e2e('should create reply failed when user is not member', async t => {
       variables: {
         input: {
           commentId: createResult.createComment.id,
+          docMode: DocMode.page,
+          docTitle: 'test',
           content: {
             type: 'paragraph',
             content: [{ type: 'text', text: 'test' }],
@@ -616,6 +815,8 @@ e2e('should create reply failed when user is Reader', async t => {
       input: {
         workspaceId: teamWorkspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -631,6 +832,8 @@ e2e('should create reply failed when user is Reader', async t => {
       variables: {
         input: {
           commentId: createResult.createComment.id,
+          docMode: DocMode.page,
+          docTitle: 'test',
           content: {
             type: 'paragraph',
             content: [{ type: 'text', text: 'test' }],
@@ -655,6 +858,8 @@ e2e('should update reply work when user is reply owner', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -668,6 +873,8 @@ e2e('should update reply work when user is reply owner', async t => {
     variables: {
       input: {
         commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -702,6 +909,8 @@ e2e('should update reply failed when user is not reply owner', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -715,6 +924,8 @@ e2e('should update reply failed when user is not reply owner', async t => {
     variables: {
       input: {
         commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -775,6 +986,8 @@ e2e('should delete reply work when user is reply owner', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -788,6 +1001,8 @@ e2e('should delete reply work when user is reply owner', async t => {
     variables: {
       input: {
         commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -822,6 +1037,8 @@ e2e('should delete reply work when user is doc Editor', async t => {
       input: {
         workspaceId: teamWorkspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -835,6 +1052,8 @@ e2e('should delete reply work when user is doc Editor', async t => {
     variables: {
       input: {
         commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -870,6 +1089,8 @@ e2e('should delete reply work when user is doc Manager', async t => {
       input: {
         workspaceId: teamWorkspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -883,6 +1104,8 @@ e2e('should delete reply work when user is doc Manager', async t => {
     variables: {
       input: {
         commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test' }],
@@ -933,6 +1156,8 @@ e2e('should list comments and changes work', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test 1' }],
@@ -949,6 +1174,8 @@ e2e('should list comments and changes work', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test 2' }],
@@ -963,6 +1190,8 @@ e2e('should list comments and changes work', async t => {
       input: {
         workspaceId: workspace.id,
         docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test 3' }],
@@ -976,6 +1205,8 @@ e2e('should list comments and changes work', async t => {
     variables: {
       input: {
         commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test 1 reply 1' }],
@@ -991,6 +1222,8 @@ e2e('should list comments and changes work', async t => {
     variables: {
       input: {
         commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test 1 reply 2' }],
@@ -1062,6 +1295,8 @@ e2e('should list comments and changes work', async t => {
     variables: {
       input: {
         commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
         content: {
           type: 'paragraph',
           content: [{ type: 'text', text: 'test 1 reply 3' }],

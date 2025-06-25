@@ -17,6 +17,7 @@ import {
   CommentResolve,
   CommentUpdate,
   DeletedChangeItem,
+  DocMode,
   Reply,
   ReplyCreate,
   ReplyUpdate,
@@ -150,8 +151,21 @@ export class CommentCreateInput implements Partial<CommentCreate> {
   @Field(() => ID)
   docId!: string;
 
+  @Field(() => String)
+  docTitle!: string;
+
+  @Field(() => DocMode)
+  docMode!: DocMode;
+
   @Field(() => GraphQLJSONObject)
   content!: object;
+
+  @Field(() => [String], {
+    nullable: true,
+    description:
+      'The mention user ids, if not provided, the comment will not be mentioned',
+  })
+  mentions?: string[];
 }
 
 @InputType()
@@ -181,6 +195,19 @@ export class ReplyCreateInput implements Partial<ReplyCreate> {
 
   @Field(() => GraphQLJSONObject)
   content!: object;
+
+  @Field(() => String)
+  docTitle!: string;
+
+  @Field(() => DocMode)
+  docMode!: DocMode;
+
+  @Field(() => [String], {
+    nullable: true,
+    description:
+      'The mention user ids, if not provided, the comment reply will not be mentioned',
+  })
+  mentions?: string[];
 }
 
 @InputType()

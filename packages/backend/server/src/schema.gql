@@ -125,6 +125,13 @@ type CommentChangeObjectTypeEdge {
 input CommentCreateInput {
   content: JSONObject!
   docId: ID!
+  docMode: DocMode!
+  docTitle: String!
+
+  """
+  The mention user ids, if not provided, the comment will not be mentioned
+  """
+  mentions: [String!]
   workspaceId: ID!
 }
 
@@ -1584,6 +1591,13 @@ input RemoveContextFileInput {
 input ReplyCreateInput {
   commentId: ID!
   content: JSONObject!
+  docMode: DocMode!
+  docTitle: String!
+
+  """
+  The mention user ids, if not provided, the comment reply will not be mentioned
+  """
+  mentions: [String!]
 }
 
 type ReplyObjectType {

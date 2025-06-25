@@ -13,6 +13,7 @@ import {
   CommentAttachmentQuotaExceeded,
   CommentNotFound,
   type FileUpload,
+  JobQueue,
   readableToBuffer,
   ReplyNotFound,
 } from '../../base';
@@ -21,6 +22,7 @@ import {
   paginateWithCustomCursor,
   PaginationInput,
 } from '../../base/graphql';
+import { Comment, DocMode, Models, Reply } from '../../models';
 import { CurrentUser } from '../auth/session';
 import { AccessController, DocAction } from '../permission';
 import { CommentAttachmentStorage } from '../storage';
@@ -50,7 +52,9 @@ export class CommentResolver {
   constructor(
     private readonly service: CommentService,
     private readonly ac: AccessController,
-    private readonly commentAttachmentStorage: CommentAttachmentStorage
+    private readonly commentAttachmentStorage: CommentAttachmentStorage,
+    private readonly queue: JobQueue,
+    private readonly models: Models
   ) {}
 
   @Mutation(() => CommentObjectType)
@@ -64,6 +68,15 @@ export class CommentResolver {
       ...input,
       userId: me.id,
     });
+
+    await this.sendCommentNotification(
+      me,
+      comment,
+      input.docTitle,
+      input.docMode,
+      input.mentions
+    );
+
     return {
       ...comment,
       user: {
@@ -142,6 +155,16 @@ export class CommentResolver {
       ...input,
       userId: me.id,
     });
+
+    await this.sendCommentNotification(
+      me,
+      comment,
+      input.docTitle,
+      input.docMode,
+      input.mentions,
+      reply
+    );
+
     return {
       ...reply,
       user: {
@@ -336,6 +359,74 @@ export class CommentResolver {
       buffer
     );
     return this.commentAttachmentStorage.getUrl(workspaceId, docId, key);
+  }
+
+  private async sendCommentNotification(
+    sender: UserType,
+    comment: Comment,
+    docTitle: string,
+    docMode: DocMode,
+    mentions?: string[],
+    reply?: Reply
+  ) {
+    // send comment notification to doc owners
+    const owner = await this.models.docUser.getOwner(
+      comment.workspaceId,
+      comment.docId
+    );
+    if (owner && owner.userId !== sender.id) {
+      await this.queue.add('notification.sendComment', {
+        userId: owner.userId,
+        body: {
+          workspaceId: comment.workspaceId,
+          createdByUserId: sender.id,
+          commentId: comment.id,
+          replyId: reply?.id,
+          doc: {
+            id: comment.docId,
+            title: docTitle,
+            mode: docMode,
+          },
+        },
+      });
+    }
+
+    // send comment mention notification to mentioned users
+    if (mentions) {
+      for (const mentionUserId of mentions) {
+        // skip if the mention user is the doc owner
+        if (mentionUserId === owner?.userId || mentionUserId === sender.id) {
+          continue;
+        }
+
+        // check if the mention user has Doc.Comments.Read permission
+        const hasPermission = await this.ac
+          .user(mentionUserId)
+          .workspace(comment.workspaceId)
+          .doc(comment.docId)
+          .can('Doc.Comments.Read');
+
+        if (!hasPermission) {
+          continue;
+        }
+
+        await this.queue.add('notification.sendComment', {
+          isMention: true,
+          userId: mentionUserId,
+          body: {
+            workspaceId: comment.workspaceId,
+            createdByUserId: sender.id,
+            commentId: comment.id,
+            replyId: reply?.id,
+            doc: {
+              id: comment.docId,
+              title: docTitle,
+              mode: docMode,
+            },
+          },
+        });
+      }
+    }
   }
 
   private async assertPermission(
