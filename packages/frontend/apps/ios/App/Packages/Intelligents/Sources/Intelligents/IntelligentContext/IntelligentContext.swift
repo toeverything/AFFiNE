@@ -47,6 +47,17 @@ public class IntelligentContext {
     return tempDir.appendingPathComponent("IntelligentContext")
   }()
 
+  public enum IntelligentError: Error, LocalizedError {
+    case loginRequired(String)
+
+    public var errorDescription: String? {
+      switch self {
+      case let .loginRequired(reason):
+        "Login required: \(reason)"
+      }
+    }
+  }
+
   private init() {}
 
   public func preparePresent(_ completion: @escaping (Result<Void, Error>) -> Void) {
@@ -63,11 +74,27 @@ public class IntelligentContext {
       webViewGroup.wait()
       webViewMetadata = webViewMetadataResult
 
-      if let baseUrlString = webViewMetadataResult[.currentServerBaseUrl] as? String,
-         let url = URL(string: baseUrlString)
-      {
-        QLService.shared.setEndpoint(base: url)
+      // Check required webView metadata
+      guard let baseUrlString = webViewMetadataResult[.currentServerBaseUrl] as? String,
+            !baseUrlString.isEmpty,
+            let url = URL(string: baseUrlString)
+      else {
+        DispatchQueue.main.async {
+          completion(.failure(IntelligentError.loginRequired("Missing server base URL")))
+        }
+        return
       }
+
+      guard let workspaceId = webViewMetadataResult[.currentWorkspaceId] as? String,
+            !workspaceId.isEmpty
+      else {
+        DispatchQueue.main.async {
+          completion(.failure(IntelligentError.loginRequired("Missing workspace ID")))
+        }
+        return
+      }
+
+      QLService.shared.setEndpoint(base: url)
 
       let gqlGroup = DispatchGroup()
       var gqlMetadataResult: [QLMetadataKey: Any] = [:]
@@ -78,6 +105,16 @@ public class IntelligentContext {
       }
       gqlGroup.wait()
       qlMetadata = gqlMetadataResult
+
+      // Check required QL metadata
+      guard let userIdentifier = gqlMetadataResult[.userIdentifierKey] as? String,
+            !userIdentifier.isEmpty
+      else {
+        DispatchQueue.main.async {
+          completion(.failure(IntelligentError.loginRequired("Missing user identifier")))
+        }
+        return
+      }
 
       dumpMetadataContents()
 

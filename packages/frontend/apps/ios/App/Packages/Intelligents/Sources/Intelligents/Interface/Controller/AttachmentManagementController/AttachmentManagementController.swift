@@ -171,17 +171,20 @@ private class AttachmentCell: UITableViewCell {
   let iconView = UIImageView().then {
     $0.contentMode = .scaleAspectFit
     $0.tintColor = .affineIconPrimary
+    $0.setContentCompressionResistancePriority(.required, for: .horizontal)
   }
 
   let titleLabel = UILabel().then {
     $0.textColor = .label
     $0.textAlignment = .left
     $0.font = .preferredFont(forTextStyle: .body)
+    $0.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
   }
 
   let deleteButton = UIButton(type: .system).then {
     $0.setImage(UIImage(systemName: "xmark"), for: .normal)
     $0.tintColor = .affineIconPrimary
+    $0.setContentCompressionResistancePriority(.required, for: .horizontal)
   }
 
   var onDelete: (() -> Void)?

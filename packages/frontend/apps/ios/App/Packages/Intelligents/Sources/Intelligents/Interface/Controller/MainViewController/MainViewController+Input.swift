@@ -6,6 +6,7 @@
 //
 
 import PhotosUI
+import SnapKit
 import UIKit
 import UniformTypeIdentifiers
 
@@ -37,12 +38,38 @@ extension MainViewController: InputBoxDelegate {
     present(documentPicker, animated: true)
   }
 
-  func inputBoxDidSelectEmbedDocs(_ inputBox: InputBox) {
-    print(#function, inputBox)
+  func inputBoxDidSelectEmbedDocs(_: InputBox) {
+    showDocumentPicker()
   }
 
-  func inputBoxDidSelectAttachment(_ inputBox: InputBox) {
-    print(#function, inputBox)
+  @objc func showDocumentPicker() {
+    view.endEditing(true)
+    terminateEditGesture.isEnabled = false
+    documentPickerView.snp.remakeConstraints { make in
+      make.bottom.equalTo(view.keyboardLayoutGuide.snp.top)
+      make.leading.trailing.equalToSuperview()
+      make.height.equalTo(300)
+    }
+    documentPickerHideDetector.isHidden = false
+    performWithAnimation(duration: 0.75) {
+      self.view.layoutIfNeeded()
+    } completion: { _ in
+      self.documentPickerView.updateDocumentsFromRecentDocs()
+      self.documentPickerView.searchTextField.becomeFirstResponder()
+    }
+  }
+
+  @objc func hideDocumentPicker() {
+    terminateEditGesture.isEnabled = true
+    documentPickerView.snp.remakeConstraints { make in
+      make.top.equalTo(view.snp.bottom).offset(200)
+      make.leading.trailing.equalToSuperview()
+      make.height.equalTo(300)
+    }
+    documentPickerHideDetector.isHidden = true
+    performWithAnimation(duration: 0.75) {
+      self.view.layoutIfNeeded()
+    }
   }
 
   func inputBoxDidSend(_ inputBox: InputBox) {
@@ -125,5 +152,13 @@ extension MainViewController: UIDocumentPickerDelegate {
         present(alert, animated: true)
       }
     }
+  }
+}
+
+// MARK: - DocumentPickerViewDelegate
+
+extension MainViewController: DocumentPickerViewDelegate {
+  func documentPickerView(_ view: DocumentPickerView, didSelectDocument document: DocumentItem) {
+    print(#function, view, document)
   }
 }

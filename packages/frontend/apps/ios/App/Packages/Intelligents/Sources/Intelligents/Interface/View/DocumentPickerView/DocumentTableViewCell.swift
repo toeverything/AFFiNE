@@ -56,7 +56,7 @@ class DocumentTableViewCell: UITableViewCell {
   }
 
   func configure(with document: DocumentItem) {
-    iconImageView.image = document.icon ?? UIImage(systemName: "doc.text")
+    iconImageView.image = UIImage(systemName: "doc.text")
     titleLabel.text = document.title
   }
 }
