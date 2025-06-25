@@ -3509,6 +3509,31 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@blocksuite/affine-inline-comment@workspace:*, @blocksuite/affine-inline-comment@workspace:blocksuite/affine/inlines/comment":
+  version: 0.0.0-use.local
+  resolution: "@blocksuite/affine-inline-comment@workspace:blocksuite/affine/inlines/comment"
+  dependencies:
+    "@blocksuite/affine-ext-loader": "workspace:*"
+    "@blocksuite/affine-model": "workspace:*"
+    "@blocksuite/affine-rich-text": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
+    "@blocksuite/global": "workspace:*"
+    "@blocksuite/std": "workspace:*"
+    "@blocksuite/store": "workspace:*"
+    "@lit/context": "npm:^1.1.2"
+    "@preact/signals-core": "npm:^1.8.0"
+    "@toeverything/theme": "npm:^1.1.15"
+    "@types/lodash-es": "npm:^4.17.12"
+    lit: "npm:^3.2.0"
+    lit-html: "npm:^3.2.1"
+    lodash-es: "npm:^4.17.21"
+    rxjs: "npm:^7.8.1"
+    vitest: "npm:3.1.3"
+    yjs: "npm:^13.6.21"
+    zod: "npm:^3.23.8"
+  languageName: unknown
+  linkType: soft
+
 "@blocksuite/affine-inline-footnote@workspace:*, @blocksuite/affine-inline-footnote@workspace:blocksuite/affine/inlines/footnote":
   version: 0.0.0-use.local
   resolution: "@blocksuite/affine-inline-footnote@workspace:blocksuite/affine/inlines/footnote"
@@ -3637,6 +3662,7 @@ __metadata:
   dependencies:
     "@blocksuite/affine-components": "workspace:*"
     "@blocksuite/affine-ext-loader": "workspace:*"
+    "@blocksuite/affine-inline-comment": "workspace:*"
     "@blocksuite/affine-inline-footnote": "workspace:*"
     "@blocksuite/affine-inline-latex": "workspace:*"
     "@blocksuite/affine-inline-link": "workspace:*"
@@ -4217,6 +4243,7 @@ __metadata:
     "@blocksuite/affine-gfx-template": "workspace:*"
     "@blocksuite/affine-gfx-text": "workspace:*"
     "@blocksuite/affine-gfx-turbo-renderer": "workspace:*"
+    "@blocksuite/affine-inline-comment": "workspace:*"
     "@blocksuite/affine-inline-footnote": "workspace:*"
     "@blocksuite/affine-inline-latex": "workspace:*"
     "@blocksuite/affine-inline-link": "workspace:*"

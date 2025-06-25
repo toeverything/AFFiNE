@@ -2,7 +2,7 @@ import { createIdentifier } from '@blocksuite/global/di';
 import type { DisposableMember } from '@blocksuite/global/disposable';
 import type { BaseSelection, ExtensionType } from '@blocksuite/store';
 
-type CommentId = string;
+export type CommentId = string;
 
 /**
  * The `CommentProvider` is an interface used to connect external comment services

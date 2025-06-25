@@ -2,7 +2,6 @@ import {
   type ViewExtensionContext,
   ViewExtensionProvider,
 } from '@blocksuite/affine/ext-loader';
-import { CommentService } from '@blocksuite/affine/shared/services';
 import z from 'zod';
 
 import { AffineCommentProvider } from './comment-provider';
@@ -23,6 +22,6 @@ export class CommentViewExtension extends ViewExtensionProvider {
     super.setup(context, options);
     if (!options?.enableComment) return;
 
-    context.register([AffineCommentProvider, CommentService]);
+    context.register([AffineCommentProvider]);
   }
 }

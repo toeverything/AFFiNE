@@ -58,6 +58,7 @@ export type AffineTextAttributes = AffineTextStyleAttributes & {
     member: string;
     notification?: string;
   } | null;
+  [key: `comment-${string}`]: boolean | null;
 };
 
 export type AffineInlineEditor = InlineEditor<AffineTextAttributes>;
