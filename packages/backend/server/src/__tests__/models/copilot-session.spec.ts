@@ -174,7 +174,10 @@ test('should check session validation for prompts', async t => {
   sessionTypes.forEach(({ name, session }) => {
     t.notThrows(
       () =>
-        copilotSession.checkSessionPrompt(session, 'test-prompt', undefined),
+        copilotSession.checkSessionPrompt(session, {
+          name: 'test-prompt',
+          action: undefined,
+        }),
       `${name} session should allow non-action prompts`
     );
   });
@@ -195,14 +198,20 @@ test('should check session validation for prompts', async t => {
       if (shouldThrow) {
         t.throws(
           () =>
-            copilotSession.checkSessionPrompt(session, 'action-prompt', 'edit'),
+            copilotSession.checkSessionPrompt(session, {
+              name: 'action-prompt',
+              action: 'edit',
+            }),
           { instanceOf: CopilotPromptInvalid },
           `${name} session should reject action prompts`
         );
       } else {
         t.notThrows(
           () =>
-            copilotSession.checkSessionPrompt(session, 'action-prompt', 'edit'),
+            copilotSession.checkSessionPrompt(session, {
+              name: 'action-prompt',
+              action: 'edit',
+            }),
           `${name} session should allow action prompts`
         );
       }

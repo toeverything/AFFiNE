@@ -51,21 +51,19 @@ type PureChatSession = {
   docId?: string | null;
   pinned?: boolean;
   messages?: ChatMessage[];
+  // connect ids
+  userId: string;
+  parentSessionId?: string | null;
 };
 
 type ChatSession = PureChatSession & {
   // connect ids
-  userId: string;
   promptName: string;
   promptAction: string | null;
-  parentSessionId?: string | null;
 };
 
 type ChatSessionWithPrompt = PureChatSession & {
   prompt: ChatPrompt;
-  // connect ids
-  userId: string;
-  parentSessionId?: string | null;
 };
 
 type ChatSessionBaseState = Pick<ChatSession, 'userId' | 'sessionId'>;
@@ -122,10 +120,10 @@ export class CopilotSessionModel extends BaseModel {
 
   checkSessionPrompt(
     session: Pick<ChatSession, 'docId' | 'pinned'>,
-    promptName: string,
-    promptAction: string | undefined
+    prompt: Partial<ChatPrompt>
   ): boolean {
     const sessionType = this.getSessionType(session);
+    const { name: promptName, action: promptAction } = prompt;
 
     // workspace and pinned sessions cannot use action prompts
     if (
@@ -148,22 +146,20 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async create(state: ChatSession, reuseChat = false) {
-    let sessionId = state.sessionId;
-
-    // find existing session if session is chat session
+  async create(state: ChatSession, reuseChat = false): Promise<string> {
+    // find and return existing session if session is chat session
     if (reuseChat && !state.promptAction) {
-      const id = await this.getChatSessionId(state);
-      if (id) sessionId = id;
+      const sessionId = await this.find(state);
+      if (sessionId) return sessionId;
     }
 
     if (state.pinned) {
       await this.unpin(state.workspaceId, state.userId);
     }
 
-    return await this.db.aiSession.create({
+    const session = await this.db.aiSession.create({
       data: {
-        id: sessionId,
+        id: state.sessionId,
         workspaceId: state.workspaceId,
         docId: state.docId,
         pinned: state.pinned ?? false,
@@ -173,14 +169,16 @@ export class CopilotSessionModel extends BaseModel {
         promptAction: state.promptAction,
         parentSessionId: state.parentSessionId,
       },
+      select: { id: true },
     });
+    return session.id;
   }
 
   @Transactional()
-  private async createWithPrompt(
+  async createWithPrompt(
     state: ChatSessionWithPrompt,
     reuseChat = false
-  ) {
+  ): Promise<string> {
     const { prompt, ...rest } = state;
     return await this.models.copilotSession.create(
       { ...rest, promptName: prompt.name, promptAction: prompt.action ?? null },
@@ -201,7 +199,7 @@ export class CopilotSessionModel extends BaseModel {
     const { messages, ...forkedState } = options;
 
     // create session
-    const { id } = await this.createWithPrompt({
+    const sessionId = await this.createWithPrompt({
       ...forkedState,
       messages: [],
     });
@@ -210,7 +208,7 @@ export class CopilotSessionModel extends BaseModel {
       ...forkedState,
       messages,
     });
-    return id;
+    return sessionId;
   }
 
   @Transactional()
@@ -225,9 +223,7 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async getChatSessionId(
-    state: Omit<ChatSession, 'promptName' | 'promptAction'>
-  ) {
+  async find(state: PureChatSession) {
     const extraCondition: Record<string, any> = {};
     if (state.parentSessionId) {
       // also check session id if provided session is forked session

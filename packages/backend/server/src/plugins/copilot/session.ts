@@ -230,19 +230,6 @@ export class ChatSessionService {
     private readonly models: Models
   ) {}
 
-  @Transactional()
-  private async createSession(state: ChatSessionState): Promise<string> {
-    const row = await this.models.copilotSession.create(
-      {
-        ...state,
-        promptName: state.prompt.name,
-        promptAction: state.prompt.action ?? null,
-      },
-      true
-    );
-    return row.id;
-  }
-
   async getSession(sessionId: string): Promise<ChatSessionState | undefined> {
     const session = await this.models.copilotSession.get(sessionId);
     if (!session) return;
@@ -418,20 +405,19 @@ export class ChatSessionService {
     }
 
     // validate prompt compatibility with session type
-    this.models.copilotSession.checkSessionPrompt(
-      options,
-      prompt.name,
-      prompt.action
-    );
+    this.models.copilotSession.checkSessionPrompt(options, prompt);
 
-    return await this.createSession({
-      ...options,
-      sessionId,
-      prompt,
-      messages: [],
-      // when client create chat session, we always find root session
-      parentSessionId: null,
-    });
+    return await this.models.copilotSession.createWithPrompt(
+      {
+        ...options,
+        sessionId,
+        prompt,
+        messages: [],
+        // when client create chat session, we always find root session
+        parentSessionId: null,
+      },
+      true
+    );
   }
 
   @Transactional()
@@ -457,11 +443,7 @@ export class ChatSessionService {
         throw new CopilotPromptNotFound({ name: options.promptName });
       }
 
-      this.models.copilotSession.checkSessionPrompt(
-        session,
-        prompt.name,
-        prompt.action
-      );
+      this.models.copilotSession.checkSessionPrompt(session, prompt);
       finalData.promptName = prompt.name;
     }
     finalData.pinned = options.pinned;
