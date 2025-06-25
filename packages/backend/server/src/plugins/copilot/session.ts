@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { AiPromptRole, PrismaClient } from '@prisma/client';
+import { AiPromptRole } from '@prisma/client';
 
 import {
   CopilotActionTaken,
@@ -14,10 +14,11 @@ import {
 } from '../../base';
 import { QuotaService } from '../../core/quota';
 import {
+  CleanupSessionOptions,
   ListSessionOptions,
   Models,
   type UpdateChatSession,
-  UpdateChatSessionData,
+  UpdateChatSessionOptions,
 } from '../../models';
 import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
@@ -223,7 +224,6 @@ export class ChatSessionService {
   private readonly logger = new Logger(ChatSessionService.name);
 
   constructor(
-    private readonly db: PrismaClient,
     private readonly quota: QuotaService,
     private readonly messageCache: ChatMessageCache,
     private readonly prompt: PromptService,
@@ -232,11 +232,15 @@ export class ChatSessionService {
 
   @Transactional()
   private async createSession(state: ChatSessionState): Promise<string> {
-    return await this.models.copilotSession.create({
-      ...state,
-      promptName: state.prompt.name,
-      promptAction: state.prompt.action ?? null,
-    });
+    const row = await this.models.copilotSession.create(
+      {
+        ...state,
+        promptName: state.prompt.name,
+        promptAction: state.prompt.action ?? null,
+      },
+      true
+    );
+    return row.id;
   }
 
   async getSession(sessionId: string): Promise<ChatSessionState | undefined> {
@@ -269,16 +273,6 @@ export class ChatSessionService {
       sessionId,
       removeLatestUserMessage
     );
-  }
-
-  private async countUserMessages(userId: string): Promise<number> {
-    const sessions = await this.db.aiSession.findMany({
-      where: { userId },
-      select: { messageCost: true, prompt: { select: { action: true } } },
-    });
-    return sessions
-      .map(({ messageCost, prompt: { action } }) => (action ? 1 : messageCost))
-      .reduce((prev, cost) => prev + cost, 0);
   }
 
   async listSessions(
@@ -399,7 +393,7 @@ export class ChatSessionService {
       limit = quota.copilotActionLimit;
     }
 
-    const used = await this.countUserMessages(userId);
+    const used = await this.models.copilotSession.countUserMessages(userId);
 
     return { limit, used };
   }
@@ -452,7 +446,10 @@ export class ChatSessionService {
       throw new CopilotSessionNotFound();
     }
 
-    const finalData: UpdateChatSessionData = {};
+    const finalData: UpdateChatSessionOptions = {
+      userId: options.userId,
+      sessionId: options.sessionId,
+    };
     if (options.promptName) {
       const prompt = await this.prompt.get(options.promptName);
       if (!prompt) {
@@ -476,11 +473,7 @@ export class ChatSessionService {
       );
     }
 
-    return await this.models.copilotSession.update(
-      options.userId,
-      options.sessionId,
-      finalData
-    );
+    return await this.models.copilotSession.update(finalData);
   }
 
   async fork(options: ChatSessionForkOptions): Promise<string> {
@@ -523,49 +516,8 @@ export class ChatSessionService {
     return forkedState.sessionId;
   }
 
-  async cleanup(
-    options: Omit<ChatSessionOptions, 'pinned' | 'promptName'> & {
-      sessionIds: string[];
-    }
-  ) {
-    return await this.db.$transaction(async tx => {
-      const sessions = await tx.aiSession.findMany({
-        where: {
-          id: { in: options.sessionIds },
-          userId: options.userId,
-          workspaceId: options.workspaceId,
-          docId: options.docId,
-          deletedAt: null,
-        },
-        select: { id: true, promptName: true },
-      });
-      const sessionIds = sessions.map(({ id }) => id);
-      // cleanup all messages
-      await tx.aiSessionMessage.deleteMany({
-        where: { sessionId: { in: sessionIds } },
-      });
-
-      // only mark action session as deleted
-      // chat session always can be reuse
-      const actionIds = (
-        await Promise.all(
-          sessions.map(({ id, promptName }) =>
-            this.prompt
-              .get(promptName)
-              .then(prompt => ({ id, action: !!prompt?.action }))
-          )
-        )
-      )
-        .filter(({ action }) => action)
-        .map(({ id }) => id);
-
-      await tx.aiSession.updateMany({
-        where: { id: { in: actionIds } },
-        data: { pinned: false, deletedAt: new Date() },
-      });
-
-      return [...sessionIds, ...actionIds];
-    });
+  async cleanup(options: CleanupSessionOptions) {
+    return await this.models.copilotSession.cleanup(options);
   }
 
   async createMessage(message: SubmittedMessage): Promise<string> {

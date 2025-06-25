@@ -52,22 +52,23 @@ type ChatSession = {
   parentSessionId?: string | null;
 };
 
-type ChatSessionState = Pick<ChatSession, 'sessionId' | 'userId'> & {
+type ChatSessionBaseState = Pick<ChatSession, 'userId' | 'sessionId'>;
+
+type UpdateChatSessionMessage = ChatSessionBaseState & {
   prompt: { model: string };
   messages: ChatMessage[];
 };
 
-export type UpdateChatSessionData = Partial<
-  Pick<ChatSession, 'docId' | 'pinned' | 'promptName'>
->;
-export type UpdateChatSession = Pick<ChatSession, 'userId' | 'sessionId'> &
-  UpdateChatSessionData;
+export type UpdateChatSessionOptions = ChatSessionBaseState &
+  Pick<Partial<ChatSession>, 'docId' | 'pinned' | 'promptName'>;
 
-export type ListSessionOptions = {
+export type UpdateChatSession = ChatSessionBaseState & UpdateChatSessionOptions;
+
+export type ListSessionOptions = Pick<
+  Partial<ChatSession>,
+  'sessionId' | 'workspaceId' | 'docId' | 'pinned'
+> & {
   userId: string;
-  sessionId?: string;
-  workspaceId?: string;
-  docId?: string;
   action?: boolean;
   fork?: boolean;
   limit?: number;
@@ -79,6 +80,11 @@ export type ListSessionOptions = {
   withPrompt?: boolean;
   withMessages?: boolean;
 };
+
+export type CleanupSessionOptions = ChatSessionBaseState &
+  Pick<ChatSession, 'workspaceId' | 'docId'> & {
+    sessionIds: string[];
+  };
 
 @Injectable()
 export class CopilotSessionModel extends BaseModel {
@@ -116,7 +122,7 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async create(state: ChatSession, reuseChat = true) {
+  async create(state: ChatSession, reuseChat = false) {
     let sessionId = state.sessionId;
 
     // find existing session if session is chat session
@@ -129,7 +135,7 @@ export class CopilotSessionModel extends BaseModel {
       await this.unpin(state.workspaceId, state.userId);
     }
 
-    const row = await this.db.aiSession.create({
+    return await this.db.aiSession.create({
       data: {
         id: sessionId,
         workspaceId: state.workspaceId,
@@ -142,7 +148,6 @@ export class CopilotSessionModel extends BaseModel {
         parentSessionId: state.parentSessionId,
       },
     });
-    return row.id;
   }
 
   @Transactional()
@@ -301,11 +306,8 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async update(
-    userId: string,
-    sessionId: string,
-    data: UpdateChatSessionData
-  ): Promise<string> {
+  async update(options: UpdateChatSessionOptions): Promise<string> {
+    const { userId, sessionId, docId, promptName, pinned } = options;
     const session = await this.getExists(
       sessionId,
       {
@@ -327,31 +329,69 @@ export class CopilotSessionModel extends BaseModel {
       throw new CopilotSessionInvalidInput(
         `Cannot update action: ${session.id}`
       );
-    } else if (data.docId && session.parentSessionId) {
+    } else if (docId && session.parentSessionId) {
       throw new CopilotSessionInvalidInput(
         `Cannot update docId for forked session: ${session.id}`
       );
     }
 
-    if (data.promptName) {
+    if (promptName) {
       const prompt = await this.db.aiPrompt.findFirst({
-        where: { name: data.promptName },
+        where: { name: promptName },
       });
       // always not allow to update to action prompt
       if (!prompt || prompt.action) {
         throw new CopilotSessionInvalidInput(
-          `Prompt ${data.promptName} not found or not available for session ${sessionId}`
+          `Prompt ${promptName} not found or not available for session ${sessionId}`
         );
       }
     }
-    if (data.pinned && data.pinned !== session.pinned) {
+    if (pinned && pinned !== session.pinned) {
       // if pin the session, unpin exists session in the workspace
       await this.unpin(session.workspaceId, userId);
     }
 
-    await this.db.aiSession.update({ where: { id: sessionId }, data });
+    await this.db.aiSession.update({
+      where: { id: sessionId },
+      data: { docId, promptName, pinned },
+    });
 
     return sessionId;
+  }
+
+  @Transactional()
+  async cleanup(options: CleanupSessionOptions): Promise<string[]> {
+    const sessions = await this.db.aiSession.findMany({
+      where: {
+        id: { in: options.sessionIds },
+        userId: options.userId,
+        workspaceId: options.workspaceId,
+        docId: options.docId,
+        deletedAt: null,
+      },
+      select: { id: true, prompt: true },
+    });
+    const sessionIds = sessions.map(({ id }) => id);
+    // cleanup all messages
+    await this.db.aiSessionMessage.deleteMany({
+      where: { sessionId: { in: sessionIds } },
+    });
+
+    // only mark action session as deleted
+    // chat session always can be reuse
+    const actionIds = sessions
+      .filter(({ prompt }) => !!prompt.action)
+      .map(({ id }) => id);
+
+    // 标记 action session 为已删除
+    if (actionIds.length > 0) {
+      await this.db.aiSession.updateMany({
+        where: { id: { in: actionIds } },
+        data: { pinned: false, deletedAt: new Date() },
+      });
+    }
+
+    return sessionIds;
   }
 
   @Transactional()
@@ -374,7 +414,7 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   @Transactional()
-  async updateMessages(state: ChatSessionState) {
+  async updateMessages(state: UpdateChatSessionMessage) {
     const { sessionId, userId, messages } = state;
     const haveSession = await this.has(sessionId, userId);
     if (!haveSession) {
@@ -428,5 +468,16 @@ export class CopilotSessionModel extends BaseModel {
     if (ids.length) {
       await this.db.aiSessionMessage.deleteMany({ where: { id: { in: ids } } });
     }
+  }
+
+  @Transactional()
+  async countUserMessages(userId: string): Promise<number> {
+    const sessions = await this.db.aiSession.findMany({
+      where: { userId },
+      select: { messageCost: true, prompt: { select: { action: true } } },
+    });
+    return sessions
+      .map(({ messageCost, prompt: { action } }) => (action ? 1 : messageCost))
+      .reduce((prev, cost) => prev + cost, 0);
   }
 }
