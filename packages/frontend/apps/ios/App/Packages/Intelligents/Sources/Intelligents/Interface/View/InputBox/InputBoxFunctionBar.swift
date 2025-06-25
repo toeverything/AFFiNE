@@ -2,17 +2,6 @@ import SnapKit
 import Then
 import UIKit
 
-protocol InputBoxFunctionBarDelegate: AnyObject {
-  func functionBarDidTapTakePhoto(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapPhotoLibrary(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapAttachFiles(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapEmbedDocs(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapTool(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapNetwork(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapDeepThinking(_ functionBar: InputBoxFunctionBar)
-  func functionBarDidTapSend(_ functionBar: InputBoxFunctionBar)
-}
-
 private let unselectedColor: UIColor = .affineIconPrimary
 private let selectedColor: UIColor = .affineIconActivated
 

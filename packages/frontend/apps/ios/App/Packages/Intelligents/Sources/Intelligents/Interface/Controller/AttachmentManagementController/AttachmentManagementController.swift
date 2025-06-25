@@ -9,11 +9,6 @@ import SnapKit
 import Then
 import UIKit
 
-protocol AttachmentManagementControllerDelegate: AnyObject {
-  func deleteFileAttachment(controller: AttachmentManagementController, _ attachment: FileAttachment)
-  func deleteDocumentAttachment(controller: AttachmentManagementController, _ attachment: DocumentAttachment)
-}
-
 class AttachmentManagementController: UINavigationController {
   private let _viewController: _AttachmentManagementController
   init(delegate: AttachmentManagementControllerDelegate) {

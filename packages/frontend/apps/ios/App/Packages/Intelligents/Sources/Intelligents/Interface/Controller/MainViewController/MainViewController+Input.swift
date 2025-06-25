@@ -51,6 +51,8 @@ extension MainViewController: InputBoxDelegate {
       make.height.equalTo(300)
     }
     documentPickerHideDetector.isHidden = false
+    documentPickerView.setSelectedDocuments(inputBox.viewModel.documentAttachments)
+
     performWithAnimation(duration: 0.75) {
       self.view.layoutIfNeeded()
     } completion: { _ in
@@ -158,7 +160,26 @@ extension MainViewController: UIDocumentPickerDelegate {
 // MARK: - DocumentPickerViewDelegate
 
 extension MainViewController: DocumentPickerViewDelegate {
-  func documentPickerView(_ view: DocumentPickerView, didSelectDocument document: DocumentItem) {
-    print(#function, view, document)
+  func documentPickerView(_: DocumentPickerView, didSelectDocument document: DocumentItem) {
+    // Get current workspace ID
+    guard let workspaceId = IntelligentContext.shared.webViewMetadata[.currentWorkspaceId] as? String,
+          !workspaceId.isEmpty
+    else {
+      return
+    }
+
+    // Create DocumentAttachment from DocumentItem
+    let documentAttachment = DocumentAttachment(
+      title: document.title,
+      workspaceID: workspaceId,
+      documentID: document.id,
+      updatedAt: document.updatedAt
+    )
+
+    // Add to InputBox
+    inputBox.addDocumentAttachment(documentAttachment)
+
+    // Hide document picker
+    hideDocumentPicker()
   }
 }

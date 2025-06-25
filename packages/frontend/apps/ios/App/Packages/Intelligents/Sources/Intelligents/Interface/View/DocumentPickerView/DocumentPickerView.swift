@@ -10,30 +10,23 @@ import SnapKit
 import Then
 import UIKit
 
-protocol DocumentPickerViewDelegate: AnyObject {
-  func documentPickerView(_ view: DocumentPickerView, didSelectDocument document: DocumentItem)
-}
-
-struct DocumentItem {
-  let id: String
-  let title: String
-  let updatedAt: Date?
-
-  init(id: String, title: String, updatedAt: Date? = nil) {
-    self.id = id
-    self.title = title
-    self.updatedAt = updatedAt
-  }
-}
-
 class DocumentPickerView: UIView {
   // MARK: - Properties
 
   weak var delegate: DocumentPickerViewDelegate?
 
   private var documents: [DocumentItem] = []
+  private var selectedDocumentIds: Set<String> = []
   private let updateQueue = DispatchQueue(label: "com.affine.documentpicker.update", qos: .userInitiated)
   private var lastSearchKeyword: String = ""
+
+  // MARK: - DiffableDataSource
+
+  private enum Section {
+    case main
+  }
+
+  private var dataSource: UITableViewDiffableDataSource<Section, DocumentItem>!
 
   // MARK: - UI Components
 
@@ -78,7 +71,6 @@ class DocumentPickerView: UIView {
     $0.backgroundColor = .white
     $0.separatorStyle = .none
     $0.delegate = self
-    $0.dataSource = self
     $0.register(DocumentTableViewCell.self, forCellReuseIdentifier: "DocumentCell")
   }
 
@@ -99,6 +91,7 @@ class DocumentPickerView: UIView {
     searchContainerView.addSubview(activityIndicator)
 
     setupConstraints()
+    setupDataSource()
   }
 
   @available(*, unavailable)
@@ -143,6 +136,15 @@ class DocumentPickerView: UIView {
     }
   }
 
+  private func setupDataSource() {
+    dataSource = UITableViewDiffableDataSource<Section, DocumentItem>(tableView: tableView) { [weak self] tableView, indexPath, document in
+      let cell = tableView.dequeueReusableCell(withIdentifier: "DocumentCell", for: indexPath) as! DocumentTableViewCell
+      let isSelected = self?.selectedDocumentIds.contains(document.id) ?? false
+      cell.configure(with: document, isSelected: isSelected)
+      return cell
+    }
+  }
+
   // MARK: - Public Methods
 
   func updateDocuments(_ documents: [DocumentItem]) {
@@ -151,7 +153,10 @@ class DocumentPickerView: UIView {
 
       DispatchQueue.main.async {
         self.documents = documents
-        self.tableView.reloadData()
+        var snapshot = NSDiffableDataSourceSnapshot<Section, DocumentItem>()
+        snapshot.appendSections([.main])
+        snapshot.appendItems(documents)
+        self.dataSource.apply(snapshot, animatingDifferences: true)
       }
     }
   }
@@ -177,6 +182,13 @@ class DocumentPickerView: UIView {
           updatedAt: $0.updatedAt?.decoded
         ) })
       }
+    }
+  }
+
+  func setSelectedDocuments(_ documentAttachments: [DocumentAttachment]) {
+    selectedDocumentIds = Set(documentAttachments.map(\.documentID))
+    DispatchQueue.main.async { [weak self] in
+      self?.tableView.reloadData()
     }
   }
 
@@ -237,20 +249,6 @@ class DocumentPickerView: UIView {
   }
 }
 
-// MARK: - UITableViewDataSource
-
-extension DocumentPickerView: UITableViewDataSource {
-  func tableView(_: UITableView, numberOfRowsInSection _: Int) -> Int {
-    documents.count
-  }
-
-  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-    let cell = tableView.dequeueReusableCell(withIdentifier: "DocumentCell", for: indexPath) as! DocumentTableViewCell
-    cell.configure(with: documents[indexPath.row])
-    return cell
-  }
-}
-
 // MARK: - UITableViewDelegate
 
 extension DocumentPickerView: UITableViewDelegate {
@@ -260,7 +258,7 @@ extension DocumentPickerView: UITableViewDelegate {
 
   func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     tableView.deselectRow(at: indexPath, animated: true)
-    let document = documents[indexPath.row]
+    guard let document = dataSource.itemIdentifier(for: indexPath) else { return }
     delegate?.documentPickerView(self, didSelectDocument: document)
   }
 }

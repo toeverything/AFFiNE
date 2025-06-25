@@ -2,11 +2,6 @@ import SnapKit
 import Then
 import UIKit
 
-protocol FileAttachmentHeaderViewDelegate: AnyObject {
-  func headerViewDidPickMore(_ headerView: FileAttachmentHeaderView)
-  func headerViewDidTapManagement(_ headerView: FileAttachmentHeaderView)
-}
-
 final class FileAttachmentHeaderView: UIView {
   // MARK: - Properties
 
@@ -131,7 +126,17 @@ final class FileAttachmentHeaderView: UIView {
   // MARK: - Public Methods
 
   func updateContent(attachmentCount: Int, docsCount: Int) {
-    primaryLabel.text = "\(attachmentCount) attachment, \(docsCount) AFFiNE docs"
+    var components: [String] = []
+
+    if attachmentCount > 0 {
+      components.append("\(attachmentCount) attachment\(attachmentCount > 1 ? "s" : "")")
+    }
+
+    if docsCount > 0 {
+      components.append("\(docsCount) AFFiNE doc\(docsCount > 1 ? "s" : "")")
+    }
+
+    primaryLabel.text = components.joined(separator: ", ")
   }
 
   func setIconImage(_ image: UIImage?) {

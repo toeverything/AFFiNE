@@ -76,6 +76,7 @@ class MainViewController: UIViewController {
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     navigationController!.setNavigationBarHidden(true, animated: animated)
+    documentPickerView.updateDocumentsFromRecentDocs()
     DispatchQueue.main.async {
       self.inputBox.textView.becomeFirstResponder()
     }

@@ -12,4 +12,13 @@ public struct DocumentAttachment: Identifiable, Equatable, Hashable, Codable {
   public var title: String = ""
   public var workspaceID: String = ""
   public var documentID: String = ""
+  public var updatedAt: Date?
+
+  public init(id: UUID = .init(), title: String = "", workspaceID: String = "", documentID: String = "", updatedAt: Date? = nil) {
+    self.id = id
+    self.title = title
+    self.workspaceID = workspaceID
+    self.documentID = documentID
+    self.updatedAt = updatedAt
+  }
 }
