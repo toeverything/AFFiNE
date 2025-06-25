@@ -437,11 +437,12 @@ export class CopilotResolver {
     );
     if (appendOptions.docId) {
       type Session = Omit<ChatSessionState, 'messages'> & { docId: string };
-      const filteredSessions = await this.ac
+      const filtered = sessions.filter((s): s is Session => !!s.docId);
+      const accessible = await this.ac
         .user(user.id)
         .workspace(copilot.workspaceId)
-        .docs(sessions.filter(s => s.docId) as Session[], 'Doc.Update');
-      return filteredSessions.map(this.transformToSessionType);
+        .docs(filtered, 'Doc.Update');
+      return accessible.map(this.transformToSessionType);
     } else {
       return sessions.map(this.transformToSessionType);
     }
