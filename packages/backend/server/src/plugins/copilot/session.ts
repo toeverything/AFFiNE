@@ -476,6 +476,7 @@ export class ChatSessionService {
     return await this.models.copilotSession.update(finalData);
   }
 
+  @Transactional()
   async fork(options: ChatSessionForkOptions): Promise<string> {
     const state = await this.getSession(options.sessionId);
     if (!state) {
