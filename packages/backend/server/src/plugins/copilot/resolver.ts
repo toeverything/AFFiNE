@@ -372,6 +372,30 @@ export class CopilotResolver {
     return await this.chatSession.getQuota(user.id);
   }
 
+  private async assertPermission(
+    user: CurrentUser,
+    options: { workspaceId?: string | null; docId?: string | null }
+  ) {
+    const { workspaceId, docId } = options;
+    if (!workspaceId) {
+      throw new NotFoundException('Workspace not found');
+    }
+    if (docId) {
+      await this.ac
+        .user(user.id)
+        .doc({ workspaceId, docId })
+        .allowLocal()
+        .assert('Doc.Update');
+    } else {
+      await this.ac
+        .user(user.id)
+        .workspace(workspaceId)
+        .allowLocal()
+        .assert('Workspace.Copilot');
+    }
+    return { userId: user.id, workspaceId, docId: docId || undefined };
+  }
+
   @ResolveField(() => CopilotSessionType, {
     description: 'Get the session by id',
     complexity: 2,
@@ -381,14 +405,7 @@ export class CopilotResolver {
     @CurrentUser() user: CurrentUser,
     @Args('sessionId') sessionId: string
   ): Promise<CopilotSessionType> {
-    if (!copilot.workspaceId) {
-      throw new NotFoundException('Workspace not found');
-    }
-    await this.ac
-      .user(user.id)
-      .workspace(copilot.workspaceId)
-      .allowLocal()
-      .assert('Workspace.Copilot');
+    await this.assertPermission(user, copilot);
     const session = await this.chatSession.getSession(sessionId);
     if (!session) {
       throw new NotFoundException('Session not found');
@@ -403,24 +420,16 @@ export class CopilotResolver {
   async sessions(
     @Parent() copilot: CopilotType,
     @CurrentUser() user: CurrentUser,
-    @Args('docId', { nullable: true }) docId?: string,
+    @Args('docId', { nullable: true }) maybeDocId?: string,
     @Args('options', { nullable: true }) options?: QueryChatSessionsInput
   ): Promise<CopilotSessionType[]> {
-    if (!copilot.workspaceId) {
-      throw new NotFoundException('Workspace not found');
-    }
-    await this.ac
-      .user(user.id)
-      .workspace(copilot.workspaceId)
-      .allowLocal()
-      .assert('Workspace.Copilot');
+    const appendOptions = await this.assertPermission(
+      user,
+      Object.assign({}, copilot, { docId: maybeDocId })
+    );
 
     const sessions = await this.chatSession.listSessions(
-      Object.assign({}, options, {
-        userId: user.id,
-        workspaceId: copilot.workspaceId,
-        docId,
-      })
+      Object.assign({}, options, appendOptions)
     );
 
     return sessions.map(this.transformToSessionType);
@@ -437,18 +446,8 @@ export class CopilotResolver {
     const workspaceId = copilot.workspaceId;
     if (!workspaceId) {
       return [];
-    } else if (docId) {
-      await this.ac
-        .user(user.id)
-        .doc({ workspaceId, docId })
-        .allowLocal()
-        .assert('Doc.Read');
     } else {
-      await this.ac
-        .user(user.id)
-        .workspace(workspaceId)
-        .allowLocal()
-        .assert('Workspace.Copilot');
+      await this.assertPermission(user, { workspaceId, docId });
     }
 
     const histories = await this.chatSession.listHistories(
@@ -474,19 +473,7 @@ export class CopilotResolver {
     options: CreateChatSessionInput
   ): Promise<string> {
     // permission check based on session type
-    if (options.docId) {
-      await this.ac
-        .user(user.id)
-        .doc({ workspaceId: options.workspaceId, docId: options.docId })
-        .allowLocal()
-        .assert('Doc.Update');
-    } else {
-      await this.ac
-        .user(user.id)
-        .workspace(options.workspaceId)
-        .allowLocal()
-        .assert('Workspace.Copilot');
-    }
+    await this.assertPermission(user, options);
 
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${options.workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
@@ -517,20 +504,15 @@ export class CopilotResolver {
     if (!session) {
       throw new CopilotSessionNotFound();
     }
-    const { workspaceId, docId } = session.config;
-    if (docId) {
-      await this.ac
-        .user(user.id)
-        .doc(workspaceId, docId)
-        .allowLocal()
-        .assert('Doc.Update');
-    } else {
-      await this.ac
-        .user(user.id)
-        .workspace(workspaceId)
-        .allowLocal()
-        .assert('Workspace.Copilot');
+
+    const config = await this.assertPermission(user, session.config);
+    const { workspaceId, docId: currentDocId } = config;
+    const { docId: newDocId } = options;
+    // check permission if the docId is changed
+    if (newDocId !== undefined && newDocId !== currentDocId) {
+      await this.assertPermission(user, { workspaceId, docId: newDocId });
     }
+
     const lockFlag = `${COPILOT_LOCKER}:session:${user.id}:${workspaceId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
