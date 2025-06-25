@@ -9,10 +9,6 @@ import SnapKit
 import Then
 import UIKit
 
-protocol ImageAttachmentBarDelegate: AnyObject {
-  func inputBoxImageBar(_ imageBar: ImageAttachmentBar, didRemoveImageWithId id: UUID)
-}
-
 class ImageAttachmentBar: UICollectionView {
   weak var imageBarDelegate: ImageAttachmentBarDelegate?
 

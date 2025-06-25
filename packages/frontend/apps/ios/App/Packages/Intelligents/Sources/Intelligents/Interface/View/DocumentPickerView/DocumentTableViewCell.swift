@@ -25,6 +25,13 @@ class DocumentTableViewCell: UITableViewCell {
     $0.textAlignment = .left
   }
 
+  private lazy var checkmarkImageView = UIImageView().then {
+    $0.image = UIImage(systemName: "checkmark.circle.fill")
+    $0.tintColor = .systemBlue
+    $0.contentMode = .scaleAspectFit
+    $0.isHidden = true
+  }
+
   override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
     super.init(style: style, reuseIdentifier: reuseIdentifier)
     setupUI()
@@ -39,8 +46,11 @@ class DocumentTableViewCell: UITableViewCell {
     backgroundColor = .white
     selectionStyle = .none
 
+    contentView.clipsToBounds = true
+
     contentView.addSubview(iconImageView)
     contentView.addSubview(titleLabel)
+    contentView.addSubview(checkmarkImageView)
 
     iconImageView.snp.makeConstraints { make in
       make.leading.equalToSuperview().offset(Self.cellInset)
@@ -50,13 +60,20 @@ class DocumentTableViewCell: UITableViewCell {
 
     titleLabel.snp.makeConstraints { make in
       make.leading.equalTo(iconImageView.snp.trailing).offset(Self.spacing)
+      make.trailing.equalTo(checkmarkImageView.snp.leading).offset(-Self.spacing)
+      make.centerY.equalToSuperview()
+    }
+
+    checkmarkImageView.snp.makeConstraints { make in
       make.trailing.equalToSuperview().offset(-Self.cellInset)
       make.centerY.equalToSuperview()
+      make.width.height.equalTo(Self.iconSize)
     }
   }
 
-  func configure(with document: DocumentItem) {
-    iconImageView.image = document.icon ?? UIImage(systemName: "doc.text")
+  func configure(with document: DocumentItem, isSelected: Bool = false) {
+    iconImageView.image = UIImage(systemName: "doc.text")
     titleLabel.text = document.title
+    checkmarkImageView.isHidden = !isSelected
   }
 }

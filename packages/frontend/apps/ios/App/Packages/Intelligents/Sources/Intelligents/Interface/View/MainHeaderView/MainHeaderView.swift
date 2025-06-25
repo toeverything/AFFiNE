@@ -2,12 +2,6 @@ import SnapKit
 import Then
 import UIKit
 
-protocol MainHeaderViewDelegate: AnyObject {
-  func mainHeaderViewDidTapClose()
-  func mainHeaderViewDidTapDropdown()
-  func mainHeaderViewDidTapMenu()
-}
-
 class MainHeaderView: UIView {
   weak var delegate: MainHeaderViewDelegate?
 
