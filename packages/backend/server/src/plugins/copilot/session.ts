@@ -232,36 +232,21 @@ export class ChatSessionService {
   ) {}
 
   @Transactional()
-  private async setSession(state: ChatSessionState): Promise<string> {
-    const session = this.models.copilotSession;
-    let sessionId = state.sessionId;
+  private async createSession(state: ChatSessionState): Promise<string> {
+    return await this.models.copilotSession.create({
+      ...state,
+      promptName: state.prompt.name,
+      promptAction: state.prompt.action ?? null,
+    });
+  }
 
-    // find existing session if session is chat session
-    if (!state.prompt.action) {
-      const id = await session.getChatSessionId(state);
-      if (id) sessionId = id;
-    }
+  @Transactional()
+  private async updateMessages(state: ChatSessionState): Promise<string> {
+    const model = state.prompt.model;
+    const tokenCost = this.calculateTokenSize(state.messages, model);
+    await this.models.copilotSession.updateMessages(state, tokenCost);
 
-    const haveSession = await session.has(sessionId, state.userId);
-    if (haveSession) {
-      // message will only exists when setSession call by session.save
-      if (state.messages.length) {
-        await session.setMessages(
-          sessionId,
-          state.messages,
-          this.calculateTokenSize(state.messages, state.prompt.model)
-        );
-      }
-    } else {
-      await session.create({
-        ...state,
-        sessionId,
-        promptName: state.prompt.name,
-        promptAction: state.prompt.action ?? null,
-      });
-    }
-
-    return sessionId;
+    return state.sessionId;
   }
 
   async getSession(sessionId: string): Promise<ChatSessionState | undefined> {
@@ -462,7 +447,7 @@ export class ChatSessionService {
       prompt.action
     );
 
-    return await this.setSession({
+    return await this.createSession({
       ...options,
       sessionId,
       prompt,
@@ -546,9 +531,9 @@ export class ChatSessionService {
       parentSessionId: options.sessionId,
     };
     // create session
-    await this.setSession(forkedState);
+    await this.createSession(forkedState);
     // save message
-    return await this.setSession({ ...forkedState, messages });
+    return await this.updateMessages({ ...forkedState, messages });
   }
 
   async cleanup(
@@ -617,7 +602,7 @@ export class ChatSessionService {
     const state = await this.getSession(sessionId);
     if (state) {
       return new ChatSession(this.messageCache, state, async state => {
-        await this.setSession(state);
+        await this.updateMessages(state);
       });
     }
     return null;
