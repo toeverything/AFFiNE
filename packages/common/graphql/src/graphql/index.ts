@@ -755,6 +755,35 @@ export const forkCopilotSessionMutation = {
 }`,
 };
 
+export const getCopilotLatestDocSessionQuery = {
+  id: 'getCopilotLatestDocSessionQuery' as const,
+  op: 'getCopilotLatestDocSession',
+  query: `query getCopilotLatestDocSession($workspaceId: String!, $docId: String!) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(
+        docId: $docId
+        options: {limit: 1, sessionOrder: desc, action: false, fork: false}
+      ) {
+        sessionId
+        pinned
+        action
+        tokens
+        createdAt
+        messages {
+          id
+          role
+          content
+          attachments
+          params
+          createdAt
+        }
+      }
+    }
+  }
+}`,
+};
+
 export const getCopilotSessionQuery = {
   id: 'getCopilotSessionQuery' as const,
   op: 'getCopilotSession',

@@ -327,6 +327,7 @@ export class CopilotSessionModel extends BaseModel {
         promptName: true,
         tokenCost: true,
         createdAt: true,
+        updatedAt: true,
         messages: options.withMessages
           ? {
               select: {
@@ -348,8 +349,10 @@ export class CopilotSessionModel extends BaseModel {
       take: options?.limit,
       skip: options?.skip,
       orderBy: {
-        // session order is desc by default
-        createdAt: options?.sessionOrder === 'asc' ? 'asc' : 'desc',
+        // for doc session, order by updatedAt to ensure the latest updated session is on top;
+        // for workspace and pinned session, order by createdAt
+        [docId ? 'updatedAt' : 'createdAt']:
+          options?.sessionOrder === 'asc' ? 'asc' : 'desc',
       },
     });
   }

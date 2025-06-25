@@ -340,22 +340,6 @@ export interface CopilotMessageNotFoundDataType {
   messageId: Scalars['String']['output'];
 }
 
-export enum CopilotModels {
-  DallE3 = 'DallE3',
-  Gpt4Omni = 'Gpt4Omni',
-  Gpt4Omni0806 = 'Gpt4Omni0806',
-  Gpt4OmniMini = 'Gpt4OmniMini',
-  Gpt4OmniMini0718 = 'Gpt4OmniMini0718',
-  Gpt41 = 'Gpt41',
-  Gpt41Mini = 'Gpt41Mini',
-  Gpt41Nano = 'Gpt41Nano',
-  Gpt410414 = 'Gpt410414',
-  GptImage = 'GptImage',
-  TextEmbedding3Large = 'TextEmbedding3Large',
-  TextEmbedding3Small = 'TextEmbedding3Small',
-  TextEmbeddingAda002 = 'TextEmbeddingAda002',
-}
-
 export interface CopilotPromptConfigInput {
   frequencyPenalty?: InputMaybe<Scalars['Float']['input']>;
   presencePenalty?: InputMaybe<Scalars['Float']['input']>;
@@ -515,7 +499,7 @@ export interface CreateCopilotPromptInput {
   action?: InputMaybe<Scalars['String']['input']>;
   config?: InputMaybe<CopilotPromptConfigInput>;
   messages: Array<CopilotPromptMessageInput>;
-  model: CopilotModels;
+  model: Scalars['String']['input'];
   name: Scalars['String']['input'];
 }
 
@@ -3575,6 +3559,38 @@ export type ForkCopilotSessionMutation = {
   forkCopilotSession: string;
 };
 
+export type GetCopilotLatestDocSessionQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+}>;
+
+export type GetCopilotLatestDocSessionQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      histories: Array<{
+        __typename?: 'CopilotHistories';
+        sessionId: string;
+        pinned: boolean;
+        action: string | null;
+        tokens: number;
+        createdAt: string;
+        messages: Array<{
+          __typename?: 'ChatMessage';
+          id: string | null;
+          role: string;
+          content: string;
+          attachments: Array<string> | null;
+          params: Record<string, string> | null;
+          createdAt: string;
+        }>;
+      }>;
+    };
+  } | null;
+};
+
 export type GetCopilotSessionQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   sessionId: Scalars['String']['input'];
@@ -5208,6 +5224,11 @@ export type Queries =
       name: 'copilotQuotaQuery';
       variables: CopilotQuotaQueryVariables;
       response: CopilotQuotaQuery;
+    }
+  | {
+      name: 'getCopilotLatestDocSessionQuery';
+      variables: GetCopilotLatestDocSessionQueryVariables;
+      response: GetCopilotLatestDocSessionQuery;
     }
   | {
       name: 'getCopilotSessionQuery';
