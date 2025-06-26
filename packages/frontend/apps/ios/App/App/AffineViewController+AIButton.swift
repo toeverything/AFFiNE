@@ -16,7 +16,7 @@ extension AFFiNEViewController: IntelligentsButtonDelegate {
     IntelligentContext.shared.preparePresent() { result in
       button.stopProgress()
       switch result {
-      case .success(let success):
+      case .success:
         let controller = IntelligentsController()
         self.present(controller, animated: true)
       case .failure(let failure):
