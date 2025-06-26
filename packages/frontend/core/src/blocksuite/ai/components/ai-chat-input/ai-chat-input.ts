@@ -50,7 +50,8 @@ export class AIChatInput extends SignalWatcher(
         0px 0px 0px 0px rgba(28, 158, 228, 0),
         0px 0px 0px 2px transparent;
     }
-    [data-theme='light'] .chat-panel-input {
+    [data-theme='light'] .chat-panel-input,
+    .chat-panel-input {
       box-shadow:
         var(--border-shadow),
         0px 0px 0px 3px transparent,
@@ -252,6 +253,10 @@ export class AIChatInput extends SignalWatcher(
       font-size: 20px;
       background: var(--affine-v2-icon-activated);
       color: var(--affine-v2-layer-pureWhite);
+      border: none;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
     }
     .chat-panel-send[aria-disabled='true'] {
       cursor: not-allowed;
@@ -268,6 +273,9 @@ export class AIChatInput extends SignalWatcher(
       border-radius: 50%;
       font-size: 24px;
       color: var(--affine-v2-icon-activated);
+      border: none;
+      padding: 0;
+      background: transparent;
     }
     .chat-input-footer-spacer {
       flex: 1;
