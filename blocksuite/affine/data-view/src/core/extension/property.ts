@@ -98,9 +98,8 @@ export class PropertyManager {
   }
 
   getConvertFunction(from: string, to: string): ConvertFunction | null {
-    return (
-      this.dataSource.provider.getOptional(getPropertyConvertKey(from, to)) ??
-      null
+    return this.dataSource.provider.getOptional(
+      getPropertyConvertKey(from, to)
     );
   }
 }
