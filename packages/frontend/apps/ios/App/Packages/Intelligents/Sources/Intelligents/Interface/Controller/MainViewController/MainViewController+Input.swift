@@ -79,18 +79,15 @@ extension MainViewController: InputBoxDelegate {
 
     Task { @MainActor in
       do {
-        // Ensure we have a current session or create one
         let chatManager = ChatManager.shared
 
         if let currentSession = chatManager.currentSession {
-          // Send message to existing session
           try await chatManager.sendMessage(
             content: inputData.text,
             attachments: [], // TODO: Handle attachments
             sessionId: currentSession.id
           )
         } else {
-          // Create new session first
           guard let workspaceId = IntelligentContext.shared.webViewMetadata[.currentWorkspaceId] as? String,
                 !workspaceId.isEmpty
           else {
@@ -100,7 +97,6 @@ extension MainViewController: InputBoxDelegate {
 
           let session = try await chatManager.createSession(workspaceId: workspaceId)
 
-          // Send message to new session
           try await chatManager.sendMessage(
             content: inputData.text,
             attachments: [], // TODO: Handle attachments
@@ -108,7 +104,6 @@ extension MainViewController: InputBoxDelegate {
           )
         }
 
-        // Clear input after successful send
         inputBox.text = ""
         inputBox.viewModel.clearAllAttachments()
 
