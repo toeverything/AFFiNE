@@ -228,23 +228,20 @@ export const builtinInlineLinkToolbarConfig = {
             const props = { url };
             let blockId: string | undefined;
 
-            // first try to embed as iframe block
             const embedIframeService = ctx.std.get(EmbedIframeService);
-            if (embedIframeService.canEmbed(url)) {
+            const embedOptions = ctx.std
+              .get(EmbedOptionProvider)
+              .getEmbedBlockOptions(url);
+
+            if (embedOptions?.viewType === 'embed') {
+              const flavour = embedOptions.flavour;
+              blockId = ctx.store.addBlock(flavour, props, parent, index + 1);
+            } else if (embedIframeService.canEmbed(url)) {
               blockId = embedIframeService.addEmbedIframeBlock(
                 props,
                 parent.id,
                 index + 1
               );
-            } else {
-              // if not, try to add as other embed link block
-              const options = ctx.std
-                .get(EmbedOptionProvider)
-                .getEmbedBlockOptions(url);
-              if (options?.viewType !== 'embed') return;
-
-              const flavour = options.flavour;
-              blockId = ctx.store.addBlock(flavour, props, parent, index + 1);
             }
 
             if (!blockId) return;
