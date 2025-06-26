@@ -766,10 +766,13 @@ export const getCopilotLatestDocSessionQuery = {
         options: {limit: 1, sessionOrder: desc, action: false, fork: false}
       ) {
         sessionId
+        workspaceId
+        docId
         pinned
         action
         tokens
         createdAt
+        updatedAt
         messages {
           id
           role
@@ -798,6 +801,27 @@ export const getCopilotSessionQuery = {
         promptName
         model
         optionalModels
+      }
+    }
+  }
+}`,
+};
+
+export const getCopilotRecentSessionsQuery = {
+  id: 'getCopilotRecentSessionsQuery' as const,
+  op: 'getCopilotRecentSessions',
+  query: `query getCopilotRecentSessions($workspaceId: String!, $limit: Int = 10) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(options: {limit: $limit, sessionOrder: desc}) {
+        sessionId
+        workspaceId
+        docId
+        pinned
+        action
+        tokens
+        createdAt
+        updatedAt
       }
     }
   }

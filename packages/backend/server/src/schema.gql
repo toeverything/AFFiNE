@@ -237,12 +237,15 @@ type CopilotHistories {
   """An mark identifying which view to use to display the session"""
   action: String
   createdAt: DateTime!
+  docId: String
   messages: [ChatMessage!]!
   pinned: Boolean!
   sessionId: String!
 
   """The number of tokens used in the session"""
   tokens: Int!
+  updatedAt: DateTime!
+  workspaceId: String!
 }
 
 type CopilotInvalidContextDataType {

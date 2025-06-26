@@ -1,16 +1,13 @@
-query getCopilotLatestDocSession(
+query getCopilotRecentSessions(
   $workspaceId: String!
-  $docId: String!
+  $limit: Int = 10
 ) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
       histories(
-        docId: $docId
         options: {
-          limit: 1
+          limit: $limit
           sessionOrder: desc
-          action: false
-          fork: false
         }
       ) {
         sessionId
@@ -21,14 +18,6 @@ query getCopilotLatestDocSession(
         tokens
         createdAt
         updatedAt
-        messages {
-          id
-          role
-          content
-          attachments
-          params
-          createdAt
-        }
       }
     }
   }

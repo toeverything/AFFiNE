@@ -47,11 +47,14 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export const ChatHistorySchema = z
   .object({
     sessionId: z.string(),
+    workspaceId: z.string(),
+    docId: z.string().nullable(),
     pinned: z.boolean(),
     action: z.string().nullable(),
     tokens: z.number(),
     messages: z.array(ChatMessageSchema),
     createdAt: z.date(),
+    updatedAt: z.date(),
   })
   .strict();
 

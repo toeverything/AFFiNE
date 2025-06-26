@@ -323,11 +323,14 @@ export interface CopilotHistories {
   /** An mark identifying which view to use to display the session */
   action: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTime']['output'];
+  docId: Maybe<Scalars['String']['output']>;
   messages: Array<ChatMessage>;
   pinned: Scalars['Boolean']['output'];
   sessionId: Scalars['String']['output'];
   /** The number of tokens used in the session */
   tokens: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  workspaceId: Scalars['String']['output'];
 }
 
 export interface CopilotInvalidContextDataType {
@@ -3573,10 +3576,13 @@ export type GetCopilotLatestDocSessionQuery = {
       histories: Array<{
         __typename?: 'CopilotHistories';
         sessionId: string;
+        workspaceId: string;
+        docId: string | null;
         pinned: boolean;
         action: string | null;
         tokens: number;
         createdAt: string;
+        updatedAt: string;
         messages: Array<{
           __typename?: 'ChatMessage';
           id: string | null;
@@ -3612,6 +3618,32 @@ export type GetCopilotSessionQuery = {
         model: string;
         optionalModels: Array<string>;
       };
+    };
+  } | null;
+};
+
+export type GetCopilotRecentSessionsQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+export type GetCopilotRecentSessionsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      histories: Array<{
+        __typename?: 'CopilotHistories';
+        sessionId: string;
+        workspaceId: string;
+        docId: string | null;
+        pinned: boolean;
+        action: string | null;
+        tokens: number;
+        createdAt: string;
+        updatedAt: string;
+      }>;
     };
   } | null;
 };
@@ -5234,6 +5266,11 @@ export type Queries =
       name: 'getCopilotSessionQuery';
       variables: GetCopilotSessionQueryVariables;
       response: GetCopilotSessionQuery;
+    }
+  | {
+      name: 'getCopilotRecentSessionsQuery';
+      variables: GetCopilotRecentSessionsQueryVariables;
+      response: GetCopilotRecentSessionsQuery;
     }
   | {
       name: 'getCopilotSessionsQuery';
