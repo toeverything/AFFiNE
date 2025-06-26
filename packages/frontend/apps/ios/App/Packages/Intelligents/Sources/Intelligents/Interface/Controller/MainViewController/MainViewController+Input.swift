@@ -75,7 +75,53 @@ extension MainViewController: InputBoxDelegate {
   }
 
   func inputBoxDidSend(_ inputBox: InputBox) {
-    print(#function, inputBox, inputBox.viewModel)
+    let inputData = inputBox.inputBoxData
+
+    Task { @MainActor in
+      do {
+        // Ensure we have a current session or create one
+        let chatManager = ChatManager.shared
+
+        if let currentSession = chatManager.currentSession {
+          // Send message to existing session
+          try await chatManager.sendMessage(
+            content: inputData.text,
+            attachments: [], // TODO: Handle attachments
+            sessionId: currentSession.id
+          )
+        } else {
+          // Create new session first
+          guard let workspaceId = IntelligentContext.shared.webViewMetadata[.currentWorkspaceId] as? String,
+                !workspaceId.isEmpty
+          else {
+            showAlert(title: "Error", message: "No workspace available")
+            return
+          }
+
+          let session = try await chatManager.createSession(workspaceId: workspaceId)
+
+          // Send message to new session
+          try await chatManager.sendMessage(
+            content: inputData.text,
+            attachments: [], // TODO: Handle attachments
+            sessionId: session.id
+          )
+        }
+
+        // Clear input after successful send
+        inputBox.text = ""
+        inputBox.viewModel.clearAllAttachments()
+
+      } catch {
+        showAlert(title: "Error", message: error.localizedDescription)
+      }
+    }
+  }
+
+  private func showAlert(title: String, message: String) {
+    let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+    alert.addAction(UIAlertAction(title: "OK", style: .default))
+    present(alert, animated: true)
   }
 
   func inputBoxTextDidChange(_ text: String) {

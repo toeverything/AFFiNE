@@ -8,24 +8,40 @@
 import AffineGraphQL
 import Foundation
 
-struct ChatMessage: Codable, Identifiable, Equatable, Hashable {
-  var id: String?
-  var role: MessageRole
-  var content: String
-  var attachments: [String]?
-  var params: [String: String]?
-  var createdAt: DateTime?
+public struct ChatMessage: Codable, Identifiable, Equatable, Hashable {
+  public var id: String?
+  public var role: MessageRole
+  public var content: String
+  public var attachments: [String]?
+  public var params: [String: String]?
+  public var createdAt: DateTime?
 
-  var createdDate: Date? {
+  public var createdDate: Date? {
     createdAt?.decoded
   }
 
-  var messageId: String {
+  public var messageId: String {
     id ?? UUID().uuidString
+  }
+
+  public init(
+    id: String? = nil,
+    role: MessageRole,
+    content: String,
+    attachments: [String]? = nil,
+    params: [String: String]? = nil,
+    createdAt: DateTime? = nil
+  ) {
+    self.id = id
+    self.role = role
+    self.content = content
+    self.attachments = attachments
+    self.params = params
+    self.createdAt = createdAt
   }
 }
 
-extension ChatMessage {
+public extension ChatMessage {
   enum MessageRole: String, Codable, CaseIterable {
     case user
     case assistant
@@ -33,23 +49,47 @@ extension ChatMessage {
   }
 }
 
-struct SessionViewModel: Codable, Identifiable, Equatable, Hashable {
-  var id: String
-  var workspaceId: String
-  var docId: String?
-  var promptName: String
-  var model: String?
-  var pinned: Bool
-  var tokens: Int
-  var createdAt: DateTime?
-  var updatedAt: DateTime?
-  var parentSessionId: String?
+public struct SessionViewModel: Codable, Identifiable, Equatable, Hashable {
+  public var id: String
+  public var workspaceId: String
+  public var docId: String?
+  public var promptName: String
+  public var model: String?
+  public var pinned: Bool
+  public var tokens: Int
+  public var createdAt: DateTime?
+  public var updatedAt: DateTime?
+  public var parentSessionId: String?
 
-  var createdDate: Date? {
+  public var createdDate: Date? {
     createdAt?.decoded
   }
 
-  var updatedDate: Date? {
+  public var updatedDate: Date? {
     updatedAt?.decoded
+  }
+
+  public init(
+    id: String,
+    workspaceId: String,
+    docId: String? = nil,
+    promptName: String,
+    model: String? = nil,
+    pinned: Bool,
+    tokens: Int,
+    createdAt: DateTime? = nil,
+    updatedAt: DateTime? = nil,
+    parentSessionId: String? = nil
+  ) {
+    self.id = id
+    self.workspaceId = workspaceId
+    self.docId = docId
+    self.promptName = promptName
+    self.model = model
+    self.pinned = pinned
+    self.tokens = tokens
+    self.createdAt = createdAt
+    self.updatedAt = updatedAt
+    self.parentSessionId = parentSessionId
   }
 }

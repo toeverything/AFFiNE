@@ -39,4 +39,3 @@ public enum CustomJSON: CustomScalarType, Hashable {
     hasher.combine(_jsonValue)
   }
 }
-

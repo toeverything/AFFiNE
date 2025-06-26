@@ -19,6 +19,10 @@ extension DateTime {
     return fmt
   }()
 
+  init(date: Date) {
+    self.init(Self.formatter.string(from: date))
+  }
+
   var decoded: Date? {
     Self.formatter.date(from: self)
   }

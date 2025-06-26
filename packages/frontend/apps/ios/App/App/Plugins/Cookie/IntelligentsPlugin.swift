@@ -1,8 +1,8 @@
 import Capacitor
 import Foundation
 
-//@objc(IntelligentsPlugin)
-//public class IntelligentsPlugin: CAPPlugin, CAPBridgedPlugin {
+// @objc(IntelligentsPlugin)
+// public class IntelligentsPlugin: CAPPlugin, CAPBridgedPlugin {
 //  public let identifier = "IntelligentsPlugin"
 //  public let jsName = "Intelligents"
 //  public let pluginMethods: [CAPPluginMethod] = [
@@ -33,4 +33,4 @@ import Foundation
 //      call.resolve()
 //    }
 //  }
-//}
+// }

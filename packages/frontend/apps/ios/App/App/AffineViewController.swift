@@ -13,15 +13,15 @@ class AFFiNEViewController: CAPBridgeViewController {
     intelligentsButton.delegate = self
     dismissIntelligentsButton()
   }
-  
+
   override func webViewConfiguration(for instanceConfiguration: InstanceConfiguration) -> WKWebViewConfiguration {
     let configuration = super.webViewConfiguration(for: instanceConfiguration)
     return configuration
   }
-  
+
   override func webView(with frame: CGRect, configuration: WKWebViewConfiguration) -> WKWebView {
-    return super.webView(with: frame, configuration: configuration)
-}
+    super.webView(with: frame, configuration: configuration)
+  }
 
   override func capacitorDidLoad() {
     let plugins: [CAPPlugin] = [
@@ -43,6 +43,3 @@ class AFFiNEViewController: CAPBridgeViewController {
     }
   }
 }
-
-
-
