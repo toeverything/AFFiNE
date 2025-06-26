@@ -291,6 +291,13 @@ class InputBox: UIView {
     }
   }
 
+  public func addDocumentAttachment(_ documentAttachment: DocumentAttachment) {
+    performWithAnimation { [self] in
+      viewModel.addDocumentAttachment(documentAttachment)
+      layoutIfNeeded()
+    }
+  }
+
   public var inputBoxData: InputBoxData {
     viewModel.prepareSendData()
   }

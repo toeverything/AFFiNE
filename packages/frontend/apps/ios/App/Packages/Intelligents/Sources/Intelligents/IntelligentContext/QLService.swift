@@ -89,4 +89,38 @@ public final class QLService {
       }
     }
   }
+
+  public func searchDocuments(
+    workspaceId: String,
+    keyword: String,
+    limit: Int = 20,
+    completion: @escaping ([IndexerSearchDocsQuery.Data.Workspace.SearchDoc]) -> Void
+  ) {
+    let input = SearchDocsInput(keyword: keyword, limit: .some(limit))
+    client.fetch(query: IndexerSearchDocsQuery(id: workspaceId, input: input)) { result in
+      switch result {
+      case let .success(graphQLResult):
+        completion(graphQLResult.data?.workspace.searchDocs ?? [])
+      case .failure:
+        completion([])
+      }
+    }
+  }
+
+  public func fetchRecentlyUpdatedDocs(
+    workspaceId: String,
+    first: Int = 20,
+    completion: @escaping ([GetRecentlyUpdatedDocsQuery.Data.Workspace.RecentlyUpdatedDocs.Edge.Node]) -> Void
+  ) {
+    let pagination = PaginationInput(first: .some(first))
+    client.fetch(query: GetRecentlyUpdatedDocsQuery(workspaceId: workspaceId, pagination: pagination)) { result in
+      switch result {
+      case let .success(graphQLResult):
+        let docs = graphQLResult.data?.workspace.recentlyUpdatedDocs.edges.map(\.node) ?? []
+        completion(docs)
+      case .failure:
+        completion([])
+      }
+    }
+  }
 }

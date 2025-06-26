@@ -274,14 +274,6 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
-  enable_web_container: {
-    category: 'blocksuite',
-    bsFlag: 'enable_web_container',
-    displayName: 'Enable Web Container',
-    description: 'Enable web container for code block preview',
-    defaultState: false,
-    configurable: true,
-  },
 } satisfies { [key in string]: FlagInfo };
 
 // oxlint-disable-next-line no-redeclare

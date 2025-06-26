@@ -237,12 +237,15 @@ type CopilotHistories {
   """An mark identifying which view to use to display the session"""
   action: String
   createdAt: DateTime!
+  docId: String
   messages: [ChatMessage!]!
   pinned: Boolean!
   sessionId: String!
 
   """The number of tokens used in the session"""
   tokens: Int!
+  updatedAt: DateTime!
+  workspaceId: String!
 }
 
 type CopilotInvalidContextDataType {
@@ -251,22 +254,6 @@ type CopilotInvalidContextDataType {
 
 type CopilotMessageNotFoundDataType {
   messageId: String!
-}
-
-enum CopilotModels {
-  DallE3
-  Gpt4Omni
-  Gpt4Omni0806
-  Gpt4OmniMini
-  Gpt4OmniMini0718
-  Gpt41
-  Gpt41Mini
-  Gpt41Nano
-  Gpt410414
-  GptImage
-  TextEmbedding3Large
-  TextEmbedding3Small
-  TextEmbeddingAda002
 }
 
 input CopilotPromptConfigInput {
@@ -408,7 +395,7 @@ input CreateCopilotPromptInput {
   action: String
   config: CopilotPromptConfigInput
   messages: [CopilotPromptMessageInput!]!
-  model: CopilotModels!
+  model: String!
   name: String!
 }
 

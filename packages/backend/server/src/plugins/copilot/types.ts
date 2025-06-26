@@ -1,8 +1,6 @@
-import { type Tokenizer } from '@affine/server-native';
 import { z } from 'zod';
 
 import { OneMB } from '../../base';
-import { fromModelName } from '../../native';
 import type { ChatPrompt } from './prompt';
 import { PromptMessageSchema, PureMessageSchema } from './providers';
 
@@ -38,41 +36,6 @@ export const ChatQuerySchema = z
     })
   );
 
-export enum AvailableModels {
-  // text to text
-  Gpt4Omni = 'gpt-4o',
-  Gpt4Omni0806 = 'gpt-4o-2024-08-06',
-  Gpt4OmniMini = 'gpt-4o-mini',
-  Gpt4OmniMini0718 = 'gpt-4o-mini-2024-07-18',
-  Gpt41 = 'gpt-4.1',
-  Gpt410414 = 'gpt-4.1-2025-04-14',
-  Gpt41Mini = 'gpt-4.1-mini',
-  Gpt41Nano = 'gpt-4.1-nano',
-  // embeddings
-  TextEmbedding3Large = 'text-embedding-3-large',
-  TextEmbedding3Small = 'text-embedding-3-small',
-  TextEmbeddingAda002 = 'text-embedding-ada-002',
-  // text to image
-  DallE3 = 'dall-e-3',
-  GptImage = 'gpt-image-1',
-}
-
-const availableModels = Object.values(AvailableModels);
-
-export function getTokenEncoder(model?: string | null): Tokenizer | null {
-  if (!model) return null;
-  if (!availableModels.includes(model as AvailableModels)) return null;
-  if (model.startsWith('gpt')) {
-    return fromModelName(model);
-  } else if (model.startsWith('dall')) {
-    // dalle don't need to calc the token
-    return null;
-  } else {
-    // c100k based model
-    return fromModelName('gpt-4');
-  }
-}
-
 // ======== ChatMessage ========
 
 export const ChatMessageSchema = PromptMessageSchema.extend({
@@ -84,11 +47,14 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export const ChatHistorySchema = z
   .object({
     sessionId: z.string(),
+    workspaceId: z.string(),
+    docId: z.string().nullable(),
     pinned: z.boolean(),
     action: z.string().nullable(),
     tokens: z.number(),
     messages: z.array(ChatMessageSchema),
     createdAt: z.date(),
+    updatedAt: z.date(),
   })
   .strict();
 
