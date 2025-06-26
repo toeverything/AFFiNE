@@ -83,6 +83,13 @@ jobs:
       - build-ios-web
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Version
+        uses: ./.github/actions/setup-version
+        with:
+          app-version: ${{ inputs.app-version }}
+      - name: 'Update Code Sign Identity'
+        shell: bash
+        run: ./packages/frontend/apps/ios/update_code_sign_identity.sh
       - name: Download mobile artifact
         uses: actions/download-artifact@v4
         with:
