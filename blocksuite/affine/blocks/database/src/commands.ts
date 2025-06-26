@@ -1,5 +1,9 @@
 import type { DatabaseBlockModel } from '@blocksuite/affine-model';
-import type { Command } from '@blocksuite/std';
+import {
+  type DataViewExtensionType,
+  getDataViewExtensions,
+} from '@blocksuite/data-view';
+import { type Command } from '@blocksuite/std';
 import type { BlockModel, Store } from '@blocksuite/store';
 
 import {
@@ -37,7 +41,16 @@ export const insertDatabaseBlockCommand: Command<
 
   if (string == null) return;
 
-  initDatabaseBlock(std.store, targetModel, string, viewType, false);
+  const extensions = getDataViewExtensions(std.provider);
+
+  initDatabaseBlock({
+    doc: std.store,
+    model: targetModel,
+    databaseId: string,
+    extensions,
+    viewType,
+    isAppendNewRow: false,
+  });
 
   if (removeEmptyLine && targetModel.text?.length === 0) {
     std.store.deleteBlock(targetModel);
@@ -46,20 +59,31 @@ export const insertDatabaseBlockCommand: Command<
   next({ insertedDatabaseBlockId: string });
 };
 
-export const initDatabaseBlock = (
-  doc: Store,
-  model: BlockModel,
-  databaseId: string,
-  viewType: string,
-  isAppendNewRow = true
-) => {
+export const initDatabaseBlock = ({
+  doc,
+  model,
+  databaseId,
+  viewType,
+  extensions = [],
+  isAppendNewRow = true,
+}: {
+  doc: Store;
+  model: BlockModel;
+  databaseId: string;
+  viewType: string;
+  extensions?: DataViewExtensionType[];
+  isAppendNewRow?: boolean;
+}) => {
   const blockModel = doc.getBlock(databaseId)?.model as
     | DatabaseBlockModel
     | undefined;
   if (!blockModel) {
     return;
   }
-  const datasource = new DatabaseBlockDataSource(blockModel);
+  const datasource = new DatabaseBlockDataSource({
+    model: blockModel,
+    extensions,
+  });
   databaseViewInitTemplate(datasource, viewType);
   if (isAppendNewRow) {
     const parent = doc.getParent(model);

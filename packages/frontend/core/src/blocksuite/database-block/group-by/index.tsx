@@ -1,6 +1,7 @@
 import { Avatar, uniReactRoot } from '@affine/component';
 import {
   createGroupByConfig,
+  GroupByExtension,
   type GroupRenderProps,
   t,
   ungroups,
@@ -146,3 +147,7 @@ export const groupByConfigList = [
     view: uniReactRoot.createUniComponent(MultiMemberGroupView),
   }),
 ];
+
+export const AffineDatabaseGroupByExtensions = groupByConfigList.map(config =>
+  GroupByExtension(config)
+);

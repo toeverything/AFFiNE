@@ -44,7 +44,7 @@ export const typeConfig = (property: Property) => {
           style="color: var(--affine-text-secondary-color);gap:4px;font-size: 14px;"
         >
           ${renderUniLit(property.icon)}
-          ${property.view.propertyMetas$.value.find(
+          ${property.view.propertyMetas.find(
             v => v.type === property.type$.value
           )?.config.name}
         </div>`,
@@ -54,7 +54,7 @@ export const typeConfig = (property: Property) => {
           },
           items: [
             menu.group({
-              items: property.view.propertyMetas$.value.map(config => {
+              items: property.view.propertyMetas.map(config => {
                 return menu.action({
                   isSelected: config.type === property.type$.value,
                   name: config.config.name,

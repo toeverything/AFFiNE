@@ -1,4 +1,4 @@
-import { DatabaseBlockDataSource } from '@blocksuite/affine/blocks/database';
+import { createAffineDatabaseDataSource } from '@affine/core/blocksuite/database-block';
 import type { DatabaseBlockModel } from '@blocksuite/affine/model';
 import { LiveData, Service } from '@toeverything/infra';
 import { isEqual } from 'lodash-es';
@@ -33,7 +33,7 @@ export class DocDatabaseBacklinksService extends Service {
   }
 
   private adaptRowCells(dbModel: DatabaseBlockModel, rowId: string) {
-    const dataSource = new DatabaseBlockDataSource(dbModel);
+    const dataSource = createAffineDatabaseDataSource(dbModel);
 
     const hydratedRows$ = combineLatest([
       signalToObservable(dataSource.rows$),

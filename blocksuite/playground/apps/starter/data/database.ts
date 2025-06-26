@@ -42,7 +42,7 @@ export const database: InitFn = (collection: Workspace, id: string) => {
         noteId
       );
       const database = store.getModelById(databaseId) as DatabaseBlockModel;
-      const datasource = new DatabaseBlockDataSource(database);
+      const datasource = new DatabaseBlockDataSource({ model: database });
       datasource.viewManager.viewAdd('table');
       database.props.title = new Text(title);
       const richTextId = datasource.propertyAdd('end', {

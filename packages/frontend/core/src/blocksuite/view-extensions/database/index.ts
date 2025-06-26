@@ -20,7 +20,6 @@ export class AffineDatabaseViewExtension extends ViewExtensionProvider<AffineDat
     options?: AffineDatabaseViewOptions
   ) {
     super.setup(context, options);
-
     context.register(patchDatabaseBlockConfigService());
   }
 }

@@ -1,4 +1,4 @@
-import type { DataSource } from '../data-source/base';
+import type { DataSource } from '../data-source/source';
 import type { PropertyConfig } from './types';
 
 export const fromJson = <Data, RawValue, JsonValue>(

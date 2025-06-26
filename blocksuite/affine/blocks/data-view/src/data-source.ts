@@ -51,7 +51,7 @@ export class BlockQueryDataSource extends DataSourceBase {
     ];
   }
 
-  get propertyMetas(): PropertyMetaConfig[] {
+  override get propertyMetas(): PropertyMetaConfig[] {
     return queryBlockColumns as PropertyMetaConfig[];
   }
 
@@ -69,6 +69,7 @@ export class BlockQueryDataSource extends DataSourceBase {
     config: BlockQueryDataSourceConfig
   ) {
     super();
+
     this.meta = blockMetaMap[config.type];
     for (const property of this.meta.properties) {
       this.columnMetaMap.set(property.metaConfig.type, property.metaConfig);
@@ -96,6 +97,8 @@ export class BlockQueryDataSource extends DataSourceBase {
         }
       });
     });
+
+    this.configure([]);
   }
 
   private getProperty(propertyId: string) {
@@ -231,7 +234,7 @@ export class BlockQueryDataSource extends DataSourceBase {
     throw new Error('Method not implemented.');
   }
 
-  propertyMetaGet(type: string): PropertyMetaConfig {
+  override propertyMetaGet(type: string): PropertyMetaConfig {
     const meta = this.columnMetaMap.get(type);
     if (meta) {
       return meta;

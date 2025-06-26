@@ -25,7 +25,7 @@ import {
   type DataViewWidget,
   type DataViewWidgetProps,
   defineUniComponent,
-  ExternalGroupByConfigProvider,
+  getDataViewExtensions,
   lazy,
   renderUniLit,
   type SingleView,
@@ -121,17 +121,23 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
   };
 
   private readonly dataSource = lazy(() => {
-    const dataSource = new DatabaseBlockDataSource(this.model, dataSource => {
-      dataSource.serviceSet(EditorHostKey, this.host);
-      this.std.provider
-        .getAll(ExternalGroupByConfigProvider)
-        .forEach(config => {
-          dataSource.serviceSet(
-            ExternalGroupByConfigProvider(config.name),
-            config
-          );
-        });
+    // extra extensions from provider
+
+    const extensions = getDataViewExtensions(this.std.provider);
+
+    const dataSource = new DatabaseBlockDataSource({
+      model: this.model,
+      extensions: [
+        ...extensions,
+        {
+          setup: context => {
+            // provide host
+            context.di.addValue(EditorHostKey, this.host);
+          },
+        },
+      ],
     });
+
     const id = currentViewStorage.getCurrentView(this.model.id);
     if (id && dataSource.viewManager.viewGet(id)) {
       dataSource.viewManager.setCurrentView(id);

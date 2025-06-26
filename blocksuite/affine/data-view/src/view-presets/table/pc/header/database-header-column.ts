@@ -40,10 +40,7 @@ import {
 } from '../../../../core/utils/wc-dnd/dnd-context.js';
 import type { Property } from '../../../../core/view-manager/property.js';
 import { numberFormats } from '../../../../property-presets/number/utils/formats.js';
-import {
-  createDefaultShowQuickSettingBar,
-  ShowQuickSettingBarKey,
-} from '../../../../widget-presets/quick-setting-bar/context.js';
+import { ShowQuickSettingBarKey } from '../../../../widget-presets/quick-setting-bar/context.js';
 import { DEFAULT_COLUMN_TITLE_HEIGHT } from '../../consts.js';
 import type { TableProperty } from '../../table-view-manager.js';
 import type { TableViewUILogic } from '../table-view-ui-logic.js';
@@ -83,7 +80,7 @@ export class DatabaseHeaderColumn extends SignalWatcher(
     event.stopPropagation();
     popMenu(popupTargetFromElement(this), {
       options: {
-        items: this.tableViewManager.propertyMetas$.value.map(config => {
+        items: this.tableViewManager.propertyMetas.map(config => {
           return menu.action({
             name: config.config.name,
             isSelected: config.type === this.column.type$.value,
@@ -194,10 +191,13 @@ export class DatabaseHeaderColumn extends SignalWatcher(
   }
 
   private _toggleQuickSettingBar(show = true) {
-    const map = this.tableViewManager.serviceGetOrCreate(
-      ShowQuickSettingBarKey,
-      createDefaultShowQuickSettingBar
-    );
+    const map = this.tableViewManager.serviceGet(ShowQuickSettingBarKey);
+
+    if (!map) {
+      console.warn('ShowQuickSettingBar is not available.');
+      return;
+    }
+
     map.value = {
       ...map.value,
       [this.tableViewManager.id]: show,

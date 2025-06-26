@@ -54,7 +54,7 @@ export interface SingleView {
   rowAdd(insertPosition: InsertToPosition): string;
   rowsDelete(rows: string[]): void;
 
-  readonly propertyMetas$: ReadonlySignal<PropertyMetaConfig[]>;
+  readonly propertyMetas: PropertyMetaConfig[];
 
   propertyAdd(
     toAfterOfProperty: InsertToPosition,
@@ -65,7 +65,6 @@ export interface SingleView {
   ): string | undefined;
 
   serviceGet<T>(key: GeneralServiceIdentifier<T>): T | null;
-  serviceGetOrCreate<T>(key: GeneralServiceIdentifier<T>, create: () => T): T;
 
   traitGet<T>(key: TraitKey<T>): T | undefined;
 
@@ -173,8 +172,8 @@ export abstract class SingleViewBase<
     return this.dataSource.viewMetaGet(this.type);
   }
 
-  get propertyMetas$() {
-    return this.dataSource.propertyMetas$;
+  get propertyMetas() {
+    return this.dataSource.propertyMetas;
   }
 
   abstract get type(): string;
@@ -208,10 +207,6 @@ export abstract class SingleViewBase<
 
   serviceGet<T>(key: GeneralServiceIdentifier<T>): T | null {
     return this.dataSource.serviceGet(key);
-  }
-
-  serviceGetOrCreate<T>(key: GeneralServiceIdentifier<T>, create: () => T): T {
-    return this.dataSource.serviceGetOrCreate(key, create);
   }
 
   dataUpdate(updater: (viewData: ViewData) => Partial<ViewData>): void {

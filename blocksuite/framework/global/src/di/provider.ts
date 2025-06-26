@@ -45,10 +45,12 @@ export abstract class ServiceProvider {
     identifier: GeneralServiceIdentifier<T>,
     options?: ResolveOptions
   ): T | null {
-    return this.getRaw(parseIdentifier(identifier), {
-      ...options,
-      optional: true,
-    });
+    return (
+      this.getRaw(parseIdentifier(identifier), {
+        ...options,
+        optional: true,
+      }) ?? null
+    );
   }
 
   abstract getRaw(

@@ -14,6 +14,16 @@ export type ConvertFunction<
   property: GetPropertyDataFromConfig<To['config']>;
   cells: (GetRawValueFromConfig<To['config']> | undefined)[];
 };
+
+export type PropertyConvert<
+  From extends PropertyModel<any, any, any, any>,
+  To extends PropertyModel<any, any, any, any>,
+> = {
+  from: From['type'];
+  to: To['type'];
+  convert: ConvertFunction<From, To>;
+};
+
 export const createPropertyConvert = <
   From extends PropertyModel<any, any, any, any>,
   To extends PropertyModel<any, any, any, any>,
@@ -21,7 +31,7 @@ export const createPropertyConvert = <
   from: From,
   to: To,
   convert: ConvertFunction<From, To>
-) => {
+): PropertyConvert<From, To> => {
   return {
     from: from.type,
     to: to.type,

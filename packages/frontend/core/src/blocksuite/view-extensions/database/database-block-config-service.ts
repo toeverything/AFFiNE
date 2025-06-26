@@ -1,20 +1,16 @@
-import {
-  DatabaseBlockDataSource,
-  ExternalGroupByConfigProvider,
-} from '@blocksuite/affine/blocks/database';
+import { DataViewExtension } from '@blocksuite/affine/blocks/database';
 import type { ExtensionType } from '@blocksuite/affine/store';
 
-import { groupByConfigList } from '../../database-block/group-by';
-import { propertiesPresets } from '../../database-block/properties';
+import { AffineDatabaseDVExtensions } from '../../database-block';
+
+const AffineDatabaseExtensions = AffineDatabaseDVExtensions.map(extension =>
+  DataViewExtension(extension)
+);
 
 export function patchDatabaseBlockConfigService(): ExtensionType {
-  //TODO use service
-  DatabaseBlockDataSource.externalProperties.value = propertiesPresets;
   return {
-    setup: di => {
-      groupByConfigList.forEach(config => {
-        di.addValue(ExternalGroupByConfigProvider(config.name), config);
-      });
+    setup(di) {
+      AffineDatabaseExtensions.forEach(extension => extension.setup(di));
     },
   };
 }

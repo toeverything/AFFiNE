@@ -61,7 +61,9 @@ test.describe('embed-synced-doc render', () => {
       );
       const model = doc2.getModelById(databaseId) as DatabaseBlockModel;
       const datasource =
-        new window.$blocksuite.blocks.database.DatabaseBlockDataSource(model);
+        new window.$blocksuite.blocks.database.DatabaseBlockDataSource({
+          model,
+        });
       datasource.viewManager.viewAdd('table');
     }, embedDocId);
 

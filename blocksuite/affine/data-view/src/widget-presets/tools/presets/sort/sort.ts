@@ -10,10 +10,7 @@ import { popCreateSort } from '../../../../core/sort/add-sort.js';
 import { sortTraitKey } from '../../../../core/sort/manager.js';
 import { createSortUtils } from '../../../../core/sort/utils.js';
 import { WidgetBase } from '../../../../core/widget/widget-base.js';
-import {
-  createDefaultShowQuickSettingBar,
-  ShowQuickSettingBarKey,
-} from '../../../quick-setting-bar/context.js';
+import { ShowQuickSettingBarKey } from '../../../quick-setting-bar/context.js';
 import { popSortRoot } from '../../../quick-setting-bar/sort/root-panel.js';
 
 const styles = css`
@@ -109,10 +106,11 @@ export class DataViewHeaderToolsSort extends WidgetBase {
   }
 
   toggleShowQuickSettingBar(show?: boolean) {
-    const map = this.view.serviceGetOrCreate(
-      ShowQuickSettingBarKey,
-      createDefaultShowQuickSettingBar
-    );
+    const map = this.view.serviceGet(ShowQuickSettingBarKey);
+    if (!map) {
+      console.error('ShowQuickSettingBar service not found');
+      return;
+    }
     map.value = {
       ...map.value,
       [this.view.id]: show ?? !map.value[this.view.id],

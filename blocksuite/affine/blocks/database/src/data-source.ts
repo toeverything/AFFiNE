@@ -1,8 +1,8 @@
-import type {
-  ColumnDataType,
-  ColumnUpdater,
+import {
+  type ColumnDataType,
+  type ColumnUpdater,
   DatabaseBlockModel,
-  ParagraphBlockModel,
+  type ParagraphBlockModel,
 } from '@blocksuite/affine-model';
 import { getSelectedModelsCommand } from '@blocksuite/affine-shared/commands';
 import { FeatureFlagService } from '@blocksuite/affine-shared/services';
@@ -14,6 +14,8 @@ import {
   type DatabaseFlags,
   DataSourceBase,
   type DataViewDataType,
+  type DataViewExtensionType,
+  getDataViewExtensions,
   type PropertyMetaConfig,
   type TypeInstance,
   type ViewManager,
@@ -21,6 +23,7 @@ import {
   type ViewMeta,
 } from '@blocksuite/data-view';
 import { propertyPresets } from '@blocksuite/data-view/property-presets';
+import { WidgetPresetExtensions } from '@blocksuite/data-view/widget-presets';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import { BlockSuiteError, ErrorCode } from '@blocksuite/global/exceptions';
 import type { EditorHost } from '@blocksuite/std';
@@ -30,7 +33,7 @@ import { computed, type ReadonlySignal, signal } from '@preact/signals-core';
 import { getIcon } from './block-icons.js';
 import {
   databaseBlockProperties,
-  databasePropertyConverts,
+  DatabaseBlockPropertyExtensions,
 } from './properties/index.js';
 import {
   addProperty,
@@ -52,17 +55,29 @@ import {
   databaseBlockViews,
 } from './views/index.js';
 
-type SpacialProperty = {
+type SpecialProperty = {
   valueSet: (rowId: string, propertyId: string, value: unknown) => void;
   valueGet: (rowId: string, propertyId: string) => unknown;
 };
 
+export const DefaultDatabaseBlockExtensions: DataViewExtensionType[] = [
+  ...DatabaseBlockPropertyExtensions,
+  ...WidgetPresetExtensions,
+];
+
+export type DatabaseDataSourceConfig = {
+  model: DatabaseBlockModel;
+  /**
+   * Note: `DatabaseBlockDataSource` comes with a set of default extensions. eg properties, converts etc..
+   */
+  extensions?: DataViewExtensionType[];
+};
 export class DatabaseBlockDataSource extends DataSourceBase {
   override get parentProvider() {
     return this._model.store.provider;
   }
 
-  spacialProperties: Record<string, SpacialProperty> = {
+  specialProperties: Record<string, SpecialProperty> = {
     'created-time': {
       valueSet: () => {},
       valueGet: (rowId: string) => {
@@ -104,18 +119,19 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     },
   };
 
-  isSpacialProperty(propertyType: string): boolean {
-    return this.spacialProperties[propertyType] !== undefined;
+  isSpecialProperty(propertyType: string): boolean {
+    return this.specialProperties[propertyType] !== undefined;
   }
 
-  spacialValueGet(
+  specialValueGet(
     rowId: string,
     propertyId: string,
     propertyType: string
   ): unknown {
-    return this.spacialProperties[propertyType]?.valueGet(rowId, propertyId);
+    return this.specialProperties[propertyType]?.valueGet(rowId, propertyId);
   }
 
+  // TODO(golok727) remove
   static externalProperties = signal<PropertyMetaConfig[]>([]);
   static propertiesList = computed(() => {
     return [
@@ -148,7 +164,7 @@ export class DatabaseBlockDataSource extends DataSourceBase {
   });
 
   properties$: ReadonlySignal<string[]> = computed(() => {
-    const fixedPropertiesSet = new Set(this.fixedProperties$.value);
+    const fixedPropertiesSet = new Set(this.fixedProperties);
     const properties: string[] = [];
     this._model.props.columns$.value.forEach(column => {
       if (fixedPropertiesSet.has(column.type)) {
@@ -187,23 +203,17 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     return this._model.store;
   }
 
-  allPropertyMetas$ = computed<PropertyMetaConfig<any, any, any, any>[]>(() => {
-    return DatabaseBlockDataSource.propertiesList.value;
-  });
-
-  propertyMetas$ = computed<PropertyMetaConfig[]>(() => {
-    return this.allPropertyMetas$.value.filter(
-      v => !v.config.fixed && !v.config.hide
-    );
-  });
-
-  constructor(
-    model: DatabaseBlockModel,
-    init?: (dataSource: DatabaseBlockDataSource) => void
-  ) {
+  constructor(modelOrConfig: DatabaseDataSourceConfig | DatabaseBlockModel) {
     super();
+
+    let { model, extensions = [] } =
+      modelOrConfig instanceof DatabaseBlockModel
+        ? { model: modelOrConfig }
+        : modelOrConfig;
+
     this._model = model; // ensure invariants first
-    init?.(this); // then allow external initialisation
+
+    this.configure([...DefaultDatabaseBlockExtensions, ...extensions]); // then initialize
   }
 
   private _runCapture() {
@@ -268,15 +278,15 @@ export class DatabaseBlockDataSource extends DataSourceBase {
   }
 
   cellValueGet(rowId: string, propertyId: string): unknown {
-    if (this.isSpacialProperty(propertyId)) {
-      return this.spacialValueGet(rowId, propertyId, propertyId);
+    if (this.isSpecialProperty(propertyId)) {
+      return this.specialValueGet(rowId, propertyId, propertyId);
     }
     const type = this.propertyTypeGet(propertyId);
     if (!type) {
       return;
     }
-    if (this.isSpacialProperty(type)) {
-      return this.spacialValueGet(rowId, propertyId, type);
+    if (this.isSpecialProperty(type)) {
+      return this.specialValueGet(rowId, propertyId, type);
     }
     const meta = this.propertyMetaGet(type);
     if (!meta) {
@@ -460,10 +470,6 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     return id;
   }
 
-  propertyMetaGet(type: string): PropertyMetaConfig | undefined {
-    return DatabaseBlockDataSource.propertiesMap.value[type];
-  }
-
   propertyNameGet(propertyId: string): string {
     if (propertyId === 'type') {
       return 'Block Type';
@@ -504,18 +510,25 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     if (!meta) {
       return;
     }
+
     const currentType = this.propertyTypeGet(propertyId);
     const currentData = this.propertyDataGet(propertyId);
     const rows = this.rows$.value;
     const currentCells = rows.map(rowId =>
       this.cellValueGet(rowId, propertyId)
     );
-    const convertFunction = databasePropertyConverts.find(
-      v => v.from === currentType && v.to === toType
-    )?.convert;
+
+    const getConvertFunction = () => {
+      if (!currentType) return undefined;
+      return (
+        this.propertyManager.getConvertFunction(currentType, toType) ??
+        undefined
+      );
+    };
+
+    const convertFunction = getConvertFunction();
     const result = convertFunction?.(
       currentData as any,
-
       currentCells as any
     ) ?? {
       property: meta.config.propertyData.default(),
@@ -658,7 +671,11 @@ export const convertToDatabase = (host: EditorHost, viewType: string) => {
   if (!databaseModel) {
     return;
   }
-  const datasource = new DatabaseBlockDataSource(databaseModel);
+
+  const datasource = new DatabaseBlockDataSource({
+    model: databaseModel,
+    extensions: getDataViewExtensions(host.std.provider),
+  });
   datasource.viewManager.viewAdd(viewType);
   host.store.moveBlocks(selectedModels, databaseModel);
 

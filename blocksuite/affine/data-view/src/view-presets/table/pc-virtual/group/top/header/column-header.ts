@@ -34,7 +34,7 @@ export class VirtualTableHeader extends SignalWatcher(
         },
         items: [
           menu.group({
-            items: this.tableViewManager.propertyMetas$.value.map(config => {
+            items: this.tableViewManager.propertyMetas.map(config => {
               return menu.action({
                 name: config.config.name,
                 prefix: renderUniLit(config.renderer.icon),

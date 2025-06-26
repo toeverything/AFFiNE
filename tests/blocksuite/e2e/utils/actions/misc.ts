@@ -346,7 +346,7 @@ export async function initEmptyDatabaseState(page: Page, rootId?: string) {
     );
     const model = doc.getModelById(databaseId) as DatabaseBlockModel;
     const datasource =
-      new window.$blocksuite.blocks.database.DatabaseBlockDataSource(model);
+      new window.$blocksuite.blocks.database.DatabaseBlockDataSource({ model });
     datasource.viewManager.viewAdd('table');
     doc.captureSync();
     return { rootId, noteId, databaseId };
@@ -382,7 +382,9 @@ export async function initKanbanViewState(
       );
       const model = doc.getModelById(databaseId) as DatabaseBlockModel;
       const datasource =
-        new window.$blocksuite.blocks.database.DatabaseBlockDataSource(model);
+        new window.$blocksuite.blocks.database.DatabaseBlockDataSource({
+          model,
+        });
       const rowIds = config.rows.map(rowText => {
         const rowId = doc.addBlock(
           'affine:paragraph',
@@ -443,7 +445,7 @@ export async function initEmptyDatabaseWithParagraphState(
     );
     const model = doc.getModelById(databaseId) as DatabaseBlockModel;
     const datasource =
-      new window.$blocksuite.blocks.database.DatabaseBlockDataSource(model);
+      new window.$blocksuite.blocks.database.DatabaseBlockDataSource({ model });
     datasource.viewManager.viewAdd('table');
     doc.addBlock('affine:paragraph', {}, noteId);
     doc.captureSync();

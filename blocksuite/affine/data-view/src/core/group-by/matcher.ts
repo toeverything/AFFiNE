@@ -1,6 +1,8 @@
 import { createIdentifier } from '@blocksuite/global/di';
 
-import type { DataSource } from '../data-source/base.js';
+import { DataSourceKey } from '../data-source/consts.js';
+import { type DataSource } from '../data-source/source.js';
+import { type DataViewExtensionType } from '../extension/dataview.js';
 import { Matcher_ } from '../logical/matcher.js';
 import { groupByMatchers } from './define.js';
 import type { GroupByConfig } from './types.js';
@@ -14,7 +16,7 @@ export class GroupByService {
 
   allExternalGroupByConfig(): GroupByConfig[] {
     return Array.from(
-      this.dataSource.provider.getAll(ExternalGroupByConfigProvider).values()
+      this.dataSource.provider.getAll(GroupByConfigProvider).values()
     );
   }
 
@@ -27,15 +29,36 @@ export class GroupByService {
 }
 
 export const GroupByProvider =
-  createIdentifier<GroupByService>('group-by-service');
+  createIdentifier<GroupByService>('GroupByService');
 
-export const getGroupByService = (dataSource: DataSource) => {
-  return dataSource.serviceGetOrCreate(
-    GroupByProvider,
-    () => new GroupByService(dataSource)
-  );
+/**
+ * @internal
+ */
+export const GroupByServiceExtension: DataViewExtensionType = {
+  name: 'GroupByServiceExtension',
+  setup({ di }) {
+    di.addImpl(
+      GroupByProvider,
+      provider => new GroupByService(provider.get(DataSourceKey))
+    );
+  },
 };
 
-export const ExternalGroupByConfigProvider = createIdentifier<GroupByConfig>(
-  'external-group-by-config'
-);
+export function GroupByExtension(config: GroupByConfig): DataViewExtensionType {
+  return {
+    setup({ di }) {
+      di.addValue(GroupByConfigProvider(config.name), config);
+    },
+  };
+}
+
+export const getGroupByService = (dataSource: DataSource) => {
+  const groupBy = dataSource.serviceGet(GroupByProvider);
+  if (!groupBy) {
+    throw new Error('GroupByService is not available for this data source');
+  }
+  return groupBy;
+};
+
+export const GroupByConfigProvider =
+  createIdentifier<GroupByConfig>('group-by-config');
