@@ -7,8 +7,8 @@ import { FeatureFlagService } from '../feature-flag';
 import { GlobalStateService } from '../storage';
 import { AIButtonProvider } from './provider/ai-button';
 import { AIButtonService } from './services/ai-button';
-import { AIModelSwitchService } from './services/model-switch';
 import { AINetworkSearchService } from './services/network-search';
+import { AIPlaygroundService } from './services/playground';
 import { AIReasoningService } from './services/reasoning';
 
 export const configureAIButtonModule = (framework: Framework) => {
@@ -28,6 +28,6 @@ export function configureAIReasoningModule(framework: Framework) {
   framework.service(AIReasoningService, [GlobalStateService]);
 }
 
-export function configureAIModelSwitchModule(framework: Framework) {
-  framework.service(AIModelSwitchService, [FeatureFlagService]);
+export function configureAIPlaygroundModule(framework: Framework) {
+  framework.service(AIPlaygroundService, [FeatureFlagService]);
 }

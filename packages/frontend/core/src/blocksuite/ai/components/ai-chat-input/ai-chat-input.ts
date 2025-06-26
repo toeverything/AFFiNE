@@ -27,7 +27,6 @@ import {
 import { MAX_IMAGE_COUNT } from './const';
 import type {
   AIChatInputContext,
-  AIModelSwitchConfig,
   AINetworkSearchConfig,
   AIReasoningConfig,
 } from './type';
@@ -321,9 +320,6 @@ export class AIChatInput extends SignalWatcher(
   accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
-  accessor modelSwitchConfig: AIModelSwitchConfig | undefined = undefined;
-
-  @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
 
   @property({ attribute: false })
@@ -442,7 +438,6 @@ export class AIChatInput extends SignalWatcher(
         </div>
         <div class="chat-input-footer-spacer"></div>
         <chat-input-preference
-          .modelSwitchConfig=${this.modelSwitchConfig}
           .session=${this.session}
           .onModelChange=${this._handleModelChange}
           .modelId=${this.modelId}

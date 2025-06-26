@@ -5693,6 +5693,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.settings.workspace.experimental-features.enable-ai-model-switch.description"](): string;
     /**
+      * `Enable AI Playground`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-playground.name"](): string;
+    /**
+      * `Enable or disable AI playground feature.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-playground.description"](): string;
+    /**
       * `Database Full Width`
       */
     ["com.affine.settings.workspace.experimental-features.enable-database-full-width.name"](): string;

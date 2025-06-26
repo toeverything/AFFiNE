@@ -29,7 +29,6 @@ import type {
 import { isCollectionChip, isDocChip, isTagChip } from '../ai-chat-chips';
 import type {
   AIChatInputContext,
-  AIModelSwitchConfig,
   AINetworkSearchConfig,
   AIReasoningConfig,
 } from '../ai-chat-input';
@@ -94,9 +93,6 @@ export class AIChatComposer extends SignalWatcher(
   accessor searchMenuConfig!: SearchMenuConfig;
 
   @property({ attribute: false })
-  accessor modelSwitchConfig!: AIModelSwitchConfig;
-
-  @property({ attribute: false })
   accessor onChatSuccess: (() => void) | undefined;
 
   @property({ attribute: false })
@@ -151,7 +147,6 @@ export class AIChatComposer extends SignalWatcher(
         .updateContext=${this.updateContext}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
-        .modelSwitchConfig=${this.modelSwitchConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .onChatSuccess=${this.onChatSuccess}
         .trackOptions=${this.trackOptions}
