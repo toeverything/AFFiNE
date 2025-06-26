@@ -45,6 +45,7 @@ import { ChatContentRichText } from './components/ai-message-content/rich-text';
 import { ChatContentStreamObjects } from './components/ai-message-content/stream-objects';
 import { AIScrollableTextRenderer } from './components/ai-scrollable-text-renderer';
 import { ToolCallCard } from './components/ai-tools/tool-call-card';
+import { ToolFailedCard } from './components/ai-tools/tool-failed-card';
 import { ToolResultCard } from './components/ai-tools/tool-result-card';
 import { WebCrawlTool } from './components/ai-tools/web-crawl';
 import { WebSearchTool } from './components/ai-tools/web-search';
@@ -167,6 +168,7 @@ export function registerAIEffects() {
 
   customElements.define('tool-call-card', ToolCallCard);
   customElements.define('tool-result-card', ToolResultCard);
+  customElements.define('tool-call-failed', ToolFailedCard);
   customElements.define('web-crawl-tool', WebCrawlTool);
   customElements.define('web-search-tool', WebSearchTool);
 

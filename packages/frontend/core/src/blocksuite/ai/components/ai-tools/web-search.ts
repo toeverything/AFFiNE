@@ -5,6 +5,8 @@ import type { Signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
+import type { ToolError } from './type';
+
 interface WebSearchToolCall {
   type: 'tool-call';
   toolCallId: string;
@@ -17,14 +19,17 @@ interface WebSearchToolResult {
   toolCallId: string;
   toolName: string;
   args: { url: string };
-  result: Array<{
-    title: string;
-    url: string;
-    content: string;
-    favicon: string;
-    publishedDate: string;
-    author: string;
-  }>;
+  result:
+    | Array<{
+        title: string;
+        url: string;
+        content: string;
+        favicon: string;
+        publishedDate: string;
+        author: string;
+      }>
+    | ToolError
+    | null;
 }
 
 export class WebSearchTool extends WithDisposable(ShadowlessElement) {
@@ -50,27 +55,35 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
       return nothing;
     }
 
-    const results = this.data.result.map(item => {
-      const { favicon, title, content } = item;
-      return {
-        title: title,
-        icon: favicon || WebIcon(),
-        content: content,
-      };
-    });
-    const footerIcons = this.data.result
-      .map(item => item.favicon)
-      .filter(Boolean);
+    const result = this.data.result;
+    if (result && Array.isArray(result)) {
+      const results = result.map(item => {
+        const { favicon, title, content } = item;
+        return {
+          title: title,
+          icon: favicon || WebIcon(),
+          content: content,
+        };
+      });
+      const footerIcons = result.map(item => item.favicon).filter(Boolean);
+
+      return html`
+        <tool-result-card
+          .host=${this.host}
+          .name=${'The search is complete, and these webpages have been searched'}
+          .icon=${WebIcon()}
+          .footerIcons=${footerIcons}
+          .results=${results}
+          .width=${this.width}
+        ></tool-result-card>
+      `;
+    }
 
     return html`
-      <tool-result-card
-        .host=${this.host}
-        .name=${'The search is complete, and these webpages have been searched'}
+      <tool-call-failed
+        .name=${'Web search failed'}
         .icon=${WebIcon()}
-        .footerIcons=${footerIcons}
-        .results=${results}
-        .width=${this.width}
-      ></tool-result-card>
+      ></tool-call-failed>
     `;
   }
 

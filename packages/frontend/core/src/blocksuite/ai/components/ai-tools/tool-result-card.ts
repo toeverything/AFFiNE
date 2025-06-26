@@ -2,7 +2,7 @@ import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { ImageProxyService } from '@blocksuite/affine/shared/adapters';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
-import { ToggleDownIcon } from '@blocksuite/icons/lit';
+import { ToggleDownIcon, ToolIcon } from '@blocksuite/icons/lit';
 import { type Signal } from '@preact/signals-core';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
@@ -17,7 +17,7 @@ export class ToolResultCard extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
   static override styles = css`
-    .ai-tool-wrapper {
+    .ai-tool-result-wrapper {
       padding: 12px;
       margin: 8px 0;
       border-radius: 8px;
@@ -158,16 +158,16 @@ export class ToolResultCard extends SignalWatcher(
   accessor host!: EditorHost;
 
   @property({ attribute: false })
-  accessor name!: string;
+  accessor name: string = 'Tool result';
 
   @property({ attribute: false })
-  accessor icon!: TemplateResult<1> | string;
+  accessor icon: TemplateResult<1> | string = ToolIcon();
 
   @property({ attribute: false })
   accessor footerIcons: TemplateResult<1>[] | string[] = [];
 
   @property({ attribute: false })
-  accessor results!: ToolResult[];
+  accessor results: ToolResult[] = [];
 
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
@@ -177,7 +177,7 @@ export class ToolResultCard extends SignalWatcher(
 
   protected override render() {
     return html`
-      <div class="ai-tool-wrapper">
+      <div class="ai-tool-result-wrapper">
         <div class="ai-tool-header" @click=${this.toggleCard}>
           <div class="ai-icon">${this.renderIcon(this.icon)}</div>
           <div class="ai-tool-name">${this.name}</div>

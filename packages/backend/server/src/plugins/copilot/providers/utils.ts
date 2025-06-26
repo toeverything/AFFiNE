@@ -390,19 +390,19 @@ export interface CustomAITools extends ToolSet {
 
 type ChunkType = TextStreamPart<CustomAITools>['type'];
 
-export function parseUnknownError(error: unknown) {
+export function toError(error: unknown): Error {
   if (typeof error === 'string') {
-    throw new Error(error);
+    return new Error(error);
   } else if (error instanceof Error) {
-    throw error;
+    return error;
   } else if (
     typeof error === 'object' &&
     error !== null &&
     'message' in error
   ) {
-    throw new Error(String(error.message));
+    return new Error(String(error.message));
   } else {
-    throw new Error(JSON.stringify(error));
+    return new Error(JSON.stringify(error));
   }
 }
 
@@ -483,8 +483,7 @@ export class TextStreamParser {
         break;
       }
       case 'error': {
-        parseUnknownError(chunk.error);
-        break;
+        throw toError(chunk.error);
       }
     }
     this.lastType = chunk.type;
@@ -550,8 +549,7 @@ export class StreamObjectParser {
         return chunk;
       }
       case 'error': {
-        parseUnknownError(chunk.error);
-        return null;
+        throw toError(chunk.error);
       }
       default: {
         return null;
