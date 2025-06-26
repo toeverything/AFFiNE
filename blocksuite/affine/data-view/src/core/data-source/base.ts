@@ -66,12 +66,6 @@ export abstract class DataSourceBase implements DataSource {
     value: unknown
   ): void;
 
-  abstract cellValueChange(
-    rowId: string,
-    propertyId: string,
-    value: unknown
-  ): void;
-
   abstract cellValueGet(rowId: string, propertyId: string): unknown;
 
   cellValueGet$(

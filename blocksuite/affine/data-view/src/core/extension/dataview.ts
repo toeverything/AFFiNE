@@ -19,7 +19,14 @@ export function loadDataViewExtensions(
 ) {
   const context = createDataViewExtensionContext(container, dataSource);
   for (const ext of extensions) {
-    ext.setup(context);
+    try {
+      ext.setup(context);
+    } catch (error) {
+      console.error(
+        `Failed to setup DataViewExtension: ${ext.name ?? 'Unnamed Extension'}`,
+        error
+      );
+    }
   }
 }
 

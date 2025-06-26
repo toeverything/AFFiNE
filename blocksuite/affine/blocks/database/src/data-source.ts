@@ -131,7 +131,7 @@ export class DatabaseBlockDataSource extends DataSourceBase {
     return this.specialProperties[propertyType]?.valueGet(rowId, propertyId);
   }
 
-  // TODO(golok727) remove
+  // TODO remove
   static externalProperties = signal<PropertyMetaConfig[]>([]);
   static propertiesList = computed(() => {
     return [

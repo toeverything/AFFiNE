@@ -121,8 +121,6 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
   };
 
   private readonly dataSource = lazy(() => {
-    // extra extensions from provider
-
     const extensions = getDataViewExtensions(this.std.provider);
 
     const dataSource = new DatabaseBlockDataSource({
