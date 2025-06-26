@@ -25,7 +25,7 @@ export interface DataSource {
   cellValueChange(rowId: string, propertyId: string, value: unknown): void;
 
   rows$: ReadonlySignal<string[]>;
-  rowAdd(InsertToPosition: InsertToPosition | number): string;
+  rowAdd(insertToPosition: InsertToPosition | number): string;
   rowDelete(ids: string[]): void;
   rowMove(rowId: string, position: InsertToPosition): void;
 

@@ -170,7 +170,7 @@ export abstract class DataSourceBase implements DataSource {
 
   abstract propertyTypeSet(propertyId: string, type: string): void;
 
-  abstract rowAdd(InsertToPosition: InsertToPosition | number): string;
+  abstract rowAdd(insertToPosition: InsertToPosition | number): string;
 
   abstract rowDelete(ids: string[]): void;
 

@@ -9,22 +9,29 @@ import { nanoid, Text } from '@blocksuite/store';
 
 import { richTextPropertyModelConfig } from './define';
 
+const createTagGetter = () => {
+  const options: Record<string, SelectTag> = {};
+  return {
+    getTag: (name: string) => {
+      if (options[name]) return options[name];
+      const tag: SelectTag = {
+        id: nanoid(),
+        value: name,
+        color: getTagColor(),
+      };
+      options[name] = tag;
+      return tag;
+    },
+    getAllOptions: () => Object.values(options),
+  };
+};
+
 export const richTextPropertyConverts = [
   createPropertyConvert(
     richTextPropertyModelConfig,
     propertyModelPresets.selectPropertyModelConfig,
     (_property, cells) => {
-      const options: Record<string, SelectTag> = {};
-      const getTag = (name: string) => {
-        if (options[name]) return options[name];
-        const tag: SelectTag = {
-          id: nanoid(),
-          value: name,
-          color: getTagColor(),
-        };
-        options[name] = tag;
-        return tag;
-      };
+      const { getTag, getAllOptions } = createTagGetter();
       return {
         cells: cells.map(v => {
           const tags = v?.toString().split(',');
@@ -35,7 +42,7 @@ export const richTextPropertyConverts = [
           return undefined;
         }),
         property: {
-          options: Object.values(options),
+          options: getAllOptions(),
         },
       };
     }
@@ -44,18 +51,7 @@ export const richTextPropertyConverts = [
     richTextPropertyModelConfig,
     propertyModelPresets.multiSelectPropertyModelConfig,
     (_property, cells) => {
-      const options: Record<string, SelectTag> = {};
-      // eslint-disable-next-line sonarjs/no-identical-functions
-      const getTag = (name: string) => {
-        if (options[name]) return options[name];
-        const tag: SelectTag = {
-          id: nanoid(),
-          value: name,
-          color: getTagColor(),
-        };
-        options[name] = tag;
-        return tag;
-      };
+      const { getTag, getAllOptions } = createTagGetter();
       return {
         cells: cells.map(v => {
           const result: string[] = [];
@@ -69,7 +65,7 @@ export const richTextPropertyConverts = [
           return result;
         }),
         property: {
-          options: Object.values(options),
+          options: getAllOptions(),
         },
       };
     }
