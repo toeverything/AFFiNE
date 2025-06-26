@@ -206,6 +206,7 @@ export class CopilotSessionModel extends BaseModel {
     // save message
     await this.models.copilotSession.updateMessages({
       ...forkedState,
+      sessionId,
       messages,
     });
     return sessionId;
@@ -286,18 +287,37 @@ export class CopilotSessionModel extends BaseModel {
   async list(options: ListSessionOptions) {
     const { userId, sessionId, workspaceId, docId } = options;
 
-    const extraCondition = [];
+    const conditions: Prisma.AiSessionWhereInput['OR'] = [
+      {
+        userId,
+        workspaceId,
+        docId: docId ?? null,
+        id: sessionId ? { equals: sessionId } : undefined,
+        deletedAt: null,
+        prompt:
+          typeof options.action === 'boolean'
+            ? options.action
+              ? { action: { not: null } }
+              : { action: null }
+            : undefined,
+        parentSessionId:
+          typeof options.fork === 'boolean'
+            ? options.fork
+              ? { not: null }
+              : null
+            : undefined,
+      },
+    ];
 
     if (!options?.action && options?.fork) {
+      // query forked sessions from other users
       // only query forked session if fork == true and action == false
-      extraCondition.push({
+      conditions.push({
         userId: { not: userId },
         workspaceId: workspaceId,
         docId: docId ?? null,
         id: sessionId ? { equals: sessionId } : undefined,
-        prompt: {
-          action: options.action ? { not: null } : null,
-        },
+        prompt: { action: null },
         // should only find forked session
         parentSessionId: { not: null },
         deletedAt: null,
@@ -305,18 +325,7 @@ export class CopilotSessionModel extends BaseModel {
     }
 
     return await this.db.aiSession.findMany({
-      where: {
-        OR: [
-          {
-            userId,
-            workspaceId,
-            docId: docId ?? null,
-            id: sessionId ? { equals: sessionId } : undefined,
-            deletedAt: null,
-          },
-          ...extraCondition,
-        ],
-      },
+      where: { OR: conditions },
       select: {
         id: true,
         userId: true,
@@ -327,6 +336,7 @@ export class CopilotSessionModel extends BaseModel {
         promptName: true,
         tokenCost: true,
         createdAt: true,
+        updatedAt: true,
         messages: options.withMessages
           ? {
               select: {
@@ -348,8 +358,7 @@ export class CopilotSessionModel extends BaseModel {
       take: options?.limit,
       skip: options?.skip,
       orderBy: {
-        // session order is desc by default
-        createdAt: options?.sessionOrder === 'asc' ? 'asc' : 'desc',
+        updatedAt: options?.sessionOrder === 'asc' ? 'asc' : 'desc',
       },
     });
   }

@@ -298,13 +298,16 @@ export class ChatSessionService {
     const histories = await Promise.all(
       sessions.map(
         async ({
-          id,
           userId: uid,
+          id,
+          workspaceId,
+          docId,
           pinned,
           promptName,
           tokenCost,
           messages,
           createdAt,
+          updatedAt,
         }) => {
           try {
             const prompt = await this.prompt.get(promptName);
@@ -341,10 +344,13 @@ export class ChatSessionService {
 
               return {
                 sessionId: id,
+                workspaceId,
+                docId,
                 pinned,
                 action: prompt.action || null,
                 tokens: tokenCost,
                 createdAt,
+                updatedAt,
                 messages: preload.concat(ret.data).map(m => ({
                   ...m,
                   attachments: m.attachments

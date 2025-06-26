@@ -495,14 +495,6 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
 
     const linkedDoc = this.linkedDoc;
     if (linkedDoc) {
-      this.disposables.add(
-        linkedDoc.workspace.slots.docListUpdated.subscribe(() => {
-          this._load().catch(e => {
-            console.error(e);
-            this.isError = true;
-          });
-        })
-      );
       // Should throttle the blockUpdated event to avoid too many re-renders
       // Because the blockUpdated event is triggered too frequently at some cases
       this.disposables.add(

@@ -755,6 +755,38 @@ export const forkCopilotSessionMutation = {
 }`,
 };
 
+export const getCopilotLatestDocSessionQuery = {
+  id: 'getCopilotLatestDocSessionQuery' as const,
+  op: 'getCopilotLatestDocSession',
+  query: `query getCopilotLatestDocSession($workspaceId: String!, $docId: String!) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(
+        docId: $docId
+        options: {limit: 1, sessionOrder: desc, action: false, fork: false}
+      ) {
+        sessionId
+        workspaceId
+        docId
+        pinned
+        action
+        tokens
+        createdAt
+        updatedAt
+        messages {
+          id
+          role
+          content
+          attachments
+          params
+          createdAt
+        }
+      }
+    }
+  }
+}`,
+};
+
 export const getCopilotSessionQuery = {
   id: 'getCopilotSessionQuery' as const,
   op: 'getCopilotSession',
@@ -769,6 +801,27 @@ export const getCopilotSessionQuery = {
         promptName
         model
         optionalModels
+      }
+    }
+  }
+}`,
+};
+
+export const getCopilotRecentSessionsQuery = {
+  id: 'getCopilotRecentSessionsQuery' as const,
+  op: 'getCopilotRecentSessions',
+  query: `query getCopilotRecentSessions($workspaceId: String!, $limit: Int = 10) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(options: {limit: $limit, sessionOrder: desc}) {
+        sessionId
+        workspaceId
+        docId
+        pinned
+        action
+        tokens
+        createdAt
+        updatedAt
       }
     }
   }

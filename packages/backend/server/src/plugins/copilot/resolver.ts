@@ -235,6 +235,12 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
   @Field(() => String)
   sessionId!: string;
 
+  @Field(() => String)
+  workspaceId!: string;
+
+  @Field(() => String, { nullable: true })
+  docId!: string | null;
+
   @Field(() => Boolean)
   pinned!: boolean;
 
@@ -254,6 +260,9 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
 
   @Field(() => Date)
   createdAt!: Date;
+
+  @Field(() => Date)
+  updatedAt!: Date;
 }
 
 @ObjectType('CopilotQuota')

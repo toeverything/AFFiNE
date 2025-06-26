@@ -1,8 +1,6 @@
-import track from '@affine/track';
 import { CodeBlockPreviewExtension } from '@blocksuite/affine/blocks/code';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { CodeBlockModel } from '@blocksuite/affine/model';
-import { FeatureFlagService } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { css, html, LitElement, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
@@ -10,7 +8,6 @@ import { choose } from 'lit/directives/choose.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { linkIframe } from './iframe-container';
-import { linkWebContainer } from './web-container';
 
 export const CodeBlockHtmlPreview = CodeBlockPreviewExtension(
   'html',
@@ -81,34 +78,12 @@ export class HTMLPreview extends SignalWatcher(WithDisposable(LitElement)) {
   private _link() {
     this.state = 'loading';
 
-    const featureFlagService = this.model.store.get(FeatureFlagService);
-    const isWebContainerEnabled = featureFlagService.getFlag(
-      'enable_web_container'
-    );
-
-    if (isWebContainerEnabled) {
-      linkWebContainer(this.iframe, this.model)
-        .then(() => {
-          this.state = 'finish';
-        })
-        .catch(error => {
-          const errorMessage = `Failed to link WebContainer: ${error}`;
-
-          console.error(errorMessage);
-          track.doc.editor.codeBlock.htmlBlockPreviewFailed({
-            type: errorMessage,
-          });
-
-          this.state = 'error';
-        });
-    } else {
-      try {
-        linkIframe(this.iframe, this.model);
-        this.state = 'finish';
-      } catch (error) {
-        console.error('HTML preview iframe failed:', error);
-        this.state = 'error';
-      }
+    try {
+      linkIframe(this.iframe, this.model);
+      this.state = 'finish';
+    } catch (error) {
+      console.error('HTML preview iframe failed:', error);
+      this.state = 'error';
     }
   }
 
