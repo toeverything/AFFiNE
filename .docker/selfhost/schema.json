@@ -540,6 +540,11 @@
           "description": "Where the server get deployed(FQDN).\n@default \"localhost\"\n@environment `AFFINE_SERVER_HOST`",
           "default": "localhost"
         },
+        "hosts": {
+          "type": "array",
+          "description": "Multiple hosts the server will accept requests from.\n@default []",
+          "default": []
+        },
         "port": {
           "type": "number",
           "description": "Which port the server will listen on.\n@default 3010\n@environment `AFFINE_SERVER_PORT`",

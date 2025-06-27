@@ -12,6 +12,8 @@ declare global {
     var readEnv: <T>(key: string, defaultValue: T, availableValues?: T[]) => T;
     // oxlint-disable-next-line no-var
     var CUSTOM_CONFIG_PATH: string;
+    // oxlint-disable-next-line no-var
+    var CLS_REQUEST_HOST: 'CLS_REQUEST_HOST';
   }
 }
 
@@ -53,6 +55,7 @@ export type AppEnv = {
   version: string;
 };
 
+globalThis.CLS_REQUEST_HOST = 'CLS_REQUEST_HOST';
 globalThis.CUSTOM_CONFIG_PATH = join(homedir(), '.affine/config');
 globalThis.readEnv = function readEnv<T>(
   env: string,
