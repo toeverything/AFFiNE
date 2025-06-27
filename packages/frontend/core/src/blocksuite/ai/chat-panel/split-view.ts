@@ -102,9 +102,6 @@ export class ChatPanelSplitView extends SignalWatcher(
   private accessor _right!: HTMLElement;
 
   @state()
-  accessor percent: number = this._getInitialSize();
-
-  @state()
   accessor isDragging = false;
 
   @state()
@@ -113,12 +110,20 @@ export class ChatPanelSplitView extends SignalWatcher(
   private readonly _storeKey = 'chat-panel-split-view-size';
 
   private _getInitialSize() {
-    const last = localStorage.getItem(this._storeKey);
-    return last ? Number.parseInt(last) : 50;
+    try {
+      const last = localStorage.getItem(this._storeKey);
+      return last ? Number.parseInt(last) : 50;
+    } catch {
+      return 50;
+    }
   }
 
   private _setInitialSize(size: number) {
-    localStorage.setItem(this._storeKey, size.toString());
+    try {
+      localStorage.setItem(this._storeKey, size.toString());
+    } catch {
+      console.error('Failed to set initial size');
+    }
   }
 
   private _percent = this._getInitialSize();
@@ -148,7 +153,7 @@ export class ChatPanelSplitView extends SignalWatcher(
   }
   private _onDragEnd() {
     this.isDragging = false;
-    this._setInitialSize(this.percent);
+    this._setInitialSize(this._percent);
   }
 
   private _updateSize() {
@@ -173,11 +178,9 @@ export class ChatPanelSplitView extends SignalWatcher(
     super.firstUpdated(changed);
     if (this._left) {
       this.disposables.addFromEvent(this._left, 'transitionstart', () => {
-        console.log('transitionstart');
         this.isTransitioning = true;
       });
       this.disposables.addFromEvent(this._left, 'transitionend', () => {
-        console.log('transitionend');
         this.isTransitioning = false;
       });
     }
@@ -207,6 +210,7 @@ export class ChatPanelSplitView extends SignalWatcher(
       const onTouchEnd = () => {
         document.removeEventListener('touchmove', onTouchMove);
         document.removeEventListener('touchend', onTouchEnd);
+        this._onDragEnd();
       };
       this.disposables.addFromEvent(this._handle, 'touchstart', e => {
         e.stopPropagation();
