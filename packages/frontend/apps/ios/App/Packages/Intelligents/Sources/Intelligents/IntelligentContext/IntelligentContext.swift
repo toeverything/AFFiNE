@@ -42,6 +42,9 @@ public class IntelligentContext {
     case currentI18nLocale
   }
 
+  public private(set) var currentSession: SessionViewModel?
+  public private(set) var currentWorkspaceId: String?
+
   public lazy var temporaryDirectory: URL = {
     let tempDir = FileManager.default.temporaryDirectory
     return tempDir.appendingPathComponent("IntelligentContext")
@@ -49,11 +52,14 @@ public class IntelligentContext {
 
   public enum IntelligentError: Error, LocalizedError {
     case loginRequired(String)
+    case sessionCreationFailed(String)
 
     public var errorDescription: String? {
       switch self {
       case let .loginRequired(reason):
         "Login required: \(reason)"
+      case let .sessionCreationFailed(reason):
+        "Session creation failed: \(reason)"
       }
     }
   }
@@ -79,21 +85,18 @@ public class IntelligentContext {
             !baseUrlString.isEmpty,
             let url = URL(string: baseUrlString)
       else {
-        DispatchQueue.main.async {
-          completion(.failure(IntelligentError.loginRequired("Missing server base URL")))
-        }
+        completion(.failure(IntelligentError.loginRequired("Missing server base URL")))
         return
       }
 
       guard let workspaceId = webViewMetadataResult[.currentWorkspaceId] as? String,
             !workspaceId.isEmpty
       else {
-        DispatchQueue.main.async {
-          completion(.failure(IntelligentError.loginRequired("Missing workspace ID")))
-        }
+        completion(.failure(IntelligentError.loginRequired("Missing workspace ID")))
         return
       }
 
+      currentWorkspaceId = workspaceId
       QLService.shared.setEndpoint(base: url)
 
       let gqlGroup = DispatchGroup()
@@ -106,20 +109,28 @@ public class IntelligentContext {
       gqlGroup.wait()
       qlMetadata = gqlMetadataResult
 
-      // Check required QL metadata
       guard let userIdentifier = gqlMetadataResult[.userIdentifierKey] as? String,
             !userIdentifier.isEmpty
       else {
-        DispatchQueue.main.async {
-          completion(.failure(IntelligentError.loginRequired("Missing user identifier")))
-        }
+        completion(.failure(IntelligentError.loginRequired("Missing user identifier")))
         return
       }
 
+      let currentDocumentId: String? = webViewMetadata[.currentDocId] as? String
+
       dumpMetadataContents()
 
-      DispatchQueue.main.async {
-        completion(.success(()))
+      createSession(
+        workspaceId: workspaceId,
+        docId: currentDocumentId
+      ) { result in
+        switch result {
+        case let .success(session):
+          self.currentSession = session
+          completion(.success(()))
+        case let .failure(error):
+          completion(.failure(error))
+        }
       }
     }
   }

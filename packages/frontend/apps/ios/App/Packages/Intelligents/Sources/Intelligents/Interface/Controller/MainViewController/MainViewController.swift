@@ -119,17 +119,11 @@ class MainViewController: UIViewController {
   }
 
   private func setupBindings() {
-    chatManager.$currentSession
-      .receive(on: DispatchQueue.main)
-      .sink { [weak self] session in
-        self?.updateMessages(for: session?.id)
-      }
-      .store(in: &cancellables)
-
+    // Monitor messages for the current session
     chatManager.$messages
       .receive(on: DispatchQueue.main)
       .sink { [weak self] _ in
-        if let sessionId = self?.chatManager.currentSession?.id {
+        if let sessionId = IntelligentContext.shared.currentSession?.id {
           self?.updateMessages(for: sessionId)
         }
       }

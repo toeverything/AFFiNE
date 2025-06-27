@@ -40,7 +40,6 @@ public class ChatManager: ObservableObject {
   // MARK: - Properties
 
   @Published public private(set) var sessions: [SessionViewModel] = []
-  @Published public private(set) var currentSession: SessionViewModel?
   @Published public private(set) var messages: [String: [ChatMessage]] = [:]
   @Published public private(set) var isLoading = false
   @Published public private(set) var error: Error?
@@ -56,83 +55,11 @@ public class ChatManager: ObservableObject {
 
   // MARK: - Public Methods
 
-  public func createSession(
-    workspaceId: String,
-    promptName: PromptName = .chatWithAffineAI,
-    docId: String? = nil,
-    pinned: Bool = false
-  ) async throws -> SessionViewModel {
-    isLoading = true
-    error = nil
-
-    do {
-      let input = CreateChatSessionInput(
-        docId: docId.map { .some($0) } ?? .null,
-        pinned: .some(pinned),
-        promptName: promptName.rawValue,
-        workspaceId: workspaceId
-      )
-
-      let mutation = CreateCopilotSessionMutation(options: input)
-
-      return try await withCheckedThrowingContinuation { continuation in
-        apolloClient.perform(mutation: mutation) { result in
-          switch result {
-          case let .success(graphQLResult):
-            guard let sessionId = graphQLResult.data?.createCopilotSession else {
-              continuation.resume(throwing: ChatError.invalidResponse)
-              return
-            }
-
-            let session = SessionViewModel(
-              id: sessionId,
-              workspaceId: workspaceId,
-              docId: docId,
-              promptName: promptName.rawValue,
-              model: nil,
-              pinned: pinned,
-              tokens: 0,
-              createdAt: DateTime(date: Date()),
-              updatedAt: DateTime(date: Date()),
-              parentSessionId: nil
-            )
-
-            Task { @MainActor in
-              self.sessions.append(session)
-              self.currentSession = session
-              self.messages[sessionId] = []
-              self.isLoading = false
-            }
-
-            continuation.resume(returning: session)
-
-          case let .failure(error):
-            Task { @MainActor in
-              self.error = error
-              self.isLoading = false
-            }
-            continuation.resume(throwing: error)
-          }
-        }
-      }
-    } catch {
-      await MainActor.run {
-        self.error = error
-        self.isLoading = false
-      }
-      throw error
-    }
-  }
-
   public func sendMessage(
     content: String,
     inputBoxData: InputBoxData? = nil,
-    sessionId: String? = nil
+    sessionId: String
   ) async throws {
-    guard let targetSessionId = sessionId ?? currentSession?.id else {
-      throw ChatError.noActiveSession
-    }
-
     isLoading = true
     error = nil
 
@@ -182,9 +109,9 @@ public class ChatManager: ObservableObject {
     )
 
     await MainActor.run {
-      var sessionMessages = self.messages[targetSessionId] ?? []
+      var sessionMessages = self.messages[sessionId] ?? []
       sessionMessages.append(userMessage)
-      self.messages[targetSessionId] = sessionMessages
+      self.messages[sessionId] = sessionMessages
     }
 
     do {
@@ -192,7 +119,7 @@ public class ChatManager: ObservableObject {
         attachments: attachmentIds.isEmpty ? .null : .some(attachmentIds),
         content: .some(content),
         params: .some(AffineGraphQL.JSON(_jsonValue: params)),
-        sessionId: targetSessionId
+        sessionId: sessionId
       )
 
       let mutation = CreateCopilotMessageMutation(options: input)
@@ -224,14 +151,14 @@ public class ChatManager: ObservableObject {
       )
 
       await MainActor.run {
-        var sessionMessages = self.messages[targetSessionId] ?? []
+        var sessionMessages = self.messages[sessionId] ?? []
         sessionMessages.append(assistantMessage)
-        self.messages[targetSessionId] = sessionMessages
+        self.messages[sessionId] = sessionMessages
         self.isLoading = false
       }
 
       // Start streaming response
-      try await startStreamingResponse(sessionId: targetSessionId, messageId: messageId)
+      try await startStreamingResponse(sessionId: sessionId, messageId: messageId)
 
     } catch {
       await MainActor.run {
@@ -269,17 +196,9 @@ public class ChatManager: ObservableObject {
     }
   }
 
-  public func switchToSession(_ session: SessionViewModel) {
-    currentSession = session
-  }
-
   public func deleteSession(sessionId: String) {
     sessions.removeAll { $0.id == sessionId }
     messages.removeValue(forKey: sessionId)
-
-    if currentSession?.id == sessionId {
-      currentSession = sessions.first
-    }
   }
 
   public func clearError() {
@@ -594,15 +513,12 @@ public class ChatManager: ObservableObject {
 // MARK: - ChatError
 
 public enum ChatError: LocalizedError {
-  case noActiveSession
   case invalidResponse
   case networkError(Error)
   case notImplemented(String)
 
   public var errorDescription: String? {
     switch self {
-    case .noActiveSession:
-      "No active chat session"
     case .invalidResponse:
       "Invalid response from server"
     case let .networkError(error):

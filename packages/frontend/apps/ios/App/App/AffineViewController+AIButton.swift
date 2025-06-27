@@ -14,19 +14,21 @@ extension AFFiNEViewController: IntelligentsButtonDelegate {
     button.beginProgress()
 
     IntelligentContext.shared.preparePresent { result in
-      button.stopProgress()
-      switch result {
-      case .success:
-        let controller = IntelligentsController()
-        self.present(controller, animated: true)
-      case let .failure(failure):
-        let alert = UIAlertController(
-          title: "Error",
-          message: failure.localizedDescription,
-          preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        self.present(alert, animated: true)
+      DispatchQueue.main.async {
+        button.stopProgress()
+        switch result {
+        case .success:
+          let controller = IntelligentsController()
+          self.present(controller, animated: true)
+        case let .failure(failure):
+          let alert = UIAlertController(
+            title: "Error",
+            message: failure.localizedDescription,
+            preferredStyle: .alert
+          )
+          alert.addAction(UIAlertAction(title: "OK", style: .default))
+          self.present(alert, animated: true)
+        }
       }
     }
   }
