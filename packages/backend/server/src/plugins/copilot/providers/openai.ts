@@ -440,6 +440,60 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     }
   }
 
+  override async rerank(
+    cond: ModelConditions,
+    chunkMessages: PromptMessage[][],
+    options: CopilotChatOptions = {}
+  ): Promise<number[]> {
+    const fullCond = { ...cond, outputType: ModelOutputType.Text };
+    await this.checkParams({ messages: [], cond: fullCond, options });
+    const model = this.selectModel(fullCond);
+    const instance = this.#instance.responses(model.id);
+
+    const scores = await Promise.all(
+      chunkMessages.map(async messages => {
+        const [system, msgs] = await chatToGPTMessage(messages);
+
+        const { logprobs } = await generateText({
+          model: instance,
+          system,
+          messages: msgs,
+          temperature: 0,
+          maxTokens: 1,
+          providerOptions: {
+            openai: {
+              ...this.getOpenAIOptions(options, model.id),
+              // get the log probability of "yes"/"no"
+              logprobs: 2,
+            },
+          },
+          maxSteps: 1,
+          abortSignal: options.signal,
+        });
+
+        const top = (logprobs?.[0]?.topLogprobs ?? []).reduce(
+          (acc, item) => {
+            acc[item.token] = item.logprob;
+            return acc;
+          },
+          {} as Record<string, number>
+        );
+
+        // OpenAI often includes a leading space, so try matching both ' yes' and 'yes'
+        const logYes = top[' yes'] ?? top['yes'] ?? Number.NEGATIVE_INFINITY;
+        const logNo = top[' no'] ?? top['no'] ?? Number.NEGATIVE_INFINITY;
+
+        const pYes = Math.exp(logYes);
+        const pNo = Math.exp(logNo);
+        const prob = pYes + pNo === 0 ? 0 : pYes / (pYes + pNo);
+
+        return prob;
+      })
+    );
+
+    return scores;
+  }
+
   private async getFullStream(
     model: CopilotProviderModel,
     messages: PromptMessage[],

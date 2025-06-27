@@ -177,11 +177,6 @@ export abstract class EmbeddingClient {
 
 const ReRankItemSchema = z.object({
   scores: z.object({
-    reason: z
-      .string()
-      .describe(
-        'Think step by step, describe in 20 words the reason for giving this score.'
-      ),
     chunk: z.string().describe('The chunk index of the search result.'),
     targetId: z.string().describe('The id of the target.'),
     score: z
@@ -194,11 +189,4 @@ const ReRankItemSchema = z.object({
   }),
 });
 
-export const getReRankSchema = (size: number) =>
-  z.object({
-    ranks: ReRankItemSchema.array().describe(
-      `A array of scores. Make sure to score all ${size} results.`
-    ),
-  });
-
-export type ReRankResult = z.infer<ReturnType<typeof getReRankSchema>>['ranks'];
+export type ReRankResult = z.infer<typeof ReRankItemSchema>['scores'][];

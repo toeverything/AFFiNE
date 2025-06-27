@@ -295,4 +295,15 @@ export abstract class CopilotProvider<C = any> {
       kind: 'embedding',
     });
   }
+
+  async rerank(
+    _model: ModelConditions,
+    _messages: PromptMessage[][],
+    _options?: CopilotChatOptions
+  ): Promise<number[]> {
+    throw new CopilotProviderNotSupported({
+      provider: this.type,
+      kind: 'rerank',
+    });
+  }
 }
