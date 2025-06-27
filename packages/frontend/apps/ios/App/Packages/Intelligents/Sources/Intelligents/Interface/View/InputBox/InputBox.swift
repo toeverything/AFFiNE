@@ -30,6 +30,7 @@ class InputBox: UIView {
     $0.textContainerInset = .zero
     $0.delegate = self
     $0.text = ""
+    $0.returnKeyType = .send
   }
 
   lazy var placeholderLabel = UILabel().then {

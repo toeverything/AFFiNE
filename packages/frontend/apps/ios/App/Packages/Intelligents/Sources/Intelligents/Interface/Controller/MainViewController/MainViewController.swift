@@ -18,6 +18,7 @@ class MainViewController: UIViewController {
     $0.register(ChatCell.self, forCellReuseIdentifier: "ChatCell")
     $0.keyboardDismissMode = .interactive
     $0.contentInsetAdjustmentBehavior = .never
+    $0.tableFooterView = UIView(frame: .init(x: 0, y: 0, width: 100, height: 500))
   }
 
   lazy var emptyStateView = UIView().then {
@@ -88,8 +89,8 @@ class MainViewController: UIViewController {
 
     tableView.snp.makeConstraints { make in
       make.top.equalTo(headerView.snp.bottom)
-      make.leading.trailing.equalToSuperview()
-      make.bottom.equalTo(inputBox.snp.top)
+      make.left.right.equalToSuperview()
+      make.bottom.equalToSuperview()
     }
 
     emptyStateView.snp.makeConstraints { make in
