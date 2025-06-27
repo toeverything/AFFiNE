@@ -585,7 +585,7 @@ export class AIChatInput extends SignalWatcher(
       await this._preUpdateMessages(userInput, attachments);
 
       const sessionId = await this.createSessionId();
-      let contexts = await this._getMatchedContexts(userInput);
+      let contexts = await this._getMatchedContexts();
       if (abortController.signal.aborted) {
         return;
       }
@@ -685,46 +685,11 @@ export class AIChatInput extends SignalWatcher(
     }
   };
 
-  private async _getMatchedContexts(userInput: string) {
-    const contextId = await this.getContextId();
-    const workspaceId = this.host.store.workspace.id;
-
+  private async _getMatchedContexts() {
     const docContexts = new Map<
       string,
       { docId: string; docContent: string }
     >();
-    const fileContexts = new Map<
-      string,
-      BlockSuitePresets.AIFileContextOption
-    >();
-
-    const { files: matchedFiles = [], docs: matchedDocs = [] } =
-      (await AIProvider.context?.matchContext(
-        userInput,
-        contextId,
-        workspaceId
-      )) ?? {};
-
-    matchedDocs.forEach(doc => {
-      docContexts.set(doc.docId, {
-        docId: doc.docId,
-        docContent: doc.content,
-      });
-    });
-
-    matchedFiles.forEach(file => {
-      const context = fileContexts.get(file.fileId);
-      if (context) {
-        context.fileContent += `\n${file.content}`;
-      } else {
-        fileContexts.set(file.fileId, {
-          blobId: file.blobId,
-          fileName: file.name,
-          fileType: file.mimeType,
-          fileContent: file.content,
-        });
-      }
-    });
 
     this.chips.forEach(chip => {
       if (isDocChip(chip) && !!chip.markdown?.value) {
@@ -759,10 +724,7 @@ export class AIChatInput extends SignalWatcher(
       };
     });
 
-    return {
-      docs,
-      files: Array.from(fileContexts.values()),
-    };
+    return { docs, files: [] };
   }
 }
 
