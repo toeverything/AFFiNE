@@ -197,7 +197,7 @@ export class CopilotContextService implements OnApplicationBootstrap {
   async matchWorkspaceAll(
     workspaceId: string,
     content: string,
-    topK: number = 10,
+    topK: number,
     signal?: AbortSignal,
     threshold: number = 0.8,
     docIds?: string[],
