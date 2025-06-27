@@ -10,19 +10,19 @@ import Foundation
 
 // MARK: - ChatManager Context Models Extension
 
-extension ChatManager {
+public extension ChatManager {
   // MARK: - Context Models
 
   struct ContextReference: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var fileId: String?
-    var docId: String?
-    var chunk: Int
-    var content: String
-    var distance: Double
-    var highlightedContent: String?
+    public var id: String
+    public var fileId: String?
+    public var docId: String?
+    public var chunk: Int
+    public var content: String
+    public var distance: Double
+    public var highlightedContent: String?
 
-    init(fileId: String? = nil, docId: String? = nil, chunk: Int, content: String, distance: Double, highlightedContent: String? = nil) {
+    public init(fileId: String? = nil, docId: String? = nil, chunk: Int, content: String, distance: Double, highlightedContent: String? = nil) {
       id = UUID().uuidString
       self.fileId = fileId
       self.docId = docId
@@ -34,12 +34,12 @@ extension ChatManager {
   }
 
   struct CopilotContext: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var sessionId: String
-    var workspaceId: String
-    var files: [ContextFile]
-    var docs: [ContextDoc]
-    var categories: [ContextCategory]
+    public var id: String
+    public var sessionId: String
+    public var workspaceId: String
+    public var files: [ContextFile]
+    public var docs: [ContextDoc]
+    public var categories: [ContextCategory]
 
     init(id: String, sessionId: String, workspaceId: String, files: [ContextFile] = [], docs: [ContextDoc] = [], categories: [ContextCategory] = []) {
       self.id = id
@@ -52,14 +52,14 @@ extension ChatManager {
   }
 
   struct ContextFile: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var contextId: String
-    var blobId: String
-    var fileName: String?
-    var fileSize: Int?
-    var mimeType: String?
-    var embeddingStatus: ContextEmbedStatus?
-    var createdAt: DateTime?
+    public var id: String
+    public var contextId: String
+    public var blobId: String
+    public var fileName: String?
+    public var fileSize: Int?
+    public var mimeType: String?
+    public var embeddingStatus: ContextEmbedStatus?
+    public var createdAt: DateTime?
 
     var createdDate: Date? {
       createdAt?.decoded
@@ -67,27 +67,27 @@ extension ChatManager {
   }
 
   struct ContextDoc: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var contextId: String
-    var docId: String
-    var title: String?
-    var embeddingStatus: ContextEmbedStatus?
-    var createdAt: DateTime?
+    public var id: String
+    public var contextId: String
+    public var docId: String
+    public var title: String?
+    public var embeddingStatus: ContextEmbedStatus?
+    public var createdAt: DateTime?
 
-    var createdDate: Date? {
+    public var createdDate: Date? {
       createdAt?.decoded
     }
   }
 
   struct ContextCategory: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var contextId: String
-    var type: ContextCategoryType
-    var docs: [String]
-    var name: String?
-    var createdAt: DateTime?
+    public var id: String
+    public var contextId: String
+    public var type: ContextCategoryType
+    public var docs: [String]
+    public var name: String?
+    public var createdAt: DateTime?
 
-    var createdDate: Date? {
+    public var createdDate: Date? {
       createdAt?.decoded
     }
   }
@@ -104,15 +104,15 @@ extension ChatManager {
   }
 
   struct MatchContextResult: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var fileId: String?
-    var docId: String?
-    var chunk: Int
-    var content: String
-    var distance: Double
-    var highlightedContent: String?
+    public var id: String
+    public var fileId: String?
+    public var docId: String?
+    public var chunk: Int
+    public var content: String
+    public var distance: Double
+    public var highlightedContent: String?
 
-    init(fileId: String? = nil, docId: String? = nil, chunk: Int, content: String, distance: Double, highlightedContent: String? = nil) {
+    public init(fileId: String? = nil, docId: String? = nil, chunk: Int, content: String, distance: Double, highlightedContent: String? = nil) {
       id = UUID().uuidString
       self.fileId = fileId
       self.docId = docId

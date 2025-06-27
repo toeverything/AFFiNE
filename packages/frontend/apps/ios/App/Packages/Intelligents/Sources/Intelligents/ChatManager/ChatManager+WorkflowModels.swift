@@ -10,15 +10,15 @@ import Foundation
 
 // MARK: - ChatManager Workflow Models Extension
 
-extension ChatManager {
+public extension ChatManager {
   // MARK: - Workflow Models
 
   struct WorkflowEventData: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var status: String
-    var type: String
-    var progress: Double?
-    var message: String?
+    public var id: String
+    public var status: String
+    public var type: String
+    public var progress: Double?
+    public var message: String?
 
     init(status: String, type: String, progress: Double? = nil, message: String? = nil) {
       id = UUID().uuidString
@@ -30,12 +30,12 @@ extension ChatManager {
   }
 
   struct WorkspaceEmbeddingStatus: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var workspaceId: String
-    var total: Int
-    var embedded: Int
+    public var id: String
+    public var workspaceId: String
+    public var total: Int
+    public var embedded: Int
 
-    var progress: Double {
+    public var progress: Double {
       total > 0 ? Double(embedded) / Double(total) : 0.0
     }
 
@@ -48,12 +48,12 @@ extension ChatManager {
   }
 
   struct ChatEvent: Codable, Identifiable, Equatable, Hashable {
-    var id: String
-    var type: ChatEventType
-    var data: String
-    var timestamp: DateTime?
+    public var id: String
+    public var type: ChatEventType
+    public var data: String
+    public var timestamp: DateTime?
 
-    var timestampDate: Date? {
+    public var timestampDate: Date? {
       timestamp?.decoded
     }
 

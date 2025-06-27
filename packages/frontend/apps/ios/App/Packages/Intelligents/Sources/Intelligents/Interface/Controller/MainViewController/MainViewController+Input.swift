@@ -84,7 +84,6 @@ extension MainViewController: InputBoxDelegate {
         if let currentSession = chatManager.currentSession {
           try await chatManager.sendMessage(
             content: inputData.text,
-            attachments: [], // TODO: Handle attachments
             sessionId: currentSession.id
           )
         } else {
@@ -99,7 +98,6 @@ extension MainViewController: InputBoxDelegate {
 
           try await chatManager.sendMessage(
             content: inputData.text,
-            attachments: [], // TODO: Handle attachments
             sessionId: session.id
           )
         }
