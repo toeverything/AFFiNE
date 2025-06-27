@@ -197,9 +197,9 @@ export class CopilotContextService implements OnApplicationBootstrap {
   async matchWorkspaceAll(
     workspaceId: string,
     content: string,
-    topK: number = 5,
+    topK: number = 10,
     signal?: AbortSignal,
-    threshold: number = 0.5
+    threshold: number = 0.8
   ) {
     if (!this.embeddingClient) return [];
     const embedding = await this.embeddingClient.getEmbedding(content, signal);
