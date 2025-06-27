@@ -107,14 +107,8 @@ class ChatBaseCell: UITableViewCell {
       .systemRed.withAlphaComponent(0.1)
     case .loading:
       .systemGray6
-    case .workflowStatus:
-      .systemBlue.withAlphaComponent(0.1)
-    case .contextReference:
-      .systemGreen.withAlphaComponent(0.1)
     case .attachment:
       .systemPurple.withAlphaComponent(0.1)
-    case .transcription:
-      .systemOrange.withAlphaComponent(0.1)
     }
   }
 }

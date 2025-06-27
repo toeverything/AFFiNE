@@ -17,11 +17,6 @@ class ChatCellFactory {
     tableView.register(LoadingCell.self, forCellReuseIdentifier: CellType.loading.rawValue)
     tableView.register(ErrorCell.self, forCellReuseIdentifier: CellType.error.rawValue)
     tableView.register(AttachmentCell.self, forCellReuseIdentifier: CellType.attachment.rawValue)
-    tableView.register(ContextReferenceCell.self, forCellReuseIdentifier: CellType.contextReference.rawValue)
-    tableView.register(WorkflowStatusCell.self, forCellReuseIdentifier: CellType.workflowStatus.rawValue)
-
-    // 为不支持的类型注册默认cell
-    tableView.register(SystemMessageCell.self, forCellReuseIdentifier: CellType.transcription.rawValue)
   }
 
   // MARK: - Cell Creation
@@ -75,16 +70,7 @@ class ChatCellFactory {
         return 60 + CGFloat(attachmentViewModel.attachments.count * 60)
       }
       return 120
-    case .contextReference:
-      // 基础高度 + 每个引用的高度
-//      if let contextViewModel = viewModel as? ContextReferenceCellViewModel {
-//        return 60 + CGFloat(contextViewModel.references.count * 80)
-//      }
-      return 140
-    case .workflowStatus:
-      return 100
-    case .transcription:
-      return 80
+      
     }
   }
 }

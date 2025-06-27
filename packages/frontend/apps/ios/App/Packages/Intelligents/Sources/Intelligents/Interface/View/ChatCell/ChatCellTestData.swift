@@ -41,22 +41,6 @@ import Foundation
           progress: 0.6
         ),
 
-//        // Context reference
-//        ContextReferenceCellViewModel(
-//          id: "context-1",
-//          references: [
-//            ChatManager.ContextReference(
-//              docId: "doc-1",
-//              title: "Project Plan Document",
-//              type: "document",
-//              chunk: 1,
-//              content: "This is the core objectives and timeline of the project, including detailed milestone planning...",
-//              distance: 0.1
-//            ),
-//          ],
-//          parentMessageId: "user-1"
-//        ),
-
         // AI assistant reply
         AssistantMessageCellViewModel(
           id: "assistant-1",
@@ -72,20 +56,6 @@ import Foundation
               snippet: "The project is planned to be completed within 6 months, including four main phases: design, development, testing, and deployment"
             ),
           ]
-        ),
-
-        // Workflow status
-        WorkflowStatusCellViewModel(
-          id: "workflow-1",
-          workflow: ChatManager.WorkflowEventData(
-            status: "completed",
-            type: "document_analysis",
-            title: "Document Analysis Completed",
-            content: "Successfully analyzed document content and extracted key information",
-            progress: 1.0,
-            timestamp: Date().addingTimeInterval(-30)
-          ),
-          parentMessageId: "assistant-1"
         ),
 
         // Error message
