@@ -95,6 +95,7 @@ export function setupAIProvider(
       client,
       sessionId,
       content: input,
+      timeout: 5 * 60 * 1000, // 5 minutes
       params: {
         docs: contexts?.docs,
         files: contexts?.files,
