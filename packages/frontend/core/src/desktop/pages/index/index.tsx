@@ -1,4 +1,3 @@
-import { DefaultServerService } from '@affine/core/modules/cloud';
 import { DesktopApiService } from '@affine/core/modules/desktop-api';
 import { WorkspacesService } from '@affine/core/modules/workspace';
 import {
@@ -47,17 +46,10 @@ export const Component = ({
   const [navigating, setNavigating] = useState(true);
   const [creating, setCreating] = useState(false);
   const authService = useService(AuthService);
-  const defaultServerService = useService(DefaultServerService);
 
   const loggedIn = useLiveData(
     authService.session.status$.map(s => s === 'authenticated')
   );
-  const allowGuestDemo =
-    useLiveData(
-      defaultServerService.server.config$.selector(
-        c => c.allowGuestDemoWorkspace
-      )
-    ) ?? true;
 
   const workspacesService = useService(WorkspacesService);
   const list = useLiveData(workspacesService.list.workspaces$);
@@ -92,12 +84,6 @@ export const Component = ({
       return;
     }
 
-    if (!allowGuestDemo && !loggedIn) {
-      localStorage.removeItem('last_workspace_id');
-      jumpToSignIn();
-      return;
-    }
-
     // check is user logged in && has cloud workspace
     if (searchParams.get('initCloud') === 'true') {
       if (loggedIn) {
@@ -125,7 +111,6 @@ export const Component = ({
       openPage(openWorkspace.id, defaultIndexRoute, RouteLogic.REPLACE);
     }
   }, [
-    allowGuestDemo,
     createCloudWorkspace,
     list,
     openPage,
@@ -147,12 +132,7 @@ export const Component = ({
     if (listIsLoading || list.length > 0) {
       return;
     }
-    if (!allowGuestDemo && !loggedIn) {
-      localStorage.removeItem('last_workspace_id');
-      jumpToSignIn();
-      return;
-    }
-    setCreating(true);
+
     createFirstAppData(workspacesService)
       .then(createdWorkspace => {
         if (createdWorkspace) {
@@ -177,7 +157,6 @@ export const Component = ({
     jumpToSignIn,
     openPage,
     workspacesService,
-    allowGuestDemo,
     loggedIn,
     listIsLoading,
     list,

@@ -1,7 +1,6 @@
 import type { FlagInfo } from './types';
 
 // const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
-const isDesktopEnvironment = BUILD_CONFIG.isElectron;
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
 const isMobile = BUILD_CONFIG.isMobileEdition;
 
@@ -148,15 +147,6 @@ export const AFFINE_FLAGS = {
       'com.affine.settings.workspace.experimental-features.enable-theme-editor.description',
     configurable: isCanaryBuild && !isMobile,
     defaultState: isCanaryBuild,
-  },
-  enable_local_workspace: {
-    category: 'affine',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-local-workspace.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-local-workspace.description',
-    configurable: isCanaryBuild,
-    defaultState: isDesktopEnvironment || isCanaryBuild,
   },
   enable_advanced_block_visibility: {
     category: 'blocksuite',
