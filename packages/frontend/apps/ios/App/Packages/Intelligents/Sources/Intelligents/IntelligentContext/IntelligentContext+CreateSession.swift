@@ -16,7 +16,7 @@ public extension IntelligentContext {
     promptName: PromptName = .chatWithAffineAI,
     docId: String? = nil,
     pinned: Bool = false,
-    completion: @escaping (Result<SessionViewModel, Error>) -> Void
+    completion: @escaping (Result<ChatSessionObject, Error>) -> Void
   ) {
     let input = CreateChatSessionInput(
       docId: docId.map { .some($0) } ?? .null,
@@ -35,7 +35,7 @@ public extension IntelligentContext {
           return
         }
 
-        let session = SessionViewModel(
+        let session = ChatSessionObject(
           id: sessionId,
           workspaceId: workspaceId,
           docId: docId,

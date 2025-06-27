@@ -39,7 +39,7 @@ public class ChatManager: ObservableObject {
 
   // MARK: - Properties
 
-  @Published public private(set) var messages: [String: [ChatMessage]] = [:]
+  @Published public private(set) var viewModels: [String: [any ChatCellViewModel]] = [:]
 
   private var cancellables = Set<AnyCancellable>()
 
@@ -100,18 +100,18 @@ public class ChatManager: ObservableObject {
     }
 
     // Add user message immediately
-    let userMessage = ChatMessage(
+    let userViewModel = UserMessageCellViewModel(
       id: UUID().uuidString,
-      role: .user,
       content: content,
-      attachments: attachmentIds.isEmpty ? nil : attachmentIds,
-      params: params.isEmpty ? nil : params.mapValues { String(describing: $0) }
+      timestamp: Date(),
+      attachments: attachmentIds.isEmpty ? nil : attachmentIds.map { AttachmentViewModel(id: $0, url: $0, fileName: "Attachment") },
+      isRetrying: false
     )
 
     await MainActor.run {
-      var sessionMessages = self.messages[sessionId] ?? []
-      sessionMessages.append(userMessage)
-      self.messages[sessionId] = sessionMessages
+      var sessionViewModels = self.viewModels[sessionId] ?? []
+      sessionViewModels.append(userViewModel)
+      self.viewModels[sessionId] = sessionViewModels
     }
 
     do {
@@ -141,18 +141,18 @@ public class ChatManager: ObservableObject {
       }
 
       // Add assistant message placeholder
-      let assistantMessage = ChatMessage(
+      let assistantViewModel = AssistantMessageCellViewModel(
         id: messageId,
-        role: .assistant,
         content: "Thinking...",
-        attachments: nil,
-        params: nil
+        timestamp: Date(),
+        isStreaming: true,
+        canRetry: false
       )
 
       await MainActor.run {
-        var sessionMessages = self.messages[sessionId] ?? []
-        sessionMessages.append(assistantMessage)
-        self.messages[sessionId] = sessionMessages
+        var sessionViewModels = self.viewModels[sessionId] ?? []
+        sessionViewModels.append(assistantViewModel)
+        self.viewModels[sessionId] = sessionViewModels
       }
 
       // Start streaming response
@@ -161,16 +161,15 @@ public class ChatManager: ObservableObject {
     } catch {
       // Add error message to chat
       await MainActor.run {
-        let errorMessage = ChatMessage(
+        let errorViewModel = ErrorCellViewModel(
           id: UUID().uuidString,
-          role: .error,
-          content: error.localizedDescription,
-          attachments: nil,
-          params: nil
+          errorMessage: error.localizedDescription,
+          canRetry: true,
+          retryAction: "retry_message"
         )
-        var sessionMessages = self.messages[sessionId] ?? []
-        sessionMessages.append(errorMessage)
-        self.messages[sessionId] = sessionMessages
+        var sessionViewModels = self.viewModels[sessionId] ?? []
+        sessionViewModels.append(errorViewModel)
+        self.viewModels[sessionId] = sessionViewModels
       }
     }
   }
@@ -186,8 +185,8 @@ public class ChatManager: ObservableObject {
     try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
 
     await MainActor.run {
-      var sessionMessages = self.messages[sessionId] ?? []
-      if let lastIndex = sessionMessages.lastIndex(where: { $0.id == messageId }) {
+      var sessionViewModels = self.viewModels[sessionId] ?? []
+      if let lastIndex = sessionViewModels.lastIndex(where: { $0.id == messageId }) {
         let responses = [
           "This is a simulated streaming response. The actual implementation would use Server-Sent Events to connect to the AFFiNE AI backend.",
           "Hello! I'm AFFiNE AI. How can I help you today?",
@@ -196,14 +195,19 @@ public class ChatManager: ObservableObject {
           "Based on the context provided, here's what I found...",
         ]
 
-        sessionMessages[lastIndex].content = responses.randomElement() ?? "Hello! How can I help you?"
+        if var assistantViewModel = sessionViewModels[lastIndex] as? AssistantMessageCellViewModel {
+          assistantViewModel.content = responses.randomElement() ?? "Hello! How can I help you?"
+          assistantViewModel.isStreaming = false
+          assistantViewModel.canRetry = true
+          sessionViewModels[lastIndex] = assistantViewModel
+        }
       }
-      self.messages[sessionId] = sessionMessages
+      self.viewModels[sessionId] = sessionViewModels
     }
   }
 
   public func deleteSessionMessages(sessionId: String) {
-    messages.removeValue(forKey: sessionId)
+    viewModels.removeValue(forKey: sessionId)
   }
 
   // MARK: - Retry Message
@@ -216,100 +220,29 @@ public class ChatManager: ObservableObject {
   // MARK: - ViewModel Generation
 
   public func viewModels(for sessionId: String) -> [any ChatCellViewModel] {
-    guard let messages = messages[sessionId] else { return [] }
-
-    var viewModels: [any ChatCellViewModel] = []
-
-    for message in messages {
-      let mainViewModel = createMainViewModel(from: message)
-      viewModels.append(mainViewModel)
-
-      if let attachments = message.attachments, !attachments.isEmpty {
-        let attachmentViewModels = attachments.map { attachmentId in
-          AttachmentViewModel(
-            id: attachmentId,
-            url: attachmentId, // TODO: IMPL
-            mimeType: nil,
-            fileName: "Attachment",
-            size: nil
-          )
-        }
-
-        let attachmentViewModel = AttachmentCellViewModel(
-          id: "\(message.messageId)_attachments",
-          attachments: attachmentViewModels,
-          parentMessageId: message.messageId
-        )
-        viewModels.append(attachmentViewModel)
-      }
-
-      // TODO: OTHER ITEMS
-    }
-
-    return viewModels
-  }
-
-  private func createMainViewModel(from message: ChatMessage) -> any ChatCellViewModel {
-    switch message.role {
-    case .user:
-      UserMessageCellViewModel(
-        id: message.messageId,
-        content: message.content,
-        timestamp: Date(),
-        attachments: [], // 应该从消息中获取实际时间戳
-        isRetrying: false
-      )
-
-    case .assistant:
-      AssistantMessageCellViewModel(
-        id: message.messageId,
-        content: message.content,
-        timestamp: Date(), // 应该从消息中获取实际时间戳
-        isStreaming: message.content == "Thinking...", // 简单判断是否在流式传输
-        model: message.params?["model"],
-        tokens: Int(message.params?["tokens"] ?? ""),
-        canRetry: true
-      )
-
-    case .system:
-      SystemMessageCellViewModel(
-        id: message.messageId,
-        content: message.content,
-        timestamp: Date() // 应该从消息中获取实际时间戳
-      )
-
-    case .error:
-      ErrorCellViewModel(
-        id: message.messageId,
-        errorMessage: message.content,
-        canRetry: true,
-        retryAction: "retry_message"
-      )
-    }
+    viewModels[sessionId] ?? []
   }
 
   // MARK: - Loading State Management
 
   public func addLoadingMessage(to sessionId: String, message: String? = nil) {
-    let loadingMessage = ChatMessage(
+    let loadingViewModel = LoadingCellViewModel(
       id: "loading_\(UUID().uuidString)",
-      role: .system,
-      content: message ?? "正在处理...",
-      attachments: nil,
-      params: ["type": "loading"]
+      message: message ?? "正在处理...",
+      progress: nil
     )
 
-    var sessionMessages = messages[sessionId] ?? []
-    sessionMessages.append(loadingMessage)
-    messages[sessionId] = sessionMessages
+    var sessionViewModels = viewModels[sessionId] ?? []
+    sessionViewModels.append(loadingViewModel)
+    viewModels[sessionId] = sessionViewModels
   }
 
   public func removeLoadingMessage(from sessionId: String) {
-    var sessionMessages = messages[sessionId] ?? []
-    sessionMessages.removeAll { message in
-      message.params?["type"] == "loading"
+    var sessionViewModels = viewModels[sessionId] ?? []
+    sessionViewModels.removeAll { viewModel in
+      viewModel.cellType == .loading
     }
-    messages[sessionId] = sessionMessages
+    viewModels[sessionId] = sessionViewModels
   }
 }
 

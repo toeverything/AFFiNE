@@ -1,3 +1,4 @@
+import Combine
 import SnapKit
 import Then
 import UIKit
@@ -33,7 +34,17 @@ class ChatTableView: UIView {
   // MARK: - Properties
 
   weak var delegate: ChatTableViewDelegate?
-  var cellViewModels: [ChatCellViewModel] = [] {
+  var sessionId: String? {
+    didSet {
+      if let sessionId {
+        bindToSession(sessionId)
+      }
+    }
+  }
+
+  private var cancellables = Set<AnyCancellable>()
+
+  var cellViewModels: [any ChatCellViewModel] = [] {
     didSet {
       updateEmptyState()
       tableView.reloadData()
@@ -84,10 +95,6 @@ class ChatTableView: UIView {
 
   // MARK: - Public Methods
 
-  func updateMessages(_ messages: [ChatMessage]) {
-    cellViewModels = ChatMessageToViewModelConverter.convertAll(messages)
-  }
-
   func scrollToBottom(animated: Bool = true) {
     guard !cellViewModels.isEmpty else { return }
     let indexPath = IndexPath(row: cellViewModels.count - 1, section: 0)
@@ -95,6 +102,18 @@ class ChatTableView: UIView {
   }
 
   // MARK: - Private Methods
+
+  private func bindToSession(_ sessionId: String) {
+    cancellables.removeAll()
+
+    ChatManager.shared.$viewModels
+      .map { $0[sessionId] ?? [] }
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] viewModels in
+        self?.cellViewModels = viewModels
+      }
+      .store(in: &cancellables)
+  }
 
   private func updateEmptyState() {
     emptyStateView.isHidden = !cellViewModels.isEmpty

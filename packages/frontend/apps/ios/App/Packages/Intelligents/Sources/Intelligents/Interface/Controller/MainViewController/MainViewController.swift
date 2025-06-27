@@ -32,7 +32,6 @@ class MainViewController: UIViewController {
 
   // MARK: - Properties
 
-  var messages: [ChatMessage] = []
   var cancellables = Set<AnyCancellable>()
   let intelligentContext = IntelligentContext.shared
   let chatManager = ChatManager.shared
@@ -45,7 +44,6 @@ class MainViewController: UIViewController {
     view.backgroundColor = .affineLayerBackgroundPrimary
 
     setupUI()
-    setupBindings()
 
     view.isUserInteractionEnabled = true
     terminateEditGesture = UITapGestureRecognizer(target: self, action: #selector(terminateEditing))
@@ -88,18 +86,6 @@ class MainViewController: UIViewController {
     }
   }
 
-  private func setupBindings() {
-    // Monitor messages for the current session
-    chatManager.$messages
-      .receive(on: DispatchQueue.main)
-      .sink { [weak self] _ in
-        if let sessionId = IntelligentContext.shared.currentSession?.id {
-          self?.updateMessages(for: sessionId)
-        }
-      }
-      .store(in: &cancellables)
-  }
-
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     navigationController!.setNavigationBarHidden(true, animated: animated)
@@ -119,26 +105,6 @@ class MainViewController: UIViewController {
   }
 
   // MARK: - Chat Methods
-
-  private func updateMessages(for sessionId: String?) {
-    guard let sessionId else {
-      messages = []
-      chatTableView.updateMessages([])
-      return
-    }
-
-    messages = chatManager.messages[sessionId] ?? []
-    chatTableView.updateMessages(messages)
-  }
-
-  // MARK: - Internal Methods for Preview/Testing
-
-  #if DEBUG
-    func setMessagesForPreview(_ previewMessages: [ChatMessage]) {
-      messages = previewMessages
-      chatTableView.updateMessages(messages)
-    }
-  #endif
 }
 
 // MARK: - ChatTableViewDelegate

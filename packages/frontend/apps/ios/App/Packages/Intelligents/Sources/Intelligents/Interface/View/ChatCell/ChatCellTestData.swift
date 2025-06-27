@@ -67,31 +67,5 @@ import Foundation
         ),
       ]
     }
-
-    static func createTestMessages() -> [ChatMessage] {
-      [
-        ChatMessage(
-          id: "msg-1",
-          role: .user,
-          content: "Hello, AFFiNE AI!",
-          attachments: ["file1.pdf"]
-        ),
-        ChatMessage(
-          id: "msg-2",
-          role: .assistant,
-          content: "Hello! I'm AFFiNE AI, glad to serve you. How can I help you?"
-        ),
-        ChatMessage(
-          id: "msg-3",
-          role: .system,
-          content: "System message: Current session has been established"
-        ),
-        ChatMessage(
-          id: "msg-4",
-          role: .error,
-          content: "Connection timeout, please retry"
-        ),
-      ]
-    }
   }
 #endif

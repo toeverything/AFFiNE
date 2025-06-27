@@ -70,7 +70,6 @@ class ChatCellFactory {
         return 60 + CGFloat(attachmentViewModel.attachments.count * 60)
       }
       return 120
-      
     }
   }
 }

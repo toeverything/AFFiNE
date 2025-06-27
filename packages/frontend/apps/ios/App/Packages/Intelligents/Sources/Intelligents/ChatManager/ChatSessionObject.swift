@@ -1,5 +1,5 @@
 //
-//  ChatMessage.swift
+//  ChatSessionObject.swift
 //  Intelligents
 //
 //  Created by 秋星桥 on 6/26/25.
@@ -8,42 +8,7 @@
 import AffineGraphQL
 import Foundation
 
-public struct ChatMessage: Codable, Identifiable, Equatable, Hashable {
-  public var id: String?
-  public var role: MessageRole
-  public var content: String
-  public var attachments: [String]?
-  public var params: [String: String]?
-
-  public var messageId: String {
-    id ?? UUID().uuidString
-  }
-
-  public init(
-    id: String? = nil,
-    role: MessageRole,
-    content: String,
-    attachments: [String]? = nil,
-    params: [String: String]? = nil
-  ) {
-    self.id = id
-    self.role = role
-    self.content = content
-    self.attachments = attachments
-    self.params = params
-  }
-}
-
-public extension ChatMessage {
-  enum MessageRole: String, Codable, CaseIterable {
-    case user
-    case assistant
-    case system
-    case error
-  }
-}
-
-public struct SessionViewModel: Codable, Identifiable, Equatable, Hashable {
+public struct ChatSessionObject: Codable, Identifiable, Equatable, Hashable {
   public var id: String
   public var workspaceId: String
   public var docId: String?
