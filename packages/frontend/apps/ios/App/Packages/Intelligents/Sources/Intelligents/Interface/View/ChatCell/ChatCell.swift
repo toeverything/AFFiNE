@@ -12,16 +12,8 @@ import UIKit
 class ChatCell: UITableViewCell {
   // MARK: - UI Components
 
-  private lazy var avatarImageView = UIImageView().then {
-    $0.contentMode = .scaleAspectFit
-    $0.layer.cornerRadius = 16
-    $0.layer.cornerCurve = .continuous
-    $0.clipsToBounds = true
-    $0.backgroundColor = .systemGray5
-  }
-
   private lazy var messageContainerView = UIView().then {
-    $0.layer.cornerRadius = 12
+    $0.layer.cornerRadius = 8
     $0.layer.cornerCurve = .continuous
   }
 
@@ -29,23 +21,6 @@ class ChatCell: UITableViewCell {
     $0.numberOfLines = 0
     $0.font = .systemFont(ofSize: 16)
     $0.textColor = .label
-  }
-
-  private lazy var timestampLabel = UILabel().then {
-    $0.font = .systemFont(ofSize: 12)
-    $0.textColor = .systemGray
-    $0.textAlignment = .right
-  }
-
-  private lazy var stackView = UIStackView().then {
-    $0.axis = .horizontal
-    $0.spacing = 12
-    $0.alignment = .top
-  }
-
-  private lazy var messageStackView = UIStackView().then {
-    $0.axis = .vertical
-    $0.spacing = 4
   }
 
   // MARK: - Properties
@@ -70,30 +45,16 @@ class ChatCell: UITableViewCell {
     backgroundColor = .clear
     selectionStyle = .none
 
-    contentView.addSubview(stackView)
-
-    messageStackView.addArrangedSubview(messageContainerView)
-    messageStackView.addArrangedSubview(timestampLabel)
-
+    contentView.addSubview(messageContainerView)
     messageContainerView.addSubview(messageLabel)
 
-    stackView.addArrangedSubview(avatarImageView)
-    stackView.addArrangedSubview(messageStackView)
-
-    stackView.snp.makeConstraints { make in
-      make.edges.equalToSuperview().inset(16)
-    }
-
-    avatarImageView.snp.makeConstraints { make in
-      make.size.equalTo(32)
+    messageContainerView.snp.makeConstraints { make in
+      make.top.bottom.equalToSuperview().inset(8)
+      make.leading.trailing.equalToSuperview().inset(16)
     }
 
     messageLabel.snp.makeConstraints { make in
       make.edges.equalToSuperview().inset(12)
-    }
-
-    messageStackView.snp.makeConstraints { make in
-      make.width.lessThanOrEqualTo(250)
     }
   }
 
@@ -101,17 +62,7 @@ class ChatCell: UITableViewCell {
 
   func configure(with message: ChatMessage) {
     self.message = message
-
     messageLabel.text = message.content
-
-    if let createdDate = message.createdDate {
-      let formatter = DateFormatter()
-      formatter.dateStyle = .none
-      formatter.timeStyle = .short
-      timestampLabel.text = formatter.string(from: createdDate)
-    } else {
-      timestampLabel.text = ""
-    }
 
     switch message.role {
     case .user:
@@ -120,36 +71,32 @@ class ChatCell: UITableViewCell {
       configureAssistantMessage()
     case .system:
       configureSystemMessage()
+    case .error:
+      configureErrorMessage()
     }
   }
 
   private func configureUserMessage() {
-    // User message - align to right
-    stackView.semanticContentAttribute = .forceRightToLeft
-    messageContainerView.backgroundColor = .systemBlue
-    messageLabel.textColor = .white
-    avatarImageView.image = UIImage(systemName: "person.circle.fill")
-    avatarImageView.tintColor = .systemBlue
-    timestampLabel.textAlignment = .left
+    // User message - no background, default text color
+    messageContainerView.backgroundColor = .clear
+    messageLabel.textColor = .label
   }
 
   private func configureAssistantMessage() {
-    // Assistant message - align to left
-    stackView.semanticContentAttribute = .forceLeftToRight
-    messageContainerView.backgroundColor = .systemGray6
+    // Assistant message - no background, default text color
+    messageContainerView.backgroundColor = .clear
     messageLabel.textColor = .label
-    avatarImageView.image = UIImage(systemName: "brain.head.profile")
-    avatarImageView.tintColor = .systemPurple
-    timestampLabel.textAlignment = .right
   }
 
   private func configureSystemMessage() {
-    // System message - center aligned
-    stackView.semanticContentAttribute = .forceLeftToRight
-    messageContainerView.backgroundColor = .systemYellow.withAlphaComponent(0.3)
+    // System message - with background for visibility
+    messageContainerView.backgroundColor = .systemYellow.withAlphaComponent(0.2)
     messageLabel.textColor = .label
-    avatarImageView.image = UIImage(systemName: "gear")
-    avatarImageView.tintColor = .systemOrange
-    timestampLabel.textAlignment = .center
+  }
+
+  private func configureErrorMessage() {
+    // Error message - with background for visibility
+    messageContainerView.backgroundColor = .systemRed.withAlphaComponent(0.1)
+    messageLabel.textColor = .systemRed
   }
 }

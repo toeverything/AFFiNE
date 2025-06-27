@@ -39,19 +39,13 @@ public class ChatManager: ObservableObject {
 
   // MARK: - Properties
 
-  @Published public private(set) var sessions: [SessionViewModel] = []
   @Published public private(set) var messages: [String: [ChatMessage]] = [:]
-  @Published public private(set) var isLoading = false
-  @Published public private(set) var error: Error?
 
   private var cancellables = Set<AnyCancellable>()
-  private let apolloClient: ApolloClient
 
   // MARK: - Initialization
 
-  private init(apolloClient: ApolloClient = QLService.shared.client) {
-    self.apolloClient = apolloClient
-  }
+  private init() {}
 
   // MARK: - Public Methods
 
@@ -59,10 +53,17 @@ public class ChatManager: ObservableObject {
     content: String,
     inputBoxData: InputBoxData? = nil,
     sessionId: String
-  ) async throws {
-    isLoading = true
-    error = nil
+  ) {
+    Task {
+      await _sendMessage(content: content, inputBoxData: inputBoxData, sessionId: sessionId)
+    }
+  }
 
+  private func _sendMessage(
+    content: String,
+    inputBoxData: InputBoxData? = nil,
+    sessionId: String
+  ) async {
     // Prepare attachments and parameters
     var attachmentIds: [String] = []
     var params: [String: AnyHashable] = [
@@ -104,8 +105,7 @@ public class ChatManager: ObservableObject {
       role: .user,
       content: content,
       attachments: attachmentIds.isEmpty ? nil : attachmentIds,
-      params: params.isEmpty ? nil : params.mapValues { String(describing: $0) },
-      createdAt: DateTime(date: Date())
+      params: params.isEmpty ? nil : params.mapValues { String(describing: $0) }
     )
 
     await MainActor.run {
@@ -125,7 +125,7 @@ public class ChatManager: ObservableObject {
       let mutation = CreateCopilotMessageMutation(options: input)
 
       let messageId = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
-        apolloClient.perform(mutation: mutation) { result in
+        QLService.shared.client.perform(mutation: mutation) { result in
           switch result {
           case let .success(graphQLResult):
             guard let messageId = graphQLResult.data?.createCopilotMessage else {
@@ -146,26 +146,32 @@ public class ChatManager: ObservableObject {
         role: .assistant,
         content: "Thinking...",
         attachments: nil,
-        params: nil,
-        createdAt: DateTime(date: Date())
+        params: nil
       )
 
       await MainActor.run {
         var sessionMessages = self.messages[sessionId] ?? []
         sessionMessages.append(assistantMessage)
         self.messages[sessionId] = sessionMessages
-        self.isLoading = false
       }
 
       // Start streaming response
       try await startStreamingResponse(sessionId: sessionId, messageId: messageId)
 
     } catch {
+      // Add error message to chat
       await MainActor.run {
-        self.error = error
-        self.isLoading = false
+        let errorMessage = ChatMessage(
+          id: UUID().uuidString,
+          role: .error,
+          content: error.localizedDescription,
+          attachments: nil,
+          params: nil
+        )
+        var sessionMessages = self.messages[sessionId] ?? []
+        sessionMessages.append(errorMessage)
+        self.messages[sessionId] = sessionMessages
       }
-      throw error
     }
   }
 
@@ -196,13 +202,8 @@ public class ChatManager: ObservableObject {
     }
   }
 
-  public func deleteSession(sessionId: String) {
-    sessions.removeAll { $0.id == sessionId }
+  public func deleteSessionMessages(sessionId: String) {
     messages.removeValue(forKey: sessionId)
-  }
-
-  public func clearError() {
-    error = nil
   }
 
   // MARK: - Context Management
@@ -211,7 +212,7 @@ public class ChatManager: ObservableObject {
     let mutation = CreateCopilotContextMutation(workspaceId: workspaceId, sessionId: sessionId)
 
     return try await withCheckedThrowingContinuation { continuation in
-      apolloClient.perform(mutation: mutation) { result in
+      QLService.shared.client.perform(mutation: mutation) { result in
         switch result {
         case let .success(graphQLResult):
           guard let contextId = graphQLResult.data?.createCopilotContext else {
@@ -226,272 +227,12 @@ public class ChatManager: ObservableObject {
     }
   }
 
-  public func addFileToContext(contextId _: String, fileData _: Data, fileName _: String) async throws {
-    // TODO: Implement file upload and context addition
-    // This would involve:
-    // 1. Upload the file to get a blob ID
-    // 2. Add the blob to context using AddContextFileMutation
-    throw ChatError.notImplemented("File upload not implemented yet")
-  }
-
   public func addDocumentToContext(contextId: String, docId: String) async throws {
     let input = AffineGraphQL.AddContextDocInput(contextId: contextId, docId: docId)
     let mutation = AddContextDocMutation(options: input)
 
     try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-      apolloClient.perform(mutation: mutation) { result in
-        switch result {
-        case .success:
-          continuation.resume()
-        case let .failure(error):
-          continuation.resume(throwing: error)
-        }
-      }
-    }
-  }
-
-  public func matchContext(contextId: String, content: String, limit: Int = 5) async throws -> [ContextReference] {
-    let query = MatchContextQuery(
-      contextId: .some(contextId),
-      workspaceId: .null,
-      content: content,
-      limit: .some(limit.string),
-      scopedThreshold: .null,
-      threshold: .null
-    )
-
-    return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[ContextReference], Error>) in
-      apolloClient.fetch(query: query) { result in
-        switch result {
-        case let .success(graphQLResult):
-          guard let contexts = graphQLResult.data?.currentUser?.copilot.contexts else {
-            continuation.resume(returning: [])
-            return
-          }
-
-          var references: [ContextReference] = []
-
-          for context in contexts {
-            // Process file matches
-            for file in context.matchFiles ?? [] {
-              let ref = ContextReference(
-                fileId: file.fileId,
-                chunk: .init(file.chunk) ?? 0,
-                content: file.content,
-                distance: file.distance ?? 0
-              )
-              references.append(ref)
-            }
-
-            // Process document matches
-            for doc in context.matchWorkspaceDocs ?? [] {
-              let ref = ContextReference(
-                docId: doc.docId,
-                chunk: .init(doc.chunk) ?? 0,
-                content: doc.content,
-                distance: doc.distance ?? 0
-              )
-              references.append(ref)
-            }
-          }
-
-          continuation.resume(returning: references)
-        case let .failure(error):
-          continuation.resume(throwing: error)
-        }
-      }
-    }
-  }
-
-  // MARK: - Session Management
-
-  public func updateSession(
-    sessionId: String,
-    docId: String? = nil,
-    pinned: Bool? = nil,
-    promptName: String? = nil
-  ) async throws {
-    var input = AffineGraphQL.UpdateChatSessionInput(sessionId: sessionId)
-
-    if let docId {
-      input.docId = .some(docId)
-    }
-    if let pinned {
-      input.pinned = .some(pinned)
-    }
-    if let promptName {
-      input.promptName = .some(promptName)
-    }
-
-    let mutation = UpdateCopilotSessionMutation(options: input)
-
-    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-      apolloClient.perform(mutation: mutation) { result in
-        switch result {
-        case .success:
-          continuation.resume()
-        case let .failure(error):
-          continuation.resume(throwing: error)
-        }
-      }
-    }
-  }
-
-  public func forkSession(
-    sessionId: String,
-    workspaceId: String,
-    docId: String,
-    latestMessageId: String
-  ) async throws -> String {
-    let input = AffineGraphQL.ForkChatSessionInput(
-      docId: docId,
-      latestMessageId: .some(latestMessageId),
-      sessionId: sessionId,
-      workspaceId: workspaceId
-    )
-
-    let mutation = ForkCopilotSessionMutation(options: input)
-
-    return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
-      apolloClient.perform(mutation: mutation) { result in
-        switch result {
-        case let .success(graphQLResult):
-          guard let newSessionId = graphQLResult.data?.forkCopilotSession else {
-            continuation.resume(throwing: ChatError.invalidResponse)
-            return
-          }
-          continuation.resume(returning: newSessionId)
-        case let .failure(error):
-          continuation.resume(throwing: error)
-        }
-      }
-    }
-  }
-
-  public func loadSessionHistory(sessionId: String, workspaceId: String) async throws -> [ChatMessage] {
-    let options = AffineGraphQL.QueryChatHistoriesInput(
-      action: .null,
-      limit: .null,
-      sessionId: .some(sessionId),
-      skip: .null
-    )
-
-    let query = GetCopilotHistoriesQuery(
-      workspaceId: workspaceId,
-      docId: .null,
-      options: .some(options)
-    )
-
-    return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[ChatMessage], Error>) in
-      apolloClient.fetch(query: query) { result in
-        switch result {
-        case let .success(graphQLResult):
-          guard let histories = graphQLResult.data?.currentUser?.copilot.histories,
-                let history = histories.first
-          else {
-            continuation.resume(returning: [])
-            return
-          }
-
-          let messages = history.messages.compactMap { message -> ChatMessage? in
-            guard let role = ChatMessage.MessageRole(rawValue: message.role) else {
-              return nil
-            }
-
-            return ChatMessage(
-              id: message.id?.description,
-              role: role,
-              content: message.content ?? "",
-              attachments: message.attachments,
-              params: nil, // GraphQL doesn't return params in history
-              createdAt: message.createdAt
-            )
-          }
-
-          continuation.resume(returning: messages)
-        case let .failure(error):
-          continuation.resume(throwing: error)
-        }
-      }
-    }
-  }
-
-  public func loadRecentSessions(workspaceId: String, limit: Int = 10) async throws -> [SessionViewModel] {
-    let query = GetCopilotRecentSessionsQuery(workspaceId: workspaceId, limit: .some(limit))
-
-    return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[SessionViewModel], Error>) in
-      apolloClient.fetch(query: query) { result in
-        switch result {
-        case let .success(graphQLResult):
-          guard let histories = graphQLResult.data?.currentUser?.copilot.histories else {
-            continuation.resume(returning: [])
-            return
-          }
-
-          let sessions = histories.compactMap { history -> SessionViewModel? in
-            SessionViewModel(
-              id: history.sessionId,
-              workspaceId: workspaceId,
-              docId: history.docId, // Available in recent sessions query
-              promptName: history.action ?? "Chat With AFFiNE AI",
-              model: nil,
-              pinned: history.pinned,
-              tokens: history.tokens,
-              createdAt: history.createdAt,
-              updatedAt: history.updatedAt,
-              parentSessionId: nil
-            )
-          }
-
-          continuation.resume(returning: sessions)
-        case let .failure(error):
-          continuation.resume(throwing: error)
-        }
-      }
-    }
-  }
-
-  // MARK: - File Upload
-
-  public func uploadFile(workspaceId _: String, fileData _: Data, fileName _: String) async throws -> String {
-    // TODO: Implement file upload to get blob ID
-    // This would use AddWorkspaceEmbeddingFilesMutation
-    throw ChatError.notImplemented("File upload not implemented yet")
-  }
-
-  // MARK: - Embedding Management
-
-  public func getWorkspaceEmbeddingStatus(workspaceId: String) async throws -> WorkspaceEmbeddingStatus {
-    let query = GetWorkspaceEmbeddingStatusQuery(workspaceId: workspaceId)
-
-    return try await withCheckedThrowingContinuation { continuation in
-      apolloClient.fetch(query: query) { result in
-        switch result {
-        case let .success(graphQLResult):
-          guard let status = graphQLResult.data?.queryWorkspaceEmbeddingStatus else {
-            continuation.resume(throwing: ChatError.invalidResponse)
-            return
-          }
-
-          let embeddingStatus = WorkspaceEmbeddingStatus(
-            workspaceId: workspaceId,
-            total: .init(status.total) ?? 0,
-            embedded: .init(status.embedded) ?? 0
-          )
-
-          continuation.resume(returning: embeddingStatus)
-        case let .failure(error):
-          continuation.resume(throwing: error)
-        }
-      }
-    }
-  }
-
-  public func queueWorkspaceEmbedding(workspaceId: String, docIds: [String]) async throws {
-    let mutation = QueueWorkspaceEmbeddingMutation(workspaceId: workspaceId, docId: docIds)
-
-    try await withCheckedThrowingContinuation { continuation in
-      apolloClient.perform(mutation: mutation) { result in
+      QLService.shared.client.perform(mutation: mutation) { result in
         switch result {
         case .success:
           continuation.resume()

@@ -14,11 +14,6 @@ public struct ChatMessage: Codable, Identifiable, Equatable, Hashable {
   public var content: String
   public var attachments: [String]?
   public var params: [String: String]?
-  public var createdAt: DateTime?
-
-  public var createdDate: Date? {
-    createdAt?.decoded
-  }
 
   public var messageId: String {
     id ?? UUID().uuidString
@@ -29,15 +24,13 @@ public struct ChatMessage: Codable, Identifiable, Equatable, Hashable {
     role: MessageRole,
     content: String,
     attachments: [String]? = nil,
-    params: [String: String]? = nil,
-    createdAt: DateTime? = nil
+    params: [String: String]? = nil
   ) {
     self.id = id
     self.role = role
     self.content = content
     self.attachments = attachments
     self.params = params
-    self.createdAt = createdAt
   }
 }
 
@@ -46,6 +39,7 @@ public extension ChatMessage {
     case user
     case assistant
     case system
+    case error
   }
 }
 
