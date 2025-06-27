@@ -36,7 +36,8 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    - host: "{{ .Values.global.ingress.host }}"
+    {{- range .Values.global.ingress.hosts }}
+    - host: {{ . | quote }}
       http:
         paths:
           - path: /socket.io
@@ -45,33 +46,34 @@ spec:
               service:
                 name: affine-sync
                 port:
-                  number: {{ .Values.sync.service.port }}
+                  number: {{ $.Values.sync.service.port }}
           - path: /graphql
             pathType: Prefix
             backend:
               service:
                 name: affine-graphql
                 port:
-                  number: {{ .Values.graphql.service.port }}
+                  number: {{ $.Values.graphql.service.port }}
           - path: /api
             pathType: Prefix
             backend:
               service:
                 name: affine-graphql
                 port:
-                  number: {{ .Values.graphql.service.port }}
+                  number: {{ $.Values.graphql.service.port }}
           - path: /workspace
             pathType: Prefix
             backend:
               service:
                 name: affine-renderer
                 port:
-                  number: {{ .Values.renderer.service.port }}
+                  number: {{ $.Values.renderer.service.port }}
           - path: /
             pathType: Prefix
             backend:
               service:
                 name: affine-web
                 port:
-                  number: {{ .Values.web.service.port }}
+                  number: {{ $.Values.web.service.port }}
+    {{- end }}
 {{- end }}

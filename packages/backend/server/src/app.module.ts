@@ -8,6 +8,7 @@ import { ClsModule } from 'nestjs-cls';
 
 import { AppController } from './app.controller';
 import {
+  getRequestFromHost,
   getRequestIdFromHost,
   getRequestIdFromRequest,
   ScannerModule,
@@ -66,8 +67,9 @@ export const FunctionalityModules = [
         // make every request has a unique id to tracing
         return getRequestIdFromRequest(req, 'http');
       },
-      setup(cls, _req, res: Response) {
+      setup(cls, req: Request, res: Response) {
         res.setHeader('X-Request-Id', cls.getId());
+        cls.set(CLS_REQUEST_HOST, req.hostname);
       },
     },
     // for websocket connection
@@ -78,6 +80,10 @@ export const FunctionalityModules = [
       idGenerator(context: ExecutionContext) {
         // make every request has a unique id to tracing
         return getRequestIdFromHost(context);
+      },
+      setup(cls, context: ExecutionContext) {
+        const req = getRequestFromHost(context);
+        cls.set(CLS_REQUEST_HOST, req.hostname);
       },
     },
     plugins: [

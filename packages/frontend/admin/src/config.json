@@ -171,6 +171,10 @@
       "desc": "Where the server get deployed(FQDN).",
       "env": "AFFINE_SERVER_HOST"
     },
+    "hosts": {
+      "type": "Array",
+      "desc": "Multiple hosts the server will accept requests from."
+    },
     "port": {
       "type": "Number",
       "desc": "Which port the server will listen on.",

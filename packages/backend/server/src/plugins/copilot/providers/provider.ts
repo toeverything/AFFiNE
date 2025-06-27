@@ -141,7 +141,11 @@ export abstract class CopilotProvider<C = any> {
             const context = this.moduleRef.get(CopilotContextService, {
               strict: false,
             });
-            const searchDocs = buildDocSearchGetter(ac, context);
+
+            const docContext = options.session
+              ? await context.getBySessionId(options.session)
+              : null;
+            const searchDocs = buildDocSearchGetter(ac, context, docContext);
             tools.doc_semantic_search = createDocSemanticSearchTool(
               searchDocs.bind(null, options)
             );

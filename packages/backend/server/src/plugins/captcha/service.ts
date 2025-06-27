@@ -56,13 +56,26 @@ export class CaptchaService {
       body: formData,
       method: 'POST',
     });
-    const outcome: any = await result.json();
+    const outcome = (await result.json()) as {
+      success: boolean;
+      hostname: string;
+    };
 
-    return (
-      !!outcome.success &&
-      // skip hostname check in dev mode
-      (env.dev || outcome.hostname === this.config.server.host)
+    if (!outcome.success) return false;
+
+    // skip hostname check in dev mode
+    if (env.dev) return true;
+
+    // check if the hostname is in the hosts
+    if (this.config.server.hosts.includes(outcome.hostname)) return true;
+
+    // check if the hostname is in the host
+    if (this.config.server.host === outcome.hostname) return true;
+
+    this.logger.warn(
+      `Captcha verification failed for hostname: ${outcome.hostname}`
     );
+    return false;
   }
 
   private async verifyChallengeResponse(response: any, resource: string) {

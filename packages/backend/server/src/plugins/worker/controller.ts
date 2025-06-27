@@ -56,7 +56,7 @@ export class WorkerController {
       this.logger.error('Invalid Origin', 'ERROR', { origin, referer });
       throw new BadRequest('Invalid header');
     }
-    const url = new URL(req.url, this.url.baseUrl);
+    const url = new URL(req.url, this.url.requestBaseUrl);
     const imageURL = url.searchParams.get('url');
     if (!imageURL) {
       throw new BadRequest('Missing "url" parameter');
