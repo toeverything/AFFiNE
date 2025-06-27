@@ -14,7 +14,7 @@ export interface AIReasoningConfig {
   setEnabled: (state: boolean) => void;
 }
 
-export interface AIModelSwitchConfig {
+export interface AIPlaygroundConfig {
   visible: Signal<boolean | undefined>;
 }
 

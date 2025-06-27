@@ -3,11 +3,11 @@ import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { ToolIcon } from '@blocksuite/icons/lit';
 import { css, html, type TemplateResult } from 'lit';
-import { property, state } from 'lit/decorators.js';
+import { property } from 'lit/decorators.js';
 
-export class ToolCallCard extends WithDisposable(ShadowlessElement) {
+export class ToolFailedCard extends WithDisposable(ShadowlessElement) {
   static override styles = css`
-    .ai-tool-call-wrapper {
+    .ai-tool-failed-wrapper {
       padding: 12px;
       margin: 8px 0;
       border-radius: 8px;
@@ -27,74 +27,36 @@ export class ToolCallCard extends WithDisposable(ShadowlessElement) {
         svg {
           width: 24px;
           height: 24px;
-          color: ${unsafeCSSVarV2('icon/activated')};
+          color: ${unsafeCSSVarV2('button/error')};
         }
       }
 
-      .ai-tool-name {
+      .ai-error-name {
         font-size: 14px;
         font-weight: 500;
         line-height: 24px;
         margin-left: 0px;
         margin-right: auto;
-        color: ${unsafeCSSVarV2('icon/activated')};
+        color: ${unsafeCSSVarV2('button/error')};
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-      }
-
-      .loading-dots {
-        display: inline;
-        margin-left: 2px;
-        color: ${unsafeCSSVarV2('icon/activated')};
       }
     }
   `;
 
   @property({ attribute: false })
-  accessor name: string = 'Tool calling';
+  accessor name: string = 'Tool calling failed';
 
   @property({ attribute: false })
   accessor icon: TemplateResult<1> = ToolIcon();
 
-  @state()
-  private accessor dotsText = '.';
-
-  private animationTimer?: number;
-
-  override connectedCallback() {
-    super.connectedCallback();
-    this.startDotsAnimation();
-  }
-
-  override disconnectedCallback() {
-    super.disconnectedCallback();
-    this.stopDotsAnimation();
-  }
-
-  private startDotsAnimation() {
-    let dotCount = 1;
-    this.animationTimer = window.setInterval(() => {
-      dotCount = (dotCount % 3) + 1;
-      this.dotsText = '.'.repeat(dotCount);
-    }, 750);
-  }
-
-  private stopDotsAnimation() {
-    if (this.animationTimer) {
-      clearInterval(this.animationTimer);
-      this.animationTimer = undefined;
-    }
-  }
-
   protected override render() {
     return html`
-      <div class="ai-tool-call-wrapper">
+      <div class="ai-tool-failed-wrapper">
         <div class="ai-tool-header">
           <div class="ai-icon">${this.icon}</div>
-          <div class="ai-tool-name">
-            ${this.name}<span class="loading-dots">${this.dotsText}</span>
-          </div>
+          <div class="ai-error-name">${this.name}</div>
         </div>
       </div>
     `;

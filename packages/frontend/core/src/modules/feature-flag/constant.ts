@@ -26,7 +26,7 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: true,
   },
-  enable_ai_model_switch: {
+  enable_ai_playground: {
     category: 'affine',
     displayName:
       'com.affine.settings.workspace.experimental-features.enable-ai-model-switch.name',

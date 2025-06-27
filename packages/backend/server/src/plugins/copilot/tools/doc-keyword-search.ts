@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { AccessController } from '../../../core/permission';
 import type { IndexerService, SearchDoc } from '../../indexer';
 import type { CopilotChatOptions } from '../providers';
+import { toolError } from './error';
 
 export const buildDocKeywordSearchGetter = (
   ac: AccessController,
@@ -56,8 +57,8 @@ export const createDocKeywordSearchTool = (
           createdByUser: doc.createdByUser,
           updatedByUser: doc.updatedByUser,
         }));
-      } catch {
-        return 'Failed to search documents.';
+      } catch (e: any) {
+        return toolError('Doc Keyword Search Failed', e.message);
       }
     },
   });

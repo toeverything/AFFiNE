@@ -5,6 +5,8 @@ import type { Signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
+import type { ToolError } from './type';
+
 interface WebCrawlToolCall {
   type: 'tool-call';
   toolCallId: string;
@@ -17,14 +19,17 @@ interface WebCrawlToolResult {
   toolCallId: string;
   toolName: string;
   args: { url: string };
-  result: Array<{
-    title: string;
-    url: string;
-    content: string;
-    favicon: string;
-    publishedDate: string;
-    author: string;
-  }>;
+  result:
+    | Array<{
+        title: string;
+        url: string;
+        content: string;
+        favicon: string;
+        publishedDate: string;
+        author: string;
+      }>
+    | ToolError
+    | null;
 }
 
 export class WebCrawlTool extends WithDisposable(ShadowlessElement) {
@@ -51,23 +56,32 @@ export class WebCrawlTool extends WithDisposable(ShadowlessElement) {
       return nothing;
     }
 
-    const { favicon, title, content } = this.data.result[0];
+    const result = this.data.result;
+    if (result && Array.isArray(result)) {
+      const { favicon, title, content } = result[0];
+      return html`
+        <tool-result-card
+          .host=${this.host}
+          .name=${'The reading is complete, and this webpage has been read'}
+          .icon=${WebIcon()}
+          .footerIcons=${favicon ? [favicon] : []}
+          .results=${[
+            {
+              title: title,
+              icon: favicon,
+              content: content,
+            },
+          ]}
+          .width=${this.width}
+        ></tool-result-card>
+      `;
+    }
 
     return html`
-      <tool-result-card
-        .host=${this.host}
-        .name=${'The reading is complete, and this webpage has been read'}
+      <tool-call-failed
+        .name=${'Web reading failed'}
         .icon=${WebIcon()}
-        .footerIcons=${favicon ? [favicon] : []}
-        .results=${[
-          {
-            title: title,
-            icon: favicon,
-            content: content,
-          },
-        ]}
-        .width=${this.width}
-      ></tool-result-card>
+      ></tool-call-failed>
     `;
   }
 

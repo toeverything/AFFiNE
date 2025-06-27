@@ -1,6 +1,5 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
@@ -20,13 +19,6 @@ export class ChatContentStreamObjects extends WithDisposable(
       margin: 8px 0;
       border-radius: 8px;
       background-color: rgba(0, 0, 0, 0.05);
-    }
-
-    .tool-wrapper {
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
     }
   `;
 
@@ -70,12 +62,16 @@ export class ChatContentStreamObjects extends WithDisposable(
             .width=${this.width}
           ></web-search-tool>
         `;
-      default:
+      default: {
+        const name = streamObject.toolName + ' tool calling';
         return html`
-          <div class="tool-wrapper">
-            ${streamObject.toolName} tool calling...
-          </div>
+          <tool-call-card
+            .name=${name}
+            .host=${this.host}
+            .width=${this.width}
+          ></tool-call-card>
         `;
+      }
     }
   }
 
@@ -101,12 +97,16 @@ export class ChatContentStreamObjects extends WithDisposable(
             .width=${this.width}
           ></web-search-tool>
         `;
-      default:
+      default: {
+        const name = streamObject.toolName + ' tool result';
         return html`
-          <div class="tool-wrapper">
-            ${streamObject.toolName} tool result...
-          </div>
+          <tool-result-card
+            .name=${name}
+            .host=${this.host}
+            .width=${this.width}
+          ></tool-result-card>
         `;
+      }
     }
   }
 

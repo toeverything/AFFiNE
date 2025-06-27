@@ -20,8 +20,8 @@ import type {
   SearchMenuConfig,
 } from '../components/ai-chat-chips';
 import type {
-  AIModelSwitchConfig,
   AINetworkSearchConfig,
+  AIPlaygroundConfig,
   AIReasoningConfig,
 } from '../components/ai-chat-input';
 import {
@@ -224,7 +224,7 @@ export class ChatPanel extends SignalWatcher(
   accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
-  accessor modelSwitchConfig!: AIModelSwitchConfig;
+  accessor playgroundConfig!: AIPlaygroundConfig;
 
   @property({ attribute: false })
   accessor appSidebarConfig!: AppSidebarConfig;
@@ -298,7 +298,7 @@ export class ChatPanel extends SignalWatcher(
         .doc=${this.doc}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
-        .modelSwitchConfig=${this.modelSwitchConfig}
+        .playgroundConfig=${this.playgroundConfig}
         .appSidebarConfig=${this.appSidebarConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .docDisplayConfig=${this.docDisplayConfig}
@@ -437,7 +437,7 @@ export class ChatPanel extends SignalWatcher(
               >`
             : 'AFFiNE AI'}
         </div>
-        ${this.modelSwitchConfig.visible.value
+        ${this.playgroundConfig.visible.value
           ? html`
               <div class="chat-panel-playground" @click=${this._openPlayground}>
                 ${CenterPeekIcon()}
@@ -478,7 +478,7 @@ export class ChatPanel extends SignalWatcher(
         .isVisible=${this._isSidebarOpen}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
-        .modelSwitchConfig=${this.modelSwitchConfig}
+        .playgroundConfig=${this.playgroundConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .trackOptions=${{

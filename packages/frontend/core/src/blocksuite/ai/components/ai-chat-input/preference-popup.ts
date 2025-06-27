@@ -15,8 +15,6 @@ import { ShadowlessElement } from '@blocksuite/std';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import type { AIModelSwitchConfig } from './type';
-
 export class ChatInputPreference extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
@@ -50,10 +48,6 @@ export class ChatInputPreference extends SignalWatcher(
 
   @property({ attribute: false })
   accessor session!: CopilotSessionType | undefined;
-
-  // --------- model props start ---------
-  @property({ attribute: false })
-  accessor modelSwitchConfig: AIModelSwitchConfig | undefined = undefined;
 
   @property({ attribute: false })
   accessor onModelChange: ((modelId: string) => void) | undefined;
@@ -96,22 +90,20 @@ export class ChatInputPreference extends SignalWatcher(
     const searchItems = [];
 
     // model switch
-    if (this.modelSwitchConfig?.visible.value) {
-      modelItems.push(
-        menu.subMenu({
-          name: 'Model',
-          prefix: AiOutlineIcon(),
-          options: {
-            items: (this.session?.optionalModels ?? []).map(modelId => {
-              return menu.action({
-                name: modelId,
-                select: () => this._onModelChange(modelId),
-              });
-            }),
-          },
-        })
-      );
-    }
+    modelItems.push(
+      menu.subMenu({
+        name: 'Model',
+        prefix: AiOutlineIcon(),
+        options: {
+          items: (this.session?.optionalModels ?? []).map(modelId => {
+            return menu.action({
+              name: modelId,
+              select: () => this._onModelChange(modelId),
+            });
+          }),
+        },
+      })
+    );
 
     modelItems.push(
       menu.toggleSwitch({

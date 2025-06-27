@@ -6,7 +6,7 @@ import { Service } from '@toeverything/infra';
 
 import type { FeatureFlagService } from '../../feature-flag';
 
-export class AIModelSwitchService extends Service {
+export class AIPlaygroundService extends Service {
   constructor(private readonly featureFlagService: FeatureFlagService) {
     super();
 
@@ -22,5 +22,5 @@ export class AIModelSwitchService extends Service {
   visible: Signal<boolean | undefined>;
 
   private readonly _visible$ =
-    this.featureFlagService.flags.enable_ai_model_switch.$;
+    this.featureFlagService.flags.enable_ai_playground.$;
 }

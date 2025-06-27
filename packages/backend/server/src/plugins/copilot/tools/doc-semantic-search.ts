@@ -5,6 +5,7 @@ import type { AccessController } from '../../../core/permission';
 import type { ChunkSimilarity } from '../../../models';
 import type { CopilotContextService } from '../context';
 import type { CopilotChatOptions } from '../providers';
+import { toolError } from './error';
 
 export const buildDocSearchGetter = (
   ac: AccessController,
@@ -46,8 +47,8 @@ export const createDocSemanticSearchTool = (
     execute: async ({ query }) => {
       try {
         return await searchDocs(query);
-      } catch {
-        return 'Failed to search documents.';
+      } catch (e: any) {
+        return toolError('Doc Semantic Search Failed', e.message);
       }
     },
   });

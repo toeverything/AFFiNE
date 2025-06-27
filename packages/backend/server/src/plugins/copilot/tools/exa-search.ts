@@ -3,6 +3,7 @@ import Exa from 'exa-js';
 import { z } from 'zod';
 
 import { Config } from '../../../base';
+import { toolError } from './error';
 
 export const createExaSearchTool = (config: Config) => {
   return tool({
@@ -30,41 +31,8 @@ export const createExaSearchTool = (config: Config) => {
           publishedDate: data.publishedDate,
           author: data.author,
         }));
-      } catch {
-        return 'Failed to search the web';
-      }
-    },
-  });
-};
-
-export const createExaCrawlTool = (config: Config) => {
-  return tool({
-    description: 'Crawl the web url for information',
-    parameters: z.object({
-      url: z
-        .string()
-        .describe('The URL to crawl (including http:// or https://)'),
-    }),
-    execute: async ({ url }) => {
-      try {
-        const { key } = config.copilot.exa;
-        const exa = new Exa(key);
-        const result = await exa.getContents([url], {
-          livecrawl: 'always',
-          text: {
-            maxCharacters: 100000,
-          },
-        });
-        return result.results.map(data => ({
-          title: data.title,
-          url: data.url,
-          content: data.text,
-          favicon: data.favicon,
-          publishedDate: data.publishedDate,
-          author: data.author,
-        }));
-      } catch {
-        return 'Failed to crawl the web url';
+      } catch (e: any) {
+        return toolError('Exa Search Failed', e.message);
       }
     },
   });

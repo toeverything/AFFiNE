@@ -188,11 +188,6 @@ export class CopilotSessionModel extends BaseModel {
 
   @Transactional()
   async fork(options: ForkSessionOptions): Promise<string> {
-    if (!options.messages?.length) {
-      throw new CopilotSessionInvalidInput(
-        'Cannot fork session without messages'
-      );
-    }
     if (options.pinned) {
       await this.unpin(options.workspaceId, options.userId);
     }
@@ -203,12 +198,15 @@ export class CopilotSessionModel extends BaseModel {
       ...forkedState,
       messages: [],
     });
-    // save message
-    await this.models.copilotSession.updateMessages({
-      ...forkedState,
-      sessionId,
-      messages,
-    });
+    if (options.messages.length) {
+      // save message
+      await this.models.copilotSession.updateMessages({
+        ...forkedState,
+        sessionId,
+        messages,
+      });
+    }
+
     return sessionId;
   }
 
