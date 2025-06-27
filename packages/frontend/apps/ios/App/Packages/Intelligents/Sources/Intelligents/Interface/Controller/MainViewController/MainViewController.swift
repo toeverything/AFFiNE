@@ -10,26 +10,8 @@ class MainViewController: UIViewController {
     $0.delegate = self
   }
 
-  lazy var tableView = UITableView().then {
-    $0.backgroundColor = .clear
-    $0.separatorStyle = .none
+  lazy var chatTableView = ChatTableView().then {
     $0.delegate = self
-    $0.dataSource = self
-    $0.register(ChatCell.self, forCellReuseIdentifier: "ChatCell")
-    $0.keyboardDismissMode = .interactive
-    $0.contentInsetAdjustmentBehavior = .never
-    $0.tableFooterView = UIView(frame: .init(x: 0, y: 0, width: 100, height: 500))
-  }
-
-  lazy var emptyStateView = UIView().then {
-    $0.isHidden = true
-  }
-
-  lazy var emptyStateLabel = UILabel().then {
-    $0.text = "Start a conversation..."
-    $0.font = .systemFont(ofSize: 18, weight: .medium)
-    $0.textColor = .systemGray
-    $0.textAlignment = .center
   }
 
   lazy var inputBox = InputBox().then {
@@ -50,10 +32,10 @@ class MainViewController: UIViewController {
 
   // MARK: - Properties
 
-  private var messages: [ChatMessage] = []
-  private var cancellables = Set<AnyCancellable>()
-  private let intelligentContext = IntelligentContext.shared
-  private let chatManager = ChatManager.shared
+  var messages: [ChatMessage] = []
+  var cancellables = Set<AnyCancellable>()
+  let intelligentContext = IntelligentContext.shared
+  let chatManager = ChatManager.shared
   var terminateEditGesture: UITapGestureRecognizer!
 
   // MARK: - Lifecycle
@@ -74,32 +56,20 @@ class MainViewController: UIViewController {
 
   private func setupUI() {
     view.addSubview(headerView)
-    view.addSubview(tableView)
-    view.addSubview(emptyStateView)
+    view.addSubview(chatTableView)
     view.addSubview(inputBox)
     view.addSubview(documentPickerHideDetector)
     view.addSubview(documentPickerView)
-
-    emptyStateView.addSubview(emptyStateLabel)
 
     headerView.snp.makeConstraints { make in
       make.top.equalTo(view.safeAreaLayoutGuide)
       make.leading.trailing.equalToSuperview()
     }
 
-    tableView.snp.makeConstraints { make in
+    chatTableView.snp.makeConstraints { make in
       make.top.equalTo(headerView.snp.bottom)
       make.left.right.equalToSuperview()
       make.bottom.equalToSuperview()
-    }
-
-    emptyStateView.snp.makeConstraints { make in
-      make.center.equalTo(tableView)
-      make.width.lessThanOrEqualTo(tableView).inset(32)
-    }
-
-    emptyStateLabel.snp.makeConstraints { make in
-      make.edges.equalToSuperview()
     }
 
     inputBox.snp.makeConstraints { make in
@@ -153,24 +123,12 @@ class MainViewController: UIViewController {
   private func updateMessages(for sessionId: String?) {
     guard let sessionId else {
       messages = []
-      updateEmptyState()
-      tableView.reloadData()
+      chatTableView.updateMessages([])
       return
     }
 
     messages = chatManager.messages[sessionId] ?? []
-    updateEmptyState()
-    tableView.reloadData()
-
-    if !messages.isEmpty {
-      let indexPath = IndexPath(row: messages.count - 1, section: 0)
-      tableView.scrollToRow(at: indexPath, at: .bottom, animated: true)
-    }
-  }
-
-  private func updateEmptyState() {
-    emptyStateView.isHidden = !messages.isEmpty
-    tableView.isHidden = messages.isEmpty
+    chatTableView.updateMessages(messages)
   }
 
   // MARK: - Internal Methods for Preview/Testing
@@ -178,35 +136,15 @@ class MainViewController: UIViewController {
   #if DEBUG
     func setMessagesForPreview(_ previewMessages: [ChatMessage]) {
       messages = previewMessages
-      updateEmptyState()
-      tableView.reloadData()
+      chatTableView.updateMessages(messages)
     }
   #endif
 }
 
-// MARK: - UITableViewDataSource
+// MARK: - ChatTableViewDelegate
 
-extension MainViewController: UITableViewDataSource {
-  func tableView(_: UITableView, numberOfRowsInSection _: Int) -> Int {
-    messages.count
-  }
-
-  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-    let cell = tableView.dequeueReusableCell(withIdentifier: "ChatCell", for: indexPath) as! ChatCell
-    let message = messages[indexPath.row]
-    cell.configure(with: message)
-    return cell
-  }
-}
-
-// MARK: - UITableViewDelegate
-
-extension MainViewController: UITableViewDelegate {
-  func tableView(_: UITableView, heightForRowAt _: IndexPath) -> CGFloat {
-    UITableView.automaticDimension
-  }
-
-  func tableView(_: UITableView, estimatedHeightForRowAt _: IndexPath) -> CGFloat {
-    60
+extension MainViewController: ChatTableViewDelegate {
+  func chatTableView(_: ChatTableView, didSelectRowAt _: IndexPath) {
+    // Handle cell selection if needed
   }
 }

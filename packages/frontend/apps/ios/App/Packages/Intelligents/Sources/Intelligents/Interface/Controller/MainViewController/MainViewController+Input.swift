@@ -76,27 +76,19 @@ extension MainViewController: InputBoxDelegate {
 
   func inputBoxDidSend(_ inputBox: InputBox) {
     let inputData = inputBox.inputBoxData
+    inputBox.text = ""
+    inputBox.viewModel.clearAllAttachments()
 
-    Task { @MainActor in
-      do {
-        guard let currentSession = IntelligentContext.shared.currentSession else {
-          showAlert(title: "Error", message: "No active session available")
-          return
-        }
-
-        try await ChatManager.shared.sendMessage(
-          content: inputData.text,
-          inputBoxData: inputData,
-          sessionId: currentSession.id
-        )
-
-        inputBox.text = ""
-        inputBox.viewModel.clearAllAttachments()
-
-      } catch {
-        showAlert(title: "Error", message: error.localizedDescription)
-      }
+    guard let currentSession = IntelligentContext.shared.currentSession else {
+      showAlert(title: "Error", message: "No active session available")
+      return
     }
+
+    ChatManager.shared.sendMessage(
+      content: inputData.text,
+      inputBoxData: inputData,
+      sessionId: currentSession.id
+    )
   }
 
   private func showAlert(title: String, message: String) {

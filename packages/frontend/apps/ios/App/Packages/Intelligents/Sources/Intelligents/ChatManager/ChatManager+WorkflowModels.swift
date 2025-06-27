@@ -17,15 +17,19 @@ public extension ChatManager {
     public var id: String
     public var status: String
     public var type: String
+    public var title: String
+    public var content: String
     public var progress: Double?
-    public var message: String?
+    public var timestamp: Date?
 
-    init(status: String, type: String, progress: Double? = nil, message: String? = nil) {
+    init(status: String, type: String, title: String, content: String, progress: Double? = nil, timestamp: Date? = nil) {
       id = UUID().uuidString
       self.status = status
       self.type = type
+      self.title = title
+      self.content = content
       self.progress = progress
-      self.message = message
+      self.timestamp = timestamp
     }
   }
 

@@ -9,36 +9,40 @@ import Foundation
 
 // MARK: - ChatManager Input Models Extension
 
-extension ChatManager {
-  // MARK: - Input Models
+// TODO: Temporarily disabled context input models
 
-  struct AddContextFileInput: Codable, Equatable, Hashable {
-    var contextId: String
-    var blobId: String
-  }
+/*
+ extension ChatManager {
+   // MARK: - Input Models
 
-  struct RemoveContextFileInput: Codable, Equatable, Hashable {
-    var contextId: String
-    var fileId: String
-  }
+   struct AddContextFileInput: Codable, Equatable, Hashable {
+     var contextId: String
+     var blobId: String
+   }
 
-  struct AddContextDocInput: Codable, Equatable, Hashable {
-    var contextId: String
-    var docId: String
-  }
+   struct RemoveContextFileInput: Codable, Equatable, Hashable {
+     var contextId: String
+     var fileId: String
+   }
 
-  struct RemoveContextDocInput: Codable, Equatable, Hashable {
-    var contextId: String
-    var docId: String
-  }
+   struct AddContextDocInput: Codable, Equatable, Hashable {
+     var contextId: String
+     var docId: String
+   }
 
-  struct AddContextCategoryInput: Codable, Equatable, Hashable {
-    var contextId: String
-    var docs: [String]
-  }
+   struct RemoveContextDocInput: Codable, Equatable, Hashable {
+     var contextId: String
+     var docId: String
+   }
 
-  struct RemoveContextCategoryInput: Codable, Equatable, Hashable {
-    var contextId: String
-    var categoryId: String
-  }
-}
+   struct AddContextCategoryInput: Codable, Equatable, Hashable {
+     var contextId: String
+     var docs: [String]
+   }
+
+   struct RemoveContextCategoryInput: Codable, Equatable, Hashable {
+     var contextId: String
+     var categoryId: String
+   }
+ }
+ */

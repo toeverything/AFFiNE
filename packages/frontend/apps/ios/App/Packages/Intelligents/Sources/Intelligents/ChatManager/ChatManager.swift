@@ -206,48 +206,110 @@ public class ChatManager: ObservableObject {
     messages.removeValue(forKey: sessionId)
   }
 
-  // MARK: - Context Management
-
-  public func createContext(sessionId: String, workspaceId: String) async throws -> String {
-    let mutation = CreateCopilotContextMutation(workspaceId: workspaceId, sessionId: sessionId)
-
-    return try await withCheckedThrowingContinuation { continuation in
-      QLService.shared.client.perform(mutation: mutation) { result in
-        switch result {
-        case let .success(graphQLResult):
-          guard let contextId = graphQLResult.data?.createCopilotContext else {
-            continuation.resume(throwing: ChatError.invalidResponse)
-            return
-          }
-          continuation.resume(returning: contextId)
-        case let .failure(error):
-          continuation.resume(throwing: error)
-        }
-      }
-    }
-  }
-
-  public func addDocumentToContext(contextId: String, docId: String) async throws {
-    let input = AffineGraphQL.AddContextDocInput(contextId: contextId, docId: docId)
-    let mutation = AddContextDocMutation(options: input)
-
-    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-      QLService.shared.client.perform(mutation: mutation) { result in
-        switch result {
-        case .success:
-          continuation.resume()
-        case let .failure(error):
-          continuation.resume(throwing: error)
-        }
-      }
-    }
-  }
-
   // MARK: - Retry Message
 
   public func retryMessage(sessionId: String, messageId: String) async throws {
     // Start streaming response with retry flag
     try await startStreamingResponse(sessionId: sessionId, messageId: messageId, isRetry: true)
+  }
+
+  // MARK: - ViewModel Generation
+
+  public func viewModels(for sessionId: String) -> [any ChatCellViewModel] {
+    guard let messages = messages[sessionId] else { return [] }
+
+    var viewModels: [any ChatCellViewModel] = []
+
+    for message in messages {
+      let mainViewModel = createMainViewModel(from: message)
+      viewModels.append(mainViewModel)
+
+      if let attachments = message.attachments, !attachments.isEmpty {
+        let attachmentViewModels = attachments.map { attachmentId in
+          AttachmentViewModel(
+            id: attachmentId,
+            url: attachmentId, // TODO: IMPL
+            mimeType: nil,
+            fileName: "Attachment",
+            size: nil
+          )
+        }
+
+        let attachmentViewModel = AttachmentCellViewModel(
+          id: "\(message.messageId)_attachments",
+          attachments: attachmentViewModels,
+          parentMessageId: message.messageId
+        )
+        viewModels.append(attachmentViewModel)
+      }
+
+      // TODO: OTHER ITEMS
+    }
+
+    return viewModels
+  }
+
+  private func createMainViewModel(from message: ChatMessage) -> any ChatCellViewModel {
+    switch message.role {
+    case .user:
+      UserMessageCellViewModel(
+        id: message.messageId,
+        content: message.content,
+        timestamp: Date(),
+        attachments: [], // 应该从消息中获取实际时间戳
+        isRetrying: false
+      )
+
+    case .assistant:
+      AssistantMessageCellViewModel(
+        id: message.messageId,
+        content: message.content,
+        timestamp: Date(), // 应该从消息中获取实际时间戳
+        isStreaming: message.content == "Thinking...", // 简单判断是否在流式传输
+        model: message.params?["model"],
+        tokens: Int(message.params?["tokens"] ?? ""),
+        canRetry: true
+      )
+
+    case .system:
+      SystemMessageCellViewModel(
+        id: message.messageId,
+        content: message.content,
+        timestamp: Date() // 应该从消息中获取实际时间戳
+      )
+
+    case .error:
+      ErrorCellViewModel(
+        id: message.messageId,
+        errorMessage: message.content,
+        canRetry: true,
+        retryAction: "retry_message"
+      )
+    }
+  }
+
+  // MARK: - Loading State Management
+
+  public func addLoadingMessage(to sessionId: String, message: String? = nil) {
+    let loadingMessage = ChatMessage(
+      id: "loading_\(UUID().uuidString)",
+      role: .system,
+      content: message ?? "正在处理...",
+      attachments: nil,
+      params: ["type": "loading"]
+    )
+
+    var sessionMessages = messages[sessionId] ?? []
+    sessionMessages.append(loadingMessage)
+    messages[sessionId] = sessionMessages
+  }
+
+  public func removeLoadingMessage(from sessionId: String) {
+    var sessionMessages = messages[sessionId] ?? []
+    sessionMessages.removeAll { message in
+      message.params?["type"] == "loading"
+    }
+    messages[sessionId] = sessionMessages
   }
 }
 

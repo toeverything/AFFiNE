@@ -10,6 +10,6 @@ import Foundation
 struct ContextReferenceCellViewModel: ChatCellViewModel {
   var cellType: CellType = .contextReference
   var id: String
-  var references: [ChatManager.ContextReference]
+//  var references: [ChatManager.ContextReference]
   var parentMessageId: String
 }
