@@ -560,6 +560,11 @@
           "type": "boolean",
           "description": "Only allow users with early access features to access the app\n@default false",
           "default": false
+        },
+        "allowGuestDemoWorkspace": {
+          "type": "boolean",
+          "description": "Whether allow guest users to create demo workspaces.\n@default true",
+          "default": true
         }
       }
     },
@@ -587,11 +592,6 @@
           "type": "string",
           "description": "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect.\n@default \">=0.20.0\"",
           "default": ">=0.20.0"
-        },
-        "allowGuestDemoWorkspace": {
-          "type": "boolean",
-          "description": "Allow guests to access demo workspace.\n@default true",
-          "default": true
         }
       }
     },

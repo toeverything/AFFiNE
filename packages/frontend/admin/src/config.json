@@ -186,6 +186,10 @@
     "earlyAccessControl": {
       "type": "Boolean",
       "desc": "Only allow users with early access features to access the app"
+    },
+    "allowGuestDemoWorkspace": {
+      "type": "Boolean",
+      "desc": "Whether allow guest users to create demo workspaces."
     }
   },
   "docService": {
@@ -203,10 +207,6 @@
     "versionControl.requiredVersion": {
       "type": "String",
       "desc": "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect."
-    },
-    "allowGuestDemoWorkspace": {
-      "type": "Boolean",
-      "desc": "Allow guests to access demo workspace."
     }
   },
   "captcha": {

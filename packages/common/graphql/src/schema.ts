@@ -2147,6 +2147,8 @@ export enum SearchTable {
 
 export interface ServerConfigType {
   __typename?: 'ServerConfigType';
+  /** Whether allow guest users to create demo workspaces. */
+  allowGuestDemoWorkspace: Scalars['Boolean']['output'];
   /** fetch latest available upgradable release of server */
   availableUpgrade: Maybe<ReleaseVersionType>;
   /** Features for user that can be configured */
@@ -2157,8 +2159,6 @@ export interface ServerConfigType {
   credentialsRequirement: CredentialsRequirementType;
   /** enabled server features */
   features: Array<ServerFeature>;
-  /** allow guests to access demo workspace */
-  allowGuestDemoWorkspace: Scalars['Boolean']['output'];
   /** whether server has been initialized */
   initialized: Scalars['Boolean']['output'];
   /** server identical name could be shown as badge on user interface */
