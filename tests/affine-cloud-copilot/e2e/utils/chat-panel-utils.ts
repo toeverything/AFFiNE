@@ -261,7 +261,7 @@ export class ChatPanelUtils {
   ) {
     await this.uploadImages(page, images);
 
-    await page.waitForSelector('ai-chat-input img');
+    await page.waitForSelector('ai-chat-input .image-container');
     await this.makeChat(page, text);
   }
 

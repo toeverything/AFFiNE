@@ -255,7 +255,6 @@ export class AIChatInput extends SignalWatcher(
       color: var(--affine-v2-layer-pureWhite);
       border: none;
       padding: 0;
-      background: transparent;
       cursor: pointer;
     }
     .chat-panel-send[aria-disabled='true'] {
