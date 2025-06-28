@@ -1,5 +1,6 @@
-import fs from 'fs-extra';
 import path from 'node:path';
+
+import fs from 'fs-extra';
 
 import { logger } from './logger';
 import { mainRPC } from './main-rpc';
@@ -21,4 +22,3 @@ export async function openTempFile(data: number[], name: string) {
 export const fileHandlers = {
   openTempFile,
 };
-

@@ -33,9 +33,15 @@ function isTextExtension(ext: string): boolean {
     return true;
   }
 
-  return bundledLanguagesInfo.some(info =>
-    [info.id, info.name, ...(info.aliases ?? [])].includes(ext)
-  );
+  if (
+    bundledLanguagesInfo.some(info =>
+      [info.id, info.name, ...(info.aliases ?? [])].includes(ext)
+    )
+  ) {
+    return true;
+  }
+
+  return true;
 }
 
 export function getAttachmentType(model: AttachmentBlockModel) {
@@ -77,12 +83,12 @@ export function getAttachmentType(model: AttachmentBlockModel) {
     return 'video';
   }
 
-  if (isTextExtension(ext)) {
-    return 'text';
-  }
-
   if (ext === 'pdf') {
     return 'pdf';
+  }
+
+  if (isTextExtension(ext)) {
+    return 'text';
   }
 
   return 'unknown';

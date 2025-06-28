@@ -159,7 +159,10 @@ const openAction = {
   icon: ExpandFullIcon(),
   run(ctx) {
     const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
-    block?.openPreview();
+    if (!block) return;
+    block.openPreview().catch(error => {
+      console.error('Failed to open preview:', error);
+    });
   },
 } as const satisfies ToolbarAction;
 
@@ -169,7 +172,10 @@ const openExternalAction = {
   icon: OpenInNewIcon(),
   run(ctx) {
     const block = ctx.getCurrentBlockByType(AttachmentBlockComponent);
-    block?.openExternal();
+    if (!block) return;
+    block.openExternal().catch(error => {
+      console.error('Failed to open externally:', error);
+    });
   },
 } as const satisfies ToolbarAction;
 

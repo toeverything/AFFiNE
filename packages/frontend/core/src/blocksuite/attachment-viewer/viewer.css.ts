@@ -52,6 +52,7 @@ globalStyle(`.${scrollable}::-webkit-scrollbar-corner`, {
 globalStyle('.shiki', {
   whiteSpace: 'pre-wrap',
   wordBreak: 'break-word',
+  overflow: 'visible',
   fontFamily:
     'var(--affine-font-code, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace)',
   fontSize: '13px',
