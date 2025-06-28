@@ -186,6 +186,10 @@
     "earlyAccessControl": {
       "type": "Boolean",
       "desc": "Only allow users with early access features to access the app"
+    },
+    "allowGuestDemoWorkspace": {
+      "type": "Boolean",
+      "desc": "Whether allow guest users to create demo workspaces."
     }
   },
   "docService": {
@@ -266,16 +270,6 @@
       "desc": "The config for the storage provider."
     }
   },
-  "customerIo": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Enable customer.io integration"
-    },
-    "token": {
-      "type": "String",
-      "desc": "Customer.io token"
-    }
-  },
   "indexer": {
     "enabled": {
       "type": "Boolean",
@@ -312,6 +306,16 @@
     "autoIndex.batchSize": {
       "type": "Number",
       "desc": "Number of workspaces automatically indexed per batch"
+    }
+  },
+  "customerIo": {
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Enable customer.io integration"
+    },
+    "token": {
+      "type": "String",
+      "desc": "Customer.io token"
     }
   },
   "oauth": {

@@ -11,6 +11,7 @@ on:
     paths-ignore:
       - README.md
   pull_request:
+  merge_group:
 
 env:
   DEBUG: napi:*
@@ -27,26 +28,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  optimize_ci:
-    name: Optimize CI
-    runs-on: ubuntu-latest
-    outputs:
-      skip: ${{ steps.check_skip.outputs.skip }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Graphite CI Optimizer
-        uses: withgraphite/graphite-ci-action@main
-        id: check_skip
-        with:
-          graphite_token: ${{ secrets.GRAPHITE_CI_OPTIMIZER_TOKEN }}
-
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
     env:
       NODE_OPTIONS: --max-old-space-size=14384
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     permissions:
       actions: read
       contents: read
@@ -80,9 +66,6 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-24.04-arm
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
-
     steps:
       - uses: actions/checkout@v4
       - name: Run oxlint
@@ -108,8 +91,6 @@ jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-24.04-arm
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       NODE_OPTIONS: --max-old-space-size=14384
     steps:
@@ -137,8 +118,6 @@ jobs:
   lint-rust:
     name: Lint Rust
     runs-on: ubuntu-latest
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build-rust
@@ -159,9 +138,7 @@ jobs:
     name: Check Git Status
     runs-on: ubuntu-latest
     needs:
-      - optimize_ci
       - build-server-native
-    if: needs.optimize_ci.outputs.skip == 'false'
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -197,8 +174,6 @@ jobs:
   check-yarn-binary:
     name: Check yarn binary
     runs-on: ubuntu-latest
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     steps:
       - uses: actions/checkout@v4
       - name: Run check
@@ -209,8 +184,6 @@ jobs:
   e2e-blocksuite-test:
     name: E2E BlockSuite Test
     runs-on: ubuntu-latest
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -242,8 +215,6 @@ jobs:
   e2e-blocksuite-cross-browser-test:
     name: E2E BlockSuite Cross Browser Test
     runs-on: ubuntu-latest
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -278,8 +249,6 @@ jobs:
   e2e-test:
     name: E2E Test
     runs-on: ubuntu-24.04-arm
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       DISTRIBUTION: web
       IN_CI_TEST: true
@@ -312,8 +281,6 @@ jobs:
   e2e-mobile-test:
     name: E2E Mobile Test
     runs-on: ubuntu-latest
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       DISTRIBUTION: mobile
       IN_CI_TEST: true
@@ -345,9 +312,7 @@ jobs:
     name: Unit Test
     runs-on: ubuntu-latest
     needs:
-      - optimize_ci
       - build-native
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       DISTRIBUTION: web
     strategy:
@@ -384,8 +349,6 @@ jobs:
   build-native:
     name: Build AFFiNE native (${{ matrix.spec.target }})
     runs-on: ${{ matrix.spec.os }}
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       CARGO_PROFILE_RELEASE_DEBUG: '1'
     strategy:
@@ -428,8 +391,6 @@ jobs:
   build-windows-native:
     name: Build AFFiNE native (${{ matrix.spec.target }})
     runs-on: ${{ matrix.spec.os }}
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       CARGO_PROFILE_RELEASE_DEBUG: '1'
     strategy:
@@ -477,8 +438,6 @@ jobs:
   build-server-native:
     name: Build Server native
     runs-on: ubuntu-latest
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       CARGO_PROFILE_RELEASE_DEBUG: '1'
     steps:
@@ -504,8 +463,6 @@ jobs:
   build-electron-renderer:
     name: Build @affine/electron renderer
     runs-on: ubuntu-latest
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -531,9 +488,7 @@ jobs:
     name: Native Unit Test
     runs-on: ubuntu-latest
     needs:
-      - optimize_ci
       - build-native
-    if: needs.optimize_ci.outputs.skip == 'false'
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -553,9 +508,7 @@ jobs:
     name: Server Test
     runs-on: ubuntu-latest
     needs:
-      - optimize_ci
       - build-server-native
-    if: needs.optimize_ci.outputs.skip == 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -587,7 +540,7 @@ jobs:
           - 1025:1025
           - 8025:8025
       indexer:
-        image: manticoresearch/manticore:9.3.2
+        image: manticoresearch/manticore:10.1.0
         ports:
           - 9308:9308
     steps:
@@ -628,9 +581,7 @@ jobs:
     name: Server Test with Elasticsearch
     runs-on: ubuntu-latest
     needs:
-      - optimize_ci
       - build-server-native
-    if: needs.optimize_ci.outputs.skip == 'false'
     strategy:
       fail-fast: false
     env:
@@ -713,9 +664,7 @@ jobs:
     name: Server E2E Test
     runs-on: ubuntu-latest
     needs:
-      - optimize_ci
       - build-server-native
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -737,7 +686,7 @@ jobs:
         ports:
           - 6379:6379
       indexer:
-        image: manticoresearch/manticore:9.3.2
+        image: manticoresearch/manticore:10.1.0
         ports:
           - 9308:9308
     steps:
@@ -773,9 +722,6 @@ jobs:
   miri:
     name: miri code check
     runs-on: ubuntu-latest
-    needs:
-      - optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       RUST_BACKTRACE: full
       CARGO_TERM_COLOR: always
@@ -789,7 +735,9 @@ jobs:
           toolchain: nightly
           components: miri
       - name: Install latest nextest release
-        uses: taiki-e/install-action@nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest@0.9.98
 
       - name: Miri Code Check
         continue-on-error: true
@@ -799,9 +747,6 @@ jobs:
   loom:
     name: loom thread test
     runs-on: ubuntu-latest
-    needs:
-      - optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       RUSTFLAGS: --cfg loom
       RUST_BACKTRACE: full
@@ -814,7 +759,9 @@ jobs:
         with:
           toolchain: stable
       - name: Install latest nextest release
-        uses: taiki-e/install-action@nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest@0.9.98
 
       - name: Loom Thread Test
         run: |
@@ -823,9 +770,6 @@ jobs:
   fuzzing:
     name: fuzzing
     runs-on: ubuntu-latest
-    needs:
-      - optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       CARGO_TERM_COLOR: always
     steps:
@@ -872,9 +816,6 @@ jobs:
           - { target: 'aarch64-apple-darwin', os: 'macos-latest' }
           - { target: 'x86_64-pc-windows-msvc', os: 'windows-latest' }
           - { target: 'aarch64-pc-windows-msvc', os: 'windows-11-arm' }
-    needs:
-      - optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
@@ -908,8 +849,6 @@ jobs:
   rust-test:
     name: Run native tests
     runs-on: ubuntu-latest
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       CARGO_TERM_COLOR: always
     steps:
@@ -921,7 +860,9 @@ jobs:
           no-build: 'true'
 
       - name: Install latest nextest release
-        uses: taiki-e/install-action@nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest@0.9.98
 
       - name: Run tests
         run: cargo nextest run --workspace --exclude affine_server_native --features use-as-lib --release --no-fail-fast
@@ -930,9 +871,7 @@ jobs:
     name: Server Copilot Api Test
     runs-on: ubuntu-latest
     needs:
-      - optimize_ci
       - build-server-native
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       NODE_ENV: test
       DISTRIBUTION: web
@@ -960,7 +899,7 @@ jobs:
           - 1025:1025
           - 8025:8025
       indexer:
-        image: manticoresearch/manticore:9.3.2
+        image: manticoresearch/manticore:10.1.0
         ports:
           - 9308:9308
     steps:
@@ -1054,7 +993,7 @@ jobs:
         ports:
           - 6379:6379
       indexer:
-        image: manticoresearch/manticore:9.3.2
+        image: manticoresearch/manticore:10.1.0
         ports:
           - 9308:9308
     steps:
@@ -1114,10 +1053,8 @@ jobs:
     name: ${{ matrix.tests.name }}
     runs-on: ubuntu-latest
     needs:
-      - optimize_ci
       - build-server-native
       - build-native
-    if: needs.optimize_ci.outputs.skip == 'false'
     env:
       DISTRIBUTION: web
       DATABASE_URL: postgresql://affine:affine@localhost:5432/affine
@@ -1176,7 +1113,7 @@ jobs:
           - 1025:1025
           - 8025:8025
       indexer:
-        image: manticoresearch/manticore:9.3.2
+        image: manticoresearch/manticore:10.1.0
         ports:
           - 9308:9308
     steps:
@@ -1221,10 +1158,8 @@ jobs:
     name: Desktop Test (${{ matrix.spec.os }}, ${{ matrix.spec.platform }}, ${{ matrix.spec.arch }}, ${{ matrix.spec.target }}, ${{ matrix.spec.test }})
     runs-on: ${{ matrix.spec.os }}
     needs:
-      - optimize_ci
       - build-electron-renderer
       - build-native
-    if: needs.optimize_ci.outputs.skip == 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -1319,10 +1254,8 @@ jobs:
     name: Desktop bundle check (${{ matrix.spec.os }}, ${{ matrix.spec.platform }}, ${{ matrix.spec.arch }}, ${{ matrix.spec.target }}, ${{ matrix.spec.test }})
     runs-on: ${{ matrix.spec.os }}
     needs:
-      - optimize_ci
       - build-electron-renderer
       - build-native
-    if: needs.optimize_ci.outputs.skip == 'false'
     strategy:
       fail-fast: false
       matrix:
@@ -1426,17 +1359,6 @@ jobs:
         run: |
           yarn affine @affine/electron node ./scripts/macos-arm64-output-check.ts
 
-  test-build-mobile-app:
-    uses: ./.github/workflows/release-mobile.yml
-    needs: optimize_ci
-    if: needs.optimize_ci.outputs.skip == 'false'
-    with:
-      build-type: canary
-      build-target: development
-    secrets: inherit
-    permissions:
-      id-token: 'write'
-
   test-done:
     needs:
       - analyze
@@ -1467,7 +1389,6 @@ jobs:
       - desktop-test
       - desktop-bundle-check
       - cloud-e2e-test
-      - test-build-mobile-app
     if: always()
     runs-on: ubuntu-latest
     name: 3, 2, 1 Launch

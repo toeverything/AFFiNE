@@ -46,5 +46,5 @@
     "vite-plugin-wasm": "^3.3.0",
     "vite-plugin-web-components-hmr": "^0.1.3"
   },
-  "version": "0.21.0"
+  "version": "0.22.4"
 }

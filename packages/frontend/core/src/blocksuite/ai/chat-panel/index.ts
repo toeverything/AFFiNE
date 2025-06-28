@@ -20,11 +20,15 @@ import type {
   SearchMenuConfig,
 } from '../components/ai-chat-chips';
 import type {
-  AIModelSwitchConfig,
   AINetworkSearchConfig,
+  AIPlaygroundConfig,
   AIReasoningConfig,
 } from '../components/ai-chat-input';
-import { type HistoryMessage } from '../components/ai-chat-messages';
+import {
+  type ChatAction,
+  type ChatMessage,
+  type HistoryMessage,
+} from '../components/ai-chat-messages';
 import { createPlaygroundModal } from '../components/playground/modal';
 import { AIProvider } from '../provider';
 import { extractSelectedContent } from '../utils/extract';
@@ -146,12 +150,14 @@ export class ChatPanel extends SignalWatcher(
       return;
     }
 
-    const messages: HistoryMessage[] = actions ? [...actions] : [];
+    const chatActions = (actions || []) as ChatAction[];
+    const messages: HistoryMessage[] = chatActions;
 
     const sessionId = await this._getSessionId();
     const history = histories?.find(history => history.sessionId === sessionId);
     if (history) {
-      messages.push(...history.messages);
+      const chatMessages = (history.messages || []) as ChatMessage[];
+      messages.push(...chatMessages);
     }
 
     this.chatContextValue = {
@@ -218,7 +224,7 @@ export class ChatPanel extends SignalWatcher(
   accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
-  accessor modelSwitchConfig!: AIModelSwitchConfig;
+  accessor playgroundConfig!: AIPlaygroundConfig;
 
   @property({ attribute: false })
   accessor appSidebarConfig!: AppSidebarConfig;
@@ -292,7 +298,7 @@ export class ChatPanel extends SignalWatcher(
         .doc=${this.doc}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
-        .modelSwitchConfig=${this.modelSwitchConfig}
+        .playgroundConfig=${this.playgroundConfig}
         .appSidebarConfig=${this.appSidebarConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .docDisplayConfig=${this.docDisplayConfig}
@@ -431,7 +437,7 @@ export class ChatPanel extends SignalWatcher(
               >`
             : 'AFFiNE AI'}
         </div>
-        ${this.modelSwitchConfig.visible.value
+        ${this.playgroundConfig.visible.value
           ? html`
               <div class="chat-panel-playground" @click=${this._openPlayground}>
                 ${CenterPeekIcon()}
@@ -458,6 +464,7 @@ export class ChatPanel extends SignalWatcher(
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
+        .panelWidth=${this._sidebarWidth}
       ></chat-panel-messages>
       <ai-chat-composer
         .host=${this.host}
@@ -471,7 +478,7 @@ export class ChatPanel extends SignalWatcher(
         .isVisible=${this._isSidebarOpen}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
-        .modelSwitchConfig=${this.modelSwitchConfig}
+        .playgroundConfig=${this.playgroundConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .trackOptions=${{

@@ -142,7 +142,7 @@ export function textToText({
             webSearch,
             modelId,
           },
-          workflow ? 'workflow' : undefined
+          workflow ? 'workflow' : 'stream-object'
         );
         AIProvider.LAST_ACTION_SESSIONID = sessionId;
 

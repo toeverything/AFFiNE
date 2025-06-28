@@ -265,16 +265,6 @@ class StoreConsumer {
         }),
       'awarenessSync.collect': ({ collectId, awareness }) =>
         collectJobs.get(collectId)?.(awareness),
-      'indexerStorage.aggregate': ({ table, query, field, options }) =>
-        this.indexerStorage.aggregate(table, query, field, options),
-      'indexerStorage.search': ({ table, query, options }) =>
-        this.indexerStorage.search(table, query, options),
-      'indexerStorage.subscribeSearch': ({ table, query, options }) =>
-        this.indexerStorage.search$(table, query, options),
-      'indexerStorage.subscribeAggregate': ({ table, query, field, options }) =>
-        this.indexerStorage.aggregate$(table, query, field, options),
-      'indexerStorage.waitForConnected': (_, ctx) =>
-        this.indexerStorage.connection.waitForConnected(ctx.signal),
       'indexerSync.state': () => this.indexerSync.state$,
       'indexerSync.docState': (docId: string) =>
         this.indexerSync.docState$(docId),
@@ -287,6 +277,14 @@ class StoreConsumer {
         this.indexerSync.waitForCompleted(ctx.signal),
       'indexerSync.waitForDocCompleted': (docId: string, ctx) =>
         this.indexerSync.waitForDocCompleted(docId, ctx.signal),
+      'indexerSync.aggregate': ({ table, query, field, options }) =>
+        this.indexerSync.aggregate(table, query, field, options),
+      'indexerSync.search': ({ table, query, options }) =>
+        this.indexerSync.search(table, query, options),
+      'indexerSync.subscribeSearch': ({ table, query, options }) =>
+        this.indexerSync.search$(table, query, options),
+      'indexerSync.subscribeAggregate': ({ table, query, field, options }) =>
+        this.indexerSync.aggregate$(table, query, field, options),
     });
   }
 }

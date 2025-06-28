@@ -98,6 +98,9 @@ export class EditorUtils {
       const responsesMenu = answer.getByTestId('answer-responses');
       await responsesMenu.isVisible();
       await responsesMenu.scrollIntoViewIfNeeded({ timeout: 60000 });
+      await responsesMenu
+        .getByTestId('answer-insert-below-loading')
+        .waitFor({ state: 'hidden' });
 
       if (await responsesMenu.getByTestId('answer-insert-below').isVisible()) {
         responses.add('insert-below');

@@ -83,6 +83,7 @@ export const popCardMenu = (
               { before: true, id: cardId },
               groupKey
             );
+            kanbanViewLogic.ui$.value?.requestUpdate();
           },
         }),
         menu.action({
@@ -97,6 +98,7 @@ export const popCardMenu = (
               { before: false, id: cardId },
               groupKey
             );
+            kanbanViewLogic.ui$.value?.requestUpdate();
           },
         }),
       ],
@@ -111,6 +113,7 @@ export const popCardMenu = (
           prefix: DeleteIcon(),
           select: () => {
             kanbanViewLogic.view.rowsDelete([cardId]);
+            kanbanViewLogic.ui$.value?.requestUpdate();
           },
         }),
       ],

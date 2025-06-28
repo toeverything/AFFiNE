@@ -13,11 +13,11 @@ import { AuthService } from '../core/auth';
 import { QuotaModule } from '../core/quota';
 import { ContextCategories, WorkspaceModel } from '../models';
 import { CopilotModule } from '../plugins/copilot';
+import { CopilotContextService } from '../plugins/copilot/context';
 import {
-  CopilotContextDocJob,
-  CopilotContextService,
-} from '../plugins/copilot/context';
-import { MockEmbeddingClient } from '../plugins/copilot/context/embedding';
+  CopilotEmbeddingJob,
+  MockEmbeddingClient,
+} from '../plugins/copilot/embedding';
 import { prompts, PromptService } from '../plugins/copilot/prompt';
 import {
   CopilotProviderFactory,
@@ -69,7 +69,7 @@ const test = ava as TestFn<{
   workspaceEmbedding: CopilotWorkspaceService;
   factory: CopilotProviderFactory;
   session: ChatSessionService;
-  jobs: CopilotContextDocJob;
+  jobs: CopilotEmbeddingJob;
   storage: CopilotStorage;
   workflow: CopilotWorkflowService;
   executors: {
@@ -127,7 +127,7 @@ test.before(async t => {
   const storage = module.get(CopilotStorage);
 
   const context = module.get(CopilotContextService);
-  const jobs = module.get(CopilotContextDocJob);
+  const jobs = module.get(CopilotEmbeddingJob);
   const transcript = module.get(CopilotTranscriptionService);
   const workspaceEmbedding = module.get(CopilotWorkspaceService);
 
@@ -275,7 +275,7 @@ test('should be able to manage chat session', async t => {
   ]);
 
   const params = { word: 'world' };
-  const commonParams = { docId: 'test', workspaceId: 'test' };
+  const commonParams = { docId: 'test', workspaceId: 'test', pinned: false };
 
   const sessionId = await session.create({
     userId,
@@ -342,11 +342,12 @@ test('should be able to update chat session prompt', async t => {
     docId: 'test',
     workspaceId: 'test',
     userId,
+    pinned: false,
   });
   t.truthy(sessionId, 'should create session');
 
   // Update the session
-  const updatedSessionId = await session.updateSessionPrompt({
+  const updatedSessionId = await session.update({
     sessionId,
     promptName: 'Search With AFFiNE AI',
     userId,
@@ -371,7 +372,7 @@ test('should be able to fork chat session', async t => {
   ]);
 
   const params = { word: 'world' };
-  const commonParams = { docId: 'test', workspaceId: 'test' };
+  const commonParams = { docId: 'test', workspaceId: 'test', pinned: false };
   // create session
   const sessionId = await session.create({
     userId,
@@ -494,6 +495,7 @@ test('should be able to process message id', async t => {
     workspaceId: 'test',
     userId,
     promptName: 'prompt',
+    pinned: false,
   });
   const s = (await session.get(sessionId))!;
 
@@ -537,6 +539,7 @@ test('should be able to generate with message id', async t => {
       workspaceId: 'test',
       userId,
       promptName: 'prompt',
+      pinned: false,
     });
     const s = (await session.get(sessionId))!;
 
@@ -559,6 +562,7 @@ test('should be able to generate with message id', async t => {
       workspaceId: 'test',
       userId,
       promptName: 'prompt',
+      pinned: false,
     });
     const s = (await session.get(sessionId))!;
 
@@ -586,6 +590,7 @@ test('should be able to generate with message id', async t => {
       workspaceId: 'test',
       userId,
       promptName: 'prompt',
+      pinned: false,
     });
     const s = (await session.get(sessionId))!;
 
@@ -614,6 +619,7 @@ test('should save message correctly', async t => {
     workspaceId: 'test',
     userId,
     promptName: 'prompt',
+    pinned: false,
   });
   const s = (await session.get(sessionId))!;
 
@@ -643,6 +649,7 @@ test('should revert message correctly', async t => {
       workspaceId: 'test',
       userId,
       promptName: 'prompt',
+      pinned: false,
     });
     const s = (await session.get(sessionId))!;
 
@@ -742,6 +749,7 @@ test('should handle params correctly in chat session', async t => {
     workspaceId: 'test',
     userId,
     promptName: 'prompt',
+    pinned: false,
   });
 
   const s = (await session.get(sessionId))!;
@@ -1506,6 +1514,7 @@ test('should be able to manage context', async t => {
     workspaceId: 'test',
     userId,
     promptName: 'prompt',
+    pinned: false,
   });
 
   // use mocked embedding client
@@ -1729,6 +1738,7 @@ test('should be able to manage workspace embedding', async t => {
       workspaceId: ws.id,
       userId,
       promptName: 'prompt',
+      pinned: false,
     });
     const contextSession = await context.create(sessionId);
 

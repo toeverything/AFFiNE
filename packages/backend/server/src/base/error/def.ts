@@ -643,6 +643,10 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'resource_not_found',
     message: `Copilot session not found.`,
   },
+  copilot_session_invalid_input: {
+    type: 'invalid_input',
+    message: `Copilot session input is invalid.`,
+  },
   copilot_session_deleted: {
     type: 'action_forbidden',
     message: `Copilot session has been deleted.`,

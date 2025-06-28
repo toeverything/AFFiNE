@@ -58,6 +58,7 @@ export class TableGroupHeader extends SignalWatcher(
       return;
     }
     this.tableViewManager.rowAdd('start', group.key);
+    this.requestUpdate();
     const selectionController = this.selectionController;
     selectionController.selection = undefined;
     requestAnimationFrame(() => {
@@ -95,6 +96,7 @@ export class TableGroupHeader extends SignalWatcher(
         name: 'Delete Cards',
         select: () => {
           this.tableViewManager.rowsDelete(group.rows.map(row => row.rowId));
+          this.requestUpdate();
         },
       }),
     ]);

@@ -102,6 +102,8 @@ export class ModelsModule {}
 export * from './common';
 export * from './copilot-context';
 export * from './copilot-job';
+export * from './copilot-session';
+export * from './copilot-workspace';
 export * from './doc';
 export * from './doc-user';
 export * from './feature';

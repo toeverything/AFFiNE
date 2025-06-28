@@ -1,9 +1,10 @@
-import { join } from 'node:path';
+import path, { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { app, net, protocol, session } from 'electron';
 import cookieParser from 'set-cookie-parser';
 
-import { resourcesPath } from '../shared/utils';
+import { isWindows, resourcesPath } from '../shared/utils';
 import { anotherHost, mainHost } from './constants';
 import { logger } from './logger';
 
@@ -77,18 +78,31 @@ async function handleFileRequest(request: Request) {
     }
   } else {
     filepath = decodeURIComponent(urlObject.pathname);
+    // on windows, the path could be start with '/'
+    if (isWindows()) {
+      filepath = path.resolve(filepath.replace(/^\//, ''));
+    }
     // security check if the filepath is within app.getPath('sessionData')
-    const sessionDataPath = app.getPath('sessionData');
-    const tempPath = app.getPath('temp');
+    const sessionDataPath = path
+      .resolve(app.getPath('sessionData'))
+      .toLowerCase();
+    const tempPath = path.resolve(app.getPath('temp')).toLowerCase();
     if (
-      !filepath.startsWith(sessionDataPath) &&
-      !filepath.startsWith(tempPath)
+      !filepath.toLowerCase().startsWith(sessionDataPath) &&
+      !filepath.toLowerCase().startsWith(tempPath)
     ) {
       throw new Error('Invalid filepath');
     }
   }
-  return net.fetch('file://' + filepath, clonedRequest);
+  return net.fetch(pathToFileURL(filepath).toString(), clonedRequest);
 }
+
+// whitelist for cors
+// url patterns that are allowed to have cors headers
+const corsWhitelist = [
+  /^(?:[a-zA-Z0-9-]+\.)*googlevideo\.com$/,
+  /^(?:[a-zA-Z0-9-]+\.)*youtube\.com$/,
+];
 
 export function registerProtocol() {
   protocol.handle('file', request => {
@@ -101,7 +115,7 @@ export function registerProtocol() {
 
   session.defaultSession.webRequest.onHeadersReceived(
     (responseDetails, callback) => {
-      const { responseHeaders } = responseDetails;
+      const { responseHeaders, url } = responseDetails;
       (async () => {
         if (responseHeaders) {
           const originalCookie =
@@ -139,10 +153,13 @@ export function registerProtocol() {
             }
           }
 
-          delete responseHeaders['access-control-allow-origin'];
-          delete responseHeaders['access-control-allow-headers'];
-          delete responseHeaders['Access-Control-Allow-Origin'];
-          delete responseHeaders['Access-Control-Allow-Headers'];
+          const hostname = new URL(url).hostname;
+          if (!corsWhitelist.some(domainRegex => domainRegex.test(hostname))) {
+            delete responseHeaders['access-control-allow-origin'];
+            delete responseHeaders['access-control-allow-headers'];
+            delete responseHeaders['Access-Control-Allow-Origin'];
+            delete responseHeaders['Access-Control-Allow-Headers'];
+          }
         }
       })()
         .catch(err => {

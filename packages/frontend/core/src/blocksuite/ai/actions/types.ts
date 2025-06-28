@@ -9,6 +9,7 @@ import type {
   CopilotSessionType,
   getCopilotHistoriesQuery,
   RequestOptions,
+  StreamObject,
 } from '@affine/graphql';
 import type { EditorHost } from '@blocksuite/affine/std';
 import type { GfxModel } from '@blocksuite/affine/std/gfx';
@@ -359,7 +360,8 @@ declare global {
         content: string;
         createdAt: string;
         role: MessageRole;
-        attachments?: string[];
+        attachments?: string[] | null;
+        streamObjects?: StreamObject[] | null;
       }[];
     }
 

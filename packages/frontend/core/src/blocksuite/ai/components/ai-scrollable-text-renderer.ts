@@ -112,7 +112,7 @@ export const createAIScrollableTextRenderer: (
   maxHeight,
   autoScroll
 ) => {
-  return (answer, state) => {
+  return (answer: string, state: AffineAIPanelState | undefined) => {
     return html`<ai-scrollable-text-renderer
       .host=${host}
       .answer=${answer}

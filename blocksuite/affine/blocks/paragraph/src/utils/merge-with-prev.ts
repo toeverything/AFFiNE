@@ -20,6 +20,7 @@ import { EMBED_BLOCK_MODEL_LIST } from '@blocksuite/affine-shared/consts';
 import type { ExtendedModel } from '@blocksuite/affine-shared/types';
 import {
   focusTitle,
+  getDocTitleInlineEditor,
   getPrevContentBlock,
   matchModels,
 } from '@blocksuite/affine-shared/utils';
@@ -44,10 +45,6 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
   const doc = model.store;
   const parent = doc.getParent(model);
   if (!parent) return false;
-
-  if (matchModels(parent, [EdgelessTextBlockModel])) {
-    return true;
-  }
 
   const prevBlock = getPrevContentBlock(editorHost, model);
   if (!prevBlock) {
@@ -123,36 +120,63 @@ function handleNoPreviousSibling(editorHost: EditorHost, model: ExtendedModel) {
   const parent = doc.getParent(model);
   if (!parent) return false;
 
-  if (matchModels(parent, [NoteBlockModel]) && parent.isPageBlock()) {
+  const focusFirstBlockStart = () => {
+    const firstBlock = parent.firstChild();
+    if (firstBlock) {
+      focusTextModel(editorHost.std, firstBlock.id, 0);
+    }
+  };
+
+  if (matchModels(parent, [NoteBlockModel])) {
+    const hasTitleEditor = getDocTitleInlineEditor(editorHost);
     const rootModel = model.store.root as RootBlockModel;
     const title = rootModel.props.title;
 
+    const shouldHandleTitle = parent.isPageBlock() && hasTitleEditor;
+
     doc.captureSync();
-    let textLength = 0;
-    if (text) {
-      textLength = text.length;
-      title.join(text);
+
+    if (shouldHandleTitle) {
+      let textLength = 0;
+      if (text) {
+        textLength = text.length;
+        title.join(text);
+      }
+      if (model.children.length > 0 || doc.getNext(model)) {
+        doc.deleteBlock(model, {
+          bringChildrenTo: parent,
+        });
+      }
+      // no other blocks, preserve a empty line
+      else {
+        text?.clear();
+      }
+      focusTitle(editorHost, title.length - textLength);
+      return true;
     }
 
     // Preserve at least one block to be able to focus on container click
-    if (doc.getNext(model) || model.children.length > 0) {
+    if (
+      text?.length === 0 &&
+      (model.children.length > 0 || doc.getNext(model))
+    ) {
       doc.deleteBlock(model, {
         bringChildrenTo: parent,
       });
-    } else {
-      text?.clear();
+      focusFirstBlockStart();
+      return true;
     }
-    focusTitle(editorHost, title.length - textLength);
-    return true;
   }
 
   if (
-    matchModels(parent, [EdgelessTextBlockModel]) ||
-    model.children.length > 0
+    matchModels(parent, [EdgelessTextBlockModel]) &&
+    text?.length === 0 &&
+    (model.children.length > 0 || doc.getNext(model))
   ) {
     doc.deleteBlock(model, {
       bringChildrenTo: parent,
     });
+    focusFirstBlockStart();
     return true;
   }
 

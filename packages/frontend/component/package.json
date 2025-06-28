@@ -28,6 +28,8 @@
     "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.0.3",
     "@blocksuite/icons": "^2.2.12",
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@radix-ui/react-avatar": "^1.1.2",
@@ -50,6 +52,7 @@
     "check-password-strength": "^3.0.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
+    "emoji-mart": "^5.6.0",
     "foxact": "^0.2.45",
     "jotai": "^2.10.3",
     "lit": "^3.2.1",
@@ -71,10 +74,6 @@
     "@affine-tools/utils": "workspace:*",
     "@blocksuite/affine": "workspace:*",
     "@chromatic-com/storybook": "^4.0.0",
-    "@storybook/addon-essentials": "^8.4.7",
-    "@storybook/addon-interactions": "^8.4.7",
-    "@storybook/addon-links": "^9.0.0",
-    "@storybook/addon-mdx-gfm": "^8.4.7",
     "@storybook/react": "^9.0.0",
     "@storybook/react-vite": "^9.0.0",
     "@testing-library/dom": "^10.4.0",
@@ -89,5 +88,5 @@
     "vite": "^6.0.3",
     "vitest": "3.1.3"
   },
-  "version": "0.21.0"
+  "version": "0.22.4"
 }

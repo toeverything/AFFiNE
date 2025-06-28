@@ -112,7 +112,10 @@ export class GroupTrait {
       return;
     }
     const { staticMap, groupInfo } = staticInfo;
-    const groupMap: Record<string, Group> = { ...staticMap };
+    const groupMap: Record<string, Group> = {};
+    Object.entries(staticMap).forEach(([key, group]) => {
+      groupMap[key] = new Group(key, group.value, groupInfo, this);
+    });
     this.view.rows$.value.forEach(row => {
       const value = this.view.cellGetOrCreate(row.rowId, groupInfo.property.id)
         .jsonValue$.value;
@@ -182,6 +185,7 @@ export class GroupTrait {
   ) {}
 
   addToGroup(rowId: string, key: string) {
+    this.view.lockRows(false);
     const groupMap = this.groupDataMap$.value;
     const groupInfo = this.groupInfo$.value;
     if (!groupMap || !groupInfo) {
@@ -254,6 +258,7 @@ export class GroupTrait {
     toGroupKey: string,
     position: InsertToPosition
   ) {
+    this.view.lockRows(false);
     const groupMap = this.groupDataMap$.value;
     if (!groupMap) {
       return;
@@ -290,6 +295,7 @@ export class GroupTrait {
   }
 
   moveGroupTo(groupKey: string, position: InsertToPosition) {
+    this.view.lockRows(false);
     const groups = this.groupsDataList$.value;
     if (!groups) {
       return;
@@ -305,6 +311,7 @@ export class GroupTrait {
   }
 
   removeFromGroup(rowId: string, key: string) {
+    this.view.lockRows(false);
     const groupMap = this.groupDataMap$.value;
     if (!groupMap) {
       return;
@@ -323,6 +330,7 @@ export class GroupTrait {
   }
 
   updateValue(rows: string[], value: unknown) {
+    this.view.lockRows(false);
     const propertyId = this.property$.value?.id;
     if (!propertyId) {
       return;

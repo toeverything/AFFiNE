@@ -43,7 +43,10 @@ describe('op consumer', () => {
     expect(ctx.postMessage.mock.lastCall).toMatchInlineSnapshot(`
       [
         {
-          "error": [Error: Handler for operation [add] is not registered.],
+          "error": {
+            "message": "Handler for operation [add] is not registered.",
+            "name": "Error",
+          },
           "id": "add:1",
           "type": "return",
         },

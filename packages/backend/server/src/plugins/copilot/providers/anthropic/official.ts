@@ -20,7 +20,7 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -29,7 +29,7 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -38,7 +38,7 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -47,7 +47,7 @@ export class AnthropicOfficialProvider extends AnthropicProvider<AnthropicOffici
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
           defaultForOutputType: true,
         },
       ],

@@ -1,7 +1,7 @@
-#import './license.gql'
+#import './license-body.gql'
 
 mutation activateLicense($workspaceId: String!, $license: String!) {
   activateLicense(workspaceId: $workspaceId, license: $license) {
-    ...license
+    ...licenseBody
   }
 }

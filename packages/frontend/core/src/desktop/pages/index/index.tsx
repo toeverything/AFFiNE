@@ -147,12 +147,6 @@ export const Component = ({
     if (listIsLoading || list.length > 0) {
       return;
     }
-    if (!allowGuestDemo && !loggedIn) {
-      localStorage.removeItem('last_workspace_id');
-      jumpToSignIn();
-      return;
-    }
-    setCreating(true);
     createFirstAppData(workspacesService)
       .then(createdWorkspace => {
         if (createdWorkspace) {
@@ -177,7 +171,6 @@ export const Component = ({
     jumpToSignIn,
     openPage,
     workspacesService,
-    allowGuestDemo,
     loggedIn,
     listIsLoading,
     list,

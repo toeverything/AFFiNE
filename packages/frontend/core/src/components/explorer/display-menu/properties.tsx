@@ -102,26 +102,30 @@ export const DisplayProperties = ({
             );
           })}
       </div>
-      <Divider size="thinner" />
-      <section className={styles.sectionLabel}>
-        {t['com.affine.all-docs.display.list-view']()}
-      </section>
-      <div className={styles.properties}>
-        <Button
-          className={styles.property}
-          data-show={showIcon}
-          onClick={toggleIcon}
-        >
-          {t['com.affine.all-docs.display.list-view.icon']()}
-        </Button>
-        <Button
-          className={styles.property}
-          data-show={showBody}
-          onClick={toggleBody}
-        >
-          {t['com.affine.all-docs.display.list-view.body']()}
-        </Button>
-      </div>
+      {displayPreference.view === 'list' ? (
+        <>
+          <Divider space={4} size="thinner" />
+          <section className={styles.sectionLabel}>
+            {t['com.affine.all-docs.display.list-view']()}
+          </section>
+          <div className={styles.properties}>
+            <Button
+              className={styles.property}
+              data-show={showIcon}
+              onClick={toggleIcon}
+            >
+              {t['com.affine.all-docs.display.list-view.icon']()}
+            </Button>
+            <Button
+              className={styles.property}
+              data-show={showBody}
+              onClick={toggleBody}
+            >
+              {t['com.affine.all-docs.display.list-view.body']()}
+            </Button>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 };

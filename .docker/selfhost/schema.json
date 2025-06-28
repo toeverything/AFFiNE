@@ -560,6 +560,11 @@
           "type": "boolean",
           "description": "Only allow users with early access features to access the app\n@default false",
           "default": false
+        },
+        "allowGuestDemoWorkspace": {
+          "type": "boolean",
+          "description": "Whether allow guest users to create demo workspaces.\n@default true",
+          "default": true
         }
       }
     },
@@ -869,22 +874,6 @@
         }
       }
     },
-    "customerIo": {
-      "type": "object",
-      "description": "Configuration for customerIo module",
-      "properties": {
-        "enabled": {
-          "type": "boolean",
-          "description": "Enable customer.io integration\n@default false",
-          "default": false
-        },
-        "token": {
-          "type": "string",
-          "description": "Customer.io token\n@default \"\"",
-          "default": ""
-        }
-      }
-    },
     "indexer": {
       "type": "object",
       "description": "Configuration for indexer module",
@@ -923,6 +912,22 @@
           "type": "number",
           "description": "Number of workspaces automatically indexed per batch\n@default 10",
           "default": 10
+        }
+      }
+    },
+    "customerIo": {
+      "type": "object",
+      "description": "Configuration for customerIo module",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable customer.io integration\n@default false",
+          "default": false
+        },
+        "token": {
+          "type": "string",
+          "description": "Customer.io token\n@default \"\"",
+          "default": ""
         }
       }
     },

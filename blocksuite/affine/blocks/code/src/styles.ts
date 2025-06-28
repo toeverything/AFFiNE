@@ -33,6 +33,10 @@ export const codeBlockStyles = css`
     grid-template-columns: auto minmax(0, 1fr);
   }
 
+  .affine-code-block-container.disable-line-numbers v-line {
+    grid-template-columns: unset;
+  }
+
   .affine-code-block-container div:has(> v-line) {
     display: grid;
   }

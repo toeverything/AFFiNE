@@ -1,4 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
+import { Tool, ToolSet } from 'ai';
 import { z } from 'zod';
 
 import {
@@ -7,9 +9,21 @@ import {
   CopilotProviderNotSupported,
   OnEvent,
 } from '../../../base';
+import { AccessController } from '../../../core/permission';
+import { IndexerService } from '../../indexer';
+import { CopilotContextService } from '../context';
+import {
+  buildDocKeywordSearchGetter,
+  buildDocSearchGetter,
+  createDocKeywordSearchTool,
+  createDocSemanticSearchTool,
+  createExaCrawlTool,
+  createExaSearchTool,
+} from '../tools';
 import { CopilotProviderFactory } from './factory';
 import {
   type CopilotChatOptions,
+  CopilotChatTools,
   type CopilotEmbeddingOptions,
   type CopilotImageOptions,
   CopilotProviderModel,
@@ -22,6 +36,7 @@ import {
   ModelInputType,
   type PromptMessage,
   PromptMessageSchema,
+  StreamObject,
 } from './types';
 
 @Injectable()
@@ -33,6 +48,7 @@ export abstract class CopilotProvider<C = any> {
 
   @Inject() protected readonly AFFiNEConfig!: Config;
   @Inject() protected readonly factory!: CopilotProviderFactory;
+  @Inject() protected readonly moduleRef!: ModuleRef;
 
   get config(): C {
     return this.AFFiNEConfig.copilot.providers[this.type] as C;
@@ -96,6 +112,69 @@ export abstract class CopilotProvider<C = any> {
           ? `No model supports ${outputType} output with ${inputTypes ?? '<any>'} input for provider ${this.type}`
           : 'Output type is required when modelId is not provided'
     );
+  }
+
+  protected getProviderSpecificTools(
+    _toolName: CopilotChatTools,
+    _model: string
+  ): [string, Tool] | undefined {
+    return;
+  }
+
+  // use for tool use, shared between providers
+  protected async getTools(
+    options: CopilotChatOptions,
+    model: string
+  ): Promise<ToolSet> {
+    const tools: ToolSet = {};
+    if (options?.tools?.length) {
+      this.logger.debug(`getTools: ${JSON.stringify(options.tools)}`);
+      for (const tool of options.tools) {
+        const toolDef = this.getProviderSpecificTools(tool, model);
+        if (toolDef) {
+          tools[toolDef[0]] = toolDef[1];
+          continue;
+        }
+        switch (tool) {
+          case 'docSemanticSearch': {
+            const ac = this.moduleRef.get(AccessController, { strict: false });
+            const context = this.moduleRef.get(CopilotContextService, {
+              strict: false,
+            });
+            const searchDocs = buildDocSearchGetter(ac, context);
+            tools.doc_semantic_search = createDocSemanticSearchTool(
+              searchDocs.bind(null, options)
+            );
+            break;
+          }
+          case 'docKeywordSearch': {
+            if (this.AFFiNEConfig.indexer.enabled) {
+              const ac = this.moduleRef.get(AccessController, {
+                strict: false,
+              });
+              const indexerService = this.moduleRef.get(IndexerService, {
+                strict: false,
+              });
+              const searchDocs = buildDocKeywordSearchGetter(
+                ac,
+                indexerService
+              );
+              tools.doc_keyword_search = createDocKeywordSearchTool(
+                searchDocs.bind(null, options)
+              );
+            }
+            break;
+          }
+          case 'webSearch': {
+            tools.web_search_exa = createExaSearchTool(this.AFFiNEConfig);
+            tools.web_crawl_exa = createExaCrawlTool(this.AFFiNEConfig);
+            break;
+          }
+        }
+      }
+      return tools;
+    }
+    return tools;
   }
 
   private handleZodError(ret: z.SafeParseReturnType<any, any>) {
@@ -168,6 +247,17 @@ export abstract class CopilotProvider<C = any> {
     messages: PromptMessage[],
     options?: CopilotChatOptions
   ): AsyncIterable<string>;
+
+  streamObject(
+    _model: ModelConditions,
+    _messages: PromptMessage[],
+    _options?: CopilotChatOptions
+  ): AsyncIterable<StreamObject> {
+    throw new CopilotProviderNotSupported({
+      provider: this.type,
+      kind: 'object',
+    });
+  }
 
   structure(
     _cond: ModelConditions,

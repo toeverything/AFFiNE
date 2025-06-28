@@ -8,13 +8,14 @@ import { FeatureModule } from '../../core/features';
 import { PermissionModule } from '../../core/permission';
 import { QuotaModule } from '../../core/quota';
 import { WorkspaceModule } from '../../core/workspaces';
+import { IndexerModule } from '../indexer';
 import {
-  CopilotContextDocJob,
   CopilotContextResolver,
   CopilotContextRootResolver,
   CopilotContextService,
 } from './context';
 import { CopilotController } from './controller';
+import { CopilotEmbeddingJob } from './embedding';
 import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
 import { CopilotProviderFactory, CopilotProviders } from './providers';
@@ -44,6 +45,7 @@ import {
     PermissionModule,
     ServerConfigModule,
     WorkspaceModule,
+    IndexerModule,
   ],
   providers: [
     // providers
@@ -61,7 +63,7 @@ import {
     // context
     CopilotContextResolver,
     CopilotContextService,
-    CopilotContextDocJob,
+    CopilotEmbeddingJob,
     // transcription
     CopilotTranscriptionService,
     CopilotTranscriptionResolver,

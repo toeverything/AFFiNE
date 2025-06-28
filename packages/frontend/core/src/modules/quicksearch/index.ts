@@ -55,6 +55,7 @@ export function configureQuickSearchModule(framework: Framework) {
     .entity(QuickSearch)
     .entity(CommandsQuickSearchSession, [GlobalContextService])
     .entity(DocsQuickSearchSession, [
+      WorkspaceService,
       DocsSearchService,
       DocsService,
       DocDisplayMetaService,

@@ -12,11 +12,13 @@ public struct CreateUserInput: InputObject {
 
   public init(
     email: String,
-    name: GraphQLNullable<String> = nil
+    name: GraphQLNullable<String> = nil,
+    password: GraphQLNullable<String> = nil
   ) {
     __data = InputDict([
       "email": email,
-      "name": name
+      "name": name,
+      "password": password
     ])
   }
 
@@ -28,5 +30,10 @@ public struct CreateUserInput: InputObject {
   public var name: GraphQLNullable<String> {
     get { __data["name"] }
     set { __data["name"] = newValue }
+  }
+
+  public var password: GraphQLNullable<String> {
+    get { __data["password"] }
+    set { __data["password"] = newValue }
   }
 }

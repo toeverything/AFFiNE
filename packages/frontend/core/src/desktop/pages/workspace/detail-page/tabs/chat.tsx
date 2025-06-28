@@ -47,7 +47,7 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     searchMenuConfig,
     networkSearchConfig,
     reasoningConfig,
-    modelSwitchConfig,
+    playgroundConfig,
   } = useAIChatConfig();
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
       chatPanelRef.current.searchMenuConfig = searchMenuConfig;
       chatPanelRef.current.networkSearchConfig = networkSearchConfig;
       chatPanelRef.current.reasoningConfig = reasoningConfig;
-      chatPanelRef.current.modelSwitchConfig = modelSwitchConfig;
+      chatPanelRef.current.playgroundConfig = playgroundConfig;
       chatPanelRef.current.extensions = editor.host.std
         .get(ViewExtensionManagerIdentifier)
         .get('preview-page');
@@ -109,7 +109,7 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     networkSearchConfig,
     searchMenuConfig,
     reasoningConfig,
-    modelSwitchConfig,
+    playgroundConfig,
   ]);
 
   return <div className={styles.root} ref={containerRef} />;

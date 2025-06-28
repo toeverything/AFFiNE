@@ -292,7 +292,7 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.21.0",
+  "version": "0.22.4",
   "devDependencies": {
     "@vanilla-extract/vite-plugin": "^5.0.0",
     "msw": "^2.8.4",

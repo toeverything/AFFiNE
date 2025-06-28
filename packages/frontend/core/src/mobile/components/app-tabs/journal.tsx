@@ -5,8 +5,8 @@ import { TodayIcon } from '@blocksuite/icons/rc';
 import { useLiveData, useService } from '@toeverything/infra';
 import { useCallback } from 'react';
 
-import type { AppTabCustomFCProps } from './data';
 import { TabItem } from './tab-item';
+import type { AppTabCustomFCProps } from './type';
 
 export const AppTabJournal = ({ tab }: AppTabCustomFCProps) => {
   const workbench = useService(WorkbenchService).workbench;
