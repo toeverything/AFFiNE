@@ -5,7 +5,7 @@ import Foundation
 public final class QLService {
   public static let shared = QLService()
   private var endpointURL: URL
-  public private(set) var client: ApolloClient
+  public var client: ApolloClient
 
   private init() {
     let store = ApolloStore()

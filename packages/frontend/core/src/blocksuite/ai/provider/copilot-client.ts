@@ -34,6 +34,13 @@ import {
   UnauthorizedError,
 } from './error';
 
+export enum Endpoint {
+  Stream = 'stream',
+  StreamObject = 'stream-object',
+  Workflow = 'workflow',
+  Images = 'images',
+}
+
 type OptionsField<T extends GraphQLQuery> =
   RequestOptions<T>['variables'] extends { options: infer U } ? U : never;
 
@@ -415,7 +422,7 @@ export class CopilotClient {
       webSearch?: boolean;
       modelId?: string;
     },
-    endpoint = 'stream'
+    endpoint = Endpoint.Stream
   ) {
     let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({
@@ -435,7 +442,7 @@ export class CopilotClient {
     sessionId: string,
     messageId?: string,
     seed?: string,
-    endpoint = 'images'
+    endpoint = Endpoint.Images
   ) {
     let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({

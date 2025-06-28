@@ -80,7 +80,7 @@ export class DesktopStateSynchronizer extends Service {
 
     this.electronApi.events.ui.onToggleRightSidebar(tabId => {
       if (tabId === appInfo?.viewId) {
-        workbench.sidebarOpen$.next(!workbench.sidebarOpen$.value);
+        workbench.setSidebarOpen(!workbench.sidebarOpen$.value);
       }
     });
 

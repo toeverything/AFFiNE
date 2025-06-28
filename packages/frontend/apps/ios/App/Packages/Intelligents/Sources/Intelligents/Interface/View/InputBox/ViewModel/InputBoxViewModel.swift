@@ -66,6 +66,12 @@ public class InputBoxViewModel: ObservableObject {
       .assign(to: \.canSend, on: self)
       .store(in: &cancellables)
   }
+
+  public func clearAllAttachments() {
+    imageAttachments.removeAll()
+    fileAttachments.removeAll()
+    documentAttachments.removeAll()
+  }
 }
 
 // MARK: - Text Management

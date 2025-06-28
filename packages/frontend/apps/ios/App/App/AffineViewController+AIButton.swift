@@ -12,14 +12,14 @@ extension AFFiNEViewController: IntelligentsButtonDelegate {
   func onIntelligentsButtonTapped(_ button: IntelligentsButton) {
     IntelligentContext.shared.webView = webView!
     button.beginProgress()
-    
-    IntelligentContext.shared.preparePresent() { result in
+
+    IntelligentContext.shared.preparePresent { result in
       button.stopProgress()
       switch result {
-      case .success(let success):
+      case .success:
         let controller = IntelligentsController()
         self.present(controller, animated: true)
-      case .failure(let failure):
+      case let .failure(failure):
         let alert = UIAlertController(
           title: "Error",
           message: failure.localizedDescription,

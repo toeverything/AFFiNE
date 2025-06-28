@@ -197,34 +197,52 @@ export class CopilotContextService implements OnApplicationBootstrap {
   async matchWorkspaceAll(
     workspaceId: string,
     content: string,
-    topK: number = 5,
+    topK: number,
     signal?: AbortSignal,
-    threshold: number = 0.5
+    threshold: number = 0.8,
+    docIds?: string[],
+    scopedThreshold: number = 0.85
   ) {
     if (!this.embeddingClient) return [];
     const embedding = await this.embeddingClient.getEmbedding(content, signal);
     if (!embedding) return [];
 
-    const [fileChunks, workspaceChunks] = await Promise.all([
-      this.models.copilotWorkspace.matchFileEmbedding(
-        workspaceId,
-        embedding,
-        topK * 2,
-        threshold
-      ),
-      this.models.copilotContext.matchWorkspaceEmbedding(
-        embedding,
-        workspaceId,
-        topK * 2,
-        threshold
-      ),
-    ]);
+    const [fileChunks, workspaceChunks, scopedWorkspaceChunks] =
+      await Promise.all([
+        this.models.copilotWorkspace.matchFileEmbedding(
+          workspaceId,
+          embedding,
+          topK * 2,
+          threshold
+        ),
 
-    if (!fileChunks.length && !workspaceChunks.length) return [];
+        this.models.copilotContext.matchWorkspaceEmbedding(
+          embedding,
+          workspaceId,
+          topK * 2,
+          threshold
+        ),
+        docIds
+          ? this.models.copilotContext.matchWorkspaceEmbedding(
+              embedding,
+              workspaceId,
+              topK * 2,
+              scopedThreshold,
+              docIds
+            )
+          : null,
+      ]);
+
+    if (
+      !fileChunks.length &&
+      !workspaceChunks.length &&
+      !scopedWorkspaceChunks?.length
+    )
+      return [];
 
     return await this.embeddingClient.reRank(
       content,
-      [...fileChunks, ...workspaceChunks],
+      [...fileChunks, ...workspaceChunks, ...(scopedWorkspaceChunks || [])],
       topK,
       signal
     );

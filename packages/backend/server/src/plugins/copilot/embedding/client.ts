@@ -17,7 +17,6 @@ import {
 import {
   EMBEDDING_DIMENSIONS,
   EmbeddingClient,
-  getReRankSchema,
   type ReRankResult,
 } from './types';
 
@@ -81,9 +80,9 @@ class ProductionEmbeddingClient extends EmbeddingClient {
   }
 
   private getTargetId<T extends ChunkSimilarity>(embedding: T) {
-    return 'docId' in embedding
+    return 'docId' in embedding && typeof embedding.docId === 'string'
       ? embedding.docId
-      : 'fileId' in embedding
+      : 'fileId' in embedding && typeof embedding.fileId === 'string'
         ? embedding.fileId
         : '';
   }
@@ -102,24 +101,19 @@ class ProductionEmbeddingClient extends EmbeddingClient {
       throw new CopilotPromptNotFound({ name: RERANK_PROMPT });
     }
     const provider = await this.getProvider({ modelId: prompt.model });
-    const schema = getReRankSchema(embeddings.length);
 
-    const ranks = await provider.structure(
+    const ranks = await provider.rerank(
       { modelId: prompt.model },
-      prompt.finish({
-        query,
-        results: embeddings.map(e => ({
-          targetId: this.getTargetId(e),
-          chunk: e.chunk,
-          content: e.content,
-        })),
-        schema,
-      }),
-      { maxRetries: 3, signal }
+      embeddings.map(e => prompt.finish({ query, doc: e.content })),
+      { signal }
     );
 
     try {
-      return schema.parse(JSON.parse(ranks)).ranks;
+      return ranks.map((score, i) => ({
+        chunk: embeddings[i].content,
+        targetId: this.getTargetId(embeddings[i]),
+        score,
+      }));
     } catch (error) {
       this.logger.error('Failed to parse rerank results', error);
       // silent error, will fallback to default sorting in parent method
@@ -176,9 +170,9 @@ class ProductionEmbeddingClient extends EmbeddingClient {
 
       const highConfidenceChunks = ranks
         .flat()
-        .toSorted((a, b) => b.scores.score - a.scores.score)
-        .filter(r => r.scores.score > 5)
-        .map(r => chunks[`${r.scores.targetId}:${r.scores.chunk}`])
+        .toSorted((a, b) => b.score - a.score)
+        .filter(r => r.score > 5)
+        .map(r => chunks[`${r.targetId}:${r.chunk}`])
         .filter(Boolean);
 
       this.logger.verbose(

@@ -13,6 +13,7 @@ export enum CopilotProviderType {
   GeminiVertex = 'geminiVertex',
   OpenAI = 'openai',
   Perplexity = 'perplexity',
+  Morph = 'morph',
 }
 
 export const CopilotProviderSchema = z.object({
@@ -161,6 +162,7 @@ export type StreamObject = z.infer<typeof StreamObjectSchema>;
 const CopilotProviderOptionsSchema = z.object({
   signal: z.instanceof(AbortSignal).optional(),
   user: z.string().optional(),
+  session: z.string().optional(),
   workspace: z.string().optional(),
 });
 

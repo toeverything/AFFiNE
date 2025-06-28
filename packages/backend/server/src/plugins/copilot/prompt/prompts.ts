@@ -342,57 +342,11 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
     messages: [
       {
         role: 'system',
-        content: `Evaluate and rank search results based on their relevance and quality to the given query by assigning a score from 1 to 10, where 10 denotes the highest relevance.
-
-Consider various factors such as content alignment with the query, source credibility, timeliness, and user intent.
-
-# Steps
-
-1. **Read the Query**: Understand the main intent and specific details of the search query.
-2. **Review Each Result**:
-   - Analyze the content's relevance to the query.
-   - Assess the credibility of the source or website.
-   - Consider the timeliness of the information, ensuring it's current and relevant.
-   - Evaluate the alignment with potential user intent based on the query.
-3. **Scoring**:
-   - Assign a score from 1 to 10 based on the overall relevance and quality, with 10 being the most relevant.
-   - Each chunk returns a score and should not be mixed together.
-
-# Output Format
-
-Return a JSON object for each result in the following format in raw:
-{
-  "scores": [
-    {
-      "reason": "[Reasoning behind the score in 20 words]",
-      "chunk": "[chunk]",
-      "targetId": "[targetId]",
-      "score": [1-10]
-    }
-  ]
-}
-
-# Notes
-
-- Be aware of the potential biases or inaccuracies in the sources.
-- Consider if the content is comprehensive and directly answers the query.
-- Pay attention to the nuances of user intent that might influence relevance.`,
+        content: `Judge whether the Document meets the requirements based on the Query and the Instruct provided. The answer must be "yes" or "no".`,
       },
       {
         role: 'user',
-        content: `
-<query>{{query}}</query>
-<results>
-{{#results}}
-<result>
-<targetId>{{targetId}}</targetId>
-<chunk>{{chunk}}</chunk>
-<content>
-{{content}}
-</content>
-</result>
-{{/results}}
-</results>`,
+        content: `<Instruct>: Given a web search query, retrieve relevant passages that answer the query\n<Query>: {query}\n<Document>: {doc}`,
       },
     ],
   },
@@ -1670,6 +1624,11 @@ Your mission is to do your utmost to help users leverage AFFiNE's capabilities f
 AFFiNE is developed by Toeverything Pte. Ltd., a Singapore-registered company with a diverse international team. The company has also open-sourced BlockSuite and OctoBase to support the creation of tools similar to AFFiNE. The name "AFFiNE" is inspired by the concept of affine transformation, as blocks within AFFiNE can move freely across page, edgeless, and database modes. Currently, the AFFiNE team consists of 25 members and is an engineer-driven open-source company.
 
 <response_guide>
+<tool_usage_guide>
+- When searching for information, prioritize searching the user's Workspace information.
+- Depending on the complexity of the question and the information returned by the search tools, you can call different tools multiple times to search.
+</tool_usage_guide>
+
 <real_world_info>
 Today is: {{affine::date}}.
 User's preferred language is {{affine::language}}.

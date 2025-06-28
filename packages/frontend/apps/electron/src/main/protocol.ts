@@ -160,6 +160,48 @@ export function registerProtocol() {
             delete responseHeaders['Access-Control-Allow-Origin'];
             delete responseHeaders['Access-Control-Allow-Headers'];
           }
+
+          // to allow url embedding, remove "x-frame-options",
+          // if response header contains "content-security-policy", remove "frame-ancestors/frame-src"
+          delete responseHeaders['x-frame-options'];
+          delete responseHeaders['X-Frame-Options'];
+
+          // Handle Content Security Policy headers
+          const cspHeaders = [
+            'content-security-policy',
+            'Content-Security-Policy',
+          ];
+          for (const cspHeader of cspHeaders) {
+            const cspValues = responseHeaders[cspHeader];
+            if (cspValues) {
+              // Remove frame-ancestors and frame-src directives from CSP
+              const modifiedCspValues = cspValues
+                .map(cspValue => {
+                  if (typeof cspValue === 'string') {
+                    return cspValue
+                      .split(';')
+                      .filter(directive => {
+                        const trimmed = directive.trim().toLowerCase();
+                        return (
+                          !trimmed.startsWith('frame-ancestors') &&
+                          !trimmed.startsWith('frame-src')
+                        );
+                      })
+                      .join(';');
+                  }
+                  return cspValue;
+                })
+                .filter(
+                  value => value && typeof value === 'string' && value.trim()
+                );
+
+              if (modifiedCspValues.length > 0) {
+                responseHeaders[cspHeader] = modifiedCspValues;
+              } else {
+                delete responseHeaders[cspHeader];
+              }
+            }
+          }
         }
       })()
         .catch(err => {

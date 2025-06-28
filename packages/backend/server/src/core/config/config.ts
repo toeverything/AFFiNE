@@ -13,6 +13,7 @@ declare global {
       externalUrl?: string;
       https: boolean;
       host: string;
+      hosts: ConfigItem<string[]>;
       port: number;
       path: string;
       name?: string;
@@ -52,6 +53,11 @@ Default to be \`[server.protocol]://[server.host][:server.port]\` if not specifi
     desc: 'Where the server get deployed(FQDN).',
     default: 'localhost',
     env: 'AFFINE_SERVER_HOST',
+  },
+  hosts: {
+    desc: 'Multiple hosts the server will accept requests from.',
+    default: [],
+    shape: z.array(z.string()),
   },
   port: {
     desc: 'Which port the server will listen on.',

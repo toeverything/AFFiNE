@@ -65,7 +65,11 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
         ? [
             {
               id: 'affine-cloud',
-              baseUrl: 'https://app.affine.pro',
+              baseUrl: BUILD_CONFIG.isNative
+                ? BUILD_CONFIG.isIOS
+                  ? 'https://apple.getaffineapp.com'
+                  : 'https://app.affine.pro'
+                : location.origin,
               config: {
                 serverName: 'Affine Cloud',
                 features: [
@@ -94,7 +98,11 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
           ? [
               {
                 id: 'affine-cloud',
-                baseUrl: 'https://insider.affine.pro',
+                baseUrl: BUILD_CONFIG.isNative
+                  ? BUILD_CONFIG.isIOS
+                    ? 'https://apple.getaffineapp.com'
+                    : 'https://insider.affine.pro'
+                  : location.origin,
                 config: {
                   serverName: 'Affine Cloud',
                   features: [
@@ -152,7 +160,9 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
               ? [
                   {
                     id: 'affine-cloud',
-                    baseUrl: 'https://affine.fail',
+                    baseUrl: BUILD_CONFIG.isNative
+                      ? 'https://affine.fail'
+                      : location.origin,
                     config: {
                       serverName: 'Affine Cloud',
                       features: [
