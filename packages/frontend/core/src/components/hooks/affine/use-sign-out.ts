@@ -34,7 +34,10 @@ export const useSignOut = ({
     onConfirm?.()?.catch(console.error);
     try {
       await authService.signOut();
-      if (defaultServerService.server.config$.value.allowGuestDemoWorkspace) {
+      if (
+        defaultServerService.server.config$.value.allowGuestDemoWorkspace !==
+        false
+      ) {
         jumpToIndex();
       } else {
         jumpToSignIn();

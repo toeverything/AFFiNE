@@ -18,6 +18,7 @@ export const AddWorkspace = ({
   const allowGuestDemo = useLiveData(
     defaultServerService.server.config$.selector(c => c.allowGuestDemoWorkspace)
   );
+  const guestDemoEnabled = allowGuestDemo !== false;
 
   return (
     <>
@@ -44,7 +45,7 @@ export const AddWorkspace = ({
         className={styles.ItemContainer}
       >
         <div className={styles.ItemText}>
-          {allowGuestDemo
+          {guestDemoEnabled
             ? t['com.affine.workspaceList.addWorkspace.create']()
             : t['com.affine.workspaceList.addWorkspace.create-cloud']()}
         </div>

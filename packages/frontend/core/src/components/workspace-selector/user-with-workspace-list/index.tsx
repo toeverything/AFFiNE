@@ -76,7 +76,8 @@ export const UserWithWorkspaceList = ({
   const onNewWorkspace = useCallback(() => {
     if (
       !isAuthenticated &&
-      !defaultServerService.server.config$.value.allowGuestDemoWorkspace
+      defaultServerService.server.config$.value.allowGuestDemoWorkspace ===
+        false
     ) {
       return openSignInModal();
     }
