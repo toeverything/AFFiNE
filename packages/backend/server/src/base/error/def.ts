@@ -907,4 +907,14 @@ export const USER_FRIENDLY_ERRORS = {
     args: { reason: 'string' },
     message: ({ reason }) => `Invalid indexer input: ${reason}`,
   },
+
+  // comment and reply errors
+  comment_not_found: {
+    type: 'resource_not_found',
+    message: 'Comment not found.',
+  },
+  reply_not_found: {
+    type: 'resource_not_found',
+    message: 'Reply not found.',
+  },
 } satisfies Record<string, UserFriendlyErrorOptions>;

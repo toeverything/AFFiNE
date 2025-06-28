@@ -911,6 +911,7 @@ __metadata:
     "@ai-sdk/google": "npm:^1.2.18"
     "@ai-sdk/google-vertex": "npm:^2.2.23"
     "@ai-sdk/openai": "npm:^1.3.22"
+    "@ai-sdk/openai-compatible": "npm:^0.2.14"
     "@ai-sdk/perplexity": "npm:^1.1.9"
     "@apollo/server": "npm:^4.11.3"
     "@aws-sdk/client-s3": "npm:^3.779.0"
@@ -1110,6 +1111,18 @@ __metadata:
   peerDependencies:
     zod: ^3.0.0
   checksum: 10/e8ff1ea1cae8f6c1c17e5526e3e51a8e584bb60d8e407646594c9b07600e06ef43c85518d08aafd3856aa2d46a1ae88111d6c61532bdf8c917859e0baad23432
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/openai-compatible@npm:^0.2.14":
+  version: 0.2.14
+  resolution: "@ai-sdk/openai-compatible@npm:0.2.14"
+  dependencies:
+    "@ai-sdk/provider": "npm:1.1.3"
+    "@ai-sdk/provider-utils": "npm:2.2.8"
+  peerDependencies:
+    zod: ^3.0.0
+  checksum: 10/a2b9fbe6c9a0a9edbe6c5d91fbb06708088c881060cff7018ce0bb7ca52d8f63a20dd334389099d9ea256482f2c22f9f1ff6be0de836d3af98a27274578f0be6
   languageName: node
   linkType: hard
 

@@ -253,6 +253,10 @@
       "type": "Object",
       "desc": "The config for the anthropic provider in Google Vertex AI."
     },
+    "providers.morph": {
+      "type": "Object",
+      "desc": "The config for the morph provider."
+    },
     "unsplash": {
       "type": "Object",
       "desc": "The config for the unsplash key."
