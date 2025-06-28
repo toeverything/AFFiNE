@@ -6,11 +6,12 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { truncate } from 'lodash-es';
-import { map, of, switchMap, tap, throttleTime } from 'rxjs';
+import { catchError, EMPTY, map, of, switchMap, tap, throttleTime } from 'rxjs';
 
 import type { DocRecord, DocsService } from '../../doc';
 import type { DocDisplayMetaService } from '../../doc-display-meta';
 import type { DocsSearchService } from '../../docs-search';
+import type { WorkspaceService } from '../../workspace';
 import type { QuickSearchSession } from '../providers/quick-search-provider';
 import type { QuickSearchItem } from '../types/item';
 
@@ -26,6 +27,7 @@ export class DocsQuickSearchSession
   implements QuickSearchSession<'docs', DocsPayload>
 {
   constructor(
+    private readonly workspaceService: WorkspaceService,
     private readonly docsSearchService: DocsSearchService,
     private readonly docsService: DocsService,
     private readonly docDisplayMetaService: DocDisplayMetaService
@@ -41,9 +43,16 @@ export class DocsQuickSearchSession
 
   private readonly isQueryLoading$ = new LiveData(false);
 
+  isCloudWorkspace = this.workspaceService.workspace.flavour !== 'local';
+
   isLoading$ = LiveData.computed(get => {
-    return get(this.isIndexerLoading$) || get(this.isQueryLoading$);
+    return (
+      (this.isCloudWorkspace ? false : get(this.isIndexerLoading$)) ||
+      get(this.isQueryLoading$)
+    );
   });
+
+  error$ = new LiveData<any>(null);
 
   query$ = new LiveData('');
 
@@ -102,8 +111,15 @@ export class DocsQuickSearchSession
           this.isQueryLoading$.next(false);
         }),
         onStart(() => {
+          this.error$.next(null);
           this.items$.next([]);
           this.isQueryLoading$.next(true);
+        }),
+        catchError(err => {
+          this.error$.next(err instanceof Error ? err.message : err);
+          this.items$.next([]);
+          this.isQueryLoading$.next(false);
+          return EMPTY;
         }),
         onComplete(() => {})
       );

@@ -7,27 +7,23 @@ public class InviteByEmailsMutation: GraphQLMutation {
   public static let operationName: String = "inviteByEmails"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation inviteByEmails($workspaceId: String!, $emails: [String!]!, $sendInviteMail: Boolean) { inviteBatch( workspaceId: $workspaceId emails: $emails sendInviteMail: $sendInviteMail ) { __typename email inviteId sentSuccess } }"#
+      #"mutation inviteByEmails($workspaceId: String!, $emails: [String!]!) { inviteMembers(workspaceId: $workspaceId, emails: $emails) { __typename email inviteId sentSuccess } }"#
     ))
 
   public var workspaceId: String
   public var emails: [String]
-  public var sendInviteMail: GraphQLNullable<Bool>
 
   public init(
     workspaceId: String,
-    emails: [String],
-    sendInviteMail: GraphQLNullable<Bool>
+    emails: [String]
   ) {
     self.workspaceId = workspaceId
     self.emails = emails
-    self.sendInviteMail = sendInviteMail
   }
 
   public var __variables: Variables? { [
     "workspaceId": workspaceId,
-    "emails": emails,
-    "sendInviteMail": sendInviteMail
+    "emails": emails
   ] }
 
   public struct Data: AffineGraphQL.SelectionSet {
@@ -35,21 +31,19 @@ public class InviteByEmailsMutation: GraphQLMutation {
     public init(_dataDict: DataDict) { __data = _dataDict }
 
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Mutation }
-    #warning("Argument 'sendInviteMail' of field 'inviteBatch' is deprecated. Reason: 'never used'")
     public static var __selections: [ApolloAPI.Selection] { [
-      .field("inviteBatch", [InviteBatch].self, arguments: [
+      .field("inviteMembers", [InviteMember].self, arguments: [
         "workspaceId": .variable("workspaceId"),
-        "emails": .variable("emails"),
-        "sendInviteMail": .variable("sendInviteMail")
+        "emails": .variable("emails")
       ]),
     ] }
 
-    public var inviteBatch: [InviteBatch] { __data["inviteBatch"] }
+    public var inviteMembers: [InviteMember] { __data["inviteMembers"] }
 
-    /// InviteBatch
+    /// InviteMember
     ///
     /// Parent Type: `InviteResult`
-    public struct InviteBatch: AffineGraphQL.SelectionSet {
+    public struct InviteMember: AffineGraphQL.SelectionSet {
       public let __data: DataDict
       public init(_dataDict: DataDict) { __data = _dataDict }
 
@@ -65,6 +59,7 @@ public class InviteByEmailsMutation: GraphQLMutation {
       /// Invite id, null if invite record create failed
       public var inviteId: String? { __data["inviteId"] }
       /// Invite email sent success
+      @available(*, deprecated, message: "Notification will be sent asynchronously")
       public var sentSuccess: Bool { __data["sentSuccess"] }
     }
   }

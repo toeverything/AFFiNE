@@ -12,6 +12,7 @@ test.beforeEach(async t => {
     server: {
       externalUrl: '',
       host: 'app.affine.local',
+      hosts: [],
       port: 3010,
       https: true,
       path: '',
@@ -28,6 +29,7 @@ test('can factor base url correctly with specified external url', t => {
     server: {
       externalUrl: 'https://external.domain.com',
       host: 'app.affine.local',
+      hosts: [],
       port: 3010,
       https: true,
       path: '/ignored',
@@ -42,6 +44,7 @@ test('can factor base url correctly with specified external url and path', t => 
     server: {
       externalUrl: 'https://external.domain.com/anything',
       host: 'app.affine.local',
+      hosts: [],
       port: 3010,
       https: true,
       path: '/ignored',
@@ -56,6 +59,7 @@ test('can factor base url correctly with specified external url with port', t =>
     server: {
       externalUrl: 'https://external.domain.com:123',
       host: 'app.affine.local',
+      hosts: [],
       port: 3010,
       https: true,
     },
@@ -95,7 +99,7 @@ test('can safe redirect', t => {
 
   function deny(to: string) {
     t.context.url.safeRedirect(res, to);
-    t.true(spy.calledOnceWith(t.context.url.home));
+    t.true(spy.calledOnceWith(t.context.url.baseUrl));
     spy.resetHistory();
   }
 
@@ -105,4 +109,39 @@ test('can safe redirect', t => {
     'https://app.affine.local/path?query=1',
   ].forEach(allow);
   ['https://other.domain.com', 'a://invalid.uri'].forEach(deny);
+});
+
+test('can get request origin', t => {
+  t.is(t.context.url.requestOrigin, 'https://app.affine.local');
+});
+
+test('can get request base url', t => {
+  t.is(t.context.url.requestBaseUrl, 'https://app.affine.local');
+});
+
+test('can get request base url with multiple hosts', t => {
+  // mock cls
+  const cls = new Map<string, string>();
+  const url = new URLHelper(
+    {
+      server: {
+        externalUrl: '',
+        host: 'app.affine.local1',
+        hosts: ['app.affine.local1', 'app.affine.local2'],
+        port: 3010,
+        https: true,
+        path: '',
+      },
+    } as any,
+    cls as any
+  );
+
+  // no cls, use default origin
+  t.is(url.requestOrigin, 'https://app.affine.local1');
+  t.is(url.requestBaseUrl, 'https://app.affine.local1');
+
+  // set cls
+  cls.set(CLS_REQUEST_HOST, 'app.affine.local2');
+  t.is(url.requestOrigin, 'https://app.affine.local2');
+  t.is(url.requestBaseUrl, 'https://app.affine.local2');
 });

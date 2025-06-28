@@ -12,8 +12,8 @@ import type { AppSidebarConfig } from '../../chat-panel/chat-config';
 import { AIProvider } from '../../provider';
 import type { DocDisplayConfig, SearchMenuConfig } from '../ai-chat-chips';
 import type {
-  AIModelSwitchConfig,
   AINetworkSearchConfig,
+  AIPlaygroundConfig,
   AIReasoningConfig,
 } from '../ai-chat-input';
 
@@ -66,7 +66,7 @@ export class PlaygroundContent extends SignalWatcher(
   accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
-  accessor modelSwitchConfig!: AIModelSwitchConfig;
+  accessor playgroundConfig!: AIPlaygroundConfig;
 
   @property({ attribute: false })
   accessor appSidebarConfig!: AppSidebarConfig;
@@ -102,9 +102,7 @@ export class PlaygroundContent extends SignalWatcher(
         this.doc.id,
         { action: false }
       )) || [];
-    const rootSession = sessions
-      ?.filter(session => !session.parentSessionId)
-      .at(-1);
+    const rootSession = sessions?.findLast(session => !session.parentSessionId);
     if (!rootSession) {
       // Create a new session
       const rootSessionId = await AIProvider.session?.createSession({
@@ -331,7 +329,7 @@ export class PlaygroundContent extends SignalWatcher(
                 .doc=${this.doc}
                 .networkSearchConfig=${this.networkSearchConfig}
                 .reasoningConfig=${this.reasoningConfig}
-                .modelSwitchConfig=${this.modelSwitchConfig}
+                .playgroundConfig=${this.playgroundConfig}
                 .appSidebarConfig=${this.appSidebarConfig}
                 .searchMenuConfig=${this.searchMenuConfig}
                 .docDisplayConfig=${this.docDisplayConfig}

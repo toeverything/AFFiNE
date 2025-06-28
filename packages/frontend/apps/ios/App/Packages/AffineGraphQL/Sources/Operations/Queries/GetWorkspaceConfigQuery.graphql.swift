@@ -7,7 +7,7 @@ public class GetWorkspaceConfigQuery: GraphQLQuery {
   public static let operationName: String = "getWorkspaceConfig"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getWorkspaceConfig($id: String!) { workspace(id: $id) { __typename enableAi enableUrlPreview inviteLink { __typename link expireTime } } }"#
+      #"query getWorkspaceConfig($id: String!) { workspace(id: $id) { __typename enableAi enableUrlPreview enableDocEmbedding inviteLink { __typename link expireTime } } }"#
     ))
 
   public var id: String
@@ -42,6 +42,7 @@ public class GetWorkspaceConfigQuery: GraphQLQuery {
         .field("__typename", String.self),
         .field("enableAi", Bool.self),
         .field("enableUrlPreview", Bool.self),
+        .field("enableDocEmbedding", Bool.self),
         .field("inviteLink", InviteLink?.self),
       ] }
 
@@ -49,6 +50,8 @@ public class GetWorkspaceConfigQuery: GraphQLQuery {
       public var enableAi: Bool { __data["enableAi"] }
       /// Enable url previous when sharing
       public var enableUrlPreview: Bool { __data["enableUrlPreview"] }
+      /// Enable doc embedding
+      public var enableDocEmbedding: Bool { __data["enableDocEmbedding"] }
       /// invite link for workspace
       public var inviteLink: InviteLink? { __data["inviteLink"] }
 

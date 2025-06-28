@@ -13,6 +13,7 @@
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",
     "@blocksuite/affine-model": "workspace:*",
+    "@blocksuite/affine-rich-text": "workspace:*",
     "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/global": "workspace:*",
     "@blocksuite/std": "workspace:*",
@@ -38,5 +39,5 @@
     "!src/__tests__",
     "!dist/__tests__"
   ],
-  "version": "0.21.0"
+  "version": "0.22.4"
 }

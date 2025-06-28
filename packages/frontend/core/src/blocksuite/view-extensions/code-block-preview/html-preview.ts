@@ -1,4 +1,3 @@
-import track from '@affine/track';
 import { CodeBlockPreviewExtension } from '@blocksuite/affine/blocks/code';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { CodeBlockModel } from '@blocksuite/affine/model';
@@ -8,7 +7,7 @@ import { property, query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
-import { linkWebContainer } from './web-container';
+import { linkIframe } from './iframe-container';
 
 export const CodeBlockHtmlPreview = CodeBlockPreviewExtension(
   'html',
@@ -65,11 +64,6 @@ export class HTMLPreview extends SignalWatcher(WithDisposable(LitElement)) {
   override firstUpdated(_changedProperties: PropertyValues): void {
     const result = super.firstUpdated(_changedProperties);
 
-    if (!window.crossOriginIsolated) {
-      this.state = 'fallback';
-      return;
-    }
-
     this._link();
 
     this.disposables.add(
@@ -83,20 +77,14 @@ export class HTMLPreview extends SignalWatcher(WithDisposable(LitElement)) {
 
   private _link() {
     this.state = 'loading';
-    linkWebContainer(this.iframe, this.model)
-      .then(() => {
-        this.state = 'finish';
-      })
-      .catch(error => {
-        const errorMessage = `Failed to link WebContainer: ${error}`;
 
-        console.error(errorMessage);
-        track.doc.editor.codeBlock.htmlBlockPreviewFailed({
-          type: errorMessage,
-        });
-
-        this.state = 'error';
-      });
+    try {
+      linkIframe(this.iframe, this.model);
+      this.state = 'finish';
+    } catch (error) {
+      console.error('HTML preview iframe failed:', error);
+      this.state = 'error';
+    }
   }
 
   override render() {

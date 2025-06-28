@@ -58,14 +58,14 @@ export class Workbench extends Entity {
   });
   sidebarOpen$ = LiveData.from(
     this.globalState.watch<boolean>(sidebarOpenKey),
-    false
+    this.globalState.get<boolean>(sidebarOpenKey) ?? false
   );
   setSidebarOpen(open: boolean) {
     this.globalState.set(sidebarOpenKey, open);
   }
   sidebarWidth$ = LiveData.from(
     this.globalState.watch<number>(sidebarWidthKey),
-    320
+    this.globalState.get<number>(sidebarWidthKey) ?? 320
   );
   setSidebarWidth(width: number) {
     this.globalState.set(sidebarWidthKey, width);
@@ -73,7 +73,7 @@ export class Workbench extends Entity {
 
   workspaceSelectorOpen$ = LiveData.from(
     this.globalState.watch<boolean>(workspaceSelectorOpenKey),
-    false
+    this.globalState.get<boolean>(workspaceSelectorOpenKey) ?? false
   );
   setWorkspaceSelectorOpen(open: boolean) {
     this.globalState.set(workspaceSelectorOpenKey, open);

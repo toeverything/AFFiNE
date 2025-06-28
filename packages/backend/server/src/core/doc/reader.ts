@@ -18,6 +18,7 @@ import { Models } from '../../models';
 import { WorkspaceBlobStorage } from '../storage';
 import {
   type PageDocContent,
+  parseDocToMarkdownFromDocSnapshot,
   parsePageDoc,
   parseWorkspaceDoc,
 } from '../utils/blocksuite';
@@ -31,6 +32,11 @@ export interface WorkspaceDocInfo {
   name: string;
   avatarKey?: string;
   avatarUrl?: string;
+}
+
+export interface DocMarkdown {
+  title: string;
+  markdown: string;
 }
 
 export abstract class DocReader {
@@ -58,6 +64,11 @@ export abstract class DocReader {
     workspaceId: string,
     docId: string
   ): Promise<DocRecord | null>;
+
+  abstract getDocMarkdown(
+    workspaceId: string,
+    docId: string
+  ): Promise<DocMarkdown | null>;
 
   abstract getDocDiff(
     spaceId: string,
@@ -169,6 +180,17 @@ export class DatabaseDocReader extends DocReader {
 
   async getDoc(workspaceId: string, docId: string): Promise<DocRecord | null> {
     return await this.workspace.getDoc(workspaceId, docId);
+  }
+
+  async getDocMarkdown(
+    workspaceId: string,
+    docId: string
+  ): Promise<DocMarkdown | null> {
+    const doc = await this.workspace.getDoc(workspaceId, docId);
+    if (!doc) {
+      return null;
+    }
+    return parseDocToMarkdownFromDocSnapshot(workspaceId, docId, doc.bin);
   }
 
   async getDocDiff(
@@ -301,6 +323,33 @@ export class RpcDocReader extends DatabaseDocReader {
       );
       // fallback to database doc reader if the error is not user friendly, like network error
       return await super.getDoc(workspaceId, docId);
+    }
+  }
+
+  override async getDocMarkdown(
+    workspaceId: string,
+    docId: string
+  ): Promise<DocMarkdown | null> {
+    const url = `${this.config.docService.endpoint}/rpc/workspaces/${workspaceId}/docs/${docId}/markdown`;
+    const accessToken = this.crypto.sign(docId);
+    try {
+      const res = await this.fetch(accessToken, url, 'GET');
+      if (!res) {
+        return null;
+      }
+      return (await res.json()) as DocMarkdown;
+    } catch (e) {
+      if (e instanceof UserFriendlyError) {
+        throw e;
+      }
+      const err = e as Error;
+      // other error
+      this.logger.error(
+        `Failed to fetch doc markdown ${url}, fallback to database doc reader`,
+        err
+      );
+      // fallback to database doc reader if the error is not user friendly, like network error
+      return await super.getDocMarkdown(workspaceId, docId);
     }
   }
 

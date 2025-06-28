@@ -171,6 +171,10 @@
       "desc": "Where the server get deployed(FQDN).",
       "env": "AFFINE_SERVER_HOST"
     },
+    "hosts": {
+      "type": "Array",
+      "desc": "Multiple hosts the server will accept requests from."
+    },
     "port": {
       "type": "Number",
       "desc": "Which port the server will listen on.",
@@ -262,16 +266,6 @@
       "desc": "The config for the storage provider."
     }
   },
-  "customerIo": {
-    "enabled": {
-      "type": "Boolean",
-      "desc": "Enable customer.io integration"
-    },
-    "token": {
-      "type": "String",
-      "desc": "Customer.io token"
-    }
-  },
   "indexer": {
     "enabled": {
       "type": "Boolean",
@@ -308,6 +302,16 @@
     "autoIndex.batchSize": {
       "type": "Number",
       "desc": "Number of workspaces automatically indexed per batch"
+    }
+  },
+  "customerIo": {
+    "enabled": {
+      "type": "Boolean",
+      "desc": "Enable customer.io integration"
+    },
+    "token": {
+      "type": "String",
+      "desc": "Customer.io token"
     }
   },
   "oauth": {

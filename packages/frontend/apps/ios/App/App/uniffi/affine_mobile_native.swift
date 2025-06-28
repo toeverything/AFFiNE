@@ -1711,11 +1711,14 @@ extension UniffiError: Equatable, Hashable {}
 
 
 
+
 extension UniffiError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
 }
+
+
 
 
 #if swift(>=5.8)

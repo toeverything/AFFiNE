@@ -2,12 +2,14 @@ import type {
   ChatHistoryOrder,
   ContextMatchedDocChunk,
   ContextMatchedFileChunk,
+  ContextWorkspaceEmbeddingStatus,
   CopilotContextCategory,
   CopilotContextDoc,
   CopilotContextFile,
   CopilotSessionType,
   getCopilotHistoriesQuery,
   RequestOptions,
+  StreamObject,
 } from '@affine/graphql';
 import type { EditorHost } from '@blocksuite/affine/std';
 import type { GfxModel } from '@blocksuite/affine/std/gfx';
@@ -329,6 +331,11 @@ declare global {
         onPoll: (result: AIDocsAndFilesContext | undefined) => void,
         abortSignal: AbortSignal
       ) => Promise<void>;
+      pollEmbeddingStatus: (
+        workspaceId: string,
+        onPoll: (result: ContextWorkspaceEmbeddingStatus) => void,
+        abortSignal: AbortSignal
+      ) => Promise<void>;
       matchContext: (
         content: string,
         contextId?: string,
@@ -353,7 +360,8 @@ declare global {
         content: string;
         createdAt: string;
         role: MessageRole;
-        attachments?: string[];
+        attachments?: string[] | null;
+        streamObjects?: StreamObject[] | null;
       }[];
     }
 

@@ -11,7 +11,7 @@ import {
   generateObject,
   generateText,
   streamText,
-  ToolSet,
+  Tool,
 } from 'ai';
 import { z } from 'zod';
 
@@ -21,18 +21,25 @@ import {
   metrics,
   UserFriendlyError,
 } from '../../../base';
-import { createExaCrawlTool, createExaSearchTool } from '../tools';
 import { CopilotProvider } from './provider';
 import type {
   CopilotChatOptions,
+  CopilotChatTools,
   CopilotEmbeddingOptions,
   CopilotImageOptions,
+  CopilotProviderModel,
   CopilotStructuredOptions,
   ModelConditions,
   PromptMessage,
+  StreamObject,
 } from './types';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from './types';
-import { chatToGPTMessage, CitationParser, TextStreamParser } from './utils';
+import {
+  chatToGPTMessage,
+  CitationParser,
+  StreamObjectParser,
+  TextStreamParser,
+} from './utils';
 
 export const DEFAULT_DIMENSIONS = 256;
 
@@ -65,7 +72,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -75,7 +82,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -84,7 +91,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -94,7 +101,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -103,7 +110,11 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Structured],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
           defaultForOutputType: true,
         },
       ],
@@ -113,7 +124,11 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Structured],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
         },
       ],
     },
@@ -122,7 +137,11 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Structured],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
         },
       ],
     },
@@ -131,7 +150,11 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text, ModelOutputType.Structured],
+          output: [
+            ModelOutputType.Text,
+            ModelOutputType.Object,
+            ModelOutputType.Structured,
+          ],
         },
       ],
     },
@@ -140,7 +163,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -149,7 +172,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -158,7 +181,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       capabilities: [
         {
           input: [ModelInputType.Text, ModelInputType.Image],
-          output: [ModelOutputType.Text],
+          output: [ModelOutputType.Text, ModelOutputType.Object],
         },
       ],
     },
@@ -248,25 +271,14 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     }
   }
 
-  private getTools(options: CopilotChatOptions, model: string): ToolSet {
-    const tools: ToolSet = {};
-    if (options?.tools?.length) {
-      for (const tool of options.tools) {
-        switch (tool) {
-          case 'webSearch': {
-            if (this.isReasoningModel(model)) {
-              tools.web_search_exa = createExaSearchTool(this.AFFiNEConfig);
-              tools.web_crawl_exa = createExaCrawlTool(this.AFFiNEConfig);
-            } else {
-              tools.web_search_preview = openai.tools.webSearchPreview();
-            }
-            break;
-          }
-        }
-      }
-      return tools;
+  override getProviderSpecificTools(
+    toolName: CopilotChatTools,
+    model: string
+  ): [string, Tool] | undefined {
+    if (toolName === 'webSearch' && !this.isReasoningModel(model)) {
+      return ['web_search_preview', openai.tools.webSearchPreview()];
     }
-    return tools;
+    return;
   }
 
   async text(
@@ -297,7 +309,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
         providerOptions: {
           openai: this.getOpenAIOptions(options, model.id),
         },
-        tools: this.getTools(options, model.id),
+        tools: await this.getTools(options, model.id),
         maxSteps: this.MAX_STEPS,
         abortSignal: options.signal,
       });
@@ -323,26 +335,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
 
     try {
       metrics.ai.counter('chat_text_stream_calls').add(1, { model: model.id });
-      const [system, msgs] = await chatToGPTMessage(messages);
-
-      const modelInstance = this.#instance.responses(model.id);
-
-      const { fullStream } = streamText({
-        model: modelInstance,
-        system,
-        messages: msgs,
-        frequencyPenalty: options.frequencyPenalty ?? 0,
-        presencePenalty: options.presencePenalty ?? 0,
-        temperature: options.temperature ?? 0,
-        maxTokens: options.maxTokens ?? 4096,
-        providerOptions: {
-          openai: this.getOpenAIOptions(options, model.id),
-        },
-        tools: this.getTools(options, model.id),
-        maxSteps: this.MAX_STEPS,
-        abortSignal: options.signal,
-      });
-
+      const fullStream = await this.getFullStream(model, messages, options);
       const citationParser = new CitationParser();
       const textParser = new TextStreamParser();
       for await (const chunk of fullStream) {
@@ -370,6 +363,39 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       }
     } catch (e: any) {
       metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
+      throw this.handleError(e, model.id, options);
+    }
+  }
+
+  override async *streamObject(
+    cond: ModelConditions,
+    messages: PromptMessage[],
+    options: CopilotChatOptions = {}
+  ): AsyncIterable<StreamObject> {
+    const fullCond = { ...cond, outputType: ModelOutputType.Object };
+    await this.checkParams({ cond: fullCond, messages, options });
+    const model = this.selectModel(fullCond);
+
+    try {
+      metrics.ai
+        .counter('chat_object_stream_calls')
+        .add(1, { model: model.id });
+      const fullStream = await this.getFullStream(model, messages, options);
+      const parser = new StreamObjectParser();
+      for await (const chunk of fullStream) {
+        const result = parser.parse(chunk);
+        if (result) {
+          yield result;
+        }
+        if (options.signal?.aborted) {
+          await fullStream.cancel();
+          break;
+        }
+      }
+    } catch (e: any) {
+      metrics.ai
+        .counter('chat_object_stream_errors')
+        .add(1, { model: model.id });
       throw this.handleError(e, model.id, options);
     }
   }
@@ -412,6 +438,85 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
       metrics.ai.counter('chat_text_errors').add(1, { model: model.id });
       throw this.handleError(e, model.id, options);
     }
+  }
+
+  override async rerank(
+    cond: ModelConditions,
+    chunkMessages: PromptMessage[][],
+    options: CopilotChatOptions = {}
+  ): Promise<number[]> {
+    const fullCond = { ...cond, outputType: ModelOutputType.Text };
+    await this.checkParams({ messages: [], cond: fullCond, options });
+    const model = this.selectModel(fullCond);
+    const instance = this.#instance.responses(model.id);
+
+    const scores = await Promise.all(
+      chunkMessages.map(async messages => {
+        const [system, msgs] = await chatToGPTMessage(messages);
+
+        const { logprobs } = await generateText({
+          model: instance,
+          system,
+          messages: msgs,
+          temperature: 0,
+          maxTokens: 1,
+          providerOptions: {
+            openai: {
+              ...this.getOpenAIOptions(options, model.id),
+              // get the log probability of "yes"/"no"
+              logprobs: 2,
+            },
+          },
+          maxSteps: 1,
+          abortSignal: options.signal,
+        });
+
+        const top = (logprobs?.[0]?.topLogprobs ?? []).reduce(
+          (acc, item) => {
+            acc[item.token] = item.logprob;
+            return acc;
+          },
+          {} as Record<string, number>
+        );
+
+        // OpenAI often includes a leading space, so try matching both ' yes' and 'yes'
+        const logYes = top[' yes'] ?? top['yes'] ?? Number.NEGATIVE_INFINITY;
+        const logNo = top[' no'] ?? top['no'] ?? Number.NEGATIVE_INFINITY;
+
+        const pYes = Math.exp(logYes);
+        const pNo = Math.exp(logNo);
+        const prob = pYes + pNo === 0 ? 0 : pYes / (pYes + pNo);
+
+        return prob;
+      })
+    );
+
+    return scores;
+  }
+
+  private async getFullStream(
+    model: CopilotProviderModel,
+    messages: PromptMessage[],
+    options: CopilotChatOptions = {}
+  ) {
+    const [system, msgs] = await chatToGPTMessage(messages);
+    const modelInstance = this.#instance.responses(model.id);
+    const { fullStream } = streamText({
+      model: modelInstance,
+      system,
+      messages: msgs,
+      frequencyPenalty: options.frequencyPenalty ?? 0,
+      presencePenalty: options.presencePenalty ?? 0,
+      temperature: options.temperature ?? 0,
+      maxTokens: options.maxTokens ?? 4096,
+      providerOptions: {
+        openai: this.getOpenAIOptions(options, model.id),
+      },
+      tools: await this.getTools(options, model.id),
+      maxSteps: this.MAX_STEPS,
+      abortSignal: options.signal,
+    });
+    return fullStream;
   }
 
   // ====== text to image ======

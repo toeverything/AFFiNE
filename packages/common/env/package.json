@@ -22,5 +22,5 @@
   "dependencies": {
     "zod": "^3.24.1"
   },
-  "version": "0.21.0"
+  "version": "0.22.4"
 }

@@ -8,6 +8,7 @@ function maybeAffineOrigin(origin: string, baseUrl: string) {
   return (
     origin.startsWith('file://') ||
     origin.endsWith('affine.pro') || // stable/beta
+    origin.endsWith('apple.getaffineapp.com') || // stable/beta
     origin.endsWith('affine.fail') || // canary
     origin === baseUrl // localhost or self-hosted
   );

@@ -4,7 +4,13 @@ global:
   ingress:
     enabled: false
     className: ''
-    host: affine.pro
+    # hosts for ingress rules
+    # e.g.
+    # hosts:
+    #  - affine.pro
+    #  - www.affine.pro
+    hosts:
+      - affine.pro
     tls: []
   secret:
     secretName: 'server-private-key'

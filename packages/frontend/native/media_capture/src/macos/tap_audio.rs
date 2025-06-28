@@ -24,9 +24,8 @@ use coreaudio::sys::{
   AudioObjectRemovePropertyListenerBlock, AudioTimeStamp, OSStatus,
 };
 use napi::{
-  bindgen_prelude::Float32Array,
+  bindgen_prelude::{Float32Array, Result, Status},
   threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
-  Result,
 };
 use napi_derive::napi;
 use objc2::runtime::AnyObject;
@@ -38,7 +37,7 @@ use crate::{
   device::get_device_uid,
   error::CoreAudioError,
   queue::create_audio_tap_queue,
-  screen_capture_kit::TappableApplication,
+  screen_capture_kit::ApplicationInfo,
   utils::{cfstring_from_bytes_with_nul, get_global_main_property},
 };
 
@@ -69,7 +68,7 @@ pub struct AggregateDevice {
 }
 
 impl AggregateDevice {
-  pub fn new(app: &TappableApplication) -> Result<Self> {
+  pub fn new(app: &ApplicationInfo) -> Result<Self> {
     let object_id = app.object_id;
 
     let tap_description = CATapDescription::init_stereo_mixdown_of_processes(object_id)?;
@@ -242,7 +241,7 @@ impl AggregateDevice {
   /// Implementation for the AggregateDevice to start processing audio
   pub fn start(
     &mut self,
-    audio_stream_callback: Arc<ThreadsafeFunction<Float32Array, (), Float32Array, true>>,
+    audio_stream_callback: Arc<ThreadsafeFunction<Float32Array, (), Float32Array, Status, true>>,
     // Add original_audio_stats to ensure consistent target rate
     original_audio_stats: AudioStats,
   ) -> Result<AudioTapStream> {
@@ -598,13 +597,13 @@ pub struct AggregateDeviceManager {
   app_id: Option<AudioObjectID>,
   excluded_processes: Vec<AudioObjectID>,
   active_stream: Option<Arc<std::sync::Mutex<Option<AudioTapStream>>>>,
-  audio_callback: Option<Arc<ThreadsafeFunction<Float32Array, (), Float32Array, true>>>,
+  audio_callback: Option<Arc<ThreadsafeFunction<Float32Array, (), Float32Array, Status, true>>>,
   original_audio_stats: Option<AudioStats>,
 }
 
 impl AggregateDeviceManager {
   /// Creates a new AggregateDeviceManager for a specific application
-  pub fn new(app: &TappableApplication) -> Result<Self> {
+  pub fn new(app: &ApplicationInfo) -> Result<Self> {
     let device = AggregateDevice::new(app)?;
 
     Ok(Self {
@@ -638,7 +637,7 @@ impl AggregateDeviceManager {
   /// This sets up the initial stream and listeners.
   pub fn start_capture(
     &mut self,
-    audio_stream_callback: Arc<ThreadsafeFunction<Float32Array, (), Float32Array, true>>,
+    audio_stream_callback: Arc<ThreadsafeFunction<Float32Array, (), Float32Array, Status, true>>,
   ) -> Result<()> {
     // Store the callback for potential device switch later
     self.audio_callback = Some(audio_stream_callback.clone());
@@ -717,10 +716,12 @@ impl AggregateDeviceManager {
         };
 
         // Create a new device with updated default devices
-        let result: Result<AggregateDevice> = (|| {
+        let result: Result<AggregateDevice> = {
           if is_app_specific {
             if let Some(id) = app_id {
-              let app = TappableApplication::new(id)?;
+              // For device change listener, we need to create a minimal ApplicationInfo
+              // We don't have the name here, so we'll use an empty string
+              let app = ApplicationInfo::new(id as i32, String::new(), id);
               AggregateDevice::new(&app)
             } else {
               Err(CoreAudioError::CreateProcessTapFailed(0).into())
@@ -728,7 +729,7 @@ impl AggregateDeviceManager {
           } else {
             AggregateDevice::create_global_tap_but_exclude_processes(&excluded_processes)
           }
-        })();
+        };
 
         // If we successfully created a new device, stop the old stream and start a new
         // one

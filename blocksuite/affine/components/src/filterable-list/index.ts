@@ -111,6 +111,7 @@ export class FilterableListComponent<Props = unknown> extends WithDisposable(
           if (ev.isComposing) break;
           ev.preventDefault();
           const item = filteredItems[this._curFocusIndex];
+          if (!item) return;
           this._select(item);
           break;
         }

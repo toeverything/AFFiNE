@@ -18,11 +18,15 @@ import type { ChatPanelMessages } from '../../chat-panel/chat-panel-messages';
 import { AIProvider } from '../../provider';
 import type { DocDisplayConfig, SearchMenuConfig } from '../ai-chat-chips';
 import type {
-  AIModelSwitchConfig,
   AINetworkSearchConfig,
+  AIPlaygroundConfig,
   AIReasoningConfig,
 } from '../ai-chat-input';
-import { type HistoryMessage } from '../ai-chat-messages';
+import {
+  type ChatAction,
+  type ChatMessage,
+  type HistoryMessage,
+} from '../ai-chat-messages';
 
 const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
   quote: '',
@@ -132,7 +136,7 @@ export class PlaygroundChat extends SignalWatcher(
   accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
-  accessor modelSwitchConfig!: AIModelSwitchConfig;
+  accessor playgroundConfig!: AIPlaygroundConfig;
 
   @property({ attribute: false })
   accessor appSidebarConfig!: AppSidebarConfig;
@@ -204,12 +208,14 @@ export class PlaygroundChat extends SignalWatcher(
       return;
     }
 
-    const messages: HistoryMessage[] = actions ? [...actions] : [];
+    const chatActions = (actions || []) as ChatAction[];
+    const messages: HistoryMessage[] = chatActions;
 
     const sessionId = await this._getSessionId();
     const history = histories?.find(history => history.sessionId === sessionId);
     if (history) {
-      messages.push(...history.messages);
+      const chatMessages = (history.messages || []) as ChatMessage[];
+      messages.push(...chatMessages);
     }
 
     this.chatContextValue = {
@@ -314,7 +320,7 @@ export class PlaygroundChat extends SignalWatcher(
         .isVisible=${this._isVisible}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
-        .modelSwitchConfig=${this.modelSwitchConfig}
+        .playgroundConfig=${this.playgroundConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
       ></ai-chat-composer>

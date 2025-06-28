@@ -59,6 +59,7 @@ export class AffineLink extends WithDisposable(ShadowlessElement) {
 
     refNodeSlotsProvider.docLinkClicked.next({
       ...referenceInfo,
+      openMode: e?.button === 1 ? 'open-in-new-tab' : undefined,
       host: this.std.host,
     });
   };
@@ -149,6 +150,7 @@ export class AffineLink extends WithDisposable(ShadowlessElement) {
       target="_blank"
       style=${styleMap(style)}
       @click=${this.openLink}
+      @auxclick=${this.openLink}
       @mouseup=${this._onMouseUp}
       ><v-text .str=${this.delta.insert}></v-text
     ></a>`;

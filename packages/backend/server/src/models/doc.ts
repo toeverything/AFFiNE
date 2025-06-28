@@ -636,5 +636,61 @@ export class DocModel extends BaseModel {
 
     return [count, rows] as const;
   }
+
+  async paginateDocInfoByUpdatedAt(
+    workspaceId: string,
+    pagination: PaginationInput
+  ) {
+    const count = await this.db.workspaceDoc.count({
+      where: {
+        workspaceId,
+      },
+    });
+
+    const after = pagination.after
+      ? Prisma.sql`AND "snapshots"."updated_at" < ${new Date(pagination.after)}`
+      : Prisma.sql``;
+
+    const rows = await this.db.$queryRaw<
+      {
+        workspaceId: string;
+        docId: string;
+        mode: PublicDocMode;
+        public: boolean;
+        defaultRole: DocRole;
+        title: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        creatorId?: string;
+        lastUpdaterId?: string;
+      }[]
+    >`
+      SELECT
+       "workspace_pages"."workspace_id" as "workspaceId",
+       "workspace_pages"."page_id" as "docId",
+       "workspace_pages"."mode" as "mode",
+       "workspace_pages"."public" as "public",
+       "workspace_pages"."defaultRole" as "defaultRole",
+       "workspace_pages"."title" as "title",
+       "snapshots"."created_at" as "createdAt",
+       "snapshots"."updated_at" as "updatedAt",
+       "snapshots"."created_by" as "creatorId",
+       "snapshots"."updated_by" as "lastUpdaterId"
+      FROM "workspace_pages"
+      INNER JOIN "snapshots"
+      ON "workspace_pages"."workspace_id" = "snapshots"."workspace_id"
+      AND "workspace_pages"."page_id" = "snapshots"."guid"
+      WHERE
+        "workspace_pages"."workspace_id" = ${workspaceId}
+        ${after}
+      ORDER BY
+        "snapshots"."updated_at" DESC
+      LIMIT ${pagination.first}
+      OFFSET ${pagination.offset}
+    `;
+
+    return [count, rows] as const;
+  }
+
   // #endregion
 }

@@ -66,7 +66,9 @@ export class MobileKanbanViewUILogic extends DataViewUILogicBase<
 
   addRow = (position: InsertToPosition) => {
     if (this.readonly) return;
-    return this.view.rowAdd(position);
+    const id = this.view.rowAdd(position);
+    this.ui$.value?.requestUpdate();
+    return id;
   };
 
   focusFirstCell = () => {};

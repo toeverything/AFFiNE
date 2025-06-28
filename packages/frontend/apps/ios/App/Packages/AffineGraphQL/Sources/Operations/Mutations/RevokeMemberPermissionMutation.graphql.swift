@@ -7,7 +7,7 @@ public class RevokeMemberPermissionMutation: GraphQLMutation {
   public static let operationName: String = "revokeMemberPermission"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation revokeMemberPermission($workspaceId: String!, $userId: String!) { revoke(workspaceId: $workspaceId, userId: $userId) }"#
+      #"mutation revokeMemberPermission($workspaceId: String!, $userId: String!) { revokeMember(workspaceId: $workspaceId, userId: $userId) }"#
     ))
 
   public var workspaceId: String
@@ -32,12 +32,12 @@ public class RevokeMemberPermissionMutation: GraphQLMutation {
 
     public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.Mutation }
     public static var __selections: [ApolloAPI.Selection] { [
-      .field("revoke", Bool.self, arguments: [
+      .field("revokeMember", Bool.self, arguments: [
         "workspaceId": .variable("workspaceId"),
         "userId": .variable("userId")
       ]),
     ] }
 
-    public var revoke: Bool { __data["revoke"] }
+    public var revokeMember: Bool { __data["revokeMember"] }
   }
 }

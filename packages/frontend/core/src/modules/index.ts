@@ -3,8 +3,8 @@ import { type Framework } from '@toeverything/infra';
 
 import {
   configureAIButtonModule,
-  configureAIModelSwitchModule,
   configureAINetworkSearchModule,
+  configureAIPlaygroundModule,
   configureAIReasoningModule,
 } from './ai-button';
 import { configureAppSidebarModule } from './app-sidebar';
@@ -107,7 +107,7 @@ export function configureCommonModules(framework: Framework) {
   configureCommonGlobalStorageImpls(framework);
   configureAINetworkSearchModule(framework);
   configureAIReasoningModule(framework);
-  configureAIModelSwitchModule(framework);
+  configureAIPlaygroundModule(framework);
   configureAIButtonModule(framework);
   configureTemplateDocModule(framework);
   configureBlobManagementModule(framework);

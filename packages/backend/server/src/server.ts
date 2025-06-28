@@ -66,5 +66,5 @@ export async function run() {
 
   logger.log(`AFFiNE Server is running in [${env.DEPLOYMENT_TYPE}] mode`);
   logger.log(`Listening on http://${listeningHost}:${config.server.port}`);
-  logger.log(`And the public server should be recognized as ${url.home}`);
+  logger.log(`And the public server should be recognized as ${url.baseUrl}`);
 }

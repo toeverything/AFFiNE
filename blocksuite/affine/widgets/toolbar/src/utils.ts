@@ -369,14 +369,22 @@ function renderActionItem(action: ToolbarAction, context: ToolbarContext) {
   const innerToolbar = context.placement$.value === 'inner';
   const ids = action.id.split('.');
   const id = ids[ids.length - 1];
+  const label = action.label ?? action.tooltip ?? id;
+  const actived =
+    typeof action.active === 'function'
+      ? action.active(context)
+      : action.active;
+  const disabled =
+    typeof action.disabled === 'function'
+      ? action.disabled(context)
+      : action.disabled;
+
   return html`
     <editor-icon-button
       data-testid=${ifDefined(id)}
-      aria-label=${ifDefined(action.label ?? action.tooltip ?? id)}
-      ?active=${typeof action.active === 'function'
-        ? action.active(context)
-        : action.active}
-      ?disabled=${action.disabled}
+      aria-label=${ifDefined(label)}
+      ?active=${actived}
+      ?disabled=${disabled}
       .tooltip=${action.tooltip}
       .iconContainerPadding=${innerToolbar ? 4 : 2}
       .iconSize=${innerToolbar ? '16px' : undefined}
@@ -394,17 +402,24 @@ function renderMenuActionItem(action: ToolbarAction, context: ToolbarContext) {
   const innerToolbar = context.placement$.value === 'inner';
   const ids = action.id.split('.');
   const id = ids[ids.length - 1];
+  const label = action.label ?? action.tooltip ?? id;
+  const actived =
+    typeof action.active === 'function'
+      ? action.active(context)
+      : action.active;
+  const disabled =
+    typeof action.disabled === 'function'
+      ? action.disabled(context)
+      : action.disabled;
+  const destructive = action.variant === 'destructive' ? 'delete' : undefined;
+
   return html`
     <editor-menu-action
       data-testid=${ifDefined(id)}
-      aria-label=${ifDefined(action.label ?? action.tooltip ?? id)}
-      class="${ifDefined(
-        action.variant === 'destructive' ? 'delete' : undefined
-      )}"
-      ?active=${typeof action.active === 'function'
-        ? action.active(context)
-        : action.active}
-      ?disabled=${action.disabled}
+      aria-label=${ifDefined(label)}
+      class="${ifDefined(destructive)}"
+      ?active=${actived}
+      ?disabled=${disabled}
       .tooltip=${ifDefined(action.tooltip)}
       .iconContainerPadding=${innerToolbar ? 4 : 2}
       .iconSize=${innerToolbar ? '16px' : undefined}

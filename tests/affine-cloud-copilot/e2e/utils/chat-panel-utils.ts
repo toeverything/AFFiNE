@@ -165,9 +165,11 @@ export class ChatPanelUtils {
     const actionList = await message.getByTestId('chat-action-list');
     return {
       message,
-      content: await message
-        .locator('chat-content-rich-text editor-host')
-        .innerText(),
+      content: (
+        await message
+          .locator('chat-content-rich-text editor-host')
+          .allInnerTexts()
+      ).join(' '),
       actions: {
         copy: async () => actions.getByTestId('action-copy-button').click(),
         retry: async () => actions.getByTestId('action-retry-button').click(),
@@ -306,7 +308,16 @@ export class ChatPanelUtils {
     }
   }
 
+  public static async openChatInputPreference(page: Page) {
+    const trigger = page.getByTestId('chat-input-preference-trigger');
+    await trigger.click();
+    await page.getByTestId('chat-input-preference').waitFor({
+      state: 'visible',
+    });
+  }
+
   public static async enableNetworkSearch(page: Page) {
+    await this.openChatInputPreference(page);
     const networkSearch = page.getByTestId('chat-network-search');
     if ((await networkSearch.getAttribute('data-active')) === 'false') {
       await networkSearch.click();
@@ -314,6 +325,7 @@ export class ChatPanelUtils {
   }
 
   public static async disableNetworkSearch(page: Page) {
+    await this.openChatInputPreference(page);
     const networkSearch = page.getByTestId('chat-network-search');
     if ((await networkSearch.getAttribute('data-active')) === 'true') {
       await networkSearch.click();
@@ -321,6 +333,7 @@ export class ChatPanelUtils {
   }
 
   public static async enableReasoning(page: Page) {
+    await this.openChatInputPreference(page);
     const reasoning = page.getByTestId('chat-reasoning');
     if ((await reasoning.getAttribute('data-active')) === 'false') {
       await reasoning.click();
@@ -328,6 +341,7 @@ export class ChatPanelUtils {
   }
 
   public static async disableReasoning(page: Page) {
+    await this.openChatInputPreference(page);
     const reasoning = page.getByTestId('chat-reasoning');
     if ((await reasoning.getAttribute('data-active')) === 'true') {
       await reasoning.click();

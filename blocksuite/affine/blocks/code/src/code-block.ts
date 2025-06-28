@@ -450,7 +450,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
           contenteditable="false"
           class="affine-code-block-preview"
         >
-          ${previewContext?.renderer(this.model)}
+          ${shouldRenderPreview && previewContext?.renderer(this.model)}
         </div>
         ${this.renderChildren(this.model)} ${Object.values(this.widgets)}
       </div>

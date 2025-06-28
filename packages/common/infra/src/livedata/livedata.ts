@@ -250,6 +250,9 @@ export class LiveData<T = unknown>
   private isPoisoned = false;
   private poisonedError: PoisonedError | null = null;
 
+  private _signal: Signal<T> | undefined;
+  private _signalSubscription: Subscription | undefined;
+
   constructor(
     initialValue: T,
     upstream:
@@ -302,12 +305,10 @@ export class LiveData<T = unknown>
     this.next(v);
   }
 
-  private _signal: Signal<T> | undefined;
-
   get signal(): ReadonlySignal<T> {
     if (!this._signal) {
       this._signal = signal(this.value);
-      this.subscribe(v => {
+      this._signalSubscription = this.subscribe(v => {
         // oxlint-disable-next-line no-non-null-assertion
         this._signal!.value = v;
       });
@@ -464,6 +465,7 @@ export class LiveData<T = unknown>
     this.ops$.complete();
     this.raw$.complete();
     this.upstreamSubscription?.unsubscribe();
+    this._signalSubscription?.unsubscribe();
   }
 
   /**
