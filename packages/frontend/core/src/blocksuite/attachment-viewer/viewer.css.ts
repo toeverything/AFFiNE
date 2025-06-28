@@ -1,5 +1,5 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
-import { globalStyle,style } from '@vanilla-extract/css';
+import { globalStyle, style } from '@vanilla-extract/css';
 
 export const viewer = style({
   position: 'relative',
@@ -9,7 +9,7 @@ export const viewer = style({
   overflow: 'hidden',
   resize: 'none',
   selectors: {
-    '&:before': {
+    '&.gridding:before': {
       position: 'absolute',
       content: '',
       top: 0,
@@ -17,11 +17,6 @@ export const viewer = style({
       bottom: 0,
       left: 0,
       zIndex: -1,
-    },
-    '&:not(.gridding):before': {
-      backgroundColor: cssVarV2('layer/background/secondary'),
-    },
-    '&.gridding:before': {
       opacity: 0.25,
       backgroundSize: '20px 20px',
       backgroundImage: `linear-gradient(${cssVarV2('button/grabber/default')} 1px, transparent 1px), linear-gradient(to right, ${cssVarV2('button/grabber/default')} 1px, transparent 1px)`,
