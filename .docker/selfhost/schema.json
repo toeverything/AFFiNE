@@ -732,6 +732,11 @@
           },
           "default": {}
         },
+        "providers.morph": {
+          "type": "object",
+          "description": "The config for the morph provider.\n@default {}",
+          "default": {}
+        },
         "unsplash": {
           "type": "object",
           "description": "The config for the unsplash key.\n@default {\"key\":\"\"}",
