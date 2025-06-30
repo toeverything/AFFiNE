@@ -1,6 +1,6 @@
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import type { ContextEmbedStatus } from '@affine/graphql';
+import type { ContextEmbedStatus, CopilotSessionType } from '@affine/graphql';
 import {
   CanvasElementType,
   EdgelessCRUDIdentifier,
@@ -12,9 +12,7 @@ import {
   DocModeProvider,
   TelemetryProvider,
 } from '@blocksuite/affine/shared/services';
-import type { Signal } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
-import { signal } from '@preact/signals-core';
 import { html, LitElement, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
@@ -94,10 +92,6 @@ export class AIChatBlockPeekView extends LitElement {
 
   private _forkBlockId: string | undefined = undefined;
 
-  private _forkSessionId: string | undefined = undefined;
-
-  accessor isComposerVisible: Signal<boolean | undefined> = signal(true);
-
   private readonly _deserializeHistoryChatMessages = (
     historyMessagesString: string
   ) => {
@@ -117,14 +111,14 @@ export class AIChatBlockPeekView extends LitElement {
 
   private readonly _constructBranchChatBlockMessages = async (
     rootWorkspaceId: string,
-    rootDocId: string,
-    forkSessionId: string
+    forkSessionId: string,
+    docId?: string
   ) => {
     const currentUserInfo = await AIProvider.userInfo;
     const forkMessages = (await queryHistoryMessages(
       rootWorkspaceId,
-      rootDocId,
-      forkSessionId
+      forkSessionId,
+      docId
     )) as ChatMessage[];
     const forkLength = forkMessages.length;
     const historyLength = this._historyMessages.length;
@@ -163,18 +157,20 @@ export class AIChatBlockPeekView extends LitElement {
       messages: [],
     });
     this._forkBlockId = undefined;
-    this._forkSessionId = undefined;
   };
 
-  private readonly _getSessionId = async () => {
-    return this._forkSessionId ?? this._sessionId;
+  private readonly initSession = async () => {
+    const session = await AIProvider.session?.getSession(
+      this.rootWorkspaceId,
+      this._sessionId
+    );
+    this.session = session ?? null;
   };
 
-  private readonly _createSessionId = async () => {
-    if (this._forkSessionId) {
-      return this._forkSessionId;
+  private readonly createForkSession = async () => {
+    if (this.forkSession) {
+      return this.forkSession;
     }
-
     const lastMessage = this._historyMessages.at(-1);
     if (!lastMessage) return;
 
@@ -185,8 +181,14 @@ export class AIChatBlockPeekView extends LitElement {
       sessionId: this._sessionId,
       latestMessageId: lastMessage.id,
     });
-    this._forkSessionId = forkSessionId;
-    return this._forkSessionId;
+    if (forkSessionId) {
+      const session = await AIProvider.session?.getSession(
+        this.rootWorkspaceId,
+        forkSessionId
+      );
+      this.forkSession = session ?? null;
+    }
+    return this.forkSession;
   };
 
   private readonly _onChatSuccess = async () => {
@@ -213,7 +215,8 @@ export class AIChatBlockPeekView extends LitElement {
     }
 
     // If there is no session id or chat messages, do not create a new chat block
-    if (!this._forkSessionId || !this.chatContext.messages.length) {
+    const forkSessionId = this.forkSession?.id;
+    if (!forkSessionId || !this.chatContext.messages.length) {
       return;
     }
 
@@ -230,8 +233,8 @@ export class AIChatBlockPeekView extends LitElement {
     const { rootWorkspaceId, rootDocId } = this;
     const messages = await this._constructBranchChatBlockMessages(
       rootWorkspaceId,
-      rootDocId,
-      this._forkSessionId
+      forkSessionId,
+      rootDocId
     );
     if (!messages.length) {
       return;
@@ -245,7 +248,7 @@ export class AIChatBlockPeekView extends LitElement {
       {
         xywh: bound.serialize(),
         messages: JSON.stringify(messages),
-        sessionId: this._forkSessionId,
+        sessionId: forkSessionId,
         rootWorkspaceId: rootWorkspaceId,
         rootDocId: rootDocId,
       },
@@ -280,7 +283,8 @@ export class AIChatBlockPeekView extends LitElement {
    * Update the current chat messages with the new message
    */
   updateChatBlockMessages = async () => {
-    if (!this._forkBlockId || !this._forkSessionId) {
+    const forkSessionId = this.forkSession?.id;
+    if (!this._forkBlockId || !forkSessionId) {
       return;
     }
 
@@ -292,8 +296,8 @@ export class AIChatBlockPeekView extends LitElement {
     const { rootWorkspaceId, rootDocId } = this;
     const messages = await this._constructBranchChatBlockMessages(
       rootWorkspaceId,
-      rootDocId,
-      this._forkSessionId
+      forkSessionId,
+      rootDocId
     );
     if (!messages.length) {
       return;
@@ -355,8 +359,8 @@ export class AIChatBlockPeekView extends LitElement {
    */
   retry = async () => {
     try {
-      const { _forkBlockId, _forkSessionId } = this;
-      if (!_forkBlockId || !_forkSessionId) return;
+      const forkSessionId = this.forkSession?.id;
+      if (!this._forkBlockId || !forkSessionId) return;
       if (!AIProvider.actions.chat) return;
 
       const abortController = new AbortController();
@@ -376,7 +380,7 @@ export class AIChatBlockPeekView extends LitElement {
 
       const { store } = this.host;
       const stream = await AIProvider.actions.chat({
-        sessionId: _forkSessionId,
+        sessionId: forkSessionId,
         retry: true,
         docId: store.id,
         workspaceId: store.workspace.id,
@@ -461,20 +465,20 @@ export class AIChatBlockPeekView extends LitElement {
         }
 
         return html`<div class=${messageClasses}>
-          <ai-chat-message
+          <ai-chat-block-message
             .host=${host}
             .state=${messageState}
             .message=${message}
             .textRendererOptions=${this._textRendererOptions}
-          ></ai-chat-message>
+          ></ai-chat-block-message>
           ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
           ${shouldRenderCopyMore
             ? html` <chat-copy-more
                 .host=${host}
+                .session=${this.forkSession}
                 .actions=${actions}
                 .content=${markdown}
                 .isLast=${isLastReply}
-                .getSessionId=${this._getSessionId}
                 .messageId=${message.id ?? undefined}
                 .retry=${() => this.retry()}
               ></chat-copy-more>`
@@ -482,9 +486,9 @@ export class AIChatBlockPeekView extends LitElement {
           ${shouldRenderActions
             ? html`<chat-action-list
                 .host=${host}
+                .session=${this.forkSession}
                 .actions=${actions}
                 .content=${markdown}
-                .getSessionId=${this._getSessionId}
                 .messageId=${message.id ?? undefined}
                 .layoutDirection=${'horizontal'}
               ></chat-action-list>`
@@ -496,6 +500,7 @@ export class AIChatBlockPeekView extends LitElement {
 
   override connectedCallback() {
     super.connectedCallback();
+    this.initSession().catch(console.error);
     const extensions = this.host.std
       .get(ViewExtensionManagerIdentifier)
       .get('preview-page');
@@ -507,8 +512,8 @@ export class AIChatBlockPeekView extends LitElement {
     this._historyMessages = this._deserializeHistoryChatMessages(
       this.historyMessagesString
     );
-    const { rootWorkspaceId, rootDocId, _sessionId } = this;
-    queryHistoryMessages(rootWorkspaceId, rootDocId, _sessionId)
+    const { rootWorkspaceId, _sessionId } = this;
+    queryHistoryMessages(rootWorkspaceId, _sessionId)
       .then(messages => {
         this._historyMessages = this._historyMessages.map((message, idx) => {
           return {
@@ -566,17 +571,17 @@ export class AIChatBlockPeekView extends LitElement {
         <ai-history-clear
           .host=${this.host}
           .doc=${this.host.store}
-          .getSessionId=${this._getSessionId}
+          .session=${this.forkSession}
           .onHistoryCleared=${this._onHistoryCleared}
           .chatContextValue=${chatContext}
         ></ai-history-clear>
       </div>
       <div class="ai-chat-messages-container">
-        <ai-chat-messages
+        <ai-chat-block-messages
           .host=${host}
           .messages=${_historyMessages}
           .textRendererOptions=${_textRendererOptions}
-        ></ai-chat-messages>
+        ></ai-chat-block-messages>
         <date-time .date=${latestMessageCreatedAt}></date-time>
         <div class="new-chat-messages-container">
           ${this.CurrentMessages(currentChatMessages)}
@@ -584,12 +589,11 @@ export class AIChatBlockPeekView extends LitElement {
       </div>
       <ai-chat-composer
         .host=${host}
-        .doc=${this.host.store}
-        .getSessionId=${this._getSessionId}
-        .createSessionId=${this._createSessionId}
+        .workspaceId=${this.rootWorkspaceId}
+        .session=${this.forkSession ?? this.session}
+        .createSession=${this.createForkSession}
         .chatContextValue=${chatContext}
         .updateContext=${updateContext}
-        .isVisible=${this.isComposerVisible}
         .updateEmbeddingProgress=${this._updateEmbeddingProgress}
         .networkSearchConfig=${networkSearchConfig}
         .docDisplayConfig=${this.docDisplayConfig}
@@ -647,6 +651,12 @@ export class AIChatBlockPeekView extends LitElement {
 
   @state()
   accessor embeddingProgress: [number, number] = [0, 0];
+
+  @state()
+  accessor session: CopilotSessionType | null | undefined;
+
+  @state()
+  accessor forkSession: CopilotSessionType | null | undefined;
 }
 
 declare global {

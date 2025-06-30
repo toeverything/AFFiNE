@@ -1,3 +1,4 @@
+import type { CopilotSessionType } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
@@ -7,15 +8,15 @@ import type { Store } from '@blocksuite/affine/store';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import type { ChatContextValue } from '../../chat-panel/chat-context';
 import { AIProvider } from '../../provider';
+import type { ChatContextValue } from '../ai-chat-content';
 
 export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor chatContextValue!: ChatContextValue;
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
+  accessor session!: CopilotSessionType | null | undefined;
 
   @property({ attribute: false })
   accessor host!: EditorHost;
@@ -41,15 +42,16 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
     return (
       this.chatContextValue.status === 'loading' ||
       this.chatContextValue.status === 'transmitting' ||
-      !this.chatContextValue.messages.length
+      !this.chatContextValue.messages.length ||
+      !this.session
     );
   }
 
   private readonly _cleanupHistories = async () => {
-    if (this._isHistoryClearDisabled) {
+    if (this._isHistoryClearDisabled || !this.session) {
       return;
     }
-    const sessionId = await this.getSessionId();
+    const sessionId = this.session.id;
     const notification = this.host.std.getOptional(NotificationProvider);
     if (!notification) return;
     try {

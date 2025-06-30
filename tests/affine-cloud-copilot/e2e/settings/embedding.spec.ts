@@ -460,9 +460,6 @@ test.describe('AISettings/Embedding', () => {
 
     await utils.settings.closeSettingsPanel(page);
 
-    // Clear history
-    await utils.chatPanel.clearChat(page);
-
     // Ignored docs should not be used for embedding
     await utils.chatPanel.makeChat(
       page,

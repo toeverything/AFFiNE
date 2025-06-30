@@ -1,3 +1,4 @@
+import type { CopilotSessionType } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import {
   DocModeProvider,
@@ -13,25 +14,21 @@ import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { debounce } from 'lodash-es';
 
-import { AffineIcon } from '../_common/icons';
+import { AffineIcon } from '../../_common/icons';
+import { HISTORY_IMAGE_ACTIONS } from '../../chat-panel/const';
+import { AIPreloadConfig } from '../../chat-panel/preload-config';
+import { type AIError, AIProvider, UnauthorizedError } from '../../provider';
+import { mergeStreamObjects } from '../../utils/stream-objects';
+import { type ChatContextValue } from '../ai-chat-content/type';
 import type {
   AINetworkSearchConfig,
   AIReasoningConfig,
-} from '../components/ai-chat-input';
-import {
-  isChatAction,
-  isChatMessage,
-  StreamObjectSchema,
-} from '../components/ai-chat-messages';
-import { type AIError, AIProvider, UnauthorizedError } from '../provider';
-import { mergeStreamObjects } from '../utils/stream-objects';
-import { type ChatContextValue } from './chat-context';
-import { HISTORY_IMAGE_ACTIONS } from './const';
-import { AIPreloadConfig } from './preload-config';
+} from '../ai-chat-input';
+import { isChatAction, isChatMessage, StreamObjectSchema } from './type';
 
-export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
+export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   static override styles = css`
-    chat-panel-messages {
+    ai-chat-messages {
       position: relative;
     }
 
@@ -147,16 +144,16 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   accessor host!: EditorHost;
 
   @property({ attribute: false })
-  accessor isLoading!: boolean;
+  accessor isHistoryLoading!: boolean;
 
   @property({ attribute: false })
   accessor chatContextValue!: ChatContextValue;
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
+  accessor session!: CopilotSessionType | null | undefined;
 
   @property({ attribute: false })
-  accessor createSessionId!: () => Promise<string | undefined>;
+  accessor createSession!: () => Promise<CopilotSessionType | undefined>;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<ChatContextValue>) => void;
@@ -174,7 +171,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
-  accessor panelWidth!: Signal<number | undefined>;
+  accessor width: Signal<number | undefined> | undefined;
 
   @query('.chat-panel-messages-container')
   accessor messagesContainer: HTMLDivElement | null = null;
@@ -202,7 +199,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   }
 
   private _renderAIOnboarding() {
-    return this.isLoading ||
+    return this.isHistoryLoading ||
       !this.host?.store.get(FeatureFlagService).getFlag('enable_ai_onboarding')
       ? nothing
       : html`<div class="onboarding-wrapper" data-testid="ai-onboarding">
@@ -241,7 +238,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
 
   protected override render() {
     const { messages, status, error } = this.chatContextValue;
-    const { isLoading } = this;
+    const { isHistoryLoading } = this;
     const filteredItems = messages.filter(item => {
       return (
         isChatMessage(item) ||
@@ -268,12 +265,15 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
               data-testid="chat-panel-messages-placeholder"
             >
               ${AffineIcon(
-                isLoading
+                isHistoryLoading
                   ? 'var(--affine-icon-secondary)'
                   : 'var(--affine-primary-color)'
               )}
-              <div class="messages-placeholder-title" data-loading=${isLoading}>
-                ${this.isLoading
+              <div
+                class="messages-placeholder-title"
+                data-loading=${isHistoryLoading}
+              >
+                ${this.isHistoryLoading
                   ? html`<span data-testid="chat-panel-loading-state"
                       >AFFiNE AI is loading history...</span
                     >`
@@ -295,15 +295,15 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
                 } else if (isChatMessage(item) && item.role === 'assistant') {
                   return html`<chat-message-assistant
                     .host=${this.host}
+                    .session=${this.session}
                     .item=${item}
                     .isLast=${isLast}
                     .status=${isLast ? status : 'idle'}
                     .error=${isLast ? error : null}
                     .extensions=${this.extensions}
                     .affineFeatureFlagService=${this.affineFeatureFlagService}
-                    .getSessionId=${this.getSessionId}
                     .retry=${() => this.retry()}
-                    .panelWidth=${this.panelWidth}
+                    .width=${this.width}
                   ></chat-message-assistant>`;
                 } else if (isChatAction(item)) {
                   return html`<chat-message-action
@@ -365,7 +365,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
   }
 
   protected override updated(_changedProperties: PropertyValues) {
-    if (_changedProperties.has('isLoading')) {
+    if (_changedProperties.has('isHistoryLoading')) {
       this.canScrollDown = false;
     }
   }
@@ -382,7 +382,7 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
 
   retry = async () => {
     try {
-      const sessionId = await this.createSessionId();
+      const sessionId = (await this.createSession())?.id;
       if (!sessionId) return;
       if (!AIProvider.actions.chat) return;
 
@@ -447,10 +447,4 @@ export class ChatPanelMessages extends WithDisposable(ShadowlessElement) {
       this.updateContext({ abortController: null });
     }
   };
-}
-
-declare global {
-  interface HTMLElementTagNameMap {
-    'chat-panel-messages': ChatPanelMessages;
-  }
 }

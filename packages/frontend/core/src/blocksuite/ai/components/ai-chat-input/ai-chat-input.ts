@@ -6,14 +6,13 @@ import { openFilesWith } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { ArrowUpBigIcon, CloseIcon, ImageIcon } from '@blocksuite/icons/lit';
-import { type Signal, signal } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { ChatAbortIcon } from '../../_common/icons';
-import { type AIError, AIProvider } from '../../provider';
+import { type AIError, AIProvider, type AISendParams } from '../../provider';
 import { reportResponse } from '../../utils/action-reporter';
 import { readBlobAsURL } from '../../utils/image';
 import { mergeStreamObjects } from '../../utils/stream-objects';
@@ -285,7 +284,7 @@ export class AIChatInput extends SignalWatcher(
   accessor host!: EditorHost;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | undefined;
+  accessor session!: CopilotSessionType | null | undefined;
 
   @query('image-preview-grid')
   accessor imagePreviewGrid: HTMLDivElement | null = null;
@@ -309,13 +308,7 @@ export class AIChatInput extends SignalWatcher(
   accessor chips: ChatChip[] = [];
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
-
-  @property({ attribute: false })
-  accessor createSessionId!: () => Promise<string | undefined>;
-
-  @property({ attribute: false })
-  accessor getContextId!: () => Promise<string | undefined>;
+  accessor createSession!: () => Promise<CopilotSessionType | undefined>;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
@@ -342,9 +335,6 @@ export class AIChatInput extends SignalWatcher(
   accessor testId = 'chat-panel-input-container';
 
   @property({ attribute: false })
-  accessor panelWidth: Signal<number | undefined> = signal(undefined);
-
-  @property({ attribute: false })
   accessor addImages!: (images: File[]) => void;
 
   private get _isNetworkActive() {
@@ -366,9 +356,15 @@ export class AIChatInput extends SignalWatcher(
     super.connectedCallback();
     this._disposables.add(
       AIProvider.slots.requestSendWithChat.subscribe(
-        ({ input, context, host }) => {
+        (params: AISendParams | null) => {
+          if (!params) {
+            return;
+          }
+          const { input, context, host } = params;
           if (this.host === host) {
-            context && this.updateContext(context);
+            if (context) {
+              this.updateContext(context);
+            }
             setTimeout(() => {
               this.send(input).catch(console.error);
             }, 0);
@@ -591,7 +587,7 @@ export class AIChatInput extends SignalWatcher(
       // optimistic update messages
       await this._preUpdateMessages(userInput, attachments);
 
-      const sessionId = await this.createSessionId();
+      const sessionId = (await this.createSession())?.id;
       let contexts = await this._getMatchedContexts();
       if (abortController.signal.aborted) {
         return;
@@ -678,11 +674,13 @@ export class AIChatInput extends SignalWatcher(
   };
 
   private readonly _postUpdateMessages = async () => {
+    const sessionId = this.session?.id;
+    if (!sessionId || !AIProvider.histories) return;
+
     const { messages } = this.chatContextValue;
     const last = messages[messages.length - 1] as ChatMessage;
     if (!last.id) {
-      const sessionId = await this.getSessionId();
-      const historyIds = await AIProvider.histories?.ids(
+      const historyIds = await AIProvider.histories.ids(
         this.host.store.workspace.id,
         this.host.store.id,
         { sessionId }

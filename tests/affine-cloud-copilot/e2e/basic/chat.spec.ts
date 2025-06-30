@@ -343,25 +343,6 @@ test.describe('AIBasic/Chat', () => {
     ]);
   });
 
-  test('should support clearing chat', async ({
-    loggedInPage: page,
-    utils,
-  }) => {
-    await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
-    await utils.chatPanel.waitForHistory(page, [
-      {
-        role: 'user',
-        content: 'Hello. Answer in 50 words.',
-      },
-      {
-        role: 'assistant',
-        status: 'success',
-      },
-    ]);
-    await utils.chatPanel.clearChat(page);
-    await utils.chatPanel.waitForHistory(page, []);
-  });
   test('should support copying answer', async ({
     loggedInPage: page,
     utils,

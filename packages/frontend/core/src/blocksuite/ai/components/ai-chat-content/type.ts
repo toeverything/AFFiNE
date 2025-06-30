@@ -1,8 +1,5 @@
-import type {
-  ChatStatus,
-  HistoryMessage,
-} from '../components/ai-chat-messages';
-import type { AIError } from '../provider';
+import type { AIError } from '../../provider';
+import type { ChatStatus, HistoryMessage } from '../ai-chat-messages';
 
 export type ChatContextValue = {
   // history messages of the chat

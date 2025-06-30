@@ -12,9 +12,7 @@ import type {
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
-import type { Store } from '@blocksuite/affine/store';
-import { type Signal, signal } from '@preact/signals-core';
-import { css, html, type PropertyValues } from 'lit';
+import { css, html } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
 import { AIProvider } from '../../provider';
@@ -56,25 +54,19 @@ export class AIChatComposer extends SignalWatcher(
   accessor host!: EditorHost;
 
   @property({ attribute: false })
-  accessor doc!: Store;
+  accessor workspaceId!: string;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | undefined;
+  accessor session!: CopilotSessionType | null | undefined;
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
-
-  @property({ attribute: false })
-  accessor createSessionId!: () => Promise<string | undefined>;
+  accessor createSession!: () => Promise<CopilotSessionType | undefined>;
 
   @property({ attribute: false })
   accessor chatContextValue!: AIChatInputContext;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
-
-  @property({ attribute: false })
-  accessor isVisible: Signal<boolean | undefined> = signal(false);
 
   @property({ attribute: false })
   accessor updateEmbeddingProgress!: (
@@ -103,9 +95,6 @@ export class AIChatComposer extends SignalWatcher(
   accessor portalContainer: HTMLElement | null = null;
 
   @property({ attribute: false })
-  accessor panelWidth: Signal<number | undefined> = signal(undefined);
-
-  @property({ attribute: false })
   accessor affineWorkspaceDialogService!: WorkspaceDialogService;
 
   @state()
@@ -113,10 +102,6 @@ export class AIChatComposer extends SignalWatcher(
 
   @state()
   accessor embeddingCompleted = false;
-
-  private _isInitialized = false;
-
-  private _isLoading = false;
 
   private _contextId: string | undefined = undefined;
 
@@ -141,9 +126,7 @@ export class AIChatComposer extends SignalWatcher(
         .host=${this.host}
         .chips=${this.chips}
         .session=${this.session}
-        .getSessionId=${this.getSessionId}
-        .createSessionId=${this.createSessionId}
-        .getContextId=${this._getContextId}
+        .createSession=${this.createSession}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
         .networkSearchConfig=${this.networkSearchConfig}
@@ -151,7 +134,6 @@ export class AIChatComposer extends SignalWatcher(
         .docDisplayConfig=${this.docDisplayConfig}
         .onChatSuccess=${this.onChatSuccess}
         .trackOptions=${this.trackOptions}
-        .panelWidth=${this.panelWidth}
         .addImages=${this.addImages}
       ></ai-chat-input>
       <div class="chat-panel-footer">
@@ -173,25 +155,7 @@ export class AIChatComposer extends SignalWatcher(
 
   override connectedCallback() {
     super.connectedCallback();
-    if (!this.doc) throw new Error('doc is required');
-
-    this._disposables.add(
-      AIProvider.slots.userInfo.subscribe(() => {
-        this._initComposer().catch(console.error);
-      })
-    );
-
-    this._disposables.add(
-      this.isVisible.subscribe(isVisible => {
-        if (isVisible && !this._isInitialized) {
-          this._initComposer().catch(console.error);
-        }
-        if (!isVisible) {
-          this._abortPoll();
-          this._abortPollEmbeddingStatus();
-        }
-      })
-    );
+    this._initComposer().catch(console.error);
   }
 
   override disconnectedCallback() {
@@ -200,25 +164,16 @@ export class AIChatComposer extends SignalWatcher(
     this._abortPollEmbeddingStatus();
   }
 
-  protected override willUpdate(_changedProperties: PropertyValues) {
-    if (_changedProperties.has('doc')) {
-      this._resetComposer();
-      requestAnimationFrame(async () => {
-        await this._initComposer();
-      });
-    }
-  }
-
   private readonly _getContextId = async () => {
     if (this._contextId) {
       return this._contextId;
     }
 
-    const sessionId = await this.getSessionId();
+    const sessionId = this.session?.id;
     if (!sessionId) return;
 
     const contextId = await AIProvider.context?.getContextId(
-      this.doc.workspace.id,
+      this.workspaceId,
       sessionId
     );
     this._contextId = contextId;
@@ -230,11 +185,11 @@ export class AIChatComposer extends SignalWatcher(
       return this._contextId;
     }
 
-    const sessionId = await this.createSessionId();
+    const sessionId = (await this.createSession())?.id;
     if (!sessionId) return;
 
     this._contextId = await AIProvider.context?.createContext(
-      this.doc.workspace.id,
+      this.workspaceId,
       sessionId
     );
     return this._contextId;
@@ -242,7 +197,7 @@ export class AIChatComposer extends SignalWatcher(
 
   private readonly _initChips = async () => {
     // context not initialized
-    const sessionId = await this.getSessionId();
+    const sessionId = this.session?.id;
     const contextId = await this._getContextId();
     if (!sessionId || !contextId) {
       return;
@@ -255,7 +210,7 @@ export class AIChatComposer extends SignalWatcher(
       tags = [],
       collections = [],
     } = (await AIProvider.context?.getContextDocsAndFiles(
-      this.doc.workspace.id,
+      this.workspaceId,
       sessionId,
       contextId
     )) || {};
@@ -319,7 +274,7 @@ export class AIChatComposer extends SignalWatcher(
   };
 
   private readonly _pollContextDocsAndFiles = async () => {
-    const sessionId = await this.getSessionId();
+    const sessionId = this.session?.id;
     const contextId = await this._getContextId();
     if (!sessionId || !contextId || !AIProvider.context) {
       return;
@@ -330,7 +285,7 @@ export class AIChatComposer extends SignalWatcher(
     }
     this._pollAbortController = new AbortController();
     await AIProvider.context.pollContextDocsAndFiles(
-      this.doc.workspace.id,
+      this.workspaceId,
       sessionId,
       contextId,
       this._onPoll,
@@ -436,13 +391,9 @@ export class AIChatComposer extends SignalWatcher(
   };
 
   private readonly _initComposer = async () => {
-    if (!this.isVisible.value) return;
-    if (this._isLoading) return;
-
     const userId = (await AIProvider.userInfo)?.id;
-    if (!userId) return;
+    if (!userId || !this.session) return;
 
-    this._isLoading = true;
     await this._initChips();
     const needPoll = this.chips.some(
       chip =>
@@ -452,16 +403,5 @@ export class AIChatComposer extends SignalWatcher(
       await this._pollContextDocsAndFiles();
     }
     await this._pollEmbeddingStatus();
-    this._isLoading = false;
-    this._isInitialized = true;
-  };
-
-  private readonly _resetComposer = () => {
-    this._abortPoll();
-    this._abortPollEmbeddingStatus();
-    this.chips = [];
-    this._contextId = undefined;
-    this._isLoading = false;
-    this._isInitialized = false;
   };
 }

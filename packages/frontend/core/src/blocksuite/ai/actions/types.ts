@@ -1,5 +1,4 @@
 import type {
-  ChatHistoryOrder,
   ContextMatchedDocChunk,
   ContextMatchedFileChunk,
   ContextWorkspaceEmbeddingStatus,
@@ -400,15 +399,12 @@ declare global {
       // non chat histories
       actions: (
         workspaceId: string,
-        docId?: string
+        docId: string
       ) => Promise<AIHistory[] | undefined>;
       chats: (
         workspaceId: string,
-        docId?: string,
-        options?: {
-          sessionId?: string;
-          messageOrder?: ChatHistoryOrder;
-        }
+        sessionId: string,
+        docId?: string
       ) => Promise<AIHistory[] | undefined>;
       cleanup: (
         workspaceId: string,

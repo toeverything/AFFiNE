@@ -1,6 +1,6 @@
 import { Scrollable } from '@affine/component';
 import { PageDetailLoading } from '@affine/component/page-detail-skeleton';
-import type { ChatPanel } from '@affine/core/blocksuite/ai';
+import type { AIChatParams, ChatPanel } from '@affine/core/blocksuite/ai';
 import { AIProvider } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
@@ -119,7 +119,10 @@ const DetailPageImpl = memo(function DetailPageImpl() {
 
   useEffect(() => {
     const disposables: Subscription[] = [];
-    const openHandler = () => {
+    const openHandler = (params: AIChatParams | null) => {
+      if (!params) {
+        return;
+      }
       workbench.openSidebar();
       view.activeSidebarTab('chat');
     };

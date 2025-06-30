@@ -327,6 +327,7 @@ export class PlaygroundContent extends SignalWatcher(
               <playground-chat
                 .host=${this.host}
                 .doc=${this.doc}
+                .session=${session}
                 .networkSearchConfig=${this.networkSearchConfig}
                 .reasoningConfig=${this.reasoningConfig}
                 .playgroundConfig=${this.playgroundConfig}
@@ -335,7 +336,6 @@ export class PlaygroundContent extends SignalWatcher(
                 .docDisplayConfig=${this.docDisplayConfig}
                 .extensions=${this.extensions}
                 .affineFeatureFlagService=${this.affineFeatureFlagService}
-                .session=${session}
                 .addChat=${this.addChat}
               ></playground-chat>
             </div>

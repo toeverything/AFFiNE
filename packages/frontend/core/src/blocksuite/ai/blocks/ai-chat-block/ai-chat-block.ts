@@ -49,12 +49,12 @@ export class AIChatBlockComponent extends BlockComponent<AIChatBlockModel> {
 
     return html`<div class="affine-ai-chat-block-container">
       <div class="ai-chat-messages-container">
-        <ai-chat-messages
+        <ai-chat-block-messages
           .host=${this.host}
           .messages=${messages}
           .textRendererOptions=${this._textRendererOptions}
           .withMask=${true}
-        ></ai-chat-messages>
+        ></ai-chat-block-messages>
       </div>
       <div class="ai-chat-block-button">
         ${ChatWithAIIcon} <span>AI chat block</span>

@@ -2,7 +2,6 @@ import { toggleGeneralAIOnboarding } from '@affine/core/components/affine/ai-onb
 import type { AuthAccountInfo, AuthService } from '@affine/core/modules/cloud';
 import type { GlobalDialogService } from '@affine/core/modules/dialogs';
 import {
-  type ChatHistoryOrder,
   ContextCategories,
   type ContextWorkspaceEmbeddingStatus,
   type getCopilotHistoriesQuery,
@@ -742,7 +741,7 @@ Could you make a new website based on these notes and send back just the html fi
   AIProvider.provide('histories', {
     actions: async (
       workspaceId: string,
-      docId?: string
+      docId: string
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
       return (
@@ -754,14 +753,15 @@ Could you make a new website based on these notes and send back just the html fi
     },
     chats: async (
       workspaceId: string,
-      docId?: string,
-      options?: {
-        sessionId?: string;
-        messageOrder?: ChatHistoryOrder;
-      }
+      sessionId: string,
+      docId?: string
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
-      return (await client.getHistories(workspaceId, docId, options)) ?? [];
+      return (
+        (await client.getHistories(workspaceId, docId, {
+          sessionId,
+        })) ?? []
+      );
     },
     cleanup: async (
       workspaceId: string,

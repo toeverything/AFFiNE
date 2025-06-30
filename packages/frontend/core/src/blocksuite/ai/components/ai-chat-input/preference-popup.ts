@@ -50,7 +50,7 @@ export class ChatInputPreference extends SignalWatcher(
   `;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | undefined;
+  accessor session!: CopilotSessionType | null | undefined;
 
   @property({ attribute: false })
   accessor onModelChange: ((modelId: string) => void) | undefined;
