@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { Transactional } from '@nestjs-cls/transactional';
 import { AiPromptRole } from '@prisma/client';
 
@@ -240,12 +241,12 @@ export class ChatSessionService {
   private readonly logger = new Logger(ChatSessionService.name);
 
   constructor(
+    private readonly moduleRef: ModuleRef,
+    private readonly models: Models,
+    private readonly jobs: JobQueue,
     private readonly quota: QuotaService,
     private readonly messageCache: ChatMessageCache,
-    private readonly providerFactory: CopilotProviderFactory,
-    private readonly prompt: PromptService,
-    private readonly models: Models,
-    private readonly jobs: JobQueue
+    private readonly prompt: PromptService
   ) {}
 
   async getSession(sessionId: string): Promise<ChatSessionState | undefined> {
@@ -565,10 +566,12 @@ export class ChatSessionService {
     const msg = { role: 'user' as const, content: '', ...message };
     const config = Object.assign({}, prompt.config);
 
-    const provider = await this.providerFactory.getProvider({
-      outputType: ModelOutputType.Text,
-      modelId: prompt.model,
-    });
+    const provider = await this.moduleRef
+      .get(CopilotProviderFactory)
+      .getProvider({
+        outputType: ModelOutputType.Text,
+        modelId: prompt.model,
+      });
 
     if (!provider) {
       throw new NoCopilotProviderAvailable();
