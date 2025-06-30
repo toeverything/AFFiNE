@@ -3,13 +3,12 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		2E0DD47B57B994A104B25EED /* Pods_AFFiNE.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF48636D7DB5BEE00770FD9A /* Pods_AFFiNE.framework */; };
 		5075136A2D1924C600AD60C0 /* RootViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507513692D1924C600AD60C0 /* RootViewController.swift */; };
-		5075136E2D1925BC00AD60C0 /* IntelligentsPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5075136D2D1925BC00AD60C0 /* IntelligentsPlugin.swift */; };
 		50802D612D112F8700694021 /* Intelligents in Frameworks */ = {isa = PBXBuildFile; productRef = 50802D602D112F8700694021 /* Intelligents */; settings = {ATTRIBUTES = (Required, ); }; };
 		50A285D72D112A5E000D5A6D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D62D112A5E000D5A6D /* Localizable.xcstrings */; };
 		50A285D82D112A5E000D5A6D /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 50A285D52D112A5E000D5A6D /* InfoPlist.xcstrings */; };
@@ -56,7 +55,6 @@
 		5039CC962D1D42C700874F32 /* AffineGraphQL */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AffineGraphQL; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* AFFiNE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AFFiNE.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		507513692D1924C600AD60C0 /* RootViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootViewController.swift; sourceTree = "<group>"; };
-		5075136D2D1925BC00AD60C0 /* IntelligentsPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntelligentsPlugin.swift; sourceTree = "<group>"; };
 		50802D5E2D112F7D00694021 /* Intelligents */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Intelligents; sourceTree = "<group>"; };
 		50A285D52D112A5E000D5A6D /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		50A285D62D112A5E000D5A6D /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
@@ -92,8 +90,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C45499AB2D140B5000E21978 /* NBStore */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = NBStore;
 			sourceTree = "<group>";
 		};
@@ -179,7 +175,6 @@
 				9D90BE172CCB9876006677DB /* CookieManager.swift */,
 				9D90BE182CCB9876006677DB /* CookiePlugin.swift */,
 				9D6A85322CCF6DA700DAB35F /* HashcashPlugin.swift */,
-				5075136D2D1925BC00AD60C0 /* IntelligentsPlugin.swift */,
 			);
 			path = Cookie;
 			sourceTree = "<group>";
@@ -342,8 +337,12 @@
 			);
 			inputFileListPaths = (
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -376,7 +375,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				9D52FC432D26CDBF00105D0A /* JSValueContainerExt.swift in Sources */,
-				5075136E2D1925BC00AD60C0 /* IntelligentsPlugin.swift in Sources */,
 				5075136A2D1924C600AD60C0 /* RootViewController.swift in Sources */,
 				C4C97C7C2D030BE000BC2AD1 /* affine_mobile_native.swift in Sources */,
 				9DAE9BD92D8D1AB0000C1D5A /* AppConfigManager.swift in Sources */,
