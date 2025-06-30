@@ -255,7 +255,7 @@ export class CopilotSessionModel extends BaseModel {
     return (await this.db.aiSession.findUnique({
       where: { ...where, id: sessionId, deletedAt: null },
       select,
-    })) as Prisma.AiSessionGetPayload<{ select: Select }>;
+    })) as Prisma.AiSessionGetPayload<{ select: Select }> | null;
   }
 
   @Transactional()

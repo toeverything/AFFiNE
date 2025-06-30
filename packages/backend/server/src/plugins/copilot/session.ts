@@ -543,13 +543,16 @@ export class ChatSessionService {
     if (state) {
       return new ChatSession(this.messageCache, state, async state => {
         await this.models.copilotSession.updateMessages(state);
-        await this.jobs.add('copilot.session.generateTitle', { sessionId });
+        if (!state.prompt.action) {
+          await this.jobs.add('copilot.session.generateTitle', { sessionId });
+        }
       });
     }
     return null;
   }
 
-  private async chatWithPrompt(
+  // public for test mock
+  async chatWithPrompt(
     promptName: string,
     message: Partial<PromptMessage>
   ): Promise<string> {
@@ -580,6 +583,12 @@ export class ChatSessionService {
 
     try {
       const session = await this.models.copilotSession.get(sessionId);
+      if (!session) {
+        this.logger.warn(
+          `Session ${sessionId} not found when generating title`
+        );
+        return;
+      }
       const { userId, title, messages } = session;
       if (
         title ||

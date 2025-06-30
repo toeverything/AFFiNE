@@ -82,6 +82,7 @@ const createTestSession = async (
     workspaceId: workspace.id,
     docId: null,
     pinned: false,
+    title: null,
     promptName: TEST_PROMPTS.NORMAL,
     promptAction: null,
     ...overrides,
@@ -297,6 +298,7 @@ test('should pin and unpin sessions', async t => {
       promptName: 'test-prompt',
       promptAction: null,
       pinned: true,
+      title: null,
     });
 
     const firstSession = await copilotSession.get(firstSessionId);
@@ -312,6 +314,7 @@ test('should pin and unpin sessions', async t => {
       promptName: 'test-prompt',
       promptAction: null,
       pinned: true,
+      title: null,
     });
 
     const sessionStatesAfterSecondPin = await getSessionStates(db, [
@@ -796,6 +799,7 @@ test('should handle fork and session attachment operations', async t => {
       workspaceId: workspace.id,
       docId: forkConfig.docId,
       pinned: forkConfig.pinned,
+      title: null,
       parentSessionId,
       prompt: { name: TEST_PROMPTS.NORMAL, action: null, model: 'gpt-4.1' },
       messages: [
