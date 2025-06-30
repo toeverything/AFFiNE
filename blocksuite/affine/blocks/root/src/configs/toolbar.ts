@@ -165,7 +165,7 @@ const highlightActionGroup = {
 } as const satisfies ToolbarAction;
 
 const turnIntoDatabase = {
-  id: 'd.convert-to-database',
+  id: 'e.convert-to-database',
   tooltip: 'Create Table',
   icon: DatabaseTableViewIcon(),
   when({ chain }) {
@@ -212,7 +212,7 @@ const turnIntoDatabase = {
 } as const satisfies ToolbarAction;
 
 const turnIntoLinkedDoc = {
-  id: 'e.convert-to-linked-doc',
+  id: 'f.convert-to-linked-doc',
   tooltip: 'Create Linked Doc',
   icon: LinkedPageIcon(),
   when({ chain }) {
@@ -271,7 +271,7 @@ const turnIntoLinkedDoc = {
 } as const satisfies ToolbarAction;
 
 const commentAction = {
-  id: 'Z.comment',
+  id: 'd.comment',
   when: ({ std, chain }) =>
     isFormatSupported(chain).run()[0] &&
     !!std.getOptional(CommentProviderIdentifier),
@@ -286,10 +286,10 @@ const commentAction = {
 
 export const builtinToolbarConfig = {
   actions: [
-    commentAction,
     conversionsActionGroup,
     inlineTextActionGroup,
     highlightActionGroup,
+    commentAction,
     turnIntoDatabase,
     turnIntoLinkedDoc,
     {
