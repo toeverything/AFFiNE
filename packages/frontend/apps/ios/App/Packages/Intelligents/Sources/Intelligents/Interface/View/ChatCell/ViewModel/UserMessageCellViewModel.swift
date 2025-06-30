@@ -12,7 +12,5 @@ struct UserMessageCellViewModel: ChatCellViewModel {
   var id: UUID
   var content: String
   var timestamp: Date
-  var attachments: [AttachmentViewModel]?
-  var isEditing: Bool = false
-  var isRetrying: Bool = false
+  var attachments: [String] = []
 }

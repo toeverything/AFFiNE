@@ -16,7 +16,6 @@ class ChatCellFactory {
     tableView.register(SystemMessageCell.self, forCellReuseIdentifier: CellType.systemMessage.rawValue)
     tableView.register(LoadingCell.self, forCellReuseIdentifier: CellType.loading.rawValue)
     tableView.register(ErrorCell.self, forCellReuseIdentifier: CellType.error.rawValue)
-    tableView.register(AttachmentCell.self, forCellReuseIdentifier: CellType.attachment.rawValue)
   }
 
   // MARK: - Cell Creation
@@ -56,20 +55,15 @@ class ChatCellFactory {
 
   static func estimatedHeight(for viewModel: ChatCellViewModel) -> CGFloat {
     switch viewModel.cellType {
-    case .userMessage, .assistantMessage:
-      return 80
+    case .userMessage,
+         .assistantMessage:
+      80
     case .systemMessage:
-      return 60
+      60
     case .loading:
-      return 100
+      100
     case .error:
-      return 120
-    case .attachment:
-      // 基础高度 + 每个附件的高度
-      if let attachmentViewModel = viewModel as? AttachmentCellViewModel {
-        return 60 + CGFloat(attachmentViewModel.attachments.count * 60)
-      }
-      return 120
+      120
     }
   }
 }

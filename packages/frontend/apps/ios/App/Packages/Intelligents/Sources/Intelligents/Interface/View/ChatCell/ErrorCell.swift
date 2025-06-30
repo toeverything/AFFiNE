@@ -74,8 +74,11 @@ class ErrorCell: ChatBaseCell {
 
   // MARK: - Configuration
 
-  override func configure(with viewModel: ChatCellViewModel) {
-    guard let errorViewModel = viewModel as? ErrorCellViewModel else { return }
+  override func configure(with viewModel: any ChatCellViewModel) {
+    guard let errorViewModel = viewModel as? ErrorCellViewModel else {
+      assertionFailure()
+      return
+    }
     self.viewModel = errorViewModel
 
     errorLabel.text = errorViewModel.errorMessage
@@ -84,9 +87,6 @@ class ErrorCell: ChatBaseCell {
       borderColor: .systemRed.withAlphaComponent(0.3),
       borderWidth: 1
     )
-
-    // 配置重试按钮
-    retryButton.isHidden = !errorViewModel.canRetry
   }
 
   // MARK: - Actions

@@ -13,13 +13,7 @@ import EventSource
 import Foundation
 import OrderedCollections
 
-protocol Closable {
-  func close()
-}
-
-extension EventSource: @preconcurrency Closable {}
-
-public class ChatManager: ObservableObject {
+public class ChatManager: ObservableObject, @unchecked Sendable {
   public static let shared = ChatManager()
 
   public typealias SessionID = String
@@ -29,7 +23,7 @@ public class ChatManager: ObservableObject {
     OrderedDictionary<MessageID, any ChatCellViewModel>
   > = [:]
 
-  private var closable: [Closable] = []
+  var closable: [Closable] = []
 
   private init() {}
 
@@ -38,110 +32,51 @@ public class ChatManager: ObservableObject {
     closable.removeAll()
   }
 
-  public func startUserRequest(
-    content: String,
-    inputBoxData: InputBoxData,
-    sessionId: String
-  ) {
-    let messageParameters: [String: AnyHashable] = [
-      // packages/frontend/core/src/blocksuite/ai/provider/setup-provider.tsx
-      "docs": inputBoxData.documentAttachments.map(\.documentID), // affine doc
-      "files": [String](), // attachment in context, keep nil for now
-      "searchMode": inputBoxData.isSearchEnabled ? "MUST" : "AUTO",
-    ]
-    let uploadableAttachments: [GraphQLFile] = [
-      inputBoxData.fileAttachments.map { file -> GraphQLFile in
-        .init(
-          fieldName: file.name,
-          originalName: file.name,
-          data: file.data ?? .init()
-        )
-      },
-      inputBoxData.imageAttachments.map { image -> GraphQLFile in
-        .init(
-          fieldName: image.hashValue.description,
-          originalName: "image.jpg",
-          data: image.imageData
-        )
-      },
-    ].flatMap(\.self)
-    assert(uploadableAttachments.allSatisfy { !($0.data?.isEmpty ?? true) })
-    guard let input = try? CreateChatMessageInput(
-      content: .some(content),
-      params: .some(AffineGraphQL.JSON(_jsonValue: messageParameters)),
-      sessionId: sessionId
-    ) else {
-      assertionFailure() // very unlikely to happen
-      return
+  public func with(sessionId: String, _ action: (inout OrderedDictionary<MessageID, any ChatCellViewModel>) -> Void) {
+    if Thread.isMainThread {
+      if var sessionViewModels = viewModels[sessionId] {
+        action(&sessionViewModels)
+        viewModels[sessionId] = sessionViewModels
+      } else {
+        var sessionViewModels = OrderedDictionary<MessageID, any ChatCellViewModel>()
+        action(&sessionViewModels)
+        viewModels[sessionId] = sessionViewModels
+      }
+    } else {
+      DispatchQueue.main.asyncAndWait {
+        self.with(sessionId: sessionId, action)
+      }
     }
-    let mutation = CreateCopilotMessageMutation(options: input)
-    QLService.shared.client.upload(operation: mutation, files: uploadableAttachments) { result in
-      DispatchQueue.main.async {
-        switch result {
-        case let .success(graphQLResult):
-          guard let messageIdentifier = graphQLResult.data?.createCopilotMessage else {
-            self.resolveError(sessionId, ChatError.invalidResponse)
-            return
-          }
-          self.startStreamingResponse(
-            sessionId: sessionId,
-            messageId: messageIdentifier
-          )
-        case let .failure(error):
-          self.resolveError(sessionId, error)
+  }
+
+  public func with<T>(sessionId: String, vmId: UUID, _ action: (inout T) -> Void) {
+    with(sessionId: sessionId) { sessionViewModels in
+      if let read = sessionViewModels[vmId], var convert = read as? T {
+        action(&convert)
+        guard let vm = convert as? any ChatCellViewModel else {
+          assertionFailure()
+          return
         }
+        sessionViewModels[vmId] = vm
+      } else {
+        assertionFailure()
       }
     }
   }
 
-  private func resolveError(_: String, _ error: Error) {
-    assert(Thread.isMainThread)
-    let text = error.localizedDescription
-    // TODO: SEND TO VIEW MODEL
-    print(text)
+  @discardableResult
+  public func append(sessionId: String, _ viewModel: any ChatCellViewModel) -> UUID {
+    with(sessionId: sessionId) { $0.updateValue(viewModel, forKey: viewModel.id) }
+    return viewModel.id
   }
 
-  private func startStreamingResponse(sessionId: String, messageId: String) {
-    let base = IntelligentContext.shared.webViewMetadata[.currentServerBaseUrl] as? String
-    guard let base, let url = URL(string: base) else {
-      resolveError(sessionId, ChatError.invalidServerConfiguration)
-      return
-    }
-    let streamUrl = url
-      .appendingPathComponent("api")
-      .appendingPathComponent("copilot")
-      .appendingPathComponent("chat")
-      .appendingPathComponent(sessionId)
-      .appendingPathComponent("stream")
-    var comps = URLComponents(url: streamUrl, resolvingAgainstBaseURL: false)
-    comps?.queryItems = [
-      .init(name: "messageId", value: messageId),
-      .init(name: "retry", value: "false"), // TODO: IMPL FROM UI
-    ]
-    guard let finalUrl = comps?.url else {
-      resolveError(sessionId, ChatError.invalidStreamURL)
-      return
-    }
-    let eventSource = EventSource(
-      request: .init(
-        url: finalUrl,
-        cachePolicy: .reloadIgnoringLocalAndRemoteCacheData,
-        timeoutInterval: 10
-      ),
-      configuration: .default
+  @discardableResult
+  public func report(_ sessionID: String, _ error: Error) -> UUID {
+    let model = ErrorCellViewModel(
+      id: .init(),
+      errorMessage: error.localizedDescription
     )
-    eventSource.onOpen = {
-      print("[*] \(messageId): connection established")
-    }
-    eventSource.onError = {
-      self.resolveError(sessionId, $0 ?? ChatError.unknownError)
-    }
-    eventSource.onMessage = { event in
-      print("[*] \(messageId): \(event.event ?? "?") received message: \(event.data)")
-      switch event.event {
-      default: break
-      }
-    }
-    closable.append(eventSource)
+    append(sessionId: sessionID, model)
+    return model.id
   }
 }

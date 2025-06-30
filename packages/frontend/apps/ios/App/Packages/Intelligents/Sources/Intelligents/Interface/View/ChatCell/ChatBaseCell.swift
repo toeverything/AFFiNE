@@ -107,8 +107,6 @@ class ChatBaseCell: UITableViewCell {
       .systemRed.withAlphaComponent(0.1)
     case .loading:
       .systemGray6
-    case .attachment:
-      .systemPurple.withAlphaComponent(0.1)
     }
   }
 }

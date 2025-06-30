@@ -79,17 +79,9 @@ class UserMessageCell: ChatBaseCell {
     messageLabel.text = userViewModel.content
     configureContainer(backgroundColor: backgroundColor(for: userViewModel.cellType))
 
-    // 配置时间戳
     let timestamp = userViewModel.timestamp
     timestampLabel.text = formatTimestamp(timestamp)
     timestampLabel.isHidden = false
-
-    // 配置重试状态
-    if userViewModel.isRetrying {
-      retryIndicator.startAnimating()
-    } else {
-      retryIndicator.stopAnimating()
-    }
   }
 
   // MARK: - Helpers

@@ -11,7 +11,6 @@ public enum CellType: String, Codable, CaseIterable {
   case userMessage
   case assistantMessage
   case systemMessage
-  case attachment
   case loading
   case error
 }
