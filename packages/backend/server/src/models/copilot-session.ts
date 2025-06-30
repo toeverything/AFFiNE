@@ -522,17 +522,29 @@ export class CopilotSessionModel extends BaseModel {
     if (!id) {
       throw new CopilotSessionNotFound();
     }
-    const ids = await this.getMessages(id, { id: true, role: true }).then(
-      roles =>
-        roles
-          .slice(
-            roles.findLastIndex(({ role }) => role === AiPromptRole.user) +
-              (removeLatestUserMessage ? 0 : 1)
-          )
-          .map(({ id }) => id)
-    );
+    const messages = await this.getMessages(id, { id: true, role: true });
+    const ids = messages
+      .slice(
+        messages.findLastIndex(({ role }) => role === AiPromptRole.user) +
+          (removeLatestUserMessage ? 0 : 1)
+      )
+      .map(({ id }) => id);
+
     if (ids.length) {
       await this.db.aiSessionMessage.deleteMany({ where: { id: { in: ids } } });
+
+      // clear the title if there only one round of conversation left
+      const remainingMessages = await this.getMessages(id, { role: true });
+      const userMessageCount = remainingMessages.filter(
+        m => m.role === AiPromptRole.user
+      ).length;
+
+      if (userMessageCount <= 1) {
+        await this.db.aiSession.update({
+          where: { id },
+          data: { title: null },
+        });
+      }
     }
   }
 

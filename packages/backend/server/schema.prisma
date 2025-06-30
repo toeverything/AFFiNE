@@ -122,15 +122,15 @@ model Workspace {
   avatarKey          String?  @map("avatar_key") @db.VarChar
   indexed            Boolean  @default(false)
 
-  features       WorkspaceFeature[]
-  docs           WorkspaceDoc[]
-  permissions    WorkspaceUserRole[]
-  docPermissions WorkspaceDocUserRole[]
-  blobs          Blob[]
-  ignoredDocs    AiWorkspaceIgnoredDocs[]
-  embedFiles     AiWorkspaceFiles[]
-  comments       Comment[]
-  commentAttachments    CommentAttachment[]
+  features           WorkspaceFeature[]
+  docs               WorkspaceDoc[]
+  permissions        WorkspaceUserRole[]
+  docPermissions     WorkspaceDocUserRole[]
+  blobs              Blob[]
+  ignoredDocs        AiWorkspaceIgnoredDocs[]
+  embedFiles         AiWorkspaceFiles[]
+  comments           Comment[]
+  commentAttachments CommentAttachment[]
 
   @@map("workspaces")
 }
@@ -443,6 +443,7 @@ model AiSession {
   promptName      String    @map("prompt_name") @db.VarChar(32)
   promptAction    String?   @default("") @map("prompt_action") @db.VarChar(32)
   pinned          Boolean   @default(false)
+  title           String?   @db.VarChar(64)
   // the session id of the parent session if this session is a forked session
   parentSessionId String?   @map("parent_session_id") @db.VarChar
   messageCost     Int       @default(0)
@@ -900,8 +901,8 @@ model Reply {
   updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
 
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   @@index([commentId, sid])
   @@index([workspaceId, docId, updatedAt])
@@ -911,19 +912,19 @@ model Reply {
 
 model CommentAttachment {
   // NOTE: manually set this column type to identity in migration file
-  sid         Int       @unique @default(autoincrement())
-  workspaceId String    @map("workspace_id") @db.VarChar
-  docId       String    @map("doc_id") @db.VarChar
-  key         String    @db.VarChar
-  size        Int       @db.Integer
-  mime        String    @db.VarChar
-  name        String    @db.VarChar
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  createdBy   String?   @map("created_by") @db.VarChar
+  sid         Int      @unique @default(autoincrement())
+  workspaceId String   @map("workspace_id") @db.VarChar
+  docId       String   @map("doc_id") @db.VarChar
+  key         String   @db.VarChar
+  size        Int      @db.Integer
+  mime        String   @db.VarChar
+  name        String   @db.VarChar
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy   String?  @map("created_by") @db.VarChar
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   // will delete creator record if creator's account is deleted
-  createdByUser User? @relation(name: "createdCommentAttachments", fields: [createdBy], references: [id], onDelete: SetNull)
+  createdByUser User?     @relation(name: "createdCommentAttachments", fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@id([workspaceId, docId, key])
   @@map("comment_attachments")
