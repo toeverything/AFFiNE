@@ -132,6 +132,7 @@ jobs:
           cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
           fastlane beta
         env:
+          BUILD_TARGET: distribution
           BUILD_PROVISION_PROFILE: ${{ secrets.BUILD_PROVISION_PROFILE }}
           PP_PATH: ${{ runner.temp }}/build_pp.mobileprovision
           APPLE_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPLE_STORE_CONNECT_API_KEY_ID }}
