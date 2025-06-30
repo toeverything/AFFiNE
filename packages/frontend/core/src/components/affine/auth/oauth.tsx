@@ -110,7 +110,10 @@ interface OauthProviderProps {
 }
 
 function OAuthProvider({ onContinue, provider }: OauthProviderProps) {
-  const { icon } = OAuthProviderMap[provider];
+  const { icon } =
+    provider in OAuthProviderMap
+      ? OAuthProviderMap[provider]
+      : { icon: undefined };
 
   const onClick = useCallback(() => {
     onContinue(provider);
