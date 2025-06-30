@@ -1,4 +1,5 @@
 import Combine
+import OrderedCollections
 import SnapKit
 import Then
 import UIKit
@@ -44,7 +45,7 @@ class ChatTableView: UIView {
 
   private var cancellables = Set<AnyCancellable>()
 
-  var cellViewModels: [any ChatCellViewModel] = [] {
+  var cellViewModels: OrderedDictionary<UUID, any ChatCellViewModel> = [:] {
     didSet {
       updateEmptyState()
       tableView.reloadData()
@@ -107,7 +108,7 @@ class ChatTableView: UIView {
     cancellables.removeAll()
 
     ChatManager.shared.$viewModels
-      .map { $0[sessionId] ?? [] }
+      .map { $0[sessionId] ?? [:] }
       .receive(on: DispatchQueue.main)
       .sink { [weak self] viewModels in
         self?.cellViewModels = viewModels
@@ -129,7 +130,7 @@ extension ChatTableView: UITableViewDataSource {
   }
 
   func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-    let viewModel = cellViewModels[indexPath.row]
+    let viewModel = cellViewModels.elements[indexPath.row].value
     return ChatCellFactory.dequeueCell(for: tableView, at: indexPath, with: viewModel)
   }
 }
@@ -138,12 +139,12 @@ extension ChatTableView: UITableViewDataSource {
 
 extension ChatTableView: UITableViewDelegate {
   func tableView(_: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-    let viewModel = cellViewModels[indexPath.row]
+    let viewModel = cellViewModels.elements[indexPath.row].value
     return ChatCellFactory.estimatedHeight(for: viewModel)
   }
 
   func tableView(_: UITableView, estimatedHeightForRowAt indexPath: IndexPath) -> CGFloat {
-    let viewModel = cellViewModels[indexPath.row]
+    let viewModel = cellViewModels.elements[indexPath.row].value
     return ChatCellFactory.estimatedHeight(for: viewModel)
   }
 

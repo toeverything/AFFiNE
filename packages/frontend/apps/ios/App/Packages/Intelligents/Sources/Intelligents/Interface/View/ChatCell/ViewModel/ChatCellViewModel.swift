@@ -8,6 +8,6 @@
 import Foundation
 
 public protocol ChatCellViewModel: Codable, Identifiable, Equatable, Hashable {
+  var id: UUID { get }
   var cellType: CellType { get }
-  var id: String { get }
 }

@@ -9,7 +9,7 @@ import Foundation
 
 struct LoadingCellViewModel: ChatCellViewModel {
   var cellType: CellType = .loading
-  var id: String
+  var id: UUID
   var message: String?
   var progress: Double?
 }

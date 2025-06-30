@@ -29,6 +29,7 @@ let package = Package(
       "SwifterSwift",
       .product(name: "Apollo", package: "apollo-ios"),
       .product(name: "OrderedCollections", package: "swift-collections"),
+      .product(name: "EventSource", package: "eventsource"),
     ], resources: [
       .process("Interface/View/InputBox/InputBox.xcassets"),
       .process("Interface/Controller/AttachmentManagementController/AttachmentIcon.xcassets"),

@@ -148,7 +148,7 @@ class InputBox: UIView {
       }
       .store(in: &cancellables)
 
-    viewModel.$isNetworkEnabled
+    viewModel.$isSearchEnabled
       .removeDuplicates()
       .sink { [weak self] enabled in
         self?.functionBar.updateNetworkState(isEnabled: enabled)

@@ -9,7 +9,7 @@ import Foundation
 
 struct AssistantMessageCellViewModel: ChatCellViewModel {
   var cellType: CellType = .assistantMessage
-  var id: String
+  var id: UUID
   var content: String
   var timestamp: Date
   var isStreaming: Bool = false

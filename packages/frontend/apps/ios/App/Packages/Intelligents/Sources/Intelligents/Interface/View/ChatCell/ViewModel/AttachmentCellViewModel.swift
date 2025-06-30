@@ -9,7 +9,7 @@ import Foundation
 
 struct AttachmentCellViewModel: ChatCellViewModel {
   var cellType: CellType = .attachment
-  var id: String
+  var id: UUID
   var attachments: [AttachmentViewModel]
   var parentMessageId: String
 }

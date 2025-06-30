@@ -9,7 +9,7 @@ import Foundation
 
 struct UserMessageCellViewModel: ChatCellViewModel {
   var cellType: CellType = .userMessage
-  var id: String
+  var id: UUID
   var content: String
   var timestamp: Date
   var attachments: [AttachmentViewModel]?

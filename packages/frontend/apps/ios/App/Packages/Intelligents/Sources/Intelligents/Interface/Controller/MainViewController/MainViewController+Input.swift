@@ -84,7 +84,8 @@ extension MainViewController: InputBoxDelegate {
       return
     }
 
-    ChatManager.shared.sendMessage(
+    ChatManager.shared.closeAll()
+    ChatManager.shared.startUserRequest(
       content: inputData.text,
       inputBoxData: inputData,
       sessionId: currentSession.id

@@ -67,6 +67,7 @@ public class IntelligentContext {
   private init() {}
 
   public func preparePresent(_ completion: @escaping (Result<Void, Error>) -> Void) {
+    assert(webView != nil)
     DispatchQueue.global(qos: .userInitiated).async { [self] in
       prepareTemporaryDirectory()
 

@@ -9,7 +9,7 @@ import Foundation
 
 struct ErrorCellViewModel: ChatCellViewModel {
   var cellType: CellType = .error
-  var id: String
+  var id: UUID
   var errorMessage: String
   var canRetry: Bool
   var retryAction: String?

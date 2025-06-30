@@ -16,16 +16,16 @@ public struct InputBoxData {
   public var fileAttachments: [FileAttachment] = []
   public var documentAttachments: [DocumentAttachment] = []
   public var isToolEnabled: Bool
-  public var isNetworkEnabled: Bool
+  public var isSearchEnabled: Bool
   public var isDeepThinkingEnabled: Bool
 
-  public init(text: String, imageAttachments: [ImageAttachment], fileAttachments: [FileAttachment], documentAttachments: [DocumentAttachment], isToolEnabled: Bool, isNetworkEnabled: Bool, isDeepThinkingEnabled: Bool) {
+  public init(text: String, imageAttachments: [ImageAttachment], fileAttachments: [FileAttachment], documentAttachments: [DocumentAttachment], isToolEnabled: Bool, isSearchEnabled: Bool, isDeepThinkingEnabled: Bool) {
     self.text = text
     self.imageAttachments = imageAttachments
     self.fileAttachments = fileAttachments
     self.documentAttachments = documentAttachments
     self.isToolEnabled = isToolEnabled
-    self.isNetworkEnabled = isNetworkEnabled
+    self.isSearchEnabled = isSearchEnabled
     self.isDeepThinkingEnabled = isDeepThinkingEnabled
   }
 }
@@ -37,7 +37,7 @@ public class InputBoxViewModel: ObservableObject {
 
   @Published public var inputText: String = ""
   @Published public var isToolEnabled: Bool = false
-  @Published public var isNetworkEnabled: Bool = false
+  @Published public var isSearchEnabled: Bool = false
   @Published public var isDeepThinkingEnabled: Bool = false
   @Published public var imageAttachments: [ImageAttachment] = []
   @Published public var fileAttachments: [FileAttachment] = []
@@ -90,7 +90,7 @@ public extension InputBoxViewModel {
   }
 
   func toggleNetwork() {
-    isNetworkEnabled.toggle()
+    isSearchEnabled.toggle()
   }
 
   func toggleDeepThinking() {
@@ -148,7 +148,7 @@ public extension InputBoxViewModel {
       fileAttachments: fileAttachments,
       documentAttachments: documentAttachments,
       isToolEnabled: isToolEnabled,
-      isNetworkEnabled: isNetworkEnabled,
+      isSearchEnabled: isSearchEnabled,
       isDeepThinkingEnabled: isDeepThinkingEnabled
     )
   }
@@ -159,7 +159,7 @@ public extension InputBoxViewModel {
     fileAttachments.removeAll()
     documentAttachments.removeAll()
     isToolEnabled = false
-    isNetworkEnabled = false
+    isSearchEnabled = false
     isDeepThinkingEnabled = false
   }
 }

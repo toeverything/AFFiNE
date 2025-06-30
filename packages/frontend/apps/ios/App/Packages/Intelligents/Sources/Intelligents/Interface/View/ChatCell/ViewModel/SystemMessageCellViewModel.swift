@@ -9,7 +9,7 @@ import Foundation
 
 struct SystemMessageCellViewModel: ChatCellViewModel {
   var cellType: CellType = .systemMessage
-  var id: String
+  var id: UUID
   var content: String
   var timestamp: Date?
 }
