@@ -1,3 +1,4 @@
+import { CommentInlineSpecExtension } from '@blocksuite/affine-inline-comment';
 import { LatexInlineSpecExtension } from '@blocksuite/affine-inline-latex';
 import { LinkInlineSpecExtension } from '@blocksuite/affine-inline-link';
 import {
@@ -44,5 +45,6 @@ export const CodeBlockInlineManagerExtension =
       LatexInlineSpecExtension.identifier,
       LinkInlineSpecExtension.identifier,
       CodeBlockUnitSpecExtension.identifier,
+      CommentInlineSpecExtension.identifier,
     ],
   });
