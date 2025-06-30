@@ -270,7 +270,6 @@ export function mockCommentProvider() {
   }
 
   const provider = new MockCommentProvider();
-  console.log(provider);
   return provider;
 }
 

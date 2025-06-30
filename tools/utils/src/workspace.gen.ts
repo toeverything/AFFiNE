@@ -134,6 +134,7 @@ export const PackageList = [
       'blocksuite/affine/inlines/latex',
       'blocksuite/affine/inlines/link',
       'blocksuite/affine/inlines/preset',
+      'blocksuite/affine/inlines/comment',
       'blocksuite/affine/model',
       'blocksuite/affine/rich-text',
       'blocksuite/affine/shared',

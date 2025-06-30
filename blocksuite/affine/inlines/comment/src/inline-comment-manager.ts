@@ -13,7 +13,7 @@ import {
 } from '@blocksuite/std';
 import type { BaseSelection, BlockModel } from '@blocksuite/store';
 
-import { findCommentedTexts } from './utils';
+import { extractCommentIdFromDelta, findCommentedTexts } from './utils';
 
 export class InlineCommentManager extends LifeCycleWatcher {
   static override key = 'inline-comment-manager';
@@ -34,6 +34,9 @@ export class InlineCommentManager extends LifeCycleWatcher {
     );
     this._disposables.add(
       provider.onCommentResolved(this._handleDeleteAndResolve)
+    );
+    this._disposables.add(
+      this.std.selection.slots.changed.subscribe(this._handleSelectionChanged)
     );
   }
 
@@ -126,5 +129,33 @@ export class InlineCommentManager extends LifeCycleWatcher {
         );
       });
     });
+  };
+
+  private readonly _handleSelectionChanged = (selections: BaseSelection[]) => {
+    if (selections.length === 1) {
+      const selection = selections[0];
+
+      // InlineCommentManager only handle text selection
+      if (!selection.is(TextSelection)) return;
+
+      if (!selection.isCollapsed()) {
+        this._provider?.highlightComment(null);
+        return;
+      }
+
+      const model = this.std.store.getModelById(selection.from.blockId);
+      if (!model) return;
+
+      const inlineEditor = getInlineEditorByModel(this.std, model);
+      if (!inlineEditor) return;
+
+      const delta = inlineEditor.getDeltaByRangeIndex(selection.from.index);
+      if (!delta) return;
+
+      const commentIds = extractCommentIdFromDelta(delta);
+      if (commentIds.length !== 0) return;
+    }
+
+    this._provider?.highlightComment(null);
   };
 }
