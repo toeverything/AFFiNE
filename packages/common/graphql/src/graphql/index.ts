@@ -799,6 +799,7 @@ export const getCopilotSessionQuery = {
         parentSessionId
         docId
         pinned
+        title
         promptName
         model
         optionalModels
@@ -848,6 +849,7 @@ export const getCopilotSessionsQuery = {
         parentSessionId
         docId
         pinned
+        title
         promptName
         model
         optionalModels

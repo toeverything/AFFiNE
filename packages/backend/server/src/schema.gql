@@ -324,6 +324,7 @@ type CopilotSessionType {
   parentSessionId: ID
   pinned: Boolean!
   promptName: String!
+  title: String
 }
 
 type CopilotWorkspaceConfig {

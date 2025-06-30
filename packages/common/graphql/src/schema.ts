@@ -419,6 +419,7 @@ export interface CopilotSessionType {
   parentSessionId: Maybe<Scalars['ID']['output']>;
   pinned: Scalars['Boolean']['output'];
   promptName: Scalars['String']['output'];
+  title: Maybe<Scalars['String']['output']>;
 }
 
 export interface CopilotWorkspaceConfig {
@@ -3619,6 +3620,7 @@ export type GetCopilotSessionQuery = {
         parentSessionId: string | null;
         docId: string | null;
         pinned: boolean;
+        title: string | null;
         promptName: string;
         model: string;
         optionalModels: Array<string>;
@@ -3680,6 +3682,7 @@ export type GetCopilotSessionsQuery = {
         parentSessionId: string | null;
         docId: string | null;
         pinned: boolean;
+        title: string | null;
         promptName: string;
         model: string;
         optionalModels: Array<string>;

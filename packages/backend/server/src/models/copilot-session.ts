@@ -50,6 +50,7 @@ type PureChatSession = {
   workspaceId: string;
   docId?: string | null;
   pinned?: boolean;
+  title: string | null;
   messages?: ChatMessage[];
   // connect ids
   userId: string;
@@ -82,7 +83,7 @@ type UpdateChatSessionMessage = ChatSessionBaseState & {
 };
 
 export type UpdateChatSessionOptions = ChatSessionBaseState &
-  Pick<Partial<ChatSession>, 'docId' | 'pinned' | 'promptName'>;
+  Pick<Partial<ChatSession>, 'docId' | 'pinned' | 'promptName' | 'title'>;
 
 export type UpdateChatSession = ChatSessionBaseState & UpdateChatSessionOptions;
 
@@ -266,6 +267,7 @@ export class CopilotSessionModel extends BaseModel {
       docId: true,
       pinned: true,
       parentSessionId: true,
+      title: true,
       messages: {
         select: {
           id: true,
@@ -331,6 +333,7 @@ export class CopilotSessionModel extends BaseModel {
         docId: true,
         parentSessionId: true,
         pinned: true,
+        title: true,
         promptName: true,
         tokenCost: true,
         createdAt: true,
@@ -373,7 +376,7 @@ export class CopilotSessionModel extends BaseModel {
 
   @Transactional()
   async update(options: UpdateChatSessionOptions): Promise<string> {
-    const { userId, sessionId, docId, promptName, pinned } = options;
+    const { userId, sessionId, docId, promptName, pinned, title } = options;
     const session = await this.getExists(
       sessionId,
       {
@@ -419,7 +422,7 @@ export class CopilotSessionModel extends BaseModel {
 
     await this.db.aiSession.update({
       where: { id: sessionId },
-      data: { docId, promptName, pinned },
+      data: { docId, promptName, pinned, title },
     });
 
     return sessionId;

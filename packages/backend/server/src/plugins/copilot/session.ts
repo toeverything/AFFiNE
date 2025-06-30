@@ -11,6 +11,9 @@ import {
   CopilotQuotaExceeded,
   CopilotSessionInvalidInput,
   CopilotSessionNotFound,
+  JobQueue,
+  NoCopilotProviderAvailable,
+  OnJob,
 } from '../../base';
 import { QuotaService } from '../../core/quota';
 import {
@@ -22,7 +25,12 @@ import {
 } from '../../models';
 import { ChatMessageCache } from './message';
 import { PromptService } from './prompt';
-import { PromptMessage, PromptParams } from './providers';
+import {
+  CopilotProviderFactory,
+  ModelOutputType,
+  PromptMessage,
+  PromptParams,
+} from './providers';
 import {
   type ChatHistory,
   type ChatMessage,
@@ -32,6 +40,14 @@ import {
   type ChatSessionState,
   type SubmittedMessage,
 } from './types';
+
+declare global {
+  interface Jobs {
+    'copilot.session.generateTitle': {
+      sessionId: string;
+    };
+  }
+}
 
 export class ChatSession implements AsyncDisposable {
   private stashMessageCount = 0;
@@ -226,8 +242,10 @@ export class ChatSessionService {
   constructor(
     private readonly quota: QuotaService,
     private readonly messageCache: ChatMessageCache,
+    private readonly providerFactory: CopilotProviderFactory,
     private readonly prompt: PromptService,
-    private readonly models: Models
+    private readonly models: Models,
+    private readonly jobs: JobQueue
   ) {}
 
   async getSession(sessionId: string): Promise<ChatSessionState | undefined> {
@@ -244,6 +262,7 @@ export class ChatSessionService {
       workspaceId: session.workspaceId,
       docId: session.docId,
       pinned: session.pinned,
+      title: session.title,
       parentSessionId: session.parentSessionId,
       prompt,
       messages: messages.success ? messages.data : [],
@@ -282,6 +301,7 @@ export class ChatSessionService {
           workspaceId: session.workspaceId,
           docId: session.docId,
           pinned: session.pinned,
+          title: session.title,
           parentSessionId: session.parentSessionId,
           prompt,
         };
@@ -303,6 +323,7 @@ export class ChatSessionService {
           workspaceId,
           docId,
           pinned,
+          title,
           promptName,
           tokenCost,
           messages,
@@ -347,6 +368,7 @@ export class ChatSessionService {
                 workspaceId,
                 docId,
                 pinned,
+                title,
                 action: prompt.action || null,
                 tokens: tokenCost,
                 createdAt,
@@ -418,6 +440,7 @@ export class ChatSessionService {
         ...options,
         sessionId,
         prompt,
+        title: null,
         messages: [],
         // when client create chat session, we always find root session
         parentSessionId: null,
@@ -520,8 +543,67 @@ export class ChatSessionService {
     if (state) {
       return new ChatSession(this.messageCache, state, async state => {
         await this.models.copilotSession.updateMessages(state);
+        await this.jobs.add('copilot.session.generateTitle', { sessionId });
       });
     }
     return null;
+  }
+
+  private async chatWithPrompt(
+    promptName: string,
+    message: Partial<PromptMessage>
+  ): Promise<string> {
+    const prompt = await this.prompt.get(promptName);
+    if (!prompt) {
+      throw new CopilotPromptNotFound({ name: promptName });
+    }
+
+    const cond = { modelId: prompt.model };
+    const msg = { role: 'user' as const, content: '', ...message };
+    const config = Object.assign({}, prompt.config);
+
+    const provider = await this.providerFactory.getProvider({
+      outputType: ModelOutputType.Text,
+      modelId: prompt.model,
+    });
+
+    if (!provider) {
+      throw new NoCopilotProviderAvailable();
+    }
+
+    return provider.text(cond, [...prompt.finish({}), msg], config);
+  }
+
+  @OnJob('copilot.session.generateTitle')
+  async generateSessionTitle(job: Jobs['copilot.session.generateTitle']) {
+    const { sessionId } = job;
+
+    try {
+      const session = await this.models.copilotSession.get(sessionId);
+      const { userId, title, messages } = session;
+      if (
+        title ||
+        !messages.length ||
+        messages.filter(m => m.role === 'user').length === 0 ||
+        messages.filter(m => m.role === 'assistant').length === 0
+      ) {
+        return;
+      }
+
+      {
+        const title = await this.chatWithPrompt('Summary as title', {
+          content: session.messages
+            .map(m => `[${m.role}]: ${m.content}`)
+            .join('\n'),
+        });
+        await this.models.copilotSession.update({ userId, sessionId, title });
+      }
+    } catch (error) {
+      console.error(
+        `Failed to generate title for session ${sessionId}:`,
+        error
+      );
+      throw error;
+    }
   }
 }

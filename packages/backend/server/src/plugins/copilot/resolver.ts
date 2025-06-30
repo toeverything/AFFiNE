@@ -67,7 +67,9 @@ class CreateChatSessionInput {
 }
 
 @InputType()
-class UpdateChatSessionInput implements Omit<UpdateChatSession, 'userId'> {
+class UpdateChatSessionInput
+  implements Omit<UpdateChatSession, 'userId' | 'title'>
+{
   @Field(() => String)
   sessionId!: string;
 
@@ -335,6 +337,9 @@ export class CopilotSessionType {
 
   @Field(() => Boolean)
   pinned!: boolean;
+
+  @Field(() => String, { nullable: true })
+  title!: string | null;
 
   @Field(() => ID, { nullable: true })
   parentSessionId!: string | null;
@@ -653,6 +658,7 @@ export class CopilotResolver {
       parentSessionId: session.parentSessionId,
       docId: session.docId,
       pinned: session.pinned,
+      title: session.title,
       promptName: session.prompt.name,
       model: session.prompt.model,
       optionalModels: session.prompt.optionalModels,
