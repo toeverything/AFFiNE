@@ -285,38 +285,43 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   async list(options: ListSessionOptions) {
-    const { userId, sessionId, workspaceId, docId } = options;
+    const { userId, sessionId, workspaceId, docId, action, fork } = options;
+
+    function getNullCond<T>(
+      maybeBool: boolean | undefined,
+      wrap: (ret: { not: null } | null) => T = ret => ret as T
+    ): T | undefined {
+      return maybeBool === true
+        ? wrap({ not: null })
+        : maybeBool === false
+          ? wrap(null)
+          : undefined;
+    }
+
+    function getEqCond<T>(maybeValue: T | undefined): T | undefined {
+      return maybeValue !== undefined ? maybeValue : undefined;
+    }
 
     const conditions: Prisma.AiSessionWhereInput['OR'] = [
       {
         userId,
         workspaceId,
-        docId: docId ?? null,
-        id: sessionId ? { equals: sessionId } : undefined,
+        docId: getEqCond(docId),
+        id: getEqCond(sessionId),
         deletedAt: null,
-        prompt:
-          typeof options.action === 'boolean'
-            ? options.action
-              ? { action: { not: null } }
-              : { action: null }
-            : undefined,
-        parentSessionId:
-          typeof options.fork === 'boolean'
-            ? options.fork
-              ? { not: null }
-              : null
-            : undefined,
+        prompt: getNullCond(fork, ret => ({ action: ret })),
+        parentSessionId: getNullCond(fork),
       },
     ];
 
-    if (!options?.action && options?.fork) {
+    if (!action && fork) {
       // query forked sessions from other users
       // only query forked session if fork == true and action == false
       conditions.push({
         userId: { not: userId },
         workspaceId: workspaceId,
         docId: docId ?? null,
-        id: sessionId ? { equals: sessionId } : undefined,
+        id: getEqCond(sessionId),
         prompt: { action: null },
         // should only find forked session
         parentSessionId: { not: null },

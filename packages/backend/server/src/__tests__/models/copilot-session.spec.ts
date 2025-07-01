@@ -169,6 +169,7 @@ test('should list and filter session type', async t => {
     const workspaceSessions = await copilotSession.list({
       userId: user.id,
       workspaceId: workspace.id,
+      docId: null,
     });
 
     t.snapshot(
@@ -575,6 +576,10 @@ test('should handle session queries, ordering, and filtering', async t => {
   const docParams = { ...baseParams, docId };
   const queryTestCases = [
     { name: 'all_workspace_sessions', params: baseParams },
+    {
+      name: 'workspace_sessions_with_messages',
+      params: { ...baseParams, docId: null, withMessages: true },
+    },
     {
       name: 'doc_sessions_with_messages',
       params: { ...docParams, withMessages: true },

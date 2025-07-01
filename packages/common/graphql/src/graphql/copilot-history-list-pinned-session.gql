@@ -1,0 +1,38 @@
+query getCopilotPinnedSessions(
+  $workspaceId: String!
+  $docId: String
+  $messageOrder: ChatHistoryOrder
+  $withPrompt: Boolean
+) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(docId: $docId, options: {
+        limit: 1,
+        pinned: true,
+        messageOrder: $messageOrder,
+        withPrompt: $withPrompt
+      }) {
+        sessionId
+        pinned
+        tokens
+        action
+        createdAt
+        messages {
+          id
+          role
+          content
+          streamObjects {
+            type
+            textDelta
+            toolCallId
+            toolName
+            args
+            result
+          }
+          attachments
+          createdAt
+        }
+      }
+    }
+  }
+}

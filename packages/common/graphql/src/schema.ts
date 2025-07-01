@@ -3390,6 +3390,129 @@ export type GetCopilotHistoryIdsQuery = {
   } | null;
 };
 
+export type GetCopilotDocSessionsQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId: Scalars['String']['input'];
+  options?: InputMaybe<QueryChatHistoriesInput>;
+}>;
+
+export type GetCopilotDocSessionsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      histories: Array<{
+        __typename?: 'CopilotHistories';
+        sessionId: string;
+        pinned: boolean;
+        tokens: number;
+        action: string | null;
+        createdAt: string;
+        messages: Array<{
+          __typename?: 'ChatMessage';
+          id: string | null;
+          role: string;
+          content: string;
+          attachments: Array<string> | null;
+          createdAt: string;
+          streamObjects: Array<{
+            __typename?: 'StreamObject';
+            type: string;
+            textDelta: string | null;
+            toolCallId: string | null;
+            toolName: string | null;
+            args: Record<string, string> | null;
+            result: Record<string, string> | null;
+          }> | null;
+        }>;
+      }>;
+    };
+  } | null;
+};
+
+export type GetCopilotPinnedSessionsQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  docId?: InputMaybe<Scalars['String']['input']>;
+  messageOrder?: InputMaybe<ChatHistoryOrder>;
+  withPrompt?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+export type GetCopilotPinnedSessionsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      histories: Array<{
+        __typename?: 'CopilotHistories';
+        sessionId: string;
+        pinned: boolean;
+        tokens: number;
+        action: string | null;
+        createdAt: string;
+        messages: Array<{
+          __typename?: 'ChatMessage';
+          id: string | null;
+          role: string;
+          content: string;
+          attachments: Array<string> | null;
+          createdAt: string;
+          streamObjects: Array<{
+            __typename?: 'StreamObject';
+            type: string;
+            textDelta: string | null;
+            toolCallId: string | null;
+            toolName: string | null;
+            args: Record<string, string> | null;
+            result: Record<string, string> | null;
+          }> | null;
+        }>;
+      }>;
+    };
+  } | null;
+};
+
+export type GetCopilotWorkspaceSessionsQueryVariables = Exact<{
+  workspaceId: Scalars['String']['input'];
+  options?: InputMaybe<QueryChatHistoriesInput>;
+}>;
+
+export type GetCopilotWorkspaceSessionsQuery = {
+  __typename?: 'Query';
+  currentUser: {
+    __typename?: 'UserType';
+    copilot: {
+      __typename?: 'Copilot';
+      histories: Array<{
+        __typename?: 'CopilotHistories';
+        sessionId: string;
+        pinned: boolean;
+        tokens: number;
+        action: string | null;
+        createdAt: string;
+        messages: Array<{
+          __typename?: 'ChatMessage';
+          id: string | null;
+          role: string;
+          content: string;
+          attachments: Array<string> | null;
+          createdAt: string;
+          streamObjects: Array<{
+            __typename?: 'StreamObject';
+            type: string;
+            textDelta: string | null;
+            toolCallId: string | null;
+            toolName: string | null;
+            args: Record<string, string> | null;
+            result: Record<string, string> | null;
+          }> | null;
+        }>;
+      }>;
+    };
+  } | null;
+};
+
 export type GetCopilotHistoriesQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   docId?: InputMaybe<Scalars['String']['input']>;
@@ -5251,6 +5374,21 @@ export type Queries =
       name: 'getCopilotHistoryIdsQuery';
       variables: GetCopilotHistoryIdsQueryVariables;
       response: GetCopilotHistoryIdsQuery;
+    }
+  | {
+      name: 'getCopilotDocSessionsQuery';
+      variables: GetCopilotDocSessionsQueryVariables;
+      response: GetCopilotDocSessionsQuery;
+    }
+  | {
+      name: 'getCopilotPinnedSessionsQuery';
+      variables: GetCopilotPinnedSessionsQueryVariables;
+      response: GetCopilotPinnedSessionsQuery;
+    }
+  | {
+      name: 'getCopilotWorkspaceSessionsQuery';
+      variables: GetCopilotWorkspaceSessionsQueryVariables;
+      response: GetCopilotWorkspaceSessionsQuery;
     }
   | {
       name: 'getCopilotHistoriesQuery';

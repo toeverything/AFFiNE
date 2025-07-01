@@ -604,6 +604,108 @@ export const getCopilotHistoryIdsQuery = {
 }`,
 };
 
+export const getCopilotDocSessionsQuery = {
+  id: 'getCopilotDocSessionsQuery' as const,
+  op: 'getCopilotDocSessions',
+  query: `query getCopilotDocSessions($workspaceId: String!, $docId: String!, $options: QueryChatHistoriesInput) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(docId: $docId, options: $options) {
+        sessionId
+        pinned
+        tokens
+        action
+        createdAt
+        messages {
+          id
+          role
+          content
+          streamObjects {
+            type
+            textDelta
+            toolCallId
+            toolName
+            args
+            result
+          }
+          attachments
+          createdAt
+        }
+      }
+    }
+  }
+}`,
+};
+
+export const getCopilotPinnedSessionsQuery = {
+  id: 'getCopilotPinnedSessionsQuery' as const,
+  op: 'getCopilotPinnedSessions',
+  query: `query getCopilotPinnedSessions($workspaceId: String!, $docId: String, $messageOrder: ChatHistoryOrder, $withPrompt: Boolean) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(
+        docId: $docId
+        options: {limit: 1, pinned: true, messageOrder: $messageOrder, withPrompt: $withPrompt}
+      ) {
+        sessionId
+        pinned
+        tokens
+        action
+        createdAt
+        messages {
+          id
+          role
+          content
+          streamObjects {
+            type
+            textDelta
+            toolCallId
+            toolName
+            args
+            result
+          }
+          attachments
+          createdAt
+        }
+      }
+    }
+  }
+}`,
+};
+
+export const getCopilotWorkspaceSessionsQuery = {
+  id: 'getCopilotWorkspaceSessionsQuery' as const,
+  op: 'getCopilotWorkspaceSessions',
+  query: `query getCopilotWorkspaceSessions($workspaceId: String!, $options: QueryChatHistoriesInput) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(docId: null, options: $options) {
+        sessionId
+        pinned
+        tokens
+        action
+        createdAt
+        messages {
+          id
+          role
+          content
+          streamObjects {
+            type
+            textDelta
+            toolCallId
+            toolName
+            args
+            result
+          }
+          attachments
+          createdAt
+        }
+      }
+    }
+  }
+}`,
+};
+
 export const getCopilotHistoriesQuery = {
   id: 'getCopilotHistoriesQuery' as const,
   op: 'getCopilotHistories',
