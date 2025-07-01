@@ -28,6 +28,7 @@ export type BookmarkBlockProps = {
   url: string;
   caption: string | null;
   footnoteIdentifier: string | null;
+  comments?: Record<string, boolean>;
 } & LinkPreviewData &
   Omit<GfxCommonBlockProps, 'scale'> &
   BlockMeta;
@@ -52,6 +53,7 @@ const defaultBookmarkProps: BookmarkBlockProps = {
   'meta:updatedBy': undefined,
 
   footnoteIdentifier: null,
+  comments: undefined,
 };
 
 export const BookmarkBlockSchema = defineBlockSchema({

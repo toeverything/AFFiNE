@@ -16,6 +16,7 @@ export type ListProps = {
   checked: boolean;
   collapsed: boolean;
   order: number | null;
+  comments?: Record<string, boolean>;
 } & BlockMeta;
 
 export const ListBlockSchema = defineBlockSchema({
@@ -29,6 +30,7 @@ export const ListBlockSchema = defineBlockSchema({
 
       // number type only for numbered list
       order: null,
+      comments: undefined,
       'meta:createdAt': undefined,
       'meta:createdBy': undefined,
       'meta:updatedAt': undefined,

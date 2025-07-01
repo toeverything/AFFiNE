@@ -30,6 +30,7 @@ export type FrameBlockProps = {
   background: Color;
   childElementIds?: Record<string, boolean>;
   presentationIndex?: string;
+  comments?: Record<string, boolean>;
 } & GfxCompatibleProps;
 
 export const FrameZodSchema = z
@@ -50,6 +51,7 @@ export const FrameBlockSchema = defineBlockSchema({
     childElementIds: Object.create(null),
     presentationIndex: generateKeyBetweenV2(null, null),
     lockedBySelf: false,
+    comments: undefined,
   }),
   metadata: {
     version: 1,

@@ -272,6 +272,7 @@ const turnIntoLinkedDoc = {
 
 const commentAction = {
   id: 'd.comment',
+  tooltip: 'Comment',
   when: ({ std, chain }) =>
     isFormatSupported(chain).run()[0] &&
     !!std.getOptional(CommentProviderIdentifier),
