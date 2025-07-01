@@ -309,6 +309,7 @@ export class CopilotSessionModel extends BaseModel {
         docId: getEqCond(docId),
         id: getEqCond(sessionId),
         deletedAt: null,
+        pinned: getEqCond(options.pinned),
         prompt: getNullCond(fork, ret => ({ action: ret })),
         parentSessionId: getNullCond(fork),
       },

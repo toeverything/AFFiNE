@@ -53,7 +53,10 @@ import {
   createWorkspaceCopilotSession,
   forkCopilotSession,
   getCopilotSession,
+  getDocSessions,
   getHistories,
+  getPinnedSessions,
+  getWorkspaceSessions,
   listContext,
   listContextDocAndFiles,
   matchFiles,
@@ -1140,31 +1143,94 @@ test('should list histories for different session types correctly', async t => {
   ]);
 
   const testHistoryQuery = async (
-    queryDocId: string | undefined,
-    expectedSessionId: string,
+    queryFn: () => Promise<any[]>,
+    opts: {
+      sessionIds?: string[];
+      sessionId?: string;
+      pinned?: boolean;
+      isEmpty?: boolean;
+    },
     description: string
   ) => {
-    const histories = await getHistories(app, {
-      workspaceId,
-      docId: queryDocId,
-    });
-    t.is(histories.length, 1, `should return ${description}`);
-    t.is(
-      histories[0].sessionId,
-      expectedSessionId,
-      `should return correct ${description}`
-    );
+    const s = await queryFn();
+
+    if (opts.isEmpty) {
+      t.is(s.length, 0, `should return ${description}`);
+      return;
+    }
+
+    if (opts.sessionIds) {
+      t.is(s.length, opts.sessionIds.length, `should return ${description}`);
+      const ids = s.map(h => h.sessionId).sort((a, b) => a.localeCompare(b));
+      const expectedIds = opts.sessionIds.sort((a, b) => a.localeCompare(b));
+      t.deepEqual(ids, expectedIds, `should return correct ${description}`);
+    } else if (opts.sessionId) {
+      t.is(s.length, 1, `should return ${description}`);
+      t.is(
+        s[0].sessionId,
+        opts.sessionId,
+        `should return correct ${description}`
+      );
+      if (opts.pinned !== undefined) {
+        t.is(s[0].pinned, opts.pinned, `pinned status for ${description}`);
+      }
+    }
   };
 
+  // test for getHistories
   await testHistoryQuery(
-    undefined,
-    workspaceSessionId,
+    () => getHistories(app, { workspaceId, docId: null }),
+    { sessionId: workspaceSessionId },
     'workspace session history'
   );
   await testHistoryQuery(
-    pinnedDocId,
-    pinnedSessionId,
+    () => getHistories(app, { workspaceId, docId: pinnedDocId }),
+    { sessionId: pinnedSessionId },
     'pinned session history'
   );
-  await testHistoryQuery(docId, docSessionId, 'doc session history');
+  await testHistoryQuery(
+    () => getHistories(app, { workspaceId, docId }),
+    { sessionId: docSessionId },
+    'doc session history'
+  );
+
+  // test for getWorkspaceSessions
+  await testHistoryQuery(
+    () => getWorkspaceSessions(app, { workspaceId }),
+    { sessionId: workspaceSessionId, pinned: false },
+    'workspace-level sessions'
+  );
+
+  // test for getDocSessions
+  await testHistoryQuery(
+    () =>
+      getDocSessions(app, { workspaceId, docId, options: { pinned: false } }),
+    { sessionId: docSessionId, pinned: false },
+    'doc sessions'
+  );
+
+  await testHistoryQuery(
+    () => getDocSessions(app, { workspaceId, docId: pinnedDocId }),
+    { sessionId: pinnedSessionId, pinned: true },
+    'pinned doc sessions'
+  );
+
+  // test for getPinnedSessions
+  await testHistoryQuery(
+    () => getPinnedSessions(app, { workspaceId }),
+    { sessionId: pinnedSessionId, pinned: true },
+    'pinned sessions'
+  );
+
+  await testHistoryQuery(
+    () => getPinnedSessions(app, { workspaceId, docId: pinnedDocId }),
+    { sessionId: pinnedSessionId, pinned: true },
+    'pinned session for specific doc'
+  );
+
+  await testHistoryQuery(
+    () => getPinnedSessions(app, { workspaceId, docId }),
+    { isEmpty: true },
+    'no pinned sessions for non-pinned doc'
+  );
 });
