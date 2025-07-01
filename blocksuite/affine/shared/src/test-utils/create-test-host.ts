@@ -240,7 +240,7 @@ export function createTestHost(doc: Store): EditorHost {
   std.selection = new MockSelectionStore();
 
   std.command = new CommandManager(std as any);
-  // @ts-expect-error
+  // @ts-expect-error dev-only
   host.command = std.command;
   host.selection = std.selection;
 

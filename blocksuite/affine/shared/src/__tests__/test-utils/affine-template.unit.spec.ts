@@ -1,7 +1,7 @@
 import { TextSelection } from '@blocksuite/std';
 import { describe, expect, it } from 'vitest';
 
-import { affine } from './affine-template';
+import { affine } from '../../test-utils';
 
 describe('helpers/affine-template', () => {
   it('should create a basic document structure from template', () => {

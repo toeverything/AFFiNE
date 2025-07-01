@@ -19,6 +19,7 @@
     "@affine/templates": "workspace:*",
     "@affine/track": "workspace:*",
     "@blocksuite/affine": "workspace:*",
+    "@blocksuite/affine-shared": "workspace:*",
     "@blocksuite/icons": "^2.2.13",
     "@blocksuite/std": "workspace:*",
     "@dotlottie/player-component": "^2.7.12",
@@ -89,6 +90,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@blocksuite/affine-ext-loader": "workspace:*",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.1.0",
     "@types/animejs": "^3.1.12",

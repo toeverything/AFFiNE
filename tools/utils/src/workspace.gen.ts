@@ -1348,8 +1348,10 @@ export const PackageList = [
       'packages/frontend/templates',
       'packages/frontend/track',
       'blocksuite/affine/all',
+      'blocksuite/affine/shared',
       'blocksuite/framework/std',
       'packages/common/infra',
+      'blocksuite/affine/ext-loader',
     ],
   },
   {

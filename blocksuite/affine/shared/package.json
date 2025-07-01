@@ -63,7 +63,8 @@
     "./theme": "./src/theme/index.ts",
     "./styles": "./src/styles/index.ts",
     "./services": "./src/services/index.ts",
-    "./adapters": "./src/adapters/index.ts"
+    "./adapters": "./src/adapters/index.ts",
+    "./test-utils": "./src/test-utils/index.ts"
   },
   "files": [
     "src",

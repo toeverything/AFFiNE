@@ -7,7 +7,7 @@
 ### Basic Usage
 
 ```typescript
-import { affine } from '../__tests__/utils/affine-template';
+import { affine } from '@blocksuite/affine-shared/test-utils';
 
 // Create a simple document
 const doc = affine`

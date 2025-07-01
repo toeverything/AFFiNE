@@ -402,6 +402,8 @@ __metadata:
     "@affine/templates": "workspace:*"
     "@affine/track": "workspace:*"
     "@blocksuite/affine": "workspace:*"
+    "@blocksuite/affine-ext-loader": "workspace:*"
+    "@blocksuite/affine-shared": "workspace:*"
     "@blocksuite/icons": "npm:^2.2.13"
     "@blocksuite/std": "workspace:*"
     "@dotlottie/player-component": "npm:^2.7.12"

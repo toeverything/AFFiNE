@@ -131,7 +131,8 @@ export async function insertFromMarkdown(
   markdown: string,
   doc: Store,
   parent?: string,
-  index?: number
+  index?: number,
+  id?: string
 ) {
   const { snapshot, transformer } = await markdownToSnapshot(
     markdown,
@@ -144,6 +145,9 @@ export async function insertFromMarkdown(
   const models: BlockModel[] = [];
   for (let i = 0; i < snapshots.length; i++) {
     const blockSnapshot = snapshots[i];
+    if (snapshots.length === 1 && id) {
+      blockSnapshot.id = id;
+    }
     const model = await transformer.snapshotToBlock(
       blockSnapshot,
       doc,
@@ -156,6 +160,27 @@ export async function insertFromMarkdown(
   }
 
   return models;
+}
+
+export async function replaceFromMarkdown(
+  host: EditorHost | undefined,
+  markdown: string,
+  doc: Store,
+  parent: string,
+  index: number,
+  id: string
+) {
+  doc.deleteBlock(id);
+  const { snapshot, transformer } = await markdownToSnapshot(
+    markdown,
+    doc,
+    host
+  );
+
+  const snapshots = snapshot?.content.flatMap(x => x.children) ?? [];
+  const blockSnapshot = snapshots[0];
+  blockSnapshot.id = id;
+  await transformer.snapshotToBlock(blockSnapshot, doc, parent, index);
 }
 
 export async function markDownToDoc(

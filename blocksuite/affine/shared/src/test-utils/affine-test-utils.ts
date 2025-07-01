@@ -63,10 +63,8 @@ function compareBlocks(
   if (JSON.stringify(actualProps) !== JSON.stringify(expectedProps))
     return false;
 
-  // eslint-disable-next-line @typescript-eslint/prefer-for-of
-  for (let i = 0; i < actual.children.length; i++) {
-    if (!compareBlocks(actual.children[i], expected.children[i], compareId))
-      return false;
+  for (const [i, child] of actual.children.entries()) {
+    if (!compareBlocks(child, expected.children[i], compareId)) return false;
   }
 
   return true;
