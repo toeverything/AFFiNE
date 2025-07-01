@@ -6,6 +6,7 @@ import {
   EDGELESS_TOP_CONTENTEDITABLE_SELECTOR,
 } from '@blocksuite/affine-shared/consts';
 import {
+  BlockCommentManager,
   DocModeProvider,
   NotificationProvider,
 } from '@blocksuite/affine-shared/services';
@@ -390,6 +391,12 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
       });
   }
 
+  get isCommentHighlighted() {
+    return this.std
+      .get(BlockCommentManager)
+      .isBlockCommentHighlighted(this.model);
+  }
+
   override async getUpdateComplete() {
     const result = await super.getUpdateComplete();
     await this._richTextElement?.updateComplete;
@@ -413,6 +420,7 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
       <div
         class=${classMap({
           'affine-code-block-container': true,
+          'highlight-comment': this.isCommentHighlighted,
           mobile: IS_MOBILE,
           wrap: this.model.props.wrap,
           'disable-line-numbers': !showLineNumbers,

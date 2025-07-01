@@ -40,11 +40,10 @@ import type {
 } from '@blocksuite/affine-shared/services';
 import {
   ActionPlacement,
-  CommentProviderIdentifier,
+  blockCommentToolbarButton,
 } from '@blocksuite/affine-shared/services';
 import { tableViewMeta } from '@blocksuite/data-view/view-presets';
 import {
-  CommentIcon,
   CopyIcon,
   DatabaseTableViewIcon,
   DeleteIcon,
@@ -270,29 +269,17 @@ const turnIntoLinkedDoc = {
   },
 } as const satisfies ToolbarAction;
 
-const commentAction = {
-  id: 'd.comment',
-  tooltip: 'Comment',
-  when: ({ std, chain }) =>
-    isFormatSupported(chain).run()[0] &&
-    !!std.getOptional(CommentProviderIdentifier),
-  icon: CommentIcon(),
-  run: ({ std }) => {
-    const commentProvider = std.getOptional(CommentProviderIdentifier);
-    if (!commentProvider) return;
-
-    commentProvider.addComment(std.selection.value);
-  },
-} as const satisfies ToolbarAction;
-
 export const builtinToolbarConfig = {
   actions: [
     conversionsActionGroup,
     inlineTextActionGroup,
     highlightActionGroup,
-    commentAction,
     turnIntoDatabase,
     turnIntoLinkedDoc,
+    {
+      id: 'g.comment',
+      ...blockCommentToolbarButton,
+    },
     {
       placement: ActionPlacement.More,
       id: 'a.clipboard',

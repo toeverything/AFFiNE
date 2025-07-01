@@ -1,17 +1,39 @@
+import { DividerBlockModel } from '@blocksuite/affine-model';
 import { DisposableGroup } from '@blocksuite/global/disposable';
-import { BlockSelection, LifeCycleWatcher } from '@blocksuite/std';
-import type { BaseSelection } from '@blocksuite/store';
+import {
+  BlockSelection,
+  LifeCycleWatcher,
+  TextSelection,
+} from '@blocksuite/std';
+import type { BaseSelection, BlockModel } from '@blocksuite/store';
+import { signal } from '@preact/signals-core';
 
+import { getSelectedBlocksCommand } from '../../commands';
+import { ImageSelection } from '../../selection';
+import { matchModels } from '../../utils';
 import { type CommentId, CommentProviderIdentifier } from './comment-provider';
 import { findCommentedBlocks } from './utils';
 
 export class BlockCommentManager extends LifeCycleWatcher {
   static override key = 'block-comment-manager';
 
+  private readonly _highlightedCommentId$ = signal<CommentId | null>(null);
+
   private readonly _disposables = new DisposableGroup();
 
   private get _provider() {
     return this.std.getOptional(CommentProviderIdentifier);
+  }
+
+  isBlockCommentHighlighted(
+    block: BlockModel<{ comments?: Record<CommentId, boolean> }>
+  ) {
+    const comments = block.props.comments;
+    if (!comments) return false;
+    return (
+      this._highlightedCommentId$.value !== null &&
+      Object.keys(comments).includes(this._highlightedCommentId$.value)
+    );
   }
 
   override mounted() {
@@ -25,6 +47,9 @@ export class BlockCommentManager extends LifeCycleWatcher {
     this._disposables.add(
       provider.onCommentResolved(this._handleDeleteAndResolve)
     );
+    this._disposables.add(
+      provider.onCommentHighlighted(this._handleHighlightComment)
+    );
   }
 
   override unmounted() {
@@ -35,10 +60,31 @@ export class BlockCommentManager extends LifeCycleWatcher {
     id: CommentId,
     selections: BaseSelection[]
   ) => {
-    const needCommentBlocks = selections
-      .filter((s): s is BlockSelection => s.is(BlockSelection))
-      .map(({ blockId }) => this.std.store.getModelById(blockId))
-      .filter(m => m !== null);
+    const blocksFromTextRange = selections
+      .filter((s): s is TextSelection => s.is(TextSelection))
+      .map(s => {
+        const [_, { selectedBlocks }] = this.std.command.exec(
+          getSelectedBlocksCommand,
+          {
+            textSelection: s,
+          }
+        );
+        if (!selectedBlocks) return [];
+        return selectedBlocks.map(b => b.model);
+      });
+
+    const needCommentBlocks = [
+      ...blocksFromTextRange.flat(),
+      ...selections
+        .filter(s => s instanceof BlockSelection || s instanceof ImageSelection)
+        .map(({ blockId }) => this.std.store.getModelById(blockId))
+        .filter(
+          (m): m is BlockModel =>
+            m !== null && !matchModels(m, [DividerBlockModel])
+        ),
+    ];
+
+    if (needCommentBlocks.length === 0) return;
 
     this.std.store.withoutTransact(() => {
       needCommentBlocks.forEach(block => {
@@ -64,5 +110,9 @@ export class BlockCommentManager extends LifeCycleWatcher {
         delete block.props.comments[id];
       });
     });
+  };
+
+  private readonly _handleHighlightComment = (id: CommentId | null) => {
+    this._highlightedCommentId$.value = id;
   };
 }

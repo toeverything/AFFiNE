@@ -23,13 +23,23 @@ export const blockCommentToolbarButton: Omit<ToolbarAction, 'id'> = {
   icon: CommentIcon(),
   run: ctx => {
     const commentProvider = ctx.std.getOptional(CommentProviderIdentifier);
-    const model = ctx.getCurrentModel();
-    if (!commentProvider || !model) return;
+    if (!commentProvider) return;
+    const selections = ctx.selection.value;
 
-    commentProvider.addComment([
-      new BlockSelection({
-        blockId: model.id,
-      }),
-    ]);
+    const model = ctx.getCurrentModel();
+
+    if (selections.length > 1) {
+      commentProvider.addComment(selections);
+    } else if (model) {
+      commentProvider.addComment([
+        new BlockSelection({
+          blockId: model.id,
+        }),
+      ]);
+    } else if (selections.length === 1) {
+      commentProvider.addComment(selections);
+    } else {
+      return;
+    }
   },
 };

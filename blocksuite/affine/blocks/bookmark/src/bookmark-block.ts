@@ -8,6 +8,7 @@ import type {
 } from '@blocksuite/affine-model';
 import { ImageProxyService } from '@blocksuite/affine-shared/adapters';
 import {
+  BlockCommentManager,
   CitationProvider,
   DocModeProvider,
   LinkPreviewServiceIdentifier,
@@ -126,6 +127,12 @@ export class BookmarkBlockComponent extends CaptionedBlockComponent<BookmarkBloc
 
   get imageProxyService() {
     return this.std.get(ImageProxyService);
+  }
+
+  get isCommentHighlighted() {
+    return this.std
+      .get(BlockCommentManager)
+      .isBlockCommentHighlighted(this.model);
   }
 
   handleClick = (event: MouseEvent) => {

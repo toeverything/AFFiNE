@@ -57,6 +57,9 @@ export const blockStyles = css`
     border-radius: 8px;
     overflow: hidden;
   }
+  .affine-embed-synced-doc-container.comment-highlighted {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+  }
   .affine-embed-synced-doc-container.show-hover-border:hover {
     border-color: var(--affine-border-color);
   }
