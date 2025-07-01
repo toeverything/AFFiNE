@@ -614,6 +614,7 @@ test('should handle session queries, ordering, and filtering', async t => {
         type: copilotSession.getSessionType(s),
         hasMessages: !!s.messages?.length,
         messageCount: s.messages?.length || 0,
+        isAction: s.promptName === TEST_PROMPTS.ACTION,
         isFork: !!s.parentSessionId,
       })),
     };
