@@ -21,6 +21,7 @@ export type InlineSpecs<
   match: (delta: DeltaInsert<TextAttributes>) => boolean;
   renderer: AttributeRenderer<TextAttributes>;
   embed?: boolean;
+  wrapper?: boolean;
 };
 
 export type InlineMarkdownMatchAction<

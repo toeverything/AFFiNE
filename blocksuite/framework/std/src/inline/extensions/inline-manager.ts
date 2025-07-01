@@ -32,12 +32,29 @@ export class InlineManager<TextAttributes extends BaseTextAttributes> {
 
     const renderer: AttributeRenderer<TextAttributes> = props => {
       // Priority increases from front to back
-      for (const spec of this.specs.toReversed()) {
+      const specs = this.specs.toReversed();
+      const wrapperSpecs = specs.filter(spec => spec.wrapper);
+      const normalSpecs = specs.filter(spec => !spec.wrapper);
+
+      let result = defaultRenderer(props);
+
+      for (const spec of normalSpecs) {
         if (spec.match(props.delta)) {
-          return spec.renderer(props);
+          result = spec.renderer(props);
+          break;
         }
       }
-      return defaultRenderer(props);
+
+      for (const spec of wrapperSpecs) {
+        if (spec.match(props.delta)) {
+          result = spec.renderer({
+            ...props,
+            children: result,
+          });
+        }
+      }
+
+      return result;
     };
     return renderer;
   };

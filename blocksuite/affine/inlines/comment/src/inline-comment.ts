@@ -15,8 +15,7 @@ import { consume } from '@lit/context';
 import { css, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { html } from 'lit-html';
-
-unsafeCSSVarV2('block/comment/highlightDefault');
+import { isEqual } from 'lodash-es';
 
 @requiredProperties({
   commentIds: PropTypes.arrayOf(id => typeof id === 'string'),
@@ -35,7 +34,11 @@ export class InlineComment extends WithDisposable(ShadowlessElement) {
     }
   `;
 
-  @property({ attribute: false })
+  @property({
+    attribute: false,
+    hasChanged: (newVal: string[], oldVal: string[]) =>
+      !isEqual(newVal, oldVal),
+  })
   accessor commentIds!: string[];
 
   @consume({ context: stdContext })
@@ -76,9 +79,7 @@ export class InlineComment extends WithDisposable(ShadowlessElement) {
     }
   }
 
-  protected override willUpdate(
-    _changedProperties: PropertyValues<this>
-  ): void {
+  override willUpdate(_changedProperties: PropertyValues<this>) {
     if (_changedProperties.has('highlighted')) {
       if (this.highlighted) {
         this.classList.add('highlighted');
