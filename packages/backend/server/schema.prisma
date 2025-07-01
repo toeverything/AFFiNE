@@ -443,7 +443,7 @@ model AiSession {
   promptName      String    @map("prompt_name") @db.VarChar(32)
   promptAction    String?   @default("") @map("prompt_action") @db.VarChar(32)
   pinned          Boolean   @default(false)
-  title           String?   @db.VarChar(64)
+  title           String?   @db.VarChar
   // the session id of the parent session if this session is a forked session
   parentSessionId String?   @map("parent_session_id") @db.VarChar
   messageCost     Int       @default(0)
