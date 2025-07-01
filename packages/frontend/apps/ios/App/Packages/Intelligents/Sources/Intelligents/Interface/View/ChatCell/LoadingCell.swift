@@ -63,7 +63,7 @@ class LoadingCell: ChatBaseCell {
 
   // MARK: - Configuration
 
-  override func configure(with viewModel: ChatCellViewModel) {
+  override func configure(with viewModel: any ChatCellViewModel) {
     guard let loadingViewModel = viewModel as? LoadingCellViewModel else { return }
     self.viewModel = loadingViewModel
 

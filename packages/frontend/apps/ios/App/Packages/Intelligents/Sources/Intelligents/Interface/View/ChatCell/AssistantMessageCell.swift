@@ -84,7 +84,7 @@ class AssistantMessageCell: ChatBaseCell {
 
   // MARK: - Configuration
 
-  override func configure(with viewModel: ChatCellViewModel) {
+  override func configure(with viewModel: any ChatCellViewModel) {
     guard let assistantViewModel = viewModel as? AssistantMessageCellViewModel else { return }
     self.viewModel = assistantViewModel
 

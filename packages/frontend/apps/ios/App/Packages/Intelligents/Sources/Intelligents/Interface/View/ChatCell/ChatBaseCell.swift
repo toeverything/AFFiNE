@@ -76,7 +76,7 @@ class ChatBaseCell: UITableViewCell {
   }
 
   /// 配置 ViewModel，子类需要重写
-  func configure(with _: ChatCellViewModel) {
+  func configure(with _: any ChatCellViewModel) {
     // 子类实现
   }
 
@@ -91,8 +91,6 @@ class ChatBaseCell: UITableViewCell {
       .systemRed
     case .loading:
       .secondaryLabel
-    default:
-      .label
     }
   }
 

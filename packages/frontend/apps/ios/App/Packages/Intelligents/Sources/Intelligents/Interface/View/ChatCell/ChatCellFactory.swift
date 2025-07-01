@@ -53,7 +53,7 @@ class ChatCellFactory {
 
   // MARK: - Height Estimation
 
-  static func estimatedHeight(for viewModel: ChatCellViewModel) -> CGFloat {
+  static func estimatedHeight(for viewModel: any ChatCellViewModel) -> CGFloat {
     switch viewModel.cellType {
     case .userMessage,
          .assistantMessage:

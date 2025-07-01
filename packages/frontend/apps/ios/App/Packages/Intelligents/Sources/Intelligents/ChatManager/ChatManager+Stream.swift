@@ -21,7 +21,7 @@ extension ChatManager {
       id: .init(),
       content: inputBoxData.text,
       timestamp: .init(),
-      attachments: [],
+      attachments: []
     ))
 
     let messageParameters: [String: AnyHashable] = [

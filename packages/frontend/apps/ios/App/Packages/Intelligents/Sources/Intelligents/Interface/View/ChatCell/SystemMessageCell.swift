@@ -68,7 +68,7 @@ class SystemMessageCell: ChatBaseCell {
 
   // MARK: - Configuration
 
-  override func configure(with viewModel: ChatCellViewModel) {
+  override func configure(with viewModel: any ChatCellViewModel) {
     guard let systemViewModel = viewModel as? SystemMessageCellViewModel else { return }
     self.viewModel = systemViewModel
 
