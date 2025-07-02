@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 
 import { gqlFetcherFactory } from '@affine/graphql';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ModuleMetadata } from '@nestjs/common';
 import { NestApplication } from '@nestjs/core';
 import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { PrismaClient } from '@prisma/client';
@@ -35,6 +35,7 @@ import { parseCookies, TEST_LOG_LEVEL } from '../utils';
 interface TestingAppMetadata {
   tapModule?(m: TestingModuleBuilder): void;
   tapApp?(app: INestApplication): void;
+  imports?: ModuleMetadata['imports'];
 }
 
 export class TestingApp extends NestApplication {
@@ -203,7 +204,7 @@ export async function createApp(
   const { tapModule, tapApp } = metadata;
 
   const builder = Test.createTestingModule({
-    imports: [buildAppModule(globalThis.env)],
+    imports: [buildAppModule(globalThis.env), ...(metadata.imports ?? [])],
   });
 
   builder.overrideProvider(Mailer).useValue(new MockMailer());
