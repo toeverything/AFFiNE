@@ -57,7 +57,7 @@ export class WebCrawlTool extends WithDisposable(ShadowlessElement) {
     }
 
     const result = this.data.result;
-    if (result && Array.isArray(result)) {
+    if (result && Array.isArray(result) && result.length > 0) {
       const { favicon, title, content } = result[0];
       return html`
         <tool-result-card

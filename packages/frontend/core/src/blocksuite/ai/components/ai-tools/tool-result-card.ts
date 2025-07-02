@@ -22,6 +22,8 @@ export class ToolResultCard extends SignalWatcher(
       margin: 8px 0;
       border-radius: 8px;
       border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+      color: ${unsafeCSSVarV2('icon/secondary')};
+      transition: color 0.23s ease;
 
       .ai-tool-header {
         display: flex;
@@ -39,7 +41,6 @@ export class ToolResultCard extends SignalWatcher(
         svg {
           width: 24px;
           height: 24px;
-          color: ${unsafeCSSVarV2('icon/primary')};
         }
       }
 
@@ -49,27 +50,44 @@ export class ToolResultCard extends SignalWatcher(
         line-height: 24px;
         margin-left: 0px;
         margin-right: auto;
-        color: ${unsafeCSSVarV2('icon/primary')};
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
       .ai-tool-results {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        margin: 8px 2px 4px 12px;
-        padding-left: 20px;
-        border-left: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+        display: grid;
+        grid-template-rows: 1fr;
+        transition:
+          grid-template-rows 0.4s cubic-bezier(0.07, 0.83, 0.46, 1),
+          opacity 0.4s ease,
+          margin-top 0.23s ease,
+          transform 0.43s ease;
+        padding-left: 11px;
+        margin-top: 4px;
+        transform-origin: bottom;
       }
 
       .ai-tool-results[data-collapsed='true'] {
-        display: none;
+        grid-template-rows: 0fr;
+        opacity: 0;
+        transform: translateY(10px);
+        margin-top: 0px;
+      }
+
+      .ai-tool-result-collapse-wrapper {
+        overflow: hidden;
+      }
+
+      .ai-tool-results-content {
+        display: flex;
+        flex-direction: column;
+        padding: 4px 2px 4px 20px;
+        border-left: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
       }
 
       .result-item {
-        margin-top: 12px;
+        margin-top: 16px;
       }
 
       .result-item:first-child {
@@ -80,12 +98,12 @@ export class ToolResultCard extends SignalWatcher(
         display: flex;
         justify-content: space-between;
         align-items: center;
+        line-height: 24px;
       }
 
       .result-title {
         font-size: 12px;
         font-weight: 400;
-        line-height: 20px;
         color: ${unsafeCSSVarV2('icon/primary')};
         overflow: hidden;
         text-overflow: ellipsis;
@@ -94,19 +112,25 @@ export class ToolResultCard extends SignalWatcher(
       }
 
       .result-icon {
-        width: 24px;
-        height: 24px;
+        width: 18px;
+        height: 18px;
+
+        &:has(img) {
+          background-color: ${unsafeCSSVarV2('layer/background/primary')};
+          border-radius: 100%;
+          border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
+        }
 
         img {
-          width: 24px;
-          height: 24px;
+          width: inherit;
+          height: inherit;
           border-radius: 100%;
           border: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
         }
 
         svg {
-          width: 24px;
-          height: 24px;
+          width: inherit;
+          height: inherit;
           color: ${unsafeCSSVarV2('icon/primary')};
         }
       }
@@ -128,17 +152,22 @@ export class ToolResultCard extends SignalWatcher(
         position: relative;
         height: 24px;
         align-items: center;
+        opacity: 0.5;
+        transition: opacity 0.23s ease;
+        user-select: none;
       }
 
       .footer-icon {
         width: 18px;
         height: 18px;
+        background-color: ${unsafeCSSVarV2('layer/background/primary')};
+        border-radius: 100%;
+        border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
 
         img {
           width: 18px;
           height: 18px;
           border-radius: 100%;
-          border: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
         }
 
         svg {
@@ -150,6 +179,13 @@ export class ToolResultCard extends SignalWatcher(
 
       .footer-icon:not(:first-child) {
         margin-left: -8px;
+      }
+    }
+    .ai-tool-result-wrapper:hover {
+      color: ${unsafeCSSVarV2('icon/primary')};
+
+      .footer-icons {
+        opacity: 1;
       }
     }
   `;
@@ -186,19 +222,27 @@ export class ToolResultCard extends SignalWatcher(
             : html` <div class="ai-icon">${ToggleDownIcon()}</div> `}
         </div>
         <div class="ai-tool-results" data-collapsed=${this.isCollapsed}>
-          ${this.results.map(
-            result => html`
-              <div class="result-item">
-                <div class="result-header">
-                  <div class="result-title">${result.title}</div>
-                  <div class="result-icon">${this.renderIcon(result.icon)}</div>
-                </div>
-                ${result.content
-                  ? html` <div class="result-content">${result.content}</div> `
-                  : nothing}
-              </div>
-            `
-          )}
+          <div class="ai-tool-result-collapse-wrapper">
+            <div class="ai-tool-results-content">
+              ${this.results.map(
+                result => html`
+                  <div class="result-item">
+                    <div class="result-header">
+                      <div class="result-title">${result.title}</div>
+                      <div class="result-icon">
+                        ${this.renderIcon(result.icon)}
+                      </div>
+                    </div>
+                    ${result.content
+                      ? html`<div class="result-content">
+                          ${result.content}
+                        </div>`
+                      : nothing}
+                  </div>
+                `
+              )}
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -219,10 +263,7 @@ export class ToolResultCard extends SignalWatcher(
       <div class="footer-icons">
         ${visibleIcons.map(
           (icon, index) => html`
-            <div
-              class="footer-icon"
-              style="z-index: ${visibleIcons.length - index}"
-            >
+            <div class="footer-icon" style="z-index: ${index}">
               ${this.renderIcon(icon)}
             </div>
           `
