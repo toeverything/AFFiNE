@@ -4520,9 +4520,19 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.quicksearch.group.creation"](): string;
     /**
+      * `Search locally`
+      */
+    ["com.affine.quicksearch.search-locally"](): string;
+    /**
       * `Search for "{{query}}"`
       */
     ["com.affine.quicksearch.group.searchfor"](options: {
+        readonly query: string;
+    }): string;
+    /**
+      * `Search for "{{query}}" (locally)`
+      */
+    ["com.affine.quicksearch.group.searchfor-locally"](options: {
         readonly query: string;
     }): string;
     /**
