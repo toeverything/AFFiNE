@@ -72,10 +72,10 @@ export class AIChatContent extends SignalWatcher(
   `;
 
   @property({ attribute: false })
-  accessor chatTitle!: TemplateResult<1>;
+  accessor chatTitle: TemplateResult<1> | undefined;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor session!: CopilotSessionType | null | undefined;
@@ -288,6 +288,8 @@ export class AIChatContent extends SignalWatcher(
       <ai-chat-messages
         ${ref(this.chatMessagesRef)}
         .host=${this.host}
+        .workspaceId=${this.workspaceId}
+        .docId=${this.docId}
         .session=${this.session}
         .createSession=${this.createSession}
         .chatContextValue=${this.chatContextValue}
@@ -302,6 +304,7 @@ export class AIChatContent extends SignalWatcher(
       <ai-chat-composer
         .host=${this.host}
         .workspaceId=${this.workspaceId}
+        .docId=${this.docId}
         .session=${this.session}
         .createSession=${this.createSession}
         .chatContextValue=${this.chatContextValue}

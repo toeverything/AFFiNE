@@ -1,5 +1,6 @@
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
+import type { ImageProxyService } from '@blocksuite/affine/shared/adapters';
+import { ShadowlessElement } from '@blocksuite/affine/std';
 import { WebIcon } from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
@@ -37,10 +38,10 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
   accessor data!: WebSearchToolCall | WebSearchToolResult;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor width: Signal<number | undefined> | undefined;
 
   @property({ attribute: false })
-  accessor width: Signal<number | undefined> | undefined;
+  accessor imageProxyService: ImageProxyService | null | undefined;
 
   renderToolCall() {
     return html`
@@ -69,12 +70,12 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
 
       return html`
         <tool-result-card
-          .host=${this.host}
           .name=${'The search is complete, and these webpages have been searched'}
           .icon=${WebIcon()}
           .footerIcons=${footerIcons}
           .results=${results}
           .width=${this.width}
+          .imageProxyService=${this.imageProxyService}
         ></tool-result-card>
       `;
     }

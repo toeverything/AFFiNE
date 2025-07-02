@@ -298,6 +298,8 @@ export class PlaygroundChat extends SignalWatcher(
       <ai-chat-messages
         ${ref(this._chatMessagesRef)}
         .host=${this.host}
+        .workspaceId=${this.doc.workspace.id}
+        .docId=${this.doc.id}
         .isHistoryLoading=${this.isLoading}
         .chatContextValue=${this.chatContextValue}
         .session=${this.session}
@@ -311,6 +313,7 @@ export class PlaygroundChat extends SignalWatcher(
       <ai-chat-composer
         .host=${this.host}
         .workspaceId=${this.doc.workspace.id}
+        .docId=${this.doc.id}
         .session=${this.session}
         .createSession=${this._createSession}
         .chatContextValue=${this.chatContextValue}

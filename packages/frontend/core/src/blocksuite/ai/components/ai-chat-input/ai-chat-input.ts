@@ -281,7 +281,13 @@ export class AIChatInput extends SignalWatcher(
   `;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor workspaceId!: string;
+
+  @property({ attribute: false })
+  accessor docId: string | undefined;
 
   @property({ attribute: false })
   accessor session!: CopilotSessionType | null | undefined;
@@ -596,10 +602,9 @@ export class AIChatInput extends SignalWatcher(
         sessionId,
         input: userInput,
         contexts,
-        docId: this.host.store.id,
+        docId: this.docId,
         attachments: images,
-        workspaceId: this.host.store.workspace.id,
-        host: this.host,
+        workspaceId: this.workspaceId,
         stream: true,
         signal: abortController.signal,
         isRootSession: this.isRootSession,
@@ -681,8 +686,8 @@ export class AIChatInput extends SignalWatcher(
     const last = messages[messages.length - 1] as ChatMessage;
     if (!last.id) {
       const historyIds = await AIProvider.histories.ids(
-        this.host.store.workspace.id,
-        this.host.store.id,
+        this.workspaceId,
+        this.docId,
         { sessionId }
       );
       if (!historyIds || !historyIds[0]) return;

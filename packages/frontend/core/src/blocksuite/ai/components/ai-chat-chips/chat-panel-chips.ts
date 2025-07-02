@@ -83,7 +83,7 @@ export class ChatPanelChips extends SignalWatcher(
   private _abortController: AbortController | null = null;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor chips!: ChatChip[];
@@ -406,6 +406,9 @@ export class ChatPanelChips extends SignalWatcher(
       const contextId = await this.createContextId();
       if (!contextId || !AIProvider.context) {
         throw new Error('Context not found');
+      }
+      if (!this.host) {
+        throw new Error('Host not found');
       }
       const blobId = await this.host.store.blobSync.set(chip.file);
       const contextFile = await AIProvider.context.addContextFile(chip.file, {

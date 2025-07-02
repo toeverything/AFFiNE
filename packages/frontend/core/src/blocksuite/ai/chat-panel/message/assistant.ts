@@ -33,7 +33,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   `;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor item!: ChatMessage;
@@ -99,7 +99,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       ${streamObjects?.length
         ? this.renderStreamObjects(streamObjects)
         : this.renderRichText(content)}
-      ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
+      ${shouldRenderError ? AIChatErrorRenderer(error, host) : nothing}
       ${this.renderEditorActions()}
     `;
   }
@@ -152,9 +152,11 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       ? mergeStreamContent(streamObjects)
       : content;
 
-    const actions = isInsidePageEditor(host)
-      ? PageEditorActions
-      : EdgelessEditorActions;
+    const actions = host
+      ? isInsidePageEditor(host)
+        ? PageEditorActions
+        : EdgelessEditorActions
+      : null;
 
     return html`
       <chat-copy-more
@@ -167,7 +169,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
         .withMargin=${true}
         .retry=${() => this.retry()}
       ></chat-copy-more>
-      ${isLast && !!markdown
+      ${isLast && !!markdown && host
         ? html`<chat-action-list
             .actions=${actions}
             .host=${host}

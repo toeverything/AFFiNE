@@ -42,24 +42,26 @@ const processTypeToPromptName = new Map<string, PromptKey>(
   })
 );
 
+interface CreateSessionOptions {
+  promptName: PromptKey;
+  workspaceId: string;
+  docId?: string;
+  sessionId?: string;
+  retry?: boolean;
+}
+
 export function setupAIProvider(
   client: CopilotClient,
   globalDialogService: GlobalDialogService,
   authService: AuthService
 ) {
   async function createSession({
+    promptName,
     workspaceId,
     docId,
-    promptName,
     sessionId,
     retry,
-  }: {
-    workspaceId: string;
-    docId: string;
-    promptName: PromptKey;
-    sessionId?: string;
-    retry?: boolean;
-  }) {
+  }: CreateSessionOptions) {
     if (sessionId) return sessionId;
     if (retry) return AIProvider.LAST_ACTION_SESSIONID;
 

@@ -80,11 +80,11 @@ declare global {
       retry?: boolean;
 
       // action's context
-      docId: string;
+      docId?: string;
       workspaceId: string;
 
       // internal context
-      host: EditorHost;
+      host?: EditorHost;
       models?: (BlockModel | GfxModel)[];
       control?: TrackerControl;
       where?: TrackerWhere;
@@ -142,6 +142,7 @@ declare global {
         docs: AIDocContextOption[];
         files: AIFileContextOption[];
       };
+      postfix?: (text: string) => string;
     }
 
     interface TranslateOptions extends AITextActionOptions {
@@ -374,9 +375,9 @@ declare global {
     };
 
     interface CreateSessionOptions {
-      docId: string;
-      workspaceId: string;
       promptName: PromptKey;
+      workspaceId: string;
+      docId?: string;
       sessionId?: string;
       retry?: boolean;
     }

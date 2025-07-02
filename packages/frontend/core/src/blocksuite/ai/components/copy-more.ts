@@ -82,7 +82,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   `;
 
   private get _selectionValue() {
-    return this.host.selection.value;
+    return this.host?.selection.value ?? [];
   }
 
   private get _currentTextSelection(): TextSelection | undefined {
@@ -105,7 +105,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   private _morePopper: ReturnType<typeof createButtonPopper> | null = null;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor actions: ChatAction[] = [];
@@ -136,7 +136,8 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   }
 
   private readonly _notifySuccess = (title: string) => {
-    const notificationService = this.host.std.getOptional(NotificationProvider);
+    const notificationService =
+      this.host?.std.getOptional(NotificationProvider);
     notificationService?.notify({
       title: title,
       accent: 'success',
@@ -174,7 +175,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
         }
       </style>
       <div class="copy-more">
-        ${content
+        ${content && host
           ? html`<div
               class="button copy"
               @click=${async () => {
@@ -199,19 +200,19 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
               <affine-tooltip .autoShift=${true}>Retry</affine-tooltip>
             </div>`
           : nothing}
-        ${isLast
-          ? nothing
-          : html`<div
+        ${!isLast && host
+          ? html`<div
               class="button more"
               data-testid="action-more-button"
               @click=${this._toggle}
             >
               ${MoreHorizontalIcon({ width: '20px', height: '20px' })}
-            </div> `}
+            </div> `
+          : nothing}
       </div>
 
       <div class="more-menu">
-        ${this._showMoreMenu
+        ${this._showMoreMenu && host
           ? repeat(
               actions.filter(action => action.showWhen(host)),
               action => action.title,

@@ -51,10 +51,13 @@ export class AIChatComposer extends SignalWatcher(
   `;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor workspaceId!: string;
+
+  @property({ attribute: false })
+  accessor docId: string | undefined;
 
   @property({ attribute: false })
   accessor session!: CopilotSessionType | null | undefined;
@@ -124,8 +127,10 @@ export class AIChatComposer extends SignalWatcher(
       ></chat-panel-chips>
       <ai-chat-input
         .host=${this.host}
-        .chips=${this.chips}
+        .workspaceId=${this.workspaceId}
+        .docId=${this.docId}
         .session=${this.session}
+        .chips=${this.chips}
         .createSession=${this.createSession}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
@@ -224,13 +229,12 @@ export class AIChatComposer extends SignalWatcher(
 
     const fileChips: FileChip[] = await Promise.all(
       files.map(async file => {
-        const blob = await this.host.store.blobSync.get(file.blobId);
         return {
-          file: new File(blob ? [blob] : [], file.name),
+          file: new File([], file.name),
           blobId: file.blobId,
           fileId: file.id,
-          state: blob ? file.status : 'failed',
-          tooltip: blob ? file.error : 'File not found in blob storage',
+          state: file.status,
+          tooltip: file.error,
           createdAt: file.createdAt,
         };
       })
@@ -302,7 +306,7 @@ export class AIChatComposer extends SignalWatcher(
 
     try {
       await AIProvider.context?.pollEmbeddingStatus(
-        this.host.std.workspace.id,
+        this.workspaceId,
         (status: ContextWorkspaceEmbeddingStatus) => {
           if (!status) {
             this.embeddingCompleted = false;

@@ -471,7 +471,7 @@ export class AIChatBlockPeekView extends LitElement {
             .message=${message}
             .textRendererOptions=${this._textRendererOptions}
           ></ai-chat-block-message>
-          ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
+          ${shouldRenderError ? AIChatErrorRenderer(error, host) : nothing}
           ${shouldRenderCopyMore
             ? html` <chat-copy-more
                 .host=${host}
@@ -590,6 +590,7 @@ export class AIChatBlockPeekView extends LitElement {
       <ai-chat-composer
         .host=${host}
         .workspaceId=${this.rootWorkspaceId}
+        .docId=${this.rootDocId}
         .session=${this.forkSession ?? this.session}
         .createSession=${this.createForkSession}
         .chatContextValue=${chatContext}

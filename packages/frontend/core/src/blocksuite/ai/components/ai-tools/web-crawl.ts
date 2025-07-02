@@ -1,5 +1,6 @@
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
+import type { ImageProxyService } from '@blocksuite/affine/shared/adapters';
+import { ShadowlessElement } from '@blocksuite/affine/std';
 import { WebIcon } from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
@@ -37,10 +38,10 @@ export class WebCrawlTool extends WithDisposable(ShadowlessElement) {
   accessor data!: WebCrawlToolCall | WebCrawlToolResult;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor width: Signal<number | undefined> | undefined;
 
   @property({ attribute: false })
-  accessor width: Signal<number | undefined> | undefined;
+  accessor imageProxyService: ImageProxyService | null | undefined;
 
   renderToolCall() {
     return html`
@@ -61,7 +62,6 @@ export class WebCrawlTool extends WithDisposable(ShadowlessElement) {
       const { favicon, title, content } = result[0];
       return html`
         <tool-result-card
-          .host=${this.host}
           .name=${'The reading is complete, and this webpage has been read'}
           .icon=${WebIcon()}
           .footerIcons=${favicon ? [favicon] : []}
@@ -73,6 +73,7 @@ export class WebCrawlTool extends WithDisposable(ShadowlessElement) {
             },
           ]}
           .width=${this.width}
+          .imageProxyService=${this.imageProxyService}
         ></tool-result-card>
       `;
     }
