@@ -1,6 +1,5 @@
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
-  CommentProviderExtension,
   CommunityCanvasTextFonts,
   DocModeProvider,
   EditorSettingExtension,
@@ -13,7 +12,6 @@ import { type TestAffineEditorContainer } from '@blocksuite/integration-test';
 import { getTestViewManager } from '@blocksuite/integration-test/view';
 
 import {
-  mockCommentProvider,
   mockDocModeService,
   mockEditorSetting,
   mockParseDocUrlService,
@@ -35,7 +33,6 @@ export function getTestCommonExtensions(
         di.override(DocModeProvider, mockDocModeService(editor));
       },
     },
-    CommentProviderExtension(mockCommentProvider()),
   ];
 }
 
