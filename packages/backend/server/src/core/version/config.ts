@@ -5,7 +5,6 @@ export interface VersionConfig {
     enabled: boolean;
     requiredVersion: string;
   };
-  allowGuestDemoWorkspace?: boolean;
 }
 
 declare global {
@@ -28,9 +27,5 @@ defineModuleConfig('client', {
   'versionControl.requiredVersion': {
     desc: "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect.",
     default: '>=0.20.0',
-  },
-  allowGuestDemoWorkspace: {
-    desc: 'Allow guests to access demo workspace.',
-    default: true,
   },
 });
