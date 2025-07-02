@@ -12,6 +12,7 @@ import {
   TextSelection,
 } from '@blocksuite/std';
 import type { BaseSelection, BlockModel } from '@blocksuite/store';
+import { signal } from '@preact/signals-core';
 
 import { extractCommentIdFromDelta, findCommentedTexts } from './utils';
 
@@ -19,6 +20,8 @@ export class InlineCommentManager extends LifeCycleWatcher {
   static override key = 'inline-comment-manager';
 
   private readonly _disposables = new DisposableGroup();
+
+  private readonly _highlightedCommentId$ = signal<CommentId | null>(null);
 
   private get _provider() {
     return this.std.getOptional(CommentProviderIdentifier);
@@ -34,6 +37,9 @@ export class InlineCommentManager extends LifeCycleWatcher {
     );
     this._disposables.add(
       provider.onCommentResolved(this._handleDeleteAndResolve)
+    );
+    this._disposables.add(
+      provider.onCommentHighlighted(this._handleHighlightComment)
     );
     this._disposables.add(
       this.std.selection.slots.changed.subscribe(this._handleSelectionChanged)
@@ -131,14 +137,20 @@ export class InlineCommentManager extends LifeCycleWatcher {
     });
   };
 
+  private readonly _handleHighlightComment = (id: CommentId | null) => {
+    this._highlightedCommentId$.value = id;
+  };
+
   private readonly _handleSelectionChanged = (selections: BaseSelection[]) => {
+    const currentHighlightedCommentId = this._highlightedCommentId$.peek();
+
     if (selections.length === 1) {
       const selection = selections[0];
 
       // InlineCommentManager only handle text selection
       if (!selection.is(TextSelection)) return;
 
-      if (!selection.isCollapsed()) {
+      if (!selection.isCollapsed() && currentHighlightedCommentId !== null) {
         this._provider?.highlightComment(null);
         return;
       }
@@ -156,6 +168,8 @@ export class InlineCommentManager extends LifeCycleWatcher {
       if (commentIds.length !== 0) return;
     }
 
-    this._provider?.highlightComment(null);
+    if (currentHighlightedCommentId !== null) {
+      this._provider?.highlightComment(null);
+    }
   };
 }

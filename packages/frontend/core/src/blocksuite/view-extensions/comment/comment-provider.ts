@@ -130,9 +130,11 @@ class AffineCommentService implements CommentProvider {
   }
 
   highlightComment(id: string | null): void {
-    const workbench = this.framework.get(WorkbenchService).workbench;
-    workbench.setSidebarOpen(true);
-    workbench.activeView$.value.activeSidebarTab('comment');
+    if (id !== null) {
+      const workbench = this.framework.get(WorkbenchService).workbench;
+      workbench.setSidebarOpen(true);
+      workbench.activeView$.value.activeSidebarTab('comment');
+    }
     this.commentEntity.highlightComment(id);
   }
 
