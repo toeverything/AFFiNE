@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import {
   Args,
   Context,
@@ -102,8 +104,9 @@ class AddContextFileInput {
   @Field(() => String)
   contextId!: string;
 
-  @Field(() => String)
-  blobId!: string;
+  // @TODO(@darkskygit): remove this after client lower then 0.22 has been disconnected
+  @Field(() => String, { nullable: true, deprecationReason: 'Never used' })
+  blobId!: string | undefined;
 }
 
 @InputType()
@@ -611,8 +614,9 @@ export class CopilotContextResolver {
     if (!this.context.canEmbedding) {
       throw new CopilotEmbeddingUnavailable();
     }
+    const { contextId } = options;
 
-    const lockFlag = `${COPILOT_LOCKER}:context:${options.contextId}`;
+    const lockFlag = `${COPILOT_LOCKER}:context:${contextId}`;
     await using lock = await this.mutex.acquire(lockFlag);
     if (!lock) {
       throw new TooManyRequest('Server is busy');
@@ -623,22 +627,15 @@ export class CopilotContextResolver {
       throw new BlobQuotaExceeded();
     }
 
-    const session = await this.context.get(options.contextId);
+    const session = await this.context.get(contextId);
 
     try {
-      const file = await session.addFile(
-        options.blobId,
-        content.filename,
-        content.mimetype
-      );
-
       const buffer = await readStream(content.createReadStream());
-      await this.storage.put(
-        user.id,
-        session.workspaceId,
-        options.blobId,
-        buffer
-      );
+      const blobId = createHash('sha256').update(buffer).digest('base64url');
+      const { filename, mimetype } = content;
+
+      await this.storage.put(user.id, session.workspaceId, blobId, buffer);
+      const file = await session.addFile(blobId, filename, mimetype);
 
       await this.jobs.addFileEmbeddingQueue({
         userId: user.id,
@@ -655,10 +652,7 @@ export class CopilotContextResolver {
       if (e instanceof UserFriendlyError) {
         throw e;
       }
-      throw new CopilotFailedToModifyContext({
-        contextId: options.contextId,
-        message: e.message,
-      });
+      throw new CopilotFailedToModifyContext({ contextId, message: e.message });
     }
   }
 
