@@ -17,7 +17,6 @@ import {
 } from '@blocksuite/affine-model';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
 import {
-  BlockCommentManager,
   DocDisplayMetaProvider,
   DocModeProvider,
   EditorSettingExtension,
@@ -409,12 +408,6 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
     if (this.isPageMode) options.query = this._pageFilter;
     const doc = this.std.workspace.getDoc(this.model.props.pageId);
     return doc?.getStore(options) ?? null;
-  }
-
-  get isCommentHighlighted() {
-    return this.std
-      .get(BlockCommentManager)
-      .isBlockCommentHighlighted(this.model);
   }
 
   private _checkCycle() {

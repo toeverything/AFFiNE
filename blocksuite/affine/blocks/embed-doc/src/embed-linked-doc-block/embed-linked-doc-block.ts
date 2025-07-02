@@ -17,7 +17,6 @@ import {
   REFERENCE_NODE,
 } from '@blocksuite/affine-shared/consts';
 import {
-  BlockCommentManager,
   CitationProvider,
   DocDisplayMetaProvider,
   DocModeProvider,
@@ -263,12 +262,6 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
 
   get isCitation() {
     return this.citationService.isCitationModel(this.model);
-  }
-
-  get isCommentHighlighted() {
-    return this.std
-      .get(BlockCommentManager)
-      .isBlockCommentHighlighted(this.model);
   }
 
   private readonly _handleDoubleClick = (event: MouseEvent) => {
