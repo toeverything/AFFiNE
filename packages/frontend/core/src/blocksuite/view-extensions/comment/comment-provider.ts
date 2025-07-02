@@ -126,7 +126,7 @@ class AffineCommentService implements CommentProvider {
   }
 
   resolveComment(id: string): void {
-    this.commentEntity.resolveComment(id).catch(console.error);
+    this.commentEntity.resolveComment(id, true).catch(console.error);
   }
 
   highlightComment(id: string | null): void {

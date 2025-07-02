@@ -2,6 +2,7 @@ import { useConfirmModal, useLitPortalFactory } from '@affine/component';
 import { LitDocEditor, type PageEditor } from '@affine/core/blocksuite/editors';
 import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import { SnapshotHelper } from '@affine/core/modules/comment/services/snapshot-helper';
+import type { RichText } from '@blocksuite/affine/rich-text';
 import { ViewportElementExtension } from '@blocksuite/affine/shared/services';
 import { type DocSnapshot, Store } from '@blocksuite/affine/store';
 import { ArrowUpBigIcon } from '@blocksuite/icons/rc';
@@ -140,11 +141,10 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
         editorRef.current.updateComplete
           .then(async () => {
             if (cancel) return;
-            const richText = editorRef.current?.querySelector('rich-text');
+            const richText = editorRef.current?.querySelector(
+              'rich-text'
+            ) as unknown as RichText;
             if (!richText) return;
-
-            // Wait for rich text component to be fully loaded
-            await richText.updateComplete;
 
             // Finally focus the inline editor
             const inlineEditor = richText.inlineEditor;
@@ -166,7 +166,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
 
     useEffect(() => {
       if (doc && onChange) {
-        const subscription = doc.slots.yBlockUpdated.subscribe(() => {
+        const subscription = doc.slots.blockUpdated.subscribe(() => {
           const snapshot = snapshotHelper.getSnapshot(doc);
           if (snapshot) {
             onChange?.(snapshot);
@@ -191,7 +191,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
 
     return (
       <div
-        onClick={handleClickEditor}
+        onClick={readonly ? undefined : handleClickEditor}
         data-readonly={!!readonly}
         className={clsx(styles.container, 'comment-editor-viewport')}
       >

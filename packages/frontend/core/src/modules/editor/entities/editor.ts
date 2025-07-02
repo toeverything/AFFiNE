@@ -3,9 +3,13 @@ import type { DefaultOpenProperty } from '@affine/core/components/properties';
 import { PresentTool } from '@blocksuite/affine/blocks/frame';
 import { DefaultTool } from '@blocksuite/affine/blocks/surface';
 import type { DocTitle } from '@blocksuite/affine/fragments/doc-title';
+import { findCommentedTexts } from '@blocksuite/affine/inlines/comment';
 import type { DocMode, ReferenceParams } from '@blocksuite/affine/model';
 import { HighlightSelection } from '@blocksuite/affine/shared/selection';
-import { DocModeProvider } from '@blocksuite/affine/shared/services';
+import {
+  DocModeProvider,
+  findCommentedBlocks,
+} from '@blocksuite/affine/shared/services';
 import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import type { InlineEditor } from '@blocksuite/std/inline';
 import { effect } from '@preact/signals-core';
@@ -210,17 +214,14 @@ export class Editor extends Entity {
       const std = editorContainer.host.std;
 
       // First try to find inline commented texts
-      const inlineCommentedSelections = this.findCommentedTexts(std, commentId);
+      const inlineCommentedSelections = findCommentedTexts(std, commentId);
       if (inlineCommentedSelections.length > 0) {
         const firstSelection = inlineCommentedSelections[0][0];
         finalId = firstSelection.from.blockId;
         finalKey = 'blockIds';
       } else {
         // Then try to find block comments
-        const blockCommentedBlocks = this.findCommentedBlocks(
-          std.store,
-          commentId
-        );
+        const blockCommentedBlocks = findCommentedBlocks(std.store, commentId);
         if (blockCommentedBlocks.length > 0) {
           finalId = blockCommentedBlocks[0].id;
           finalKey = 'blockIds';
@@ -358,66 +359,5 @@ export class Editor extends Entity {
     private readonly workspaceService: WorkspaceService
   ) {
     super();
-  }
-
-  private findCommentedTexts(std: any, commentId: string) {
-    const selections: any[] = [];
-    std.store.getAllModels().forEach((model: any) => {
-      // Try to get inline editor for the model
-      // This is a simplified version - in practice you'd need proper imports
-      const inlineEditor = model.text?.yText
-        ? {
-            yTextLength: model.text.yText.length,
-            mapDeltasInInlineRange: (_range: any, callback: any) => {
-              const deltas = model.text.yText.toDelta();
-              deltas.forEach((delta: any, index: number) => {
-                callback(delta, index);
-              });
-            },
-          }
-        : null;
-
-      if (!inlineEditor) return;
-
-      inlineEditor.mapDeltasInInlineRange(
-        {
-          index: 0,
-          length: inlineEditor.yTextLength,
-        },
-        (delta: any, rangeIndex: number) => {
-          if (
-            delta.attributes &&
-            Object.keys(delta.attributes).some(
-              (key: string) => key === `comment-${commentId}`
-            )
-          ) {
-            selections.push([
-              {
-                from: {
-                  blockId: model.id,
-                  index: rangeIndex,
-                  length: delta.insert?.length || 0,
-                },
-                to: null,
-              },
-              inlineEditor,
-            ]);
-          }
-        }
-      );
-    });
-
-    return selections;
-  }
-
-  private findCommentedBlocks(store: any, commentId: string) {
-    return store.getAllModels().filter((block: any) => {
-      return (
-        'comments' in block.props &&
-        typeof block.props.comments === 'object' &&
-        block.props.comments !== null &&
-        commentId in block.props.comments
-      );
-    });
   }
 }

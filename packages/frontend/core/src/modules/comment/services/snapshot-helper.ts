@@ -6,6 +6,7 @@ import {
 } from '@blocksuite/affine/shared/adapters';
 import {
   type DocSnapshot,
+  nanoid,
   type Store,
   Text,
   Transformer,
@@ -37,7 +38,7 @@ export class SnapshotHelper extends Service {
 
   getTempWorkspace() {
     const collection = new WorkspaceImpl({
-      rootDoc: new YDoc({ guid: 'markdownToDoc' }),
+      rootDoc: new YDoc({ guid: 'markdownToDoc' + nanoid() }),
       blobSource: {
         name: 'cloud',
         readonly: true,
@@ -115,7 +116,6 @@ export class SnapshotHelper extends Service {
       }
       return await transformer.snapshotToDoc(snapshot);
     } else {
-      // Create a document with proper default structure instead of using empty markdown
       const collection = this.getTempWorkspace();
       if (!collection) {
         throw new Error('Temp workspace not found');
@@ -124,7 +124,7 @@ export class SnapshotHelper extends Service {
       // Create a temporary doc with proper structure
       const doc = collection.createDoc();
       const store = doc.getStore();
-      doc.load(() => {
+      store.load(() => {
         // Add root page block with empty title
         const rootId = store.addBlock('affine:page', {
           title: new Text(''),
