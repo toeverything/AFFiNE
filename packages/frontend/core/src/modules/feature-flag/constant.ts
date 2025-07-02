@@ -265,7 +265,8 @@ export const AFFINE_FLAGS = {
     defaultState: false,
   },
   enable_comment: {
-    category: 'affine',
+    category: 'blocksuite',
+    bsFlag: 'enable_comment',
     displayName: 'Enable Comment',
     description: 'Enable comment',
     configurable: isCanaryBuild,

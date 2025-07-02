@@ -7,6 +7,7 @@ import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 // import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { GlobalPageHistoryModal } from '@affine/core/components/affine/page-history-modal';
+import { CommentSidebar } from '@affine/core/components/comment/sidebar';
 import { useGuard } from '@affine/core/components/guard';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
@@ -37,6 +38,7 @@ import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   AiIcon,
+  CommentIcon,
   ExportIcon,
   FrameIcon,
   PropertyIcon,
@@ -377,6 +379,17 @@ const DetailPageImpl = memo(function DetailPageImpl() {
             <Scrollable.Viewport>
               <EditorAdapterPanel host={editorContainer?.host ?? null} />
             </Scrollable.Viewport>
+          </Scrollable.Root>
+        </ViewSidebarTab>
+      )}
+
+      {workspace.flavour !== 'local' && (
+        <ViewSidebarTab tabId="comment" icon={<CommentIcon />}>
+          <Scrollable.Root className={styles.sidebarScrollArea}>
+            <Scrollable.Viewport>
+              <CommentSidebar />
+            </Scrollable.Viewport>
+            <Scrollable.Scrollbar />
           </Scrollable.Root>
         </ViewSidebarTab>
       )}

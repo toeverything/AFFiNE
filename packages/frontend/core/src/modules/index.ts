@@ -13,6 +13,7 @@ import { configureBlobManagementModule } from './blob-management';
 import { configureCloudModule } from './cloud';
 import { configureCollectionModule } from './collection';
 import { configureCollectionRulesModule } from './collection-rules';
+import { configureCommentModule } from './comment';
 import { configureWorkspaceDBModule } from './db';
 import { configureDialogModule } from './dialogs';
 import { configureDndModule } from './dnd';
@@ -118,4 +119,5 @@ export function configureCommonModules(framework: Framework) {
   configureWorkspacePropertyModule(framework);
   configureCollectionRulesModule(framework);
   configureIndexerEmbeddingModule(framework);
+  configureCommentModule(framework);
 }

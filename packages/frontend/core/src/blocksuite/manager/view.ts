@@ -57,7 +57,10 @@ type Configure = {
   electron: (framework?: FrameworkProvider) => Configure;
   linkPreview: (framework?: FrameworkProvider) => Configure;
   codeBlockHtmlPreview: (framework?: FrameworkProvider) => Configure;
-  comment: (enableComment?: boolean) => Configure;
+  comment: (
+    enableComment?: boolean,
+    framework?: FrameworkProvider
+  ) => Configure;
 
   value: ViewExtensionManager;
 };
@@ -92,6 +95,7 @@ class ViewProvider {
       ElectronViewExtension,
       AffineLinkPreviewExtension,
       AffineDatabaseViewExtension,
+      CommentViewExtension,
     ]);
   }
 
@@ -328,8 +332,14 @@ class ViewProvider {
     return this.config;
   };
 
-  private readonly _configureComment = (enableComment?: boolean) => {
-    this._manager.configure(CommentViewExtension, { enableComment });
+  private readonly _configureComment = (
+    enableComment?: boolean,
+    framework?: FrameworkProvider
+  ) => {
+    this._manager.configure(CommentViewExtension, {
+      enableComment,
+      framework,
+    });
     return this.config;
   };
 }
