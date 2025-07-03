@@ -17,6 +17,7 @@ import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
 import { WorkspacePropertySidebar } from '@affine/core/components/properties/sidebar';
 import { TrashPageFooter } from '@affine/core/components/pure/trash-page-footer';
 import { TopTip } from '@affine/core/components/top-tip';
+import { ServerService } from '@affine/core/modules/cloud';
 import { DocService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
@@ -33,6 +34,7 @@ import {
 } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { isNewTabTrigger } from '@affine/core/utils';
+import { ServerFeature } from '@affine/graphql';
 import track from '@affine/track';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
@@ -112,6 +114,14 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const enableAdapterPanel = useLiveData(
     featureFlagService.flags.enable_adapter_panel.$
   );
+
+  const serverService = useService(ServerService);
+  const serverConfig = useLiveData(serverService.server.config$);
+
+  const enableComment =
+    useLiveData(featureFlagService.flags.enable_comment.$) &&
+    // comment may not be supported by the server
+    serverConfig.features.includes(ServerFeature.Comment);
 
   useEffect(() => {
     if (isActiveView) {
@@ -383,7 +393,7 @@ const DetailPageImpl = memo(function DetailPageImpl() {
         </ViewSidebarTab>
       )}
 
-      {workspace.flavour !== 'local' && (
+      {workspace.flavour !== 'local' && enableComment && (
         <ViewSidebarTab tabId="comment" icon={<CommentIcon />}>
           <Scrollable.Root className={styles.sidebarScrollArea}>
             <Scrollable.Viewport>

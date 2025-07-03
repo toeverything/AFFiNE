@@ -551,7 +551,6 @@ const useCommentEntity = (docId: string | undefined) => {
     const entityRef = docCommentManager.get(docId);
     setEntity(entityRef.obj);
     entityRef.obj.start();
-    entityRef.obj.revalidate();
 
     // Set up pending comment watching to auto-open sidebar
     const unwatchPending = commentPanelService.watchForPendingComments(
@@ -560,6 +559,7 @@ const useCommentEntity = (docId: string | undefined) => {
 
     return () => {
       unwatchPending();
+      entityRef.obj.stop();
       entityRef.release();
     };
   }, [docCommentManager, commentPanelService, docId]);

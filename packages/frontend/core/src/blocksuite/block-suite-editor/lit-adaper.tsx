@@ -11,6 +11,7 @@ import {
 } from '@affine/core/blocksuite/editors';
 import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
+import { ServerService } from '@affine/core/modules/cloud';
 import type { DocCustomPropertyInfo } from '@affine/core/modules/db';
 import type {
   DatabaseRow,
@@ -21,6 +22,7 @@ import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { JournalService } from '@affine/core/modules/journal';
 import { useInsidePeekView } from '@affine/core/modules/peek-view';
 import { WorkspaceService } from '@affine/core/modules/workspace';
+import { ServerFeature } from '@affine/graphql';
 import track from '@affine/track';
 import type { DocTitle } from '@blocksuite/affine/fragments/doc-title';
 import type { DocMode } from '@blocksuite/affine/model';
@@ -80,7 +82,13 @@ const usePatchSpecs = (mode: DocMode) => {
     featureFlagService.flags.enable_pdf_embed_preview.$
   );
 
-  const enableComment = useLiveData(featureFlagService.flags.enable_comment.$);
+  const serverService = useService(ServerService);
+  const serverConfig = useLiveData(serverService.server.config$);
+
+  const enableComment =
+    useLiveData(featureFlagService.flags.enable_comment.$) &&
+    // comment may not be supported by the server
+    serverConfig.features.includes(ServerFeature.Comment);
 
   const patchedSpecs = useMemo(() => {
     const manager = getViewManager()

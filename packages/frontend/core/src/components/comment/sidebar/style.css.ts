@@ -125,7 +125,7 @@ export const previewContainer = style({
       position: 'absolute',
       left: '0',
       top: '0',
-      backgroundColor: cssVarV2('layer/insideBorder/primaryBorder'),
+      backgroundColor: cssVarV2('block/comment/highlightUnderline'),
     },
   },
 });

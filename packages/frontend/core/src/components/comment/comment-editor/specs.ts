@@ -1,6 +1,8 @@
+import { CloudViewExtension } from '@affine/core/blocksuite/view-extensions/cloud';
 import { createLinkedWidgetConfig } from '@affine/core/blocksuite/view-extensions/editor-config/linked';
 import { AffineEditorViewExtension } from '@affine/core/blocksuite/view-extensions/editor-view/editor-view';
 import { AffineThemeViewExtension } from '@affine/core/blocksuite/view-extensions/theme';
+import { LinkedMenuGroupType } from '@affine/core/modules/at-menu-config/services';
 import { CodeBlockViewExtension } from '@blocksuite/affine/blocks/code/view';
 import { DividerViewExtension } from '@blocksuite/affine/blocks/divider/view';
 import { LatexViewExtension as LatexBlockViewExtension } from '@blocksuite/affine/blocks/latex/view';
@@ -145,6 +147,9 @@ export function getCommentEditorViewManager(framework: FrameworkProvider) {
       // Affine side
       AffineThemeViewExtension,
       AffineEditorViewExtension,
+
+      // for rendering mentions
+      CloudViewExtension,
     ]);
 
     manager.configure(ParagraphViewExtension, {
@@ -155,8 +160,15 @@ export function getCommentEditorViewManager(framework: FrameworkProvider) {
 
     manager.configure(
       LinkedDocViewExtension,
-      createLinkedWidgetConfig(framework)
+      createLinkedWidgetConfig(framework, {
+        includedGroups: [LinkedMenuGroupType.Mention],
+      })
     );
+
+    manager.configure(CloudViewExtension, {
+      framework,
+      enableCloud: true,
+    });
   }
   return manager;
 }

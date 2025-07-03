@@ -62,6 +62,13 @@ const RESERVED_ITEM_KEYS = {
   datePicker: 'date-picker',
 };
 
+export enum LinkedMenuGroupType {
+  LinkToDoc = 'link-to-doc',
+  Mention = 'mention',
+  Journal = 'journal',
+  NewDoc = 'new-doc',
+}
+
 export class AtMenuConfigService extends Service {
   constructor(
     private readonly journalService: JournalService,
@@ -79,9 +86,11 @@ export class AtMenuConfigService extends Service {
 
   // todo(@peng17): maybe refactor the config using entity, so that each config
   // can be reactive to the query, instead of recreating the whole config?
-  getConfig(): Partial<LinkedWidgetConfig> {
+  getConfig(
+    includedGroups?: LinkedMenuGroupType[]
+  ): Partial<LinkedWidgetConfig> {
     return {
-      getMenus: this.getMenusFn(),
+      getMenus: this.getMenusFn(includedGroups),
       mobile: this.getMobileConfig(),
       autoFocusedItemKey: this.autoFocusedItemKey,
     };
@@ -102,14 +111,14 @@ export class AtMenuConfigService extends Service {
       return null;
     }
 
-    const linkToDocGroup = menus[0];
-    const memberGroup = menus[1];
+    const linkToDocGroup = menus.at(0);
+    const memberGroup = menus.at(1);
 
-    if (resolveSignal(memberGroup.items).length > 1) {
+    if (memberGroup && resolveSignal(memberGroup.items).length > 1) {
       return resolveSignal(memberGroup.items)[0]?.key;
     }
 
-    if (resolveSignal(linkToDocGroup.items).length > 0) {
+    if (linkToDocGroup && resolveSignal(linkToDocGroup.items).length > 0) {
       return resolveSignal(linkToDocGroup.items)[0]?.key;
     }
 
@@ -635,9 +644,7 @@ export class AtMenuConfigService extends Service {
       return query.length > 0 && !loading && members.length === 0;
     });
 
-    if (query.length > 0) {
-      this.memberSearchService.search(query);
-    }
+    this.memberSearchService.search(query);
 
     return {
       name: I18n.t('com.affine.editor.at-menu.mention-members'),
@@ -655,13 +662,28 @@ export class AtMenuConfigService extends Service {
     };
   }
 
-  private getMenusFn(): LinkedWidgetConfig['getMenus'] {
+  private getMenusFn(
+    includedGroups: LinkedMenuGroupType[] = [
+      LinkedMenuGroupType.LinkToDoc,
+      LinkedMenuGroupType.Mention,
+      LinkedMenuGroupType.Journal,
+      LinkedMenuGroupType.NewDoc,
+    ]
+  ): LinkedWidgetConfig['getMenus'] {
     return (query, close, editorHost, inlineEditor, abortSignal) => {
       return [
-        this.linkToDocGroup(query, close, inlineEditor, abortSignal),
-        this.memberGroup(query, close, inlineEditor, abortSignal),
-        this.journalGroup(query, close, inlineEditor),
-        this.newDocMenuGroup(query, close, editorHost, inlineEditor),
+        ...(includedGroups?.includes(LinkedMenuGroupType.LinkToDoc)
+          ? [this.linkToDocGroup(query, close, inlineEditor, abortSignal)]
+          : []),
+        ...(includedGroups?.includes(LinkedMenuGroupType.Mention)
+          ? [this.memberGroup(query, close, inlineEditor, abortSignal)]
+          : []),
+        ...(includedGroups?.includes(LinkedMenuGroupType.Journal)
+          ? [this.journalGroup(query, close, inlineEditor)]
+          : []),
+        ...(includedGroups?.includes(LinkedMenuGroupType.NewDoc)
+          ? [this.newDocMenuGroup(query, close, editorHost, inlineEditor)]
+          : []),
       ];
     };
   }

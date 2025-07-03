@@ -269,8 +269,8 @@ export const AFFINE_FLAGS = {
     bsFlag: 'enable_comment',
     displayName: 'Enable Comment',
     description: 'Enable comment',
-    configurable: isCanaryBuild,
-    defaultState: true,
+    configurable: true,
+    defaultState: isCanaryBuild,
   },
 } satisfies { [key in string]: FlagInfo };
 

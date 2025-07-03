@@ -162,6 +162,7 @@ export class DocCommentStore extends Entity<{
 
   async createComment(commentInput: {
     content: DocCommentContent;
+    mentions?: string[];
   }): Promise<DocComment> {
     const graphql = this.graphqlService;
     if (!graphql) {
@@ -177,6 +178,7 @@ export class DocCommentStore extends Entity<{
           docMode: this.props.getDocMode(),
           docTitle: this.props.getDocTitle(),
           content: commentInput.content,
+          mentions: commentInput.mentions,
         },
       },
     });
@@ -245,6 +247,7 @@ export class DocCommentStore extends Entity<{
     commentId: string,
     replyInput: {
       content: DocCommentContent;
+      mentions?: string[];
     }
   ): Promise<DocCommentReply> {
     const graphql = this.graphqlService;
@@ -260,6 +263,7 @@ export class DocCommentStore extends Entity<{
           content: replyInput.content,
           docMode: this.props.getDocMode(),
           docTitle: this.props.getDocTitle(),
+          mentions: replyInput.mentions,
         },
       },
     });

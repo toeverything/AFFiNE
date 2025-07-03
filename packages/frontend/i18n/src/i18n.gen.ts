@@ -9439,6 +9439,26 @@ export const TypedTrans: {
         ["2"]: JSX.Element;
     }>>;
     /**
+      * `<1>{{username}}</1> commented in <2>{{docTitle}}</2>`
+      */
+    ["com.affine.notification.comment"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        docTitle: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> mentioned you in a comment in <2>{{docTitle}}</2>`
+      */
+    ["com.affine.notification.comment-mention"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        docTitle: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
       * `<1>{{username}}</1> has accept your invitation`
       */
     ["com.affine.notification.invitation-accepted"]: ComponentType<TypedTransProps<{

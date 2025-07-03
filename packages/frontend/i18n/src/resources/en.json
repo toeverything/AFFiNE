@@ -1932,6 +1932,8 @@
   "com.affine.page-starter-bar.edgeless": "Edgeless",
   "com.affine.notification.unsupported": "Unsupported message",
   "com.affine.notification.mention": "<1>{{username}}</1> mentioned you in <2>{{docTitle}}</2>",
+  "com.affine.notification.comment": "<1>{{username}}</1> commented in <2>{{docTitle}}</2>",
+  "com.affine.notification.comment-mention": "<1>{{username}}</1> mentioned you in a comment in <2>{{docTitle}}</2>",
   "com.affine.notification.empty": "No new notifications",
   "com.affine.notification.loading-more": "Loading more...",
   "com.affine.notification.empty.description": "You'll be notified here for @mentions and workspace invites.",
