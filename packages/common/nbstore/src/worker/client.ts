@@ -86,6 +86,21 @@ export class StoreManagerClient {
       connection.dispose();
     });
   }
+
+  enableBatterySaveMode() {
+    this.connections.forEach(connection => {
+      connection.store.enableBatterySaveMode().catch(err => {
+        console.error('error enabling battery save mode', err);
+      });
+    });
+  }
+  disableBatterySaveMode() {
+    this.connections.forEach(connection => {
+      connection.store.disableBatterySaveMode().catch(err => {
+        console.error('error disabling battery save mode', err);
+      });
+    });
+  }
 }
 
 export class StoreClient {
@@ -113,6 +128,13 @@ export class StoreClient {
   readonly blobFrontend: BlobFrontend;
   readonly awarenessFrontend: AwarenessFrontend;
   readonly indexerFrontend: IndexerFrontend;
+
+  enableBatterySaveMode(): Promise<void> {
+    return this.client.call('sync.enableBatterySaveMode');
+  }
+  disableBatterySaveMode(): Promise<void> {
+    return this.client.call('sync.disableBatterySaveMode');
+  }
 }
 
 class WorkerDocStorage implements DocStorage {
