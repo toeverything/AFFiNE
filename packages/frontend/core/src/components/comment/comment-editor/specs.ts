@@ -1,8 +1,6 @@
 import { CloudViewExtension } from '@affine/core/blocksuite/view-extensions/cloud';
-import { createLinkedWidgetConfig } from '@affine/core/blocksuite/view-extensions/editor-config/linked';
 import { AffineEditorViewExtension } from '@affine/core/blocksuite/view-extensions/editor-view/editor-view';
 import { AffineThemeViewExtension } from '@affine/core/blocksuite/view-extensions/theme';
-import { LinkedMenuGroupType } from '@affine/core/modules/at-menu-config/services';
 import { CodeBlockViewExtension } from '@blocksuite/affine/blocks/code/view';
 import { DividerViewExtension } from '@blocksuite/affine/blocks/divider/view';
 import { LatexViewExtension as LatexBlockViewExtension } from '@blocksuite/affine/blocks/latex/view';
@@ -57,6 +55,8 @@ import { ToolbarViewExtension } from '@blocksuite/affine/widgets/toolbar/view';
 import { ViewportOverlayViewExtension } from '@blocksuite/affine/widgets/viewport-overlay/view';
 import type { FrameworkProvider } from '@toeverything/infra';
 import { z } from 'zod';
+
+import { createCommentLinkedWidgetConfig } from './linked-widget-config';
 
 const commentEditorViewExtensionOptionsSchema = z.object({
   peekView: z.optional(z.custom<PeekViewService>()),
@@ -160,9 +160,7 @@ export function getCommentEditorViewManager(framework: FrameworkProvider) {
 
     manager.configure(
       LinkedDocViewExtension,
-      createLinkedWidgetConfig(framework, {
-        includedGroups: [LinkedMenuGroupType.Mention],
-      })
+      createCommentLinkedWidgetConfig(framework)
     );
 
     manager.configure(CloudViewExtension, {
