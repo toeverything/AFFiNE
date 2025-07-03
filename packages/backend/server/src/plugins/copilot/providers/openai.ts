@@ -349,7 +349,7 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
           case 'finish': {
             const footnotes = textParser.end();
             const result =
-              citationParser.end() + footnotes.length ? '\n' + footnotes : '';
+              citationParser.end() + (footnotes.length ? '\n' + footnotes : '');
             yield result;
             break;
           }
