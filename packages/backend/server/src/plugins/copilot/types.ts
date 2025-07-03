@@ -76,6 +76,7 @@ export interface ChatSessionOptions {
   docId: string | null;
   promptName: string;
   pinned: boolean;
+  reuseLatestChat?: boolean;
 }
 
 export interface ChatSessionForkOptions

@@ -453,6 +453,9 @@ input CreateChatSessionInput {
 
   """The prompt name to use for the session"""
   promptName: String!
+
+  """true by default, compliant for old version"""
+  reuseLatestChat: Boolean
   workspaceId: String!
 }
 

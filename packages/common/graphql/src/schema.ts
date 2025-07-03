@@ -552,6 +552,8 @@ export interface CreateChatSessionInput {
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
   /** The prompt name to use for the session */
   promptName: Scalars['String']['input'];
+  /** true by default, compliant for old version */
+  reuseLatestChat?: InputMaybe<Scalars['Boolean']['input']>;
   workspaceId: Scalars['String']['input'];
 }
 
