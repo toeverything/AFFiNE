@@ -16,7 +16,7 @@ import type {
   PromptMessage,
 } from './types';
 import { CopilotProviderType, ModelInputType, ModelOutputType } from './types';
-import { chatToGPTMessage, CitationParser, TextStreamParser } from './utils';
+import { chatToGPTMessage, TextStreamParser } from './utils';
 
 export const DEFAULT_DIMENSIONS = 256;
 
@@ -130,18 +130,11 @@ export class MorphProvider extends CopilotProvider<MorphConfig> {
         abortSignal: options.signal,
       });
 
-      const citationParser = new CitationParser();
       const textParser = new TextStreamParser();
       for await (const chunk of fullStream) {
         switch (chunk.type) {
           case 'text-delta': {
             let result = textParser.parse(chunk);
-            result = citationParser.parse(result);
-            yield result;
-            break;
-          }
-          case 'finish': {
-            const result = citationParser.end();
             yield result;
             break;
           }
