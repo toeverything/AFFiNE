@@ -70,7 +70,7 @@ export class BlockCommentManager extends LifeCycleWatcher {
           }
         );
         if (!selectedBlocks) return [];
-        return selectedBlocks.map(b => b.model);
+        return selectedBlocks.map(b => b.model).filter(m => !m.text);
       });
 
     const needCommentBlocks = [
