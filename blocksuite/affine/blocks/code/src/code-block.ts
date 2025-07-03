@@ -392,9 +392,11 @@ export class CodeBlockComponent extends CaptionedBlockComponent<CodeBlockModel> 
   }
 
   get isCommentHighlighted() {
-    return this.std
-      .get(BlockCommentManager)
-      .isBlockCommentHighlighted(this.model);
+    return (
+      this.std
+        .getOptional(BlockCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   override async getUpdateComplete() {

@@ -69,9 +69,11 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
   }
 
   get isCommentHighlighted() {
-    return this.std
-      .get(BlockCommentManager)
-      .isBlockCommentHighlighted(this.model);
+    return (
+      this.std
+        .getOptional(BlockCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   private _handleClick(event: MouseEvent) {

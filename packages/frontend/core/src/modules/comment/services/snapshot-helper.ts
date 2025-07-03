@@ -130,9 +130,6 @@ export class SnapshotHelper extends Service {
           title: new Text(''),
         });
 
-        // Add surface block
-        store.addBlock('affine:surface', {}, rootId);
-
         // Add note block
         const noteId = store.addBlock('affine:note', {}, rootId);
 

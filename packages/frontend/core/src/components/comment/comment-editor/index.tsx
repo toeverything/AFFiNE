@@ -1,6 +1,5 @@
-import { useConfirmModal, useLitPortalFactory } from '@affine/component';
+import { useLitPortalFactory } from '@affine/component';
 import { LitDocEditor, type PageEditor } from '@affine/core/blocksuite/editors';
-import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import { SnapshotHelper } from '@affine/core/modules/comment/services/snapshot-helper';
 import type { RichText } from '@blocksuite/affine/rich-text';
 import { ViewportElementExtension } from '@blocksuite/affine/shared/services';
@@ -19,31 +18,34 @@ import {
   useState,
 } from 'react';
 
+import { getCommentEditorViewManager } from './specs';
 import * as styles from './style.css';
 
 const usePatchSpecs = (readonly: boolean) => {
-  const [reactToLit, portals] = useLitPortalFactory();
+  const [_, portals] = useLitPortalFactory();
   const framework = useFramework();
-  const confirmModal = useConfirmModal();
+  // const confirmModal = useConfirmModal();
 
   const patchedSpecs = useMemo(() => {
-    const manager = getViewManager()
-      .config.init()
-      .foundation(framework)
-      .theme(framework)
-      .editorConfig(framework)
-      .editorView({
-        framework,
-        reactToLit,
-        confirmModal,
-      })
-      .linkedDoc(framework)
-      .paragraph(false)
-      .codeBlockHtmlPreview(framework).value;
+    // const manager = getViewManager()
+    //   .config.init()
+    //   .foundation(framework)
+    //   .theme(framework)
+    //   .editorConfig(framework)
+    //   .editorView({
+    //     framework,
+    //     reactToLit,
+    //     confirmModal,
+    //   })
+    //   .linkedDoc(framework)
+    //   .paragraph(false)
+    //   .codeBlockHtmlPreview(framework).value;
+
+    const manager = getCommentEditorViewManager(framework);
     return manager
       .get(readonly ? 'preview-page' : 'page')
       .concat([ViewportElementExtension('.comment-editor-viewport')]);
-  }, [confirmModal, framework, reactToLit, readonly]);
+  }, [framework, readonly]);
 
   return [
     patchedSpecs,

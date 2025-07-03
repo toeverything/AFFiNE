@@ -109,9 +109,11 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
   }
 
   get isCommentHighlighted() {
-    return this.std
-      .get(BlockCommentManager)
-      .isBlockCommentHighlighted(this.model);
+    return (
+      this.std
+        .getOptional(BlockCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   override get topContenteditableElement() {

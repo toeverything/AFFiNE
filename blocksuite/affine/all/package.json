@@ -285,6 +285,7 @@
     "./sync": "./src/sync/index.ts",
     "./extensions/store": "./src/extensions/store.ts",
     "./extensions/view": "./src/extensions/view.ts",
+    "./foundation/clipboard": "./src/foundation/clipboard.ts",
     "./foundation/store": "./src/foundation/store.ts",
     "./foundation/view": "./src/foundation/view.ts"
   },

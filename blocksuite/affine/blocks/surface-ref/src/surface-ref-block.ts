@@ -143,9 +143,11 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
   }
 
   get isCommentHighlighted() {
-    return this.std
-      .get(BlockCommentManager)
-      .isBlockCommentHighlighted(this.model);
+    return (
+      this.std
+        .getOptional(BlockCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   private readonly _handleClick = () => {
