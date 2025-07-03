@@ -47,6 +47,8 @@ import { ChatContentPureText } from './components/ai-message-content/pure-text';
 import { ChatContentRichText } from './components/ai-message-content/rich-text';
 import { ChatContentStreamObjects } from './components/ai-message-content/stream-objects';
 import { AIScrollableTextRenderer } from './components/ai-scrollable-text-renderer';
+import { ArtifactPreviewPanel } from './components/ai-tools/artifacts';
+import { DocComposeTool } from './components/ai-tools/doc-compose';
 import { ToolCallCard } from './components/ai-tools/tool-call-card';
 import { ToolFailedCard } from './components/ai-tools/tool-failed-card';
 import { ToolResultCard } from './components/ai-tools/tool-result-card';
@@ -176,6 +178,8 @@ export function registerAIEffects() {
   customElements.define('tool-call-failed', ToolFailedCard);
   customElements.define('web-crawl-tool', WebCrawlTool);
   customElements.define('web-search-tool', WebSearchTool);
+  customElements.define('doc-compose-tool', DocComposeTool);
+  customElements.define('artifact-preview-panel', ArtifactPreviewPanel);
 
   customElements.define(AFFINE_AI_PANEL_WIDGET, AffineAIPanelWidget);
   customElements.define(AFFINE_EDGELESS_COPILOT_WIDGET, EdgelessCopilotWidget);

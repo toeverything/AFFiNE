@@ -11,6 +11,7 @@ import {
 import { ZodType } from 'zod';
 
 import {
+  createDocComposeTool,
   createDocEditTool,
   createDocKeywordSearchTool,
   createDocReadTool,
@@ -388,6 +389,7 @@ export interface CustomAITools extends ToolSet {
   doc_semantic_search: ReturnType<typeof createDocSemanticSearchTool>;
   doc_keyword_search: ReturnType<typeof createDocKeywordSearchTool>;
   doc_read: ReturnType<typeof createDocReadTool>;
+  doc_compose: ReturnType<typeof createDocComposeTool>;
   web_search_exa: ReturnType<typeof createExaSearchTool>;
   web_crawl_exa: ReturnType<typeof createExaCrawlTool>;
 }
@@ -457,6 +459,10 @@ export class TextStreamParser {
             result += `\nReading the doc "${chunk.args.doc_id}"\n`;
             break;
           }
+          case 'doc_compose': {
+            result += `\nWriting document "${chunk.args.title}"\n`;
+            break;
+          }
         }
         result = this.markAsCallout(result);
         break;
@@ -483,6 +489,16 @@ export class TextStreamParser {
             if (Array.isArray(chunk.result)) {
               result += `\nFound ${chunk.result.length} document${chunk.result.length !== 1 ? 's' : ''} related to “${chunk.args.query}”.\n`;
               result += `\n${this.getKeywordSearchLinks(chunk.result)}\n`;
+            }
+            break;
+          }
+          case 'doc_compose': {
+            if (
+              chunk.result &&
+              typeof chunk.result === 'object' &&
+              'title' in chunk.result
+            ) {
+              result += `\nDocument "${chunk.result.title}" created successfully with ${chunk.result.wordCount} words.\n`;
             }
             break;
           }

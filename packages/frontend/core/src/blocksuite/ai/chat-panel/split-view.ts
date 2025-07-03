@@ -23,6 +23,9 @@ export class ChatPanelSplitView extends SignalWatcher(
     .ai-chat-panel-split-view[data-dragging='true'] {
       cursor: col-resize;
     }
+    .ai-chat-panel-split-view-right {
+      position: relative;
+    }
     .ai-chat-panel-split-view-left,
     .ai-chat-panel-split-view-right,
     .ai-chat-panel-split-view-divider {
@@ -42,7 +45,6 @@ export class ChatPanelSplitView extends SignalWatcher(
     .ai-chat-panel-split-view-divider {
       width: var(--gap);
       position: relative;
-      border-left: 0.5px solid var(--affine-v2-layer-insideBorder-border);
     }
     .ai-chat-panel-split-view-divider[data-open='false'] {
       width: 0;

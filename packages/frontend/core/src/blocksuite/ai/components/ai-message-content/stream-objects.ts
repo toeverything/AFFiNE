@@ -63,6 +63,15 @@ export class ChatContentStreamObjects extends WithDisposable(
             .imageProxyService=${imageProxyService}
           ></web-search-tool>
         `;
+      case 'doc_compose':
+        return html`
+          <doc-compose-tool
+            .std=${this.host?.std}
+            .data=${streamObject}
+            .width=${this.width}
+            .imageProxyService=${imageProxyService}
+          ></doc-compose-tool>
+        `;
       default: {
         const name = streamObject.toolName + ' tool calling';
         return html`
@@ -93,6 +102,15 @@ export class ChatContentStreamObjects extends WithDisposable(
             .width=${this.width}
             .imageProxyService=${imageProxyService}
           ></web-search-tool>
+        `;
+      case 'doc_compose':
+        return html`
+          <doc-compose-tool
+            .std=${this.host?.std}
+            .data=${streamObject}
+            .width=${this.width}
+            .imageProxyService=${imageProxyService}
+          ></doc-compose-tool>
         `;
       default: {
         const name = streamObject.toolName + ' tool result';

@@ -1,3 +1,4 @@
+export * from './doc-compose';
 export * from './doc-edit';
 export * from './doc-keyword-search';
 export * from './doc-read';

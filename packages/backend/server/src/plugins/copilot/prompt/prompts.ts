@@ -1752,6 +1752,7 @@ Below is the user's query. Please respond in the user's preferred language witho
       'docKeywordSearch',
       'docSemanticSearch',
       'webSearch',
+      'docCompose',
     ],
   },
 };
