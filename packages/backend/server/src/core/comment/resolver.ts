@@ -24,6 +24,7 @@ import {
 } from '../../base/graphql';
 import { Comment, DocMode, Models, Reply } from '../../models';
 import { CurrentUser } from '../auth/session';
+import { ServerFeature, ServerService } from '../config';
 import { AccessController, DocAction } from '../permission';
 import { CommentAttachmentStorage } from '../storage';
 import { UserType } from '../user';
@@ -54,8 +55,12 @@ export class CommentResolver {
     private readonly ac: AccessController,
     private readonly commentAttachmentStorage: CommentAttachmentStorage,
     private readonly queue: JobQueue,
-    private readonly models: Models
-  ) {}
+    private readonly models: Models,
+    private readonly server: ServerService
+  ) {
+    // enable comment feature by default
+    this.server.enableFeature(ServerFeature.Comment);
+  }
 
   @Mutation(() => CommentObjectType)
   async createComment(

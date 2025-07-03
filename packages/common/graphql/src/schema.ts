@@ -2345,6 +2345,7 @@ export enum ServerDeploymentType {
 
 export enum ServerFeature {
   Captcha = 'Captcha',
+  Comment = 'Comment',
   Copilot = 'Copilot',
   CopilotEmbedding = 'CopilotEmbedding',
   Indexer = 'Indexer',

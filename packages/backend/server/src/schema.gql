@@ -1774,6 +1774,7 @@ enum ServerDeploymentType {
 
 enum ServerFeature {
   Captcha
+  Comment
   Copilot
   CopilotEmbedding
   Indexer
