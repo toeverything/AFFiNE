@@ -20,6 +20,10 @@ import {
   isFormatSupported,
   textFormatConfigs,
 } from '@blocksuite/affine-inline-preset';
+import {
+  EmbedLinkedDocBlockSchema,
+  EmbedSyncedDocBlockSchema,
+} from '@blocksuite/affine-model';
 import { textConversionConfigs } from '@blocksuite/affine-rich-text';
 import {
   copySelectedModelsCommand,
@@ -50,7 +54,11 @@ import {
   DuplicateIcon,
   LinkedPageIcon,
 } from '@blocksuite/icons/lit';
-import { type BlockComponent, BlockSelection } from '@blocksuite/std';
+import {
+  type BlockComponent,
+  BlockSelection,
+  BlockViewIdentifier,
+} from '@blocksuite/std';
 import { toDraftModel } from '@blocksuite/store';
 import { html } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
@@ -214,7 +222,18 @@ const turnIntoLinkedDoc = {
   id: 'f.convert-to-linked-doc',
   tooltip: 'Create Linked Doc',
   icon: LinkedPageIcon(),
-  when({ chain }) {
+  when({ chain, std }) {
+    const supportFlavours = [
+      EmbedLinkedDocBlockSchema,
+      EmbedSyncedDocBlockSchema,
+    ].map(schema => schema.model.flavour);
+    if (
+      supportFlavours.some(
+        flavour => !std.getOptional(BlockViewIdentifier(flavour))
+      )
+    )
+      return false;
+
     const [ok, { selectedModels }] = chain
       .pipe(getSelectedModelsCommand, {
         types: ['block', 'text'],
