@@ -1,4 +1,3 @@
-import { useLitPortalFactory } from '@affine/component';
 import { LitDocEditor, type PageEditor } from '@affine/core/blocksuite/editors';
 import { SnapshotHelper } from '@affine/core/modules/comment/services/snapshot-helper';
 import type { RichText } from '@blocksuite/affine/rich-text';
@@ -9,7 +8,6 @@ import { useFramework, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import {
   forwardRef,
-  Fragment,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -22,44 +20,17 @@ import { getCommentEditorViewManager } from './specs';
 import * as styles from './style.css';
 
 const usePatchSpecs = (readonly: boolean) => {
-  const [_, portals] = useLitPortalFactory();
   const framework = useFramework();
   // const confirmModal = useConfirmModal();
 
   const patchedSpecs = useMemo(() => {
-    // const manager = getViewManager()
-    //   .config.init()
-    //   .foundation(framework)
-    //   .theme(framework)
-    //   .editorConfig(framework)
-    //   .editorView({
-    //     framework,
-    //     reactToLit,
-    //     confirmModal,
-    //   })
-    //   .linkedDoc(framework)
-    //   .paragraph(false)
-    //   .codeBlockHtmlPreview(framework).value;
-
     const manager = getCommentEditorViewManager(framework);
     return manager
       .get(readonly ? 'preview-page' : 'page')
       .concat([ViewportElementExtension('.comment-editor-viewport')]);
   }, [framework, readonly]);
 
-  return [
-    patchedSpecs,
-    useMemo(
-      () => (
-        <>
-          {portals.map(p => (
-            <Fragment key={p.id}>{p.portal}</Fragment>
-          ))}
-        </>
-      ),
-      [portals]
-    ),
-  ] as const;
+  return patchedSpecs;
 };
 
 interface CommentEditorProps {
@@ -117,7 +88,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
     if (!defaultSnapshotOrDoc) {
       throw new Error('Either defaultSnapshot or doc must be provided');
     }
-    const [specs, portals] = usePatchSpecs(!!readonly);
+    const specs = usePatchSpecs(!!readonly);
     const doc = useSnapshotDoc(defaultSnapshotOrDoc, readonly);
     const snapshotHelper = useService(SnapshotHelper);
     const editorRef = useRef<PageEditor>(null);
@@ -198,7 +169,6 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
         className={clsx(styles.container, 'comment-editor-viewport')}
       >
         {doc && <LitDocEditor ref={editorRef} specs={specs} doc={doc} />}
-        {portals}
         {!readonly && (
           <div className={styles.footer}>
             <button onClick={onCommit} className={styles.commitButton}>
