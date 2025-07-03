@@ -36,6 +36,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
+  accessor docId: string | undefined;
+
+  @property({ attribute: false })
   accessor item!: ChatMessage;
 
   @property({ attribute: false })
@@ -135,7 +138,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   }
 
   private renderEditorActions() {
-    const { item, isLast, status, host, session } = this;
+    const { item, isLast, status, host, session, docId } = this;
 
     if (!isChatMessage(item) || item.role !== 'assistant') return nothing;
 
@@ -158,18 +161,20 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
         : EdgelessEditorActions
       : null;
 
+    const showActions = host && docId && !!markdown;
+
     return html`
       <chat-copy-more
         .host=${host}
         .session=${session}
-        .actions=${actions}
+        .actions=${showActions ? actions : []}
         .content=${markdown}
         .isLast=${isLast}
         .messageId=${messageId}
         .withMargin=${true}
         .retry=${() => this.retry()}
       ></chat-copy-more>
-      ${isLast && !!markdown && host
+      ${isLast && showActions
         ? html`<chat-action-list
             .actions=${actions}
             .host=${host}

@@ -165,6 +165,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
 
   override render() {
     const { host, content, isLast, messageId, actions } = this;
+    const showMoreIcon = !isLast && host && actions.length > 0;
     return html`<style>
         .copy-more {
           margin-top: ${this.withMargin ? '8px' : '0px'};
@@ -200,7 +201,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
               <affine-tooltip .autoShift=${true}>Retry</affine-tooltip>
             </div>`
           : nothing}
-        ${!isLast && host
+        ${showMoreIcon
           ? html`<div
               class="button more"
               data-testid="action-more-button"

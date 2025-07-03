@@ -1,6 +1,10 @@
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import type { ContextEmbedStatus, CopilotSessionType } from '@affine/graphql';
+import type {
+  ContextEmbedStatus,
+  CopilotSessionType,
+  UpdateChatSessionInput,
+} from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -99,29 +103,44 @@ export class ChatPanel extends SignalWatcher(
   @state()
   accessor embeddingProgress: [number, number] = [0, 0];
 
-  private isSidebarOpen: Signal<boolean | undefined> = signal(false);
-
-  private sidebarWidth: Signal<number | undefined> = signal(undefined);
   @state()
   accessor showPreviewPanel = false;
 
+  private isSidebarOpen: Signal<boolean | undefined> = signal(false);
+
+  private sidebarWidth: Signal<number | undefined> = signal(undefined);
+
+  private hasPinned = false;
+
+  private get isInitialized() {
+    return this.session !== undefined;
+  }
+
   private readonly initSession = async () => {
-    if (this.session) {
-      return this.session;
+    if (!AIProvider.session) {
+      return;
     }
-    const sessions = (
-      (await AIProvider.session?.getSessions(
+    const pinSessions = await AIProvider.session.getSessions(
+      this.doc.workspace.id,
+      undefined,
+      { pinned: true }
+    );
+    if (Array.isArray(pinSessions) && pinSessions[0]) {
+      this.session = pinSessions[0];
+    } else {
+      const docSessions = await AIProvider.session.getSessions(
         this.doc.workspace.id,
         this.doc.id,
-        { action: false }
-      )) || []
-    ).filter(session => !session.parentSessionId);
-    const session = sessions.at(-1);
-    this.session = session ?? null;
-    return session;
+        { action: false, fork: false }
+      );
+      // the first item is the latest session
+      this.session = docSessions?.[0] ?? null;
+    }
   };
 
-  private readonly createSession = async () => {
+  private readonly createSession = async (
+    options: Partial<BlockSuitePresets.AICreateSessionOptions> = {}
+  ) => {
     if (this.session) {
       return this.session;
     }
@@ -129,6 +148,8 @@ export class ChatPanel extends SignalWatcher(
       docId: this.doc.id,
       workspaceId: this.doc.workspace.id,
       promptName: 'Chat With AFFiNE AI',
+      reuseLatestChat: false,
+      ...options,
     });
     if (sessionId) {
       const session = await AIProvider.session?.getSession(
@@ -140,12 +161,42 @@ export class ChatPanel extends SignalWatcher(
     return this.session;
   };
 
+  private readonly updateSession = async (options: UpdateChatSessionInput) => {
+    await AIProvider.session?.updateSession(options);
+    const session = await AIProvider.session?.getSession(
+      this.doc.workspace.id,
+      options.sessionId
+    );
+    this.session = session ?? null;
+  };
+
+  private readonly newSession = () => {
+    this.resetPanel();
+    requestAnimationFrame(() => {
+      this.session = null;
+    });
+  };
+
+  private readonly togglePin = async () => {
+    const pinned = !this.session?.pinned;
+    this.hasPinned = true;
+    if (!this.session) {
+      await this.createSession({ pinned });
+    } else {
+      await this.updateSession({
+        sessionId: this.session.id,
+        pinned,
+      });
+    }
+  };
+
   private readonly initPanel = async () => {
     try {
       if (!this.isSidebarOpen.value) {
         return;
       }
       await this.initSession();
+      this.hasPinned = !!this.session?.pinned;
     } catch (error) {
       console.error(error);
     }
@@ -154,6 +205,8 @@ export class ChatPanel extends SignalWatcher(
   private readonly resetPanel = () => {
     this.session = undefined;
     this.embeddingProgress = [0, 0];
+    this.showPreviewPanel = false;
+    this.hasPinned = false;
   };
 
   private readonly updateEmbeddingProgress = (
@@ -184,6 +237,9 @@ export class ChatPanel extends SignalWatcher(
 
   protected override updated(changedProperties: PropertyValues) {
     if (changedProperties.has('doc')) {
+      if (this.session?.pinned) {
+        return;
+      }
       this.resetPanel();
       this.initPanel().catch(console.error);
     }
@@ -209,8 +265,8 @@ export class ChatPanel extends SignalWatcher(
     this._disposables.add(width.cleanup);
 
     this._disposables.add(
-      this.isSidebarOpen.subscribe(() => {
-        if (this.session === undefined) {
+      this.isSidebarOpen.subscribe(isOpen => {
+        if (isOpen && !this.isInitialized) {
           this.initPanel().catch(console.error);
         }
       })
@@ -218,8 +274,7 @@ export class ChatPanel extends SignalWatcher(
   }
 
   override render() {
-    const isInitialized = this.session !== undefined;
-    if (!isInitialized) {
+    if (!this.isInitialized) {
       return nothing;
     }
 
@@ -244,11 +299,16 @@ export class ChatPanel extends SignalWatcher(
             </div>
           `
         : nothing}
+      <ai-chat-toolbar
+        .session=${this.session}
+        .onNewSession=${this.newSession}
+        .onTogglePin=${this.togglePin}
+      ></ai-chat-toolbar>
     `;
 
     const left = html`<div class="chat-panel-container" style=${style}>
       ${keyed(
-        this.doc.id,
+        this.hasPinned ? this.session?.id : this.doc.id,
         html`<ai-chat-content
           .chatTitle=${title}
           .host=${this.host}

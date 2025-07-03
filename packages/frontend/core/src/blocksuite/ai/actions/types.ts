@@ -7,8 +7,10 @@ import type {
   CopilotContextFile,
   CopilotSessionType,
   getCopilotHistoriesQuery,
+  QueryChatSessionsInput,
   RequestOptions,
   StreamObject,
+  UpdateChatSessionInput,
 } from '@affine/graphql';
 import type { EditorHost } from '@blocksuite/affine/std';
 import type { GfxModel } from '@blocksuite/affine/std/gfx';
@@ -374,26 +376,29 @@ declare global {
       >[];
     };
 
-    interface CreateSessionOptions {
+    interface AICreateSessionOptions {
       promptName: PromptKey;
       workspaceId: string;
       docId?: string;
       sessionId?: string;
       retry?: boolean;
+      pinned?: boolean;
+      // default value of reuseLatestChat is true at backend
+      reuseLatestChat?: boolean;
     }
 
     interface AISessionService {
-      createSession: (options: CreateSessionOptions) => Promise<string>;
+      createSession: (options: AICreateSessionOptions) => Promise<string>;
       getSessions: (
         workspaceId: string,
         docId?: string,
-        options?: { action?: boolean }
+        options?: QueryChatSessionsInput
       ) => Promise<CopilotSessionType[] | undefined>;
       getSession: (
         workspaceId: string,
         sessionId: string
       ) => Promise<CopilotSessionType | undefined>;
-      updateSession: (sessionId: string, promptName: string) => Promise<string>;
+      updateSession: (options: UpdateChatSessionInput) => Promise<string>;
     }
 
     interface AIHistoryService {

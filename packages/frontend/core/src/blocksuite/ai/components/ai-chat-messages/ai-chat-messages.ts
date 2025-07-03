@@ -301,6 +301,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                 } else if (isChatMessage(item) && item.role === 'assistant') {
                   return html`<chat-message-assistant
                     .host=${this.host}
+                    .docId=${this.docId}
                     .session=${this.session}
                     .item=${item}
                     .isLast=${isLast}
@@ -390,6 +391,13 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         top: this.messagesContainer.scrollHeight,
         behavior: 'smooth',
       });
+    });
+  }
+
+  scrollToPos(top: number) {
+    requestAnimationFrame(() => {
+      if (!this.messagesContainer) return;
+      this.messagesContainer.scrollTo({ top });
     });
   }
 
