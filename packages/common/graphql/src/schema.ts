@@ -50,7 +50,7 @@ export interface AddContextDocInput {
 }
 
 export interface AddContextFileInput {
-  blobId: Scalars['String']['input'];
+  blobId?: InputMaybe<Scalars['String']['input']>;
   contextId: Scalars['String']['input'];
 }
 
