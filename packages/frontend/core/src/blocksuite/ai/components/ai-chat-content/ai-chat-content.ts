@@ -6,11 +6,20 @@ import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
 import { type Signal } from '@preact/signals-core';
-import { css, html, type PropertyValues, type TemplateResult } from 'lit';
+import {
+  css,
+  html,
+  nothing,
+  type PropertyValues,
+  type TemplateResult,
+} from 'lit';
 import { property, state } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
+import { styleMap } from 'lit/directives/style-map.js';
 import { throttle } from 'lodash-es';
 
+import { HISTORY_IMAGE_ACTIONS } from '../../chat-panel/const';
 import { type AIChatParams, AIProvider } from '../../provider/ai-provider';
 import { extractSelectedContent } from '../../utils/extract';
 import type { DocDisplayConfig, SearchMenuConfig } from '../ai-chat-chips';
@@ -44,6 +53,7 @@ export class AIChatContent extends SignalWatcher(
     ai-chat-content {
       display: flex;
       flex-direction: column;
+      justify-content: center;
       height: 100%;
 
       .ai-chat-title {
@@ -67,9 +77,24 @@ export class AIChatContent extends SignalWatcher(
       ai-chat-messages {
         flex: 1;
         overflow-y: hidden;
+        transition:
+          flex-grow 0.32s cubic-bezier(0.07, 0.83, 0.46, 1),
+          padding-top 0.32s ease,
+          padding-bottom 0.32s ease;
+      }
+      ai-chat-messages.independent-mode.no-message {
+        flex-grow: 0;
+        flex-shrink: 0;
+        overflow-y: visible;
       }
     }
   `;
+
+  @property({ attribute: false })
+  accessor independentMode!: boolean;
+
+  @property({ attribute: false })
+  accessor onboardingOffsetY!: number;
 
   @property({ attribute: false })
   accessor chatTitle: TemplateResult<1> | undefined;
@@ -133,6 +158,17 @@ export class AIChatContent extends SignalWatcher(
   private wheelTriggered = false;
 
   private lastScrollTop: number | undefined;
+
+  get messages() {
+    return this.chatContextValue.messages.filter(item => {
+      return (
+        isChatMessage(item) ||
+        item.messages?.length === 3 ||
+        (HISTORY_IMAGE_ACTIONS.includes(item.action) &&
+          item.messages?.length === 2)
+      );
+    });
+  }
 
   private readonly updateHistory = async () => {
     const currentRequest = ++this.updateHistoryCounter;
@@ -310,8 +346,15 @@ export class AIChatContent extends SignalWatcher(
   }
 
   override render() {
-    return html` <div class="ai-chat-title">${this.chatTitle}</div>
+    return html`${this.chatTitle
+        ? html`<div class="ai-chat-title">${this.chatTitle}</div>`
+        : nothing}
       <ai-chat-messages
+        class=${classMap({
+          'ai-chat-messages': true,
+          'independent-mode': this.independentMode,
+          'no-message': this.messages.length === 0,
+        })}
         ${ref(this.chatMessagesRef)}
         .host=${this.host}
         .workspaceId=${this.workspaceId}
@@ -326,8 +369,15 @@ export class AIChatContent extends SignalWatcher(
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .width=${this.width}
+        .independentMode=${this.independentMode}
+        .messages=${this.messages}
       ></ai-chat-messages>
       <ai-chat-composer
+        style=${styleMap({
+          [this.onboardingOffsetY > 0 ? 'paddingTop' : 'paddingBottom']:
+            `${this.messages.length === 0 ? Math.abs(this.onboardingOffsetY) * 2 : 0}px`,
+        })}
+        .independentMode=${this.independentMode}
         .host=${this.host}
         .workspaceId=${this.workspaceId}
         .docId=${this.docId}

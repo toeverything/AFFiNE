@@ -80,6 +80,11 @@ export class AIChatInput extends SignalWatcher(
       transition: box-shadow 0.23s ease;
       background-color: var(--affine-v2-input-background);
 
+      &[data-independent-mode='true'] {
+        padding: 12px;
+        border-radius: 16px;
+      }
+
       .chat-selection-quote {
         padding: 4px 0px 8px 0px;
         padding-left: 15px;
@@ -281,6 +286,9 @@ export class AIChatInput extends SignalWatcher(
   `;
 
   @property({ attribute: false })
+  accessor independentMode!: boolean;
+
+  @property({ attribute: false })
   accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
@@ -385,8 +393,9 @@ export class AIChatInput extends SignalWatcher(
     const hasImages = images.length > 0;
     const maxHeight = hasImages ? 272 + 2 : 200 + 2;
 
-    return html` <div
+    return html`<div
       class="chat-panel-input"
+      data-independent-mode=${this.independentMode}
       data-if-focused=${this.focused}
       style=${styleMap({
         maxHeight: `${maxHeight}px !important`,

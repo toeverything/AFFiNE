@@ -3,9 +3,9 @@ import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace';
 import type { DocSnapshot, Store } from '@blocksuite/affine/store';
 import { Transformer } from '@blocksuite/affine/store';
 import { Doc as YDoc } from 'yjs';
-const getCollection = (() => {
+export const getCollection = (() => {
   let collection: WorkspaceImpl | null = null;
-  return async function () {
+  return function () {
     if (collection) {
       return collection;
     }
@@ -85,7 +85,7 @@ export async function getDocByName(name: DocName) {
 
 async function initDoc(name: DocName) {
   const snapshot = (await loaders[name]()) as DocSnapshot;
-  const collection = await getCollection();
+  const collection = getCollection();
   const transformer = new Transformer({
     schema: getAFFiNEWorkspaceSchema(),
     blobCRUD: collection.blobSync,

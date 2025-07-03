@@ -51,6 +51,9 @@ export class AIChatComposer extends SignalWatcher(
   `;
 
   @property({ attribute: false })
+  accessor independentMode!: boolean;
+
+  @property({ attribute: false })
   accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
@@ -126,6 +129,7 @@ export class AIChatComposer extends SignalWatcher(
         .addImages=${this.addImages}
       ></chat-panel-chips>
       <ai-chat-input
+        .independentMode=${this.independentMode}
         .host=${this.host}
         .workspaceId=${this.workspaceId}
         .docId=${this.docId}
