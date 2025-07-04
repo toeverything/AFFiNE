@@ -46,6 +46,15 @@ export function setupStoreManager(framework: Framework) {
   window.addEventListener('beforeunload', () => {
     storeManagerClient.dispose();
   });
+  window.addEventListener('focus', () => {
+    storeManagerClient.disableBatterySaveMode();
+  });
+  window.addEventListener('click', () => {
+    storeManagerClient.disableBatterySaveMode();
+  });
+  window.addEventListener('blur', () => {
+    storeManagerClient.enableBatterySaveMode();
+  });
 
   framework.impl(NbstoreProvider, {
     openStore(key, options) {

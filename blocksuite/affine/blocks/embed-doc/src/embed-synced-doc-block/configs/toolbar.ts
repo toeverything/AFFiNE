@@ -16,6 +16,7 @@ import {
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
 import {
   ActionPlacement,
+  blockCommentToolbarButton,
   EditorSettingProvider,
   type LinkEventType,
   type OpenDocMode,
@@ -225,6 +226,10 @@ const builtinToolbarConfig = {
     openDocActionGroup,
     conversionsActionGroup,
     captionAction,
+    {
+      id: 'e.comment',
+      ...blockCommentToolbarButton,
+    },
     {
       placement: ActionPlacement.More,
       id: 'a.clipboard',

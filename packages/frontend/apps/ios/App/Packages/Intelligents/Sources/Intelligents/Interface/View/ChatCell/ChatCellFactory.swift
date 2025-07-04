@@ -23,7 +23,7 @@ class ChatCellFactory {
   static func dequeueCell(
     for tableView: UITableView,
     at indexPath: IndexPath,
-    with viewModel: ChatCellViewModel
+    with viewModel: any ChatCellViewModel
   ) -> ChatBaseCell {
     let identifier = viewModel.cellType.rawValue
 

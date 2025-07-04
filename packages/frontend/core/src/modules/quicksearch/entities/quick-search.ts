@@ -110,6 +110,9 @@ export class QuickSearch extends Entity {
   }
 
   submit(result: QuickSearchItem | null) {
+    if (result && result.beforeSubmit && !result.beforeSubmit?.()) {
+      return;
+    }
     if (this.state$.value?.callback) {
       this.state$.value.sessions.forEach(session => session.dispose?.());
       this.state$.value.callback(result);

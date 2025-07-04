@@ -155,6 +155,7 @@ export const preprocessParams = (
     'databaseId',
     'databaseRowId',
     'refreshKey',
+    'commentId',
   ]);
 };
 
@@ -171,6 +172,7 @@ export const paramsParseOptions: ParseOptions = {
     databaseId: 'string',
     databaseRowId: 'string',
     refreshKey: 'string',
+    commentId: 'string',
   },
 };
 

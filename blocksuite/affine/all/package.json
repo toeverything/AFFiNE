@@ -48,6 +48,7 @@
     "@blocksuite/affine-gfx-template": "workspace:*",
     "@blocksuite/affine-gfx-text": "workspace:*",
     "@blocksuite/affine-gfx-turbo-renderer": "workspace:*",
+    "@blocksuite/affine-inline-comment": "workspace:*",
     "@blocksuite/affine-inline-footnote": "workspace:*",
     "@blocksuite/affine-inline-latex": "workspace:*",
     "@blocksuite/affine-inline-link": "workspace:*",
@@ -173,6 +174,7 @@
     "./inlines/footnote": "./src/inlines/footnote/index.ts",
     "./inlines/footnote/view": "./src/inlines/footnote/view.ts",
     "./inlines/footnote/store": "./src/inlines/footnote/store.ts",
+    "./inlines/comment": "./src/inlines/comment/index.ts",
     "./inlines/latex": "./src/inlines/latex/index.ts",
     "./inlines/latex/store": "./src/inlines/latex/store.ts",
     "./inlines/latex/view": "./src/inlines/latex/view.ts",
@@ -283,6 +285,7 @@
     "./sync": "./src/sync/index.ts",
     "./extensions/store": "./src/extensions/store.ts",
     "./extensions/view": "./src/extensions/view.ts",
+    "./foundation/clipboard": "./src/foundation/clipboard.ts",
     "./foundation/store": "./src/foundation/store.ts",
     "./foundation/view": "./src/foundation/view.ts"
   },

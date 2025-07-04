@@ -69,6 +69,7 @@ export const NoteBlockSchema = defineBlockSchema({
         shadowType: DEFAULT_NOTE_SHADOW,
       },
     },
+    comments: undefined,
   }),
   metadata: {
     version: 1,
@@ -91,6 +92,7 @@ export type NoteProps = {
   background: Color;
   displayMode: NoteDisplayMode;
   edgeless: NoteEdgelessProps;
+  comments?: Record<string, boolean>;
   /**
    * @deprecated
    * use `displayMode` instead

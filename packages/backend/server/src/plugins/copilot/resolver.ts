@@ -64,6 +64,12 @@ class CreateChatSessionInput {
 
   @Field(() => Boolean, { nullable: true })
   pinned?: boolean;
+
+  @Field(() => Boolean, {
+    nullable: true,
+    description: 'true by default, compliant for old version',
+  })
+  reuseLatestChat?: boolean;
 }
 
 @InputType()

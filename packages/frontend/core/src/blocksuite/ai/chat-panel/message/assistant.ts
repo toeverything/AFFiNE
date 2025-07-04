@@ -33,7 +33,10 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   `;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor docId: string | undefined;
 
   @property({ attribute: false })
   accessor item!: ChatMessage;
@@ -99,7 +102,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       ${streamObjects?.length
         ? this.renderStreamObjects(streamObjects)
         : this.renderRichText(content)}
-      ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
+      ${shouldRenderError ? AIChatErrorRenderer(error, host) : nothing}
       ${this.renderEditorActions()}
     `;
   }
@@ -135,7 +138,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   }
 
   private renderEditorActions() {
-    const { item, isLast, status, host, session } = this;
+    const { item, isLast, status, host, session, docId } = this;
 
     if (!isChatMessage(item) || item.role !== 'assistant') return nothing;
 
@@ -152,22 +155,26 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       ? mergeStreamContent(streamObjects)
       : content;
 
-    const actions = isInsidePageEditor(host)
-      ? PageEditorActions
-      : EdgelessEditorActions;
+    const actions = host
+      ? isInsidePageEditor(host)
+        ? PageEditorActions
+        : EdgelessEditorActions
+      : null;
+
+    const showActions = host && docId && !!markdown;
 
     return html`
       <chat-copy-more
         .host=${host}
         .session=${session}
-        .actions=${actions}
+        .actions=${showActions ? actions : []}
         .content=${markdown}
         .isLast=${isLast}
         .messageId=${messageId}
         .withMargin=${true}
         .retry=${() => this.retry()}
       ></chat-copy-more>
-      ${isLast && !!markdown
+      ${isLast && showActions
         ? html`<chat-action-list
             .actions=${actions}
             .host=${host}

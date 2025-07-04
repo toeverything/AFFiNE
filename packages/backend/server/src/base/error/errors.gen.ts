@@ -1085,6 +1085,12 @@ export class CommentAttachmentNotFound extends UserFriendlyError {
     super('resource_not_found', 'comment_attachment_not_found', message);
   }
 }
+
+export class CommentAttachmentQuotaExceeded extends UserFriendlyError {
+  constructor(message?: string) {
+    super('quota_exceeded', 'comment_attachment_quota_exceeded', message);
+  }
+}
 export enum ErrorNames {
   INTERNAL_SERVER_ERROR,
   NETWORK_ERROR,
@@ -1223,7 +1229,8 @@ export enum ErrorNames {
   INVALID_INDEXER_INPUT,
   COMMENT_NOT_FOUND,
   REPLY_NOT_FOUND,
-  COMMENT_ATTACHMENT_NOT_FOUND
+  COMMENT_ATTACHMENT_NOT_FOUND,
+  COMMENT_ATTACHMENT_QUOTA_EXCEEDED
 }
 registerEnumType(ErrorNames, {
   name: 'ErrorNames'

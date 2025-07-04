@@ -211,10 +211,6 @@
     "versionControl.requiredVersion": {
       "type": "String",
       "desc": "Allowed version range of the app that allowed to access the server. Requires 'client/versionControl.enabled' to be true to take effect."
-    },
-    "allowGuestDemoWorkspace": {
-      "type": "Boolean",
-      "desc": "Allow guests to access demo workspace."
     }
   },
   "captcha": {

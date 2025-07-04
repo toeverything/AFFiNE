@@ -7,6 +7,7 @@ import { EditorOutlineViewer } from '@affine/core/blocksuite/outline-viewer';
 import { AffineErrorBoundary } from '@affine/core/components/affine/affine-error-boundary';
 // import { PageAIOnboarding } from '@affine/core/components/affine/ai-onboarding';
 import { GlobalPageHistoryModal } from '@affine/core/components/affine/page-history-modal';
+import { CommentSidebar } from '@affine/core/components/comment/sidebar';
 import { useGuard } from '@affine/core/components/guard';
 import { useAppSettingHelper } from '@affine/core/components/hooks/affine/use-app-setting-helper';
 import { useEnableAI } from '@affine/core/components/hooks/affine/use-enable-ai';
@@ -16,6 +17,7 @@ import { PageDetailEditor } from '@affine/core/components/page-detail-editor';
 import { WorkspacePropertySidebar } from '@affine/core/components/properties/sidebar';
 import { TrashPageFooter } from '@affine/core/components/pure/trash-page-footer';
 import { TopTip } from '@affine/core/components/top-tip';
+import { ServerService } from '@affine/core/modules/cloud';
 import { DocService } from '@affine/core/modules/doc';
 import { EditorService } from '@affine/core/modules/editor';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
@@ -32,11 +34,13 @@ import {
 } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { isNewTabTrigger } from '@affine/core/utils';
+import { ServerFeature } from '@affine/graphql';
 import track from '@affine/track';
 import { DisposableGroup } from '@blocksuite/affine/global/disposable';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   AiIcon,
+  CommentIcon,
   ExportIcon,
   FrameIcon,
   PropertyIcon,
@@ -110,6 +114,14 @@ const DetailPageImpl = memo(function DetailPageImpl() {
   const enableAdapterPanel = useLiveData(
     featureFlagService.flags.enable_adapter_panel.$
   );
+
+  const serverService = useService(ServerService);
+  const serverConfig = useLiveData(serverService.server.config$);
+
+  const enableComment =
+    useLiveData(featureFlagService.flags.enable_comment.$) &&
+    // comment may not be supported by the server
+    serverConfig.features.includes(ServerFeature.Comment);
 
   useEffect(() => {
     if (isActiveView) {
@@ -377,6 +389,17 @@ const DetailPageImpl = memo(function DetailPageImpl() {
             <Scrollable.Viewport>
               <EditorAdapterPanel host={editorContainer?.host ?? null} />
             </Scrollable.Viewport>
+          </Scrollable.Root>
+        </ViewSidebarTab>
+      )}
+
+      {workspace.flavour !== 'local' && enableComment && (
+        <ViewSidebarTab tabId="comment" icon={<CommentIcon />}>
+          <Scrollable.Root className={styles.sidebarScrollArea}>
+            <Scrollable.Viewport>
+              <CommentSidebar />
+            </Scrollable.Viewport>
+            <Scrollable.Scrollbar />
           </Scrollable.Root>
         </ViewSidebarTab>
       )}

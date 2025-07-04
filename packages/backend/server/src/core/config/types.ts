@@ -9,6 +9,7 @@ export enum ServerFeature {
   Payment = 'payment',
   OAuth = 'oauth',
   Indexer = 'indexer',
+  Comment = 'comment',
 }
 
 registerEnumType(ServerFeature, {

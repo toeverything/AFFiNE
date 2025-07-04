@@ -19,6 +19,8 @@ import {
   buildDocContentGetter,
   buildDocKeywordSearchGetter,
   buildDocSearchGetter,
+  createCodeArtifactTool,
+  createDocComposeTool,
   createDocEditTool,
   createDocKeywordSearchTool,
   createDocReadTool,
@@ -196,6 +198,14 @@ export abstract class CopilotProvider<C = any> {
           case 'webSearch': {
             tools.web_search_exa = createExaSearchTool(this.AFFiNEConfig);
             tools.web_crawl_exa = createExaCrawlTool(this.AFFiNEConfig);
+            break;
+          }
+          case 'docCompose': {
+            tools.doc_compose = createDocComposeTool();
+            break;
+          }
+          case 'codeArtifact': {
+            tools.code_artifact = createCodeArtifactTool();
             break;
           }
         }

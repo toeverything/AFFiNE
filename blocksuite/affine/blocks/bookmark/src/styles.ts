@@ -1,4 +1,4 @@
-import { unsafeCSSVar } from '@blocksuite/affine-shared/theme';
+import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { baseTheme } from '@toeverything/theme';
 import { css, unsafeCSS } from 'lit';
 
@@ -156,6 +156,10 @@ export const styles = css`
     height: 102px;
     object-fit: cover;
     border-radius: 4px;
+  }
+
+  .affine-bookmark-card.comment-highlighted {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
   }
 
   .affine-bookmark-card.loading {

@@ -139,8 +139,8 @@ export class AIProvider {
       template: string;
       mode: 'page' | 'edgeless';
     }>(),
-    requestLogin: new Subject<{ host: EditorHost }>(),
-    requestUpgradePlan: new Subject<{ host: EditorHost }>(),
+    requestLogin: new Subject<{ host?: EditorHost | null }>(),
+    requestUpgradePlan: new Subject<{ host?: EditorHost | null }>(),
     // stream of AI actions triggered by users
     actions: new Subject<{
       action: keyof BlockSuitePresets.AIActions;

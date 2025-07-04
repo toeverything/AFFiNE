@@ -72,10 +72,10 @@ export class AIChatContent extends SignalWatcher(
   `;
 
   @property({ attribute: false })
-  accessor chatTitle!: TemplateResult<1>;
+  accessor chatTitle: TemplateResult<1> | undefined;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor session!: CopilotSessionType | null | undefined;
@@ -132,6 +132,8 @@ export class AIChatContent extends SignalWatcher(
 
   private wheelTriggered = false;
 
+  private lastScrollTop: number | undefined;
+
   private readonly updateHistory = async () => {
     const currentRequest = ++this.updateHistoryCounter;
     if (!AIProvider.histories) {
@@ -139,9 +141,14 @@ export class AIChatContent extends SignalWatcher(
     }
 
     const sessionId = this.session?.id;
+    const pinned = this.session?.pinned;
     const [histories, actions] = await Promise.all([
       sessionId
-        ? AIProvider.histories.chats(this.workspaceId, sessionId, this.docId)
+        ? AIProvider.histories.chats(
+            this.workspaceId,
+            sessionId,
+            pinned ? undefined : this.docId
+          )
         : Promise.resolve([]),
       this.docId
         ? AIProvider.histories.actions(this.workspaceId, this.docId)
@@ -153,7 +160,9 @@ export class AIChatContent extends SignalWatcher(
       return;
     }
 
-    const messages: HistoryMessage[] = this.chatContextValue.messages.slice();
+    const messages: HistoryMessage[] = this.chatContextValue.messages
+      .slice()
+      .filter(isChatMessage);
 
     const chatActions = (actions || []) as ChatAction[];
     messages.push(...chatActions);
@@ -168,6 +177,7 @@ export class AIChatContent extends SignalWatcher(
       ),
     });
 
+    this.wheelTriggered = false;
     this.scrollToEnd();
   };
 
@@ -192,6 +202,9 @@ export class AIChatContent extends SignalWatcher(
         ),
       });
     }
+
+    this.wheelTriggered = false;
+    this.scrollToEnd();
   };
 
   private readonly updateContext = (context: Partial<ChatContextValue>) => {
@@ -217,8 +230,12 @@ export class AIChatContent extends SignalWatcher(
     if (chatMessages) {
       chatMessages.updateComplete
         .then(() => {
-          chatMessages.getScrollContainer()?.addEventListener('wheel', () => {
+          const scrollContainer = chatMessages.getScrollContainer();
+          scrollContainer?.addEventListener('wheel', () => {
             this.wheelTriggered = true;
+          });
+          scrollContainer?.addEventListener('scrollend', () => {
+            this.lastScrollTop = scrollContainer.scrollTop;
           });
         })
         .catch(console.error);
@@ -245,6 +262,15 @@ export class AIChatContent extends SignalWatcher(
       this.chatContextValue.status === 'transmitting'
     ) {
       this._throttledScrollToEnd();
+    }
+
+    // restore pinned chat scroll position
+    if (
+      changedProperties.has('host') &&
+      this.session?.pinned &&
+      this.lastScrollTop !== undefined
+    ) {
+      this.chatMessagesRef.value?.scrollToPos(this.lastScrollTop);
     }
   }
 
@@ -288,6 +314,8 @@ export class AIChatContent extends SignalWatcher(
       <ai-chat-messages
         ${ref(this.chatMessagesRef)}
         .host=${this.host}
+        .workspaceId=${this.workspaceId}
+        .docId=${this.docId}
         .session=${this.session}
         .createSession=${this.createSession}
         .chatContextValue=${this.chatContextValue}
@@ -302,6 +330,7 @@ export class AIChatContent extends SignalWatcher(
       <ai-chat-composer
         .host=${this.host}
         .workspaceId=${this.workspaceId}
+        .docId=${this.docId}
         .session=${this.session}
         .createSession=${this.createSession}
         .chatContextValue=${this.chatContextValue}

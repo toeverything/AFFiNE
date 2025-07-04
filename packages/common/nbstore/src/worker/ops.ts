@@ -140,6 +140,10 @@ interface GroupedWorkerOps {
       AggregateResult<any, any>,
     ];
   };
+  sync: {
+    enableBatterySaveMode: [void, void];
+    disableBatterySaveMode: [void, void];
+  };
 }
 
 type Values<T> = T extends { [k in keyof T]: any } ? T[keyof T] : never;

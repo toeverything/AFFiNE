@@ -83,10 +83,10 @@ export class AIScrollableTextRenderer extends WithDisposable(
   accessor answer!: string;
 
   @property({ attribute: false })
-  accessor host: EditorHost | null = null;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
-  accessor state: AffineAIPanelState | undefined = undefined;
+  accessor state: AffineAIPanelState | undefined;
 
   @property({ attribute: false })
   accessor textRendererOptions!: TextRendererOptions;

@@ -141,7 +141,13 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   accessor avatarUrl = '';
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor workspaceId!: string;
+
+  @property({ attribute: false })
+  accessor docId: string | undefined;
 
   @property({ attribute: false })
   accessor isHistoryLoading!: boolean;
@@ -295,6 +301,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                 } else if (isChatMessage(item) && item.role === 'assistant') {
                   return html`<chat-message-assistant
                     .host=${this.host}
+                    .docId=${this.docId}
                     .session=${this.session}
                     .item=${item}
                     .isLast=${isLast}
@@ -305,7 +312,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                     .retry=${() => this.retry()}
                     .width=${this.width}
                   ></chat-message-assistant>`;
-                } else if (isChatAction(item)) {
+                } else if (isChatAction(item) && this.host) {
                   return html`<chat-message-action
                     .host=${this.host}
                     .item=${item}
@@ -330,7 +337,6 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   override connectedCallback() {
     super.connectedCallback();
     const { disposables } = this;
-    const docModeService = this.host.std.get(DocModeProvider);
 
     Promise.resolve(AIProvider.userInfo)
       .then(res => {
@@ -351,17 +357,25 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         }
       })
     );
-    disposables.add(
-      this.host.selection.slots.changed.subscribe(() => {
-        this._selectionValue = this.host.selection.value;
-      })
-    );
-    disposables.add(
-      docModeService.onPrimaryModeChange(
-        () => this.requestUpdate(),
-        this.host.store.id
-      )
-    );
+
+    const selection$ = this.host?.selection.slots.changed;
+    if (selection$) {
+      disposables.add(
+        selection$.subscribe(() => {
+          this._selectionValue = this.host?.selection.value ?? [];
+        })
+      );
+    }
+
+    const docModeService = this.host?.std.get(DocModeProvider);
+    if (docModeService && this.docId) {
+      disposables.add(
+        docModeService.onPrimaryModeChange(
+          () => this.requestUpdate(),
+          this.docId
+        )
+      );
+    }
   }
 
   protected override updated(_changedProperties: PropertyValues) {
@@ -377,6 +391,13 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         top: this.messagesContainer.scrollHeight,
         behavior: 'smooth',
       });
+    });
+  }
+
+  scrollToPos(top: number) {
+    requestAnimationFrame(() => {
+      if (!this.messagesContainer) return;
+      this.messagesContainer.scrollTo({ top });
     });
   }
 
@@ -400,13 +421,11 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
         abortController,
       });
 
-      const { store } = this.host;
       const stream = await AIProvider.actions.chat({
         sessionId,
         retry: true,
-        docId: store.id,
-        workspaceId: store.workspace.id,
-        host: this.host,
+        docId: this.docId,
+        workspaceId: this.workspaceId,
         stream: true,
         signal: abortController.signal,
         where: 'chat-panel',

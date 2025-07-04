@@ -43,6 +43,7 @@ export const PackageList = [
       'blocksuite/affine/gfx/template',
       'blocksuite/affine/gfx/text',
       'blocksuite/affine/gfx/turbo-renderer',
+      'blocksuite/affine/inlines/comment',
       'blocksuite/affine/inlines/footnote',
       'blocksuite/affine/inlines/latex',
       'blocksuite/affine/inlines/link',
@@ -130,6 +131,7 @@ export const PackageList = [
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
       'blocksuite/affine/gfx/turbo-renderer',
+      'blocksuite/affine/inlines/comment',
       'blocksuite/affine/inlines/latex',
       'blocksuite/affine/inlines/link',
       'blocksuite/affine/inlines/preset',
@@ -725,6 +727,19 @@ export const PackageList = [
     ],
   },
   {
+    location: 'blocksuite/affine/inlines/comment',
+    name: '@blocksuite/affine-inline-comment',
+    workspaceDependencies: [
+      'blocksuite/affine/ext-loader',
+      'blocksuite/affine/model',
+      'blocksuite/affine/rich-text',
+      'blocksuite/affine/shared',
+      'blocksuite/framework/global',
+      'blocksuite/framework/std',
+      'blocksuite/framework/store',
+    ],
+  },
+  {
     location: 'blocksuite/affine/inlines/footnote',
     name: '@blocksuite/affine-inline-footnote',
     workspaceDependencies: [
@@ -786,6 +801,7 @@ export const PackageList = [
     workspaceDependencies: [
       'blocksuite/affine/components',
       'blocksuite/affine/ext-loader',
+      'blocksuite/affine/inlines/comment',
       'blocksuite/affine/inlines/footnote',
       'blocksuite/affine/inlines/latex',
       'blocksuite/affine/inlines/link',
@@ -1505,6 +1521,7 @@ export type PackageName =
   | '@blocksuite/affine-gfx-template'
   | '@blocksuite/affine-gfx-text'
   | '@blocksuite/affine-gfx-turbo-renderer'
+  | '@blocksuite/affine-inline-comment'
   | '@blocksuite/affine-inline-footnote'
   | '@blocksuite/affine-inline-latex'
   | '@blocksuite/affine-inline-link'

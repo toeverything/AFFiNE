@@ -23,6 +23,7 @@ import { AILoading } from './chat-panel/ai-loading';
 import { ChatMessageAction } from './chat-panel/message/action';
 import { ChatMessageAssistant } from './chat-panel/message/assistant';
 import { ChatMessageUser } from './chat-panel/message/user';
+import { ChatPanelSplitView } from './chat-panel/split-view';
 import { ChatPanelAddPopover } from './components/ai-chat-chips/add-popover';
 import { ChatPanelCandidatesPopover } from './components/ai-chat-chips/candidates-popover';
 import { ChatPanelChips } from './components/ai-chat-chips/chat-panel-chips';
@@ -37,6 +38,7 @@ import { AIChatInput } from './components/ai-chat-input';
 import { AIChatEmbeddingStatusTooltip } from './components/ai-chat-input/embedding-status-tooltip';
 import { ChatInputPreference } from './components/ai-chat-input/preference-popup';
 import { AIChatMessages } from './components/ai-chat-messages/ai-chat-messages';
+import { AIChatToolbar } from './components/ai-chat-toolbar';
 import { AIHistoryClear } from './components/ai-history-clear';
 import { effects as componentAiItemEffects } from './components/ai-item';
 import { AssistantAvatar } from './components/ai-message-content/assistant-avatar';
@@ -45,6 +47,12 @@ import { ChatContentPureText } from './components/ai-message-content/pure-text';
 import { ChatContentRichText } from './components/ai-message-content/rich-text';
 import { ChatContentStreamObjects } from './components/ai-message-content/stream-objects';
 import { AIScrollableTextRenderer } from './components/ai-scrollable-text-renderer';
+import { ArtifactPreviewPanel } from './components/ai-tools/artifacts-preview-panel';
+import {
+  CodeArtifactTool,
+  CodeHighlighter,
+} from './components/ai-tools/code-artifact';
+import { DocComposeTool } from './components/ai-tools/doc-compose';
 import { ToolCallCard } from './components/ai-tools/tool-call-card';
 import { ToolFailedCard } from './components/ai-tools/tool-failed-card';
 import { ToolResultCard } from './components/ai-tools/tool-result-card';
@@ -106,6 +114,7 @@ export function registerAIEffects() {
   customElements.define('action-text', ActionText);
   customElements.define('ai-loading', AILoading);
   customElements.define('ai-chat-content', AIChatContent);
+  customElements.define('ai-chat-toolbar', AIChatToolbar);
   customElements.define('ai-chat-messages', AIChatMessages);
   customElements.define('chat-panel', ChatPanel);
   customElements.define('ai-chat-input', AIChatInput);
@@ -173,6 +182,10 @@ export function registerAIEffects() {
   customElements.define('tool-call-failed', ToolFailedCard);
   customElements.define('web-crawl-tool', WebCrawlTool);
   customElements.define('web-search-tool', WebSearchTool);
+  customElements.define('doc-compose-tool', DocComposeTool);
+  customElements.define('code-artifact-tool', CodeArtifactTool);
+  customElements.define('code-highlighter', CodeHighlighter);
+  customElements.define('artifact-preview-panel', ArtifactPreviewPanel);
 
   customElements.define(AFFINE_AI_PANEL_WIDGET, AffineAIPanelWidget);
   customElements.define(AFFINE_EDGELESS_COPILOT_WIDGET, EdgelessCopilotWidget);
@@ -184,4 +197,5 @@ export function registerAIEffects() {
   );
 
   customElements.define('transcription-block', LitTranscriptionBlock);
+  customElements.define('chat-panel-split-view', ChatPanelSplitView);
 }

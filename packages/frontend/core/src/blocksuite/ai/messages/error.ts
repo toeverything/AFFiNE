@@ -186,7 +186,7 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
   accessor testId = 'ai-error';
 }
 
-const PaymentRequiredErrorRenderer = (host: EditorHost) => html`
+const PaymentRequiredErrorRenderer = (host?: EditorHost | null) => html`
   <ai-error-wrapper
     .text=${"You've reached the current usage cap for AFFiNE AI. You can subscribe to AFFiNE AI(with free 7-day-trial) to continue the AI experience!"}
     .actionText=${'Upgrade'}
@@ -194,7 +194,7 @@ const PaymentRequiredErrorRenderer = (host: EditorHost) => html`
   ></ai-error-wrapper>
 `;
 
-const LoginRequiredErrorRenderer = (host: EditorHost) => html`
+const LoginRequiredErrorRenderer = (host?: EditorHost | null) => html`
   <ai-error-wrapper
     .text=${'You need to login to AFFiNE Cloud to continue using AFFiNE AI.'}
     .actionText=${'Login'}
@@ -227,7 +227,7 @@ const GeneralErrorRenderer = (props: ErrorProps = {}) => {
   ></ai-error-wrapper>`;
 };
 
-export function AIChatErrorRenderer(host: EditorHost, error: AIError) {
+export function AIChatErrorRenderer(error: AIError, host?: EditorHost | null) {
   if (error instanceof PaymentRequiredError) {
     return PaymentRequiredErrorRenderer(host);
   } else if (error instanceof UnauthorizedError) {

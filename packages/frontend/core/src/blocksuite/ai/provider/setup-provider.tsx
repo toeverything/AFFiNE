@@ -5,7 +5,9 @@ import {
   ContextCategories,
   type ContextWorkspaceEmbeddingStatus,
   type getCopilotHistoriesQuery,
+  type QueryChatSessionsInput,
   type RequestOptions,
+  type UpdateChatSessionInput,
 } from '@affine/graphql';
 import { z } from 'zod';
 
@@ -48,18 +50,14 @@ export function setupAIProvider(
   authService: AuthService
 ) {
   async function createSession({
+    promptName,
     workspaceId,
     docId,
-    promptName,
     sessionId,
     retry,
-  }: {
-    workspaceId: string;
-    docId: string;
-    promptName: PromptKey;
-    sessionId?: string;
-    retry?: boolean;
-  }) {
+    pinned,
+    reuseLatestChat,
+  }: BlockSuitePresets.AICreateSessionOptions) {
     if (sessionId) return sessionId;
     if (retry) return AIProvider.LAST_ACTION_SESSIONID;
 
@@ -67,6 +65,8 @@ export function setupAIProvider(
       workspaceId,
       docId,
       promptName,
+      pinned,
+      reuseLatestChat,
     });
   }
 
@@ -584,16 +584,12 @@ Could you make a new website based on these notes and send back just the html fi
     getSessions: async (
       workspaceId: string,
       docId?: string,
-      options?: { action?: boolean }
+      options?: QueryChatSessionsInput
     ) => {
       return client.getSessions(workspaceId, docId, options);
     },
-    updateSession: async (sessionId: string, promptName: string) => {
-      return client.updateSession({
-        sessionId,
-        promptName,
-        // TODO(@yoyoyohamapi): update docId & pinned for chat independence
-      });
+    updateSession: async (options: UpdateChatSessionInput) => {
+      return client.updateSession(options);
     },
   });
 

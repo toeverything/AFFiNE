@@ -19,7 +19,7 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
   accessor session!: CopilotSessionType | null | undefined;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor doc!: Store;
@@ -52,18 +52,19 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
       return;
     }
     const sessionId = this.session.id;
-    const notification = this.host.std.getOptional(NotificationProvider);
-    if (!notification) return;
+    const notification = this.host?.std.getOptional(NotificationProvider);
     try {
-      if (
-        await notification.confirm({
-          title: 'Clear History',
-          message:
-            'Are you sure you want to clear all history? This action will permanently delete all content, including all chat logs and data, and cannot be undone.',
-          confirmText: 'Confirm',
-          cancelText: 'Cancel',
-        })
-      ) {
+      const confirm = notification
+        ? await notification.confirm({
+            title: 'Clear History',
+            message:
+              'Are you sure you want to clear all history? This action will permanently delete all content, including all chat logs and data, and cannot be undone.',
+            confirmText: 'Confirm',
+            cancelText: 'Cancel',
+          })
+        : true;
+
+      if (confirm) {
         const actionIds = this.chatContextValue.messages
           .filter(item => 'sessionId' in item)
           .map(item => item.sessionId);
@@ -72,11 +73,11 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
           this.doc.id,
           [...(sessionId ? [sessionId] : []), ...(actionIds || [])]
         );
-        notification.toast('History cleared');
+        notification?.toast('History cleared');
         this.onHistoryCleared?.();
       }
     } catch {
-      notification.toast('Failed to clear history');
+      notification?.toast('Failed to clear history');
     }
   };
 

@@ -10,6 +10,8 @@ import { toast } from '@blocksuite/affine-components/toast';
 import type { DatabaseBlockModel } from '@blocksuite/affine-model';
 import { EDGELESS_TOP_CONTENTEDITABLE_SELECTOR } from '@blocksuite/affine-shared/consts';
 import {
+  BlockCommentManager,
+  CommentProviderIdentifier,
   DocModeProvider,
   NotificationProvider,
   type TelemetryEventMap,
@@ -34,11 +36,12 @@ import {
 import { widgetPresets } from '@blocksuite/data-view/widget-presets';
 import { Rect } from '@blocksuite/global/gfx';
 import {
+  CommentIcon,
   CopyIcon,
   DeleteIcon,
   MoreHorizontalIcon,
 } from '@blocksuite/icons/lit';
-import { type BlockComponent } from '@blocksuite/std';
+import { type BlockComponent, BlockSelection } from '@blocksuite/std';
 import { RANGE_SYNC_EXCLUDE_ATTR } from '@blocksuite/std/inline';
 import { Slice } from '@blocksuite/store';
 import { autoUpdate } from '@floating-ui/dom';
@@ -80,6 +83,18 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
               this.model.props.title.length,
               text
             );
+          },
+        }),
+        menu.action({
+          prefix: CommentIcon(),
+          name: 'Comment',
+          hide: () => !this.std.getOptional(CommentProviderIdentifier),
+          select: () => {
+            this.std.getOptional(CommentProviderIdentifier)?.addComment([
+              new BlockSelection({
+                blockId: this.blockId,
+              }),
+            ]);
           },
         }),
         menu.action({
@@ -295,6 +310,14 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
       configure: (_model, options) => options,
       ...this.std.getOptional(DatabaseConfigExtension.identifier),
     };
+  }
+
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   override get topContenteditableElement() {

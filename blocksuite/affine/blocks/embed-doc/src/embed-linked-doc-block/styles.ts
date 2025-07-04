@@ -15,6 +15,10 @@ export const styles = css`
     position: relative;
   }
 
+  .affine-embed-linked-doc-block.comment-highlighted {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+  }
+
   .affine-embed-linked-doc-block.in-canvas {
     border: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
     background: ${unsafeCSSVarV2('layer/background/linkedDocOnEdgeless')};

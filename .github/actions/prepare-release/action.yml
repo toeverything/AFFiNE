@@ -21,7 +21,7 @@ runs:
         if [ "${{ github.ref_type }}" == "tag" ]; then
           APP_VERSION=$(echo "${{ github.ref_name }}" | sed 's/^v//')
         else
-          APP_VERSION=$(date '+%Y.%-m.%-d-canary.%-H%-M')
+          APP_VERSION=$(date '+%Y.%-m.%-d-canary.%-H%M')
         fi
         if [[ "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
           BUILD_TYPE=stable

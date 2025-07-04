@@ -446,7 +446,7 @@ export class ChatSessionService {
         // when client create chat session, we always find root session
         parentSessionId: null,
       },
-      true
+      options.reuseLatestChat ?? true
     );
   }
 

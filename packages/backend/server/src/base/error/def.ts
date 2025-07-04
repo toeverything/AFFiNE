@@ -921,4 +921,8 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'resource_not_found',
     message: 'Comment attachment not found.',
   },
+  comment_attachment_quota_exceeded: {
+    type: 'quota_exceeded',
+    message: 'You have exceeded the comment attachment size quota.',
+  },
 } satisfies Record<string, UserFriendlyErrorOptions>;
