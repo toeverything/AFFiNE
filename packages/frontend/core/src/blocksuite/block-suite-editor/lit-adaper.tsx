@@ -85,10 +85,8 @@ const usePatchSpecs = (mode: DocMode) => {
   const serverService = useService(ServerService);
   const serverConfig = useLiveData(serverService.server.config$);
 
-  const enableComment =
-    useLiveData(featureFlagService.flags.enable_comment.$) &&
-    // comment may not be supported by the server
-    serverConfig.features.includes(ServerFeature.Comment);
+  // comment may not be supported by the server
+  const enableComment = serverConfig.features.includes(ServerFeature.Comment);
 
   const patchedSpecs = useMemo(() => {
     const manager = getViewManager()
