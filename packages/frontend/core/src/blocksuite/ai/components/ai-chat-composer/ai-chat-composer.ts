@@ -75,7 +75,7 @@ export class AIChatComposer extends SignalWatcher(
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
 
   @property({ attribute: false })
-  accessor updateEmbeddingProgress!: (
+  accessor onEmbeddingProgressChange!: (
     count: Record<ContextEmbedStatus, number>
   ) => void;
 
@@ -382,7 +382,7 @@ export class AIChatComposer extends SignalWatcher(
       return chip;
     });
     this.updateChips(nextChips);
-    this.updateEmbeddingProgress(count);
+    this.onEmbeddingProgressChange(count);
     if (count.processing === 0) {
       this._abortPoll();
     }

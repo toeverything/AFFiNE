@@ -10,6 +10,7 @@ import { ViewExtensionManagerIdentifier } from '@blocksuite/affine/ext-loader';
 import { ConnectorMode } from '@blocksuite/affine/model';
 import {
   DocModeProvider,
+  NotificationProvider,
   TelemetryProvider,
 } from '@blocksuite/affine/shared/services';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -311,7 +312,7 @@ export class AIChatBlockPeekView extends LitElement {
     this.chatContext = { ...this.chatContext, ...context };
   };
 
-  private readonly _updateEmbeddingProgress = (
+  private readonly onEmbeddingProgressChange = (
     count: Record<ContextEmbedStatus, number>
   ) => {
     const total = count.finished + count.processing + count.failed;
@@ -565,15 +566,16 @@ export class AIChatBlockPeekView extends LitElement {
     } = this;
 
     const { messages: currentChatMessages } = chatContext;
+    const notification = this.host.std.getOptional(NotificationProvider);
 
     return html`<div class="ai-chat-block-peek-view-container">
       <div class="history-clear-container">
         <ai-history-clear
-          .host=${this.host}
           .doc=${this.host.store}
           .session=${this.forkSession}
           .onHistoryCleared=${this._onHistoryCleared}
           .chatContextValue=${chatContext}
+          .notification=${notification}
         ></ai-history-clear>
       </div>
       <div class="ai-chat-messages-container">
@@ -595,7 +597,7 @@ export class AIChatBlockPeekView extends LitElement {
         .createSession=${this.createForkSession}
         .chatContextValue=${chatContext}
         .updateContext=${updateContext}
-        .updateEmbeddingProgress=${this._updateEmbeddingProgress}
+        .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
         .networkSearchConfig=${networkSearchConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}

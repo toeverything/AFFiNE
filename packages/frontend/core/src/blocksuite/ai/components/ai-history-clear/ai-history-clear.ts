@@ -1,8 +1,7 @@
 import type { CopilotSessionType } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { NotificationProvider } from '@blocksuite/affine/shared/services';
+import { type NotificationService } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { Store } from '@blocksuite/affine/store';
 import { css, html } from 'lit';
@@ -19,7 +18,7 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
   accessor session!: CopilotSessionType | null | undefined;
 
   @property({ attribute: false })
-  accessor host: EditorHost | null | undefined;
+  accessor notification: NotificationService | null | undefined;
 
   @property({ attribute: false })
   accessor doc!: Store;
@@ -52,10 +51,9 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
       return;
     }
     const sessionId = this.session.id;
-    const notification = this.host?.std.getOptional(NotificationProvider);
     try {
-      const confirm = notification
-        ? await notification.confirm({
+      const confirm = this.notification
+        ? await this.notification.confirm({
             title: 'Clear History',
             message:
               'Are you sure you want to clear all history? This action will permanently delete all content, including all chat logs and data, and cannot be undone.',
@@ -73,11 +71,11 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
           this.doc.id,
           [...(sessionId ? [sessionId] : []), ...(actionIds || [])]
         );
-        notification?.toast('History cleared');
+        this.notification?.toast('History cleared');
         this.onHistoryCleared?.();
       }
     } catch {
-      notification?.toast('Failed to clear history');
+      this.notification?.toast('Failed to clear history');
     }
   };
 

@@ -38,7 +38,7 @@ import { AIChatInput } from './components/ai-chat-input';
 import { AIChatEmbeddingStatusTooltip } from './components/ai-chat-input/embedding-status-tooltip';
 import { ChatInputPreference } from './components/ai-chat-input/preference-popup';
 import { AIChatMessages } from './components/ai-chat-messages/ai-chat-messages';
-import { AIChatToolbar } from './components/ai-chat-toolbar';
+import { AIChatToolbar, AISessionHistory } from './components/ai-chat-toolbar';
 import { AIHistoryClear } from './components/ai-history-clear';
 import { effects as componentAiItemEffects } from './components/ai-item';
 import { AssistantAvatar } from './components/ai-message-content/assistant-avatar';
@@ -115,6 +115,7 @@ export function registerAIEffects() {
   customElements.define('ai-loading', AILoading);
   customElements.define('ai-chat-content', AIChatContent);
   customElements.define('ai-chat-toolbar', AIChatToolbar);
+  customElements.define('ai-session-history', AISessionHistory);
   customElements.define('ai-chat-messages', AIChatMessages);
   customElements.define('chat-panel', ChatPanel);
   customElements.define('ai-chat-input', AIChatInput);

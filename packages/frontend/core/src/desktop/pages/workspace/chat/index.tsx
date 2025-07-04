@@ -195,8 +195,8 @@ export const Component = () => {
         setCurrentSession(null);
         chatContent?.reset();
       };
-      tool.onTogglePin = () => {
-        togglePin().catch(console.error);
+      tool.onTogglePin = async () => {
+        await togglePin();
       };
       // mount
       chatToolContainerRef.current.append(tool);

@@ -5,6 +5,7 @@ import type {
   CopilotContextCategory,
   CopilotContextDoc,
   CopilotContextFile,
+  CopilotHistories,
   CopilotSessionType,
   getCopilotHistoriesQuery,
   QueryChatSessionsInput,
@@ -387,6 +388,8 @@ declare global {
       reuseLatestChat?: boolean;
     }
 
+    type AIRecentSession = Omit<CopilotHistories, 'messages'>;
+
     interface AISessionService {
       createSession: (options: AICreateSessionOptions) => Promise<string>;
       getSessions: (
@@ -394,6 +397,10 @@ declare global {
         docId?: string,
         options?: QueryChatSessionsInput
       ) => Promise<CopilotSessionType[] | undefined>;
+      getRecentSessions: (
+        workspaceId: string,
+        limit?: number
+      ) => Promise<AIRecentSession[] | undefined>;
       getSession: (
         workspaceId: string,
         sessionId: string

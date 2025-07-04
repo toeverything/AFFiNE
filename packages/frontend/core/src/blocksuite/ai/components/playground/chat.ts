@@ -1,6 +1,7 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { ContextEmbedStatus, CopilotSessionType } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
+import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -229,7 +230,7 @@ export class PlaygroundChat extends SignalWatcher(
     this._scrollToEnd();
   };
 
-  private readonly _updateEmbeddingProgress = (
+  private readonly onEmbeddingProgressChange = (
     count: Record<ContextEmbedStatus, number>
   ) => {
     const total = count.finished + count.processing + count.failed;
@@ -272,6 +273,7 @@ export class PlaygroundChat extends SignalWatcher(
   override render() {
     const [done, total] = this.embeddingProgress;
     const isEmbedding = total > 0 && done < total;
+    const notification = this.host.std.getOptional(NotificationProvider);
 
     return html`<div class="chat-panel-container">
       <div class="chat-panel-title">
@@ -287,9 +289,9 @@ export class PlaygroundChat extends SignalWatcher(
           <affine-tooltip>Add chat</affine-tooltip>
         </div>
         <ai-history-clear
-          .host=${this.host}
           .doc=${this.doc}
           .session=${this.session}
+          .notification=${notification}
           .onHistoryCleared=${this._updateHistory}
           .chatContextValue=${this.chatContextValue}
         ></ai-history-clear>
@@ -318,7 +320,7 @@ export class PlaygroundChat extends SignalWatcher(
         .createSession=${this._createSession}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
-        .updateEmbeddingProgress=${this._updateEmbeddingProgress}
+        .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .playgroundConfig=${this.playgroundConfig}

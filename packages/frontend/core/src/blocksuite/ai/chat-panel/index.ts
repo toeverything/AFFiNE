@@ -6,6 +6,7 @@ import type {
   UpdateChatSessionInput,
 } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
+import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -27,6 +28,7 @@ import type {
   DocDisplayConfig,
   SearchMenuConfig,
 } from '../components/ai-chat-chips';
+import type { ChatContextValue } from '../components/ai-chat-content';
 import type {
   AINetworkSearchConfig,
   AIPlaygroundConfig,
@@ -125,6 +127,38 @@ export class ChatPanel extends SignalWatcher(
     return this.session !== undefined;
   }
 
+  private get chatTitle() {
+    const [done, total] = this.embeddingProgress;
+    const isEmbedding = total > 0 && done < total;
+    const notification = this.host.std.getOptional(NotificationProvider);
+
+    return html`
+      <div class="chat-panel-title-text">
+        ${isEmbedding
+          ? html`<span data-testid="chat-panel-embedding-progress"
+              >Embedding ${done}/${total}</span
+            >`
+          : 'AFFiNE AI'}
+      </div>
+      ${this.playgroundConfig.visible.value
+        ? html`
+            <div class="chat-panel-playground" @click=${this.openPlayground}>
+              ${CenterPeekIcon()}
+            </div>
+          `
+        : nothing}
+      <ai-chat-toolbar
+        .session=${this.session}
+        .workspaceId=${this.doc.workspace.id}
+        .onNewSession=${this.newSession}
+        .onTogglePin=${this.togglePin}
+        .onOpenSession=${this.openSession}
+        .docDisplayConfig=${this.docDisplayConfig}
+        .notification=${notification}
+      ></ai-chat-toolbar>
+    `;
+  }
+
   private readonly initSession = async () => {
     if (!AIProvider.session) {
       return;
@@ -132,7 +166,7 @@ export class ChatPanel extends SignalWatcher(
     const pinSessions = await AIProvider.session.getSessions(
       this.doc.workspace.id,
       undefined,
-      { pinned: true }
+      { pinned: true, limit: 1 }
     );
     if (Array.isArray(pinSessions) && pinSessions[0]) {
       this.session = pinSessions[0];
@@ -140,7 +174,7 @@ export class ChatPanel extends SignalWatcher(
       const docSessions = await AIProvider.session.getSessions(
         this.doc.workspace.id,
         this.doc.id,
-        { action: false, fork: false }
+        { action: false, fork: false, limit: 1 }
       );
       // the first item is the latest session
       this.session = docSessions?.[0] ?? null;
@@ -186,6 +220,15 @@ export class ChatPanel extends SignalWatcher(
     });
   };
 
+  private readonly openSession = async (sessionId: string) => {
+    this.resetPanel();
+    const session = await AIProvider.session?.getSession(
+      this.doc.workspace.id,
+      sessionId
+    );
+    this.session = session ?? null;
+  };
+
   private readonly togglePin = async () => {
     const pinned = !this.session?.pinned;
     this.hasPinned = true;
@@ -195,6 +238,18 @@ export class ChatPanel extends SignalWatcher(
       await this.updateSession({
         sessionId: this.session.id,
         pinned,
+      });
+    }
+  };
+
+  private readonly rebindSession = async () => {
+    if (!this.session) {
+      return;
+    }
+    if (this.session.docId !== this.doc.id) {
+      await this.updateSession({
+        sessionId: this.session.id,
+        docId: this.doc.id,
       });
     }
   };
@@ -218,11 +273,19 @@ export class ChatPanel extends SignalWatcher(
     this.hasPinned = false;
   };
 
-  private readonly updateEmbeddingProgress = (
+  private readonly onEmbeddingProgressChange = (
     count: Record<ContextEmbedStatus, number>
   ) => {
     const total = count.finished + count.processing + count.failed;
     this.embeddingProgress = [count.finished, total];
+  };
+
+  private readonly onContextChange = async (
+    context: Partial<ChatContextValue>
+  ) => {
+    if (context.status === 'success') {
+      await this.rebindSession();
+    }
   };
 
   private readonly openPlayground = () => {
@@ -291,35 +354,12 @@ export class ChatPanel extends SignalWatcher(
     const style = styleMap({
       padding: width > 540 ? '8px 24px 0 24px' : '8px 12px 0 12px',
     });
-    const [done, total] = this.embeddingProgress;
-    const isEmbedding = total > 0 && done < total;
-    const title = html`
-      <div class="chat-panel-title-text">
-        ${isEmbedding
-          ? html`<span data-testid="chat-panel-embedding-progress"
-              >Embedding ${done}/${total}</span
-            >`
-          : 'AFFiNE AI'}
-      </div>
-      ${this.playgroundConfig.visible.value
-        ? html`
-            <div class="chat-panel-playground" @click=${this.openPlayground}>
-              ${CenterPeekIcon()}
-            </div>
-          `
-        : nothing}
-      <ai-chat-toolbar
-        .session=${this.session}
-        .onNewSession=${this.newSession}
-        .onTogglePin=${this.togglePin}
-      ></ai-chat-toolbar>
-    `;
 
     const left = html`<div class="chat-panel-container" style=${style}>
       ${keyed(
         this.hasPinned ? this.session?.id : this.doc.id,
         html`<ai-chat-content
-          .chatTitle=${title}
+          .chatTitle=${this.chatTitle}
           .host=${this.host}
           .session=${this.session}
           .createSession=${this.createSession}
@@ -332,7 +372,8 @@ export class ChatPanel extends SignalWatcher(
           .extensions=${this.extensions}
           .affineFeatureFlagService=${this.affineFeatureFlagService}
           .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
-          .updateEmbeddingProgress=${this.updateEmbeddingProgress}
+          .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
+          .onContextChange=${this.onContextChange}
           .width=${this.sidebarWidth}
         ></ai-chat-content>`
       )}

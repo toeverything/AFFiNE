@@ -11,6 +11,7 @@ import {
   forkCopilotSessionMutation,
   getCopilotHistoriesQuery,
   getCopilotHistoryIdsQuery,
+  getCopilotRecentSessionsQuery,
   getCopilotSessionQuery,
   getCopilotSessionsQuery,
   getWorkspaceEmbeddingStatusQuery,
@@ -174,6 +175,21 @@ export class CopilotClient {
         },
       });
       return res.currentUser?.copilot?.sessions;
+    } catch (err) {
+      throw resolveError(err);
+    }
+  }
+
+  async getRecentSessions(workspaceId: string, limit?: number) {
+    try {
+      const res = await this.gql({
+        query: getCopilotRecentSessionsQuery,
+        variables: {
+          workspaceId,
+          limit,
+        },
+      });
+      return res.currentUser?.copilot?.histories;
     } catch (err) {
       throw resolveError(err);
     }

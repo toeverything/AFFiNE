@@ -136,9 +136,12 @@ export class AIChatContent extends SignalWatcher(
   accessor affineWorkspaceDialogService!: WorkspaceDialogService;
 
   @property({ attribute: false })
-  accessor updateEmbeddingProgress!: (
+  accessor onEmbeddingProgressChange!: (
     count: Record<ContextEmbedStatus, number>
   ) => void;
+
+  @property({ attribute: false })
+  accessor onContextChange!: (context: Partial<ChatContextValue>) => void;
 
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
@@ -177,14 +180,9 @@ export class AIChatContent extends SignalWatcher(
     }
 
     const sessionId = this.session?.id;
-    const pinned = this.session?.pinned;
     const [histories, actions] = await Promise.all([
       sessionId
-        ? AIProvider.histories.chats(
-            this.workspaceId,
-            sessionId,
-            pinned ? undefined : this.docId
-          )
+        ? AIProvider.histories.chats(this.workspaceId, sessionId)
         : Promise.resolve([]),
       this.docId
         ? AIProvider.histories.actions(this.workspaceId, this.docId)
@@ -245,6 +243,7 @@ export class AIChatContent extends SignalWatcher(
 
   private readonly updateContext = (context: Partial<ChatContextValue>) => {
     this.chatContextValue = { ...this.chatContextValue, ...context };
+    this.onContextChange?.(context);
   };
 
   private readonly scrollToEnd = () => {
@@ -389,7 +388,7 @@ export class AIChatContent extends SignalWatcher(
         .createSession=${this.createSession}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
-        .updateEmbeddingProgress=${this.updateEmbeddingProgress}
+        .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
         .docDisplayConfig=${this.docDisplayConfig}
