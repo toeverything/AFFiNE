@@ -88,6 +88,12 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
         system,
         messages: msgs,
         abortSignal: options.signal,
+        providerOptions: {
+          google: this.getGeminiOptions(options, model.id),
+        },
+        tools: await this.getTools(options, model.id),
+        maxSteps: this.MAX_STEPS,
+        experimental_continueSteps: true,
       });
 
       if (!text) throw new Error('Failed to generate text');
@@ -254,16 +260,16 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
   ) {
     const [system, msgs] = await chatToGPTMessage(messages);
     const { fullStream } = streamText({
-      model: this.instance(model.id, {
-        useSearchGrounding: this.useSearchGrounding(options),
-      }),
+      model: this.instance(model.id),
       system,
       messages: msgs,
       abortSignal: options.signal,
-      maxSteps: this.MAX_STEPS,
       providerOptions: {
         google: this.getGeminiOptions(options, model.id),
       },
+      tools: await this.getTools(options, model.id),
+      maxSteps: this.MAX_STEPS,
+      experimental_continueSteps: true,
     });
     return fullStream;
   }
@@ -281,9 +287,5 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
 
   private isReasoningModel(model: string) {
     return model.startsWith('gemini-2.5');
-  }
-
-  private useSearchGrounding(options: CopilotChatOptions) {
-    return options?.tools?.includes('webSearch');
   }
 }
