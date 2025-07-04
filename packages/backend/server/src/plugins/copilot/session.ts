@@ -47,6 +47,10 @@ declare global {
     'copilot.session.generateTitle': {
       sessionId: string;
     };
+    'copilot.session.deleteDoc': {
+      workspaceId: string;
+      docId: string;
+    };
   }
 }
 
@@ -578,6 +582,24 @@ export class ChatSessionService {
     }
 
     return provider.text(cond, [...prompt.finish({}), msg], config);
+  }
+
+  @OnJob('copilot.session.deleteDoc')
+  async deleteDocSessions(doc: Jobs['copilot.session.deleteDoc']) {
+    const sessionIds = await this.models.copilotSession
+      .list({
+        userId: undefined,
+        workspaceId: doc.workspaceId,
+        docId: doc.docId,
+      })
+      .then(s => s.map(s => [s.userId, s.id]));
+    for (const [userId, sessionId] of sessionIds) {
+      await this.models.copilotSession.update({
+        userId,
+        sessionId,
+        docId: null,
+      });
+    }
   }
 
   @OnJob('copilot.session.generateTitle')

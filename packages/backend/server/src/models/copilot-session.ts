@@ -91,7 +91,7 @@ export type ListSessionOptions = Pick<
   Partial<ChatSession>,
   'sessionId' | 'workspaceId' | 'docId' | 'pinned'
 > & {
-  userId: string;
+  userId: string | undefined;
   action?: boolean;
   fork?: boolean;
   limit?: number;
