@@ -346,7 +346,7 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
       },
       {
         role: 'user',
-        content: `<Instruct>: Given a web search query, retrieve relevant passages that answer the query\n<Query>: {query}\n<Document>: {doc}`,
+        content: `<Instruct>: Given a web search query, retrieve relevant passages that answer the query\n<Query>: {{query}}\n<Document>: {{doc}}`,
       },
     ],
   },

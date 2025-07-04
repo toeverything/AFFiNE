@@ -829,3 +829,55 @@ for (const { name, content, verifier } of workflows) {
     }
   );
 }
+
+// ==================== rerank ====================
+
+test.only(
+  'should be able to rerank message chunks',
+  runIfCopilotConfigured,
+  async t => {
+    const { factory, prompt } = t.context;
+
+    await retry('rerank', t, async t => {
+      const query = 'Is this content relevant to programming?';
+      const embeddings = [
+        'How to write JavaScript code for web development.',
+        'Today is a beautiful sunny day for walking in the park.',
+        'Python is a popular programming language for data science.',
+        'The weather forecast predicts rain for the weekend.',
+        'JavaScript frameworks like React and Angular are widely used.',
+        'Cooking recipes can be found in many online blogs.',
+        'Machine learning algorithms are essential for AI development.',
+        'The latest smartphone models have impressive camera features.',
+        'Learning to code can open up many career opportunities.',
+        'The stock market is experiencing significant fluctuations.',
+      ];
+
+      const p = (await prompt.get('Rerank results'))!;
+      t.assert(p, 'should have prompt for rerank');
+      const provider = (await factory.getProviderByModel(p.model))!;
+      t.assert(provider, 'should have provider for rerank');
+
+      const scores = await provider.rerank(
+        { modelId: p.model },
+        embeddings.map(e => p.finish({ query, doc: e }))
+      );
+
+      t.is(scores.length, 10, 'should return scores for all chunks');
+
+      for (const score of scores) {
+        t.assert(
+          typeof score === 'number' && score >= 0 && score <= 1,
+          `score should be a number between 0 and 1, got ${score}`
+        );
+      }
+
+      t.log('Rerank scores:', scores);
+      t.is(
+        scores.filter(s => s > 0.5).length,
+        4,
+        'should have 4 related chunks'
+      );
+    });
+  }
+);

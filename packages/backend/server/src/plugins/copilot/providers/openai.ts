@@ -450,7 +450,8 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
     const fullCond = { ...cond, outputType: ModelOutputType.Text };
     await this.checkParams({ messages: [], cond: fullCond, options });
     const model = this.selectModel(fullCond);
-    const instance = this.#instance.responses(model.id);
+    // get the log probability of "yes"/"no"
+    const instance = this.#instance(model.id, { logprobs: 16 });
 
     const scores = await Promise.all(
       chunkMessages.map(async messages => {
@@ -461,29 +462,37 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
           system,
           messages: msgs,
           temperature: 0,
-          maxTokens: 1,
+          maxTokens: 16,
           providerOptions: {
             openai: {
               ...this.getOpenAIOptions(options, model.id),
-              // get the log probability of "yes"/"no"
-              logprobs: 2,
             },
           },
-          maxSteps: 1,
           abortSignal: options.signal,
         });
 
-        const top = (logprobs?.[0]?.topLogprobs ?? []).reduce(
-          (acc, item) => {
-            acc[item.token] = item.logprob;
-            return acc;
-          },
-          {} as Record<string, number>
+        const topMap: Record<string, number> = (
+          logprobs?.[0]?.topLogprobs ?? []
+        ).reduce<Record<string, number>>(
+          (acc, { token, logprob }) => ({ ...acc, [token]: logprob }),
+          {}
         );
 
-        // OpenAI often includes a leading space, so try matching both ' yes' and 'yes'
-        const logYes = top[' yes'] ?? top['yes'] ?? Number.NEGATIVE_INFINITY;
-        const logNo = top[' no'] ?? top['no'] ?? Number.NEGATIVE_INFINITY;
+        const findLogProb = (token: string): number => {
+          // OpenAI often includes a leading space, so try matching '.yes', '_yes', ' yes' and 'yes'
+          return [`.${token}`, `_${token}`, ` ${token}`, token]
+            .flatMap(v => [v, v.toLowerCase(), v.toUpperCase()])
+            .reduce<number>(
+              (best, key) =>
+                (topMap[key] ?? Number.NEGATIVE_INFINITY) > best
+                  ? topMap[key]
+                  : best,
+              Number.NEGATIVE_INFINITY
+            );
+        };
+
+        const logYes = findLogProb('Yes');
+        const logNo = findLogProb('No');
 
         const pYes = Math.exp(logYes);
         const pNo = Math.exp(logNo);
