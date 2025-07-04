@@ -134,14 +134,16 @@ test.before(async t => {
   t.context.jobs = jobs;
 });
 
-const textPromptName = 'prompt';
-const imagePromptName = 'prompt-image';
+let textPromptName = 'prompt';
+let imagePromptName = 'prompt-image';
+
 test.beforeEach(async t => {
   Sinon.restore();
   const { app, prompt } = t.context;
-  await app.initTestingDB();
   await prompt.onApplicationBootstrap();
-  t.context.u1 = await app.signupV1('u1@affine.pro');
+  t.context.u1 = await app.signupV1();
+  textPromptName = randomUUID().replaceAll('-', '');
+  imagePromptName = randomUUID().replaceAll('-', '');
 
   await prompt.set(textPromptName, 'test', [
     { role: 'system', content: 'hello {{word}}' },
@@ -189,7 +191,7 @@ test('should create session correctly', async t => {
   }
 
   {
-    const u2 = await app.createUser('u2@affine.pro');
+    const u2 = await app.createUser();
     const { id } = await createWorkspace(app);
     await app.login(u2);
     await assertCreateSession(id, '', async x => {
@@ -253,8 +255,8 @@ test('should update session correctly', async t => {
   }
 
   {
-    await app.signupV1('test@affine.pro');
-    const u2 = await app.createUser('u2@affine.pro');
+    await app.signupV1();
+    const u2 = await app.createUser();
     const { id: workspaceId } = await createWorkspace(app);
     const inviteId = await inviteUser(app, workspaceId, u2.email);
     await app.login(u2);
@@ -356,7 +358,7 @@ test('should fork session correctly', async t => {
   }
 
   {
-    const u2 = await app.signupV1('u2@affine.pro');
+    const u2 = await app.signupV1();
     await assertForkSession(id, sessionId, randomUUID(), '', async x => {
       await t.throwsAsync(
         x,
@@ -712,7 +714,7 @@ test('should reject message from different session', async t => {
 test('should reject request from different user', async t => {
   const { app, u1 } = t.context;
 
-  const u2 = await app.createUser('u2@affine.pro');
+  const u2 = await app.createUser();
   const { id } = await createWorkspace(app);
   const sessionId = await createCopilotSession(
     app,
@@ -789,7 +791,7 @@ test('should be able to list history', async t => {
 test('should reject request that user have not permission', async t => {
   const { app, u1 } = t.context;
 
-  const u2 = await app.createUser('u2@affine.pro');
+  const u2 = await app.createUser();
   const { id: workspaceId } = await createWorkspace(app);
 
   // should reject request that user have not permission
