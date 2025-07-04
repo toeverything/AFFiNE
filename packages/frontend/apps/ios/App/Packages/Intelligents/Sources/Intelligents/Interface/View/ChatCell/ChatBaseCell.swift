@@ -7,6 +7,7 @@
 
 import ListViewKit
 import Litext
+import MarkdownView
 import SnapKit
 import Then
 import UIKit
@@ -43,6 +44,11 @@ class ChatBaseCell: ListRowView {
       height: bounds.height - contentInsets.top - contentInsets.bottom
     )
     layoutContentView(bounds: contentView.bounds)
+  }
+
+  override func addSubview(_ view: UIView) {
+    assert(view == contentView)
+    super.addSubview(view)
   }
 
   func layoutContentView(bounds: CGRect) {

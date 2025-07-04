@@ -1,5 +1,5 @@
 //
-//  AssistantMessageCellViewModel.swift
+//  CCVM+Assistant.swift
 //  Intelligents
 //
 //  Created by 秋星桥 on 6/27/25.
@@ -52,7 +52,8 @@ struct AssistantMessageCellViewModel: ChatCellViewModel {
     citations: [CitationViewModel]? = nil,
     actions: [MessageActionViewModel]? = nil
   ) {
-    assert(!Thread.isMainThread)
+    // time expensive rendering should not happen here
+    assert(!Thread.isMainThread || content.isEmpty)
 
     self.id = id
     self.content = content

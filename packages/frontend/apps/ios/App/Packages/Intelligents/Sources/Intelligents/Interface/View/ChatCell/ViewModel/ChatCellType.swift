@@ -9,6 +9,7 @@ import Foundation
 
 public enum ChatCellType: String, CaseIterable {
   case userMessage
+  case userAttachmentsHint
   case assistantMessage
   case systemMessage
   case loading

@@ -22,7 +22,7 @@ let package = Package(
     .package(url: "https://github.com/loopwork-ai/eventsource.git", from: "1.1.1"),
 
     .package(url: "https://github.com/Lakr233/ListViewKit", from: "1.1.6"),
-    .package(url: "https://github.com/Lakr233/MarkdownView", from: "2.3.2"),
+    .package(url: "https://github.com/Lakr233/MarkdownView", from: "2.3.8"),
   ],
   targets: [
     .target(name: "Intelligents", dependencies: [

@@ -19,7 +19,7 @@ class ChatListView: UIView {
   init() {
     super.init(frame: .zero)
 
-    addSubview(listView)
+    listView.adapter = self
     addSubview(listView)
     listView.snp.makeConstraints { make in
       make.edges.equalToSuperview()

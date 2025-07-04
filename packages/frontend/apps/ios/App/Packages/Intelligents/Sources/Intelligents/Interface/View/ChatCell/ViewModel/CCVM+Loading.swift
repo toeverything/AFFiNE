@@ -1,5 +1,5 @@
 //
-//  LoadingCellViewModel.swift
+//  CCVM+Loading.swift
 //  Intelligents
 //
 //  Created by 秋星桥 on 6/26/25.

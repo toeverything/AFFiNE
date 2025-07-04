@@ -11,6 +11,15 @@ import ApolloAPI
 import EventSource
 import Foundation
 
+private extension InputBoxData {
+  var hasAttachment: Bool {
+    if !imageAttachments.isEmpty { return false }
+    if !fileAttachments.isEmpty { return false }
+    if !documentAttachments.isEmpty { return false }
+    return true
+  }
+}
+
 extension ChatManager {
   public func startUserRequest(
     content: String,
@@ -21,7 +30,13 @@ extension ChatManager {
       id: .init(),
       content: inputBoxData.text,
       timestamp: .init(),
-      attachments: []
+    ))
+    append(sessionId: sessionId, UserHintCellViewModel(
+      id: .init(),
+      date: .init(),
+      imageAttachments: inputBoxData.imageAttachments,
+      fileAttachments: inputBoxData.fileAttachments,
+      docAttachments: inputBoxData.documentAttachments
     ))
 
     let messageParameters: [String: AnyHashable] = [

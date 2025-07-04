@@ -12,7 +12,14 @@ extension ChatListView: ListViewAdapter {
   func fill(viewModels: [any ChatCellViewModel]) {
     assert(!Thread.isMainThread)
     let items = viewModels.map { ChatItemEntity(id: $0.id, object: $0) }
-    dataSource.applySnapshot(using: items, animatingDifferences: true)
+    preprocessItems(items)
+    DispatchQueue.main.asyncAndWait { [self] in
+      dataSource.applySnapshot(using: items, animatingDifferences: true)
+    }
+  }
+
+  private func preprocessItems(_: [ChatItemEntity]) {
+    // reserved for future use
   }
 
   func listView(_: ListViewKit.ListView, rowKindFor item: ItemType, at _: Int) -> RowKind {
@@ -23,6 +30,7 @@ extension ChatListView: ListViewAdapter {
   func listViewMakeRow(for kind: RowKind) -> ListViewKit.ListRowView {
     switch kind as! ChatCellType {
     case .userMessage: UserMessageCell()
+    case .userAttachmentsHint: UserHintCell()
     case .assistantMessage: AssistantMessageCell()
     case .systemMessage: SystemMessageCell()
     case .loading: LoadingCell()
@@ -34,6 +42,7 @@ extension ChatListView: ListViewAdapter {
     let item = item as! ChatItemEntity
     return switch item.object.cellType {
     case .userMessage: UserMessageCell.heightForCell(for: item.object, width: list.bounds.width)
+    case .userAttachmentsHint: UserHintCell.heightForCell(for: item.object, width: list.bounds.width)
     case .assistantMessage: AssistantMessageCell.heightForCell(for: item.object, width: list.bounds.width)
     case .systemMessage: SystemMessageCell.heightForCell(for: item.object, width: list.bounds.width)
     case .loading: LoadingCell.heightForCell(for: item.object, width: list.bounds.width)
