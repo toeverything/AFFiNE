@@ -6,7 +6,6 @@ export const container = style({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'stretch',
-  paddingTop: '8px',
   paddingBottom: '64px',
   position: 'relative',
   minHeight: '100%',
@@ -16,9 +15,13 @@ export const header = style({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '0 16px',
+  padding: '8px 16px 0 16px',
   gap: '8px',
-  height: '32px',
+  height: '40px',
+  position: 'sticky',
+  top: 0,
+  backgroundColor: cssVarV2('layer/background/overlayPanel'),
+  zIndex: 2,
 });
 
 export const headerTitle = style({

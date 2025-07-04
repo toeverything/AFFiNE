@@ -1,7 +1,7 @@
 import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace';
 import { getEmbedLinkedDocIcons } from '@blocksuite/affine/blocks/embed-doc';
-import { DocIcon } from '@blocksuite/affine/components/icons';
+import { LoadingIcon } from '@blocksuite/affine/components/icons';
 import { toast } from '@blocksuite/affine/components/toast';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
@@ -15,11 +15,14 @@ import { type BlockStdScope, ShadowlessElement } from '@blocksuite/affine/std';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
 import { CopyIcon, PageIcon, ToolIcon } from '@blocksuite/icons/lit';
 import { type Signal } from '@preact/signals-core';
-import { css, html, nothing } from 'lit';
+import { css, html, nothing, type PropertyValues } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { getCustomPageEditorBlockSpecs } from '../text-renderer';
-import { renderPreviewPanel } from './artifacts-preview-panel';
+import {
+  isPreviewPanelOpen,
+  renderPreviewPanel,
+} from './artifacts-preview-panel';
 import type { ToolError } from './type';
 
 interface DocComposeToolCall {
@@ -60,6 +63,7 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
 
     .doc-compose-result-preview {
       padding: 24px;
+      height: 100%;
     }
 
     .doc-compose-result-preview-title {
@@ -82,6 +86,18 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
       font-weight: 500;
     }
 
+    .doc-compose-result-preview-loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
     .doc-compose-result-save-as-doc:hover {
       background: ${unsafeCSSVarV2('switch/buttonBackground/hover')};
     }
@@ -99,145 +115,159 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor std: BlockStdScope | undefined;
 
-  private renderToolCall() {
-    const { args } = this.data as DocComposeToolCall;
-    const name = `Composing document "${args.title}"`;
-    return html`<tool-call-card
-      .name=${name}
-      .icon=${ToolIcon()}
-    ></tool-call-card>`;
+  override updated(changedProperties: PropertyValues) {
+    super.updated(changedProperties);
+    if (changedProperties.has('data') && isPreviewPanelOpen(this)) {
+      this.updatePreviewPanel();
+    }
   }
 
-  private renderToolResult() {
-    if (!this.std) return nothing;
-    if (this.data.type !== 'tool-result') return nothing;
+  private updatePreviewPanel() {
+    if (!this.std) return;
     const std = this.std;
-    const resultData = this.data as DocComposeToolResult;
-    const result = resultData.result;
+    const resultData = this.data;
+    const composing = resultData.type === 'tool-call';
+    const title = this.data.args.title;
+    const result = resultData.type === 'tool-result' ? resultData.result : null;
+    const successResult = result && 'markdown' in result ? result : null;
 
-    if (result && typeof result === 'object' && 'title' in result) {
-      const { title } = result as { title: string };
+    const copyMarkdown = async () => {
+      if (!successResult) {
+        return;
+      }
+      await navigator.clipboard
+        .writeText(successResult.markdown)
+        .catch(console.error);
+      toast(std.host, 'Copied markdown to clipboard');
+    };
 
-      const theme = this.std.get(ThemeProvider).theme;
-
-      const { LinkedDocEmptyBanner } = getEmbedLinkedDocIcons(
-        theme,
-        'page',
-        'horizontal'
-      );
-
-      const onClick = () => {
-        const copyMarkdown = async () => {
-          await navigator.clipboard
-            .writeText(result.markdown)
-            .catch(console.error);
-          toast(std.host, 'Copied markdown to clipboard');
-        };
-
-        const saveAsDoc = async () => {
-          try {
-            const workspace = std.store.workspace;
-            const notificationService = std.get(NotificationProvider);
-            const refNodeSlots = std.getOptional(RefNodeSlotsProvider);
-            const docId = await MarkdownTransformer.importMarkdownToDoc({
-              collection: workspace,
-              schema: getAFFiNEWorkspaceSchema(),
-              markdown: result.markdown,
-              fileName: title,
-              extensions: getStoreManager().config.init().value.get('store'),
+    const saveAsDoc = async () => {
+      try {
+        if (!successResult) {
+          return;
+        }
+        const workspace = std.store.workspace;
+        const notificationService = std.get(NotificationProvider);
+        const refNodeSlots = std.getOptional(RefNodeSlotsProvider);
+        const docId = await MarkdownTransformer.importMarkdownToDoc({
+          collection: workspace,
+          schema: getAFFiNEWorkspaceSchema(),
+          markdown: successResult.markdown,
+          fileName: title,
+          extensions: getStoreManager().config.init().value.get('store'),
+        });
+        if (docId) {
+          const open = await notificationService.confirm({
+            title: 'Open the doc you just created',
+            message: 'Doc saved successfully! Would you like to open it now?',
+            cancelText: 'Cancel',
+            confirmText: 'Open',
+          });
+          if (open) {
+            refNodeSlots?.docLinkClicked.next({
+              pageId: docId,
+              openMode: 'open-in-active-view',
+              host: std.host,
             });
-            if (docId) {
-              const open = await notificationService.confirm({
-                title: 'Open the doc you just created',
-                message:
-                  'Doc saved successfully! Would you like to open it now?',
-                cancelText: 'Cancel',
-                confirmText: 'Open',
-              });
-              if (open) {
-                refNodeSlots?.docLinkClicked.next({
-                  pageId: docId,
-                  openMode: 'open-in-active-view',
-                  host: std.host,
-                });
-              }
-            } else {
-              toast(std.host, 'Failed to create document');
-            }
-          } catch (e) {
-            console.error(e);
-            toast(std.host, 'Failed to create document');
           }
-        };
+        } else {
+          toast(std.host, 'Failed to create document');
+        }
+      } catch (e) {
+        console.error(e);
+        toast(std.host, 'Failed to create document');
+      }
+    };
 
-        const controls = html`
-          <button class="doc-compose-result-save-as-doc" @click=${saveAsDoc}>
-            ${PageIcon({
-              width: '20',
-              height: '20',
-              style: `color: ${unsafeCSSVarV2('icon/primary')}`,
-            })}
-            Save as doc
-          </button>
-          <icon-button @click=${copyMarkdown} title="Copy markdown">
-            ${CopyIcon({ width: '20', height: '20' })}
-          </icon-button>
-        `;
+    const controls = html`
+      <button class="doc-compose-result-save-as-doc" @click=${saveAsDoc}>
+        ${PageIcon({
+          width: '20',
+          height: '20',
+          style: `color: ${unsafeCSSVarV2('icon/primary')}`,
+        })}
+        Save as doc
+      </button>
+      <icon-button @click=${copyMarkdown} title="Copy markdown">
+        ${CopyIcon({ width: '20', height: '20' })}
+      </icon-button>
+    `;
 
-        renderPreviewPanel(
-          this,
-          html`<div class="doc-compose-result-preview">
-            <div class="doc-compose-result-preview-title">${title}</div>
-            <text-renderer
-              .answer=${result.markdown}
+    renderPreviewPanel(
+      this,
+      html`<div class="doc-compose-result-preview">
+        <div class="doc-compose-result-preview-title">${title}</div>
+        ${successResult
+          ? html`<text-renderer
+              .answer=${successResult.markdown}
               .host=${std.host}
               .schema=${std.store.schema}
               .options=${{
                 customHeading: true,
                 extensions: getCustomPageEditorBlockSpecs(),
               }}
-            ></text-renderer>
-          </div>`,
-          controls
-        );
-      };
-
-      return html`
-        <div
-          class="affine-embed-linked-doc-block doc-compose-result horizontal"
-          @click=${onClick}
-        >
-          <div class="affine-embed-linked-doc-content">
-            <div class="affine-embed-linked-doc-content-title">
-              <div class="affine-embed-linked-doc-content-title-icon">
-                ${DocIcon}
-              </div>
-              <div class="affine-embed-linked-doc-content-title-text">
-                ${title}
-              </div>
-            </div>
-          </div>
-          <div class="affine-embed-linked-doc-banner">
-            ${LinkedDocEmptyBanner}
-          </div>
-        </div>
-      `;
-    }
-
-    // failed
-    return html`<tool-call-failed
-      .name=${'Doc compose failed'}
-      .icon=${ToolIcon()}
-    ></tool-call-failed>`;
+            ></text-renderer>`
+          : html`<div class="doc-compose-result-preview-loading">
+              ${LoadingIcon({
+                size: '32px',
+              })}
+            </div>`}
+      </div>`,
+      composing ? undefined : controls
+    );
   }
 
   protected override render() {
-    if (this.data.type === 'tool-call') {
-      return this.renderToolCall();
+    if (!this.std) return nothing;
+    const resultData = this.data;
+    const composing = resultData.type === 'tool-call';
+
+    const title = this.data.args.title;
+
+    if (
+      resultData.type === 'tool-result' &&
+      resultData.result &&
+      'type' in resultData.result &&
+      resultData.result.type === 'error'
+    ) {
+      // failed
+      return html`<tool-call-failed
+        .name=${'Doc compose failed'}
+        .icon=${ToolIcon()}
+      ></tool-call-failed>`;
     }
-    if (this.data.type === 'tool-result') {
-      return this.renderToolResult();
-    }
-    return nothing;
+
+    const theme = this.std.get(ThemeProvider).theme;
+
+    const { LinkedDocEmptyBanner } = getEmbedLinkedDocIcons(
+      theme,
+      'page',
+      'horizontal'
+    );
+
+    return html`
+      <div
+        class="affine-embed-linked-doc-block doc-compose-result horizontal"
+        @click=${this.updatePreviewPanel}
+      >
+        <div class="affine-embed-linked-doc-content">
+          <div class="affine-embed-linked-doc-content-title">
+            <div class="affine-embed-linked-doc-content-title-icon">
+              ${composing
+                ? LoadingIcon({
+                    size: '20px',
+                  })
+                : PageIcon()}
+            </div>
+            <div class="affine-embed-linked-doc-content-title-text">
+              ${title}
+            </div>
+          </div>
+        </div>
+        <div class="affine-embed-linked-doc-banner">
+          ${LinkedDocEmptyBanner}
+        </div>
+      </div>
+    `;
   }
 }
