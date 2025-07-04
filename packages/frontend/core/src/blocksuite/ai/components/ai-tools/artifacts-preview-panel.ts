@@ -5,8 +5,10 @@ import { EmptyIcon } from '@blocksuite/icons/lit';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 
+import type { AIChatContent } from '../ai-chat-content';
+
 function getChatPanel(target: HTMLElement) {
-  return target.closest('chat-panel');
+  return target.closest('ai-chat-content') as AIChatContent;
 }
 
 export const isPreviewPanelOpen = (target: HTMLElement) => {
