@@ -12,11 +12,7 @@ import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { bundledLanguagesInfo, type ThemedToken } from 'shiki';
 
-import {
-  closePreviewPanel,
-  isPreviewPanelOpen,
-  renderPreviewPanel,
-} from './artifacts-preview-panel';
+import { renderPreviewPanel } from './artifacts-preview-panel';
 import type { ToolError } from './type';
 
 interface CodeArtifactToolCall {
@@ -331,11 +327,6 @@ export class CodeArtifactTool extends WithDisposable(ShadowlessElement) {
       };
 
       const onClick = () => {
-        if (isPreviewPanelOpen(this)) {
-          closePreviewPanel(this);
-          return;
-        }
-
         const copyHTML = async () => {
           if (this.std) {
             await navigator.clipboard

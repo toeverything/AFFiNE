@@ -19,11 +19,7 @@ import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { getCustomPageEditorBlockSpecs } from '../text-renderer';
-import {
-  closePreviewPanel,
-  isPreviewPanelOpen,
-  renderPreviewPanel,
-} from './artifacts-preview-panel';
+import { renderPreviewPanel } from './artifacts-preview-panel';
 import type { ToolError } from './type';
 
 interface DocComposeToolCall {
@@ -132,11 +128,6 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
       );
 
       const onClick = () => {
-        if (isPreviewPanelOpen(this)) {
-          closePreviewPanel(this);
-          return;
-        }
-
         const copyMarkdown = async () => {
           await navigator.clipboard
             .writeText(result.markdown)

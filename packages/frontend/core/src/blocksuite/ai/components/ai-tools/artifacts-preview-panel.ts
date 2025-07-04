@@ -86,6 +86,7 @@ export class ArtifactPreviewPanel extends WithDisposable(ShadowlessElement) {
     .artifact-panel-actions {
       display: flex;
       align-items: center;
+      justify-content: flex-end;
       gap: 4px;
       flex: 1;
     }
