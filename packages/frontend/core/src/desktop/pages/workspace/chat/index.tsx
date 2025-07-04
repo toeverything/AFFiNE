@@ -58,6 +58,7 @@ export const Component = () => {
   const [currentSession, setCurrentSession] = useState<CopilotSession | null>(
     null
   );
+  const [isTogglingPin, setIsTogglingPin] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatToolContainerRef = useRef<HTMLDivElement>(null);
   const widthSignalRef = useRef<Signal<number>>(signal(0));
@@ -88,19 +89,25 @@ export const Component = () => {
   );
 
   const togglePin = useCallback(async () => {
-    const pinned = !currentSession?.pinned;
-    if (!currentSession) {
-      await createSession({ pinned });
-    } else {
-      await client.updateSession({
-        sessionId: currentSession.id,
-        pinned,
-      });
-      // retrieve the latest session and update the state
-      const session = await client.getSession(workspaceId, currentSession.id);
-      setCurrentSession(session);
+    if (isTogglingPin) return;
+    setIsTogglingPin(true);
+    try {
+      const pinned = !currentSession?.pinned;
+      if (!currentSession) {
+        await createSession({ pinned });
+      } else {
+        await client.updateSession({
+          sessionId: currentSession.id,
+          pinned,
+        });
+        // retrieve the latest session and update the state
+        const session = await client.getSession(workspaceId, currentSession.id);
+        setCurrentSession(session);
+      }
+    } finally {
+      setIsTogglingPin(false);
     }
-  }, [client, createSession, currentSession, workspaceId]);
+  }, [client, createSession, currentSession, isTogglingPin, workspaceId]);
 
   // create a temp doc/host for ai-chat-content
   useEffect(() => {
