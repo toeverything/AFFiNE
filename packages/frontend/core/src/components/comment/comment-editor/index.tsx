@@ -109,7 +109,6 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
     useEffect(() => {
       let cancel = false;
       if (autoFocus && editorRef.current && doc) {
-        // fixme: the following does not work
         // Wait for editor to be fully loaded before focusing
         editorRef.current.updateComplete
           .then(async () => {
@@ -128,6 +127,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
               block: 'center',
             });
 
+            // fixme: the following does not work
             inlineEditor?.focusEnd();
           })
           .catch(console.error);
@@ -152,6 +152,25 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
       return;
     }, [doc, onChange, snapshotHelper]);
 
+    // Add keydown handler to commit on Enter key
+    const handleKeyDown = useCallback(
+      (e: React.KeyboardEvent) => {
+        if (readonly) return;
+
+        // Only handle Enter if focus is within the editor
+        const activeElement = document.activeElement;
+        if (!editorRef.current?.contains(activeElement)) return;
+
+        // If Enter is pressed without Shift key, commit the comment
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          onCommit?.();
+        }
+      },
+      [onCommit, readonly]
+    );
+
     const handleClickEditor = useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -165,6 +184,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
     return (
       <div
         onClick={readonly ? undefined : handleClickEditor}
+        onKeyDown={handleKeyDown}
         data-readonly={!!readonly}
         className={clsx(styles.container, 'comment-editor-viewport')}
       >

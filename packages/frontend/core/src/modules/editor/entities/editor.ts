@@ -17,6 +17,8 @@ import { Entity, LiveData } from '@toeverything/infra';
 import { defaults, isEqual, omit } from 'lodash-es';
 import { skip } from 'rxjs';
 
+import { CommentPanelService } from '../../comment/services/comment-panel-service';
+import { DocCommentManagerService } from '../../comment/services/doc-comment-manager';
 import type { DocService } from '../../doc';
 import { paramsParseOptions, preprocessParams } from '../../navigation/utils';
 import type { WorkbenchView } from '../../workbench';
@@ -233,6 +235,18 @@ export class Editor extends Entity {
       }
       // Workaround: clear selection to avoid comment editor flickering
       selection?.clear();
+
+      // highlight comment
+      setTimeout(() => {
+        const commentManager = this.framework.get(DocCommentManagerService);
+        const commentPanelService = this.framework.get(CommentPanelService);
+        const commentEntity = commentManager.get(this.doc.id);
+        commentPanelService.openCommentPanel();
+        commentEntity.obj.highlightComment(commentId);
+        commentEntity.release();
+      }, 0);
+
+      // do not highlight block
       highlight = false;
     }
 

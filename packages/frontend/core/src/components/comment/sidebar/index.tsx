@@ -26,6 +26,7 @@ import {
   useServiceOptional,
 } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { useAsyncCallback } from '../../hooks/affine-async-hooks';
 import { CommentEditor } from '../comment-editor';
@@ -243,7 +244,7 @@ const CommentItem = ({
         refreshKey: 'comment-' + Date.now(),
       },
       {
-        show: true,
+        replaceHistory: true,
       }
     );
     entity.highlightComment(comment.id);
@@ -251,11 +252,9 @@ const CommentItem = ({
 
   useEffect(() => {
     const subscription = entity.commentHighlighted$
-      .distinctUntilChanged()
+      .pipe(debounceTime(0), distinctUntilChanged())
       .subscribe(id => {
         if (id === comment.id && commentRef.current) {
-          commentRef.current.scrollIntoView({ behavior: 'smooth' });
-
           // Auto-start reply when comment becomes highlighted, but only if not resolved
           if (!isReplyingToThisComment && !comment.resolved) {
             entity.addReply(comment.id).catch(() => {
