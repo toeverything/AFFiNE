@@ -1,6 +1,7 @@
 import { observeResize } from '@affine/component';
 import { CopilotClient } from '@affine/core/blocksuite/ai';
 import { AIChatContent } from '@affine/core/blocksuite/ai/components/ai-chat-content';
+import { AIChatToolbar } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
 import { getCustomPageEditorBlockSpecs } from '@affine/core/blocksuite/ai/components/text-renderer';
 import type { PromptKey } from '@affine/core/blocksuite/ai/provider/prompt';
 import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
@@ -28,6 +29,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import * as styles from './index.css';
 
+type CopilotSession = Awaited<ReturnType<CopilotClient['getSession']>>;
+
 function useCopilotClient() {
   const graphqlService = useService(GraphQLService);
   const eventSourceService = useService(EventSourceService);
@@ -48,10 +51,15 @@ export const Component = () => {
   const t = useI18n();
   const framework = useFramework();
   const [isBodyProvided, setIsBodyProvided] = useState(false);
-  const [doc, setDoc] = useState<Doc | null>(null);
+  const [isHeaderProvided, setIsHeaderProvided] = useState(false);
   const [host, setHost] = useState<EditorHost | null>(null);
   const [chatContent, setChatContent] = useState<AIChatContent | null>(null);
+  const [chatTool, setChatTool] = useState<AIChatToolbar | null>(null);
+  const [currentSession, setCurrentSession] = useState<CopilotSession | null>(
+    null
+  );
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const chatToolContainerRef = useRef<HTMLDivElement>(null);
   const widthSignalRef = useRef<Signal<number>>(signal(0));
   const client = useCopilotClient();
 
@@ -64,6 +72,36 @@ export const Component = () => {
     reasoningConfig,
   } = useAIChatConfig();
 
+  const createSession = useCallback(
+    async (options: Partial<BlockSuitePresets.AICreateSessionOptions> = {}) => {
+      const sessionId = await client.createSession({
+        workspaceId,
+        promptName: 'Chat With AFFiNE AI' satisfies PromptKey,
+        ...options,
+      });
+
+      const session = await client.getSession(workspaceId, sessionId);
+      setCurrentSession(session);
+      return session;
+    },
+    [client, workspaceId]
+  );
+
+  const togglePin = useCallback(async () => {
+    const pinned = !currentSession?.pinned;
+    if (!currentSession) {
+      await createSession({ pinned });
+    } else {
+      await client.updateSession({
+        sessionId: currentSession.id,
+        pinned,
+      });
+      // retrieve the latest session and update the state
+      const session = await client.getSession(workspaceId, currentSession.id);
+      setCurrentSession(session);
+    }
+  }, [client, createSession, currentSession, workspaceId]);
+
   // create a temp doc/host for ai-chat-content
   useEffect(() => {
     let tempDoc: Doc | null = null;
@@ -75,7 +113,6 @@ export const Component = () => {
         store: tempDoc?.getStore() as Store,
         extensions: getCustomPageEditorBlockSpecs(),
       }).render();
-      setDoc(doc);
       setHost(host);
     });
 
@@ -86,7 +123,7 @@ export const Component = () => {
 
   // init or update ai-chat-content
   useEffect(() => {
-    if (!isBodyProvided || !host || !doc) {
+    if (!isBodyProvided || !host) {
       return;
     }
 
@@ -95,6 +132,8 @@ export const Component = () => {
     if (!content) {
       content = new AIChatContent();
     }
+
+    content.session = currentSession;
     content.host = host;
     content.workspaceId = workspaceId;
     content.docDisplayConfig = docDisplayConfig;
@@ -108,17 +147,6 @@ export const Component = () => {
 
     if (!chatContent) {
       // initial values that won't change
-      const createSession = async () => {
-        const sessionId = await client.createSession({
-          workspaceId,
-          docId: doc.id,
-          promptName: 'Chat With AFFiNE AI' satisfies PromptKey,
-        });
-
-        const session = await client.getSession(workspaceId, sessionId);
-        return session;
-      };
-
       content.createSession = createSession;
       content.independentMode = true;
       content.onboardingOffsetY = -100;
@@ -128,7 +156,8 @@ export const Component = () => {
   }, [
     chatContent,
     client,
-    doc,
+    createSession,
+    currentSession,
     docDisplayConfig,
     framework,
     host,
@@ -139,11 +168,47 @@ export const Component = () => {
     workspaceId,
   ]);
 
+  // init or update header ai-chat-toolbar
+  useEffect(() => {
+    if (!isHeaderProvided || !chatToolContainerRef.current || !chatContent) {
+      return;
+    }
+    let tool = chatTool;
+
+    if (!tool) {
+      tool = new AIChatToolbar();
+    }
+
+    tool.session = currentSession;
+
+    // initial props
+    if (!chatTool) {
+      tool.onNewSession = () => {
+        if (!currentSession) return;
+        setCurrentSession(null);
+        chatContent?.reset();
+      };
+      tool.onTogglePin = () => {
+        togglePin().catch(console.error);
+      };
+      // mount
+      chatToolContainerRef.current.append(tool);
+      setChatTool(tool);
+    }
+  }, [chatContent, chatTool, currentSession, isHeaderProvided, togglePin]);
+
   const onChatContainerRef = useCallback((node: HTMLDivElement) => {
     if (node) {
       setIsBodyProvided(true);
       chatContainerRef.current = node;
       widthSignalRef.current.value = node.clientWidth;
+    }
+  }, []);
+
+  const onChatToolContainerRef = useCallback((node: HTMLDivElement) => {
+    if (node) {
+      setIsHeaderProvided(true);
+      chatToolContainerRef.current = node;
     }
   }, []);
 
@@ -159,7 +224,12 @@ export const Component = () => {
     <>
       <ViewTitle title={t['AFFiNE AI']()} />
       <ViewIcon icon="ai" />
-      <ViewHeader></ViewHeader>
+      <ViewHeader>
+        <div className={styles.chatHeader}>
+          <div />
+          <div ref={onChatToolContainerRef} />
+        </div>
+      </ViewHeader>
       <ViewBody>
         <div className={styles.chatRoot} ref={onChatContainerRef} />
       </ViewBody>

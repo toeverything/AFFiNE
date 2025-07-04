@@ -310,6 +310,10 @@ export class AIChatContent extends SignalWatcher(
     }
   }
 
+  public reset() {
+    this.updateContext(DEFAULT_CHAT_CONTEXT_VALUE);
+  }
+
   override connectedCallback() {
     super.connectedCallback();
     this.initChatContent().catch(console.error);

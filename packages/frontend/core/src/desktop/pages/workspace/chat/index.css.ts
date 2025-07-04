@@ -7,3 +7,10 @@ export const chatRoot = style({
   padding: '0px 16px',
   margin: '0 auto',
 });
+
+export const chatHeader = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  width: '100%',
+});
