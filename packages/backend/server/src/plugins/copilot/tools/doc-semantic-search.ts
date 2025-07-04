@@ -56,7 +56,7 @@ export const createDocSemanticSearchTool = (
 ) => {
   return tool({
     description:
-      'Semantic search for relevant documents in the current workspace',
+      'Retrieve conceptually related passages by performing vector-based semantic similarity search across embedded documents; call this tool only when exact keyword search fails or the user explicitly needs meaning-level matches (e.g., paraphrases, synonyms, broader concepts).',
     parameters: z.object({
       query: z
         .string()

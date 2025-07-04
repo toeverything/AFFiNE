@@ -4714,6 +4714,7 @@ export type GetUserSettingsQuery = {
       __typename?: 'UserSettingsType';
       receiveInvitationEmail: boolean;
       receiveMentionEmail: boolean;
+      receiveCommentEmail: boolean;
     };
   } | null;
 };

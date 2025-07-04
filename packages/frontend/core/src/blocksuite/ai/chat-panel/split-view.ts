@@ -46,7 +46,8 @@ export class ChatPanelSplitView extends SignalWatcher(
       width: var(--gap);
       position: relative;
     }
-    .ai-chat-panel-split-view-divider[data-open='false'] {
+    .ai-chat-panel-split-view[data-open='false']
+      .ai-chat-panel-split-view-divider {
       width: 0;
       visibility: hidden;
       pointer-events: none;

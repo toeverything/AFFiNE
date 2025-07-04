@@ -188,16 +188,18 @@ export const Component = () => {
 
     tool.session = currentSession;
 
+    tool.onNewSession = () => {
+      if (!currentSession) return;
+      setCurrentSession(null);
+      chatContent?.reset();
+    };
+
+    tool.onTogglePin = async () => {
+      await togglePin();
+    };
+
     // initial props
     if (!chatTool) {
-      tool.onNewSession = () => {
-        if (!currentSession) return;
-        setCurrentSession(null);
-        chatContent?.reset();
-      };
-      tool.onTogglePin = async () => {
-        await togglePin();
-      };
       // mount
       chatToolContainerRef.current.append(tool);
       setChatTool(tool);

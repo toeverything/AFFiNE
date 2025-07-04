@@ -14,16 +14,9 @@ import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType, Store } from '@blocksuite/affine/store';
 import { CenterPeekIcon } from '@blocksuite/icons/lit';
 import { type Signal, signal } from '@preact/signals-core';
-import {
-  css,
-  html,
-  nothing,
-  type PropertyValues,
-  type TemplateResult,
-} from 'lit';
+import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { keyed } from 'lit/directives/keyed.js';
-import { styleMap } from 'lit/directives/style-map.js';
 
 import type {
   DocDisplayConfig,
@@ -114,12 +107,6 @@ export class ChatPanel extends SignalWatcher(
 
   @state()
   accessor embeddingProgress: [number, number] = [0, 0];
-
-  @state()
-  accessor showPreviewPanel = false;
-
-  @state()
-  accessor previewPanelContent: TemplateResult<1> | null = null;
 
   private isSidebarOpen: Signal<boolean | undefined> = signal(false);
 
@@ -330,7 +317,6 @@ export class ChatPanel extends SignalWatcher(
   private readonly resetPanel = () => {
     this.session = undefined;
     this.embeddingProgress = [0, 0];
-    this.showPreviewPanel = false;
     this.hasPinned = false;
   };
 
@@ -411,12 +397,7 @@ export class ChatPanel extends SignalWatcher(
       return nothing;
     }
 
-    const width = this.sidebarWidth.value || 0;
-    const style = styleMap({
-      padding: width > 540 ? '8px 24px 0 24px' : '8px 12px 0 12px',
-    });
-
-    const left = html`<div class="chat-panel-container" style=${style}>
+    return html`<div class="chat-panel-container">
       ${keyed(
         this.hasPinned ? this.session?.id : this.doc.id,
         html`<ai-chat-content
@@ -439,15 +420,6 @@ export class ChatPanel extends SignalWatcher(
         ></ai-chat-content>`
       )}
     </div>`;
-
-    const right = this.previewPanelContent;
-
-    return html`<chat-panel-split-view
-      .left=${left}
-      .right=${right}
-      .open=${this.showPreviewPanel}
-    >
-    </chat-panel-split-view>`;
   }
 }
 

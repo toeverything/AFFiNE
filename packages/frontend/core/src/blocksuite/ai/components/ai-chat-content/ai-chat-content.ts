@@ -88,6 +88,27 @@ export class AIChatContent extends SignalWatcher(
         overflow-y: visible;
       }
     }
+    chat-panel-split-view {
+      height: 100%;
+      width: 100%;
+      container-type: inline-size;
+      container-name: chat-panel-split-view;
+    }
+    .chat-panel-main {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+      width: 100%;
+      padding: 8px 24px 0 24px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    @container chat-panel-split-view (width < 540px) {
+      .chat-panel-main {
+        padding: 8px 12px 0 12px;
+      }
+    }
   `;
 
   @property({ attribute: false })
@@ -151,6 +172,12 @@ export class AIChatContent extends SignalWatcher(
 
   @state()
   accessor isHistoryLoading = false;
+
+  @state()
+  accessor showPreviewPanel = false;
+
+  @state()
+  accessor previewPanelContent: TemplateResult<1> | null = null;
 
   private readonly chatMessagesRef: Ref<AIChatMessages> =
     createRef<AIChatMessages>();
@@ -311,6 +338,8 @@ export class AIChatContent extends SignalWatcher(
 
   public reset() {
     this.updateContext(DEFAULT_CHAT_CONTEXT_VALUE);
+    this.showPreviewPanel = false;
+    this.previewPanelContent = null;
   }
 
   override connectedCallback() {
@@ -349,7 +378,7 @@ export class AIChatContent extends SignalWatcher(
   }
 
   override render() {
-    return html`${this.chatTitle
+    const left = html`${this.chatTitle
         ? html`<div class="ai-chat-title">${this.chatTitle}</div>`
         : nothing}
       <ai-chat-messages
@@ -399,5 +428,14 @@ export class AIChatContent extends SignalWatcher(
           control: 'chat-send',
         }}
       ></ai-chat-composer>`;
+
+    const right = this.previewPanelContent;
+
+    return html`<chat-panel-split-view
+      .left=${html`<div class="chat-panel-main">${left}</div>`}
+      .right=${right}
+      .open=${this.showPreviewPanel}
+    >
+    </chat-panel-split-view>`;
   }
 }

@@ -1558,6 +1558,7 @@ export const getUserSettingsQuery = {
     settings {
       receiveInvitationEmail
       receiveMentionEmail
+      receiveCommentEmail
     }
   }
 }`,

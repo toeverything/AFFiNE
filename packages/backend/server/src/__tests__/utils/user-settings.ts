@@ -14,6 +14,7 @@ export async function getUserSettings(
         settings {
           receiveInvitationEmail
           receiveMentionEmail
+          receiveCommentEmail
         }
       }
     }
