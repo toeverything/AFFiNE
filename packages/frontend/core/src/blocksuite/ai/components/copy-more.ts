@@ -1,4 +1,4 @@
-import type { CopilotSessionType } from '@affine/graphql';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { Tooltip } from '@blocksuite/affine/components/toolbar';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { noop } from '@blocksuite/affine/global/utils';
@@ -111,7 +111,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   accessor actions: ChatAction[] = [];
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor content!: string;
@@ -224,7 +224,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
                 };
                 return html`<div
                   @click=${async () => {
-                    const sessionId = this.session?.id;
+                    const sessionId = this.session?.sessionId;
                     const success = await action.handler(
                       host,
                       content,

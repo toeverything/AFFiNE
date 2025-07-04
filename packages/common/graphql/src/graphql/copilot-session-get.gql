@@ -1,4 +1,4 @@
-#import "./copilot-fragments.gql"
+#import "./fragments/copilot.gql"
 
 query getCopilotSession(
   $workspaceId: String!

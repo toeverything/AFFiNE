@@ -1,4 +1,4 @@
-import type { CopilotSessionType } from '@affine/graphql';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import type { ImageSelection } from '@blocksuite/affine/shared/selection';
 import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import type {
@@ -82,7 +82,7 @@ export class ChatActionList extends LitElement {
   accessor content: string = '';
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor messageId: string | undefined = undefined;
@@ -139,7 +139,7 @@ export class ChatActionList extends LitElement {
                   blocks: this._currentBlockSelections,
                   images: this._currentImageSelections,
                 };
-                const sessionId = this.session?.id;
+                const sessionId = this.session?.sessionId;
                 const success = await action.handler(
                   host,
                   content,

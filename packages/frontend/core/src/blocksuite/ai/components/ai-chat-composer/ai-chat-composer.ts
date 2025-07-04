@@ -4,10 +4,10 @@ import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type {
   ContextEmbedStatus,
   ContextWorkspaceEmbeddingStatus,
+  CopilotChatHistoryFragment,
   CopilotContextDoc,
   CopilotContextFile,
   CopilotDocType,
-  CopilotSessionType,
 } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -63,10 +63,12 @@ export class AIChatComposer extends SignalWatcher(
   accessor docId: string | undefined;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor createSession!: () => Promise<CopilotSessionType | undefined>;
+  accessor createSession!: () => Promise<
+    CopilotChatHistoryFragment | undefined
+  >;
 
   @property({ attribute: false })
   accessor chatContextValue!: AIChatInputContext;
@@ -178,7 +180,7 @@ export class AIChatComposer extends SignalWatcher(
       return this._contextId;
     }
 
-    const sessionId = this.session?.id;
+    const sessionId = this.session?.sessionId;
     if (!sessionId) return;
 
     const contextId = await AIProvider.context?.getContextId(
@@ -194,7 +196,7 @@ export class AIChatComposer extends SignalWatcher(
       return this._contextId;
     }
 
-    const sessionId = (await this.createSession())?.id;
+    const sessionId = (await this.createSession())?.sessionId;
     if (!sessionId) return;
 
     this._contextId = await AIProvider.context?.createContext(
@@ -206,7 +208,7 @@ export class AIChatComposer extends SignalWatcher(
 
   private readonly _initChips = async () => {
     // context not initialized
-    const sessionId = this.session?.id;
+    const sessionId = this.session?.sessionId;
     const contextId = await this._getContextId();
     if (!sessionId || !contextId) {
       return;
@@ -282,7 +284,7 @@ export class AIChatComposer extends SignalWatcher(
   };
 
   private readonly _pollContextDocsAndFiles = async () => {
-    const sessionId = this.session?.id;
+    const sessionId = this.session?.sessionId;
     const contextId = await this._getContextId();
     if (!sessionId || !contextId || !AIProvider.context) {
       return;

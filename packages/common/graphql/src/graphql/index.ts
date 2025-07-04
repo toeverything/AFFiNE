@@ -1060,7 +1060,10 @@ export const getCopilotSessionQuery = {
       }
     }
   }
-}`,
+}
+${copilotChatMessageFragment}
+${copilotChatHistoryFragment}
+${paginatedCopilotChatsFragment}`,
 };
 
 export const getCopilotRecentSessionsQuery = {

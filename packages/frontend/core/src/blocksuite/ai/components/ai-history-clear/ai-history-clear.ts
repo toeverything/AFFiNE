@@ -1,4 +1,4 @@
-import type { CopilotSessionType } from '@affine/graphql';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { type NotificationService } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
@@ -15,7 +15,7 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
   accessor chatContextValue!: ChatContextValue;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor notification: NotificationService | null | undefined;
@@ -50,7 +50,7 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
     if (this._isHistoryClearDisabled || !this.session) {
       return;
     }
-    const sessionId = this.session.id;
+    const sessionId = this.session.sessionId;
     try {
       const confirm = this.notification
         ? await this.notification.confirm({

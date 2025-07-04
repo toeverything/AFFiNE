@@ -8,7 +8,7 @@ import type {
   CopilotContextFile,
   CopilotHistories,
   getCopilotHistoriesQuery,
-  QueryChatSessionsInput,
+  QueryChatHistoriesInput,
   RequestOptions,
   StreamObject,
   UpdateChatSessionInput,
@@ -399,7 +399,7 @@ declare global {
       getSessions: (
         workspaceId: string,
         docId?: string,
-        options?: QueryChatSessionsInput
+        options?: QueryChatHistoriesInput
       ) => Promise<CopilotChatHistoryFragment[] | undefined>;
       getRecentSessions: (
         workspaceId: string,

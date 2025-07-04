@@ -1,5 +1,5 @@
 import { toast } from '@affine/component';
-import type { CopilotSessionType } from '@affine/graphql';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { openFilesWith } from '@blocksuite/affine/shared/utils';
@@ -304,7 +304,7 @@ export class AIChatInput extends SignalWatcher(
   accessor docId: string | undefined;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @query('image-preview-grid')
   accessor imagePreviewGrid: HTMLDivElement | null = null;
@@ -328,7 +328,9 @@ export class AIChatInput extends SignalWatcher(
   accessor chips: ChatChip[] = [];
 
   @property({ attribute: false })
-  accessor createSession!: () => Promise<CopilotSessionType | undefined>;
+  accessor createSession!: () => Promise<
+    CopilotChatHistoryFragment | undefined
+  >;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
@@ -608,7 +610,7 @@ export class AIChatInput extends SignalWatcher(
       // optimistic update messages
       await this._preUpdateMessages(userInput, attachments);
 
-      const sessionId = (await this.createSession())?.id;
+      const sessionId = (await this.createSession())?.sessionId;
       let contexts = await this._getMatchedContexts();
       if (abortController.signal.aborted) {
         return;
@@ -694,7 +696,7 @@ export class AIChatInput extends SignalWatcher(
   };
 
   private readonly _postUpdateMessages = async () => {
-    const sessionId = this.session?.id;
+    const sessionId = this.session?.sessionId;
     if (!sessionId || !AIProvider.histories) return;
 
     const { messages } = this.chatContextValue;

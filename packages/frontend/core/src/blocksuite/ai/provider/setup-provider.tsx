@@ -759,6 +759,7 @@ Could you make a new website based on these notes and send back just the html fi
       return (
         (await client.getHistories(workspaceId, {}, docId, {
           sessionId,
+          withMessages: true,
         })) ?? []
       );
     },

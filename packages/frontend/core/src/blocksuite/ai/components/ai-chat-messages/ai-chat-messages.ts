@@ -1,4 +1,4 @@
-import type { CopilotSessionType } from '@affine/graphql';
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import {
   DocModeProvider,
@@ -171,10 +171,12 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   accessor chatContextValue!: ChatContextValue;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor createSession!: () => Promise<CopilotSessionType | undefined>;
+  accessor createSession!: () => Promise<
+    CopilotChatHistoryFragment | undefined
+  >;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<ChatContextValue>) => void;
@@ -418,7 +420,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
 
   retry = async () => {
     try {
-      const sessionId = (await this.createSession())?.id;
+      const sessionId = (await this.createSession())?.sessionId;
       if (!sessionId) return;
       if (!AIProvider.actions.chat) return;
 

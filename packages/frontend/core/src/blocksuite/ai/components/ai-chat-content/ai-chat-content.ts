@@ -1,6 +1,9 @@
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import type { ContextEmbedStatus, CopilotSessionType } from '@affine/graphql';
+import type {
+  ContextEmbedStatus,
+  CopilotChatHistoryFragment,
+} from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -123,10 +126,12 @@ export class AIChatContent extends SignalWatcher(
   accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor createSession!: () => Promise<CopilotSessionType | undefined>;
+  accessor createSession!: () => Promise<
+    CopilotChatHistoryFragment | undefined
+  >;
 
   @property({ attribute: false })
   accessor workspaceId!: string;
@@ -203,7 +208,7 @@ export class AIChatContent extends SignalWatcher(
       return;
     }
 
-    const sessionId = this.session?.id;
+    const sessionId = this.session?.sessionId;
     const [histories, actions] = await Promise.all([
       sessionId
         ? AIProvider.histories.chats(this.workspaceId, sessionId)

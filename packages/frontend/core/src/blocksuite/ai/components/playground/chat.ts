@@ -1,5 +1,8 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import type { ContextEmbedStatus, CopilotSessionType } from '@affine/graphql';
+import type {
+  ContextEmbedStatus,
+  CopilotChatHistoryFragment,
+} from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
@@ -130,7 +133,7 @@ export class PlaygroundChat extends SignalWatcher(
   accessor doc!: Store;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor networkSearchConfig!: AINetworkSearchConfig;
@@ -194,7 +197,7 @@ export class PlaygroundChat extends SignalWatcher(
 
     const currentRequest = ++this._updateHistoryCounter;
 
-    const sessionId = this.session?.id;
+    const sessionId = this.session?.sessionId;
     const [histories, actions] = await Promise.all([
       sessionId
         ? AIProvider.histories.chats(

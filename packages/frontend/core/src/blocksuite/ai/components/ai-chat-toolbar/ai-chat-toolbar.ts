@@ -1,4 +1,5 @@
-import type { CopilotSessionType } from '@affine/graphql';
+
+import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { createLitPortal } from '@blocksuite/affine/components/portal';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import type { NotificationService } from '@blocksuite/affine/shared/services';
@@ -18,7 +19,7 @@ import type { DocDisplayConfig } from '../ai-chat-chips';
 
 export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | null | undefined;
+  accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
   accessor workspaceId!: string;
