@@ -345,10 +345,6 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   async list(options: ListSessionOptions) {
-    console.log(
-      'list options',
-      JSON.stringify(this.getListConditions(options))
-    );
     return await this.db.aiSession.findMany({
       where: this.getListConditions(options),
       select: {

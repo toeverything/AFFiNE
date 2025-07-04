@@ -336,7 +336,6 @@ export class ChatSessionService {
       ...options,
       withMessages,
     });
-    console.log('list options1', sessions);
     const histories = await Promise.all(
       sessions.map(async session => {
         const { userId, id: sessionId, createdAt } = session;
