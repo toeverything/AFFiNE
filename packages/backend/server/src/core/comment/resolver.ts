@@ -374,14 +374,33 @@ export class CommentResolver {
     mentions?: string[],
     reply?: Reply
   ) {
-    // send comment notification to doc owners
-    const owner = await this.models.docUser.getOwner(
-      comment.workspaceId,
-      comment.docId
-    );
-    if (owner && owner.userId !== sender.id) {
+    const mentionUserIds = new Set(mentions);
+    // send comment mention notification to comment author on reply
+    if (reply) {
+      mentionUserIds.add(comment.userId);
+    }
+
+    // send comment mention notification to mentioned users
+    for (const mentionUserId of mentionUserIds) {
+      // skip if the mention user is the sender
+      if (mentionUserId === sender.id) {
+        continue;
+      }
+
+      // check if the mention user has Doc.Comments.Read permission
+      const hasPermission = await this.ac
+        .user(mentionUserId)
+        .workspace(comment.workspaceId)
+        .doc(comment.docId)
+        .can('Doc.Comments.Read');
+
+      if (!hasPermission) {
+        continue;
+      }
+
       await this.queue.add('notification.sendComment', {
-        userId: owner.userId,
+        isMention: true,
+        userId: mentionUserId,
         body: {
           workspaceId: comment.workspaceId,
           createdByUserId: sender.id,
@@ -396,16 +415,24 @@ export class CommentResolver {
       });
     }
 
-    // send comment mention notification to comment author on reply
-    if (reply && comment.userId !== sender.id) {
+    // send comment notification to doc owners
+    const owner = await this.models.docUser.getOwner(
+      comment.workspaceId,
+      comment.docId
+    );
+    // if the owner is not in the mention user ids, send comment notification to the owner
+    if (
+      owner &&
+      owner.userId !== sender.id &&
+      !mentionUserIds.has(owner.userId)
+    ) {
       await this.queue.add('notification.sendComment', {
-        isMention: true,
-        userId: comment.userId,
+        userId: owner.userId,
         body: {
           workspaceId: comment.workspaceId,
           createdByUserId: sender.id,
           commentId: comment.id,
-          replyId: reply.id,
+          replyId: reply?.id,
           doc: {
             id: comment.docId,
             title: docTitle,
@@ -413,47 +440,6 @@ export class CommentResolver {
           },
         },
       });
-    }
-
-    // send comment mention notification to mentioned users
-    if (mentions) {
-      for (const mentionUserId of mentions) {
-        // skip if the mention user is the doc owner or the comment author
-        if (
-          mentionUserId === owner?.userId ||
-          mentionUserId === sender.id ||
-          mentionUserId === comment.userId
-        ) {
-          continue;
-        }
-
-        // check if the mention user has Doc.Comments.Read permission
-        const hasPermission = await this.ac
-          .user(mentionUserId)
-          .workspace(comment.workspaceId)
-          .doc(comment.docId)
-          .can('Doc.Comments.Read');
-
-        if (!hasPermission) {
-          continue;
-        }
-
-        await this.queue.add('notification.sendComment', {
-          isMention: true,
-          userId: mentionUserId,
-          body: {
-            workspaceId: comment.workspaceId,
-            createdByUserId: sender.id,
-            commentId: comment.id,
-            replyId: reply?.id,
-            doc: {
-              id: comment.docId,
-              title: docTitle,
-              mode: docMode,
-            },
-          },
-        });
-      }
     }
   }
 
