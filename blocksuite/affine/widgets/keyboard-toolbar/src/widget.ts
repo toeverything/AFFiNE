@@ -42,6 +42,7 @@ export class AffineKeyboardToolbarWidget extends WidgetComponent<RootBlockModel>
 
     return {
       // fallback keyboard actions
+      fallback: true,
       show: () => {
         const rootComponent = this.block?.rootComponent;
         if (rootComponent && rootComponent === document.activeElement) {
