@@ -16,6 +16,7 @@ import type {
 
 @Injectable()
 export class CopilotWorkspaceConfigModel extends BaseModel {
+  @Transactional()
   private async listIgnoredDocIds(
     workspaceId: string,
     options?: PaginationInput
