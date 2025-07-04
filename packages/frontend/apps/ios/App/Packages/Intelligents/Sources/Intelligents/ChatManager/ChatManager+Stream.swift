@@ -33,7 +33,7 @@ extension ChatManager {
     ))
     append(sessionId: sessionId, UserHintCellViewModel(
       id: .init(),
-      date: .init(),
+      timestamp: .init(),
       imageAttachments: inputBoxData.imageAttachments,
       fileAttachments: inputBoxData.fileAttachments,
       docAttachments: inputBoxData.documentAttachments

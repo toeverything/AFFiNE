@@ -17,7 +17,7 @@ struct UserMessageCellViewModel: ChatCellViewModel {
 struct UserHintCellViewModel: ChatCellViewModel {
   var cellType: ChatCellType = .userAttachmentsHint
   var id: UUID
-  var date: Date
+  var timestamp: Date
   var imageAttachments: [ImageAttachment]
   var fileAttachments: [FileAttachment]
   var docAttachments: [DocumentAttachment]

@@ -11,5 +11,5 @@ struct SystemMessageCellViewModel: ChatCellViewModel {
   var cellType: ChatCellType = .systemMessage
   var id: UUID
   var content: String
-  var timestamp: Date?
+  var timestamp: Date
 }

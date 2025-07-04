@@ -8,18 +8,48 @@
 import ListViewKit
 import UIKit
 
+private let dayDateFormatter: DateFormatter = {
+  let formatter = DateFormatter()
+  formatter.dateFormat = "yyyy-MM-dd"
+  return formatter
+}()
+
 extension ChatListView: ListViewAdapter {
   func fill(viewModels: [any ChatCellViewModel]) {
     assert(!Thread.isMainThread)
-    let items = viewModels.map { ChatItemEntity(id: $0.id, object: $0) }
-    preprocessItems(items)
+    var items = viewModels.map { ChatItemEntity(id: $0.id, object: $0) }
+    items = preprocessItems(items)
     DispatchQueue.main.asyncAndWait { [self] in
       dataSource.applySnapshot(using: items, animatingDifferences: true)
     }
   }
 
-  private func preprocessItems(_: [ChatItemEntity]) {
-    // reserved for future use
+  private func preprocessItems(_ items: [ChatItemEntity]) -> [ChatItemEntity] {
+    var ans = [ChatItemEntity]()
+
+    // prepend a date hint for each day
+    let calendar = Calendar.current
+    var currentDayAnchor: Date?
+    for item in items {
+      defer { ans.append(item) }
+
+      guard item.object.cellType == .userMessage,
+            let userMessage = item.object as? UserMessageCellViewModel
+      else { continue }
+      let messageDate = userMessage.timestamp
+      let dayAnchor = calendar.startOfDay(for: messageDate)
+      if currentDayAnchor == nil || dayAnchor > currentDayAnchor! {
+        currentDayAnchor = dayAnchor
+        let dateHint = SystemMessageCellViewModel(
+          id: .init(),
+          content: dayDateFormatter.string(from: dayAnchor),
+          timestamp: .init()
+        )
+        ans.append(ChatItemEntity(id: dateHint.id, object: dateHint))
+      }
+    }
+
+    return ans
   }
 
   func listView(_: ListViewKit.ListView, rowKindFor item: ItemType, at _: Int) -> RowKind {

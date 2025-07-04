@@ -74,7 +74,8 @@ public class ChatManager: ObservableObject, @unchecked Sendable {
   public func report(_ sessionID: String, _ error: Error) -> UUID {
     let model = ErrorCellViewModel(
       id: .init(),
-      errorMessage: error.localizedDescription
+      errorMessage: error.localizedDescription,
+      timestamp: .init()
     )
     append(sessionId: sessionID, model)
     return model.id

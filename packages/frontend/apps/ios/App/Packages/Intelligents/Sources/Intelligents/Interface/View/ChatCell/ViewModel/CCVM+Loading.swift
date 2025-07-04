@@ -10,6 +10,7 @@ import Foundation
 struct LoadingCellViewModel: ChatCellViewModel {
   var cellType: ChatCellType = .loading
   var id: UUID
+  var timestamp: Date
   var message: String?
   var progress: Double?
 }

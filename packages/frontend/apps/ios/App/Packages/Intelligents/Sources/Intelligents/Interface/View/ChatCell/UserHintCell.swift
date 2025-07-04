@@ -62,7 +62,7 @@ class UserHintCell: ChatBaseCell {
       vm.fileAttachments.count,
     ].reduce(0, +)
     let text: [String] = [
-      formatter.string(from: vm.date),
+      formatter.string(from: vm.timestamp),
       {
         if attachmentsCount > 0 {
           String(localized: "\(attachmentsCount) attachments")

@@ -19,6 +19,8 @@ class ChatListView: UIView {
   init() {
     super.init(frame: .zero)
 
+    listView.topInset = 8
+    listView.bottomInset = 64
     listView.adapter = self
     addSubview(listView)
     listView.snp.makeConstraints { make in

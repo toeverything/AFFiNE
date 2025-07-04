@@ -10,4 +10,5 @@ import Foundation
 public protocol ChatCellViewModel: Identifiable, Equatable, Hashable {
   var id: UUID { get }
   var cellType: ChatCellType { get }
+  var timestamp: Date { get }
 }
