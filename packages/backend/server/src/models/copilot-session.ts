@@ -265,26 +265,31 @@ export class CopilotSessionModel extends BaseModel {
       userId: true,
       workspaceId: true,
       docId: true,
-      pinned: true,
       parentSessionId: true,
+      pinned: true,
       title: true,
+      promptName: true,
+      tokenCost: true,
+      createdAt: true,
+      updatedAt: true,
       messages: {
         select: {
           id: true,
           role: true,
           content: true,
-          streamObjects: true,
           attachments: true,
+          streamObjects: true,
           params: true,
           createdAt: true,
         },
         orderBy: { createdAt: 'asc' },
       },
-      promptName: true,
     });
   }
 
-  async list(options: ListSessionOptions) {
+  private getListConditions(
+    options: ListSessionOptions
+  ): Prisma.AiSessionWhereInput {
     const { userId, sessionId, workspaceId, docId, action, fork } = options;
 
     function getNullCond<T>(
@@ -330,8 +335,18 @@ export class CopilotSessionModel extends BaseModel {
       });
     }
 
+    return { OR: conditions };
+  }
+
+  async count(options: ListSessionOptions) {
+    return await this.db.aiSession.count({
+      where: this.getListConditions(options),
+    });
+  }
+
+  async list(options: ListSessionOptions) {
     return await this.db.aiSession.findMany({
-      where: { OR: conditions },
+      where: this.getListConditions(options),
       select: {
         id: true,
         userId: true,
@@ -351,8 +366,8 @@ export class CopilotSessionModel extends BaseModel {
                 role: true,
                 content: true,
                 attachments: true,
-                params: true,
                 streamObjects: true,
+                params: true,
                 createdAt: true,
               },
               orderBy: {

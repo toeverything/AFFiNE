@@ -4,6 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { Transactional } from '@nestjs-cls/transactional';
 import { AiPromptRole } from '@prisma/client';
+import { pick } from 'lodash-es';
 
 import {
   CopilotActionTaken,
@@ -25,7 +26,7 @@ import {
   UpdateChatSessionOptions,
 } from '../../models';
 import { ChatMessageCache } from './message';
-import { PromptService } from './prompt';
+import { ChatPrompt, PromptService } from './prompt';
 import {
   CopilotProviderFactory,
   ModelOutputType,
@@ -240,6 +241,14 @@ export class ChatSession implements AsyncDisposable {
   }
 }
 
+type Session = NonNullable<
+  Awaited<ReturnType<Models['copilotSession']['get']>>
+>;
+
+type SessionHistory = ChatHistory & {
+  prompt: ChatPrompt;
+};
+
 @Injectable()
 export class ChatSessionService {
   private readonly logger = new Logger(ChatSessionService.name);
@@ -253,25 +262,53 @@ export class ChatSessionService {
     private readonly prompt: PromptService
   ) {}
 
-  async getSession(sessionId: string): Promise<ChatSessionState | undefined> {
-    const session = await this.models.copilotSession.get(sessionId);
-    if (!session) return;
+  private getMessage(session: Session): ChatMessage[] {
+    if (!Array.isArray(session.messages) || !session.messages.length) {
+      return [];
+    }
+    const messages = ChatMessageSchema.array().safeParse(session.messages);
+    if (!messages.success) {
+      this.logger.error(
+        `Unexpected message schema: ${JSON.stringify(messages.error)}`
+      );
+      return [];
+    }
+    return messages.data;
+  }
+
+  private async getHistory(session: Session): Promise<SessionHistory> {
     const prompt = await this.prompt.get(session.promptName);
     if (!prompt) throw new CopilotPromptNotFound({ name: session.promptName });
 
-    const messages = ChatMessageSchema.array().safeParse(session.messages);
-
     return {
+      ...pick(session, [
+        'userId',
+        'workspaceId',
+        'docId',
+        'parentSessionId',
+        'pinned',
+        'title',
+        'createdAt',
+        'updatedAt',
+      ]),
       sessionId: session.id,
-      userId: session.userId,
-      workspaceId: session.workspaceId,
-      docId: session.docId,
-      pinned: session.pinned,
-      title: session.title,
-      parentSessionId: session.parentSessionId,
+      tokens: session.tokenCost,
+      messages: this.getMessage(session),
+
+      // prompt info
       prompt,
-      messages: messages.success ? messages.data : [],
+      action: prompt.action || null,
+      model: prompt.model,
+      optionalModels: prompt.optionalModels || null,
+      promptName: prompt.name,
     };
+  }
+
+  async getSessionInfo(sessionId: string): Promise<SessionHistory | undefined> {
+    const session = await this.models.copilotSession.get(sessionId);
+    if (!session) return;
+
+    return await this.getHistory(session);
   }
 
   // revert the latest messages not generate by user
@@ -286,116 +323,70 @@ export class ChatSessionService {
     );
   }
 
-  async listSessions(
-    options: ListSessionOptions
-  ): Promise<Omit<ChatSessionState, 'messages'>[]> {
-    const sessions = await this.models.copilotSession.list({
-      ...options,
-      withMessages: false,
-    });
-
-    return Promise.all(
-      sessions.map(async session => {
-        const prompt = await this.prompt.get(session.promptName);
-        if (!prompt)
-          throw new CopilotPromptNotFound({ name: session.promptName });
-
-        return {
-          sessionId: session.id,
-          userId: session.userId,
-          workspaceId: session.workspaceId,
-          docId: session.docId,
-          pinned: session.pinned,
-          title: session.title,
-          parentSessionId: session.parentSessionId,
-          prompt,
-        };
-      })
-    );
+  async count(options: ListSessionOptions): Promise<number> {
+    return await this.models.copilotSession.count(options);
   }
 
-  async listHistories(options: ListSessionOptions): Promise<ChatHistory[]> {
-    const { userId } = options;
+  async list(
+    options: ListSessionOptions,
+    withMessages: boolean
+  ): Promise<ChatHistory[]> {
+    const { userId: reqUserId } = options;
     const sessions = await this.models.copilotSession.list({
       ...options,
-      withMessages: true,
+      withMessages,
     });
     const histories = await Promise.all(
-      sessions.map(
-        async ({
-          userId: uid,
-          id,
-          workspaceId,
-          docId,
-          pinned,
-          title,
-          promptName,
-          tokenCost,
-          messages,
-          createdAt,
-          updatedAt,
-        }) => {
-          try {
-            const prompt = await this.prompt.get(promptName);
-            if (!prompt) {
-              throw new CopilotPromptNotFound({ name: promptName });
-            }
+      sessions.map(async session => {
+        const { userId, id: sessionId, createdAt } = session;
+        try {
+          const { prompt, messages, ...baseHistory } =
+            await this.getHistory(session);
+
+          if (withMessages) {
             if (
               // filter out the user's session that not match the action option
-              (uid === userId && !!options?.action !== !!prompt.action) ||
+              (userId === reqUserId && !!options?.action !== !!prompt.action) ||
               // filter out the non chat session from other user
-              (uid !== userId && !!prompt.action)
+              (userId !== reqUserId && !!prompt.action)
             ) {
               return undefined;
             }
 
-            const ret = ChatMessageSchema.array().safeParse(messages);
-            if (ret.success) {
-              // render system prompt
-              const preload = (
-                options?.withPrompt
-                  ? prompt
-                      .finish(ret.data[0]?.params || {}, id)
-                      .filter(({ role }) => role !== 'system')
-                  : []
-              ) as ChatMessage[];
+            // render system prompt
+            const preload = (
+              options?.withPrompt
+                ? prompt
+                    .finish(messages[0]?.params || {}, sessionId)
+                    .filter(({ role }) => role !== 'system')
+                : []
+            ) as ChatMessage[];
 
-              // `createdAt` is required for history sorting in frontend
-              // let's fake the creating time of prompt messages
-              preload.forEach((msg, i) => {
-                msg.createdAt = new Date(
-                  createdAt.getTime() - preload.length - i - 1
-                );
-              });
-
-              return {
-                sessionId: id,
-                workspaceId,
-                docId,
-                pinned,
-                title,
-                action: prompt.action || null,
-                tokens: tokenCost,
-                createdAt,
-                updatedAt,
-                messages: preload.concat(ret.data).map(m => ({
-                  ...m,
-                  attachments: m.attachments
-                    ?.map(a => (typeof a === 'string' ? a : a.attachment))
-                    .filter(a => !!a),
-                })),
-              };
-            } else {
-              this.logger.error(
-                `Unexpected message schema: ${JSON.stringify(ret.error)}`
+            // `createdAt` is required for history sorting in frontend
+            // let's fake the creating time of prompt messages
+            preload.forEach((msg, i) => {
+              msg.createdAt = new Date(
+                createdAt.getTime() - preload.length - i - 1
               );
-            }
-          } catch (e) {
-            this.logger.error('Unexpected error in listHistories', e);
+            });
+
+            return {
+              ...baseHistory,
+              messages: preload.concat(messages).map(m => ({
+                ...m,
+                attachments: m.attachments
+                  ?.map(a => (typeof a === 'string' ? a : a.attachment))
+                  .filter(a => !!a),
+              })),
+            };
+          } else {
+            return { ...baseHistory, messages: [] };
           }
-          return undefined;
+        } catch (e) {
+          this.logger.error('Unexpected error in list ChatHistories', e);
         }
-      )
+        return undefined;
+      })
     );
 
     return histories.filter((v): v is NonNullable<typeof v> => !!v);
@@ -461,7 +452,7 @@ export class ChatSessionService {
 
   @Transactional()
   async update(options: UpdateChatSession): Promise<string> {
-    const session = await this.getSession(options.sessionId);
+    const session = await this.getSessionInfo(options.sessionId);
     if (!session) {
       throw new CopilotSessionNotFound();
     }
@@ -494,14 +485,14 @@ export class ChatSessionService {
 
   @Transactional()
   async fork(options: ChatSessionForkOptions): Promise<string> {
-    const state = await this.getSession(options.sessionId);
-    if (!state) {
+    const session = await this.getSessionInfo(options.sessionId);
+    if (!session) {
       throw new CopilotSessionNotFound();
     }
 
-    let messages = state.messages.map(m => ({ ...m, id: undefined }));
+    let messages = session.messages.map(m => ({ ...m, id: undefined }));
     if (options.latestMessageId) {
-      const lastMessageIdx = state.messages.findLastIndex(
+      const lastMessageIdx = session.messages.findLastIndex(
         ({ id, role }) =>
           role === AiPromptRole.assistant && id === options.latestMessageId
       );
@@ -514,7 +505,7 @@ export class ChatSessionService {
     }
 
     return await this.models.copilotSession.fork({
-      ...state,
+      ...session,
       userId: options.userId,
       sessionId: randomUUID(),
       parentSessionId: options.sessionId,
@@ -544,7 +535,7 @@ export class ChatSessionService {
    * @returns
    */
   async get(sessionId: string): Promise<ChatSession | null> {
-    const state = await this.getSession(sessionId);
+    const state = await this.getSessionInfo(sessionId);
     if (state) {
       return new ChatSession(this.messageCache, state, async state => {
         await this.models.copilotSession.updateMessages(state);

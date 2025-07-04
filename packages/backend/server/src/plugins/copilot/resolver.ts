@@ -25,6 +25,9 @@ import {
   CopilotFailedToCreateMessage,
   CopilotSessionNotFound,
   type FileUpload,
+  paginate,
+  Paginated,
+  PaginationInput,
   RequestMutex,
   Throttle,
   TooManyRequest,
@@ -38,12 +41,7 @@ import { PromptService } from './prompt';
 import { PromptMessage, StreamObject } from './providers';
 import { ChatSessionService } from './session';
 import { CopilotStorage } from './storage';
-import {
-  type ChatHistory,
-  type ChatMessage,
-  type ChatSessionState,
-  SubmittedMessage,
-} from './types';
+import { type ChatHistory, type ChatMessage, SubmittedMessage } from './types';
 
 export const COPILOT_LOCKER = 'copilot';
 
@@ -187,6 +185,9 @@ class QueryChatHistoriesInput
   sessionId: string | undefined;
 
   @Field(() => Boolean, { nullable: true })
+  withMessages: boolean | undefined;
+
+  @Field(() => Boolean, { nullable: true })
   withPrompt: boolean | undefined;
 }
 
@@ -239,7 +240,7 @@ class ChatMessageType implements Partial<ChatMessage> {
 }
 
 @ObjectType('CopilotHistories')
-class CopilotHistoriesType implements Partial<ChatHistory> {
+class CopilotHistoriesType implements Omit<ChatHistory, 'userId'> {
   @Field(() => String)
   sessionId!: string;
 
@@ -249,14 +250,29 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
   @Field(() => String, { nullable: true })
   docId!: string | null;
 
-  @Field(() => Boolean)
-  pinned!: boolean;
+  @Field(() => String, { nullable: true })
+  parentSessionId!: string | null;
+
+  @Field(() => String)
+  promptName!: string;
+
+  @Field(() => String)
+  model!: string;
+
+  @Field(() => [String])
+  optionalModels!: string[];
 
   @Field(() => String, {
     description: 'An mark identifying which view to use to display the session',
     nullable: true,
   })
   action!: string | null;
+
+  @Field(() => Boolean)
+  pinned!: boolean;
+
+  @Field(() => String, { nullable: true })
+  title!: string | null;
 
   @Field(() => Number, {
     description: 'The number of tokens used in the session',
@@ -272,6 +288,11 @@ class CopilotHistoriesType implements Partial<ChatHistory> {
   @Field(() => Date)
   updatedAt!: Date;
 }
+
+@ObjectType()
+export class PaginatedCopilotHistoriesType extends Paginated(
+  CopilotHistoriesType
+) {}
 
 @ObjectType('CopilotQuota')
 class CopilotQuotaType {
@@ -421,7 +442,7 @@ export class CopilotResolver {
     @Args('sessionId') sessionId: string
   ): Promise<CopilotSessionType> {
     await this.assertPermission(user, copilot);
-    const session = await this.chatSession.getSession(sessionId);
+    const session = await this.chatSession.getSessionInfo(sessionId);
     if (!session) {
       throw new NotFoundException('Session not found');
     }
@@ -430,6 +451,7 @@ export class CopilotResolver {
 
   @ResolveField(() => [CopilotSessionType], {
     description: 'Get the session list in the workspace',
+    deprecationReason: 'use `chats` instead',
     complexity: 2,
   })
   async sessions(
@@ -447,11 +469,12 @@ export class CopilotResolver {
       Object.assign({}, copilot, { docId: maybeDocId })
     );
 
-    const sessions = await this.chatSession.listSessions(
-      Object.assign({}, options, appendOptions)
+    const sessions = await this.chatSession.list(
+      Object.assign({}, options, appendOptions),
+      false
     );
     if (appendOptions.docId) {
-      type Session = Omit<ChatSessionState, 'messages'> & { docId: string };
+      type Session = ChatHistory & { docId: string };
       const filtered = sessions.filter((s): s is Session => !!s.docId);
       const accessible = await this.ac
         .user(user.id)
@@ -463,7 +486,9 @@ export class CopilotResolver {
     }
   }
 
-  @ResolveField(() => [CopilotHistoriesType], {})
+  @ResolveField(() => [CopilotHistoriesType], {
+    deprecationReason: 'use `chats` instead',
+  })
   @CallMetric('ai', 'histories')
   async histories(
     @Parent() copilot: CopilotType,
@@ -478,8 +503,9 @@ export class CopilotResolver {
       await this.assertPermission(user, { workspaceId, docId });
     }
 
-    const histories = await this.chatSession.listHistories(
-      Object.assign({}, options, { userId: user.id, workspaceId, docId })
+    const histories = await this.chatSession.list(
+      Object.assign({}, options, { userId: user.id, workspaceId, docId }),
+      true
     );
 
     return histories.map(h => ({
@@ -489,6 +515,48 @@ export class CopilotResolver {
         m => m.content || m.attachments?.length
       ) as ChatMessageType[],
     }));
+  }
+
+  @ResolveField(() => PaginatedCopilotHistoriesType, {})
+  @CallMetric('ai', 'histories')
+  async chats(
+    @Parent() copilot: CopilotType,
+    @CurrentUser() user: CurrentUser,
+    @Args('pagination', PaginationInput.decode) pagination: PaginationInput,
+    @Args('docId', { nullable: true }) docId?: string,
+    @Args('options', { nullable: true }) options?: QueryChatHistoriesInput
+  ): Promise<PaginatedCopilotHistoriesType> {
+    const workspaceId = copilot.workspaceId;
+    if (!workspaceId) {
+      return paginate([], 'updatedAt', pagination, 0);
+    } else {
+      await this.assertPermission(user, { workspaceId, docId });
+    }
+
+    const finalOptions = Object.assign(
+      {},
+      options,
+      { userId: user.id, workspaceId, docId },
+      { skip: pagination.offset, limit: pagination.first }
+    );
+    const totalCount = await this.chatSession.count(finalOptions);
+    const histories = await this.chatSession.list(
+      finalOptions,
+      !!options?.withMessages
+    );
+
+    return paginate(
+      histories.map(h => ({
+        ...h,
+        // filter out empty messages
+        messages: h.messages?.filter(
+          m => m.content || m.attachments?.length
+        ) as ChatMessageType[],
+      })),
+      'updatedAt',
+      pagination,
+      totalCount
+    );
   }
 
   @Mutation(() => String, {
@@ -657,18 +725,9 @@ export class CopilotResolver {
   }
 
   private transformToSessionType(
-    session: Omit<ChatSessionState, 'messages'>
+    session: Omit<ChatHistory, 'messages'>
   ): CopilotSessionType {
-    return {
-      id: session.sessionId,
-      parentSessionId: session.parentSessionId,
-      docId: session.docId,
-      pinned: session.pinned,
-      title: session.title,
-      promptName: session.prompt.name,
-      model: session.prompt.model,
-      optionalModels: session.prompt.optionalModels,
-    };
+    return { id: session.sessionId, ...session };
   }
 }
 

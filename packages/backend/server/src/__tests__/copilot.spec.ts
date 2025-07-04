@@ -1891,7 +1891,7 @@ test('should handle generateSessionTitle correctly under various conditions', as
       await session.generateSessionTitle({ sessionId });
 
       if (testCase.expectSnapshot) {
-        const sessionState = await session.getSession(sessionId);
+        const sessionState = await session.getSessionInfo(sessionId);
         t.snapshot(
           {
             chatWithPromptCalled: testCase.expectNotCalled

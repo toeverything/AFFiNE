@@ -208,10 +208,11 @@ type ContextWorkspaceEmbeddingStatus {
 
 type Copilot {
   audioTranscription(blobId: String, jobId: String): TranscriptionResultType
+  chats(docId: String, options: QueryChatHistoriesInput, pagination: PaginationInput!): PaginatedCopilotHistoriesType!
 
   """Get the context list of a session"""
   contexts(contextId: String, sessionId: String): [CopilotContext!]!
-  histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]!
+  histories(docId: String, options: QueryChatHistoriesInput): [CopilotHistories!]! @deprecated(reason: "use `chats` instead")
 
   """Get the quota of the user in the workspace"""
   quota: CopilotQuota!
@@ -220,7 +221,7 @@ type Copilot {
   session(sessionId: String!): CopilotSessionType!
 
   """Get the session list in the workspace"""
-  sessions(docId: String, options: QueryChatSessionsInput): [CopilotSessionType!]!
+  sessions(docId: String, options: QueryChatSessionsInput): [CopilotSessionType!]! @deprecated(reason: "use `chats` instead")
   workspaceId: ID
 }
 
@@ -313,13 +314,23 @@ type CopilotHistories {
   createdAt: DateTime!
   docId: String
   messages: [ChatMessage!]!
+  model: String!
+  optionalModels: [String!]!
+  parentSessionId: String
   pinned: Boolean!
+  promptName: String!
   sessionId: String!
+  title: String
 
   """The number of tokens used in the session"""
   tokens: Int!
   updatedAt: DateTime!
   workspaceId: String!
+}
+
+type CopilotHistoriesTypeEdge {
+  cursor: String!
+  node: CopilotHistories!
 }
 
 type CopilotInvalidContextDataType {
@@ -1418,6 +1429,12 @@ type PaginatedCommentObjectType {
   totalCount: Int!
 }
 
+type PaginatedCopilotHistoriesType {
+  edges: [CopilotHistoriesTypeEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
 type PaginatedCopilotWorkspaceFileType {
   edges: [CopilotWorkspaceFileTypeEdge!]!
   pageInfo: PageInfo!
@@ -1549,6 +1566,7 @@ input QueryChatHistoriesInput {
   sessionId: String
   sessionOrder: ChatHistoryOrder
   skip: Int
+  withMessages: Boolean
   withPrompt: Boolean
 }
 
