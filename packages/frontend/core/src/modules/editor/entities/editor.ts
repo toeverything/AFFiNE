@@ -214,9 +214,12 @@ export class Editor extends Entity {
       const std = editorContainer.host.std;
 
       // First try to find inline commented texts
-      const inlineCommentedSelections = findCommentedTexts(std, commentId);
+      const inlineCommentedSelections = findCommentedTexts(
+        std.store,
+        commentId
+      );
       if (inlineCommentedSelections.length > 0) {
-        const firstSelection = inlineCommentedSelections[0][0];
+        const firstSelection = inlineCommentedSelections[0];
         finalId = firstSelection.from.blockId;
         finalKey = 'blockIds';
       } else {

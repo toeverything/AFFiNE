@@ -244,8 +244,14 @@ export function mockCommentProvider() {
       this.commentHighlightSubject.next(id);
     }
 
-    getComments() {
-      return Array.from(this.comments.keys());
+    getComments(type: 'resolved' | 'unresolved' | 'all' = 'all') {
+      return Array.from(this.comments.entries())
+        .filter(([_, comment]) => {
+          if (type === 'all') return true;
+          if (type === 'resolved') return comment.resolved;
+          return !comment.resolved;
+        })
+        .map(([id]) => id);
     }
 
     onCommentAdded(

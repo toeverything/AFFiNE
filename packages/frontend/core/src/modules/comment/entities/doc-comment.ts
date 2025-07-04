@@ -14,7 +14,16 @@ import {
   onStart,
 } from '@toeverything/infra';
 import { nanoid } from 'nanoid';
-import { catchError, of, Subject, switchMap, tap, timer } from 'rxjs';
+import {
+  catchError,
+  filter,
+  first,
+  of,
+  Subject,
+  switchMap,
+  tap,
+  timer,
+} from 'rxjs';
 
 import { type DocDisplayMetaService } from '../../doc-display-meta';
 import { GlobalContextService } from '../../global-context';
@@ -280,8 +289,30 @@ export class DocCommentEntity extends Entity<{
     this.commentHighlighted$.next(id);
   }
 
-  getComments(): CommentId[] {
-    return this.comments$.value.map(comment => comment.id);
+  async getComments(
+    type: 'resolved' | 'unresolved' | 'all' = 'all'
+  ): Promise<CommentId[]> {
+    return new Promise<CommentId[]>(resolve => {
+      this.revalidate();
+      this.loading$
+        .pipe(
+          filter(loading => !loading),
+          first()
+        )
+        .subscribe(() => {
+          resolve(
+            this.comments$.value
+              .filter(comment =>
+                type === 'all'
+                  ? true
+                  : type === 'resolved'
+                    ? comment.resolved
+                    : !comment.resolved
+              )
+              .map(comment => comment.id)
+          );
+        });
+    });
   }
 
   onCommentAdded(

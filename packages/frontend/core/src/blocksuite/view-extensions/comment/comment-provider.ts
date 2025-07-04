@@ -138,8 +138,10 @@ class AffineCommentService implements CommentProvider {
     this.commentEntity.highlightComment(id);
   }
 
-  getComments(): string[] {
-    return this.commentEntity.getComments();
+  async getComments(
+    type: 'resolved' | 'unresolved' | 'all' = 'all'
+  ): Promise<string[]> {
+    return this.commentEntity.getComments(type);
   }
 
   onCommentAdded(callback: (id: string, selections: BaseSelection[]) => void) {

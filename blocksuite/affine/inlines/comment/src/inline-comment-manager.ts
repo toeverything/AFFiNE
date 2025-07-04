@@ -38,7 +38,7 @@ export class InlineCommentManager extends LifeCycleWatcher {
     const provider = this._provider;
     if (!provider) return;
 
-    this._init();
+    this._init().catch(console.error);
 
     this._disposables.add(provider.onCommentAdded(this._handleAddComment));
     this._disposables.add(
@@ -59,20 +59,12 @@ export class InlineCommentManager extends LifeCycleWatcher {
     this._disposables.dispose();
   }
 
-  private _init() {
+  private async _init() {
     const provider = this._provider;
     if (!provider) return;
 
-    const commentsInProvider = provider.getComments();
-    const inlineComments = findAllCommentedTexts(this.std).flatMap(
-      ([selection, inlineEditor]) => {
-        const deltas = inlineEditor.getDeltasByInlineRange({
-          index: selection.from.index,
-          length: selection.from.length,
-        });
-        return deltas.flatMap(([delta]) => extractCommentIdFromDelta(delta));
-      }
-    );
+    const commentsInProvider = await provider.getComments('unresolved');
+    const inlineComments = [...findAllCommentedTexts(this.std.store).values()];
 
     const blockComments = findAllCommentedBlocks(this.std.store).flatMap(
       block => Object.keys(block.props.comments)
@@ -165,12 +157,17 @@ export class InlineCommentManager extends LifeCycleWatcher {
   };
 
   private readonly _handleDeleteAndResolve = (id: CommentId) => {
-    const commentedTexts = findCommentedTexts(this.std, id);
+    const commentedTexts = findCommentedTexts(this.std.store, id);
     if (commentedTexts.length === 0) return;
 
     this.std.store.withoutTransact(() => {
-      commentedTexts.forEach(([selection, inlineEditor]) => {
-        inlineEditor.formatText(
+      commentedTexts.forEach(selection => {
+        const inlineEditor = getInlineEditorByModel(
+          this.std,
+          selection.from.blockId
+        );
+
+        inlineEditor?.formatText(
           selection.from,
           {
             [`comment-${id}`]: null,
