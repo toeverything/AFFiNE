@@ -45,17 +45,22 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
       }
 
       .ai-session-item {
+        position: relative;
         display: flex;
         height: 24px;
         padding: 2px 4px;
         justify-content: space-between;
         align-items: center;
+        border-radius: 4px;
         cursor: pointer;
       }
 
-      .ai-session-item:hover {
+      .ai-session-item:hover:not(:has(.ai-session-doc:hover)) {
         background: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
-        border-color: ${unsafeCSSVarV2('layer/insideBorder/border')};
+      }
+
+      .ai-session-doc:hover {
+        background: ${unsafeCSSVarV2('layer/background/hoverOverlay')};
       }
 
       .ai-session-title {
@@ -75,6 +80,7 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
         align-items: center;
         gap: 4px;
         flex-shrink: 0;
+        border-radius: 2px;
         cursor: pointer;
 
         svg {
@@ -109,6 +115,9 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor onSessionClick!: (sessionId: string) => void;
+
+  @property({ attribute: false })
+  accessor onDocClick!: (docId: string, sessionId: string) => void;
 
   @property({ attribute: false })
   accessor notification: NotificationService | null | undefined;
@@ -194,10 +203,20 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
           return html`
             <div
               class="ai-session-item"
-              @click=${() => this.onSessionClick(session.sessionId)}
+              @click=${(e: MouseEvent) => {
+                e.stopPropagation();
+                this.onSessionClick(session.sessionId);
+              }}
             >
-              <div class="ai-session-title">${session.sessionId}</div>
-              ${session.docId ? this.renderSessionDoc(session.docId) : nothing}
+              <div class="ai-session-title">
+                ${session.sessionId}
+                <affine-tooltip .offsetX=${60}>
+                  Click to open this chat
+                </affine-tooltip>
+              </div>
+              ${session.docId
+                ? this.renderSessionDoc(session.docId, session.sessionId)
+                : nothing}
             </div>
           `;
         })}
@@ -205,12 +224,19 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
     `;
   }
 
-  private renderSessionDoc(docId: string) {
+  private renderSessionDoc(docId: string, sessionId: string) {
     const getIcon = this.docDisplayConfig.getIcon(docId);
     const docIcon = typeof getIcon === 'function' ? getIcon() : getIcon;
-    return html`<div class="ai-session-doc">
+    return html`<div
+      class="ai-session-doc"
+      @click=${(e: MouseEvent) => {
+        e.stopPropagation();
+        this.onDocClick(docId, sessionId);
+      }}
+    >
       ${docIcon}
-      <span class="doc-title">${this.docDisplayConfig.getTitle(docId)}</span>
+      <span class="doc-title"> ${this.docDisplayConfig.getTitle(docId)} </span>
+      <affine-tooltip>Open this doc</affine-tooltip>
     </div>`;
   }
 

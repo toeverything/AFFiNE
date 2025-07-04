@@ -24,6 +24,9 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   accessor workspaceId!: string;
 
   @property({ attribute: false })
+  accessor docId: string | undefined;
+
+  @property({ attribute: false })
   accessor onNewSession!: () => void;
 
   @property({ attribute: false })
@@ -31,6 +34,9 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor onOpenSession!: (sessionId: string) => void;
+
+  @property({ attribute: false })
+  accessor onOpenDoc!: (docId: string, sessionId: string) => void;
 
   @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
@@ -80,9 +86,9 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
         </div>
         <div class="chat-toolbar-icon" @click=${this.onTogglePin}>
           ${pinned ? PinedIcon() : PinIcon()}
-          <affine-tooltip
-            >${pinned ? 'Unpin this Chat' : 'Pin this Chat'}</affine-tooltip
-          >
+          <affine-tooltip>
+            ${pinned ? 'Unpin this Chat' : 'Pin this Chat'}
+          </affine-tooltip>
         </div>
         <div
           class="chat-toolbar-icon history-button"
@@ -126,10 +132,22 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   };
 
   private readonly onSessionClick = async (sessionId: string) => {
+    if (this.session?.id === sessionId) {
+      this.notification?.toast('You are already in this chat');
+      return;
+    }
     const confirm = await this.unpinConfirm();
     if (confirm) {
       this.onOpenSession(sessionId);
     }
+  };
+
+  private readonly onDocClick = async (docId: string, sessionId: string) => {
+    if (this.docId === docId && this.session?.id === sessionId) {
+      this.notification?.toast('You are already in this chat');
+      return;
+    }
+    this.onOpenDoc(docId, sessionId);
   };
 
   private readonly toggleHistoryMenu = () => {
@@ -150,6 +168,7 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
           .workspaceId=${this.workspaceId}
           .docDisplayConfig=${this.docDisplayConfig}
           .onSessionClick=${this.onSessionClick}
+          .onDocClick=${this.onDocClick}
           .notification=${this.notification}
         ></ai-session-history>
       `,

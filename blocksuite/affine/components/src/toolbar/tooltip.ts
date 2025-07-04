@@ -190,7 +190,10 @@ export class Tooltip extends LitElement {
             middleware: [
               this.autoFlip && flip({ padding: AUTO_FLIP_PADDING }),
               this.autoShift && shift({ padding: AUTO_SHIFT_PADDING }),
-              offset((this.arrow ? TRIANGLE_HEIGHT : 0) + this.offset),
+              offset({
+                mainAxis: (this.arrow ? TRIANGLE_HEIGHT : 0) + this.offsetY,
+                crossAxis: this.offsetX,
+              }),
               arrow({
                 element: portalRoot.shadowRoot!.querySelector('.arrow')!,
               }),
@@ -264,7 +267,7 @@ export class Tooltip extends LitElement {
    * Show a triangle arrow pointing to the reference element.
    */
   @property({ attribute: false })
-  accessor arrow = true;
+  accessor arrow = false;
 
   /**
    * changes the placement of the floating element in order to keep it in view,
@@ -303,7 +306,10 @@ export class Tooltip extends LitElement {
    * See https://floating-ui.com/docs/offset
    */
   @property({ attribute: false })
-  accessor offset = 4;
+  accessor offsetY = 6;
+
+  @property({ attribute: false })
+  accessor offsetX = 0;
 
   @property({ attribute: 'tip-position' })
   accessor placement: Placement = 'top';

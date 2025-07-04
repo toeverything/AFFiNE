@@ -155,9 +155,9 @@ export class AIErrorWrapper extends SignalWatcher(WithDisposable(LitElement)) {
         >
           ${this.actionText}
           ${this.actionTooltip
-            ? html`<affine-tooltip tip-position="top"
-                >${this.actionTooltip}</affine-tooltip
-              >`
+            ? html`<affine-tooltip tip-position="top">
+                ${this.actionTooltip}
+              </affine-tooltip>`
             : nothing}
         </span>
       </div>

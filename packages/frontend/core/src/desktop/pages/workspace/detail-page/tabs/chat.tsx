@@ -84,6 +84,8 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
       chatPanelRef.current.affineWorkspaceDialogService = framework.get(
         WorkspaceDialogService
       );
+      chatPanelRef.current.affineWorkbenchService =
+        framework.get(WorkbenchService);
 
       containerRef.current?.append(chatPanelRef.current);
     } else {

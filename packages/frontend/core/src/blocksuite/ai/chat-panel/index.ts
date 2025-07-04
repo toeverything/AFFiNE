@@ -1,5 +1,6 @@
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { WorkbenchService } from '@affine/core/modules/workbench';
 import type {
   ContextEmbedStatus,
   CopilotSessionType,
@@ -105,6 +106,9 @@ export class ChatPanel extends SignalWatcher(
   @property({ attribute: false })
   accessor affineWorkspaceDialogService!: WorkspaceDialogService;
 
+  @property({ attribute: false })
+  accessor affineWorkbenchService!: WorkbenchService;
+
   @state()
   accessor session: CopilotSessionType | null | undefined;
 
@@ -150,34 +154,72 @@ export class ChatPanel extends SignalWatcher(
       <ai-chat-toolbar
         .session=${this.session}
         .workspaceId=${this.doc.workspace.id}
+        .docId=${this.doc.id}
         .onNewSession=${this.newSession}
         .onTogglePin=${this.togglePin}
         .onOpenSession=${this.openSession}
+        .onOpenDoc=${this.openDoc}
         .docDisplayConfig=${this.docDisplayConfig}
         .notification=${notification}
       ></ai-chat-toolbar>
     `;
   }
 
+  private readonly getSessionIdFromUrl = () => {
+    if (this.affineWorkbenchService) {
+      const { workbench } = this.affineWorkbenchService;
+      const location = workbench.location$.value;
+      const searchParams = new URLSearchParams(location.search);
+      const sessionId = searchParams.get('sessionId');
+      if (sessionId) {
+        workbench.activeView$.value.updateQueryString(
+          { sessionId: undefined },
+          { replace: true }
+        );
+      }
+      return sessionId;
+    }
+    return undefined;
+  };
+
+  private readonly setSession = (
+    session: CopilotSessionType | null | undefined
+  ) => {
+    this.session = session ?? null;
+  };
+
   private readonly initSession = async () => {
     if (!AIProvider.session) {
       return;
     }
+    const sessionId = this.getSessionIdFromUrl();
     const pinSessions = await AIProvider.session.getSessions(
       this.doc.workspace.id,
       undefined,
       { pinned: true, limit: 1 }
     );
+
     if (Array.isArray(pinSessions) && pinSessions[0]) {
+      // pinned session
       this.session = pinSessions[0];
+    } else if (sessionId) {
+      // sessionId from url
+      const session = await AIProvider.session.getSession(
+        this.doc.workspace.id,
+        sessionId
+      );
+      this.setSession(session);
     } else {
+      // latest doc session
       const docSessions = await AIProvider.session.getSessions(
         this.doc.workspace.id,
         this.doc.id,
         { action: false, fork: false, limit: 1 }
       );
+      // sessions is descending ordered by updatedAt
       // the first item is the latest session
-      this.session = docSessions?.[0] ?? null;
+      const session = docSessions?.[0];
+      this.setSession(session);
     }
   };
 
@@ -199,7 +241,7 @@ export class ChatPanel extends SignalWatcher(
         this.doc.workspace.id,
         sessionId
       );
-      this.session = session ?? null;
+      this.setSession(session);
     }
     return this.session;
   };
@@ -210,7 +252,7 @@ export class ChatPanel extends SignalWatcher(
       this.doc.workspace.id,
       options.sessionId
     );
-    this.session = session ?? null;
+    this.setSession(session);
   };
 
   private readonly newSession = () => {
@@ -221,12 +263,31 @@ export class ChatPanel extends SignalWatcher(
   };
 
   private readonly openSession = async (sessionId: string) => {
+    if (this.session?.id === sessionId) {
+      return;
+    }
     this.resetPanel();
     const session = await AIProvider.session?.getSession(
       this.doc.workspace.id,
       sessionId
     );
-    this.session = session ?? null;
+    this.setSession(session);
+  };
+
+  private readonly openDoc = async (docId: string, sessionId: string) => {
+    if (this.doc.id === docId) {
+      if (this.session?.id === sessionId || this.session?.pinned) {
+        return;
+      }
+      await this.openSession(sessionId);
+    } else if (this.affineWorkbenchService) {
+      const { workbench } = this.affineWorkbenchService;
+      if (this.session?.pinned) {
+        workbench.open(`/${docId}`, { at: 'active' });
+      } else {
+        workbench.open(`/${docId}?sessionId=${sessionId}`, { at: 'active' });
+      }
+    }
   };
 
   private readonly togglePin = async () => {

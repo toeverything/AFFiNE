@@ -251,9 +251,9 @@ export class AIPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
                 @pointerdown=${stopPropagation}
               >
                 ${PublishIcon()}
-                <affine-tooltip .offset=${12}
-                  >Toggle Network Search</affine-tooltip
-                >
+                <affine-tooltip .offsetY=${12}>
+                  Toggle Network Search
+                </affine-tooltip>
               </div>
             `
           : nothing}
@@ -265,7 +265,7 @@ export class AIPanelInput extends SignalWatcher(WithDisposable(LitElement)) {
         >
           ${SendIcon()}
           ${this._hasContent
-            ? html`<affine-tooltip .offset=${12}>Send to AI</affine-tooltip>`
+            ? html`<affine-tooltip .offsetY=${12}>Send to AI</affine-tooltip>`
             : nothing}
         </div>
       </div>
