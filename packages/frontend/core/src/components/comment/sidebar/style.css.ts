@@ -172,6 +172,7 @@ export const commentInputContainer = style({
   justifyContent: 'flex-start',
   gap: '4px',
   paddingLeft: '8px',
+  maxWidth: '800px',
 });
 
 export const userName = style({

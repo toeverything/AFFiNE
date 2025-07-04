@@ -149,15 +149,25 @@ export class DocCommentStore extends Entity<{
 
     const commentChanges = response.workspace?.commentChanges;
     if (!commentChanges) {
-      return [];
+      return {
+        changes: [],
+        startCursor: '',
+        endCursor: after ?? '',
+        hasNextPage: false,
+      };
     }
 
-    return commentChanges.edges.map(edge => ({
-      id: edge.node.id,
-      action: edge.node.action,
-      comment: normalizeComment(edge.node.item),
-      commentId: edge.node.commentId || undefined,
-    }));
+    return {
+      changes: commentChanges.edges.map(edge => ({
+        id: edge.node.id,
+        action: edge.node.action,
+        comment: normalizeComment(edge.node.item),
+        commentId: edge.node.commentId || undefined,
+      })),
+      startCursor: commentChanges.pageInfo.startCursor || '',
+      endCursor: commentChanges.pageInfo.endCursor || '',
+      hasNextPage: commentChanges.pageInfo.hasNextPage,
+    };
   }
 
   async createComment(commentInput: {

@@ -51,4 +51,9 @@ export interface DocCommentChange {
   commentId?: CommentId; // a change with comment id is a reply
 }
 
-export type DocCommentChangeListResult = DocCommentChange[];
+export type DocCommentChangeListResult = {
+  changes: DocCommentChange[];
+  startCursor: string;
+  endCursor: string;
+  hasNextPage: boolean;
+};

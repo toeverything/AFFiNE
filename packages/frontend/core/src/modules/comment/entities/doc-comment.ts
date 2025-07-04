@@ -359,13 +359,15 @@ export class DocCommentEntity extends Entity<{
         // If we have comments, fetch changes; otherwise fetch all
         if (this.comments$.value.length > 0) {
           return fromPromise(async () => {
-            return await this.store.listCommentChanges({
+            const res = await this.store.listCommentChanges({
               after: this.startCursor,
             });
+            return res;
           }).pipe(
-            tap(changes => {
-              if (changes) {
-                this.handleCommentChanges(changes);
+            tap(result => {
+              if (result) {
+                this.handleCommentChanges(result);
+                this.startCursor = result.endCursor;
               }
             }),
             catchError(error => {
@@ -418,7 +420,8 @@ export class DocCommentEntity extends Entity<{
     }
   }
 
-  private handleCommentChanges(changes: DocCommentChangeListResult): void {
+  private handleCommentChanges(result: DocCommentChangeListResult): void {
+    const { changes } = result;
     if (!changes || changes.length === 0) {
       return;
     }
