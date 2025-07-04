@@ -23,8 +23,22 @@ class AssistantMessageCell: ChatBaseCell {
 
   override func prepareForReuse() {
     super.prepareForReuse()
+    markdownView.prepareForReuse()
   }
 
+  override func configure(with viewModel: any ChatCellViewModel) {
+    super.configure(with: viewModel)
+    
+    guard let vm = viewModel as? AssistantMessageCellViewModel else {
+      assertionFailure()
+      return
+    }
+    markdownView.setMarkdown(
+      vm.documentBlocks,
+      renderedContent: vm.documentRenderedContent
+    )
+  }
+  
   override func layoutContentView(bounds: CGRect) {
     super.layoutContentView(bounds: bounds)
     markdownView.frame = bounds

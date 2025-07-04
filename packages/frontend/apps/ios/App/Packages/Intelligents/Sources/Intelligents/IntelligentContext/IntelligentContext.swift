@@ -70,6 +70,7 @@ public class IntelligentContext {
     assert(webView != nil)
     DispatchQueue.global(qos: .userInitiated).async { [self] in
       prepareTemporaryDirectory()
+      prepareMarkdownViewThemes()
 
       let webViewGroup = DispatchGroup()
       var webViewMetadataResult: [WebViewMetadataKey: Any] = [:]

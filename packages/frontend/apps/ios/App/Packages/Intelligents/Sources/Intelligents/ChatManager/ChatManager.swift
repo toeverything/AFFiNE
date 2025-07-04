@@ -28,6 +28,7 @@ public class ChatManager: ObservableObject, @unchecked Sendable {
   private init() {}
 
   public func closeAll() {
+    print("[+] terminating all closables...")
     closable.forEach { $0.close() }
     closable.removeAll()
   }

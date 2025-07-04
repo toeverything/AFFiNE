@@ -10,6 +10,10 @@ import Apollo
 import ApolloAPI
 import EventSource
 import Foundation
+import MarkdownParser
+import MarkdownView
+
+private let loadingIndicator = " ●"
 
 private extension InputBoxData {
   var hasAttachment: Bool {
@@ -117,12 +121,23 @@ extension ChatManager {
       report(sessionId, ChatError.invalidStreamURL)
       return
     }
+    var request = URLRequest(
+      url: finalUrl,
+      cachePolicy: .reloadIgnoringLocalAndRemoteCacheData,
+      timeoutInterval: 10
+    )
+    request.setValue("close", forHTTPHeaderField: "Connection")
+    
+    var document = ""
+    let queue = DispatchQueue(label: "com.affine.chat.stream.\(sessionId)")
+    @Sendable func finalizeDocument() {
+      queue.async {
+        self.writeMarkdownContent(document, sessionId: sessionId, vmId: vmId)
+      }
+    }
+    
     let eventSource = EventSource(
-      request: .init(
-        url: finalUrl,
-        cachePolicy: .reloadIgnoringLocalAndRemoteCacheData,
-        timeoutInterval: 10
-      ),
+      request: request,
       configuration: .default
     )
     eventSource.onOpen = {
@@ -130,24 +145,54 @@ extension ChatManager {
     }
     eventSource.onError = {
       self.report(sessionId, $0 ?? ChatError.unknownError)
+      self.closeAll()
+      finalizeDocument()
     }
 
-    var document = ""
-    let queue = DispatchQueue(label: "com.affine.chat.stream.\(sessionId)")
     eventSource.onMessage = { event in
       queue.async {
-        print("[*] \(messageId): \(event.event ?? "?") received message: \(event.data)")
+        assert(!Thread.isMainThread)
         switch event.event {
         case "message":
           document += event.data
-          self.with(sessionId: sessionId, vmId: vmId) { (viewModel: inout AssistantMessageCellViewModel) in
-            viewModel.content = document
-          }
+          self.writeMarkdownContent(document + loadingIndicator, sessionId: sessionId, vmId: vmId)
+        case "ping":
+          print("[*] \(messageId): ping received")
         default:
+          print("[*] \(messageId): \(event.event ?? "?") received message: \(event.data)")
           break
         }
       }
     }
     closable.append(eventSource)
+  }
+  
+  private func writeMarkdownContent(
+    _ document: String,
+    sessionId: SessionID,
+    vmId: UUID
+  ) {
+//    print("[*] updating message content for \(sessionId): \(document.count) characters")
+    print(document)
+    let result = MarkdownParser().parse(document)
+    var renderedContexts: [String: RenderedItem] = [:]
+    for (key, value) in result.mathContext {
+        let image = MathRenderer.renderToImage(
+            latex: value,
+            fontSize: MarkdownTheme.default.fonts.body.pointSize,
+            textColor: MarkdownTheme.default.colors.body
+        )?.withRenderingMode(.alwaysTemplate)
+        let renderedContext = RenderedItem(
+            image: image,
+            text: value
+        )
+        renderedContexts["math://\(key)"] = renderedContext
+    }
+    
+    self.with(sessionId: sessionId, vmId: vmId) { (viewModel: inout AssistantMessageCellViewModel) in
+      viewModel.content = document
+      viewModel.documentBlocks = result.document
+      viewModel.documentRenderedContent = renderedContexts
+    }
   }
 }
