@@ -4826,6 +4826,14 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.setting.notifications.email.invites.subtitle"](): string;
     /**
+      * `Comments`
+      */
+    ["com.affine.setting.notifications.email.comments.title"](): string;
+    /**
+      * `You will be notified through email when other members of the workspace comment on your docs.`
+      */
+    ["com.affine.setting.notifications.email.comments.subtitle"](): string;
+    /**
       * `Account settings`
       */
     ["com.affine.setting.account"](): string;

@@ -1199,6 +1199,8 @@
   "com.affine.setting.notifications.email.mention.subtitle": "You will be notified through email when other members of the workspace @ you.",
   "com.affine.setting.notifications.email.invites.title": "Invites",
   "com.affine.setting.notifications.email.invites.subtitle": "Invitation related messages will be sent through emails.",
+  "com.affine.setting.notifications.email.comments.title": "Comments",
+  "com.affine.setting.notifications.email.comments.subtitle": "You will be notified through email when other members of the workspace comment on your docs.",
   "com.affine.setting.account": "Account settings",
   "com.affine.setting.account.delete": "Delete your account",
   "com.affine.setting.account.delete.message": "Once deleted, your account will no longer be accessible, and all data in your personal cloud space will be permanently deleted.",
