@@ -2,64 +2,51 @@ import { Logger } from '@nestjs/common';
 import { tool } from 'ai';
 import { z } from 'zod';
 
+import type { PromptService } from '../prompt';
+import type { CopilotProviderFactory } from '../providers';
 import { toolError } from './error';
 
 const logger = new Logger('DocComposeTool');
 
-export const createDocComposeTool = () => {
+export const createDocComposeTool = (
+  promptService: PromptService,
+  factory: CopilotProviderFactory
+) => {
   return tool({
     description:
       'Write a new document with markdown content. This tool creates structured markdown content for documents including titles, sections, and formatting.',
     parameters: z.object({
       title: z.string().describe('The title of the document'),
-      content: z
+      userPrompt: z
         .string()
         .describe(
-          'The main content to write in markdown format. Include proper markdown formatting like headers (# ## ###), lists (- * 1.), links [text](url), code blocks ```code```, and other markdown elements as needed.'
+          'The user description of the document, will be used to generate the document'
         ),
-      sections: z
-        .array(
-          z.object({
-            heading: z.string().describe('Section heading'),
-            content: z.string().describe('Section content in markdown'),
-          })
-        )
-        .optional()
-        .describe('Optional structured sections for the document'),
-      metadata: z
-        .object({
-          tags: z
-            .array(z.string())
-            .optional()
-            .describe('Optional tags for the document'),
-          description: z
-            .string()
-            .optional()
-            .describe('Optional brief description of the document'),
-        })
-        .optional()
-        .describe('Optional metadata for the document'),
     }),
-    execute: async ({ title, content, sections, metadata }) => {
+    execute: async ({ title, userPrompt }) => {
       try {
-        let markdownContent = '';
-
-        markdownContent += `${content}\n\n`;
-
-        if (sections && sections.length > 0) {
-          for (const section of sections) {
-            markdownContent += `## ${section.heading}\n\n`;
-            markdownContent += `${section.content}\n\n`;
-          }
+        const prompt = await promptService.get('Write an article about this');
+        if (!prompt) {
+          throw new Error('Prompt not found');
         }
+
+        const provider = await factory.getProviderByModel(prompt.model);
+
+        if (!provider) {
+          throw new Error('Provider not found');
+        }
+
+        const content = await provider.text(
+          {
+            modelId: prompt.model,
+          },
+          [...prompt.finish({}), { role: 'user', content: userPrompt }]
+        );
 
         return {
           title,
-          markdown: markdownContent.trim(),
+          markdown: content,
           wordCount: content.split(/\s+/).length,
-          metadata: metadata || {},
-          tags: metadata?.tags || [],
-          description: metadata?.description || '',
         };
       } catch (err: any) {
         logger.error(`Failed to write document: ${title}`, err);

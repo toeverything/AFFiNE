@@ -39,7 +39,6 @@ interface DocComposeToolResult {
         title: string;
         markdown: string;
         wordCount: number;
-        metadata: Record<string, unknown>;
       }
     | ToolError
     | null;

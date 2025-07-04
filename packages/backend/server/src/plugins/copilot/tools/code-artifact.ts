@@ -2,6 +2,8 @@ import { Logger } from '@nestjs/common';
 import { tool } from 'ai';
 import { z } from 'zod';
 
+import type { PromptService } from '../prompt';
+import type { CopilotProviderFactory } from '../providers';
 import { toolError } from './error';
 
 const logger = new Logger('CodeArtifactTool');
@@ -12,7 +14,10 @@ const logger = new Logger('CodeArtifactTool');
  * it can be saved as a single .html file and opened in any browser with no
  * external dependencies.
  */
-export const createCodeArtifactTool = () => {
+export const createCodeArtifactTool = (
+  promptService: PromptService,
+  factory: CopilotProviderFactory
+) => {
   return tool({
     description:
       'Generate a single-file HTML snippet (with inline <style> and <script>) that accomplishes the requested functionality. The final HTML should be runnable when saved as an .html file and opened in a browser. Do NOT reference external resources (CSS, JS, images) except through data URIs.',
@@ -22,58 +27,49 @@ export const createCodeArtifactTool = () => {
        */
       title: z.string().describe('The title of the HTML page'),
       /**
-       * The raw HTML that should be placed inside <body>. *Do not* include
-       * <body> tags here – the tool will wrap it for you.
+       * The optimized user prompt
        */
-      body: z
+      userPrompt: z
         .string()
-        .describe('HTML markup that goes inside the <body> element'),
-      /**
-       * Optional CSS rules to be wrapped in a single <style> tag inside <head>.
-       */
-      css: z
-        .string()
-        .optional()
-        .describe('CSS to inline in a <style> tag (omit if none).'),
-      /**
-       * Optional JavaScript code to be wrapped in a single <script> tag before
-       * </body>.
-       */
-      js: z
-        .string()
-        .optional()
-        .describe('JavaScript to inline in a <script> tag (omit if none).'),
+        .describe(
+          'The user description of the code artifact, will be used to generate the code artifact'
+        ),
     }),
-    execute: async ({ title, body, css = '', js = '' }) => {
+    execute: async ({ title, userPrompt }) => {
       try {
-        const parts: string[] = [];
-        parts.push('<!DOCTYPE html>');
-        parts.push('<html lang="en">');
-        parts.push('<head>');
-        parts.push('<meta charset="UTF-8" />');
-        parts.push(`<title>${title}</title>`);
-        if (css.trim().length) {
-          parts.push('<style>');
-          parts.push(css);
-          parts.push('</style>');
+        const prompt = await promptService.get('Make it real with text');
+        if (!prompt) {
+          throw new Error('Prompt not found');
         }
-        parts.push('</head>');
-        parts.push('<body>');
-        parts.push(body);
-        if (js.trim().length) {
-          parts.push('<script>');
-          parts.push(js);
-          parts.push('</script>');
-        }
-        parts.push('</body>');
-        parts.push('</html>');
 
-        const html = parts.join('\n');
+        const provider = await factory.getProviderByModel(prompt.model);
+        if (!provider) {
+          throw new Error('Provider not found');
+        }
+
+        const content = await provider.text(
+          {
+            modelId: prompt.model,
+          },
+          [...prompt.finish({}), { role: 'user', content: userPrompt }]
+        );
+
+        // Remove surrounding ``` or ```html fences if present
+        let stripped = content.trim();
+        if (stripped.startsWith('```')) {
+          const firstNewline = stripped.indexOf('\n');
+          if (firstNewline !== -1) {
+            stripped = stripped.slice(firstNewline + 1);
+          }
+          if (stripped.endsWith('```')) {
+            stripped = stripped.slice(0, -3);
+          }
+        }
 
         return {
           title,
-          html,
-          size: html.length,
+          html: stripped,
+          size: stripped.length,
         };
       } catch (err: any) {
         logger.error(`Failed to compose code artifact (${title})`, err);

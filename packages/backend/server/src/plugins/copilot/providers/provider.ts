@@ -14,6 +14,7 @@ import { AccessController } from '../../../core/permission';
 import { Models } from '../../../models';
 import { IndexerService } from '../../indexer';
 import { CopilotContextService } from '../context';
+import { PromptService } from '../prompt';
 import {
   buildContentGetter,
   buildDocContentGetter,
@@ -201,11 +202,23 @@ export abstract class CopilotProvider<C = any> {
             break;
           }
           case 'docCompose': {
-            tools.doc_compose = createDocComposeTool();
+            const promptService = this.moduleRef.get(PromptService, {
+              strict: false,
+            });
+            tools.doc_compose = createDocComposeTool(
+              promptService,
+              this.factory
+            );
             break;
           }
           case 'codeArtifact': {
-            tools.code_artifact = createCodeArtifactTool();
+            const promptService = this.moduleRef.get(PromptService, {
+              strict: false,
+            });
+            tools.code_artifact = createCodeArtifactTool(
+              promptService,
+              this.factory
+            );
             break;
           }
         }
