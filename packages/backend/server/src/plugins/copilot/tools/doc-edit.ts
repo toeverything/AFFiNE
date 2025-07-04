@@ -16,8 +16,8 @@ export const buildContentGetter = (ac: AccessController, doc: DocReader) => {
       .doc(docId)
       .can('Doc.Read');
     if (!canAccess) return undefined;
-    const content = await doc.getFullDocContent(options.workspace, docId);
-    return content?.summary.trim() || undefined;
+    const content = await doc.getDocMarkdown(options.workspace, docId, true);
+    return content?.markdown.trim() || undefined;
   };
   return getDocContent;
 };

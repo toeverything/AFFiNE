@@ -168,6 +168,7 @@ export const styles = css`
   .affine-embed-linked-doc-banner {
     margin: 12px 12px 0px 0px;
     width: 204px;
+    min-width: 204px;
     max-width: 100%;
     height: 102px;
     pointer-events: none;

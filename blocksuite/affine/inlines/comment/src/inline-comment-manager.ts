@@ -1,8 +1,10 @@
 import { getInlineEditorByModel } from '@blocksuite/affine-rich-text';
 import { getSelectedBlocksCommand } from '@blocksuite/affine-shared/commands';
 import {
+  BlockCommentManager,
   type CommentId,
   CommentProviderIdentifier,
+  findAllCommentedBlocks,
 } from '@blocksuite/affine-shared/services';
 import type { AffineInlineEditor } from '@blocksuite/affine-shared/types';
 import { DisposableGroup } from '@blocksuite/global/disposable';
@@ -13,8 +15,13 @@ import {
 } from '@blocksuite/std';
 import type { BaseSelection, BlockModel } from '@blocksuite/store';
 import { signal } from '@preact/signals-core';
+import difference from 'lodash-es/difference';
 
-import { extractCommentIdFromDelta, findCommentedTexts } from './utils';
+import {
+  extractCommentIdFromDelta,
+  findAllCommentedTexts,
+  findCommentedTexts,
+} from './utils';
 
 export class InlineCommentManager extends LifeCycleWatcher {
   static override key = 'inline-comment-manager';
@@ -30,6 +37,8 @@ export class InlineCommentManager extends LifeCycleWatcher {
   override mounted() {
     const provider = this._provider;
     if (!provider) return;
+
+    this._init();
 
     this._disposables.add(provider.onCommentAdded(this._handleAddComment));
     this._disposables.add(
@@ -48,6 +57,43 @@ export class InlineCommentManager extends LifeCycleWatcher {
 
   override unmounted() {
     this._disposables.dispose();
+  }
+
+  private _init() {
+    const provider = this._provider;
+    if (!provider) return;
+
+    const commentsInProvider = provider.getComments();
+    const inlineComments = findAllCommentedTexts(this.std).flatMap(
+      ([selection, inlineEditor]) => {
+        const deltas = inlineEditor.getDeltasByInlineRange({
+          index: selection.from.index,
+          length: selection.from.length,
+        });
+        return deltas.flatMap(([delta]) => extractCommentIdFromDelta(delta));
+      }
+    );
+
+    const blockComments = findAllCommentedBlocks(this.std.store).flatMap(
+      block => Object.keys(block.props.comments)
+    );
+
+    const commentsInEditor = [
+      ...new Set([...inlineComments, ...blockComments]),
+    ];
+
+    // resolve comments that are in provider but not in editor
+    // which means the commented content may be deleted
+    difference(commentsInProvider, commentsInEditor).forEach(comment => {
+      provider.resolveComment(comment);
+    });
+
+    // remove comments that are in editor but not in provider
+    // which means the comment may be removed or resolved in provider side
+    difference(commentsInEditor, commentsInProvider).forEach(comment => {
+      this._handleDeleteAndResolve(comment);
+      this.std.get(BlockCommentManager).handleDeleteAndResolve(comment);
+    });
   }
 
   private readonly _handleAddComment = (

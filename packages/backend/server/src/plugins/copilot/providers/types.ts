@@ -69,6 +69,9 @@ export const PromptConfigStrictSchema = z.object({
       'docSemanticSearch',
       // work with exa/model internal tools
       'webSearch',
+      // artifact tools
+      'docCompose',
+      'codeArtifact',
     ])
     .array()
     .nullable()

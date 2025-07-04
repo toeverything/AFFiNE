@@ -47,7 +47,11 @@ export const buildDocContentGetter = (
       return;
     }
 
-    const content = await docReader.getDocMarkdown(options.workspace, docId);
+    const content = await docReader.getDocMarkdown(
+      options.workspace,
+      docId,
+      true
+    );
     if (!content) {
       return;
     }

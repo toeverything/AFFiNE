@@ -15,13 +15,7 @@ yarn affine cert --install
 
 ```bash
 # certificates will be located at `./.docker/dev/certs/${domain}`
-yarn affine cert --domain dev.affine.fail
+yarn affine cert --domain affine.localhost
 ```
 
-### 3. Enable dns and nginx service in compose.yml
-
-### 4. Add custom dns server
-
-```bash
-echo "nameserver 127.0.0.1" | sudo tee /etc/resolver/dev.affine.fail
-```
+### 3. Enable nginx service in compose.yml

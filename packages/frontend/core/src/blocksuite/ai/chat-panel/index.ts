@@ -12,7 +12,13 @@ import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType, Store } from '@blocksuite/affine/store';
 import { CenterPeekIcon } from '@blocksuite/icons/lit';
 import { type Signal, signal } from '@preact/signals-core';
-import { css, html, nothing, type PropertyValues } from 'lit';
+import {
+  css,
+  html,
+  nothing,
+  type PropertyValues,
+  type TemplateResult,
+} from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { keyed } from 'lit/directives/keyed.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -105,6 +111,9 @@ export class ChatPanel extends SignalWatcher(
 
   @state()
   accessor showPreviewPanel = false;
+
+  @state()
+  accessor previewPanelContent: TemplateResult<1> | null = null;
 
   private isSidebarOpen: Signal<boolean | undefined> = signal(false);
 
@@ -329,7 +338,7 @@ export class ChatPanel extends SignalWatcher(
       )}
     </div>`;
 
-    const right = html`<div>Preview Panel</div>`;
+    const right = this.previewPanelContent;
 
     return html`<chat-panel-split-view
       .left=${left}

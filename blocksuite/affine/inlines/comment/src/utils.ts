@@ -5,8 +5,8 @@ import { type BlockStdScope, TextSelection } from '@blocksuite/std';
 import type { InlineEditor } from '@blocksuite/std/inline';
 import type { DeltaInsert } from '@blocksuite/store';
 
-export function findCommentedTexts(std: BlockStdScope, commentId: CommentId) {
-  const selections: [TextSelection, InlineEditor][] = [];
+export function findAllCommentedTexts(std: BlockStdScope) {
+  const selections: [TextSelection, InlineEditor<AffineTextAttributes>][] = [];
   std.store.getAllModels().forEach(model => {
     const inlineEditor = getInlineEditorByModel(std, model);
     if (!inlineEditor) return;
@@ -19,9 +19,7 @@ export function findCommentedTexts(std: BlockStdScope, commentId: CommentId) {
       (delta, rangeIndex) => {
         if (
           delta.attributes &&
-          Object.keys(delta.attributes).some(
-            key => key === `comment-${commentId}`
-          )
+          Object.keys(delta.attributes).some(key => key.startsWith('comment-'))
         ) {
           selections.push([
             new TextSelection({
@@ -40,6 +38,18 @@ export function findCommentedTexts(std: BlockStdScope, commentId: CommentId) {
   });
 
   return selections;
+}
+
+export function findCommentedTexts(std: BlockStdScope, commentId: CommentId) {
+  return findAllCommentedTexts(std).filter(([selection, inlineEditor]) => {
+    const deltas = inlineEditor.getDeltasByInlineRange({
+      index: selection.from.index,
+      length: selection.from.length,
+    });
+    return deltas
+      .flatMap(([delta]) => extractCommentIdFromDelta(delta))
+      .includes(commentId);
+  });
 }
 
 export function extractCommentIdFromDelta(

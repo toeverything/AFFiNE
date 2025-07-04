@@ -5,15 +5,20 @@ import type { BlockModel, Store } from '@blocksuite/store';
 import type { ToolbarAction } from '../toolbar-service';
 import { type CommentId, CommentProviderIdentifier } from './comment-provider';
 
-export function findCommentedBlocks(store: Store, commentId: CommentId) {
+export function findAllCommentedBlocks(store: Store) {
   type CommentedBlock = BlockModel<{ comments: Record<CommentId, boolean> }>;
   return store.getAllModels().filter((block): block is CommentedBlock => {
     return (
       'comments' in block.props &&
       typeof block.props.comments === 'object' &&
-      block.props.comments !== null &&
-      commentId in block.props.comments
+      block.props.comments !== null
     );
+  });
+}
+
+export function findCommentedBlocks(store: Store, commentId: CommentId) {
+  return findAllCommentedBlocks(store).filter(block => {
+    return block.props.comments[commentId];
   });
 }
 

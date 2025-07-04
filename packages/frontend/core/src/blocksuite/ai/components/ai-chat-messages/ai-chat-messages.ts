@@ -11,11 +11,11 @@ import { ArrowDownBigIcon as ArrowDownIcon } from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';
 import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { debounce } from 'lodash-es';
 
 import { AffineIcon } from '../../_common/icons';
-import { HISTORY_IMAGE_ACTIONS } from '../../chat-panel/const';
 import { AIPreloadConfig } from '../../chat-panel/preload-config';
 import { type AIError, AIProvider, UnauthorizedError } from '../../provider';
 import { mergeStreamObjects } from '../../utils/stream-objects';
@@ -24,7 +24,12 @@ import type {
   AINetworkSearchConfig,
   AIReasoningConfig,
 } from '../ai-chat-input';
-import { isChatAction, isChatMessage, StreamObjectSchema } from './type';
+import {
+  type HistoryMessage,
+  isChatAction,
+  isChatMessage,
+  StreamObjectSchema,
+} from './type';
 
 export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   static override styles = css`
@@ -68,6 +73,10 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
       flex-direction: column;
       align-items: center;
       gap: 12px;
+    }
+    .independent-mode .messages-placeholder {
+      position: static;
+      transform: none;
     }
 
     .messages-placeholder-title {
@@ -139,6 +148,12 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
 
   @state()
   accessor avatarUrl = '';
+
+  @property({ attribute: false })
+  accessor independentMode!: boolean;
+
+  @property({ attribute: false })
+  accessor messages!: HistoryMessage[];
 
   @property({ attribute: false })
   accessor host: EditorHost | null | undefined;
@@ -243,16 +258,9 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   };
 
   protected override render() {
-    const { messages, status, error } = this.chatContextValue;
+    const { status, error } = this.chatContextValue;
     const { isHistoryLoading } = this;
-    const filteredItems = messages.filter(item => {
-      return (
-        isChatMessage(item) ||
-        item.messages?.length === 3 ||
-        (HISTORY_IMAGE_ACTIONS.includes(item.action) &&
-          item.messages?.length === 2)
-      );
-    });
+    const filteredItems = this.messages;
 
     const showDownIndicator =
       this.canScrollDown &&
@@ -261,7 +269,10 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
 
     return html`
       <div
-        class="chat-panel-messages-container"
+        class=${classMap({
+          'chat-panel-messages-container': true,
+          'independent-mode': this.independentMode,
+        })}
         data-testid="chat-panel-messages-container"
         @scroll=${() => this._debouncedOnScroll()}
       >
@@ -287,7 +298,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                       >What can I help you with?</span
                     >`}
               </div>
-              ${this._renderAIOnboarding()}
+              ${this.independentMode ? nothing : this._renderAIOnboarding()}
             </div> `
           : repeat(
               filteredItems,

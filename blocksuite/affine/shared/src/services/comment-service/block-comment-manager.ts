@@ -42,10 +42,10 @@ export class BlockCommentManager extends LifeCycleWatcher {
 
     this._disposables.add(provider.onCommentAdded(this._handleAddComment));
     this._disposables.add(
-      provider.onCommentDeleted(this._handleDeleteAndResolve)
+      provider.onCommentDeleted(this.handleDeleteAndResolve)
     );
     this._disposables.add(
-      provider.onCommentResolved(this._handleDeleteAndResolve)
+      provider.onCommentResolved(this.handleDeleteAndResolve)
     );
     this._disposables.add(
       provider.onCommentHighlighted(this._handleHighlightComment)
@@ -103,7 +103,7 @@ export class BlockCommentManager extends LifeCycleWatcher {
     });
   };
 
-  private readonly _handleDeleteAndResolve = (id: CommentId) => {
+  readonly handleDeleteAndResolve = (id: CommentId) => {
     const commentedBlocks = findCommentedBlocks(this.std.store, id);
     this.std.store.withoutTransact(() => {
       commentedBlocks.forEach(block => {

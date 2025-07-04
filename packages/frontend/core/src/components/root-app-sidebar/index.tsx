@@ -18,6 +18,7 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { Store } from '@blocksuite/affine/store';
 import {
+  AiIcon,
   AllDocsIcon,
   ImportIcon,
   JournalIcon,
@@ -82,6 +83,22 @@ const AllDocsButton = () => {
       <span data-testid="all-pages">
         {t['com.affine.workspaceSubPath.all']()}
       </span>
+    </MenuLinkItem>
+  );
+};
+
+const AIChatButton = () => {
+  const { workbenchService } = useServices({
+    WorkbenchService,
+  });
+  const workbench = workbenchService.workbench;
+  const aiChatActive = useLiveData(
+    workbench.location$.selector(location => location.pathname === '/chat')
+  );
+
+  return (
+    <MenuLinkItem icon={<AiIcon />} active={aiChatActive} to={'/chat'}>
+      <span data-testid="ai-chat">AFFiNE Intelligent</span>
     </MenuLinkItem>
   );
 };
@@ -184,6 +201,7 @@ export const RootAppSidebar = memo((): ReactElement => {
         <AllDocsButton />
         <AppSidebarJournalButton />
         {sessionStatus === 'authenticated' && <NotificationButton />}
+        <AIChatButton />
         <MenuItem
           data-testid="slider-bar-workspace-setting-button"
           icon={<SettingsIcon />}

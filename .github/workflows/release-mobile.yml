@@ -124,7 +124,6 @@ jobs:
           package: 'affine_mobile_native'
           no-build: 'true'
       - name: Testflight
-        if: ${{ env.BUILD_TYPE != 'stable' }}
         working-directory: packages/frontend/apps/ios/App
         run: |
           echo -n "${{ env.BUILD_PROVISION_PROFILE }}" | base64 --decode -o $PP_PATH
