@@ -396,11 +396,34 @@ export class CommentResolver {
       });
     }
 
+    // send comment mention notification to comment author on reply
+    if (reply && comment.userId !== sender.id) {
+      await this.queue.add('notification.sendComment', {
+        isMention: true,
+        userId: comment.userId,
+        body: {
+          workspaceId: comment.workspaceId,
+          createdByUserId: sender.id,
+          commentId: comment.id,
+          replyId: reply.id,
+          doc: {
+            id: comment.docId,
+            title: docTitle,
+            mode: docMode,
+          },
+        },
+      });
+    }
+
     // send comment mention notification to mentioned users
     if (mentions) {
       for (const mentionUserId of mentions) {
-        // skip if the mention user is the doc owner
-        if (mentionUserId === owner?.userId || mentionUserId === sender.id) {
+        // skip if the mention user is the doc owner or the comment author
+        if (
+          mentionUserId === owner?.userId ||
+          mentionUserId === sender.id ||
+          mentionUserId === comment.userId
+        ) {
           continue;
         }
 

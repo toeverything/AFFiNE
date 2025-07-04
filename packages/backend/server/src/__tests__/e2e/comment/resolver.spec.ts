@@ -687,6 +687,63 @@ e2e(
   }
 );
 
+e2e(
+  'should create reply and send comment mention notification to comment author',
+  async t => {
+    const docId = randomUUID();
+    await app.create(Mockers.DocUser, {
+      workspaceId: teamWorkspace.id,
+      docId,
+      userId: owner.id,
+      type: DocRole.Owner,
+    });
+
+    await app.login(member);
+    const createResult = await app.gql({
+      query: createCommentMutation,
+      variables: {
+        input: {
+          workspaceId: teamWorkspace.id,
+          docId,
+          docMode: DocMode.page,
+          docTitle: 'test',
+          content: {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'test' }],
+          },
+        },
+      },
+    });
+
+    // owner login to create reply and send notification to comment author: member
+    await app.login(owner);
+    const count = app.queue.count('notification.sendComment');
+    const result = await app.gql({
+      query: createReplyMutation,
+      variables: {
+        input: {
+          commentId: createResult.createComment.id,
+          docMode: DocMode.page,
+          docTitle: 'test',
+          content: {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'test' }],
+          },
+        },
+      },
+    });
+
+    t.truthy(result.createReply.id);
+    t.is(result.createReply.commentId, createResult.createComment.id);
+    t.is(app.queue.count('notification.sendComment'), count + 1);
+    const notification = app.queue.last('notification.sendComment');
+    t.is(notification.name, 'notification.sendComment');
+    t.is(notification.payload.userId, member.id);
+    t.is(notification.payload.body.replyId, result.createReply.id);
+    t.is(notification.payload.isMention, true);
+  }
+);
+
 e2e('should create reply work when user is Commenter', async t => {
   const docId = randomUUID();
   await app.create(Mockers.DocUser, {
