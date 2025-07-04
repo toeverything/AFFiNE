@@ -9,7 +9,6 @@ import AffineGraphQL
 import Apollo
 import ApolloAPI
 import Combine
-import EventSource
 import Foundation
 import OrderedCollections
 
@@ -22,6 +21,7 @@ public class ChatManager: ObservableObject, @unchecked Sendable {
     SessionID,
     OrderedDictionary<MessageID, any ChatCellViewModel>
   > = [:]
+  public let scrollToBottomPublisher = PassthroughSubject<SessionID, Never>()
 
   var closable: [Closable] = []
 

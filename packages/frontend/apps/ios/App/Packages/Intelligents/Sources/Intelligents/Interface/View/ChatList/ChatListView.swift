@@ -44,10 +44,43 @@ class ChatListView: UIView {
       fill(viewModels: viewModels)
     }
     .store(in: &cancellables)
+
+    Publishers.CombineLatest(
+      IntelligentContext.shared.$currentSession
+        .map { $0?.id ?? "default_session" }
+        .removeDuplicates(),
+      ChatManager.shared.scrollToBottomPublisher
+    )
+    .receive(on: dataSourceQueue)
+    .filter { $0 == $1 }
+    .map { _ in () }
+    .receive(on: DispatchQueue.main)
+    .sink { [weak self] _ in
+      guard let self else { return }
+      scrollToBottom()
+    }
+    .store(in: &cancellables)
   }
 
   @available(*, unavailable)
   required init?(coder _: NSCoder) {
     fatalError()
+  }
+
+  deinit {
+    cancellables.forEach { $0.cancel() }
+    cancellables.removeAll()
+  }
+
+  func scrollToBottom() {
+    if listView.contentSize.height <= listView.bounds.height {
+      // If the content size is smaller than the bounds, no need to scroll.
+      return
+    }
+    let contentOffset = CGPoint(
+      x: 0,
+      y: listView.contentSize.height - listView.bounds.height
+    )
+    listView.scroll(to: contentOffset)
   }
 }

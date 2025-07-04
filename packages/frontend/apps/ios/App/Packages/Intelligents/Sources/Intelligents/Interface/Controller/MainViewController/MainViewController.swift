@@ -98,6 +98,16 @@ class MainViewController: UIViewController {
     navigationController!.setNavigationBarHidden(false, animated: animated)
   }
 
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+
+    let bottomAnchor = inputBox.frame.minY
+    let bottomInset = view.bounds.height - bottomAnchor + 64
+    if listView.listView.bottomInset != bottomInset {
+      listView.listView.bottomInset = bottomInset
+    }
+  }
+
   @objc func terminateEditing() {
     view.endEditing(true)
   }
