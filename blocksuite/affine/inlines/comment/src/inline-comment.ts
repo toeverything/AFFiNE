@@ -41,6 +41,8 @@ export class InlineComment extends WithDisposable(ShadowlessElement) {
   })
   accessor commentIds!: string[];
 
+  private _index: number = 0;
+
   @consume({ context: stdContext })
   private accessor _std!: BlockStdScope;
 
@@ -52,8 +54,8 @@ export class InlineComment extends WithDisposable(ShadowlessElement) {
   }
 
   private readonly _handleClick = () => {
-    const provider = this._provider;
-    provider && this.commentIds.forEach(id => provider.highlightComment(id));
+    this._provider?.highlightComment(this.commentIds[this._index]);
+    this._index = (this._index + 1) % this.commentIds.length;
   };
 
   private readonly _handleHighlight = (id: CommentId | null) => {

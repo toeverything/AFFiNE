@@ -56,7 +56,7 @@ export class Editor extends Entity {
     const mode = get(this.mode$);
     let id = selector?.blockIds?.[0];
     let commentId = selector?.commentId;
-    let key = 'blockIds';
+    let key: 'blockIds' | 'elementIds' = 'blockIds';
 
     if (mode === 'edgeless') {
       const elementId = selector?.elementIds?.[0];
@@ -195,7 +195,7 @@ export class Editor extends Entity {
   }
 
   handleFocusAt(focusAt: {
-    key: string;
+    key: 'blockIds' | 'elementIds';
     mode: DocMode;
     id?: string;
     commentId?: string;
@@ -208,6 +208,7 @@ export class Editor extends Entity {
 
     let finalId = id;
     let finalKey = key;
+    let highlight = true;
 
     // If we have commentId but no blockId, find the block from the comment
     if (commentId && !id && editorContainer.host?.std) {
@@ -230,6 +231,9 @@ export class Editor extends Entity {
           finalKey = 'blockIds';
         }
       }
+      // Workaround: clear selection to avoid comment editor flickering
+      selection?.clear();
+      highlight = false;
     }
 
     if (mode === this.mode$.value && finalId) {
@@ -237,7 +241,8 @@ export class Editor extends Entity {
         selection?.create(HighlightSelection, {
           mode,
           [finalKey]: [finalId],
-        }),
+          highlight,
+        } as const),
       ]);
     }
   }

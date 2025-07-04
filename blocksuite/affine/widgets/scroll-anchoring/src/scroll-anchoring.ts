@@ -12,6 +12,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 type Anchor = {
   id: string;
   mode: DocMode;
+  highlight: boolean;
 };
 
 export const AFFINE_SCROLL_ANCHORING_WIDGET = 'affine-scroll-anchoring-widget';
@@ -221,6 +222,7 @@ export class AffineScrollAnchoringWidget extends WidgetComponent {
           mode,
           blockIds: [bid],
           elementIds: [eid],
+          highlight,
         } = highlighted;
         const id = mode === 'page' ? bid : eid || bid;
         if (!id) return;
@@ -228,7 +230,7 @@ export class AffineScrollAnchoringWidget extends WidgetComponent {
         // Consumes highlight selection
         this.std.selection.clear(['highlight']);
 
-        this.anchor$.value = { mode, id };
+        this.anchor$.value = { mode, id, highlight };
         this.#listened = true;
       })
     );
@@ -241,7 +243,7 @@ export class AffineScrollAnchoringWidget extends WidgetComponent {
 
   override render() {
     const anchor = this.anchor$.value;
-    if (!anchor) return nothing;
+    if (!anchor || !anchor.highlight) return nothing;
 
     const { mode, id } = anchor;
 
