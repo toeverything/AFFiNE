@@ -1,3 +1,5 @@
+#import "./fragments/copilot.gql"
+
 query getCopilotPinnedSessions(
   $workspaceId: String!
   $docId: String
@@ -6,32 +8,12 @@ query getCopilotPinnedSessions(
 ) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      histories(docId: $docId, options: {
-        limit: 1,
+      chats(pagination: { first: 1 }, docId: $docId, options: {
         pinned: true,
         messageOrder: $messageOrder,
         withPrompt: $withPrompt
       }) {
-        sessionId
-        pinned
-        tokens
-        action
-        createdAt
-        messages {
-          id
-          role
-          content
-          streamObjects {
-            type
-            textDelta
-            toolCallId
-            toolName
-            args
-            result
-          }
-          attachments
-          createdAt
-        }
+        ...PaginatedCopilotChats
       }
     }
   }

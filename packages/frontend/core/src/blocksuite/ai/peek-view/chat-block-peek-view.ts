@@ -1,6 +1,9 @@
 import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import type { ContextEmbedStatus, CopilotSessionType } from '@affine/graphql';
+import type {
+  ContextEmbedStatus,
+  CopilotChatHistoryFragment,
+} from '@affine/graphql';
 import {
   CanvasElementType,
   EdgelessCRUDIdentifier,
@@ -216,7 +219,7 @@ export class AIChatBlockPeekView extends LitElement {
     }
 
     // If there is no session id or chat messages, do not create a new chat block
-    const forkSessionId = this.forkSession?.id;
+    const forkSessionId = this.forkSession?.sessionId;
     if (!forkSessionId || !this.chatContext.messages.length) {
       return;
     }
@@ -284,7 +287,7 @@ export class AIChatBlockPeekView extends LitElement {
    * Update the current chat messages with the new message
    */
   updateChatBlockMessages = async () => {
-    const forkSessionId = this.forkSession?.id;
+    const forkSessionId = this.forkSession?.sessionId;
     if (!this._forkBlockId || !forkSessionId) {
       return;
     }
@@ -360,7 +363,7 @@ export class AIChatBlockPeekView extends LitElement {
    */
   retry = async () => {
     try {
-      const forkSessionId = this.forkSession?.id;
+      const forkSessionId = this.forkSession?.sessionId;
       if (!this._forkBlockId || !forkSessionId) return;
       if (!AIProvider.actions.chat) return;
 
@@ -656,10 +659,10 @@ export class AIChatBlockPeekView extends LitElement {
   accessor embeddingProgress: [number, number] = [0, 0];
 
   @state()
-  accessor session: CopilotSessionType | null | undefined;
+  accessor session: CopilotChatHistoryFragment | null | undefined;
 
   @state()
-  accessor forkSession: CopilotSessionType | null | undefined;
+  accessor forkSession: CopilotChatHistoryFragment | null | undefined;
 }
 
 declare global {

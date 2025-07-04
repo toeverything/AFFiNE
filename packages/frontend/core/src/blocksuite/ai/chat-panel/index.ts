@@ -3,7 +3,7 @@ import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { WorkbenchService } from '@affine/core/modules/workbench';
 import type {
   ContextEmbedStatus,
-  CopilotSessionType,
+  CopilotChatHistoryFragment,
   UpdateChatSessionInput,
 } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
@@ -103,7 +103,7 @@ export class ChatPanel extends SignalWatcher(
   accessor affineWorkbenchService!: WorkbenchService;
 
   @state()
-  accessor session: CopilotSessionType | null | undefined;
+  accessor session: CopilotChatHistoryFragment | null | undefined;
 
   @state()
   accessor embeddingProgress: [number, number] = [0, 0];
@@ -284,7 +284,7 @@ export class ChatPanel extends SignalWatcher(
       await this.createSession({ pinned });
     } else {
       await this.updateSession({
-        sessionId: this.session.id,
+        sessionId: this.session.sessionId,
         pinned,
       });
     }
@@ -399,7 +399,7 @@ export class ChatPanel extends SignalWatcher(
 
     return html`<div class="chat-panel-container">
       ${keyed(
-        this.hasPinned ? this.session?.id : this.doc.id,
+        this.hasPinned ? this.session?.sessionId : this.doc.id,
         html`<ai-chat-content
           .chatTitle=${this.chatTitle}
           .host=${this.host}

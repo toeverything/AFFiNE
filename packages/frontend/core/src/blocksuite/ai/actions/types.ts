@@ -2,11 +2,11 @@ import type {
   ContextMatchedDocChunk,
   ContextMatchedFileChunk,
   ContextWorkspaceEmbeddingStatus,
+  CopilotChatHistoryFragment,
   CopilotContextCategory,
   CopilotContextDoc,
   CopilotContextFile,
   CopilotHistories,
-  CopilotSessionType,
   getCopilotHistoriesQuery,
   QueryChatSessionsInput,
   RequestOptions,
@@ -356,10 +356,10 @@ declare global {
     interface AIHistory {
       sessionId: string;
       tokens: number;
-      action: string;
+      action: string | null;
       createdAt: string;
       messages: {
-        id: string; // message id
+        id: string | null; // message id
         content: string;
         createdAt: string;
         role: MessageRole;
@@ -392,19 +392,19 @@ declare global {
 
     interface AISessionService {
       createSession: (options: AICreateSessionOptions) => Promise<string>;
+      getSession: (
+        workspaceId: string,
+        sessionId: string
+      ) => Promise<CopilotChatHistoryFragment | undefined>;
       getSessions: (
         workspaceId: string,
         docId?: string,
         options?: QueryChatSessionsInput
-      ) => Promise<CopilotSessionType[] | undefined>;
+      ) => Promise<CopilotChatHistoryFragment[] | undefined>;
       getRecentSessions: (
         workspaceId: string,
         limit?: number
       ) => Promise<AIRecentSession[] | undefined>;
-      getSession: (
-        workspaceId: string,
-        sessionId: string
-      ) => Promise<CopilotSessionType | undefined>;
       updateSession: (options: UpdateChatSessionInput) => Promise<string>;
     }
 

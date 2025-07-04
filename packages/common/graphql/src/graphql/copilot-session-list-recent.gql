@@ -1,23 +1,19 @@
+#import "./fragments/copilot.gql"
+
 query getCopilotRecentSessions(
   $workspaceId: String!
   $limit: Int = 10
 ) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      histories(
+      chats(
+        pagination: { first: $limit }
         options: {
-          limit: $limit
           sessionOrder: desc
+          withMessages: true
         }
       ) {
-        sessionId
-        workspaceId
-        docId
-        pinned
-        action
-        tokens
-        createdAt
-        updatedAt
+        ...PaginatedCopilotChats
       }
     }
   }

@@ -19,6 +19,7 @@ import {
   listContextObjectQuery,
   listContextQuery,
   matchContextQuery,
+  type PaginationInput,
   type QueryOptions,
   type QueryResponse,
   removeContextCategoryMutation,
@@ -152,7 +153,7 @@ export class CopilotClient {
         query: getCopilotSessionQuery,
         variables: { sessionId, workspaceId },
       });
-      return res.currentUser?.copilot?.session;
+      return res.currentUser?.copilot?.chats?.edges?.[0]?.node;
     } catch (err) {
       throw resolveError(err);
     }
@@ -160,6 +161,7 @@ export class CopilotClient {
 
   async getSessions(
     workspaceId: string,
+    pagination: PaginationInput,
     docId?: string,
     options?: RequestOptions<
       typeof getCopilotSessionsQuery
@@ -170,11 +172,12 @@ export class CopilotClient {
         query: getCopilotSessionsQuery,
         variables: {
           workspaceId,
+          pagination,
           docId,
           options,
         },
       });
-      return res.currentUser?.copilot?.sessions;
+      return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
       throw resolveError(err);
     }
@@ -197,6 +200,7 @@ export class CopilotClient {
 
   async getHistories(
     workspaceId: string,
+    pagination: PaginationInput,
     docId?: string,
     options?: RequestOptions<
       typeof getCopilotHistoriesQuery
@@ -207,12 +211,13 @@ export class CopilotClient {
         query: getCopilotHistoriesQuery,
         variables: {
           workspaceId,
+          pagination,
           docId,
           options,
         },
       });
 
-      return res.currentUser?.copilot?.histories;
+      return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
       throw resolveError(err);
     }
@@ -220,9 +225,10 @@ export class CopilotClient {
 
   async getHistoryIds(
     workspaceId: string,
+    pagination: PaginationInput,
     docId?: string,
     options?: RequestOptions<
-      typeof getCopilotHistoriesQuery
+      typeof getCopilotHistoryIdsQuery
     >['variables']['options']
   ) {
     try {
@@ -230,12 +236,13 @@ export class CopilotClient {
         query: getCopilotHistoryIdsQuery,
         variables: {
           workspaceId,
+          pagination,
           docId,
           options,
         },
       });
 
-      return res.currentUser?.copilot?.histories;
+      return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
       throw resolveError(err);
     }

@@ -6,6 +6,53 @@ export interface GraphQLQuery {
   file?: boolean;
   deprecations?: string[];
 }
+export const copilotChatMessageFragment = `fragment CopilotChatMessage on ChatMessage {
+  id
+  role
+  content
+  attachments
+  streamObjects {
+    type
+    textDelta
+    toolCallId
+    toolName
+    args
+    result
+  }
+  createdAt
+}`;
+export const copilotChatHistoryFragment = `fragment CopilotChatHistory on CopilotHistories {
+  sessionId
+  workspaceId
+  docId
+  parentSessionId
+  promptName
+  model
+  optionalModels
+  action
+  pinned
+  title
+  tokens
+  messages {
+    ...CopilotChatMessage
+  }
+  createdAt
+  updatedAt
+}`;
+export const paginatedCopilotChatsFragment = `fragment PaginatedCopilotChats on PaginatedCopilotHistoriesType {
+  pageInfo {
+    hasNextPage
+    hasPreviousPage
+    startCursor
+    endCursor
+  }
+  edges {
+    cursor
+    node {
+      ...CopilotChatHistory
+    }
+  }
+}`;
 export const credentialsRequirementsFragment = `fragment CredentialsRequirements on CredentialsRequirementType {
   password {
     ...PasswordLimits
@@ -762,16 +809,27 @@ export const queueWorkspaceEmbeddingMutation = {
 export const getCopilotHistoryIdsQuery = {
   id: 'getCopilotHistoryIdsQuery' as const,
   op: 'getCopilotHistoryIds',
-  query: `query getCopilotHistoryIds($workspaceId: String!, $docId: String, $options: QueryChatHistoriesInput) {
+  query: `query getCopilotHistoryIds($workspaceId: String!, $pagination: PaginationInput!, $docId: String, $options: QueryChatHistoriesInput) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      histories(docId: $docId, options: $options) {
-        sessionId
-        pinned
-        messages {
-          id
-          role
-          createdAt
+      chats(pagination: $pagination, docId: $docId, options: $options) {
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+        edges {
+          cursor
+          node {
+            sessionId
+            pinned
+            messages {
+              id
+              role
+              createdAt
+            }
+          }
         }
       }
     }
@@ -782,34 +840,18 @@ export const getCopilotHistoryIdsQuery = {
 export const getCopilotDocSessionsQuery = {
   id: 'getCopilotDocSessionsQuery' as const,
   op: 'getCopilotDocSessions',
-  query: `query getCopilotDocSessions($workspaceId: String!, $docId: String!, $options: QueryChatHistoriesInput) {
+  query: `query getCopilotDocSessions($workspaceId: String!, $docId: String!, $pagination: PaginationInput!, $options: QueryChatHistoriesInput) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      histories(docId: $docId, options: $options) {
-        sessionId
-        pinned
-        tokens
-        action
-        createdAt
-        messages {
-          id
-          role
-          content
-          streamObjects {
-            type
-            textDelta
-            toolCallId
-            toolName
-            args
-            result
-          }
-          attachments
-          createdAt
-        }
+      chats(pagination: $pagination, docId: $docId, options: $options) {
+        ...PaginatedCopilotChats
       }
     }
   }
-}`,
+}
+${copilotChatMessageFragment}
+${copilotChatHistoryFragment}
+${paginatedCopilotChatsFragment}`,
 };
 
 export const getCopilotPinnedSessionsQuery = {
@@ -818,100 +860,53 @@ export const getCopilotPinnedSessionsQuery = {
   query: `query getCopilotPinnedSessions($workspaceId: String!, $docId: String, $messageOrder: ChatHistoryOrder, $withPrompt: Boolean) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      histories(
+      chats(
+        pagination: {first: 1}
         docId: $docId
-        options: {limit: 1, pinned: true, messageOrder: $messageOrder, withPrompt: $withPrompt}
+        options: {pinned: true, messageOrder: $messageOrder, withPrompt: $withPrompt}
       ) {
-        sessionId
-        pinned
-        tokens
-        action
-        createdAt
-        messages {
-          id
-          role
-          content
-          streamObjects {
-            type
-            textDelta
-            toolCallId
-            toolName
-            args
-            result
-          }
-          attachments
-          createdAt
-        }
+        ...PaginatedCopilotChats
       }
     }
   }
-}`,
+}
+${copilotChatMessageFragment}
+${copilotChatHistoryFragment}
+${paginatedCopilotChatsFragment}`,
 };
 
 export const getCopilotWorkspaceSessionsQuery = {
   id: 'getCopilotWorkspaceSessionsQuery' as const,
   op: 'getCopilotWorkspaceSessions',
-  query: `query getCopilotWorkspaceSessions($workspaceId: String!, $options: QueryChatHistoriesInput) {
+  query: `query getCopilotWorkspaceSessions($workspaceId: String!, $pagination: PaginationInput!, $options: QueryChatHistoriesInput) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      histories(docId: null, options: $options) {
-        sessionId
-        pinned
-        tokens
-        action
-        createdAt
-        messages {
-          id
-          role
-          content
-          streamObjects {
-            type
-            textDelta
-            toolCallId
-            toolName
-            args
-            result
-          }
-          attachments
-          createdAt
-        }
+      chats(pagination: $pagination, docId: null, options: $options) {
+        ...PaginatedCopilotChats
       }
     }
   }
-}`,
+}
+${copilotChatMessageFragment}
+${copilotChatHistoryFragment}
+${paginatedCopilotChatsFragment}`,
 };
 
 export const getCopilotHistoriesQuery = {
   id: 'getCopilotHistoriesQuery' as const,
   op: 'getCopilotHistories',
-  query: `query getCopilotHistories($workspaceId: String!, $docId: String, $options: QueryChatHistoriesInput) {
+  query: `query getCopilotHistories($workspaceId: String!, $pagination: PaginationInput!, $docId: String, $options: QueryChatHistoriesInput) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      histories(docId: $docId, options: $options) {
-        sessionId
-        pinned
-        tokens
-        action
-        createdAt
-        messages {
-          id
-          role
-          content
-          streamObjects {
-            type
-            textDelta
-            toolCallId
-            toolName
-            args
-            result
-          }
-          attachments
-          createdAt
-        }
+      chats(pagination: $pagination, docId: $docId, options: $options) {
+        ...PaginatedCopilotChats
       }
     }
   }
-}`,
+}
+${copilotChatMessageFragment}
+${copilotChatHistoryFragment}
+${paginatedCopilotChatsFragment}`,
 };
 
 export const submitAudioTranscriptionMutation = {
@@ -1039,30 +1034,19 @@ export const getCopilotLatestDocSessionQuery = {
   query: `query getCopilotLatestDocSession($workspaceId: String!, $docId: String!) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      histories(
+      chats(
+        pagination: {first: 1}
         docId: $docId
-        options: {limit: 1, sessionOrder: desc, action: false, fork: false}
+        options: {sessionOrder: desc, action: false, fork: false, withMessages: true}
       ) {
-        sessionId
-        workspaceId
-        docId
-        pinned
-        action
-        tokens
-        createdAt
-        updatedAt
-        messages {
-          id
-          role
-          content
-          attachments
-          params
-          createdAt
-        }
+        ...PaginatedCopilotChats
       }
     }
   }
-}`,
+}
+${copilotChatMessageFragment}
+${copilotChatHistoryFragment}
+${paginatedCopilotChatsFragment}`,
 };
 
 export const getCopilotSessionQuery = {
@@ -1071,15 +1055,8 @@ export const getCopilotSessionQuery = {
   query: `query getCopilotSession($workspaceId: String!, $sessionId: String!) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      session(sessionId: $sessionId) {
-        id
-        parentSessionId
-        docId
-        pinned
-        title
-        promptName
-        model
-        optionalModels
+      chats(pagination: {first: 1}, options: {sessionId: $sessionId}) {
+        ...PaginatedCopilotChats
       }
     }
   }
@@ -1092,19 +1069,18 @@ export const getCopilotRecentSessionsQuery = {
   query: `query getCopilotRecentSessions($workspaceId: String!, $limit: Int = 10) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      histories(options: {limit: $limit, sessionOrder: desc}) {
-        sessionId
-        workspaceId
-        docId
-        pinned
-        action
-        tokens
-        createdAt
-        updatedAt
+      chats(
+        pagination: {first: $limit}
+        options: {sessionOrder: desc, withMessages: true}
+      ) {
+        ...PaginatedCopilotChats
       }
     }
   }
-}`,
+}
+${copilotChatMessageFragment}
+${copilotChatHistoryFragment}
+${paginatedCopilotChatsFragment}`,
 };
 
 export const updateCopilotSessionMutation = {
@@ -1118,22 +1094,18 @@ export const updateCopilotSessionMutation = {
 export const getCopilotSessionsQuery = {
   id: 'getCopilotSessionsQuery' as const,
   op: 'getCopilotSessions',
-  query: `query getCopilotSessions($workspaceId: String!, $docId: String, $options: QueryChatSessionsInput) {
+  query: `query getCopilotSessions($workspaceId: String!, $pagination: PaginationInput!, $docId: String, $options: QueryChatHistoriesInput) {
   currentUser {
     copilot(workspaceId: $workspaceId) {
-      sessions(docId: $docId, options: $options) {
-        id
-        parentSessionId
-        docId
-        pinned
-        title
-        promptName
-        model
-        optionalModels
+      chats(pagination: $pagination, docId: $docId, options: $options) {
+        ...PaginatedCopilotChats
       }
     }
   }
-}`,
+}
+${copilotChatMessageFragment}
+${copilotChatHistoryFragment}
+${paginatedCopilotChatsFragment}`,
 };
 
 export const addWorkspaceEmbeddingFilesMutation = {

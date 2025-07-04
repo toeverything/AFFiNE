@@ -586,7 +586,7 @@ Could you make a new website based on these notes and send back just the html fi
       docId?: string,
       options?: QueryChatSessionsInput
     ) => {
-      return client.getSessions(workspaceId, docId, options);
+      return client.getSessions(workspaceId, {}, docId, options);
     },
     getRecentSessions: async (workspaceId: string, limit?: number) => {
       return client.getRecentSessions(workspaceId, limit);
@@ -744,7 +744,7 @@ Could you make a new website based on these notes and send back just the html fi
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
       return (
-        (await client.getHistories(workspaceId, docId, {
+        (await client.getHistories(workspaceId, {}, docId, {
           action: true,
           withPrompt: true,
         })) ?? []
@@ -757,7 +757,7 @@ Could you make a new website based on these notes and send back just the html fi
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
       return (
-        (await client.getHistories(workspaceId, docId, {
+        (await client.getHistories(workspaceId, {}, docId, {
           sessionId,
         })) ?? []
       );
@@ -776,8 +776,8 @@ Could you make a new website based on these notes and send back just the html fi
         typeof getCopilotHistoriesQuery
       >['variables']['options']
     ): Promise<BlockSuitePresets.AIHistoryIds[]> => {
-      // @ts-expect-error - 'role' is missing type in server impl
-      return await client.getHistoryIds(workspaceId, docId, options);
+      // @ts-expect-error - 'action' is missing in server impl
+      return await client.getHistoryIds(workspaceId, {}, docId, options);
     },
   });
 

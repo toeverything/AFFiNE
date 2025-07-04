@@ -245,14 +245,19 @@ export interface ContextWorkspaceEmbeddingStatus {
 export interface Copilot {
   __typename?: 'Copilot';
   audioTranscription: Maybe<TranscriptionResultType>;
+  chats: PaginatedCopilotHistoriesType;
   /** Get the context list of a session */
   contexts: Array<CopilotContext>;
+  /** @deprecated use `chats` instead */
   histories: Array<CopilotHistories>;
   /** Get the quota of the user in the workspace */
   quota: CopilotQuota;
   /** Get the session by id */
   session: CopilotSessionType;
-  /** Get the session list in the workspace */
+  /**
+   * Get the session list in the workspace
+   * @deprecated use `chats` instead
+   */
   sessions: Array<CopilotSessionType>;
   workspaceId: Maybe<Scalars['ID']['output']>;
 }
@@ -260,6 +265,12 @@ export interface Copilot {
 export interface CopilotAudioTranscriptionArgs {
   blobId?: InputMaybe<Scalars['String']['input']>;
   jobId?: InputMaybe<Scalars['String']['input']>;
+}
+
+export interface CopilotChatsArgs {
+  docId?: InputMaybe<Scalars['String']['input']>;
+  options?: InputMaybe<QueryChatHistoriesInput>;
+  pagination: PaginationInput;
 }
 
 export interface CopilotContextsArgs {
@@ -391,12 +402,23 @@ export interface CopilotHistories {
   createdAt: Scalars['DateTime']['output'];
   docId: Maybe<Scalars['String']['output']>;
   messages: Array<ChatMessage>;
+  model: Scalars['String']['output'];
+  optionalModels: Array<Scalars['String']['output']>;
+  parentSessionId: Maybe<Scalars['String']['output']>;
   pinned: Scalars['Boolean']['output'];
+  promptName: Scalars['String']['output'];
   sessionId: Scalars['String']['output'];
+  title: Maybe<Scalars['String']['output']>;
   /** The number of tokens used in the session */
   tokens: Scalars['Int']['output'];
   updatedAt: Scalars['DateTime']['output'];
   workspaceId: Scalars['String']['output'];
+}
+
+export interface CopilotHistoriesTypeEdge {
+  __typename?: 'CopilotHistoriesTypeEdge';
+  cursor: Scalars['String']['output'];
+  node: CopilotHistories;
 }
 
 export interface CopilotInvalidContextDataType {
@@ -1952,6 +1974,13 @@ export interface PaginatedCommentObjectType {
   totalCount: Scalars['Int']['output'];
 }
 
+export interface PaginatedCopilotHistoriesType {
+  __typename?: 'PaginatedCopilotHistoriesType';
+  edges: Array<CopilotHistoriesTypeEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+}
+
 export interface PaginatedCopilotWorkspaceFileType {
   __typename?: 'PaginatedCopilotWorkspaceFileType';
   edges: Array<CopilotWorkspaceFileTypeEdge>;
@@ -2131,6 +2160,7 @@ export interface QueryChatHistoriesInput {
   sessionId?: InputMaybe<Scalars['String']['input']>;
   sessionOrder?: InputMaybe<ChatHistoryOrder>;
   skip?: InputMaybe<Scalars['Int']['input']>;
+  withMessages?: InputMaybe<Scalars['Boolean']['input']>;
   withPrompt?: InputMaybe<Scalars['Boolean']['input']>;
 }
 
@@ -3755,6 +3785,7 @@ export type QueueWorkspaceEmbeddingMutation = {
 
 export type GetCopilotHistoryIdsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  pagination: PaginationInput;
   docId?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<QueryChatHistoriesInput>;
 }>;
@@ -3765,17 +3796,31 @@ export type GetCopilotHistoryIdsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        pinned: boolean;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          createdAt: string;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            pinned: boolean;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              createdAt: string;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
@@ -3783,6 +3828,7 @@ export type GetCopilotHistoryIdsQuery = {
 export type GetCopilotDocSessionsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
   docId: Scalars['String']['input'];
+  pagination: PaginationInput;
   options?: InputMaybe<QueryChatHistoriesInput>;
 }>;
 
@@ -3792,31 +3838,53 @@ export type GetCopilotDocSessionsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        pinned: boolean;
-        tokens: number;
-        action: string | null;
-        createdAt: string;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          content: string;
-          attachments: Array<string> | null;
-          createdAt: string;
-          streamObjects: Array<{
-            __typename?: 'StreamObject';
-            type: string;
-            textDelta: string | null;
-            toolCallId: string | null;
-            toolName: string | null;
-            args: Record<string, string> | null;
-            result: Record<string, string> | null;
-          }> | null;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
@@ -3834,37 +3902,60 @@ export type GetCopilotPinnedSessionsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        pinned: boolean;
-        tokens: number;
-        action: string | null;
-        createdAt: string;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          content: string;
-          attachments: Array<string> | null;
-          createdAt: string;
-          streamObjects: Array<{
-            __typename?: 'StreamObject';
-            type: string;
-            textDelta: string | null;
-            toolCallId: string | null;
-            toolName: string | null;
-            args: Record<string, string> | null;
-            result: Record<string, string> | null;
-          }> | null;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
 
 export type GetCopilotWorkspaceSessionsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  pagination: PaginationInput;
   options?: InputMaybe<QueryChatHistoriesInput>;
 }>;
 
@@ -3874,37 +3965,60 @@ export type GetCopilotWorkspaceSessionsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        pinned: boolean;
-        tokens: number;
-        action: string | null;
-        createdAt: string;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          content: string;
-          attachments: Array<string> | null;
-          createdAt: string;
-          streamObjects: Array<{
-            __typename?: 'StreamObject';
-            type: string;
-            textDelta: string | null;
-            toolCallId: string | null;
-            toolName: string | null;
-            args: Record<string, string> | null;
-            result: Record<string, string> | null;
-          }> | null;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
 
 export type GetCopilotHistoriesQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  pagination: PaginationInput;
   docId?: InputMaybe<Scalars['String']['input']>;
   options?: InputMaybe<QueryChatHistoriesInput>;
 }>;
@@ -3915,31 +4029,53 @@ export type GetCopilotHistoriesQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        pinned: boolean;
-        tokens: number;
-        action: string | null;
-        createdAt: string;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          content: string;
-          attachments: Array<string> | null;
-          createdAt: string;
-          streamObjects: Array<{
-            __typename?: 'StreamObject';
-            type: string;
-            textDelta: string | null;
-            toolCallId: string | null;
-            toolName: string | null;
-            args: Record<string, string> | null;
-            result: Record<string, string> | null;
-          }> | null;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
@@ -4093,26 +4229,53 @@ export type GetCopilotLatestDocSessionQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        workspaceId: string;
-        docId: string | null;
-        pinned: boolean;
-        action: string | null;
-        tokens: number;
-        createdAt: string;
-        updatedAt: string;
-        messages: Array<{
-          __typename?: 'ChatMessage';
-          id: string | null;
-          role: string;
-          content: string;
-          attachments: Array<string> | null;
-          params: Record<string, string> | null;
-          createdAt: string;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
         }>;
-      }>;
+      };
     };
   } | null;
 };
@@ -4128,16 +4291,52 @@ export type GetCopilotSessionQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      session: {
-        __typename?: 'CopilotSessionType';
-        id: string;
-        parentSessionId: string | null;
-        docId: string | null;
-        pinned: boolean;
-        title: string | null;
-        promptName: string;
-        model: string;
-        optionalModels: Array<string>;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
+        }>;
       };
     };
   } | null;
@@ -4154,17 +4353,53 @@ export type GetCopilotRecentSessionsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      histories: Array<{
-        __typename?: 'CopilotHistories';
-        sessionId: string;
-        workspaceId: string;
-        docId: string | null;
-        pinned: boolean;
-        action: string | null;
-        tokens: number;
-        createdAt: string;
-        updatedAt: string;
-      }>;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
+        }>;
+      };
     };
   } | null;
 };
@@ -4180,8 +4415,9 @@ export type UpdateCopilotSessionMutation = {
 
 export type GetCopilotSessionsQueryVariables = Exact<{
   workspaceId: Scalars['String']['input'];
+  pagination: PaginationInput;
   docId?: InputMaybe<Scalars['String']['input']>;
-  options?: InputMaybe<QueryChatSessionsInput>;
+  options?: InputMaybe<QueryChatHistoriesInput>;
 }>;
 
 export type GetCopilotSessionsQuery = {
@@ -4190,17 +4426,53 @@ export type GetCopilotSessionsQuery = {
     __typename?: 'UserType';
     copilot: {
       __typename?: 'Copilot';
-      sessions: Array<{
-        __typename?: 'CopilotSessionType';
-        id: string;
-        parentSessionId: string | null;
-        docId: string | null;
-        pinned: boolean;
-        title: string | null;
-        promptName: string;
-        model: string;
-        optionalModels: Array<string>;
-      }>;
+      chats: {
+        __typename?: 'PaginatedCopilotHistoriesType';
+        pageInfo: {
+          __typename?: 'PageInfo';
+          hasNextPage: boolean;
+          hasPreviousPage: boolean;
+          startCursor: string | null;
+          endCursor: string | null;
+        };
+        edges: Array<{
+          __typename?: 'CopilotHistoriesTypeEdge';
+          cursor: string;
+          node: {
+            __typename?: 'CopilotHistories';
+            sessionId: string;
+            workspaceId: string;
+            docId: string | null;
+            parentSessionId: string | null;
+            promptName: string;
+            model: string;
+            optionalModels: Array<string>;
+            action: string | null;
+            pinned: boolean;
+            title: string | null;
+            tokens: number;
+            createdAt: string;
+            updatedAt: string;
+            messages: Array<{
+              __typename?: 'ChatMessage';
+              id: string | null;
+              role: string;
+              content: string;
+              attachments: Array<string> | null;
+              createdAt: string;
+              streamObjects: Array<{
+                __typename?: 'StreamObject';
+                type: string;
+                textDelta: string | null;
+                toolCallId: string | null;
+                toolName: string | null;
+                args: Record<string, string> | null;
+                result: Record<string, string> | null;
+              }> | null;
+            }>;
+          };
+        }>;
+      };
     };
   } | null;
 };
@@ -4434,6 +4706,106 @@ export type GetDocRolePermissionsQuery = {
       };
     };
   };
+};
+
+export type CopilotChatMessageFragment = {
+  __typename?: 'ChatMessage';
+  id: string | null;
+  role: string;
+  content: string;
+  attachments: Array<string> | null;
+  createdAt: string;
+  streamObjects: Array<{
+    __typename?: 'StreamObject';
+    type: string;
+    textDelta: string | null;
+    toolCallId: string | null;
+    toolName: string | null;
+    args: Record<string, string> | null;
+    result: Record<string, string> | null;
+  }> | null;
+};
+
+export type CopilotChatHistoryFragment = {
+  __typename?: 'CopilotHistories';
+  sessionId: string;
+  workspaceId: string;
+  docId: string | null;
+  parentSessionId: string | null;
+  promptName: string;
+  model: string;
+  optionalModels: Array<string>;
+  action: string | null;
+  pinned: boolean;
+  title: string | null;
+  tokens: number;
+  createdAt: string;
+  updatedAt: string;
+  messages: Array<{
+    __typename?: 'ChatMessage';
+    id: string | null;
+    role: string;
+    content: string;
+    attachments: Array<string> | null;
+    createdAt: string;
+    streamObjects: Array<{
+      __typename?: 'StreamObject';
+      type: string;
+      textDelta: string | null;
+      toolCallId: string | null;
+      toolName: string | null;
+      args: Record<string, string> | null;
+      result: Record<string, string> | null;
+    }> | null;
+  }>;
+};
+
+export type PaginatedCopilotChatsFragment = {
+  __typename?: 'PaginatedCopilotHistoriesType';
+  pageInfo: {
+    __typename?: 'PageInfo';
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    startCursor: string | null;
+    endCursor: string | null;
+  };
+  edges: Array<{
+    __typename?: 'CopilotHistoriesTypeEdge';
+    cursor: string;
+    node: {
+      __typename?: 'CopilotHistories';
+      sessionId: string;
+      workspaceId: string;
+      docId: string | null;
+      parentSessionId: string | null;
+      promptName: string;
+      model: string;
+      optionalModels: Array<string>;
+      action: string | null;
+      pinned: boolean;
+      title: string | null;
+      tokens: number;
+      createdAt: string;
+      updatedAt: string;
+      messages: Array<{
+        __typename?: 'ChatMessage';
+        id: string | null;
+        role: string;
+        content: string;
+        attachments: Array<string> | null;
+        createdAt: string;
+        streamObjects: Array<{
+          __typename?: 'StreamObject';
+          type: string;
+          textDelta: string | null;
+          toolCallId: string | null;
+          toolName: string | null;
+          args: Record<string, string> | null;
+          result: Record<string, string> | null;
+        }> | null;
+      }>;
+    };
+  }>;
 };
 
 export type CredentialsRequirementsFragment = {
