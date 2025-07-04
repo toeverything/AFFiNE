@@ -1,9 +1,7 @@
 import type { FlagInfo } from './types';
 
 // const isNotStableBuild = BUILD_CONFIG.appBuildType !== 'stable';
-const isDesktopEnvironment = BUILD_CONFIG.isElectron;
 const isCanaryBuild = BUILD_CONFIG.appBuildType === 'canary';
-const isBetaBuild = BUILD_CONFIG.appBuildType === 'beta';
 const isMobile = BUILD_CONFIG.isMobileEdition;
 
 export const AFFINE_FLAGS = {
@@ -27,7 +25,7 @@ export const AFFINE_FLAGS = {
     configurable: false,
     defaultState: true,
   },
-  enable_ai_model_switch: {
+  enable_ai_playground: {
     category: 'affine',
     displayName:
       'com.affine.settings.workspace.experimental-features.enable-ai-model-switch.name',
@@ -150,15 +148,6 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild && !isMobile,
     defaultState: isCanaryBuild,
   },
-  enable_local_workspace: {
-    category: 'affine',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-local-workspace.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-local-workspace.description',
-    configurable: isCanaryBuild,
-    defaultState: isDesktopEnvironment || isCanaryBuild,
-  },
   enable_advanced_block_visibility: {
     category: 'blocksuite',
     bsFlag: 'enable_advanced_block_visibility',
@@ -266,22 +255,6 @@ export const AFFINE_FLAGS = {
     configurable: isCanaryBuild,
     defaultState: false,
   },
-  enable_cloud_indexer: {
-    category: 'affine',
-    displayName: 'Enable Cloud Indexer',
-    description: 'Use cloud indexer to search docs',
-    configurable: isBetaBuild || isCanaryBuild,
-    defaultState: false,
-  },
-  enable_code_block_html_preview: {
-    category: 'affine',
-    displayName:
-      'com.affine.settings.workspace.experimental-features.enable-code-block-html-preview.name',
-    description:
-      'com.affine.settings.workspace.experimental-features.enable-code-block-html-preview.description',
-    configurable: isCanaryBuild,
-    defaultState: true,
-  },
   enable_adapter_panel: {
     category: 'affine',
     displayName:
@@ -290,6 +263,14 @@ export const AFFINE_FLAGS = {
       'com.affine.settings.workspace.experimental-features.enable-adapter-panel.description',
     configurable: isCanaryBuild,
     defaultState: false,
+  },
+  enable_comment: {
+    category: 'blocksuite',
+    bsFlag: 'enable_comment',
+    displayName: 'Enable Comment',
+    description: 'Enable comment',
+    configurable: true,
+    defaultState: isCanaryBuild,
   },
 } satisfies { [key in string]: FlagInfo };
 

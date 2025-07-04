@@ -37,7 +37,10 @@ import {
   getSelections,
 } from '../utils/selection-utils';
 import type { AffineAIPanelWidget } from '../widgets/ai-panel/ai-panel';
-import type { AINetworkSearchConfig } from '../widgets/ai-panel/type';
+import type {
+  AIActionAnswer,
+  AINetworkSearchConfig,
+} from '../widgets/ai-panel/type';
 import type { EdgelessCopilotWidget } from '../widgets/edgeless-copilot';
 import { actionToAnswerRenderer } from './answer-renderer';
 import { EXCLUDING_COPY_ACTIONS } from './consts';
@@ -130,6 +133,12 @@ export async function getContentFromSelected(
       }
     );
 
+  const hasPageBlock = notes.find(note => note.isPageBlock());
+  const title =
+    hasPageBlock && host.std.store.meta?.title
+      ? `# ${host.std.store.meta?.title}\n`
+      : '';
+
   const noteContent = await getContentFromHubBlockModel(host, notes);
   const edgelessTextContent = await getContentFromHubBlockModel(
     host,
@@ -140,7 +149,7 @@ export async function getContentFromSelected(
     embedSyncedDocs
   );
 
-  return `${noteContent.join('\n')}
+  return `${title}${noteContent.join('\n')}
 ${edgelessTextContent.join('\n')}
 ${syncedDocsContent}
 ${texts.map(text => text.text.toString()).join('\n')}
@@ -276,7 +285,7 @@ function actionToGeneration<T extends keyof BlockSuitePresets.AIActions>(
     }: {
       input: string;
       signal?: AbortSignal;
-      update: (text: string) => void;
+      update: (answer: AIActionAnswer) => void;
       finish: (state: 'success' | 'error' | 'aborted', err?: AIError) => void;
     }) => {
       if (!extract) {

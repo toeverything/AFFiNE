@@ -1,4 +1,5 @@
 import { scrollbarStyle } from '@blocksuite/affine-shared/styles';
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css } from 'lit';
 
 export const codeBlockStyles = css`
@@ -20,6 +21,10 @@ export const codeBlockStyles = css`
     padding: 12px;
   }
 
+  .affine-code-block-container.highlight-comment {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+  }
+
   ${scrollbarStyle('.affine-code-block-container rich-text')}
 
   .affine-code-block-container .inline-editor {
@@ -31,6 +36,10 @@ export const codeBlockStyles = css`
     position: relative;
     display: inline-grid !important;
     grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .affine-code-block-container.disable-line-numbers v-line {
+    grid-template-columns: unset;
   }
 
   .affine-code-block-container div:has(> v-line) {

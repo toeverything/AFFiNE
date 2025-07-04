@@ -134,6 +134,35 @@ class StoreConsumer {
     }
   }
 
+  private readonly ENABLE_BATTERY_SAVE_MODE_DELAY = 1000;
+  private enableBatterySaveModeTimeout: NodeJS.Timeout | null = null;
+  private enabledBatterySaveMode = false;
+
+  enableBatterySaveMode() {
+    if (this.enableBatterySaveModeTimeout || this.enabledBatterySaveMode) {
+      return;
+    }
+    this.enableBatterySaveModeTimeout = setTimeout(() => {
+      if (!this.enabledBatterySaveMode) {
+        this.indexerSync.enableBatterySaveMode();
+        this.enabledBatterySaveMode = true;
+        console.log('[BatterySaveMode] enabled');
+      }
+    }, this.ENABLE_BATTERY_SAVE_MODE_DELAY);
+  }
+
+  disableBatterySaveMode() {
+    if (this.enableBatterySaveModeTimeout) {
+      clearTimeout(this.enableBatterySaveModeTimeout);
+      this.enableBatterySaveModeTimeout = null;
+    }
+    if (this.enabledBatterySaveMode) {
+      this.indexerSync.disableBatterySaveMode();
+      this.enabledBatterySaveMode = false;
+      console.log('[BatterySaveMode] disabled');
+    }
+  }
+
   private registerHandlers(consumer: OpConsumer<WorkerOps>) {
     const collectJobs = new Map<
       string,
@@ -265,16 +294,6 @@ class StoreConsumer {
         }),
       'awarenessSync.collect': ({ collectId, awareness }) =>
         collectJobs.get(collectId)?.(awareness),
-      'indexerStorage.aggregate': ({ table, query, field, options }) =>
-        this.indexerStorage.aggregate(table, query, field, options),
-      'indexerStorage.search': ({ table, query, options }) =>
-        this.indexerStorage.search(table, query, options),
-      'indexerStorage.subscribeSearch': ({ table, query, options }) =>
-        this.indexerStorage.search$(table, query, options),
-      'indexerStorage.subscribeAggregate': ({ table, query, field, options }) =>
-        this.indexerStorage.aggregate$(table, query, field, options),
-      'indexerStorage.waitForConnected': (_, ctx) =>
-        this.indexerStorage.connection.waitForConnected(ctx.signal),
       'indexerSync.state': () => this.indexerSync.state$,
       'indexerSync.docState': (docId: string) =>
         this.indexerSync.docState$(docId),
@@ -287,6 +306,16 @@ class StoreConsumer {
         this.indexerSync.waitForCompleted(ctx.signal),
       'indexerSync.waitForDocCompleted': (docId: string, ctx) =>
         this.indexerSync.waitForDocCompleted(docId, ctx.signal),
+      'indexerSync.aggregate': ({ table, query, field, options }) =>
+        this.indexerSync.aggregate(table, query, field, options),
+      'indexerSync.search': ({ table, query, options }) =>
+        this.indexerSync.search(table, query, options),
+      'indexerSync.subscribeSearch': ({ table, query, options }) =>
+        this.indexerSync.search$(table, query, options),
+      'indexerSync.subscribeAggregate': ({ table, query, field, options }) =>
+        this.indexerSync.aggregate$(table, query, field, options),
+      'sync.enableBatterySaveMode': () => this.enableBatterySaveMode(),
+      'sync.disableBatterySaveMode': () => this.disableBatterySaveMode(),
     });
   }
 }

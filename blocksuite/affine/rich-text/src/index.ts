@@ -10,6 +10,5 @@ export {
   onModelTextUpdated,
   selectTextModel,
 } from './dom';
-export { markdownInput } from './markdown';
 export { RichText } from './rich-text';
 export * from './utils';

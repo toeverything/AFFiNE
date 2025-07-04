@@ -1,7 +1,10 @@
-import './chat-panel-messages';
-
+import type { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
-import type { ContextEmbedStatus, CopilotSessionType } from '@affine/graphql';
+import type {
+  ContextEmbedStatus,
+  CopilotSessionType,
+  UpdateChatSessionInput,
+} from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -9,42 +12,29 @@ import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType, Store } from '@blocksuite/affine/store';
 import { CenterPeekIcon } from '@blocksuite/icons/lit';
 import { type Signal, signal } from '@preact/signals-core';
-import { css, html, nothing, type PropertyValues } from 'lit';
+import {
+  css,
+  html,
+  nothing,
+  type PropertyValues,
+  type TemplateResult,
+} from 'lit';
 import { property, state } from 'lit/decorators.js';
-import { createRef, type Ref, ref } from 'lit/directives/ref.js';
+import { keyed } from 'lit/directives/keyed.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import { throttle } from 'lodash-es';
 
 import type {
   DocDisplayConfig,
   SearchMenuConfig,
 } from '../components/ai-chat-chips';
 import type {
-  AIModelSwitchConfig,
   AINetworkSearchConfig,
+  AIPlaygroundConfig,
   AIReasoningConfig,
 } from '../components/ai-chat-input';
-import { type HistoryMessage } from '../components/ai-chat-messages';
 import { createPlaygroundModal } from '../components/playground/modal';
 import { AIProvider } from '../provider';
-import { extractSelectedContent } from '../utils/extract';
-import {
-  getSelectedImagesAsBlobs,
-  getSelectedTextContent,
-} from '../utils/selection-utils';
 import type { AppSidebarConfig } from './chat-config';
-import type { ChatContextValue } from './chat-context';
-import type { ChatPanelMessages } from './chat-panel-messages';
-
-const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
-  quote: '',
-  images: [],
-  abortController: null,
-  messages: [],
-  status: 'idle',
-  error: null,
-  markdown: '',
-};
 
 export class ChatPanel extends SignalWatcher(
   WithDisposable(ShadowlessElement)
@@ -53,24 +43,10 @@ export class ChatPanel extends SignalWatcher(
     chat-panel {
       width: 100%;
       user-select: text;
-    }
 
-    .chat-panel-container {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .chat-panel-title {
-      background: var(--affine-background-primary-color);
-      position: relative;
-      padding: 8px 0px;
-      width: 100%;
-      height: 36px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 1;
+      .chat-panel-container {
+        height: 100%;
+      }
 
       .chat-panel-title-text {
         font-size: 14px;
@@ -78,132 +54,21 @@ export class ChatPanel extends SignalWatcher(
         color: var(--affine-text-secondary-color);
       }
 
-      svg {
-        width: 18px;
-        height: 18px;
-        color: var(--affine-text-secondary-color);
+      .chat-panel-playground {
+        cursor: pointer;
+        padding: 2px;
+        margin-left: 8px;
+        margin-right: auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .chat-panel-playground:hover svg {
+        color: ${unsafeCSSVarV2('icon/activated')};
       }
     }
-
-    chat-panel-messages {
-      flex: 1;
-      overflow-y: hidden;
-    }
-
-    .chat-panel-hints {
-      margin: 0 4px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--affine-border-color);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    .chat-panel-hints :first-child {
-      color: var(--affine-text-primary-color);
-    }
-
-    .chat-panel-hints :nth-child(2) {
-      color: var(--affine-text-secondary-color);
-    }
-
-    .chat-panel-playground {
-      cursor: pointer;
-      padding: 2px;
-      margin-left: 8px;
-      margin-right: auto;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .chat-panel-playground:hover svg {
-      color: ${unsafeCSSVarV2('icon/activated')};
-    }
   `;
-
-  private readonly _chatMessagesRef: Ref<ChatPanelMessages> =
-    createRef<ChatPanelMessages>();
-
-  // request counter to track the latest request
-  private _updateHistoryCounter = 0;
-
-  private _wheelTriggered = false;
-
-  private readonly _updateHistory = async () => {
-    const { doc } = this;
-
-    const currentRequest = ++this._updateHistoryCounter;
-
-    const [histories, actions] = await Promise.all([
-      AIProvider.histories?.chats(doc.workspace.id, doc.id),
-      AIProvider.histories?.actions(doc.workspace.id, doc.id),
-    ]);
-
-    // Check if this is still the latest request
-    if (currentRequest !== this._updateHistoryCounter) {
-      return;
-    }
-
-    const messages: HistoryMessage[] = actions ? [...actions] : [];
-
-    const sessionId = await this._getSessionId();
-    const history = histories?.find(history => history.sessionId === sessionId);
-    if (history) {
-      messages.push(...history.messages);
-    }
-
-    this.chatContextValue = {
-      ...this.chatContextValue,
-      messages: messages.sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      ),
-    };
-
-    this._scrollToEnd();
-  };
-
-  private readonly _updateEmbeddingProgress = (
-    count: Record<ContextEmbedStatus, number>
-  ) => {
-    const total = count.finished + count.processing + count.failed;
-    this.embeddingProgress = [count.finished, total];
-  };
-
-  private readonly _getSessionId = async () => {
-    if (this.session) {
-      return this.session.id;
-    }
-    const sessions = (
-      (await AIProvider.session?.getSessions(
-        this.doc.workspace.id,
-        this.doc.id,
-        { action: false }
-      )) || []
-    ).filter(session => !session.parentSessionId);
-    this.session = sessions.at(-1);
-    return this.session?.id;
-  };
-
-  private readonly _createSessionId = async () => {
-    if (this.session) {
-      return this.session.id;
-    }
-    const sessionId = await AIProvider.session?.createSession({
-      docId: this.doc.id,
-      workspaceId: this.doc.workspace.id,
-      promptName: 'Chat With AFFiNE AI',
-    });
-    if (sessionId) {
-      this.session = await AIProvider.session?.getSession(
-        this.doc.workspace.id,
-        sessionId
-      );
-    }
-    return sessionId;
-  };
 
   @property({ attribute: false })
   accessor host!: EditorHost;
@@ -212,16 +77,16 @@ export class ChatPanel extends SignalWatcher(
   accessor doc!: Store;
 
   @property({ attribute: false })
+  accessor playgroundConfig!: AIPlaygroundConfig;
+
+  @property({ attribute: false })
+  accessor appSidebarConfig!: AppSidebarConfig;
+
+  @property({ attribute: false })
   accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
-
-  @property({ attribute: false })
-  accessor modelSwitchConfig!: AIModelSwitchConfig;
-
-  @property({ attribute: false })
-  accessor appSidebarConfig!: AppSidebarConfig;
 
   @property({ attribute: false })
   accessor searchMenuConfig!: SearchMenuConfig;
@@ -235,64 +100,139 @@ export class ChatPanel extends SignalWatcher(
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
 
-  @state()
-  accessor isLoading = false;
+  @property({ attribute: false })
+  accessor affineWorkspaceDialogService!: WorkspaceDialogService;
 
   @state()
-  accessor chatContextValue: ChatContextValue = DEFAULT_CHAT_CONTEXT_VALUE;
+  accessor session: CopilotSessionType | null | undefined;
 
   @state()
   accessor embeddingProgress: [number, number] = [0, 0];
 
   @state()
-  accessor session: CopilotSessionType | undefined = undefined;
+  accessor showPreviewPanel = false;
 
-  private _isInitialized = false;
+  @state()
+  accessor previewPanelContent: TemplateResult<1> | null = null;
 
-  private _isSidebarOpen: Signal<boolean | undefined> = signal(false);
+  private isSidebarOpen: Signal<boolean | undefined> = signal(false);
 
-  private _sidebarWidth: Signal<number | undefined> = signal(undefined);
+  private sidebarWidth: Signal<number | undefined> = signal(undefined);
 
-  private readonly _scrollToEnd = () => {
-    if (!this._wheelTriggered) {
-      this._chatMessagesRef.value?.scrollToEnd();
+  private hasPinned = false;
+
+  private get isInitialized() {
+    return this.session !== undefined;
+  }
+
+  private readonly initSession = async () => {
+    if (!AIProvider.session) {
+      return;
+    }
+    const pinSessions = await AIProvider.session.getSessions(
+      this.doc.workspace.id,
+      undefined,
+      { pinned: true }
+    );
+    if (Array.isArray(pinSessions) && pinSessions[0]) {
+      this.session = pinSessions[0];
+    } else {
+      const docSessions = await AIProvider.session.getSessions(
+        this.doc.workspace.id,
+        this.doc.id,
+        { action: false, fork: false }
+      );
+      // the first item is the latest session
+      this.session = docSessions?.[0] ?? null;
     }
   };
 
-  private readonly _throttledScrollToEnd = throttle(this._scrollToEnd, 600);
+  private readonly createSession = async (
+    options: Partial<BlockSuitePresets.AICreateSessionOptions> = {}
+  ) => {
+    if (this.session) {
+      return this.session;
+    }
+    const sessionId = await AIProvider.session?.createSession({
+      docId: this.doc.id,
+      workspaceId: this.doc.workspace.id,
+      promptName: 'Chat With AFFiNE AI',
+      reuseLatestChat: false,
+      ...options,
+    });
+    if (sessionId) {
+      const session = await AIProvider.session?.getSession(
+        this.doc.workspace.id,
+        sessionId
+      );
+      this.session = session ?? null;
+    }
+    return this.session;
+  };
 
-  private readonly _initPanel = async () => {
+  private readonly updateSession = async (options: UpdateChatSessionInput) => {
+    await AIProvider.session?.updateSession(options);
+    const session = await AIProvider.session?.getSession(
+      this.doc.workspace.id,
+      options.sessionId
+    );
+    this.session = session ?? null;
+  };
+
+  private readonly newSession = () => {
+    this.resetPanel();
+    requestAnimationFrame(() => {
+      this.session = null;
+    });
+  };
+
+  private readonly togglePin = async () => {
+    const pinned = !this.session?.pinned;
+    this.hasPinned = true;
+    if (!this.session) {
+      await this.createSession({ pinned });
+    } else {
+      await this.updateSession({
+        sessionId: this.session.id,
+        pinned,
+      });
+    }
+  };
+
+  private readonly initPanel = async () => {
     try {
-      if (!this._isSidebarOpen.value) return;
-      if (this.isLoading) return;
-      const userId = (await AIProvider.userInfo)?.id;
-      if (!userId) return;
-
-      this.isLoading = true;
-      await this._updateHistory();
-      this.isLoading = false;
-      this._isInitialized = true;
+      if (!this.isSidebarOpen.value) {
+        return;
+      }
+      await this.initSession();
+      this.hasPinned = !!this.session?.pinned;
     } catch (error) {
       console.error(error);
     }
   };
 
-  private readonly _resetPanel = () => {
+  private readonly resetPanel = () => {
     this.session = undefined;
-    this.chatContextValue = DEFAULT_CHAT_CONTEXT_VALUE;
-    this.isLoading = false;
-    this._isInitialized = false;
     this.embeddingProgress = [0, 0];
+    this.showPreviewPanel = false;
+    this.hasPinned = false;
   };
 
-  private readonly _openPlayground = () => {
+  private readonly updateEmbeddingProgress = (
+    count: Record<ContextEmbedStatus, number>
+  ) => {
+    const total = count.finished + count.processing + count.failed;
+    this.embeddingProgress = [count.finished, total];
+  };
+
+  private readonly openPlayground = () => {
     const playgroundContent = html`
       <playground-content
         .host=${this.host}
         .doc=${this.doc}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
-        .modelSwitchConfig=${this.modelSwitchConfig}
+        .playgroundConfig=${this.playgroundConfig}
         .appSidebarConfig=${this.appSidebarConfig}
         .searchMenuConfig=${this.searchMenuConfig}
         .docDisplayConfig=${this.docDisplayConfig}
@@ -304,48 +244,13 @@ export class ChatPanel extends SignalWatcher(
     createPlaygroundModal(playgroundContent, 'AI Playground');
   };
 
-  protected override willUpdate(_changedProperties: PropertyValues) {
-    if (_changedProperties.has('doc')) {
-      this._resetPanel();
-      requestAnimationFrame(async () => {
-        await this._initPanel();
-      });
-    }
-  }
-
-  protected override updated(_changedProperties: PropertyValues) {
-    if (this.chatContextValue.status === 'loading') {
-      // reset the wheel triggered flag when the status is loading
-      this._wheelTriggered = false;
-    }
-
-    if (
-      _changedProperties.has('chatContextValue') &&
-      (this.chatContextValue.status === 'loading' ||
-        this.chatContextValue.status === 'error' ||
-        this.chatContextValue.status === 'success')
-    ) {
-      setTimeout(this._scrollToEnd, 500);
-    }
-
-    if (
-      _changedProperties.has('chatContextValue') &&
-      this.chatContextValue.status === 'transmitting'
-    ) {
-      this._throttledScrollToEnd();
-    }
-  }
-
-  protected override firstUpdated(): void {
-    const chatMessages = this._chatMessagesRef.value;
-    if (chatMessages) {
-      chatMessages.updateComplete
-        .then(() => {
-          chatMessages.getScrollContainer()?.addEventListener('wheel', () => {
-            this._wheelTriggered = true;
-          });
-        })
-        .catch(console.error);
+  protected override updated(changedProperties: PropertyValues) {
+    if (changedProperties.has('doc')) {
+      if (this.session?.pinned) {
+        return;
+      }
+      this.resetPanel();
+      this.initPanel().catch(console.error);
     }
   }
 
@@ -354,133 +259,93 @@ export class ChatPanel extends SignalWatcher(
     if (!this.doc) throw new Error('doc is required');
 
     this._disposables.add(
-      AIProvider.slots.actions.subscribe(({ event }) => {
-        const { status } = this.chatContextValue;
-        if (
-          event === 'finished' &&
-          (status === 'idle' || status === 'success')
-        ) {
-          this._updateHistory().catch(console.error);
-        }
-      })
-    );
-    this._disposables.add(
       AIProvider.slots.userInfo.subscribe(() => {
-        this._initPanel().catch(console.error);
-      })
-    );
-    this._disposables.add(
-      AIProvider.slots.requestOpenWithChat.subscribe(({ host }) => {
-        if (this.host === host) {
-          extractSelectedContent(host)
-            .then(context => {
-              if (!context) return;
-              this.updateContext(context);
-            })
-            .catch(console.error);
-        }
+        this.resetPanel();
+        this.initPanel().catch(console.error);
       })
     );
 
     const isOpen = this.appSidebarConfig.isOpen();
-    this._isSidebarOpen = isOpen.signal;
+    this.isSidebarOpen = isOpen.signal;
     this._disposables.add(isOpen.cleanup);
 
     const width = this.appSidebarConfig.getWidth();
-    this._sidebarWidth = width.signal;
+    this.sidebarWidth = width.signal;
     this._disposables.add(width.cleanup);
 
     this._disposables.add(
-      this._isSidebarOpen.subscribe(isOpen => {
-        if (isOpen && !this._isInitialized) {
-          this._initPanel().catch(console.error);
+      this.isSidebarOpen.subscribe(isOpen => {
+        if (isOpen && !this.isInitialized) {
+          this.initPanel().catch(console.error);
         }
       })
     );
   }
 
-  updateContext = (context: Partial<ChatContextValue>) => {
-    this.chatContextValue = { ...this.chatContextValue, ...context };
-  };
-
-  continueInChat = async () => {
-    const text = await getSelectedTextContent(this.host, 'plain-text');
-    const markdown = await getSelectedTextContent(this.host, 'markdown');
-    const images = await getSelectedImagesAsBlobs(this.host);
-    this.updateContext({
-      quote: text,
-      markdown,
-      images,
-    });
-  };
-
   override render() {
-    const width = this._sidebarWidth.value || 0;
+    if (!this.isInitialized) {
+      return nothing;
+    }
+
+    const width = this.sidebarWidth.value || 0;
     const style = styleMap({
       padding: width > 540 ? '8px 24px 0 24px' : '8px 12px 0 12px',
     });
     const [done, total] = this.embeddingProgress;
     const isEmbedding = total > 0 && done < total;
-
-    return html`<div class="chat-panel-container" style=${style}>
-      <div class="chat-panel-title">
-        <div class="chat-panel-title-text">
-          ${isEmbedding
-            ? html`<span data-testid="chat-panel-embedding-progress"
-                >Embedding ${done}/${total}</span
-              >`
-            : 'AFFiNE AI'}
-        </div>
-        ${this.modelSwitchConfig.visible.value
-          ? html`
-              <div class="chat-panel-playground" @click=${this._openPlayground}>
-                ${CenterPeekIcon()}
-              </div>
-            `
-          : nothing}
-        <ai-history-clear
-          .host=${this.host}
-          .doc=${this.doc}
-          .getSessionId=${this._getSessionId}
-          .onHistoryCleared=${this._updateHistory}
-          .chatContextValue=${this.chatContextValue}
-        ></ai-history-clear>
+    const title = html`
+      <div class="chat-panel-title-text">
+        ${isEmbedding
+          ? html`<span data-testid="chat-panel-embedding-progress"
+              >Embedding ${done}/${total}</span
+            >`
+          : 'AFFiNE AI'}
       </div>
-      <chat-panel-messages
-        ${ref(this._chatMessagesRef)}
-        .chatContextValue=${this.chatContextValue}
-        .getSessionId=${this._getSessionId}
-        .createSessionId=${this._createSessionId}
-        .updateContext=${this.updateContext}
-        .host=${this.host}
-        .isLoading=${this.isLoading}
-        .extensions=${this.extensions}
-        .affineFeatureFlagService=${this.affineFeatureFlagService}
-        .networkSearchConfig=${this.networkSearchConfig}
-        .reasoningConfig=${this.reasoningConfig}
-      ></chat-panel-messages>
-      <ai-chat-composer
-        .host=${this.host}
-        .doc=${this.doc}
+      ${this.playgroundConfig.visible.value
+        ? html`
+            <div class="chat-panel-playground" @click=${this.openPlayground}>
+              ${CenterPeekIcon()}
+            </div>
+          `
+        : nothing}
+      <ai-chat-toolbar
         .session=${this.session}
-        .getSessionId=${this._getSessionId}
-        .createSessionId=${this._createSessionId}
-        .chatContextValue=${this.chatContextValue}
-        .updateContext=${this.updateContext}
-        .updateEmbeddingProgress=${this._updateEmbeddingProgress}
-        .isVisible=${this._isSidebarOpen}
-        .networkSearchConfig=${this.networkSearchConfig}
-        .reasoningConfig=${this.reasoningConfig}
-        .modelSwitchConfig=${this.modelSwitchConfig}
-        .docDisplayConfig=${this.docDisplayConfig}
-        .searchMenuConfig=${this.searchMenuConfig}
-        .trackOptions=${{
-          where: 'chat-panel',
-          control: 'chat-send',
-        }}
-        .panelWidth=${this._sidebarWidth}
-      ></ai-chat-composer>
+        .onNewSession=${this.newSession}
+        .onTogglePin=${this.togglePin}
+      ></ai-chat-toolbar>
+    `;
+
+    const left = html`<div class="chat-panel-container" style=${style}>
+      ${keyed(
+        this.hasPinned ? this.session?.id : this.doc.id,
+        html`<ai-chat-content
+          .chatTitle=${title}
+          .host=${this.host}
+          .session=${this.session}
+          .createSession=${this.createSession}
+          .workspaceId=${this.doc.workspace.id}
+          .docId=${this.doc.id}
+          .networkSearchConfig=${this.networkSearchConfig}
+          .reasoningConfig=${this.reasoningConfig}
+          .searchMenuConfig=${this.searchMenuConfig}
+          .docDisplayConfig=${this.docDisplayConfig}
+          .extensions=${this.extensions}
+          .affineFeatureFlagService=${this.affineFeatureFlagService}
+          .affineWorkspaceDialogService=${this.affineWorkspaceDialogService}
+          .updateEmbeddingProgress=${this.updateEmbeddingProgress}
+          .width=${this.sidebarWidth}
+        ></ai-chat-content>`
+      )}
     </div>`;
+
+    const right = this.previewPanelContent;
+
+    return html`<chat-panel-split-view
+      .left=${left}
+      .right=${right}
+      .open=${this.showPreviewPanel}
+    >
+    </chat-panel-split-view>`;
   }
 }
 

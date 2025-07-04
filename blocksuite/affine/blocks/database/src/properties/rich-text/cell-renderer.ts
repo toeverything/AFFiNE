@@ -70,7 +70,7 @@ function toggleStyle(
         return [k, v];
       }
     })
-  );
+  ) as AffineTextAttributes;
 
   inlineEditor.formatText(inlineRange, newAttributes, {
     mode: 'merge',
@@ -331,7 +331,6 @@ export class RichTextCell extends BaseCellRenderer<Text, string> {
         this.inlineEditor$.value?.selectAll();
       }
     };
-    this.addEventListener('keydown', selectAll);
     this.disposables.addFromEvent(this, 'keydown', selectAll);
     this.disposables.add(
       effect(() => {

@@ -1,4 +1,5 @@
 import { EdgelessLegacySlotIdentifier } from '@blocksuite/affine-block-surface';
+import type { EmbedProps } from '@blocksuite/affine-model';
 import { Bound } from '@blocksuite/global/gfx';
 import {
   blockComponentSymbol,
@@ -7,16 +8,13 @@ import {
   GfxElementSymbol,
   toGfxBlockComponent,
 } from '@blocksuite/std';
-import type {
-  GfxBlockElementModel,
-  GfxCompatibleProps,
-} from '@blocksuite/std/gfx';
+import type { GfxBlockElementModel } from '@blocksuite/std/gfx';
 import type { StyleInfo } from 'lit/directives/style-map.js';
 
 import type { EmbedBlockComponent } from './embed-block-element.js';
 
 export function toEdgelessEmbedBlock<
-  Model extends GfxBlockElementModel<GfxCompatibleProps>,
+  Model extends GfxBlockElementModel<EmbedProps>,
   Service extends BlockService,
   WidgetName extends string,
   B extends typeof EmbedBlockComponent<Model, Service, WidgetName>,

@@ -41,6 +41,15 @@ if (
 window.addEventListener('beforeunload', () => {
   storeManagerClient.dispose();
 });
+window.addEventListener('focus', () => {
+  storeManagerClient.disableBatterySaveMode();
+});
+window.addEventListener('click', () => {
+  storeManagerClient.disableBatterySaveMode();
+});
+window.addEventListener('blur', () => {
+  storeManagerClient.enableBatterySaveMode();
+});
 
 const future = {
   v7_startTransition: true,

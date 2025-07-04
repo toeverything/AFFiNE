@@ -7,6 +7,9 @@ query getCopilotSession(
       session(sessionId: $sessionId) {
         id
         parentSessionId
+        docId
+        pinned
+        title
         promptName
         model
         optionalModels

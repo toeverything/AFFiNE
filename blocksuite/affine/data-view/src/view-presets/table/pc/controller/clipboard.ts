@@ -43,6 +43,7 @@ export class TableClipboardController implements ReactiveController {
       }
       if (deleteRows.length) {
         this.logic.view.rowsDelete(deleteRows);
+        this.logic.ui$.value?.requestUpdate();
       }
     }
     this.clipboard
@@ -77,6 +78,14 @@ export class TableClipboardController implements ReactiveController {
   private readonly _onPaste = async (_context: UIEventStateContext) => {
     const event = _context.get('clipboardState').raw;
     event.stopPropagation();
+
+    const active = document.activeElement as HTMLElement | null;
+    if (
+      active &&
+      (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
+    ) {
+      return true;
+    }
 
     const clipboardData = event.clipboardData;
     if (!clipboardData) return;

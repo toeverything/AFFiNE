@@ -657,6 +657,12 @@ export class CopilotSessionNotFound extends UserFriendlyError {
   }
 }
 
+export class CopilotSessionInvalidInput extends UserFriendlyError {
+  constructor(message?: string) {
+    super('invalid_input', 'copilot_session_invalid_input', message);
+  }
+}
+
 export class CopilotSessionDeleted extends UserFriendlyError {
   constructor(message?: string) {
     super('action_forbidden', 'copilot_session_deleted', message);
@@ -1061,6 +1067,30 @@ export class InvalidIndexerInput extends UserFriendlyError {
     super('invalid_input', 'invalid_indexer_input', message, args);
   }
 }
+
+export class CommentNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'comment_not_found', message);
+  }
+}
+
+export class ReplyNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'reply_not_found', message);
+  }
+}
+
+export class CommentAttachmentNotFound extends UserFriendlyError {
+  constructor(message?: string) {
+    super('resource_not_found', 'comment_attachment_not_found', message);
+  }
+}
+
+export class CommentAttachmentQuotaExceeded extends UserFriendlyError {
+  constructor(message?: string) {
+    super('quota_exceeded', 'comment_attachment_quota_exceeded', message);
+  }
+}
 export enum ErrorNames {
   INTERNAL_SERVER_ERROR,
   NETWORK_ERROR,
@@ -1145,6 +1175,7 @@ export enum ErrorNames {
   WORKSPACE_ID_REQUIRED_FOR_TEAM_SUBSCRIPTION,
   WORKSPACE_ID_REQUIRED_TO_UPDATE_TEAM_SUBSCRIPTION,
   COPILOT_SESSION_NOT_FOUND,
+  COPILOT_SESSION_INVALID_INPUT,
   COPILOT_SESSION_DELETED,
   NO_COPILOT_PROVIDER_AVAILABLE,
   COPILOT_FAILED_TO_GENERATE_TEXT,
@@ -1195,7 +1226,11 @@ export enum ErrorNames {
   INVALID_APP_CONFIG_INPUT,
   SEARCH_PROVIDER_NOT_FOUND,
   INVALID_SEARCH_PROVIDER_REQUEST,
-  INVALID_INDEXER_INPUT
+  INVALID_INDEXER_INPUT,
+  COMMENT_NOT_FOUND,
+  REPLY_NOT_FOUND,
+  COMMENT_ATTACHMENT_NOT_FOUND,
+  COMMENT_ATTACHMENT_QUOTA_EXCEEDED
 }
 registerEnumType(ErrorNames, {
   name: 'ErrorNames'

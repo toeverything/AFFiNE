@@ -8,6 +8,7 @@ import {
   EDGELESS_TOP_CONTENTEDITABLE_SELECTOR,
 } from '@blocksuite/affine-shared/consts';
 import {
+  BlockCommentManager,
   CitationProvider,
   DocModeProvider,
 } from '@blocksuite/affine-shared/services';
@@ -104,6 +105,14 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
   get hasCitationSiblings() {
     return this.collapsedSiblings.some(sibling =>
       this.citationService.isCitationModel(sibling)
+    );
+  }
+
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
     );
   }
 
@@ -268,7 +277,10 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
         }
       </style>
       <div
-        class="affine-paragraph-block-container"
+        class=${classMap({
+          'affine-paragraph-block-container': true,
+          'highlight-comment': this.isCommentHighlighted,
+        })}
         data-has-collapsed-siblings="${collapsedSiblings.length > 0}"
       >
         <div

@@ -1,13 +1,16 @@
 import type {
-  ChatHistoryOrder,
   ContextMatchedDocChunk,
   ContextMatchedFileChunk,
+  ContextWorkspaceEmbeddingStatus,
   CopilotContextCategory,
   CopilotContextDoc,
   CopilotContextFile,
   CopilotSessionType,
   getCopilotHistoriesQuery,
+  QueryChatSessionsInput,
   RequestOptions,
+  StreamObject,
+  UpdateChatSessionInput,
 } from '@affine/graphql';
 import type { EditorHost } from '@blocksuite/affine/std';
 import type { GfxModel } from '@blocksuite/affine/std/gfx';
@@ -79,11 +82,11 @@ declare global {
       retry?: boolean;
 
       // action's context
-      docId: string;
+      docId?: string;
       workspaceId: string;
 
       // internal context
-      host: EditorHost;
+      host?: EditorHost;
       models?: (BlockModel | GfxModel)[];
       control?: TrackerControl;
       where?: TrackerWhere;
@@ -141,6 +144,7 @@ declare global {
         docs: AIDocContextOption[];
         files: AIFileContextOption[];
       };
+      postfix?: (text: string) => string;
     }
 
     interface TranslateOptions extends AITextActionOptions {
@@ -329,6 +333,11 @@ declare global {
         onPoll: (result: AIDocsAndFilesContext | undefined) => void,
         abortSignal: AbortSignal
       ) => Promise<void>;
+      pollEmbeddingStatus: (
+        workspaceId: string,
+        onPoll: (result: ContextWorkspaceEmbeddingStatus) => void,
+        abortSignal: AbortSignal
+      ) => Promise<void>;
       matchContext: (
         content: string,
         contextId?: string,
@@ -353,7 +362,8 @@ declare global {
         content: string;
         createdAt: string;
         role: MessageRole;
-        attachments?: string[];
+        attachments?: string[] | null;
+        streamObjects?: StreamObject[] | null;
       }[];
     }
 
@@ -366,41 +376,41 @@ declare global {
       >[];
     };
 
-    interface CreateSessionOptions {
-      docId: string;
-      workspaceId: string;
+    interface AICreateSessionOptions {
       promptName: PromptKey;
+      workspaceId: string;
+      docId?: string;
       sessionId?: string;
       retry?: boolean;
+      pinned?: boolean;
+      // default value of reuseLatestChat is true at backend
+      reuseLatestChat?: boolean;
     }
 
     interface AISessionService {
-      createSession: (options: CreateSessionOptions) => Promise<string>;
+      createSession: (options: AICreateSessionOptions) => Promise<string>;
       getSessions: (
         workspaceId: string,
         docId?: string,
-        options?: { action?: boolean }
+        options?: QueryChatSessionsInput
       ) => Promise<CopilotSessionType[] | undefined>;
       getSession: (
         workspaceId: string,
         sessionId: string
       ) => Promise<CopilotSessionType | undefined>;
-      updateSession: (sessionId: string, promptName: string) => Promise<string>;
+      updateSession: (options: UpdateChatSessionInput) => Promise<string>;
     }
 
     interface AIHistoryService {
       // non chat histories
       actions: (
         workspaceId: string,
-        docId?: string
+        docId: string
       ) => Promise<AIHistory[] | undefined>;
       chats: (
         workspaceId: string,
-        docId?: string,
-        options?: {
-          sessionId?: string;
-          messageOrder?: ChatHistoryOrder;
-        }
+        sessionId: string,
+        docId?: string
       ) => Promise<AIHistory[] | undefined>;
       cleanup: (
         workspaceId: string,

@@ -25,10 +25,13 @@ export const SignInDialog = ({
       persistent
       onOpenChange={() => close()}
       width={400}
-      height={550}
       contentOptions={{
         ['data-testid' as string]: 'auth-modal',
-        style: { padding: '44px 40px 20px' },
+        style: {
+          padding: '44px 40px 20px',
+          minHeight: 550,
+          maxHeight: 650,
+        },
       }}
     >
       <SignInPanel

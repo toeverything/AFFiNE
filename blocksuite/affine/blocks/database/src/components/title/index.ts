@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { stopPropagation } from '@blocksuite/affine-shared/utils';
 import type { DataViewUILogicBase } from '@blocksuite/data-view';
 import { SignalWatcher, WithDisposable } from '@blocksuite/global/lit';
@@ -72,6 +73,12 @@ export class DatabaseTitle extends SignalWatcher(
     .affine-database-title [data-title-focus='true']::before {
       color: var(--affine-placeholder-color);
     }
+
+    .affine-database-title.comment-highlighted {
+      border-bottom: 2px solid
+        ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+      background-color: ${unsafeCSSVarV2('block/comment/highlightActive')};
+    }
   `;
 
   private readonly compositionEnd = () => {
@@ -134,6 +141,7 @@ export class DatabaseTitle extends SignalWatcher(
     const classList = classMap({
       'affine-database-title': true,
       ellipsis: !this.isFocus$.value,
+      'comment-highlighted': this.database?.isCommentHighlighted ?? false,
     });
     const untitledStyle = styleMap({
       height: isEmpty ? 'auto' : 0,

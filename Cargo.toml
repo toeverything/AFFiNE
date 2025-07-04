@@ -28,12 +28,14 @@ base64-simd            = "0.8"
 bitvec                 = "1.0"
 block2                 = "0.6"
 byteorder              = "1.5"
+cpal                   = "0.15"
 chrono                 = "0.4"
 clap                   = { version = "4.4", features = ["derive"] }
 core-foundation        = "0.10"
 coreaudio-rs           = "0.12"
 criterion              = { version = "0.5", features = ["html_reports"] }
 criterion2             = { version = "3", default-features = false }
+crossbeam-channel      = "0.5"
 dispatch2              = "0.3"
 docx-parser            = { git = "https://github.com/toeverything/docx-parser" }
 dotenvy                = "0.15"
@@ -97,6 +99,19 @@ uniffi                 = "0.29"
 url                    = { version = "2.5" }
 uuid                   = "1.8"
 v_htmlescape           = "0.15"
+windows                = { version = "0.61", features = [
+  "Win32_Devices_FunctionDiscovery",
+  "Win32_UI_Shell_PropertiesSystem",
+  "Win32_Media_Audio",
+  "Win32_System_Variant",
+  "Win32_System_Com_StructuredStorage",
+  "Win32_System_Threading",
+  "Win32_System_ProcessStatus",
+  "Win32_Foundation",
+  "Win32_System_Com",
+  "Win32_System_Diagnostics_ToolHelp",
+] }
+windows-core = { version = "0.61" }
 y-octo                 = { path = "./packages/common/y-octo/core" }
 y-sync                 = { version = "0.4" }
 yrs                    = "0.23.0"

@@ -19,6 +19,7 @@ export type ImageBlockProps = {
   height?: number;
   rotate: number;
   size?: number;
+  comments?: Record<string, boolean>;
 } & Omit<GfxCommonBlockProps, 'scale'> &
   BlockMeta;
 
@@ -32,6 +33,7 @@ const defaultImageProps: ImageBlockProps = {
   lockedBySelf: false,
   rotate: 0,
   size: -1,
+  comments: undefined,
   'meta:createdAt': undefined,
   'meta:createdBy': undefined,
   'meta:updatedAt': undefined,

@@ -9,14 +9,16 @@ export const MentionInlineSpecExtension =
     const std = provider.get(StdIdentifier);
     return {
       name: 'mention',
-      schema: z
-        .object({
-          member: z.string(),
-          notification: z.string().optional(),
-        })
-        .optional()
-        .nullable()
-        .catch(undefined),
+      schema: z.object({
+        mention: z
+          .object({
+            member: z.string(),
+            notification: z.string().optional(),
+          })
+          .optional()
+          .nullable()
+          .catch(undefined),
+      }),
       match: delta => {
         return !!delta.attributes?.mention?.member;
       },

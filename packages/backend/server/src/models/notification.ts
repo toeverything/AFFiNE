@@ -7,7 +7,7 @@ import {
 } from '@prisma/client';
 import { z } from 'zod';
 
-import { PaginationInput } from '../base';
+import { Due, PaginationInput } from '../base';
 import { BaseModel } from './base';
 import { DocMode } from './common';
 
@@ -16,7 +16,7 @@ export type { Notification };
 
 // #region input
 
-export const ONE_YEAR = 1000 * 60 * 60 * 24 * 365;
+export const ONE_YEAR = Due.ms('1y');
 const IdSchema = z.string().trim().min(1).max(100);
 
 export const BaseNotificationCreateSchema = z.object({
@@ -96,10 +96,37 @@ export type InvitationReviewDeclinedNotificationCreate = z.input<
   typeof InvitationReviewDeclinedNotificationCreateSchema
 >;
 
+export const CommentNotificationBodySchema = z.object({
+  workspaceId: IdSchema,
+  createdByUserId: IdSchema,
+  commentId: IdSchema,
+  replyId: IdSchema.optional(),
+  doc: MentionDocSchema,
+});
+
+export type CommentNotificationBody = z.infer<
+  typeof CommentNotificationBodySchema
+>;
+
+export const CommentNotificationCreateSchema =
+  BaseNotificationCreateSchema.extend({
+    body: CommentNotificationBodySchema,
+  });
+
+export type CommentNotificationCreate = z.input<
+  typeof CommentNotificationCreateSchema
+>;
+
+export const CommentMentionNotificationCreateSchema =
+  BaseNotificationCreateSchema.extend({
+    body: CommentNotificationBodySchema,
+  });
+
 export type UnionNotificationBody =
   | MentionNotificationBody
   | InvitationNotificationBody
-  | InvitationReviewDeclinedNotificationBody;
+  | InvitationReviewDeclinedNotificationBody
+  | CommentNotificationBody;
 
 // #endregion
 
@@ -114,10 +141,14 @@ export type InvitationNotification = Notification &
 export type InvitationReviewDeclinedNotification = Notification &
   z.infer<typeof InvitationReviewDeclinedNotificationCreateSchema>;
 
+export type CommentNotification = Notification &
+  z.infer<typeof CommentNotificationCreateSchema>;
+
 export type UnionNotification =
   | MentionNotification
   | InvitationNotification
-  | InvitationReviewDeclinedNotification;
+  | InvitationReviewDeclinedNotification
+  | CommentNotification;
 
 // #endregion
 
@@ -175,6 +206,40 @@ export class NotificationModel extends BaseModel {
       `Created ${type} notification ${row.id} to user ${data.userId} in workspace ${data.body.workspaceId}`
     );
     return row as InvitationReviewDeclinedNotification;
+  }
+
+  // #endregion
+
+  // #region comment
+
+  async createComment(input: CommentNotificationCreate) {
+    const data = CommentNotificationCreateSchema.parse(input);
+    const type = NotificationType.Comment;
+    const row = await this.create({
+      userId: data.userId,
+      level: data.level,
+      type,
+      body: data.body,
+    });
+    this.logger.debug(
+      `Created ${type} notification ${row.id} to user ${data.userId} in workspace ${data.body.workspaceId}`
+    );
+    return row as CommentNotification;
+  }
+
+  async createCommentMention(input: CommentNotificationCreate) {
+    const data = CommentMentionNotificationCreateSchema.parse(input);
+    const type = NotificationType.CommentMention;
+    const row = await this.create({
+      userId: data.userId,
+      level: data.level,
+      type,
+      body: data.body,
+    });
+    this.logger.debug(
+      `Created ${type} notification ${row.id} to user ${data.userId} in workspace ${data.body.workspaceId}`
+    );
+    return row as CommentNotification;
   }
 
   // #endregion

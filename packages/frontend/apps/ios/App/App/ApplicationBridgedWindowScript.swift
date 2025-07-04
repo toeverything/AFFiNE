@@ -8,22 +8,28 @@
 import Foundation
 import WebKit
 
+/*
+ packages/frontend/apps/ios/src/app.tsx
+ */
+
 enum ApplicationBridgedWindowScript: String {
   case getCurrentDocContentInMarkdown = "return await window.getCurrentDocContentInMarkdown();"
   case getCurrentServerBaseUrl = "window.getCurrentServerBaseUrl()"
   case getCurrentWorkspaceId = "window.getCurrentWorkspaceId();"
   case getCurrentDocId = "window.getCurrentDocId();"
-  
+  case getCurrentI18nLocale = "window.getCurrentI18nLocale();"
+  case createNewDocByMarkdownInCurrentWorkspace = "return await window.createNewDocByMarkdownInCurrentWorkspace(markdown, title);"
+
   var requiresAsyncContext: Bool {
     switch self {
-    case .getCurrentDocContentInMarkdown: return true
-    default: return false
+    case .getCurrentDocContentInMarkdown, .createNewDocByMarkdownInCurrentWorkspace: true
+    default: false
     }
   }
 }
 
 extension WKWebView {
-  func evaluateScript(_ script: ApplicationBridgedWindowScript, callback: @escaping (Any?) -> ()) {
+  func evaluateScript(_ script: ApplicationBridgedWindowScript, callback: @escaping (Any?) -> Void) {
     if script.requiresAsyncContext {
       callAsyncJavaScript(
         script.rawValue,
@@ -32,7 +38,7 @@ extension WKWebView {
         in: .page
       ) { result in
         switch result {
-        case .success(let input):
+        case let .success(input):
           callback(input)
         case .failure:
           callback(nil)
@@ -43,5 +49,3 @@ extension WKWebView {
     }
   }
 }
-
-

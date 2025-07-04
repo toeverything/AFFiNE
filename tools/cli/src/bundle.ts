@@ -111,7 +111,7 @@ const defaultDevServerConfig: DevServerConfiguration = {
     overlay: process.env.DISABLE_DEV_OVERLAY === 'true' ? false : undefined,
     logging: process.env.CI ? 'none' : 'error',
     // see: https://webpack.js.org/configuration/dev-server/#websocketurl
-    webSocketURL: 'auto://0.0.0.0:0/ws',
+    webSocketURL: 'auto://0.0.0.0:8080/ws',
   },
   historyApiFallback: {
     rewrites: [
@@ -124,20 +124,6 @@ const defaultDevServerConfig: DevServerConfiguration = {
         },
       },
     ],
-  },
-  headers: (req): Record<string, string | string[]> => {
-    if (
-      [/^\/api/, /^\/socket\.io/, /^\/graphql/].some(path =>
-        path.test(req.path)
-      )
-    ) {
-      return {};
-    }
-
-    return {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    };
   },
   proxy: [
     {

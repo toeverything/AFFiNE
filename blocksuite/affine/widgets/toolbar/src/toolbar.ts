@@ -80,6 +80,11 @@ export class AffineToolbarWidget extends WidgetComponent {
       }
     }
 
+    editor-toolbar[data-open][data-inline='true'] {
+      transition-property: opacity, overlay, display, transform;
+      transition-timing-function: ease;
+    }
+
     editor-toolbar[data-placement='inner'] {
       background-color: unset;
       box-shadow: unset;
@@ -536,9 +541,7 @@ export class AffineToolbarWidget extends WidgetComponent {
           );
         });
 
-        return () => {
-          subscription.unsubscribe();
-        };
+        disposables.add(subscription);
       })
     );
 
@@ -576,9 +579,11 @@ export class AffineToolbarWidget extends WidgetComponent {
     );
 
     // Handles elements when resizing
-    const edgelessSlots = std.get(EdgelessLegacySlotIdentifier);
-    disposables.add(edgelessSlots.elementResizeStart.subscribe(dragStart));
-    disposables.add(edgelessSlots.elementResizeEnd.subscribe(dragEnd));
+    const edgelessSlots = std.getOptional(EdgelessLegacySlotIdentifier);
+    if (edgelessSlots) {
+      disposables.add(edgelessSlots.elementResizeStart.subscribe(dragStart));
+      disposables.add(edgelessSlots.elementResizeEnd.subscribe(dragEnd));
+    }
 
     // Handles elements when hovering
     disposables.add(
@@ -632,6 +637,7 @@ export class AffineToolbarWidget extends WidgetComponent {
 
         // Hides toolbar
         if (Flag.None === value || flags.check(Flag.Hiding, value)) {
+          if ('inline' in toolbar.dataset) delete toolbar.dataset.inline;
           if (toolbar.dataset.open) delete toolbar.dataset.open;
           // Closes dropdown menus
           toolbar

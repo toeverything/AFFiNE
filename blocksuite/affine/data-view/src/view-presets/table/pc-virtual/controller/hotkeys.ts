@@ -3,6 +3,8 @@ import { DisposableGroup } from '@blocksuite/global/disposable';
 import type { ReactiveController } from 'lit';
 
 import { TableViewAreaSelection, TableViewRowSelection } from '../../selection';
+import { handleCharStartEdit } from '../../utils.js';
+import type { DatabaseCellContainer } from '../row/cell.js';
 import { popRowMenu } from '../row/menu';
 import type { VirtualTableViewUILogic } from '../table-view-ui-logic';
 
@@ -30,6 +32,7 @@ export class TableHotkeysController implements ReactiveController {
             const rows = TableViewRowSelection.rowsIds(selection);
             this.selectionController.selection = undefined;
             this.logic.view.rowsDelete(rows);
+            this.logic.ui$.value?.requestUpdate();
             return;
           }
           const {
@@ -137,7 +140,11 @@ export class TableHotkeysController implements ReactiveController {
                 });
             }
           } else if (selection.isEditing) {
-            return false;
+            this.selectionController.selection = {
+              ...selection,
+              isEditing: false,
+            };
+            this.selectionController.focusToCell('down');
           } else {
             this.selectionController.selection = {
               ...selection,
@@ -171,27 +178,31 @@ export class TableHotkeysController implements ReactiveController {
         },
         Tab: ctx => {
           const selection = this.selectionController.selection;
-          if (
-            !selection ||
-            TableViewRowSelection.is(selection) ||
-            selection.isEditing
-          ) {
+          if (!selection || TableViewRowSelection.is(selection)) {
             return false;
           }
           ctx.get('keyboardState').raw.preventDefault();
+          if (selection.isEditing) {
+            this.selectionController.selection = {
+              ...selection,
+              isEditing: false,
+            };
+          }
           this.selectionController.focusToCell('right');
           return true;
         },
         'Shift-Tab': ctx => {
           const selection = this.selectionController.selection;
-          if (
-            !selection ||
-            TableViewRowSelection.is(selection) ||
-            selection.isEditing
-          ) {
+          if (!selection || TableViewRowSelection.is(selection)) {
             return false;
           }
           ctx.get('keyboardState').raw.preventDefault();
+          if (selection.isEditing) {
+            this.selectionController.selection = {
+              ...selection,
+              isEditing: false,
+            };
+          }
           this.selectionController.focusToCell('left');
           return true;
         },
@@ -387,6 +398,20 @@ export class TableHotkeysController implements ReactiveController {
             );
           }
         },
+      })
+    );
+    this.disposables.add(
+      this.logic.handleEvent('keyDown', ctx => {
+        const event = ctx.get('keyboardState').raw;
+        return handleCharStartEdit<DatabaseCellContainer>({
+          event,
+          selection: this.selectionController.selection,
+          getCellContainer: this.selectionController.getCellContainer.bind(
+            this.selectionController
+          ),
+          updateSelection: sel => (this.selectionController.selection = sel),
+          getColumn: cell => cell.column$.value,
+        });
       })
     );
   }

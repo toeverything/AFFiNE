@@ -7,7 +7,8 @@ public class ActivateLicenseMutation: GraphQLMutation {
   public static let operationName: String = "activateLicense"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"mutation activateLicense($workspaceId: String!, $license: String!) { activateLicense(workspaceId: $workspaceId, license: $license) { __typename installedAt validatedAt } }"#
+      #"mutation activateLicense($workspaceId: String!, $license: String!) { activateLicense(workspaceId: $workspaceId, license: $license) { __typename ...licenseBody } }"#,
+      fragments: [LicenseBody.self]
     ))
 
   public var workspaceId: String
@@ -50,12 +51,22 @@ public class ActivateLicenseMutation: GraphQLMutation {
       public static var __parentType: any ApolloAPI.ParentType { AffineGraphQL.Objects.License }
       public static var __selections: [ApolloAPI.Selection] { [
         .field("__typename", String.self),
-        .field("installedAt", AffineGraphQL.DateTime.self),
-        .field("validatedAt", AffineGraphQL.DateTime.self),
+        .fragment(LicenseBody.self),
       ] }
 
+      public var expiredAt: AffineGraphQL.DateTime? { __data["expiredAt"] }
       public var installedAt: AffineGraphQL.DateTime { __data["installedAt"] }
+      public var quantity: Int { __data["quantity"] }
+      public var recurring: GraphQLEnum<AffineGraphQL.SubscriptionRecurring> { __data["recurring"] }
       public var validatedAt: AffineGraphQL.DateTime { __data["validatedAt"] }
+      public var variant: GraphQLEnum<AffineGraphQL.SubscriptionVariant>? { __data["variant"] }
+
+      public struct Fragments: FragmentContainer {
+        public let __data: DataDict
+        public init(_dataDict: DataDict) { __data = _dataDict }
+
+        public var licenseBody: LicenseBody { _toFragment() }
+      }
     }
   }
 }

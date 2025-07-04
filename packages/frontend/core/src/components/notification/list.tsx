@@ -156,6 +156,10 @@ const NotificationItem = ({ notification }: { notification: Notification }) => {
 
   return type === NotificationType.Mention ? (
     <MentionNotificationItem notification={notification} />
+  ) : type === NotificationType.Comment ? (
+    <CommentNotificationItem notification={notification} />
+  ) : type === NotificationType.CommentMention ? (
+    <CommentMentionNotificationItem notification={notification} />
   ) : type === NotificationType.InvitationAccepted ? (
     <InvitationAcceptedNotificationItem notification={notification} />
   ) : type === NotificationType.Invitation ? (
@@ -769,5 +773,145 @@ const DocNameWithIcon = ({
       )}
       {titleWithoutEmoji}
     </b>
+  );
+};
+
+const CommentNotificationItem = ({
+  notification,
+}: {
+  notification: Notification;
+}) => {
+  const notificationListService = useService(NotificationListService);
+  const { jumpToPageComment } = useNavigateHelper();
+  const t = useI18n();
+  const body = notification.body;
+
+  const memberInactived = !body.createdByUser;
+
+  const handleClick = useCallback(() => {
+    track.$.sidebar.notifications.clickNotification({
+      type: notification.type,
+      item: 'read',
+    });
+    if (!body.workspaceId || !body.doc?.id) {
+      return;
+    }
+    notificationListService.readNotification(notification.id).catch(err => {
+      console.error(err);
+    });
+
+    jumpToPageComment(
+      body.workspaceId,
+      body.doc.id,
+      body.commentId,
+      body.doc.mode
+    );
+  }, [body, jumpToPageComment, notificationListService, notification]);
+
+  return (
+    <div className={styles.itemContainer} onClick={handleClick}>
+      <Avatar
+        size={22}
+        name={body.createdByUser?.name}
+        url={body.createdByUser?.avatarUrl}
+      />
+      <div className={styles.itemMain}>
+        <span>
+          <Trans
+            i18nKey={'com.affine.notification.comment'}
+            components={{
+              1: (
+                <b
+                  className={styles.itemNameLabel}
+                  data-inactived={memberInactived}
+                />
+              ),
+              2: <DocNameWithIcon mode={body.doc?.mode || 'page'} />,
+            }}
+            values={{
+              username:
+                body.createdByUser?.name ?? t['com.affine.inactive-member'](),
+              docTitle: body.doc?.title || t['Untitled'](),
+            }}
+          />
+        </span>
+        <div className={styles.itemDate}>
+          {i18nTime(notification.createdAt, {
+            relative: true,
+          })}
+        </div>
+      </div>
+      <DeleteButton notification={notification} />
+    </div>
+  );
+};
+
+const CommentMentionNotificationItem = ({
+  notification,
+}: {
+  notification: Notification;
+}) => {
+  const notificationListService = useService(NotificationListService);
+  const { jumpToPageComment } = useNavigateHelper();
+  const t = useI18n();
+  const body = notification.body;
+
+  const memberInactived = !body.createdByUser;
+
+  const handleClick = useCallback(() => {
+    track.$.sidebar.notifications.clickNotification({
+      type: notification.type,
+      item: 'read',
+    });
+    if (!body.workspaceId || !body.doc?.id) {
+      return;
+    }
+    notificationListService.readNotification(notification.id).catch(err => {
+      console.error(err);
+    });
+
+    jumpToPageComment(
+      body.workspaceId,
+      body.doc.id,
+      body.commentId,
+      body.doc.mode
+    );
+  }, [body, jumpToPageComment, notificationListService, notification]);
+
+  return (
+    <div className={styles.itemContainer} onClick={handleClick}>
+      <Avatar
+        size={22}
+        name={body.createdByUser?.name}
+        url={body.createdByUser?.avatarUrl}
+      />
+      <div className={styles.itemMain}>
+        <span>
+          <Trans
+            i18nKey={'com.affine.notification.comment-mention'}
+            components={{
+              1: (
+                <b
+                  className={styles.itemNameLabel}
+                  data-inactived={memberInactived}
+                />
+              ),
+              2: <DocNameWithIcon mode={body.doc?.mode || 'page'} />,
+            }}
+            values={{
+              username:
+                body.createdByUser?.name ?? t['com.affine.inactive-member'](),
+              docTitle: body.doc?.title || t['Untitled'](),
+            }}
+          />
+        </span>
+        <div className={styles.itemDate}>
+          {i18nTime(notification.createdAt, {
+            relative: true,
+          })}
+        </div>
+      </div>
+      <DeleteButton notification={notification} />
+    </div>
   );
 };

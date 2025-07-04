@@ -1,0 +1,24 @@
+query getCopilotRecentSessions(
+  $workspaceId: String!
+  $limit: Int = 10
+) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(
+        options: {
+          limit: $limit
+          sessionOrder: desc
+        }
+      ) {
+        sessionId
+        workspaceId
+        docId
+        pinned
+        action
+        tokens
+        createdAt
+        updatedAt
+      }
+    }
+  }
+}

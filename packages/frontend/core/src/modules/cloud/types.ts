@@ -14,6 +14,7 @@ export interface ServerMetadata {
 export interface ServerConfig {
   serverName: string;
   features: ServerFeature[];
+  allowGuestDemoWorkspace: boolean;
   oauthProviders: OAuthProviderType[];
   type: ServerDeploymentType;
   initialized?: boolean;

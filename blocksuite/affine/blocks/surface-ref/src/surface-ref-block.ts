@@ -13,6 +13,7 @@ import {
   type SurfaceRefBlockModel,
 } from '@blocksuite/affine-model';
 import {
+  BlockCommentManager,
   DocModeProvider,
   EditPropsStore,
   type OpenDocMode,
@@ -76,6 +77,10 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
       border-color: ${unsafeCSSVarV2('edgeless/frame/border/active')};
     }
 
+    .affine-surface-ref.comment-highlighted {
+      outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+    }
+
     @media print {
       .affine-surface-ref {
         outline: none !important;
@@ -135,6 +140,14 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
 
   get referenceModel() {
     return this._referencedModel;
+  }
+
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   private readonly _handleClick = () => {
@@ -456,6 +469,7 @@ export class SurfaceRefBlockComponent extends BlockComponent<SurfaceRefBlockMode
         class=${classMap({
           'affine-surface-ref': true,
           focused: this.selected$.value,
+          'comment-highlighted': this.isCommentHighlighted,
         })}
         @click=${this._handleClick}
       >

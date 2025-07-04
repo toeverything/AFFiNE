@@ -46,6 +46,9 @@ model User {
   // receive notifications
   notifications                Notification[]                 @relation("user_notifications")
   settings                     UserSettings?
+  comments                     Comment[]
+  replies                      Reply[]
+  commentAttachments           CommentAttachment[]            @relation("createdCommentAttachments")
 
   @@index([email])
   @@map("users")
@@ -119,13 +122,15 @@ model Workspace {
   avatarKey          String?  @map("avatar_key") @db.VarChar
   indexed            Boolean  @default(false)
 
-  features       WorkspaceFeature[]
-  docs           WorkspaceDoc[]
-  permissions    WorkspaceUserRole[]
-  docPermissions WorkspaceDocUserRole[]
-  blobs          Blob[]
-  ignoredDocs    AiWorkspaceIgnoredDocs[]
-  embedFiles     AiWorkspaceFiles[]
+  features           WorkspaceFeature[]
+  docs               WorkspaceDoc[]
+  permissions        WorkspaceUserRole[]
+  docPermissions     WorkspaceDocUserRole[]
+  blobs              Blob[]
+  ignoredDocs        AiWorkspaceIgnoredDocs[]
+  embedFiles         AiWorkspaceFiles[]
+  comments           Comment[]
+  commentAttachments CommentAttachment[]
 
   @@map("workspaces")
 }
@@ -414,14 +419,15 @@ model AiPrompt {
 }
 
 model AiSessionMessage {
-  id          String       @id @default(uuid()) @db.VarChar
-  sessionId   String       @map("session_id") @db.VarChar
-  role        AiPromptRole
-  content     String       @db.Text
-  attachments Json?        @db.Json
-  params      Json?        @db.Json
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id            String       @id @default(uuid()) @db.VarChar
+  sessionId     String       @map("session_id") @db.VarChar
+  role          AiPromptRole
+  content       String       @db.Text
+  streamObjects Json?        @db.Json
+  attachments   Json?        @db.Json
+  params        Json?        @db.Json
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
@@ -433,13 +439,17 @@ model AiSession {
   id              String    @id @default(uuid()) @db.VarChar
   userId          String    @map("user_id") @db.VarChar
   workspaceId     String    @map("workspace_id") @db.VarChar
-  docId           String    @map("doc_id") @db.VarChar
+  docId           String?   @map("doc_id") @db.VarChar
   promptName      String    @map("prompt_name") @db.VarChar(32)
+  promptAction    String?   @default("") @map("prompt_action") @db.VarChar(32)
+  pinned          Boolean   @default(false)
+  title           String?   @db.VarChar
   // the session id of the parent session if this session is a forked session
   parentSessionId String?   @map("parent_session_id") @db.VarChar
   messageCost     Int       @default(0)
   tokenCost       Int       @default(0)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -447,8 +457,14 @@ model AiSession {
   messages AiSessionMessage[]
   context  AiContext[]
 
+  //NOTE:
+  // unrecorded index:
+  // @@index([userId, workspaceId]) where pinned = true and deleted_at is null
+  // @@index([userId, workspaceId, docId]) where prompt_action is null and parent_session_id is null and doc_id is not null and deleted_at is null
+  // since prisma does not support partial indexes, those indexes are only exists in migration files.
+  @@index([promptName])
   @@index([userId])
-  @@index([userId, workspaceId])
+  @@index([userId, workspaceId, docId])
   @@map("ai_sessions_metadata")
 }
 
@@ -806,6 +822,8 @@ enum NotificationType {
   InvitationReviewRequest
   InvitationReviewApproved
   InvitationReviewDeclined
+  Comment
+  CommentMention
 }
 
 enum NotificationLevel {
@@ -845,4 +863,71 @@ model UserSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
+}
+
+model Comment {
+  // NOTE: manually set this column type to identity in migration file
+  sid         Int       @unique @default(autoincrement()) @db.Integer
+  id          String    @id @default(uuid()) @db.VarChar
+  workspaceId String    @map("workspace_id") @db.VarChar
+  docId       String    @map("doc_id") @db.VarChar
+  userId      String    @map("user_id") @db.VarChar
+  content     Json      @db.JsonB
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+  // whether the comment is resolved
+  resolved    Boolean   @default(false) @map("resolved")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  replies   Reply[]
+
+  @@index([workspaceId, docId, sid])
+  @@index([workspaceId, docId, updatedAt])
+  @@index([userId])
+  @@map("comments")
+}
+
+model Reply {
+  // NOTE: manually set this column type to identity in migration file
+  sid         Int       @unique @default(autoincrement()) @db.Integer
+  id          String    @id @default(uuid()) @db.VarChar
+  userId      String    @map("user_id") @db.VarChar
+  commentId   String    @map("comment_id") @db.VarChar
+  // query new replies by workspaceId and docId
+  workspaceId String    @map("workspace_id") @db.VarChar
+  docId       String    @map("doc_id") @db.VarChar
+  content     Json      @db.JsonB
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([commentId, sid])
+  @@index([workspaceId, docId, updatedAt])
+  @@index([userId])
+  @@map("replies")
+}
+
+model CommentAttachment {
+  // NOTE: manually set this column type to identity in migration file
+  sid         Int      @unique @default(autoincrement())
+  workspaceId String   @map("workspace_id") @db.VarChar
+  docId       String   @map("doc_id") @db.VarChar
+  key         String   @db.VarChar
+  size        Int      @db.Integer
+  mime        String   @db.VarChar
+  name        String   @db.VarChar
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  createdBy   String?  @map("created_by") @db.VarChar
+
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  // will delete creator record if creator's account is deleted
+  createdByUser User?     @relation(name: "createdCommentAttachments", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@id([workspaceId, docId, key])
+  @@map("comment_attachments")
 }

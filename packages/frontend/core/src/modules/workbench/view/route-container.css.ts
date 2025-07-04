@@ -26,6 +26,11 @@ export const header = style({
       display: 'none',
     },
   },
+  selectors: {
+    '&[data-show-switch=true]': {
+      paddingLeft: 8,
+    },
+  },
 });
 
 export const viewBodyContainer = style({

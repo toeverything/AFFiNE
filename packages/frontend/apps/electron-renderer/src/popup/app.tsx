@@ -25,7 +25,7 @@ export function App() {
     <FrameworkRoot framework={frameworkProvider}>
       <ThemeProvider>
         <I18nProvider>
-          <div className={styles.root}>
+          <div className={styles.root} data-is-windows={environment.isWindows}>
             {mode === 'recording' && <Recording />}
           </div>
         </I18nProvider>

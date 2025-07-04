@@ -46,6 +46,7 @@ const CreatedByUpdatedByAvatar = (props: {
           id={userId}
           size={props.size}
           showName={props.showName}
+          align="center"
           tooltip={
             props.type === 'CreatedBy' ? CreatedUsernameTip : UpdatedUsernameTip
           }
@@ -160,6 +161,7 @@ export const CreatedByUpdatedByFilterValue = ({
       onChange={handleChange}
       ref={menuRef}
       onEditorClose={onDraftCompleted}
+      menuClassName={styles.filterValueMenu}
     />
   );
 };
@@ -197,7 +199,12 @@ export const ModifiedByGroupHeader = ({
   return (
     <PlainTextDocGroupHeader groupId={groupId} docCount={docCount}>
       <div className={styles.userLabelContainer}>
-        <PublicUserLabel id={userId} size={20} showName={false} />
+        <PublicUserLabel
+          id={userId}
+          size={20}
+          showName={false}
+          align="center"
+        />
       </div>
     </PlainTextDocGroupHeader>
   );

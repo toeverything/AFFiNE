@@ -1,4 +1,4 @@
-import { Input, Menu, type MenuRef, PropertyValue } from '@affine/component';
+import { Input, PropertyValue } from '@affine/component';
 import type { FilterParams } from '@affine/core/modules/collection-rules';
 import { useI18n } from '@affine/i18n';
 import { NumberIcon } from '@blocksuite/icons/rc';
@@ -8,13 +8,13 @@ import {
   type ChangeEventHandler,
   useCallback,
   useEffect,
-  useRef,
   useState,
 } from 'react';
 
 import { PlainTextDocGroupHeader } from '../explorer/docs-view/group-header';
 import { StackProperty } from '../explorer/docs-view/stack-property';
 import type { GroupHeaderProps } from '../explorer/types';
+import { FilterValueMenu } from '../filter/filter-value-menu';
 import type { PropertyValueProps } from '../properties/types';
 import * as styles from './number.css';
 
@@ -77,14 +77,7 @@ export const NumberFilterValue = ({
 }) => {
   const [tempValue, setTempValue] = useState(filter.value || '');
   const [valueMenuOpen, setValueMenuOpen] = useState(false);
-  const menuRef = useRef<MenuRef>(null);
   const t = useI18n();
-
-  useEffect(() => {
-    if (isDraft) {
-      menuRef.current?.changeOpen(true);
-    }
-  }, [isDraft]);
 
   useEffect(() => {
     // update temp value with new filter value
@@ -126,8 +119,7 @@ export const NumberFilterValue = ({
   }, [isDraft, filter.method, onDraftCompleted]);
 
   return filter.method !== 'is-not-empty' && filter.method !== 'is-empty' ? (
-    <Menu
-      ref={menuRef}
+    <FilterValueMenu
       rootOptions={{
         open: valueMenuOpen,
         onOpenChange: setValueMenuOpen,
@@ -135,7 +127,6 @@ export const NumberFilterValue = ({
       }}
       contentOptions={{
         onPointerDownOutside: submitTempValue,
-        sideOffset: -28,
       }}
       items={
         <Input
@@ -163,7 +154,7 @@ export const NumberFilterValue = ({
           {t['com.affine.filter.empty']()}
         </span>
       )}
-    </Menu>
+    </FilterValueMenu>
   ) : null;
 };
 

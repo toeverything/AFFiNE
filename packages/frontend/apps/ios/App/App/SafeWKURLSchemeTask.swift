@@ -11,26 +11,24 @@ class SafeWKURLSchemeTask: WKURLSchemeTask, NSObject {
   var origin: any WKURLSchemeTask
   init(origin: any WKURLSchemeTask) {
     self.origin = origin
-    self.request = origin.request
+    request = origin.request
   }
-  
+
   var request: URLRequest
-  
-  func didReceive(_ response: URLResponse) {
+
+  func didReceive(_: URLResponse) {
     <#code#>
   }
-  
-  func didReceive(_ data: Data) {
-    self.origin.didReceive(<#T##response: URLResponse##URLResponse#>)
+
+  func didReceive(_: Data) {
+    origin.didReceive(<#T##response: URLResponse##URLResponse#>)
   }
-  
+
   func didFinish() {
-    self.origin.didFinish()
+    origin.didFinish()
   }
-  
+
   func didFailWithError(_ error: any Error) {
-    self.origin.didFailWithError(error)
+    origin.didFailWithError(error)
   }
-  
-  
 }

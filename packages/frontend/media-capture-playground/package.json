@@ -2,7 +2,7 @@
   "name": "@affine/media-capture-playground",
   "private": true,
   "type": "module",
-  "version": "0.21.0",
+  "version": "0.22.4",
   "scripts": {
     "dev:web": "vite",
     "dev:server": "tsx --env-file=.env --watch server/main.ts"

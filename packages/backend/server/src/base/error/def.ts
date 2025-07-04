@@ -643,6 +643,10 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'resource_not_found',
     message: `Copilot session not found.`,
   },
+  copilot_session_invalid_input: {
+    type: 'invalid_input',
+    message: `Copilot session input is invalid.`,
+  },
   copilot_session_deleted: {
     type: 'action_forbidden',
     message: `Copilot session has been deleted.`,
@@ -902,5 +906,23 @@ export const USER_FRIENDLY_ERRORS = {
     type: 'invalid_input',
     args: { reason: 'string' },
     message: ({ reason }) => `Invalid indexer input: ${reason}`,
+  },
+
+  // comment and reply errors
+  comment_not_found: {
+    type: 'resource_not_found',
+    message: 'Comment not found.',
+  },
+  reply_not_found: {
+    type: 'resource_not_found',
+    message: 'Reply not found.',
+  },
+  comment_attachment_not_found: {
+    type: 'resource_not_found',
+    message: 'Comment attachment not found.',
+  },
+  comment_attachment_quota_exceeded: {
+    type: 'quota_exceeded',
+    message: 'You have exceeded the comment attachment size quota.',
   },
 } satisfies Record<string, UserFriendlyErrorOptions>;
