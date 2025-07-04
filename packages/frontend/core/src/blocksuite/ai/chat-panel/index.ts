@@ -296,7 +296,7 @@ export class ChatPanel extends SignalWatcher(
     }
     if (this.session.docId !== this.doc.id) {
       await this.updateSession({
-        sessionId: this.session.id,
+        sessionId: this.session.sessionId,
         docId: this.doc.id,
       });
     }

@@ -1,4 +1,3 @@
-
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { createLitPortal } from '@blocksuite/affine/components/portal';
 import { WithDisposable } from '@blocksuite/affine/global/lit';

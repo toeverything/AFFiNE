@@ -98,11 +98,14 @@ export const Component = () => {
         await createSession({ pinned });
       } else {
         await client.updateSession({
-          sessionId: currentSession.id,
+          sessionId: currentSession.sessionId,
           pinned,
         });
         // retrieve the latest session and update the state
-        const session = await client.getSession(workspaceId, currentSession.id);
+        const session = await client.getSession(
+          workspaceId,
+          currentSession.sessionId
+        );
         setCurrentSession(session);
       }
     } finally {
