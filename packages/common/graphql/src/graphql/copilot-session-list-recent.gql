@@ -9,6 +9,7 @@ query getCopilotRecentSessions(
       chats(
         pagination: { first: $limit }
         options: {
+          fork: false
           sessionOrder: desc
           withMessages: true
         }

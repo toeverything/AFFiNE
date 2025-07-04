@@ -1074,7 +1074,7 @@ export const getCopilotRecentSessionsQuery = {
     copilot(workspaceId: $workspaceId) {
       chats(
         pagination: {first: $limit}
-        options: {sessionOrder: desc, withMessages: true}
+        options: {fork: false, sessionOrder: desc, withMessages: true}
       ) {
         ...PaginatedCopilotChats
       }
