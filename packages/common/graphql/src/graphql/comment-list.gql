@@ -1,0 +1,40 @@
+query listComments($workspaceId: String!, $docId: String!, $pagination: PaginationInput) {
+  workspace(id: $workspaceId) {
+    comments(docId: $docId, pagination: $pagination) {
+      totalCount
+      edges {
+        cursor
+        node {
+          id
+          content
+          resolved
+          createdAt
+          updatedAt
+          user {
+            id
+            name
+            avatarUrl
+          }
+          replies {
+            commentId
+            id
+            content
+            createdAt
+            updatedAt
+            user {
+              id
+              name
+              avatarUrl
+            }
+          }
+        }
+      }
+      pageInfo {
+        startCursor
+        endCursor
+        hasNextPage
+        hasPreviousPage
+      }
+    }
+  }
+}

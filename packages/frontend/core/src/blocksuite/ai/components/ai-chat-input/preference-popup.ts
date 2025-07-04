@@ -15,8 +15,6 @@ import { ShadowlessElement } from '@blocksuite/std';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import type { AIModelSwitchConfig } from './type';
-
 export class ChatInputPreference extends SignalWatcher(
   WithDisposable(ShadowlessElement)
 ) {
@@ -28,6 +26,9 @@ export class ChatInputPreference extends SignalWatcher(
       color: var(--affine-v2-icon-primary);
       transition: all 0.23s ease;
       border-radius: 4px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
     }
     .chat-input-preference-trigger:hover {
       background-color: var(--affine-v2-layer-background-hoverOverlay);
@@ -49,11 +50,7 @@ export class ChatInputPreference extends SignalWatcher(
   `;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | undefined;
-
-  // --------- model props start ---------
-  @property({ attribute: false })
-  accessor modelSwitchConfig: AIModelSwitchConfig | undefined = undefined;
+  accessor session!: CopilotSessionType | null | undefined;
 
   @property({ attribute: false })
   accessor onModelChange: ((modelId: string) => void) | undefined;
@@ -96,22 +93,20 @@ export class ChatInputPreference extends SignalWatcher(
     const searchItems = [];
 
     // model switch
-    if (this.modelSwitchConfig?.visible.value) {
-      modelItems.push(
-        menu.subMenu({
-          name: 'Model',
-          prefix: AiOutlineIcon(),
-          options: {
-            items: (this.session?.optionalModels ?? []).map(modelId => {
-              return menu.action({
-                name: modelId,
-                select: () => this._onModelChange(modelId),
-              });
-            }),
-          },
-        })
-      );
-    }
+    modelItems.push(
+      menu.subMenu({
+        name: 'Model',
+        prefix: AiOutlineIcon(),
+        options: {
+          items: (this.session?.optionalModels ?? []).map(modelId => {
+            return menu.action({
+              name: modelId,
+              select: () => this._onModelChange(modelId),
+            });
+          }),
+        },
+      })
+    );
 
     modelItems.push(
       menu.toggleSwitch({

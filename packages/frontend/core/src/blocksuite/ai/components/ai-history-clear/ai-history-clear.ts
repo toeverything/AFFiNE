@@ -1,24 +1,24 @@
+import type { CopilotSessionType } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { NotificationProvider } from '@blocksuite/affine/shared/services';
+import { type NotificationService } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { Store } from '@blocksuite/affine/store';
 import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
-import type { ChatContextValue } from '../../chat-panel/chat-context';
 import { AIProvider } from '../../provider';
+import type { ChatContextValue } from '../ai-chat-content';
 
 export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor chatContextValue!: ChatContextValue;
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
+  accessor session!: CopilotSessionType | null | undefined;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor notification: NotificationService | null | undefined;
 
   @property({ attribute: false })
   accessor doc!: Store;
@@ -41,27 +41,28 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
     return (
       this.chatContextValue.status === 'loading' ||
       this.chatContextValue.status === 'transmitting' ||
-      !this.chatContextValue.messages.length
+      !this.chatContextValue.messages.length ||
+      !this.session
     );
   }
 
   private readonly _cleanupHistories = async () => {
-    if (this._isHistoryClearDisabled) {
+    if (this._isHistoryClearDisabled || !this.session) {
       return;
     }
-    const sessionId = await this.getSessionId();
-    const notification = this.host.std.getOptional(NotificationProvider);
-    if (!notification) return;
+    const sessionId = this.session.id;
     try {
-      if (
-        await notification.confirm({
-          title: 'Clear History',
-          message:
-            'Are you sure you want to clear all history? This action will permanently delete all content, including all chat logs and data, and cannot be undone.',
-          confirmText: 'Confirm',
-          cancelText: 'Cancel',
-        })
-      ) {
+      const confirm = this.notification
+        ? await this.notification.confirm({
+            title: 'Clear History',
+            message:
+              'Are you sure you want to clear all history? This action will permanently delete all content, including all chat logs and data, and cannot be undone.',
+            confirmText: 'Confirm',
+            cancelText: 'Cancel',
+          })
+        : true;
+
+      if (confirm) {
         const actionIds = this.chatContextValue.messages
           .filter(item => 'sessionId' in item)
           .map(item => item.sessionId);
@@ -70,11 +71,11 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
           this.doc.id,
           [...(sessionId ? [sessionId] : []), ...(actionIds || [])]
         );
-        notification.toast('History cleared');
+        this.notification?.toast('History cleared');
         this.onHistoryCleared?.();
       }
     } catch {
-      notification.toast('Failed to clear history');
+      this.notification?.toast('Failed to clear history');
     }
   };
 

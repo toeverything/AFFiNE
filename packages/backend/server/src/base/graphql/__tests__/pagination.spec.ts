@@ -4,7 +4,13 @@ import Sinon from 'sinon';
 
 import { createTestingApp } from '../../../__tests__/utils';
 import { Public } from '../../../core/auth';
-import { paginate, Paginated, PaginationInput } from '../pagination';
+import {
+  decodeWithJson,
+  paginate,
+  Paginated,
+  paginateWithCustomCursor,
+  PaginationInput,
+} from '../pagination';
 
 const TOTAL_COUNT = 105;
 const ITEMS = Array.from({ length: TOTAL_COUNT }, (_, i) => ({ id: i + 1 }));
@@ -103,4 +109,25 @@ test('should return encode pageInfo', async t => {
   );
 
   t.snapshot(result);
+});
+
+test('should return encode pageInfo with custom cursor', async t => {
+  const result = paginateWithCustomCursor(
+    ITEMS.slice(10, 20),
+    TOTAL_COUNT,
+    { id: 10, name: 'test' },
+    { id: 20, name: 'test2' }
+  );
+
+  t.snapshot(result);
+});
+
+test('should decode with json', async t => {
+  const result = decodeWithJson<{ id: number; name: string }>(
+    'eyJpZCI6MTAsIm5hbWUiOiJ0ZXN0In0='
+  );
+  t.snapshot(result);
+
+  const result2 = decodeWithJson<{ id: number; name: string }>('');
+  t.is(result2, null);
 });

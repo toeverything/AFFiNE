@@ -9,13 +9,22 @@ import {
   CopilotProviderNotSupported,
   OnEvent,
 } from '../../../base';
+import { DocReader } from '../../../core/doc';
 import { AccessController } from '../../../core/permission';
+import { Models } from '../../../models';
 import { IndexerService } from '../../indexer';
 import { CopilotContextService } from '../context';
+import { PromptService } from '../prompt';
 import {
+  buildContentGetter,
+  buildDocContentGetter,
   buildDocKeywordSearchGetter,
   buildDocSearchGetter,
+  createCodeArtifactTool,
+  createDocComposeTool,
+  createDocEditTool,
   createDocKeywordSearchTool,
+  createDocReadTool,
   createDocSemanticSearchTool,
   createExaCrawlTool,
   createExaSearchTool,
@@ -129,6 +138,8 @@ export abstract class CopilotProvider<C = any> {
     const tools: ToolSet = {};
     if (options?.tools?.length) {
       this.logger.debug(`getTools: ${JSON.stringify(options.tools)}`);
+      const ac = this.moduleRef.get(AccessController, { strict: false });
+
       for (const tool of options.tools) {
         const toolDef = this.getProviderSpecificTools(tool, model);
         if (toolDef) {
@@ -136,12 +147,24 @@ export abstract class CopilotProvider<C = any> {
           continue;
         }
         switch (tool) {
+          case 'docEdit': {
+            const doc = this.moduleRef.get(DocReader, { strict: false });
+            const getDocContent = buildContentGetter(ac, doc);
+            tools.doc_edit = createDocEditTool(
+              this.factory,
+              getDocContent.bind(null, options)
+            );
+            break;
+          }
           case 'docSemanticSearch': {
-            const ac = this.moduleRef.get(AccessController, { strict: false });
             const context = this.moduleRef.get(CopilotContextService, {
               strict: false,
             });
-            const searchDocs = buildDocSearchGetter(ac, context);
+
+            const docContext = options.session
+              ? await context.getBySessionId(options.session)
+              : null;
+            const searchDocs = buildDocSearchGetter(ac, context, docContext);
             tools.doc_semantic_search = createDocSemanticSearchTool(
               searchDocs.bind(null, options)
             );
@@ -165,9 +188,37 @@ export abstract class CopilotProvider<C = any> {
             }
             break;
           }
+          case 'docRead': {
+            const ac = this.moduleRef.get(AccessController, { strict: false });
+            const models = this.moduleRef.get(Models, { strict: false });
+            const docReader = this.moduleRef.get(DocReader, { strict: false });
+            const getDoc = buildDocContentGetter(ac, docReader, models);
+            tools.doc_read = createDocReadTool(getDoc.bind(null, options));
+            break;
+          }
           case 'webSearch': {
             tools.web_search_exa = createExaSearchTool(this.AFFiNEConfig);
             tools.web_crawl_exa = createExaCrawlTool(this.AFFiNEConfig);
+            break;
+          }
+          case 'docCompose': {
+            const promptService = this.moduleRef.get(PromptService, {
+              strict: false,
+            });
+            tools.doc_compose = createDocComposeTool(
+              promptService,
+              this.factory
+            );
+            break;
+          }
+          case 'codeArtifact': {
+            const promptService = this.moduleRef.get(PromptService, {
+              strict: false,
+            });
+            tools.code_artifact = createCodeArtifactTool(
+              promptService,
+              this.factory
+            );
             break;
           }
         }
@@ -289,6 +340,17 @@ export abstract class CopilotProvider<C = any> {
     throw new CopilotProviderNotSupported({
       provider: this.type,
       kind: 'embedding',
+    });
+  }
+
+  async rerank(
+    _model: ModelConditions,
+    _messages: PromptMessage[][],
+    _options?: CopilotChatOptions
+  ): Promise<number[]> {
+    throw new CopilotProviderNotSupported({
+      provider: this.type,
+      kind: 'rerank',
     });
   }
 }

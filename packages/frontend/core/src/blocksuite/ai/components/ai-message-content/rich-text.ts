@@ -10,7 +10,7 @@ import { createTextRenderer } from '../../components/text-renderer';
 
 export class ChatContentRichText extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor text!: string;

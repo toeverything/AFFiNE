@@ -15,6 +15,10 @@ export const styles = css`
     position: relative;
   }
 
+  .affine-embed-linked-doc-block.comment-highlighted {
+    outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
+  }
+
   .affine-embed-linked-doc-block.in-canvas {
     border: 1px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
     background: ${unsafeCSSVarV2('layer/background/linkedDocOnEdgeless')};
@@ -164,6 +168,7 @@ export const styles = css`
   .affine-embed-linked-doc-banner {
     margin: 12px 12px 0px 0px;
     width: 204px;
+    min-width: 204px;
     max-width: 100%;
     height: 102px;
     pointer-events: none;

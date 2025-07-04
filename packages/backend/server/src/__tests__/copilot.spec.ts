@@ -11,7 +11,11 @@ import { EventBus, JobQueue } from '../base';
 import { ConfigModule } from '../base/config';
 import { AuthService } from '../core/auth';
 import { QuotaModule } from '../core/quota';
-import { ContextCategories, WorkspaceModel } from '../models';
+import {
+  ContextCategories,
+  CopilotSessionModel,
+  WorkspaceModel,
+} from '../models';
 import { CopilotModule } from '../plugins/copilot';
 import { CopilotContextService } from '../plugins/copilot/context';
 import {
@@ -57,12 +61,13 @@ import { MockCopilotProvider } from './mocks';
 import { createTestingModule, TestingModule } from './utils';
 import { WorkflowTestCases } from './utils/copilot';
 
-const test = ava as TestFn<{
+type Context = {
   auth: AuthService;
   module: TestingModule;
   db: PrismaClient;
   event: EventBus;
   workspace: WorkspaceModel;
+  copilotSession: CopilotSessionModel;
   context: CopilotContextService;
   prompt: PromptService;
   transcript: CopilotTranscriptionService;
@@ -78,7 +83,8 @@ const test = ava as TestFn<{
     html: CopilotCheckHtmlExecutor;
     json: CopilotCheckJsonExecutor;
   };
-}>;
+};
+const test = ava as TestFn<Context>;
 let userId: string;
 
 test.before(async t => {
@@ -119,6 +125,7 @@ test.before(async t => {
   const db = module.get(PrismaClient);
   const event = module.get(EventBus);
   const workspace = module.get(WorkspaceModel);
+  const copilotSession = module.get(CopilotSessionModel);
   const prompt = module.get(PromptService);
   const factory = module.get(CopilotProviderFactory);
 
@@ -136,6 +143,7 @@ test.before(async t => {
   t.context.db = db;
   t.context.event = event;
   t.context.workspace = workspace;
+  t.context.copilotSession = copilotSession;
   t.context.prompt = prompt;
   t.context.factory = factory;
   t.context.session = session;
@@ -1750,5 +1758,170 @@ test('should be able to manage workspace embedding', async t => {
 
     const ret2 = await contextSession.matchFiles('test', 1, undefined, 1);
     t.is(ret2.length, 0, 'should not match workspace context');
+  }
+});
+
+test('should handle generateSessionTitle correctly under various conditions', async t => {
+  const { prompt, session, workspace, copilotSession } = t.context;
+
+  await prompt.set('test', 'model', [{ role: 'user', content: '{{content}}' }]);
+  const createSession = async (
+    options: {
+      userMessage?: string;
+      assistantMessage?: string;
+      existingTitle?: string;
+    } = {}
+  ) => {
+    const ws = await workspace.create(userId);
+    const sessionId = await session.create({
+      docId: 'test-doc',
+      workspaceId: ws.id,
+      userId,
+      promptName: 'test',
+      pinned: false,
+    });
+
+    if (options.existingTitle) {
+      await copilotSession.update({
+        userId,
+        sessionId,
+        title: options.existingTitle,
+      });
+    }
+
+    const chatSession = await session.get(sessionId);
+    if (chatSession) {
+      if (options.userMessage) {
+        chatSession.push({
+          role: 'user',
+          content: options.userMessage,
+          createdAt: new Date(),
+        });
+      }
+      if (options.assistantMessage) {
+        chatSession.push({
+          role: 'assistant',
+          content: options.assistantMessage,
+          createdAt: new Date(),
+        });
+      }
+      await chatSession.save();
+    }
+
+    return sessionId;
+  };
+
+  const testCases = [
+    {
+      name: 'should generate title when conditions are met',
+      setup: () =>
+        createSession({
+          userMessage: 'What is machine learning?',
+          assistantMessage:
+            'Machine learning is a subset of artificial intelligence.',
+        }),
+      mockFn: () => 'What is Machine Learning?',
+      expectSnapshot: true,
+    },
+    {
+      name: 'should not generate title when session already has title',
+      setup: () =>
+        createSession({
+          userMessage: 'Test message',
+          assistantMessage: 'Test response',
+          existingTitle: 'Existing Title',
+        }),
+      mockFn: () => 'New Title',
+      expectSnapshot: true,
+      expectNotCalled: true,
+    },
+    {
+      name: 'should not generate title when no user messages exist',
+      setup: () =>
+        createSession({ assistantMessage: 'Hello! How can I help you?' }),
+      mockFn: () => 'New Title',
+      expectSnapshot: true,
+      expectNotCalled: true,
+    },
+    {
+      name: 'should not generate title when no assistant messages exist',
+      setup: () => createSession({ userMessage: 'What is AI?' }),
+      mockFn: () => 'New Title',
+      expectSnapshot: true,
+      expectNotCalled: true,
+    },
+    {
+      name: 'should handle errors gracefully',
+      setup: () =>
+        createSession({
+          userMessage: 'Test question',
+          assistantMessage: 'Test answer',
+        }),
+      mockFn: () => {
+        throw new Error('Mock error for testing');
+      },
+      expectError: 'Mock error for testing',
+    },
+  ];
+
+  for (const testCase of testCases) {
+    const sessionId = await testCase.setup();
+    let chatWithPromptCalled = false;
+
+    const mockStub = Sinon.stub(session, 'chatWithPrompt').callsFake(
+      async () => {
+        chatWithPromptCalled = true;
+        return testCase.mockFn();
+      }
+    );
+
+    if (testCase.expectError) {
+      await t.throwsAsync(
+        () => session.generateSessionTitle({ sessionId }),
+        { message: testCase.expectError },
+        testCase.name
+      );
+    } else {
+      await session.generateSessionTitle({ sessionId });
+
+      if (testCase.expectSnapshot) {
+        const sessionState = await session.getSession(sessionId);
+        t.snapshot(
+          {
+            chatWithPromptCalled: testCase.expectNotCalled
+              ? chatWithPromptCalled
+              : undefined,
+            title: sessionState?.title,
+            exists: !!sessionState,
+          },
+          testCase.name
+        );
+      }
+    }
+
+    mockStub.restore();
+  }
+
+  {
+    const sessionId = await createSession({
+      userMessage: 'Explain quantum computing briefly',
+      assistantMessage: 'Quantum computing uses quantum mechanics principles.',
+    });
+
+    let capturedArgs: any[] = [];
+    Sinon.stub(session, 'chatWithPrompt').callsFake(async (...args) => {
+      capturedArgs = args;
+      return 'Quantum Computing Explained';
+    });
+
+    await session.generateSessionTitle({ sessionId });
+
+    t.snapshot(
+      {
+        promptName: capturedArgs[0],
+        content: capturedArgs[1]?.content,
+      },
+      'should use correct prompt for title generation'
+    );
   }
 });

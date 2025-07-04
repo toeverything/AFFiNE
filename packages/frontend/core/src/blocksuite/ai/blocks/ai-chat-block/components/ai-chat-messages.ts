@@ -11,7 +11,7 @@ import {
 } from '../../../components/ai-chat-messages';
 import { UserInfoTemplate } from './user-info';
 
-export class AIChatMessage extends LitElement {
+export class AIChatBlockMessage extends LitElement {
   static override styles = css`
     .ai-chat-message {
       display: flex;
@@ -99,7 +99,7 @@ export class AIChatMessage extends LitElement {
   accessor textRendererOptions: TextRendererOptions = {};
 }
 
-export class AIChatMessages extends LitElement {
+export class AIChatBlockMessages extends LitElement {
   static override styles = css`
     :host {
       width: 100%;
@@ -123,11 +123,11 @@ export class AIChatMessages extends LitElement {
         message => message.id || message.createdAt,
         message => {
           return html`
-            <ai-chat-message
+            <ai-chat-block-message
               .host=${this.host}
               .textRendererOptions=${this.textRendererOptions}
               .message=${message}
-            ></ai-chat-message>
+            ></ai-chat-block-message>
           `;
         }
       )}
@@ -146,7 +146,7 @@ export class AIChatMessages extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ai-chat-message': AIChatMessage;
-    'ai-chat-messages': AIChatMessages;
+    'ai-chat-block-message': AIChatBlockMessage;
+    'ai-chat-block-messages': AIChatBlockMessages;
   }
 }

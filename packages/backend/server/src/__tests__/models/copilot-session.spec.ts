@@ -82,6 +82,7 @@ const createTestSession = async (
     workspaceId: workspace.id,
     docId: null,
     pinned: false,
+    title: null,
     promptName: TEST_PROMPTS.NORMAL,
     promptAction: null,
     ...overrides,
@@ -168,6 +169,7 @@ test('should list and filter session type', async t => {
     const workspaceSessions = await copilotSession.list({
       userId: user.id,
       workspaceId: workspace.id,
+      docId: null,
     });
 
     t.snapshot(
@@ -297,6 +299,7 @@ test('should pin and unpin sessions', async t => {
       promptName: 'test-prompt',
       promptAction: null,
       pinned: true,
+      title: null,
     });
 
     const firstSession = await copilotSession.get(firstSessionId);
@@ -312,6 +315,7 @@ test('should pin and unpin sessions', async t => {
       promptName: 'test-prompt',
       promptAction: null,
       pinned: true,
+      title: null,
     });
 
     const sessionStatesAfterSecondPin = await getSessionStates(db, [
@@ -573,6 +577,10 @@ test('should handle session queries, ordering, and filtering', async t => {
   const queryTestCases = [
     { name: 'all_workspace_sessions', params: baseParams },
     {
+      name: 'workspace_sessions_with_messages',
+      params: { ...baseParams, docId: null, withMessages: true },
+    },
+    {
       name: 'doc_sessions_with_messages',
       params: { ...docParams, withMessages: true },
     },
@@ -606,6 +614,7 @@ test('should handle session queries, ordering, and filtering', async t => {
         type: copilotSession.getSessionType(s),
         hasMessages: !!s.messages?.length,
         messageCount: s.messages?.length || 0,
+        isAction: s.promptName === TEST_PROMPTS.ACTION,
         isFork: !!s.parentSessionId,
       })),
     };
@@ -796,6 +805,7 @@ test('should handle fork and session attachment operations', async t => {
       workspaceId: workspace.id,
       docId: forkConfig.docId,
       pinned: forkConfig.pinned,
+      title: null,
       parentSessionId,
       prompt: { name: TEST_PROMPTS.NORMAL, action: null, model: 'gpt-4.1' },
       messages: [

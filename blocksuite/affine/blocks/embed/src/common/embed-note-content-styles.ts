@@ -57,6 +57,11 @@ export const embedNoteContentStyles = css`
     font-weight: 600;
   }
 
+  .affine-embed-doc-content-note-blocks inline-comment {
+    background-color: unset !important;
+    border-bottom: unset !important;
+  }
+
   .affine-embed-linked-doc-block.horizontal {
     affine-paragraph,
     affine-list {

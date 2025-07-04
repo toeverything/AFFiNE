@@ -50,6 +50,7 @@ export const ChatHistorySchema = z
     workspaceId: z.string(),
     docId: z.string().nullable(),
     pinned: z.boolean(),
+    title: z.string().nullable(),
     action: z.string().nullable(),
     tokens: z.number(),
     messages: z.array(ChatMessageSchema),
@@ -75,6 +76,7 @@ export interface ChatSessionOptions {
   docId: string | null;
   promptName: string;
   pinned: boolean;
+  reuseLatestChat?: boolean;
 }
 
 export interface ChatSessionForkOptions
@@ -85,6 +87,7 @@ export interface ChatSessionForkOptions
 
 export interface ChatSessionState
   extends Omit<ChatSessionOptions, 'promptName'> {
+  title: string | null;
   // connect ids
   sessionId: string;
   parentSessionId: string | null;

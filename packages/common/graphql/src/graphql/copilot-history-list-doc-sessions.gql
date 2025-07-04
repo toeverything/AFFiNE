@@ -1,0 +1,32 @@
+query getCopilotDocSessions(
+  $workspaceId: String!
+  $docId: String!
+  $options: QueryChatHistoriesInput
+) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(docId: $docId, options: $options) {
+        sessionId
+        pinned
+        tokens
+        action
+        createdAt
+        messages {
+          id
+          role
+          content
+          streamObjects {
+            type
+            textDelta
+            toolCallId
+            toolName
+            args
+            result
+          }
+          attachments
+          createdAt
+        }
+      }
+    }
+  }
+}

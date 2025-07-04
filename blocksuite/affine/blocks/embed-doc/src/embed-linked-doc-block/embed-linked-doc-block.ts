@@ -338,6 +338,7 @@ export class EmbedLinkedDocBlockComponent extends EmbedBlockComponent<EmbedLinke
       'note-empty': this.isNoteContentEmpty,
       'in-canvas': inCanvas,
       [this._cardStyle]: true,
+      'comment-highlighted': this.isCommentHighlighted,
     });
 
     const theme = this.std.get(ThemeProvider).theme;

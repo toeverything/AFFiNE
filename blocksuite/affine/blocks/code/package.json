@@ -13,6 +13,7 @@
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",
     "@blocksuite/affine-gfx-turbo-renderer": "workspace:*",
+    "@blocksuite/affine-inline-comment": "workspace:*",
     "@blocksuite/affine-inline-latex": "workspace:*",
     "@blocksuite/affine-inline-link": "workspace:*",
     "@blocksuite/affine-inline-preset": "workspace:*",

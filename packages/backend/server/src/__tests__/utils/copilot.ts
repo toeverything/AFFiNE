@@ -709,26 +709,30 @@ type ChatMessage = {
 
 type History = {
   sessionId: string;
+  pinned: boolean;
   tokens: number;
   action: string | null;
   createdAt: string;
   messages: ChatMessage[];
 };
 
+type HistoryOptions = {
+  action?: boolean;
+  fork?: boolean;
+  pinned?: boolean;
+  limit?: number;
+  skip?: number;
+  sessionOrder?: 'asc' | 'desc';
+  messageOrder?: 'asc' | 'desc';
+  sessionId?: string;
+};
+
 export async function getHistories(
   app: TestingApp,
   variables: {
     workspaceId: string;
-    docId?: string;
-    options?: {
-      action?: boolean;
-      fork?: boolean;
-      limit?: number;
-      skip?: number;
-      sessionOrder?: 'asc' | 'desc';
-      messageOrder?: 'asc' | 'desc';
-      sessionId?: string;
-    };
+    docId?: string | null;
+    options?: HistoryOptions;
   }
 ): Promise<History[]> {
   const res = await app.gql(
@@ -742,6 +746,7 @@ export async function getHistories(
         copilot(workspaceId: $workspaceId) {
           histories(docId: $docId, options: $options) {
             sessionId
+            pinned
             tokens
             action
             createdAt
@@ -757,6 +762,152 @@ export async function getHistories(
       }
     }
     `,
+    variables
+  );
+
+  return res.currentUser?.copilot?.histories || [];
+}
+
+export async function getWorkspaceSessions(
+  app: TestingApp,
+  variables: {
+    workspaceId: string;
+    options?: HistoryOptions;
+  }
+): Promise<History[]> {
+  const res = await app.gql(
+    `query getCopilotWorkspaceSessions(
+        $workspaceId: String!
+        $options: QueryChatHistoriesInput
+      ) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            histories(docId: null, options: $options) {
+              sessionId
+              pinned
+              tokens
+              action
+              createdAt
+              messages {
+                id
+                role
+                content
+                streamObjects {
+                  type
+                  textDelta
+                  toolCallId
+                  toolName
+                  args
+                  result
+                }
+                attachments
+                createdAt
+              }
+            }
+          }
+        }
+      }`,
+    variables
+  );
+
+  return res.currentUser?.copilot?.histories || [];
+}
+
+export async function getDocSessions(
+  app: TestingApp,
+  variables: {
+    workspaceId: string;
+    docId: string;
+    options?: HistoryOptions;
+  }
+): Promise<History[]> {
+  const res = await app.gql(
+    `query getCopilotDocSessions(
+        $workspaceId: String!
+        $docId: String!
+        $options: QueryChatHistoriesInput
+      ) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            histories(docId: $docId, options: $options) {
+              sessionId
+              pinned
+              tokens
+              action
+              createdAt
+              messages {
+                id
+                role
+                content
+                streamObjects {
+                  type
+                  textDelta
+                  toolCallId
+                  toolName
+                  args
+                  result
+                }
+                attachments
+                createdAt
+              }
+            }
+          }
+        }
+      }`,
+    variables
+  );
+
+  return res.currentUser?.copilot?.histories || [];
+}
+
+export async function getPinnedSessions(
+  app: TestingApp,
+  variables: {
+    workspaceId: string;
+    docId?: string;
+    messageOrder?: 'asc' | 'desc';
+    withPrompt?: boolean;
+  }
+): Promise<History[]> {
+  const res = await app.gql(
+    `query getCopilotPinnedSessions(
+        $workspaceId: String!
+        $docId: String
+        $messageOrder: ChatHistoryOrder
+        $withPrompt: Boolean
+      ) {
+        currentUser {
+          copilot(workspaceId: $workspaceId) {
+            histories(docId: $docId, options: {
+              limit: 1,
+              pinned: true,
+              messageOrder: $messageOrder,
+              withPrompt: $withPrompt
+            }) {
+              sessionId
+              pinned
+              tokens
+              action
+              createdAt
+              messages {
+                id
+                role
+                content
+                streamObjects {
+                  type
+                  textDelta
+                  toolCallId
+                  toolName
+                  args
+                  result
+                }
+                attachments
+                createdAt
+              }
+            }
+          }
+        }
+      }`,
     variables
   );
 

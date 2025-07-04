@@ -70,7 +70,7 @@ function toggleStyle(
         return [k, v];
       }
     })
-  );
+  ) as AffineTextAttributes;
 
   inlineEditor.formatText(inlineRange, newAttributes, {
     mode: 'merge',

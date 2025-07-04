@@ -159,6 +159,14 @@ export class IndexerSyncImpl implements IndexerSync {
     this.remote = Object.values(this.peers.remotes).find(remote => !!remote);
   }
 
+  enableBatterySaveMode() {
+    this.status.enableBatterySaveMode();
+  }
+
+  disableBatterySaveMode() {
+    this.status.disableBatterySaveMode();
+  }
+
   start() {
     if (this.abort) {
       this.abort.abort(MANUALLY_STOP);
@@ -611,6 +619,10 @@ class IndexerSyncStatus {
   currentJob: string | null = null;
   errorMessage: string | null = null;
   statusUpdatedSubject$ = new Subject<string | true>();
+  batterySaveMode: {
+    promise: Promise<void>;
+    resolve: () => void;
+  } | null = null;
 
   state$ = new Observable<IndexerSyncState>(subscribe => {
     const next = () => {
@@ -685,6 +697,9 @@ class IndexerSyncStatus {
   }
 
   async acceptJob(abort?: AbortSignal) {
+    if (this.batterySaveMode) {
+      await this.batterySaveMode.promise;
+    }
     const job = await this.jobs.asyncPop(abort);
     this.currentJob = job;
     this.statusUpdatedSubject$.next(job);
@@ -707,6 +722,18 @@ class IndexerSyncStatus {
       this.prioritySettings.set(id, currentPriority - priority);
       this.jobs.setPriority(id, currentPriority - priority);
     };
+  }
+
+  enableBatterySaveMode() {
+    if (this.batterySaveMode) {
+      return;
+    }
+    this.batterySaveMode = Promise.withResolvers();
+  }
+
+  disableBatterySaveMode() {
+    this.batterySaveMode?.resolve();
+    this.batterySaveMode = null;
   }
 
   reset() {

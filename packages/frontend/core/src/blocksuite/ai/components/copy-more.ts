@@ -1,3 +1,4 @@
+import type { CopilotSessionType } from '@affine/graphql';
 import { Tooltip } from '@blocksuite/affine/components/toolbar';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { noop } from '@blocksuite/affine/global/utils';
@@ -81,7 +82,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   `;
 
   private get _selectionValue() {
-    return this.host.selection.value;
+    return this.host?.selection.value ?? [];
   }
 
   private get _currentTextSelection(): TextSelection | undefined {
@@ -104,16 +105,16 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   private _morePopper: ReturnType<typeof createButtonPopper> | null = null;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor actions: ChatAction[] = [];
 
   @property({ attribute: false })
-  accessor content!: string;
+  accessor session!: CopilotSessionType | null | undefined;
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
+  accessor content!: string;
 
   @property({ attribute: false })
   accessor messageId: string | undefined = undefined;
@@ -135,7 +136,8 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
   }
 
   private readonly _notifySuccess = (title: string) => {
-    const notificationService = this.host.std.getOptional(NotificationProvider);
+    const notificationService =
+      this.host?.std.getOptional(NotificationProvider);
     notificationService?.notify({
       title: title,
       accent: 'success',
@@ -163,6 +165,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
 
   override render() {
     const { host, content, isLast, messageId, actions } = this;
+    const showMoreIcon = !isLast && host && actions.length > 0;
     return html`<style>
         .copy-more {
           margin-top: ${this.withMargin ? '8px' : '0px'};
@@ -173,7 +176,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
         }
       </style>
       <div class="copy-more">
-        ${content
+        ${content && host
           ? html`<div
               class="button copy"
               @click=${async () => {
@@ -198,19 +201,19 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
               <affine-tooltip .autoShift=${true}>Retry</affine-tooltip>
             </div>`
           : nothing}
-        ${isLast
-          ? nothing
-          : html`<div
+        ${showMoreIcon
+          ? html`<div
               class="button more"
               data-testid="action-more-button"
               @click=${this._toggle}
             >
               ${MoreHorizontalIcon({ width: '20px', height: '20px' })}
-            </div> `}
+            </div> `
+          : nothing}
       </div>
 
       <div class="more-menu">
-        ${this._showMoreMenu
+        ${this._showMoreMenu && host
           ? repeat(
               actions.filter(action => action.showWhen(host)),
               action => action.title,
@@ -221,7 +224,7 @@ export class ChatCopyMore extends WithDisposable(LitElement) {
                 };
                 return html`<div
                   @click=${async () => {
-                    const sessionId = await this.getSessionId();
+                    const sessionId = this.session?.id;
                     const success = await action.handler(
                       host,
                       content,

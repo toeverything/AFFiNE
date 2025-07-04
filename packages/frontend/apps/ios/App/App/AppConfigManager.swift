@@ -4,9 +4,9 @@ final class AppConfigManager {
   struct AppConfig: Decodable {
     let affineVersion: String
   }
-  
-  static var affineVersion: String? = nil
-  
+
+  static var affineVersion: String?
+
   static func getAffineVersion() -> String {
     if affineVersion == nil {
       let file = Bundle(for: AppConfigManager.self).url(forResource: "capacitor.config", withExtension: "json")!
@@ -14,7 +14,7 @@ final class AppConfigManager {
       let config = try! JSONDecoder().decode(AppConfig.self, from: data)
       affineVersion = config.affineVersion
     }
-    
+
     return affineVersion!
   }
 }

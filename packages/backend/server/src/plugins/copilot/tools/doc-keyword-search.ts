@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { AccessController } from '../../../core/permission';
 import type { IndexerService, SearchDoc } from '../../indexer';
 import type { CopilotChatOptions } from '../providers';
+import { toolError } from './error';
 
 export const buildDocKeywordSearchGetter = (
   ac: AccessController,
@@ -38,7 +39,7 @@ export const createDocKeywordSearchTool = (
 ) => {
   return tool({
     description:
-      'Full-text search for relevant documents in the current workspace',
+      'Search all workspace documents for the exact keyword or phrase supplied and return passages ranked by textual match. Use this tool by default whenever a straightforward term-based lookup is sufficient.',
     parameters: z.object({
       query: z.string().describe('The query to search for'),
     }),
@@ -56,8 +57,8 @@ export const createDocKeywordSearchTool = (
           createdByUser: doc.createdByUser,
           updatedByUser: doc.updatedByUser,
         }));
-      } catch {
-        return 'Failed to search documents.';
+      } catch (e: any) {
+        return toolError('Doc Keyword Search Failed', e.message);
       }
     },
   });

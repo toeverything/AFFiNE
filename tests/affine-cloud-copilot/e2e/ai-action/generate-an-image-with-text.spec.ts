@@ -71,11 +71,15 @@ test.describe('AIAction/GenerateAnImageWithText', () => {
     const { answer } = await generateImage();
     const insert = answer.getByTestId('answer-insert-below');
     await insert.click();
+    await page.waitForSelector('.affine-image-container');
+    await page.reload();
+
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'action',
       },
     ]);
+
     const { answer: panelAnswer, actionName } =
       await utils.chatPanel.getLatestAIActionMessage(page);
     await expect(

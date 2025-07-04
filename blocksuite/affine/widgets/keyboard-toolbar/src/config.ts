@@ -26,7 +26,7 @@ import {
   formatBlockCommand,
   formatNativeCommand,
   formatTextCommand,
-  getTextStyle,
+  getTextAttributes,
   toggleBold,
   toggleCode,
   toggleItalic,
@@ -45,7 +45,7 @@ import {
   getTextSelectionCommand,
 } from '@blocksuite/affine-shared/commands';
 import { REFERENCE_NODE } from '@blocksuite/affine-shared/consts';
-import type { AffineTextAttributes } from '@blocksuite/affine-shared/types';
+import type { AffineTextStyleAttributes } from '@blocksuite/affine-shared/types';
 import {
   createDefaultDoc,
   openSingleFileWith,
@@ -817,8 +817,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'Bold',
     icon: BoldIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.bold ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.bold ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleBold);
@@ -828,8 +828,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'Italic',
     icon: ItalicIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.italic ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.italic ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleItalic);
@@ -839,8 +839,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'UnderLine',
     icon: UnderLineIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.underline ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.underline ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleUnderline);
@@ -850,8 +850,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'StrikeThrough',
     icon: StrikeThroughIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.strike ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.strike ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleStrike);
@@ -861,8 +861,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'Code',
     icon: CodeIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.code ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.code ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleCode);
@@ -872,8 +872,8 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
     name: 'Link',
     icon: LinkIcon(),
     background: ({ std }) => {
-      const [_, { textStyle }] = std.command.exec(getTextStyle);
-      return textStyle?.link ? '#00000012' : '';
+      const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+      return textAttributes?.link ? '#00000012' : '';
     },
     action: ({ std }) => {
       std.command.exec(toggleLink);
@@ -883,9 +883,9 @@ const textStyleToolItems: KeyboardToolbarItem[] = [
 
 const highlightToolPanel: KeyboardToolPanelConfig = {
   icon: ({ std }) => {
-    const [_, { textStyle }] = std.command.exec(getTextStyle);
-    if (textStyle?.color) {
-      return HighLightDuotoneIcon(textStyle.color);
+    const [_, { textAttributes }] = std.command.exec(getTextAttributes);
+    if (textAttributes?.color) {
+      return HighLightDuotoneIcon(textAttributes.color);
     } else {
       return HighLightDuotoneIcon(cssVarV2('icon/primary'));
     }
@@ -916,7 +916,7 @@ const highlightToolPanel: KeyboardToolPanelConfig = {
             const payload = {
               styles: {
                 color: cssVarV2(`text/highlight/fg/${color}`),
-              } satisfies AffineTextAttributes,
+              } satisfies AffineTextStyleAttributes,
             };
             std.command
               .chain()
@@ -961,7 +961,7 @@ const highlightToolPanel: KeyboardToolPanelConfig = {
             const payload = {
               styles: {
                 background: cssVarV2(`text/highlight/bg/${color}`),
-              } satisfies AffineTextAttributes,
+              } satisfies AffineTextStyleAttributes,
             };
             std.command
               .chain()

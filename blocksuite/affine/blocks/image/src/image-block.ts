@@ -5,7 +5,10 @@ import { Peekable } from '@blocksuite/affine-components/peek';
 import { ResourceController } from '@blocksuite/affine-components/resource';
 import type { ImageBlockModel } from '@blocksuite/affine-model';
 import { ImageSelection } from '@blocksuite/affine-shared/selection';
-import { ToolbarRegistryIdentifier } from '@blocksuite/affine-shared/services';
+import {
+  BlockCommentManager,
+  ToolbarRegistryIdentifier,
+} from '@blocksuite/affine-shared/services';
 import { formatSize } from '@blocksuite/affine-shared/utils';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import { BrokenImageIcon, ImageIcon } from '@blocksuite/icons/lit';
@@ -63,6 +66,14 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
 
   get resizableImg() {
     return this.pageImage?.resizeImg;
+  }
+
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   private _handleClick(event: MouseEvent) {

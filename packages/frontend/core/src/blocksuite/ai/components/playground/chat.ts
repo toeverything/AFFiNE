@@ -1,28 +1,28 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import type { ContextEmbedStatus, CopilotSessionType } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
+import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType, Store } from '@blocksuite/affine/store';
 import { DeleteIcon, NewPageIcon } from '@blocksuite/icons/lit';
-import { type Signal, signal } from '@preact/signals-core';
 import { css, html, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { throttle } from 'lodash-es';
 
 import type { AppSidebarConfig } from '../../chat-panel/chat-config';
-import type { ChatContextValue } from '../../chat-panel/chat-context';
-import type { ChatPanelMessages } from '../../chat-panel/chat-panel-messages';
 import { AIProvider } from '../../provider';
 import type { DocDisplayConfig, SearchMenuConfig } from '../ai-chat-chips';
+import type { ChatContextValue } from '../ai-chat-content';
 import type {
-  AIModelSwitchConfig,
   AINetworkSearchConfig,
+  AIPlaygroundConfig,
   AIReasoningConfig,
 } from '../ai-chat-input';
 import {
+  type AIChatMessages,
   type ChatAction,
   type ChatMessage,
   type HistoryMessage,
@@ -74,7 +74,7 @@ export class PlaygroundChat extends SignalWatcher(
         }
       }
 
-      chat-panel-messages {
+      ai-chat-messages {
         flex: 1;
         overflow-y: hidden;
       }
@@ -130,13 +130,16 @@ export class PlaygroundChat extends SignalWatcher(
   accessor doc!: Store;
 
   @property({ attribute: false })
+  accessor session!: CopilotSessionType | null | undefined;
+
+  @property({ attribute: false })
   accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
 
   @property({ attribute: false })
-  accessor modelSwitchConfig!: AIModelSwitchConfig;
+  accessor playgroundConfig!: AIPlaygroundConfig;
 
   @property({ attribute: false })
   accessor appSidebarConfig!: AppSidebarConfig;
@@ -154,9 +157,6 @@ export class PlaygroundChat extends SignalWatcher(
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
-  accessor session: CopilotSessionType | undefined = undefined;
-
-  @property({ attribute: false })
   accessor addChat!: () => Promise<void>;
 
   @state()
@@ -168,10 +168,8 @@ export class PlaygroundChat extends SignalWatcher(
   @state()
   accessor embeddingProgress: [number, number] = [0, 0];
 
-  private readonly _isVisible: Signal<boolean | undefined> = signal(true);
-
-  private readonly _chatMessagesRef: Ref<ChatPanelMessages> =
-    createRef<ChatPanelMessages>();
+  private readonly _chatMessagesRef: Ref<AIChatMessages> =
+    createRef<AIChatMessages>();
 
   // request counter to track the latest request
   private _updateHistoryCounter = 0;
@@ -185,22 +183,29 @@ export class PlaygroundChat extends SignalWatcher(
     this.isLoading = false;
   };
 
-  private readonly _getSessionId = async () => {
-    return this.session?.id;
-  };
-
-  private readonly _createSessionId = async () => {
-    return this.session?.id;
+  private readonly _createSession = async () => {
+    return this.session;
   };
 
   private readonly _updateHistory = async () => {
-    const { doc } = this;
+    if (!AIProvider.histories) {
+      return;
+    }
 
     const currentRequest = ++this._updateHistoryCounter;
 
+    const sessionId = this.session?.id;
     const [histories, actions] = await Promise.all([
-      AIProvider.histories?.chats(doc.workspace.id, doc.id),
-      AIProvider.histories?.actions(doc.workspace.id, doc.id),
+      sessionId
+        ? AIProvider.histories.chats(
+            this.doc.workspace.id,
+            sessionId,
+            this.doc.id
+          )
+        : Promise.resolve([]),
+      this.doc.id
+        ? AIProvider.histories.actions(this.doc.workspace.id, this.doc.id)
+        : Promise.resolve([]),
     ]);
 
     // Check if this is still the latest request
@@ -211,12 +216,8 @@ export class PlaygroundChat extends SignalWatcher(
     const chatActions = (actions || []) as ChatAction[];
     const messages: HistoryMessage[] = chatActions;
 
-    const sessionId = await this._getSessionId();
-    const history = histories?.find(history => history.sessionId === sessionId);
-    if (history) {
-      const chatMessages = (history.messages || []) as ChatMessage[];
-      messages.push(...chatMessages);
-    }
+    const chatMessages = (histories?.[0]?.messages || []) as ChatMessage[];
+    messages.push(...chatMessages);
 
     this.chatContextValue = {
       ...this.chatContextValue,
@@ -229,7 +230,7 @@ export class PlaygroundChat extends SignalWatcher(
     this._scrollToEnd();
   };
 
-  private readonly _updateEmbeddingProgress = (
+  private readonly onEmbeddingProgressChange = (
     count: Record<ContextEmbedStatus, number>
   ) => {
     const total = count.finished + count.processing + count.failed;
@@ -272,6 +273,7 @@ export class PlaygroundChat extends SignalWatcher(
   override render() {
     const [done, total] = this.embeddingProgress;
     const isEmbedding = total > 0 && done < total;
+    const notification = this.host.std.getOptional(NotificationProvider);
 
     return html`<div class="chat-panel-container">
       <div class="chat-panel-title">
@@ -287,40 +289,41 @@ export class PlaygroundChat extends SignalWatcher(
           <affine-tooltip>Add chat</affine-tooltip>
         </div>
         <ai-history-clear
-          .host=${this.host}
           .doc=${this.doc}
-          .getSessionId=${this._getSessionId}
+          .session=${this.session}
+          .notification=${notification}
           .onHistoryCleared=${this._updateHistory}
           .chatContextValue=${this.chatContextValue}
         ></ai-history-clear>
         <div class="chat-panel-delete">${DeleteIcon()}</div>
       </div>
-      <chat-panel-messages
+      <ai-chat-messages
         ${ref(this._chatMessagesRef)}
-        .chatContextValue=${this.chatContextValue}
-        .getSessionId=${this._getSessionId}
-        .createSessionId=${this._createSessionId}
-        .updateContext=${this.updateContext}
         .host=${this.host}
-        .isLoading=${this.isLoading}
+        .workspaceId=${this.doc.workspace.id}
+        .docId=${this.doc.id}
+        .isHistoryLoading=${this.isLoading}
+        .chatContextValue=${this.chatContextValue}
+        .session=${this.session}
+        .createSession=${this._createSession}
+        .updateContext=${this.updateContext}
         .extensions=${this.extensions}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
-      ></chat-panel-messages>
+      ></ai-chat-messages>
       <ai-chat-composer
         .host=${this.host}
-        .doc=${this.doc}
+        .workspaceId=${this.doc.workspace.id}
+        .docId=${this.doc.id}
         .session=${this.session}
-        .getSessionId=${this._getSessionId}
-        .createSessionId=${this._createSessionId}
+        .createSession=${this._createSession}
         .chatContextValue=${this.chatContextValue}
         .updateContext=${this.updateContext}
-        .updateEmbeddingProgress=${this._updateEmbeddingProgress}
-        .isVisible=${this._isVisible}
+        .onEmbeddingProgressChange=${this.onEmbeddingProgressChange}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
-        .modelSwitchConfig=${this.modelSwitchConfig}
+        .playgroundConfig=${this.playgroundConfig}
         .docDisplayConfig=${this.docDisplayConfig}
         .searchMenuConfig=${this.searchMenuConfig}
       ></ai-chat-composer>

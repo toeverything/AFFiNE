@@ -29,6 +29,7 @@ export interface TableBlockProps extends BlockMeta {
   columns: Record<string, TableColumn>;
   // key = `${rowId}:${columnId}`
   cells: Record<string, TableCell>;
+  comments?: Record<string, boolean>;
 }
 
 export interface TableCellSerialized {
@@ -51,6 +52,7 @@ export const TableBlockSchema = defineBlockSchema({
     rows: {},
     columns: {},
     cells: {},
+    comments: undefined,
     'meta:createdAt': undefined,
     'meta:createdBy': undefined,
     'meta:updatedAt': undefined,

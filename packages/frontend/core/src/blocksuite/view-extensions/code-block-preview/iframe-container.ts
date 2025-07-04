@@ -1,7 +1,4 @@
-import type { CodeBlockModel } from '@blocksuite/affine/model';
-
-export function linkIframe(iframe: HTMLIFrameElement, model: CodeBlockModel) {
-  const html = model.props.text.toString();
+export function linkIframe(iframe: HTMLIFrameElement, html: string) {
   // force reload iframe
   iframe.src = '';
   iframe.src = 'https://affine.run/static/container.html';

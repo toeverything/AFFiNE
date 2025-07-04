@@ -11,6 +11,7 @@ import {
 } from '@blocksuite/affine-shared/consts';
 import {
   ActionPlacement,
+  blockCommentToolbarButton,
   DocDisplayMetaProvider,
   EditorSettingProvider,
   type LinkEventType,
@@ -305,6 +306,10 @@ const builtinToolbarConfig = {
       },
     } satisfies ToolbarActionGroup<ToolbarAction>,
     captionAction,
+    {
+      id: 'e.comment',
+      ...blockCommentToolbarButton,
+    },
     {
       placement: ActionPlacement.More,
       id: 'a.clipboard',

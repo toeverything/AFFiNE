@@ -1,8 +1,7 @@
 import { ScrollableContainer } from '@affine/component';
 import { MenuItem } from '@affine/component/ui/menu';
-import { AuthService } from '@affine/core/modules/cloud';
+import { AuthService, DefaultServerService } from '@affine/core/modules/cloud';
 import { GlobalDialogService } from '@affine/core/modules/dialogs';
-import { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { type WorkspaceMetadata } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
@@ -66,7 +65,7 @@ export const UserWithWorkspaceList = ({
 }: UserWithWorkspaceListProps) => {
   const globalDialogService = useService(GlobalDialogService);
   const session = useLiveData(useService(AuthService).session.session$);
-  const featureFlagService = useService(FeatureFlagService);
+  const defaultServerService = useService(DefaultServerService);
 
   const isAuthenticated = session.status === 'authenticated';
 
@@ -77,7 +76,8 @@ export const UserWithWorkspaceList = ({
   const onNewWorkspace = useCallback(() => {
     if (
       !isAuthenticated &&
-      !featureFlagService.flags.enable_local_workspace.value
+      defaultServerService.server.config$.value.allowGuestDemoWorkspace ===
+        false
     ) {
       return openSignInModal();
     }
@@ -90,7 +90,7 @@ export const UserWithWorkspaceList = ({
     onEventEnd?.();
   }, [
     globalDialogService,
-    featureFlagService,
+    defaultServerService,
     isAuthenticated,
     onCreatedWorkspace,
     onEventEnd,

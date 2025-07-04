@@ -17,6 +17,7 @@ import {
   AttachmentBlockStyles,
 } from '@blocksuite/affine-model';
 import {
+  BlockCommentManager,
   CitationProvider,
   DocModeProvider,
   FileSizeLimitProvider,
@@ -90,6 +91,14 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
 
   get isCitation() {
     return this.citationService.isCitationModel(this.model);
+  }
+
+  get isCommentHighlighted() {
+    return (
+      this.std
+        .getOptional(BlockCommentManager)
+        ?.isBlockCommentHighlighted(this.model) ?? false
+    );
   }
 
   convertTo = () => {
@@ -499,6 +508,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
         class=${classMap({
           'affine-attachment-container': true,
           focused: this.selected$.value,
+          'comment-highlighted': this.isCommentHighlighted,
         })}
         style=${this.containerStyleMap}
       >

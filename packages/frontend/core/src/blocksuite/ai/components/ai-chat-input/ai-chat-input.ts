@@ -6,14 +6,13 @@ import { openFilesWith } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { ArrowUpBigIcon, CloseIcon, ImageIcon } from '@blocksuite/icons/lit';
-import { type Signal, signal } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { ChatAbortIcon } from '../../_common/icons';
-import { type AIError, AIProvider } from '../../provider';
+import { type AIError, AIProvider, type AISendParams } from '../../provider';
 import { reportResponse } from '../../utils/action-reporter';
 import { readBlobAsURL } from '../../utils/image';
 import { mergeStreamObjects } from '../../utils/stream-objects';
@@ -27,7 +26,6 @@ import {
 import { MAX_IMAGE_COUNT } from './const';
 import type {
   AIChatInputContext,
-  AIModelSwitchConfig,
   AINetworkSearchConfig,
   AIReasoningConfig,
 } from './type';
@@ -51,7 +49,8 @@ export class AIChatInput extends SignalWatcher(
         0px 0px 0px 0px rgba(28, 158, 228, 0),
         0px 0px 0px 2px transparent;
     }
-    [data-theme='light'] .chat-panel-input {
+    [data-theme='light'] .chat-panel-input,
+    .chat-panel-input {
       box-shadow:
         var(--border-shadow),
         0px 0px 0px 3px transparent,
@@ -80,6 +79,11 @@ export class AIChatInput extends SignalWatcher(
       box-sizing: border-box;
       transition: box-shadow 0.23s ease;
       background-color: var(--affine-v2-input-background);
+
+      &[data-independent-mode='true'] {
+        padding: 12px;
+        border-radius: 16px;
+      }
 
       .chat-selection-quote {
         padding: 4px 0px 8px 0px;
@@ -253,6 +257,9 @@ export class AIChatInput extends SignalWatcher(
       font-size: 20px;
       background: var(--affine-v2-icon-activated);
       color: var(--affine-v2-layer-pureWhite);
+      border: none;
+      padding: 0;
+      cursor: pointer;
     }
     .chat-panel-send[aria-disabled='true'] {
       cursor: not-allowed;
@@ -269,6 +276,9 @@ export class AIChatInput extends SignalWatcher(
       border-radius: 50%;
       font-size: 24px;
       color: var(--affine-v2-icon-activated);
+      border: none;
+      padding: 0;
+      background: transparent;
     }
     .chat-input-footer-spacer {
       flex: 1;
@@ -276,10 +286,19 @@ export class AIChatInput extends SignalWatcher(
   `;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor independentMode!: boolean;
 
   @property({ attribute: false })
-  accessor session!: CopilotSessionType | undefined;
+  accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor workspaceId!: string;
+
+  @property({ attribute: false })
+  accessor docId: string | undefined;
+
+  @property({ attribute: false })
+  accessor session!: CopilotSessionType | null | undefined;
 
   @query('image-preview-grid')
   accessor imagePreviewGrid: HTMLDivElement | null = null;
@@ -303,13 +322,7 @@ export class AIChatInput extends SignalWatcher(
   accessor chips: ChatChip[] = [];
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
-
-  @property({ attribute: false })
-  accessor createSessionId!: () => Promise<string | undefined>;
-
-  @property({ attribute: false })
-  accessor getContextId!: () => Promise<string | undefined>;
+  accessor createSession!: () => Promise<CopilotSessionType | undefined>;
 
   @property({ attribute: false })
   accessor updateContext!: (context: Partial<AIChatInputContext>) => void;
@@ -319,9 +332,6 @@ export class AIChatInput extends SignalWatcher(
 
   @property({ attribute: false })
   accessor reasoningConfig!: AIReasoningConfig;
-
-  @property({ attribute: false })
-  accessor modelSwitchConfig: AIModelSwitchConfig | undefined = undefined;
 
   @property({ attribute: false })
   accessor docDisplayConfig!: DocDisplayConfig;
@@ -337,9 +347,6 @@ export class AIChatInput extends SignalWatcher(
 
   @property({ attribute: 'data-testid', reflect: true })
   accessor testId = 'chat-panel-input-container';
-
-  @property({ attribute: false })
-  accessor panelWidth: Signal<number | undefined> = signal(undefined);
 
   @property({ attribute: false })
   accessor addImages!: (images: File[]) => void;
@@ -363,9 +370,15 @@ export class AIChatInput extends SignalWatcher(
     super.connectedCallback();
     this._disposables.add(
       AIProvider.slots.requestSendWithChat.subscribe(
-        ({ input, context, host }) => {
+        (params: AISendParams | null) => {
+          if (!params) {
+            return;
+          }
+          const { input, context, host } = params;
           if (this.host === host) {
-            context && this.updateContext(context);
+            if (context) {
+              this.updateContext(context);
+            }
             setTimeout(() => {
               this.send(input).catch(console.error);
             }, 0);
@@ -380,8 +393,9 @@ export class AIChatInput extends SignalWatcher(
     const hasImages = images.length > 0;
     const maxHeight = hasImages ? 272 + 2 : 200 + 2;
 
-    return html` <div
+    return html`<div
       class="chat-panel-input"
+      data-independent-mode=${this.independentMode}
       data-if-focused=${this.focused}
       style=${styleMap({
         maxHeight: `${maxHeight}px !important`,
@@ -442,7 +456,6 @@ export class AIChatInput extends SignalWatcher(
         </div>
         <div class="chat-input-footer-spacer"></div>
         <chat-input-preference
-          .modelSwitchConfig=${this.modelSwitchConfig}
           .session=${this.session}
           .onModelChange=${this._handleModelChange}
           .modelId=${this.modelId}
@@ -589,8 +602,8 @@ export class AIChatInput extends SignalWatcher(
       // optimistic update messages
       await this._preUpdateMessages(userInput, attachments);
 
-      const sessionId = await this.createSessionId();
-      let contexts = await this._getMatchedContexts(userInput);
+      const sessionId = (await this.createSession())?.id;
+      let contexts = await this._getMatchedContexts();
       if (abortController.signal.aborted) {
         return;
       }
@@ -598,10 +611,9 @@ export class AIChatInput extends SignalWatcher(
         sessionId,
         input: userInput,
         contexts,
-        docId: this.host.store.id,
+        docId: this.docId,
         attachments: images,
-        workspaceId: this.host.store.workspace.id,
-        host: this.host,
+        workspaceId: this.workspaceId,
         stream: true,
         signal: abortController.signal,
         isRootSession: this.isRootSession,
@@ -676,13 +688,15 @@ export class AIChatInput extends SignalWatcher(
   };
 
   private readonly _postUpdateMessages = async () => {
+    const sessionId = this.session?.id;
+    if (!sessionId || !AIProvider.histories) return;
+
     const { messages } = this.chatContextValue;
     const last = messages[messages.length - 1] as ChatMessage;
     if (!last.id) {
-      const sessionId = await this.getSessionId();
-      const historyIds = await AIProvider.histories?.ids(
-        this.host.store.workspace.id,
-        this.host.store.id,
+      const historyIds = await AIProvider.histories.ids(
+        this.workspaceId,
+        this.docId,
         { sessionId }
       );
       if (!historyIds || !historyIds[0]) return;
@@ -690,46 +704,11 @@ export class AIChatInput extends SignalWatcher(
     }
   };
 
-  private async _getMatchedContexts(userInput: string) {
-    const contextId = await this.getContextId();
-    const workspaceId = this.host.store.workspace.id;
-
+  private async _getMatchedContexts() {
     const docContexts = new Map<
       string,
       { docId: string; docContent: string }
     >();
-    const fileContexts = new Map<
-      string,
-      BlockSuitePresets.AIFileContextOption
-    >();
-
-    const { files: matchedFiles = [], docs: matchedDocs = [] } =
-      (await AIProvider.context?.matchContext(
-        userInput,
-        contextId,
-        workspaceId
-      )) ?? {};
-
-    matchedDocs.forEach(doc => {
-      docContexts.set(doc.docId, {
-        docId: doc.docId,
-        docContent: doc.content,
-      });
-    });
-
-    matchedFiles.forEach(file => {
-      const context = fileContexts.get(file.fileId);
-      if (context) {
-        context.fileContent += `\n${file.content}`;
-      } else {
-        fileContexts.set(file.fileId, {
-          blobId: file.blobId,
-          fileName: file.name,
-          fileType: file.mimeType,
-          fileContent: file.content,
-        });
-      }
-    });
 
     this.chips.forEach(chip => {
       if (isDocChip(chip) && !!chip.markdown?.value) {
@@ -764,10 +743,7 @@ export class AIChatInput extends SignalWatcher(
       };
     });
 
-    return {
-      docs,
-      files: Array.from(fileContexts.values()),
-    };
+    return { docs, files: [] };
   }
 }
 

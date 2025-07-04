@@ -26,6 +26,7 @@ import { DefaultTheme } from '../../themes/default';
 
 type EdgelessTextProps = {
   hasMaxWidth: boolean;
+  comments?: Record<string, boolean>;
 } & Omit<TextStyleProps, 'fontSize'> &
   GfxCommonBlockProps;
 
@@ -54,6 +55,7 @@ export const EdgelessTextBlockSchema = defineBlockSchema({
     scale: 1,
     rotate: 0,
     hasMaxWidth: false,
+    comments: undefined,
     ...EdgelessTextZodSchema.parse(undefined),
   }),
   metadata: {

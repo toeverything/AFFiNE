@@ -10,12 +10,84 @@
       }
     },
     {
+      "identity" : "eventsource",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Recouse/EventSource",
+      "state" : {
+        "revision" : "d783b1cf60599dbcec6396c55a6bab33a1c92dc3",
+        "version" : "0.1.4"
+      }
+    },
+    {
+      "identity" : "listviewkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/ListViewKit",
+      "state" : {
+        "revision" : "a4372d7f90c846d834c1f1575d1af0050d70fa0f",
+        "version" : "1.1.6"
+      }
+    },
+    {
+      "identity" : "litext",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/Litext",
+      "state" : {
+        "revision" : "c37f3ab5826659854311e20d6c3942d4905b00b6",
+        "version" : "0.5.0"
+      }
+    },
+    {
+      "identity" : "lrucache",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nicklockwood/LRUCache",
+      "state" : {
+        "revision" : "542f0449556327415409ededc9c43a4bd0a397dc",
+        "version" : "1.0.7"
+      }
+    },
+    {
+      "identity" : "markdownview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/MarkdownView",
+      "state" : {
+        "revision" : "29a9da19d6dc21af4e629c423961b0f453ffe192",
+        "version" : "2.3.8"
+      }
+    },
+    {
       "identity" : "snapkit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SnapKit/SnapKit.git",
       "state" : {
         "revision" : "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
         "version" : "5.7.1"
+      }
+    },
+    {
+      "identity" : "splash",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/Splash",
+      "state" : {
+        "revision" : "4d997712fe07f75695aacdf287aeb3b1f2c6ab88",
+        "version" : "0.17.0"
+      }
+    },
+    {
+      "identity" : "springinterpolation",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/SpringInterpolation",
+      "state" : {
+        "revision" : "f9ae95ece5d6b7cdceafd4381f1d5f0f9494e5d2",
+        "version" : "1.3.1"
+      }
+    },
+    {
+      "identity" : "swift-cmark",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-cmark",
+      "state" : {
+        "revision" : "b022b08312decdc46585e0b3440d97f6f22ef703",
+        "version" : "0.6.0"
       }
     },
     {
@@ -34,6 +106,15 @@
       "state" : {
         "revision" : "39fa28c90a3ebe3d53f80289304fd880cf2c42d0",
         "version" : "6.2.0"
+      }
+    },
+    {
+      "identity" : "swiftmath",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/SwiftMath",
+      "state" : {
+        "revision" : "cfd646dcac0c5553e21ebf1ee05f9078277518bc",
+        "version" : "1.7.2"
       }
     },
     {

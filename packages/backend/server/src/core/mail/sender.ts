@@ -44,7 +44,8 @@ export class MailSender {
   }
 
   get configured() {
-    return this.smtp !== null;
+    // NOTE: testing environment will use mock queue, so we need to return true
+    return this.smtp !== null || env.testing;
   }
 
   @OnEvent('config.init')

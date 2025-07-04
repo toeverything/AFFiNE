@@ -232,6 +232,7 @@ export class EmbedSyncedDocBlockComponent extends EmbedBlockComponent<EmbedSynce
             surface: false,
             selected: this.selected$.value,
             'show-hover-border': true,
+            'comment-highlighted': this.isCommentHighlighted,
           })}
           @click=${this._handleClick}
           style=${containerStyleMap}

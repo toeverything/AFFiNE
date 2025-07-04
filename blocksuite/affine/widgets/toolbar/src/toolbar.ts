@@ -579,9 +579,11 @@ export class AffineToolbarWidget extends WidgetComponent {
     );
 
     // Handles elements when resizing
-    const edgelessSlots = std.get(EdgelessLegacySlotIdentifier);
-    disposables.add(edgelessSlots.elementResizeStart.subscribe(dragStart));
-    disposables.add(edgelessSlots.elementResizeEnd.subscribe(dragEnd));
+    const edgelessSlots = std.getOptional(EdgelessLegacySlotIdentifier);
+    if (edgelessSlots) {
+      disposables.add(edgelessSlots.elementResizeStart.subscribe(dragStart));
+      disposables.add(edgelessSlots.elementResizeEnd.subscribe(dragEnd));
+    }
 
     // Handles elements when hovering
     disposables.add(

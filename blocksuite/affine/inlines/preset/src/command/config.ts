@@ -11,7 +11,7 @@ import { type EditorHost, TextSelection } from '@blocksuite/std';
 import type { TemplateResult } from 'lit';
 
 import {
-  isTextStyleActive,
+  isTextAttributeActive,
   toggleBold,
   toggleCode,
   toggleItalic,
@@ -38,7 +38,7 @@ export const textFormatConfigs: TextFormatConfig[] = [
     activeWhen: host => {
       const [result] = host.std.command
         .chain()
-        .pipe(isTextStyleActive, { key: 'bold' })
+        .pipe(isTextAttributeActive, { key: 'bold' })
         .run();
       return result;
     },
@@ -54,7 +54,7 @@ export const textFormatConfigs: TextFormatConfig[] = [
     activeWhen: host => {
       const [result] = host.std.command
         .chain()
-        .pipe(isTextStyleActive, { key: 'italic' })
+        .pipe(isTextAttributeActive, { key: 'italic' })
         .run();
       return result;
     },
@@ -70,7 +70,7 @@ export const textFormatConfigs: TextFormatConfig[] = [
     activeWhen: host => {
       const [result] = host.std.command
         .chain()
-        .pipe(isTextStyleActive, { key: 'underline' })
+        .pipe(isTextAttributeActive, { key: 'underline' })
         .run();
       return result;
     },
@@ -86,7 +86,7 @@ export const textFormatConfigs: TextFormatConfig[] = [
     activeWhen: host => {
       const [result] = host.std.command
         .chain()
-        .pipe(isTextStyleActive, { key: 'strike' })
+        .pipe(isTextAttributeActive, { key: 'strike' })
         .run();
       return result;
     },
@@ -102,7 +102,7 @@ export const textFormatConfigs: TextFormatConfig[] = [
     activeWhen: host => {
       const [result] = host.std.command
         .chain()
-        .pipe(isTextStyleActive, { key: 'code' })
+        .pipe(isTextAttributeActive, { key: 'code' })
         .run();
       return result;
     },
@@ -118,7 +118,7 @@ export const textFormatConfigs: TextFormatConfig[] = [
     activeWhen: host => {
       const [result] = host.std.command
         .chain()
-        .pipe(isTextStyleActive, { key: 'link' })
+        .pipe(isTextAttributeActive, { key: 'link' })
         .run();
       return result;
     },

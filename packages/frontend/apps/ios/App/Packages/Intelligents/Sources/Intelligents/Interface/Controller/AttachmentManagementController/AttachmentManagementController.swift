@@ -45,7 +45,7 @@ private class _AttachmentManagementController: UIViewController {
     Section,
     Item
   > = .init(tableView: tableView) { [weak self] tableView, indexPath, item in
-    let cell = tableView.dequeueReusableCell(withIdentifier: "AttachmentCell", for: indexPath) as! AttachmentCell
+    let cell = tableView.dequeueReusableCell(withIdentifier: "AttachmentManagementCell", for: indexPath) as! AttachmentManagementCell
     cell.configure(with: item)
     cell.onDelete = { [weak self] in
       guard let delegateController = self?.delegateController else { return }
@@ -119,7 +119,7 @@ private class _AttachmentManagementController: UIViewController {
 
     tableView.backgroundColor = .clear
     tableView.separatorStyle = .none
-    tableView.register(AttachmentCell.self, forCellReuseIdentifier: "AttachmentCell")
+    tableView.register(AttachmentManagementCell.self, forCellReuseIdentifier: "AttachmentManagementCell")
     tableView.clipsToBounds = true
     tableView.rowHeight = UITableView.automaticDimension
     view.addSubview(tableView)
@@ -156,7 +156,7 @@ private class _AttachmentManagementController: UIViewController {
   }
 }
 
-private class AttachmentCell: UITableViewCell {
+private class AttachmentManagementCell: UITableViewCell {
   let container = UIView().then {
     $0.layer.cornerRadius = 4
     $0.layer.borderWidth = 0.5

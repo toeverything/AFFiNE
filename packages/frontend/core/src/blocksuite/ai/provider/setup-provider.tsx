@@ -2,16 +2,17 @@ import { toggleGeneralAIOnboarding } from '@affine/core/components/affine/ai-onb
 import type { AuthAccountInfo, AuthService } from '@affine/core/modules/cloud';
 import type { GlobalDialogService } from '@affine/core/modules/dialogs';
 import {
-  type ChatHistoryOrder,
   ContextCategories,
   type ContextWorkspaceEmbeddingStatus,
   type getCopilotHistoriesQuery,
+  type QueryChatSessionsInput,
   type RequestOptions,
+  type UpdateChatSessionInput,
 } from '@affine/graphql';
 import { z } from 'zod';
 
 import { AIProvider } from './ai-provider';
-import type { CopilotClient } from './copilot-client';
+import { type CopilotClient, Endpoint } from './copilot-client';
 import type { PromptKey } from './prompt';
 import { textToText, toImage } from './request';
 import { setupTracker } from './tracker';
@@ -49,18 +50,14 @@ export function setupAIProvider(
   authService: AuthService
 ) {
   async function createSession({
+    promptName,
     workspaceId,
     docId,
-    promptName,
     sessionId,
     retry,
-  }: {
-    workspaceId: string;
-    docId: string;
-    promptName: PromptKey;
-    sessionId?: string;
-    retry?: boolean;
-  }) {
+    pinned,
+    reuseLatestChat,
+  }: BlockSuitePresets.AICreateSessionOptions) {
     if (sessionId) return sessionId;
     if (retry) return AIProvider.LAST_ACTION_SESSIONID;
 
@@ -68,6 +65,8 @@ export function setupAIProvider(
       workspaceId,
       docId,
       promptName,
+      pinned,
+      reuseLatestChat,
     });
   }
 
@@ -95,11 +94,13 @@ export function setupAIProvider(
       client,
       sessionId,
       content: input,
+      timeout: 5 * 60 * 1000, // 5 minutes
       params: {
         docs: contexts?.docs,
         files: contexts?.files,
         searchMode: webSearch ? 'MUST' : 'AUTO',
       },
+      endpoint: Endpoint.StreamObject,
     });
   });
 
@@ -355,7 +356,7 @@ export function setupAIProvider(
       content: options.input,
       // 3 minutes
       timeout: 180000,
-      workflow: true,
+      endpoint: Endpoint.Workflow,
     });
   });
 
@@ -481,7 +482,7 @@ Could you make a new website based on these notes and send back just the html fi
       content: options.input,
       // 3 minutes
       timeout: 180000,
-      workflow: true,
+      endpoint: Endpoint.Workflow,
       postfix,
     });
   });
@@ -516,13 +517,14 @@ Could you make a new website based on these notes and send back just the html fi
       promptName,
       ...options,
     });
+    const isWorkflow = !!promptName?.startsWith('workflow:');
     return toImage({
       ...options,
       client,
       sessionId,
       content: options.input,
       timeout: 180000,
-      workflow: !!promptName?.startsWith('workflow:'),
+      endpoint: isWorkflow ? Endpoint.Workflow : Endpoint.Images,
     });
   });
 
@@ -582,16 +584,15 @@ Could you make a new website based on these notes and send back just the html fi
     getSessions: async (
       workspaceId: string,
       docId?: string,
-      options?: { action?: boolean }
+      options?: QueryChatSessionsInput
     ) => {
       return client.getSessions(workspaceId, docId, options);
     },
-    updateSession: async (sessionId: string, promptName: string) => {
-      return client.updateSession({
-        sessionId,
-        promptName,
-        // TODO(@yoyoyohamapi): update docId & pinned for chat independence
-      });
+    getRecentSessions: async (workspaceId: string, limit?: number) => {
+      return client.getRecentSessions(workspaceId, limit);
+    },
+    updateSession: async (options: UpdateChatSessionInput) => {
+      return client.updateSession(options);
     },
   });
 
@@ -739,7 +740,7 @@ Could you make a new website based on these notes and send back just the html fi
   AIProvider.provide('histories', {
     actions: async (
       workspaceId: string,
-      docId?: string
+      docId: string
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
       return (
@@ -751,14 +752,15 @@ Could you make a new website based on these notes and send back just the html fi
     },
     chats: async (
       workspaceId: string,
-      docId?: string,
-      options?: {
-        sessionId?: string;
-        messageOrder?: ChatHistoryOrder;
-      }
+      sessionId: string,
+      docId?: string
     ): Promise<BlockSuitePresets.AIHistory[]> => {
       // @ts-expect-error - 'action' is missing in server impl
-      return (await client.getHistories(workspaceId, docId, options)) ?? [];
+      return (
+        (await client.getHistories(workspaceId, docId, {
+          sessionId,
+        })) ?? []
+      );
     },
     cleanup: async (
       workspaceId: string,

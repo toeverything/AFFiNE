@@ -11,6 +11,7 @@ import {
   forkCopilotSessionMutation,
   getCopilotHistoriesQuery,
   getCopilotHistoryIdsQuery,
+  getCopilotRecentSessionsQuery,
   getCopilotSessionQuery,
   getCopilotSessionsQuery,
   getWorkspaceEmbeddingStatusQuery,
@@ -33,6 +34,13 @@ import {
   PaymentRequiredError,
   UnauthorizedError,
 } from './error';
+
+export enum Endpoint {
+  Stream = 'stream',
+  StreamObject = 'stream-object',
+  Workflow = 'workflow',
+  Images = 'images',
+}
 
 type OptionsField<T extends GraphQLQuery> =
   RequestOptions<T>['variables'] extends { options: infer U } ? U : never;
@@ -167,6 +175,21 @@ export class CopilotClient {
         },
       });
       return res.currentUser?.copilot?.sessions;
+    } catch (err) {
+      throw resolveError(err);
+    }
+  }
+
+  async getRecentSessions(workspaceId: string, limit?: number) {
+    try {
+      const res = await this.gql({
+        query: getCopilotRecentSessionsQuery,
+        variables: {
+          workspaceId,
+          limit,
+        },
+      });
+      return res.currentUser?.copilot?.histories;
     } catch (err) {
       throw resolveError(err);
     }
@@ -415,7 +438,7 @@ export class CopilotClient {
       webSearch?: boolean;
       modelId?: string;
     },
-    endpoint = 'stream'
+    endpoint = Endpoint.Stream
   ) {
     let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({
@@ -435,7 +458,7 @@ export class CopilotClient {
     sessionId: string,
     messageId?: string,
     seed?: string,
-    endpoint = 'images'
+    endpoint = Endpoint.Images
   ) {
     let url = `/api/copilot/chat/${sessionId}/${endpoint}`;
     const queryString = this.paramsToQueryString({

@@ -73,7 +73,8 @@ update_app_stream_version() {
 
 update_ios_marketing_version() {
   local file_path=$1
-  local new_version=$2
+  # Remove everything after the "-"
+  local new_version=$(echo "$2" | sed -E 's/-.*$//')
 
   # Check if file exists
   if [ ! -f "$file_path" ]; then

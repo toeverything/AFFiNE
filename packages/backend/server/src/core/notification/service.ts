@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 
 import { NotificationNotFound, PaginationInput, URLHelper } from '../../base';
 import {
+  CommentNotification,
+  CommentNotificationCreate,
   DEFAULT_WORKSPACE_NAME,
   InvitationNotificationCreate,
   InvitationReviewDeclinedNotificationCreate,
@@ -34,6 +36,58 @@ export class NotificationService {
 
   async cleanExpiredNotifications() {
     return await this.models.notification.cleanExpiredNotifications();
+  }
+
+  async createComment(input: CommentNotificationCreate, isMention?: boolean) {
+    const notification = isMention
+      ? await this.models.notification.createCommentMention(input)
+      : await this.models.notification.createComment(input);
+    await this.sendCommentEmail(input, isMention);
+    return notification;
+  }
+
+  private async sendCommentEmail(
+    input: CommentNotificationCreate,
+    isMention?: boolean
+  ) {
+    const userSetting = await this.models.userSettings.get(input.userId);
+    if (!userSetting.receiveCommentEmail) {
+      return;
+    }
+    const receiver = await this.models.user.getWorkspaceUser(input.userId);
+    if (!receiver) {
+      return;
+    }
+    const doc = await this.models.doc.getMeta(
+      input.body.workspaceId,
+      input.body.doc.id
+    );
+    const title = doc?.title || input.body.doc.title;
+    const url = this.url.link(
+      generateDocPath({
+        workspaceId: input.body.workspaceId,
+        docId: input.body.doc.id,
+        mode: input.body.doc.mode,
+        blockId: input.body.doc.blockId,
+        elementId: input.body.doc.elementId,
+        commentId: input.body.commentId,
+        replyId: input.body.replyId,
+      })
+    );
+    await this.mailer.trySend({
+      name: isMention ? 'CommentMention' : 'Comment',
+      to: receiver.email,
+      props: {
+        user: {
+          $$userId: input.body.createdByUserId,
+        },
+        doc: {
+          title,
+          url,
+        },
+      },
+    });
+    this.logger.debug(`Comment email sent to user ${receiver.id}`);
   }
 
   async createMention(input: MentionNotificationCreate) {
@@ -370,8 +424,11 @@ export class NotificationService {
 
     // fill latest doc title
     const mentions = notifications.filter(
-      n => n.type === NotificationType.Mention
-    ) as MentionNotification[];
+      n =>
+        n.type === NotificationType.Mention ||
+        n.type === NotificationType.CommentMention ||
+        n.type === NotificationType.Comment
+    ) as (MentionNotification | CommentNotification)[];
     const mentionDocs = await this.models.doc.findMetas(
       mentions.map(m => ({
         workspaceId: m.body.workspaceId,

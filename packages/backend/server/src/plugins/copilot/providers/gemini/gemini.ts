@@ -166,6 +166,12 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
           break;
         }
       }
+      if (!options.signal?.aborted) {
+        const footnotes = parser.end();
+        if (footnotes.length) {
+          yield `\n\n${footnotes}`;
+        }
+      }
     } catch (e: any) {
       metrics.ai.counter('chat_text_stream_errors').add(1, { model: model.id });
       throw this.handleError(e);

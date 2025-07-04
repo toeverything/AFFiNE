@@ -7,6 +7,9 @@ import {
 import { ModuleRef } from '@nestjs/core';
 
 import { ApplyType } from '../base';
+import { BlobModel } from './blob';
+import { CommentModel } from './comment';
+import { CommentAttachmentModel } from './comment-attachment';
 import { AppConfigModel } from './config';
 import { CopilotContextModel } from './copilot-context';
 import { CopilotJobModel } from './copilot-job';
@@ -48,6 +51,9 @@ const MODELS = {
   copilotWorkspace: CopilotWorkspaceConfigModel,
   copilotJob: CopilotJobModel,
   appConfig: AppConfigModel,
+  comment: CommentModel,
+  commentAttachment: CommentAttachmentModel,
+  blob: BlobModel,
 };
 
 type ModelsType = {
@@ -99,6 +105,9 @@ const ModelsSymbolProvider: ExistingProvider = {
 })
 export class ModelsModule {}
 
+export * from './blob';
+export * from './comment';
+export * from './comment-attachment';
 export * from './common';
 export * from './copilot-context';
 export * from './copilot-job';

@@ -165,9 +165,11 @@ export class ChatPanelUtils {
     const actionList = await message.getByTestId('chat-action-list');
     return {
       message,
-      content: await message
-        .locator('chat-content-rich-text editor-host')
-        .innerText(),
+      content: (
+        await message
+          .locator('chat-content-rich-text editor-host')
+          .allInnerTexts()
+      ).join(' '),
       actions: {
         copy: async () => actions.getByTestId('action-copy-button').click(),
         retry: async () => actions.getByTestId('action-retry-button').click(),
@@ -259,7 +261,7 @@ export class ChatPanelUtils {
   ) {
     await this.uploadImages(page, images);
 
-    await page.waitForSelector('ai-chat-input img');
+    await page.waitForSelector('ai-chat-input .image-container');
     await this.makeChat(page, text);
   }
 

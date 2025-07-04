@@ -37,6 +37,10 @@ test.before(async t => {
             },
           },
         },
+        server: {
+          hosts: ['localhost', 'test.affine.dev'],
+          https: true,
+        },
       }),
       AppModule,
     ],
@@ -77,6 +81,38 @@ test("should be able to redirect to oauth provider's login page", async t => {
   t.is(
     redirect.searchParams.get('redirect_uri'),
     app.get(URLHelper).link('/oauth/callback')
+  );
+  t.is(redirect.searchParams.get('response_type'), 'code');
+  t.is(redirect.searchParams.get('prompt'), 'select_account');
+  t.truthy(redirect.searchParams.get('state'));
+  // state should be a json string
+  const state = JSON.parse(redirect.searchParams.get('state')!);
+  t.is(state.provider, 'Google');
+  t.regex(
+    state.state,
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+  );
+});
+
+test('should be able to redirect to oauth provider with multiple hosts', async t => {
+  const { app } = t.context;
+
+  const res = await app
+    .POST('/api/oauth/preflight')
+    .set('host', 'test.affine.dev')
+    .send({ provider: 'Google' })
+    .expect(HttpStatus.OK);
+
+  const { url } = res.body;
+
+  const redirect = new URL(url);
+  t.is(redirect.origin, 'https://accounts.google.com');
+
+  t.is(redirect.pathname, '/o/oauth2/v2/auth');
+  t.is(redirect.searchParams.get('client_id'), 'google-client-id');
+  t.is(
+    redirect.searchParams.get('redirect_uri'),
+    'https://test.affine.dev/oauth/callback'
   );
   t.is(redirect.searchParams.get('response_type'), 'code');
   t.is(redirect.searchParams.get('prompt'), 'select_account');
