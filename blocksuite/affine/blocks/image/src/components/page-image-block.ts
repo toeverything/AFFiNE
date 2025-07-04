@@ -18,6 +18,7 @@ import type { BaseSelection } from '@blocksuite/store';
 import { computed } from '@preact/signals-core';
 import { css, html, type PropertyValues } from 'lit';
 import { property, query } from 'lit/decorators.js';
+import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { when } from 'lit/directives/when.js';
 
@@ -75,6 +76,10 @@ export class ImageBlockPageComponent extends SignalWatcher(
     affine-page-image .resizable-img img {
       width: 100%;
       height: 100%;
+    }
+
+    affine-page-image .comment-highlighted {
+      outline: 2px solid ${unsafeCSSVarV2('block/comment/highlightUnderline')};
     }
   `;
 
@@ -364,7 +369,13 @@ export class ImageBlockPageComponent extends SignalWatcher(
     const { loading, error, icon, description, needUpload } = this.state;
 
     return html`
-      <div class="resizable-img" style=${styleMap(imageSize)}>
+      <div
+        class=${classMap({
+          'resizable-img': true,
+          'comment-highlighted': this.block.isCommentHighlighted,
+        })}
+        style=${styleMap(imageSize)}
+      >
         <img
           class="drag-target"
           draggable="false"

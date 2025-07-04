@@ -109,7 +109,7 @@ const WorkbenchView = ({ view }: { view: View }) => {
 };
 
 const MIN_SIDEBAR_WIDTH = 320;
-const MAX_SIDEBAR_WIDTH = 800;
+const MAX_SIDEBAR_WIDTH = 1400;
 
 const WorkbenchSidebar = () => {
   const { clientBorder } = useAtomValue(appSettingAtom);

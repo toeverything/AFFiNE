@@ -23,7 +23,7 @@ import type { EditorHost } from '@blocksuite/affine/std';
 import type { BlockModel, Store } from '@blocksuite/affine/store';
 import { Slice, toDraftModel } from '@blocksuite/affine/store';
 
-import type { ChatContextValue } from '../chat-panel/chat-context';
+import type { ChatContextValue } from '../components/ai-chat-content';
 import {
   getSelectedImagesAsBlobs,
   getSelectedTextContent,

@@ -50,6 +50,7 @@ type PureChatSession = {
   workspaceId: string;
   docId?: string | null;
   pinned?: boolean;
+  title: string | null;
   messages?: ChatMessage[];
   // connect ids
   userId: string;
@@ -82,7 +83,7 @@ type UpdateChatSessionMessage = ChatSessionBaseState & {
 };
 
 export type UpdateChatSessionOptions = ChatSessionBaseState &
-  Pick<Partial<ChatSession>, 'docId' | 'pinned' | 'promptName'>;
+  Pick<Partial<ChatSession>, 'docId' | 'pinned' | 'promptName' | 'title'>;
 
 export type UpdateChatSession = ChatSessionBaseState & UpdateChatSessionOptions;
 
@@ -90,7 +91,7 @@ export type ListSessionOptions = Pick<
   Partial<ChatSession>,
   'sessionId' | 'workspaceId' | 'docId' | 'pinned'
 > & {
-  userId: string;
+  userId: string | undefined;
   action?: boolean;
   fork?: boolean;
   limit?: number;
@@ -188,11 +189,6 @@ export class CopilotSessionModel extends BaseModel {
 
   @Transactional()
   async fork(options: ForkSessionOptions): Promise<string> {
-    if (!options.messages?.length) {
-      throw new CopilotSessionInvalidInput(
-        'Cannot fork session without messages'
-      );
-    }
     if (options.pinned) {
       await this.unpin(options.workspaceId, options.userId);
     }
@@ -203,12 +199,15 @@ export class CopilotSessionModel extends BaseModel {
       ...forkedState,
       messages: [],
     });
-    // save message
-    await this.models.copilotSession.updateMessages({
-      ...forkedState,
-      sessionId,
-      messages,
-    });
+    if (options.messages.length) {
+      // save message
+      await this.models.copilotSession.updateMessages({
+        ...forkedState,
+        sessionId,
+        messages,
+      });
+    }
+
     return sessionId;
   }
 
@@ -256,7 +255,7 @@ export class CopilotSessionModel extends BaseModel {
     return (await this.db.aiSession.findUnique({
       where: { ...where, id: sessionId, deletedAt: null },
       select,
-    })) as Prisma.AiSessionGetPayload<{ select: Select }>;
+    })) as Prisma.AiSessionGetPayload<{ select: Select }> | null;
   }
 
   @Transactional()
@@ -268,6 +267,7 @@ export class CopilotSessionModel extends BaseModel {
       docId: true,
       pinned: true,
       parentSessionId: true,
+      title: true,
       messages: {
         select: {
           id: true,
@@ -285,38 +285,44 @@ export class CopilotSessionModel extends BaseModel {
   }
 
   async list(options: ListSessionOptions) {
-    const { userId, sessionId, workspaceId, docId } = options;
+    const { userId, sessionId, workspaceId, docId, action, fork } = options;
+
+    function getNullCond<T>(
+      maybeBool: boolean | undefined,
+      wrap: (ret: { not: null } | null) => T = ret => ret as T
+    ): T | undefined {
+      return maybeBool === true
+        ? wrap({ not: null })
+        : maybeBool === false
+          ? wrap(null)
+          : undefined;
+    }
+
+    function getEqCond<T>(maybeValue: T | undefined): T | undefined {
+      return maybeValue !== undefined ? maybeValue : undefined;
+    }
 
     const conditions: Prisma.AiSessionWhereInput['OR'] = [
       {
         userId,
         workspaceId,
-        docId: docId ?? null,
-        id: sessionId ? { equals: sessionId } : undefined,
+        docId: getEqCond(docId),
+        id: getEqCond(sessionId),
         deletedAt: null,
-        prompt:
-          typeof options.action === 'boolean'
-            ? options.action
-              ? { action: { not: null } }
-              : { action: null }
-            : undefined,
-        parentSessionId:
-          typeof options.fork === 'boolean'
-            ? options.fork
-              ? { not: null }
-              : null
-            : undefined,
+        pinned: getEqCond(options.pinned),
+        prompt: getNullCond(action, ret => ({ action: ret })),
+        parentSessionId: getNullCond(fork),
       },
     ];
 
-    if (!options?.action && options?.fork) {
+    if (!action && fork) {
       // query forked sessions from other users
       // only query forked session if fork == true and action == false
       conditions.push({
         userId: { not: userId },
         workspaceId: workspaceId,
         docId: docId ?? null,
-        id: sessionId ? { equals: sessionId } : undefined,
+        id: getEqCond(sessionId),
         prompt: { action: null },
         // should only find forked session
         parentSessionId: { not: null },
@@ -333,6 +339,7 @@ export class CopilotSessionModel extends BaseModel {
         docId: true,
         parentSessionId: true,
         pinned: true,
+        title: true,
         promptName: true,
         tokenCost: true,
         createdAt: true,
@@ -375,7 +382,7 @@ export class CopilotSessionModel extends BaseModel {
 
   @Transactional()
   async update(options: UpdateChatSessionOptions): Promise<string> {
-    const { userId, sessionId, docId, promptName, pinned } = options;
+    const { userId, sessionId, docId, promptName, pinned, title } = options;
     const session = await this.getExists(
       sessionId,
       {
@@ -421,7 +428,7 @@ export class CopilotSessionModel extends BaseModel {
 
     await this.db.aiSession.update({
       where: { id: sessionId },
-      data: { docId, promptName, pinned },
+      data: { docId, promptName, pinned, title },
     });
 
     return sessionId;
@@ -524,17 +531,29 @@ export class CopilotSessionModel extends BaseModel {
     if (!id) {
       throw new CopilotSessionNotFound();
     }
-    const ids = await this.getMessages(id, { id: true, role: true }).then(
-      roles =>
-        roles
-          .slice(
-            roles.findLastIndex(({ role }) => role === AiPromptRole.user) +
-              (removeLatestUserMessage ? 0 : 1)
-          )
-          .map(({ id }) => id)
-    );
+    const messages = await this.getMessages(id, { id: true, role: true });
+    const ids = messages
+      .slice(
+        messages.findLastIndex(({ role }) => role === AiPromptRole.user) +
+          (removeLatestUserMessage ? 0 : 1)
+      )
+      .map(({ id }) => id);
+
     if (ids.length) {
       await this.db.aiSessionMessage.deleteMany({ where: { id: { in: ids } } });
+
+      // clear the title if there only one round of conversation left
+      const remainingMessages = await this.getMessages(id, { role: true });
+      const userMessageCount = remainingMessages.filter(
+        m => m.role === AiPromptRole.user
+      ).length;
+
+      if (userMessageCount <= 1) {
+        await this.db.aiSession.update({
+          where: { id },
+          data: { title: null },
+        });
+      }
     }
   }
 

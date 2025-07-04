@@ -7,6 +7,7 @@ query serverConfig {
     baseUrl
     name
     features
+    allowGuestDemoWorkspace
     type
     initialized
     credentialsRequirement {

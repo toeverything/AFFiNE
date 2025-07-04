@@ -5,3 +5,4 @@ export * from './edgeless-clipboard-config';
 export * from './embed-edgeless-linked-doc-block';
 export * from './embed-linked-doc-block';
 export * from './embed-linked-doc-spec';
+export { getEmbedLinkedDocIcons } from './utils';

@@ -12,6 +12,7 @@
   "dependencies": {
     "@blocksuite/affine-components": "workspace:*",
     "@blocksuite/affine-ext-loader": "workspace:*",
+    "@blocksuite/affine-inline-comment": "workspace:*",
     "@blocksuite/affine-inline-footnote": "workspace:*",
     "@blocksuite/affine-inline-latex": "workspace:*",
     "@blocksuite/affine-inline-link": "workspace:*",

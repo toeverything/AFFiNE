@@ -5,6 +5,16 @@ import UIKit
 private let unselectedColor: UIColor = .affineIconPrimary
 private let selectedColor: UIColor = .affineIconActivated
 
+private let configurableOptions: [ConfigurableOptions] = [
+  .networking,
+  .reasoning,
+]
+enum ConfigurableOptions {
+  case tool
+  case networking
+  case reasoning
+}
+
 class InputBoxFunctionBar: UIView {
   weak var delegate: InputBoxFunctionBarDelegate?
 
@@ -23,6 +33,7 @@ class InputBoxFunctionBar: UIView {
     $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(toolButtonTapped), for: .touchUpInside)
+    $0.isHidden = !configurableOptions.contains(.tool)
   }
 
   lazy var networkButton = UIButton(type: .system).then {
@@ -30,6 +41,7 @@ class InputBoxFunctionBar: UIView {
     $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(networkButtonTapped), for: .touchUpInside)
+    $0.isHidden = !configurableOptions.contains(.networking)
   }
 
   lazy var deepThinkingButton = UIButton(type: .system).then {
@@ -37,6 +49,7 @@ class InputBoxFunctionBar: UIView {
     $0.tintColor = unselectedColor
     $0.imageView?.contentMode = .scaleAspectFit
     $0.addTarget(self, action: #selector(deepThinkingButtonTapped), for: .touchUpInside)
+    $0.isHidden = !configurableOptions.contains(.reasoning)
   }
 
   lazy var sendButton = UIButton(type: .system).then {

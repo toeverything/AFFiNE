@@ -37,7 +37,7 @@ export class ChatPanelDocChip extends SignalWatcher(
   accessor docDisplayConfig!: DocDisplayConfig;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   private chipName = new Signal<string>('');
 
@@ -103,6 +103,9 @@ export class ChatPanelDocChip extends SignalWatcher(
   };
 
   private readonly processDocChip = async () => {
+    if (!this.host) {
+      return;
+    }
     try {
       const doc = this.docDisplayConfig.getDoc(this.chip.docId);
       if (!doc) {

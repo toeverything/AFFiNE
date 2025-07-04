@@ -16,6 +16,7 @@ export type DatabaseBlockProps = {
   title: Text;
   cells: SerializedCells;
   columns: Array<ColumnDataType>;
+  comments?: Record<string, boolean>;
 };
 
 export class DatabaseBlockModel extends BlockModel<DatabaseBlockProps> {}
@@ -27,6 +28,7 @@ export const DatabaseBlockSchema = defineBlockSchema({
     title: internal.Text(),
     cells: Object.create(null),
     columns: [],
+    comments: undefined,
   }),
   metadata: {
     role: 'hub',

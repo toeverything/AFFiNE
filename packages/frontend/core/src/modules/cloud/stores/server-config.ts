@@ -25,6 +25,9 @@ export class ServerConfigStore extends Store {
       query: serverConfigQuery,
       context: {
         signal: abortSignal,
+        headers: {
+          'x-affine-version': BUILD_CONFIG.appVersion,
+        },
       },
     });
     if (serverConfigData.serverConfig.features.includes(ServerFeature.OAuth)) {
@@ -32,6 +35,9 @@ export class ServerConfigStore extends Store {
         query: oauthProvidersQuery,
         context: {
           signal: abortSignal,
+          headers: {
+            'x-affine-version': BUILD_CONFIG.appVersion,
+          },
         },
       });
       return {

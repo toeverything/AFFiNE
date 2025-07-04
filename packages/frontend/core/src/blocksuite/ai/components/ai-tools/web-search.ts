@@ -1,9 +1,12 @@
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { type EditorHost, ShadowlessElement } from '@blocksuite/affine/std';
+import type { ImageProxyService } from '@blocksuite/affine/shared/adapters';
+import { ShadowlessElement } from '@blocksuite/affine/std';
 import { WebIcon } from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';
 import { html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
+
+import type { ToolError } from './type';
 
 interface WebSearchToolCall {
   type: 'tool-call';
@@ -17,14 +20,17 @@ interface WebSearchToolResult {
   toolCallId: string;
   toolName: string;
   args: { url: string };
-  result: Array<{
-    title: string;
-    url: string;
-    content: string;
-    favicon: string;
-    publishedDate: string;
-    author: string;
-  }>;
+  result:
+    | Array<{
+        title: string;
+        url: string;
+        content: string;
+        favicon: string;
+        publishedDate: string;
+        author: string;
+      }>
+    | ToolError
+    | null;
 }
 
 export class WebSearchTool extends WithDisposable(ShadowlessElement) {
@@ -32,10 +38,10 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
   accessor data!: WebSearchToolCall | WebSearchToolResult;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor width: Signal<number | undefined> | undefined;
 
   @property({ attribute: false })
-  accessor width: Signal<number | undefined> | undefined;
+  accessor imageProxyService: ImageProxyService | null | undefined;
 
   renderToolCall() {
     return html`
@@ -50,27 +56,35 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
       return nothing;
     }
 
-    const results = this.data.result.map(item => {
-      const { favicon, title, content } = item;
-      return {
-        title: title,
-        icon: favicon || WebIcon(),
-        content: content,
-      };
-    });
-    const footerIcons = this.data.result
-      .map(item => item.favicon)
-      .filter(Boolean);
+    const result = this.data.result;
+    if (result && Array.isArray(result)) {
+      const results = result.map(item => {
+        const { favicon, title, content } = item;
+        return {
+          title: title,
+          icon: favicon || WebIcon(),
+          content: content,
+        };
+      });
+      const footerIcons = result.map(item => item.favicon).filter(Boolean);
+
+      return html`
+        <tool-result-card
+          .name=${'The search is complete, and these webpages have been searched'}
+          .icon=${WebIcon()}
+          .footerIcons=${footerIcons}
+          .results=${results}
+          .width=${this.width}
+          .imageProxyService=${this.imageProxyService}
+        ></tool-result-card>
+      `;
+    }
 
     return html`
-      <tool-result-card
-        .host=${this.host}
-        .name=${'The search is complete, and these webpages have been searched'}
+      <tool-call-failed
+        .name=${'Web search failed'}
         .icon=${WebIcon()}
-        .footerIcons=${footerIcons}
-        .results=${results}
-        .width=${this.width}
-      ></tool-result-card>
+      ></tool-call-failed>
     `;
   }
 

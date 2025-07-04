@@ -2,7 +2,8 @@ import { CodeBlockPreviewExtension } from '@blocksuite/affine/blocks/code';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { CodeBlockModel } from '@blocksuite/affine/model';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import { css, html, LitElement, type PropertyValues } from 'lit';
+import { ShadowlessElement } from '@blocksuite/std';
+import { css, html, type PropertyValues } from 'lit';
 import { property, query, state } from 'lit/decorators.js';
 import { choose } from 'lit/directives/choose.js';
 import { styleMap } from 'lit/directives/style-map.js';
@@ -14,7 +15,9 @@ export const CodeBlockHtmlPreview = CodeBlockPreviewExtension(
   model => html`<html-preview .model=${model}></html-preview>`
 );
 
-export class HTMLPreview extends SignalWatcher(WithDisposable(LitElement)) {
+export class HTMLPreview extends SignalWatcher(
+  WithDisposable(ShadowlessElement)
+) {
   static override styles = css`
     .html-preview-loading {
       color: ${unsafeCSSVarV2('text/placeholder')};
@@ -53,7 +56,10 @@ export class HTMLPreview extends SignalWatcher(WithDisposable(LitElement)) {
   `;
 
   @property({ attribute: false })
-  accessor model!: CodeBlockModel;
+  accessor model: CodeBlockModel | null = null;
+
+  @property({ attribute: false })
+  accessor html: string | null = null;
 
   @state()
   accessor state: 'loading' | 'error' | 'finish' | 'fallback' = 'loading';
@@ -66,20 +72,39 @@ export class HTMLPreview extends SignalWatcher(WithDisposable(LitElement)) {
 
     this._link();
 
-    this.disposables.add(
-      this.model.props.text$.subscribe(() => {
-        this._link();
-      })
-    );
+    if (this.model) {
+      this.disposables.add(
+        this.model.props.text$.subscribe(() => {
+          this._link();
+        })
+      );
+    }
 
     return result;
+  }
+
+  override updated(changedProperties: PropertyValues): void {
+    const result = super.updated(changedProperties);
+    if (changedProperties.has('html')) {
+      this._link();
+    }
+    return result;
+  }
+
+  get normalizedHtml() {
+    return this.model?.props.text.toString() ?? this.html;
   }
 
   private _link() {
     this.state = 'loading';
 
+    if (!this.normalizedHtml) {
+      this.state = 'fallback';
+      return;
+    }
+
     try {
-      linkIframe(this.iframe, this.model);
+      linkIframe(this.iframe, this.normalizedHtml);
       this.state = 'finish';
     } catch (error) {
       console.error('HTML preview iframe failed:', error);

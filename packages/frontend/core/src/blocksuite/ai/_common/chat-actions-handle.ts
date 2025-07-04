@@ -1,4 +1,3 @@
-import { ChatHistoryOrder } from '@affine/graphql';
 import { EdgelessCRUDIdentifier } from '@blocksuite/affine/blocks/surface';
 import {
   Bound,
@@ -69,14 +68,15 @@ export type ChatAction = {
 
 export async function queryHistoryMessages(
   workspaceId: string,
-  docId: string,
-  forkSessionId: string
+  forkSessionId: string,
+  docId?: string
 ) {
   // Get fork session messages
-  const histories = await AIProvider.histories?.chats(workspaceId, docId, {
-    sessionId: forkSessionId,
-    messageOrder: ChatHistoryOrder.asc,
-  });
+  const histories = await AIProvider.histories?.chats(
+    workspaceId,
+    forkSessionId,
+    docId
+  );
 
   if (!histories || !histories.length) {
     return [];
@@ -117,8 +117,8 @@ export async function constructRootChatBlockMessages(
   const userInfo = await AIProvider.userInfo;
   const forkMessages = (await queryHistoryMessages(
     doc.workspace.id,
-    doc.id,
-    forkSessionId
+    forkSessionId,
+    doc.id
   )) as ChatMessage[];
   return constructUserInfoWithMessages(forkMessages, userInfo);
 }

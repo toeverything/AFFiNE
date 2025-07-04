@@ -32,6 +32,7 @@ export const adminServerConfigQuery = {
     baseUrl
     name
     features
+    allowGuestDemoWorkspace
     type
     initialized
     credentialsRequirement {
@@ -333,6 +334,181 @@ export const changePasswordMutation = {
 }`,
 };
 
+export const listCommentChangesQuery = {
+  id: 'listCommentChangesQuery' as const,
+  op: 'listCommentChanges',
+  query: `query listCommentChanges($workspaceId: String!, $docId: String!, $pagination: PaginationInput!) {
+  workspace(id: $workspaceId) {
+    commentChanges(docId: $docId, pagination: $pagination) {
+      totalCount
+      edges {
+        cursor
+        node {
+          action
+          id
+          commentId
+          item
+        }
+      }
+      pageInfo {
+        startCursor
+        endCursor
+        hasNextPage
+        hasPreviousPage
+      }
+    }
+  }
+}`,
+};
+
+export const createCommentMutation = {
+  id: 'createCommentMutation' as const,
+  op: 'createComment',
+  query: `mutation createComment($input: CommentCreateInput!) {
+  createComment(input: $input) {
+    id
+    content
+    resolved
+    createdAt
+    updatedAt
+    user {
+      id
+      name
+      avatarUrl
+    }
+    replies {
+      commentId
+      id
+      content
+      createdAt
+      updatedAt
+      user {
+        id
+        name
+        avatarUrl
+      }
+    }
+  }
+}`,
+};
+
+export const deleteCommentMutation = {
+  id: 'deleteCommentMutation' as const,
+  op: 'deleteComment',
+  query: `mutation deleteComment($id: String!) {
+  deleteComment(id: $id)
+}`,
+};
+
+export const listCommentsQuery = {
+  id: 'listCommentsQuery' as const,
+  op: 'listComments',
+  query: `query listComments($workspaceId: String!, $docId: String!, $pagination: PaginationInput) {
+  workspace(id: $workspaceId) {
+    comments(docId: $docId, pagination: $pagination) {
+      totalCount
+      edges {
+        cursor
+        node {
+          id
+          content
+          resolved
+          createdAt
+          updatedAt
+          user {
+            id
+            name
+            avatarUrl
+          }
+          replies {
+            commentId
+            id
+            content
+            createdAt
+            updatedAt
+            user {
+              id
+              name
+              avatarUrl
+            }
+          }
+        }
+      }
+      pageInfo {
+        startCursor
+        endCursor
+        hasNextPage
+        hasPreviousPage
+      }
+    }
+  }
+}`,
+};
+
+export const createReplyMutation = {
+  id: 'createReplyMutation' as const,
+  op: 'createReply',
+  query: `mutation createReply($input: ReplyCreateInput!) {
+  createReply(input: $input) {
+    commentId
+    id
+    content
+    createdAt
+    updatedAt
+    user {
+      id
+      name
+      avatarUrl
+    }
+  }
+}`,
+};
+
+export const deleteReplyMutation = {
+  id: 'deleteReplyMutation' as const,
+  op: 'deleteReply',
+  query: `mutation deleteReply($id: String!) {
+  deleteReply(id: $id)
+}`,
+};
+
+export const updateReplyMutation = {
+  id: 'updateReplyMutation' as const,
+  op: 'updateReply',
+  query: `mutation updateReply($input: ReplyUpdateInput!) {
+  updateReply(input: $input)
+}`,
+};
+
+export const resolveCommentMutation = {
+  id: 'resolveCommentMutation' as const,
+  op: 'resolveComment',
+  query: `mutation resolveComment($input: CommentResolveInput!) {
+  resolveComment(input: $input)
+}`,
+};
+
+export const updateCommentMutation = {
+  id: 'updateCommentMutation' as const,
+  op: 'updateComment',
+  query: `mutation updateComment($input: CommentUpdateInput!) {
+  updateComment(input: $input)
+}`,
+};
+
+export const uploadCommentAttachmentMutation = {
+  id: 'uploadCommentAttachmentMutation' as const,
+  op: 'uploadCommentAttachment',
+  query: `mutation uploadCommentAttachment($workspaceId: String!, $docId: String!, $attachment: Upload!) {
+  uploadCommentAttachment(
+    workspaceId: $workspaceId
+    docId: $docId
+    attachment: $attachment
+  )
+}`,
+  file: true,
+};
+
 export const addContextCategoryMutation = {
   id: 'addContextCategoryMutation' as const,
   op: 'addContextCategory',
@@ -603,6 +779,108 @@ export const getCopilotHistoryIdsQuery = {
 }`,
 };
 
+export const getCopilotDocSessionsQuery = {
+  id: 'getCopilotDocSessionsQuery' as const,
+  op: 'getCopilotDocSessions',
+  query: `query getCopilotDocSessions($workspaceId: String!, $docId: String!, $options: QueryChatHistoriesInput) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(docId: $docId, options: $options) {
+        sessionId
+        pinned
+        tokens
+        action
+        createdAt
+        messages {
+          id
+          role
+          content
+          streamObjects {
+            type
+            textDelta
+            toolCallId
+            toolName
+            args
+            result
+          }
+          attachments
+          createdAt
+        }
+      }
+    }
+  }
+}`,
+};
+
+export const getCopilotPinnedSessionsQuery = {
+  id: 'getCopilotPinnedSessionsQuery' as const,
+  op: 'getCopilotPinnedSessions',
+  query: `query getCopilotPinnedSessions($workspaceId: String!, $docId: String, $messageOrder: ChatHistoryOrder, $withPrompt: Boolean) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(
+        docId: $docId
+        options: {limit: 1, pinned: true, messageOrder: $messageOrder, withPrompt: $withPrompt}
+      ) {
+        sessionId
+        pinned
+        tokens
+        action
+        createdAt
+        messages {
+          id
+          role
+          content
+          streamObjects {
+            type
+            textDelta
+            toolCallId
+            toolName
+            args
+            result
+          }
+          attachments
+          createdAt
+        }
+      }
+    }
+  }
+}`,
+};
+
+export const getCopilotWorkspaceSessionsQuery = {
+  id: 'getCopilotWorkspaceSessionsQuery' as const,
+  op: 'getCopilotWorkspaceSessions',
+  query: `query getCopilotWorkspaceSessions($workspaceId: String!, $options: QueryChatHistoriesInput) {
+  currentUser {
+    copilot(workspaceId: $workspaceId) {
+      histories(docId: null, options: $options) {
+        sessionId
+        pinned
+        tokens
+        action
+        createdAt
+        messages {
+          id
+          role
+          content
+          streamObjects {
+            type
+            textDelta
+            toolCallId
+            toolName
+            args
+            result
+          }
+          attachments
+          createdAt
+        }
+      }
+    }
+  }
+}`,
+};
+
 export const getCopilotHistoriesQuery = {
   id: 'getCopilotHistoriesQuery' as const,
   op: 'getCopilotHistories',
@@ -798,6 +1076,7 @@ export const getCopilotSessionQuery = {
         parentSessionId
         docId
         pinned
+        title
         promptName
         model
         optionalModels
@@ -847,6 +1126,7 @@ export const getCopilotSessionsQuery = {
         parentSessionId
         docId
         pinned
+        title
         promptName
         model
         optionalModels
@@ -1278,6 +1558,7 @@ export const getUserSettingsQuery = {
     settings {
       receiveInvitationEmail
       receiveMentionEmail
+      receiveCommentEmail
     }
   }
 }`,
@@ -1822,6 +2103,7 @@ export const serverConfigQuery = {
     baseUrl
     name
     features
+    allowGuestDemoWorkspace
     type
     initialized
     credentialsRequirement {

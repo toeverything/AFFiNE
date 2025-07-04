@@ -415,7 +415,7 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
   accessor answer!: string;
 
   @property({ attribute: false })
-  accessor host: EditorHost | null = null;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor schema: Schema | null = null;
@@ -428,7 +428,7 @@ export class TextRenderer extends WithDisposable(ShadowlessElement) {
 }
 
 export const createTextRenderer = (
-  host: EditorHost,
+  host: EditorHost | null | undefined,
   options: TextRendererOptions
 ) => {
   return (answer: string, state?: AffineAIPanelState) => {

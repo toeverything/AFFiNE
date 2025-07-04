@@ -540,6 +540,11 @@
           "description": "Where the server get deployed(FQDN).\n@default \"localhost\"\n@environment `AFFINE_SERVER_HOST`",
           "default": "localhost"
         },
+        "hosts": {
+          "type": "array",
+          "description": "Multiple hosts the server will accept requests from.\n@default []",
+          "default": []
+        },
         "port": {
           "type": "number",
           "description": "Which port the server will listen on.\n@default 3010\n@environment `AFFINE_SERVER_PORT`",
@@ -560,6 +565,11 @@
           "type": "boolean",
           "description": "Only allow users with early access features to access the app\n@default false",
           "default": false
+        },
+        "allowGuestDemoWorkspace": {
+          "type": "boolean",
+          "description": "Whether allow guest users to create demo workspaces.\n@default true",
+          "default": true
         }
       }
     },
@@ -725,6 +735,11 @@
               }
             }
           },
+          "default": {}
+        },
+        "providers.morph": {
+          "type": "object",
+          "description": "The config for the morph provider.\n@default {}",
           "default": {}
         },
         "unsplash": {

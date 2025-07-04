@@ -171,6 +171,10 @@
       "desc": "Where the server get deployed(FQDN).",
       "env": "AFFINE_SERVER_HOST"
     },
+    "hosts": {
+      "type": "Array",
+      "desc": "Multiple hosts the server will accept requests from."
+    },
     "port": {
       "type": "Number",
       "desc": "Which port the server will listen on.",
@@ -186,6 +190,10 @@
     "earlyAccessControl": {
       "type": "Boolean",
       "desc": "Only allow users with early access features to access the app"
+    },
+    "allowGuestDemoWorkspace": {
+      "type": "Boolean",
+      "desc": "Whether allow guest users to create demo workspaces."
     }
   },
   "docService": {
@@ -248,6 +256,10 @@
     "providers.anthropicVertex": {
       "type": "Object",
       "desc": "The config for the anthropic provider in Google Vertex AI."
+    },
+    "providers.morph": {
+      "type": "Object",
+      "desc": "The config for the morph provider."
     },
     "unsplash": {
       "type": "Object",

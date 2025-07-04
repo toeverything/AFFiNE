@@ -2,8 +2,8 @@ import { AIChatBlockComponent } from './blocks/ai-chat-block/ai-chat-block';
 import { EdgelessAIChatBlockComponent } from './blocks/ai-chat-block/ai-chat-edgeless-block';
 import { LitTranscriptionBlock } from './blocks/ai-chat-block/ai-transcription-block';
 import {
-  AIChatMessage,
-  AIChatMessages,
+  AIChatBlockMessage,
+  AIChatBlockMessages,
 } from './blocks/ai-chat-block/components/ai-chat-messages';
 import {
   ChatImage,
@@ -20,10 +20,10 @@ import { ActionMindmap } from './chat-panel/actions/mindmap';
 import { ActionSlides } from './chat-panel/actions/slides';
 import { ActionText } from './chat-panel/actions/text';
 import { AILoading } from './chat-panel/ai-loading';
-import { ChatPanelMessages } from './chat-panel/chat-panel-messages';
 import { ChatMessageAction } from './chat-panel/message/action';
 import { ChatMessageAssistant } from './chat-panel/message/assistant';
 import { ChatMessageUser } from './chat-panel/message/user';
+import { ChatPanelSplitView } from './chat-panel/split-view';
 import { ChatPanelAddPopover } from './components/ai-chat-chips/add-popover';
 import { ChatPanelCandidatesPopover } from './components/ai-chat-chips/candidates-popover';
 import { ChatPanelChips } from './components/ai-chat-chips/chat-panel-chips';
@@ -33,9 +33,12 @@ import { ChatPanelDocChip } from './components/ai-chat-chips/doc-chip';
 import { ChatPanelFileChip } from './components/ai-chat-chips/file-chip';
 import { ChatPanelTagChip } from './components/ai-chat-chips/tag-chip';
 import { AIChatComposer } from './components/ai-chat-composer';
+import { AIChatContent } from './components/ai-chat-content';
 import { AIChatInput } from './components/ai-chat-input';
 import { AIChatEmbeddingStatusTooltip } from './components/ai-chat-input/embedding-status-tooltip';
 import { ChatInputPreference } from './components/ai-chat-input/preference-popup';
+import { AIChatMessages } from './components/ai-chat-messages/ai-chat-messages';
+import { AIChatToolbar, AISessionHistory } from './components/ai-chat-toolbar';
 import { AIHistoryClear } from './components/ai-history-clear';
 import { effects as componentAiItemEffects } from './components/ai-item';
 import { AssistantAvatar } from './components/ai-message-content/assistant-avatar';
@@ -44,7 +47,14 @@ import { ChatContentPureText } from './components/ai-message-content/pure-text';
 import { ChatContentRichText } from './components/ai-message-content/rich-text';
 import { ChatContentStreamObjects } from './components/ai-message-content/stream-objects';
 import { AIScrollableTextRenderer } from './components/ai-scrollable-text-renderer';
+import { ArtifactPreviewPanel } from './components/ai-tools/artifacts-preview-panel';
+import {
+  CodeArtifactTool,
+  CodeHighlighter,
+} from './components/ai-tools/code-artifact';
+import { DocComposeTool } from './components/ai-tools/doc-compose';
 import { ToolCallCard } from './components/ai-tools/tool-call-card';
+import { ToolFailedCard } from './components/ai-tools/tool-failed-card';
 import { ToolResultCard } from './components/ai-tools/tool-result-card';
 import { WebCrawlTool } from './components/ai-tools/web-crawl';
 import { WebSearchTool } from './components/ai-tools/web-search';
@@ -103,7 +113,10 @@ export function registerAIEffects() {
   customElements.define('action-slides', ActionSlides);
   customElements.define('action-text', ActionText);
   customElements.define('ai-loading', AILoading);
-  customElements.define('chat-panel-messages', ChatPanelMessages);
+  customElements.define('ai-chat-content', AIChatContent);
+  customElements.define('ai-chat-toolbar', AIChatToolbar);
+  customElements.define('ai-session-history', AISessionHistory);
+  customElements.define('ai-chat-messages', AIChatMessages);
   customElements.define('chat-panel', ChatPanel);
   customElements.define('ai-chat-input', AIChatInput);
   customElements.define(
@@ -134,8 +147,8 @@ export function registerAIEffects() {
     EdgelessAIChatBlockComponent
   );
   customElements.define('affine-ai-chat', AIChatBlockComponent);
-  customElements.define('ai-chat-message', AIChatMessage);
-  customElements.define('ai-chat-messages', AIChatMessages);
+  customElements.define('ai-chat-block-message', AIChatBlockMessage);
+  customElements.define('ai-chat-block-messages', AIChatBlockMessages);
   customElements.define(
     'ai-scrollable-text-renderer',
     AIScrollableTextRenderer
@@ -167,8 +180,13 @@ export function registerAIEffects() {
 
   customElements.define('tool-call-card', ToolCallCard);
   customElements.define('tool-result-card', ToolResultCard);
+  customElements.define('tool-call-failed', ToolFailedCard);
   customElements.define('web-crawl-tool', WebCrawlTool);
   customElements.define('web-search-tool', WebSearchTool);
+  customElements.define('doc-compose-tool', DocComposeTool);
+  customElements.define('code-artifact-tool', CodeArtifactTool);
+  customElements.define('code-highlighter', CodeHighlighter);
+  customElements.define('artifact-preview-panel', ArtifactPreviewPanel);
 
   customElements.define(AFFINE_AI_PANEL_WIDGET, AffineAIPanelWidget);
   customElements.define(AFFINE_EDGELESS_COPILOT_WIDGET, EdgelessCopilotWidget);
@@ -180,4 +198,5 @@ export function registerAIEffects() {
   );
 
   customElements.define('transcription-block', LitTranscriptionBlock);
+  customElements.define('chat-panel-split-view', ChatPanelSplitView);
 }

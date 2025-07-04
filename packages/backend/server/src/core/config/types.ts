@@ -9,6 +9,7 @@ export enum ServerFeature {
   Payment = 'payment',
   OAuth = 'oauth',
   Indexer = 'indexer',
+  Comment = 'comment',
 }
 
 registerEnumType(ServerFeature, {
@@ -38,4 +39,9 @@ export class ServerConfigType {
 
   @Field(() => [ServerFeature], { description: 'enabled server features' })
   features!: ServerFeature[];
+
+  @Field(() => Boolean, {
+    description: 'Whether allow guest users to create demo workspaces.',
+  })
+  allowGuestDemoWorkspace!: boolean;
 }

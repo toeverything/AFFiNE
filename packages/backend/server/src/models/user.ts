@@ -85,13 +85,13 @@ export class UserModel extends BaseModel {
   async getPublicUsersMap<T extends ItemWithUserId>(
     items: T[]
   ): Promise<Map<string, PublicUser>> {
-    const userIds: string[] = [];
+    const userIds = new Set<string>();
     for (const item of items) {
       if (item.userId) {
-        userIds.push(item.userId);
+        userIds.add(item.userId);
       }
     }
-    const users = await this.getPublicUsers(userIds);
+    const users = await this.getPublicUsers(Array.from(userIds));
     return new Map(users.map(user => [user.id, user]));
   }
 

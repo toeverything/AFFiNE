@@ -1,4 +1,5 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { CopilotSessionType } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { isInsidePageEditor } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
@@ -32,7 +33,10 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   `;
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
+
+  @property({ attribute: false })
+  accessor docId: string | undefined;
 
   @property({ attribute: false })
   accessor item!: ChatMessage;
@@ -53,7 +57,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
-  accessor getSessionId!: () => Promise<string | undefined>;
+  accessor session!: CopilotSessionType | null | undefined;
 
   @property({ attribute: false })
   accessor retry!: () => void;
@@ -62,7 +66,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor testId = 'chat-message-assistant';
 
   @property({ attribute: false })
-  accessor panelWidth!: Signal<number | undefined>;
+  accessor width: Signal<number | undefined> | undefined;
 
   get state() {
     const { isLast, status } = this;
@@ -98,7 +102,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       ${streamObjects?.length
         ? this.renderStreamObjects(streamObjects)
         : this.renderRichText(content)}
-      ${shouldRenderError ? AIChatErrorRenderer(host, error) : nothing}
+      ${shouldRenderError ? AIChatErrorRenderer(error, host) : nothing}
       ${this.renderEditorActions()}
     `;
   }
@@ -117,7 +121,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
       .answer=${answer}
       .host=${this.host}
       .state=${this.state}
-      .width=${this.panelWidth}
+      .width=${this.width}
       .extensions=${this.extensions}
       .affineFeatureFlagService=${this.affineFeatureFlagService}
     ></chat-content-stream-objects>`;
@@ -134,7 +138,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   }
 
   private renderEditorActions() {
-    const { item, isLast, status } = this;
+    const { item, isLast, status, host, session, docId } = this;
 
     if (!isChatMessage(item) || item.role !== 'assistant') return nothing;
 
@@ -146,33 +150,36 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
     )
       return nothing;
 
-    const { host } = this;
     const { content, streamObjects, id: messageId } = item;
     const markdown = streamObjects?.length
       ? mergeStreamContent(streamObjects)
       : content;
 
-    const actions = isInsidePageEditor(host)
-      ? PageEditorActions
-      : EdgelessEditorActions;
+    const actions = host
+      ? isInsidePageEditor(host)
+        ? PageEditorActions
+        : EdgelessEditorActions
+      : null;
+
+    const showActions = host && docId && !!markdown;
 
     return html`
       <chat-copy-more
         .host=${host}
-        .actions=${actions}
+        .session=${session}
+        .actions=${showActions ? actions : []}
         .content=${markdown}
         .isLast=${isLast}
-        .getSessionId=${this.getSessionId}
         .messageId=${messageId}
         .withMargin=${true}
         .retry=${() => this.retry()}
       ></chat-copy-more>
-      ${isLast && !!markdown
+      ${isLast && showActions
         ? html`<chat-action-list
             .actions=${actions}
             .host=${host}
+            .session=${session}
             .content=${markdown}
-            .getSessionId=${this.getSessionId}
             .messageId=${messageId ?? undefined}
             .withMargin=${true}
           ></chat-action-list>`

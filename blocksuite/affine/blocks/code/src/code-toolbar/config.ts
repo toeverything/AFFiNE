@@ -7,9 +7,10 @@ import {
   WrapIcon,
 } from '@blocksuite/affine-components/icons';
 import type { MenuItemGroup } from '@blocksuite/affine-components/toolbar';
+import { CommentProviderIdentifier } from '@blocksuite/affine-shared/services';
 import { isInsidePageEditor } from '@blocksuite/affine-shared/utils';
 import { noop, sleep } from '@blocksuite/global/utils';
-import { NumberedListIcon } from '@blocksuite/icons/lit';
+import { CommentIcon, NumberedListIcon } from '@blocksuite/icons/lit';
 import { BlockSelection } from '@blocksuite/std';
 import { html } from 'lit';
 import { ifDefined } from 'lit/directives/if-defined.js';
@@ -110,6 +111,47 @@ export const PRIMARY_GROUPS: MenuItemGroup<CodeBlockToolbarContext>[] = [
                 ${item.icon}
               </editor-icon-button>
             `,
+          };
+        },
+      },
+      {
+        type: 'comment',
+        label: 'Comment',
+        tooltip: 'Comment',
+        icon: CommentIcon({
+          width: '20',
+          height: '20',
+        }),
+        when: ({ std }) => !!std.getOptional(CommentProviderIdentifier),
+        generate: ({ blockComponent }) => {
+          return {
+            action: () => {
+              const commentProvider = blockComponent.std.getOptional(
+                CommentProviderIdentifier
+              );
+              if (!commentProvider) return;
+
+              commentProvider.addComment([
+                new BlockSelection({
+                  blockId: blockComponent.model.id,
+                }),
+              ]);
+            },
+            render: item =>
+              html`<editor-icon-button
+                class="code-toolbar-button comment"
+                aria-label=${ifDefined(item.label)}
+                .tooltip=${item.label}
+                .tooltipOffset=${4}
+                .iconSize=${'16px'}
+                .iconContainerPadding=${4}
+                @click=${(e: MouseEvent) => {
+                  e.stopPropagation();
+                  item.action();
+                }}
+              >
+                ${item.icon}
+              </editor-icon-button>`,
           };
         },
       },

@@ -36,6 +36,9 @@ test.describe('AIAction/GenerateAnImageWithImage', () => {
     await expect(answer.getByTestId('ai-answer-image')).toBeVisible();
     const insert = answer.getByTestId('answer-insert-below');
     await insert.click();
+    await page.waitForSelector('.affine-image-container');
+    await page.reload();
+
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'action',

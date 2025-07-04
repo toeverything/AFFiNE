@@ -9,7 +9,9 @@ export const LinkInlineSpecExtension =
     const std = provider.get(StdIdentifier);
     return {
       name: 'link',
-      schema: z.string().optional().nullable().catch(undefined),
+      schema: z.object({
+        link: z.string().optional().nullable().catch(undefined),
+      }),
       match: delta => {
         return !!delta.attributes?.link;
       },

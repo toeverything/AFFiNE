@@ -1,4 +1,5 @@
 import { ExcalidrawEmbedConfig } from './excalidraw';
+import { GenericEmbedConfig } from './generic';
 import { GoogleDocsEmbedConfig } from './google-docs';
 import { GoogleDriveEmbedConfig } from './google-drive';
 import { MiroEmbedConfig } from './miro';
@@ -10,4 +11,5 @@ export const EmbedIframeConfigExtensions = [
   MiroEmbedConfig,
   ExcalidrawEmbedConfig,
   GoogleDocsEmbedConfig,
+  GenericEmbedConfig,
 ];

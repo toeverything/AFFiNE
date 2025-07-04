@@ -1,6 +1,6 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
+import { ImageProxyService } from '@blocksuite/affine/shared/adapters';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
@@ -21,20 +21,13 @@ export class ChatContentStreamObjects extends WithDisposable(
       border-radius: 8px;
       background-color: rgba(0, 0, 0, 0.05);
     }
-
-    .tool-wrapper {
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: 0.5px solid ${unsafeCSSVarV2('layer/insideBorder/border')};
-    }
   `;
 
   @property({ attribute: false })
   accessor answer!: StreamObject[];
 
   @property({ attribute: false })
-  accessor host!: EditorHost;
+  accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
   accessor state: AffineAIPanelState = 'finished';
@@ -52,30 +45,48 @@ export class ChatContentStreamObjects extends WithDisposable(
     if (streamObject.type !== 'tool-call') {
       return nothing;
     }
-
+    const imageProxyService = this.host?.store.get(ImageProxyService);
     switch (streamObject.toolName) {
       case 'web_crawl_exa':
         return html`
           <web-crawl-tool
             .data=${streamObject}
-            .host=${this.host}
             .width=${this.width}
+            .imageProxyService=${imageProxyService}
           ></web-crawl-tool>
         `;
       case 'web_search_exa':
         return html`
           <web-search-tool
             .data=${streamObject}
-            .host=${this.host}
             .width=${this.width}
+            .imageProxyService=${imageProxyService}
           ></web-search-tool>
         `;
-      default:
+      case 'doc_compose':
         return html`
-          <div class="tool-wrapper">
-            ${streamObject.toolName} tool calling...
-          </div>
+          <doc-compose-tool
+            .std=${this.host?.std}
+            .data=${streamObject}
+            .width=${this.width}
+            .imageProxyService=${imageProxyService}
+          ></doc-compose-tool>
         `;
+      case 'code_artifact':
+        return html`
+          <code-artifact-tool
+            .std=${this.host?.std}
+            .data=${streamObject}
+            .width=${this.width}
+            .imageProxyService=${imageProxyService}
+          ></code-artifact-tool>
+        `;
+      default: {
+        const name = streamObject.toolName + ' tool calling';
+        return html`
+          <tool-call-card .name=${name} .width=${this.width}></tool-call-card>
+        `;
+      }
     }
   }
 
@@ -83,30 +94,52 @@ export class ChatContentStreamObjects extends WithDisposable(
     if (streamObject.type !== 'tool-result') {
       return nothing;
     }
-
+    const imageProxyService = this.host?.store.get(ImageProxyService);
     switch (streamObject.toolName) {
       case 'web_crawl_exa':
         return html`
           <web-crawl-tool
             .data=${streamObject}
-            .host=${this.host}
             .width=${this.width}
+            .imageProxyService=${imageProxyService}
           ></web-crawl-tool>
         `;
       case 'web_search_exa':
         return html`
           <web-search-tool
             .data=${streamObject}
-            .host=${this.host}
             .width=${this.width}
+            .imageProxyService=${imageProxyService}
           ></web-search-tool>
         `;
-      default:
+      case 'doc_compose':
         return html`
-          <div class="tool-wrapper">
-            ${streamObject.toolName} tool result...
-          </div>
+          <doc-compose-tool
+            .std=${this.host?.std}
+            .data=${streamObject}
+            .width=${this.width}
+            .imageProxyService=${imageProxyService}
+          ></doc-compose-tool>
         `;
+      case 'code_artifact':
+        return html`
+          <code-artifact-tool
+            .std=${this.host?.std}
+            .data=${streamObject}
+            .width=${this.width}
+            .imageProxyService=${imageProxyService}
+          ></code-artifact-tool>
+        `;
+      default: {
+        const name = streamObject.toolName + ' tool result';
+        return html`
+          <tool-result-card
+            .name=${name}
+            .width=${this.width}
+            .imageProxyService=${imageProxyService}
+          ></tool-result-card>
+        `;
+      }
     }
   }
 

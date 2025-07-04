@@ -58,6 +58,7 @@ test.beforeEach(async t => {
     workspaceId: workspace.id,
     docId,
     userId: user.id,
+    title: null,
     promptName: 'prompt-name',
     promptAction: null,
   });

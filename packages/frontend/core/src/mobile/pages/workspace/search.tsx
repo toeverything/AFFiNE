@@ -10,6 +10,7 @@ import {
   QuickSearchTagIcon,
 } from '@affine/core/modules/quicksearch';
 import { TagService } from '@affine/core/modules/tag';
+import { UserFriendlyError } from '@affine/error';
 import { useI18n } from '@affine/i18n';
 import { sleep } from '@blocksuite/affine/global/utils';
 import { ViewLayersIcon } from '@blocksuite/icons/rc';
@@ -105,13 +106,17 @@ const WithQueryList = () => {
   const docList = useLiveData(searchService.docs.items$);
   const tagList = useLiveData(searchService.tags.items$);
 
+  const error = useLiveData(searchService.docs.error$);
+
   const docs = useMemo(
     () =>
-      docList.map(item => ({
-        id: item.payload.docId,
-        icon: item.icon,
-        title: <SearchResLabel item={item} />,
-      })),
+      docList
+        .filter(item => item.id !== 'search-locally')
+        .map(item => ({
+          id: item.payload.docId,
+          icon: item.icon,
+          title: <SearchResLabel item={item} />,
+        })),
     [docList]
   );
 
@@ -121,6 +126,7 @@ const WithQueryList = () => {
       docs={docs}
       collections={collectionList}
       tags={tagList}
+      error={error ? UserFriendlyError.fromAny(error).message : null}
     />
   );
 };

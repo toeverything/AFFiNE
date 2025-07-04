@@ -17,7 +17,7 @@ test.describe('AIBasic/Chat', () => {
     await expect(page.getByTestId('ai-onboarding')).toBeVisible();
   });
 
-  test('should display embedding status tooltip', async ({
+  test('should open embedding settings when clicking check status button', async ({
     loggedInPage: page,
     utils,
   }) => {
@@ -32,12 +32,8 @@ test.describe('AIBasic/Chat', () => {
     );
     await expect(check).toBeVisible({ timeout: 50 * 1000 });
 
-    await check.hover();
-    const tooltip = await page.getByTestId('ai-chat-embedding-status-tooltip');
-    await expect(tooltip).toBeVisible();
-    await expect(tooltip).toHaveText(
-      /Results will improve after embedding|Embedding finished/
-    );
+    await check.click();
+    await expect(page.getByTestId('workspace-setting:embedding')).toBeVisible();
   });
 
   test(`should send message and receive AI response:
@@ -347,25 +343,6 @@ test.describe('AIBasic/Chat', () => {
     ]);
   });
 
-  test('should support clearing chat', async ({
-    loggedInPage: page,
-    utils,
-  }) => {
-    await utils.chatPanel.openChatPanel(page);
-    await utils.chatPanel.makeChat(page, 'Hello. Answer in 50 words.');
-    await utils.chatPanel.waitForHistory(page, [
-      {
-        role: 'user',
-        content: 'Hello. Answer in 50 words.',
-      },
-      {
-        role: 'assistant',
-        status: 'success',
-      },
-    ]);
-    await utils.chatPanel.clearChat(page);
-    await utils.chatPanel.waitForHistory(page, []);
-  });
   test('should support copying answer', async ({
     loggedInPage: page,
     utils,

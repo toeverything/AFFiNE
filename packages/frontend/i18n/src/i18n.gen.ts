@@ -4520,9 +4520,19 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.quicksearch.group.creation"](): string;
     /**
+      * `Search locally`
+      */
+    ["com.affine.quicksearch.search-locally"](): string;
+    /**
       * `Search for "{{query}}"`
       */
     ["com.affine.quicksearch.group.searchfor"](options: {
+        readonly query: string;
+    }): string;
+    /**
+      * `Search for "{{query}}" (locally)`
+      */
+    ["com.affine.quicksearch.group.searchfor-locally"](options: {
         readonly query: string;
     }): string;
     /**
@@ -4815,6 +4825,14 @@ export function useAFFiNEI18N(): {
       * `Invitation related messages will be sent through emails.`
       */
     ["com.affine.setting.notifications.email.invites.subtitle"](): string;
+    /**
+      * `Comments`
+      */
+    ["com.affine.setting.notifications.email.comments.title"](): string;
+    /**
+      * `You will be notified through email when other members of the workspace comment on your docs.`
+      */
+    ["com.affine.setting.notifications.email.comments.subtitle"](): string;
     /**
       * `Account settings`
       */
@@ -5692,6 +5710,14 @@ export function useAFFiNEI18N(): {
       * `Enable or disable AI model switch feature.`
       */
     ["com.affine.settings.workspace.experimental-features.enable-ai-model-switch.description"](): string;
+    /**
+      * `Enable AI Playground`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-playground.name"](): string;
+    /**
+      * `Enable or disable AI playground feature.`
+      */
+    ["com.affine.settings.workspace.experimental-features.enable-ai-playground.description"](): string;
     /**
       * `Database Full Width`
       */
@@ -8205,6 +8231,50 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.migration-all-docs-notification.button"](): string;
     /**
+      * `Comments`
+      */
+    ["com.affine.comment.comments"](): string;
+    /**
+      * `No comments yet`
+      */
+    ["com.affine.comment.no-comments"](): string;
+    /**
+      * `Delete the thread?`
+      */
+    ["com.affine.comment.delete.confirm.title"](): string;
+    /**
+      * `All comments will also be deleted, and this action cannot be undone.`
+      */
+    ["com.affine.comment.delete.confirm.description"](): string;
+    /**
+      * `Delete this reply?`
+      */
+    ["com.affine.comment.reply.delete.confirm.title"](): string;
+    /**
+      * `Delete this reply? This action cannot be undone.`
+      */
+    ["com.affine.comment.reply.delete.confirm.description"](): string;
+    /**
+      * `Show resolved comments`
+      */
+    ["com.affine.comment.filter.show-resolved"](): string;
+    /**
+      * `Only my replies and mentions`
+      */
+    ["com.affine.comment.filter.only-my-replies"](): string;
+    /**
+      * `Only current mode`
+      */
+    ["com.affine.comment.filter.only-current-mode"](): string;
+    /**
+      * `Reply`
+      */
+    ["com.affine.comment.reply"](): string;
+    /**
+      * `Copy link`
+      */
+    ["com.affine.comment.copy-link"](): string;
+    /**
       * `An internal error occurred.`
       */
     ["error.INTERNAL_SERVER_ERROR"](): string;
@@ -8875,6 +8945,22 @@ export function useAFFiNEI18N(): {
     ["error.INVALID_INDEXER_INPUT"](options: {
         readonly reason: string;
     }): string;
+    /**
+      * `Comment not found.`
+      */
+    ["error.COMMENT_NOT_FOUND"](): string;
+    /**
+      * `Reply not found.`
+      */
+    ["error.REPLY_NOT_FOUND"](): string;
+    /**
+      * `Comment attachment not found.`
+      */
+    ["error.COMMENT_ATTACHMENT_NOT_FOUND"](): string;
+    /**
+      * `You have exceeded the comment attachment size quota.`
+      */
+    ["error.COMMENT_ATTACHMENT_QUOTA_EXCEEDED"](): string;
 } { const { t } = useTranslation(); return useMemo(() => createProxy((key) => t.bind(null, key)), [t]); }
 function createComponent(i18nKey: string) {
     return (props) => createElement(Trans, { i18nKey, shouldUnescape: true, ...props });
@@ -9354,6 +9440,26 @@ export const TypedTrans: {
       * `<1>{{username}}</1> mentioned you in <2>{{docTitle}}</2>`
       */
     ["com.affine.notification.mention"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        docTitle: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> commented in <2>{{docTitle}}</2>`
+      */
+    ["com.affine.notification.comment"]: ComponentType<TypedTransProps<Readonly<{
+        username: string;
+        docTitle: string;
+    }>, {
+        ["1"]: JSX.Element;
+        ["2"]: JSX.Element;
+    }>>;
+    /**
+      * `<1>{{username}}</1> mentioned you in a comment in <2>{{docTitle}}</2>`
+      */
+    ["com.affine.notification.comment-mention"]: ComponentType<TypedTransProps<Readonly<{
         username: string;
         docTitle: string;
     }>, {

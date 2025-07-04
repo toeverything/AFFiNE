@@ -1,6 +1,7 @@
 import { ImageBlockModel } from '@blocksuite/affine-model';
 import {
   ActionPlacement,
+  blockCommentToolbarButton,
   type ToolbarModuleConfig,
   ToolbarModuleExtension,
 } from '@blocksuite/affine-shared/services';
@@ -48,6 +49,10 @@ const builtinToolbarConfig = {
           control: 'add caption',
         });
       },
+    },
+    {
+      id: 'c.comment',
+      ...blockCommentToolbarButton,
     },
     {
       placement: ActionPlacement.More,
@@ -140,6 +145,10 @@ const builtinSurfaceToolbarConfig = {
           control: 'add caption',
         });
       },
+    },
+    {
+      id: 'c.comment',
+      ...blockCommentToolbarButton,
     },
   ],
 
