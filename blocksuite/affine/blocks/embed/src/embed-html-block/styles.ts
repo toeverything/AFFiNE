@@ -18,7 +18,7 @@ export const styles = css`
     border-radius: 12px;
     border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
 
-    background: var(--affine-background-primary-color);
+    background: ${unsafeCSSVarV2('layer/background/primary')};
     user-select: none;
   }
 
