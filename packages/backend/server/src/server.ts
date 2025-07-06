@@ -60,11 +60,10 @@ export async function run() {
   app.useWebSocketAdapter(adapter);
 
   const url = app.get(URLHelper);
-  const listeningHost = '0.0.0.0';
 
-  await app.listen(config.server.port, listeningHost);
+  await app.listen(config.server.port, config.server.host);
 
   logger.log(`AFFiNE Server is running in [${env.DEPLOYMENT_TYPE}] mode`);
-  logger.log(`Listening on http://${listeningHost}:${config.server.port}`);
+  logger.log(`Listening on http://${config.server.host}:${config.server.port}`);
   logger.log(`And the public server should be recognized as ${url.baseUrl}`);
 }
