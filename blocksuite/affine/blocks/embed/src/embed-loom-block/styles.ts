@@ -1,3 +1,4 @@
+import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css, html } from 'lit';
 
 export const styles = css`
@@ -12,7 +13,7 @@ export const styles = css`
     height: 100%;
 
     border-radius: 8px;
-    border: 1px solid var(--affine-background-tertiary-color);
+    border: 1px solid ${unsafeCSSVarV2('layer/background/tertiary')};
 
     background: var(--affine-background-primary-color);
     user-select: none;
