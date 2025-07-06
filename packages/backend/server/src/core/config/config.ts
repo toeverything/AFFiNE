@@ -51,7 +51,7 @@ Default to be \`[server.protocol]://[server.host][:server.port]\` if not specifi
   },
   host: {
     desc: 'Where the server get deployed(FQDN).',
-    default: 'localhost',
+    default: '0.0.0.0',
     env: 'AFFINE_SERVER_HOST',
   },
   hosts: {
