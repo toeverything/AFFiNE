@@ -9,7 +9,7 @@ import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import { DocModeProvider } from '@blocksuite/affine/shared/services';
 import { createSignalFromObservable } from '@blocksuite/affine/shared/utils';
 import { useFramework, useService } from '@toeverything/infra';
-import { forwardRef, useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 
 import * as styles from './chat.css';
 
@@ -119,20 +119,25 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     playgroundConfig,
   ]);
 
+  const [autoResized, setAutoResized] = useState(false);
   useEffect(() => {
+    // after auto expanded first time, do not auto expand again(even if user manually resized)
+    if (autoResized) return;
     const subscription = AIProvider.slots.previewPanelOpenChange.subscribe(
       open => {
         if (!open) return;
         const sidebarWidth = workbench.sidebarWidth$.value;
-        if (!sidebarWidth || sidebarWidth < 800) {
-          workbench.setSidebarWidth(800);
+        const MIN_SIDEBAR_WIDTH = 1080;
+        if (!sidebarWidth || sidebarWidth < MIN_SIDEBAR_WIDTH) {
+          workbench.setSidebarWidth(MIN_SIDEBAR_WIDTH);
+          setAutoResized(true);
         }
       }
     );
     return () => {
       subscription.unsubscribe();
     };
-  }, [workbench]);
+  }, [autoResized, workbench]);
 
   return <div className={styles.root} ref={containerRef} />;
 });
