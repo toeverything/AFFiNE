@@ -52,7 +52,7 @@ export const commitButton = style({
   height: '28px',
   fontSize: 20,
   selectors: {
-    '&[data-disabled="true"]': {
+    '&[disabled]': {
       background: cssVarV2('button/disable'),
       cursor: 'default',
     },

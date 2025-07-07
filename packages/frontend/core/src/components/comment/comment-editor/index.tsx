@@ -93,6 +93,8 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
     const snapshotHelper = useService(SnapshotHelper);
     const editorRef = useRef<PageEditor>(null);
 
+    const [empty, setEmpty] = useState(true);
+
     useImperativeHandle(
       ref,
       () => ({
@@ -138,12 +140,15 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
     }, [autoFocus, doc]);
 
     useEffect(() => {
-      if (doc && onChange) {
+      if (doc) {
         const subscription = doc.slots.blockUpdated.subscribe(() => {
-          const snapshot = snapshotHelper.getSnapshot(doc);
-          if (snapshot) {
-            onChange?.(snapshot);
+          if (onChange) {
+            const snapshot = snapshotHelper.getSnapshot(doc);
+            if (snapshot) {
+              onChange?.(snapshot);
+            }
           }
+          setEmpty(snapshotHelper.isDocEmpty(doc));
         });
         return () => {
           subscription?.unsubscribe();
@@ -152,7 +157,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
       return;
     }, [doc, onChange, snapshotHelper]);
 
-    // Add keydown handler to commit on Enter key
+    // Add keydown handler to commit on CMD/CTRL + Enter key
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
         if (readonly) return;
@@ -161,8 +166,8 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
         const activeElement = document.activeElement;
         if (!editorRef.current?.contains(activeElement)) return;
 
-        // If Enter is pressed without Shift key, commit the comment
-        if (e.key === 'Enter' && !e.shiftKey) {
+        // If Enter is pressed with CMD/CTRL key, commit the comment
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
           e.preventDefault();
           e.stopPropagation();
           onCommit?.();
@@ -191,7 +196,11 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
         {doc && <LitDocEditor ref={editorRef} specs={specs} doc={doc} />}
         {!readonly && (
           <div className={styles.footer}>
-            <button onClick={onCommit} className={styles.commitButton}>
+            <button
+              onClick={onCommit}
+              className={styles.commitButton}
+              disabled={empty}
+            >
               <ArrowUpBigIcon />
             </button>
           </div>
