@@ -688,7 +688,7 @@ e2e(
 );
 
 e2e(
-  'should create reply and send comment mention notification to comment author',
+  'should create reply and send comment notification to comment author',
   async t => {
     const docId = randomUUID();
     await app.create(Mockers.DocUser, {
@@ -740,12 +740,12 @@ e2e(
     t.is(notification.name, 'notification.sendComment');
     t.is(notification.payload.userId, member.id);
     t.is(notification.payload.body.replyId, result.createReply.id);
-    t.is(notification.payload.isMention, true);
+    t.is(notification.payload.isMention, undefined);
   }
 );
 
 e2e(
-  'should create reply and send comment mention notification to comment author only when author is doc owner',
+  'should create reply and send comment notification to comment author only when author is doc owner',
   async t => {
     const docId = randomUUID();
     await app.create(Mockers.DocUser, {
@@ -796,7 +796,140 @@ e2e(
     t.is(notification.name, 'notification.sendComment');
     t.is(notification.payload.userId, member.id);
     t.is(notification.payload.body.replyId, result.createReply.id);
-    t.is(notification.payload.isMention, true);
+    t.is(notification.payload.isMention, undefined);
+  }
+);
+
+e2e('should send comment mention notification is high priority', async t => {
+  const docId = randomUUID();
+  await app.create(Mockers.DocUser, {
+    workspaceId: teamWorkspace.id,
+    docId,
+    userId: member.id,
+    type: DocRole.Owner,
+  });
+
+  await app.login(member);
+  const createResult = await app.gql({
+    query: createCommentMutation,
+    variables: {
+      input: {
+        workspaceId: teamWorkspace.id,
+        docId,
+        docMode: DocMode.page,
+        docTitle: 'test',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test' }],
+        },
+      },
+    },
+  });
+
+  await app.login(owner);
+  const count = app.queue.count('notification.sendComment');
+  const result = await app.gql({
+    query: createReplyMutation,
+    variables: {
+      input: {
+        commentId: createResult.createComment.id,
+        docMode: DocMode.page,
+        docTitle: 'test',
+        content: {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'test' }],
+        },
+        mentions: [member.id],
+      },
+    },
+  });
+
+  t.truthy(result.createReply.id);
+  t.is(result.createReply.commentId, createResult.createComment.id);
+  t.is(app.queue.count('notification.sendComment'), count + 1);
+  const notification = app.queue.last('notification.sendComment');
+  t.is(notification.name, 'notification.sendComment');
+  t.is(notification.payload.userId, member.id);
+  t.is(notification.payload.body.replyId, result.createReply.id);
+  t.is(notification.payload.isMention, true);
+});
+
+e2e(
+  'should create reply and send comment notification to all repliers',
+  async t => {
+    const docId = randomUUID();
+    await app.create(Mockers.DocUser, {
+      workspaceId: teamWorkspace.id,
+      docId,
+      userId: member.id,
+      type: DocRole.Owner,
+    });
+    await app.create(Mockers.DocUser, {
+      workspaceId: teamWorkspace.id,
+      docId,
+      userId: other.id,
+      type: DocRole.Commenter,
+    });
+
+    await app.login(member);
+    const createResult = await app.gql({
+      query: createCommentMutation,
+      variables: {
+        input: {
+          workspaceId: teamWorkspace.id,
+          docId,
+          docMode: DocMode.page,
+          docTitle: 'test',
+          content: {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'test' }],
+          },
+        },
+      },
+    });
+
+    await app.login(owner);
+    await app.gql({
+      query: createReplyMutation,
+      variables: {
+        input: {
+          commentId: createResult.createComment.id,
+          docMode: DocMode.page,
+          docTitle: 'test',
+          content: {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'test' }],
+          },
+        },
+      },
+    });
+
+    // notify to all repliers: member and owner
+    const count = app.queue.count('notification.sendComment');
+    await app.login(other);
+    const result = await app.gql({
+      query: createReplyMutation,
+      variables: {
+        input: {
+          commentId: createResult.createComment.id,
+          docMode: DocMode.page,
+          docTitle: 'test',
+          content: {
+            type: 'paragraph',
+            content: [{ type: 'text', text: 'test' }],
+          },
+        },
+      },
+    });
+
+    t.truthy(result.createReply.id);
+    t.is(result.createReply.commentId, createResult.createComment.id);
+    t.is(app.queue.count('notification.sendComment'), count + 2);
+    const notification = app.queue.last('notification.sendComment');
+    t.is(notification.name, 'notification.sendComment');
+    t.is(notification.payload.userId, owner.id);
+    t.is(notification.payload.body.replyId, result.createReply.id);
+    t.is(notification.payload.isMention, undefined);
   }
 );
 

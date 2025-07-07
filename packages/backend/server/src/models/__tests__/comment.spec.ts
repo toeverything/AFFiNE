@@ -524,3 +524,43 @@ test('should list changes', async t => {
   });
   t.is(changes5.length, 0);
 });
+
+test('should list replies', async t => {
+  const docId = randomUUID();
+  const comment = await models.comment.create({
+    content: {
+      type: 'paragraph',
+      content: [{ type: 'text', text: 'test' }],
+    },
+    workspaceId: workspace.id,
+    docId,
+    userId: owner.id,
+  });
+
+  const reply1 = await models.comment.createReply({
+    userId: owner.id,
+    content: {
+      type: 'paragraph',
+      content: [{ type: 'text', text: 'test reply1' }],
+    },
+    commentId: comment.id,
+  });
+
+  const reply2 = await models.comment.createReply({
+    userId: owner.id,
+    content: {
+      type: 'paragraph',
+      content: [{ type: 'text', text: 'test reply2' }],
+    },
+    commentId: comment.id,
+  });
+
+  const replies = await models.comment.listReplies(
+    workspace.id,
+    docId,
+    comment.id
+  );
+  t.is(replies.length, 2);
+  t.is(replies[0].id, reply1.id);
+  t.is(replies[1].id, reply2.id);
+});

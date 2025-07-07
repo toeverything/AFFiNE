@@ -375,10 +375,7 @@ export class CommentResolver {
     reply?: Reply
   ) {
     const mentionUserIds = new Set(mentions);
-    // send comment mention notification to comment author on reply
-    if (reply) {
-      mentionUserIds.add(comment.userId);
-    }
+    const notifyUserIds = new Set<string>();
 
     // send comment mention notification to mentioned users
     for (const mentionUserId of mentionUserIds) {
@@ -420,26 +417,41 @@ export class CommentResolver {
       comment.workspaceId,
       comment.docId
     );
-    // if the owner is not in the mention user ids, send comment notification to the owner
-    if (
-      owner &&
-      owner.userId !== sender.id &&
-      !mentionUserIds.has(owner.userId)
-    ) {
-      await this.queue.add('notification.sendComment', {
-        userId: owner.userId,
-        body: {
-          workspaceId: comment.workspaceId,
-          createdByUserId: sender.id,
-          commentId: comment.id,
-          replyId: reply?.id,
-          doc: {
-            id: comment.docId,
-            title: docTitle,
-            mode: docMode,
+    if (owner) {
+      notifyUserIds.add(owner.userId);
+    }
+
+    // send comment notification to all repliers and comment author
+    if (reply) {
+      notifyUserIds.add(comment.userId);
+      const replies = await this.models.comment.listReplies(
+        comment.workspaceId,
+        comment.docId,
+        comment.id
+      );
+      for (const reply of replies) {
+        notifyUserIds.add(reply.userId);
+      }
+    }
+
+    for (const userId of notifyUserIds) {
+      // skip if the user is the sender or mentioned
+      if (userId !== sender.id && !mentionUserIds.has(userId)) {
+        await this.queue.add('notification.sendComment', {
+          userId,
+          body: {
+            workspaceId: comment.workspaceId,
+            createdByUserId: sender.id,
+            commentId: comment.id,
+            replyId: reply?.id,
+            doc: {
+              id: comment.docId,
+              title: docTitle,
+              mode: docMode,
+            },
           },
-        },
-      });
+        });
+      }
     }
   }
 
