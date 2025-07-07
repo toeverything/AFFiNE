@@ -378,7 +378,7 @@ export class InnerSlashMenu extends WithDisposable(LitElement) {
       this._closeSubMenu();
     });
 
-    const subMenuElement = createLitPortal({
+    const { portal: subMenuElement } = createLitPortal({
       shadowDom: false,
       template: html`<inner-slash-menu
         .context=${this.context}
