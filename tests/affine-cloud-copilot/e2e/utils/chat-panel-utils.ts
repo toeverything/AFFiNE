@@ -199,9 +199,11 @@ export class ChatPanelUtils {
   }
 
   public static async chatWithDoc(page: Page, docName: string) {
-    const withButton = await page.getByTestId('chat-panel-with-button');
+    const withButton = page.getByTestId('chat-panel-with-button');
+    await withButton.hover();
     await withButton.click();
-    const withMenu = await page.getByTestId('ai-add-popover');
+    const withMenu = page.getByTestId('ai-add-popover');
+    await withMenu.waitFor({ state: 'visible' });
     await withMenu.getByText(docName).click();
     await page.getByTestId('chat-panel-chips').getByText(docName);
   }
@@ -221,9 +223,20 @@ export class ChatPanelUtils {
       await withButton.hover();
       await withButton.click();
       const withMenu = page.getByTestId('ai-add-popover');
+      await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-files').click();
       const fileChooser = await fileChooserPromise;
       await fileChooser.setFiles(attachment);
+
+      await expect(async () => {
+        const states = await page
+          .getByTestId('chat-panel-chip')
+          .evaluateAll(elements =>
+            elements.map(el => el.getAttribute('data-state'))
+          );
+
+        expect(states.every(state => state === 'finished')).toBe(true);
+      }).toPass({ timeout: 20000 });
     }
     await expect(async () => {
       const states = await page
@@ -267,9 +280,11 @@ export class ChatPanelUtils {
 
   public static async chatWithTags(page: Page, tags: string[]) {
     for (const tag of tags) {
-      const withButton = await page.getByTestId('chat-panel-with-button');
+      const withButton = page.getByTestId('chat-panel-with-button');
+      await withButton.hover();
       await withButton.click();
-      const withMenu = await page.getByTestId('ai-add-popover');
+      const withMenu = page.getByTestId('ai-add-popover');
+      await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-tags').click();
       await withMenu.getByText(tag).click();
       await page.getByTestId('chat-panel-chips').getByText(tag);
@@ -282,9 +297,11 @@ export class ChatPanelUtils {
 
   public static async chatWithCollections(page: Page, collections: string[]) {
     for (const collection of collections) {
-      const withButton = await page.getByTestId('chat-panel-with-button');
+      const withButton = page.getByTestId('chat-panel-with-button');
+      await withButton.hover();
       await withButton.click();
-      const withMenu = await page.getByTestId('ai-add-popover');
+      const withMenu = page.getByTestId('ai-add-popover');
+      await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-collections').click();
       await withMenu.getByText(collection).click();
       await page.getByTestId('chat-panel-chips').getByText(collection);

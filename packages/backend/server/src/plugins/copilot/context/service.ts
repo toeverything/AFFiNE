@@ -215,7 +215,6 @@ export class CopilotContextService implements OnApplicationBootstrap {
           topK * 2,
           threshold
         ),
-
         this.models.copilotContext.matchWorkspaceEmbedding(
           embedding,
           workspaceId,
@@ -237,8 +236,9 @@ export class CopilotContextService implements OnApplicationBootstrap {
       !fileChunks.length &&
       !workspaceChunks.length &&
       !scopedWorkspaceChunks?.length
-    )
+    ) {
       return [];
+    }
 
     return await this.embeddingClient.reRank(
       content,

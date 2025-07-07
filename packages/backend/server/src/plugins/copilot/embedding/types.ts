@@ -176,17 +176,15 @@ export abstract class EmbeddingClient {
 }
 
 const ReRankItemSchema = z.object({
-  scores: z.object({
-    chunk: z.string().describe('The chunk index of the search result.'),
-    targetId: z.string().describe('The id of the target.'),
-    score: z
-      .number()
-      .min(0)
-      .max(10)
-      .describe(
-        'The relevance score of the results should be 0-10, with 0 being the least relevant and 10 being the most relevant.'
-      ),
-  }),
+  chunk: z.number().describe('The chunk index of the search result.'),
+  targetId: z.string().describe('The id of the target.'),
+  score: z
+    .number()
+    .min(0)
+    .max(10)
+    .describe(
+      'The relevance score of the results should be 0-10, with 0 being the least relevant and 10 being the most relevant.'
+    ),
 });
 
-export type ReRankResult = z.infer<typeof ReRankItemSchema>['scores'][];
+export type ReRankResult = z.infer<typeof ReRankItemSchema>[];

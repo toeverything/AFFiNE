@@ -207,4 +207,53 @@ export class SettingsPanelUtils {
       await searcher.getByTestId('doc-selector-confirm-button').click();
     }
   }
+
+  private static async waitForEmbeddingStatus(
+    page: Page,
+    timeout: number,
+    status = 'synced'
+  ) {
+    await expect(async () => {
+      await this.openSettingsPanel(page);
+      const title = page.getByTestId('embedding-progress-title');
+      // oxlint-disable-next-line prefer-dom-node-dataset
+      const progressAttr = await title.getAttribute('data-progress');
+      expect(progressAttr).not.toBe('loading');
+
+      expect(progressAttr).toBe(status);
+    }).toPass({ timeout });
+  }
+
+  public static async waitForEmbeddingComplete(page: Page, timeout = 30000) {
+    await this.waitForEmbeddingStatus(page, timeout);
+
+    // check embedding progress count
+    await expect(async () => {
+      const count = page.getByTestId('embedding-progress-count');
+      const countText = await count.textContent();
+      if (countText) {
+        const [embedded, total] = countText.split('/').map(Number);
+        expect(embedded).toBe(total);
+        expect(embedded).toBeGreaterThan(0);
+      }
+    }).toPass({ timeout });
+  }
+
+  public static async waitForFileEmbeddingReadiness(
+    page: Page,
+    expectedFileCount: number,
+    timeout = 30000
+  ) {
+    await expect(async () => {
+      const attachmentList = page.getByTestId(
+        'workspace-embedding-setting-attachment-list'
+      );
+      const attachmentItems = attachmentList.getByTestId(
+        'workspace-embedding-setting-attachment-item'
+      );
+      await expect(attachmentItems).toHaveCount(expectedFileCount);
+    }).toPass({ timeout });
+
+    await this.waitForEmbeddingComplete(page, timeout);
+  }
 }

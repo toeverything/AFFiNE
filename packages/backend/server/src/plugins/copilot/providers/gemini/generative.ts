@@ -71,8 +71,8 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
       ],
     },
     {
-      name: 'Text Embedding 004',
-      id: 'text-embedding-004',
+      name: 'Text Embedding 005',
+      id: 'text-embedding-005',
       capabilities: [
         {
           input: [ModelInputType.Text],
@@ -80,6 +80,18 @@ export class GeminiGenerativeProvider extends GeminiProvider<GeminiGenerativeCon
         },
       ],
     },
+    // not exists yet
+    // {
+    //   name: 'Gemini Embedding',
+    //   id: 'gemini-embedding-001',
+    //   capabilities: [
+    //     {
+    //       input: [ModelInputType.Text],
+    //       output: [ModelOutputType.Embedding],
+    //       defaultForOutputType: true,
+    //     },
+    //   ],
+    // },
   ];
 
   protected instance!: GoogleGenerativeAIProvider;

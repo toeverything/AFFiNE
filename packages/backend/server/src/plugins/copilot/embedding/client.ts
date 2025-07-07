@@ -20,6 +20,7 @@ import {
   type ReRankResult,
 } from './types';
 
+const EMBEDDING_MODEL = 'gemini-embedding-001';
 const RERANK_PROMPT = 'Rerank results';
 
 class ProductionEmbeddingClient extends EmbeddingClient {
@@ -34,6 +35,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
 
   override async configured(): Promise<boolean> {
     const embedding = await this.providerFactory.getProvider({
+      modelId: EMBEDDING_MODEL,
       outputType: ModelOutputType.Embedding,
     });
     const result = Boolean(embedding);
@@ -60,6 +62,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
 
   async getEmbeddings(input: string[]): Promise<Embedding[]> {
     const provider = await this.getProvider({
+      modelId: EMBEDDING_MODEL,
       outputType: ModelOutputType.Embedding,
     });
     this.logger.verbose(
@@ -109,9 +112,9 @@ class ProductionEmbeddingClient extends EmbeddingClient {
     );
 
     try {
-      return ranks.map((score, i) => ({
-        chunk: embeddings[i].content,
-        targetId: this.getTargetId(embeddings[i]),
+      return ranks.map((score, chunk) => ({
+        chunk,
+        targetId: this.getTargetId(embeddings[chunk]),
         score,
       }));
     } catch (error) {
@@ -171,7 +174,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
       const highConfidenceChunks = ranks
         .flat()
         .toSorted((a, b) => b.score - a.score)
-        .filter(r => r.score > 5)
+        .filter(r => r.score > 0.5)
         .map(r => chunks[`${r.targetId}:${r.chunk}`])
         .filter(Boolean);
 

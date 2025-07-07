@@ -346,7 +346,7 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
       },
       {
         role: 'user',
-        content: `<Instruct>: Given a web search query, retrieve relevant passages that answer the query\n<Query>: {{query}}\n<Document>: {{doc}}`,
+        content: `<Instruct>: Given a document search result, determine whether the result is relevant to the query.\n<Query>: {{query}}\n<Document>: {{doc}}`,
       },
     ],
   },
@@ -1676,7 +1676,7 @@ This sentence contains information from the first source[^1]. This sentence refe
 <tool-calling-guidelines>
 Before starting Tool calling, you need to follow:
 - DO NOT embed a tool call mid-sentence.
-- When searching for information, searching web & searching the user's Workspace information.
+- When searching for unknown information or keyword, prioritize searching the user's workspace.
 - Depending on the complexity of the question and the information returned by the search tools, you can call different tools multiple times to search.
 </tool-calling-guidelines>
 

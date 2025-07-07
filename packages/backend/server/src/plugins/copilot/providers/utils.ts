@@ -501,6 +501,12 @@ export class TextStreamParser {
           case 'doc_semantic_search': {
             if (Array.isArray(chunk.result)) {
               result += `\nFound ${chunk.result.length} document${chunk.result.length !== 1 ? 's' : ''} related to “${chunk.args.query}”.\n`;
+            } else if (typeof chunk.result === 'string') {
+              result += `\n${chunk.result}\n`;
+            } else {
+              this.logger.warn(
+                `Unexpected result type for doc_semantic_search: ${chunk.result?.message || 'Unknown error'}`
+              );
             }
             break;
           }

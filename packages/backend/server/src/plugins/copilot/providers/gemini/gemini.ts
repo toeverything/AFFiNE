@@ -5,6 +5,7 @@ import type {
 import type { GoogleVertexProvider } from '@ai-sdk/google-vertex';
 import {
   AISDKError,
+  embedMany,
   generateObject,
   generateText,
   JSONParseError,
@@ -20,6 +21,7 @@ import {
 import { CopilotProvider } from '../provider';
 import type {
   CopilotChatOptions,
+  CopilotEmbeddingOptions,
   CopilotImageOptions,
   CopilotProviderModel,
   ModelConditions,
@@ -206,6 +208,40 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
     } catch (e: any) {
       metrics.ai
         .counter('chat_object_stream_errors')
+        .add(1, { model: model.id });
+      throw this.handleError(e);
+    }
+  }
+
+  override async embedding(
+    cond: ModelConditions,
+    messages: string | string[],
+    options: CopilotEmbeddingOptions = { dimensions: DEFAULT_DIMENSIONS }
+  ): Promise<number[][]> {
+    messages = Array.isArray(messages) ? messages : [messages];
+    const fullCond = { ...cond, outputType: ModelOutputType.Embedding };
+    await this.checkParams({ embeddings: messages, cond: fullCond, options });
+    const model = this.selectModel(fullCond);
+
+    try {
+      metrics.ai
+        .counter('generate_embedding_calls')
+        .add(1, { model: model.id });
+
+      const modelInstance = this.instance.textEmbeddingModel(model.id, {
+        outputDimensionality: options.dimensions || DEFAULT_DIMENSIONS,
+        taskType: 'RETRIEVAL_DOCUMENT',
+      });
+
+      const { embeddings } = await embedMany({
+        model: modelInstance,
+        values: messages,
+      });
+
+      return embeddings.filter(v => v && Array.isArray(v));
+    } catch (e: any) {
+      metrics.ai
+        .counter('generate_embedding_errors')
         .add(1, { model: model.id });
       throw this.handleError(e);
     }

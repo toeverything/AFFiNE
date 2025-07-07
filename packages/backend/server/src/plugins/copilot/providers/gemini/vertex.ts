@@ -49,6 +49,17 @@ export class GeminiVertexProvider extends GeminiProvider<GeminiVertexConfig> {
         },
       ],
     },
+    {
+      name: 'Gemini Embedding',
+      id: 'gemini-embedding-001',
+      capabilities: [
+        {
+          input: [ModelInputType.Text],
+          output: [ModelOutputType.Embedding],
+          defaultForOutputType: true,
+        },
+      ],
+    },
   ];
 
   protected instance!: GoogleVertexProvider;
