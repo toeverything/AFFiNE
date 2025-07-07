@@ -262,10 +262,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
     const { isHistoryLoading } = this;
     const filteredItems = this.messages;
 
-    const showDownIndicator =
-      this.canScrollDown &&
-      filteredItems.length > 0 &&
-      this.chatContextValue.status !== 'transmitting';
+    const showDownIndicator = this.canScrollDown && filteredItems.length > 0;
 
     return html`
       <div
@@ -392,6 +389,13 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   protected override updated(_changedProperties: PropertyValues) {
     if (_changedProperties.has('isHistoryLoading')) {
       this.canScrollDown = false;
+    }
+
+    if (
+      _changedProperties.has('chatContextValue') &&
+      this.chatContextValue.status === 'transmitting'
+    ) {
+      this._onScroll();
     }
   }
 

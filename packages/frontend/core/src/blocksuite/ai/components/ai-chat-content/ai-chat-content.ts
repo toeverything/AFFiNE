@@ -17,7 +17,6 @@ import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import { throttle } from 'lodash-es';
 
 import { HISTORY_IMAGE_ACTIONS } from '../../chat-panel/const';
 import { type AIChatParams, AIProvider } from '../../provider/ai-provider';
@@ -185,8 +184,6 @@ export class AIChatContent extends SignalWatcher(
   // request counter to track the latest request
   private updateHistoryCounter = 0;
 
-  private wheelTriggered = false;
-
   private lastScrollTop: number | undefined;
 
   get messages() {
@@ -237,9 +234,6 @@ export class AIChatContent extends SignalWatcher(
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       ),
     });
-
-    this.wheelTriggered = false;
-    this.scrollToEnd();
   };
 
   private readonly updateActions = async () => {
@@ -263,9 +257,6 @@ export class AIChatContent extends SignalWatcher(
         ),
       });
     }
-
-    this.wheelTriggered = false;
-    this.scrollToEnd();
   };
 
   private readonly updateContext = (context: Partial<ChatContextValue>) => {
@@ -273,59 +264,31 @@ export class AIChatContent extends SignalWatcher(
     this.onContextChange?.(context);
   };
 
-  private readonly scrollToEnd = () => {
-    if (!this.wheelTriggered) {
-      this.chatMessagesRef.value?.scrollToEnd();
-    }
-  };
-
-  private readonly _throttledScrollToEnd = throttle(this.scrollToEnd, 600);
-
   private readonly initChatContent = async () => {
     this.isHistoryLoading = true;
     await this.updateHistory();
     this.isHistoryLoading = false;
   };
 
-  protected override firstUpdated(): void {
+  protected override firstUpdated(): void {}
+
+  private _scrollListenersInitialized = false;
+  private _initializeScrollListeners() {
     const chatMessages = this.chatMessagesRef.value;
     if (chatMessages) {
       chatMessages.updateComplete
         .then(() => {
           const scrollContainer = chatMessages.getScrollContainer();
-          scrollContainer?.addEventListener('wheel', () => {
-            this.wheelTriggered = true;
-          });
           scrollContainer?.addEventListener('scrollend', () => {
             this.lastScrollTop = scrollContainer.scrollTop;
           });
+          this._scrollListenersInitialized = true;
         })
         .catch(console.error);
     }
   }
 
   protected override updated(changedProperties: PropertyValues) {
-    if (this.chatContextValue.status === 'loading') {
-      // reset the wheel triggered flag when the status is loading
-      this.wheelTriggered = false;
-    }
-
-    if (
-      changedProperties.has('chatContextValue') &&
-      (this.chatContextValue.status === 'loading' ||
-        this.chatContextValue.status === 'error' ||
-        this.chatContextValue.status === 'success')
-    ) {
-      setTimeout(this.scrollToEnd, 500);
-    }
-
-    if (
-      changedProperties.has('chatContextValue') &&
-      this.chatContextValue.status === 'transmitting'
-    ) {
-      this._throttledScrollToEnd();
-    }
-
     // restore pinned chat scroll position
     if (
       changedProperties.has('host') &&
@@ -333,6 +296,10 @@ export class AIChatContent extends SignalWatcher(
       this.lastScrollTop !== undefined
     ) {
       this.chatMessagesRef.value?.scrollToPos(this.lastScrollTop);
+    }
+
+    if (!this._scrollListenersInitialized) {
+      this._initializeScrollListeners();
     }
   }
 
