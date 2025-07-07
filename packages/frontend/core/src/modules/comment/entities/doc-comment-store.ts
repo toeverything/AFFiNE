@@ -49,7 +49,7 @@ const normalizeReply = (reply: GQLReplyType): DocCommentReply => ({
 
 const normalizeComment = (comment: GQLCommentType): DocComment => ({
   id: comment.id,
-  content: comment.content as DocCommentContent,
+  content: comment.content ? (comment.content as DocCommentContent) : undefined,
   resolved: comment.resolved,
   createdAt: new Date(comment.createdAt).getTime(),
   updatedAt: new Date(comment.updatedAt).getTime(),
@@ -60,7 +60,9 @@ const normalizeComment = (comment: GQLCommentType): DocComment => ({
         name: '',
         avatarUrl: '',
       },
-  mentions: findMentions(comment.content.snapshot.blocks),
+  mentions: comment.content
+    ? findMentions(comment.content.snapshot.blocks)
+    : [],
   replies: comment.replies?.map(normalizeReply) ?? [],
 });
 

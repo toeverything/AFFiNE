@@ -1,9 +1,10 @@
 import { LitDocEditor, type PageEditor } from '@affine/core/blocksuite/editors';
 import { SnapshotHelper } from '@affine/core/modules/comment/services/snapshot-helper';
-import { focusTextModel, type RichText } from '@blocksuite/affine/rich-text';
+import { type RichText, selectTextModel } from '@blocksuite/affine/rich-text';
 import { ViewportElementExtension } from '@blocksuite/affine/shared/services';
 import { type DocSnapshot, Store } from '@blocksuite/affine/store';
 import { ArrowUpBigIcon } from '@blocksuite/icons/rc';
+import type { TextSelection } from '@blocksuite/std';
 import { useFramework, useService } from '@toeverything/infra';
 import clsx from 'clsx';
 import {
@@ -16,6 +17,7 @@ import {
   useState,
 } from 'react';
 
+import { useAsyncCallback } from '../../hooks/affine-async-hooks';
 import { getCommentEditorViewManager } from './specs';
 import * as styles from './style.css';
 
@@ -46,6 +48,7 @@ interface CommentEditorProps {
 
 export interface CommentEditorRef {
   getSnapshot: () => DocSnapshot | null | undefined;
+  focus: () => void;
 }
 
 // todo: get rid of circular data changes
@@ -95,6 +98,32 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
 
     const [empty, setEmpty] = useState(true);
 
+    const focusEditor = useAsyncCallback(async () => {
+      if (editorRef.current) {
+        const selectionService = editorRef.current.std.selection;
+        const selection = selectionService.value.at(-1) as TextSelection;
+        editorRef.current.std.event.active = true;
+        await editorRef.current.host?.updateComplete;
+        if (selection) {
+          selectTextModel(
+            editorRef.current.std,
+            selection.blockId,
+            selection.from.index,
+            selection.from.length
+          );
+        } else {
+          const richTexts = Array.from(
+            editorRef.current?.querySelectorAll('rich-text') ?? []
+          ) as unknown as RichText[];
+
+          const lastRichText = richTexts.at(-1);
+          if (lastRichText) {
+            lastRichText.inlineEditor?.focusEnd();
+          }
+        }
+      }
+    }, [editorRef]);
+
     useImperativeHandle(
       ref,
       () => ({
@@ -104,18 +133,10 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
           }
           return snapshotHelper.getSnapshot(doc);
         },
+        focus: focusEditor,
       }),
-      [doc, snapshotHelper]
+      [doc, focusEditor, snapshotHelper]
     );
-
-    const focusEditor = useCallback(() => {
-      if (editorRef.current) {
-        const lastChild = editorRef.current.std.store.root?.lastChild();
-        if (lastChild) {
-          focusTextModel(editorRef.current.std, lastChild.id);
-        }
-      }
-    }, [editorRef]);
 
     useEffect(() => {
       let cancel = false;
@@ -195,7 +216,9 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
         data-readonly={!!readonly}
         className={clsx(styles.container, 'comment-editor-viewport')}
       >
-        {doc && <LitDocEditor ref={editorRef} specs={specs} doc={doc} />}
+        {doc && (
+          <LitDocEditor key={doc.id} ref={editorRef} specs={specs} doc={doc} />
+        )}
         {!readonly && (
           <div className={styles.footer}>
             <button

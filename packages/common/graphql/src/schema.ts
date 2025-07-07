@@ -4427,6 +4427,10 @@ export type GetDocRolePermissionsQuery = {
         Doc_Update: boolean;
         Doc_Users_Manage: boolean;
         Doc_Users_Read: boolean;
+        Doc_Comments_Create: boolean;
+        Doc_Comments_Delete: boolean;
+        Doc_Comments_Read: boolean;
+        Doc_Comments_Resolve: boolean;
       };
     };
   };

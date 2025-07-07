@@ -1323,6 +1323,10 @@ export const getDocRolePermissionsQuery = {
         Doc_Update
         Doc_Users_Manage
         Doc_Users_Read
+        Doc_Comments_Create
+        Doc_Comments_Delete
+        Doc_Comments_Read
+        Doc_Comments_Resolve
       }
     }
   }

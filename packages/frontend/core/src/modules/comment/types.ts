@@ -10,7 +10,7 @@ export type CommentId = string;
 
 export interface BaseComment {
   id: CommentId;
-  content: DocCommentContent;
+  content?: DocCommentContent;
   createdAt: number;
   updatedAt: number;
   user: PublicUserType;

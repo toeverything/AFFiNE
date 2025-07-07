@@ -1,5 +1,9 @@
 import { type CommentChangeAction, DocMode } from '@affine/graphql';
-import type { BaseSelection } from '@blocksuite/affine/store';
+import type {
+  BaseSelection,
+  DocSnapshot,
+  Store,
+} from '@blocksuite/affine/store';
 import {
   effect,
   Entity,
@@ -63,6 +67,13 @@ export class DocCommentEntity extends Entity<{
   // Only one pending reply at a time
   readonly pendingReply$ = new LiveData<PendingComment | null>(null);
 
+  // Draft state for editing existing comment or reply (only one at a time)
+  readonly editingDraft$ = new LiveData<{
+    id: CommentId;
+    type: 'comment' | 'reply';
+    doc: Store;
+  } | null>(null);
+
   private readonly commentAdded$ = new Subject<{
     id: CommentId;
     selections: BaseSelection[];
@@ -78,13 +89,15 @@ export class DocCommentEntity extends Entity<{
     selections?: BaseSelection[],
     preview?: string
   ): Promise<string> {
-    // todo: may need to properly bind the doc to the editor
-    const doc = await this.snapshotHelper.createStore();
+    // check if there is a pending comment, reuse it
+    let pendingComment = this.pendingComment$.value;
+    const doc =
+      pendingComment?.doc ?? (await this.snapshotHelper.createStore());
     if (!doc) {
       throw new Error('Failed to create doc');
     }
     const id = nanoid();
-    const pendingComment: PendingComment = {
+    pendingComment = {
       id,
       doc,
       preview,
@@ -96,18 +109,35 @@ export class DocCommentEntity extends Entity<{
     return id;
   }
 
-  async addReply(commentId: string): Promise<string> {
-    const doc = await this.snapshotHelper.createStore();
+  /**
+   * Add a reply to a comment.
+   * If reply is provided, the content should @mention the user who is replying to.
+   */
+  async addReply(commentId: string, reply?: DocCommentReply): Promise<string> {
+    // check if there is a pending reply, reuse it
+    let pendingReply = this.pendingReply$.value;
+    const doc = pendingReply?.doc ?? (await this.snapshotHelper.createStore());
     if (!doc) {
       throw new Error('Failed to create doc');
     }
+    const mention: string | undefined = reply?.user.id;
+    if (mention) {
+      // insert mention at the end of the paragraph
+      const paragraph = doc.getModelsByFlavour('affine:paragraph').at(-1);
+      if (paragraph) {
+        paragraph.text?.insert(' ', paragraph.text.length, {
+          mention: {
+            member: mention,
+          },
+        });
+      }
+    }
     const id = nanoid();
-    const pendingReply: PendingComment = {
+    pendingReply = {
       id,
       doc,
       commentId,
     };
-
     // Replace any existing pending reply (only one at a time)
     this.pendingReply$.setValue(pendingReply);
     return id;
@@ -119,6 +149,47 @@ export class DocCommentEntity extends Entity<{
 
   dismissDraftReply(): void {
     this.pendingReply$.setValue(null);
+  }
+
+  /**
+   * Start editing an existing comment or reply.
+   * This will dismiss any previous editing draft so that only one can exist.
+   */
+  async startEdit(
+    id: CommentId,
+    type: 'comment' | 'reply',
+    snapshot: DocSnapshot
+  ): Promise<void> {
+    const doc = await this.snapshotHelper.createStore(snapshot);
+    if (!doc) {
+      throw new Error('Failed to create doc for editing');
+    }
+    this.editingDraft$.setValue({ id, type, doc });
+  }
+
+  /** Commit current editing draft (if any) */
+  async commitEditing(): Promise<void> {
+    const draft = this.editingDraft$.value;
+    if (!draft) return;
+
+    const snapshot = this.snapshotHelper.getSnapshot(draft.doc);
+    if (!snapshot) {
+      throw new Error('Failed to get snapshot');
+    }
+
+    if (draft.type === 'comment') {
+      await this.updateComment(draft.id, { snapshot });
+    } else {
+      await this.updateReply(draft.id, { snapshot });
+    }
+
+    this.editingDraft$.setValue(null);
+    this.revalidate();
+  }
+
+  /** Dismiss current editing draft without saving */
+  dismissDraftEditing(): void {
+    this.editingDraft$.setValue(null);
   }
 
   get docMode$() {

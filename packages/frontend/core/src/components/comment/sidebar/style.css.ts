@@ -151,6 +151,9 @@ export const commentActions = style({
     '&[data-menu-open="true"]': {
       opacity: 1,
     },
+    '&[data-editing="true"]': {
+      visibility: 'hidden',
+    },
   },
 });
 
@@ -159,6 +162,7 @@ export const readonlyCommentContainer = style({
   flexDirection: 'column',
   gap: '4px',
   paddingLeft: '8px',
+  position: 'relative',
 });
 
 export const userContainer = style({
@@ -209,4 +213,33 @@ export const collapsedRepliesTitle = style({
   color: cssVarV2('text/emphasis'),
   fontSize: cssVar('fontXs'),
   fontWeight: '500',
+});
+
+export const replyItem = style({
+  display: 'flex',
+  flexDirection: 'column',
+  position: 'relative',
+});
+
+export const replyActions = style({
+  display: 'flex',
+  opacity: 0,
+  gap: '8px',
+  position: 'absolute',
+  right: 0,
+  top: 0,
+  pointerEvents: 'none',
+  zIndex: 1,
+  selectors: {
+    [`${replyItem}:hover &`]: {
+      opacity: 1,
+      pointerEvents: 'auto',
+    },
+    '&[data-menu-open="true"]': {
+      opacity: 1,
+    },
+    '&[data-editing="true"]': {
+      visibility: 'hidden',
+    },
+  },
 });

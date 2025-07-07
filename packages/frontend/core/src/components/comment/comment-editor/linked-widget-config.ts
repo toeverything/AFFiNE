@@ -104,7 +104,6 @@ export const createCommentLinkedWidgetConfig = (
 
     const items = computed<LinkedMenuItem[]>(() => {
       const members = memberSearchService.result$.signal.value;
-      console.log('members', members);
 
       if (query.length === 0) {
         return members
