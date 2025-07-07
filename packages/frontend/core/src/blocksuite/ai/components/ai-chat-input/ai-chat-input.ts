@@ -56,6 +56,12 @@ export class AIChatInput extends SignalWatcher(
         0px 0px 0px 3px transparent,
         0px 2px 3px rgba(0, 0, 0, 0.05);
     }
+    .chat-panel-input[data-if-focused='true'] {
+      box-shadow:
+        var(--border-shadow),
+        0px 0px 0px 3px transparent,
+        0px 4px 6px rgba(0, 0, 0, 0.05);
+    }
     [data-theme='dark'] .chat-panel-input[data-if-focused='true'] {
       box-shadow:
         var(--border-shadow),
