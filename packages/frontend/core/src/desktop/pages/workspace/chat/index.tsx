@@ -59,6 +59,7 @@ export const Component = () => {
     null
   );
   const [isTogglingPin, setIsTogglingPin] = useState(false);
+  const [isOpeningSession, setIsOpeningSession] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatToolContainerRef = useRef<HTMLDivElement>(null);
   const widthSignalRef = useRef<Signal<number>>(signal(0));
@@ -108,6 +109,25 @@ export const Component = () => {
       setIsTogglingPin(false);
     }
   }, [client, createSession, currentSession, isTogglingPin, workspaceId]);
+
+  const onOpenSession = useCallback(
+    (sessionId: string) => {
+      if (isOpeningSession) return;
+      setIsOpeningSession(true);
+      client
+        .getSession(workspaceId, sessionId)
+        .then(session => {
+          setCurrentSession(session);
+          chatContent?.reloadSession();
+          chatTool?.closeHistoryMenu();
+        })
+        .catch(console.error)
+        .finally(() => {
+          setIsOpeningSession(false);
+        });
+    },
+    [chatContent, chatTool, client, isOpeningSession, workspaceId]
+  );
 
   // create a temp doc/host for ai-chat-content
   useEffect(() => {
@@ -187,6 +207,9 @@ export const Component = () => {
     }
 
     tool.session = currentSession;
+    tool.workspaceId = workspaceId;
+    tool.docDisplayConfig = docDisplayConfig;
+    tool.onOpenSession = onOpenSession;
 
     tool.onNewSession = () => {
       if (!currentSession) return;
@@ -204,7 +227,16 @@ export const Component = () => {
       chatToolContainerRef.current.append(tool);
       setChatTool(tool);
     }
-  }, [chatContent, chatTool, currentSession, isHeaderProvided, togglePin]);
+  }, [
+    chatContent,
+    chatTool,
+    currentSession,
+    docDisplayConfig,
+    isHeaderProvided,
+    onOpenSession,
+    togglePin,
+    workspaceId,
+  ]);
 
   const onChatContainerRef = useCallback((node: HTMLDivElement) => {
     if (node) {

@@ -186,4 +186,8 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
       closeOnClickAway: true,
     });
   };
+
+  public closeHistoryMenu() {
+    this.abortController?.abort();
+  }
 }

@@ -341,6 +341,11 @@ export class AIChatContent extends SignalWatcher(
     this.closePreviewPanel(true);
   }
 
+  public reloadSession() {
+    this.reset();
+    this.initChatContent().catch(console.error);
+  }
+
   public openPreviewPanel(content?: TemplateResult<1>) {
     this.showPreviewPanel = true;
     if (content) this.previewPanelContent = content;
