@@ -98,7 +98,7 @@ const AIChatButton = () => {
 
   return (
     <MenuLinkItem icon={<AiIcon />} active={aiChatActive} to={'/chat'}>
-      <span data-testid="ai-chat">AFFiNE Intelligent</span>
+      <span data-testid="ai-chat">Intelligent</span>
     </MenuLinkItem>
   );
 };
@@ -198,10 +198,10 @@ export const RootAppSidebar = memo((): ReactElement => {
           />
           <AddPageButton />
         </div>
+        <AIChatButton />
         <AllDocsButton />
         <AppSidebarJournalButton />
         {sessionStatus === 'authenticated' && <NotificationButton />}
-        <AIChatButton />
         <MenuItem
           data-testid="slider-bar-workspace-setting-button"
           icon={<SettingsIcon />}
