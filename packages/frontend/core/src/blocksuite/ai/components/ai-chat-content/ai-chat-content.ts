@@ -208,7 +208,7 @@ export class AIChatContent extends SignalWatcher(
       sessionId
         ? AIProvider.histories.chats(this.workspaceId, sessionId)
         : Promise.resolve([]),
-      this.docId
+      this.docId && this.session?.docId === this.docId
         ? AIProvider.histories.actions(this.workspaceId, this.docId)
         : Promise.resolve([]),
     ]);
