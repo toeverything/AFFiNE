@@ -197,6 +197,17 @@ export class AIChatContent extends SignalWatcher(
     });
   }
 
+  get showActions() {
+    if (this.docId) {
+      if (!this.session) {
+        return true;
+      }
+      return this.session.docId === this.docId;
+    } else {
+      return false;
+    }
+  }
+
   private readonly updateHistory = async () => {
     const currentRequest = ++this.updateHistoryCounter;
     if (!AIProvider.histories) {
@@ -208,7 +219,7 @@ export class AIChatContent extends SignalWatcher(
       sessionId
         ? AIProvider.histories.chats(this.workspaceId, sessionId)
         : Promise.resolve([]),
-      this.docId
+      this.docId && this.showActions
         ? AIProvider.histories.actions(this.workspaceId, this.docId)
         : Promise.resolve([]),
     ]);
