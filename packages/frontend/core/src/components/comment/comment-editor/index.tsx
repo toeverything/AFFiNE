@@ -1,6 +1,6 @@
 import { LitDocEditor, type PageEditor } from '@affine/core/blocksuite/editors';
 import { SnapshotHelper } from '@affine/core/modules/comment/services/snapshot-helper';
-import type { RichText } from '@blocksuite/affine/rich-text';
+import { focusTextModel, type RichText } from '@blocksuite/affine/rich-text';
 import { ViewportElementExtension } from '@blocksuite/affine/shared/services';
 import { type DocSnapshot, Store } from '@blocksuite/affine/store';
 import { ArrowUpBigIcon } from '@blocksuite/icons/rc';
@@ -175,7 +175,10 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
       (e: React.MouseEvent) => {
         e.stopPropagation();
         if (editorRef.current) {
-          editorRef.current.focus();
+          const lastChild = editorRef.current.std.store.root?.lastChild();
+          if (lastChild) {
+            focusTextModel(editorRef.current.std, lastChild.id);
+          }
         }
       },
       [editorRef]
