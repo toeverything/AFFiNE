@@ -1,4 +1,5 @@
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
+import { faker } from '@faker-js/faker';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
@@ -245,11 +246,13 @@ test.describe('AISettings/Embedding', () => {
     await createLocalWorkspace({ name: 'test' }, page, false, 'affine-cloud');
     await utils.settings.openSettingsPanel(page);
     await utils.settings.enableWorkspaceEmbedding(page);
-    const hobby1 = Buffer.from('Jerry-Affine love climbing');
-    const hobby2 = Buffer.from('Jerry-Affine love skating');
+    const person = faker.person.fullName();
+
+    const hobby1 = Buffer.from(`${person} love climbing`);
+    const hobby2 = Buffer.from(`${person} love skating`);
     const attachments = [
       {
-        name: 'jerry-affine-hobby.txt',
+        name: 'hobby.txt',
         mimeType: 'text/plain',
         buffer: hobby1,
       },
@@ -264,18 +267,18 @@ test.describe('AISettings/Embedding', () => {
       page,
       [
         {
-          name: 'jerry-affine-hobby2.txt',
+          name: 'hobby2.txt',
           mimeType: 'text/plain',
           buffer: hobby2,
         },
       ],
-      'What is Jerry-Affine hobby?'
+      `What is ${person}'s hobby?`
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'What is Jerry-Affine hobby?',
+        content: `What is ${person}'s hobby?`,
       },
       {
         role: 'assistant',
