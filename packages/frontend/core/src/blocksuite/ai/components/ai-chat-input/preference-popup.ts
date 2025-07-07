@@ -6,7 +6,6 @@ import {
 } from '@blocksuite/affine/components/context-menu';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import {
-  AiOutlineIcon,
   ArrowDownSmallIcon,
   ThinkingIcon,
   WebIcon,
@@ -82,9 +81,9 @@ export class ChatInputPreference extends SignalWatcher(
     | undefined;
   // --------- search props end ---------
 
-  private readonly _onModelChange = (modelId: string) => {
-    this.onModelChange?.(modelId);
-  };
+  // private readonly _onModelChange = (modelId: string) => {
+  //   this.onModelChange?.(modelId);
+  // };
 
   openPreference(e: Event) {
     const element = e.currentTarget;
@@ -93,20 +92,20 @@ export class ChatInputPreference extends SignalWatcher(
     const searchItems = [];
 
     // model switch
-    modelItems.push(
-      menu.subMenu({
-        name: 'Model',
-        prefix: AiOutlineIcon(),
-        options: {
-          items: (this.session?.optionalModels ?? []).map(modelId => {
-            return menu.action({
-              name: modelId,
-              select: () => this._onModelChange(modelId),
-            });
-          }),
-        },
-      })
-    );
+    // modelItems.push(
+    //   menu.subMenu({
+    //     name: 'Model',
+    //     prefix: AiOutlineIcon(),
+    //     options: {
+    //       items: (this.session?.optionalModels ?? []).map(modelId => {
+    //         return menu.action({
+    //           name: modelId,
+    //           select: () => this._onModelChange(modelId),
+    //         });
+    //       }),
+    //     },
+    //   })
+    // );
 
     modelItems.push(
       menu.toggleSwitch({
@@ -152,9 +151,7 @@ export class ChatInputPreference extends SignalWatcher(
       data-testid="chat-input-preference-trigger"
       class="chat-input-preference-trigger"
     >
-      <span class="chat-input-preference-trigger-label">
-        ${this.modelId || this.session?.model}
-      </span>
+      <span class="chat-input-preference-trigger-label"> Claude </span>
       <span class="chat-input-preference-trigger-icon">
         ${ArrowDownSmallIcon()}
       </span>
