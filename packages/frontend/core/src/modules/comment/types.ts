@@ -18,6 +18,7 @@ export interface BaseComment {
 
 export interface DocComment extends BaseComment {
   resolved: boolean;
+  mentions: string[];
   replies?: DocCommentReply[];
 }
 
@@ -29,7 +30,10 @@ export type PendingComment = {
   commentId?: CommentId; // only for replies, points to the parent comment
 };
 
-export type DocCommentReply = BaseComment;
+export interface DocCommentReply extends BaseComment {
+  commentId: CommentId;
+  mentions: string[];
+}
 
 export type DocCommentContent = {
   snapshot: DocSnapshot; // blocksuite snapshot

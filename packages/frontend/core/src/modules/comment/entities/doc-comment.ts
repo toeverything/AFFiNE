@@ -1,10 +1,5 @@
 import { type CommentChangeAction, DocMode } from '@affine/graphql';
-import type {
-  BaseSelection,
-  BaseTextAttributes,
-  BlockSnapshot,
-  DeltaInsert,
-} from '@blocksuite/affine/store';
+import type { BaseSelection } from '@blocksuite/affine/store';
 import {
   effect,
   Entity,
@@ -34,18 +29,12 @@ import type {
   DocCommentChangeListResult,
   DocCommentContent,
   DocCommentListResult,
+  DocCommentReply,
   PendingComment,
 } from '../types';
 import { DocCommentStore } from './doc-comment-store';
 
 type DisposeCallback = () => void;
-
-const MentionAttribute = 'mention';
-type ExtendedTextAttributes = BaseTextAttributes & {
-  [MentionAttribute]: {
-    member: string;
-  };
-};
 
 export class DocCommentEntity extends Entity<{
   docId: string;
@@ -136,31 +125,6 @@ export class DocCommentEntity extends Entity<{
     return this.framework.get(GlobalContextService).globalContext.docMode.$;
   }
 
-  findMentions(snapshot: BlockSnapshot): string[] {
-    const mentionedUserIds = new Set<string>();
-    if (
-      snapshot.props.type === 'text' &&
-      snapshot.props.text &&
-      'delta' in (snapshot.props.text as any)
-    ) {
-      const delta = (snapshot.props.text as any)
-        .delta as DeltaInsert<ExtendedTextAttributes>[];
-      for (const op of delta) {
-        if (op.attributes?.[MentionAttribute]) {
-          mentionedUserIds.add(op.attributes[MentionAttribute].member);
-        }
-      }
-    }
-
-    for (const block of snapshot.children) {
-      this.findMentions(block).forEach(userId => {
-        mentionedUserIds.add(userId);
-      });
-    }
-
-    return Array.from(mentionedUserIds);
-  }
-
   async commitComment(id: string): Promise<void> {
     const pendingComment = this.pendingComment$.value;
     if (!pendingComment || pendingComment.id !== id) {
@@ -172,9 +136,7 @@ export class DocCommentEntity extends Entity<{
     if (!snapshot) {
       throw new Error('Failed to get snapshot');
     }
-    const mentions = this.findMentions(snapshot.blocks);
     const comment = await this.store.createComment({
-      mentions: mentions,
       content: {
         snapshot,
         preview,
@@ -207,9 +169,7 @@ export class DocCommentEntity extends Entity<{
       throw new Error('Pending reply has no commentId');
     }
 
-    const mentions = this.findMentions(snapshot.blocks);
     const reply = await this.store.createReply(pendingReply.commentId, {
-      mentions,
       content: {
         snapshot,
       },
@@ -434,7 +394,12 @@ export class DocCommentEntity extends Entity<{
 
       if (commentId) {
         // This is a reply change - handle separately
-        this.handleReplyChange(currentComments, action, comment, commentId);
+        const reply = {
+          ...comment,
+          id: id,
+          commentId: commentId,
+        };
+        this.handleReplyChange(currentComments, action, reply, commentId);
         commentsUpdated = true;
       } else {
         // This is a top-level comment change
@@ -479,7 +444,7 @@ export class DocCommentEntity extends Entity<{
   private handleReplyChange(
     currentComments: DocComment[],
     action: CommentChangeAction,
-    reply: DocComment,
+    reply: DocCommentReply,
     parentCommentId: string
   ): void {
     const parentIndex = currentComments.findIndex(

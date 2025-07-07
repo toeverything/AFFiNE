@@ -2071,6 +2071,7 @@
   "com.affine.comment.delete.confirm.description": "All comments will also be deleted, and this action cannot be undone.",
   "com.affine.comment.reply.delete.confirm.title": "Delete this reply?",
   "com.affine.comment.reply.delete.confirm.description": "Delete this reply? This action cannot be undone.",
+  "com.affine.comment.reply.show-more": "Show {{count}} more replies",
   "com.affine.comment.filter.show-resolved": "Show resolved comments",
   "com.affine.comment.filter.only-my-replies": "Only my replies and mentions",
   "com.affine.comment.filter.only-current-mode": "Only current mode",

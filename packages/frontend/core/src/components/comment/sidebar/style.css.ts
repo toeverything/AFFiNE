@@ -189,3 +189,24 @@ export const time = style({
   color: cssVarV2('text/secondary'),
   fontWeight: '500',
 });
+
+export const collapsedReplies = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  cursor: 'pointer',
+  height: '28px',
+  paddingLeft: '42px',
+  borderRadius: 8,
+  selectors: {
+    '&:hover': {
+      backgroundColor: cssVarV2('layer/background/hoverOverlay'),
+    },
+  },
+});
+
+export const collapsedRepliesTitle = style({
+  color: cssVarV2('text/emphasis'),
+  fontSize: cssVar('fontXs'),
+  fontWeight: '500',
+});

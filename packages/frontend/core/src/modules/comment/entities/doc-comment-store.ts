@@ -23,6 +23,7 @@ import type {
   DocCommentListResult,
   DocCommentReply,
 } from '../types';
+import { findMentions } from './utils';
 
 type GQLCommentType =
   ListCommentsQuery['workspace']['comments']['edges'][number]['node'];
@@ -38,10 +39,12 @@ const normalizeUser = (user: GQLUserType) => ({
 
 const normalizeReply = (reply: GQLReplyType): DocCommentReply => ({
   id: reply.id,
+  commentId: reply.commentId,
   content: reply.content as DocCommentContent,
   createdAt: new Date(reply.createdAt).getTime(),
   updatedAt: new Date(reply.updatedAt).getTime(),
   user: normalizeUser(reply.user),
+  mentions: findMentions(reply.content.snapshot.blocks),
 });
 
 const normalizeComment = (comment: GQLCommentType): DocComment => ({
@@ -57,6 +60,7 @@ const normalizeComment = (comment: GQLCommentType): DocComment => ({
         name: '',
         avatarUrl: '',
       },
+  mentions: findMentions(comment.content.snapshot.blocks),
   replies: comment.replies?.map(normalizeReply) ?? [],
 });
 
@@ -172,12 +176,13 @@ export class DocCommentStore extends Entity<{
 
   async createComment(commentInput: {
     content: DocCommentContent;
-    mentions?: string[];
   }): Promise<DocComment> {
     const graphql = this.graphqlService;
     if (!graphql) {
       throw new Error('GraphQL service not found');
     }
+
+    const mentions = findMentions(commentInput.content.snapshot.blocks);
 
     const response = await graphql.gql({
       query: createCommentMutation,
@@ -188,7 +193,7 @@ export class DocCommentStore extends Entity<{
           docMode: this.props.getDocMode(),
           docTitle: this.props.getDocTitle(),
           content: commentInput.content,
-          mentions: commentInput.mentions,
+          mentions,
         },
       },
     });
@@ -257,13 +262,14 @@ export class DocCommentStore extends Entity<{
     commentId: string,
     replyInput: {
       content: DocCommentContent;
-      mentions?: string[];
     }
   ): Promise<DocCommentReply> {
     const graphql = this.graphqlService;
     if (!graphql) {
       throw new Error('GraphQL service not found');
     }
+
+    const mentions = findMentions(replyInput.content.snapshot.blocks);
 
     const response = await graphql.gql({
       query: createReplyMutation,
@@ -273,7 +279,7 @@ export class DocCommentStore extends Entity<{
           content: replyInput.content,
           docMode: this.props.getDocMode(),
           docTitle: this.props.getDocTitle(),
-          mentions: replyInput.mentions,
+          mentions: mentions,
         },
       },
     });

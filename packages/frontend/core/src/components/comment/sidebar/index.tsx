@@ -293,6 +293,74 @@ const CommentItem = ({
 
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // When the comment item is rendered the first time, the replies will be collapsed by default
+  // The replies will be collapsed when replies length > 4, that is, the comment, first reply and the last 2 replies
+  // will be shown
+  // When new reply is added either by clicking the reply button or synced remotely, we will NOT collapse the replies
+  const [collapsed, setCollapsed] = useState(
+    (comment.replies?.length ?? 0) > 4
+  );
+
+  const renderedReplies = useMemo(() => {
+    // Sort replies ascending by createdAt
+    const sortedReplies =
+      comment.replies?.toSorted((a, b) => a.createdAt - b.createdAt) ?? [];
+    if (sortedReplies.length === 0) return null;
+
+    // If not collapsed or replies are fewer than threshold, render all
+    if (!collapsed || sortedReplies.length <= 4) {
+      return sortedReplies.map(reply => (
+        <ReadonlyCommentRenderer
+          key={reply.id}
+          avatarUrl={reply.user.avatarUrl}
+          name={reply.user.name}
+          time={reply.createdAt}
+          snapshot={reply.content.snapshot}
+        />
+      ));
+    }
+
+    // Collapsed state: first reply + collapsed indicator + last two replies
+    const firstReply = sortedReplies[0];
+    const tailReplies = sortedReplies.slice(-2);
+
+    return (
+      <>
+        {firstReply && (
+          <ReadonlyCommentRenderer
+            key={firstReply.id}
+            avatarUrl={firstReply.user.avatarUrl}
+            name={firstReply.user.name}
+            time={firstReply.createdAt}
+            snapshot={firstReply.content.snapshot}
+          />
+        )}
+        <div
+          className={styles.collapsedReplies}
+          onClick={e => {
+            e.stopPropagation();
+            setCollapsed(false);
+          }}
+        >
+          <div className={styles.collapsedRepliesTitle}>
+            {t['com.affine.comment.reply.show-more']({
+              count: (sortedReplies.length - 4).toString(),
+            })}
+          </div>
+        </div>
+        {tailReplies.map(reply => (
+          <ReadonlyCommentRenderer
+            key={reply.id}
+            avatarUrl={reply.user.avatarUrl}
+            name={reply.user.name}
+            time={reply.createdAt}
+            snapshot={reply.content.snapshot}
+          />
+        ))}
+      </>
+    );
+  }, [collapsed, comment.replies, t]);
+
   return (
     <div
       onClick={handleClickPreview}
@@ -353,19 +421,7 @@ const CommentItem = ({
           time={comment.createdAt}
           snapshot={comment.content.snapshot}
         />
-
-        {/* unlike comment, replies are sorted by createdAt in ascending order */}
-        {comment.replies
-          ?.toSorted((a, b) => a.createdAt - b.createdAt)
-          .map(reply => (
-            <ReadonlyCommentRenderer
-              key={reply.id}
-              avatarUrl={reply.user.avatarUrl}
-              name={reply.user.name}
-              time={reply.createdAt}
-              snapshot={reply.content.snapshot}
-            />
-          ))}
+        {renderedReplies}
       </div>
 
       {highlighting &&
@@ -421,12 +477,30 @@ const CommentList = ({ entity }: { entity: DocCommentEntity }) => {
     }
 
     // Filter by only my replies and mentions
-    if (filterState.onlyMyReplies) {
+    if (filterState.onlyMyReplies && account) {
       filteredComments = filteredComments.filter(comment => {
         return (
-          comment.user.id === account?.id ||
-          comment.replies?.some(reply => reply.user.id === account?.id)
+          comment.user.id === account.id ||
+          comment.mentions.includes(account.id) ||
+          comment.replies?.some(reply => {
+            return (
+              reply.user.id === account.id ||
+              reply.mentions.includes(account.id)
+            );
+          })
         );
+      });
+
+      filteredComments = filteredComments.map(comment => {
+        return {
+          ...comment,
+          replies: comment.replies?.filter(reply => {
+            return (
+              reply.user.id === account.id ||
+              reply.mentions.includes(account.id)
+            );
+          }),
+        };
       });
     }
 
@@ -444,8 +518,8 @@ const CommentList = ({ entity }: { entity: DocCommentEntity }) => {
     filterState.showResolvedComments,
     filterState.onlyMyReplies,
     filterState.onlyCurrentMode,
-    account?.id,
     docMode,
+    account,
   ]);
 
   const newPendingComment = useLiveData(entity.pendingComment$);

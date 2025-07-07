@@ -8255,6 +8255,12 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.comment.reply.delete.confirm.description"](): string;
     /**
+      * `Show {{count}} more replies`
+      */
+    ["com.affine.comment.reply.show-more"](options: {
+        readonly count: string;
+    }): string;
+    /**
       * `Show resolved comments`
       */
     ["com.affine.comment.filter.show-resolved"](): string;

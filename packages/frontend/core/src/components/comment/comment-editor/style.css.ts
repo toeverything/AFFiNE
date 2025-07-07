@@ -12,7 +12,7 @@ export const container = style({
       borderRadius: 16,
       padding: '0 8px',
     },
-    '&[data-readonly="false"]:focus-within': {
+    '&[data-readonly="false"]:is(:focus-within, :active)': {
       borderColor: cssVarV2('layer/insideBorder/primaryBorder'),
       boxShadow: cssVar('activeShadow'),
     },

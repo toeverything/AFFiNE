@@ -106,6 +106,15 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
       [doc, snapshotHelper]
     );
 
+    const focusEditor = useCallback(() => {
+      if (editorRef.current) {
+        const lastChild = editorRef.current.std.store.root?.lastChild();
+        if (lastChild) {
+          focusTextModel(editorRef.current.std, lastChild.id);
+        }
+      }
+    }, [editorRef]);
+
     useEffect(() => {
       let cancel = false;
       if (autoFocus && editorRef.current && doc) {
@@ -117,25 +126,20 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
               'rich-text'
             ) as unknown as RichText;
             if (!richText) return;
-
-            // Finally focus the inline editor
-            const inlineEditor = richText.inlineEditor;
-            richText.focus();
-
             richText.scrollIntoView({
               behavior: 'smooth',
               block: 'center',
             });
-
-            // fixme: the following does not work
-            inlineEditor?.focusEnd();
+            // Finally focus the inline editor
+            richText.focus();
+            focusEditor();
           })
           .catch(console.error);
       }
       return () => {
         cancel = true;
       };
-    }, [autoFocus, doc]);
+    }, [autoFocus, doc, focusEditor]);
 
     useEffect(() => {
       if (doc && onChange) {
@@ -174,14 +178,9 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
     const handleClickEditor = useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (editorRef.current) {
-          const lastChild = editorRef.current.std.store.root?.lastChild();
-          if (lastChild) {
-            focusTextModel(editorRef.current.std, lastChild.id);
-          }
-        }
+        focusEditor();
       },
-      [editorRef]
+      [focusEditor]
     );
 
     return (
