@@ -174,10 +174,10 @@ export class AIChatContent extends SignalWatcher(
   accessor isHistoryLoading = false;
 
   @state()
-  accessor showPreviewPanel = false;
+  private accessor showPreviewPanel = false;
 
   @state()
-  accessor previewPanelContent: TemplateResult<1> | null = null;
+  private accessor previewPanelContent: TemplateResult<1> | null = null;
 
   private readonly chatMessagesRef: Ref<AIChatMessages> =
     createRef<AIChatMessages>();
@@ -338,8 +338,23 @@ export class AIChatContent extends SignalWatcher(
 
   public reset() {
     this.updateContext(DEFAULT_CHAT_CONTEXT_VALUE);
+    this.closePreviewPanel(true);
+  }
+
+  public openPreviewPanel(content?: TemplateResult<1>) {
+    this.showPreviewPanel = true;
+    if (content) this.previewPanelContent = content;
+    AIProvider.slots.previewPanelOpenChange.next(true);
+  }
+
+  public closePreviewPanel(destroyContent: boolean = false) {
     this.showPreviewPanel = false;
-    this.previewPanelContent = null;
+    if (destroyContent) this.previewPanelContent = null;
+    AIProvider.slots.previewPanelOpenChange.next(false);
+  }
+
+  public get isPreviewPanelOpen() {
+    return this.showPreviewPanel;
   }
 
   override connectedCallback() {

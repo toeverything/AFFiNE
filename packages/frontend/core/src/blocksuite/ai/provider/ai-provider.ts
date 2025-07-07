@@ -149,6 +149,7 @@ export class AIProvider {
     }>(),
     // downstream can emit this slot to notify ai presets that user info has been updated
     userInfo: new Subject<AIUserInfo | null>(),
+    previewPanelOpenChange: new Subject<boolean>(),
     /* eslint-enable rxjs/finnish */
   };
 

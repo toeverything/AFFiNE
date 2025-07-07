@@ -1,4 +1,4 @@
-import { ChatPanel } from '@affine/core/blocksuite/ai';
+import { AIProvider, ChatPanel } from '@affine/core/blocksuite/ai';
 import type { AffineEditorContainer } from '@affine/core/blocksuite/block-suite-editor';
 import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
@@ -8,7 +8,7 @@ import { ViewExtensionManagerIdentifier } from '@blocksuite/affine/ext-loader';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import { DocModeProvider } from '@blocksuite/affine/shared/services';
 import { createSignalFromObservable } from '@blocksuite/affine/shared/utils';
-import { useFramework } from '@toeverything/infra';
+import { useFramework, useService } from '@toeverything/infra';
 import { forwardRef, useEffect, useRef } from 'react';
 
 import * as styles from './chat.css';
@@ -25,6 +25,7 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
 ) {
   const chatPanelRef = useRef<ChatPanel | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const workbench = useService(WorkbenchService).workbench;
   const framework = useFramework();
 
   useEffect(() => {
@@ -117,6 +118,21 @@ export const EditorChatPanel = forwardRef(function EditorChatPanel(
     reasoningConfig,
     playgroundConfig,
   ]);
+
+  useEffect(() => {
+    const subscription = AIProvider.slots.previewPanelOpenChange.subscribe(
+      open => {
+        if (!open) return;
+        const sidebarWidth = workbench.sidebarWidth$.value;
+        if (!sidebarWidth || sidebarWidth < 800) {
+          workbench.setSidebarWidth(800);
+        }
+      }
+    );
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [workbench]);
 
   return <div className={styles.root} ref={containerRef} />;
 });

@@ -13,7 +13,7 @@ function getChatPanel(target: HTMLElement) {
 
 export const isPreviewPanelOpen = (target: HTMLElement) => {
   const chatPanel = getChatPanel(target);
-  return chatPanel?.showPreviewPanel ?? false;
+  return chatPanel?.isPreviewPanelOpen ?? false;
 };
 
 export const renderPreviewPanel = (
@@ -28,13 +28,11 @@ export const renderPreviewPanel = (
     return;
   }
 
-  chatPanel.showPreviewPanel = true;
-
   const preview = html`<artifact-preview-panel
     .content=${content}
     .controls=${controls ?? nothing}
   ></artifact-preview-panel>`;
-  chatPanel.previewPanelContent = preview;
+  chatPanel.openPreviewPanel(preview);
 };
 
 export const closePreviewPanel = (target: HTMLElement) => {
@@ -45,7 +43,7 @@ export const closePreviewPanel = (target: HTMLElement) => {
     return;
   }
 
-  chatPanel.showPreviewPanel = false;
+  chatPanel.closePreviewPanel();
 };
 
 export class ArtifactPreviewPanel extends WithDisposable(ShadowlessElement) {
