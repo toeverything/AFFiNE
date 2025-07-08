@@ -160,15 +160,19 @@ test.before(async t => {
     html: module.get(CopilotCheckHtmlExecutor),
     json: module.get(CopilotCheckJsonExecutor),
   };
+
+  await module.initTestingDB();
 });
+
+let promptName = 'prompt';
 
 test.beforeEach(async t => {
   Sinon.restore();
-  const { module, auth, prompt } = t.context;
-  await module.initTestingDB();
+  const { auth, prompt } = t.context;
   await prompt.onApplicationBootstrap();
-  const user = await auth.signUp('test@affine.pro', '123456');
+  const user = await auth.signUp(`test-${randomUUID()}@affine.pro`, '123456');
   userId = user.id;
+  promptName = randomUUID().replaceAll('-', '');
 });
 
 test.after.always(async t => {
@@ -183,7 +187,7 @@ test('should be able to manage prompt', async t => {
   const internalPromptCount = (await prompt.listNames()).length;
   t.is(internalPromptCount, prompts.length, 'should list names');
 
-  await prompt.set('test', 'test', [
+  await prompt.set(promptName, 'test', [
     { role: 'system', content: 'hello' },
     { role: 'user', content: 'hello' },
   ]);
@@ -193,25 +197,25 @@ test('should be able to manage prompt', async t => {
     'should have one prompt'
   );
   t.is(
-    (await prompt.get('test'))!.finish({}).length,
+    (await prompt.get(promptName))!.finish({}).length,
     2,
     'should have two messages'
   );
 
-  await prompt.update('test', [{ role: 'system', content: 'hello' }]);
+  await prompt.update(promptName, [{ role: 'system', content: 'hello' }]);
   t.is(
-    (await prompt.get('test'))!.finish({}).length,
+    (await prompt.get(promptName))!.finish({}).length,
     1,
     'should have one message'
   );
 
-  await prompt.delete('test');
+  await prompt.delete(promptName);
   t.is(
     (await prompt.listNames()).length,
     internalPromptCount,
     'should be delete prompt'
   );
-  t.is(await prompt.get('test'), null, 'should not have the prompt');
+  t.is(await prompt.get(promptName), null, 'should not have the prompt');
 });
 
 test('should be able to render prompt', async t => {
@@ -228,8 +232,8 @@ test('should be able to render prompt', async t => {
     content: 'hello world',
   };
 
-  await prompt.set('test', 'test', [msg]);
-  const testPrompt = await prompt.get('test');
+  await prompt.set(promptName, 'test', [msg]);
+  const testPrompt = await prompt.get(promptName);
   t.assert(testPrompt, 'should have prompt');
   t.is(
     testPrompt?.finish(params).pop()?.content,
@@ -263,8 +267,8 @@ test('should be able to render listed prompt', async t => {
     links: ['https://affine.pro', 'https://github.com/toeverything/affine'],
   };
 
-  await prompt.set('test', 'test', [msg]);
-  const testPrompt = await prompt.get('test');
+  await prompt.set(promptName, 'test', [msg]);
+  const testPrompt = await prompt.get(promptName);
 
   t.is(
     testPrompt?.finish(params).pop()?.content,
@@ -278,7 +282,7 @@ test('should be able to render listed prompt', async t => {
 test('should be able to manage chat session', async t => {
   const { prompt, session } = t.context;
 
-  await prompt.set('prompt', 'model', [
+  await prompt.set(promptName, 'model', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
 
@@ -287,14 +291,14 @@ test('should be able to manage chat session', async t => {
 
   const sessionId = await session.create({
     userId,
-    promptName: 'prompt',
+    promptName,
     ...commonParams,
   });
   t.truthy(sessionId, 'should create session');
 
   const s = (await session.get(sessionId))!;
   t.is(s.config.sessionId, sessionId, 'should get session');
-  t.is(s.config.promptName, 'prompt', 'should have prompt name');
+  t.is(s.config.promptName, promptName, 'should have prompt name');
   t.is(s.model, 'model', 'should have model');
 
   const cleanObject = (obj: any[]) =>
@@ -329,7 +333,7 @@ test('should be able to manage chat session', async t => {
   {
     const newSessionId = await session.create({
       userId,
-      promptName: 'prompt',
+      promptName,
       ...commonParams,
     });
     t.is(newSessionId, sessionId, 'should get same session id');
@@ -340,13 +344,13 @@ test('should be able to update chat session prompt', async t => {
   const { prompt, session } = t.context;
 
   // Set up a prompt to be used in the session
-  await prompt.set('prompt', 'model', [
+  await prompt.set(promptName, 'model', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
 
   // Create a session
   const sessionId = await session.create({
-    promptName: 'prompt',
+    promptName,
     docId: 'test',
     workspaceId: 'test',
     userId,
@@ -375,7 +379,7 @@ test('should be able to update chat session prompt', async t => {
 test('should be able to fork chat session', async t => {
   const { auth, prompt, session } = t.context;
 
-  await prompt.set('prompt', 'model', [
+  await prompt.set(promptName, 'model', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
 
@@ -384,7 +388,7 @@ test('should be able to fork chat session', async t => {
   // create session
   const sessionId = await session.create({
     userId,
-    promptName: 'prompt',
+    promptName,
     ...commonParams,
   });
   const s = (await session.get(sessionId))!;
@@ -484,7 +488,7 @@ test('should be able to fork chat session', async t => {
   {
     const newSessionId = await session.create({
       userId,
-      promptName: 'prompt',
+      promptName,
       ...commonParams,
     });
     t.is(newSessionId, sessionId, 'should get same session id');
@@ -494,7 +498,7 @@ test('should be able to fork chat session', async t => {
 test('should be able to process message id', async t => {
   const { prompt, session } = t.context;
 
-  await prompt.set('prompt', 'model', [
+  await prompt.set(promptName, 'model', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
 
@@ -502,7 +506,7 @@ test('should be able to process message id', async t => {
     docId: 'test',
     workspaceId: 'test',
     userId,
-    promptName: 'prompt',
+    promptName,
     pinned: false,
   });
   const s = (await session.get(sessionId))!;
@@ -536,7 +540,7 @@ test('should be able to process message id', async t => {
 test('should be able to generate with message id', async t => {
   const { prompt, session } = t.context;
 
-  await prompt.set('prompt', 'model', [
+  await prompt.set(promptName, 'model', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
 
@@ -546,7 +550,7 @@ test('should be able to generate with message id', async t => {
       docId: 'test',
       workspaceId: 'test',
       userId,
-      promptName: 'prompt',
+      promptName,
       pinned: false,
     });
     const s = (await session.get(sessionId))!;
@@ -569,7 +573,7 @@ test('should be able to generate with message id', async t => {
       docId: 'test',
       workspaceId: 'test',
       userId,
-      promptName: 'prompt',
+      promptName,
       pinned: false,
     });
     const s = (await session.get(sessionId))!;
@@ -597,7 +601,7 @@ test('should be able to generate with message id', async t => {
       docId: 'test',
       workspaceId: 'test',
       userId,
-      promptName: 'prompt',
+      promptName,
       pinned: false,
     });
     const s = (await session.get(sessionId))!;
@@ -618,7 +622,7 @@ test('should be able to generate with message id', async t => {
 test('should save message correctly', async t => {
   const { prompt, session } = t.context;
 
-  await prompt.set('prompt', 'model', [
+  await prompt.set(promptName, 'model', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
 
@@ -626,7 +630,7 @@ test('should save message correctly', async t => {
     docId: 'test',
     workspaceId: 'test',
     userId,
-    promptName: 'prompt',
+    promptName,
     pinned: false,
   });
   const s = (await session.get(sessionId))!;
@@ -648,7 +652,7 @@ test('should revert message correctly', async t => {
   // init session
   let sessionId: string;
   {
-    await prompt.set('prompt', 'model', [
+    await prompt.set(promptName, 'model', [
       { role: 'system', content: 'hello {{word}}' },
     ]);
 
@@ -656,7 +660,7 @@ test('should revert message correctly', async t => {
       docId: 'test',
       workspaceId: 'test',
       userId,
-      promptName: 'prompt',
+      promptName,
       pinned: false,
     });
     const s = (await session.get(sessionId))!;
@@ -748,7 +752,7 @@ test('should revert message correctly', async t => {
 test('should handle params correctly in chat session', async t => {
   const { prompt, session } = t.context;
 
-  await prompt.set('prompt', 'model', [
+  await prompt.set(promptName, 'model', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
 
@@ -756,7 +760,7 @@ test('should handle params correctly in chat session', async t => {
     docId: 'test',
     workspaceId: 'test',
     userId,
-    promptName: 'prompt',
+    promptName,
     pinned: false,
   });
 
@@ -1033,7 +1037,7 @@ test('should be able to run text executor', async t => {
 
   executors.text.register();
   const executor = getWorkflowExecutor(executors.text.type);
-  await prompt.set('test', 'test', [
+  await prompt.set(promptName, 'test', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
   // mock provider
@@ -1045,7 +1049,7 @@ test('should be able to run text executor', async t => {
     id: 'basic',
     name: 'basic',
     nodeType: WorkflowNodeType.Basic,
-    promptName: 'test',
+    promptName,
     type: NodeExecutorType.ChatText,
   };
 
@@ -1099,7 +1103,7 @@ test('should be able to run image executor', async t => {
 
   executors.image.register();
   const executor = getWorkflowExecutor(executors.image.type);
-  await prompt.set('test', 'test-image', [
+  await prompt.set(promptName, 'test-image', [
     { role: 'user', content: 'tag1, tag2, tag3, {{#tags}}{{.}}, {{/tags}}' },
   ]);
   // mock provider
@@ -1111,7 +1115,7 @@ test('should be able to run image executor', async t => {
     id: 'basic',
     name: 'basic',
     nodeType: WorkflowNodeType.Basic,
-    promptName: 'test',
+    promptName,
     type: NodeExecutorType.ChatText,
   };
 
@@ -1514,14 +1518,14 @@ test('TextStreamParser should process a sequence of message chunks', t => {
 test('should be able to manage context', async t => {
   const { context, prompt, session, event, jobs, storage } = t.context;
 
-  await prompt.set('prompt', 'model', [
+  await prompt.set(promptName, 'model', [
     { role: 'system', content: 'hello {{word}}' },
   ]);
   const chatSession = await session.create({
     docId: 'test',
     workspaceId: 'test',
     userId,
-    promptName: 'prompt',
+    promptName,
     pinned: false,
   });
 
@@ -1738,14 +1742,14 @@ test('should be able to manage workspace embedding', async t => {
 
   // should create workspace embedding with file
   {
-    await prompt.set('prompt', 'model', [
+    await prompt.set(promptName, 'model', [
       { role: 'system', content: 'hello {{word}}' },
     ]);
     const sessionId = await session.create({
       docId: 'test',
       workspaceId: ws.id,
       userId,
-      promptName: 'prompt',
+      promptName,
       pinned: false,
     });
     const contextSession = await context.create(sessionId);
@@ -1764,7 +1768,9 @@ test('should be able to manage workspace embedding', async t => {
 test('should handle generateSessionTitle correctly under various conditions', async t => {
   const { prompt, session, workspace, copilotSession } = t.context;
 
-  await prompt.set('test', 'model', [{ role: 'user', content: '{{content}}' }]);
+  await prompt.set(promptName, 'model', [
+    { role: 'user', content: '{{content}}' },
+  ]);
   const createSession = async (
     options: {
       userMessage?: string;
@@ -1777,7 +1783,7 @@ test('should handle generateSessionTitle correctly under various conditions', as
       docId: 'test-doc',
       workspaceId: ws.id,
       userId,
-      promptName: 'test',
+      promptName,
       pinned: false,
     });
 
