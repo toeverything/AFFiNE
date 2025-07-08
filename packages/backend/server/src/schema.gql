@@ -1236,6 +1236,9 @@ type Mutation {
   """queue workspace doc embedding"""
   queueWorkspaceEmbedding(docId: [String!]!, workspaceId: String!): Boolean!
 
+  """mark all notifications as read"""
+  readAllNotifications: Boolean!
+
   """mark notification as read"""
   readNotification(id: String!): Boolean!
   recoverDoc(guid: String!, timestamp: DateTime!, workspaceId: String!): DateTime!

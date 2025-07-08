@@ -1989,6 +1989,14 @@ export const quotaQuery = {
   deprecations: ["'storageQuota' is deprecated: use `UserQuotaType['usedStorageQuota']` instead"],
 };
 
+export const readAllNotificationsMutation = {
+  id: 'readAllNotificationsMutation' as const,
+  op: 'readAllNotifications',
+  query: `mutation readAllNotifications {
+  readAllNotifications
+}`,
+};
+
 export const readNotificationMutation = {
   id: 'readNotificationMutation' as const,
   op: 'readNotification',

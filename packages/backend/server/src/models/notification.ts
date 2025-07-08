@@ -261,6 +261,18 @@ export class NotificationModel extends BaseModel {
     });
   }
 
+  async markAllAsRead(userId: string) {
+    const { count } = await this.db.notification.updateMany({
+      where: { userId },
+      data: {
+        read: true,
+      },
+    });
+    this.logger.log(
+      `Marked all notifications as read for user ${userId}, count: ${count}`
+    );
+  }
+
   /**
    * Find many notifications by user id, exclude read notifications by default
    */

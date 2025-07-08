@@ -399,6 +399,10 @@ export class NotificationService {
     }
   }
 
+  async markAllAsRead(userId: string) {
+    await this.models.notification.markAllAsRead(userId);
+  }
+
   /**
    * Find notifications by user id, order by createdAt desc
    */

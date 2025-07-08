@@ -1371,6 +1371,8 @@ export interface Mutation {
   publishPage: DocType;
   /** queue workspace doc embedding */
   queueWorkspaceEmbedding: Scalars['Boolean']['output'];
+  /** mark all notifications as read */
+  readAllNotifications: Scalars['Boolean']['output'];
   /** mark notification as read */
   readNotification: Scalars['Boolean']['output'];
   recoverDoc: Scalars['DateTime']['output'];
@@ -5218,6 +5220,15 @@ export type QuotaQuery = {
   } | null;
 };
 
+export type ReadAllNotificationsMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type ReadAllNotificationsMutation = {
+  __typename?: 'Mutation';
+  readAllNotifications: boolean;
+};
+
 export type ReadNotificationMutationVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
@@ -6351,6 +6362,11 @@ export type Mutations =
       name: 'publishPageMutation';
       variables: PublishPageMutationVariables;
       response: PublishPageMutation;
+    }
+  | {
+      name: 'readAllNotificationsMutation';
+      variables: ReadAllNotificationsMutationVariables;
+      response: ReadAllNotificationsMutation;
     }
   | {
       name: 'readNotificationMutation';
