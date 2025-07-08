@@ -132,7 +132,7 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   };
 
   private readonly onSessionClick = async (sessionId: string) => {
-    if (this.session?.id === sessionId) {
+    if (this.session?.sessionId === sessionId) {
       this.notification?.toast('You are already in this chat');
       return;
     }
@@ -143,7 +143,7 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   };
 
   private readonly onDocClick = async (docId: string, sessionId: string) => {
-    if (this.docId === docId && this.session?.id === sessionId) {
+    if (this.docId === docId && this.session?.sessionId === sessionId) {
       this.notification?.toast('You are already in this chat');
       return;
     }

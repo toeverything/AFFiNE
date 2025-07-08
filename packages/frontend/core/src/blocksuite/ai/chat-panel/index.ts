@@ -170,7 +170,7 @@ export class ChatPanel extends SignalWatcher(
   };
 
   private readonly setSession = (
-    session: CopilotSessionType | null | undefined
+    session: CopilotChatHistoryFragment | null | undefined
   ) => {
     this.session = session ?? null;
   };
@@ -250,7 +250,7 @@ export class ChatPanel extends SignalWatcher(
   };
 
   private readonly openSession = async (sessionId: string) => {
-    if (this.session?.id === sessionId) {
+    if (this.session?.sessionId === sessionId) {
       return;
     }
     this.resetPanel();
@@ -263,7 +263,7 @@ export class ChatPanel extends SignalWatcher(
 
   private readonly openDoc = async (docId: string, sessionId: string) => {
     if (this.doc.id === docId) {
-      if (this.session?.id === sessionId || this.session?.pinned) {
+      if (this.session?.sessionId === sessionId || this.session?.pinned) {
         return;
       }
       await this.openSession(sessionId);

@@ -192,7 +192,7 @@ export class CopilotClient {
           limit,
         },
       });
-      return res.currentUser?.copilot?.histories;
+      return res.currentUser?.copilot?.chats.edges.map(e => e.node);
     } catch (err) {
       throw resolveError(err);
     }
