@@ -1,9 +1,11 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { AppThemeService } from '@affine/core/modules/theme';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType, Store } from '@blocksuite/affine/store';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { css, html } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -82,6 +84,12 @@ export class PlaygroundContent extends SignalWatcher(
 
   @property({ attribute: false })
   accessor affineFeatureFlagService!: FeatureFlagService;
+
+  @property({ attribute: false })
+  accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
 
   @state()
   accessor sessions: CopilotChatHistoryFragment[] = [];
@@ -336,6 +344,8 @@ export class PlaygroundContent extends SignalWatcher(
                 .docDisplayConfig=${this.docDisplayConfig}
                 .extensions=${this.extensions}
                 .affineFeatureFlagService=${this.affineFeatureFlagService}
+                .affineThemeService=${this.affineThemeService}
+                .notificationService=${this.notificationService}
                 .addChat=${this.addChat}
               ></playground-chat>
             </div>

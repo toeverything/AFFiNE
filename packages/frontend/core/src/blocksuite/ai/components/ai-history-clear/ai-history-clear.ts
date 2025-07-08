@@ -18,7 +18,7 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
   accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
-  accessor notification: NotificationService | null | undefined;
+  accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
   accessor doc!: Store;
@@ -52,15 +52,13 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
     }
     const sessionId = this.session.sessionId;
     try {
-      const confirm = this.notification
-        ? await this.notification.confirm({
-            title: 'Clear History',
-            message:
-              'Are you sure you want to clear all history? This action will permanently delete all content, including all chat logs and data, and cannot be undone.',
-            confirmText: 'Confirm',
-            cancelText: 'Cancel',
-          })
-        : true;
+      const confirm = await this.notificationService.confirm({
+        title: 'Clear History',
+        message:
+          'Are you sure you want to clear all history? This action will permanently delete all content, including all chat logs and data, and cannot be undone.',
+        confirmText: 'Confirm',
+        cancelText: 'Cancel',
+      });
 
       if (confirm) {
         const actionIds = this.chatContextValue.messages
@@ -71,11 +69,11 @@ export class AIHistoryClear extends WithDisposable(ShadowlessElement) {
           this.doc.id,
           [...(sessionId ? [sessionId] : []), ...(actionIds || [])]
         );
-        this.notification?.toast('History cleared');
+        this.notificationService.toast('History cleared');
         this.onHistoryCleared?.();
       }
     } catch {
-      this.notification?.toast('Failed to clear history');
+      this.notificationService.toast('Failed to clear history');
     }
   };
 

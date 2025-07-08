@@ -1,4 +1,3 @@
-import type { ServiceProvider } from '@blocksuite/affine/global/di';
 import {
   DatabaseBlockModel,
   ImageBlockModel,
@@ -19,10 +18,11 @@ import {
   isInsideEdgelessEditor,
   matchModels,
 } from '@blocksuite/affine/shared/utils';
-import type { EditorHost } from '@blocksuite/affine/std';
+import { BlockStdScope, type EditorHost } from '@blocksuite/affine/std';
 import type { BlockModel, Store } from '@blocksuite/affine/store';
 import { Slice, toDraftModel } from '@blocksuite/affine/store';
 
+import { getStoreManager } from '../../manager/store';
 import type { ChatContextValue } from '../components/ai-chat-content';
 import {
   getSelectedImagesAsBlobs,
@@ -96,12 +96,13 @@ async function extractPageSelected(
   }
 }
 
-export async function extractMarkdownFromDoc(
-  doc: Store,
-  provider: ServiceProvider
-): Promise<string> {
+export async function extractMarkdownFromDoc(doc: Store): Promise<string> {
+  const std = new BlockStdScope({
+    store: doc,
+    extensions: getStoreManager().config.init().value.get('store'),
+  });
   const transformer = await getTransformer(doc);
-  const adapter = new MarkdownAdapter(transformer, provider);
+  const adapter = new MarkdownAdapter(transformer, std.provider);
   const blockModels = getNoteBlockModels(doc);
   const textModels = blockModels.filter(
     model => !matchModels(model, [ImageBlockModel, DatabaseBlockModel])

@@ -1,10 +1,12 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { AppThemeService } from '@affine/core/modules/theme';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { isInsidePageEditor } from '@blocksuite/affine/shared/utils';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import type { ExtensionType } from '@blocksuite/affine/store';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import type { Signal } from '@preact/signals-core';
 import { css, html, nothing } from 'lit';
 import { property } from 'lit/decorators.js';
@@ -36,9 +38,6 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor host: EditorHost | null | undefined;
 
   @property({ attribute: false })
-  accessor docId: string | undefined;
-
-  @property({ attribute: false })
   accessor item!: ChatMessage;
 
   @property({ attribute: false })
@@ -57,6 +56,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
+  accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
   accessor session!: CopilotChatHistoryFragment | null | undefined;
 
   @property({ attribute: false })
@@ -67,6 +69,9 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
 
   get state() {
     const { isLast, status } = this;
@@ -118,27 +123,29 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
 
   private renderStreamObjects(answer: StreamObject[]) {
     return html`<chat-content-stream-objects
-      .answer=${answer}
       .host=${this.host}
+      .answer=${answer}
       .state=${this.state}
       .width=${this.width}
       .extensions=${this.extensions}
       .affineFeatureFlagService=${this.affineFeatureFlagService}
+      .notificationService=${this.notificationService}
+      .theme=${this.affineThemeService.appTheme.themeSignal}
     ></chat-content-stream-objects>`;
   }
 
   private renderRichText(text: string) {
     return html`<chat-content-rich-text
-      .host=${this.host}
       .text=${text}
       .state=${this.state}
       .extensions=${this.extensions}
       .affineFeatureFlagService=${this.affineFeatureFlagService}
+      .theme=${this.affineThemeService.appTheme.themeSignal}
     ></chat-content-rich-text>`;
   }
 
   private renderEditorActions() {
-    const { item, isLast, status, host, session, docId } = this;
+    const { item, isLast, status, host, session } = this;
 
     if (!isChatMessage(item) || item.role !== 'assistant') return nothing;
 
@@ -161,7 +168,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
         : EdgelessEditorActions
       : null;
 
-    const showActions = host && docId && !!markdown;
+    const showActions = host && !!markdown;
 
     return html`
       <chat-copy-more
@@ -173,6 +180,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
         .messageId=${messageId}
         .withMargin=${true}
         .retry=${() => this.retry()}
+        .notificationService=${this.notificationService}
       ></chat-copy-more>
       ${isLast && showActions
         ? html`<chat-action-list
@@ -182,6 +190,7 @@ export class ChatMessageAssistant extends WithDisposable(ShadowlessElement) {
             .content=${markdown}
             .messageId=${messageId ?? undefined}
             .withMargin=${true}
+            .notificationService=${this.notificationService}
           ></chat-action-list>`
         : nothing}
     `;

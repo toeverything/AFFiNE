@@ -468,6 +468,8 @@ export class AIChatBlockPeekView extends LitElement {
           return html`<ai-loading></ai-loading>`;
         }
 
+        const notificationService = this.host.std.get(NotificationProvider);
+
         return html`<div class=${messageClasses}>
           <ai-chat-block-message
             .host=${host}
@@ -485,6 +487,7 @@ export class AIChatBlockPeekView extends LitElement {
                 .isLast=${isLastReply}
                 .messageId=${message.id ?? undefined}
                 .retry=${() => this.retry()}
+                .notificationService=${notificationService}
               ></chat-copy-more>`
             : nothing}
           ${shouldRenderActions
@@ -495,6 +498,7 @@ export class AIChatBlockPeekView extends LitElement {
                 .content=${markdown}
                 .messageId=${message.id ?? undefined}
                 .layoutDirection=${'horizontal'}
+                .notificationService=${notificationService}
               ></chat-action-list>`
             : nothing}
         </div>`;
@@ -569,7 +573,7 @@ export class AIChatBlockPeekView extends LitElement {
     } = this;
 
     const { messages: currentChatMessages } = chatContext;
-    const notification = this.host.std.getOptional(NotificationProvider);
+    const notificationService = this.host.std.get(NotificationProvider);
 
     return html`<div class="ai-chat-block-peek-view-container">
       <div class="history-clear-container">
@@ -578,7 +582,7 @@ export class AIChatBlockPeekView extends LitElement {
           .session=${this.forkSession}
           .onHistoryCleared=${this._onHistoryCleared}
           .chatContextValue=${chatContext}
-          .notification=${notification}
+          .notificationService=${notificationService}
         ></ai-history-clear>
       </div>
       <div class="ai-chat-messages-container">

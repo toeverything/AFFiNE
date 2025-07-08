@@ -37,7 +37,7 @@ export class ChatPanelUtils {
   }
 
   public static async closeChatPanel(page: Page) {
-    await page.getByTestId('right-sidebar-toggle').click({
+    await page.getByTestId('right-sidebar-close').click({
       delay: 200,
     });
     await expect(page.getByTestId('sidebar-tab-content-chat')).toBeHidden();

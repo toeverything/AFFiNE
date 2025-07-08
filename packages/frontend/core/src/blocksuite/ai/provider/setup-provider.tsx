@@ -2,6 +2,7 @@ import { toggleGeneralAIOnboarding } from '@affine/core/components/affine/ai-onb
 import type { AuthAccountInfo, AuthService } from '@affine/core/modules/cloud';
 import type { GlobalDialogService } from '@affine/core/modules/dialogs';
 import {
+  type AddContextFileInput,
   ContextCategories,
   type ContextWorkspaceEmbeddingStatus,
   type getCopilotHistoriesQuery,
@@ -609,10 +610,7 @@ Could you make a new website based on these notes and send back just the html fi
     removeContextDoc: async (options: { contextId: string; docId: string }) => {
       return client.removeContextDoc(options);
     },
-    addContextFile: async (
-      file: File,
-      options: { contextId: string; blobId: string }
-    ) => {
+    addContextFile: async (file: File, options: AddContextFileInput) => {
       return client.addContextFile(file, options);
     },
     removeContextFile: async (options: {

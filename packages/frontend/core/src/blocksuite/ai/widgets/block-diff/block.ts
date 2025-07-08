@@ -1,4 +1,5 @@
 import { WidgetComponent, WidgetViewExtension } from '@blocksuite/affine/std';
+import { ThemeProvider } from '@blocksuite/affine-shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine-shared/theme';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { literal, unsafeStatic } from 'lit/static-html.js';
@@ -98,9 +99,9 @@ export class AffineBlockDiffWidgetForBlock extends WidgetComponent {
           : html`<div class="ai-block-diff insert" data-diff-id=${diffId}>
               <chat-content-rich-text
                 .text=${block.content}
-                .host=${this.host}
                 .state="finished"
                 .extensions=${this.userExtensions}
+                .theme=${this.host.std.get(ThemeProvider).app$}
               ></chat-content-rich-text>
               <ai-block-diff-options
                 class="diff-options"
@@ -132,9 +133,9 @@ export class AffineBlockDiffWidgetForBlock extends WidgetComponent {
       <div class="ai-block-diff update" data-diff-id=${diffId}>
         <chat-content-rich-text
           .text=${content}
-          .host=${this.host}
           .state="finished"
           .extensions=${this.userExtensions}
+          .theme=${this.host.std.get(ThemeProvider).app$}
         ></chat-content-rich-text>
         <ai-block-diff-options
           class="diff-options"

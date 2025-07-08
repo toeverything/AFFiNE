@@ -5,14 +5,11 @@ import { LoadingIcon } from '@blocksuite/affine/components/icons';
 import { toast } from '@blocksuite/affine/components/toast';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
-import type { ImageProxyService } from '@blocksuite/affine/shared/adapters';
-import {
-  NotificationProvider,
-  ThemeProvider,
-} from '@blocksuite/affine/shared/services';
+import type { ColorScheme } from '@blocksuite/affine/model';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type BlockStdScope, ShadowlessElement } from '@blocksuite/affine/std';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
+import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { CopyIcon, PageIcon, ToolIcon } from '@blocksuite/icons/lit';
 import { type Signal } from '@preact/signals-core';
 import { css, html, nothing, type PropertyValues } from 'lit';
@@ -110,10 +107,13 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
   accessor width: Signal<number | undefined> | undefined;
 
   @property({ attribute: false })
-  accessor imageProxyService: ImageProxyService | null | undefined;
+  accessor std: BlockStdScope | undefined;
 
   @property({ attribute: false })
-  accessor std: BlockStdScope | undefined;
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
+  accessor theme!: Signal<ColorScheme>;
 
   override updated(changedProperties: PropertyValues) {
     super.updated(changedProperties);
@@ -147,7 +147,6 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
           return;
         }
         const workspace = std.store.workspace;
-        const notificationService = std.get(NotificationProvider);
         const refNodeSlots = std.getOptional(RefNodeSlotsProvider);
         const docId = await MarkdownTransformer.importMarkdownToDoc({
           collection: workspace,
@@ -157,7 +156,7 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
           extensions: getStoreManager().config.init().value.get('store'),
         });
         if (docId) {
-          const open = await notificationService.confirm({
+          const open = await this.notificationService.confirm({
             title: 'Open the doc you just created',
             message: 'Doc saved successfully! Would you like to open it now?',
             cancelText: 'Cancel',
@@ -200,8 +199,6 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
         ${successResult
           ? html`<text-renderer
               .answer=${successResult.markdown}
-              .host=${std.host}
-              .schema=${std.store.schema}
               .options=${{
                 customHeading: true,
                 extensions: getCustomPageEditorBlockSpecs(),
@@ -237,10 +234,8 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
       ></tool-call-failed>`;
     }
 
-    const theme = this.std.get(ThemeProvider).theme;
-
     const { LinkedDocEmptyBanner } = getEmbedLinkedDocIcons(
-      theme,
+      this.theme.value,
       'page',
       'horizontal'
     );

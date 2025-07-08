@@ -1,10 +1,11 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import type { AppThemeService } from '@affine/core/modules/theme';
 import type {
   ContextEmbedStatus,
   CopilotChatHistoryFragment,
 } from '@affine/graphql';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
-import { NotificationProvider } from '@blocksuite/affine/shared/services';
+import { type NotificationService } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -16,6 +17,7 @@ import { createRef, type Ref, ref } from 'lit/directives/ref.js';
 import { throttle } from 'lodash-es';
 
 import type { AppSidebarConfig } from '../../chat-panel/chat-config';
+import { HISTORY_IMAGE_ACTIONS } from '../../chat-panel/const';
 import { AIProvider } from '../../provider';
 import type { DocDisplayConfig, SearchMenuConfig } from '../ai-chat-chips';
 import type { ChatContextValue } from '../ai-chat-content';
@@ -29,6 +31,7 @@ import {
   type ChatAction,
   type ChatMessage,
   type HistoryMessage,
+  isChatMessage,
 } from '../ai-chat-messages';
 
 const DEFAULT_CHAT_CONTEXT_VALUE: ChatContextValue = {
@@ -160,6 +163,12 @@ export class PlaygroundChat extends SignalWatcher(
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
+  accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
   accessor addChat!: () => Promise<void>;
 
   @state()
@@ -176,6 +185,17 @@ export class PlaygroundChat extends SignalWatcher(
 
   // request counter to track the latest request
   private _updateHistoryCounter = 0;
+
+  get messages() {
+    return this.chatContextValue.messages.filter(item => {
+      return (
+        isChatMessage(item) ||
+        item.messages?.length === 3 ||
+        (HISTORY_IMAGE_ACTIONS.includes(item.action) &&
+          item.messages?.length === 2)
+      );
+    });
+  }
 
   private readonly _initPanel = async () => {
     const userId = (await AIProvider.userInfo)?.id;
@@ -276,7 +296,6 @@ export class PlaygroundChat extends SignalWatcher(
   override render() {
     const [done, total] = this.embeddingProgress;
     const isEmbedding = total > 0 && done < total;
-    const notification = this.host.std.getOptional(NotificationProvider);
 
     return html`<div class="chat-panel-container">
       <div class="chat-panel-title">
@@ -294,7 +313,7 @@ export class PlaygroundChat extends SignalWatcher(
         <ai-history-clear
           .doc=${this.doc}
           .session=${this.session}
-          .notification=${notification}
+          .notificationService=${this.notificationService}
           .onHistoryCleared=${this._updateHistory}
           .chatContextValue=${this.chatContextValue}
         ></ai-history-clear>
@@ -312,8 +331,11 @@ export class PlaygroundChat extends SignalWatcher(
         .updateContext=${this.updateContext}
         .extensions=${this.extensions}
         .affineFeatureFlagService=${this.affineFeatureFlagService}
+        .affineThemeService=${this.affineThemeService}
+        .notificationService=${this.notificationService}
         .networkSearchConfig=${this.networkSearchConfig}
         .reasoningConfig=${this.reasoningConfig}
+        .messages=${this.messages}
       ></ai-chat-messages>
       <ai-chat-composer
         .host=${this.host}

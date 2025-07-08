@@ -120,7 +120,6 @@ export class AIChatComposer extends SignalWatcher(
   override render() {
     return html`
       <chat-panel-chips
-        .host=${this.host}
         .chips=${this.chips}
         .createContextId=${this._createContextId}
         .updateChips=${this.updateChips}

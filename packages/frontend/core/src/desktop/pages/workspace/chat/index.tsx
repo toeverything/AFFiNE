@@ -1,11 +1,10 @@
-import { observeResize } from '@affine/component';
+import { observeResize, useConfirmModal } from '@affine/component';
 import { CopilotClient } from '@affine/core/blocksuite/ai';
 import { AIChatContent } from '@affine/core/blocksuite/ai/components/ai-chat-content';
 import { AIChatToolbar } from '@affine/core/blocksuite/ai/components/ai-chat-toolbar';
-import { getCustomPageEditorBlockSpecs } from '@affine/core/blocksuite/ai/components/text-renderer';
 import type { PromptKey } from '@affine/core/blocksuite/ai/provider/prompt';
+import { NotificationServiceImpl } from '@affine/core/blocksuite/view-extensions/editor-view/notification-service';
 import { useAIChatConfig } from '@affine/core/components/hooks/affine/use-ai-chat-config';
-import { getCollection } from '@affine/core/desktop/dialogs/setting/general-setting/editor/edgeless/docs';
 import {
   EventSourceService,
   FetchService,
@@ -13,6 +12,7 @@ import {
 } from '@affine/core/modules/cloud';
 import { WorkspaceDialogService } from '@affine/core/modules/dialogs';
 import { FeatureFlagService } from '@affine/core/modules/feature-flag';
+import { AppThemeService } from '@affine/core/modules/theme';
 import {
   ViewBody,
   ViewHeader,
@@ -21,8 +21,6 @@ import {
 } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
-import type { Doc, Store } from '@blocksuite/affine/store';
-import { BlockStdScope, type EditorHost } from '@blocksuite/std';
 import { type Signal, signal } from '@preact/signals-core';
 import { useFramework, useService } from '@toeverything/infra';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -52,7 +50,6 @@ export const Component = () => {
   const framework = useFramework();
   const [isBodyProvided, setIsBodyProvided] = useState(false);
   const [isHeaderProvided, setIsHeaderProvided] = useState(false);
-  const [host, setHost] = useState<EditorHost | null>(null);
   const [chatContent, setChatContent] = useState<AIChatContent | null>(null);
   const [chatTool, setChatTool] = useState<AIChatToolbar | null>(null);
   const [currentSession, setCurrentSession] = useState<CopilotSession | null>(
@@ -132,28 +129,11 @@ export const Component = () => {
     [chatContent, chatTool, client, isOpeningSession, workspaceId]
   );
 
-  // create a temp doc/host for ai-chat-content
-  useEffect(() => {
-    let tempDoc: Doc | null = null;
-    const collection = getCollection();
-    const doc = collection.createDoc();
-    tempDoc = doc;
-    doc.load(() => {
-      const host = new BlockStdScope({
-        store: tempDoc?.getStore() as Store,
-        extensions: getCustomPageEditorBlockSpecs(),
-      }).render();
-      setHost(host);
-    });
-
-    return () => {
-      tempDoc?.dispose();
-    };
-  }, []);
+  const confirmModal = useConfirmModal();
 
   // init or update ai-chat-content
   useEffect(() => {
-    if (!isBodyProvided || !host) {
+    if (!isBodyProvided) {
       return;
     }
 
@@ -164,7 +144,6 @@ export const Component = () => {
     }
 
     content.session = currentSession;
-    content.host = host;
     content.workspaceId = workspaceId;
     content.docDisplayConfig = docDisplayConfig;
     content.searchMenuConfig = searchMenuConfig;
@@ -173,6 +152,11 @@ export const Component = () => {
     content.affineFeatureFlagService = framework.get(FeatureFlagService);
     content.affineWorkspaceDialogService = framework.get(
       WorkspaceDialogService
+    );
+    content.affineThemeService = framework.get(AppThemeService);
+    content.notificationService = new NotificationServiceImpl(
+      confirmModal.closeConfirmModal,
+      confirmModal.openConfirmModal
     );
 
     if (!chatContent) {
@@ -190,12 +174,12 @@ export const Component = () => {
     currentSession,
     docDisplayConfig,
     framework,
-    host,
     isBodyProvided,
     networkSearchConfig,
     reasoningConfig,
     searchMenuConfig,
     workspaceId,
+    confirmModal,
   ]);
 
   // init or update header ai-chat-toolbar
@@ -213,6 +197,10 @@ export const Component = () => {
     tool.workspaceId = workspaceId;
     tool.docDisplayConfig = docDisplayConfig;
     tool.onOpenSession = onOpenSession;
+    tool.notificationService = new NotificationServiceImpl(
+      confirmModal.closeConfirmModal,
+      confirmModal.openConfirmModal
+    );
 
     tool.onNewSession = () => {
       if (!currentSession) return;
@@ -239,6 +227,7 @@ export const Component = () => {
     onOpenSession,
     togglePin,
     workspaceId,
+    confirmModal,
   ]);
 
   const onChatContainerRef = useCallback((node: HTMLDivElement) => {

@@ -1,7 +1,6 @@
 import { CodeBlockHighlighter } from '@blocksuite/affine/blocks/code';
 import { toast } from '@blocksuite/affine/components/toast';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
-import type { ImageProxyService } from '@blocksuite/affine/shared/adapters';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { type BlockStdScope, ShadowlessElement } from '@blocksuite/affine/std';
 import { CopyIcon, PageIcon, ToolIcon } from '@blocksuite/icons/lit';
@@ -295,9 +294,6 @@ export class CodeArtifactTool extends WithDisposable(ShadowlessElement) {
 
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
-
-  @property({ attribute: false })
-  accessor imageProxyService: ImageProxyService | null | undefined;
 
   @property({ attribute: false })
   accessor std: BlockStdScope | undefined;

@@ -1,8 +1,10 @@
+import type { AppThemeService } from '@affine/core/modules/theme';
 import type { CopilotChatHistoryFragment } from '@affine/graphql';
 import { WithDisposable } from '@blocksuite/affine/global/lit';
 import {
   DocModeProvider,
-  FeatureFlagService,
+  type FeatureFlagService,
+  type NotificationService,
 } from '@blocksuite/affine/shared/services';
 import type { EditorHost } from '@blocksuite/affine/std';
 import { ShadowlessElement } from '@blocksuite/affine/std';
@@ -188,6 +190,12 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   accessor affineFeatureFlagService!: FeatureFlagService;
 
   @property({ attribute: false })
+  accessor affineThemeService!: AppThemeService;
+
+  @property({ attribute: false })
+  accessor notificationService!: NotificationService;
+
+  @property({ attribute: false })
   accessor networkSearchConfig!: AINetworkSearchConfig;
 
   @property({ attribute: false })
@@ -222,8 +230,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
   }
 
   private _renderAIOnboarding() {
-    return this.isHistoryLoading ||
-      !this.host?.store.get(FeatureFlagService).getFlag('enable_ai_onboarding')
+    return this.isHistoryLoading
       ? nothing
       : html`<div class="onboarding-wrapper" data-testid="ai-onboarding">
           ${repeat(
@@ -311,7 +318,6 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                 } else if (isChatMessage(item) && item.role === 'assistant') {
                   return html`<chat-message-assistant
                     .host=${this.host}
-                    .docId=${this.docId}
                     .session=${this.session}
                     .item=${item}
                     .isLast=${isLast}
@@ -319,6 +325,8 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
                     .error=${isLast ? error : null}
                     .extensions=${this.extensions}
                     .affineFeatureFlagService=${this.affineFeatureFlagService}
+                    .affineThemeService=${this.affineThemeService}
+                    .notificationService=${this.notificationService}
                     .retry=${() => this.retry()}
                     .width=${this.width}
                   ></chat-message-assistant>`;
