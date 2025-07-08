@@ -705,7 +705,7 @@ export class AIChatInput extends SignalWatcher(
       const historyIds = await AIProvider.histories.ids(
         this.workspaceId,
         this.docId,
-        { sessionId }
+        { sessionId, withMessages: true }
       );
       if (!historyIds || !historyIds[0]) return;
       last.id = historyIds[0].messages.at(-1)?.id ?? '';
