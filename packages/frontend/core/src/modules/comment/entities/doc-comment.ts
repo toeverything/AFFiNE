@@ -28,6 +28,7 @@ import { type DocDisplayMetaService } from '../../doc-display-meta';
 import { GlobalContextService } from '../../global-context';
 import type { SnapshotHelper } from '../services/snapshot-helper';
 import type {
+  CommentAttachment,
   CommentId,
   DocComment,
   DocCommentChangeListResult,
@@ -39,6 +40,13 @@ import type {
 import { DocCommentStore } from './doc-comment-store';
 
 type DisposeCallback = () => void;
+
+type EditingDraft = {
+  id: CommentId;
+  type: 'comment' | 'reply';
+  doc: Store;
+  attachments: CommentAttachment[];
+};
 
 export class DocCommentEntity extends Entity<{
   docId: string;
@@ -68,11 +76,7 @@ export class DocCommentEntity extends Entity<{
   readonly pendingReply$ = new LiveData<PendingComment | null>(null);
 
   // Draft state for editing existing comment or reply (only one at a time)
-  readonly editingDraft$ = new LiveData<{
-    id: CommentId;
-    type: 'comment' | 'reply';
-    doc: Store;
-  } | null>(null);
+  readonly editingDraft$ = new LiveData<EditingDraft | null>(null);
 
   private readonly commentAdded$ = new Subject<{
     id: CommentId;
@@ -102,6 +106,7 @@ export class DocCommentEntity extends Entity<{
       doc,
       preview,
       selections,
+      attachments: [],
     };
 
     // Replace any existing pending comment (only one at a time)
@@ -137,6 +142,7 @@ export class DocCommentEntity extends Entity<{
       id,
       doc,
       commentId,
+      attachments: [],
     };
     // Replace any existing pending reply (only one at a time)
     this.pendingReply$.setValue(pendingReply);
@@ -158,13 +164,14 @@ export class DocCommentEntity extends Entity<{
   async startEdit(
     id: CommentId,
     type: 'comment' | 'reply',
-    snapshot: DocSnapshot
+    snapshot: DocSnapshot,
+    attachments: CommentAttachment[]
   ): Promise<void> {
     const doc = await this.snapshotHelper.createStore(snapshot);
     if (!doc) {
       throw new Error('Failed to create doc for editing');
     }
-    this.editingDraft$.setValue({ id, type, doc });
+    this.editingDraft$.setValue({ id, type, doc, attachments });
   }
 
   /** Commit current editing draft (if any) */
@@ -178,9 +185,15 @@ export class DocCommentEntity extends Entity<{
     }
 
     if (draft.type === 'comment') {
-      await this.updateComment(draft.id, { snapshot });
+      await this.updateComment(draft.id, {
+        snapshot,
+        attachments: draft.attachments,
+      });
     } else {
-      await this.updateReply(draft.id, { snapshot });
+      await this.updateReply(draft.id, {
+        snapshot,
+        attachments: draft.attachments,
+      });
     }
 
     this.editingDraft$.setValue(null);
@@ -202,7 +215,7 @@ export class DocCommentEntity extends Entity<{
       console.warn('Pending comment not found:', id);
       return;
     }
-    const { doc, preview } = pendingComment;
+    const { doc, preview, attachments } = pendingComment;
     const snapshot = this.snapshotHelper.getSnapshot(doc);
     if (!snapshot) {
       throw new Error('Failed to get snapshot');
@@ -212,6 +225,7 @@ export class DocCommentEntity extends Entity<{
         snapshot,
         preview,
         mode: this.docMode$.value ?? 'page',
+        attachments,
       },
     });
     const currentComments = this.comments$.value;
@@ -230,7 +244,7 @@ export class DocCommentEntity extends Entity<{
       console.warn('Pending reply not found:', id);
       return;
     }
-    const { doc } = pendingReply;
+    const { doc, attachments } = pendingReply;
     const snapshot = this.snapshotHelper.getSnapshot(doc);
     if (!snapshot) {
       throw new Error('Failed to get snapshot');
@@ -243,6 +257,7 @@ export class DocCommentEntity extends Entity<{
     const reply = await this.store.createReply(pendingReply.commentId, {
       content: {
         snapshot,
+        attachments,
       },
     });
     const currentComments = this.comments$.value;
@@ -264,18 +279,55 @@ export class DocCommentEntity extends Entity<{
     this.revalidate();
   }
 
-  async deleteReply(id: string): Promise<void> {
-    await this.store.deleteReply(id);
+  async deleteReply(replyId: string): Promise<void> {
+    await this.store.deleteReply(replyId);
     const currentComments = this.comments$.value;
     const updatedComments = currentComments.map(comment => {
       return {
         ...comment,
-        replies: comment.replies?.filter(r => r.id !== id),
+        replies: comment.replies?.filter(r => r.id !== replyId),
       };
     });
     this.comments$.setValue(updatedComments);
     this.revalidate();
   }
+
+  /**
+   * Upload an attachment file for the draft/editing comment/reply.
+   * @param file File to upload
+   * @returns
+   */
+  uploadCommentAttachment = async (
+    id: string,
+    file: File,
+    pending: PendingComment | EditingDraft
+  ): Promise<string> => {
+    // check if the given pending comment is the same as the current comment or reply
+    const isPendingComment = pending.id === this.pendingComment$.value?.id;
+    const isPendingReply = pending.id === this.pendingReply$.value?.id;
+    const isEditingDraft = pending.id === this.editingDraft$.value?.id;
+    if (!isPendingComment && !isPendingReply && !isEditingDraft) {
+      throw new Error('Pending comment/reply not found');
+    }
+    const url = await this.store.uploadCommentAttachment(file);
+
+    // todo: should be immutable
+    pending.attachments.push({
+      id,
+      url,
+      filename: file.name,
+      mimeType: file.type,
+    });
+
+    if (isPendingComment) {
+      this.pendingComment$.setValue(pending as PendingComment);
+    } else if (isPendingReply) {
+      this.pendingReply$.setValue(pending as PendingComment);
+    } else if (isEditingDraft) {
+      this.editingDraft$.setValue(pending as EditingDraft);
+    }
+    return url;
+  };
 
   async updateComment(id: string, content: DocCommentContent): Promise<void> {
     await this.store.updateComment(id, { content });
@@ -295,6 +347,30 @@ export class DocCommentEntity extends Entity<{
     );
     this.comments$.setValue(updatedComments);
     this.revalidate();
+  }
+
+  updatePendingComment(id: string, patch: Partial<PendingComment>): void {
+    const pendingComment = this.pendingComment$.value;
+    if (!pendingComment || pendingComment.id !== id) {
+      throw new Error('Pending comment not found');
+    }
+    this.pendingComment$.setValue({ ...pendingComment, ...patch });
+  }
+
+  updatePendingReply(id: string, patch: Partial<PendingComment>): void {
+    const pendingReply = this.pendingReply$.value;
+    if (!pendingReply || pendingReply.id !== id) {
+      throw new Error('Pending reply not found');
+    }
+    this.pendingReply$.setValue({ ...pendingReply, ...patch });
+  }
+
+  updateEditingDraft(id: string, patch: Partial<EditingDraft>): void {
+    const draft = this.editingDraft$.value;
+    if (!draft || draft.id !== id) {
+      throw new Error('Editing draft not found');
+    }
+    this.editingDraft$.setValue({ ...draft, ...patch });
   }
 
   async resolveComment(id: CommentId, resolved: boolean): Promise<void> {

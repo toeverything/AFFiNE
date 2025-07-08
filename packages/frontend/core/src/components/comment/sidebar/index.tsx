@@ -14,6 +14,7 @@ import { type DocCommentEntity } from '@affine/core/modules/comment/entities/doc
 import { CommentPanelService } from '@affine/core/modules/comment/services/comment-panel-service';
 import { DocCommentManagerService } from '@affine/core/modules/comment/services/doc-comment-manager';
 import type {
+  CommentAttachment,
   DocComment,
   DocCommentReply,
 } from '@affine/core/modules/comment/types';
@@ -22,7 +23,7 @@ import { toDocSearchParams } from '@affine/core/modules/navigation';
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { copyTextToClipboard } from '@affine/core/utils/clipboard';
 import { i18nTime, useI18n } from '@affine/i18n';
-import type { DocSnapshot } from '@blocksuite/affine/store';
+import type { DocSnapshot, Store } from '@blocksuite/affine/store';
 import { DoneIcon, FilterIcon, MoreHorizontalIcon } from '@blocksuite/icons/rc';
 import {
   useLiveData,
@@ -91,31 +92,152 @@ const SortFilterButton = ({
   );
 };
 
-const ReadonlyCommentRenderer = ({
-  avatarUrl,
-  name,
-  time,
-  snapshot,
+// ---------------------------------------------------------------------------
+// ActionMenu – reusable dropdown for comment / reply rows
+// ---------------------------------------------------------------------------
+
+const ActionMenu = ({
+  open,
+  onOpenChange,
+  canReply,
+  canEdit,
+  canDelete,
+  canCopyLink,
+  disabled,
+  resolved,
+  onReply,
+  onEdit,
+  onDelete,
+  onCopyLink,
 }: {
-  avatarUrl: string | null;
-  name: string;
-  time: number;
-  snapshot: DocSnapshot;
+  open: boolean;
+  onOpenChange: (v: boolean | ((prev: boolean) => boolean)) => void;
+  canReply?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canCopyLink?: boolean;
+  disabled?: boolean;
+  resolved?: boolean;
+  onReply?: (e: React.MouseEvent) => void;
+  onEdit?: (e: React.MouseEvent) => void;
+  onDelete?: (e: React.MouseEvent) => void;
+  onCopyLink?: (e: React.MouseEvent) => void;
 }) => {
+  const t = useI18n();
+
   return (
-    <div data-time={time} className={styles.readonlyCommentContainer}>
-      <div className={styles.userContainer}>
-        <Avatar url={avatarUrl} size={24} />
-        <div className={styles.userName}>{name}</div>
-        <div className={styles.time}>
-          {i18nTime(time, {
-            absolute: { accuracy: 'minute' },
-          })}
+    <Menu
+      rootOptions={{
+        open,
+        onOpenChange,
+      }}
+      items={
+        <>
+          {canReply ? (
+            <MenuItem onClick={onReply} disabled={!!disabled || !!resolved}>
+              {t['com.affine.comment.reply']()}
+            </MenuItem>
+          ) : null}
+          {canCopyLink ? (
+            <MenuItem onClick={onCopyLink} disabled={disabled}>
+              {t['com.affine.comment.copy-link']()}
+            </MenuItem>
+          ) : null}
+          {canEdit ? (
+            <MenuItem onClick={onEdit} disabled={!!disabled || !!resolved}>
+              {t['Edit']()}
+            </MenuItem>
+          ) : null}
+          {canDelete ? (
+            <MenuItem onClick={onDelete} type="danger" disabled={disabled}>
+              {t['Delete']()}
+            </MenuItem>
+          ) : null}
+        </>
+      }
+    >
+      <IconButton
+        variant="solid"
+        icon={<MoreHorizontalIcon />}
+        disabled={disabled}
+      />
+    </Menu>
+  );
+};
+
+interface CommentRowProps {
+  user: { avatarUrl: string | null; name: string };
+  // Read-only variant
+  snapshot?: DocSnapshot;
+  time?: number;
+  // Editable variant
+  doc?: Store;
+  autoFocus?: boolean;
+  onCommit?: () => void;
+  onCancel?: () => void;
+  attachments?: CommentAttachment[];
+  onAttachmentsChange?: (atts: CommentAttachment[]) => void;
+  uploadCommentAttachment?: (id: string, file: File) => Promise<string>;
+  editorRefSetter?: (ref: CommentEditorRef | null) => void;
+}
+
+const CommentRow = ({
+  user,
+  snapshot,
+  time,
+  doc,
+  autoFocus,
+  onCommit,
+  onCancel,
+  attachments,
+  onAttachmentsChange,
+  uploadCommentAttachment,
+  editorRefSetter,
+}: CommentRowProps) => {
+  if (snapshot) {
+    return (
+      <div data-time={time} className={styles.readonlyCommentContainer}>
+        <div className={styles.userContainer}>
+          <Avatar url={user.avatarUrl ?? null} size={24} />
+          <div className={styles.userName}>{user.name}</div>
+          {time ? (
+            <div className={styles.time}>
+              {i18nTime(time, {
+                absolute: { accuracy: 'minute' },
+              })}
+            </div>
+          ) : null}
+        </div>
+        <div style={{ marginLeft: '34px' }}>
+          <CommentEditor
+            readonly
+            defaultSnapshot={snapshot}
+            attachments={attachments}
+          />
         </div>
       </div>
-      <div style={{ marginLeft: '34px' }}>
-        <CommentEditor readonly defaultSnapshot={snapshot} />
+    );
+  }
+
+  if (!doc) {
+    return null;
+  }
+
+  return (
+    <div className={styles.commentInputContainer}>
+      <div className={styles.userContainer}>
+        <Avatar url={user.avatarUrl ?? null} size={24} />
       </div>
+      <CommentEditor
+        ref={editorRefSetter}
+        attachments={attachments}
+        onAttachmentsChange={onAttachmentsChange}
+        doc={doc}
+        autoFocus={autoFocus}
+        onCommit={onCommit}
+        onCancel={onCancel}
+        uploadCommentAttachment={uploadCommentAttachment}
+      />
     </div>
   );
 };
@@ -319,7 +441,12 @@ const CommentItem = ({
     async (e: React.MouseEvent) => {
       e.stopPropagation();
       if (comment.resolved || !comment.content) return;
-      await entity.startEdit(comment.id, 'comment', comment.content.snapshot);
+      await entity.startEdit(
+        comment.id,
+        'comment',
+        comment.content.snapshot,
+        comment.content.attachments ?? []
+      );
     },
     [entity, comment.id, comment.content, comment.resolved]
   );
@@ -370,74 +497,50 @@ const CommentItem = ({
             disabled={isMutating}
           />
         )}
-        <Menu
-          rootOptions={{
-            open: menuOpen,
-            onOpenChange: v => {
-              setMenuOpen(v);
-            },
-          }}
-          items={
-            <>
-              {canReply ? (
-                <MenuItem
-                  onClick={handleReply}
-                  disabled={isMutating || comment.resolved}
-                >
-                  {t['com.affine.comment.reply']()}
-                </MenuItem>
-              ) : null}
-              <MenuItem onClick={handleCopyLink} disabled={isMutating}>
-                {t['com.affine.comment.copy-link']()}
-              </MenuItem>
-              {canEdit ? (
-                <MenuItem
-                  onClick={handleStartEdit}
-                  disabled={isMutating || comment.resolved}
-                >
-                  {t['Edit']()}
-                </MenuItem>
-              ) : null}
-              {canDelete ? (
-                <MenuItem
-                  onClick={handleDelete}
-                  disabled={isMutating}
-                  style={{ color: 'var(--affine-error-color)' }}
-                >
-                  {t['Delete']()}
-                </MenuItem>
-              ) : null}
-            </>
-          }
-        >
-          <IconButton
-            variant="solid"
-            icon={<MoreHorizontalIcon />}
-            disabled={isMutating}
-          />
-        </Menu>
+        <ActionMenu
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          canReply={canReply}
+          canCopyLink
+          canEdit={!!canEdit}
+          canDelete={canDelete}
+          disabled={isMutating}
+          resolved={comment.resolved}
+          onReply={handleReply}
+          onCopyLink={handleCopyLink}
+          onEdit={handleStartEdit}
+          onDelete={handleDelete}
+        />
       </div>
       <div className={styles.previewContainer}>{comment.content?.preview}</div>
 
       <div className={styles.repliesContainer}>
         {isEditing && editingDoc ? (
-          <div className={styles.commentInputContainer}>
-            <div className={styles.userContainer}>
-              <Avatar url={account?.avatar} size={24} />
-            </div>
-            <CommentEditor
-              doc={editingDoc}
-              autoFocus
-              onCommit={isMutating ? undefined : handleCommitEdit}
-              onCancel={isMutating ? undefined : handleCancelEdit}
-            />
-          </div>
+          <CommentRow
+            user={{ avatarUrl: account?.avatar ?? null, name: '' }}
+            doc={editingDoc}
+            autoFocus
+            onCommit={isMutating ? undefined : handleCommitEdit}
+            onCancel={isMutating ? undefined : handleCancelEdit}
+            attachments={editingDraft.attachments}
+            onAttachmentsChange={attachments => {
+              entity.updateEditingDraft(editingDraft.id, {
+                attachments,
+              });
+            }}
+            uploadCommentAttachment={(id, file) => {
+              return entity.uploadCommentAttachment(id, file, editingDraft);
+            }}
+          />
         ) : (
-          <ReadonlyCommentRenderer
-            avatarUrl={comment.user.avatarUrl}
-            name={comment.user.name}
+          <CommentRow
+            user={{
+              avatarUrl: comment.user.avatarUrl,
+              name: comment.user.name,
+            }}
             time={comment.createdAt}
             snapshot={comment.content.snapshot}
+            attachments={comment.content?.attachments}
           />
         )}
         {comment.replies && comment.replies.length > 0 && (
@@ -457,20 +560,25 @@ const CommentItem = ({
         account &&
         !comment.resolved &&
         canCreateComment && (
-          <div className={styles.commentInputContainer}>
-            <div className={styles.userContainer}>
-              <Avatar url={account.avatar} size={24} />
-            </div>
-            <CommentEditor
-              ref={setReplyEditor}
-              autoFocus
-              doc={pendingReply.doc}
-              onCommit={
-                isMutating || !canCreateComment ? undefined : handleCommitReply
-              }
-              onCancel={isMutating ? undefined : handleCancelReply}
-            />
-          </div>
+          <CommentRow
+            user={{ avatarUrl: account.avatar ?? null, name: '' }}
+            doc={pendingReply.doc}
+            autoFocus
+            editorRefSetter={setReplyEditor}
+            onCommit={
+              isMutating || !canCreateComment ? undefined : handleCommitReply
+            }
+            onCancel={isMutating ? undefined : handleCancelReply}
+            attachments={pendingReply.attachments}
+            onAttachmentsChange={attachments => {
+              entity.updatePendingReply(pendingReply.id, {
+                attachments,
+              });
+            }}
+            uploadCommentAttachment={(id, file) => {
+              return entity.uploadCommentAttachment(id, file, pendingReply);
+            }}
+          />
         )}
     </div>
   );
@@ -630,17 +738,22 @@ const CommentInput = ({ entity }: { entity: DocCommentEntity }) => {
       {pendingPreview && (
         <div className={styles.previewContainer}>{pendingPreview}</div>
       )}
-      <div className={styles.commentInputContainer}>
-        <div className={styles.userContainer}>
-          <Avatar url={account.avatar} size={24} />
-        </div>
-        <CommentEditor
-          autoFocus
-          doc={newPendingComment.doc}
-          onCommit={isMutating || !canCreateComment ? undefined : handleCommit}
-          onCancel={isMutating ? undefined : handleCancel}
-        />
-      </div>
+      <CommentRow
+        user={{ avatarUrl: account.avatar ?? null, name: '' }}
+        doc={newPendingComment.doc}
+        autoFocus
+        onCommit={isMutating || !canCreateComment ? undefined : handleCommit}
+        onCancel={isMutating ? undefined : handleCancel}
+        attachments={newPendingComment.attachments}
+        onAttachmentsChange={attachments => {
+          entity.updatePendingComment(newPendingComment.id, {
+            attachments,
+          });
+        }}
+        uploadCommentAttachment={(id, file) => {
+          return entity.uploadCommentAttachment(id, file, newPendingComment);
+        }}
+      />
     </div>
   );
 };
@@ -675,7 +788,12 @@ const ReplyItem = ({
 
   const handleStartEdit = useAsyncCallback(async () => {
     if (parentComment.resolved || !reply.content) return;
-    await entity.startEdit(reply.id, 'reply', reply.content.snapshot);
+    await entity.startEdit(
+      reply.id,
+      'reply',
+      reply.content.snapshot,
+      reply.content.attachments ?? []
+    );
   }, [entity, parentComment.resolved, reply.id, reply.content]);
 
   const handleCommitEdit = useAsyncCallback(async () => {
@@ -744,67 +862,46 @@ const ReplyItem = ({
         data-menu-open={isMenuOpen}
         data-editing={isEditingThisReply}
       >
-        <Menu
-          rootOptions={{
-            onOpenChange: setIsMenuOpen,
-            open: isMenuOpen,
-          }}
-          items={
-            <>
-              {canReply ? (
-                <MenuItem
-                  onClick={handleReply}
-                  disabled={isMutating || parentComment.resolved}
-                >
-                  {t['com.affine.comment.reply']()}
-                </MenuItem>
-              ) : null}
-              {canEdit ? (
-                <MenuItem
-                  onClick={handleStartEdit}
-                  disabled={isMutating || parentComment.resolved}
-                >
-                  {t['Edit']()}
-                </MenuItem>
-              ) : null}
-              {canDelete ? (
-                <MenuItem
-                  onClick={handleDelete}
-                  style={{ color: 'var(--affine-error-color)' }}
-                  disabled={isMutating}
-                >
-                  {t['Delete']()}
-                </MenuItem>
-              ) : null}
-            </>
-          }
-        >
-          <IconButton
-            icon={<MoreHorizontalIcon />}
-            variant="solid"
-            disabled={isMutating}
-          />
-        </Menu>
+        <ActionMenu
+          open={isMenuOpen}
+          onOpenChange={setIsMenuOpen}
+          canReply={canReply}
+          canEdit={!!canEdit}
+          canDelete={canDelete}
+          disabled={isMutating}
+          resolved={parentComment.resolved}
+          onReply={handleReply}
+          onEdit={handleStartEdit}
+          onDelete={handleDelete}
+        />
       </div>
 
       {isEditingThisReply && editingDoc ? (
-        <div className={styles.commentInputContainer}>
-          <div className={styles.userContainer}>
-            <Avatar url={account?.avatar} size={24} />
-          </div>
-          <CommentEditor
-            doc={editingDoc}
-            autoFocus
-            onCommit={isMutating ? undefined : handleCommitEdit}
-            onCancel={isMutating ? undefined : handleCancelEdit}
-          />
-        </div>
+        <CommentRow
+          user={{ avatarUrl: account?.avatar ?? null, name: '' }}
+          doc={editingDoc}
+          autoFocus
+          onCommit={isMutating ? undefined : handleCommitEdit}
+          onCancel={isMutating ? undefined : handleCancelEdit}
+          attachments={editingDraft.attachments}
+          onAttachmentsChange={attachments => {
+            entity.updateEditingDraft(editingDraft.id, {
+              attachments,
+            });
+          }}
+          uploadCommentAttachment={(id, file) => {
+            return entity.uploadCommentAttachment(id, file, editingDraft);
+          }}
+        />
       ) : (
-        <ReadonlyCommentRenderer
-          avatarUrl={reply.user.avatarUrl}
-          name={reply.user.name}
+        <CommentRow
+          user={{
+            avatarUrl: reply.user.avatarUrl ?? null,
+            name: reply.user.name,
+          }}
           time={reply.createdAt}
-          snapshot={reply.content.snapshot}
+          snapshot={reply.content ? reply.content.snapshot : undefined}
+          attachments={reply.content?.attachments}
         />
       )}
     </div>
@@ -856,12 +953,16 @@ const ReplyList = ({
 
     return (
       <>
-        <ReplyItem
-          key={firstReply.id}
-          reply={firstReply}
-          parentComment={parentComment}
-          entity={entity}
-          replyEditor={replyEditor}
+        <CommentRow
+          user={{
+            avatarUrl: firstReply.user.avatarUrl ?? null,
+            name: firstReply.user.name,
+          }}
+          time={firstReply.createdAt}
+          snapshot={
+            firstReply.content ? firstReply.content.snapshot : undefined
+          }
+          attachments={firstReply.content?.attachments}
         />
         <div
           className={styles.collapsedReplies}

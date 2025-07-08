@@ -10,6 +10,7 @@ import {
   resolveCommentMutation,
   updateCommentMutation,
   updateReplyMutation,
+  uploadCommentAttachmentMutation,
 } from '@affine/graphql';
 import { Entity } from '@toeverything/infra';
 
@@ -323,4 +324,26 @@ export class DocCommentStore extends Entity<{
       },
     });
   }
+
+  /**
+   * Upload a comment attachment blob and obtain the remote URL.
+   * @param file File (image/blob) selected by user
+   * @returns url string returned by server
+   */
+  uploadCommentAttachment = async (file: File): Promise<string> => {
+    const graphql = this.graphqlService;
+    if (!graphql) {
+      throw new Error('GraphQL service not found');
+    }
+
+    const res = await graphql.gql({
+      query: uploadCommentAttachmentMutation,
+      variables: {
+        workspaceId: this.currentWorkspaceId,
+        docId: this.props.docId,
+        attachment: file,
+      },
+    });
+    return res.uploadCommentAttachment;
+  };
 }

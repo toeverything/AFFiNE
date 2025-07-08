@@ -8,6 +8,13 @@ import type {
 
 export type CommentId = string;
 
+export type CommentAttachment = {
+  id: string;
+  url?: string; // attachment may not be uploaded yet
+  filename?: string;
+  mimeType?: string;
+};
+
 export interface BaseComment {
   id: CommentId;
   content?: DocCommentContent;
@@ -28,6 +35,7 @@ export type PendingComment = {
   preview?: string;
   selections?: BaseSelection[];
   commentId?: CommentId; // only for replies, points to the parent comment
+  attachments: CommentAttachment[];
 };
 
 export interface DocCommentReply extends BaseComment {
@@ -37,6 +45,7 @@ export interface DocCommentReply extends BaseComment {
 
 export type DocCommentContent = {
   snapshot: DocSnapshot; // blocksuite snapshot
+  attachments?: CommentAttachment[];
   mode?: DocMode;
   preview?: string; // text preview of the target
 };

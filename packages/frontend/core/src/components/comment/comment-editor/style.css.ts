@@ -6,9 +6,11 @@ export const container = style({
   width: '100%',
   height: '100%',
   border: `1px solid transparent`,
+  overflow: 'hidden',
   selectors: {
     '&[data-readonly="false"]': {
       borderColor: cssVarV2('layer/insideBorder/border'),
+      background: cssVarV2('layer/background/primary'),
       borderRadius: 16,
       padding: '0 8px',
     },
@@ -56,5 +58,69 @@ export const commitButton = style({
       background: cssVarV2('button/disable'),
       cursor: 'default',
     },
+    '&:hover': {
+      opacity: 0.8,
+    },
   },
+});
+
+export const previewRow = style({
+  display: 'flex',
+  gap: 4,
+  padding: '8px 0',
+  flexWrap: 'nowrap',
+  overflowX: 'auto',
+});
+
+export const previewBox = style({
+  position: 'relative',
+  width: 62,
+  height: 62,
+  aspectRatio: '1/1',
+  objectFit: 'cover',
+  borderRadius: 4,
+  flex: '0 0 auto',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  border: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
+  cursor: 'pointer',
+  selectors: {
+    '&:hover': {
+      opacity: 0.8,
+    },
+  },
+});
+
+export const deleteBtn = style({
+  position: 'absolute',
+  top: -6,
+  right: -6,
+  width: 16,
+  height: 16,
+  borderRadius: 4,
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  border: `0.5px solid ${cssVarV2('layer/insideBorder/border')}`,
+  backgroundColor: cssVarV2('layer/background/primary'),
+  cursor: 'pointer',
+  selectors: {
+    '&:hover': {
+      backgroundColor: cssVarV2('layer/background/error'),
+      borderColor: cssVarV2('button/error'),
+      color: cssVarV2('button/error'),
+    },
+  },
+});
+
+export const spinnerWrapper = style({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'rgba(255,255,255,0.6)',
 });
