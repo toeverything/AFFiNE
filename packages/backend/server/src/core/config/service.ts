@@ -110,6 +110,13 @@ export class ServerService implements OnApplicationBootstrap {
     this.event.emit('config.changed', event);
   }
 
+  @OnEvent('config.changed')
+  onConfigChanged(event: Events['config.changed']) {
+    if ('flags' in event.updates) {
+      this.onFlagsChanged();
+    }
+  }
+
   async revalidateConfig() {
     const overrides = await this.loadDbOverrides();
     this.configFactory.override(overrides);
@@ -122,6 +129,7 @@ export class ServerService implements OnApplicationBootstrap {
     await this.event.emitAsync('config.init', {
       config: this.configFactory.config,
     });
+    this.onFlagsChanged();
   }
 
   private async loadDbOverrides() {
@@ -133,5 +141,14 @@ export class ServerService implements OnApplicationBootstrap {
     });
 
     return overrides;
+  }
+
+  private onFlagsChanged() {
+    const flags = this.configFactory.config.flags;
+    if (flags.allowGuestDemoWorkspace) {
+      this.enableFeature(ServerFeature.LocalWorkspace);
+    } else {
+      this.disableFeature(ServerFeature.LocalWorkspace);
+    }
   }
 }

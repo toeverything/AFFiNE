@@ -1760,7 +1760,7 @@ enum SearchTable {
 
 type ServerConfigType {
   """Whether allow guest users to create demo workspaces."""
-  allowGuestDemoWorkspace: Boolean!
+  allowGuestDemoWorkspace: Boolean! @deprecated(reason: "This field is deprecated, please use `features` instead. Will be removed in 0.25.0")
 
   """fetch latest available upgradable release of server"""
   availableUpgrade: ReleaseVersionType
@@ -1802,6 +1802,7 @@ enum ServerFeature {
   Copilot
   CopilotEmbedding
   Indexer
+  LocalWorkspace
   OAuth
   Payment
 }

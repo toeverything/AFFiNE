@@ -2349,7 +2349,10 @@ export enum SearchTable {
 
 export interface ServerConfigType {
   __typename?: 'ServerConfigType';
-  /** Whether allow guest users to create demo workspaces. */
+  /**
+   * Whether allow guest users to create demo workspaces.
+   * @deprecated This field is deprecated, please use `features` instead. Will be removed in 0.25.0
+   */
   allowGuestDemoWorkspace: Scalars['Boolean']['output'];
   /** fetch latest available upgradable release of server */
   availableUpgrade: Maybe<ReleaseVersionType>;
@@ -2383,6 +2386,7 @@ export enum ServerFeature {
   Copilot = 'Copilot',
   CopilotEmbedding = 'CopilotEmbedding',
   Indexer = 'Indexer',
+  LocalWorkspace = 'LocalWorkspace',
   OAuth = 'OAuth',
   Payment = 'Payment',
 }
@@ -2964,7 +2968,6 @@ export type AdminServerConfigQuery = {
     baseUrl: string;
     name: string;
     features: Array<ServerFeature>;
-    allowGuestDemoWorkspace: boolean;
     type: ServerDeploymentType;
     initialized: boolean;
     availableUserFeatures: Array<FeatureType>;
@@ -5736,7 +5739,6 @@ export type ServerConfigQuery = {
     baseUrl: string;
     name: string;
     features: Array<ServerFeature>;
-    allowGuestDemoWorkspace: boolean;
     type: ServerDeploymentType;
     initialized: boolean;
     credentialsRequirement: {

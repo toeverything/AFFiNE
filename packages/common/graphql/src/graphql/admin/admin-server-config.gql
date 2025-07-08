@@ -7,7 +7,6 @@ query adminServerConfig {
     baseUrl
     name
     features
-    allowGuestDemoWorkspace
     type
     initialized
     credentialsRequirement {

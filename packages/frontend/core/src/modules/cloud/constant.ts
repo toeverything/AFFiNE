@@ -17,7 +17,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
           // since we never build desktop app in selfhosted mode, so it's fine
           config: {
             serverName: 'Affine Selfhost',
-            features: [],
+            features: [ServerFeature.LocalWorkspace],
             oauthProviders: [],
             type: ServerDeploymentType.Selfhosted,
             credentialsRequirement: {
@@ -26,7 +26,6 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                 maxLength: 32,
               },
             },
-            allowGuestDemoWorkspace: true,
           },
         },
       ]
@@ -45,6 +44,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                 ServerFeature.CopilotEmbedding,
                 ServerFeature.OAuth,
                 ServerFeature.Payment,
+                ServerFeature.LocalWorkspace,
               ],
               oauthProviders: [
                 OAuthProviderType.Google,
@@ -57,7 +57,6 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                   maxLength: 32,
                 },
               },
-              allowGuestDemoWorkspace: true,
             },
           },
         ]
@@ -78,6 +77,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                   ServerFeature.CopilotEmbedding,
                   ServerFeature.OAuth,
                   ServerFeature.Payment,
+                  ServerFeature.LocalWorkspace,
                 ],
                 oauthProviders: [
                   OAuthProviderType.Google,
@@ -90,7 +90,6 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                     maxLength: 32,
                   },
                 },
-                allowGuestDemoWorkspace: true,
               },
             },
           ]
@@ -111,6 +110,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                     ServerFeature.CopilotEmbedding,
                     ServerFeature.OAuth,
                     ServerFeature.Payment,
+                    ServerFeature.LocalWorkspace,
                   ],
                   oauthProviders: [
                     OAuthProviderType.Google,
@@ -123,7 +123,6 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                       maxLength: 32,
                     },
                   },
-                  allowGuestDemoWorkspace: true,
                 },
               },
             ]
@@ -140,6 +139,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                       ServerFeature.CopilotEmbedding,
                       ServerFeature.OAuth,
                       ServerFeature.Payment,
+                      ServerFeature.LocalWorkspace,
                     ],
                     oauthProviders: [
                       OAuthProviderType.Google,
@@ -152,7 +152,6 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                         maxLength: 32,
                       },
                     },
-                    allowGuestDemoWorkspace: true,
                   },
                 },
               ]
@@ -171,6 +170,7 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                         ServerFeature.CopilotEmbedding,
                         ServerFeature.OAuth,
                         ServerFeature.Payment,
+                        ServerFeature.LocalWorkspace,
                       ],
                       oauthProviders: [
                         OAuthProviderType.Google,
@@ -183,7 +183,6 @@ export const BUILD_IN_SERVERS: (ServerMetadata & { config: ServerConfig })[] =
                           maxLength: 32,
                         },
                       },
-                      allowGuestDemoWorkspace: true,
                     },
                   },
                 ]

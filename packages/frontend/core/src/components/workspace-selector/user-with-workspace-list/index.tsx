@@ -3,6 +3,7 @@ import { MenuItem } from '@affine/component/ui/menu';
 import { AuthService, DefaultServerService } from '@affine/core/modules/cloud';
 import { GlobalDialogService } from '@affine/core/modules/dialogs';
 import { type WorkspaceMetadata } from '@affine/core/modules/workspace';
+import { ServerFeature } from '@affine/graphql';
 import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import { Logo1Icon } from '@blocksuite/icons/rc';
@@ -74,11 +75,12 @@ export const UserWithWorkspaceList = ({
   }, [globalDialogService]);
 
   const onNewWorkspace = useCallback(() => {
-    if (
-      !isAuthenticated &&
-      defaultServerService.server.config$.value.allowGuestDemoWorkspace ===
-        false
-    ) {
+    const enableLocalWorkspace =
+      BUILD_CONFIG.isNative ||
+      defaultServerService.server.config$.value.features.includes(
+        ServerFeature.LocalWorkspace
+      );
+    if (!isAuthenticated && !enableLocalWorkspace) {
       return openSignInModal();
     }
     track.$.navigationPanel.workspaceList.createWorkspace();

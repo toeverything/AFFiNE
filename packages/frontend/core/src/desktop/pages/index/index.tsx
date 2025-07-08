@@ -5,6 +5,7 @@ import {
   buildShowcaseWorkspace,
   createFirstAppData,
 } from '@affine/core/utils/first-app-data';
+import { ServerFeature } from '@affine/graphql';
 import {
   useLiveData,
   useService,
@@ -52,10 +53,12 @@ export const Component = ({
   const loggedIn = useLiveData(
     authService.session.status$.map(s => s === 'authenticated')
   );
-  const allowGuestDemo =
+  const enableLocalWorkspace =
     useLiveData(
       defaultServerService.server.config$.selector(
-        c => c.allowGuestDemoWorkspace
+        c =>
+          c.features.includes(ServerFeature.LocalWorkspace) ||
+          BUILD_CONFIG.isNative
       )
     ) ?? true;
 
@@ -92,7 +95,7 @@ export const Component = ({
       return;
     }
 
-    if (!allowGuestDemo && !loggedIn) {
+    if (!enableLocalWorkspace && !loggedIn) {
       localStorage.removeItem('last_workspace_id');
       jumpToSignIn();
       return;
@@ -125,7 +128,7 @@ export const Component = ({
       openPage(openWorkspace.id, defaultIndexRoute, RouteLogic.REPLACE);
     }
   }, [
-    allowGuestDemo,
+    enableLocalWorkspace,
     createCloudWorkspace,
     list,
     openPage,
