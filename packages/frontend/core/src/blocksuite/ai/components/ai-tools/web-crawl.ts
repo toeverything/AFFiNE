@@ -46,7 +46,7 @@ export class WebCrawlTool extends WithDisposable(ShadowlessElement) {
   renderToolCall() {
     return html`
       <tool-call-card
-        .name=${'Reading the website'}
+        .name=${`Reading the website "${this.data.args.url}"`}
         .icon=${WebIcon()}
       ></tool-call-card>
     `;

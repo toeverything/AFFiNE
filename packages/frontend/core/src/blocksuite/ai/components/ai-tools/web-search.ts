@@ -12,14 +12,14 @@ interface WebSearchToolCall {
   type: 'tool-call';
   toolCallId: string;
   toolName: string;
-  args: { url: string };
+  args: { query: string };
 }
 
 interface WebSearchToolResult {
   type: 'tool-result';
   toolCallId: string;
   toolName: string;
-  args: { url: string };
+  args: { query: string };
   result:
     | Array<{
         title: string;
@@ -46,7 +46,7 @@ export class WebSearchTool extends WithDisposable(ShadowlessElement) {
   renderToolCall() {
     return html`
       <tool-call-card
-        .name=${'Search from web'}
+        .name=${`Searching the web for "${this.data.args.query}"`}
         .icon=${WebIcon()}
       ></tool-call-card>
     `;

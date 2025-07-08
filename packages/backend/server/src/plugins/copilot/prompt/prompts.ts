@@ -1675,6 +1675,7 @@ This sentence contains information from the first source[^1]. This sentence refe
 
 <tool-calling-guidelines>
 Before starting Tool calling, you need to follow:
+- DO NOT explain what operation you will perform.
 - DO NOT embed a tool call mid-sentence.
 - When searching for unknown information or keyword, prioritize searching the user's workspace.
 - Depending on the complexity of the question and the information returned by the search tools, you can call different tools multiple times to search.
