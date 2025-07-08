@@ -205,6 +205,16 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
     return this.db.subscription.findFirst({
       where: {
         targetId: identity.workspaceId,
+      },
+    });
+  }
+
+  getActiveSubscription(
+    identity: z.infer<typeof WorkspaceSubscriptionIdentity>
+  ) {
+    return this.db.subscription.findFirst({
+      where: {
+        targetId: identity.workspaceId,
         status: {
           in: [SubscriptionStatus.Active, SubscriptionStatus.Trialing],
         },
@@ -277,7 +287,7 @@ export class WorkspaceSubscriptionManager extends SubscriptionManager {
   @OnEvent('workspace.members.updated')
   async onMembersUpdated({ workspaceId }: Events['workspace.members.updated']) {
     const count = await this.models.workspaceUser.chargedCount(workspaceId);
-    const subscription = await this.getSubscription({
+    const subscription = await this.getActiveSubscription({
       plan: SubscriptionPlan.Team,
       workspaceId,
     });

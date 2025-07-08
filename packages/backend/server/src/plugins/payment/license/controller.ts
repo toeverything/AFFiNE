@@ -79,7 +79,7 @@ export class LicenseController {
       });
     }
 
-    const subscription = await this.manager.getSubscription({
+    const subscription = await this.manager.getActiveSubscription({
       key: license.key,
       plan: SubscriptionPlan.SelfHostedTeam,
     });
@@ -140,7 +140,7 @@ export class LicenseController {
       },
     });
 
-    const subscription = await this.manager.getSubscription({
+    const subscription = await this.manager.getActiveSubscription({
       key,
       plan: SubscriptionPlan.SelfHostedTeam,
     });

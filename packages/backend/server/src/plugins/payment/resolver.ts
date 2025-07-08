@@ -528,7 +528,7 @@ export class WorkspaceSubscriptionResolver {
     description: 'The team subscription of the workspace, if exists.',
   })
   async subscription(@Parent() workspace: WorkspaceType) {
-    return this.service.getSubscription({
+    return this.service.getActiveSubscription({
       plan: SubscriptionPlan.Team,
       workspaceId: workspace.id,
     });
