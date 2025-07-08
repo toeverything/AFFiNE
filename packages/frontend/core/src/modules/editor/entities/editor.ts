@@ -9,6 +9,7 @@ import { HighlightSelection } from '@blocksuite/affine/shared/selection';
 import {
   DocModeProvider,
   findCommentedBlocks,
+  findCommentedElements,
 } from '@blocksuite/affine/shared/services';
 import { GfxControllerIdentifier } from '@blocksuite/affine/std/gfx';
 import type { InlineEditor } from '@blocksuite/std/inline';
@@ -231,6 +232,12 @@ export class Editor extends Entity {
         if (blockCommentedBlocks.length > 0) {
           finalId = blockCommentedBlocks[0].id;
           finalKey = 'blockIds';
+        } else {
+          const commentedElements = findCommentedElements(std.store, commentId);
+          if (commentedElements.length > 0) {
+            finalId = commentedElements[0].id;
+            finalKey = 'elementIds';
+          }
         }
       }
       // Workaround: clear selection to avoid comment editor flickering

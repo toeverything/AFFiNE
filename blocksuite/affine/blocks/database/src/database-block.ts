@@ -10,7 +10,7 @@ import { toast } from '@blocksuite/affine-components/toast';
 import type { DatabaseBlockModel } from '@blocksuite/affine-model';
 import { EDGELESS_TOP_CONTENTEDITABLE_SELECTOR } from '@blocksuite/affine-shared/consts';
 import {
-  BlockCommentManager,
+  BlockElementCommentManager,
   CommentProviderIdentifier,
   DocModeProvider,
   NotificationProvider,
@@ -316,7 +316,7 @@ export class DatabaseBlockComponent extends CaptionedBlockComponent<DatabaseBloc
   get isCommentHighlighted() {
     return (
       this.std
-        .getOptional(BlockCommentManager)
+        .getOptional(BlockElementCommentManager)
         ?.isBlockCommentHighlighted(this.model) ?? false
     );
   }

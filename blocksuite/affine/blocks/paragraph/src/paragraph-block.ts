@@ -8,7 +8,7 @@ import {
   EDGELESS_TOP_CONTENTEDITABLE_SELECTOR,
 } from '@blocksuite/affine-shared/consts';
 import {
-  BlockCommentManager,
+  BlockElementCommentManager,
   CitationProvider,
   DocModeProvider,
 } from '@blocksuite/affine-shared/services';
@@ -112,7 +112,7 @@ export class ParagraphBlockComponent extends CaptionedBlockComponent<ParagraphBl
   get isCommentHighlighted() {
     return (
       this.std
-        .getOptional(BlockCommentManager)
+        .getOptional(BlockElementCommentManager)
         ?.isBlockCommentHighlighted(this.model) ?? false
     );
   }

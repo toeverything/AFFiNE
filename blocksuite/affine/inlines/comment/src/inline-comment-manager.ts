@@ -1,7 +1,7 @@
 import { getInlineEditorByModel } from '@blocksuite/affine-rich-text';
 import { getSelectedBlocksCommand } from '@blocksuite/affine-shared/commands';
 import {
-  BlockCommentManager,
+  BlockElementCommentManager,
   type CommentId,
   CommentProviderIdentifier,
   findAllCommentedBlocks,
@@ -78,7 +78,7 @@ export class InlineCommentManager extends LifeCycleWatcher {
     // which means the comment may be removed or resolved in provider side
     difference(commentsInEditor, commentsInProvider).forEach(comment => {
       this._handleDeleteAndResolve(comment);
-      this.std.get(BlockCommentManager).handleDeleteAndResolve(comment);
+      this.std.get(BlockElementCommentManager).handleDeleteAndResolve(comment);
     });
   }
 

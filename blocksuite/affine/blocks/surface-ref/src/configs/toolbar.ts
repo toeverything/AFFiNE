@@ -5,7 +5,6 @@ import {
 } from '@blocksuite/affine-shared/commands';
 import {
   ActionPlacement,
-  blockCommentToolbarButton,
   type ToolbarModuleConfig,
 } from '@blocksuite/affine-shared/services';
 import { CaptionIcon, CopyIcon, DeleteIcon } from '@blocksuite/icons/lit';
@@ -61,10 +60,6 @@ export const surfaceRefToolbarModuleConfig: ToolbarModuleConfig = {
 
         surfaceRefBlock.captionElement.show();
       },
-    },
-    {
-      id: 'e.comment',
-      ...blockCommentToolbarButton,
     },
     {
       id: 'a.clipboard',

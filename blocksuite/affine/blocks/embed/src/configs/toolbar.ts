@@ -13,7 +13,6 @@ import {
 } from '@blocksuite/affine-shared/consts';
 import {
   ActionPlacement,
-  blockCommentToolbarButton,
   EmbedOptionProvider,
   type LinkEventType,
   type ToolbarAction,
@@ -348,10 +347,6 @@ function createBuiltinToolbarConfigForExternal(
             control: 'add caption',
           });
         },
-      },
-      {
-        id: 'e.comment',
-        ...blockCommentToolbarButton,
       },
       {
         placement: ActionPlacement.More,

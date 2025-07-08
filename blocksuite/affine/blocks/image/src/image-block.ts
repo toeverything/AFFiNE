@@ -6,7 +6,7 @@ import { ResourceController } from '@blocksuite/affine-components/resource';
 import type { ImageBlockModel } from '@blocksuite/affine-model';
 import { ImageSelection } from '@blocksuite/affine-shared/selection';
 import {
-  BlockCommentManager,
+  BlockElementCommentManager,
   ToolbarRegistryIdentifier,
 } from '@blocksuite/affine-shared/services';
 import { formatSize } from '@blocksuite/affine-shared/utils';
@@ -71,7 +71,7 @@ export class ImageBlockComponent extends CaptionedBlockComponent<ImageBlockModel
   get isCommentHighlighted() {
     return (
       this.std
-        .getOptional(BlockCommentManager)
+        .getOptional(BlockElementCommentManager)
         ?.isBlockCommentHighlighted(this.model) ?? false
     );
   }

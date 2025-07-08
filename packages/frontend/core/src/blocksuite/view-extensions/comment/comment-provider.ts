@@ -5,8 +5,18 @@ import { CommentProviderIdentifier } from '@blocksuite/affine/shared/services';
 import type { BlockStdScope } from '@blocksuite/affine/std';
 import { StdIdentifier } from '@blocksuite/affine/std';
 import type { BaseSelection, ExtensionType } from '@blocksuite/affine/store';
+import { ImageSelection } from '@blocksuite/affine-shared/selection';
 import { type Container } from '@blocksuite/global/di';
-import { BlockSelection, TextSelection } from '@blocksuite/std';
+import {
+  BlockSelection,
+  SurfaceSelection,
+  TextSelection,
+} from '@blocksuite/std';
+import {
+  GfxBlockElementModel,
+  GfxControllerIdentifier,
+  GfxPrimitiveElementModel,
+} from '@blocksuite/std/gfx';
 import type { FrameworkProvider } from '@toeverything/infra';
 
 import { DocCommentManagerService } from '../../../modules/comment/services/doc-comment-manager';
@@ -20,6 +30,8 @@ function getPreviewFromSelections(
   }
 
   const previews: string[] = [];
+
+  const gfx = std.get(GfxControllerIdentifier);
 
   for (const selection of selections) {
     if (selection instanceof TextSelection) {
@@ -35,9 +47,23 @@ function getPreviewFromSelections(
         const flavour = block.model.flavour.replace('affine:', '');
         previews.push(`<${flavour}>`);
       }
-    } else if (selection.type === 'image') {
+    } else if (selection instanceof ImageSelection) {
       // Return <"Image"> for ImageSelection
       previews.push('<Image>');
+    } else if (
+      selection instanceof SurfaceSelection &&
+      gfx.surface?.id === selection.blockId
+    ) {
+      selection.elements.forEach(elementId => {
+        const model = gfx.getElementById(elementId);
+        if (model instanceof GfxPrimitiveElementModel) {
+          const flavour = model.type.replace('affine:', '');
+          previews.push(`<${flavour}>`);
+        } else if (model instanceof GfxBlockElementModel) {
+          const flavour = model.flavour.replace('affine:', '');
+          previews.push(`<${flavour}>`);
+        }
+      });
     }
     // Skip other types
   }

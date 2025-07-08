@@ -17,7 +17,7 @@ import {
   AttachmentBlockStyles,
 } from '@blocksuite/affine-model';
 import {
-  BlockCommentManager,
+  BlockElementCommentManager,
   CitationProvider,
   DocModeProvider,
   FileSizeLimitProvider,
@@ -96,7 +96,7 @@ export class AttachmentBlockComponent extends CaptionedBlockComponent<Attachment
   get isCommentHighlighted() {
     return (
       this.std
-        .getOptional(BlockCommentManager)
+        .getOptional(BlockElementCommentManager)
         ?.isBlockCommentHighlighted(this.model) ?? false
     );
   }
