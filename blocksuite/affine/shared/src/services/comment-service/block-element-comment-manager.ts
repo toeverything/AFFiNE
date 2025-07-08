@@ -132,8 +132,15 @@ export class BlockElementCommentManager extends LifeCycleWatcher {
     if (elementsFromSurfaceSelection.length !== 0) {
       this.std.store.withoutTransact(() => {
         elementsFromSurfaceSelection.forEach(element => {
+          const comments =
+            'comments' in element &&
+            typeof element.comments === 'object' &&
+            element.comments !== null
+              ? element.comments
+              : {};
+
           gfx.updateElement(element, {
-            comments: { [id]: true },
+            comments: { [id]: true, ...comments },
           });
         });
       });
