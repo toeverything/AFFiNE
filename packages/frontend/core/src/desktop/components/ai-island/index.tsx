@@ -7,6 +7,11 @@ import { IslandContainer } from './container';
 import { AIIcon } from './icons';
 import { aiIslandBtn, aiIslandWrapper, toolStyle } from './styles.css';
 
+const hideChat: Array<string | ((path: string) => boolean)> = [
+  '/chat',
+  path => path.includes('attachments'),
+];
+
 export const AIIsland = () => {
   // to make sure ai island is hidden first and animate in
   const [hide, setHide] = useState(true);
@@ -25,7 +30,10 @@ export const AIIsland = () => {
     if (haveChatTab) {
       hide = !!sidebarOpen && activeTab?.id === 'chat';
     } else {
-      hide = activeLocation.pathname === '/chat';
+      const path = activeLocation.pathname;
+      hide = hideChat.some(item =>
+        typeof item === 'string' ? path === item : item(path)
+      );
     }
     setHide(hide);
   }, [activeLocation.pathname, activeTab, haveChatTab, sidebarOpen]);
