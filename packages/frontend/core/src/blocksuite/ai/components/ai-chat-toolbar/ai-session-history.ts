@@ -30,6 +30,21 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
       background: ${unsafeCSSVarV2('layer/background/overlayPanel')};
       box-shadow: ${unsafeCSSVar('overlayPanelShadow')};
 
+      .loading-container,
+      .empty-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 344px;
+      }
+
+      .loading-title,
+      .empty-title {
+        font-weight: 600;
+        font-size: var(--affine-font-sm);
+        color: var(--affine-text-secondary-color);
+      }
+
       .ai-session-group {
         display: flex;
         flex-direction: column;
@@ -125,6 +140,9 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   @state()
   private accessor sessions: BlockSuitePresets.AIRecentSession[] = [];
 
+  @state()
+  private accessor loading = true;
+
   private groupSessionsByTime(
     sessions: BlockSuitePresets.AIRecentSession[]
   ): GroupedSessions {
@@ -174,6 +192,7 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   }
 
   private async getRecentSessions() {
+    this.loading = true;
     const limit = 50;
     const sessions = await AIProvider.session?.getRecentSessions(
       this.workspaceId,
@@ -182,6 +201,7 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
     if (sessions) {
       this.sessions = sessions;
     }
+    this.loading = false;
   }
 
   override connectedCallback() {
@@ -241,11 +261,27 @@ export class AISessionHistory extends WithDisposable(ShadowlessElement) {
   }
 
   override render() {
-    if (this.sessions.length === 0) {
-      return nothing;
+    if (this.loading) {
+      return html`
+        <div class="ai-session-history">
+          <div class="loading-container">
+            <div class="loading-title">Loading history...</div>
+          </div>
+        </div>
+      `;
     }
-    const groupedSessions = this.groupSessionsByTime(this.sessions);
 
+    if (this.sessions.length === 0) {
+      return html`
+        <div class="ai-session-history">
+          <div class="empty-container">
+            <div class="empty-title">Empty history</div>
+          </div>
+        </div>
+      `;
+    }
+
+    const groupedSessions = this.groupSessionsByTime(this.sessions);
     return html`
       <div class="ai-session-history">
         ${this.renderSessionGroup('Today', groupedSessions.today)}

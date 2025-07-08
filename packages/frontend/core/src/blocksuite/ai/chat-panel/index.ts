@@ -18,6 +18,7 @@ import { css, html, nothing, type PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { keyed } from 'lit/directives/keyed.js';
 
+import { AffineIcon } from '../_common/icons';
 import type {
   DocDisplayConfig,
   SearchMenuConfig,
@@ -47,6 +48,28 @@ export class ChatPanel extends SignalWatcher(
       .chat-panel-title-text {
         font-size: 14px;
         font-weight: 500;
+        color: var(--affine-text-secondary-color);
+      }
+
+      .chat-loading-container {
+        position: relative;
+        padding: 44px 0 166px 0;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+
+      .chat-loading {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .chat-loading-title {
+        font-weight: 600;
+        font-size: var(--affine-font-sm);
         color: var(--affine-text-secondary-color);
       }
 
@@ -394,7 +417,14 @@ export class ChatPanel extends SignalWatcher(
 
   override render() {
     if (!this.isInitialized) {
-      return nothing;
+      return html`<div class="chat-loading-container">
+        <div class="chat-loading">
+          ${AffineIcon('var(--affine-icon-secondary)')}
+          <div class="chat-loading-title">
+            <span> AFFiNE AI is loading history... </span>
+          </div>
+        </div>
+      </div>`;
     }
 
     return html`<div class="chat-panel-container">
