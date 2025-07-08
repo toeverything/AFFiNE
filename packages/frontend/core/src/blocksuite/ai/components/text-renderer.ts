@@ -4,7 +4,7 @@ import { getViewManager } from '@affine/core/blocksuite/manager/view';
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { PeekViewProvider } from '@blocksuite/affine/components/peek';
 import { Container, type ServiceProvider } from '@blocksuite/affine/global/di';
-import { WithDisposable } from '@blocksuite/affine/global/lit';
+import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import {
   codeBlockWrapMiddleware,
@@ -106,7 +106,9 @@ export type TextRendererOptions = {
 };
 
 // todo: refactor it for more general purpose usage instead of AI only?
-export class TextRenderer extends WithDisposable(ShadowlessElement) {
+export class TextRenderer extends SignalWatcher(
+  WithDisposable(ShadowlessElement)
+) {
   static override styles = css`
     .ai-answer-text-editor.affine-page-viewport {
       background: transparent;

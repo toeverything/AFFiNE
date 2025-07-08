@@ -20,7 +20,7 @@ export const header = style({
   height: '40px',
   position: 'sticky',
   top: 0,
-  backgroundColor: cssVarV2('layer/background/overlayPanel'),
+  backgroundColor: cssVarV2('layer/background/primary'),
   zIndex: 2,
 });
 
