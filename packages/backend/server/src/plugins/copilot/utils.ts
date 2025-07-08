@@ -21,16 +21,19 @@ type SignalReturnType = {
 export function getSignal(req: Request): SignalReturnType {
   const controller = new AbortController();
 
-  let isAborted = true;
+  let hasEnded = false;
   let callback: ((isAborted: boolean) => void) | undefined = undefined;
 
   const onSocketEnd = () => {
-    isAborted = false;
+    hasEnded = true;
   };
   const onSocketClose = (hadError: boolean) => {
     req.socket.off('end', onSocketEnd);
     req.socket.off('close', onSocketClose);
-    const aborted = hadError || isAborted;
+    // NOTE: the connection is considered abnormally interrupted:
+    // 1. there is an error when the socket is closed.
+    // 2. the connection is closed directly without going through the normal end process (the client disconnects actively).
+    const aborted = hadError || !hasEnded;
     if (aborted) {
       controller.abort();
     }
