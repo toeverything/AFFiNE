@@ -74,12 +74,6 @@ export class InlineCommentManager extends LifeCycleWatcher {
       ...new Set([...inlineComments, ...blockComments]),
     ];
 
-    // resolve comments that are in provider but not in editor
-    // which means the commented content may be deleted
-    difference(commentsInProvider, commentsInEditor).forEach(comment => {
-      provider.resolveComment(comment);
-    });
-
     // remove comments that are in editor but not in provider
     // which means the comment may be removed or resolved in provider side
     difference(commentsInEditor, commentsInProvider).forEach(comment => {

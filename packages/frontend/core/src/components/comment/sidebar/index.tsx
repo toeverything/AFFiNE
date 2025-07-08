@@ -362,7 +362,7 @@ const CommentItem = ({
         data-menu-open={menuOpen}
         data-editing={isEditing}
       >
-        {!comment.resolved && canResolveComment && (
+        {canResolveComment && (
           <IconButton
             variant="solid"
             onClick={handleResolve}
