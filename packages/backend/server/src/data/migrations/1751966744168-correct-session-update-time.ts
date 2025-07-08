@@ -17,18 +17,16 @@ export class CorrectSessionUpdateTime1751966744168 {
       },
     });
 
-    await db.$transaction(async tx => {
-      await Promise.all(
-        sessionTime
-          .filter((s): s is SessionTime => !!s._max.createdAt)
-          .map(s =>
-            tx.aiSession.update({
-              where: { id: s.sessionId },
-              data: { updatedAt: s._max.createdAt },
-            })
-          )
-      );
-    });
+    await Promise.all(
+      sessionTime
+        .filter((s): s is SessionTime => !!s._max.createdAt)
+        .map(s =>
+          db.aiSession.update({
+            where: { id: s.sessionId },
+            data: { updatedAt: s._max.createdAt },
+          })
+        )
+    );
   }
 
   // revert the migration
