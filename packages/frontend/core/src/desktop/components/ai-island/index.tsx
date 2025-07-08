@@ -1,7 +1,7 @@
 import { WorkbenchService } from '@affine/core/modules/workbench';
 import { useLiveData, useService } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { IslandContainer } from './container';
 import { AIIcon } from './icons';
@@ -16,12 +16,30 @@ export const AIIsland = () => {
   const haveChatTab = useLiveData(
     activeView.sidebarTabs$.map(tabs => tabs.some(t => t.id === 'chat'))
   );
+  const activeLocation = useLiveData(activeView.location$);
   const activeTab = useLiveData(activeView.activeSidebarTab$);
   const sidebarOpen = useLiveData(workbench.sidebarOpen$);
 
   useEffect(() => {
-    setHide((sidebarOpen && activeTab?.id === 'chat') || !haveChatTab);
-  }, [activeTab, haveChatTab, sidebarOpen]);
+    let hide = true;
+    if (haveChatTab) {
+      hide = !!sidebarOpen && activeTab?.id === 'chat';
+    } else {
+      hide = activeLocation.pathname === '/chat';
+    }
+    setHide(hide);
+  }, [activeLocation.pathname, activeTab, haveChatTab, sidebarOpen]);
+
+  const onOpenChat = useCallback(() => {
+    if (hide) return;
+    if (haveChatTab) {
+      workbench.openSidebar();
+      activeView.activeSidebarTab('chat');
+    } else {
+      workbench.open('/chat');
+      workbench.closeSidebar();
+    }
+  }, [activeView, haveChatTab, hide, workbench]);
 
   return (
     <IslandContainer className={clsx(toolStyle, { hide })}>
@@ -29,11 +47,7 @@ export const AIIsland = () => {
         <button
           className={aiIslandBtn}
           data-testid="ai-island"
-          onClick={() => {
-            if (hide) return;
-            workbench.openSidebar();
-            activeView.activeSidebarTab('chat');
-          }}
+          onClick={onOpenChat}
         >
           <AIIcon />
         </button>

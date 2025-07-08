@@ -18,7 +18,7 @@ import { useI18n } from '@affine/i18n';
 import { track } from '@affine/track';
 import type { Store } from '@blocksuite/affine/store';
 import {
-  AiIcon,
+  AiOutlineIcon,
   AllDocsIcon,
   ImportIcon,
   JournalIcon,
@@ -97,8 +97,8 @@ const AIChatButton = () => {
   );
 
   return (
-    <MenuLinkItem icon={<AiIcon />} active={aiChatActive} to={'/chat'}>
-      <span data-testid="ai-chat">Intelligent</span>
+    <MenuLinkItem icon={<AiOutlineIcon />} active={aiChatActive} to={'/chat'}>
+      <span data-testid="ai-chat">AFFiNE Intelligence</span>
     </MenuLinkItem>
   );
 };
@@ -198,10 +198,10 @@ export const RootAppSidebar = memo((): ReactElement => {
           />
           <AddPageButton />
         </div>
-        <AIChatButton />
         <AllDocsButton />
         <AppSidebarJournalButton />
         {sessionStatus === 'authenticated' && <NotificationButton />}
+        <AIChatButton />
         <MenuItem
           data-testid="slider-bar-workspace-setting-button"
           icon={<SettingsIcon />}
