@@ -437,6 +437,7 @@ export class AIChatMessages extends WithDisposable(ShadowlessElement) {
       const last = messages[messages.length - 1];
       if ('content' in last) {
         last.content = '';
+        last.streamObjects = [];
         last.createdAt = new Date().toISOString();
       }
       this.updateContext({
