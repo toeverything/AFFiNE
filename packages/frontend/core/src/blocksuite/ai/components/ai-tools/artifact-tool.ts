@@ -1,7 +1,8 @@
 import { LoadingIcon } from '@blocksuite/affine/components/icons';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
-import type { ImageProxyService } from '@blocksuite/affine/shared/adapters';
-import { type BlockStdScope, ShadowlessElement } from '@blocksuite/affine/std';
+import type { ColorScheme } from '@blocksuite/affine/model';
+import { ShadowlessElement } from '@blocksuite/affine/std';
+import { type NotificationService } from '@blocksuite/affine-shared/services';
 import type { Signal } from '@preact/signals-core';
 import {
   css,
@@ -33,7 +34,7 @@ export abstract class ArtifactTool<
     }
 
     .artifact-tool-card:hover {
-      background-color: var(--affine-hover-color);
+      opacity: 0.8;
     }
   `;
 
@@ -45,10 +46,10 @@ export abstract class ArtifactTool<
   accessor width: Signal<number | undefined> | undefined;
 
   @property({ attribute: false })
-  accessor imageProxyService: ImageProxyService | null | undefined;
+  accessor notificationService!: NotificationService;
 
   @property({ attribute: false })
-  accessor std: BlockStdScope | undefined;
+  accessor theme!: Signal<ColorScheme>;
 
   /* -------------------------- Card meta hooks -------------------------- */
 
@@ -66,12 +67,9 @@ export abstract class ArtifactTool<
   };
 
   /** Banner shown on the right side of the card (can be undefined). */
-  protected abstract getBanner():
-    | TemplateResult
-    | HTMLElement
-    | string
-    | null
-    | undefined;
+  protected abstract getBanner(
+    theme: ColorScheme
+  ): TemplateResult | HTMLElement | string | null | undefined;
 
   /**
    * Provide the main TemplateResult shown in the preview panel.
@@ -117,7 +115,7 @@ export abstract class ArtifactTool<
         })
       : icon;
 
-    const banner = this.getBanner();
+    const banner = this.getBanner(this.theme.value);
 
     return html`
       <div

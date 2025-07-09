@@ -1,9 +1,14 @@
 import { CodeBlockHighlighter } from '@blocksuite/affine/blocks/code';
-import { toast } from '@blocksuite/affine/components/toast';
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
+import { ColorScheme } from '@blocksuite/affine/model';
 import { unsafeCSSVar, unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import { type BlockStdScope, ShadowlessElement } from '@blocksuite/affine/std';
-import { CopyIcon, PageIcon, ToolIcon } from '@blocksuite/icons/lit';
+import { type BlockStdScope } from '@blocksuite/affine/std';
+import {
+  CodeBlockIcon,
+  CopyIcon,
+  PageIcon,
+  ToolIcon,
+} from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';
 import { effect, signal } from '@preact/signals-core';
 import { css, html, LitElement, nothing } from 'lit';
@@ -11,7 +16,7 @@ import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { bundledLanguagesInfo, type ThemedToken } from 'shiki';
 
-import { renderPreviewPanel } from './artifacts-preview-panel';
+import { ArtifactTool } from './artifact-tool';
 import type { ToolError } from './type';
 
 interface CodeArtifactToolCall {
@@ -209,20 +214,143 @@ export class CodeHighlighter extends SignalWatcher(WithDisposable(LitElement)) {
   }
 }
 
+const CodeBlockBanner = html`<svg
+  width="204"
+  height="102"
+  viewBox="0 0 204 102"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <g clip-path="url(#clip0_3371_100809)">
+    <g filter="url(#filter0_d_3371_100809)">
+      <rect
+        x="53.5054"
+        width="111.999"
+        height="99.5543"
+        rx="12.4443"
+        transform="rotate(8.37805 53.5054 0)"
+        fill="white"
+      />
+    </g>
+    <path
+      d="M89.7547 40.6581C90.8629 39.8345 92.4285 40.065 93.2522 41.1732C94.0758 42.2813 93.8452 43.847 92.7371 44.6706L79.7618 54.3146L89.4058 67.2899L89.5482 67.5024C90.1977 68.5905 89.9295 70.0161 88.8906 70.7883C87.8516 71.56 86.4104 71.4044 85.5558 70.4689L85.3932 70.2732L74.2581 55.2907C73.4345 54.1826 73.6653 52.617 74.7732 51.7933L89.7547 40.6581ZM114.378 44.2845C115.486 43.4608 117.052 43.6914 117.875 44.7996L129.011 59.7812C129.834 60.8892 129.604 62.4551 128.496 63.2787L113.514 74.4147L113.301 74.5552C112.213 75.2046 110.789 74.9382 110.016 73.8996C109.244 72.8606 109.399 71.4184 110.335 70.5637L110.531 70.4012L123.507 60.7572L113.863 47.7819C113.039 46.6738 113.27 45.1081 114.378 44.2845Z"
+      fill="#F3F3F3"
+    />
+  </g>
+  <defs>
+    <filter
+      id="filter0_d_3371_100809"
+      x="35.6787"
+      y="-3.32129"
+      width="131.951"
+      height="121.453"
+      filterUnits="userSpaceOnUse"
+      color-interpolation-filters="sRGB"
+    >
+      <feFlood flood-opacity="0" result="BackgroundImageFix" />
+      <feColorMatrix
+        in="SourceAlpha"
+        type="matrix"
+        values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+        result="hardAlpha"
+      />
+      <feOffset />
+      <feGaussianBlur stdDeviation="2.5" />
+      <feComposite in2="hardAlpha" operator="out" />
+      <feColorMatrix
+        type="matrix"
+        values="0 0 0 0 0.258824 0 0 0 0 0.254902 0 0 0 0 0.286275 0 0 0 0.17 0"
+      />
+      <feBlend
+        mode="normal"
+        in2="BackgroundImageFix"
+        result="effect1_dropShadow_3371_100809"
+      />
+      <feBlend
+        mode="normal"
+        in="SourceGraphic"
+        in2="effect1_dropShadow_3371_100809"
+        result="shape"
+      />
+    </filter>
+    <clipPath id="clip0_3371_100809">
+      <rect width="204" height="102" fill="white" />
+    </clipPath>
+  </defs>
+</svg>`;
+
+const CodeBlockBannerDark = html`<svg
+  width="204"
+  height="102"
+  viewBox="0 0 204 102"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <g clip-path="url(#clip0_3371_101118)">
+    <g filter="url(#filter0_d_3371_101118)">
+      <rect
+        x="53.5055"
+        width="111.999"
+        height="99.5543"
+        rx="12.4443"
+        transform="rotate(8.37805 53.5055 0)"
+        fill="#252525"
+      />
+    </g>
+    <path
+      d="M89.7551 40.6574C90.8631 39.8342 92.429 40.0647 93.2525 41.1725C94.0762 42.2806 93.8455 43.8472 92.7373 44.6709L79.762 54.3149L89.406 67.2902L89.5475 67.5025C90.197 68.5907 89.9298 70.0163 88.8908 70.7886C87.8519 71.5603 86.4106 71.4047 85.5561 70.4692L85.3934 70.2735L74.2574 55.2908C73.4341 54.1829 73.6649 52.6171 74.7725 51.7934L89.7551 40.6574ZM114.378 44.2838C115.486 43.4606 117.052 43.6911 117.876 44.7988L129.011 59.7814C129.834 60.8895 129.604 62.4552 128.496 63.2788L113.514 74.4149L113.301 74.5553C112.213 75.2045 110.789 74.9381 110.016 73.8998C109.244 72.8609 109.398 71.4186 110.334 70.5638L110.532 70.4014L123.507 60.7574L113.863 47.7822C113.039 46.674 113.27 45.1074 114.378 44.2838Z"
+      fill="#565656"
+    />
+  </g>
+  <defs>
+    <filter
+      id="filter0_d_3371_101118"
+      x="35.6787"
+      y="-3.32129"
+      width="131.951"
+      height="121.453"
+      filterUnits="userSpaceOnUse"
+      color-interpolation-filters="sRGB"
+    >
+      <feFlood flood-opacity="0" result="BackgroundImageFix" />
+      <feColorMatrix
+        in="SourceAlpha"
+        type="matrix"
+        values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+        result="hardAlpha"
+      />
+      <feOffset />
+      <feGaussianBlur stdDeviation="2.5" />
+      <feComposite in2="hardAlpha" operator="out" />
+      <feColorMatrix
+        type="matrix"
+        values="0 0 0 0 0.258824 0 0 0 0 0.254902 0 0 0 0 0.286275 0 0 0 0.17 0"
+      />
+      <feBlend
+        mode="normal"
+        in2="BackgroundImageFix"
+        result="effect1_dropShadow_3371_101118"
+      />
+      <feBlend
+        mode="normal"
+        in="SourceGraphic"
+        in2="effect1_dropShadow_3371_101118"
+        result="shape"
+      />
+    </filter>
+    <clipPath id="clip0_3371_101118">
+      <rect width="204" height="102" fill="white" />
+    </clipPath>
+  </defs>
+</svg> `;
+
 /**
  * Component to render code artifact tool call/result inside chat.
  */
-export class CodeArtifactTool extends WithDisposable(ShadowlessElement) {
+export class CodeArtifactTool extends ArtifactTool<
+  CodeArtifactToolCall | CodeArtifactToolResult
+> {
   static override styles = css`
-    .code-artifact-result {
-      cursor: pointer;
-      margin: 8px 0;
-    }
-
-    .code-artifact-result:hover {
-      background-color: var(--affine-hover-color);
-    }
-
     .code-artifact-preview {
       padding: 0;
       width: 100%;
@@ -300,164 +428,147 @@ export class CodeArtifactTool extends WithDisposable(ShadowlessElement) {
   `;
 
   @property({ attribute: false })
-  accessor data!: CodeArtifactToolCall | CodeArtifactToolResult;
-
-  @property({ attribute: false })
-  accessor width: Signal<number | undefined> | undefined;
-
-  @property({ attribute: false })
   accessor std: BlockStdScope | undefined;
 
   @state()
   private accessor mode: 'preview' | 'code' = 'code';
 
-  private renderToolCall() {
-    const { args } = this.data as CodeArtifactToolCall;
-    const name = `Generating HTML artifact "${args.title}"`;
-    return html`<tool-call-card
-      .name=${name}
-      .icon=${ToolIcon()}
-    ></tool-call-card>`;
+  /* ---------------- ArtifactTool hooks ---------------- */
+
+  protected getBanner(theme: ColorScheme) {
+    return theme === ColorScheme.Dark ? CodeBlockBannerDark : CodeBlockBanner;
   }
 
-  private renderToolResult() {
-    if (!this.std) return nothing;
-    if (this.data.type !== 'tool-result') return nothing;
-    const resultData = this.data as CodeArtifactToolResult;
-    const result = resultData.result;
+  protected getCardMeta() {
+    const loading = this.data.type === 'tool-call';
+    return {
+      title: this.data.args.title,
+      icon: CodeBlockIcon({ width: '20', height: '20' }),
+      loading,
+      className: 'code-artifact-result',
+    };
+  }
 
-    if (result && typeof result === 'object' && 'title' in result) {
-      const { title, html: htmlContent } = result as {
-        title: string;
-        html: string;
-      };
-
-      const onClick = () => {
-        const copyHTML = async () => {
-          if (this.std) {
-            await navigator.clipboard
-              .writeText(htmlContent)
-              .catch(console.error);
-            toast(this.std.host, 'Copied HTML to clipboard');
-          }
-        };
-
-        const downloadHTML = () => {
-          try {
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${title || 'artifact'}.html`;
-            document.body.append(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-          } catch (e) {
-            console.error(e);
-          }
-        };
-
-        const setCodeMode = () => {
-          if (this.mode !== 'code') {
-            this.mode = 'code';
-            renderPreview();
-          }
-        };
-
-        const setPreviewMode = () => {
-          if (this.mode !== 'preview') {
-            this.mode = 'preview';
-            renderPreview();
-          }
-        };
-
-        const renderPreview = () => {
-          const controls = html`
-            <div class="code-artifact-toggle-container">
-              <div
-                class=${classMap({
-                  'toggle-button': true,
-                  active: this.mode === 'code',
-                })}
-                @click=${setCodeMode}
-              >
-                Code
-              </div>
-              <div
-                class=${classMap({
-                  'toggle-button': true,
-                  active: this.mode === 'preview',
-                })}
-                @click=${setPreviewMode}
-              >
-                Preview
-              </div>
-            </div>
-            <div style="flex: 1"></div>
-            <button class="code-artifact-control-btn" @click=${downloadHTML}>
-              ${PageIcon({
-                width: '20',
-                height: '20',
-                style: `color: ${unsafeCSSVarV2('icon/primary')}`,
-              })}
-              Download
-            </button>
-            <icon-button @click=${copyHTML} title="Copy HTML">
-              ${CopyIcon({ width: '20', height: '20' })}
-            </icon-button>
-          `;
-          renderPreviewPanel(
-            this,
-            html`<div class="code-artifact-preview">
-              ${this.mode === 'preview'
-                ? html`<html-preview .html=${htmlContent}></html-preview>`
-                : html`<code-highlighter
-                    .std=${this.std}
-                    .code=${htmlContent}
-                    .language=${'html'}
-                    .showLineNumbers=${true}
-                  ></code-highlighter>`}
-            </div>`,
-            controls
-          );
-        };
-
-        renderPreview();
-      };
-
-      return html`
+  protected override getPreviewContent() {
+    if (this.data.type !== 'tool-result' || !this.data.result) {
+      // loading state
+      return html`<div class="code-artifact-preview">
         <div
-          class="affine-embed-linked-doc-block code-artifact-result horizontal"
-          @click=${onClick}
+          style="display:flex;justify-content:center;align-items:center;height:100%"
         >
-          <div class="affine-embed-linked-doc-content">
-            <div class="affine-embed-linked-doc-content-title">
-              <div class="affine-embed-linked-doc-content-title-icon">
-                ${PageIcon({ width: '20', height: '20' })}
-              </div>
-              <div class="affine-embed-linked-doc-content-title-text">
-                ${title}
-              </div>
-            </div>
-          </div>
+          ${CodeBlockIcon({ width: '24', height: '24' })}
         </div>
-      `;
+      </div>`;
     }
 
-    return html`<tool-call-failed
-      .name=${'Code artifact failed'}
-      .icon=${ToolIcon()}
-    ></tool-call-failed>`;
+    const result = this.data.result;
+    if (typeof result !== 'object' || !('html' in result)) return html``;
+
+    const { html: htmlContent } = result as { html: string };
+
+    return html`<div class="code-artifact-preview">
+      ${this.mode === 'preview'
+        ? html`<html-preview .html=${htmlContent}></html-preview>`
+        : html`<code-highlighter
+            .std=${this.std}
+            .code=${htmlContent}
+            .language=${'html'}
+            .showLineNumbers=${true}
+          ></code-highlighter>`}
+    </div>`;
   }
 
-  protected override render() {
-    if (this.data.type === 'tool-call') {
-      return this.renderToolCall();
+  protected override getPreviewControls() {
+    if (this.data.type !== 'tool-result' || !this.std || !this.data.result) {
+      return undefined;
     }
-    if (this.data.type === 'tool-result') {
-      return this.renderToolResult();
+
+    const result = this.data.result as { html: string; title: string };
+    const htmlContent = result.html;
+    const title = result.title;
+
+    const copyHTML = async () => {
+      await navigator.clipboard.writeText(htmlContent).catch(console.error);
+      this.notificationService.toast('Copied HTML to clipboard');
+    };
+
+    const downloadHTML = () => {
+      try {
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${title || 'artifact'}.html`;
+        document.body.append(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    const setCodeMode = () => {
+      if (this.mode !== 'code') {
+        this.mode = 'code';
+        this.refreshPreviewPanel();
+      }
+    };
+
+    const setPreviewMode = () => {
+      if (this.mode !== 'preview') {
+        this.mode = 'preview';
+        this.refreshPreviewPanel();
+      }
+    };
+
+    return html`
+      <div class="code-artifact-toggle-container">
+        <div
+          class=${classMap({
+            'toggle-button': true,
+            active: this.mode === 'code',
+          })}
+          @click=${setCodeMode}
+        >
+          Code
+        </div>
+        <div
+          class=${classMap({
+            'toggle-button': true,
+            active: this.mode === 'preview',
+          })}
+          @click=${setPreviewMode}
+        >
+          Preview
+        </div>
+      </div>
+      <div style="flex: 1"></div>
+      <button class="code-artifact-control-btn" @click=${downloadHTML}>
+        ${PageIcon({
+          width: '20',
+          height: '20',
+          style: `color: ${unsafeCSSVarV2('icon/primary')}`,
+        })}
+        Download
+      </button>
+      <icon-button @click=${copyHTML} title="Copy HTML">
+        ${CopyIcon({ width: '20', height: '20' })}
+      </icon-button>
+    `;
+  }
+
+  protected override getErrorTemplate() {
+    if (
+      this.data.type === 'tool-result' &&
+      this.data.result &&
+      (this.data.result as any).type === 'error'
+    ) {
+      return html`<tool-call-failed
+        .name=${'Code artifact failed'}
+        .icon=${ToolIcon()}
+      ></tool-call-failed>`;
     }
-    return nothing;
+    return null;
   }
 }

@@ -2,24 +2,18 @@ import { getStoreManager } from '@affine/core/blocksuite/manager/store';
 import { getAFFiNEWorkspaceSchema } from '@affine/core/modules/workspace';
 import { getEmbedLinkedDocIcons } from '@blocksuite/affine/blocks/embed-doc';
 import { LoadingIcon } from '@blocksuite/affine/components/icons';
-import { toast } from '@blocksuite/affine/components/toast';
-import { WithDisposable } from '@blocksuite/affine/global/lit';
 import { RefNodeSlotsProvider } from '@blocksuite/affine/inlines/reference';
 import type { ColorScheme } from '@blocksuite/affine/model';
+import { NotificationProvider } from '@blocksuite/affine/shared/services';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
-import { type BlockStdScope, ShadowlessElement } from '@blocksuite/affine/std';
 import { MarkdownTransformer } from '@blocksuite/affine/widgets/linked-doc';
-import type { NotificationService } from '@blocksuite/affine-shared/services';
 import { CopyIcon, PageIcon, ToolIcon } from '@blocksuite/icons/lit';
-import { type Signal } from '@preact/signals-core';
-import { css, html, nothing, type PropertyValues } from 'lit';
+import type { BlockStdScope } from '@blocksuite/std';
+import { css, html } from 'lit';
 import { property } from 'lit/decorators.js';
 
 import { getCustomPageEditorBlockSpecs } from '../text-renderer';
-import {
-  isPreviewPanelOpen,
-  renderPreviewPanel,
-} from './artifacts-preview-panel';
+import { ArtifactTool } from './artifact-tool';
 import type { ToolError } from './type';
 
 interface DocComposeToolCall {
@@ -47,17 +41,10 @@ interface DocComposeToolResult {
 /**
  * Component to render doc compose tool call/result inside chat.
  */
-export class DocComposeTool extends WithDisposable(ShadowlessElement) {
+export class DocComposeTool extends ArtifactTool<
+  DocComposeToolCall | DocComposeToolResult
+> {
   static override styles = css`
-    .doc-compose-result {
-      cursor: pointer;
-      margin: 8px 0;
-    }
-
-    .doc-compose-result:hover {
-      background-color: var(--affine-hover-color);
-    }
-
     .doc-compose-result-preview {
       padding: 24px;
       height: 100%;
@@ -101,32 +88,59 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
   `;
 
   @property({ attribute: false })
-  accessor data!: DocComposeToolCall | DocComposeToolResult;
-
-  @property({ attribute: false })
-  accessor width: Signal<number | undefined> | undefined;
-
-  @property({ attribute: false })
   accessor std: BlockStdScope | undefined;
 
-  @property({ attribute: false })
-  accessor notificationService!: NotificationService;
-
-  @property({ attribute: false })
-  accessor theme!: Signal<ColorScheme>;
-
-  override updated(changedProperties: PropertyValues) {
-    super.updated(changedProperties);
-    if (changedProperties.has('data') && isPreviewPanelOpen(this)) {
-      this.updatePreviewPanel();
-    }
+  protected getBanner(theme: ColorScheme) {
+    const { LinkedDocEmptyBanner } = getEmbedLinkedDocIcons(
+      theme,
+      'page',
+      'horizontal'
+    );
+    return LinkedDocEmptyBanner;
   }
 
-  private updatePreviewPanel() {
+  protected getCardMeta() {
+    const composing = this.data.type === 'tool-call';
+    return {
+      title: this.data.args.title,
+      icon: PageIcon(),
+      loading: composing,
+      className: 'doc-compose-result',
+    };
+  }
+
+  protected override getPreviewContent() {
+    if (!this.std) return html``;
+    const std = this.std;
+    const resultData = this.data;
+    const title = this.data.args.title;
+    const result = resultData.type === 'tool-result' ? resultData.result : null;
+    const successResult = result && 'markdown' in result ? result : null;
+
+    return html`<div class="doc-compose-result-preview">
+      <div class="doc-compose-result-preview-title">${title}</div>
+      ${successResult
+        ? html`<text-renderer
+            .answer=${successResult.markdown}
+            .host=${std.host}
+            .schema=${std.store.schema}
+            .options=${{
+              customHeading: true,
+              extensions: getCustomPageEditorBlockSpecs(),
+            }}
+          ></text-renderer>`
+        : html`<div class="doc-compose-result-preview-loading">
+            ${LoadingIcon({
+              size: '32px',
+            })}
+          </div>`}
+    </div>`;
+  }
+
+  protected override getPreviewControls() {
     if (!this.std) return;
     const std = this.std;
     const resultData = this.data;
-    const composing = resultData.type === 'tool-call';
     const title = this.data.args.title;
     const result = resultData.type === 'tool-result' ? resultData.result : null;
     const successResult = result && 'markdown' in result ? result : null;
@@ -138,7 +152,7 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
       await navigator.clipboard
         .writeText(successResult.markdown)
         .catch(console.error);
-      toast(std.host, 'Copied markdown to clipboard');
+      this.notificationService.toast('Copied markdown to clipboard');
     };
 
     const saveAsDoc = async () => {
@@ -147,6 +161,7 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
           return;
         }
         const workspace = std.store.workspace;
+        const notificationService = std.get(NotificationProvider);
         const refNodeSlots = std.getOptional(RefNodeSlotsProvider);
         const docId = await MarkdownTransformer.importMarkdownToDoc({
           collection: workspace,
@@ -156,7 +171,7 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
           extensions: getStoreManager().config.init().value.get('store'),
         });
         if (docId) {
-          const open = await this.notificationService.confirm({
+          const open = await notificationService.confirm({
             title: 'Open the doc you just created',
             message: 'Doc saved successfully! Would you like to open it now?',
             cancelText: 'Cancel',
@@ -170,99 +185,43 @@ export class DocComposeTool extends WithDisposable(ShadowlessElement) {
             });
           }
         } else {
-          toast(std.host, 'Failed to create document');
+          this.notificationService.toast('Failed to create document');
         }
       } catch (e) {
         console.error(e);
-        toast(std.host, 'Failed to create document');
+        this.notificationService.toast('Failed to create document');
       }
     };
 
-    const controls = html`
-      <button class="doc-compose-result-save-as-doc" @click=${saveAsDoc}>
-        ${PageIcon({
-          width: '20',
-          height: '20',
-          style: `color: ${unsafeCSSVarV2('icon/primary')}`,
-        })}
-        Save as doc
-      </button>
-      <icon-button @click=${copyMarkdown} title="Copy markdown">
-        ${CopyIcon({ width: '20', height: '20' })}
-      </icon-button>
-    `;
-
-    renderPreviewPanel(
-      this,
-      html`<div class="doc-compose-result-preview">
-        <div class="doc-compose-result-preview-title">${title}</div>
-        ${successResult
-          ? html`<text-renderer
-              .answer=${successResult.markdown}
-              .options=${{
-                customHeading: true,
-                extensions: getCustomPageEditorBlockSpecs(),
-              }}
-            ></text-renderer>`
-          : html`<div class="doc-compose-result-preview-loading">
-              ${LoadingIcon({
-                size: '32px',
-              })}
-            </div>`}
-      </div>`,
-      composing ? undefined : controls
-    );
+    return this.data.type === 'tool-call'
+      ? undefined
+      : html`
+          <button class="doc-compose-result-save-as-doc" @click=${saveAsDoc}>
+            ${PageIcon({
+              width: '20',
+              height: '20',
+              style: `color: ${unsafeCSSVarV2('icon/primary')}`,
+            })}
+            Save as doc
+          </button>
+          <icon-button @click=${copyMarkdown} title="Copy markdown">
+            ${CopyIcon({ width: '20', height: '20' })}
+          </icon-button>
+        `;
   }
 
-  protected override render() {
-    if (!this.std) return nothing;
-    const resultData = this.data;
-    const composing = resultData.type === 'tool-call';
-
-    const title = this.data.args.title;
-
+  protected override getErrorTemplate() {
     if (
-      resultData.type === 'tool-result' &&
-      resultData.result &&
-      'type' in resultData.result &&
-      resultData.result.type === 'error'
+      this.data.type === 'tool-result' &&
+      this.data.result &&
+      'type' in this.data.result &&
+      (this.data.result as any).type === 'error'
     ) {
-      // failed
       return html`<tool-call-failed
         .name=${'Doc compose failed'}
         .icon=${ToolIcon()}
       ></tool-call-failed>`;
     }
-
-    const { LinkedDocEmptyBanner } = getEmbedLinkedDocIcons(
-      this.theme.value,
-      'page',
-      'horizontal'
-    );
-
-    return html`
-      <div
-        class="affine-embed-linked-doc-block doc-compose-result horizontal"
-        @click=${this.updatePreviewPanel}
-      >
-        <div class="affine-embed-linked-doc-content">
-          <div class="affine-embed-linked-doc-content-title">
-            <div class="affine-embed-linked-doc-content-title-icon">
-              ${composing
-                ? LoadingIcon({
-                    size: '20px',
-                  })
-                : PageIcon()}
-            </div>
-            <div class="affine-embed-linked-doc-content-title-text">
-              ${title}
-            </div>
-          </div>
-        </div>
-        <div class="affine-embed-linked-doc-banner">
-          ${LinkedDocEmptyBanner}
-        </div>
-      </div>
-    `;
+    return null;
   }
 }
