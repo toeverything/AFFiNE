@@ -11,13 +11,21 @@ public struct UpdateUserSettingsInput: InputObject {
   }
 
   public init(
+    receiveCommentEmail: GraphQLNullable<Bool> = nil,
     receiveInvitationEmail: GraphQLNullable<Bool> = nil,
     receiveMentionEmail: GraphQLNullable<Bool> = nil
   ) {
     __data = InputDict([
+      "receiveCommentEmail": receiveCommentEmail,
       "receiveInvitationEmail": receiveInvitationEmail,
       "receiveMentionEmail": receiveMentionEmail
     ])
+  }
+
+  /// Receive comment email
+  public var receiveCommentEmail: GraphQLNullable<Bool> {
+    get { __data["receiveCommentEmail"] }
+    set { __data["receiveCommentEmail"] = newValue }
   }
 
   /// Receive invitation email

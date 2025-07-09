@@ -3,28 +3,36 @@
 
 @_exported import ApolloAPI
 
-public class GetCopilotLatestDocSessionQuery: GraphQLQuery {
-  public static let operationName: String = "getCopilotLatestDocSession"
+public class GetCopilotDocSessionsQuery: GraphQLQuery {
+  public static let operationName: String = "getCopilotDocSessions"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getCopilotLatestDocSession($workspaceId: String!, $docId: String!) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename chats( pagination: { first: 1 } docId: $docId options: { sessionOrder: desc, action: false, fork: false, withMessages: true } ) { __typename ...PaginatedCopilotChats } } } }"#,
+      #"query getCopilotDocSessions($workspaceId: String!, $docId: String!, $pagination: PaginationInput!, $options: QueryChatHistoriesInput) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename chats(pagination: $pagination, docId: $docId, options: $options) { __typename ...PaginatedCopilotChats } } } }"#,
       fragments: [CopilotChatHistory.self, CopilotChatMessage.self, PaginatedCopilotChats.self]
     ))
 
   public var workspaceId: String
   public var docId: String
+  public var pagination: PaginationInput
+  public var options: GraphQLNullable<QueryChatHistoriesInput>
 
   public init(
     workspaceId: String,
-    docId: String
+    docId: String,
+    pagination: PaginationInput,
+    options: GraphQLNullable<QueryChatHistoriesInput>
   ) {
     self.workspaceId = workspaceId
     self.docId = docId
+    self.pagination = pagination
+    self.options = options
   }
 
   public var __variables: Variables? { [
     "workspaceId": workspaceId,
-    "docId": docId
+    "docId": docId,
+    "pagination": pagination,
+    "options": options
   ] }
 
   public struct Data: AffineGraphQL.SelectionSet {
@@ -65,14 +73,9 @@ public class GetCopilotLatestDocSessionQuery: GraphQLQuery {
         public static var __selections: [ApolloAPI.Selection] { [
           .field("__typename", String.self),
           .field("chats", Chats.self, arguments: [
-            "pagination": ["first": 1],
+            "pagination": .variable("pagination"),
             "docId": .variable("docId"),
-            "options": [
-              "sessionOrder": "desc",
-              "action": false,
-              "fork": false,
-              "withMessages": true
-            ]
+            "options": .variable("options")
           ]),
         ] }
 

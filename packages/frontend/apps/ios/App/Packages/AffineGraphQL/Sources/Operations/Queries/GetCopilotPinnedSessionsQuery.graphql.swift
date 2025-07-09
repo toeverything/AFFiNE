@@ -3,28 +3,36 @@
 
 @_exported import ApolloAPI
 
-public class GetCopilotLatestDocSessionQuery: GraphQLQuery {
-  public static let operationName: String = "getCopilotLatestDocSession"
+public class GetCopilotPinnedSessionsQuery: GraphQLQuery {
+  public static let operationName: String = "getCopilotPinnedSessions"
   public static let operationDocument: ApolloAPI.OperationDocument = .init(
     definition: .init(
-      #"query getCopilotLatestDocSession($workspaceId: String!, $docId: String!) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename chats( pagination: { first: 1 } docId: $docId options: { sessionOrder: desc, action: false, fork: false, withMessages: true } ) { __typename ...PaginatedCopilotChats } } } }"#,
+      #"query getCopilotPinnedSessions($workspaceId: String!, $docId: String, $messageOrder: ChatHistoryOrder, $withPrompt: Boolean) { currentUser { __typename copilot(workspaceId: $workspaceId) { __typename chats( pagination: { first: 1 } docId: $docId options: { pinned: true, messageOrder: $messageOrder, withPrompt: $withPrompt } ) { __typename ...PaginatedCopilotChats } } } }"#,
       fragments: [CopilotChatHistory.self, CopilotChatMessage.self, PaginatedCopilotChats.self]
     ))
 
   public var workspaceId: String
-  public var docId: String
+  public var docId: GraphQLNullable<String>
+  public var messageOrder: GraphQLNullable<GraphQLEnum<ChatHistoryOrder>>
+  public var withPrompt: GraphQLNullable<Bool>
 
   public init(
     workspaceId: String,
-    docId: String
+    docId: GraphQLNullable<String>,
+    messageOrder: GraphQLNullable<GraphQLEnum<ChatHistoryOrder>>,
+    withPrompt: GraphQLNullable<Bool>
   ) {
     self.workspaceId = workspaceId
     self.docId = docId
+    self.messageOrder = messageOrder
+    self.withPrompt = withPrompt
   }
 
   public var __variables: Variables? { [
     "workspaceId": workspaceId,
-    "docId": docId
+    "docId": docId,
+    "messageOrder": messageOrder,
+    "withPrompt": withPrompt
   ] }
 
   public struct Data: AffineGraphQL.SelectionSet {
@@ -68,10 +76,9 @@ public class GetCopilotLatestDocSessionQuery: GraphQLQuery {
             "pagination": ["first": 1],
             "docId": .variable("docId"),
             "options": [
-              "sessionOrder": "desc",
-              "action": false,
-              "fork": false,
-              "withMessages": true
+              "pinned": true,
+              "messageOrder": .variable("messageOrder"),
+              "withPrompt": .variable("withPrompt")
             ]
           ]),
         ] }
