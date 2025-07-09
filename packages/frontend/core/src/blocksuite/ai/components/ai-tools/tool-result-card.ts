@@ -1,7 +1,7 @@
 import { SignalWatcher, WithDisposable } from '@blocksuite/affine/global/lit';
-import { type ImageProxyService } from '@blocksuite/affine/shared/adapters';
 import { unsafeCSSVarV2 } from '@blocksuite/affine/shared/theme';
 import { ShadowlessElement } from '@blocksuite/affine/std';
+import { DEFAULT_IMAGE_PROXY_ENDPOINT } from '@blocksuite/affine-shared/consts';
 import { ToggleDownIcon, ToolIcon } from '@blocksuite/icons/lit';
 import { type Signal } from '@preact/signals-core';
 import { css, html, nothing, type TemplateResult } from 'lit';
@@ -205,11 +205,10 @@ export class ToolResultCard extends SignalWatcher(
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
 
-  @property({ attribute: false })
-  accessor imageProxyService: ImageProxyService | null | undefined;
-
   @state()
   private accessor isCollapsed = true;
+
+  private readonly imageProxyURL = DEFAULT_IMAGE_PROXY_ENDPOINT;
 
   protected override render() {
     return html`
@@ -272,15 +271,20 @@ export class ToolResultCard extends SignalWatcher(
     `;
   }
 
+  buildUrl(imageUrl: string) {
+    if (imageUrl.startsWith(this.imageProxyURL)) {
+      return imageUrl;
+    }
+    return `${this.imageProxyURL}?url=${encodeURIComponent(imageUrl)}`;
+  }
+
   private renderIcon(icon: string | TemplateResult<1> | undefined) {
     if (!icon) {
       return nothing;
     }
+
     if (typeof icon === 'string') {
-      if (this.imageProxyService) {
-        return html`<img src=${this.imageProxyService.buildUrl(icon)} />`;
-      }
-      return html`<img src=${icon} />`;
+      return html`<img src=${this.buildUrl(icon)} />`;
     }
     return html`${icon}`;
   }

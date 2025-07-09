@@ -15,10 +15,7 @@ import {
 import { toDocSearchParams } from '@affine/core/modules/navigation/utils';
 import { GlobalSessionStateService } from '@affine/core/modules/storage';
 import { WorkbenchLink } from '@affine/core/modules/workbench';
-import {
-  getAFFiNEWorkspaceSchema,
-  WorkspaceService,
-} from '@affine/core/modules/workspace';
+import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
 import track from '@affine/track';
 import type {
@@ -338,7 +335,6 @@ export const LinkPreview = ({
               <LitTextRenderer
                 className={styles.linkPreviewRenderer}
                 answer={link.markdownPreview}
-                schema={getAFFiNEWorkspaceSchema()}
                 options={textRendererOptions}
               />
             )}

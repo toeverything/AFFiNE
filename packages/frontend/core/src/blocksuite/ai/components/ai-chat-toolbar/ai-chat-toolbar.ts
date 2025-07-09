@@ -42,7 +42,7 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   accessor docDisplayConfig!: DocDisplayConfig;
 
   @property({ attribute: false })
-  accessor notification: NotificationService | null | undefined;
+  accessor notificationService!: NotificationService;
 
   @query('.history-button')
   accessor historyButton!: HTMLDivElement;
@@ -104,21 +104,19 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
   private readonly unpinConfirm = async () => {
     if (this.session && this.session.pinned) {
       try {
-        const confirm = this.notification
-          ? await this.notification.confirm({
-              title: 'Switch Chat? Current chat is pinned',
-              message:
-                'Switching will unpinned the current chat. This will change the active chat panel, allowing you to navigate between different conversation histories.',
-              confirmText: 'Switch Chat',
-              cancelText: 'Cancel',
-            })
-          : true;
+        const confirm = await this.notificationService.confirm({
+          title: 'Switch Chat? Current chat is pinned',
+          message:
+            'Switching will unpinned the current chat. This will change the active chat panel, allowing you to navigate between different conversation histories.',
+          confirmText: 'Switch Chat',
+          cancelText: 'Cancel',
+        });
         if (!confirm) {
           return false;
         }
         await this.onTogglePin();
       } catch {
-        this.notification?.toast('Failed to unpin the chat');
+        this.notificationService.toast('Failed to unpin the chat');
       }
     }
     return true;
@@ -133,7 +131,7 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
 
   private readonly onSessionClick = async (sessionId: string) => {
     if (this.session?.sessionId === sessionId) {
-      this.notification?.toast('You are already in this chat');
+      this.notificationService.toast('You are already in this chat');
       return;
     }
     const confirm = await this.unpinConfirm();
@@ -144,7 +142,7 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
 
   private readonly onDocClick = async (docId: string, sessionId: string) => {
     if (this.docId === docId && this.session?.sessionId === sessionId) {
-      this.notification?.toast('You are already in this chat');
+      this.notificationService.toast('You are already in this chat');
       return;
     }
     this.onOpenDoc(docId, sessionId);
@@ -169,7 +167,6 @@ export class AIChatToolbar extends WithDisposable(ShadowlessElement) {
           .docDisplayConfig=${this.docDisplayConfig}
           .onSessionClick=${this.onSessionClick}
           .onDocClick=${this.onDocClick}
-          .notification=${this.notification}
         ></ai-session-history>
       `,
       portalStyles: {

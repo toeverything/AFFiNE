@@ -19,6 +19,7 @@ public struct QueryChatHistoriesInput: InputObject {
     sessionId: GraphQLNullable<String> = nil,
     sessionOrder: GraphQLNullable<GraphQLEnum<ChatHistoryOrder>> = nil,
     skip: GraphQLNullable<Int> = nil,
+    withMessages: GraphQLNullable<Bool> = nil,
     withPrompt: GraphQLNullable<Bool> = nil
   ) {
     __data = InputDict([
@@ -30,6 +31,7 @@ public struct QueryChatHistoriesInput: InputObject {
       "sessionId": sessionId,
       "sessionOrder": sessionOrder,
       "skip": skip,
+      "withMessages": withMessages,
       "withPrompt": withPrompt
     ])
   }
@@ -72,6 +74,11 @@ public struct QueryChatHistoriesInput: InputObject {
   public var skip: GraphQLNullable<Int> {
     get { __data["skip"] }
     set { __data["skip"] = newValue }
+  }
+
+  public var withMessages: GraphQLNullable<Bool> {
+    get { __data["withMessages"] }
+    set { __data["withMessages"] = newValue }
   }
 
   public var withPrompt: GraphQLNullable<Bool> {

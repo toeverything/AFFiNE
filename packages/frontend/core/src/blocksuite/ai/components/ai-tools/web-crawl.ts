@@ -1,5 +1,4 @@
 import { WithDisposable } from '@blocksuite/affine/global/lit';
-import type { ImageProxyService } from '@blocksuite/affine/shared/adapters';
 import { ShadowlessElement } from '@blocksuite/affine/std';
 import { WebIcon } from '@blocksuite/icons/lit';
 import type { Signal } from '@preact/signals-core';
@@ -40,9 +39,6 @@ export class WebCrawlTool extends WithDisposable(ShadowlessElement) {
   @property({ attribute: false })
   accessor width: Signal<number | undefined> | undefined;
 
-  @property({ attribute: false })
-  accessor imageProxyService: ImageProxyService | null | undefined;
-
   renderToolCall() {
     return html`
       <tool-call-card
@@ -73,7 +69,6 @@ export class WebCrawlTool extends WithDisposable(ShadowlessElement) {
             },
           ]}
           .width=${this.width}
-          .imageProxyService=${this.imageProxyService}
         ></tool-result-card>
       `;
     }

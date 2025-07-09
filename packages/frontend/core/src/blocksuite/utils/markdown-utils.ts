@@ -1,6 +1,5 @@
 import type { FeatureFlagService } from '@affine/core/modules/feature-flag';
 import { WorkspaceImpl } from '@affine/core/modules/workspace/impls/workspace';
-import type { ServiceProvider } from '@blocksuite/affine/global/di';
 import {
   defaultImageProxyMiddleware,
   embedSyncedDocMiddleware,
@@ -11,6 +10,7 @@ import {
   titleMiddleware,
 } from '@blocksuite/affine/shared/adapters';
 import {
+  BlockStdScope,
   type EditorHost,
   type TextRangePoint,
   TextSelection,
@@ -19,7 +19,6 @@ import type {
   BlockModel,
   BlockSnapshot,
   DraftModel,
-  Schema,
   Slice,
   SliceSnapshot,
   Store,
@@ -27,6 +26,43 @@ import type {
 } from '@blocksuite/affine/store';
 import { toDraftModel, Transformer } from '@blocksuite/affine/store';
 import { Doc as YDoc } from 'yjs';
+
+import { getStoreManager } from '../manager/store';
+
+interface MarkdownWorkspace {
+  collection: WorkspaceImpl;
+  std: BlockStdScope;
+}
+
+let markdownWorkspace: MarkdownWorkspace | null = null;
+
+const getMarkdownWorkspace = (
+  featureFlagService?: FeatureFlagService
+): MarkdownWorkspace => {
+  if (markdownWorkspace) {
+    return markdownWorkspace;
+  }
+
+  const collection = new WorkspaceImpl({
+    rootDoc: new YDoc({ guid: 'markdownToDoc' }),
+    featureFlagService: featureFlagService,
+  });
+  collection.meta.initialize();
+
+  const mockDoc = collection.createDoc('mock-id');
+  const std = new BlockStdScope({
+    store: mockDoc.getStore(),
+    extensions: getStoreManager().config.init().value.get('store'),
+  });
+
+  markdownWorkspace = {
+    collection,
+    std,
+  };
+
+  return markdownWorkspace;
+};
+
 const updateSnapshotText = (
   point: TextRangePoint,
   snapshot: BlockSnapshot,
@@ -184,20 +220,14 @@ export async function replaceFromMarkdown(
 }
 
 export async function markDownToDoc(
-  provider: ServiceProvider,
-  schema: Schema,
   answer: string,
   middlewares?: TransformerMiddleware[],
   affineFeatureFlagService?: FeatureFlagService
 ) {
-  // Should not create a new doc in the original collection
-  const collection = new WorkspaceImpl({
-    rootDoc: new YDoc({ guid: 'markdownToDoc' }),
-    featureFlagService: affineFeatureFlagService,
-  });
-  collection.meta.initialize();
+  const { collection, std } = getMarkdownWorkspace(affineFeatureFlagService);
+
   const transformer = new Transformer({
-    schema,
+    schema: std.store.schema,
     blobCRUD: collection.blobSync,
     docCRUD: {
       create: (id: string) => collection.createDoc(id).getStore({ id }),
@@ -206,7 +236,7 @@ export async function markDownToDoc(
     },
     middlewares,
   });
-  const mdAdapter = new MarkdownAdapter(transformer, provider);
+  const mdAdapter = new MarkdownAdapter(transformer, std.store.provider);
   const doc = await mdAdapter.toDoc({
     file: answer,
     assets: transformer.assetsManager,

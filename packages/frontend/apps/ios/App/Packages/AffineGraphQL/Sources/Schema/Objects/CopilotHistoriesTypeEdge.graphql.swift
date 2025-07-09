@@ -4,8 +4,8 @@
 import ApolloAPI
 
 public extension Objects {
-  static let CopilotSessionType = ApolloAPI.Object(
-    typename: "CopilotSessionType",
+  static let CopilotHistoriesTypeEdge = ApolloAPI.Object(
+    typename: "CopilotHistoriesTypeEdge",
     implementedInterfaces: [],
     keyFields: nil
   )
