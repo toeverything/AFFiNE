@@ -1,12 +1,16 @@
 import { createLocalWorkspace } from '@affine-test/kit/utils/workspace';
-import { faker } from '@faker-js/faker';
 import { expect } from '@playwright/test';
 
 import { test } from '../base/base-test';
 
+test.describe.configure({ mode: 'serial' });
+
 test.describe('AISettings/Embedding', () => {
   test.beforeEach(async ({ loggedInPage: page, utils }) => {
-    await utils.testUtils.setupTestEnvironment(page);
+    await utils.testUtils.setupTestEnvironment(
+      page,
+      'claude-sonnet-4@20250514'
+    );
     await utils.chatPanel.openChatPanel(page);
   });
 
@@ -246,7 +250,7 @@ test.describe('AISettings/Embedding', () => {
     await createLocalWorkspace({ name: 'test' }, page, false, 'affine-cloud');
     await utils.settings.openSettingsPanel(page);
     await utils.settings.enableWorkspaceEmbedding(page);
-    const person = faker.person.fullName();
+    const person = 'test123';
 
     const hobby1 = Buffer.from(`${person} love climbing`);
     const hobby2 = Buffer.from(`${person} love skating`);

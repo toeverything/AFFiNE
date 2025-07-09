@@ -61,8 +61,11 @@ export class TestUtils {
     await waitForEditorLoad(page);
   }
 
-  public async setupTestEnvironment(page: Page) {
-    await switchDefaultChatModel('gemini-2.5-flash');
+  public async setupTestEnvironment(
+    page: Page,
+    defaultModel = 'gemini-2.5-flash'
+  ) {
+    await switchDefaultChatModel(defaultModel);
 
     await skipOnboarding(page.context());
     await openHomePage(page);

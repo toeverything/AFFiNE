@@ -274,9 +274,11 @@ export class OpenAIProvider extends CopilotProvider<OpenAIConfig> {
   override getProviderSpecificTools(
     toolName: CopilotChatTools,
     model: string
-  ): [string, Tool] | undefined {
+  ): [string, Tool?] | undefined {
     if (toolName === 'webSearch' && !this.isReasoningModel(model)) {
       return ['web_search_preview', openai.tools.webSearchPreview()];
+    } else if (toolName === 'docEdit') {
+      return ['doc_edit', undefined];
     }
     return;
   }

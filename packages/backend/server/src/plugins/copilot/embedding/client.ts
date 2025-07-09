@@ -112,11 +112,14 @@ class ProductionEmbeddingClient extends EmbeddingClient {
     );
 
     try {
-      return ranks.map((score, chunk) => ({
-        chunk,
-        targetId: this.getTargetId(embeddings[chunk]),
-        score,
-      }));
+      return ranks.map((score, i) => {
+        const chunk = embeddings[i];
+        return {
+          chunk: chunk.chunk,
+          targetId: this.getTargetId(chunk),
+          score: Math.max(score, 1 - (chunk.distance || -Infinity)),
+        };
+      });
     } catch (error) {
       this.logger.error('Failed to parse rerank results', error);
       // silent error, will fallback to default sorting in parent method
@@ -148,7 +151,7 @@ class ProductionEmbeddingClient extends EmbeddingClient {
 
     const chunks = sortedEmbeddings.reduce(
       (acc, e) => {
-        const targetId = 'docId' in e ? e.docId : 'fileId' in e ? e.fileId : '';
+        const targetId = this.getTargetId(e);
         const key = `${targetId}:${e.chunk}`;
         acc[key] = e;
         return acc;
@@ -179,7 +182,10 @@ class ProductionEmbeddingClient extends EmbeddingClient {
         .filter(Boolean);
 
       this.logger.verbose(
-        `ReRank completed: ${highConfidenceChunks.length} high-confidence results found`
+        `ReRank completed: ${highConfidenceChunks.length} high-confidence results found, total ${sortedEmbeddings.length} embeddings`,
+        highConfidenceChunks.length !== sortedEmbeddings.length
+          ? JSON.stringify(ranks)
+          : undefined
       );
       return highConfidenceChunks.slice(0, topK);
     } catch (error) {

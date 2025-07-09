@@ -126,7 +126,7 @@ export abstract class CopilotProvider<C = any> {
   protected getProviderSpecificTools(
     _toolName: CopilotChatTools,
     _model: string
-  ): [string, Tool] | undefined {
+  ): [string, Tool?] | undefined {
     return;
   }
 
@@ -143,7 +143,10 @@ export abstract class CopilotProvider<C = any> {
       for (const tool of options.tools) {
         const toolDef = this.getProviderSpecificTools(tool, model);
         if (toolDef) {
-          tools[toolDef[0]] = toolDef[1];
+          // allow provider prevent tool creation
+          if (toolDef[1]) {
+            tools[toolDef[0]] = toolDef[1];
+          }
           continue;
         }
         switch (tool) {

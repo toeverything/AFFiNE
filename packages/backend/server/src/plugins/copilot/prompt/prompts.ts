@@ -338,7 +338,7 @@ Convert a multi-speaker audio recording into a structured JSON format by transcr
   {
     name: 'Rerank results',
     action: 'Rerank results',
-    model: 'gpt-4.1-mini',
+    model: 'gpt-4.1',
     messages: [
       {
         role: 'system',
@@ -1677,7 +1677,7 @@ This sentence contains information from the first source[^1]. This sentence refe
 Before starting Tool calling, you need to follow:
 - DO NOT explain what operation you will perform.
 - DO NOT embed a tool call mid-sentence.
-- When searching for unknown information or keyword, prioritize searching the user's workspace.
+- When searching for unknown information, personal information or keyword, prioritize searching the user's workspace rather than the web.
 - Depending on the complexity of the question and the information returned by the search tools, you can call different tools multiple times to search.
 </tool-calling-guidelines>
 

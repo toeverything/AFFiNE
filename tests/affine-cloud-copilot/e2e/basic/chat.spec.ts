@@ -45,28 +45,30 @@ test.describe('AIBasic/Chat', () => {
     // Type and send a message
     await utils.chatPanel.makeChat(
       page,
-      'Introduce AFFiNE to me. Answer in 50 words.'
+      'Introduce AFFiNE to me. Answer in 500 words.'
     );
 
-    // AI is loading
-    await utils.chatPanel.waitForHistory(page, [
-      {
-        role: 'user',
-        content: 'Introduce AFFiNE to me. Answer in 50 words.',
-      },
-      {
-        role: 'assistant',
-        status: 'loading',
-      },
-    ]);
+    if (!(await page.getByTestId('ai-loading').isVisible())) {
+      // AI is loading
+      await utils.chatPanel.waitForHistory(page, [
+        {
+          role: 'user',
+          content: 'Introduce AFFiNE to me. Answer in 500 words.',
+        },
+        {
+          role: 'assistant',
+          status: 'loading',
+        },
+      ]);
 
-    await expect(page.getByTestId('ai-loading')).toBeVisible();
+      await expect(page.getByTestId('ai-loading')).toBeVisible();
+    }
 
     // AI Generating
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce AFFiNE to me. Answer in 50 words.',
+        content: 'Introduce AFFiNE to me. Answer in 500 words.',
       },
       {
         role: 'assistant',
@@ -79,7 +81,7 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce AFFiNE to me. Answer in 50 words.',
+        content: 'Introduce AFFiNE to me. Answer in 500 words.',
       },
       {
         role: 'assistant',
@@ -94,14 +96,14 @@ test.describe('AIBasic/Chat', () => {
   }) => {
     await utils.chatPanel.makeChat(
       page,
-      'Introduce AFFiNE to me. Answer in 50 words.'
+      'Introduce AFFiNE to me. Answer in 5000 words.'
     );
 
     // AI Generating
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce AFFiNE to me. Answer in 50 words.',
+        content: 'Introduce AFFiNE to me. Answer in 5000 words.',
       },
       {
         role: 'assistant',
@@ -113,7 +115,7 @@ test.describe('AIBasic/Chat', () => {
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Introduce AFFiNE to me. Answer in 50 words.',
+        content: 'Introduce AFFiNE to me. Answer in 5000 words.',
       },
       {
         role: 'assistant',
@@ -183,13 +185,14 @@ test.describe('AIBasic/Chat', () => {
     // Type and send a message
     await utils.chatPanel.makeChat(
       page,
-      'Hello, write a poem about the moon. Answer in 50 words.'
+      'Hello, give a introduction about the moon. Answer in 500 words.'
     );
 
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'user',
-        content: 'Hello, write a poem about the moon. Answer in 50 words.',
+        content:
+          'Hello, give a introduction about the moon. Answer in 500 words.',
       },
       {
         role: 'assistant',

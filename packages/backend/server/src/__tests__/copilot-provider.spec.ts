@@ -369,7 +369,7 @@ The term **“CRDT”** was first introduced by Marc Shapiro, Nuno Preguiça, Ca
               .map(c => JSON.parse(c.citationJson).type)
               .filter(type => ['attachment', 'doc'].includes(type)).length ===
               0,
-          'should not have citation'
+          `should not have citation: ${JSON.stringify(c, null, 2)}`
         );
       });
     },

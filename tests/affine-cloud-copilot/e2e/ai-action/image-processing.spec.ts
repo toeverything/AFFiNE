@@ -36,6 +36,8 @@ test.describe('AIAction/ImageProcessing', () => {
     await expect(answer.getByTestId('ai-answer-image')).toBeVisible();
     const insert = answer.getByTestId('answer-insert-below');
     await insert.click();
+    await page.reload();
+
     await utils.chatPanel.waitForHistory(page, [
       {
         role: 'action',
