@@ -1286,7 +1286,7 @@ If there are items in the content that can be used as to-do tasks, please refer 
   {
     name: 'Make it real',
     action: 'Make it real',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'claude-sonnet-4@20250514',
     messages: [
       {
         role: 'system',
@@ -1327,7 +1327,7 @@ When sent new wireframes, respond ONLY with the contents of the html file.`,
   {
     name: 'Make it real with text',
     action: 'Make it real with text',
-    model: 'gpt-4.1-2025-04-14',
+    model: 'claude-sonnet-4@20250514',
     messages: [
       {
         role: 'system',
