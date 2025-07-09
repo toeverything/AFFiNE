@@ -233,12 +233,16 @@ export abstract class GeminiProvider<T> extends CopilotProvider<T> {
         taskType: 'RETRIEVAL_DOCUMENT',
       });
 
-      const { embeddings } = await embedMany({
-        model: modelInstance,
-        values: messages,
-      });
+      const embeddings = await Promise.allSettled(
+        messages.map(m =>
+          embedMany({ model: modelInstance, values: [m], maxRetries: 3 })
+        )
+      );
 
-      return embeddings.filter(v => v && Array.isArray(v));
+      return embeddings
+        .map(e => (e.status === 'fulfilled' ? e.value.embeddings : null))
+        .flat()
+        .filter((v): v is number[] => !!v && Array.isArray(v));
     } catch (e: any) {
       metrics.ai
         .counter('generate_embedding_errors')
