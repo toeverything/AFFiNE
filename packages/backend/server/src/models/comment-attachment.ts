@@ -32,6 +32,7 @@ export class CommentAttachmentModel extends BaseModel {
         name: input.name,
         mime: input.mime,
         size: input.size,
+        createdBy: input.createdBy,
       },
     });
   }

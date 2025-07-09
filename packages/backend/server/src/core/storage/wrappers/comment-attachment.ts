@@ -59,7 +59,8 @@ export class CommentAttachmentStorage {
     docId: string,
     key: string,
     name: string,
-    blob: Buffer
+    blob: Buffer,
+    userId: string
   ) {
     const meta = autoMetadata(blob);
 
@@ -75,6 +76,7 @@ export class CommentAttachmentStorage {
       name,
       mime: meta.contentType ?? 'application/octet-stream',
       size: blob.length,
+      createdBy: userId,
     });
   }
 

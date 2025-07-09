@@ -73,7 +73,8 @@ e2e('should get comment attachment body', async t => {
     docId,
     key,
     'test.txt',
-    Buffer.from('test')
+    Buffer.from('test'),
+    owner.id
   );
 
   const res = await app.GET(

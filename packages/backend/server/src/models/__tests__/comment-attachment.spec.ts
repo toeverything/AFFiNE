@@ -13,6 +13,7 @@ test.after.always(async () => {
 
 test('should upsert comment attachment', async t => {
   const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
 
   // add
   const item = await models.commentAttachment.upsert({
@@ -22,6 +23,7 @@ test('should upsert comment attachment', async t => {
     name: 'test-name',
     mime: 'text/plain',
     size: 100,
+    createdBy: user.id,
   });
 
   t.is(item.workspaceId, workspace.id);
@@ -30,6 +32,7 @@ test('should upsert comment attachment', async t => {
   t.is(item.mime, 'text/plain');
   t.is(item.size, 100);
   t.truthy(item.createdAt);
+  t.is(item.createdBy, user.id);
 
   // update
   const item2 = await models.commentAttachment.upsert({
@@ -46,6 +49,7 @@ test('should upsert comment attachment', async t => {
   t.is(item2.key, 'test-key');
   t.is(item2.mime, 'text/html');
   t.is(item2.size, 200);
+  t.is(item2.createdBy, user.id);
 
   // make sure only one blob is created
   const items = await models.commentAttachment.list(workspace.id);

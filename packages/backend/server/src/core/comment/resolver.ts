@@ -361,7 +361,8 @@ export class CommentResolver {
       docId,
       key,
       attachment.filename ?? key,
-      buffer
+      buffer,
+      me.id
     );
     return this.commentAttachmentStorage.getUrl(workspaceId, docId, key);
   }

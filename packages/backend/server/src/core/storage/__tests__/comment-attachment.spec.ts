@@ -24,11 +24,12 @@ test.after.always(async () => {
 
 test('should put comment attachment', async t => {
   const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
   const docId = randomUUID();
   const key = randomUUID();
   const blob = Buffer.from('test');
 
-  await storage.put(workspace.id, docId, key, 'test.txt', blob);
+  await storage.put(workspace.id, docId, key, 'test.txt', blob, user.id);
 
   const item = await models.commentAttachment.get(workspace.id, docId, key);
 
@@ -39,15 +40,17 @@ test('should put comment attachment', async t => {
   t.is(item?.mime, 'text/plain');
   t.is(item?.size, blob.length);
   t.is(item?.name, 'test.txt');
+  t.is(item?.createdBy, user.id);
 });
 
 test('should get comment attachment', async t => {
   const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
   const docId = randomUUID();
   const key = randomUUID();
   const blob = Buffer.from('test');
 
-  await storage.put(workspace.id, docId, key, 'test.txt', blob);
+  await storage.put(workspace.id, docId, key, 'test.txt', blob, user.id);
 
   const item = await storage.get(workspace.id, docId, key);
 
@@ -62,11 +65,12 @@ test('should get comment attachment', async t => {
 
 test('should get comment attachment with access url', async t => {
   const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
   const docId = randomUUID();
   const key = randomUUID();
   const blob = Buffer.from('test');
 
-  await storage.put(workspace.id, docId, key, 'test.txt', blob);
+  await storage.put(workspace.id, docId, key, 'test.txt', blob, user.id);
 
   const url = storage.getUrl(workspace.id, docId, key);
 
@@ -79,11 +83,12 @@ test('should get comment attachment with access url', async t => {
 
 test('should delete comment attachment', async t => {
   const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
   const docId = randomUUID();
   const key = randomUUID();
   const blob = Buffer.from('test');
 
-  await storage.put(workspace.id, docId, key, 'test.txt', blob);
+  await storage.put(workspace.id, docId, key, 'test.txt', blob, user.id);
 
   await storage.delete(workspace.id, docId, key);
 
@@ -94,11 +99,12 @@ test('should delete comment attachment', async t => {
 
 test('should handle comment.attachment.delete event', async t => {
   const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
   const docId = randomUUID();
   const key = randomUUID();
   const blob = Buffer.from('test');
 
-  await storage.put(workspace.id, docId, key, 'test.txt', blob);
+  await storage.put(workspace.id, docId, key, 'test.txt', blob, user.id);
 
   await storage.onCommentAttachmentDelete({
     workspaceId: workspace.id,
@@ -113,14 +119,15 @@ test('should handle comment.attachment.delete event', async t => {
 
 test('should handle workspace.deleted event', async t => {
   const workspace = await module.create(Mockers.Workspace);
+  const user = await module.create(Mockers.User);
   const docId = randomUUID();
   const key1 = randomUUID();
   const key2 = randomUUID();
   const blob1 = Buffer.from('test');
   const blob2 = Buffer.from('test2');
 
-  await storage.put(workspace.id, docId, key1, 'test.txt', blob1);
-  await storage.put(workspace.id, docId, key2, 'test.txt', blob2);
+  await storage.put(workspace.id, docId, key1, 'test.txt', blob1, user.id);
+  await storage.put(workspace.id, docId, key2, 'test.txt', blob2, user.id);
 
   const count = module.event.count('comment.attachment.delete');
 
