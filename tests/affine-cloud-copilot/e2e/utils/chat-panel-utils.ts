@@ -201,7 +201,7 @@ export class ChatPanelUtils {
   public static async chatWithDoc(page: Page, docName: string) {
     const withButton = page.getByTestId('chat-panel-with-button');
     await withButton.hover();
-    await withButton.click();
+    await withButton.click({ delay: 200 });
     const withMenu = page.getByTestId('ai-add-popover');
     await withMenu.waitFor({ state: 'visible' });
     await withMenu.getByText(docName).click();
@@ -221,7 +221,7 @@ export class ChatPanelUtils {
       const fileChooserPromise = page.waitForEvent('filechooser');
       const withButton = page.getByTestId('chat-panel-with-button');
       await withButton.hover();
-      await withButton.click();
+      await withButton.click({ delay: 200 });
       const withMenu = page.getByTestId('ai-add-popover');
       await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-files').click();
@@ -282,7 +282,7 @@ export class ChatPanelUtils {
     for (const tag of tags) {
       const withButton = page.getByTestId('chat-panel-with-button');
       await withButton.hover();
-      await withButton.click();
+      await withButton.click({ delay: 200 });
       const withMenu = page.getByTestId('ai-add-popover');
       await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-tags').click();
@@ -299,7 +299,7 @@ export class ChatPanelUtils {
     for (const collection of collections) {
       const withButton = page.getByTestId('chat-panel-with-button');
       await withButton.hover();
-      await withButton.click();
+      await withButton.click({ delay: 200 });
       const withMenu = page.getByTestId('ai-add-popover');
       await withMenu.waitFor({ state: 'visible' });
       await withMenu.getByTestId('ai-chat-with-collections').click();
