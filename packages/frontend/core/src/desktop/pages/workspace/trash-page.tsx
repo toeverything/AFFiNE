@@ -1,4 +1,4 @@
-import { toast } from '@affine/component';
+import { toast, useConfirmModal } from '@affine/component';
 import {
   createDocExplorerContext,
   DocExplorerContext,
@@ -44,8 +44,9 @@ export const TrashPage = () => {
   const globalContextService = useService(GlobalContextService);
   const permissionService = useService(WorkspacePermissionService);
 
-  const { restoreFromTrash } = useBlockSuiteMetaHelper();
+  const { restoreFromTrash, permanentlyDeletePage } = useBlockSuiteMetaHelper();
   const isActiveView = useIsActiveView();
+  const { openConfirmModal } = useConfirmModal();
 
   const [explorerContextValue] = useState(() =>
     createDocExplorerContext({
@@ -85,6 +86,47 @@ export const TrashPage = () => {
       );
     },
     [restoreFromTrash, t]
+  );
+
+  const handleMultiDelete = useCallback(
+    (ids: string[]) => {
+      ids.forEach(pageId => {
+        permanentlyDeletePage(pageId);
+      });
+      toast(t['com.affine.toastMessage.permanentlyDeleted']());
+    },
+    [permanentlyDeletePage, t]
+  );
+
+  const onConfirmPermanentlyDelete = useCallback(
+    (
+      ids: string[],
+      callbacks?: {
+        onFinished?: () => void;
+        onAbort?: () => void;
+      }
+    ) => {
+      if (ids.length === 0) {
+        return;
+      }
+      openConfirmModal({
+        title: `${t['com.affine.trashOperation.deletePermanently']()}?`,
+        description: t['com.affine.trashOperation.deleteDescription'](),
+        cancelText: t['Cancel'](),
+        confirmText: t['com.affine.trashOperation.delete'](),
+        confirmButtonOptions: {
+          variant: 'error',
+        },
+        onConfirm: () => {
+          handleMultiDelete(ids);
+          callbacks?.onFinished?.();
+        },
+        onCancel: () => {
+          callbacks?.onAbort?.();
+        },
+      });
+    },
+    [handleMultiDelete, openConfirmModal, t]
   );
 
   useEffect(() => {
@@ -139,6 +181,9 @@ export const TrashPage = () => {
             <DocsExplorer
               disableMultiDelete={!isAdmin && !isOwner}
               onRestore={isAdmin || isOwner ? handleMultiRestore : undefined}
+              onDelete={
+                isAdmin || isOwner ? onConfirmPermanentlyDelete : undefined
+              }
             />
           )}
         </div>
