@@ -106,3 +106,83 @@ export const attachmentButton = style({
     },
   },
 });
+
+// New generic file preview box (non-image attachments)
+export const filePreviewBox = style({
+  position: 'relative',
+  width: 194,
+  height: 62,
+  borderRadius: 4,
+  flex: '0 0 auto',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '0 4px',
+  background: cssVarV2('layer/background/secondary'),
+  border: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
+  cursor: 'pointer',
+  selectors: {
+    '&:hover': {
+      opacity: 0.8,
+    },
+  },
+});
+
+export const fileIcon = style({
+  height: 36,
+  width: 'auto',
+});
+
+export const fileInfo = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 4,
+  overflow: 'hidden',
+});
+
+export const fileName = style({
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  fontSize: 14,
+  flex: '1 1 auto',
+  fontWeight: 600,
+});
+
+export const fileSize = style({
+  fontSize: 12,
+  color: cssVarV2('text/secondary'),
+});
+
+export const deleteBtn = style({
+  position: 'absolute',
+  top: -6,
+  right: -6,
+  width: 16,
+  height: 16,
+  borderRadius: '50%',
+  background: cssVarV2('layer/background/primary'),
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: `1px solid ${cssVarV2('layer/insideBorder/border')}`,
+  selectors: {
+    '&:hover': {
+      background: cssVarV2('layer/background/error'),
+      borderColor: cssVarV2('button/error'),
+    },
+  },
+});
+
+export const spinnerWrapper = style({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%',
+  background: cssVarV2('layer/background/tertiary'),
+  borderRadius: 4,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});

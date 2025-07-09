@@ -1,9 +1,10 @@
-import { IconButton } from '@affine/component';
+import { IconButton, notify } from '@affine/component';
 import { LitDocEditor, type PageEditor } from '@affine/core/blocksuite/editors';
 import { SnapshotHelper } from '@affine/core/modules/comment/services/snapshot-helper';
 import type { CommentAttachment } from '@affine/core/modules/comment/types';
 import { PeekViewService } from '@affine/core/modules/peek-view';
 import { DebugLogger } from '@affine/debug';
+import { getAttachmentFileIconRC } from '@blocksuite/affine/components/icons';
 import { type RichText, selectTextModel } from '@blocksuite/affine/rich-text';
 import { ViewportElementExtension } from '@blocksuite/affine/shared/services';
 import { openFilesWith } from '@blocksuite/affine/shared/utils';
@@ -15,6 +16,7 @@ import {
 } from '@blocksuite/icons/rc';
 import type { TextSelection } from '@blocksuite/std';
 import { useFramework, useService } from '@toeverything/infra';
+import bytes from 'bytes';
 import clsx from 'clsx';
 import {
   forwardRef,
@@ -30,7 +32,7 @@ import { useAsyncCallback } from '../../hooks/affine-async-hooks';
 import { getCommentEditorViewManager } from './specs';
 import * as styles from './style.css';
 
-const MAX_IMAGE_COUNT = 10;
+const MAX_ATTACHMENT_COUNT = 10;
 const logger = new DebugLogger('CommentEditor');
 
 const usePatchSpecs = (readonly: boolean) => {
@@ -78,6 +80,16 @@ export interface CommentEditorRef {
   focus: () => void;
 }
 
+const download = (url: string, name: string) => {
+  const element = document.createElement('a');
+  element.setAttribute('download', name);
+  element.setAttribute('href', url);
+  element.style.display = 'none';
+  document.body.append(element);
+  element.click();
+  element.remove();
+};
+
 // todo: get rid of circular data changes
 const useSnapshotDoc = (
   defaultSnapshotOrDoc: DocSnapshot | Store,
@@ -107,6 +119,75 @@ const useSnapshotDoc = (
   }, [defaultSnapshotOrDoc, readonly, snapshotHelper]);
 
   return doc;
+};
+
+const isImageAttachment = (att: EditorAttachment) => {
+  const type = att.mimeType || att.file?.type || '';
+  if (type) return type.startsWith('image/');
+  return !!att.url && /\.(png|jpe?g|gif|webp|svg)$/i.test(att.url);
+};
+
+const AttachmentPreviewItem: React.FC<{
+  attachment: EditorAttachment;
+  index: number;
+  readonly?: boolean;
+  handleAttachmentClick: (e: React.MouseEvent, index: number) => void;
+  handleAttachmentRemove: (id: string) => void;
+}> = ({
+  attachment,
+  index,
+  readonly,
+  handleAttachmentClick,
+  handleAttachmentRemove,
+}) => {
+  const isImg = isImageAttachment(attachment);
+  const Icon = !isImg
+    ? getAttachmentFileIconRC(
+        attachment.mimeType ||
+          attachment.file?.type ||
+          attachment.filename?.split('.').pop() ||
+          'none'
+      )
+    : undefined;
+
+  return (
+    <div
+      key={attachment.id}
+      className={isImg ? styles.previewBox : styles.filePreviewBox}
+      style={{
+        backgroundImage: isImg
+          ? `url(${attachment.localUrl ?? attachment.url})`
+          : undefined,
+      }}
+      onClick={e => handleAttachmentClick(e, index)}
+    >
+      {!isImg && Icon && <Icon className={styles.fileIcon} />}
+      {!isImg && (
+        <div className={styles.fileInfo}>
+          <span className={styles.fileName}>
+            {attachment.filename || attachment.file?.name || 'File'}
+          </span>
+          <span className={styles.fileSize}>
+            {attachment.size ? bytes(attachment.size) : ''}
+          </span>
+        </div>
+      )}
+
+      {!readonly && (
+        <IconButton
+          size={12}
+          className={styles.attachmentButton}
+          loading={attachment.status === 'uploading'}
+          variant="danger"
+          onClick={e => {
+            e.stopPropagation();
+            handleAttachmentRemove(attachment.id);
+          }}
+          icon={<CloseIcon />}
+        />
+      )}
+    </div>
+  );
 };
 
 export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
@@ -143,25 +224,28 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
       [attachments, onAttachmentsChange]
     );
 
-    const isImageUploadDisabled = (attachments?.length ?? 0) >= MAX_IMAGE_COUNT;
+    const isUploadDisabled = (attachments?.length ?? 0) >= MAX_ATTACHMENT_COUNT;
     const uploadingAttachments = attachments?.some(
       att => att.status === 'uploading'
     );
     const commitDisabled =
       (empty && (attachments?.length ?? 0) === 0) || uploadingAttachments;
 
-    const addImages = useAsyncCallback(
+    const addAttachments = useAsyncCallback(
       async (files: File[]) => {
         if (!uploadCommentAttachment) return;
-        const valid = files.filter(f => f.type.startsWith('image/'));
+        const remaining = MAX_ATTACHMENT_COUNT - (attachments?.length ?? 0);
+        const valid = files.slice(0, remaining);
         if (!valid.length) return;
-        logger.info('addImages', { files: valid });
+        logger.info('addAttachments', { files: valid });
 
         const pendingAttachments: EditorAttachment[] = valid.map(f => ({
           id: nanoid(),
           file: f,
           localUrl: URL.createObjectURL(f),
           status: 'uploading',
+          filename: f.name,
+          mimeType: f.type,
         }));
 
         setAttachments(prev => [...prev, ...pendingAttachments]);
@@ -189,8 +273,12 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
               };
               return next;
             });
-          } catch (e) {
+          } catch (e: any) {
             logger.error('uploadCommentAttachment failed', { error: e });
+            notify.error({
+              title: 'Failed to upload attachment',
+              message: e.message,
+            });
             pending.localUrl && URL.revokeObjectURL(pending.localUrl);
             setAttachments(prev => {
               const index = prev.findIndex(att => att.id === pending.id);
@@ -202,38 +290,38 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
           }
         }
       },
-      [setAttachments, uploadCommentAttachment]
+      [attachments?.length, setAttachments, uploadCommentAttachment]
     );
 
-    const handlePasteImage = useCallback(
+    const handlePaste = useCallback(
       (event: React.ClipboardEvent) => {
         const items = event.clipboardData?.items;
         if (!items) return;
         const files: File[] = [];
         for (const index in items) {
           const item = items[index as any];
-          if (item.kind === 'file' && item.type.indexOf('image') >= 0) {
+          if (item.kind === 'file') {
             const blob = item.getAsFile();
             if (blob) files.push(blob);
           }
         }
         if (files.length) {
           event.preventDefault();
-          addImages(files);
+          addAttachments(files);
         }
       },
-      [addImages]
+      [addAttachments]
     );
 
-    const uploadImageFiles = useAsyncCallback(async () => {
-      if (isImageUploadDisabled) return;
-      const files = await openFilesWith('Images');
+    const openFilePicker = useAsyncCallback(async () => {
+      if (isUploadDisabled) return;
+      const files = await openFilesWith('Any');
       if (files) {
-        addImages(files);
+        addAttachments(files);
       }
-    }, [isImageUploadDisabled, addImages]);
+    }, [isUploadDisabled, addAttachments]);
 
-    const handleImageRemove = useCallback(
+    const handleAttachmentRemove = useCallback(
       (id: string) => {
         setAttachments(prev => {
           const att = prev.find(att => att.id === id);
@@ -247,10 +335,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
     const handleImagePreview = useCallback(
       (index: number) => {
         if (!attachments) return;
-
-        const imageAttachments = attachments.filter(
-          att => att.url || att.localUrl
-        );
+        const imageAttachments = attachments.filter(isImageAttachment);
 
         if (index >= imageAttachments.length) return;
 
@@ -291,12 +376,31 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
       [attachments, peekViewService]
     );
 
-    const handleImageClick = useCallback(
+    const handleAttachmentClick = useCallback(
       (e: React.MouseEvent, index: number) => {
         e.stopPropagation();
-        handleImagePreview(index);
+        if (!attachments) return;
+        const att = attachments[index];
+        if (!att) return;
+        const url = att.url || att.localUrl;
+        if (!url) return;
+        if (isImageAttachment(att)) {
+          // translate attachment index to image index
+          const imageAttachments = attachments.filter(isImageAttachment);
+          const imageIndex = imageAttachments.findIndex(i => i.id === att.id);
+          if (imageIndex >= 0) {
+            handleImagePreview(imageIndex);
+          }
+        } else if (att.url || att.localUrl) {
+          // todo: open attachment preview. for now, just download it
+          download(url, att.filename ?? att.file?.name ?? 'attachment');
+          notify({
+            title: 'Downloading attachment',
+            message: 'The attachment is being downloaded to your computer.',
+          });
+        }
       },
-      [handleImagePreview]
+      [attachments, handleImagePreview]
     );
 
     // upload attachments and call original onCommit
@@ -433,38 +537,24 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
       <div
         onClick={readonly ? undefined : handleClickEditor}
         onKeyDown={handleKeyDown}
-        onPaste={handlePasteImage}
+        onPaste={handlePaste}
         data-readonly={!!readonly}
         className={clsx(styles.container, 'comment-editor-viewport')}
       >
         {attachments?.length && attachments.length > 0 ? (
           <div
             className={styles.previewRow}
-            data-testid="comment-image-preview"
+            data-testid="comment-attachment-preview"
           >
             {attachments.map((att, index) => (
-              <div
+              <AttachmentPreviewItem
                 key={att.id}
-                className={styles.previewBox}
-                style={{
-                  backgroundImage: `url(${att.localUrl ?? att.url})`,
-                }}
-                onClick={e => handleImageClick(e, index)}
-              >
-                {!readonly && (
-                  <IconButton
-                    size={12}
-                    className={styles.attachmentButton}
-                    loading={att.status === 'uploading'}
-                    variant="danger"
-                    onClick={e => {
-                      e.stopPropagation();
-                      handleImageRemove(att.id);
-                    }}
-                    icon={<CloseIcon />}
-                  />
-                )}
-              </div>
+                attachment={att}
+                index={index}
+                readonly={readonly}
+                handleAttachmentClick={handleAttachmentClick}
+                handleAttachmentRemove={handleAttachmentRemove}
+              />
             ))}
           </div>
         ) : null}
@@ -476,8 +566,8 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
           <div className={styles.footer}>
             <IconButton
               icon={<AttachmentIcon />}
-              onClick={uploadImageFiles}
-              aria-disabled={isImageUploadDisabled}
+              onClick={openFilePicker}
+              disabled={isUploadDisabled}
             />
             <button
               onClick={handleCommit}

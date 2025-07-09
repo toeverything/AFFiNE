@@ -351,6 +351,7 @@ export class DocCommentEntity extends Entity<{
       url,
       filename: file.name,
       mimeType: file.type,
+      size: file.size,
     });
 
     if (isPendingComment) {

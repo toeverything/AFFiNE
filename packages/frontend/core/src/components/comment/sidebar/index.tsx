@@ -470,10 +470,6 @@ const CommentItem = ({
   const canDelete =
     (isMyComment && canCreateComment) || (!isMyComment && canDeleteComment);
 
-  const isCommentInEditor = useLiveData(entity.commentsInEditor$).includes(
-    comment.id
-  );
-
   // invalid comment, should not happen
   if (!comment.content) {
     return null;
@@ -516,12 +512,7 @@ const CommentItem = ({
           onDelete={handleDelete}
         />
       </div>
-      <div
-        data-deleted={!isCommentInEditor}
-        className={styles.previewContainer}
-      >
-        {comment.content?.preview}
-      </div>
+      <div className={styles.previewContainer}>{comment.content?.preview}</div>
 
       <div className={styles.repliesContainer}>
         {isEditing && editingDoc ? (

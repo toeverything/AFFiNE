@@ -13,6 +13,7 @@ export type CommentAttachment = {
   url?: string; // attachment may not be uploaded yet
   filename?: string;
   mimeType?: string;
+  size?: number; // in bytes
 };
 
 export interface BaseComment {
