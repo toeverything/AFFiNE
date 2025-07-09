@@ -20,14 +20,16 @@ export class CorrectSessionUpdateTime1751966744168 {
 
     for (const s of chunk(sessionTime, 100)) {
       const sessions = s.filter((s): s is SessionTime => !!s._max.createdAt);
-      await Promise.all(
-        sessions.map(s =>
-          db.aiSession.update({
-            where: { id: s.sessionId },
-            data: { updatedAt: s._max.createdAt },
-          })
-        )
-      );
+      await db.$transaction(async tx => {
+        await Promise.all(
+          sessions.map(s =>
+            tx.aiSession.update({
+              where: { id: s.sessionId },
+              data: { updatedAt: s._max.createdAt },
+            })
+          )
+        );
+      });
     }
   }
 
