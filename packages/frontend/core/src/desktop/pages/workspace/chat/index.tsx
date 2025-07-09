@@ -17,7 +17,9 @@ import {
   ViewBody,
   ViewHeader,
   ViewIcon,
+  ViewService,
   ViewTitle,
+  WorkbenchService,
 } from '@affine/core/modules/workbench';
 import { WorkspaceService } from '@affine/core/modules/workspace';
 import { useI18n } from '@affine/i18n';
@@ -212,6 +214,14 @@ export const Component = () => {
       await togglePin();
     };
 
+    tool.onOpenDoc = (docId: string, sessionId: string) => {
+      const { workbench } = framework.get(WorkbenchService);
+      const viewService = framework.get(ViewService);
+      workbench.open(`/${docId}?sessionId=${sessionId}`, { at: 'active' });
+      workbench.openSidebar();
+      viewService.view.activeSidebarTab('chat');
+    };
+
     // initial props
     if (!chatTool) {
       // mount
@@ -228,6 +238,7 @@ export const Component = () => {
     togglePin,
     workspaceId,
     confirmModal,
+    framework,
   ]);
 
   const onChatContainerRef = useCallback((node: HTMLDivElement) => {
