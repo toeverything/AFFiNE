@@ -36,3 +36,14 @@ export const CommentInlineSpecExtension =
       >`,
     wrapper: true,
   });
+
+export const NullCommentInlineSpecExtension =
+  InlineSpecExtension<AffineTextAttributes>({
+    name: 'comment',
+    schema: dynamicSchema(
+      isInlineCommendId,
+      z.boolean().optional().nullable().catch(undefined)
+    ),
+    match: () => false,
+    renderer: () => html``,
+  });

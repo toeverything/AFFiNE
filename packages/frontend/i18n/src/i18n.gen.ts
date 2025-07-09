@@ -7755,6 +7755,10 @@ export function useAFFiNEI18N(): {
       */
     ["com.affine.notification.unsupported"](): string;
     /**
+      * `What are your thoughts?`
+      */
+    ["com.affine.notification.comment-prompt"](): string;
+    /**
       * `No new notifications`
       */
     ["com.affine.notification.empty"](): string;

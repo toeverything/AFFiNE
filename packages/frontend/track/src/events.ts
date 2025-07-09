@@ -198,6 +198,15 @@ type WorkspaceEmbeddingEvents =
   | 'addIgnoredDocs';
 // END SECTION
 
+// SECTION: comment events
+// Add events for comment actions
+type CommentEvents =
+  | 'createComment'
+  | 'editComment'
+  | 'deleteComment'
+  | 'resolveComment';
+// END SECTION
+
 type UserEvents =
   | GeneralEvents
   | AppEvents
@@ -215,6 +224,7 @@ type UserEvents =
   | PaymentEvents
   | DNDEvents
   | AIEvents
+  | CommentEvents
   | AttachmentEvents
   | TemplateEvents
   | NotificationEvents
@@ -420,6 +430,9 @@ interface PageEvents extends PageDivision {
     };
     chatPanel: {
       chatPanelInput: ['addEmbeddingDoc'];
+    };
+    commentPanel: {
+      $: ['createComment', 'editComment', 'deleteComment', 'resolveComment'];
     };
     attachment: {
       $: [
@@ -807,6 +820,15 @@ export type EventArgs = {
   navigatePinedCollectionRouter: {
     control: 'all' | 'user-custom-collection';
   };
+  resolveComment: { type: 'on' | 'off' };
+  createComment: {
+    type: 'root' | 'node';
+    withAttachment: boolean;
+    withMention: boolean;
+    category: string;
+  };
+  editComment: { type: 'root' | 'node' };
+  deleteComment: { type: 'root' | 'node' };
 };
 
 // for type checking

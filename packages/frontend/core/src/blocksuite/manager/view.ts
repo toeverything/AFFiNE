@@ -33,6 +33,7 @@ import type {
 import { ViewExtensionManager } from '@blocksuite/affine/ext-loader';
 import { getInternalViewExtensions } from '@blocksuite/affine/extensions/view';
 import { FoundationViewExtension } from '@blocksuite/affine/foundation/view';
+import { InlineCommentViewExtension } from '@blocksuite/affine/inlines/comment';
 import { AffineCanvasTextFonts } from '@blocksuite/affine/shared/services';
 import { LinkedDocViewExtension } from '@blocksuite/affine/widgets/linked-doc/view';
 import type { FrameworkProvider } from '@toeverything/infra';
@@ -340,6 +341,11 @@ class ViewProvider {
       enableComment,
       framework,
     });
+
+    this._manager.configure(InlineCommentViewExtension, {
+      enabled: enableComment,
+    });
+
     return this.config;
   };
 }

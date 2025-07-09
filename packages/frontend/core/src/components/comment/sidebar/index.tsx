@@ -377,7 +377,7 @@ const CommentItem = ({
     entity.dismissDraftReply();
   }, [entity, pendingReply]);
 
-  const handleClickPreview = useCallback(() => {
+  const handleClick = useCallback(() => {
     workbench.workbench.openDoc(
       {
         docId: entity.props.docId,
@@ -470,6 +470,10 @@ const CommentItem = ({
   const canDelete =
     (isMyComment && canCreateComment) || (!isMyComment && canDeleteComment);
 
+  const isCommentInEditor = useLiveData(entity.commentsInEditor$).includes(
+    comment.id
+  );
+
   // invalid comment, should not happen
   if (!comment.content) {
     return null;
@@ -477,7 +481,7 @@ const CommentItem = ({
 
   return (
     <div
-      onClick={handleClickPreview}
+      onClick={handleClick}
       data-comment-id={comment.id}
       data-resolved={comment.resolved}
       data-highlighting={highlighting || menuOpen}
@@ -512,7 +516,12 @@ const CommentItem = ({
           onDelete={handleDelete}
         />
       </div>
-      <div className={styles.previewContainer}>{comment.content?.preview}</div>
+      <div
+        data-deleted={!isCommentInEditor}
+        className={styles.previewContainer}
+      >
+        {comment.content?.preview}
+      </div>
 
       <div className={styles.repliesContainer}>
         {isEditing && editingDoc ? (

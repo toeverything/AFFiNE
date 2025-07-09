@@ -128,6 +128,7 @@ class AffineCommentService implements CommentProvider {
     private readonly framework: FrameworkProvider
   ) {
     this.docCommentManager = framework.get(DocCommentManagerService);
+    this.docCommentManager.std = std;
   }
 
   private get currentDocId(): string {

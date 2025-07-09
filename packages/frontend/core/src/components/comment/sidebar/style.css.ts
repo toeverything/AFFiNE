@@ -130,6 +130,9 @@ export const previewContainer = style({
       top: '0',
       backgroundColor: cssVarV2('block/comment/highlightUnderline'),
     },
+    '&[data-deleted="true"]': {
+      textDecoration: 'line-through',
+    },
   },
 });
 

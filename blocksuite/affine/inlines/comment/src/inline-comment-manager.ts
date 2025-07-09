@@ -5,6 +5,7 @@ import {
   type CommentId,
   CommentProviderIdentifier,
   findAllCommentedBlocks,
+  findAllCommentedElements,
 } from '@blocksuite/affine-shared/services';
 import type { AffineInlineEditor } from '@blocksuite/affine-shared/types';
 import { DisposableGroup } from '@blocksuite/global/disposable';
@@ -64,15 +65,8 @@ export class InlineCommentManager extends LifeCycleWatcher {
     if (!provider) return;
 
     const commentsInProvider = await provider.getComments('unresolved');
-    const inlineComments = [...findAllCommentedTexts(this.std.store).values()];
 
-    const blockComments = findAllCommentedBlocks(this.std.store).flatMap(
-      block => Object.keys(block.props.comments)
-    );
-
-    const commentsInEditor = [
-      ...new Set([...inlineComments, ...blockComments]),
-    ];
+    const commentsInEditor = this.getCommentsInEditor();
 
     // remove comments that are in editor but not in provider
     // which means the comment may be removed or resolved in provider side
@@ -80,6 +74,24 @@ export class InlineCommentManager extends LifeCycleWatcher {
       this._handleDeleteAndResolve(comment);
       this.std.get(BlockElementCommentManager).handleDeleteAndResolve(comment);
     });
+  }
+
+  getCommentsInEditor() {
+    const inlineComments = [...findAllCommentedTexts(this.std.store).values()];
+
+    const blockComments = findAllCommentedBlocks(this.std.store).flatMap(
+      block => Object.keys(block.props.comments)
+    );
+
+    const surfaceComments = findAllCommentedElements(this.std.store).flatMap(
+      element => Object.keys(element.comments)
+    );
+
+    const commentsInEditor = [
+      ...new Set([...inlineComments, ...blockComments, ...surfaceComments]),
+    ];
+
+    return commentsInEditor;
   }
 
   private readonly _handleAddComment = (

@@ -59,7 +59,7 @@ interface BlocksuiteEditorProps {
   defaultOpenProperty?: DefaultOpenProperty;
 }
 
-const usePatchSpecs = (mode: DocMode) => {
+const usePatchSpecs = (mode: DocMode, shared?: boolean) => {
   const [reactToLit, portals] = useLitPortalFactory();
   const { workspaceService, featureFlagService } = useServices({
     WorkspaceService,
@@ -86,7 +86,8 @@ const usePatchSpecs = (mode: DocMode) => {
   const serverConfig = useLiveData(serverService.server.config$);
 
   // comment may not be supported by the server
-  const enableComment = serverConfig.features.includes(ServerFeature.Comment);
+  const enableComment =
+    serverConfig.features.includes(ServerFeature.Comment) && !shared;
 
   const patchedSpecs = useMemo(() => {
     const manager = getViewManager()
@@ -206,7 +207,7 @@ export const BlocksuiteDocEditor = forwardRef<
     [externalTitleRef]
   );
 
-  const [specs, portals] = usePatchSpecs('page');
+  const [specs, portals] = usePatchSpecs('page', shared);
 
   const displayBiDirectionalLink = useLiveData(
     editorSettingService.editorSetting.settings$.selector(

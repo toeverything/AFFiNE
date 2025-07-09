@@ -179,13 +179,14 @@ export class DocCommentStore extends Entity<{
 
   async createComment(commentInput: {
     content: DocCommentContent;
+    mentions?: string[];
   }): Promise<DocComment> {
     const graphql = this.graphqlService;
     if (!graphql) {
       throw new Error('GraphQL service not found');
     }
 
-    const mentions = findMentions(commentInput.content.snapshot.blocks);
+    const mentions = commentInput.mentions;
 
     const response = await graphql.gql({
       query: createCommentMutation,
@@ -265,14 +266,13 @@ export class DocCommentStore extends Entity<{
     commentId: string,
     replyInput: {
       content: DocCommentContent;
+      mentions?: string[];
     }
   ): Promise<DocCommentReply> {
     const graphql = this.graphqlService;
     if (!graphql) {
       throw new Error('GraphQL service not found');
     }
-
-    const mentions = findMentions(replyInput.content.snapshot.blocks);
 
     const response = await graphql.gql({
       query: createReplyMutation,
@@ -282,7 +282,7 @@ export class DocCommentStore extends Entity<{
           content: replyInput.content,
           docMode: this.props.getDocMode(),
           docTitle: this.props.getDocTitle(),
-          mentions: mentions,
+          mentions: replyInput.mentions,
         },
       },
     });

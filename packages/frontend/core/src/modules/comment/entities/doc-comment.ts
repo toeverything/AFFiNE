@@ -1,9 +1,12 @@
 import { type CommentChangeAction, DocMode } from '@affine/graphql';
+import { track } from '@affine/track';
+import { InlineCommentManager } from '@blocksuite/affine/inlines/comment';
 import type {
   BaseSelection,
   DocSnapshot,
   Store,
 } from '@blocksuite/affine/store';
+import type { BlockStdScope } from '@blocksuite/std';
 import {
   effect,
   Entity,
@@ -38,6 +41,7 @@ import type {
   PendingComment,
 } from '../types';
 import { DocCommentStore } from './doc-comment-store';
+import { findMentions } from './utils';
 
 type DisposeCallback = () => void;
 
@@ -50,6 +54,7 @@ type EditingDraft = {
 
 export class DocCommentEntity extends Entity<{
   docId: string;
+  std: BlockStdScope | null;
 }> {
   constructor(
     private readonly snapshotHelper: SnapshotHelper,
@@ -68,6 +73,8 @@ export class DocCommentEntity extends Entity<{
 
   loading$ = new LiveData<boolean>(false);
   comments$ = new LiveData<DocComment[]>([]);
+
+  commentsInEditor$ = new LiveData<string[]>([]);
 
   // Only one pending comment at a time (for new comments)
   readonly pendingComment$ = new LiveData<PendingComment | null>(null);
@@ -195,7 +202,9 @@ export class DocCommentEntity extends Entity<{
         attachments: draft.attachments,
       });
     }
-
+    track.$.commentPanel.$.editComment({
+      type: draft.type === 'comment' ? 'root' : 'node',
+    });
     this.editingDraft$.setValue(null);
     this.revalidate();
   }
@@ -220,6 +229,7 @@ export class DocCommentEntity extends Entity<{
     if (!snapshot) {
       throw new Error('Failed to get snapshot');
     }
+    const mentions = findMentions(snapshot.blocks);
     const comment = await this.store.createComment({
       content: {
         snapshot,
@@ -227,12 +237,26 @@ export class DocCommentEntity extends Entity<{
         mode: this.docMode$.value ?? 'page',
         attachments,
       },
+      mentions,
     });
     const currentComments = this.comments$.value;
     this.comments$.setValue([...currentComments, comment]);
     this.commentAdded$.next({
       id: comment.id,
       selections: pendingComment.selections || [],
+    });
+    // for block's preview, it will be something like <Paragraph>
+    // extract the block type from the preview
+    const blockType = preview?.match(/<([^>]+)>/)?.[1];
+    track.$.commentPanel.$.createComment({
+      type: 'root',
+      withAttachment: (attachments?.length ?? 0) > 0,
+      withMention: mentions.length > 0,
+      category: blockType
+        ? blockType
+        : (this.docMode$.value ?? 'page') === 'page'
+          ? 'Page'
+          : 'Note',
     });
     this.pendingComment$.setValue(null);
     this.revalidate();
@@ -254,11 +278,13 @@ export class DocCommentEntity extends Entity<{
       throw new Error('Pending reply has no commentId');
     }
 
+    const mentions = findMentions(snapshot.blocks);
     const reply = await this.store.createReply(pendingReply.commentId, {
       content: {
         snapshot,
         attachments,
       },
+      mentions,
     });
     const currentComments = this.comments$.value;
     const updatedComments = currentComments.map(comment =>
@@ -267,6 +293,12 @@ export class DocCommentEntity extends Entity<{
         : comment
     );
     this.comments$.setValue(updatedComments);
+    track.$.commentPanel.$.createComment({
+      type: 'node',
+      withAttachment: (attachments?.length ?? 0) > 0,
+      withMention: mentions.length > 0,
+      category: (this.docMode$.value ?? 'page') === 'page' ? 'Page' : 'Note',
+    });
     this.pendingReply$.setValue(null);
     this.revalidate();
   }
@@ -275,6 +307,7 @@ export class DocCommentEntity extends Entity<{
     await this.store.deleteComment(id);
     const currentComments = this.comments$.value;
     this.comments$.setValue(currentComments.filter(c => c.id !== id));
+    track.$.commentPanel.$.deleteComment({ type: 'root' });
     this.commentDeleted$.next(id);
     this.revalidate();
   }
@@ -289,6 +322,7 @@ export class DocCommentEntity extends Entity<{
       };
     });
     this.comments$.setValue(updatedComments);
+    track.$.commentPanel.$.deleteComment({ type: 'node' });
     this.revalidate();
   }
 
@@ -385,6 +419,9 @@ export class DocCommentEntity extends Entity<{
       this.comments$.setValue(updatedComments);
 
       this.commentResolved$.next(id);
+      track.$.commentPanel.$.resolveComment({
+        type: resolved ? 'on' : 'off',
+      });
       this.revalidate();
     } catch (error) {
       console.error('Failed to resolve comment:', error);
@@ -459,6 +496,7 @@ export class DocCommentEntity extends Entity<{
 
     // Initial load
     this.revalidate();
+    this.revalidateCommentsInEditor();
 
     // Set up polling every 10 seconds
     const polling$ = timer(10000, 10000).pipe(
@@ -508,6 +546,7 @@ export class DocCommentEntity extends Entity<{
 
             return allComments;
           }).pipe(
+            tap(() => this.revalidateCommentsInEditor()),
             catchError(error => {
               console.error('Failed to fetch comments:', error);
               return of(null);
@@ -642,7 +681,7 @@ export class DocCommentEntity extends Entity<{
         const allComments: DocComment[] = [];
         let cursor = '';
         let firstResult: DocCommentListResult | null = null;
-
+        this.revalidateCommentsInEditor();
         // Fetch all pages of comments
         while (true) {
           const result = await this.store.listComments({ after: cursor });
@@ -661,6 +700,7 @@ export class DocCommentEntity extends Entity<{
         return allComments;
       }).pipe(
         tap(allComments => {
+          this.revalidateCommentsInEditor();
           // Update state with all comments
           this.comments$.setValue(allComments);
         }),
@@ -674,6 +714,18 @@ export class DocCommentEntity extends Entity<{
       );
     })
   );
+
+  private readonly revalidateCommentsInEditor = () => {
+    this.commentsInEditor$.setValue(this.getCommentsInEditor());
+  };
+
+  private getCommentsInEditor(): string[] {
+    const inlineCommentManager = this.props.std?.get(InlineCommentManager);
+    if (!inlineCommentManager) {
+      return [];
+    }
+    return inlineCommentManager.getCommentsInEditor();
+  }
 
   override dispose(): void {
     this.stop();
