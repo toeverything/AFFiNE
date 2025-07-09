@@ -1,4 +1,4 @@
-import { toast } from '@affine/component';
+import { toast, useConfirmModal } from '@affine/component';
 import {
   createDocExplorerContext,
   DocExplorerContext,
@@ -43,8 +43,8 @@ export const TrashPage = () => {
   const collectionRulesService = useService(CollectionRulesService);
   const globalContextService = useService(GlobalContextService);
   const permissionService = useService(WorkspacePermissionService);
-
-  const { restoreFromTrash } = useBlockSuiteMetaHelper();
+  const { openConfirmModal } = useConfirmModal();
+  const { restoreFromTrash, permanentlyDeletePage } = useBlockSuiteMetaHelper();
   const isActiveView = useIsActiveView();
 
   const [explorerContextValue] = useState(() =>
@@ -85,6 +85,42 @@ export const TrashPage = () => {
       );
     },
     [restoreFromTrash, t]
+  );
+
+  const handleMultiDeletePermanently = useCallback(
+    (ids: string[]) => {
+      const isMultiple = ids.length > 1;
+      const number = ids.length.toString();
+
+      const title = isMultiple
+        ? t['com.affine.deletePermanently.confirmModal.title.multiple']({
+            number,
+          })
+        : t['com.affine.deletePermanently.confirmModal.title']();
+
+      const description = isMultiple
+        ? t['com.affine.deletePermanently.confirmModal.description.multiple']({
+            number,
+          })
+        : t['com.affine.deletePermanently.confirmModal.description']();
+
+      openConfirmModal({
+        title,
+        description,
+        cancelText: t['com.affine.confirmModal.button.cancel'](),
+        confirmText: t['com.affine.trashOperation.deletePermanently'](),
+        confirmButtonOptions: {
+          variant: 'error',
+        },
+        onConfirm: () => {
+          ids.forEach(id => {
+            permanentlyDeletePage(id);
+          });
+          toast(t['com.affine.toastMessage.permanentlyDeleted']());
+        },
+      });
+    },
+    [openConfirmModal, permanentlyDeletePage, t]
   );
 
   useEffect(() => {
@@ -139,6 +175,9 @@ export const TrashPage = () => {
             <DocsExplorer
               disableMultiDelete={!isAdmin && !isOwner}
               onRestore={isAdmin || isOwner ? handleMultiRestore : undefined}
+              onDelete={
+                isAdmin || isOwner ? handleMultiDeletePermanently : undefined
+              }
             />
           )}
         </div>

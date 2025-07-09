@@ -2810,6 +2810,26 @@ export function useAFFiNEI18N(): {
         readonly number: string;
     }): string;
     /**
+      * `Delete doc permanently?`
+      */
+    ["com.affine.deletePermanently.confirmModal.title"](): string;
+    /**
+      * `A doc will be permanently deleted. This action cannot be undone.`
+      */
+    ["com.affine.deletePermanently.confirmModal.description"](): string;
+    /**
+      * `Delete {{ number }} docs permanently?`
+      */
+    ["com.affine.deletePermanently.confirmModal.title.multiple"](options: {
+        readonly number: string;
+    }): string;
+    /**
+      * `{{ number }} docs will be permanently deleted. This action cannot be undone.`
+      */
+    ["com.affine.deletePermanently.confirmModal.description.multiple"](options: {
+        readonly number: string;
+    }): string;
+    /**
       * `Move to trash`
       */
     ["com.affine.moveToTrash.title"](): string;
