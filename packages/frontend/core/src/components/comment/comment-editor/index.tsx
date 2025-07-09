@@ -1,4 +1,4 @@
-import { IconButton, Loading } from '@affine/component';
+import { IconButton } from '@affine/component';
 import { LitDocEditor, type PageEditor } from '@affine/core/blocksuite/editors';
 import { SnapshotHelper } from '@affine/core/modules/comment/services/snapshot-helper';
 import type { CommentAttachment } from '@affine/core/modules/comment/types';
@@ -144,6 +144,11 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
     );
 
     const isImageUploadDisabled = (attachments?.length ?? 0) >= MAX_IMAGE_COUNT;
+    const uploadingAttachments = attachments?.some(
+      att => att.status === 'uploading'
+    );
+    const commitDisabled =
+      (empty && (attachments?.length ?? 0) === 0) || uploadingAttachments;
 
     const addImages = useAsyncCallback(
       async (files: File[]) => {
@@ -296,13 +301,13 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
 
     // upload attachments and call original onCommit
     const handleCommit = useAsyncCallback(async () => {
-      if (readonly) return;
+      if (readonly || commitDisabled) return;
       onCommit?.();
       setAttachments(prev => {
         prev.forEach(att => att.localUrl && URL.revokeObjectURL(att.localUrl));
         return [];
       });
-    }, [readonly, onCommit, setAttachments]);
+    }, [readonly, commitDisabled, onCommit, setAttachments]);
 
     const focusEditor = useAsyncCallback(async () => {
       if (editorRef.current) {
@@ -447,20 +452,17 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
                 onClick={e => handleImageClick(e, index)}
               >
                 {!readonly && (
-                  <div
-                    className={styles.deleteBtn}
+                  <IconButton
+                    size={12}
+                    className={styles.attachmentButton}
+                    loading={att.status === 'uploading'}
+                    variant="danger"
                     onClick={e => {
                       e.stopPropagation();
                       handleImageRemove(att.id);
                     }}
-                  >
-                    <CloseIcon width={12} height={12} />
-                  </div>
-                )}
-                {att.status === 'uploading' && (
-                  <div className={styles.spinnerWrapper}>
-                    <Loading size={16} />
-                  </div>
+                    icon={<CloseIcon />}
+                  />
                 )}
               </div>
             ))}
@@ -480,7 +482,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(
             <button
               onClick={handleCommit}
               className={styles.commitButton}
-              disabled={empty && (attachments?.length ?? 0) === 0}
+              disabled={commitDisabled}
             >
               <ArrowUpBigIcon />
             </button>

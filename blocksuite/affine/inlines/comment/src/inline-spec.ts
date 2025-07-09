@@ -47,3 +47,7 @@ export const NullCommentInlineSpecExtension =
     match: () => false,
     renderer: () => html``,
   });
+
+// reuse the same identifier
+NullCommentInlineSpecExtension.identifier =
+  CommentInlineSpecExtension.identifier;
