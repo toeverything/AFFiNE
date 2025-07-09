@@ -33,7 +33,7 @@ extension ChatManager {
     append(sessionId: sessionId, UserMessageCellViewModel(
       id: .init(),
       content: inputBoxData.text,
-      timestamp: .init(),
+      timestamp: .init()
     ))
     append(sessionId: sessionId, UserHintCellViewModel(
       id: .init(),
