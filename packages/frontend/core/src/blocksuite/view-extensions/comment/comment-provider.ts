@@ -50,10 +50,7 @@ function getPreviewFromSelections(
     } else if (selection instanceof ImageSelection) {
       // Return <"Image"> for ImageSelection
       previews.push('<Image>');
-    } else if (
-      selection instanceof SurfaceSelection &&
-      gfx.surface?.id === selection.blockId
-    ) {
+    } else if (selection instanceof SurfaceSelection) {
       selection.elements.forEach(elementId => {
         const model = gfx.getElementById(elementId);
         if (model instanceof GfxPrimitiveElementModel) {

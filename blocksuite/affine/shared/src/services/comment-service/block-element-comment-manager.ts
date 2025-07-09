@@ -123,8 +123,7 @@ export class BlockElementCommentManager extends LifeCycleWatcher {
     const gfx = this.std.get(GfxControllerIdentifier);
     const elementsFromSurfaceSelection = selections
       .filter(s => s instanceof SurfaceSelection)
-      .flatMap(({ blockId, elements }) => {
-        if (blockId !== gfx.surface?.id) return [];
+      .flatMap(({ elements }) => {
         return elements
           .map(id => gfx.getElementById<GfxModel>(id))
           .filter(m => m !== null);
